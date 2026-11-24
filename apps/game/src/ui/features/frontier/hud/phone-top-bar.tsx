@@ -146,7 +146,7 @@ export const PhoneTopBarView = ({
       <StockChips {...stocks} />
       <div className="frontier-phone-cornice__clock">{clock}</div>
     </div>
-    <div className="frontier-phone-float">
+    <div data-map-cluster className="frontier-phone-float">
       {placeMenu}
       {spectatorChip}
       {quest && <div className="frontier-phone-float__quest">{quest}</div>}
@@ -174,7 +174,7 @@ export const TabletTopBarView = ({
       </div>
       <div className="frontier-tablet-bar__places">{places}</div>
     </div>
-    <div className="frontier-tablet-float">
+    <div data-map-cluster className="frontier-tablet-float">
       <div className="frontier-tablet-realm">{realmCard}</div>
       {spectatorChip}
     </div>

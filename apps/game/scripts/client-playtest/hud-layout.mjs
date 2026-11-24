@@ -36,7 +36,7 @@ export const HUD_LAYOUT_EXPRESSION = `JSON.stringify((() => {
     }
     return seen.right - seen.left > 6 && seen.bottom > seen.top ? seen : null;
   };
-  const PART = ".ui-panel, .ui-pill, .ui-bubble, .ui-notice, [data-kit-sheet]";
+  const PART = ".ui-panel, .ui-pill, .ui-bubble, .ui-notice, [data-kit-sheet], [data-hud-part], [data-hud-popover]";
   const candidates = [...document.querySelectorAll(PART)].filter((element) => shown(element));
   const outermost = candidates.filter((element) => !candidates.some((other) => other !== element && other.contains(element)));
   const nameOf = (element) =>

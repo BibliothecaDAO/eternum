@@ -5,6 +5,7 @@ import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { Icon } from "@/ui/design-system/icon";
 import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
+import { useTablet } from "@/shell/frame/layout";
 import { DAILY_QUEST_MODELS, readDailyQuest } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { formatShort } from "@bibliothecadao/types";
@@ -25,6 +26,7 @@ export const DailyQuestChip = ({
   const now = useNowSeconds();
   useNativeRevision(DAILY_QUEST_MODELS);
   const { triggerProps, popover, close } = useHudPopover();
+  const tablet = useTablet();
   const today = readDailyQuest(setup.store, realm.game_id, safeInteger(realm.entity_id), now);
   if (!today) return null;
   const reading = today.reading.known;
@@ -42,6 +44,7 @@ export const DailyQuestChip = ({
         {...triggerProps}
         aria-haspopup="dialog"
         data-daily-quest-chip=""
+        data-hud-part=""
         data-ready={ready || undefined}
         aria-label={face ? `${face.name} ${count}` : DAY_BANNER_WORDS.today}
         className="frontier-quest-orb"
@@ -58,7 +61,7 @@ export const DailyQuestChip = ({
       </button>
       {popover(<DailyQuest realm={realm} layout={layout} onClose={close} />, {
         className: "frontier-quest-popover",
-        layout,
+        layout: tablet && layout === "phone" ? "tablet" : layout,
       })}
     </div>
   );

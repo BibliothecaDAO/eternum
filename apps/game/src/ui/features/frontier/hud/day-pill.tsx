@@ -42,7 +42,13 @@ export const FrontierDayClock = ({
   const finished = useGameFinished();
   if (finished) return <GameFinishedPill />;
   return (
-    <button type="button" aria-label={TODAY} onClick={onOpenToday} className="frontier-day-trigger pointer-events-auto">
+    <button
+      type="button"
+      aria-label={TODAY}
+      data-hud-part=""
+      onClick={onOpenToday}
+      className="frontier-day-trigger pointer-events-auto"
+    >
       {compact ? <DayRing clock={clock} /> : <DayPill clock={clock} />}
     </button>
   );

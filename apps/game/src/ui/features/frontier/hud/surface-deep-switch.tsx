@@ -161,6 +161,7 @@ export const PlaceMenu = ({ realm, ...props }: PlaceSwitchProps & { realm?: { na
         aria-haspopup="true"
         aria-label={`Map view, ${shown.label}`}
         data-place-pill=""
+        data-hud-part=""
         data-place={shown.label}
         className="frontier-place-pill"
       >

@@ -112,6 +112,7 @@ export const HUD_WORDS = {
   close: "Close",
   chat: "Chat",
   settings: "Settings",
+  today: "Today",
 };
 
 const PHONE_PLACE_PRESSES = {
@@ -3150,6 +3151,38 @@ const DISCOVERED_SPIRE_STEPS = [
  * the rest, and fails under MAP_LEAST_SHARE (Chat, which fills the band, excepted); a step that could not reach its
  * state is blocked, never read as the map's. Run it at each device's size with --viewport.
  */
+/**
+ * Each sheet and page a phone or tablet opens over the map, one at a time, and the HUD judged with it open
+ * (judgeHudLayout): no sheet stands over the frame's own parts (the place pill, the quest orb, the day ring, the realm
+ * card) nor they over it.
+ */
+const HUD_SHEETS = [
+  ["research", (browser) => browser.tapPlace(HUD_WORDS.research)],
+  ["season", (browser) => browser.tapPlace(HUD_WORDS.season)],
+  ["menu", (browser) => browser.tapPlace(HUD_WORDS.menu)],
+  ["today", (browser) => browser.click(HUD_WORDS.today)],
+  [
+    "quest",
+    (browser) => browser.read(`(() => { document.querySelector("[data-daily-quest-chip]")?.click(); return true; })()`),
+  ],
+];
+
+const HUD_SHEET_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  ...HUD_SHEETS.map(([name, open]) => ({
+    name: `sheet-${name}`,
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      browser.press("Escape");
+      await sleep(HOVER_SETTLE_MS);
+      open(browser);
+      await sleep(SHEET_WAIT_MS);
+      return { layout: browser.hudLayout(), shot: extraScreenshot(name) };
+    },
+    verify: ({ played }) => judgeHudLayout(played.layout),
+  })),
+];
+
 const HUD_DEVICE_STEPS = [
   { name: "map", play: readTheMapShare, settleMs: 3_000, verify: mapShareRead },
   {
@@ -7211,6 +7244,7 @@ export const STEP_SETS = {
       },
     ],
   },
+  "lab-hud-sheets": { game: labSpireGame("panels"), steps: HUD_SHEET_STEPS },
   "lab-race-expired": { game: labSpireGame("race-expired"), steps: raceBoardSteps("expired") },
   "lab-race-finished": { game: labSpireGame("race-finished"), steps: raceBoardSteps("won") },
 

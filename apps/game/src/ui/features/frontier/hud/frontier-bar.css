@@ -43,7 +43,7 @@
   align-items: center;
   border: 0;
   background: transparent;
-  padding: 0 0 8px;
+  padding: 0;
   color: rgb(var(--hud-ink));
   cursor: pointer;
 }
@@ -54,10 +54,8 @@
   box-shadow: var(--hud-shadow-panel);
 }
 .frontier-quest-orb__count {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
+  margin-top: -8px;
   border: 1px solid var(--hud-line-strong);
   border-radius: var(--hud-radius-round);
   background: var(--hud-surface-to);
@@ -77,9 +75,6 @@
   box-shadow: 0 0 14px rgb(var(--hud-gold) / 0.55);
 }
 .frontier-quest-orb[data-ready="true"] .frontier-quest-orb__count {
-  right: -4px;
-  left: auto;
-  transform: none;
   border-color: rgb(var(--hud-gold));
   background: rgb(var(--hud-gold));
   color: rgb(var(--hud-dark));
@@ -124,6 +119,11 @@
 }
 .frontier-popover[data-layout="phone"] {
   --popover-edge: theme(spacing.2);
+}
+.frontier-popover[data-layout="tablet"] {
+  --popover-edge: theme(spacing.2);
+  left: auto;
+  right: var(--popover-edge);
 }
 .frontier-fragments-socket {
   display: inline-flex;

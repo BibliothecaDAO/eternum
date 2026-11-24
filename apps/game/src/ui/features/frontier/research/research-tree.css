@@ -757,13 +757,15 @@
   }
 
   .research-node__body {
+    container-type: inline-size;
     align-items: flex-start;
     gap: 2px;
   }
 
   .research-node__title {
-    font-size: var(--hud-text-label);
+    font-size: min(var(--hud-text-label), 11.5cqi);
     letter-spacing: 0.04em;
+    overflow-wrap: normal;
   }
 
   .research-node__delta--desktop {

@@ -112,15 +112,11 @@ button.frontier-stock-chip {
   white-space: nowrap;
 }
 .frontier-phone-float {
-  position: absolute;
-  top: 48px;
-  inset-inline: 0;
   display: flex;
   min-height: 52px;
   align-items: flex-start;
   justify-content: space-between;
   gap: theme(spacing.2);
-  padding-top: theme(spacing.2);
 }
 .frontier-phone-float__quest {
   margin-right: 2px;
@@ -330,7 +326,7 @@ button.frontier-stock-chip {
 .frontier-tablet-bar {
   display: flex;
   height: 52px;
-  margin: calc(theme(spacing.2) * -1) calc(theme(spacing.2) * -1) 0;
+  margin: calc(theme(spacing.2) * -1) calc(theme(spacing.2) * -1) theme(spacing.2);
   align-items: center;
   gap: theme(spacing.3);
   border-bottom: 2px solid color-mix(in srgb, rgb(var(--hud-gold)) 55%, var(--hud-line-strong));
@@ -399,7 +395,7 @@ button.frontier-stock-chip {
 }
 .frontier-tablet-float {
   position: absolute;
-  top: calc(100% + theme(spacing.2));
+  top: calc(100% + theme(spacing.3));
   inset-inline: 0;
   display: flex;
   align-items: flex-start;
@@ -542,9 +538,6 @@ button.frontier-stock-chip {
   position: relative;
   inset: auto;
   z-index: auto;
-}
-.frontier-quest-popover[data-layout="phone"] {
-  top: calc(48px + theme(spacing.2));
 }
 .frontier-quest-card {
   display: flex;

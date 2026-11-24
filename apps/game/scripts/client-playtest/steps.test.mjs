@@ -25,6 +25,7 @@ import {
   SETTINGS,
   SHARED_LINK_WORDS,
   SPIRE_WORDS,
+  TODAY,
 } from "../../src/ui/design-system/kit/words";
 import {
   CLOSEST_CAMERA_DISTANCE,
@@ -58,6 +59,7 @@ describe("the HUD's words the steps press and read", () => {
       close: CLOSE,
       chat: CHAT,
       settings: SETTINGS,
+      today: TODAY,
     });
   });
 });
