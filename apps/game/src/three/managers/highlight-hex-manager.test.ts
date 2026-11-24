@@ -272,3 +272,66 @@ describe("HighlightHexManager laying a lit hex on the ground", () => {
     expect(drawnHexes(scene)).toEqual(["1,0@0.92", "2,0@0.98"]);
   });
 });
+
+describe("HighlightHexManager teach highlight", () => {
+  const TEACH_RENDER_ORDER = 8;
+
+  const teachMesh = (scene: THREE.Scene) =>
+    scene.children.find(
+      (child): child is THREE.InstancedMesh =>
+        child instanceof THREE.InstancedMesh && child.renderOrder === TEACH_RENDER_ORDER,
+    )!;
+
+  it("lights one static non-pulsing hex with the teach colour, coexists with action highlights, re-grounds on terrain updates, and clears on null", () => {
+    let groundHeight = 0.1;
+    const terrain = {
+      sampleSurface: () => ({ biome: null, height: groundHeight, normal: [0, 1, 0] as const }),
+    };
+    const scene = new THREE.Scene();
+    const manager = new HighlightHexManager(scene, terrain, gridSpace);
+
+    manager.setTeachHex({ col: 4, row: 7 });
+    const mesh = teachMesh(scene);
+    const material = mesh.material as THREE.MeshBasicMaterial;
+    expect(drawnHexes(scene, TEACH_RENDER_ORDER)).toEqual(["4,7@0.56", "4,7@0.96"]);
+    expect(material.depthWrite).toBe(false);
+    expect(material.opacity).toBeCloseTo(0.28, 5);
+
+    const outerColor = new THREE.Color();
+    const innerColor = new THREE.Color();
+    mesh.getColorAt(0, outerColor);
+    mesh.getColorAt(1, innerColor);
+    expect(outerColor.getHex()).toBe(0xfff5d6);
+    expect(innerColor.getHex()).toBe(0xfffdf5);
+
+    manager.updateHighlightPulse(0.8);
+    expect(material.opacity).toBeCloseTo(0.28, 5);
+
+    manager.highlightHexes([step(1, 0)] as never);
+    finishRollIn();
+    expect(drawnHexes(scene)).toEqual(["1,0@0.92"]);
+    expect(drawnHexes(scene, TEACH_RENDER_ORDER)).toEqual(["4,7@0.56", "4,7@0.96"]);
+
+    manager.highlightHexes([]);
+    expect(drawnHexes(scene)).toEqual([]);
+    expect(drawnHexes(scene, TEACH_RENDER_ORDER)).toEqual(["4,7@0.56", "4,7@0.96"]);
+
+    groundHeight = 0.45;
+    manager.refreshTerrainPlacement();
+    const matrix = new THREE.Matrix4();
+    for (let index = 0; index < mesh.count; index++) {
+      mesh.getMatrixAt(index, matrix);
+      expect(new THREE.Vector3().setFromMatrixPosition(matrix).y).toBeGreaterThan(0.45);
+    }
+    expect(manager.getDebugState().teachCount).toBe(2);
+
+    manager.highlightHexes([step(2, 0)] as never);
+    finishRollIn();
+    manager.setTeachHex(null);
+    expect(drawnHexes(scene, TEACH_RENDER_ORDER)).toEqual([]);
+    expect(drawnHexes(scene)).toEqual(["2,0@0.92"]);
+    expect(manager.getDebugState().teachCount).toBe(0);
+
+    manager.dispose();
+  });
+});

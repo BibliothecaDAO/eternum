@@ -1,6 +1,7 @@
 import { Color } from "three";
 import { describe, expect, it } from "vitest";
 import {
+  HIGHLIGHT_LAYER_PALETTES,
   REALM_PLOT_HOVER_PALETTE,
   REALM_PLOT_PALETTE,
   resolveHighlightLayerPalette,
@@ -51,5 +52,25 @@ describe("worldmap interaction palette", () => {
       expect(color.g).toBeGreaterThan(color.b);
     }
     expect(REALM_PLOT_PALETTE.rimOpacity).toBeGreaterThan(REALM_PLOT_PALETTE.fillOpacity);
+  });
+
+  it("gives the teach highlight a distinct luminous colour that collides with no existing map meaning", () => {
+    const teach = resolveHighlightLayerPalette("teach");
+    expect(teach).toEqual({
+      routeColor: 0xfff5d6,
+      endpointColor: 0xfffdf5,
+    });
+    for (const [kind, other] of Object.entries(HIGHLIGHT_LAYER_PALETTES)) {
+      if (kind === "teach") continue;
+      expect(teach.routeColor).not.toBe(other.routeColor);
+      expect(teach.routeColor).not.toBe(other.endpointColor);
+      expect(teach.endpointColor).not.toBe(other.routeColor);
+      expect(teach.endpointColor).not.toBe(other.endpointColor);
+    }
+    const hover = resolveHoverVisualPalette({ hasSelection: false });
+    expect(teach.routeColor).not.toBe(hover.baseColor);
+    expect(teach.routeColor).not.toBe(hover.rimColor);
+    expect(teach.endpointColor).not.toBe(hover.baseColor);
+    expect(teach.endpointColor).not.toBe(hover.rimColor);
   });
 });

@@ -41,7 +41,7 @@ export const REALM_PLOT_HOVER_PALETTE: HoverVisualPalette = {
   visualMode: "fill",
 };
 
-const HIGHLIGHT_LAYER_PALETTES: Record<string, HighlightLayerPalette> = {
+export const HIGHLIGHT_LAYER_PALETTES: Record<string, HighlightLayerPalette> = {
   move: {
     routeColor: 0x4fcf6b,
     endpointColor: 0xaef7b6,
@@ -68,6 +68,10 @@ const HIGHLIGHT_LAYER_PALETTES: Record<string, HighlightLayerPalette> = {
   create_army: {
     routeColor: 0x66d6ff,
     endpointColor: 0xb6ecff,
+  },
+  teach: {
+    routeColor: 0xfff5d6,
+    endpointColor: 0xfffdf5,
   },
 };
 
