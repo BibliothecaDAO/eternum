@@ -6206,6 +6206,7 @@ function s1RehearsalSteps() {
       play: (context) => sendOneOrder(context, REHEARSAL_WORDS.explore),
       sends: 0,
     }),
+    rehearsalStep({ name: "fragment-spends-are-off", play: fragmentSpendsAreOff, sends: 0 }),
     rehearsalStep({ name: "fight-on-the-surface", play: fightOnTheSurface, sends: 0 }),
     rehearsalStep({ name: "enter-the-deep", play: (context) => enterTheDeep(context, shared, "deepArmy") }),
     rehearsalStep({
@@ -6231,6 +6232,20 @@ function s1RehearsalSteps() {
       as: "ally",
       play: (context) => actAtADeepSite(context, shared, "allyDeepArmy", EMPTY_SITE),
     }),
+  ];
+}
+
+function s1TestnetSteps() {
+  const shared = { game: null, aspect: null };
+  return [
+    rehearsalStep({ name: "found-the-host-realm", play: (context) => foundHostRealm(context, shared) }),
+    { ...FRONTIER_MAP.opening[0], name: "host-on-map", play: goTo("Map", "map") },
+    rehearsalStep({
+      name: "send-an-army",
+      play: (context) => sendOneOrder(context, REHEARSAL_WORDS.explore),
+      sends: 0,
+    }),
+    rehearsalStep({ name: "fragment-spends-are-off", play: fragmentSpendsAreOff, sends: 0 }),
   ];
 }
 
@@ -6573,21 +6588,48 @@ async function buildABarracksOnce(context) {
 
 const OATH_PICK = "[data-oath-pick]";
 const OATH_CARD = "[data-oath-id]";
+const OATH_REDRAW = "[data-reroll-oath]";
+
+const REROLL_OATH = "RerollOath";
+const FRAGMENT_SPENDS = "JSON.stringify(window.__eternumFragmentSpends?.() ?? null)";
+const gameSpends = (browser) => browser.read(FRAGMENT_SPENDS) ?? [];
+const FRAGMENT_SPEND_CONTROLS = {
+  refill: buttonLabelled("Refill"),
+  shop: buttonLabelled("^(Fragments [0-9,]+|Shop)$"),
+};
+
+async function fragmentSpendsAreOff({ browser, extraScreenshot }) {
+  const enabled = browser.read(FRAGMENT_SPENDS);
+  if (enabled === null) return { failed: "the page reports no rules for the game" };
+  if (enabled.length > 0) return { enabled, failed: `the game's rules enable ${enabled.join(", ")}` };
+  const army = await focusTheArmyFromItsDock(browser);
+  if (!army) return { blocked: "the dock holds no army whose panel would offer a refill" };
+  extraScreenshot("army-panel");
+  const controls = Object.keys(FRAGMENT_SPEND_CONTROLS);
+  const shown = controls.filter((control) => browser.read(FRAGMENT_SPEND_CONTROLS[control]));
+  if (shown.length > 0)
+    return { army, shown, failed: `the page offers ${shown.join(" and ")} with Fragment spends off` };
+  return { army, absent: controls, enabledForTheGame: enabled };
+}
 
 async function chooseAnOfferedOath(context) {
   const { browser, extraScreenshot } = context;
   const pick = await readUntil(() => browser.read(elementAt(OATH_PICK)), Boolean, SHEET_WAIT_MS);
   if (!pick) return null;
   extraScreenshot("oath-pick");
+  const redraw = Boolean(browser.read(elementAt(OATH_REDRAW)));
+  if (redraw && !gameSpends(browser).includes(REROLL_OATH))
+    return { redraw, refused: "the Oath pick offers a Redraw the game's rules turn off" };
   const before = browser.read(SENT_ACTIONS);
   browser.tap(browser.read(elementAt(OATH_CARD)).offset);
   const receipt = await receiptOfTheNextAction(context, before);
   const closed = await readUntil(() => browser.read(elementAt(OATH_PICK)) === null, Boolean, ORDER_OUTCOME_WAIT_MS);
-  return { receipt, closed };
+  return { receipt, closed, redraw };
 }
 
 const oathRefusal = (oath) => {
   if (oath === null) return null;
+  if (oath.refused) return oath.refused;
   if (!oath.receipt?.applied) return "the chain did not apply the Oath choice";
   return oath.closed ? null : "the Oath pick stayed open after its choice";
 };
@@ -6703,6 +6745,11 @@ export const STEP_SETS = {
     game: { ...FRONTIER, entersFromHome: true },
     answersStandingPrompts: true,
     steps: s1RehearsalSteps(),
+  },
+  "s1-testnet": {
+    game: { ...FRONTIER, entersFromHome: true },
+    answersStandingPrompts: true,
+    steps: s1TestnetSteps(),
   },
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
   "map-frames": { game: FRONTIER, steps: MAP_FRAME_STEPS },
