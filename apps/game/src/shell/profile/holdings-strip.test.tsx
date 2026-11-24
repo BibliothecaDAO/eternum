@@ -59,7 +59,7 @@ afterEach(async () => {
   unmount = null;
   signedIn.wallet = null;
   signedIn.realmsId = "0x7";
-  useIdentitySessionStore.setState({ status: "loading", session: null });
+  useIdentitySessionStore.setState({ status: "anonymous", session: null, settled: false });
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });

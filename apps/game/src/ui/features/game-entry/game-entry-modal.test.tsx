@@ -114,7 +114,7 @@ afterEach(() => {
   settlement.calls = [];
   settlement.order = [];
   useAccountStore.setState({ account: null });
-  useIdentitySessionStore.setState({ status: "loading", session: null });
+  useIdentitySessionStore.setState({ status: "anonymous", session: null, settled: false });
 });
 
 /** The entry modal on its game, with Settings beside it for the wallet link's detour. */

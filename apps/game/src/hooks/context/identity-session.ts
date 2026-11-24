@@ -15,11 +15,12 @@ export const identityClient = createIdentityClient({ apiUrl: "/api", fetch: fetc
 /** The identity chip's popover id: a signed-in player's account panel opens from it. */
 export const IDENTITY_POPOVER_ID = "identity";
 
-export type IdentitySessionStatus = "loading" | "anonymous" | "signed-in";
+export type IdentitySessionStatus = "anonymous" | "signed-in";
 
 interface IdentitySessionStore {
   status: IdentitySessionStatus;
   session: Session | null;
+  settled: boolean;
   error: unknown;
   applySession: (session: Session | null) => void;
   refresh: () => Promise<void>;
@@ -73,15 +74,16 @@ const runRefresh = (
 };
 
 export const useIdentitySessionStore = create<IdentitySessionStore>()((set, get) => ({
-  status: "loading",
+  status: "anonymous",
   session: null,
+  settled: false,
   error: null,
   applySession: (session) => {
     sessionRevision += 1;
     clearRetryTimer();
     retryAttempt = 0;
     if (!session) useAccountStore.getState().setGameplayAccount(null, null);
-    set({ session, status: resolveStatus(session), error: null });
+    set({ session, status: resolveStatus(session), settled: true, error: null });
   },
   refresh: () => runRefresh(get, set, true),
 }));
@@ -97,7 +99,7 @@ async function readSessionRevision(
   } catch (error) {
     if (revision !== sessionRevision) return;
     console.error("identity_session_load_failed", error);
-    if (get().status === "loading") set({ error });
+    if (!get().settled) set({ error });
     if (!retryTimer) {
       const delay = retryDelayMs(retryAttempt);
       retryAttempt += 1;
@@ -132,11 +134,12 @@ const retryIdentitySession = () => void useIdentitySessionStore.getState().refre
 export const useIdentitySession = () => {
   const status = useIdentitySessionStore((state) => state.status);
   const session = useIdentitySessionStore((state) => state.session);
+  const settled = useIdentitySessionStore((state) => state.settled);
   const error = useIdentitySessionStore((state) => state.error);
 
   useEffect(() => {
     void loadIdentitySessionOnce();
   }, []);
 
-  return { status, session, error, retry: retryIdentitySession };
+  return { status, session, settled, error, retry: retryIdentitySession };
 };

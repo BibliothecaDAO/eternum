@@ -64,7 +64,7 @@ export const AppChatConnection = () => {
  * Signed out, the way into sign-in.
  */
 const AppChatView = ({ className }: { className?: string }) => {
-  const { status, session } = useIdentitySession();
+  const { session } = useIdentitySession();
   const requestSignIn = useRequestSignIn();
   const rooms = useAppChatRooms();
   useChatShown();
@@ -75,11 +75,9 @@ const AppChatView = ({ className }: { className?: string }) => {
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4">
           <p className="text-app-body text-app-muted">{CHAT_WORDS.signInToChat}</p>
-          {status !== "loading" && (
-            <AppButton kind="primary" onClick={() => requestSignIn()}>
-              {WORDS.connect}
-            </AppButton>
-          )}
+          <AppButton kind="primary" onClick={() => requestSignIn()}>
+            {WORDS.connect}
+          </AppButton>
         </div>
       )}
     </div>

@@ -25,7 +25,7 @@ const failed = <T,>(): Read<T> => ({
 
 const reads = vi.hoisted(() => ({
   signedIn: true,
-  identity: null as null | { status: string; session: unknown; error?: unknown; retry?: () => void },
+  identity: null as null | { status: string; session: unknown; settled?: boolean; error?: unknown; retry?: () => void },
   directory: null as unknown as Read<{ games: DirectoryGame[] }>,
   calendar: {
     data: { phases: [] },
@@ -83,8 +83,8 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
   useIdentitySession: () =>
     reads.identity ??
     (reads.signedIn
-      ? { status: "signed-in", session: { user: { id: "u", realmsId: "0x7" } } }
-      : { status: "signed-out", session: null }),
+      ? { status: "signed-in", session: { user: { id: "u", realmsId: "0x7" } }, settled: true, error: null }
+      : { status: "anonymous", session: null, settled: true, error: null }),
 }));
 vi.mock("../herald", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../herald")>()),
@@ -846,21 +846,58 @@ it("renders a real-speed Final testnet card without a speed chip and with Play/R
   expect(resumeBtn.textContent).toBe("Resume Final testnet");
 });
 
-it("shows Sign-in did not answer with Try again instead of a stuck skeleton when the initial identity read fails", async () => {
+it("draws the signed-out Play board immediately while identity is pending or failed, shows retry on failure, and upgrades once signed in", async () => {
+  const openSeason = game({
+    game_id: 1,
+    name: "frontier-1",
+    season_number: 1,
+    aspect_race: { finish_height: 10_000, season_days: 50, heights: { 1: 400, 2: 200, 3: 0, 4: 0 } },
+    player_state: null,
+  });
   const retry = vi.fn();
   reads.identity = {
-    status: "loading",
+    status: "anonymous",
     session: null,
+    settled: false,
+    error: null,
+    retry,
+  };
+  reads.directory = answered({ games: [openSeason] });
+  reads.history = answered({ games: [], next: null, failures: [] });
+  const pending = await mount();
+  expect(pending.text()).toContain("Play free");
+  expect(pending.text()).not.toContain("Sign-in did not answer.");
+  expect(pending.container.querySelector("[data-play-invite]")?.textContent).toContain("Sign in");
+  await cleanup?.();
+
+  reads.identity = {
+    status: "anonymous",
+    session: null,
+    settled: false,
     error: new DOMException("The app's service did not answer in time", "TimeoutError"),
     retry,
   };
-  reads.directory = { data: undefined, isSuccess: false, isError: false, error: null, refetch: vi.fn() };
-  reads.history = answered({ games: [], next: null, failures: [] });
-  const page = await mount();
-  expect(page.text()).toContain("Sign-in did not answer.");
-  expect(page.container.querySelector('button[data-kind="primary"]')).toBeNull();
-  await press(page.container, "Try again");
+  const errored = await mount();
+  expect(errored.text()).toContain("Play free");
+  expect(errored.text()).toContain("Sign-in did not answer.");
+  await press(errored.container, "Try again");
   expect(retry).toHaveBeenCalledTimes(1);
+  await cleanup?.();
+
+  reads.identity = {
+    status: "signed-in",
+    session: { user: { id: "u", realmsId: "0x7" } },
+    settled: true,
+    error: null,
+    retry,
+  };
+  reads.directory = answered({
+    games: [{ ...openSeason, player_state: ownSeason.player_state }],
+  });
+  const upgraded = await mount();
+  expect(upgraded.text()).toContain("Enter Realm");
+  expect(upgraded.text()).not.toContain("Play free");
+  expect(upgraded.text()).not.toContain("Sign-in did not answer.");
 });
 
 it("hides TodayQuestPanel for a Live lead season when the player has no realm, and shows it once they have one", async () => {

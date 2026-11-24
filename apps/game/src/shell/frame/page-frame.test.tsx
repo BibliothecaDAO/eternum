@@ -153,11 +153,11 @@ describe("a page's notice", () => {
     return container;
   };
 
-  it("sits in the desktop's top bar, before You, so the page's content starts right under the bar", async () => {
+  it("sits in the desktop's top bar, before Connect, so the page's content starts right under the bar", async () => {
     const container = await renderNotice(1440);
     const notice = band(container, "notice")!;
     expect(notice.closest('[data-band="bar"]')).not.toBeNull();
-    expect(notice.nextElementSibling!.textContent).toContain("You");
+    expect(notice.nextElementSibling!.textContent).toContain("Connect");
     expect(bandOrder(container).filter((name) => name !== "notice")).toEqual(["bar", "body", "footer"]);
   });
 

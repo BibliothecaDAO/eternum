@@ -122,13 +122,14 @@ let answers = accountAnswers();
 beforeEach(() => {
   answers = accountAnswers();
   vi.spyOn(identityClient, "addOpeningProgress").mockImplementation((additions) => answers.add(additions));
+  useIdentitySessionStore.setState({ status: "anonymous", session: null, settled: true });
 });
 
 afterEach(async () => {
   await leaveThePage("another");
   vi.restoreAllMocks();
   app.channel = "web";
-  useIdentitySessionStore.setState({ status: "anonymous", session: null });
+  useIdentitySessionStore.setState({ status: "anonymous", session: null, settled: true });
   useConnectStore.setState({ request: null, nameDismissed: false });
   forgetSocialStart();
 });
@@ -1151,6 +1152,29 @@ describe("Connect with Discord on a phone", () => {
       await press("Continue with Discord");
       expect(opened.mock.calls).toEqual([[WEB]]);
       expect(button("Continue in browser")).toBeUndefined();
+    } finally {
+      await ui.unmount();
+    }
+  });
+
+  it("opens Connect immediately on an explicit request while session is unsettled, while holding background OAuth resume until settled", async () => {
+    vi.spyOn(identityClient, "getSession").mockImplementation(() => new Promise(() => {}));
+    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["discord"]);
+    useIdentitySessionStore.setState({ status: "anonymous", session: null, settled: false });
+    rememberSocialStart("discord", NEXT);
+    const ui = await mount("/", NEXT);
+    try {
+      expect(ui.window()).toBeNull();
+      await ui.ask();
+      expect(ui.window()?.getAttribute("aria-label")).toBe("Discord");
+      await act(async () => {
+        useConnectStore.getState().close();
+      });
+      expect(ui.window()).toBeNull();
+      await act(async () => {
+        useIdentitySessionStore.getState().applySession(null);
+      });
+      expect(ui.window()?.getAttribute("aria-label")).toBe("Discord");
     } finally {
       await ui.unmount();
     }

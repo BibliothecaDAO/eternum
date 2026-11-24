@@ -50,9 +50,9 @@ const matchesPath = (pathname: string, match: string) =>
  * place, so it is the one lit on You's own pages.
  */
 const useConnect = (): (() => void) | undefined => {
-  const { status, session } = useIdentitySession();
+  const { session } = useIdentitySession();
   const requestSignIn = useRequestSignIn();
-  return status !== "loading" && !session ? () => requestSignIn() : undefined;
+  return !session ? () => requestSignIn() : undefined;
 };
 
 /** Whether the page is one of the four places itself, which its phone head names by the lockup, not a title. */

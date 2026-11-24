@@ -77,14 +77,6 @@ describe("resolveIdentityChipState", () => {
     expect(state).toEqual({ kind: "connecting", name: "raschel", error: "class not declared" });
   });
 
-  it("a session still loading is connecting without a name", () => {
-    expect(resolveIdentityChipState(signedInPlayer({ identity: { status: "loading", name: null } }))).toEqual({
-      kind: "connecting",
-      name: null,
-      error: null,
-    });
-  });
-
   it("names the player from the players slice, then the session username before the chain row exists", () => {
     expect(resolveIdentityChipState(signedInPlayer({ playerName: "Redbeard" }))).toMatchObject({ name: "Redbeard" });
     expect(resolveIdentityChipState(signedInPlayer({ playerName: null }))).toMatchObject({ name: "raschel" });
