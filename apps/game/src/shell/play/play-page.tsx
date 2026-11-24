@@ -21,7 +21,7 @@ import { dayQuestFace } from "@/ui/features/frontier/day/day-quest-face";
 import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, gameRefOf } from "../herald";
 import { Loading } from "../loading";
-import { aspectRaceStandings, directoryDay, seasonEnded, seasonPlayerAspect } from "../season";
+import { aspectRaceStandings, directoryDay, seasonEnded, seasonPlayerAspect, stageTriumphsOf } from "../season";
 import { hasSeasonRealm } from "../season-pick";
 import { resultsHref } from "../season-tab/results-link";
 import { useShareTally } from "../share/own-shares";
@@ -153,6 +153,7 @@ const AspectRacePreview = ({
   ownAspect: AspectId | null;
 }) => {
   const { finishHeight, byAspect } = aspectRaceStandings(race, members);
+  const triumphs = stageTriumphsOf(race);
   return (
     <AppPanel
       title={ASPECT_PAGE_WORDS.race}
@@ -163,7 +164,13 @@ const AspectRacePreview = ({
         </AppLink>
       }
     >
-      <HyperstructureRaceStage byAspect={byAspect} finishHeight={finishHeight} ownAspect={ownAspect} compact />
+      <HyperstructureRaceStage
+        byAspect={byAspect}
+        finishHeight={finishHeight}
+        ownAspect={ownAspect}
+        triumphs={triumphs}
+        compact
+      />
     </AppPanel>
   );
 };

@@ -1,9 +1,10 @@
 import type { InvitedFriends, InvitedFriendState, ShareTally } from "@realms-world/identity";
 import { aspectName, formatShort, type AspectId } from "@bibliothecadao/types";
+import { Fragment } from "react";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { AppFigure, AppPanel } from "@/ui/design-system/kit/app-elements";
+import { AppPanel } from "@/ui/design-system/kit/app-elements";
 import {
   INVITED_FRIENDS_WORDS,
   PROFILE_WORDS,
@@ -14,12 +15,35 @@ import {
 import { CopySeasonInvite, SeasonInviteAlerts, useSeasonInvite } from "../play/season-invite";
 import { useInvitedFriends, useShareTally } from "../share/own-shares";
 
-const STEPS = ["posted", "visits", "joined", "activated"] as const satisfies readonly (keyof ShareTally)[];
-
 const FRIEND_STATE_ICONS = { joined: "person", reached: "check", paid: "fragment" } satisfies Record<
   InvitedFriendState,
   IconMeaning
 >;
+
+type FunnelStageKey = keyof typeof SHARED_DAYS_WORDS.funnel;
+
+type FunnelStage = {
+  key: FunnelStageKey;
+  icon: IconMeaning;
+  count: number;
+  gold?: boolean;
+};
+
+const hasReferralActivity = (tally: ShareTally): boolean =>
+  tally.links > 0 ||
+  tally.posted > 0 ||
+  tally.visits > 0 ||
+  tally.joined > 0 ||
+  tally.activated > 0 ||
+  tally.fragmentsEarned > 0;
+
+const referralFunnelStages = (tally: ShareTally): readonly FunnelStage[] => [
+  { key: "shared", icon: "share", count: Math.max(tally.links, tally.posted) },
+  { key: "visits", icon: "eye", count: tally.visits },
+  { key: "joined", icon: "person", count: tally.joined },
+  { key: "activated", icon: "victory", count: tally.activated },
+  { key: "fragmentsEarned", icon: "fragment", count: tally.fragmentsEarned, gold: tally.fragmentsEarned > 0 },
+];
 
 export const SharedDaysPanel = ({
   aspect = null,
@@ -32,9 +56,10 @@ export const SharedDaysPanel = ({
   const tally = useShareTally();
   const friends = useInvitedFriends();
   if (!session || !tally) return null;
+  const active = hasReferralActivity(tally);
   return (
     <AppPanel title={SHARED_DAYS_WORDS.title} label={SHARED_DAYS_WORDS.title} icon="share">
-      <div className="flex flex-col gap-5" data-referrals-panel>
+      <div className="flex flex-col gap-4" data-referrals-panel>
         {aspect !== null ? (
           <InviteStrip fallbackAspect={aspect} />
         ) : !aspectPending ? (
@@ -43,20 +68,64 @@ export const SharedDaysPanel = ({
         <p className="text-app-strong text-app-gold" data-referrals-reward>
           {PROFILE_WORDS.friendReward}
         </p>
-        <InvitedFriendsList friends={friends} />
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {STEPS.map((step) => (
-            <AppFigure key={step} value={formatShort(tally[step])} label={SHARED_DAYS_WORDS.steps[step]} />
-          ))}
-        </div>
-        <div data-shared-friends className="grid grid-cols-2 gap-4">
-          <AppFigure value={formatShort(tally.friendsPaid)} label={SHARED_DAYS_WORDS.friendsPaid} />
-          <AppFigure value={formatShort(tally.fragmentsEarned)} label={SHARED_DAYS_WORDS.fragmentsEarned} />
-        </div>
+        {active ? (
+          <>
+            <ReferralFunnel tally={tally} />
+            <InvitedFriendsList friends={friends} />
+          </>
+        ) : (
+          <ReferralEmptyState hasFriends={friends !== null && friends.length > 0} showFriendsHint={friends !== null} />
+        )}
+        {!active && friends !== null && friends.length > 0 && <InvitedFriendsList friends={friends} />}
       </div>
     </AppPanel>
   );
 };
+
+const ReferralFunnel = ({ tally }: { tally: ShareTally }) => {
+  const stages = referralFunnelStages(tally);
+  return (
+    <ol className="referrals-funnel" data-referrals-funnel>
+      {stages.map((stage, index) => (
+        <Fragment key={stage.key}>
+          {index > 0 && (
+            <li className="referrals-funnel__arrow" aria-hidden="true">
+              <Icon name="arrow-right" size={14} />
+            </li>
+          )}
+          <li
+            className="referrals-funnel__step"
+            data-funnel-step={stage.key}
+            data-lit={stage.gold || stage.count > 0 || undefined}
+            data-gold={stage.gold || undefined}
+          >
+            <span className="referrals-funnel__head">
+              <Icon name={stage.icon} size={15} />
+              <span className="referrals-funnel__value">{formatShort(stage.count)}</span>
+            </span>
+            <span className="referrals-funnel__label">{SHARED_DAYS_WORDS.funnel[stage.key]}</span>
+          </li>
+        </Fragment>
+      ))}
+    </ol>
+  );
+};
+
+const ReferralEmptyState = ({ hasFriends, showFriendsHint }: { hasFriends: boolean; showFriendsHint: boolean }) => (
+  <div className="referrals-empty" data-referrals-empty>
+    <span className="referrals-empty__icon" aria-hidden="true">
+      <Icon name="share" size={20} />
+    </span>
+    <div className="referrals-empty__copy">
+      <p className="referrals-empty__line">{SHARED_DAYS_WORDS.empty}</p>
+      {showFriendsHint && !hasFriends && (
+        <p className="referrals-empty__hint" data-invited-friends-empty>
+          {INVITED_FRIENDS_WORDS.empty}
+        </p>
+      )}
+    </div>
+  </div>
+);
 
 const InvitedFriendsList = ({ friends }: { friends: InvitedFriends["friends"] | null }) => {
   if (friends === null) return null;

@@ -556,7 +556,13 @@ it("combines all four Aspect rosters into the default Global Glory leaderboard w
     expect(container.querySelector("[data-aspect-summary]")).toBeNull();
     expect(container.textContent).toContain("Day 4 of 30");
     expect(container.textContent).not.toContain("LORDS");
-    const triumphs = container.querySelector("[data-stage-triumphs]")!;
+    expect(container.querySelector(".season-triumphs__grid")).toBeNull();
+    const triumphTracks = [...container.querySelectorAll(".hyper-tile [data-stage-triumphs]")];
+    expect(triumphTracks).toHaveLength(4);
+    expect(triumphTracks.map((track) => track.querySelectorAll(".hyper-tile__marker[data-reached]").length)).toEqual([
+      4, 2, 0, 0,
+    ]);
+    const triumphs = triumphTracks[0]!;
     expect(triumphs.textContent).toContain("Clear Mist");
     expect(triumphs.textContent).toContain("1,500 height");
     expect(triumphs.textContent).toContain("Sites are found at 150% of the usual odds");
@@ -578,11 +584,12 @@ it("combines all four Aspect rosters into the default Global Glory leaderboard w
     await vi.waitFor(() => expect(board.textContent).toContain("Volcanic"));
     const items = [...board.querySelectorAll("li.app-board__item")];
     expect(items).toHaveLength(3);
+    expect(board.querySelectorAll(".season-board__realm")).toHaveLength(0);
     expect(items.map((item) => item.hasAttribute("data-own"))).toEqual([false, true, false]);
     expect(items[0]!.textContent).toContain("Canzi");
     expect(items[0]!.textContent).toContain("410");
     expect(items[1]!.textContent).toContain("You");
-    expect(items[1]!.textContent).toContain(ownRealm.name);
+    expect(items[1]!.textContent).toContain(catalogOrder(ownRealm.order).orderName);
     expect(items[1]!.textContent).toContain("320");
     expect(items[2]!.textContent).toContain("Volcanic");
     expect(items[2]!.textContent).toContain("260");
