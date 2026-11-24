@@ -179,9 +179,9 @@ export const frontierPhrases = (
         `Opens ${calendar.seasonStart}`,
         (() => {
           const perHour = Math.round((stamina.staminaGainPerTick * 3600) / tick);
-          const shortHours = Math.round((2 * seasonDayUnitSeconds(preset.dayUnitSeconds)) / 3600);
-          const longHours = Math.round((6 * seasonDayUnitSeconds(preset.dayUnitSeconds)) / 3600);
-          return `An ${n(shortHours)}-hour day gives an army ${n(stamina.staminaInitial + shortHours * perHour)} total stamina; a ${n(longHours)}-hour day gives ${n(stamina.staminaInitial + longHours * perHour)}.`;
+          const shortHours = Math.round((2 * seasonDayUnitSeconds(preset)) / 3600);
+          const longHours = Math.round((6 * seasonDayUnitSeconds(preset)) / 3600);
+          return `An ${n(shortHours)}-hour day gives an army ${n(stamina.staminaKnightMax + shortHours * perHour)} total stamina; a ${n(longHours)}-hour day gives ${n(stamina.staminaKnightMax + longHours * perHour)}.`;
         })(),
         `all ${FRONTIER_BUILDING_TYPES.length} buildings`,
         `the ${aspects.length} Aspects`,
@@ -199,6 +199,7 @@ export const frontierPhrases = (
         `An army holds ${n(stamina.staminaKnightMax)} stamina and recovers ${stamina.staminaGainPerTick} every ${tick / 60} minutes (${n(Math.round((stamina.staminaGainPerTick * 3600) / tick))} per hour), so an empty bar fills in ${((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tick) / 3600} hours.`,
         `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for ${FRONTIER_TROOP_NAMES[TroopType.Knight]} and ${FRONTIER_TROOP_NAMES[TroopType.Crossbowman]}, and ${nativeRules.SCOUT_EXPLORE_STAMINA} for ${FRONTIER_TROOP_NAMES[TroopType.Paladin]}. A step on an explored tile costs ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
         `adding +${n(logisticsBonus)} bonus stamina at rank V for ${n(stamina.staminaKnightMax + logisticsBonus)} max stamina total.`,
+        `A slot's first army of the day starts with a full bar (${n(stamina.staminaKnightMax)} stamina, plus your Logistics bonus).`,
         `beside any camp your realm cleared today (supply post) on the ${personalLayersOr}`,
         staminaRule,
       ],

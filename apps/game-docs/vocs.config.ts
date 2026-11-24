@@ -4,7 +4,7 @@ import llmTxtPlugin from "./vite-plugin-llm-txt.mjs";
 import BRAND from "./docs/brand.gen.json";
 import { linkPreviewUrl } from "../game/src/brand/link-preview";
 import { isDevEnvironment } from "../game/src/shell/frame/environment";
-import { DOCS_SIDEBAR } from "./docs/utils/sidebar";
+import SIDEBAR from "./sidebar.json";
 
 /** The brand's colours and marks, written from the game's token file (apps/game/src/brand/surfaces.ts). */
 const color = BRAND.colors;
@@ -83,5 +83,9 @@ export default defineConfig({
     },
   },
   title: "Realms Docs",
-  sidebar: DOCS_SIDEBAR,
+  sidebar: SIDEBAR.map(({ text, collapsed, items }) => ({
+    text,
+    ...(collapsed ? { collapsed } : {}),
+    items: items.map(({ text: itemText, link }) => ({ text: itemText, link })),
+  })),
 });

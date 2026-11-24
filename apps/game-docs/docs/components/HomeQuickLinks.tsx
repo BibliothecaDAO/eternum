@@ -1,4 +1,6 @@
-import { HOME_QUICK_LINKS } from "@/utils/sidebar";
+import SIDEBAR from "../../sidebar.json";
+
+const HOME_QUICK_LINKS = SIDEBAR.flatMap((section) => section.items.filter((item) => "quick" in item && item.quick));
 
 export function HomeQuickLinks() {
   return (
