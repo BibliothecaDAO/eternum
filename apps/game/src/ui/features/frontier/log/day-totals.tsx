@@ -22,20 +22,20 @@ export const DayTotalsGrid = ({ totals }: { totals: DayTotals }) => <TotalsGrid 
 type TotalCell = { total: keyof DayTotals; icon: IconMeaning; name: string; value: string };
 
 const TotalsGrid = ({ cells }: { cells: readonly TotalCell[] }) => (
-  <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+  <div className="grid grid-cols-4 gap-1.5 lg:gap-2.5">
     {cells.map((cell) => (
       <span
         key={cell.icon}
         data-total={cell.icon}
-        className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-hud-divider bg-hud-well px-3 py-4"
+        className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg border border-hud-divider bg-hud-well px-1 py-2 text-center lg:px-3 lg:py-4"
       >
         <span
           role="img"
           aria-label={`${cell.name} ${cell.value}`}
-          className="flex flex-col items-center gap-1.5 tabular-nums text-hud-ink"
+          className="flex flex-col items-center gap-1 tabular-nums text-hud-ink"
         >
-          <Icon name={cell.icon} size={32} />
-          <b className="text-hud-display leading-none lg:text-hud-hero">{cell.value}</b>
+          <Icon name={cell.icon} size={22} />
+          <b className="text-hud-title leading-none lg:text-hud-hero">{cell.value}</b>
         </span>
         <span className="text-hud-label text-hud-muted">{cell.name}</span>
       </span>
