@@ -2,7 +2,7 @@ import { isGameOver } from "@/runtime/world/directory";
 
 import type { DirectoryGame } from "../herald";
 import { isAccelerated } from "../season";
-import { chooseSeason, isRehearsal, seasonRealm } from "../season-pick";
+import { chooseSeason, hasSeasonRealm, isRehearsal } from "../season-pick";
 
 type PlayVerb = "resume" | "play" | "results";
 
@@ -55,7 +55,7 @@ const frontierItems = ({ games, signedIn }: PlayBoardFacts): PlayItem[] => {
   const season = chooseSeason(games, signedIn);
   if (!season) return [];
   const live = season.status === "Live";
-  if (signedIn && live && seasonRealm(season)) return [gameItem(season, "resume", true)];
+  if (signedIn && live && hasSeasonRealm(season)) return [gameItem(season, "resume", true)];
   return [gameItem(season, "play", false)];
 };
 
@@ -70,14 +70,14 @@ const rehearsalItems = ({ games, signedIn }: PlayBoardFacts): PlayItem[] =>
     )
     .map((game) => {
       const live = game.status === "Live";
-      const mine = signedIn && seasonRealm(game) !== undefined;
+      const mine = signedIn && hasSeasonRealm(game);
       return gameItem(game, live && mine ? "resume" : "play", mine);
     });
 
 const resultItems = ({ signedIn, games, finished, seenResults }: PlayBoardFacts): PlayItem[] => {
   if (!signedIn) return [];
   const endedSeasons = games.filter(
-    (game) => game.mode === "frontier" && !isRehearsal(game) && isGameOver(game) && seasonRealm(game),
+    (game) => game.mode === "frontier" && !isRehearsal(game) && isGameOver(game) && hasSeasonRealm(game),
   );
   const unseen = [...endedSeasons, ...finished].filter(
     (game) => game.mode === "frontier" && !isRehearsal(game) && !seenResults.has(gameKey(game)),
