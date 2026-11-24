@@ -996,6 +996,23 @@ span.ui-row__choose {
 .ui-feed-line[data-own] :is(.ui-event__text, .ui-event__text strong, .ui-feed-line__reward) {
   color: rgb(var(--hud-gold));
 }
+.ui-feed-line__rule {
+  flex: none;
+  align-self: stretch;
+  width: 3px;
+  margin-block: theme(spacing.1);
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-ink));
+}
+.ui-feed-line[data-rule="own"] .ui-feed-line__rule {
+  background: rgb(var(--hud-gold));
+}
+.ui-feed-line[data-rule="good"] .ui-feed-line__rule {
+  background: var(--hud-good);
+}
+.ui-feed-line[data-rule="bad"] .ui-feed-line__rule {
+  background: var(--hud-bad);
+}
 
 /* ── Window: a panel the size of a task (Military, Transfer), its title bar and a way out. ── */
 /* ── Sheet: a panel over the stage; on a phone it rises from the place bar, as tall as what it holds and at most the

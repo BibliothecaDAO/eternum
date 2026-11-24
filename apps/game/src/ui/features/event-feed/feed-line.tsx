@@ -1,39 +1,33 @@
 import { HudRanked } from "@/ui/design-system/kit/hud-elements";
 import { useGame } from "@/hooks/context/game-context";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { feltEquals } from "@bibliothecadao/eternum/game-client";
+import { involvesPlayer } from "./event-stories";
 import { usePlayerNames } from "@/hooks/use-player-profile";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
-import { storyMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
 import { type RankedWords } from "@/ui/design-system/kit/words";
-import { formatClockTime } from "@bibliothecadao/types";
+import { formatShortDuration } from "@bibliothecadao/types";
+import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 
-import { readFeedStory, type ToldReading } from "./feed-reading";
+import { type FeedReading, readFeedStory, type ToldReading } from "./feed-reading";
 import { useStoryOpener } from "./story-feed-row";
 import { useSiteBeastMeaning } from "./use-site-beast";
 
 const OUTCOME_TONES = { good: "text-hud-good", bad: "text-hud-bad", neutral: "text-hud-muted" } as const;
 
-/**
- * One row of Frontier's Feed (option A, owner, 26 October 2026: "A is great for the feed, but the text is not
- * aligned"): its time, the act's painting, then who did it, what and to what, and what came of it, on one line and one
- * baseline, with what it paid at its end. Every row is one height; a row too long for the rail ends in an ellipsis. A row
- * that is the player's own is gold, words and reward (owner, 27 October: "when a row is mine should put the row in
- * yellow like it did before"); a row opens where its story happened.
- */
-export const FeedLine = ({ story, own = false }: { story: ProcessedStoryEvent; own?: boolean }) => {
+export const FeedLine = ({ story }: { story: ProcessedStoryEvent }) => {
   const {
     setup: { store },
   } = useGame();
   const names = usePlayerNames();
   const open = useStoryOpener(story);
+  const now = useCoarseNowSeconds(10);
+  const player = useAccountStore((state) => state.account?.address ?? null);
   const reading = readFeedStory(story, store);
+  const own = involvesPlayer(story, player);
   const words = (
-    <>
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-hud-divider bg-hud-surface">
-        <Icon name={storyMeaning(story.story)} size={24} className="ui-event__icon" />
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="ui-event__text">
+    <span className="ui-event__text">
           {"words" in reading ? (
             <OwnWordsLine
               words={reading.words}
@@ -49,18 +43,17 @@ export const FeedLine = ({ story, own = false }: { story: ProcessedStoryEvent; o
               )}
             </>
           )}
-        </span>
-        <span className="ui-event__time">{formatClockTime(story.timestampMs / 1000)}</span>
-      </span>
-    </>
+    </span>
   );
   return (
     <div
-      className="ui-event ui-feed-line items-center py-2"
+      className="ui-event ui-feed-line items-center"
       data-feed-line
       data-story={story.story}
       data-own={own || undefined}
+      data-rule={whoItConcerns(reading, own, own && feltEquals(reading.actor, player))}
     >
+      <span className="ui-feed-line__rule" aria-hidden="true" />
       {open ? (
         <button type="button" className="ui-event__open items-center" onClick={open}>
           {words}
@@ -74,8 +67,15 @@ export const FeedLine = ({ story, own = false }: { story: ProcessedStoryEvent; o
           {reading.reward.amountText}
         </span>
       )}
+      <span className="ui-event__time">{formatShortDuration(Math.max(1, now - story.timestampMs / 1000))}</span>
     </div>
   );
+};
+
+const whoItConcerns = (reading: FeedReading, own: boolean, actedByPlayer: boolean) => {
+  if (!own) return "world";
+  const tone = actedByPlayer && "outcome" in reading ? reading.outcome?.tone : undefined;
+  return tone === "good" || tone === "bad" ? tone : "own";
 };
 
 /** What the act was done to, its painting set in the line. */

@@ -25,6 +25,8 @@ import { PhoneTabBar, TabletPlaces, type HudSurface } from "@/ui/features/fronti
 import { OfflineBanner } from "@/ui/features/frontier/hud/offline-notice";
 import { PhoneTopBarView, TabletTopBarView } from "@/ui/features/frontier/hud/phone-top-bar";
 import { RealmCard } from "@/ui/features/frontier/hud/realm-card";
+import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { PLAYER } from "./fixture-game";
 import { LabGame, useLabPlayer } from "./lab-game";
 import { useHudMode } from "@/hooks/use-hud-mode";
 import { HOW_TO_PLAY_BY_MODE } from "@/shell/community";
@@ -816,11 +818,8 @@ export const HudLab = () => {
   // The season's detail closes back to its list, and a row opens it again, as FrontierSeason plays it.
   const [detailShut, setDetailShut] = useState(false);
   const chatPane = useRef<HTMLElement>(null);
-  // Chat reads the game's players (its mentions), so the phone's page stands in the lab game, as the desktop's does.
   const chat = lab.chat && (
-    <LabGame mode="frontier">
-      {() => <ChatPage rooms={[GLOBAL_ROOM]} signedIn onSignIn={noop} pane={chatPane} onClose={noop} />}
-    </LabGame>
+    <ChatPage rooms={[GLOBAL_ROOM]} signedIn onSignIn={noop} pane={chatPane} onClose={noop} />
   );
   if (lab.merge)
     return (
@@ -1499,53 +1498,51 @@ function LabDaySummary({ card }: { card: Parameters<typeof DayDoneCard>[0] }) {
   return <DayEndScreen summary={<DayDoneCard {...card} />} />;
 }
 
-/**
- * The Feed's lines for a point spent, a tier bought and a Shrine used, worded by the game's story formatter, between two
- * plain ones (a Well used, a reveal), so a rank's gem reads against the rows round it.
- */
+const RIVAL = "0x222";
+
 const LabFeed = () => {
   useLabPlayer();
   const [store] = useState(transferTrainedArmies);
-  const told = (id: string, storyType: string, storyPayload: Record<string, unknown>) =>
+  const now = useNowSeconds();
+  const told = (id: string, owner: string, minutesAgo: number, storyType: string, storyPayload: Record<string, unknown>) =>
     ({
       id,
       event_id: id,
       story: storyType,
-      owner: "0x111",
-      participants: ["0x111"],
+      owner,
+      participants: [owner],
       tx_hash: `0x${id}`,
-      timestamp: String(NOW),
-      timestampMs: NOW * 1_000,
+      timestamp: String(now - minutesAgo * 60),
+      timestampMs: (now - minutesAgo * 60) * 1_000,
       storyPayload,
       presentation: buildStoryEventPresentation(
-        { storyType, storyPayload, ownerAddress: "0x111", viewerAddress: "0x111", timestamp: NOW * 1_000 } as never,
+        { storyType, storyPayload, ownerAddress: owner, viewerAddress: PLAYER, timestamp: now * 1_000 } as never,
         store,
       ),
     }) as unknown as ProcessedStoryEvent;
   const used = (benefit: Record<string, number>) => ({ explorer_id: 201, coord: { x: 3, y: 4 }, benefit });
+  const fight = (armyAfter: string, guardAfter: string) => ({
+    attacker_id: 201,
+    defender_id: 301,
+    attacker: { player: PLAYER, category: "Knight", tier: "T1", before: "7000000000000", after: armyAfter, roll: 0 },
+    defender: { player: RIVAL, category: "Knight", tier: "T1", before: "1400000000000", after: guardAfter, roll: 0 },
+  });
   const stories = [
-    told("well", "SiteUsed", used({ Well: 60 })),
-    told("spent", "SkillPointSpent", { explorer_id: 201, choice: "Battle", point_rank: 3, stamina: 40, tier: 2 }),
-    told("bought", "TierBought", { explorer_id: 201, attribute: "Logistics", tier: 3, price: 400 }),
-    told("shrine", "SiteUsed", used({ ShrinePoint: 3 })),
-    told("well-full", "SiteUsed", used({ Well: 0 })),
+    told("rival-well", RIVAL, 2, "SiteUsed", used({ Well: 60 })),
+    told("won", PLAYER, 6, "BattleEvent", fight("6500000000000", "0")),
+    told("spent", PLAYER, 11, "SkillPointSpent", { explorer_id: 201, choice: "Battle", point_rank: 3, stamina: 40, tier: 2 }),
+    told("bought", PLAYER, 18, "TierBought", { explorer_id: 201, attribute: "Logistics", tier: 3, price: 400 }),
+    told("lost", PLAYER, 25, "BattleEvent", fight("0", "1028000000000")),
+    told("shrine", PLAYER, 31, "SiteUsed", used({ ShrinePoint: 3 })),
   ];
-  const feed = (
+  return (
     <HudSheet label={EVENTS_WORDS.feed} onClose={noop}>
       <div className="flex flex-col">
         {stories.map((story) => (
-          <FeedLine key={story.id} story={story} own />
+          <FeedLine key={story.id} story={story} />
         ))}
       </div>
     </HudSheet>
-  );
-  // A desktop's HUD already stands in the lab game (its docked chat); a phone's needs one.
-  return useLayout() === "desktop" ? (
-    feed
-  ) : (
-    <GameProvider value={{ store, systemCalls: {} } as never} account={{ address: "0x111" } as never}>
-      {feed}
-    </GameProvider>
   );
 };
 

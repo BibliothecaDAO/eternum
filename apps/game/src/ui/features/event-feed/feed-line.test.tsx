@@ -25,6 +25,7 @@ const KRUMP = "0x344";
 const NAMES: Record<string, string> = { [DJIZUS]: "djizus", [KRUMP]: "Krump" };
 const nameOf = (address: string | bigint) => NAMES[`0x${BigInt(address).toString(16)}`];
 const CAMP = 9001;
+const STORY_AT = 1_792_948_877;
 
 const game = vi.hoisted(() => ({ store: null as unknown as NativeFactStore }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: game.store } }) }));
@@ -41,11 +42,15 @@ vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
 }));
 
 const { FeedLine } = await import("./feed-line");
+const { useAccountStore } = await import("@/hooks/store/use-account-store");
+const { useChainTimeStore } = await import("@/hooks/store/use-chain-time-store");
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 let root: Root;
 let host: HTMLDivElement;
 beforeEach(() => {
+  useAccountStore.setState({ account: { address: DJIZUS } as never });
+  useChainTimeStore.getState().anchor({ timestamp: STORY_AT + 2 * 60 });
   game.store = frontierDay().store;
   configManager.setActiveGame(1);
   configManager.setStore(game.store);
@@ -95,7 +100,8 @@ const story = (owner: string, kind: string, payload: Record<string, unknown>): P
     event_id: `${kind}-${owner}`,
     story: kind,
     owner,
-    timestampMs: 1_792_948_877_000,
+    participants: [owner],
+    timestampMs: STORY_AT * 1_000,
     storyPayload: payload,
     presentation: buildStoryEventPresentation(
       { storyType: kind, storyPayload: payload, ownerAddress: owner, viewerAddress: DJIZUS, timestamp: 0 } as never,
@@ -107,11 +113,11 @@ const story = (owner: string, kind: string, payload: Record<string, unknown>): P
 /** A reward of `units` of a resource, at the chain's precision. */
 const scaled = (units: number) => String(BigInt(Math.round(units * 1_000_000_000)));
 
-const draw = async (row: ProcessedStoryEvent, own = false) => {
+const draw = async (row: ProcessedStoryEvent) => {
   await act(async () =>
     root.render(
       <QueryClientProvider client={queries}>
-        <FeedLine story={row} own={own} />
+        <FeedLine story={row} />
       </QueryClientProvider>,
     ),
   );
@@ -134,7 +140,7 @@ it("writes an exploration under one unit as who explored, with no amount (owner:
     amount: scaled(0.4),
   });
   expect(row.presentation.title).not.toContain("<1");
-  expect(await draw(row, true)).toEqual({ words: "djizus explored", reward: null, gold: true });
+  expect(await draw(row)).toEqual({ words: "djizus explored", reward: null, gold: true });
 });
 
 it("names who explored on every line, another player's too, and writes what it paid whole at its end", async () => {
@@ -154,7 +160,7 @@ it("says a find by the site it found, with the guard's painting in the line", as
     resource_type: ResourcesIds.Labor,
     amount: scaled(288),
   });
-  const read = await draw(row, true);
+  const read = await draw(row);
   expect(read).toEqual({ words: `djizus found ${siteDisplayName(CAMP)}`, reward: "+288", gold: true });
   expect(host.querySelector(".ui-event__text .ui-feed-line__glyph")!.getAttribute("data-icon")).toMatch(/^beast-/);
 });
@@ -173,7 +179,7 @@ it("reads a fight as its attacker's: who attacked what, and how it went", async 
     },
     defender: { player: "0x0", category: "Knight", tier: "T1", before: "1400000000000", after: "0", roll: 0 },
   });
-  expect((await draw(row, true)).words).toBe(`djizus attacked ${siteDisplayName(CAMP)} · Victory`);
+  expect((await draw(row)).words).toBe(`djizus attacked ${siteDisplayName(CAMP)} · Victory`);
   // The playtest runner counts a Feed's rows by their story (scripts/client-playtest/steps.mjs, feed-after-the-clear).
   expect(host.querySelector("[data-feed-line]")?.getAttribute("data-story")).toBe("BattleEvent");
 });
@@ -193,7 +199,28 @@ it("says a fight's army was lost", async () => {
       roll: 0,
     },
   });
-  expect((await draw(row, true)).words).toBe(`djizus attacked ${siteDisplayName(CAMP)} · Army lost`);
+  expect((await draw(row)).words).toBe(`djizus attacked ${siteDisplayName(CAMP)} · Army lost`);
+});
+
+it("marks each row with who it concerns, the player's own fights by how they went, and says how long ago it was", async () => {
+  const fight = (attacker: string, armyAfter: string, guardAfter: string) =>
+    story(attacker, "BattleEvent", {
+      attacker_id: 70,
+      defender_id: CAMP,
+      attacker: { player: attacker, category: "Knight", tier: "T1", before: "7000000000000", after: armyAfter, roll: 0 },
+      defender: { player: "0x0", category: "Knight", tier: "T1", before: "1400000000000", after: guardAfter, roll: 0 },
+    });
+  const rule = async (row: ProcessedStoryEvent) => {
+    await draw(row);
+    const line = host.querySelector("[data-feed-line]")!;
+    return [line.getAttribute("data-rule"), line.querySelector(".ui-event__time")!.textContent];
+  };
+  expect(await rule(fight(DJIZUS, "6500000000000", "0"))).toEqual(["good", "2m"]);
+  expect(await rule(fight(DJIZUS, "0", "1028000000000"))).toEqual(["bad", "2m"]);
+  expect(await rule(fight(KRUMP, "6500000000000", "0"))).toEqual(["world", "2m"]);
+  expect(
+    await rule(story(DJIZUS, "TierBought", { explorer_id: 70, attribute: "Logistics", tier: 3, price: 400 })),
+  ).toEqual(["own", "2m"]);
 });
 
 /** A fight on the camp's site, the attacker's army lost to its guard. */
@@ -322,7 +349,7 @@ it("reads a clear's credited resources near or far without retired progression r
     [...host.querySelectorAll("[data-feed-line] .ui-feed-line__reward")].map((each) => each.textContent);
   // The camp the map holds: 1,400 guards at the start pay floor(sqrt(25 × 1,400) / 2) = 93 base XP, scaled by Ethereal I to 139.
   const near = game.store.require("ExpeditionSite", { game_id: 1, entity_id: CAMP });
-  const read = await draw(clear(CAMP, 139), true);
+  const read = await draw(clear(CAMP, 139));
   expect(read.words).toBe(`djizus cleared ${siteDisplayName(CAMP)}`);
   expect(xps()).toEqual(["+700"]);
   // One the map does not hold, from Herald's row of that site.
@@ -401,7 +428,7 @@ it("leads a story's own words with who did it where they name no one", async () 
 it("names the player once where a story's own words already name them, in gold when they are the player's", async () => {
   const row = story(DJIZUS, "RealmCreatedStory", { coord: { x: 2147483650, y: 2147483652, alt: false } });
   expect(row.presentation.title).toBe("djizus created a Realm");
-  expect(await draw(row, true)).toEqual({ words: "djizus created a Realm", reward: null, gold: true });
+  expect(await draw(row)).toEqual({ words: "djizus created a Realm", reward: null, gold: true });
   expect(named()).toEqual(["djizus"]);
 });
 
