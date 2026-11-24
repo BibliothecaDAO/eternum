@@ -31,9 +31,9 @@
 .size-row__track .ui-slider input[type="range"] {
   background-image: linear-gradient(
     90deg,
-    #b9771f,
+    rgb(var(--hud-gold) / 0.55),
     rgb(var(--hud-gold)) var(--fill, 0%),
-    rgb(0 0 0 / 0.6) var(--fill, 0%)
+    var(--hud-well) var(--fill, 0%)
   );
 }
 .size-row__count {
@@ -56,7 +56,4 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   cursor: pointer;
-}
-.size-row__max[aria-pressed="true"] {
-  background: rgb(var(--hud-gold) / 0.2);
 }

@@ -7,7 +7,7 @@ import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
 import { FIGHT_RESULT, SUPPLY_POST, TROOPS } from "@/ui/design-system/kit/words";
 import { configManager, isSupplyPost, siteDisplayName } from "@bibliothecadao/eternum";
-import { formatExact, formatShort } from "@bibliothecadao/types";
+import { formatShort } from "@bibliothecadao/types";
 import { useEffect } from "react";
 import { create } from "zustand";
 
@@ -43,7 +43,7 @@ export const FightBanner = () => {
 const ClearBanner = ({ clear }: { clear: SiteClear }) => {
   const opensPost = useClearOpenedPost(clear.siteId);
   return (
-    <button type="button" role="status" className="fight-banner" data-fight-banner onClick={hideClearBanner}>
+    <button type="button" role="status" className="ui-panel fight-banner" data-fight-banner onClick={hideClearBanner}>
       <Icon name="victory" size={64} className="fight-banner__crown" />
       <b className="fight-banner__word">{FIGHT_RESULT.victory}</b>
       <span className="fight-banner__site">{FIGHT_RESULT.cleared(siteDisplayName(Number(clear.siteId)))}</span>
@@ -56,7 +56,7 @@ const ClearBanner = ({ clear }: { clear: SiteClear }) => {
         {opensPost && <HudChip icons={["flag"]}>{SUPPLY_POST.open}</HudChip>}
         {clear.troopsLost > 0 && (
           <HudChip icons={["troops"]} label={TROOPS} tone="bad">
-            {`−${formatExact(clear.troopsLost)}`}
+            {formatShort(-clear.troopsLost, { signed: true })}
           </HudChip>
         )}
       </span>

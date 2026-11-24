@@ -3,7 +3,7 @@ import "./picked-army.css";
 import { HudChip, HudIconButton, HudPanel, HudPortrait, HudStamina } from "@/ui/design-system/kit/hud-elements";
 import { Icon } from "@/ui/design-system/icon";
 import { CLOSE, PICKED_ARMY, STAMINA, TROOPS } from "@/ui/design-system/kit/words";
-import { formatAmount, formatExact } from "@bibliothecadao/types";
+import { formatAmount, formatShort } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import { DeepDrain, EtherealMark } from "./army-token";
@@ -54,7 +54,7 @@ export const PickedArmy = ({
           {army.troops !== undefined && (
             <span className="army-tray__troops">
               <HudChip icons={army.art ? [army.art] : ["troops"]} label={TROOPS}>
-                {formatExact(army.troops)}
+                {formatShort(army.troops)}
               </HudChip>
             </span>
           )}

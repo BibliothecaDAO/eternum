@@ -18,7 +18,7 @@
   gap: 2px;
   border: 1px solid;
   border-radius: var(--hud-radius-panel);
-  background: rgb(0 0 0 / 0.3);
+  background: var(--hud-well);
   padding: theme(spacing.2) theme(spacing.1);
   text-align: center;
 }
@@ -38,7 +38,7 @@
   overflow: hidden;
   border: 2px solid currentColor;
   border-radius: var(--hud-radius-round);
-  background: #2a1f14;
+  background: var(--hud-surface-to);
 }
 .fight-side--gone .fight-side__portrait {
   filter: grayscale(1) brightness(0.6);

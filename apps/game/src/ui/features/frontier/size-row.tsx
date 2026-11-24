@@ -61,7 +61,7 @@ export const SizeRow = ({
       {count && <b className="size-row__count">{formatExact(value)}</b>}
       <button
         type="button"
-        className="size-row__max"
+        className="ui-pick size-row__max"
         aria-label={`${MAXIMUM} ${formatExact(top)}`}
         aria-pressed={value === top && top > 0}
         disabled={disabled}

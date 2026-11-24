@@ -20,7 +20,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 import {
   formatAmount,
   formatCount,
-  formatExact,
+  formatShort,
   FRAGMENT,
   FRAGMENTS,
   FRONTIER_TROOP_NAMES,
@@ -89,10 +89,10 @@ function OathChoice({
 }) {
   const name = oathName(id);
   return (
-    <div className="oath-choice" data-chosen={chosen || undefined} data-fresh={fresh || undefined} style={aspectOf(id)}>
+    <div className="oath-choice" data-fresh={fresh || undefined} style={aspectOf(id)}>
       <button
         type="button"
-        className="oath-choice__pick"
+        className="ui-pick oath-choice__pick"
         data-oath-id={id}
         aria-pressed={chosen}
         disabled={disabled}
@@ -210,7 +210,7 @@ function ArmyOathPick({
     <section
       role="dialog"
       aria-label={replacing ? OATH_PICK.replaceTitle : OATH_PICK.title}
-      className="ui oath-pick"
+      className="ui ui-panel oath-pick"
       data-oath-pick={progress.oath_pick}
       data-oath-held={progress.oaths}
     >
@@ -225,7 +225,7 @@ function ArmyOathPick({
             <HudChip>{OATH_PICK.used}</HudChip>
           ) : (
             <HudChip icons={["refresh", "fragment"]} label={OATH_PICK.redrawPrice}>
-              {formatExact(REDRAW_COST)}
+              {formatShort(REDRAW_COST)}
             </HudChip>
           ))}
       </header>

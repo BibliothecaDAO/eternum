@@ -30,7 +30,7 @@
 .army-tray__portrait > .ui-portrait {
   width: 58px;
   height: 58px;
-  border: 2px solid #b48a4a;
+  border: 2px solid rgb(var(--hud-gold) / 0.7);
 }
 .army-tray__portrait > .ui-portrait > img {
   width: 100%;

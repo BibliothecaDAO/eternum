@@ -2,7 +2,7 @@ import "./deploy-view.css";
 
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { OATH_SLOTS_MAX } from "@bibliothecadao/eternum";
-import { type TroopType, formatAmount, formatExact, formatWait } from "@bibliothecadao/types";
+import { type TroopType, formatExact, formatShort, formatWait } from "@bibliothecadao/types";
 import {
   HudButton,
   HudChip,
@@ -156,7 +156,7 @@ export const DeployView = ({
 const StartChip = ({ stamina }: { stamina: number }) => (
   <span data-deploy-start>
     <HudChip icons={["stamina"]} label={`${DEPLOY_WORDS.startsOn} ${STAMINA}`}>
-      {formatAmount(stamina)}
+      {formatShort(stamina)}
     </HudChip>
   </span>
 );
@@ -202,7 +202,7 @@ const DeploySlots = ({
       <button
         key={slot.slot}
         type="button"
-        className="deploy-slot"
+        className="ui-pick deploy-slot"
         aria-label={`${ARMY} ${slot.number}`}
         aria-pressed={slot.slot === picked}
         onClick={() => onPick(slot.slot)}

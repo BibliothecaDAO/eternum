@@ -605,12 +605,12 @@ export const OATH_PICK = {
   another: "Choose another",
   swap: "Swap",
   swapFor: (oath: string, price: string) => `Swap ${oath} for ${price}`,
-  redrawPrice: "One redraw",
+  redrawPrice: "One reroll",
   used: "Used",
   fresh: "New",
   pass: "Pass",
   notChosen: "The Oath could not be chosen.",
-  notRedrawn: "The card could not be redrawn.",
+  notRedrawn: "The card could not be rerolled.",
 } as const;
 export const SITE_OATH = { label: "Oath", holds: "Holds an Oath", rule: "Clearing it opens an Oath pick" } as const;
 /** A camp the player's army clears on today's band: their armies refill beside it until the day ends. */

@@ -11,7 +11,7 @@
   justify-content: center;
   border: 1.5px solid rgb(var(--hud-gold));
   border-radius: var(--hud-radius-round);
-  background: #140e09;
+  background: var(--hud-surface-to);
 }
 [data-oath-waiting] {
   position: relative;

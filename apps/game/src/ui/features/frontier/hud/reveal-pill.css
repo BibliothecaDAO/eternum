@@ -10,9 +10,7 @@
   transform: translateX(-50%);
   margin: 0;
   border: 1.5px solid color-mix(in srgb, var(--hud-good) 60%, transparent);
-  border-radius: 17px;
-  background: linear-gradient(180deg, rgb(38 29 21 / 0.97), rgb(20 15 11 / 0.97));
-  box-shadow: 0 4px 14px rgb(0 0 0 / 0.55);
+  border-radius: var(--hud-radius-round);
   padding: 0 14px;
   color: var(--hud-good);
   font-size: var(--hud-text-strong);

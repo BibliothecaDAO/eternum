@@ -29,7 +29,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { multiplyByPrecision } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { formatExact } from "@bibliothecadao/types";
+import { formatExact, formatShort } from "@bibliothecadao/types";
 import { useState } from "react";
 
 import { type March, marchOn, wheatStopsAt } from "../deploy/deploy-plan";
@@ -188,7 +188,7 @@ const ArmyGain = ({ army, before, gain }: { army: DockArmy; before: number; gain
       </span>
     </span>
     <HudChip icons={[army.art]} label={TROOPS} tone="good">
-      {`+${formatExact(gain)}`}
+      {formatShort(gain, { signed: true })}
     </HudChip>
   </div>
 );

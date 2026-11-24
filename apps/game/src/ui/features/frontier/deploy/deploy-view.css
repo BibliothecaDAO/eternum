@@ -13,7 +13,7 @@
   gap: 1px;
   border: 1px solid var(--hud-line-strong);
   border-radius: var(--hud-radius-panel);
-  background: rgb(0 0 0 / 0.32);
+  background: var(--hud-well);
   padding: theme(spacing.1);
   text-align: center;
   cursor: pointer;
@@ -37,7 +37,7 @@
 .deploy-size {
   border: 1px solid var(--hud-line);
   border-radius: var(--hud-radius-panel);
-  background: rgb(0 0 0 / 0.3);
+  background: var(--hud-well);
 }
 .deploy-slots {
   display: flex;
@@ -78,8 +78,6 @@
 }
 .deploy-slot[aria-pressed="true"] {
   border-style: solid;
-  border-color: rgb(var(--hud-gold));
-  background: rgb(var(--hud-gold) / 0.14);
   color: rgb(var(--hud-gold));
 }
 .deploy-oath {
@@ -90,7 +88,7 @@
   justify-content: center;
   border: 1.5px dashed rgb(var(--hud-gold));
   border-radius: var(--hud-radius-round);
-  background: rgb(0 0 0 / 0.4);
+  background: var(--hud-well);
   color: rgb(var(--hud-gold));
   font-size: var(--hud-text-body);
   font-style: normal;
