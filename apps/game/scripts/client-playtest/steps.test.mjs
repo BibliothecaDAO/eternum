@@ -1219,6 +1219,21 @@ describe("the Season 1 rehearsal", () => {
     });
   });
 
+  it("refuses an Oath pick that offers a Redraw while the release turns Fragment spends off", async () => {
+    const shown = ["[data-oath-pick]", "[data-reroll-oath]"];
+    const browser = {
+      read: (expression) => (shown.some((selector) => expression.includes(selector)) ? { offset: [0, 0] } : null),
+      tap: vi.fn(),
+    };
+    const answer = step("answer-a-standing-oath");
+    const played = await answer.play({ browser, extraScreenshot: () => null });
+    expect(answer.verify({ played })).toMatchObject({
+      status: "failed",
+      reason: "the Oath pick offers a Redraw with Fragment spends off",
+    });
+    expect(browser.tap).not.toHaveBeenCalled();
+  });
+
   it("presses and reads the app's own words", () => {
     expect(REHEARSAL_WORDS.startAdventure).toBe(SHARED_LINK_WORDS.play);
     expect(REHEARSAL_WORDS.copyLink).toBe(INVITE_WORDS.copy);

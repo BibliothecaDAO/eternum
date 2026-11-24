@@ -181,8 +181,11 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   read from the card only. The friend then enters the Deep, attacks a rival's guard and takes an empty site, which exist
   only when another Aspect holds a site or a site's guards died. An account whose dock is empty (a new day ends every
   army) first deploys an army of at most 500 of its troops at home (Max can spend all its wheat on the deploy, leaving
-  none to explore). Without Spire lore the Deep steps are blocked with the Spire's own row. An action passes only when
-  its receipt from the chain's node is confirmed, succeeded and not refused by the game
+  none to explore). With an army out, the host's page must offer no Refill and no shop, and an Oath pick no Redraw,
+  while the release's command mask leaves BuySeal, BuyStamina and RerollOath off, so the chain refuses them ("command
+  disabled"). Without Spire lore the Deep steps are blocked with the Spire's own row. `--steps s1-testnet` plays the
+  host alone in a testnet game entered from its Play card: founding, an army sent, and the same Fragment spends check.
+  An action passes only when its receipt from the chain's node is confirmed, succeeded and not refused by the game
   (`scripts/client-playtest/chain-receipts.mjs`, which also records each play's l2 gas and event count); what the game
   does not offer yet is blocked with what the page said, and a rerun in the same game passes the foundings already made.
 - **Signing in.** Each player keeps a profile under `.context/playtest-profiles/<email>`; agent-browser is handed it on
