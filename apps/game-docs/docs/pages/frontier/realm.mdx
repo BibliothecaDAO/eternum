@@ -5,6 +5,7 @@ description: Starting resources, all nine buildings, repeat copy costs, castle l
 
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
+import { PipeTable } from "@/components/PipeTable";
 
 # Your realm
 
@@ -43,16 +44,15 @@ troops into an army costs {FRONTIER.realm.deployWheat} wheat per troop before Ra
 Each extra copy `n` of a repeatable building costs **{FRONTIER.realm.copyFormula}**, giving
 {FRONTIER.realm.copyMultipliers} for copies 1 through 6:
 
-| Repeatable building                                                                                    | 1st                                   | 2nd                                   | 3rd                                   | 4th                                   | 5th                                   | 6th                                   |
-| ------------------------------------------------------------------------------------------------------ | ------------------------------------- | ------------------------------------- | ------------------------------------- | ------------------------------------- | ------------------------------------- | ------------------------------------- |
-| {FRONTIER.names.farm}, {FRONTIER.names.barracks}, {FRONTIER.names.range}, {FRONTIER.names.scoutsLodge} | {FRONTIER.realm.copyCostsSmall[0]}    | {FRONTIER.realm.copyCostsSmall[1]}    | {FRONTIER.realm.copyCostsSmall[2]}    | {FRONTIER.realm.copyCostsSmall[3]}    | {FRONTIER.realm.copyCostsSmall[4]}    | {FRONTIER.realm.copyCostsSmall[5]}    |
-| {FRONTIER.names.workshop}                                                                              | {FRONTIER.realm.copyCostsWorkshop[0]} | {FRONTIER.realm.copyCostsWorkshop[1]} | {FRONTIER.realm.copyCostsWorkshop[2]} | {FRONTIER.realm.copyCostsWorkshop[3]} | {FRONTIER.realm.copyCostsWorkshop[4]} | {FRONTIER.realm.copyCostsWorkshop[5]} |
+<PipeTable headers={["Repeatable building", "1st", "2nd", "3rd", "4th", "5th", "6th"]}>
+  {FRONTIER.realm.copyCostsTable}
+</PipeTable>
 
 ### Unique buildings (one per realm)
 
 - **<GameIcon name={FRONTIER.buildingIcons.storeroom} /> {FRONTIER.names.storeroom}** (opens at
-  {FRONTIER.storeroom.opens}) adds {FRONTIER.storeroom.storageStep} to your wheat and labor storage caps (doubling them)
-  and scales with your castle level.
+  {FRONTIER.storeroom.opens}) adds {FRONTIER.storeroom.storageStep} to your wheat and labor storage caps and scales with
+  your castle level.
 - **<GameIcon name={FRONTIER.buildingIcons.conscriptionCamp} /> {FRONTIER.names.conscriptionCamp}** (opens at
   {FRONTIER.conscriptionOpens}) grants Conscription rank I, speeding up troop training by {FRONTIER.research.outputStep}
   per rank across every {FRONTIER.names.barracks}, {FRONTIER.names.range}, and {FRONTIER.names.scoutsLodge}.
@@ -67,7 +67,7 @@ Each extra copy `n` of a repeatable building costs **{FRONTIER.realm.copyFormula
 
 Upgrade your castle for {FRONTIER.realm.castleLabor[0]}, {FRONTIER.realm.castleLabor[1]}, then
 {FRONTIER.realm.castleLabor[2]} labor. Each level's labor store holds the full price of the next upgrade. Raising your
-castle opens another ring of plots, adds an army slot, raises the max troops per deploy, doubles castle labor, and
+castle opens another ring of plots, adds an army slot, raises the max troops per deploy, raises castle labor, and
 expands storage.
 
 | Castle level                     | Plots                     | Armies in the field        | Troops per deploy              | Castle labor/h                       | Wheat stored                | Labor stored                     | Labor with Storeroom                      |

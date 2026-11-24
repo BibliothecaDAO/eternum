@@ -91,6 +91,7 @@ export const frontierPhrases = (
     relicKinds,
     commandBits,
     calendar,
+    nativeQuest,
     nativeResearch,
     contract,
     buildablePlotCount,
@@ -187,6 +188,14 @@ export const frontierPhrases = (
         `adding +${n(logisticsBonus)} bonus stamina at rank V for ${n(stamina.staminaKnightMax + logisticsBonus)} max stamina total.`,
         `beside any camp your realm cleared today (supply post) on the ${personalLayersOr}`,
         `round(${n(Number(BigInt(config.troop.damage.damageScalingFactor) / 2n ** 64n))} × troops ÷ (both sides' troops)^${(contract.combatBetaTenths / 10).toFixed(1)})`,
+        deepSites
+          .filter((site) => !preset.deep.beasts[site.key].bow)
+          .map((site) => DEEP_BEASTS[site.key].name)
+          .join(", "),
+        deepSites
+          .filter((site) => preset.deep.beasts[site.key].bow)
+          .map((site) => DEEP_BEASTS[site.key].name)
+          .join(", "),
         staminaRule,
       ],
     },
@@ -211,6 +220,27 @@ export const frontierPhrases = (
         `receive ${n(preset.dailyQuest.labor)} Labor and ${n(preset.dailyQuest.essence)} Essence at castle level 1 (${rankName(0)}), multiplying by ${n(contract.questLevelStep)} at each higher castle level.`,
         ...FRONTIER_BUILDING_TYPES.map((id) => buildingName(id, true)),
         `base + (n - 1)² × ${n(config.buildings.buildingFixedCostScalePercent / 100)}% of base`,
+        ...[
+          ...new Map(
+            [
+              nativeResearch.FARM,
+              nativeResearch.BARRACKS,
+              nativeResearch.RANGE,
+              nativeResearch.SCOUTS_LODGE,
+              nativeResearch.WORKSHOP,
+            ].reduce((groups, id) => {
+              const base = config.buildings.simpleBuildingCost[id][0].amount;
+              return groups.set(base, [...(groups.get(base) ?? []), buildingName(id, true)]);
+            }, new Map()),
+          ).entries(),
+        ].map(
+          ([base, names]) =>
+            `${names.join(", ")} ${[1, 2, 3, 4, 5, 6]
+              .map((copy) =>
+                n(base + (copy - 1) ** 2 * Math.floor((base * config.buildings.buildingFixedCostScalePercent) / 10000)),
+              )
+              .join(" ")}`,
+        ),
         ...armies.map(
           (count, index) =>
             `Level ${index + 1} (${rankName(index)}) ${n(buildablePlotCount(index))} ${n(count)} ${n(caps[index])} ${castleLaborRate(index)} ${n(preset.board.resourceStoreCaps[index])} ${n(preset.board.laborStoreCaps[index])}`,
@@ -307,11 +337,12 @@ export const frontierPhrases = (
         `+${n(nativeFragments.WONDER_QUEST_FRAGMENTS)} Fragments`,
         `Once ${n(preset.banes.quorumPercent)}% of your Aspect's members who were active on the previous day`,
         `World Banes stop for the rest of the season.`,
-        ...worldBanes.map((entry, index) => {
+        ...worldBanes.map((entry) => {
           const head = worldBaneHead(entry.id, baneRules);
           const q = baneQuests.find((item) => item.id === entry.quest);
+          const offset = (entry.quest - nativeQuest.STAND) * config.realmMaxLevel;
           const targets = preset.banes.questCounts
-            .slice(index * 4, index * 4 + 4)
+            .slice(offset, offset + config.realmMaxLevel)
             .map(n)
             .join(" / ");
           return `${head.name} ${head.rule}. ${q.name}: ${q.objective} ${targets}`;
@@ -443,6 +474,7 @@ export const loadBalanceSources = async () => {
     const {
       nativeFragmentConstants: nativeFragments,
       nativeOathConstants: nativeOaths,
+      nativeQuestConstants: nativeQuest,
       nativeRaceConstants: nativeRace,
       nativeResearchConstants: nativeResearch,
       nativeRuleConstants: nativeRules,
@@ -497,6 +529,7 @@ export const loadBalanceSources = async () => {
       historicalFrontierPreset,
       nativeFragments,
       nativeOaths,
+      nativeQuest,
       nativeRace,
       nativeResearch,
       nativeRules,

@@ -7,6 +7,7 @@ import {
 import {
   nativeFragmentConstants as fragments,
   nativeOathConstants as oaths,
+  nativeQuestConstants as questRules,
   nativeRaceConstants as raceRules,
   nativeResearchConstants as research,
   nativeRuleConstants as rule,
@@ -190,6 +191,10 @@ const castleLevelInline = (level: number) => `castle level ${level + 1} (${rankN
 const copySurchargeBps = config.buildings.buildingFixedCostScalePercent;
 const copyCost = (base: number, copyNumber: number) =>
   base + (copyNumber - 1) ** 2 * Math.floor((base * copySurchargeBps) / 10_000);
+const copyMultiplierLabel = (copyNumber: number) => {
+  const ratio = 1 + ((copyNumber - 1) ** 2 * copySurchargeBps) / 10_000;
+  return `${Number(ratio.toFixed(2))}x`;
+};
 const copyFormula = `base + (n - 1)² × ${pct(copySurchargeBps)} of base`;
 const damageFactorValue = Number(BigInt(config.troop.damage.damageScalingFactor) / 2n ** 64n);
 const combatBetaValue = (CONTRACT.combatBetaTenths / 10).toFixed(1);
@@ -197,6 +202,34 @@ const combatFormula = `round(${n(damageFactorValue)} × troops ÷ (both sides' t
 const farmBaseLabor = config.buildings.simpleBuildingCost[research.FARM][0].amount;
 const workshopBaseLabor = config.buildings.simpleBuildingCost[research.WORKSHOP][0].amount;
 const barracksBaseLabor = config.buildings.simpleBuildingCost[research.BARRACKS][0].amount;
+const startingLabor = config.startingResources.find((r: { resource: number }) => r.resource === LABOR).amount;
+if (workshopBaseLabor + barracksBaseLabor + farmBaseLabor !== startingLabor) {
+  throw new Error(
+    `Starter buildings (${workshopBaseLabor + barracksBaseLabor + farmBaseLabor}) do not equal starting labor (${startingLabor})`,
+  );
+}
+for (let level = 0; level < config.realmMaxLevel - 1; level += 1) {
+  const upgradeCost = config.realmUpgradeCosts[level + 1][0].amount;
+  const cap = frontierPreset.board.laborStoreCaps![level];
+  if (cap < upgradeCost) throw new Error(`Level ${level + 1} labor cap (${cap}) cannot hold upgrade (${upgradeCost})`);
+}
+const repeatableIds: readonly BuildingType[] = [
+  research.FARM,
+  research.BARRACKS,
+  research.RANGE,
+  research.SCOUTS_LODGE,
+  research.WORKSHOP,
+];
+const copyCostGroups = new Map<number, string[]>();
+for (const id of repeatableIds) {
+  const base = config.buildings.simpleBuildingCost[id][0].amount;
+  copyCostGroups.set(base, [...(copyCostGroups.get(base) ?? []), buildingName(id, true)]);
+}
+const copyCostsTable = [...copyCostGroups.entries()]
+  .map(
+    ([base, names]) => `${names.join(", ")} | ${[1, 2, 3, 4, 5, 6].map((copy) => n(copyCost(base, copy))).join(" | ")}`,
+  )
+  .join("\n");
 
 const buildingMeta: Partial<Record<BuildingType, { makes: string; level: number; order: number }>> = {
   [research.FARM]: { makes: "Wheat", level: 0, order: 0 },
@@ -321,18 +354,21 @@ const minKnightsToClear = (
   defenderCount: number,
   options: { defenderGuard?: boolean; attackerOaths?: number; defenderOaths?: number; twinCount?: number },
 ) => {
-  let low = 100;
+  const step = 100;
+  let low = step;
   let high = 60_000;
-  while (low < high) {
-    const mid = Math.floor((low + high) / 200) * 100;
-    const result = runFight("Knight", mid, "Knight", defenderCount, {
+  const winsAt = (count: number) =>
+    runFight("Knight", count, "Knight", defenderCount, {
       defenderGuard: options.defenderGuard,
       attackerOaths: options.attackerOaths,
       defenderOaths: options.defenderOaths,
       twinCount: options.twinCount,
-    });
-    if (result.wins) high = mid;
-    else low = mid + 100;
+    }).wins;
+  if (!winsAt(high)) throw new Error(`No Knight army up to ${high} clears ${defenderCount} Knights`);
+  while (low < high) {
+    const mid = Math.floor((low + high) / (2 * step)) * step;
+    if (winsAt(mid)) high = mid;
+    else low = mid + step;
   }
   return low;
 };
@@ -378,6 +414,8 @@ const deepSitePays: Record<(typeof deepSites)[number]["key"], string> = {
 const powerMask = oathMask(oaths.POWER);
 const twinsMask = oathMask(oaths.TWINS);
 const protectionMask = oathMask(oaths.PROTECTION);
+const breakTarget = 10_000;
+const twinsAllyCount = 5_000;
 const holdTicks = 15;
 const holdStart = 9000;
 const holdBaseRemaining = holdStart - holdTicks * deepPreset.lossPerTick;
@@ -386,6 +424,14 @@ const attackChainCount = 7;
 const angerFuryCost = Math.floor((oaths.ANGER_ATTACK_STAMINA * (100 - oaths.FURY_REFUND_PERCENT)) / 100);
 const baseFuryCost = Math.floor((stamina.staminaAttackReq * (100 - oaths.FURY_REFUND_PERCENT)) / 100);
 const ragePerfectionPct = ((oaths.RAGE_PAY_PERCENT * oaths.PERFECTION_PAY_PERCENT) / 100).toFixed(1);
+const bladeDeepBeasts = deepSites
+  .filter((site) => !deepPreset.beasts[site.key].bow)
+  .map((site) => DEEP_BEASTS[site.key].name)
+  .join(", ");
+const bowDeepBeasts = deepSites
+  .filter((site) => deepPreset.beasts[site.key].bow)
+  .map((site) => DEEP_BEASTS[site.key].name)
+  .join(", ");
 
 export const FRONTIER = {
   calendar: SEASON_ONE_CALENDAR,
@@ -429,9 +475,8 @@ export const FRONTIER = {
     ),
     rationStep: String(frontierPreset.board.rationStep),
     copyFormula,
-    copyMultipliers: [1, 2, 3, 4, 5, 6].map((copy) => `${copyCost(1, copy)}x`).join(", "),
-    copyCostsSmall: [1, 2, 3, 4, 5, 6].map((copy) => n(copyCost(farmBaseLabor, copy))),
-    copyCostsWorkshop: [1, 2, 3, 4, 5, 6].map((copy) => n(copyCost(workshopBaseLabor, copy))),
+    copyMultipliers: [1, 2, 3, 4, 5, 6].map(copyMultiplierLabel).join(", "),
+    copyCostsTable,
   },
   stamina: {
     max: n(stamina.staminaKnightMax),
@@ -460,6 +505,8 @@ export const FRONTIER = {
     formula: combatFormula,
     damageFactor: n(damageFactorValue),
     beta: combatBetaValue,
+    bladeDeepBeasts,
+    bowDeepBeasts,
     exampleLabel: `${LAYER_NAMES[0]} ${beastOf("camp", 0).name} camp`,
     exampleGuard: n(campMid),
     exampleSent: n(campAttacker),
@@ -663,11 +710,12 @@ export const FRONTIER = {
     count: n(baneQuests.length),
     chanceStep: `${n(banesPreset.chanceStep)}%`,
     quorum: `${n(banesPreset.quorumPercent)}%`,
-    world: worldBanes.map((entry, index) => {
+    world: worldBanes.map((entry) => {
       const quest = baneQuests.find((q) => q.id === entry.quest);
       if (!quest) throw new Error(`Missing bane quest ${entry.quest}`);
       const head = worldBaneHead(entry.id, baneRules);
-      const targets = banesPreset.questCounts.slice(index * 4, index * 4 + 4).map(n);
+      const offset = (entry.quest - questRules.STAND) * config.realmMaxLevel;
+      const targets = banesPreset.questCounts.slice(offset, offset + config.realmMaxLevel).map(n);
       return {
         name: head.name,
         icon: head.icon,
@@ -747,15 +795,15 @@ export const FRONTIER = {
     rows: oathRows,
     pairs: [
       {
-        job: `Break 10,000 ${FRONTIER_TROOP_NAMES[TroopType.Knight]} guarding a Deep site (attacking ${FRONTIER_TROOP_NAMES[TroopType.Knight]}; ${oathName(oaths.TWINS)} uses a 5,000-troop adjacent ally that takes 0 losses)`,
-        none: n(minKnightsToClear(10_000, { defenderGuard: true })),
-        first: `${oathName(oaths.POWER)}: ${n(minKnightsToClear(10_000, { defenderGuard: true, attackerOaths: powerMask }))}`,
-        second: `${oathName(oaths.TWINS)}: ${n(minKnightsToClear(10_000, { defenderGuard: true, attackerOaths: twinsMask, twinCount: 5_000 }))}`,
+        job: `Break ${n(breakTarget)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} guarding a Deep site (attacking ${FRONTIER_TROOP_NAMES[TroopType.Knight]}; ${oathName(oaths.TWINS)} uses a ${n(twinsAllyCount)}-troop adjacent ally that takes 0 losses)`,
+        none: n(minKnightsToClear(breakTarget, { defenderGuard: true })),
+        first: `${oathName(oaths.POWER)}: ${n(minKnightsToClear(breakTarget, { defenderGuard: true, attackerOaths: powerMask }))}`,
+        second: `${oathName(oaths.TWINS)}: ${n(minKnightsToClear(breakTarget, { defenderGuard: true, attackerOaths: twinsMask, twinCount: twinsAllyCount }))}`,
         both: n(
-          minKnightsToClear(10_000, {
+          minKnightsToClear(breakTarget, {
             defenderGuard: true,
             attackerOaths: powerMask | twinsMask,
-            twinCount: 5_000,
+            twinCount: twinsAllyCount,
           }),
         ),
       },
