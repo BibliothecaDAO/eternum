@@ -3,6 +3,7 @@ layout: landing
 ---
 
 import { HomePage } from "vocs/components";
+import { HomeQuickLinks } from "@/components/HomeQuickLinks";
 
 <HomePage.Root>
   <div className="realms-homepage-background" aria-hidden="true">
@@ -23,15 +24,6 @@ import { HomePage } from "vocs/components";
   </HomePage.Button>
 </HomePage.Buttons>
 
-<nav className="docs-home-quick" aria-label="Most looked up guides">
-  <a href="/account/sign-in">Sign in</a>
-  <a href="/frontier/buildings">Buildings</a>
-  <a href="/frontier/combat">Combat</a>
-  <a href="/frontier/oaths">Oaths</a>
-  <a href="/frontier/relics">Relics</a>
-  <a href="/frontier/beasts">Beasts</a>
-  <a href="/frontier/deep">The Deep</a>
-  <a href="/frontier/aspects">Rewards</a>
-</nav>
+<HomeQuickLinks />
 
 </HomePage.Root>

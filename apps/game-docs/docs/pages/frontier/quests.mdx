@@ -1,6 +1,6 @@
 ---
 title: Daily quests
-description: All seven daily quests, castle-level rewards, and Realm NFT, Ancient Seal, and Wonder bonuses
+description: Daily quests, castle-level rewards, and Realm NFT, Ancient Seal, and Wonder bonuses
 ---
 
 import { FRONTIER } from "@/utils/frontier";
@@ -13,7 +13,7 @@ any lore, building, or layer unlock. Complete today's objective and press **Coll
 - Each of the {FRONTIER.quest.count} daily quests comes once every {FRONTIER.quest.count} days in shuffled order, and
   the same quest never runs two days in a row.
 - The target count is the base target multiplied by your castle level (1x at {FRONTIER.realm.castleLevelInline[0]}, up
-  to 4x at {FRONTIER.realm.castleLevelInline[3]}).
+  to {FRONTIER.realm.maxLevel}x at {FRONTIER.realm.castleLevelInline[3]}).
 - Rewards start at {FRONTIER.quest.labor} Labor and {FRONTIER.quest.essence} Essence at
   {FRONTIER.realm.castleLevelInline[0]} and multiply by {FRONTIER.quest.levelStep} at each castle level
   ({FRONTIER.quest.levelScale}).

@@ -4,6 +4,7 @@ import llmTxtPlugin from "./vite-plugin-llm-txt.mjs";
 import BRAND from "./docs/brand.gen.json";
 import { linkPreviewUrl } from "../game/src/brand/link-preview";
 import { isDevEnvironment } from "../game/src/shell/frame/environment";
+import { DOCS_SIDEBAR } from "./docs/utils/sidebar";
 
 /** The brand's colours and marks, written from the game's token file (apps/game/src/brand/surfaces.ts). */
 const color = BRAND.colors;
@@ -82,67 +83,5 @@ export default defineConfig({
     },
   },
   title: "Realms Docs",
-  sidebar: [
-    {
-      text: "Your account",
-      items: [
-        { text: "Sign in", link: "/account/sign-in" },
-        { text: "Payout wallet", link: "/account/payout-wallet" },
-        { text: "LORDS", link: "/account/lords" },
-      ],
-    },
-    {
-      text: "Start here",
-      items: [{ text: "Frontier", link: "/frontier" }],
-    },
-    {
-      text: "Your realm",
-      items: [
-        { text: "Realm and research", link: "/frontier/realm" },
-        { text: "Buildings", link: "/frontier/buildings" },
-        { text: "Daily quests", link: "/frontier/quests" },
-      ],
-    },
-    {
-      text: "Armies",
-      items: [
-        { text: "Troops and stamina", link: "/frontier/armies" },
-        { text: "Combat", link: "/frontier/combat" },
-        { text: "Oaths", link: "/frontier/oaths" },
-        { text: "Relics", link: "/frontier/relics" },
-      ],
-    },
-    {
-      text: "Exploring",
-      items: [
-        { text: "The expedition", link: "/frontier/expedition" },
-        { text: "Beasts", link: "/frontier/beasts" },
-      ],
-    },
-    {
-      text: "The Deep",
-      items: [
-        { text: "The Deep", link: "/frontier/deep" },
-        { text: "Banes and Triumphs", link: "/frontier/banes" },
-      ],
-    },
-    {
-      text: "The season",
-      items: [{ text: "Aspects and rewards", link: "/frontier/aspects" }],
-    },
-    {
-      text: "Shop and friends",
-      items: [{ text: "Shop and referrals", link: "/frontier/shop-and-referrals" }],
-    },
-    {
-      text: "Data and developers",
-      collapsed: true,
-      items: [
-        { text: "Get the data", link: "/data/get-the-data" },
-        { text: "Getting started", link: "/development/getting-started" },
-        { text: "Client", link: "/development/client" },
-        { text: "Contracts", link: "/development/contracts" },
-      ],
-    },
-  ],
+  sidebar: DOCS_SIDEBAR,
 });
