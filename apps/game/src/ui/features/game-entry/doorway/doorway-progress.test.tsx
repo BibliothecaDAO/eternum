@@ -1,6 +1,8 @@
 import { aspectName, orderAspect } from "@bibliothecadao/types";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 
 vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => ({ status: "anonymous" }) }));
@@ -98,6 +100,8 @@ it("renders the Frontier lockup, Aspect Facet, Entering Realm heading, day subti
 it("never shows progress or a redundant mode title on Sign in, Retry, Devices, Refused, or Ended blocker screens", () => {
   const blockers = [
     doorwayView({ source: "entry", phase: "account", audience: "player", signedIn: false }),
+    doorwayView({ source: "entry", phase: "settlement-waiting", audience: "player", signedIn: true }),
+    doorwayView({ source: "boot", phase: "select_world", audience: "player", waiting: true }),
     doorwayView({ source: "boot", phase: "error", audience: "player" }),
     doorwayView({ source: "boot", phase: "error", audience: "player", accountError: "device_limit_reached" }),
     doorwayView({ source: "boot", phase: "error", audience: "player", refused: "release" }),
@@ -107,6 +111,7 @@ it("never shows progress or a redundant mode title on Sign in, Retry, Devices, R
     const page = draw(view);
     expect(page.querySelector('[role="progressbar"]')).toBeNull();
     expect(page.textContent).not.toContain("Step 1 of");
+    expect(page.textContent).not.toContain("Step 2 of");
     expect(page.querySelector('[data-band="title"]')).toBeNull();
   }
 });
@@ -129,4 +134,47 @@ it("uses the Frontier lockup while game metadata is still loading and shares mon
     AGE_LOCKUP.frontier,
   );
   expect(handoff.querySelector('[role="progressbar"]')?.getAttribute("aria-valuenow")).toBe("58");
+});
+
+it("never traps on a not-started game: shows the start time and Back to Play with no loading bar", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const startsAt = Math.floor(Date.now() / 1000) + 3 * 3600;
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  await act(async () =>
+    root.render(
+      <MemoryRouter initialEntries={["/enter/0xa/4"]}>
+        <Routes>
+          <Route
+            path="/enter/:chain/:game"
+            element={
+              <DoorwayScreen
+                view={doorwayView({ source: "entry", phase: "settlement-waiting", audience: "player", signedIn: true })}
+                realm={null}
+                game={{ mode: "frontier", clock: { start_main_at: startsAt } }}
+                onRetry={() => {}}
+                onSignIn={() => {}}
+              />
+            }
+          />
+          <Route path="/" element={<p data-play-home>Play home</p>} />
+        </Routes>
+      </MemoryRouter>,
+    ),
+  );
+  try {
+    expect(container.textContent).toContain("This game has not started yet.");
+    expect(container.textContent).toContain("Starts ");
+    expect(container.textContent).not.toContain("Preparing your realm");
+    expect(container.textContent).not.toContain("Step 2 of 4");
+    expect(container.querySelector('[role="progressbar"]')).toBeNull();
+    const back = [...container.querySelectorAll<HTMLButtonElement>("button")].find(
+      (button) => button.textContent === "Back to Play",
+    )!;
+    expect(back).toBeDefined();
+    await act(async () => back.click());
+    expect(container.querySelector("[data-play-home]")?.textContent).toBe("Play home");
+  } finally {
+    await act(async () => root.unmount());
+  }
 });
