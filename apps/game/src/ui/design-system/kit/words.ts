@@ -756,8 +756,6 @@ export const UPGRADE = "Upgrade";
 
 /** The realm: its castle and levels, its buildings, and the row that counts a full realm's common buildings. */
 export const CASTLE = "Castle";
-export const MAX_LEVEL = "Max";
-export const REALM_POP = (used: number, limit: number) => `Pop ${formatExact(used)}/${formatExact(limit)}`;
 /** The castle rows that unlock the three depths beyond the spire. */
 export const LAYER = "Layer";
 

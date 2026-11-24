@@ -596,9 +596,3 @@ button.frontier-stock__face:hover {
   position: static;
   margin-left: auto;
 }
-.realm-building__max {
-  padding: 0 theme(spacing.1);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  color: var(--hud-muted);
-}

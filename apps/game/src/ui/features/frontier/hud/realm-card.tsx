@@ -2,18 +2,9 @@ import "./frontier-desktop.css";
 
 import { homeIcon, type HomeKind } from "@/ui/design-system/home-icons";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudIconButton, HudRow, HudTier } from "@/ui/design-system/kit/hud-elements";
-import { OrderLine, resolvedOrder } from "@/ui/design-system/kit/order-emblem";
-import {
-  CLOSE,
-  MAX_LEVEL,
-  REALM,
-  REALM_POP,
-  SHOP_WORDS,
-  SHOW_MY_REALM,
-  UPGRADE,
-  type Rank,
-} from "@/ui/design-system/kit/words";
+import { HudChip, HudIconButton, HudRow, HudTier } from "@/ui/design-system/kit/hud-elements";
+import { OrderLine } from "@/ui/design-system/kit/order-emblem";
+import { CLOSE, REALM, SHOP_WORDS, SHOW_MY_REALM, UPGRADE, type Rank } from "@/ui/design-system/kit/words";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
 import { aspectName, FRAGMENTS, formatShort, LORDS, type AspectId } from "@bibliothecadao/types";
@@ -31,18 +22,20 @@ export interface RealmBuildingItem {
   rankLabel?: string;
   rateIcon?: IconMeaning;
   rate?: string;
-  onUpgrade?: () => void;
-  maxed?: boolean;
+}
+
+export interface RealmRankUp {
+  name: string;
+  missing?: string;
 }
 
 export const RealmCard = ({
   name,
   kind,
   level,
-  nextRank,
+  rankUp,
   aspect,
   orderId,
-  population,
   stores,
   fragments,
   lords,
@@ -57,10 +50,9 @@ export const RealmCard = ({
   name: string;
   kind: HomeKind;
   level: number;
-  nextRank?: string;
+  rankUp?: RealmRankUp;
   aspect?: AspectId;
   orderId?: number;
-  population?: { used: number; max: number };
   stores: readonly StoreReading[];
   fragments: number | null;
   lords: number | null;
@@ -92,20 +84,20 @@ export const RealmCard = ({
           <span className="frontier-realm-card__name">{name}</span>
           <span className="frontier-realm-card__sub">
             <OrderLine orderId={orderId} size={14} className="frontier-realm-card__order" />
-            {resolvedOrder(orderId) && population && <span aria-hidden="true">·</span>}
-            {population && <span>{REALM_POP(population.used, population.max)}</span>}
           </span>
         </span>
       </button>
-      {onUpgradeCastle && nextRank && (
+      {onUpgradeCastle && rankUp && (
         <button
           type="button"
           data-realm-castle
           className="frontier-rank-up"
-          aria-label={`${UPGRADE} · ${nextRank}`}
+          aria-label={rankUp.missing ? `${UPGRADE} · ${rankUp.name}: ${rankUp.missing}` : `${UPGRADE} · ${rankUp.name}`}
+          data-tip={rankUp.missing}
+          disabled={rankUp.missing !== undefined}
           onClick={onUpgradeCastle}
         >
-          {nextRank}
+          {rankUp.name}
           <Icon name="arrow-up" size={12} />
         </button>
       )}
@@ -169,15 +161,6 @@ export const RealmCard = ({
                     {building.rate}
                   </span>
                 )
-              }
-              controls={
-                building.onUpgrade ? (
-                  <HudButton kind="secondary" size="sm" onClick={building.onUpgrade}>
-                    {UPGRADE}
-                  </HudButton>
-                ) : building.maxed ? (
-                  <span className="realm-building__max">{MAX_LEVEL}</span>
-                ) : undefined
               }
             />
           </li>

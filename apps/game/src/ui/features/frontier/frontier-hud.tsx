@@ -1,4 +1,6 @@
+import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { reasonLine } from "@/ui/design-system/kit/reasons";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -51,7 +53,8 @@ import { FrontierDayClock } from "./hud/day-pill";
 import { DayEndBlock, DayEndNotice, useDayEnd } from "./day-end/day-end";
 import { useFirstBuild, useMarkFirstBuild } from "./build/first-build";
 import { useStoreReadings } from "./hud/frontier-strip";
-import type { RealmBuildingItem } from "./hud/realm-card";
+import type { RealmBuildingItem, RealmRankUp } from "./hud/realm-card";
+import { castleUpgradeRefusal } from "./upgrade/castle-upgrade";
 import { HudBands } from "./hud/hud-bands";
 import { MenuPage } from "./hud/menu-page";
 import { useHowToPlay } from "@/ui/modules/how-to-play";
@@ -272,10 +275,6 @@ const FrontierHudBody = ({
     feedUnread,
     chatUnread: chat.unread,
   };
-  const openResearch = (node?: string) => {
-    setResearchPick(node);
-    setSurface("research");
-  };
   const realmCard = shown && (
     <FrontierRealmCard
       rules={rules}
@@ -285,7 +284,6 @@ const FrontierHudBody = ({
       fragments={own ? fragmentsHeld : null}
       storeCards={storeCards}
       onShop={own ? () => setSurface("shop") : undefined}
-      onResearch={openResearch}
       onClose={desktop || tablet ? undefined : close}
     />
   );
@@ -568,16 +566,11 @@ const REALM_PANEL_MODELS = [
   "BoardRules",
 ] as const;
 
-const useRealmBuildings = (
-  realm: NativeRows["Structure"],
-  own: NativeRows["Structure"] | null,
-  onResearch: (node?: string) => void,
-) => {
+const useRealmBuildings = (realm: NativeRows["Structure"], own: NativeRows["Structure"] | null) => {
   const facts = useNativeFacts(REALM_PANEL_MODELS);
   const tick = useCurrentDefaultTick();
   const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
   const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
-  const research = useResearchTree(own);
   const options = facts.store.get("BoardRules", { game_id: realm.game_id })
     ? (readBuildOptions(facts.store, realm, useSimpleCost, tick) ?? [])
     : [];
@@ -595,18 +588,14 @@ const useRealmBuildings = (
     .filter(isListed)
     .slice(0, 4)
     .map((option) => {
-      const label = buildingName(option.category);
-      const node = research?.nodes.find((candidate) => candidate.name === label);
       return {
         key: String(option.category),
         icon: buildingIcon(option.category),
-        name: label,
+        name: buildingName(option.category),
         tier: option.tier,
         rateIcon:
           option.effect.kind === "produces" ? FRONTIER_STORES[madeStore(option.effect.resource)].icon : undefined,
         rate: option.effect.kind === "produces" ? formatRate(option.effect.output.total) : undefined,
-        onUpgrade: own && node && node.state !== "done" ? () => onResearch(node.key) : undefined,
-        maxed: Boolean(own && node && node.state === "done"),
       };
     });
   return { standing: standingBuildings, openCastle };
@@ -615,17 +604,10 @@ const useRealmBuildings = (
 const useRealmFace = (realm: NativeRows["Structure"]) => {
   const facts = useNativeFacts(REALM_PANEL_MODELS);
   const aspectId = facts.store.get("HomeAspect", { game_id: realm.game_id, home: realm.entity_id })?.aspect;
-  const structureBuildings = facts.store.get("StructureBuildings", {
-    game_id: realm.game_id,
-    entity_id: realm.entity_id,
-  });
   return {
     name: useGameModeConfig().structure.getName(realm).name,
     kind: homeKind(realm.metadata.has_wonder),
     aspect: aspectId !== undefined ? catalogAspectId(aspectId) : undefined,
-    population: structureBuildings
-      ? { used: structureBuildings.population.current, max: structureBuildings.population.max }
-      : undefined,
   };
 };
 
@@ -637,7 +619,6 @@ const FrontierRealmCard = ({
   fragments,
   storeCards,
   onShop,
-  onResearch,
   onClose,
 }: {
   rules: ExpeditionRules;
@@ -647,24 +628,22 @@ const FrontierRealmCard = ({
   fragments: number | null;
   storeCards: ComponentProps<typeof FrontierTopBar>["storeCards"];
   onShop?: () => void;
-  onResearch: (node?: string) => void;
   onClose?: () => void;
 }) => {
-  const { name, kind, aspect, population } = useRealmFace(realm);
+  const { name, kind, aspect } = useRealmFace(realm);
   const stores = useStoreReadings(realm, rules, STORE_KINDS);
   const goToPlace = useGoToFrontierPlace(realm);
-  const { standing, openCastle } = useRealmBuildings(realm, own, onResearch);
+  const { standing, openCastle } = useRealmBuildings(realm, own);
   const lords = useWalletLords();
-  const levelUp = useRealmLevelUp(own ? safeInteger(own.entity_id) : null);
+  const rankUp = useRankUp(own);
   return (
     <RealmCard
       name={name}
       kind={kind}
       level={realm.base.level}
-      nextRank={levelUp && levelUp.mode !== "max" ? rankName(levelUp.nextLevel) : undefined}
+      rankUp={rankUp}
       aspect={aspect}
       orderId={realm.metadata.order}
-      population={population}
       stores={stores}
       fragments={fragments}
       lords={own ? lords : null}
@@ -677,6 +656,15 @@ const FrontierRealmCard = ({
       onClose={onClose}
     />
   );
+};
+
+const useRankUp = (own: NativeRows["Structure"] | null): RealmRankUp | undefined => {
+  const { setup } = useGame();
+  const tick = useCurrentDefaultTick();
+  const levelUp = useRealmLevelUp(own ? safeInteger(own.entity_id) : null);
+  if (!own || !levelUp || levelUp.mode === "max") return undefined;
+  const refusal = castleUpgradeRefusal(setup.store, own, levelUp, tick);
+  return { name: rankName(levelUp.nextLevel), missing: refusal && reasonLine(refusal.reason) };
 };
 
 const useWalletLords = (): number | null => {

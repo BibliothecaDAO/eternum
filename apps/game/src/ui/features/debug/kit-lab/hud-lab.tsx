@@ -1596,10 +1596,9 @@ const LabRealmCard = ({ lab }: { lab: LabState }) => (
     name={LAB_REALM_NAME}
     kind="realm"
     level={lab.realm?.level ?? 1}
-    nextRank={rankName((lab.realm?.level ?? 1) + 1)}
+    rankUp={{ name: rankName((lab.realm?.level ?? 1) + 1) }}
     aspect={LAB_ASPECT}
     orderId={LAB_ORDER_ID}
-    population={LAB_POPULATION}
     stores={everyStore(lab.stores)}
     fragments={LAB_FRAGMENTS}
     lords={lab.visiting ? null : (lab.purse?.lords ?? LAB_LORDS)}
@@ -1664,11 +1663,10 @@ const LAB_ASPECT: AspectId = 1;
 const LAB_ORDER_ID = 12;
 const LAB_MAP_LAYERS: MapLayers = { layers: [0, 1], shown: 0, go: noop };
 const LAB_LORDS = 320;
-const LAB_POPULATION = { used: 3, max: 12 };
 const LAB_REALM_BUILDINGS: readonly RealmBuildingItem[] = [
-  { key: "farm", icon: "farm", name: "Farm", tier: 2, rateIcon: "wheat", rate: "+20/min", onUpgrade: noop },
-  { key: "workshop", icon: "workshop", name: "Workshop", tier: 2, rateIcon: "labor", rate: "+12/min", onUpgrade: noop },
-  { key: "barracks", icon: "barracks", name: "Barracks", tier: 5, rateIcon: "troops", rate: "+3/min", maxed: true },
+  { key: "farm", icon: "farm", name: "Farm", tier: 2, rateIcon: "wheat", rate: "+20/min" },
+  { key: "workshop", icon: "workshop", name: "Workshop", tier: 2, rateIcon: "labor", rate: "+12/min" },
+  { key: "barracks", icon: "barracks", name: "Barracks", tier: 5, rateIcon: "troops", rate: "+3/min" },
 ];
 
 /** The place a lab state has open, as the desktop's round places light it. */
