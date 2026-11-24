@@ -36,6 +36,7 @@ import { handleSealCode, sealCodeWorldOf } from "./seal-codes";
 import { handleNotificationPreferences } from "./notification-preferences";
 import { handleNewsEmailOptOut, NEWS_EMAIL_OPT_OUT_PATH } from "./news-email-opt-out";
 import { handleProfile, handleProfiles } from "./profiles";
+import { handleAccountCount, readableByDocs } from "./public-stats";
 import { handleRatingTop } from "./rating-top";
 import { handleAccountsHealth, handleChatHealth } from "./health";
 import { handlePushSubscriptions } from "./push-notifications";
@@ -122,11 +123,18 @@ export const routeIdentityRequest = async (
   }
   if (pathname === "/api/profiles" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "profiles", request))) return json({ error: "too_many_requests" }, 429);
-    return handleProfiles(env.DB, new URL(request.url).searchParams.get("accounts"));
+    return readableByDocs(
+      await handleProfiles(env.DB, new URL(request.url).searchParams.get("accounts")),
+      env.ENVIRONMENT,
+    );
   }
   if (pathname.startsWith("/api/profiles/") && request.method === "GET") {
     if (!(await withinPublicBudget(env, "profiles", request))) return json({ error: "too_many_requests" }, 429);
-    return handleProfile(env.DB, pathname.slice("/api/profiles/".length));
+    return readableByDocs(await handleProfile(env.DB, pathname.slice("/api/profiles/".length)), env.ENVIRONMENT);
+  }
+  if (pathname === "/api/stats/accounts" && request.method === "GET") {
+    if (!(await withinPublicBudget(env, "stats", request))) return json({ error: "too_many_requests" }, 429);
+    return readableByDocs(await handleAccountCount(request, env.DB, platform.cache), env.ENVIRONMENT);
   }
   if (pathname === "/api/health/accounts" && request.method === "GET") return handleAccountsHealth(env.DB);
   if (pathname === "/api/chat/health" && request.method === "GET") return handleChatHealth(env);
@@ -169,7 +177,7 @@ export const routeIdentityRequest = async (
   if (pathname.startsWith("/api/notifications/push/")) return handlePushSubscriptions(request, auth, env);
   if (pathname === "/api/directory" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "directory", request))) return json({ error: "too_many_requests" }, 429);
-    return handleDirectory(request, { db: env.DB, ...platform });
+    return readableByDocs(await handleDirectory(request, { db: env.DB, ...platform }), env.ENVIRONMENT);
   }
   if (pathname === "/api/directory/history" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "directory", request))) return json({ error: "too_many_requests" }, 429);

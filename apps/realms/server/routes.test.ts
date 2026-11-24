@@ -32,6 +32,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   env = {
     BASE_URL: origin,
+    ENVIRONMENT: "production",
     OPERATOR_TOKEN: "operator-secret",
     PUBLIC_RATE_LIMIT: limiter(30),
     DIRECTORY_RATE_LIMIT: limiter(600),
