@@ -667,6 +667,7 @@ export const HUD_LAYERS = {
   motion: "60",
   loading: "110",
   popover: "130",
+  notice: "135",
   menu: "140",
   tip: "250",
 } as const;

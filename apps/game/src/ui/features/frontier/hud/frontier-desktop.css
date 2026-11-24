@@ -20,7 +20,7 @@
   position: fixed;
   top: 112px;
   left: 50%;
-  z-index: theme(zIndex.hud-popover);
+  z-index: theme(zIndex.hud-notice);
   width: max-content;
   max-width: 440px;
   transform: translateX(-50%);
