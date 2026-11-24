@@ -2434,7 +2434,7 @@ button.ui-card__choose:disabled {
   display: none;
 }
 [data-rail-panel] .ui-sheet,
-[data-realm-slot] .ui-sheet {
+[data-right-page] .ui-sheet {
   position: relative;
   inset: auto;
   z-index: auto;

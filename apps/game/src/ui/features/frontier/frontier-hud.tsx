@@ -267,7 +267,7 @@ const FrontierHudBody = ({
         fragments={own ? fragments : null}
       />
     ) : undefined;
-  const realmVisible = Boolean(shown) && (desktop ? realmOpen && !page : surface === "realm");
+  const realmVisible = Boolean(shown) && (desktop ? realmOpen : surface === "realm");
   const phoneStrip = (
     <PhoneTopBar
       rules={rules}
@@ -411,7 +411,7 @@ const FrontierHudBody = ({
       placeSwitch={placeSwitch}
       banner={<OfflineNotice />}
       realm={realmOpen ? realmPanel : null}
-      armies={!page ? armyDock : null}
+      armies={armyDock}
       aspectChip={
         isMapView && shown ? (
           <AspectStandingChip orderId={shown.metadata.order} onOpenSeason={() => setSurface("season")} />

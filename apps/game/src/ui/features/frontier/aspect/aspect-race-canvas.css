@@ -26,9 +26,9 @@
 
 @media (min-width: 1024px) {
   .race-stage {
-    height: 44vh;
-    min-height: 22rem;
-    max-height: 34rem;
+    height: clamp(16rem, 30vh, 22rem);
+    min-height: 16rem;
+    max-height: 22rem;
   }
 
   .race-stage--shell {

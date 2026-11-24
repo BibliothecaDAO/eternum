@@ -4,6 +4,7 @@ import {
   DirectionalLight,
   Fog,
   HemisphereLight,
+  type Material,
   Matrix4,
   PCFShadowMap,
   PerspectiveCamera,
@@ -22,9 +23,12 @@ import { HYPERSTRUCTURE_MODEL_PATH } from "@/three/structures/hyperstructure-des
 import { HyperstructureModel } from "@/three/structures/hyperstructure-model";
 import { resolveStructureRotationY } from "@/three/structures/structure-orientation";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
-import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
+import { TerrainField } from "@/three/terrain/terrain-field";
 import { TERRAIN_DEEP_FOG_COLOR } from "@/three/terrain/terrain-fog-style";
+import { latticeToWorld } from "@/three/utils/hex-lattice";
+import { MaterialPool } from "@/three/utils/material-pool";
 import { configureGltfTextureSupport } from "@/three/utils/utils";
+import { worldOrigin } from "@/three/world-origin";
 import {
   ASPECT_HYPERSTRUCTURE_SEEDS,
   createAspectRaceTerrainRequests,
@@ -73,6 +77,7 @@ interface RaceRuntime {
   terrain: ProceduralTerrain;
   atmosphere: WorldAtmosphereController;
   hyperstructures: HyperstructureModel;
+  towerHeights: readonly number[];
   entries: readonly RaceTowerEntry[];
   finishHeight: number;
   paused: boolean;
@@ -106,9 +111,7 @@ async function mountOnCanvas(
 ): Promise<AspectRaceRendererHandle> {
   const runtime = await createRaceRuntime(input);
   const publishAnchors = () => {
-    input.onAnchors?.(
-      projectRacePlateAnchors(runtime.camera, runtime.entries, (x, z) => runtime.terrain.sampleSurface(x, z).height),
-    );
+    input.onAnchors?.(projectRacePlateAnchors(runtime.camera, runtime.entries, runtime.towerHeights));
   };
   const renderOnce = () => {
     if (runtime.disposed) return;
@@ -132,7 +135,7 @@ async function mountOnCanvas(
       if (runtime.disposed) return;
       runtime.entries = entries;
       runtime.finishHeight = finishHeight;
-      applyTowers(runtime.hyperstructures, runtime.terrain, entries, finishHeight);
+      applyTowers(runtime.hyperstructures, runtime.towerHeights, entries, finishHeight);
       publishAnchors();
       if (runtime.paused) renderOnce();
     },
@@ -170,13 +173,14 @@ async function createRaceRuntime(input: MountAspectRaceRendererInput): Promise<R
   let hyperstructures: HyperstructureModel | null = null;
 
   try {
-    terrain = await createWorldTerrain();
+    const builtTerrain = await createWorldTerrain();
+    terrain = builtTerrain.terrain;
     scene.add(terrain.object3d);
     atmosphere = createWorldLighting(scene, target);
     renderer.setClearColor(scene.background as Color, 1);
     const compile = createPipelineCompiler({ getRenderer: () => renderer, getCamera: () => camera });
     hyperstructures = await createHyperstructures(scene, compile);
-    applyTowers(hyperstructures, terrain, input.standings, input.finishHeight);
+    applyTowers(hyperstructures, builtTerrain.towerHeights, input.standings, input.finishHeight);
     return {
       renderer,
       scene,
@@ -184,6 +188,7 @@ async function createRaceRuntime(input: MountAspectRaceRendererInput): Promise<R
       terrain,
       atmosphere,
       hyperstructures,
+      towerHeights: builtTerrain.towerHeights,
       entries: input.standings,
       finishHeight: input.finishHeight,
       paused: false,
@@ -226,19 +231,27 @@ async function createRenderer(
   }
 }
 
-async function createWorldTerrain(): Promise<ProceduralTerrain> {
+async function createWorldTerrain(): Promise<{ terrain: ProceduralTerrain; towerHeights: number[] }> {
   const terrain = new ProceduralTerrain({ streaming: false, gameMode: "frontier" });
   try {
     await terrain.loadProps().catch((error: unknown) => {
       console.warn("[AspectRace] Optional procedural terrain props failed to load", error);
     });
-    const prepared = await Promise.all(
-      createAspectRaceTerrainRequests().map((request) => terrain.preparePageAsync(request)),
-    );
+    const origin = worldOrigin();
+    const requests = createAspectRaceTerrainRequests(origin);
+    const fields = requests.map((request) => new TerrainField(request));
+    const towerHeights = RACE_TOWER_HEXES.map((hex) => {
+      const worldCol = hex.col + origin.col;
+      const worldRow = hex.row + origin.row;
+      const field = fields.find((candidate) => candidate.ownsCell(worldCol, worldRow));
+      const { x, z } = latticeToWorld(hex.col, hex.row);
+      return field ? field.sampleSurface(x, z).height : 0;
+    });
+    const prepared = await Promise.all(requests.map((request) => terrain.preparePageAsync(request)));
     const fogMask = await terrain.prepareFogMaskAsync(prepared);
     terrain.present(prepared, fogMask);
     terrain.update(0);
-    return terrain;
+    return { terrain, towerHeights };
   } catch (error) {
     terrain.dispose();
     throw error;
@@ -260,6 +273,7 @@ function createWorldLighting(scene: Scene, target: Vector3): WorldAtmosphereCont
 
 async function createHyperstructures(scene: Scene, compile: PipelineCompiler): Promise<HyperstructureModel> {
   const model = new HyperstructureModel(RACE_TOWER_HEXES.length);
+  isolatePooledMaterials(model);
   try {
     await compile(model.group, scene);
     scene.add(model.group);
@@ -270,9 +284,25 @@ async function createHyperstructures(scene: Scene, compile: PipelineCompiler): P
   }
 }
 
+function isolatePooledMaterials(model: HyperstructureModel): void {
+  const pool = MaterialPool.getInstance();
+  const clonedBySource = new Map<Material, Material>();
+  for (const mesh of model.instancedMeshes) {
+    const material = mesh.material;
+    if (Array.isArray(material) || !pool.isManagedMaterial(material)) continue;
+    let clone = clonedBySource.get(material);
+    if (!clone) {
+      clone = material.clone();
+      clonedBySource.set(material, clone);
+    }
+    pool.releaseMaterial(material);
+    mesh.material = clone;
+  }
+}
+
 function applyTowers(
   model: HyperstructureModel,
-  terrain: ProceduralTerrain,
+  towerHeights: readonly number[],
   entries: readonly RaceTowerEntry[],
   finishHeight: number,
 ): void {
@@ -282,8 +312,8 @@ function applyTowers(
   for (let index = 0; index < count; index += 1) {
     const entry = entries[index]!;
     const hex = RACE_TOWER_HEXES[index]!;
-    const { x, z } = terrainHexToWorld(hex.col, hex.row);
-    const y = terrain.sampleSurface(x, z).height;
+    const { x, z } = latticeToWorld(hex.col, hex.row);
+    const y = towerHeights[index] ?? 0;
     model.setMatrixAt(index, new Matrix4().makeRotationY(yaw).setPosition(x, y, z));
     const progress = finishHeight > 0 ? Math.max(0, Math.min(100, Math.round((entry.height / finishHeight) * 100))) : 0;
     model.setConstructionAt(index, {

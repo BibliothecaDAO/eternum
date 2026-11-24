@@ -1,8 +1,9 @@
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
-import { BiomeType, type AspectId } from "@bibliothecadao/types";
+import { BiomeType, type AspectId, type HexPosition } from "@bibliothecadao/types";
 import { type PerspectiveCamera, Vector3 } from "three";
 
-import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
+import { latticeToWorld } from "@/three/utils/hex-lattice";
+import { worldOrigin } from "@/three/world-origin";
 import type { TerrainPageRequest } from "@/three/terrain/terrain-types";
 import { buildWorldmapTerrainPageRequests } from "@/three/terrain/worldmap-procedural-terrain";
 
@@ -49,7 +50,7 @@ const MIN_VERTICAL_SPAN = 5.6;
 const TOWER_TARGET_Y = 1.35;
 const PLATE_Z_OFFSET = 1.05;
 
-export function createAspectRaceTerrainRequests(): TerrainPageRequest[] {
+export function createAspectRaceTerrainRequests(origin: HexPosition = worldOrigin()): TerrainPageRequest[] {
   const towerCells = new Set(RACE_TOWER_HEXES.map(({ col, row }) => `${col}:${row}`));
   const sightlineCells = new Set(RACE_TOWER_HEXES.map(({ col, row }) => `${col}:${row + 1}`));
   const cells = Array.from({ length: COLUMNS * ROWS }, (_, index) => {
@@ -58,9 +59,9 @@ export function createAspectRaceTerrainRequests(): TerrainPageRequest[] {
     const key = `${col}:${row}`;
     return {
       biomeKey: raceBiomeAt(col, row),
-      col,
+      col: col + origin.col,
       occupied: towerCells.has(key) || sightlineCells.has(key),
-      row,
+      row: row + origin.row,
     };
   });
   return buildWorldmapTerrainPageRequests({
@@ -68,7 +69,7 @@ export function createAspectRaceTerrainRequests(): TerrainPageRequest[] {
     climate: { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 },
     mapCenter: 0,
     pageHeight: PAGE_ROWS,
-    pageOrigin: { col: 0, row: 0 },
+    pageOrigin: { col: origin.col, row: origin.row },
     pageWidth: PAGE_COLUMNS,
     subdivisions: 3,
   });
@@ -98,8 +99,8 @@ function raceBiomeAt(col: number, row: number): BiomeType {
 }
 
 export function frameAspectRaceCamera(camera: PerspectiveCamera): Vector3 {
-  const first = terrainHexToWorld(RACE_TOWER_HEXES[0].col, RACE_TOWER_HEXES[0].row);
-  const last = terrainHexToWorld(
+  const first = latticeToWorld(RACE_TOWER_HEXES[0].col, RACE_TOWER_HEXES[0].row);
+  const last = latticeToWorld(
     RACE_TOWER_HEXES[RACE_TOWER_HEXES.length - 1].col,
     RACE_TOWER_HEXES[RACE_TOWER_HEXES.length - 1].row,
   );
@@ -122,7 +123,7 @@ export function frameAspectRaceCamera(camera: PerspectiveCamera): Vector3 {
 export function projectRacePlateAnchors(
   camera: PerspectiveCamera,
   entries: readonly RaceTowerEntry[],
-  sampleHeight: (x: number, z: number) => number,
+  towerHeights: readonly number[],
 ): TowerPlateAnchor[] {
   const count = Math.min(entries.length, RACE_TOWER_HEXES.length);
   const point = new Vector3();
@@ -130,8 +131,8 @@ export function projectRacePlateAnchors(
   for (let index = 0; index < count; index += 1) {
     const entry = entries[index]!;
     const hex = RACE_TOWER_HEXES[index]!;
-    const { x, z } = terrainHexToWorld(hex.col, hex.row);
-    const y = sampleHeight(x, z);
+    const { x, z } = latticeToWorld(hex.col, hex.row);
+    const y = towerHeights[index] ?? 0;
     point.set(x, y, z + PLATE_Z_OFFSET).project(camera);
     anchors.push({
       aspectId: entry.aspectId,
