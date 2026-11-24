@@ -44,7 +44,6 @@ import { DayEndScreen } from "@/ui/features/frontier/rollover/day-end-screen";
 import { RESTING, useDayEndStore } from "@/hooks/store/use-day-end-store";
 import { BuildView } from "@/ui/features/frontier/build/build-view";
 import { CastleResearch, CastleView } from "@/ui/features/frontier/upgrade/castle-view";
-import { type ArmyView } from "@/ui/features/frontier/army/army-detail";
 import { ArmyDetail } from "@/ui/features/frontier/army/army-panel";
 import { MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progression-fixture";
 import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
@@ -353,15 +352,10 @@ const CASTLE_SIDE = (level: number, wheatStore: number) => ({
   maxArmySize: [3_000, 9_000, 25_000, 50_000][level],
 });
 
-/**
- * `owner`: the owner's Army 4 (4 November, the panel he found crowded); `ready` holds a III point. `ethereal`: the army
- * in an Ethereal depth.
- */
 type LabArmySheet = {
   fragments?: number;
   confirm?: boolean;
   stamina?: number;
-  owner?: "crowded" | "ready";
   ethereal?: EtherealLayer;
 };
 
@@ -839,10 +833,6 @@ export const HUD_LAB_STATES = Object.keys(STATES);
 const SLOTS = 4;
 const noop = () => undefined;
 
-/**
- * Dev only: the Map HUD's states on the lab fixtures, at /lab/kit/hud/<state> (idle, selected, full, offline, menu,
- * empty, explore, move, wheat-short, stamina-short): the components the live HUD draws, on the handoff's fiction.
- */
 export const HudLab = () => {
   const { state = "idle" } = useParams();
   const lab: LabState = STATES[state as keyof typeof STATES] ?? STATES.idle;
@@ -1155,18 +1145,8 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; fragments: number
   };
 };
 
-/** The owner's Army 4 (4 November): 4.7K troops, +704 a tile, 17/140 full in 1h 22m. */
-const OWNER_ARMY: ArmyView = {
-  ...VETERAN_ARMY,
-  name: `${ARMY} 4`,
-  troops: 4_700,
-  stamina: { current: 17, max: 140, perExplore: 20 },
-  secondsToFull: 82 * 60,
-  revealYield: 704,
-};
-
 const LabArmy = ({ army }: { army: LabArmySheet }) => {
-  const base = army.owner ? OWNER_ARMY : VETERAN_ARMY;
+  const base = VETERAN_ARMY;
   const stamina = { ...base.stamina, current: army.stamina ?? base.stamina.current };
   const full = stamina.current >= stamina.max;
   const view = { ...base, stamina, ethereal: army.ethereal, ...(full ? { secondsToFull: 0 } : {}) };
