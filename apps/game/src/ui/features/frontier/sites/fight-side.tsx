@@ -36,15 +36,7 @@ const arenaSubtitle = ({ category, hitsFirst }: FightArenaSide) =>
     </>
   ) : undefined;
 
-export const FightArena = ({
-  ours,
-  theirs,
-  outcome,
-}: {
-  ours?: FightArenaSide;
-  theirs?: FightArenaSide;
-  outcome?: ReactNode;
-}) => {
+export const FightArena = ({ ours, theirs }: { ours?: FightArenaSide; theirs?: FightArenaSide }) => {
   if (!ours && !theirs) return null;
   return (
     <div className="fight-arena">
@@ -63,7 +55,6 @@ export const FightArena = ({
         <span className="fight-vs__word" aria-hidden="true">
           VS
         </span>
-        {outcome}
       </div>
       {theirs && (
         <FightSide

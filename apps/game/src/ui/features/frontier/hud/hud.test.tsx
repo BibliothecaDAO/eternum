@@ -600,8 +600,9 @@ describe("the order bar", () => {
 
   // Owner, 27 October 2026: "Yes double tapping to explore on mobile, the confirm bar can be compacted into one single
   // row". The second tap on the tile sends the order (worldmap-order-preview.test.tsx); the bar is its preview.
-  it("shows in one row what an order leaves and earns, with × to drop it", () => {
+  it("shows in one row what an order leaves and earns, its verb to send it and × to drop it", () => {
     const onCancel = vi.fn();
+    const onGo = vi.fn();
     act(() =>
       root.render(
         <OrderBar
@@ -611,7 +612,7 @@ describe("the order bar", () => {
           wheat={{ cost: 100, held: 4_410, wait: undefined }}
           revealYield={500}
           onCancel={onCancel}
-          onGo={() => {}}
+          onGo={onGo}
         />,
       ),
     );
@@ -623,9 +624,11 @@ describe("the order bar", () => {
       "Wheat −100",
       "Essence, Labor +500",
     ]);
-    expect(host.textContent).toBe("90 → 60−100+500");
-    expect(barButtons()).toEqual(["Cancel"]);
-    act(() => host.querySelector("button")!.click());
+    expect(host.textContent).toBe("90 → 60−100+500Explore");
+    expect(barButtons()).toEqual(["Explore", "Cancel"]);
+    act(() => host.querySelector<HTMLButtonElement>('button[data-kind="primary"]')!.click());
+    expect(onGo).toHaveBeenCalledTimes(1);
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Cancel"]')!.click());
     expect(onCancel).toHaveBeenCalled();
   });
 
