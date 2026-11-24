@@ -118,27 +118,28 @@
 }
 .oath-socket {
   display: inline-flex;
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   flex: none;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--hud-line);
-  border-radius: var(--hud-radius-control);
-  background: var(--hud-well);
+  border: 1.5px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-round);
+  background: rgb(0 0 0 / 0.4);
   color: rgb(var(--hud-muted));
 }
 .oath-socket[data-filled] {
-  border-color: color-mix(in srgb, rgb(var(--hud-gold)) 55%, transparent);
+  border-color: rgb(var(--hud-gold));
+  background: radial-gradient(circle, #3a2b1b, #140e09);
 }
 .oath-socket[data-open] {
   border-style: dashed;
   border-color: rgb(var(--hud-gold));
   color: rgb(var(--hud-gold));
-  font-size: var(--hud-text-body);
+  font-size: var(--hud-text-title);
   cursor: pointer;
 }
-.oath-socket[data-locked] {
+.oath-socket[data-locked] > * {
   opacity: 0.6;
 }
 .oath-sockets__hint {

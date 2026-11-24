@@ -95,9 +95,8 @@ export const useArmySpireStatus = (explorerId: number) => {
  */
 const SpireButton = ({ explorerId, spire }: { explorerId: number; spire: Spire }) => (
   <HudButton
-    kind="secondary"
-    size="sm"
-    icon={reachMark(1)}
+    kind="primary"
+    icon="spire"
     onClick={() =>
       useUIStore
         .getState()

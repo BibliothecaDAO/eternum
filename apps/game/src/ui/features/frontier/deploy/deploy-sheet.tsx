@@ -19,7 +19,7 @@ import { madeStoreOf } from "../stores";
 import { secondsUntilHeld } from "../hud/army-order";
 import { armyArt } from "../hud/dock-armies";
 import { deployArmy, deployDirection, deployRange, marchOn, previewDeploy, wheatStopsAt } from "./deploy-plan";
-import { TroopOathSlots } from "../army/oath-slots";
+import { useHomeOathSlots } from "../army/oath-slots";
 import { DeployView, type DeployTroopChoiceView } from "./deploy-view";
 import { useDeployPlan } from "./use-deploy-plan";
 
@@ -51,7 +51,6 @@ export const DeploySheet = ({
   const march = start?.start && marchOn(start.start, 0);
   const range = plan ? deployRange(plan, march) : { troopsMax: 0, wheatMax: 0, max: 0 };
   const shown = count === "max" ? range.max : Math.min(count, range.wheatMax);
-  const isFullStack = count === "max" || (range.max > 0 && shown === range.max);
   const preview = plan ? previewDeploy(plan, march, shown) : null;
   const wheatStop = wheatStopsAt(range, shown);
   const pickSlot = (slot: number) =>
@@ -74,6 +73,7 @@ export const DeploySheet = ({
     return wait === undefined ? [] : [wait];
   });
   const nextTroopIn = troopWaits.length ? Math.min(...troopWaits) : undefined;
+  const oathSlots = useHomeOathSlots(plan?.troops?.type, realmId);
 
   /** The sheet closes as the army leaves; its slot on the dock carries the wait, and a refusal says why there. */
   const deploy = async () => {
@@ -109,7 +109,7 @@ export const DeploySheet = ({
 
   return (
     <DeployView
-      oathSlots={plan?.troops && <TroopOathSlots category={plan.troops.type} homeId={realmId} />}
+      oathSlots={oathSlots}
       troopSelection={{
         choices: troopChoices,
         selected: plan?.troops?.type,
@@ -121,13 +121,7 @@ export const DeploySheet = ({
       art={plan?.troops ? armyArt({ category: plan.troops.type, tier: plan.troops.tier }) : undefined}
       troopsAtHome={plan ? (plan.troops?.atHome ?? 0) : undefined}
       count={preview?.count}
-      isFullStack={isFullStack}
-      allowedSlots={plan?.allowedSlots}
-      amount={{
-        most: range.wheatMax,
-        max: range.max,
-        held: range.wheatMax < range.troopsMax ? range.wheatMax : (plan?.troops?.atHome ?? 0),
-      }}
+      amount={{ most: range.wheatMax, max: range.max }}
       onCount={(next) => setCount(range.max > 0 && next === range.max ? "max" : next)}
       start={start}
       slots={{ open: plan?.open, onPick: pickSlot }}

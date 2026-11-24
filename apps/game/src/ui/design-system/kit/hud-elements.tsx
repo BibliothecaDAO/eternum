@@ -31,6 +31,7 @@ import {
 import { createPortal } from "react-dom";
 
 import { useModalLayer } from "./modal-layer";
+import { PRICE_FACES, type Price } from "./price-faces";
 import { useMarkFrameOpen } from "./open-frames";
 import { revealOwnPlace } from "./own-place";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
@@ -603,6 +604,18 @@ export const HudCost = ({ line }: { line: RankedWords | string }) =>
       <HudRanked words={line} />
     </span>
   ) : null;
+
+/** What a sheet's verb pays, beside it in the foot: each price's painting and its amount, named in words when asked. */
+export const HudPrice = ({ prices }: { prices: readonly Price[] }) => (
+  <span className="ui-price">
+    {prices.map(({ of, amount }) => (
+      <span key={of} role="img" aria-label={`${formatExact(amount)} ${PRICE_FACES[of].word}`}>
+        {PRICE_FACES[of].icon && <Icon name={PRICE_FACES[of].icon} size={20} />}
+        {formatExact(amount)}
+      </span>
+    ))}
+  </span>
+);
 
 /**
  * The HUD's one panel, for a part of the screen (a bar, a strip, a card in a band): a header band naming it (its icon,
@@ -1632,6 +1645,7 @@ export const HudSheet = ({
   label,
   icon,
   beside,
+  cue,
   onClose,
   children,
 }: {
@@ -1639,6 +1653,8 @@ export const HudSheet = ({
   icon?: IconMeaning;
   /** A quiet control right after the sheet's name, out of the body's flow and away from the cross (an army's Delete). */
   beside?: ReactNode;
+  /** What the head shows before the cross: the one fact the whole sheet stands on (a site's kind, a start's stamina). */
+  cue?: ReactNode;
   onClose: () => void;
   children: ReactNode;
 }) => {
@@ -1649,6 +1665,7 @@ export const HudSheet = ({
       label={label}
       icon={icon}
       beside={beside}
+      cue={cue}
       onClose={onClose}
       data-kit-sheet=""
       data-docked={dock ? "" : undefined}

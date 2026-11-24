@@ -58,26 +58,20 @@ export function OathSlotPips({
   );
 }
 
-export function TroopOathSlots({
-  category,
-  homeId,
-  explorerId,
-}: {
-  category: TroopType;
-  homeId?: number;
-  explorerId?: number;
-}) {
-  const { store } = useNativeFacts(["ArmyProgress", "RealmKnowledge", "ResearchPrice"]);
+/** How many Oaths a new army of this troop raised at this home can hold, from what the home has researched. */
+export const useHomeOathSlots = (category: TroopType | undefined, homeId: number): number | undefined => {
+  const { store } = useNativeFacts(["RealmKnowledge"]);
+  const learned = store.get("RealmKnowledge", { game_id: configManager.getActiveGameId(), structure_id: homeId });
+  return learned && category !== undefined ? troopOathSlots(learned.learned, category) : undefined;
+};
+
+export function TroopOathSlots({ category, explorerId }: { category: TroopType; explorerId: number }) {
+  const { store } = useNativeFacts(["ArmyProgress", "ResearchPrice"]);
   const pickBase = usePickEffectBase();
   const game_id = configManager.getActiveGameId();
-  const learned = homeId === undefined ? undefined : store.get("RealmKnowledge", { game_id, structure_id: homeId });
-  const count =
-    explorerId === undefined
-      ? learned && troopOathSlots(learned.learned, category)
-      : store.get("ArmyProgress", { game_id, explorer_id: explorerId })?.oath_slots;
+  const progress = store.get("ArmyProgress", { game_id, explorer_id: explorerId });
+  const count = progress?.oath_slots;
   if (count === undefined) return null;
-  const progress =
-    explorerId === undefined ? undefined : store.get("ArmyProgress", { game_id, explorer_id: explorerId });
   const held = heldOaths(progress?.oaths ?? 0);
   return (
     <div data-oath-slots={count} className="oath-board">
@@ -175,7 +169,7 @@ export function OathSockets({
               className="oath-socket"
               data-filled=""
             >
-              <Icon name={oath.icon} size={22} />
+              <Icon name={oath.icon} size={30} />
             </span>
           );
         if (index < slots)
@@ -194,7 +188,7 @@ export function OathSockets({
           );
         return (
           <span key={index} role="img" aria-label={RESEARCH_TREE.oathLocked} className="oath-socket" data-locked="">
-            <Icon name="lock" size={14} />
+            <Icon name="lock" size={15} />
           </span>
         );
       })}

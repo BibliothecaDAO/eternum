@@ -1112,15 +1112,14 @@ export const wheatForOnly = (troops: string, of: string) => `${WHEAT} for only $
 export const GET_WHEAT = `Get ${WHEAT}`;
 export const DEPLOYING = "Deploying…";
 export const DEPLOY_WORDS = {
-  slotOf: (slot: number, total: number) => `Slot ${formatExact(slot)} of ${formatExact(total)}`,
-  adjustSize: "Adjust size",
-  hideSize: "Hide size",
-  ready: (troops: number) => `${formatExact(troops)} ready`,
-  troopCount: "Troop count",
-  countOf: (count: number, of: number, troop: string, max: boolean) =>
-    `${formatExact(count)} / ${formatExact(of)} ${troop}${max ? " (Max)" : ""}`,
-  deployCount: (count: number, troop: string) => `${DEPLOY} ${formatExact(count)} ${troop}`,
+  slot: "Slot",
+  oaths: "Oaths",
+  startsOn: "Starts on",
+  howMany: (troop: string) => `${troop}: how many go`,
+  deployCount: (count: number) => `${DEPLOY} ${formatExact(count)}`,
 } as const;
+/** The size row of a sheet that raises or refills an army: one fewer, one more, the most. */
+export const SIZE_ROW = { fewer: "One fewer", more: "One more", max: "Max" } as const;
 export const BUILD = "Build";
 export const buildNamed = (building: string) => `${BUILD} ${building}`;
 export const BUILT = "Built";
@@ -1134,8 +1133,6 @@ export const ARMY = "Army";
 /** A phone's picked army, in its action row (owner, 22 October 2026: mobile direction A): its token opens its card. */
 export const PICKED_ARMY = {
   details: (army: string) => `${army}: details`,
-  title: (army: string, troops: number | undefined, troop: string | undefined) =>
-    troops === undefined ? army : `${army} · ${formatAmount(troops)}${troop ? ` ${troop}` : ""}`,
 } as const;
 
 /** Troops between two of the realm's armies side by side (Frontier's Transfer troops, desktop and phone). */

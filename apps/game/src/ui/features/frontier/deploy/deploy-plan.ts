@@ -57,7 +57,6 @@ interface DeployTroopChoice {
  * the available troop stocks and what raising the selected kind costs.
  */
 interface DeployPlan {
-  allowedSlots: number;
   choices: DeployTroopChoice[];
   /** Today's open slots, in slot order, for the player to choose from. */
   open: SlotStart[];
@@ -125,7 +124,7 @@ export const readDeployPlan = (
   const trained = researchTier(learned, research.ROW_SUPPLY_YARD);
   const perExplore = troops?.exploreStamina ?? 0;
   const starts = open.map((slot) => slotStart(slot, troops, trained, clock.defaultTick, perExplore));
-  return { allowedSlots: allowed, open: starts, troops, raise, choices };
+  return { open: starts, troops, raise, choices };
 };
 
 /** One open slot's start, through the core's one rule for it (musterStamina), on the dock's clock. */

@@ -106,7 +106,7 @@ const pickInDock = () =>
 /** A phone's picked army in the action row: its token, which opens its card. */
 const details = () => host.querySelector<HTMLButtonElement>('button[aria-label="Army 1: details"]');
 const rowButton = (name: RegExp) =>
-  [...details()!.closest(".frontier-army-tray")!.querySelectorAll<HTMLButtonElement>("button")].find((button) =>
+  [...details()!.closest(".army-tray")!.querySelectorAll<HTMLButtonElement>("button")].find((button) =>
     name.test(button.getAttribute("aria-label") ?? button.textContent ?? ""),
   )!;
 const staminaMeter = () =>
