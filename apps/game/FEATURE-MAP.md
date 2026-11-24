@@ -941,7 +941,8 @@ gets **Share** above the two steps: the tall card's PNG, the post's line and the
 stays X only). Each link carries the button that made it (`?via=x`, `?via=system`), which its landing hands identity
 with the visit. What a player's shared days brought stands on You as **Your shared days** once they posted one or a
 friend joined: days posted, opened by friends, friends who joined, and those who reached the Glory; then **Friends
-paid** (of `FRIENDS_LIMIT`), **Fragments earned** and the payout rule (`SHARED_DAYS_WORDS`). Dev:
+paid** (a count, no cap) and **Fragments earned** (`SHARED_DAYS_WORDS`), under the reward line
+(`PROFILE_WORDS.friendReward`). Dev:
 `/lab/kit/hud/day-share` (a rich day), `day-share-thin`; `/lab/kit/hud/day-done` and `today-earlier` show the button;
 `/lab/app/shared-days/profile`. Code: `rollover/day-share.ts` (best moment, trail and post),
 `rollover/day-share-sheet.tsx` (the sheet, and `useDayShare`, which both places open it through) and `system-share.tsx`,
