@@ -860,6 +860,7 @@ export const DEEP_WORDS = {
 export const DAY_BANNER_WORDS = {
   today: "Today",
   reading: "Loading today's quest…",
+  reward: "Reward",
   collect: "Collect",
   collecting: "Collecting…",
   collected: "Collected",
@@ -873,23 +874,28 @@ export const DAY_BANNER_WORDS = {
   beastBane: (percent: number) => `Guarded sites have ${formatExact(percent)}% strength while the bane lasts`,
   staminaBane: (percent: number) => `Stamina returns at ${formatExact(percent)}% while the bane lasts`,
   productionBane: (percent: number) => `Production runs at ${formatExact(percent)}% while the bane lasts`,
-  /** A quest's count in its own unit: "1 of 2 camps". */
   count: (progress: number, target: number, unit: string) =>
     `${formatExact(progress)} of ${formatExact(target)} ${unit}`,
+  objectiveLine: (objective: string, target: number) => {
+    const space = objective.indexOf(" ");
+    return space === -1
+      ? `${objective} ${formatExact(target)} today`
+      : `${objective.slice(0, space)} ${formatExact(target)} ${objective.slice(space + 1)} today`;
+  },
+  rewardAmount: (amount: number, resource: ResourcesIds) => `${formatAmount(amount)} ${resourceName(resource)}`,
   summary: (objective: string, progress: number, target: number, labor: number) =>
     `${objective} · ${formatExact(progress)} of ${formatExact(target)} · +${formatExact(labor)} ${LABOR}`,
-  /** How many members of the Aspect finished the bane's quest: "4 of 6 members". */
   members: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)} members`,
   membersShort: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)}`,
   triumph: "Triumph",
-  /** What the Aspect's active Triumph does, by its stage, at the percent the game's rules set. */
   triumphRule: {
     1: (percent: number) => `Sites are found at ${formatExact(percent)}% of the usual odds`,
     2: (percent: number) => `Stamina returns at ${formatExact(percent)}%`,
     3: (percent: number) => `Guarded sites have ${formatExact(percent)}% strength`,
     4: (percent: number) => `Site rewards are ${formatExact(percent)}%`,
   },
-  baneBar: "Your Aspect's bane bar",
+  baneBar: "Your Aspect's Altar bane bar",
+  baneBarHint: `Hold a ${DEEP} Altar to charge. At full, sends a bane to the leading rival Aspect tomorrow.`,
   barCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
 } as const;
 /** What a moment's one line needs from the game's rules; the caller reads them, the line only names them. */
