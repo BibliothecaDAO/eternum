@@ -36,7 +36,10 @@ export function AspectEmissaryDock({
   const dock = useRetireOnceSeen(status === "completed" ? moment : null, onDismiss);
   const [skipAskedOn, setSkipAskedOn] = useState<OpeningMoment | null>(null);
   const openFrames = useOpenFrameLabels();
-  const [expandedOver, setExpandedOver] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    if (openFrames.length === 0) setExpanded(false);
+  }, [openFrames.length]);
   if (aspectId === null) return null;
   const emissary = resolveAspectEmissary(aspectId);
   const phone = layout === "phone";
@@ -47,13 +50,12 @@ export function AspectEmissaryDock({
   const completed = status === "completed" && completedLine !== undefined;
   const askingSkip = !completed && onSkipAll !== undefined && skipAskedOn === moment;
   const title = OPENING_WORDS.titles[moment];
-  const sheetsOver = `${moment}:${openFrames.join("|")}`;
   const form = dockForm({
     phone,
     openFrames,
     asks: "asks" in spec ? spec.asks : undefined,
     confirming: status === "completed",
-    expanded: expandedOver === sheetsOver,
+    expanded,
   });
   const skip = onSkipAll && !completed && (
     <SkipControls
@@ -93,7 +95,7 @@ export function AspectEmissaryDock({
             type="button"
             className="emissary-dock__btn emissary-dock__fold-btn"
             aria-label={OPENING_WORDS.showLesson}
-            onClick={() => setExpandedOver(sheetsOver)}
+            onClick={() => setExpanded(true)}
           >
             ▾
           </button>

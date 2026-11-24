@@ -1014,8 +1014,8 @@ export const OPENING_WORDS = {
     relic: "Army relics checked. Equip relics on your armies here.",
   },
   inSheet: {
-    barracks: (rules: OpeningRules) => `Pick Barracks below · raises ${formatRate(rules.knightsPerSecond)} Knights`,
-    deploy: () => `Choose how many Knights, then press ${DEPLOY}`,
+    barracks: (rules: OpeningRules) => `Pick Barracks below · ${formatRate(rules.knightsPerSecond)} Knights`,
+    deploy: () => `Pick the Knights, then press ${DEPLOY}`,
   },
   tutorial: "Tutorial",
   showLesson: "Show the lesson",
