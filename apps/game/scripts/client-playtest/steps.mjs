@@ -7217,7 +7217,7 @@ export const STEP_SETS = {
             () =>
               browser.read(`JSON.stringify({
                 open: Boolean(document.querySelector('[aria-label="${target}"]:not(button)')),
-                rows: [...document.querySelectorAll('section[aria-label="Menu"] .menu-nav [aria-label]')].map((row) => row.getAttribute('aria-label')),
+                rows: [...document.querySelectorAll('section[aria-label="Menu"] .menu-tiles [aria-label]')].map((row) => row.getAttribute('aria-label')),
                 places: [...document.querySelectorAll('nav[aria-label="Places"] button')].map((button) => button.getAttribute('aria-label')),
               })`),
             (state) => state.open && (onADesktop() || state.rows.length > 0),
