@@ -40,9 +40,7 @@ it("opens named menu actions independently of their badges, with their own seman
         (b) => b.getAttribute("aria-label") === label,
       )!;
       expect(button).toBeTruthy();
-      expect(button.querySelector("img")?.getAttribute("src")).toBe(
-        `/icons/facets/64/${name}.webp`,
-      );
+      expect(button.querySelector("img")?.getAttribute("src")).toBe(`/icons/facets/64/${name}.webp`);
       await act(async () => button.click());
       expect(callback).toHaveBeenCalledTimes(1);
     }
