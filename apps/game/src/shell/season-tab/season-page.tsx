@@ -138,7 +138,12 @@ const AspectSeasonView = ({
           </span>
         }
       >
-        <HyperstructureRaceStage byAspect={byAspect} finishHeight={finishHeight} ownAspect={ownAspect} />
+        <HyperstructureRaceStage
+          byAspect={byAspect}
+          finishHeight={finishHeight}
+          ownAspect={ownAspect}
+          triumphs={triumphs}
+        />
       </AppPanel>
       <div className="season-grid">
         <AppPanel title={SEASON_WORDS.gloryLeaderboard} icon="leaderboard" flush>
@@ -172,29 +177,12 @@ const AspectSeasonView = ({
         </AppPanel>
         <div className="flex min-w-0 flex-col gap-6">
           <AspectPlayerStanding season={season} finishHeight={finishHeight} byAspect={byAspect} />
-          <StageTriumphsCard triumphs={triumphs} />
           {past.length > 0 && <PastSeasons seasons={past} />}
         </div>
       </div>
     </div>
   );
 };
-
-const StageTriumphsCard = ({ triumphs }: { triumphs: ReturnType<typeof stageTriumphsOf> }) => (
-  <AppPanel title={SEASON_WORDS.stageMilestones} icon="star">
-    <ol className="season-triumphs__grid" data-stage-triumphs>
-      {triumphs.map(({ stage, name, height, rule }) => (
-        <li key={stage} className="season-triumphs__item">
-          <div className="season-triumphs__head">
-            <span className="season-triumphs__name">{name}</span>
-            <span className="season-triumphs__height">{SEASON_WORDS.stageAtHeight(height)}</span>
-          </div>
-          {rule && <span className="season-triumphs__rule">{rule}</span>}
-        </li>
-      ))}
-    </ol>
-  </AppPanel>
-);
 
 const AspectPlayerStanding = ({
   season,

@@ -284,20 +284,24 @@ export const RealmsShowcase = ({ onLinkWallet }: { onLinkWallet?: () => void }) 
             const order = info && info.order !== 0 ? catalogOrder(info.order) : null;
             return (
               <li key={realmId} className="profile-realm-tile">
-                <HomeArt map={map} icon="realm" size={64} />
-                <span className="profile-realm-tile__name">{numberedRealm(realmId, info?.name)}</span>
-                {order && (
-                  <span className="profile-realm-tile__order">
-                    <OrderEmblem order={order.orderId} size={16} />
-                    {order.orderName}
-                  </span>
-                )}
-                {questBonusPercent !== null && questBonusPercent > 0 && (
-                  <span className="profile-realm-tile__bonus">
-                    <Icon name="labor" size={14} />
-                    {realmQuestBonus(questBonusPercent, Boolean(info?.wonder))}
-                  </span>
-                )}
+                <span className="profile-realm-tile__art">
+                  <HomeArt map={map} icon="realm" size={32} />
+                </span>
+                <div className="profile-realm-tile__body">
+                  <span className="profile-realm-tile__name">{numberedRealm(realmId, info?.name)}</span>
+                  {order && (
+                    <span className="profile-realm-tile__order">
+                      <OrderEmblem order={order.orderId} size={14} />
+                      <span className="truncate">{order.orderName}</span>
+                    </span>
+                  )}
+                  {questBonusPercent !== null && questBonusPercent > 0 && (
+                    <span className="profile-realm-tile__bonus">
+                      <Icon name="labor" size={12} />
+                      {realmQuestBonus(questBonusPercent, Boolean(info?.wonder))}
+                    </span>
+                  )}
+                </div>
               </li>
             );
           })}

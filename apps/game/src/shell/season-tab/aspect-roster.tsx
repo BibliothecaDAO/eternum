@@ -174,7 +174,7 @@ const gloryBoardEntry = (
   onClick: () => void,
   aspect?: AspectId,
 ): AppBoardEntry => {
-  const { realm, order } = realmHomeOf(member.realm_id);
+  const { order } = realmHomeOf(member.realm_id);
   return {
     key: member.entity_id,
     own,
@@ -188,10 +188,12 @@ const gloryBoardEntry = (
     name: (
       <span className="season-board__identity">
         <PlayerName account={member.owner} you={own} portrait />
-        <span className="season-board__realm">
-          {order && <OrderEmblem order={order.orderId} size={14} />}
-          <span className="truncate">{order ? `${realm.name} · ${order.orderName}` : realm.name}</span>
-        </span>
+        {order && (
+          <span className="season-board__order" aria-label={order.orderName} title={order.orderName}>
+            <OrderEmblem order={order.orderId} size={15} />
+            <span className="season-board__order-name">{order.orderName}</span>
+          </span>
+        )}
       </span>
     ),
     figures: [

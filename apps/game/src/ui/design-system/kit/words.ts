@@ -1262,14 +1262,15 @@ export const DAY_SHARE_WORDS = {
 /** What the player's shared days brought, on their own page: each step a friend takes, counted. */
 export const SHARED_DAYS_WORDS = {
   title: "Your shared days",
-  steps: {
-    posted: "Days posted",
-    visits: "Opened by friends",
-    joined: "Friends who joined",
-    activated: `Reached ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory}`,
+  funnel: {
+    shared: "Shared",
+    visits: "Opened",
+    joined: "Joined",
+    activated: `${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory}`,
+    fragmentsEarned: `${FRAGMENTS} earned`,
   },
+  empty: `Share your invite link to bring friends into your Aspect. Each friend who reaches ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory} earns you ${formatCount(FRIEND_FRAGMENTS, FRAGMENT, FRAGMENTS)}.`,
   friendsPaid: "Friends paid",
-  fragmentsEarned: `${FRAGMENTS} earned`,
 } as const;
 
 export const INVITED_FRIENDS_WORDS = {
@@ -1279,7 +1280,7 @@ export const INVITED_FRIENDS_WORDS = {
   glory: DEEP_WORDS.glory,
   states: {
     joined: "Joined",
-    reached: SHARED_DAYS_WORDS.steps.activated,
+    reached: `Reached ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory}`,
     paid: `Paid you ${formatCount(FRIEND_FRAGMENTS, FRAGMENT, FRAGMENTS)}`,
   } satisfies Record<InvitedFriendState, string>,
 } as const;
