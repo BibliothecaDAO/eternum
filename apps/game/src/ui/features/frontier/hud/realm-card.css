@@ -107,7 +107,7 @@
   border: 0;
   border-radius: var(--hud-radius-control);
   background: none;
-  padding: 4px 2px;
+  padding: 6px 2px;
   color: inherit;
   text-align: center;
 }

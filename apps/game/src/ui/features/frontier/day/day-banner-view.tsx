@@ -105,7 +105,7 @@ const End = ({
       </span>
     );
   return (
-    <HudButton kind="primary" icon="claim" busy={collecting ? WORDS.collecting : undefined} onClick={onCollect}>
+    <HudButton kind="primary" icon="reward" busy={collecting ? WORDS.collecting : undefined} onClick={onCollect}>
       {state === "again" ? WORDS.collectAgain : WORDS.collect}
     </HudButton>
   );

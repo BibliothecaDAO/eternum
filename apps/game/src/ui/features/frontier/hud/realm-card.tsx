@@ -111,7 +111,7 @@ export const RealmCard = ({
           .filter((store) => isTroopStore(store.kind))
           .map((store) => (
             <li key={store.kind} data-store={store.kind} data-row="">
-              <StoreCell store={store} />
+              <StoreCell store={store} size={34} />
             </li>
           ))}
       </ul>
@@ -120,7 +120,7 @@ export const RealmCard = ({
   </section>
 );
 
-const StoreCell = ({ store }: { store: StoreReading }) => {
+const StoreCell = ({ store, size = 30 }: { store: StoreReading; size?: number }) => {
   const rate = store.perHour && store.perHour > 0 && store.fullIn !== 0 ? formatRate(store.perHour / 3600) : null;
   return (
     <>
@@ -128,7 +128,7 @@ const StoreCell = ({ store }: { store: StoreReading }) => {
       <Cell
         icon={
           <span data-fly-target={store.flyTarget} className="inline-flex">
-            <Icon name={FRONTIER_STORES[store.kind].icon} size={30} />
+            <Icon name={FRONTIER_STORES[store.kind].icon} size={size} />
           </span>
         }
         value={<StoreValue store={store} />}
