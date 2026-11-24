@@ -25,6 +25,7 @@ const failed = <T,>(): Read<T> => ({
 
 const reads = vi.hoisted(() => ({
   signedIn: true,
+  identity: null as null | { status: string; session: unknown; error?: unknown; retry?: () => void },
   directory: null as unknown as Read<{ games: DirectoryGame[] }>,
   calendar: {
     data: { phases: [] },
@@ -80,9 +81,10 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
     },
   },
   useIdentitySession: () =>
-    reads.signedIn
+    reads.identity ??
+    (reads.signedIn
       ? { status: "signed-in", session: { user: { id: "u", realmsId: "0x7" } } }
-      : { status: "signed-out", session: null },
+      : { status: "signed-out", session: null }),
 }));
 vi.mock("../herald", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../herald")>()),
@@ -151,6 +153,7 @@ afterEach(async () => {
   await cleanup?.();
   cleanup = null;
   reads.signedIn = true;
+  reads.identity = null;
   reads.calendar = answered({ phases: [] });
   reads.intent = { order: null, members: {} };
   reads.chosen = [];
@@ -808,4 +811,50 @@ it("omits a dash on an unnumbered season, hides static LORDS claims, and renders
   expect(signInBtn.dataset.kind).toBe("secondary");
   await act(async () => signInBtn.click());
   expect(useConnectStore.getState().request).not.toBeNull();
+});
+
+it("renders a real-speed Final testnet card without a speed chip and with Play/Resume Final testnet CTAs", async () => {
+  const testnet = game({
+    game_id: 6,
+    name: "testnet-1795479180",
+    clock_scale: 1,
+    day_index: 2,
+    day_ends_at: Math.floor(Date.now() / 1000) + 3_600,
+    player_count: 14,
+  });
+  reads.directory = answered({ games: [ownSeason, testnet] });
+  reads.history = answered({ games: [], next: null, failures: [] });
+  const joinable = await mount();
+  const card = joinable.container.querySelector('[data-play-item="0xa:6"]')!.closest(".app-panel")!;
+  expect(card.querySelector(".app-panel__head h2")?.textContent).toBe("Final testnet");
+  expect(card.querySelector(".app-panel__cue")).toBeNull();
+  expect(card.textContent).not.toContain("testnet-1795479180");
+  const playBtn = card.querySelector<HTMLButtonElement>("button")!;
+  expect(playBtn.textContent).toBe("Play Final testnet");
+  expect(playBtn.dataset.kind).toBe("secondary");
+  await cleanup?.();
+
+  reads.directory = answered({ games: [ownSeason, { ...testnet, player_state: ownSeason.player_state }] });
+  const resumable = await mount();
+  const resumeBtn = resumable.container
+    .querySelector('[data-play-item="0xa:6"]')!
+    .querySelector<HTMLButtonElement>("button")!;
+  expect(resumeBtn.textContent).toBe("Resume Final testnet");
+});
+
+it("shows Sign-in did not answer with Try again instead of a stuck skeleton when the initial identity read fails", async () => {
+  const retry = vi.fn();
+  reads.identity = {
+    status: "loading",
+    session: null,
+    error: new DOMException("The app's service did not answer in time", "TimeoutError"),
+    retry,
+  };
+  reads.directory = { data: undefined, isSuccess: false, isError: false, error: null, refetch: vi.fn() };
+  reads.history = answered({ games: [], next: null, failures: [] });
+  const page = await mount();
+  expect(page.text()).toContain("Sign-in did not answer.");
+  expect(page.container.querySelector('button[data-kind="primary"]')).toBeNull();
+  await press(page.container, "Try again");
+  expect(retry).toHaveBeenCalledTimes(1);
 });

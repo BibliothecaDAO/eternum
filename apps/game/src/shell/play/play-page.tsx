@@ -104,6 +104,12 @@ const isPreseason = (
 } => facts.opening !== null && facts.board !== undefined && facts.board.lead === null && facts.gaps.length === 0;
 
 const LeadOrState = ({ facts }: { facts: PlayFacts }) => {
+  if (facts.identity.status === "loading" && facts.identity.error !== null)
+    return (
+      <QuietLead title={WORDS.play}>
+        <ServiceFailure service="identity" error={facts.identity.error} retry={facts.identity.retry} />
+      </QuietLead>
+    );
   if (facts.directory.isError)
     return (
       <QuietLead title={WORDS.play}>

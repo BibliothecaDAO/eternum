@@ -43,7 +43,7 @@ const resultsGap = (player: Read, history: Read & { data?: { failures: readonly 
     : gapOf("results", history, history.data?.failures.length ? history.data.failures : null);
 
 export const usePlayFacts = () => {
-  const { status } = useIdentitySession();
+  const { status, error: identityError, retry: retryIdentity } = useIdentitySession();
   const directory = useDirectory();
   const calendar = useSeasonCalendar();
   const now = useNowSeconds();
@@ -58,7 +58,8 @@ export const usePlayFacts = () => {
     (gap): gap is SourceGap => gap !== null,
   );
   const opening = calendar.data ? seasonOpening(calendar.data.phases, now) : null;
-  return { directory, now, games, finished, signedIn, board, gaps, opening };
+  const identity = { status, error: identityError ?? null, retry: retryIdentity };
+  return { identity, directory, now, games, finished, signedIn, board, gaps, opening };
 };
 
 export type PlayFacts = ReturnType<typeof usePlayFacts>;
