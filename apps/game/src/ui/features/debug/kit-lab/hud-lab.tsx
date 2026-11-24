@@ -64,7 +64,7 @@ import { FRONTIER_STORES, STORE_KINDS } from "@/ui/features/frontier/stores";
 import { type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams, useSearchParams } from "react-router-dom";
 import { type SlotStart, wheatStopsAt } from "@/ui/features/frontier/deploy/deploy-plan";
-import { slotStartLine } from "@/ui/features/frontier/deploy/slot-start";
+import { slotStart } from "@/ui/features/frontier/deploy/slot-start";
 import { TodaySheet } from "@/ui/features/frontier/log/today-sheet";
 import { ownerDayLog } from "./today-log-fixture";
 import { SeasonList, type SeasonListRow, type SeasonPodiumPlace } from "@/ui/features/frontier/board/season-list";
@@ -868,7 +868,7 @@ export const HudLab = () => {
               />
             }
             quest={<LabDailyQuest />}
-            realmCard={lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
+            realmCard={lab.storeCard && <LabRealmCard lab={lab} />}
           />
         }
         page={
@@ -1397,7 +1397,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
         />
       ))}
       {labSlots(lab).map((slot) => (
-        <OpenSlot key={slot.number} label="Deploy" onDeploy={noop} {...slot} />
+        <OpenSlot key={slot.number} label="Deploy" pulse={slot.pulse} tip={slot.start?.words} onDeploy={noop} />
       ))}
     </nav>
   );
@@ -1423,7 +1423,7 @@ const labSlots = (lab: LabState) =>
   labOpenSlots(lab).map((slot, index) => ({
     number: slot.number,
     pulse: index === 0 && lab.armies.length === 0,
-    tip: slotStartLine(slot),
+    start: slotStart(slot),
   }));
 
 /** The season the lab's season-over shows: prod's Playtest as its archive holds it, read by its third place. */
