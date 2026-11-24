@@ -142,9 +142,13 @@ export const SiteCardView = ({
             firstStrike={firstStrike}
             beast={beast}
             guardIcon={guardIcon}
-            earns={reward !== null}
           />
-          {reward && <div className="fight-spoils">{reward}</div>}
+          {(facing || reward) && (
+            <div className="fight-spoils">
+              {facing && <Outcome facing={facing} earns={reward !== null} />}
+              {reward}
+            </div>
+          )}
         </>
       )}
       {receipt}
@@ -207,7 +211,6 @@ const FightPanel = ({
   firstStrike,
   beast,
   guardIcon,
-  earns,
 }: {
   army: { art: IconMeaning; troops: number; category?: Troops["category"] } | null;
   guard: number | null | undefined;
@@ -215,7 +218,6 @@ const FightPanel = ({
   firstStrike: FirstStrikeSide;
   beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: Troops["category"] }) | undefined;
   guardIcon: IconMeaning;
-  earns: boolean;
 }) => (
   <FightArena
     ours={
@@ -242,14 +244,15 @@ const FightPanel = ({
           }
         : undefined
     }
-    outcome={
-      facing && (
-        <HudChip tone={isArmyLost(facing) ? "bad" : clears(facing) ? "good" : undefined}>
-          {outcomeWord(facing, earns)}
-        </HudChip>
-      )
-    }
   />
+);
+
+const Outcome = ({ facing, earns }: { facing: Facing; earns: boolean }) => (
+  <span data-fight-outcome>
+    <HudChip tone={isArmyLost(facing) ? "bad" : clears(facing) ? "good" : undefined}>
+      {outcomeWord(facing, earns)}
+    </HudChip>
+  </span>
 );
 
 const Pay = ({ pay }: { pay: { icon: IconMeaning; amount: number; fits?: number } }) => {
