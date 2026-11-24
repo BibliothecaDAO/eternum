@@ -3,7 +3,8 @@ import { BiomeType, type AspectId } from "@bibliothecadao/types";
 import { type PerspectiveCamera, Vector3 } from "three";
 
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
-import type { TerrainCellInput, TerrainPageRequest } from "@/three/terrain/terrain-types";
+import type { TerrainPageRequest } from "@/three/terrain/terrain-types";
+import { buildWorldmapTerrainPageRequests } from "@/three/terrain/worldmap-procedural-terrain";
 
 export interface RaceTowerEntry {
   aspectId: AspectId;
@@ -25,54 +26,75 @@ export const ASPECT_HYPERSTRUCTURE_SEEDS = {
 } as const satisfies Record<AspectId, number>;
 
 export const RACE_TOWER_HEXES = [
-  { col: 8, row: 5 },
-  { col: 10, row: 5 },
-  { col: 12, row: 5 },
-  { col: 14, row: 5 },
+  { col: 19, row: 12 },
+  { col: 21, row: 12 },
+  { col: 23, row: 12 },
+  { col: 25, row: 12 },
 ] as const;
 
 export const RACE_DAYLIGHT_PROGRESS = 54;
 
-const COLUMNS = 23;
-const ROWS = 11;
+const COLUMNS = 45;
+const ROWS = 20;
+const PAGE_COLUMNS = 15;
+const PAGE_ROWS = 10;
+const TOWER_ROW = RACE_TOWER_HEXES[0].row;
+const TOWER_MIN_COL = RACE_TOWER_HEXES[0].col;
+const TOWER_MAX_COL = RACE_TOWER_HEXES[RACE_TOWER_HEXES.length - 1].col;
 const CAMERA_FOV = 30;
-const TOWER_TARGET_Y = 1.65;
+const CAMERA_PITCH_RAD = (38 * Math.PI) / 180;
+const CAMERA_PITCH_SIN = Math.sin(CAMERA_PITCH_RAD);
+const CAMERA_PITCH_COS = Math.cos(CAMERA_PITCH_RAD);
+const MIN_VERTICAL_SPAN = 5.6;
+const TOWER_TARGET_Y = 1.35;
 const PLATE_Z_OFFSET = 1.05;
 
-export function createAspectRaceTerrainRequest(): TerrainPageRequest {
-  const occupied = new Set(RACE_TOWER_HEXES.map(({ col, row }) => `${col}:${row}`));
-  const cells: TerrainCellInput[] = Array.from({ length: COLUMNS * ROWS }, (_, index) => {
+export function createAspectRaceTerrainRequests(): TerrainPageRequest[] {
+  const towerCells = new Set(RACE_TOWER_HEXES.map(({ col, row }) => `${col}:${row}`));
+  const sightlineCells = new Set(RACE_TOWER_HEXES.map(({ col, row }) => `${col}:${row + 1}`));
+  const cells = Array.from({ length: COLUMNS * ROWS }, (_, index) => {
     const col = index % COLUMNS;
     const row = Math.floor(index / COLUMNS);
-    const biome = raceBiomeAt(col, row);
-    const inForegroundClearance = row >= 5 && row <= 8 && col >= 5 && col <= 17;
+    const key = `${col}:${row}`;
     return {
+      biomeKey: raceBiomeAt(col, row),
       col,
+      occupied: towerCells.has(key) || sightlineCells.has(key),
       row,
-      biome,
-      previewBiome: biome,
-      explored: true,
-      occupied: occupied.has(`${col}:${row}`) || inForegroundClearance,
     };
   });
-  return {
+  return buildWorldmapTerrainPageRequests({
     cells,
     climate: { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 },
-    halo: [],
     mapCenter: 0,
-    pageKey: "aspect-race-stage",
-    roadSegments: [],
-    settlementAnchors: [],
-    strictBiomeParity: false,
+    pageHeight: PAGE_ROWS,
+    pageOrigin: { col: 0, row: 0 },
+    pageWidth: PAGE_COLUMNS,
     subdivisions: 3,
-  };
+  });
 }
 
 function raceBiomeAt(col: number, row: number): BiomeType {
-  if (row >= 4 && row <= 8 && col >= 5 && col <= 17) return BiomeType.TemperateDesert;
-  if (row <= 2) return (col + row) % 3 === 0 ? BiomeType.TemperateDeciduousForest : BiomeType.Grassland;
-  if (row >= 9) return (col + row) % 2 === 0 ? BiomeType.SubtropicalDesert : BiomeType.Shrubland;
-  return (col + row) % 3 === 0 ? BiomeType.Shrubland : BiomeType.Grassland;
+  const inHeroCorridor = col >= TOWER_MIN_COL - 1 && col <= TOWER_MAX_COL + 1;
+  if (inHeroCorridor && row >= TOWER_ROW - 1 && row <= TOWER_ROW + 2) {
+    return BiomeType.Grassland;
+  }
+  const wave = Math.sin(col * 0.42 + row * 0.27) + Math.cos(col * 0.19 - row * 0.51);
+  if (row >= TOWER_ROW) {
+    if (col < TOWER_MIN_COL - 3 || col > TOWER_MAX_COL + 3) {
+      if (wave > 0.65) return BiomeType.TemperateDeciduousForest;
+      return wave < -0.55 ? BiomeType.Shrubland : BiomeType.Grassland;
+    }
+    return wave < -0.45 ? BiomeType.Shrubland : BiomeType.Grassland;
+  }
+  if (row <= 4) {
+    if (wave > 0.55) return BiomeType.Taiga;
+    if (wave > -0.15) return BiomeType.TemperateDeciduousForest;
+    return wave < -0.95 ? BiomeType.Shrubland : BiomeType.Grassland;
+  }
+  if (wave > 0.75) return BiomeType.TemperateDeciduousForest;
+  if (wave < -0.85) return BiomeType.Shrubland;
+  return BiomeType.Grassland;
 }
 
 export function frameAspectRaceCamera(camera: PerspectiveCamera): Vector3 {
@@ -89,9 +111,9 @@ export function frameAspectRaceCamera(camera: PerspectiveCamera): Vector3 {
   const halfFovRad = (camera.fov * Math.PI) / 360;
   const aspect = Math.max(camera.aspect, 0.5);
   const idealHorizSpan = Math.abs(last.x - first.x) / 0.78;
-  const vertSpan = Math.max(4.4, idealHorizSpan / aspect);
+  const vertSpan = Math.max(MIN_VERTICAL_SPAN, idealHorizSpan / aspect);
   const distance = vertSpan / (2 * Math.tan(halfFovRad));
-  camera.position.set(center.x, center.y + distance * 0.25, center.z + distance * 0.96);
+  camera.position.set(center.x, center.y + distance * CAMERA_PITCH_SIN, center.z + distance * CAMERA_PITCH_COS);
   camera.lookAt(center);
   camera.updateMatrixWorld();
   return center;

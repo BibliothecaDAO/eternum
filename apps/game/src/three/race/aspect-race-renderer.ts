@@ -27,7 +27,7 @@ import { TERRAIN_DEEP_FOG_COLOR } from "@/three/terrain/terrain-fog-style";
 import { configureGltfTextureSupport } from "@/three/utils/utils";
 import {
   ASPECT_HYPERSTRUCTURE_SEEDS,
-  createAspectRaceTerrainRequest,
+  createAspectRaceTerrainRequests,
   frameAspectRaceCamera,
   projectRacePlateAnchors,
   RACE_DAYLIGHT_PROGRESS,
@@ -232,10 +232,11 @@ async function createWorldTerrain(): Promise<ProceduralTerrain> {
     await terrain.loadProps().catch((error: unknown) => {
       console.warn("[AspectRace] Optional procedural terrain props failed to load", error);
     });
-    const request = createAspectRaceTerrainRequest();
-    const prepared = await terrain.preparePageAsync(request);
-    const fogMask = await terrain.prepareFogMaskAsync([prepared]);
-    terrain.present([prepared], fogMask);
+    const prepared = await Promise.all(
+      createAspectRaceTerrainRequests().map((request) => terrain.preparePageAsync(request)),
+    );
+    const fogMask = await terrain.prepareFogMaskAsync(prepared);
+    terrain.present(prepared, fogMask);
     terrain.update(0);
     return terrain;
   } catch (error) {
@@ -250,7 +251,7 @@ function createWorldLighting(scene: Scene, target: Vector3): WorldAtmosphereCont
   const sun = new DirectionalLight();
   configureWorldSunShadows(sun, true, SHADOW_MAP_SIZE);
   scene.add(ambient, hemisphere, sun, sun.target);
-  const fog = new Fog(TERRAIN_DEEP_FOG_COLOR, 18, 46);
+  const fog = new Fog(TERRAIN_DEEP_FOG_COLOR, 36, 90);
   scene.fog = fog;
   const atmosphere = new WorldAtmosphereController(scene, sun, hemisphere, ambient, fog, "frontier");
   atmosphere.update(RACE_DAYLIGHT_PROGRESS, target, { snap: true, environment: "world" });
