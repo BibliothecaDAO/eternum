@@ -38,7 +38,7 @@ export const PickedArmy = ({
       className="frontier-army-tray-panel pointer-events-auto"
       bodyClassName="frontier-army-tray"
     >
-      <div className="frontier-army-tray__head">
+      <div data-picked-army={army.label} className="frontier-army-tray__head">
         <button
           type="button"
           aria-label={PICKED_ARMY.details(army.label)}

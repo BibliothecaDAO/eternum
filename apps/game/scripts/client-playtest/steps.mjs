@@ -2369,7 +2369,17 @@ async function focusTheReadiestArmy(browser, armies = browser.armies()) {
   return readiest.label;
 }
 
+const PICKED_IN_TRAY = `JSON.stringify(document.querySelector("[data-picked-army]")?.dataset.pickedArmy ?? null)`;
+
 async function pickArmy(browser, army) {
+  const inTray = browser.read(PICKED_IN_TRAY);
+  if (inTray === army) return;
+  if (inTray !== null) {
+    browser.read(
+      `(() => { document.querySelector('[data-picked-army] button[aria-label="${HUD_WORDS.close}"]')?.click(); return true; })()`,
+    );
+    await waitFor(browser, () => browser.read(PICKED_IN_TRAY) === null, SHEET_WAIT_MS);
+  }
   browser.click(army);
   await sleep(ARMY_FLIGHT_MS);
 }
@@ -6922,7 +6932,7 @@ export const STEP_SETS = {
         name: "world-selected-army",
         settleMs: 1_500,
         play: async ({ browser, extraScreenshot }) => {
-          browser.click("Army 1");
+          await pickArmy(browser, "Army 1");
           const selected = await readUntil(
             () =>
               browser.read(
