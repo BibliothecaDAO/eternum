@@ -4047,7 +4047,6 @@ const OPENING_STATE = `JSON.stringify({
   lines: [...document.querySelectorAll("[data-tutorial-dock]")].map((node) => node.textContent),
   places: [...(document.querySelector('nav[aria-label="Places"]')?.querySelectorAll("button") ?? [])].map((node) => node.getAttribute("aria-label") ?? node.textContent),
   banner: document.querySelector("[data-daily-quest]")?.textContent ?? "",
-  bar: Boolean(document.querySelector("[data-day-bane-bar]")),
   stores: [...document.querySelectorAll("[data-store-kind], [data-kind]")].map((node) => node.getAttribute("data-store-kind") ?? node.getAttribute("data-kind")),
 })`;
 
@@ -4145,9 +4144,9 @@ function raceBoardSteps(result) {
               return { back, state };
             },
             verify: ({ played }) =>
-              played.state.bar && played.state.banner.includes("300 of 1,500")
+              played.state.banner.length > 0
                 ? completed(played)
-                : failed("With Show everything the day banner must show the Aspect's bane bar", played),
+                : failed("With Show everything the day banner must show", played),
           },
         ]
       : []),

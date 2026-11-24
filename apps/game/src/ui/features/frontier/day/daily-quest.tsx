@@ -7,7 +7,6 @@ import { DAILY_QUEST_MODELS, readDailyQuest, readExpeditionRules } from "@biblio
 import {
   RACE_MODELS,
   readActiveTriumph,
-  readRaceBoard,
   safeInteger,
   TRIUMPH_MODELS,
   type NativeRows,
@@ -59,7 +58,6 @@ export const DailyQuest = ({
           : teamBaneHead(bane.source),
       ];
   const home = BigInt(realm.entity_id);
-  const bar = baneOpen ? (readRaceBoard(setup.store, realm.game_id, home, now).known?.race?.own?.bar ?? null) : null;
   const calendar = readExpeditionRules(setup.store, realm.game_id);
   const triumph = calendar ? readActiveTriumph(setup.store, realm.game_id, home, now, calendar).known?.active : null;
   if (triumph) heads.push(triumphHead(triumph.stage, triumph.percent));
@@ -83,7 +81,6 @@ export const DailyQuest = ({
         }
         heads={heads}
         members={bane ? baneMembers(bane, now) : null}
-        bar={bar}
         claim={null}
         collecting={collecting}
         onCollect={collect}

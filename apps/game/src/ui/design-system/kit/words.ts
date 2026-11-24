@@ -893,9 +893,6 @@ export const DAY_BANNER_WORDS = {
     3: (percent: number) => `Guarded sites have ${formatExact(percent)}% strength`,
     4: (percent: number) => `Site rewards are ${formatExact(percent)}%`,
   },
-  baneBar: "Your Aspect's Altar bane bar",
-  baneBarHint: `Hold a ${DEEP} Altar to charge. At full, sends a bane to the leading rival Aspect tomorrow.`,
-  barCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
 } as const;
 /** What a moment's one line needs from the game's rules; the caller reads them, the line only names them. */
 export interface OpeningRules {
