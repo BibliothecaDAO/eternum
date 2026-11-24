@@ -863,6 +863,9 @@ export const DAY_BANNER_WORDS = {
   collectAgain: "Collect again",
   count: (progress: number, target: number, unit: string) =>
     `${formatExact(progress)} of ${formatExact(target)} ${unit}`,
+  beastBane: (percent: number) => `Guarded sites have ${formatExact(percent)}% strength while the bane lasts`,
+  staminaBane: (percent: number) => `Stamina returns at ${formatExact(percent)}% while the bane lasts`,
+  productionBane: (percent: number) => `Production runs at ${formatExact(percent)}% while the bane lasts`,
   fraction: (progress: number, target: number) => `${formatShort(progress)}/${formatShort(target)}`,
   objectiveLine: (objective: string, target: number) => {
     const space = objective.indexOf(" ");

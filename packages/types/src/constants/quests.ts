@@ -27,3 +27,4 @@ export const worldBanes = [
   { id: bane.MIST_TIDE, name: "Mist Tide", quest: bane.MIST_TIDE_QUEST },
   { id: bane.ASH_FALL, name: "Ash Fall", quest: bane.ASH_FALL_QUEST },
 ] as const;
+export type WorldBaneId = (typeof worldBanes)[number]["id"];

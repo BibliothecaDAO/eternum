@@ -111,7 +111,7 @@ export const RealmCard = ({
           .filter((store) => isTroopStore(store.kind))
           .map((store) => (
             <li key={store.kind} data-store={store.kind} data-row="">
-              <StoreCell store={store} size={34} />
+              <StoreCell store={store} troop />
             </li>
           ))}
       </ul>
@@ -120,7 +120,7 @@ export const RealmCard = ({
   </section>
 );
 
-const StoreCell = ({ store, size = 30 }: { store: StoreReading; size?: number }) => {
+const StoreCell = ({ store, troop = false }: { store: StoreReading; troop?: boolean }) => {
   const rate = store.perHour && store.perHour > 0 && store.fullIn !== 0 ? formatRate(store.perHour / 3600) : null;
   return (
     <>
@@ -128,11 +128,11 @@ const StoreCell = ({ store, size = 30 }: { store: StoreReading; size?: number })
       <Cell
         icon={
           <span data-fly-target={store.flyTarget} className="inline-flex">
-            <Icon name={FRONTIER_STORES[store.kind].icon} size={size} />
+            <Icon name={FRONTIER_STORES[store.kind].icon} size={troop ? 34 : 30} />
           </span>
         }
         value={<StoreValue store={store} />}
-        caption={rate ?? FRONTIER_STORES[store.kind].word}
+        caption={rate ?? (troop ? undefined : FRONTIER_STORES[store.kind].word)}
         tone={rate ? "good" : undefined}
         label={storeLine(store)}
       />
@@ -159,7 +159,7 @@ const Cell = ({
 }: {
   icon: ReactNode;
   value: ReactNode;
-  caption: string;
+  caption?: string;
   tone?: "good" | "gold";
   label: string;
   onPress?: () => void;
@@ -169,9 +169,11 @@ const Cell = ({
       {icon}
       <span className="frontier-realm-card__figures">
         <b className="frontier-realm-card__value">{value}</b>
-        <span className="frontier-realm-card__caption" data-tone={tone}>
-          {caption}
-        </span>
+        {caption && (
+          <span className="frontier-realm-card__caption" data-tone={tone}>
+            {caption}
+          </span>
+        )}
       </span>
     </>
   );
