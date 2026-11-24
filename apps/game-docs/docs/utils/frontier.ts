@@ -72,6 +72,8 @@ const pct = (bps: number) => `${n(bps / 100)}%`;
 const range = (lower: number, upper: number) => `${n(lower)}–${n(upper)}`;
 const dollars = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 const perHour = (ratePerSecond: number) => n(Math.round(ratePerSecond * 3600));
+const listAnd = (items: readonly string[]) =>
+  items.length > 1 ? `${items.slice(0, -1).join(", ")}, and ${items.at(-1)}` : (items[0] ?? "");
 const listOr = (items: readonly string[]) =>
   items.length > 1 ? `${items.slice(0, -1).join(", ")}, or ${items.at(-1)}` : (items[0] ?? "");
 const allPayTokens = listOr(Object.values(MAINNET_TOKENS).map((token) => token.symbol));
@@ -315,6 +317,7 @@ export const FRONTIER = {
     scout: FRONTIER_TROOP_NAMES[TroopType.Paladin],
   },
   buildingsCount: n(FRONTIER_BUILDING_TYPES.length),
+  buildingsList: listAnd(frontierBuildings.map((building) => building.name)),
   buildings: frontierBuildings,
   buildingIcons: {
     farm: buildingMeaning(research.FARM, true),
@@ -503,7 +506,7 @@ export const FRONTIER = {
     lordsNote: `The Shop takes ${MAINNET_TOKENS.lords.symbol} (or swaps ${swapPayTokens} into ${MAINNET_TOKENS.lords.symbol} through AVNU) for Fragments.`,
     statusNote: anySpendEnabled
       ? "Spending Fragments is on."
-      : `Spending Fragments is currently turned off (final testnet: ${SEASON_ONE_CALENDAR.testnetDates} UTC).`,
+      : `Spending Fragments is turned off during the final testnet (${SEASON_ONE_CALENDAR.testnetDates} UTC) and remains turned off until enabled.`,
     sealRule: `Lasts the whole season. Gives ${n(questPreset.bonusPercent)}% daily quest labor and the Season 1 Realm skin. You can also get the Seal with a code.`,
     staminaRule: `Refills ${n(fragments.STAMINA_PER_FRAGMENT)} stamina per Fragment on the Surface, Veil, and Hollow (${barFragments} Fragments for a full ${n(stamina.staminaKnightMax)} bar). Does not work inside the Deep.`,
     fragmentPrice: dollars(FRAGMENT_CENTS),
