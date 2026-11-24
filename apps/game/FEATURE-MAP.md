@@ -942,11 +942,10 @@ stays X only). Each link carries the button that made it (`?via=x`, `?via=system
 with the visit. What a player's shared days brought stands on You as **Your shared days** once they posted one or a
 friend joined: days posted, opened by friends, friends who joined, and those who reached the Glory; then **Friends
 paid** (a count, no cap) and **Fragments earned** (`SHARED_DAYS_WORDS`), under the reward line
-(`PROFILE_WORDS.friendReward`). Dev:
-`/lab/kit/hud/day-share` (a rich day), `day-share-thin`; `/lab/kit/hud/day-done` and `today-earlier` show the button;
-`/lab/app/shared-days/profile`. Code: `rollover/day-share.ts` (best moment, trail and post),
-`rollover/day-share-sheet.tsx` (the sheet, and `useDayShare`, which both places open it through) and `system-share.tsx`,
-`shell/share/` (its steps, the account's links in `own-shares.ts`, and the landing),
+(`PROFILE_WORDS.friendReward`). Dev: `/lab/kit/hud/day-share` (a rich day), `day-share-thin`; `/lab/kit/hud/day-done`
+and `today-earlier` show the button; `/lab/app/shared-days/profile`. Code: `rollover/day-share.ts` (best moment, trail
+and post), `rollover/day-share-sheet.tsx` (the sheet, and `useDayShare`, which both places open it through) and
+`system-share.tsx`, `shell/share/` (its steps, the account's links in `own-shares.ts`, and the landing),
 `shell/profile/shared-days-panel.tsx`.
 
 Coming back to a tab the browser put away (a phone's, mostly): a lost GPU (WebGL's context, which phones take from a tab
