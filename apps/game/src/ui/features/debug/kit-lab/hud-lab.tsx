@@ -1174,7 +1174,6 @@ export const HudLab = () => {
             realm={{
               icon: homeIcon("realm", lab.realm?.level ?? 1),
               label: LAB_REALM_NAME,
-              level: lab.realm?.level ?? 1,
               aspect: LAB_ASPECT,
               orderId: LAB_ORDER_ID,
             }}

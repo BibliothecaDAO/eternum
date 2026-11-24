@@ -187,7 +187,7 @@ describe("the status strip", () => {
     act(() =>
       root.render(
         <PhoneTopBarView
-          realm={{ icon: "realm-1", label: "Duskbite", level: 1, aspect: 1, orderId: 12 }}
+          realm={{ icon: "realm-1", label: "Duskbite", aspect: 1, orderId: 12 }}
           clock={<DayRing clock={day} />}
           stocks={{
             fragments: 0,
@@ -233,7 +233,7 @@ describe("the status strip", () => {
     act(() =>
       root.render(
         <TabletTopBarView
-          realm={{ icon: "realm-1", label: "Duskbite", level: 1, aspect: 1, orderId: 12 }}
+          realm={{ icon: "realm-1", label: "Duskbite", aspect: 1, orderId: 12 }}
           clock={<span role="timer">Day</span>}
           stocks={{ fragments: 3, onShop: vi.fn(), stores: [store("essence", 200), store("labor", 2_300)] }}
           placeMenu={<button type="button">Places</button>}
