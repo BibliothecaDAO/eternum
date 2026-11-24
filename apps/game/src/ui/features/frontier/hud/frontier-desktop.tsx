@@ -24,7 +24,6 @@ export const FrontierDesktop = ({
   depthSwitch,
   banner,
   realm,
-  replaceRealmWithSheet = false,
   armies,
   aspectChip,
   page,
@@ -41,7 +40,6 @@ export const FrontierDesktop = ({
   depthSwitch?: ReactNode;
   banner?: ReactNode;
   realm?: ReactNode;
-  replaceRealmWithSheet?: boolean;
   armies?: ReactNode;
   aspectChip?: ReactNode;
   page?: ReactNode;
@@ -51,7 +49,6 @@ export const FrontierDesktop = ({
   children?: ReactNode;
 }) => {
   const [railPanel, setRailPanel] = useState<HTMLElement | null>(null);
-  const [leftPanel, setLeftPanel] = useState<HTMLElement | null>(null);
   const showWide = Boolean(widePage && page);
   return (
     <div style={{ zoom: useHudScale() }}>
@@ -85,8 +82,9 @@ export const FrontierDesktop = ({
               aria-label={REALM}
               className="pointer-events-none flex min-h-0 w-hud-frontier-rail flex-col gap-2"
             >
-              {!replaceRealmWithSheet && !page && realm}
-              <div ref={setLeftPanel} data-realm-slot className="flex min-h-0 flex-1 flex-col gap-2 empty:hidden">
+              {!page && realm && <div className="pointer-events-none flex min-h-0 shrink flex-col">{realm}</div>}
+              {!page && armies && <div className="pointer-events-none shrink-0">{armies}</div>}
+              <div data-realm-slot className="flex min-h-0 flex-1 flex-col gap-2 empty:hidden">
                 {page}
               </div>
             </aside>
@@ -94,14 +92,13 @@ export const FrontierDesktop = ({
           </div>
         )}
       </div>
-      {!showWide && armies && <div className="pointer-events-none fixed bottom-4 left-4 z-hud-column">{armies}</div>}
       {!showWide && aspectChip && (
         <div className="pointer-events-none fixed bottom-4 right-4 z-hud-column">{aspectChip}</div>
       )}
       <HudFoot>
         <div className="pointer-events-none flex flex-col items-center gap-3">{foot}</div>
       </HudFoot>
-      <SheetDock.Provider value={replaceRealmWithSheet ? leftPanel : railPanel}>{children}</SheetDock.Provider>
+      <SheetDock.Provider value={railPanel}>{children}</SheetDock.Provider>
     </div>
   );
 };

@@ -2,7 +2,6 @@ import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { useQuery } from "@/hooks/helpers/use-query";
-import { LeftView } from "@/types";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
 import { useRealmVisit } from "@/sync/active-game-client";
@@ -29,7 +28,7 @@ import { ArmyLostSheet } from "./army/army-lost";
 import { useArmyPanelOpens, usePickArmy } from "./army/army-opens";
 import { FrontierArmy } from "./army/frontier-army";
 import { FrontierOathPick } from "./army/oath-pick";
-import { isRealmBoardCard, useSelectionCard } from "./frontier-selection-sheet";
+import { useSelectionCard } from "./frontier-selection-sheet";
 import { useRealmStores } from "./realm-stores";
 import { FrontierSurfaces } from "./frontier-surfaces";
 import { useArmyRevealYield } from "./frontier-reveal-yield";
@@ -205,7 +204,6 @@ const FrontierHudBody = ({
   const modeConfig = useGameModeConfig();
   const goToPlace = useGoToFrontierPlace(shown);
   const feedUnread = useUnreadImportantCount(surface === "feed");
-  const leftView = useUIStore((state) => state.leftNavigationView);
   const shownName = shown ? modeConfig.structure.getName(shown).name : null;
   const shownAspectId = shown
     ? headerFacts.store.get("HomeAspect", { game_id: shown.game_id, home: shown.entity_id })?.aspect
@@ -213,6 +211,10 @@ const FrontierHudBody = ({
   const shownAspect = shownAspectId !== undefined ? catalogAspectId(shownAspectId) : undefined;
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
+  const switchView = (toRealm: boolean) => {
+    close();
+    goToPlace(!toRealm);
+  };
   const storeCards = own
     ? {
         kinds: CARD_STORE_KINDS,
@@ -227,31 +229,6 @@ const FrontierHudBody = ({
     : undefined;
 
   const depthSwitch = <SurfaceDeepSwitch layers={layers} onSwitch={close} />;
-  const phoneStrip = (
-    <PhoneTopBar
-      rules={rules}
-      realm={shown}
-      own={own}
-      stores={headerStores}
-      isMapView={isMapView}
-      depthSwitch={depthSwitch}
-      spectatorChip={spectating ? <IdentityChip compact /> : undefined}
-      storeCards={storeCards}
-      onOpenRealm={() => {
-        if (isMapView) {
-          close();
-          goToPlace(false);
-        } else {
-          setRealmOpen((was) => !was);
-        }
-      }}
-      onSwitchView={(toRealm) => {
-        close();
-        goToPlace(!toRealm);
-      }}
-      onOpenToday={() => setSurface("today")}
-    />
-  );
   const page =
     surface === "research" && realm ? (
       <FrontierResearch key={researchPick} realm={realm} pick={researchPick} onClose={close} />
@@ -280,6 +257,22 @@ const FrontierHudBody = ({
         fragments={own ? fragments : null}
       />
     ) : undefined;
+  const realmVisible = Boolean(shown) && (desktop ? realmOpen && !page : surface === "realm");
+  const phoneStrip = (
+    <PhoneTopBar
+      rules={rules}
+      realm={shown}
+      own={own}
+      stores={headerStores}
+      isMapView={isMapView}
+      realmOpen={realmVisible}
+      depthSwitch={depthSwitch}
+      spectatorChip={spectating ? <IdentityChip compact /> : undefined}
+      storeCards={storeCards}
+      onOpenRealm={() => setSurface(surface === "realm" ? null : "realm")}
+      onOpenToday={() => setSurface("today")}
+    />
+  );
   const showOpening = !(desktop && (surface !== null || showsCard));
   const notices = (
     <>
@@ -303,8 +296,7 @@ const FrontierHudBody = ({
       <RealmVisitFoot home={realm} />
     </>
   );
-  const deployOpen = Boolean(own) && leftView === LeftView.MilitaryView;
-  const leftSheet =
+  const railSheet =
     surface === "army" && realm && !visit ? (
       <FrontierArmy realm={realm} onClose={close} />
     ) : surface === "army-lost" ? (
@@ -324,10 +316,6 @@ const FrontierHudBody = ({
         onClose={close}
       />
     ) : null;
-  const replaceRealmWithSheet =
-    desktop &&
-    (deployOpen || leftSheet !== null || (!isMapView && showsCard && card !== null && isRealmBoardCard(card.kind)));
-  const realmVisible = Boolean(shown) && realmOpen && !replaceRealmWithSheet && !page;
   const realmPanel = shown && (
     <FrontierRealmPanel
       rules={rules}
@@ -339,20 +327,16 @@ const FrontierHudBody = ({
         setResearchPick(node);
         setSurface("research");
       }}
-      onClose={() => setRealmOpen(false)}
+      onClose={() => (desktop ? setRealmOpen(false) : close())}
       sheetHandle={!desktop}
     />
   );
-  const dock = (() => {
-    if (!shown) return null;
-    if (isMapView) return <DockFor realm={shown} onOpenArmy={desktop ? openArmy : pickArmy} />;
-    return !desktop && !showsCard && surface === null && realmOpen ? realmPanel : null;
-  })();
+  const armyDock = shown ? <DockFor realm={shown} onOpenArmy={desktop ? openArmy : pickArmy} /> : null;
   const sheets = (
     <>
       <FrontierSurfaces realm={realm} rules={rules} />
       {showsCard && card?.sheet}
-      {leftSheet}
+      {railSheet}
       {surface !== "season" && <SeasonOver />}
       {realm && <DayDone rules={rules} realm={realm} visiting={Boolean(visit)} />}
       <BuildingsInFlight />
@@ -365,12 +349,15 @@ const FrontierHudBody = ({
       aspect={shownAspect}
       surface={surface}
       onSurface={setSurface}
+      isMapView={isMapView}
+      onSwitchView={switchView}
       researchReady={own ? canResearchNow(research?.nodes) : false}
       events={feedUnread}
       unread={chat.unread}
     />
   );
 
+  const phoneDockActions = surface === null || surface === "realm";
   return desktop ? (
     <FrontierDesktop
       identity={
@@ -402,8 +389,7 @@ const FrontierHudBody = ({
       depthSwitch={isMapView ? depthSwitch : undefined}
       banner={<OfflineNotice />}
       realm={realmOpen ? realmPanel : null}
-      replaceRealmWithSheet={replaceRealmWithSheet}
-      armies={isMapView && !deployOpen && !page ? dock : null}
+      armies={!page ? armyDock : null}
       aspectChip={
         isMapView && shown ? (
           <AspectStandingChip orderId={shown.metadata.order} onOpenSeason={() => setSurface("season")} />
@@ -411,8 +397,9 @@ const FrontierHudBody = ({
       }
       page={page}
       widePage={
-        surface === "season" &&
-        headerFacts.store.get("RaceRules", { game_id: configManager.getActiveGameId() }) !== undefined
+        surface === "research" ||
+        (surface === "season" &&
+          headerFacts.store.get("RaceRules", { game_id: configManager.getActiveGameId() }) !== undefined)
       }
       foot={
         <>
@@ -441,16 +428,15 @@ const FrontierHudBody = ({
       notices={notices}
       action={action}
       dock={
-        isMapView ? (
+        <div className="flex flex-col gap-1.5">
+          {realmVisible && realmPanel}
           <div className="frontier-phone-foot">
-            <div className="min-w-0 flex-1">{dock}</div>
-            {phoneActions}
+            <div className="min-w-0 flex-1">{armyDock}</div>
+            {phoneDockActions && phoneActions}
           </div>
-        ) : (
-          dock
-        )
+        </div>
       }
-      nav={surface !== null && phoneActions ? <div className="flex justify-end">{phoneActions}</div> : null}
+      nav={!phoneDockActions ? <div className="flex justify-end">{phoneActions}</div> : null}
     >
       {sheets}
     </HudBands>

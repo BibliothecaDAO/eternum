@@ -5,6 +5,7 @@ import {
   catalogOrder,
   formatAmount,
   formatExact,
+  formatShortDuration,
   LORDS,
   rankName,
   type AspectId,
@@ -18,6 +19,7 @@ import {
   ARMIES,
   CLOSE,
   DEPLOY,
+  FULL,
   REALM,
   RESEARCH,
   SHOW_MY_REALM,
@@ -29,7 +31,8 @@ import { TickNumber } from "@/ui/motion/tick-number";
 import type { ReactNode } from "react";
 
 import { FRONTIER_STORES } from "../stores";
-import { LandingDelta, STORE_TONES, type StoreReading, storeLine } from "./status-strip";
+import { ProgressRing } from "./progress-ring";
+import { LandingDelta, STORE_TONES, storeCapacityShare, type StoreReading, storeLine } from "./status-strip";
 
 export interface RealmBuildingItem {
   key: string;
@@ -133,10 +136,10 @@ export const RealmPanel = ({
       onTitle={onHome && { label: SHOW_MY_REALM, run: onHome }}
       collapsible={false}
       className={sheetHandle ? "pointer-events-auto relative realm-panel--sheet" : "pointer-events-auto"}
-      bodyClassName="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
+      bodyClassName="flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden"
     >
       {sheetHandle && <span className="frontier-phone-handle" aria-hidden="true" />}
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+      <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto">
         <ul aria-label="Stores" className="realm-tiles">
           {visibleStores.map((store) => (
             <li key={store.kind} data-store={store.kind} className="relative min-w-0">
@@ -148,16 +151,14 @@ export const RealmPanel = ({
           ))}
           {armies && (
             <li className="min-w-0">
-              <span
-                className="realm-tile"
-                aria-label={`${ARMIES} ${formatExact(armies.active)} / ${formatExact(armies.limit)}`}
-              >
-                <span className="realm-tile__label">{ARMIES}</span>
+              <TileShell label={`${ARMIES} ${formatExact(armies.active)} / ${formatExact(armies.limit)}`} tip={ARMIES}>
+                <ProgressRing size="lg" share={armies.limit > 0 ? armies.active / armies.limit : undefined} tone="calm">
+                  <SemanticIcon name="knight-t1" size={20} />
+                </ProgressRing>
                 <span className="realm-tile__value tabular-nums">
-                  <SemanticIcon name="knight-t1" size={16} />
-                  {`${formatExact(armies.active)} / ${formatExact(armies.limit)}`}
+                  {`${formatExact(armies.active)}/${formatExact(armies.limit)}`}
                 </span>
-              </span>
+              </TileShell>
             </li>
           )}
           {lords !== undefined && (
@@ -167,27 +168,27 @@ export const RealmPanel = ({
                 tip={linkWalletLine ?? LORDS}
                 onClick={onWithdraw}
               >
-                <span className="realm-tile__label">
-                  {LORDS}
-                  {linkWalletLine && <SemanticIcon name="warning" size={12} />}
-                </span>
-                <span className="realm-tile__value tabular-nums">
-                  <SemanticIcon name="lords" size={16} />
-                  {formatAmount(lords)}
-                </span>
+                <ProgressRing
+                  size="lg"
+                  tone={linkWalletLine ? "amber" : "calm"}
+                  badge={linkWalletLine ? <SemanticIcon name="warning" size={12} /> : undefined}
+                >
+                  <SemanticIcon name="lords" size={20} />
+                </ProgressRing>
+                <span className="realm-tile__value tabular-nums">{formatAmount(lords)}</span>
               </TileShell>
             </li>
           )}
         </ul>
         {storeCards?.open && storeCards.card}
         {buildings && buildings.length > 0 && (
-          <ul data-realm-buildings className="flex flex-col gap-2">
+          <ul data-realm-buildings className="flex flex-col gap-1.5">
             {buildings.map((building) => (
               <li key={building.key} className="realm-building__row">
                 <HudRow
-                  lead={<SemanticIcon name={building.icon} size={40} />}
+                  lead={<SemanticIcon name={building.icon} size={32} />}
                   title={
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-1.5">
                       <span className="realm-building__name truncate">{building.name}</span>
                       {building.tier !== undefined && <HudTier tier={building.tier} />}
                       {building.rankLabel && <HudChip>{building.rankLabel}</HudChip>}
@@ -203,7 +204,7 @@ export const RealmPanel = ({
                   }
                   controls={
                     building.onUpgrade && (
-                      <HudButton kind="secondary" onClick={building.onUpgrade}>
+                      <HudButton kind="secondary" size="sm" onClick={building.onUpgrade}>
                         {UPGRADE}
                       </HudButton>
                     )
@@ -217,12 +218,12 @@ export const RealmPanel = ({
       {(onResearch || onDeploy) && (
         <div className="realm-foot shrink-0">
           {onResearch && (
-            <HudButton kind="secondary" icon="research" onClick={onResearch}>
+            <HudButton kind="secondary" size="sm" icon="research" onClick={onResearch}>
               {RESEARCH}
             </HudButton>
           )}
           {onDeploy && (
-            <HudButton kind="primary" icon="knight-t1" onClick={onDeploy}>
+            <HudButton kind="primary" size="sm" icon="knight-t1" onClick={onDeploy}>
               {DEPLOY}
             </HudButton>
           )}
@@ -253,17 +254,25 @@ const TileShell = ({
     </span>
   );
 
+const storeBadge = (store: StoreReading): string | undefined => {
+  if (store.fullIn === 0) return FULL;
+  if (store.fullIn !== undefined && store.fullIn > 0) return formatShortDuration(store.fullIn);
+  return undefined;
+};
+
 const StoreTile = ({ store, onOpen }: { store: StoreReading; onOpen?: () => void }) => {
   const shown = useLandedValue(store.flyTarget, store.amount);
   const line = storeLine(store);
   const meta = FRONTIER_STORES[store.kind];
+  const badge = storeBadge(store);
   return (
     <>
       <LandingDelta target={store.flyTarget} />
       <TileShell label={line} tip={line} onClick={onOpen}>
-        <span className="realm-tile__label">{meta.word}</span>
+        <ProgressRing size="lg" share={storeCapacityShare(store)} tone={store.tone} badge={badge}>
+          <SemanticIcon name={meta.icon} size={20} />
+        </ProgressRing>
         <span className="realm-tile__value tabular-nums">
-          <SemanticIcon name={meta.icon} size={16} />
           <span data-fly-target={store.flyTarget} className={STORE_TONES[store.tone].text}>
             {shown === undefined ? "—" : <TickNumber value={shown} format={formatAmount} />}
           </span>

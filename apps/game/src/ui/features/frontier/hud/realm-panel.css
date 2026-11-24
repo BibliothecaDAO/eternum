@@ -18,7 +18,7 @@
   line-height: var(--hud-leading-body);
 }
 .realm-building__row {
-  min-height: 60px;
+  min-height: 46px;
   border: 1px solid var(--hud-divider);
   border-radius: var(--hud-radius-control);
   background: var(--hud-well);
@@ -34,8 +34,8 @@
 }
 .realm-tiles {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: theme(spacing.2);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: theme(spacing[1.5]);
 }
 .realm-tile {
   display: flex;
@@ -44,45 +44,38 @@
   flex-direction: column;
   align-items: center;
   gap: theme(spacing.1);
-  border: 1px solid var(--hud-line);
+  border: 1px solid transparent;
   border-radius: var(--hud-radius-control);
-  background: var(--hud-well);
-  padding: theme(spacing.2) theme(spacing.2);
+  background: transparent;
+  padding: theme(spacing.1) theme(spacing[0.5]);
   color: rgb(var(--hud-ink));
+  transition:
+    border-color var(--hud-fast) var(--hud-ease),
+    background-color var(--hud-fast) var(--hud-ease);
 }
 button.realm-tile {
   cursor: pointer;
 }
 button.realm-tile:hover {
   border-color: rgb(var(--hud-accent));
-}
-.realm-tile__label {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing.1);
-  color: var(--hud-muted);
-  font-size: var(--hud-text-body);
-  line-height: var(--hud-leading-body);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  background: var(--hud-well);
 }
 .realm-tile__value {
   display: inline-flex;
   align-items: center;
-  gap: theme(spacing[1.5]);
-  font-size: var(--hud-text-display);
-  line-height: var(--hud-leading-display);
-  font-weight: var(--hud-weight-display);
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-leading-strong);
+  font-weight: var(--hud-weight-strong);
 }
 .realm-foot {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: theme(spacing[2.5]);
-  padding-top: theme(spacing.1);
+  gap: theme(spacing.2);
+  padding-top: theme(spacing[0.5]);
 }
 .realm-foot > .ui-button {
   width: 100%;
-  height: 44px;
+  height: 38px;
 }
 @media (max-width: 1023px) {
   .realm-panel--sheet {
@@ -92,20 +85,16 @@ button.realm-tile:hover {
   .realm-tiles {
     gap: theme(spacing.1);
   }
-  .realm-tile {
-    gap: theme(spacing[0.5]);
-    padding: theme(spacing.1) theme(spacing.1);
+  .realm-tiles .frontier-progress-ring--lg {
+    width: 38px;
+    height: 38px;
   }
   .realm-building__row {
-    min-height: 44px;
+    min-height: 42px;
     padding: theme(spacing[0.5]) theme(spacing.1);
   }
-  .realm-tile__label {
-    font-size: var(--hud-text-label);
-    line-height: var(--hud-leading-label);
-  }
   .realm-tile__value {
-    font-size: var(--hud-text-title);
-    line-height: var(--hud-leading-title);
+    font-size: var(--hud-text-body);
+    line-height: var(--hud-leading-body);
   }
 }

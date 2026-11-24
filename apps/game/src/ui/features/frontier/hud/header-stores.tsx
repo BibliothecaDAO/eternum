@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 import { FRONTIER_STORES, type StoreKind } from "../stores";
 import { LandingDelta, STORE_TONES, storeLine, type StoreReading } from "./status-strip";
 
-export const REALM_STORE_KINDS: readonly StoreKind[] = ["labor", "wheat"];
+const REALM_STORE_KINDS: readonly StoreKind[] = ["labor", "wheat"];
 const BAR_STORE_KINDS: readonly StoreKind[] = [...REALM_STORE_KINDS, "essence"];
 
 export const pickStores = (stores: readonly StoreReading[], kinds: readonly StoreKind[]): StoreReading[] =>
@@ -69,7 +69,7 @@ export const HeaderStores = ({
   );
 };
 
-export const BarStoreItem = ({
+const BarStoreItem = ({
   store,
   iconSize = 16,
   onToggle,

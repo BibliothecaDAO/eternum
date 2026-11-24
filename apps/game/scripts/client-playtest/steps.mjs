@@ -6925,12 +6925,12 @@ export const STEP_SETS = {
             : h.phonePill &&
               h.questChip &&
               h.depthSwitch &&
-              h.realmWorld.includes("Realm") &&
-              h.realmWorld.includes("World") &&
+              h.realmWorld.length === 0 &&
               h.armies > 0 &&
+              h.places.includes("Realm") &&
               h.places.includes("Season") &&
               h.places.includes("Menu") &&
-              h.places.length === 2;
+              h.places.length === 3;
           return ok
             ? completed(played)
             : failed("World view must render the full approved HUD parts for this viewport", played);
@@ -6975,28 +6975,51 @@ export const STEP_SETS = {
         name: "realm-screen",
         settleMs: 2_000,
         play: async ({ browser, extraScreenshot }) => {
-          browser.clickTab("Realm");
+          if (onADesktop()) browser.clickTab("Realm");
+          else browser.click("Realm");
+          await sleep(1_500);
+          const idleUnobstructed = onADesktop()
+            ? true
+            : browser.read(`!document.querySelector('section[aria-label="Realm"]')`);
+          const shot = extraScreenshot("realm");
+          if (!onADesktop()) {
+            browser.read(
+              `(() => { const chip = document.querySelector('.frontier-phone-realm-chip'); if (!chip) return false; chip.click(); return true; })()`,
+            );
+          }
           const buildings = await readUntil(
             () =>
               browser.read(`document.querySelectorAll('section[aria-label="Realm"] [data-realm-buildings] li').length`),
             (count) => count >= 4,
             PLAYABLE_WAIT_MS,
           );
-          await sleep(1_500);
           const realmHud = browser.read(`(() => ({
             tiles: document.querySelectorAll('section[aria-label="Realm"] .realm-tile').length,
             hasDepthSwitch: Boolean(document.querySelector('[data-surface-deep-switch]')),
             hasDeploy: Boolean(document.querySelector('section[aria-label="Realm"] .realm-foot button[data-kind="primary"]')),
           }))()`);
+          const hasRealmPanel = browser.read(`Boolean(document.querySelector('section[aria-label="Realm"]'))`);
+          if (!onADesktop()) {
+            browser.read(
+              `(() => { const chip = document.querySelector('.frontier-phone-realm-chip'); if (!chip) return false; chip.click(); return true; })()`,
+            );
+            await readUntil(
+              () => browser.read(`!document.querySelector('section[aria-label="Realm"]')`),
+              Boolean,
+              SHEET_WAIT_MS,
+            );
+          }
           return {
+            idleUnobstructed,
             buildings,
             realmHud,
-            hasRealmPanel: browser.read(`Boolean(document.querySelector('section[aria-label="Realm"]'))`),
-            shot: extraScreenshot("realm"),
+            hasRealmPanel,
+            shot,
           };
         },
         verify: ({ seen, played }) =>
           seen.scene === "hex" &&
+          played.idleUnobstructed &&
           played.hasRealmPanel &&
           played.buildings >= 4 &&
           played.realmHud.tiles >= 3 &&
@@ -7035,23 +7058,36 @@ export const STEP_SETS = {
           await sleep(1_000);
           return {
             sheet,
-            inRealmSlot: onADesktop()
-              ? browser.read(`Boolean(document.querySelector('[data-realm-slot] [data-kit-sheet]'))`)
+            inRightRail: onADesktop()
+              ? browser.read(`Boolean(document.querySelector('[data-rail-panel] [data-kit-sheet]'))`)
               : true,
             realmPanelShown: browser.read(`Boolean(document.querySelector('section[aria-label="Realm"]'))`),
             shot: extraScreenshot("realm-build"),
           };
         },
         verify: ({ played }) =>
-          played.sheet === "Build" && played.inRealmSlot && !played.realmPanelShown
+          played.sheet === "Build" && played.inRightRail && played.realmPanelShown === onADesktop()
             ? completed(played)
-            : failed("Pressing an empty plot must replace the Realm panel with Build in place", played),
+            : failed(
+                "Pressing an empty plot must open Build in the right rail while Realm stays visible on desktop",
+                played,
+              ),
       },
       {
         name: "deploy-sheet",
         settleMs: 1_500,
         play: async ({ browser, extraScreenshot }) => {
           browser.press("Escape");
+          await readUntil(
+            () => browser.read(SHEET_NAME),
+            (name) => name === null,
+            SHEET_WAIT_MS,
+          );
+          if (!onADesktop()) {
+            browser.read(
+              `(() => { const chip = document.querySelector('.frontier-phone-realm-chip'); if (!chip) return false; chip.click(); return true; })()`,
+            );
+          }
           const hasDeploy = await readUntil(
             () =>
               browser.read(
@@ -7071,7 +7107,7 @@ export const STEP_SETS = {
             troopCards: [...document.querySelectorAll('[data-kit-sheet] [aria-label="Troop type"] button')].map((b) => b.getAttribute("aria-label")),
             hasAdjust: [...document.querySelectorAll('[data-kit-sheet] button')].some((b) => b.textContent?.trim() === "Adjust size"),
             deployEnabled: Boolean(document.querySelector('[data-kit-sheet] .ui-window__foot button[data-kind="primary"]:not([disabled])')),
-            inRealmSlot: Boolean(document.querySelector('[data-realm-slot] [data-kit-sheet][aria-label="Deploy"]')),
+            inRightRail: Boolean(document.querySelector('[data-rail-panel] [data-kit-sheet][aria-label="Deploy"]')),
           }))()`);
           return {
             sheet,
@@ -7084,7 +7120,7 @@ export const STEP_SETS = {
           played.deployHud.troopCards.length >= 3 &&
           played.deployHud.hasAdjust &&
           played.deployHud.deployEnabled &&
-          (!onADesktop() || played.deployHud.inRealmSlot)
+          (!onADesktop() || played.deployHud.inRightRail)
             ? completed(played)
             : failed("Deploy sheet must open at full stack with troop cards, Adjust size and enabled Deploy", played),
       },
@@ -7104,7 +7140,7 @@ export const STEP_SETS = {
           const ready = await readUntil(
             () =>
               browser.read(`JSON.stringify({
-                open: Boolean(document.querySelector('${onADesktop() ? "[data-realm-slot] " : ""}section[aria-label="${HUD_WORDS.research}"]')),
+                open: Boolean(document.querySelector('${onADesktop() ? "[data-wide-page] " : ""}section[aria-label="${HUD_WORDS.research}"]')),
                 rows: document.querySelectorAll('section[aria-label="${HUD_WORDS.research}"] [data-node]').length,
               })`),
             (state) => state.open && state.rows > 0,

@@ -22,8 +22,9 @@ import { useOnePanel } from "./one-panel";
 import { MenuPage } from "./menu-page";
 import { OrderBar } from "./order-bar";
 import { PickedArmy } from "./picked-army";
-import { DayPill } from "./day-pill";
+import { DayPill, DayRing } from "./day-pill";
 import { HeaderStores } from "./header-stores";
+import { PhoneTopBarView } from "./phone-top-bar";
 import { PhoneWorldActions } from "./frontier-nav";
 import { HUD_PLACES, resolveMenuPlaces } from "./hud-places";
 import { OfflineBanner, OfflineNotice } from "./offline-notice";
@@ -136,11 +137,70 @@ describe("the status strip", () => {
     expect(text(morning)).not.toContain("Tomorrow lasts");
     expect(morning).toContain("text-hud-ink");
     expect(morning).not.toContain("text-hud-bad");
+    expect(morning).toContain('data-fill-share="25"');
     const lastHour = renderToStaticMarkup(
       <DayPill clock={{ ...day, secondsLeft: 600, shareLeft: 0.05, tone: "ember" }} />,
     );
     expect(text(lastHour)).toContain(`Day ${day.day} · 10m`);
     expect(lastHour).toContain("text-hud-bad");
+    expect(lastHour).toContain('data-fill-share="95"');
+  });
+
+  it("renders DayRing with clamped elapsed progress, Day label, time left and ember tone in the last hour", () => {
+    const day = dayClock(
+      {
+        dayUnitSeconds: 4 * 3_600,
+        seed: 1n,
+        startMainAt: 0,
+        scheduledEndAt: 21 * 20 * 14_400,
+        endAt: 21 * 20 * 14_400,
+      },
+      3_600,
+    );
+    act(() => root.render(<DayRing clock={{ ...day, secondsLeft: 900, shareLeft: -0.2, tone: "ember" }} />));
+    const timer = host.querySelector('[role="timer"]')!;
+    expect(timer.textContent).toBe(`Day${day.day}`);
+    expect(timer.textContent).not.toBe(`D${day.day}`);
+    expect(timer.getAttribute("aria-label")).toContain(`Day ${day.day} · 15m left`);
+    expect(timer.getAttribute("data-tip")).toContain("15m left");
+    expect(timer.className).toContain("text-hud-bad");
+    expect(timer.querySelector("[data-fill-share]")?.getAttribute("data-fill-share")).toBe("100");
+  });
+
+  it("renders PhoneTopBarView with DayRing, four resource capacity gauges and no duplicate Map view tabs", () => {
+    const day = dayClock(
+      {
+        dayUnitSeconds: 4 * 3_600,
+        seed: 1n,
+        startMainAt: 0,
+        scheduledEndAt: 21 * 20 * 14_400,
+        endAt: 21 * 20 * 14_400,
+      },
+      3_600,
+    );
+    act(() =>
+      root.render(
+        <PhoneTopBarView
+          realm={{ icon: "realm-1", label: "City" }}
+          clock={<DayRing clock={day} />}
+          isMapView
+          stores={[
+            store("essence", 125_000),
+            store("labor", 9_000, 18_000),
+            store("wheat", 3_000, 6_000),
+            store("troops", 1_500, 3_000),
+          ]}
+        />,
+      ),
+    );
+    expect(host.querySelector('[aria-label="Map view"]')).toBeNull();
+    expect(host.querySelector('[role="timer"]')?.textContent).toBe(`Day${day.day}`);
+    const gauges = [...host.querySelectorAll(".frontier-phone-gauge")];
+    expect(gauges.map((gauge) => gauge.getAttribute("data-store"))).toEqual(["essence", "labor", "wheat", "troops"]);
+    expect(gauges.map((gauge) => gauge.textContent)).toEqual(["125K", "9K", "3K", "1.5K"]);
+    expect(host.querySelectorAll(".frontier-phone-gauge__bar")).toHaveLength(3);
+    expect(host.querySelector('[data-store="essence"] .frontier-phone-gauge__bar')).toBeNull();
+    expect(host.querySelector(".frontier-phone-realm-chip")?.textContent).toBe("City");
   });
 
   it("shows top-bar stores compactly with exact accessible labels and dashes the unknown", () => {
@@ -301,6 +361,46 @@ describe("the phone world actions", () => {
       ),
     );
     expect([...host.querySelectorAll("button")].map((button) => button.getAttribute("aria-label"))).toEqual(["Menu"]);
+  });
+
+  it("renders one Realm/World switch button in PhoneWorldActions showing Realm on World and World in Realm", () => {
+    const onSurface = vi.fn();
+    const onSwitchView = vi.fn();
+    act(() =>
+      root.render(
+        <PhoneWorldActions
+          surface={null}
+          onSurface={onSurface}
+          isMapView
+          onSwitchView={onSwitchView}
+          events={0}
+          unread={0}
+        />,
+      ),
+    );
+    const realmButton = host.querySelector<HTMLButtonElement>('button[aria-label="Realm"]')!;
+    expect(realmButton.textContent).toBe("Realm");
+    expect(realmButton.getAttribute("data-switch")).toBe("realm");
+    act(() => realmButton.click());
+    expect(onSwitchView).toHaveBeenLastCalledWith(true);
+
+    act(() =>
+      root.render(
+        <PhoneWorldActions
+          surface={null}
+          onSurface={onSurface}
+          isMapView={false}
+          onSwitchView={onSwitchView}
+          events={0}
+          unread={0}
+        />,
+      ),
+    );
+    const worldButton = host.querySelector<HTMLButtonElement>('button[aria-label="World"]')!;
+    expect(worldButton.textContent).toBe("World");
+    expect(worldButton.getAttribute("data-switch")).toBe("world");
+    act(() => worldButton.click());
+    expect(onSwitchView).toHaveBeenLastCalledWith(false);
   });
 
   it("names a Paladin army Scouts on the picked-army row from Frontier's troop table", () => {

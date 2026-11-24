@@ -91,7 +91,7 @@ import {
   StaminaRefill,
 } from "@/ui/features/frontier/army/refill";
 import { ShopCodeField, ShopView } from "@/ui/features/frontier/shop/shop-sheet";
-import { DayPill } from "@/ui/features/frontier/hud/day-pill";
+import { DayPill, DayRing } from "@/ui/features/frontier/hud/day-pill";
 import { RealmPanel } from "@/ui/features/frontier/hud/realm-panel";
 import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
@@ -1174,11 +1174,10 @@ export const HudLab = () => {
           <PhoneTopBarView
             realm={{ icon: homeIcon("realm", lab.realm?.level ?? 1), label: rankName(lab.realm?.level ?? 1) }}
             stores={[...lab.stores]}
-            clock={<DayPill clock={lab.clock} />}
+            clock={<DayRing clock={lab.clock} />}
             isMapView={lab.realmView === undefined}
             storeCard={lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
             onOpenRealm={noop}
-            onSwitchView={noop}
           />
         }
         page={
@@ -1271,6 +1270,8 @@ export const HudLab = () => {
                         : null
               }
               onSurface={noop}
+              isMapView={lab.realmView === undefined}
+              onSwitchView={noop}
               researchReady={!lab.offline}
               events={lab.offline ? 0 : 2}
               unread={lab.offline ? 0 : 3}
@@ -1632,6 +1633,7 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
           }
           armies={slots.dock}
           page={slots.page}
+          widePage={Boolean(lab.research)}
           foot={
             <>
               {slots.notices}
