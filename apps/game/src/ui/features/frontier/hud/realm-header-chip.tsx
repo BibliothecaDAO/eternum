@@ -57,7 +57,6 @@ export const RealmHeaderChip = ({
   aspect,
   orderId,
   expanded,
-  variant = "desktop",
   onPress,
 }: {
   name: string;
@@ -67,29 +66,23 @@ export const RealmHeaderChip = ({
   aspect?: AspectId;
   orderId?: number;
   expanded?: boolean;
-  variant?: "desktop" | "phone";
   onPress?: () => void;
 }) => {
   const order = resolvedOrder(orderId);
   const parts = [name, order?.fullOrderName, aspect !== undefined ? aspectName(aspect) : undefined].filter(Boolean);
-  const phone = variant === "phone";
-  const prefix = phone ? "frontier-phone-realm-chip" : "frontier-realm-chip";
+  const prefix = "frontier-phone-realm-chip";
   return (
     <button
       type="button"
-      className={phone ? `${prefix} pointer-events-auto` : prefix}
+      className={`${prefix} pointer-events-auto`}
       aria-label={parts.join(", ")}
       aria-expanded={expanded}
       onClick={onPress}
     >
-      <AspectMedallion
-        aspect={aspect}
-        fallbackIcon={fallbackIcon ?? homeIcon(kind, level)}
-        size={phone ? "sm" : "lg"}
-      />
+      <AspectMedallion aspect={aspect} fallbackIcon={fallbackIcon ?? homeIcon(kind, level)} size="sm" />
       <span className={`${prefix}__text`}>
         <span className={`${prefix}__name`}>{name}</span>
-        <OrderLine orderId={orderId} size={phone ? 12 : 14} className={`${prefix}__order`} />
+        <OrderLine orderId={orderId} size={12} className={`${prefix}__order`} />
       </span>
     </button>
   );

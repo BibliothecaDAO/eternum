@@ -6889,9 +6889,8 @@ export const STEP_SETS = {
             depthSwitch: Boolean(document.querySelector('[data-surface-deep-switch]')),
             realmWorld: [...document.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) => tab.textContent?.trim()),
             armies: document.querySelectorAll('nav[aria-label="Armies"] button').length,
-            aspectChip: Boolean(document.querySelector('[data-aspect-standing-chip]')),
-            desktopStores: Boolean(document.querySelector('[aria-label="Stores"]')),
-            realmChip: Boolean(document.querySelector('.frontier-realm-chip')),
+            desktopStores: document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]').length,
+            realmCard: Boolean(document.querySelector('.frontier-realm-card')),
             phonePill: Boolean(document.querySelector('.frontier-phone-pill')),
           }))()`);
           return { shot: extraScreenshot("world"), worldHud };
@@ -6901,14 +6900,14 @@ export const STEP_SETS = {
           if (base.status !== "completed") return base;
           const h = played.worldHud;
           const ok = onADesktop()
-            ? h.realmChip &&
+            ? h.realmCard &&
               h.places.includes("Research") &&
               h.places.includes("Season") &&
               h.places.includes("Feed") &&
               h.places.includes("Chat") &&
               !h.places.includes("Relics") &&
               h.questChip &&
-              h.desktopStores &&
+              h.desktopStores === 8 &&
               h.depthSwitch &&
               h.realmWorld.includes("Realm") &&
               h.realmWorld.includes("Surface") &&
@@ -6916,8 +6915,7 @@ export const STEP_SETS = {
               h.realmWorld.includes("Hollow") &&
               h.realmWorld.includes("Deep") &&
               !h.realmWorld.includes("World") &&
-              h.armies > 0 &&
-              h.aspectChip
+              h.armies > 0
             : h.phonePill &&
               h.questChip &&
               h.depthSwitch &&
@@ -6994,9 +6992,10 @@ export const STEP_SETS = {
           );
           const realmHud = browser.read(`(() => ({
             tiles: document.querySelectorAll('section[aria-label="Realm"] .realm-tile').length,
+            stocks: document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]').length,
             hasCastleHead: Boolean(document.querySelector('section[aria-label="Realm"] [data-realm-castle]')),
             hasDepthSwitch: Boolean(document.querySelector('[data-surface-deep-switch]')),
-            hasDeploy: Boolean(document.querySelector('section[aria-label="Realm"] .realm-foot button[data-kind="primary"]')),
+            hasDeploy: Boolean(document.querySelector('section[aria-label="Realm"] .realm-foot button[data-kind="primary"], nav[aria-label="Armies"] button[aria-label="Deploy"][data-kind="primary"]')),
           }))()`);
           const hasRealmPanel = browser.read(`Boolean(document.querySelector('section[aria-label="Realm"]'))`);
           if (!onADesktop()) {
@@ -7023,11 +7022,11 @@ export const STEP_SETS = {
           played.hasRealmPanel &&
           played.realmHud.hasDeploy &&
           (onADesktop()
-            ? played.buildings >= 3 && played.realmHud.hasCastleHead && played.realmHud.tiles === 0
+            ? played.buildings >= 3 && played.realmHud.hasCastleHead && played.realmHud.stocks === 8
             : played.buildings >= 4 && played.realmHud.tiles >= 3)
             ? completed(played)
             : failed(
-                "Realm view must render with Castle, Workshop, Farm and Barracks standing and lean desktop panel",
+                "Realm view must render with Castle, Workshop, Farm and Barracks standing and the desktop realm card's eight stocks",
                 {
                   seen,
                   played,

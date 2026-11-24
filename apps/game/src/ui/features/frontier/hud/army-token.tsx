@@ -182,7 +182,7 @@ export const OpenSlot = ({
 );
 
 /** An open slot's dashed ring: a plus, "…" while an army is on its way into it. */
-export const SlotRing = ({ pulse, filling }: { pulse: boolean; filling?: string }) => (
+const SlotRing = ({ pulse, filling }: { pulse: boolean; filling?: string }) => (
   <span
     className={cn(
       "flex size-10 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-hud-line text-hud-title",

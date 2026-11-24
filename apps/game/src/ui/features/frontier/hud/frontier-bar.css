@@ -1,19 +1,3 @@
-.frontier-realm-chip {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: theme(spacing.2);
-  border: 0;
-  background: transparent;
-  padding: 0 theme(spacing.1) 0 0;
-  color: rgb(var(--hud-ink));
-  cursor: pointer;
-  text-align: left;
-  transition: opacity var(--hud-fast) var(--hud-ease);
-}
-.frontier-realm-chip:hover {
-  opacity: 0.92;
-}
 .frontier-aspect-medallion {
   position: relative;
   display: inline-flex;
@@ -46,115 +30,6 @@
     0 0 6px rgb(var(--hud-aspect, var(--hud-gold)) / 0.2),
     inset 0 1px 0 rgb(var(--hud-aspect, var(--hud-gold)) / 0.4);
 }
-.frontier-realm-chip__text {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 2px;
-}
-.frontier-realm-chip__name {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-title);
-  line-height: 1.05;
-  color: rgb(var(--hud-ink));
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.frontier-realm-chip__order {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--hud-text-badge);
-  line-height: 1.15;
-  color: var(--hud-muted);
-  white-space: nowrap;
-}
-
-.frontier-places {
-  display: flex;
-  height: 100%;
-  align-items: stretch;
-  gap: 2px;
-}
-.frontier-place {
-  position: relative;
-  display: inline-flex;
-  height: 100%;
-  min-height: var(--hud-control);
-  align-items: center;
-  gap: theme(spacing[1.5]);
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  padding: 0 theme(spacing.2);
-  color: var(--hud-muted);
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  font-weight: var(--hud-weight-title);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    background-color var(--hud-fast) var(--hud-ease),
-    color var(--hud-fast) var(--hud-ease);
-}
-.frontier-place:hover {
-  background: var(--hud-hover);
-  color: rgb(var(--hud-ink));
-}
-.frontier-place[aria-selected="true"] {
-  border-color: transparent;
-  background: linear-gradient(180deg, transparent 20%, color-mix(in srgb, rgb(var(--hud-gold)) 18%, transparent));
-  color: rgb(var(--hud-gold));
-  box-shadow: none;
-}
-.frontier-place[aria-selected="true"]::after {
-  content: "";
-  position: absolute;
-  right: 4px;
-  bottom: -2px;
-  left: 4px;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, rgb(var(--hud-gold)), transparent);
-  box-shadow: 0 0 10px color-mix(in srgb, rgb(var(--hud-gold)) 75%, transparent);
-}
-.frontier-place__badge {
-  display: inline-flex;
-  min-width: theme(spacing.4);
-  height: theme(spacing.4);
-  align-items: center;
-  justify-content: center;
-  border-radius: 2px;
-  background: rgb(var(--hud-gold));
-  padding: 0 theme(spacing.1);
-  color: rgb(var(--hud-dark));
-  font-family: var(--hud-font);
-  font-size: var(--hud-text-badge);
-  line-height: 1;
-  font-weight: var(--hud-weight-badge);
-}
-.frontier-place__badge[data-tone="good"] {
-  background: var(--hud-good);
-}
-.frontier-place__badge[data-shape="diamond"] {
-  width: 16px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0;
-  transform: rotate(45deg);
-  border: 1px solid color-mix(in srgb, rgb(var(--hud-ink)) 45%, transparent);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--hud-good) 55%, transparent);
-}
-.frontier-place__badge[data-shape="diamond"] .frontier-place__badge-value {
-  transform: rotate(-45deg);
-}
 
 .frontier-quest-wrap {
   position: relative;
@@ -165,12 +40,12 @@
   display: inline-flex;
   height: 30px;
   align-items: center;
-  gap: theme(spacing[1.5]);
+  gap: 3px;
   border: 1px solid var(--hud-line-strong);
   border-radius: var(--hud-radius-chip);
   background: var(--hud-well);
   box-shadow: inset 0 1px 2px var(--hud-surface-to);
-  padding: 0 theme(spacing.2);
+  padding: 0 4px;
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-label);
   line-height: 1;
@@ -231,58 +106,6 @@
 .frontier-quest-popover[data-layout="phone"] {
   --quest-edge: theme(spacing.2);
 }
-
-.frontier-stores-wrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-.frontier-stores {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing.2);
-}
-.frontier-trough {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  color: rgb(var(--hud-ink));
-  font-size: var(--hud-text-label);
-  line-height: 1;
-  font-weight: var(--hud-weight-strong);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-button.frontier-trough {
-  cursor: pointer;
-}
-.frontier-trough__icon {
-  position: relative;
-  z-index: 2;
-  display: inline-flex;
-  flex: none;
-  margin-right: -8px;
-  filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--hud-well) 90%, transparent));
-}
-.frontier-trough__well {
-  position: relative;
-  display: inline-flex;
-  height: 26px;
-  min-width: 60px;
-  align-items: center;
-  overflow: hidden;
-  border: 1px solid var(--hud-line-strong);
-  border-radius: 2px;
-  background: var(--hud-well);
-  box-shadow: inset 0 1px 3px var(--hud-surface-to);
-  padding: 0 theme(spacing[1.5]) 0 theme(spacing.3);
-}
-button.frontier-trough:hover .frontier-trough__well {
-  border-color: rgb(var(--hud-gold));
-}
 .frontier-store-liquid {
   position: absolute;
   top: 0;
@@ -310,41 +133,11 @@ button.frontier-trough:hover .frontier-trough__well {
 .frontier-store-liquid[data-tone="bad"] {
   background: color-mix(in srgb, var(--hud-bad) 44%, transparent);
 }
-.frontier-trough__values {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: baseline;
-  gap: theme(spacing[1.5]);
-}
-.frontier-trough__rate {
-  font-size: var(--hud-text-badge);
-  line-height: 1;
-  color: var(--hud-good);
-}
-.frontier-cornice-rivet {
-  position: relative;
-  width: 1px;
-  height: 22px;
-  flex: none;
-  background: linear-gradient(180deg, transparent, var(--hud-line-strong), transparent);
-}
-.frontier-cornice-rivet::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 5px;
-  height: 5px;
-  transform: translate(-50%, -50%) rotate(45deg);
-  border: 1px solid rgb(var(--hud-gold));
-  background: var(--hud-surface-from);
-}
 .frontier-fragments-socket {
   display: inline-flex;
   height: 28px;
   align-items: center;
-  gap: theme(spacing[1.5]);
+  gap: 4px;
   border: 1px solid color-mix(in srgb, var(--hud-warn) 72%, var(--hud-line-strong));
   border-radius: 2px;
   background: linear-gradient(
@@ -353,7 +146,7 @@ button.frontier-trough:hover .frontier-trough__well {
     color-mix(in srgb, var(--hud-warn) 12%, var(--hud-well))
   );
   box-shadow: inset 0 1px 0 color-mix(in srgb, rgb(var(--hud-gold)) 25%, transparent);
-  padding: 0 4px 0 5px;
+  padding: 0 3px 0 4px;
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-label);
   line-height: 1;
@@ -390,13 +183,6 @@ button.frontier-trough:hover .frontier-trough__well {
   line-height: 1;
   font-weight: var(--hud-weight-strong);
 }
-.frontier-store-popover {
-  position: absolute;
-  top: calc(100% + theme(spacing.2));
-  left: 0;
-  z-index: theme(zIndex.hud-popover);
-  width: theme(spacing.hud-column);
-}
 
 .frontier-day-trigger {
   display: inline-flex;
@@ -405,11 +191,6 @@ button.frontier-trough:hover .frontier-trough__well {
   background: transparent;
   padding: 0;
   cursor: pointer;
-}
-.frontier-day-cornice {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing.2);
 }
 .frontier-day-medallion {
   position: relative;
@@ -452,19 +233,6 @@ button.frontier-trough:hover .frontier-trough__well {
 }
 .frontier-day-medallion__ring[data-tone="ember"] .frontier-progress-ring__fill {
   filter: drop-shadow(0 0 5px color-mix(in srgb, var(--hud-bad) 75%, transparent));
-}
-.frontier-day-readout {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  line-height: 1.1;
-  text-align: left;
-}
-.frontier-day-readout__left {
-  font-size: var(--hud-text-label);
-  line-height: 1.1;
-  font-weight: var(--hud-weight-strong);
-  white-space: nowrap;
 }
 
 .frontier-progress-ring {
@@ -582,252 +350,9 @@ button.frontier-trough:hover .frontier-trough__well {
   font-size: var(--hud-text-title);
 }
 
-.frontier-army-dock {
-  display: flex;
-  width: 100%;
-  flex-direction: column;
-  align-items: stretch;
-  gap: theme(spacing[1.5]);
-}
-.frontier-army-card {
-  position: relative;
-  display: flex;
-  width: 100%;
-  min-width: 0;
-  min-height: 62px;
-  align-items: center;
-  gap: theme(spacing[2.5]);
-  border: 1px solid var(--hud-line);
-  border-radius: var(--hud-radius-panel);
-  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
-  box-shadow: var(--hud-shadow-panel);
-  padding: theme(spacing.2) theme(spacing.3);
-  color: rgb(var(--hud-ink));
-  text-align: left;
-  cursor: pointer;
-  transition:
-    border-color var(--hud-fast) var(--hud-ease),
-    transform var(--hud-fast) var(--hud-ease);
-}
-.frontier-army-card__portrait {
-  position: relative;
-  width: 42px;
-  height: 42px;
-  flex: none;
-}
-.frontier-army-card__portrait > .ui-portrait {
-  width: 42px;
-  height: 42px;
-}
-.frontier-army-card:hover {
-  border-color: var(--hud-line-strong);
-}
-.frontier-army-card__body {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: theme(spacing[0.5]);
-  overflow: hidden;
-}
-.frontier-army-card__title {
-  display: flex;
-  align-items: center;
-  gap: theme(spacing[1.5]);
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-title);
-  line-height: var(--hud-leading-title);
-  font-weight: var(--hud-weight-title);
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
-.frontier-army-card__stamina {
-  display: flex;
-  flex-direction: column;
-  gap: theme(spacing[0.5]);
-  font-size: var(--hud-text-body);
-  line-height: var(--hud-leading-label);
-  color: var(--hud-muted);
-  font-variant-numeric: tabular-nums;
-}
-.frontier-army-card__hint {
-  color: rgb(var(--hud-gold));
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-}
-.frontier-army-card[data-open-slot="true"] {
-  border-style: dashed;
-}
-
-.frontier-aspect-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing.3);
-  border: 1px solid var(--hud-line-strong);
-  border-radius: var(--hud-radius-panel);
-  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
-  box-shadow: var(--hud-shadow-panel);
-  padding: theme(spacing[2.5]) theme(spacing.4);
-  color: rgb(var(--hud-ink));
-  text-align: left;
-  cursor: pointer;
-  transition: border-color var(--hud-fast) var(--hud-ease);
-}
-.frontier-aspect-chip:hover {
-  border-color: rgb(var(--hud-gold));
-}
-.frontier-aspect-chip__mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--hud-line-strong);
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-well);
-  padding: theme(spacing.1);
-}
-.frontier-aspect-chip__head {
-  display: block;
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-title);
-  line-height: var(--hud-leading-body);
-  font-weight: var(--hud-weight-title);
-  letter-spacing: 0.04em;
-  color: rgb(var(--hud-ink));
-  white-space: nowrap;
-}
-.frontier-aspect-chip__sub {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing[1.5]);
-  font-size: var(--hud-text-body);
-  line-height: var(--hud-leading-label);
-  color: var(--hud-muted);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
 [data-frontier-rail][data-wide="true"] {
   width: min(62rem, calc(100% - theme(spacing.hud-frontier-rail) - theme(spacing.4)));
 }
 [data-frontier-rail][data-wide="true"] [data-wide-page] {
   max-height: min(58rem, 100%);
-}
-
-@media (max-width: 1440px) {
-  .frontier-realm-chip {
-    gap: theme(spacing[1.5]);
-    padding-right: 0;
-  }
-  .frontier-aspect-medallion[data-size="lg"] {
-    width: 34px;
-    height: 40px;
-    margin-bottom: -6px;
-  }
-  .frontier-aspect-medallion[data-size="lg"] img {
-    width: 24px;
-    height: 24px;
-  }
-  .frontier-stores {
-    gap: 4px;
-  }
-  .frontier-trough__icon {
-    margin-right: -10px;
-  }
-  .frontier-trough__icon img {
-    width: 20px;
-    height: 20px;
-  }
-  .frontier-trough__well {
-    min-width: 0;
-    padding: 0 5px 0 11px;
-  }
-  .frontier-trough__values {
-    gap: 3px;
-  }
-  .frontier-cornice-rivet {
-    display: none;
-  }
-  .frontier-fragments-socket {
-    gap: 4px;
-    padding: 0 3px 0 4px;
-  }
-  .frontier-fragments-socket__icon img {
-    width: 18px;
-    height: 18px;
-  }
-  .frontier-day-cornice {
-    gap: 5px;
-  }
-  .frontier-day-medallion {
-    width: 60px;
-    height: 60px;
-    margin: 5px 0 -15px;
-  }
-  .frontier-day-medallion--phone {
-    width: 50px;
-    height: 50px;
-    margin: 4px 0 -10px;
-  }
-  .frontier-quest-chip {
-    gap: 4px;
-    padding: 0 6px;
-  }
-  .frontier-places {
-    gap: 0;
-  }
-  .frontier-place {
-    gap: 4px;
-    padding: 0 6px;
-    letter-spacing: 0.03em;
-  }
-  .frontier-place > img {
-    width: 15px;
-    height: 15px;
-  }
-}
-
-@media (max-width: 1380px) {
-  .frontier-realm-chip {
-    gap: 4px;
-  }
-  .frontier-realm-chip__name {
-    font-size: var(--hud-text-label);
-    letter-spacing: 0.02em;
-  }
-  .frontier-stores {
-    gap: 2px;
-  }
-  .frontier-trough__well {
-    padding: 0 3px 0 9px;
-  }
-  .frontier-trough__rate-unit {
-    display: none;
-  }
-  .frontier-day-cornice {
-    gap: 3px;
-  }
-  .frontier-day-medallion {
-    width: 56px;
-    height: 56px;
-    margin: 5px 0 -13px;
-  }
-  .frontier-day-medallion--phone {
-    width: 50px;
-    height: 50px;
-    margin: 4px 0 -10px;
-  }
-  .frontier-quest-chip {
-    gap: 3px;
-    padding: 0 4px;
-  }
-  .frontier-place {
-    gap: 2px;
-    padding: 0 4px;
-    font-size: var(--hud-text-badge);
-    letter-spacing: 0.01em;
-  }
-  .frontier-place > img {
-    width: 14px;
-    height: 14px;
-  }
 }

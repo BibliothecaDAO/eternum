@@ -841,13 +841,12 @@ it("shows the visited realm on the desktop top bar without duplicating the playe
   viewport.set(1440);
   try {
     const names = await renderVisit();
-    const chip = host.querySelector(".frontier-realm-chip")?.textContent ?? "";
-    const panel = host.querySelector('section[aria-label="Realm"]')!;
+    const card = host.querySelector('section[aria-label="Realm"]')!;
     expect(names.visited).not.toBe(names.own);
-    expect(chip).toContain(names.visited);
-    expect(chip).not.toContain(names.own);
-    expect(panel.querySelector(".realm-tiles")).toBeNull();
-    expect(panel.querySelector("[data-realm-castle]")).not.toBeNull();
+    expect(card.querySelector(".frontier-realm-card__name")?.textContent).toBe(names.visited);
+    expect(host.textContent).not.toContain(names.own);
+    expect(card.querySelector('[aria-label="Stores"]')).not.toBeNull();
+    expect(card.querySelector("[data-realm-castle]")).toBeNull();
   } finally {
     visiting.visit = null;
   }
@@ -1027,9 +1026,9 @@ it("orders the desktop cornice places as Research, Season, Feed, Chat without Re
       ["Hollow", "Hollow"],
       ["Deep", "Deep"],
     ]);
-    const chip = host.querySelector<HTMLButtonElement>(".frontier-realm-chip")!;
-    expect(chip.querySelector('img[src*="portraits"]')).toBeNull();
-    await act(async () => chip.click());
+    const crest = host.querySelector<HTMLButtonElement>(".frontier-realm-card__identity")!;
+    expect(crest.querySelector('img[src*="portraits"]')).toBeNull();
+    await act(async () => crest.click());
     expect(window.location.pathname).toMatch(/\/hex$/);
   } finally {
     window.history.replaceState(null, "", route);

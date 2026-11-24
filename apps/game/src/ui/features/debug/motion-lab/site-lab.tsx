@@ -1,4 +1,4 @@
-import { HeaderStores } from "@/ui/features/frontier/hud/header-stores";
+import { RealmCard } from "@/ui/features/frontier/hud/realm-card";
 import { bankedCounterTarget } from "@/ui/motion/moments/banked-flight";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
 import type { SiteClear } from "@/ui/features/frontier/sites/site-outcome";
@@ -41,8 +41,12 @@ export const SiteLab = () => {
     <div className="flex w-full flex-col items-center gap-4">
       {counters && (
         <div className="flex justify-center">
-          <HeaderStores
-            showPopoverCard={false}
+          <RealmCard
+            name="Duskbite"
+            kind="realm"
+            level={1}
+            fragments={null}
+            lords={null}
             stores={[
               labStore("essence", ResourcesIds.Essence, balances[ResourcesIds.Essence]),
               labStore("labor", ResourcesIds.Labor, balances[ResourcesIds.Labor]),

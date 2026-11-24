@@ -1162,6 +1162,14 @@ export const REINFORCE = {
 } as const;
 /** A realm's armies, as a list's name. */
 export const ARMIES = "Armies";
+export const ARMY_SLOT_WORDS = {
+  title: "All army slots",
+  count: (active: number, allowed: number, most: number) => `${active} / ${allowed} active (${most} max)`,
+  open: (slot: number) => `Slot ${slot} · Open`,
+  readyAtHome: (troops: string) => `${troops} ready at home`,
+  anyTroop: "Any troop type",
+  unlocksAt: (slot: number, rank: string) => `Slot ${slot} · Unlocks at ${rank}`,
+} as const;
 export const ARMY_MOVE_HINT = "Right-click a hex to move";
 /** The day-done card's count of the armies that ended with the day. */
 export const ARMIES_ENDED = "Armies ended with the day";

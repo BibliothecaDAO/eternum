@@ -178,7 +178,6 @@ export const PhoneTopBarView = ({
           <div className="frontier-phone-subrow__left">
             {realm && (
               <RealmHeaderChip
-                variant="phone"
                 name={realm.label}
                 fallbackIcon={realm.icon}
                 aspect={realm.aspect}

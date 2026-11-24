@@ -644,11 +644,8 @@ export const HUD_LAYOUT = {
    * width and top, and the stage between the columns.
    */
   "frontier-page": "440px",
-  /**
-   * Frontier's desktop rail, the one home for everything (the owner, 22 October): one width for the feed at home and
-   * for any panel (a page, a sheet) that stands in it ("feed should have the same width as the other panels").
-   */
-  "frontier-rail": "480px",
+  "frontier-left": "304px",
+  "frontier-rail": "372px",
   "frontier-page-top": "76px",
   /** The Frontier HUD's cards: an army token, a site card, and the Build sheet's building card (option B's band). */
   "frontier-token": "72px",

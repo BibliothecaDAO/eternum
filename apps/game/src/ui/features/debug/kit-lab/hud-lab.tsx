@@ -4,7 +4,7 @@ import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import { FeedLine } from "@/ui/features/event-feed/feed-line";
 
-import { BuildingType, FRONTIER_TROOP_NAMES, TroopType, type AspectId } from "@bibliothecadao/types";
+import { BuildingType, FRONTIER_TROOP_NAMES, rankName, TroopType, type AspectId } from "@bibliothecadao/types";
 import type { AlertsPopupAsk } from "@/shell/profile/alerts-ask";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -25,16 +25,16 @@ import {
   WITHDRAWALS_CLOSED,
   YOU,
 } from "@/ui/design-system/kit/words";
-import { ArmyCard, ArmyCardDock, OpenSlotCard } from "@/ui/features/frontier/hud/army-row";
+import { readArmySlots } from "@/ui/features/frontier/hud/army-dock";
+import { ArmyCard, ArmySlotsCard, LockedSlotCard, OpenSlotCard } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
-import { HeaderStores } from "@/ui/features/frontier/hud/header-stores";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/frontier-desktop";
 import { PhoneWorldActions, type HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
 import { OfflineBanner } from "@/ui/features/frontier/hud/offline-notice";
 import { PhoneTopBarView } from "@/ui/features/frontier/hud/phone-top-bar";
-import { RealmHeaderChip } from "@/ui/features/frontier/hud/realm-header-chip";
+import { RealmCard } from "@/ui/features/frontier/hud/realm-card";
 import { LabGame, useLabPlayer } from "./lab-game";
 import { useHudMode } from "@/hooks/use-hud-mode";
 import { HOW_TO_PLAY_BY_MODE } from "@/shell/community";
@@ -63,7 +63,7 @@ import { buildingIcon, buildingName } from "@/ui/features/frontier/build/buildin
 import { nativeResearchConstants as research, nativeStructureConstants } from "@bibliothecadao/eternum/game-client";
 import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
-import { MADE_STORES } from "@/ui/features/frontier/stores";
+import { FRONTIER_STORES, STORE_KINDS } from "@/ui/features/frontier/stores";
 import { type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams, useSearchParams } from "react-router-dom";
 import { type SlotStart, wheatStopsAt } from "@/ui/features/frontier/deploy/deploy-plan";
@@ -95,7 +95,7 @@ import { labQuestRulesFact } from "@/lab/game/quest-scenario";
 import { DayPill, DayRing } from "@/ui/features/frontier/hud/day-pill";
 import { DailyQuestChip } from "@/ui/features/frontier/hud/daily-quest-chip";
 import type { MapLayers } from "@/ui/features/frontier/hud/map-layers";
-import { RealmPanel, type RealmBuildingItem } from "@/ui/features/frontier/hud/realm-panel";
+import type { RealmBuildingItem } from "@/ui/features/frontier/hud/realm-panel";
 import { FrontierPlaceSwitch } from "@/ui/features/frontier/hud/surface-deep-switch";
 import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
@@ -1640,17 +1640,6 @@ const LabBands = ({
     {() =>
       desktop ? (
         <FrontierDesktop
-          identity={
-            <RealmHeaderChip
-              name={LAB_REALM_NAME}
-              level={lab.realm?.level ?? 1}
-              aspect={LAB_ASPECT}
-              orderId={LAB_ORDER_ID}
-              expanded
-              onPress={noop}
-            />
-          }
-          season={{ rank: "#12", onOpen: noop }}
           clock={<DayPill clock={lab.clock} />}
           quest={<LabDailyQuest />}
           placeSwitch={
@@ -1661,42 +1650,25 @@ const LabBands = ({
               onGoSurface={noop}
             />
           }
-          stores={
-            <HeaderStores
-              stores={lab.stores}
-              storeCards={
-                lab.storeCard && {
-                  kinds: MADE_STORES,
-                  open: lab.storeCard.kind,
-                  onToggle: noop,
-                  card: <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />,
-                }
-              }
-              showPopoverCard={Boolean(lab.storeCard)}
-              fragments={LAB_FRAGMENTS}
-              onShop={noop}
-            />
-          }
           banner={slots.banner}
           realm={
-            <RealmPanel
+            <RealmCard
               name={LAB_REALM_NAME}
+              kind="realm"
               level={lab.realm?.level ?? 1}
+              nextRank={rankName((lab.realm?.level ?? 1) + 1)}
               aspect={LAB_ASPECT}
               orderId={LAB_ORDER_ID}
               population={LAB_POPULATION}
-              stores={[...lab.stores]}
-              buildings={LAB_REALM_BUILDINGS}
-              lean
+              stores={everyStore(lab.stores)}
+              fragments={LAB_FRAGMENTS}
+              lords={lab.visiting ? null : (lab.purse?.lords ?? LAB_LORDS)}
+              buildings={lab.realmView === undefined ? undefined : LAB_REALM_BUILDINGS}
+              storeCard={lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
+              onStore={noop}
+              onShop={noop}
               onHome={noop}
-              onUpgradeCastle={!lab.visiting ? noop : undefined}
-              {...(!lab.visiting && {
-                lords: lab.purse?.lords ?? LAB_LORDS,
-                linkWalletLine: lab.noWallet ? LINK_WALLET_FOR_LORDS : null,
-                onWithdraw: noop,
-                onResearch: noop,
-                onDeploy: noop,
-              })}
+              onUpgradeCastle={lab.visiting ? undefined : noop}
             />
           }
           armies={slots.dock}
@@ -1720,6 +1692,9 @@ const LabBands = ({
     }
   </LabGame>
 );
+
+const everyStore = (stores: readonly StoreReading[]): StoreReading[] =>
+  STORE_KINDS.map((kind) => stores.find((each) => each.kind === kind) ?? store(kind, 0));
 
 /** The lab realm's name and its LORDS where a state names none, as the desktop's realm panel reads them. */
 const LAB_REALM_NAME = "Duskbite";
@@ -1752,25 +1727,38 @@ const LabDock = ({ lab }: { lab: LabState }) => {
   const armyArt = (army: LabArmy) => (army.troops === undefined ? undefined : ("knight-t1" as const));
   const stamina = (army: LabArmy) =>
     army.stamina === undefined ? undefined : { current: army.stamina, max: 150, perExplore: LAB_EXPLORE };
+  const limits = useGame().setup.store.get("SliceRules", { game_id: 1 })?.troop_limit_config;
+  const slotRule = limits && readArmySlots(limits, lab.armies.length, lab.slots ?? SLOTS);
   if (useLayout() === "desktop")
     return (
-      <ArmyCardDock>
+      <ArmySlotsCard count={slotRule?.count}>
         {lab.armies.map((army, index) => (
           <ArmyCard
             key={index}
             label={`Army ${index + 1}`}
+            title={FRONTIER_STORES.troops.word}
             number={index + 1}
             art={armyArt(army)}
+            troops={army.troops}
             stamina={stamina(army)}
             ethereal={army.ethereal}
             selected={lab.selected === index}
             onPick={lab.visiting ? undefined : noop}
           />
         ))}
-        {labSlots(lab).map((slot) => (
-          <OpenSlotCard key={slot.number} label="Deploy" onDeploy={noop} {...slot} />
+        {labSlots(lab).map((slot, index) => (
+          <OpenSlotCard
+            key={slot.number}
+            number={slot.number}
+            primary={index === 0}
+            start={slot.start}
+            stock={index === 0 ? { count: "1,200", label: `1,200 ${FRONTIER_STORES.troops.word}` } : undefined}
+            onDeploy={noop}
+          />
         ))}
-      </ArmyCardDock>
+        {!lab.visiting &&
+          slotRule?.locked.map((slot) => <LockedSlotCard key={slot.number} number={slot.number} rank={slot.rank} />)}
+      </ArmySlotsCard>
     );
   return (
     <nav aria-label="Armies" className="pointer-events-auto flex gap-1.5">

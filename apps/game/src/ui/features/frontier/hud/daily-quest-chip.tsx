@@ -13,6 +13,7 @@ import { createPortal } from "react-dom";
 
 import { DailyQuest } from "../day/daily-quest";
 import { dayQuestFace } from "../day/day-quest-face";
+import { ProgressRing } from "./progress-ring";
 
 const QUEST_POPOVER_GAP = 8;
 
@@ -98,12 +99,23 @@ export const DailyQuestChip = ({
         data-ready={ready || undefined}
         aria-label={face ? `${face.name} ${count}` : DAY_BANNER_WORDS.today}
         aria-expanded={open}
-        className="frontier-quest-chip"
+        className={layout === "desktop" ? "frontier-quest-orb" : "frontier-quest-chip"}
         onClick={() => setOpen((was) => !was)}
       >
-        <Icon name={face?.icon ?? "explore"} size={16} />
-        <span className="frontier-quest-chip__label">{DAY_BANNER_WORDS.quest}</span>
-        <span className="frontier-quest-chip__count">{count}</span>
+        {layout === "desktop" ? (
+          <>
+            <ProgressRing size="lg" share={target > 0 ? progress / target : undefined} tone="calm">
+              <Icon name={face?.icon ?? "explore"} size={22} />
+            </ProgressRing>
+            <span className="frontier-quest-orb__count">{ready ? DAY_BANNER_WORDS.collect : count}</span>
+          </>
+        ) : (
+          <>
+            <Icon name={face?.icon ?? "explore"} size={16} />
+            <span className="frontier-quest-chip__label">{DAY_BANNER_WORDS.quest}</span>
+            <span className="frontier-quest-chip__count">{count}</span>
+          </>
+        )}
       </button>
       {open &&
         createPortal(

@@ -6,9 +6,6 @@ import type { ReactNode } from "react";
 interface HudHeaderLayoutProps {
   lane: CompactLane | null;
   identity: ReactNode;
-  places?: ReactNode;
-  quest?: ReactNode;
-  stores?: ReactNode;
   clock: ReactNode;
   viewControls: ReactNode;
   attention: ReactNode;
@@ -16,36 +13,19 @@ interface HudHeaderLayoutProps {
 }
 
 /** Small screens keep status and navigation in two bounded rows, never in a horizontal scroller. */
-export function HudHeaderLayout({
-  lane,
-  identity,
-  places,
-  quest,
-  stores,
-  clock,
-  viewControls,
-  attention,
-  settings,
-}: HudHeaderLayoutProps) {
+export function HudHeaderLayout({ lane, identity, clock, viewControls, attention, settings }: HudHeaderLayoutProps) {
   if (lane === null) {
     return (
       <header
         aria-label="Game controls"
         className="hud-topbar pointer-events-auto fixed inset-x-0 top-0 z-20 h-hud-header px-3"
       >
-        <div className="hud-topbar__bay hud-topbar__bay--left">
-          {identity}
-          {identity && stores && <span className="hud-topbar__rivet" aria-hidden="true" />}
-          {stores}
-        </div>
+        <div className="hud-topbar__bay hud-topbar__bay--left">{identity}</div>
         <div className="hud-topbar__bay hud-topbar__bay--center">
           {clock}
-          {quest}
           {viewControls && <div className="hud-topbar__switch">{viewControls}</div>}
         </div>
         <div className="hud-topbar__bay hud-topbar__bay--right">
-          {places && <span className="hud-topbar__rivet" aria-hidden="true" />}
-          {places}
           {attention}
           {settings}
         </div>
