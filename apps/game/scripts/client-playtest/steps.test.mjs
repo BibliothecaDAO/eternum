@@ -13,6 +13,7 @@ import {
   CHAT,
   CLOSE,
   DEEP_WORDS,
+  FIGHT_WORDS,
   INVITE_WORDS,
   EXPLORE,
   MOVE,
@@ -1247,6 +1248,12 @@ describe("the Season 1 rehearsal", () => {
     expect(REHEARSAL_WORDS.move).toBe(MOVE);
     expect(REHEARSAL_WORDS.explore).toBe(EXPLORE);
     expect(REHEARSAL_WORDS.attack).toBe(DEEP_WORDS.attack);
+    expect(REHEARSAL_WORDS.forecasts).toEqual({
+      lost: FIGHT_WORDS.armyLost,
+      holds: FIGHT_WORDS.holds,
+      earns: FIGHT_WORDS.earns,
+      clears: FIGHT_WORDS.clears,
+    });
     expect(REHEARSAL_WORDS.take).toBe(DEEP_WORDS.take);
     expect(REHEARSAL_WORDS.beast("Balrog", 900)).toBe(DEEP_WORDS.beast("Balrog", 900));
     expect(REHEARSAL_WORDS.open).toBe(DEEP_WORDS.open);
