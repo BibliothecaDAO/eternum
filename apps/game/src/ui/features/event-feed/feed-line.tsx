@@ -7,7 +7,9 @@ import { usePlayerNames } from "@/hooks/use-player-profile";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Icon } from "@/ui/design-system/icon";
 import { type RankedWords } from "@/ui/design-system/kit/words";
-import { formatShortDuration } from "@bibliothecadao/types";
+import { formatClockTime, formatShortDuration } from "@bibliothecadao/types";
+import { storyMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { useLayout } from "@/shell/frame/layout";
 import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 
 import { type FeedReading, readFeedStory, type ToldReading } from "./feed-reading";
@@ -16,16 +18,26 @@ import { useSiteBeastMeaning } from "./use-site-beast";
 
 const OUTCOME_TONES = { good: "text-hud-good", bad: "text-hud-bad", neutral: "text-hud-muted" } as const;
 
+type Concern = "world" | "own" | "good" | "bad";
+const CONCERN_RULES: Record<Concern, string> = {
+  world: "bg-hud-ink",
+  own: "bg-hud-gold",
+  good: "bg-hud-good",
+  bad: "bg-hud-bad",
+};
+
 export const FeedLine = ({ story }: { story: ProcessedStoryEvent }) => {
   const {
     setup: { store },
   } = useGame();
   const names = usePlayerNames();
   const open = useStoryOpener(story);
-  const now = useCoarseNowSeconds(10);
+  const desktop = useLayout() === "desktop";
+  const now = useCoarseNowSeconds(10, !desktop);
   const player = useAccountStore((state) => state.account?.address ?? null);
   const reading = readFeedStory(story, store);
   const own = involvesPlayer(story, player);
+  const concern = whoItConcerns(reading, own, own && feltEquals(reading.actor, player));
   const words = (
     <span className="ui-event__text">
       {"words" in reading ? (
@@ -39,21 +51,36 @@ export const FeedLine = ({ story }: { story: ProcessedStoryEvent }) => {
       )}
     </span>
   );
+  const shown = desktop ? (
+    <>
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-hud-divider bg-hud-surface">
+        <Icon name={storyMeaning(story.story)} size={24} className="ui-event__icon" />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        {words}
+        <span className="ui-event__time">{formatClockTime(story.timestampMs / 1000)}</span>
+      </span>
+    </>
+  ) : (
+    words
+  );
   return (
     <div
-      className="ui-event ui-feed-line items-center"
+      className={`ui-event ui-feed-line items-center${desktop ? " py-2" : ""}`}
       data-feed-line
       data-story={story.story}
       data-own={own || undefined}
-      data-rule={whoItConcerns(reading, own, own && feltEquals(reading.actor, player))}
+      data-rule={concern}
     >
-      <span className="ui-feed-line__rule" aria-hidden="true" />
+      {!desktop && (
+        <span className={`my-1 w-[3px] shrink-0 self-stretch rounded-full ${CONCERN_RULES[concern]}`} aria-hidden="true" />
+      )}
       {open ? (
         <button type="button" className="ui-event__open items-center" onClick={open}>
-          {words}
+          {shown}
         </button>
       ) : (
-        words
+        shown
       )}
       {"reward" in reading && reading.reward && (
         <span className="ui-feed-line__reward" data-tip={reading.reward.name}>
@@ -61,12 +88,14 @@ export const FeedLine = ({ story }: { story: ProcessedStoryEvent }) => {
           {reading.reward.amountText}
         </span>
       )}
-      <span className="ui-event__time">{formatShortDuration(Math.max(1, now - story.timestampMs / 1000))}</span>
+      {!desktop && (
+        <span className="ui-event__time">{formatShortDuration(Math.max(1, now - story.timestampMs / 1000))}</span>
+      )}
     </div>
   );
 };
 
-const whoItConcerns = (reading: FeedReading, own: boolean, actedByPlayer: boolean) => {
+const whoItConcerns = (reading: FeedReading, own: boolean, actedByPlayer: boolean): Concern => {
   if (!own) return "world";
   const tone = actedByPlayer && "outcome" in reading ? reading.outcome?.tone : undefined;
   return tone === "good" || tone === "bad" ? tone : "own";
