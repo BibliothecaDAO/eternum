@@ -96,6 +96,8 @@ export const frontierPhrases = (
     contract,
     buildablePlotCount,
     isOnePerRealm,
+    relicsPerLayer,
+    previewRuinGuardBounds,
     depthRewardPercent,
     logisticsStamina,
     mainnetTokens,
@@ -211,6 +213,11 @@ export const frontierPhrases = (
         `Immediately draws ${n(contract.oathDrawCount)} Oaths for the revealing army, or lets you pass for +${n(nativeOaths.PASS_STAMINA)} stamina.`,
         `Each ruin holds either a relic or a Fragment cache, never both.`,
         `${nativeFragments.SURFACE_CACHE_PERCENT}% on the ${LAYER_NAMES[0]}`,
+        ...[0, 1, 2].map((depth) => {
+          const low = previewRuinGuardBounds(depth + 1, depth);
+          const high = previewRuinGuardBounds(depth + relicsPerLayer, depth);
+          return `${beastOf("ruin", depth).name} (${n(low[0])}–${n(low[1])} to ${n(high[0])}–${n(high[1])})`;
+        }),
       ],
     },
     {
@@ -483,6 +490,9 @@ export const loadBalanceSources = async () => {
     const { nativeCommandBits: commandBits } = await server.ssrLoadModule(
       join(here, "../../../contracts/l3/world-native/schema/commands.gen.ts"),
     );
+    const { RELICS_PER_LAYER: relicsPerLayer, previewRuinGuardBounds } = await server.ssrLoadModule(
+      join(here, "../../../contracts/l3/world-native/schema/site-previews.gen.ts"),
+    );
     const { ASPECT_PAGE_WORDS: aspectWords, RELIC_WORDS: relicWords } = await server.ssrLoadModule(
       join(here, "../../game/src/ui/design-system/kit/words.ts"),
     );
@@ -542,6 +552,8 @@ export const loadBalanceSources = async () => {
       contract,
       buildablePlotCount,
       isOnePerRealm,
+      relicsPerLayer,
+      previewRuinGuardBounds,
       depthRewardPercent,
       logisticsStamina,
       mainnetTokens,

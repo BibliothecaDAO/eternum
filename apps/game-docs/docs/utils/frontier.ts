@@ -429,6 +429,9 @@ const bowDeepBeasts = deepSites
   .map((site) => DEEP_BEASTS[site.key].name)
   .join(", ");
 
+const ruinFamilyRange = (depth: number) =>
+  `${beastOf("ruin", depth).name} (${range(...previewRuinGuardBounds(depth + 1, depth))} to ${range(...previewRuinGuardBounds(depth + RELICS_PER_LAYER, depth))})`;
+
 export const FRONTIER = {
   calendar: SEASON_ONE_CALENDAR,
   day: {
@@ -585,9 +588,9 @@ export const FRONTIER = {
       weapon: "Blade",
       bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman],
       pays: "1 relic or 1 Fragment cache",
-      surface: `${beastOf("ruin", 0).name} (${range(...previewRuinGuardBounds(1, 0))} to ${range(...previewRuinGuardBounds(3, 0))})`,
-      veil: `${beastOf("ruin", 1).name} (${range(...previewRuinGuardBounds(2, 1))} to ${range(...previewRuinGuardBounds(4, 1))})`,
-      hollow: `${beastOf("ruin", 2).name} (${range(...previewRuinGuardBounds(3, 2))} to ${range(...previewRuinGuardBounds(5, 2))})`,
+      surface: ruinFamilyRange(0),
+      veil: ruinFamilyRange(1),
+      hollow: ruinFamilyRange(2),
     },
   ],
   layers: {
