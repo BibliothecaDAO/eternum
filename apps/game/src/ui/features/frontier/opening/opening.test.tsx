@@ -57,15 +57,19 @@ describe("the interface that opens as you play", () => {
   });
 
   it("keeps every contextual line within the word budget and free of banned or numeric depth jargon", () => {
-    const ruleVariants = [OPENING_RULES, { ...OPENING_RULES, tomorrowSeconds: undefined }];
+    const ruleVariants = [OPENING_RULES, { ...OPENING_RULES, dayLeftSeconds: undefined }];
     const completableMoments = OPENING_MOMENTS.filter(
       (moment) => "completesWhen" in OPENING[moment] || "completesWhileShowing" in OPENING[moment],
     );
     expect(Object.keys(OPENING_WORDS.completed).sort()).toEqual([...completableMoments].sort());
     for (const moment of OPENING_MOMENTS) {
-      const texts = ruleVariants.map((variant) => OPENING_WORDS.lines[moment](variant));
+      const texts = ruleVariants.flatMap((variant) => [
+        OPENING_WORDS.lines[moment](variant),
+        OPENING_WORDS.titles[moment](variant),
+      ]);
       if (moment in OPENING_WORDS.completed) {
-        texts.push(OPENING_WORDS.completed[moment as keyof typeof OPENING_WORDS.completed]);
+        const { title, line } = OPENING_WORDS.completed[moment as keyof typeof OPENING_WORDS.completed];
+        texts.push(title, line);
       }
       for (const text of texts) {
         const words = text.trim().split(/\s+/).filter(Boolean);

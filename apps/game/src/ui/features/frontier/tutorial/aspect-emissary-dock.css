@@ -290,42 +290,64 @@
 
 .emissary-dock--phone {
   width: 100%;
-  min-height: 64px;
+  min-height: 70px;
+  gap: 10px;
+  padding: 8px 10px 8px 8px;
+  border-top-width: 1.5px;
 }
 
 .emissary-dock--phone .emissary-dock__portrait-bay {
-  width: 66px;
-  flex: 0 0 66px;
+  align-self: center;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  background: none;
 }
 
 .emissary-dock--phone .emissary-dock__portrait-frame {
-  width: 58px;
-  height: 58px;
-  margin-top: -8px;
-  padding: 1.5px;
+  width: 52px;
+  height: 52px;
+  margin: 0;
+  padding: 1px;
 }
 
 .emissary-dock--phone .emissary-dock__medallion {
-  right: -8px;
-  bottom: 2px;
+  right: -6px;
+  bottom: -6px;
   width: 22px;
   height: 22px;
   padding: 1.5px;
 }
 
-.emissary-dock--phone .emissary-dock__crest {
-  left: 76px;
-  right: 18px;
-}
-
-.emissary-dock--phone .emissary-dock__rivet--tl,
-.emissary-dock--phone .emissary-dock__rivet--bl {
-  left: 68px;
-}
-
 .emissary-dock--phone .emissary-dock__body {
-  padding: 7px 10px 8px 14px;
-  gap: 3px;
+  padding: 0;
+  gap: 2px;
+}
+
+.emissary-dock--phone .emissary-dock__head {
+  align-items: flex-start;
+}
+
+.emissary-dock--phone .emissary-dock__title {
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-leading-title);
+  font-variant-caps: small-caps;
+  letter-spacing: 0.04em;
+  color: rgb(var(--hud-ink));
+}
+
+.emissary-dock--phone.emissary-dock--completed .emissary-dock__title {
+  color: var(--hud-good);
+}
+
+.emissary-dock__tick {
+  margin-right: 6px;
+}
+
+.emissary-dock__line {
+  font-size: var(--hud-text-body);
+  line-height: var(--hud-leading-body);
+  color: rgb(var(--hud-ink));
 }
 
 .emissary-dock--phone .emissary-dock__btn {
@@ -335,27 +357,11 @@
   border: 0;
 }
 
-.emissary-dock--phone .emissary-dock__head {
-  flex-wrap: wrap;
-  row-gap: 4px;
-}
-
-.emissary-dock--phone .emissary-dock__speaker {
-  flex: 1 1 auto;
-  flex-wrap: wrap;
-}
-
-.emissary-dock--phone .emissary-dock__speech {
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-}
-
 .emissary-dock--phone .emissary-dock__action {
   display: flex;
   margin-left: 0;
-  margin-top: 2px;
-  font-size: var(--hud-text-badge);
-  line-height: var(--hud-leading-badge);
+  font-size: var(--hud-text-body);
+  line-height: var(--hud-leading-body);
 }
 
 .emissary-dock--completed {

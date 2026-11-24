@@ -193,7 +193,7 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
     relicMinutesPerTier: slice.relic_seconds_per_rank / 60,
     scoutExploreStamina: nativeRuleConstants.SCOUT_EXPLORE_STAMINA,
     exploreStamina: pickBase.revealStamina,
-    tomorrowSeconds: clock.tomorrowSeconds,
+    dayLeftSeconds: clock.secondsLeft,
   };
 }
 

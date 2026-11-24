@@ -123,7 +123,7 @@ export const OPENING = {
     completesWhileShowing: (ctx) => ctx.openedResearch,
   },
   "day-end": {
-    icon: "hourglass",
+    icon: "realm",
     teacher: "own",
     parts: [],
     reachedWhen: (ctx) => ctx.hasRealm && ctx.dayEndingSoon,

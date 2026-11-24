@@ -1379,7 +1379,7 @@ it.each([
       expect(initialDock?.dataset.tutorialLayout).toBe(layout);
       if (layout === "phone") {
         expect(initialDock?.dataset.tutorialForm).toBe("reminder");
-        expect(initialDock?.textContent).toContain(OPENING_WORDS.titles.explore);
+        expect(initialDock?.textContent).toContain(OPENING_WORDS.titles.explore());
       } else {
         expect(initialDock?.querySelector(".emissary-dock__action")?.textContent).toContain(
           OPENING_WORDS.actions.explore,
@@ -1417,14 +1417,13 @@ it.each([
         '[data-tutorial-dock="explore"][data-tutorial-status="completed"]',
       );
       expect(confirmed).not.toBeNull();
-      expect(confirmed?.textContent).toContain(OPENING_WORDS.completedLabel);
-      expect(confirmed?.textContent).toContain(OPENING_WORDS.completed.explore);
+      expect(confirmed?.textContent).toContain(OPENING_WORDS.completed.explore.title);
 
       await act(async () => confirmed!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
       const raceNext = host.querySelector<HTMLElement>(
         '[data-tutorial-dock="aspects"][data-tutorial-status="showing"]',
       );
-      expect(raceNext?.textContent).toContain(OPENING_WORDS.titles.aspects);
+      expect(raceNext?.textContent).toContain(OPENING_WORDS.titles.aspects());
       await act(async () => raceNext!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
       expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
 
@@ -1560,7 +1559,7 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
     );
     expect(dayEndDock).not.toBeNull();
     expect(dayEndDock?.dataset.tutorialAspect).toBe("1");
-    expect(dayEndDock?.textContent).toContain(OPENING_WORDS.titles["day-end"]);
+    expect(dayEndDock?.textContent).toContain(OPENING_WORDS.lines["day-end"]());
 
     await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Today"]')!.click());
     await act(async () => new Promise((settled) => setTimeout(settled, 20)));
