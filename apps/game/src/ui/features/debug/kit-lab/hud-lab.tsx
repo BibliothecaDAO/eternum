@@ -1600,7 +1600,9 @@ const LabCastleResearch = () => (
 /** Research's page on the realm some days in, as the game opens it: the tree alone, a tile tapped bringing its choice. */
 const LabResearch = () => {
   const nodes = readResearchTree(MID_REALM);
-  const [picked, setPicked] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(
+    () => (nodes.find(({ state }) => state === "ready") ?? nodes[0])?.key ?? null,
+  );
   return (
     <ResearchPanel
       nodes={nodes}
@@ -1610,6 +1612,9 @@ const LabResearch = () => {
       fixFor={() => undefined}
       onResearch={noop}
       onClose={noop}
+      essence={MID_REALM.essence}
+      labor={MID_REALM.labor}
+      castleLevel={MID_REALM.castleLevel}
     />
   );
 };

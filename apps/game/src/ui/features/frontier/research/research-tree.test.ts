@@ -10,6 +10,7 @@ import {
   readResearchTree,
   researchActionName,
   researchEffectLine,
+  researchEraForLevel,
   researchVerb,
   type RealmResearchFacts,
 } from "./research-tree";
@@ -162,6 +163,9 @@ it("uses one Upgrade verb across building and oath rows while naming Oath slots 
 });
 
 it("assigns every node its contract era and derives prerequisite link states from leadsTo", () => {
+  expect([researchEraForLevel(-1), researchEraForLevel(0), researchEraForLevel(1), researchEraForLevel(5)]).toEqual([
+    0, 0, 1, 2,
+  ]);
   expect(node(MID_REALM, "row-0").era).toBe(0);
   expect(node(MID_REALM, "row-6").era).toBe(0);
   expect(node(MID_REALM, "row-2").era).toBe(1);

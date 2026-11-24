@@ -2145,12 +2145,31 @@ function figureStep(from: RankedWords | string, to: RankedWords | string): Ranke
  * what each side and node gives, and each thing a node's next tier needs, in the order a player meets them.
  */
 const LESS_WORD = "less";
+const RESEARCH_STATES = {
+  ready: "Ready",
+  short: "Short",
+  done: "Researched",
+  locked: "Locked",
+} as const;
 
 export const RESEARCH_TREE = {
   /** Said while the realm's knowledge, balances, prices or board rules have not all arrived. */
   onItsWay: "Loading research…",
+  branchColumn: "Branch",
   branches: { economy: "Economy", army: ARMY, castle: CASTLE },
-  states: { ready: "Can research", short: "Not enough", done: "Researched", locked: "Locked" },
+  branchSubtitles: {
+    economy: "Output & Caps",
+    army: "Oaths & Logistics",
+    castle: `The ${DEEP} Path`,
+  },
+  currentEra: "Current",
+  readyCount: (count: number) => `${RESEARCH_STATES.ready} (${formatExact(count)})`,
+  unlocked: "Unlocked",
+  buildFirst: "Build 1st",
+  tierBadge: (numeral: string) => `Tier ${numeral}`,
+  eraBadge: (numeral: string) => `Era ${numeral}`,
+  promptPick: "Select any node to inspect or upgrade",
+  states: RESEARCH_STATES,
   outputs: {
     fields: ["Fields", "Farm wheat"],
     tools: ["Tools", "Workshop labor"],

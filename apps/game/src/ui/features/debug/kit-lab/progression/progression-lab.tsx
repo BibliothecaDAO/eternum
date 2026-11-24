@@ -71,6 +71,9 @@ const LabResearch = ({ realm }: { realm: RealmResearchFacts }) => {
       fixFor={() => undefined}
       onResearch={noop}
       onClose={() => undefined}
+      essence={realm.essence}
+      labor={realm.labor}
+      castleLevel={realm.castleLevel}
     />
   );
 };

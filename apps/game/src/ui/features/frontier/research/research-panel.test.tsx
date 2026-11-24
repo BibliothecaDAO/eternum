@@ -47,6 +47,9 @@ const draw = (picked: string | null, onResearch = vi.fn(), onPick = vi.fn(), onF
         fixFor={(need) => (need.kind === "store" ? { icon: "realm", word: "Upgrade the Castle", onFix } : undefined)}
         onResearch={onResearch}
         onClose={onClose}
+        essence={MID_REALM.essence}
+        labor={MID_REALM.labor}
+        castleLevel={MID_REALM.castleLevel}
       />,
     ),
   );
@@ -104,6 +107,9 @@ it("holds a locked node's verb, says why, and offers the step that opens it", ()
         fixFor={() => ({ icon: "realm", word: "Upgrade the Castle", onFix })}
         onResearch={vi.fn()}
         onClose={vi.fn()}
+        essence={MID_REALM.essence}
+        labor={MID_REALM.labor}
+        castleLevel={MID_REALM.castleLevel}
       />,
     ),
   );
@@ -135,6 +141,9 @@ it("states why each locked or short row is held back in plain words without repe
         fixFor={fixFor}
         onResearch={vi.fn()}
         onClose={vi.fn()}
+        essence={EARLY_REALM.essence}
+        labor={EARLY_REALM.labor}
+        castleLevel={EARLY_REALM.castleLevel}
       />,
     ),
   );
@@ -158,6 +167,9 @@ it("states why each locked or short row is held back in plain words without repe
         fixFor={fixFor}
         onResearch={vi.fn()}
         onClose={vi.fn()}
+        essence={EARLY_REALM.essence}
+        labor={EARLY_REALM.labor}
+        castleLevel={1}
       />,
     ),
   );
@@ -179,6 +191,9 @@ it("states why each locked or short row is held back in plain words without repe
         fixFor={fixFor}
         onResearch={vi.fn()}
         onClose={vi.fn()}
+        essence={EARLY_REALM.essence}
+        labor={EARLY_REALM.labor}
+        castleLevel={EARLY_REALM.castleLevel}
       />,
     ),
   );
@@ -205,6 +220,9 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
           fixFor={() => undefined}
           onResearch={vi.fn()}
           onClose={() => undefined}
+          essence={MID_REALM.essence}
+          labor={MID_REALM.labor}
+          castleLevel={MID_REALM.castleLevel}
         />,
       ),
     );
@@ -244,7 +262,9 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
 
 it("shows the Farm's output step without a production formula", () => {
   draw("row-0");
-  const lines = [...host.querySelectorAll("[data-lab='node-choice'] > span")].map((line) => line.textContent);
+  const lines = [...host.querySelectorAll("[data-lab='node-choice'] [data-choice-summary]")].map(
+    (line) => line.textContent,
+  );
   expect(lines).toEqual(["Farm wheat · 120% → 140%"]);
   expect(host.querySelector("[data-node='row-0'] [data-research-effect]")?.textContent).toBe("120% → 140%");
   expect(host.querySelector("[data-node='row-4'] [data-research-effect]")?.textContent).toBe(
@@ -265,6 +285,9 @@ it("keeps the chosen Research action outside the tree scroll on every pick, incl
         fixFor={() => undefined}
         onResearch={vi.fn()}
         onClose={() => undefined}
+        essence={MID_REALM.essence}
+        labor={MID_REALM.labor}
+        castleLevel={MID_REALM.castleLevel}
       />
     );
   };
@@ -316,15 +339,15 @@ it.each([
         fixFor={() => undefined}
         onResearch={vi.fn()}
         onClose={vi.fn()}
+        essence={MID_REALM.essence}
+        labor={MID_REALM.labor}
+        castleLevel={MID_REALM.castleLevel}
       />,
     ),
   );
   const card = host.querySelector("[data-lab='node-choice']")!;
-  const effect = [...card.querySelectorAll(":scope > span")].find((line) =>
-    line.textContent?.startsWith("New armies start with Logistics"),
-  );
-  // Each rank is its gem, read by its name, never a numeral in the words.
-  expect(saidWithGems(effect!)).toBe(`New armies start with Logistics · ${label}`);
+  const effect = card.querySelector("[data-choice-summary]")!;
+  expect(saidWithGems(effect)).toBe(`New armies start with Logistics · ${label}`);
 });
 
 /** An element's words with each gem said by its name, as a screen reader reads the line. */
@@ -348,41 +371,74 @@ it("renders every generated research row", () => {
   expect(new Set(renderedRows).size).toBe(catalogRows.length);
 });
 
-it("offers an inline Upgrade button on affordable rows with primary gold on the first ready node", () => {
+it("keeps cards free of inline Upgrade buttons and routes upgrading through the single selected bottom bar", () => {
   const onResearch = vi.fn();
-  draw(null, onResearch);
-  const upgrades = [...host.querySelectorAll<HTMLButtonElement>("button[aria-label^='Upgrade ']")];
-  expect(upgrades.length).toBeGreaterThan(1);
-  expect(upgrades[0]!.dataset.kind).toBe("primary");
-  expect(upgrades[1]!.dataset.kind).toBe("secondary");
-  act(() => upgrades[0]!.click());
-  expect(onResearch).toHaveBeenCalledTimes(1);
-  expect(onResearch).toHaveBeenCalledWith(expect.objectContaining<Partial<TreeNode>>({ state: "ready" }));
+  const onPick = vi.fn();
+  draw(null, onResearch, onPick);
+  expect(host.querySelectorAll("[data-node] button")).toHaveLength(0);
+  expect(host.querySelectorAll("[role='tab']")).toHaveLength(0);
+  expect(host.querySelectorAll("button[aria-label^='Upgrade ']")).toHaveLength(0);
+  act(() => host.querySelector<HTMLButtonElement>("[data-node='row-6']")!.click());
+  expect(onPick).toHaveBeenCalledWith("row-6");
 
-  const mid = readResearchTree(MID_REALM);
+  const withBarracks = readResearchTree({
+    ...MID_REALM,
+    standing: { ...MID_REALM.standing, [research.ROW_KNIGHT_OATHS]: 1 },
+  });
   act(() =>
     root.render(
       <ResearchPanel
-        nodes={mid}
+        nodes={withBarracks}
+        picked="row-6"
+        onPick={onPick}
+        sending={new Set()}
+        fixFor={() => undefined}
+        onResearch={onResearch}
+        onClose={vi.fn()}
+        essence={MID_REALM.essence}
+        labor={MID_REALM.labor}
+        castleLevel={MID_REALM.castleLevel}
+      />,
+    ),
+  );
+  expect(host.querySelector("[data-research-balances]")?.textContent).toContain("18.3K");
+  expect(host.querySelector("[data-era='1'][data-current-era]")).not.toBeNull();
+  const upgrades = [...host.querySelectorAll<HTMLButtonElement>("button[aria-label='Upgrade Barracks Oath slots']")];
+  expect(upgrades).toHaveLength(1);
+  expect(upgrades[0]!.closest("[data-research-footer]")).not.toBeNull();
+  expect(upgrades[0]!.dataset.kind).toBe("primary");
+  act(() => upgrades[0]!.click());
+  expect(onResearch).toHaveBeenCalledWith(expect.objectContaining<Partial<TreeNode>>({ key: "row-6", state: "ready" }));
+
+  const laborShort = readResearchTree({
+    ...MID_REALM,
+    essence: 50_000,
+    labor: 100,
+    standing: { ...MID_REALM.standing, [research.ROW_KNIGHT_OATHS]: 1 },
+  });
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={laborShort}
         picked={null}
         onPick={vi.fn()}
         sending={new Set()}
         fixFor={() => undefined}
         onResearch={vi.fn()}
         onClose={vi.fn()}
+        essence={50_000}
+        labor={100}
+        castleLevel={MID_REALM.castleLevel}
       />,
     ),
   );
-  const armyTab = [...host.querySelectorAll<HTMLButtonElement>("[role='tab']")].find(
-    (tab) => tab.textContent === "Army",
-  )!;
-  act(() => armyTab.click());
-  const armyUpgrades = [...host.querySelectorAll<HTMLButtonElement>("button[aria-label^='Upgrade ']")];
-  expect(armyUpgrades.length).toBeGreaterThan(0);
-  expect(armyUpgrades[0]!.dataset.kind).toBe("primary");
+  const shortPill = host.querySelector("[data-node='row-6'] [data-phone-pill]")!;
+  expect(shortPill.querySelector("[data-icon='labor']")).not.toBeNull();
+  expect(shortPill.querySelector("[data-icon='essence']")).toBeNull();
+  expect(shortPill.textContent).toBe("1K");
 });
 
-it("renders the 3-track Era tree with measured SVG prerequisite links on desktop and phone, tier pips, and accessible Upgrade CTA", () => {
+it("renders the 3-track Era tree with measured SVG prerequisite links on desktop and phone", () => {
   const rectOf = (left: number, top: number, width: number, height: number): DOMRect =>
     ({
       left,
@@ -421,7 +477,7 @@ it("renders the 3-track Era tree with measured SVG prerequisite links on desktop
     draw("spire", onResearch, onPick);
     expect([...host.querySelectorAll("[data-era]")].map((el) => el.textContent)).toEqual([
       "ISettlement",
-      "IICity",
+      "IICityCurrent",
       "IIIKingdom",
     ]);
     expect([...host.querySelectorAll("[data-branch]")].map((el) => el.getAttribute("data-branch"))).toEqual([
@@ -453,12 +509,6 @@ it("renders the 3-track Era tree with measured SVG prerequisite links on desktop
     act(() => spireButtons[0]!.click());
     expect(onResearch).toHaveBeenCalledWith(expect.objectContaining<Partial<TreeNode>>({ key: "spire" }));
 
-    const farmUpgrade = host.querySelector<HTMLButtonElement>("[data-node='row-0'] button[aria-label='Upgrade Farm']")!;
-    const enterEvent = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
-    act(() => farmUpgrade.dispatchEvent(enterEvent));
-    expect(enterEvent.defaultPrevented).toBe(false);
-    expect(onPick).not.toHaveBeenCalled();
-
     layout = phoneRects;
     const early = readResearchTree(EARLY_REALM);
     act(() =>
@@ -471,6 +521,9 @@ it("renders the 3-track Era tree with measured SVG prerequisite links on desktop
           fixFor={() => undefined}
           onResearch={vi.fn()}
           onClose={vi.fn()}
+          essence={EARLY_REALM.essence}
+          labor={EARLY_REALM.labor}
+          castleLevel={EARLY_REALM.castleLevel}
         />,
       ),
     );
@@ -502,6 +555,9 @@ it("renders the 3-track Era tree with measured SVG prerequisite links on desktop
           fixFor={() => undefined}
           onResearch={vi.fn()}
           onClose={vi.fn()}
+          essence={EARLY_REALM.essence}
+          labor={EARLY_REALM.labor}
+          castleLevel={EARLY_REALM.castleLevel}
         />,
       ),
     );
