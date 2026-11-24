@@ -4,10 +4,6 @@ Ratings are keyed by the L2 wallet that played. `/api/ratings/top?player=<wallet
 that wallet's position. Changing a wallet link cannot retarget a historical game's rating. Account and Realms-id rating
 queries are refused.
 
-`/api/stats/accounts` returns one number, `{ "accounts": n }`: the accounts that signed in and were not deleted, cached
-an hour per colo. It, `/api/directory` and `/api/profiles` are readable from the environment's docs site
-(`docs.origin` in `deploy/first/environments.json`).
-
 Every request reads token values at one verified L2 block. A named hash is read directly from the provider; latest reads
 resolve a confirmed header first. No rating values or rankings are stored in the Worker. Token calls are batched in
 groups of at most 100. A persisted budget of 10,000 upstream RPC methods per UTC minute counts chain, header and token
@@ -138,3 +134,9 @@ curl -s -H "authorization: Bearer $OPERATOR_TOKEN" https://<identity origin>/api
 curl -s -H "authorization: Bearer $OPERATOR_TOKEN" https://<identity origin>/api/operator/shop/refunds \
   -d '{"transactionHash":"<the payment>","refundTransaction":"<the transfer that refunded it>"}'
 ```
+
+## Public reads for the docs site
+
+`GET /api/stats/accounts` returns one number, `{ "accounts": n }`: the accounts that signed in and were not deleted,
+cached an hour per colo. It, `/api/directory` and `/api/profiles` are readable from the environment's docs site
+(`docs.origin` in `deploy/first/environments.json`).
