@@ -27,6 +27,7 @@ export interface RealmRankUp {
   name: string;
   gives?: string;
   need?: Price;
+  refusal?: string;
   sending: boolean;
   onUpgrade?: () => void;
 }
@@ -228,7 +229,13 @@ const NextRank = ({ rankUp }: { rankUp: RealmRankUp }) => (
         {UPGRADE}
       </HudButton>
     ) : (
-      <span role="img" data-realm-castle="" className="frontier-realm-card__locked" aria-label={lockedLine(rankUp)}>
+      <span
+        role="img"
+        data-realm-castle=""
+        className="frontier-realm-card__locked"
+        aria-label={lockedLine(rankUp)}
+        data-tip={lockedLine(rankUp)}
+      >
         <Icon name="lock" size={16} />
         {rankUp.need ? (
           <>
@@ -243,7 +250,5 @@ const NextRank = ({ rankUp }: { rankUp: RealmRankUp }) => (
   </footer>
 );
 
-const lockedLine = ({ name, need }: RealmRankUp) =>
-  need
-    ? `${UPGRADE} · ${name}: ${REALM_CARD_WORDS.needs} ${formatShort(need.amount)} ${PRICE_FACES[need.of].word}`
-    : `${UPGRADE} · ${name}`;
+const lockedLine = ({ name, refusal }: RealmRankUp) =>
+  refusal ? `${UPGRADE} · ${name}: ${refusal}` : `${UPGRADE} · ${name}`;

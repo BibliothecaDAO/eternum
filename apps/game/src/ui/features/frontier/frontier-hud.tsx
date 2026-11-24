@@ -2,6 +2,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
+import { reasonLine } from "@/ui/design-system/kit/reasons";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
 import { useRealmVisit } from "@/sync/active-game-client";
@@ -604,8 +605,9 @@ const useRankUp = (own: NativeRows["Structure"] | null): RealmRankUp | undefined
     name: rankName(levelUp.nextLevel),
     gives: slots > 0 ? REALM_CARD_WORDS.armySlots(slots) : undefined,
     need: refusal?.reason.kind === "short" ? { of: refusal.reason.of, amount: refusal.reason.need } : undefined,
+    refusal: refusal && reasonLine(refusal.reason),
     sending: levelUp.loading,
-    onUpgrade: levelUp.ready ? levelUp.run : undefined,
+    onUpgrade: levelUp.ready || levelUp.loading ? levelUp.run : undefined,
   };
 };
 

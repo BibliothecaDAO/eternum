@@ -2244,7 +2244,6 @@ export const RESEARCH_TREE = {
   held: (noun: string, have: string, need: string) => `${noun} ${have} / ${need}`,
   upgrade: "Upgrade",
   levelUpCastle: "Upgrade the Castle",
-  complete: "Complete",
   less: `(${LESS_WORD})`,
   step: figureStep,
   price: (essence: string) => `${essence} ${ESSENCE}`,

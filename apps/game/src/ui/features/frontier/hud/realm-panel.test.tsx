@@ -196,7 +196,12 @@ it("locks the next rank, with the price it needs, until the realm can pay it", (
         kind="realm"
         level={2}
         rank="Kingdom"
-        rankUp={{ name: "Empire", need: { of: "labor", amount: 12_000 }, sending: false }}
+        rankUp={{
+          name: "Empire",
+          need: { of: "labor", amount: 12_000 },
+          refusal: "Needs 12,000 Labor, have 9,640",
+          sending: false,
+        }}
         stores={STORES}
         fragments={null}
         lords={null}
@@ -206,5 +211,27 @@ it("locks the next rank, with the price it needs, until the realm can pay it", (
   const rankUp = host.querySelector<HTMLElement>("[data-realm-castle]")!;
   expect(rankUp.tagName).toBe("SPAN");
   expect(rankUp.textContent).toBe("Needs 12K");
-  expect(rankUp.getAttribute("aria-label")).toBe("Upgrade · Empire: Needs 12K Labor");
+  expect(rankUp.getAttribute("aria-label")).toBe("Upgrade · Empire: Needs 12,000 Labor, have 9,640");
+});
+
+it("says Upgrading on the button while the rank-up is sent, and takes no second press", () => {
+  const onUpgrade = vi.fn();
+  act(() =>
+    root.render(
+      <RealmCard
+        name="Duskbite"
+        kind="realm"
+        level={0}
+        rank="Settlement"
+        rankUp={{ name: "City", sending: true, onUpgrade }}
+        stores={STORES}
+        fragments={null}
+        lords={null}
+      />,
+    ),
+  );
+  const rankUp = host.querySelector<HTMLButtonElement>("[data-realm-castle]")!;
+  expect([rankUp.tagName, rankUp.textContent, rankUp.disabled]).toEqual(["BUTTON", "Upgrading…", true]);
+  act(() => rankUp.click());
+  expect(onUpgrade).not.toHaveBeenCalled();
 });
