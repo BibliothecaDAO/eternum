@@ -136,7 +136,7 @@ test("the expedition export states each layer's three relic tiers and their gene
     const llm = await renderLlmTxt([join(docs, "pages/frontier/expedition.mdx")], docs);
     const tableLines = llm.split("\n").filter((line) => line.startsWith("|"));
     for (const [depth, layer] of LAYER_NAMES.slice(0, 3).entries()) {
-      const row = tableLines.find((line) => line.startsWith(`| ${layer} |`) && line.includes(":"));
+      const row = tableLines.find((line) => new RegExp(`^\\|\\s*${layer}\\s*\\|`).test(line) && line.includes(":"));
       assert.ok(row, `missing ruin guard row for ${layer}`);
       for (const [place, name] of TIER_WORDS.slice(depth, depth + RELICS_PER_LAYER).entries()) {
         const bounds = previewRuinGuardBounds(depth + place + 1, depth)

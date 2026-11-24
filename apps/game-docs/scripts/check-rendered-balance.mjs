@@ -81,7 +81,17 @@ export const frontierPhrases = (
   nativeFragments,
   nativeOaths,
   nativeRace,
-  { aspectWords, relicWords, relicKinds, commandBits, calendar, nativeResearch, contract, logisticsStamina },
+  {
+    aspectWords,
+    relicWords,
+    relicKinds,
+    commandBits,
+    calendar,
+    nativeResearch,
+    contract,
+    depthRewardPercent,
+    logisticsStamina,
+  },
 ) => {
   const stamina = config.troop.stamina;
   const tick = config.tick.armiesTickIntervalInSeconds;
@@ -150,7 +160,7 @@ export const frontierPhrases = (
       phrases: [
         ...frontierGuardPhrases(preset),
         ...preset.depths.map((depth, index) => `${LAYER_NAMES[index]} ${depth.revealPercent}%`),
-        `${n(100 / contract.campGuardDivisor)}% of its starting guard on the ${LAYER_NAMES[0]}, ${n(((contract.depthRewardDivisor + 1) / contract.depthRewardDivisor) * 100)}% of that in the ${LAYER_NAMES[1]}, ${n(((contract.depthRewardDivisor + 2) / contract.depthRewardDivisor) * 100)}% in the ${LAYER_NAMES[2]}`,
+        `${n(100 / contract.campGuardDivisor)}% of its starting guard on the ${LAYER_NAMES[0]}, ${n(depthRewardPercent(1))}% of that in the ${LAYER_NAMES[1]}, ${n(depthRewardPercent(2))}% in the ${LAYER_NAMES[2]}`,
         `${n(100 * contract.riftGuardMultiplier)}% of its starting guard on the ${LAYER_NAMES[0]}`,
         `Draws ${n(contract.oathDrawCount)} Oaths to pick from, or lets you pass for +${n(nativeOaths.PASS_STAMINA)} stamina.`,
         `${nativeFragments.SURFACE_CACHE_PERCENT}% chance`,
@@ -374,7 +384,9 @@ export const loadBalanceSources = async () => {
     const { SEASON_ONE_CALENDAR: calendar } = await server.ssrLoadModule(
       join(here, "../docs/utils/season-calendar.ts"),
     );
-    const { CONTRACT: contract } = await server.ssrLoadModule(join(here, "../docs/utils/contract-constants.ts"));
+    const { CONTRACT: contract, depthRewardPercent } = await server.ssrLoadModule(
+      join(here, "../docs/utils/contract-constants.ts"),
+    );
     const { logisticsStamina } = await server.ssrLoadModule(
       join(here, "../../../packages/core/src/utils/attribute-tiers.ts"),
     );
@@ -398,6 +410,7 @@ export const loadBalanceSources = async () => {
       relicMeaning,
       calendar,
       contract,
+      depthRewardPercent,
       logisticsStamina,
       productionRelease,
       heraldLimits,

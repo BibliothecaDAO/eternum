@@ -48,12 +48,6 @@
     "value": 3
   },
   {
-    "key": "depthRewardDivisor",
-    "file": "expeditions.cairo",
-    "source": "amount * (2 + depth.into()) / 2",
-    "value": 2
-  },
-  {
     "key": "oathDrawCount",
     "file": "oaths.cairo",
     "source": "for index in 0_u8..3 {",

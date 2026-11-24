@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { createServer } from "vite";
 
 const app = fileURLToPath(new URL("..", import.meta.url));
 const constants = JSON.parse(readFileSync(join(app, "docs/utils/contract-constants.json"), "utf8"));
@@ -25,4 +26,22 @@ test("every copied contract constant still reads as its Cairo line says", () => 
 test("each constant has one key", () => {
   const keys = constants.map(({ key }) => key);
   assert.deepEqual(keys, [...new Set(keys)]);
+});
+
+test("depthRewardPercent matches expeditions.cairo depth_reward", async () => {
+  const match = source("expeditions.cairo").match(
+    /pub fn depth_reward\(amount: u128, depth: u8\) -> u128 \{\s*amount \* \((\d+) \+ depth\.into\(\)\) \/ (\d+)\s*\}/,
+  );
+  assert.ok(match, "expeditions.cairo depth_reward formula changed");
+  const base = Number(match[1]);
+  const divisor = Number(match[2]);
+  const server = await createServer({ configFile: false, logLevel: "silent", appType: "custom" });
+  try {
+    const { depthRewardPercent } = await server.ssrLoadModule(join(app, "docs/utils/contract-constants.ts"));
+    for (const depth of [0, 1, 2]) {
+      assert.equal(depthRewardPercent(depth), Math.round(((base + depth) / divisor) * 100));
+    }
+  } finally {
+    await server.close();
+  }
 });

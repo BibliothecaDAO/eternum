@@ -51,7 +51,7 @@ import {
   type WorldBaneId,
 } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "./config";
-import { CONTRACT } from "./contract-constants";
+import { CONTRACT, depthRewardPercent } from "./contract-constants";
 import { SEASON_ONE_CALENDAR } from "./season-calendar";
 
 const frontierPreset = nativePresetForId(nativePresetIdFor("frontier"));
@@ -72,8 +72,7 @@ const TIER_KEYS = ["common", "uncommon", "rare", "epic", "legendary"] as const;
 
 const hoursOf = (units: number) => (units * seasonDayUnitSeconds(frontierPreset)) / 3600;
 
-export const SHORT_DAY_UNITS = 2;
-export const LONG_DAY_UNITS = 6;
+const SHORT_DAY_UNITS = 2;
 const DAYS_PER_BAG = CONTRACT.daysPerBag;
 const UNITS_PER_BAG = CONTRACT.unitsPerBag;
 const dayLengthHours = Array.from({ length: DAYS_PER_BAG }, (_, index) => hoursOf(SHORT_DAY_UNITS + index));
@@ -84,11 +83,6 @@ const tickMinutes = config.tick.armiesTickIntervalInSeconds / 60;
 const KNIGHT = 26;
 const WHEAT = 35;
 const LABOR = 23;
-const knightWheat = config.resources.productionBySimpleRecipe[KNIGHT]?.find(
-  (input: { resource: number }) => input.resource === WHEAT,
-);
-if (!knightWheat) throw new Error("Frontier's Knight recipe takes no wheat");
-const wheatPerTroop = knightWheat.amount / config.resources.productionBySimpleRecipeOutputs[KNIGHT];
 
 const priceOf = (costs: readonly { resource: number; amount: number }[]) =>
   costs.map(({ resource, amount }) => `${n(amount)} ${resourceName(resource)}`).join(" + ");
@@ -210,7 +204,6 @@ export const FRONTIER = {
   calendar: SEASON_ONE_CALENDAR,
   day: {
     shortestHours: hoursOf(SHORT_DAY_UNITS),
-    longestHours: hoursOf(LONG_DAY_UNITS),
     daysPerBag: DAYS_PER_BAG,
     bagHours: hoursOf(UNITS_PER_BAG),
     lengths: dayLengthsList,
@@ -220,7 +213,6 @@ export const FRONTIER = {
     troops: n(config.startingResources.find((r: { resource: number }) => r.resource === KNIGHT).amount),
     wheat: n(config.startingResources.find((r: { resource: number }) => r.resource === WHEAT).amount),
     labor: n(config.startingResources.find((r: { resource: number }) => r.resource === LABOR).amount),
-    castleNames: Array.from({ length: config.realmMaxLevel }, (_, level) => rankName(level)),
     castleLevels: Array.from({ length: config.realmMaxLevel }, (_, level) => castleLevelLabel(level)),
     castleLevelInline: Array.from({ length: config.realmMaxLevel }, (_, level) => castleLevelInline(level)),
     armies: [limit.settlementArmies, limit.cityArmies, limit.kingdomArmies, limit.empireArmies].map(n),
@@ -272,8 +264,8 @@ export const FRONTIER = {
   sitePayouts: {
     campPercent: `${n(100 / CONTRACT.campGuardDivisor)}%`,
     riftPercent: `${n(100 * CONTRACT.riftGuardMultiplier)}%`,
-    veilMultiplier: `${n(((CONTRACT.depthRewardDivisor + 1) / CONTRACT.depthRewardDivisor) * 100)}%`,
-    hollowMultiplier: `${n(((CONTRACT.depthRewardDivisor + 2) / CONTRACT.depthRewardDivisor) * 100)}%`,
+    veilMultiplier: `${n(depthRewardPercent(1))}%`,
+    hollowMultiplier: `${n(depthRewardPercent(2))}%`,
   },
   depths: frontierPreset.depths.map((depth, index) => ({
     name: LAYER_NAMES[index],
@@ -341,7 +333,6 @@ export const FRONTIER = {
       .join("; "),
     lore: researchRow(research.ROW_LORE),
     outputStep: pct(frontierPreset.board.outputStepBps),
-    troopWheat: n(wheatPerTroop),
   },
   attributes: {
     lightDamageReduction: `${100 - rule.FRONTIER_LIGHT_DAMAGE_PERCENT}%`,
