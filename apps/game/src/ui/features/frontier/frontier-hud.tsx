@@ -150,7 +150,7 @@ const FrontierHudBody = ({
     },
   });
   const desktop = useLayout() === "desktop";
-  const tablet = useTablet() && !desktop;
+  const tablet = useTablet();
   const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null, !desktop);
   useReturnToShop(() => setSurface("shop"));
   const research = useResearchTree(realm);
@@ -258,13 +258,7 @@ const FrontierHudBody = ({
         onClose={close}
       />
     ) : surface === "menu" ? (
-      <HudMenu
-        onOpen={setSurface}
-        onClose={close}
-        events={feedUnread}
-        feed={!tablet}
-        shop={Boolean(own) && fragmentsHeld !== null}
-      />
+      <HudMenu onOpen={setSurface} onClose={close} events={feedUnread} shop={Boolean(own) && fragmentsHeld !== null} />
     ) : undefined;
   const realmVisible = Boolean(shown) && surface === "realm";
   const placesState = {
@@ -550,20 +544,18 @@ const HudMenu = ({
   onOpen,
   onClose,
   events,
-  feed,
   shop,
 }: {
   onOpen: (surface: HudSurface | null) => void;
   onClose: () => void;
   events: number;
-  feed: boolean;
   shop: boolean;
 }) => {
   const navigate = useNavigate();
   const guide = useHowToPlay();
   return (
     <MenuPage
-      onFeed={feed ? () => onOpen("feed") : undefined}
+      onFeed={() => onOpen("feed")}
       onShop={shop ? () => onOpen("shop") : undefined}
       events={events}
       onToday={() => onOpen("today")}

@@ -1133,7 +1133,7 @@ export const HudLab = () => {
   const { state = "idle" } = useParams();
   const lab: LabState = STATES[state as keyof typeof STATES] ?? STATES.idle;
   const desktop = useLayout() === "desktop";
-  const tablet = useTablet() && !desktop;
+  const tablet = useTablet();
   const TopBarView = tablet ? TabletTopBarView : PhoneTopBarView;
   // The game wears Frontier's age (world.tsx's useHudMode); the lab draws it the same.
   useHudMode("frontier");
