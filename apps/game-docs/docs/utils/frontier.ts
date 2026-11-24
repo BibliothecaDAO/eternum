@@ -22,7 +22,7 @@ import {
   relicMeaning,
   type RelicKind,
 } from "../../../game/src/ui/design-system/domain-icon-meaning";
-import { ASPECT_PAGE_WORDS, RELIC_WORDS } from "../../../game/src/ui/design-system/kit/words";
+import { ASPECT_PAGE_WORDS, DAY_BANNER_WORDS, RELIC_WORDS } from "../../../game/src/ui/design-system/kit/words";
 import {
   ASPECT_REWARD,
   BuildingType,
@@ -116,6 +116,22 @@ const researchRow = (row: number) =>
     .map((step) => ({ essence: n(step.essenceCost), labor: n(step.laborCost) }));
 
 const finishHeight = raceRules.STAGE_COUNT * racePreset.stageHeight;
+type TriumphStage = keyof typeof ASPECT_PAGE_WORDS.triumph;
+const triumphPercents: Record<TriumphStage, number> = {
+  1: racePreset.clearMistPercent,
+  2: racePreset.secondWindPercent,
+  3: racePreset.paleMoonPercent,
+  4: racePreset.spoilsPercent,
+};
+const triumphTable = (Object.entries(ASPECT_PAGE_WORDS.triumph) as [string, string][])
+  .map(([stageKey, name]) => {
+    const stage = Number(stageKey) as TriumphStage;
+    const ruleFn = DAY_BANNER_WORDS.triumphRule[stage];
+    const percent = triumphPercents[stage];
+    if (!ruleFn || percent === undefined) throw new Error(`Missing Triumph rule for stage ${stageKey}`);
+    return `Stage ${stage} (${n(racePreset.stageHeight * stage)} height) | ${name} | ${ruleFn(percent)}.`;
+  })
+  .join("\n");
 
 const worldBaneMeta: Record<WorldBaneId, { icon: IconMeaning; effect: string }> = {
   [bane.BLOOD_MOON]: { icon: "moon", effect: `Guarded sites have ${n(banesPreset.beastPercent)}% strength.` },
@@ -446,28 +462,7 @@ export const FRONTIER = {
     finishBonus: n(ASPECT_REWARD.finishBonus),
     maxFinishLords: n(aspectLordsWorth(finishHeight, true)),
     gloryToShare: n(ASPECT_REWARD.gloryToShare),
-    triumphRows: [
-      {
-        stage: `Stage ${raceRules.CLEAR_MIST_STAGE} (${n(racePreset.stageHeight * raceRules.CLEAR_MIST_STAGE)} height)`,
-        name: ASPECT_PAGE_WORDS.triumph[raceRules.CLEAR_MIST_STAGE],
-        effect: `Sites are found at ${n(racePreset.clearMistPercent)}% of the usual odds.`,
-      },
-      {
-        stage: `Stage ${raceRules.SECOND_WIND_STAGE} (${n(racePreset.stageHeight * raceRules.SECOND_WIND_STAGE)} height)`,
-        name: ASPECT_PAGE_WORDS.triumph[raceRules.SECOND_WIND_STAGE],
-        effect: `Stamina recovers at ${n(racePreset.secondWindPercent)}%.`,
-      },
-      {
-        stage: `Stage ${raceRules.PALE_MOON_STAGE} (${n(racePreset.stageHeight * raceRules.PALE_MOON_STAGE)} height)`,
-        name: ASPECT_PAGE_WORDS.triumph[raceRules.PALE_MOON_STAGE],
-        effect: `Guarded sites have ${n(racePreset.paleMoonPercent)}% strength.`,
-      },
-      {
-        stage: `Stage ${raceRules.SPOILS_STAGE} (${n(racePreset.stageHeight * raceRules.SPOILS_STAGE)} height)`,
-        name: ASPECT_PAGE_WORDS.triumph[raceRules.SPOILS_STAGE],
-        effect: `Site rewards pay ${n(racePreset.spoilsPercent)}%.`,
-      },
-    ],
+    triumphTable,
   },
   oaths: {
     count: n(oathRows.length),

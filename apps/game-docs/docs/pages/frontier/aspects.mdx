@@ -5,6 +5,7 @@ description: Aspects, their Orders, hyperstructures, Triumphs, Glory, and LORDS 
 
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
+import { PipeTable } from "@/components/PipeTable";
 
 # Aspects and the race
 
@@ -39,12 +40,7 @@ the Deep. The race lasts {FRONTIER.day.seasonDays} game days or ends early as so
 <GameIcon name="star" /> Completing stages 1 through 4 activates a **Triumph** for every member of your Aspect on the
 next game day. Each Triumph lasts for that one game day only, and no Triumph is scheduled on the last day of the season.
 
-| Stage reached                        | Triumph                                 | Effect for your Aspect                |
-| ------------------------------------ | --------------------------------------- | ------------------------------------- |
-| {FRONTIER.race.triumphRows[0].stage} | **{FRONTIER.race.triumphRows[0].name}** | {FRONTIER.race.triumphRows[0].effect} |
-| {FRONTIER.race.triumphRows[1].stage} | **{FRONTIER.race.triumphRows[1].name}** | {FRONTIER.race.triumphRows[1].effect} |
-| {FRONTIER.race.triumphRows[2].stage} | **{FRONTIER.race.triumphRows[2].name}** | {FRONTIER.race.triumphRows[2].effect} |
-| {FRONTIER.race.triumphRows[3].stage} | **{FRONTIER.race.triumphRows[3].name}** | {FRONTIER.race.triumphRows[3].effect} |
+<PipeTable headers={["Stage reached", "Triumph", "Effect for your Aspect"]}>{FRONTIER.race.triumphTable}</PipeTable>
 
 ## Glory and LORDS rewards
 

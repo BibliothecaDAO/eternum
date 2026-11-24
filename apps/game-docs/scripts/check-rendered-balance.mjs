@@ -86,6 +86,7 @@ export const frontierPhrases = (
   nativeRace,
   {
     aspectWords,
+    dayBannerWords,
     relicWords,
     relicKinds,
     commandBits,
@@ -207,10 +208,18 @@ export const frontierPhrases = (
         `${n(ASPECT_REWARD.lordsPerHeight)} LORDS per height point reached.`,
         `+${n(ASPECT_REWARD.finishBonus)} LORDS`,
         `at least ${n(ASPECT_REWARD.gloryToShare)} Glory`,
-        `${aspectWords.triumph[nativeRace.CLEAR_MIST_STAGE]} Sites are found at ${n(preset.race.clearMistPercent)}%`,
-        `${aspectWords.triumph[nativeRace.SECOND_WIND_STAGE]} Stamina recovers at ${n(preset.race.secondWindPercent)}%`,
-        `${aspectWords.triumph[nativeRace.PALE_MOON_STAGE]} Guarded sites have ${n(preset.race.paleMoonPercent)}%`,
-        `${aspectWords.triumph[nativeRace.SPOILS_STAGE]} Site rewards pay ${n(preset.race.spoilsPercent)}%`,
+        ...Object.entries(aspectWords.triumph).map(([stageKey, name]) => {
+          const stage = Number(stageKey);
+          const percent = {
+            [nativeRace.CLEAR_MIST_STAGE]: preset.race.clearMistPercent,
+            [nativeRace.SECOND_WIND_STAGE]: preset.race.secondWindPercent,
+            [nativeRace.PALE_MOON_STAGE]: preset.race.paleMoonPercent,
+            [nativeRace.SPOILS_STAGE]: preset.race.spoilsPercent,
+          }[stage];
+          const ruleFn = dayBannerWords.triumphRule[stage];
+          if (!ruleFn || percent === undefined) throw new Error(`Missing Triumph check for stage ${stageKey}`);
+          return `${name} ${ruleFn(percent)}.`;
+        }),
       ],
     },
     {
@@ -395,9 +404,11 @@ export const loadBalanceSources = async () => {
     const { nativeCommandBits: commandBits } = await server.ssrLoadModule(
       join(here, "../../../contracts/l3/world-native/schema/commands.gen.ts"),
     );
-    const { ASPECT_PAGE_WORDS: aspectWords, RELIC_WORDS: relicWords } = await server.ssrLoadModule(
-      join(here, "../../game/src/ui/design-system/kit/words.ts"),
-    );
+    const {
+      ASPECT_PAGE_WORDS: aspectWords,
+      DAY_BANNER_WORDS: dayBannerWords,
+      RELIC_WORDS: relicWords,
+    } = await server.ssrLoadModule(join(here, "../../game/src/ui/design-system/kit/words.ts"));
     const { iconUrl } = await server.ssrLoadModule(join(here, "../../game/src/ui/design-system/icon-meaning.ts"));
     const {
       buildingMeaning,
@@ -428,6 +439,7 @@ export const loadBalanceSources = async () => {
       nativeResearch,
       nativeRules,
       aspectWords,
+      dayBannerWords,
       relicWords,
       relicKinds,
       commandBits,
