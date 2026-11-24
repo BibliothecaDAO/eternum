@@ -16,6 +16,7 @@ import type { SlotStart } from "../deploy/deploy-plan";
 import { slotStartLine } from "../deploy/slot-start";
 import { useDeployPlan } from "../deploy/use-deploy-plan";
 import { useWellRefill } from "../sites/well-refill";
+import { useOathWaiting } from "../army/oath-pick";
 import { ArmyCard, ArmySlotsCard, LockedSlotCard, OpenSlotCard } from "./army-row";
 import { ArmyToken, OpenSlot } from "./army-token";
 import type { DockArmy } from "./dock-armies";
@@ -142,6 +143,7 @@ const useDockArmy = (army: DockArmy, pickable: boolean, onOpenArmy: ((explorerId
   const selectArmy = useSelectArmyOnMap();
   return {
     selected,
+    oathWaiting: useOathWaiting(army.explorerId),
     stamina: useWellRefillShown(army),
     onPick: pickable ? () => (onOpenArmy ?? selectArmy)(army.explorerId) : undefined,
   };
@@ -156,7 +158,7 @@ const DockToken = ({
   pickable: boolean;
   onOpenArmy?: (explorerId: number) => void;
 }) => {
-  const { selected, stamina, onPick } = useDockArmy(army, pickable, onOpenArmy);
+  const { selected, stamina, oathWaiting, onPick } = useDockArmy(army, pickable, onOpenArmy);
   return (
     <ArmyToken
       label={army.label}
@@ -167,6 +169,7 @@ const DockToken = ({
       troops={army.troops}
       ethereal={army.ethereal}
       selected={selected}
+      oathWaiting={oathWaiting}
       onPick={onPick}
     />
   );
@@ -184,7 +187,7 @@ const DockArmyRow = ({
   pickable: boolean;
   onOpenArmy?: (explorerId: number) => void;
 }) => {
-  const { selected, stamina, onPick } = useDockArmy(army, pickable, onOpenArmy);
+  const { selected, stamina, oathWaiting, onPick } = useDockArmy(army, pickable, onOpenArmy);
   const category = army.troopsFact?.category;
   return (
     <ArmyCard
@@ -198,6 +201,7 @@ const DockArmyRow = ({
       stamina={stamina}
       ethereal={army.ethereal}
       selected={selected}
+      oathWaiting={oathWaiting}
       onPick={onPick}
     />
   );

@@ -1,9 +1,11 @@
+import "./army-token.css";
+
 import { formatAmount, formatDuration, formatExact, layerName, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { HudMeter, HudStamina, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import { DEEP_WORDS, TROOPS } from "@/ui/design-system/kit/words";
+import { DEEP_WORDS, OATH_WAITING, TROOPS } from "@/ui/design-system/kit/words";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import type { DeepArmyLife } from "@bibliothecadao/eternum/game-client";
 
@@ -64,6 +66,13 @@ export const EtherealMark = ({ layer, at = "corner" }: { layer: EtherealLayer | 
     </span>
   );
 
+/** An Oath the army's clear opened, waiting on its token as a gold shrine; picking the army opens the pick. */
+export const OathWaitingBadge = () => (
+  <span role="img" aria-label={OATH_WAITING} data-tip={OATH_WAITING} className="army-oath-badge">
+    <SemanticIcon name="shrine" size={22} />
+  </span>
+);
+
 export const ArmyToken = ({
   label,
   number,
@@ -73,6 +82,7 @@ export const ArmyToken = ({
   drain,
   ethereal,
   selected,
+  oathWaiting = false,
   flyTarget,
   onPick,
 }: {
@@ -87,6 +97,8 @@ export const ArmyToken = ({
   stamina: StaminaBar | undefined;
   troops: number | undefined;
   selected: boolean;
+  /** An Oath pick waits for this army. */
+  oathWaiting?: boolean;
   /** Where a gain flies into the portrait. */
   flyTarget?: string;
   /** Absent on a visit: the token is shown, never picked. */
@@ -94,6 +106,7 @@ export const ArmyToken = ({
 }) => {
   const body = (
     <>
+      {oathWaiting && <OathWaitingBadge />}
       <span data-fly-target={flyTarget} className="relative size-8 shrink-0">
         <Portrait art={art} />
         {number !== undefined && (
@@ -119,6 +132,7 @@ export const ArmyToken = ({
       type="button"
       aria-label={label}
       aria-pressed={selected}
+      data-oath-waiting={oathWaiting || undefined}
       onClick={onPick}
       className={cn("ui-pick", TOKEN_LOOK)}
     >

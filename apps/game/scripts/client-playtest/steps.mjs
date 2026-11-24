@@ -1240,7 +1240,7 @@ function oathPickSteps(full, layer = "Map") {
     {
       name: "open-oath-pick",
       play: async ({ browser }) => {
-        const pick = await readUntil(() => browser.read(elementAt("[data-oath-pick]")), Boolean, SHEET_WAIT_MS);
+        const pick = await openTheWaitingOath(browser);
         const before = browser.read("window.__labChain.sent.length");
         browser.press("Escape");
         const outside = browser.read('document.elementFromPoint(5, 5)?.classList.contains("ui-modal")');
@@ -1288,13 +1288,16 @@ function oathPickSteps(full, layer = "Map") {
         return row && Number(row.oaths) === ${expected} && Number(row.oath_pick) === 0 && !document.querySelector('[data-oath-pick]');
       })()`,
           );
+        browser.tap(card.offset);
+        const swear = browser.read(elementAt(`[data-oath-swear="${chosen}"]`));
+        if (!swear) return { chosen, missing: true };
         if (!full) {
           const expected = held | (1 << (chosen - 1));
           watchChoice(expected);
-          browser.tap(card.offset);
+          browser.tap(swear.offset);
           return { chosen, expected, watching: true };
         }
-        browser.tap(card.offset);
+        browser.tap(swear.offset);
         const replace = await readUntil(() => browser.read(elementAt("[data-replace-oath]")), Boolean, SHEET_WAIT_MS);
         if (!replace) return { chosen, missing: true };
         const replaced = browser.read("Number(document.querySelector('[data-replace-oath]')?.dataset.replaceOath)");
@@ -6581,7 +6584,9 @@ async function buildABarracksOnce(context) {
 }
 
 const OATH_PICK = "[data-oath-pick]";
+const OATH_WAITING = "[data-oath-waiting]";
 const OATH_CARD = "[data-oath-id]";
+const OATH_SWEAR = "[data-oath-swear]";
 const OATH_REDRAW = "[data-reroll-oath]";
 const OATH_CARD_TEXTS = `JSON.stringify([...document.querySelectorAll(${JSON.stringify(OATH_CARD)})].map((card) => card.textContent.trim()))`;
 
@@ -6607,9 +6612,16 @@ async function fragmentSpendsAreOff({ browser, extraScreenshot }) {
   return { army, absent: controls, enabledForTheGame: enabled };
 }
 
+/** The army an Oath waits for, picked from its shrine-marked token, and its pick read once it opens. */
+async function openTheWaitingOath(browser) {
+  const token = await readUntil(() => browser.read(elementAt(OATH_WAITING)), Boolean, SHEET_WAIT_MS);
+  if (token && !browser.read(elementAt(OATH_PICK))) browser.tap(token.offset);
+  return readUntil(() => browser.read(elementAt(OATH_PICK)), Boolean, SHEET_WAIT_MS);
+}
+
 async function chooseAnOfferedOath(context) {
   const { browser, extraScreenshot } = context;
-  const pick = await readUntil(() => browser.read(elementAt(OATH_PICK)), Boolean, SHEET_WAIT_MS);
+  const pick = await openTheWaitingOath(browser);
   if (!pick) return null;
   extraScreenshot("oath-pick");
   const cards = browser.read(OATH_CARD_TEXTS);
@@ -6618,6 +6630,7 @@ async function chooseAnOfferedOath(context) {
     return { redraw, refused: "the Oath pick offers a Redraw the game's rules turn off" };
   const before = browser.read(SENT_ACTIONS);
   browser.tap(browser.read(elementAt(OATH_CARD)).offset);
+  browser.tap(browser.read(elementAt(OATH_SWEAR)).offset);
   const receipt = await receiptOfTheNextAction(context, before);
   const closed = await readUntil(() => browser.read(elementAt(OATH_PICK)) === null, Boolean, ORDER_OUTCOME_WAIT_MS);
   return { cards, receipt, closed, redraw };

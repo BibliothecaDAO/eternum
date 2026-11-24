@@ -3,7 +3,6 @@ import "./oath-slots.css";
 import { heldOaths } from "@bibliothecadao/eternum";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
-import type { PickEffectBase } from "../pick-effect-format";
 import { usePickEffectBase } from "../pick-effect-text";
 import { oathEffectDescription, oathName } from "./oath-details";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
@@ -17,46 +16,8 @@ import {
   oathSlotResearchTier,
   troopOathSlots,
 } from "@bibliothecadao/eternum";
-import { formatExact, RESOURCE_PRECISION, type TroopType } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, type TroopType } from "@bibliothecadao/types";
 import { useState } from "react";
-
-export function OathSlotPips({
-  held,
-  slots,
-  pickBase,
-}: {
-  held: readonly number[];
-  slots: number;
-  pickBase: PickEffectBase;
-}) {
-  return (
-    <div className="oath-pips" aria-label={`Slots ${held.length} of ${slots}`}>
-      <div className="oath-pips__row">
-        {Array.from({ length: slots }, (_, index) => {
-          const oath = held[index];
-          const active = oath === undefined && index === held.length;
-          return (
-            <span
-              key={index}
-              className="oath-pip"
-              data-filled={oath ? "" : undefined}
-              data-active={active ? "" : undefined}
-              title={oath ? `${oathName(oath)} — ${oathEffectDescription(oath, pickBase)}` : RESEARCH_TREE.oathOpen}
-            >
-              {oath ? (
-                <Icon name={orderMeaning(oath)} size={18} />
-              ) : (
-                <span className="oath-pip__num" aria-hidden="true">
-                  {formatExact(index + 1)}
-                </span>
-              )}
-            </span>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 /** How many Oaths a new army of this troop raised at this home can hold, from what the home has researched. */
 export const useHomeOathSlots = (category: TroopType | undefined, homeId: number): number | undefined => {

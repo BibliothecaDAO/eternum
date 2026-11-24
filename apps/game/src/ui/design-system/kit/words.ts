@@ -593,6 +593,25 @@ export const SEASON = "Season";
 export const RANK = "Rank";
 export const SITES = "Sites";
 export const SITES_CLEARED = "Sites cleared";
+export const OATH_WAITING = "An Oath waits: pick the army to swear it";
+/** An earned Oath's pick: three cards, one redraw, Pass for stamina, and the card chosen sworn by name. */
+export const OATH_PICK = {
+  title: "Swear an Oath",
+  replaceTitle: "Choose an Oath to replace",
+  slotOf: (slot: number, slots: number, troops: string, troop: string) =>
+    `Slot ${formatExact(slot)} of ${formatExact(slots)} · ${troops} ${troop}`,
+  swear: (oath: string) => `Swear ${oath}`,
+  replace: (oath: string) => `Replace ${oath}`,
+  another: "Choose another",
+  swap: "Swap",
+  swapFor: (oath: string, price: string) => `Swap ${oath} for ${price}`,
+  redrawPrice: "One redraw",
+  used: "Used",
+  fresh: "New",
+  pass: "Pass",
+  notChosen: "The Oath could not be chosen.",
+  notRedrawn: "The card could not be redrawn.",
+} as const;
 export const SITE_OATH = { label: "Oath", holds: "Holds an Oath", rule: "Clearing it opens an Oath pick" } as const;
 /** A camp the player's army clears on today's band: their armies refill beside it until the day ends. */
 export const SUPPLY_POST = {
