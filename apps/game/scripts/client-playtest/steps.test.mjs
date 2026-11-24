@@ -1248,8 +1248,7 @@ describe("the Season 1 rehearsal", () => {
     expect(REHEARSAL_WORDS.forecasts).toEqual({
       lost: FIGHT_WORDS.armyLost,
       holds: FIGHT_WORDS.holds,
-      earns: FIGHT_WORDS.earns,
-      clears: FIGHT_WORDS.clears,
+      victory: FIGHT_WORDS.victory,
     });
     expect(REHEARSAL_WORDS.take).toBe(DEEP_WORDS.take);
     expect(REHEARSAL_WORDS.beast("Balrog", 900)).toBe(DEEP_WORDS.beast("Balrog", 900));

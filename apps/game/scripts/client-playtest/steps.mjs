@@ -5982,8 +5982,7 @@ export const REHEARSAL_WORDS = {
   forecasts: {
     lost: "Your army is lost",
     holds: "The guard survives",
-    earns: "This attack earns",
-    clears: "This attack clears it",
+    victory: "Victory likely",
   },
   take: "Take",
   beast: (name, troops) => `Today's beast: ${name}, ${troops} troops`,
@@ -6659,7 +6658,7 @@ async function fightOnTheSurface(context) {
 
 const FIGHT_FORECAST = `JSON.stringify(${JSON.stringify(Object.values(REHEARSAL_WORDS.forecasts))}
   .find((word) => document.querySelector("[data-kit-sheet]")?.textContent.includes(word)) ?? null)`;
-const WINNING_FORECASTS = [REHEARSAL_WORDS.forecasts.earns, REHEARSAL_WORDS.forecasts.clears];
+const WINNING_FORECASTS = [REHEARSAL_WORDS.forecasts.victory];
 
 async function attackBesideAnArmy(context) {
   const { browser, extraScreenshot } = context;

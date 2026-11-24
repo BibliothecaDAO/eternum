@@ -29,7 +29,7 @@ const army = { art: "knight-t1" as const, troops: 5_000 };
 const buttons = () => [...document.querySelectorAll<HTMLButtonElement>("section[role=dialog] button")];
 
 describe("a guarded site's card", () => {
-  it("renders the depth-I Beasts reward in This attack earns", () => {
+  it("renders the depth-I Beasts reward beside its Victory likely verdict", () => {
     const { store, site, structure, attack } = campBeside("Beasts");
     placeSite(store);
     const plan = readSiteCard(store, site, structure, attack({ col: 41, row: 12, alt: false }));
@@ -49,7 +49,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector("[data-fight-outcome]")?.textContent).toContain("This attack earns");
+    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe("Victory likely");
     expect(document.querySelector("[data-fight-reward]")?.textContent).toBe("+5KFull: the rest did not fit+1 site");
   });
 
@@ -73,7 +73,7 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Troll']")!;
-    expect(card.querySelector("[data-fight-outcome]")?.textContent).toContain("This attack earns");
+    expect(card.querySelector("[data-fight-outcome]")?.textContent).toBe("Victory likely");
     expect(card.textContent?.match(/(?<!−)1,100/g)).toHaveLength(1);
     expect(card.querySelector(".fight-spoils .opacity-50")).toBeNull();
     const sides = [...card.querySelectorAll('.fight-arena [role="img"]')].map((side) =>
@@ -203,7 +203,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector("[data-fight-outcome]")?.textContent).toContain("This attack earns");
+    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe("Victory likely");
     expect(document.querySelector('[aria-label="Sites cleared +1 site"]')?.getAttribute("data-tip")).toBe(
       "Ranked by sites cleared, then deepest depth",
     );
@@ -221,7 +221,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector("[data-fight-outcome]")?.textContent).toContain("This attack clears it");
+    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe("Victory likely");
   });
 
   it("earns what fits, marked Full, when the store would overflow, with Realm to make room; never blocks the attack", () => {
