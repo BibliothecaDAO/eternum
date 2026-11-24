@@ -438,16 +438,6 @@ button.frontier-stock-chip {
     height: 48px;
   }
 }
-.frontier-phone-handle {
-  position: absolute;
-  top: theme(spacing[1.5]);
-  left: 50%;
-  width: theme(spacing.10);
-  height: theme(spacing.1);
-  transform: translateX(-50%);
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-line-strong);
-}
 .frontier-army-tray {
   display: flex;
   flex-direction: column;

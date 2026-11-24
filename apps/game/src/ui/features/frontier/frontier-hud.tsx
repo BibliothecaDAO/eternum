@@ -1,6 +1,5 @@
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
-import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
@@ -257,13 +256,7 @@ const FrontierHudBody = ({
         onClose={close}
       />
     ) : surface === "menu" ? (
-      <HudMenu
-        onOpen={setSurface}
-        onClose={close}
-        events={feedUnread}
-        feed={!tablet}
-        shop={Boolean(own) && fragmentsHeld !== null}
-      />
+      <HudMenu onOpen={setSurface} onClose={close} events={feedUnread} shop={Boolean(own) && fragmentsHeld !== null} />
     ) : undefined;
   const realmVisible = Boolean(shown) && surface === "realm";
   const placesState = {
@@ -536,20 +529,18 @@ const HudMenu = ({
   onOpen,
   onClose,
   events,
-  feed,
   shop,
 }: {
   onOpen: (surface: HudSurface | null) => void;
   onClose: () => void;
   events: number;
-  feed: boolean;
   shop: boolean;
 }) => {
   const navigate = useNavigate();
   const guide = useHowToPlay();
   return (
     <MenuPage
-      onFeed={feed ? () => onOpen("feed") : undefined}
+      onFeed={() => onOpen("feed")}
       onShop={shop ? () => onOpen("shop") : undefined}
       events={events}
       onToday={() => onOpen("today")}

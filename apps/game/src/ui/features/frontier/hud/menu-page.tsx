@@ -1,5 +1,7 @@
 import "./phone-hud.css";
 
+import { useTablet } from "@/shell/frame/layout";
+
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudPage, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { EXIT, MENU, SETTINGS, SHOP_WORDS, TODAY, unreadFeedEvents } from "@/ui/design-system/kit/words";
@@ -21,7 +23,7 @@ export const MenuPage = ({
   onExit,
   onClose,
 }: {
-  onFeed?: () => void;
+  onFeed: () => void;
   onShop?: () => void;
   onToday: () => void;
   onSettings: () => void;
@@ -29,37 +31,40 @@ export const MenuPage = ({
   guide: string;
   onExit: () => void;
   onClose: () => void;
-}) => (
-  <HudPage label={MENU} icon="menu" onClose={onClose}>
-    <nav className="menu-nav">
-      {onFeed && (
-        <MenuRow
-          icon={FEED.icon}
-          label={FEED.label}
-          badge={
-            events > 0 ? (
-              <span className="text-hud-body tabular-nums" aria-label={unreadFeedEvents(events)}>
-                {formatAmount(events)}
-              </span>
-            ) : undefined
-          }
-          onClick={onFeed}
-        />
-      )}
-      <MenuRow icon="clock" label={TODAY} onClick={onToday} />
-      {onShop && <MenuRow icon="fragment" label={SHOP_WORDS.title} onClick={onShop} />}
-      <MenuRow icon="settings" label={SETTINGS} onClick={onSettings} />
-      <div className="menu-nav__wide">
-        <HowToPlayRow guide={guide} />
+}) => {
+  const tablet = useTablet();
+  return (
+    <HudPage label={MENU} icon="menu" onClose={onClose}>
+      <nav className="menu-nav">
+        {!tablet && (
+          <MenuRow
+            icon={FEED.icon}
+            label={FEED.label}
+            badge={
+              events > 0 ? (
+                <span className="text-hud-body tabular-nums" aria-label={unreadFeedEvents(events)}>
+                  {formatAmount(events)}
+                </span>
+              ) : undefined
+            }
+            onClick={onFeed}
+          />
+        )}
+        <MenuRow icon="clock" label={TODAY} onClick={onToday} />
+        {onShop && <MenuRow icon="fragment" label={SHOP_WORDS.title} onClick={onShop} />}
+        <MenuRow icon="settings" label={SETTINGS} onClick={onSettings} />
+        <div className="menu-nav__wide">
+          <HowToPlayRow guide={guide} />
+        </div>
+      </nav>
+      <div className="grid">
+        <HudButton kind="secondary" icon="exit" onClick={onExit}>
+          {EXIT}
+        </HudButton>
       </div>
-    </nav>
-    <div className="grid">
-      <HudButton kind="secondary" icon="exit" onClick={onExit}>
-        {EXIT}
-      </HudButton>
-    </div>
-  </HudPage>
-);
+    </HudPage>
+  );
+};
 
 const MenuRow = ({
   icon,
