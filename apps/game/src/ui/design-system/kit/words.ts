@@ -999,6 +999,12 @@ export const OPENING_WORDS = {
     shop: "Shop opened. Refill stamina or unlock seals anytime.",
     relic: "Army relics checked. Equip relics on your armies here.",
   },
+  inSheet: {
+    barracks: (rules: OpeningRules) => `Pick Barracks below · ${formatRate(rules.knightsPerSecond)} Knights`,
+    deploy: () => `Pick the Knights, then press ${DEPLOY}`,
+  },
+  tutorial: "Tutorial",
+  showLesson: "Show the lesson",
   completedLabel: "Completed",
   skipTutorial: "Skip tutorial",
   skipFinal: "The tutorial will not show again.",

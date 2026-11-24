@@ -98,3 +98,24 @@ test("no built HTML page or llm.txt names Blitz, Devcon or Season 0, and synthet
     }
   }
 });
+
+test("Realms home shows Games, Global, and Data; Frontier landing holds Frontier quick links and dashboard link", () => {
+  const home = pageLine(readFileSync(join(dist, "index.html"), "utf8"));
+  for (const phrase of [
+    "Games",
+    "Open Frontier docs",
+    "Global",
+    "Sign in",
+    "Payout wallet",
+    "LORDS",
+    "Data",
+    "Live dashboard",
+    "Get the data",
+  ]) {
+    assert.ok(home.includes(phrase), `Realms home missing "${phrase}"`);
+  }
+  const frontier = pageLine(readFileSync(join(dist, "frontier", "index.html"), "utf8"));
+  for (const phrase of ["Start here", "Live dashboard", "Buildings", "Combat", "Oaths", "Relics", "Beasts"]) {
+    assert.ok(frontier.includes(phrase), `Frontier landing missing "${phrase}"`);
+  }
+});

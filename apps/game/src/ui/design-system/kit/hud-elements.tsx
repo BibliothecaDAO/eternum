@@ -31,6 +31,7 @@ import {
 import { createPortal } from "react-dom";
 
 import { useModalLayer } from "./modal-layer";
+import { useMarkFrameOpen } from "./open-frames";
 import { revealOwnPlace } from "./own-place";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
 import { CLOSE, type RankedWords, rankedText, STAMINA, type Tier, type Rank, tierNumeral, TRY_AGAIN } from "./words";
@@ -1593,6 +1594,7 @@ const SurfaceFrame = forwardRef<
   FrameParts & { bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children">
 >(({ label, icon, cue, beside, onClose, bodyClassName, className, children, ...rest }, ref) => {
   const [foot, setFoot] = useState<HTMLElement | null>(null);
+  useMarkFrameOpen(label);
   useSheetCloses(onClose);
   const drag = useDragDownCloses(onClose);
   return (

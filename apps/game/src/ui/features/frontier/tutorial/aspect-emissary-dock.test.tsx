@@ -5,8 +5,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { aspectName, aspects } from "@bibliothecadao/types";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
-import { OPENING_WORDS } from "@/ui/design-system/kit/words";
-import { OPENING_MOMENTS, teacherAspectOf } from "../opening/opening";
+import { HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { BUILD, CLOSE, MENU, OPENING_WORDS, SETTINGS } from "@/ui/design-system/kit/words";
+import { OPENING_MOMENTS, teacherAspectOf, type OpeningMoment } from "../opening/opening";
 import { OPENING_RULES } from "../opening/opening-fixtures";
 import { ASPECT_EMISSARY_PORTRAITS } from "./aspect-emissaries";
 import { AspectEmissaryDock } from "./aspect-emissary-dock";
@@ -237,5 +238,85 @@ describe("AspectEmissaryDock", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  const renderOverSheet = (moment: OpeningMoment, sheet: string | null, layout: "phone" | "desktop" = "phone") => {
+    const onDismiss = vi.fn();
+    const onSkipAll = vi.fn();
+    act(() =>
+      root.render(
+        <>
+          <AspectEmissaryDock
+            moment={moment}
+            rules={OPENING_RULES}
+            layout={layout}
+            onDismiss={onDismiss}
+            onSkipAll={onSkipAll}
+          />
+          {sheet && (
+            <HudSheet label={sheet} onClose={vi.fn()}>
+              <p>sheet</p>
+            </HudSheet>
+          )}
+        </>,
+      ),
+    );
+    return { dock: () => host.querySelector<HTMLElement>("[data-tutorial-dock]")!, onDismiss, onSkipAll };
+  };
+  const press = (name: string) =>
+    act(() =>
+      [...host.querySelectorAll<HTMLButtonElement>("[data-tutorial-dock] button")]
+        .find((button) => button.textContent === name || button.getAttribute("aria-label") === name)!
+        .click(),
+    );
+
+  it("folds to the guidance strip over the sheet its lesson asks for, keeping Skip's two steps", () => {
+    const { dock, onSkipAll } = renderOverSheet("barracks", BUILD);
+    expect(dock().dataset.tutorialForm).toBe("strip");
+    expect(dock().textContent).toContain(OPENING_WORDS.titles.barracks);
+    expect(dock().textContent).toContain(OPENING_WORDS.inSheet.barracks(OPENING_RULES));
+    expect(dock().querySelector(`button[aria-label="${CLOSE}"]`)).toBeNull();
+
+    press(OPENING_WORDS.skipTutorial);
+    expect(dock().textContent).toContain(OPENING_WORDS.skipFinal);
+    expect(onSkipAll).not.toHaveBeenCalled();
+    press(OPENING_WORDS.skipTutorial);
+    expect(onSkipAll).toHaveBeenCalledTimes(1);
+  });
+
+  it("folds to the one-line reminder over any other sheet, which expands to the card and closes the lesson", () => {
+    const { dock, onDismiss } = renderOverSheet("barracks", SETTINGS);
+    expect(dock().dataset.tutorialForm).toBe("reminder");
+    expect(dock().textContent).toContain(OPENING_WORDS.tutorial);
+    expect(dock().textContent).toContain(OPENING_WORDS.titles.barracks);
+
+    press(OPENING_WORDS.showLesson);
+    expect(dock().dataset.tutorialForm).toBe("card");
+    expect(dock().textContent).toContain(OPENING_WORDS.lines.barracks(OPENING_RULES));
+
+    renderOverSheet("barracks", null);
+    expect(dock().dataset.tutorialForm).toBe("card");
+    renderOverSheet("barracks", SETTINGS);
+    expect(dock().dataset.tutorialForm).toBe("reminder");
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
+
+  it("folds again when one sheet replaces another in the same moment", () => {
+    const { dock } = renderOverSheet("barracks", SETTINGS);
+    press(OPENING_WORDS.showLesson);
+    expect(dock().dataset.tutorialForm).toBe("card");
+    renderOverSheet("barracks", MENU);
+    expect(dock().dataset.tutorialForm).toBe("reminder");
+  });
+
+  it("closes the lesson from the reminder's cross", () => {
+    const { onDismiss } = renderOverSheet("deploy", SETTINGS);
+    press(CLOSE);
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the full card on a desktop, where sheets stand in the rail", () => {
+    const { dock } = renderOverSheet("barracks", SETTINGS, "desktop");
+    expect(dock().dataset.tutorialForm).toBe("card");
   });
 });
