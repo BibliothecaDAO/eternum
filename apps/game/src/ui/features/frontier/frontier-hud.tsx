@@ -47,7 +47,7 @@ import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { PhoneTabBar, type HudSurface } from "./hud/frontier-nav";
 import { selectLayer, useMapLayers } from "./hud/map-layers";
 import { FrontierTopBar } from "./hud/phone-top-bar";
-import { FrontierPlaceSwitch, PlaceMenu } from "./hud/surface-deep-switch";
+import { FrontierPlaceSwitch, PlaceMenu, placeLines } from "./hud/surface-deep-switch";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { DayEndBlock, DayEndNotice, useDayEnd } from "./day-end/day-end";
