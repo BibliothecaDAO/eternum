@@ -5,7 +5,6 @@ import {
   formatAmount,
   formatExact,
   formatShortDuration,
-  LORDS,
   rankName,
   type AspectId,
 } from "@bibliothecadao/types";
@@ -20,7 +19,6 @@ import {
   FULL,
   MAX_LEVEL,
   REALM,
-  REALM_POP,
   RESEARCH,
   SHOW_MY_REALM,
   UPGRADE,
@@ -52,17 +50,11 @@ export const RealmPanel = ({
   level,
   aspect,
   orderId,
-  population,
   armies,
   stores,
   buildings,
-  lords,
-  linkWalletLine = null,
-  lean = false,
   onHome,
-  onUpgradeCastle,
   storeCards,
-  onWithdraw,
   onResearch,
   onDeploy,
   onClose,
@@ -74,22 +66,16 @@ export const RealmPanel = ({
   level: number | undefined;
   aspect?: AspectId;
   orderId?: number;
-  population?: { used: number; max: number };
   armies?: { active: number; limit: number };
   stores: StoreReading[];
   buildings?: readonly RealmBuildingItem[];
-  lords?: number;
-  linkWalletLine?: string | null;
-  lean?: boolean;
   onHome?: () => void;
-  onUpgradeCastle?: () => void;
   storeCards?: {
     kinds: readonly StoreReading["kind"][];
     open: StoreReading["kind"] | null;
     onToggle: (kind: StoreReading["kind"]) => void;
     card: ReactNode;
   };
-  onWithdraw?: () => void;
   onResearch?: () => void;
   onDeploy?: () => void;
   onClose?: () => void;
@@ -106,32 +92,6 @@ export const RealmPanel = ({
   );
   const wonderLabel = kind === "wonder" ? HOME_KINDS[kind].label : undefined;
   const medallionTip = aspect !== undefined ? aspectName(aspect) : wonderLabel;
-  const castleRank = level !== undefined ? rankName(level) : REALM;
-  const lordsLabel =
-    lords !== undefined ? [`${LORDS} ${formatExact(lords)}`, linkWalletLine].filter(Boolean).join(". ") : undefined;
-  const leanTitle = (
-    <span data-realm-castle className="inline-flex min-w-0 items-center gap-2.5">
-      <SemanticIcon name={homeIcon(kind, level ?? 0)} size={30} />
-      <span className="flex min-w-0 flex-col">
-        <span className="realm-panel__castle">{castleRank}</span>
-        {(population || lords !== undefined) && (
-          <span className="realm-panel__meta">
-            {population && <span>{REALM_POP(population.used, population.max)}</span>}
-            {population && lords !== undefined && <span aria-hidden="true">·</span>}
-            {lords !== undefined && (
-              <LordsInline
-                lords={lords}
-                label={lordsLabel!}
-                tip={linkWalletLine ?? LORDS}
-                warn={Boolean(linkWalletLine)}
-                onWithdraw={onWithdraw}
-              />
-            )}
-          </span>
-        )}
-      </span>
-    </span>
-  );
   const fullTitle = (
     <span className="inline-flex min-w-0 items-center gap-3">
       <AspectMedallion
@@ -163,82 +123,42 @@ export const RealmPanel = ({
       </span>
     </span>
   );
-  const panelCue = lean ? (
-    <span className="inline-flex items-center gap-1.5">
-      {onUpgradeCastle && (
-        <HudButton kind="primary" size="sm" onClick={onUpgradeCastle}>
-          {UPGRADE}
-        </HudButton>
-      )}
-      {onClose && <HudIconButton icon="close" label={CLOSE} kind="secondary" size="sm" onClick={onClose} />}
-    </span>
-  ) : (
-    onClose && <HudIconButton icon="close" label={CLOSE} kind="secondary" size="sm" onClick={onClose} />
-  );
+  const panelCue = onClose && <HudIconButton icon="close" label={CLOSE} kind="secondary" size="sm" onClick={onClose} />;
   return (
     <HudPanel
       label={REALM}
-      title={lean ? leanTitle : fullTitle}
+      title={fullTitle}
       cue={panelCue}
-      onTitle={!lean && onHome ? { label: SHOW_MY_REALM, run: onHome } : undefined}
+      onTitle={onHome ? { label: SHOW_MY_REALM, run: onHome } : undefined}
       collapsible={false}
-      className={
-        sheetHandle
-          ? "pointer-events-auto relative realm-panel--sheet"
-          : lean
-            ? "pointer-events-auto realm-panel--lean"
-            : "pointer-events-auto"
-      }
+      className={sheetHandle ? "pointer-events-auto relative realm-panel--sheet" : "pointer-events-auto"}
       bodyClassName="flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden"
     >
       {sheetHandle && <span className="frontier-phone-handle" aria-hidden="true" />}
       <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto">
-        {!lean && (
-          <ul aria-label="Stores" className="realm-tiles">
-            {visibleStores.map((store) => (
-              <li key={store.kind} data-store={store.kind} className="relative min-w-0">
-                <StoreTile
-                  store={store}
-                  onOpen={storeCards?.kinds.includes(store.kind) ? () => storeCards.onToggle(store.kind) : undefined}
-                />
-              </li>
-            ))}
-            {armies && (
-              <li className="min-w-0">
-                <TileShell
-                  label={`${ARMIES} ${formatExact(armies.active)} / ${formatExact(armies.limit)}`}
-                  tip={ARMIES}
-                >
-                  <ProgressRing
-                    size="lg"
-                    share={armies.limit > 0 ? armies.active / armies.limit : undefined}
-                    tone="calm"
-                  >
-                    <SemanticIcon name="knight-t1" size={20} />
-                  </ProgressRing>
-                  <span className="realm-tile__value tabular-nums">
-                    {`${formatExact(armies.active)}/${formatExact(armies.limit)}`}
-                  </span>
-                </TileShell>
-              </li>
-            )}
-            {lords !== undefined && (
-              <li className="min-w-0">
-                <TileShell label={lordsLabel!} tip={linkWalletLine ?? LORDS} onClick={onWithdraw}>
-                  <ProgressRing
-                    size="lg"
-                    tone={linkWalletLine ? "amber" : "calm"}
-                    badge={linkWalletLine ? <SemanticIcon name="warning" size={12} /> : undefined}
-                  >
-                    <SemanticIcon name="lords" size={20} />
-                  </ProgressRing>
-                  <span className="realm-tile__value tabular-nums">{formatAmount(lords)}</span>
-                </TileShell>
-              </li>
-            )}
-          </ul>
-        )}
-        {!lean && storeCards?.open && storeCards.card}
+        <ul aria-label="Stores" className="realm-tiles">
+          {visibleStores.map((store) => (
+            <li key={store.kind} data-store={store.kind} className="relative min-w-0">
+              <StoreTile
+                store={store}
+                onOpen={storeCards?.kinds.includes(store.kind) ? () => storeCards.onToggle(store.kind) : undefined}
+              />
+            </li>
+          ))}
+          {armies && (
+            <li className="min-w-0">
+              <TileShell label={`${ARMIES} ${formatExact(armies.active)} / ${formatExact(armies.limit)}`} tip={ARMIES}>
+                <ProgressRing size="lg" share={armies.limit > 0 ? armies.active / armies.limit : undefined} tone="calm">
+                  <SemanticIcon name="knight-t1" size={20} />
+                </ProgressRing>
+                <span className="realm-tile__value tabular-nums">
+                  {`${formatExact(armies.active)}/${formatExact(armies.limit)}`}
+                </span>
+              </TileShell>
+            </li>
+          )}
+        </ul>
+        {storeCards?.open && storeCards.card}
         {buildings && buildings.length > 0 && (
           <ul data-realm-buildings className="flex flex-col gap-1.5">
             {buildings.map((building) => (
@@ -290,43 +210,6 @@ export const RealmPanel = ({
         </div>
       )}
     </HudPanel>
-  );
-};
-
-const LordsInline = ({
-  lords,
-  label,
-  tip,
-  warn,
-  onWithdraw,
-}: {
-  lords: number;
-  label: string;
-  tip: string;
-  warn: boolean;
-  onWithdraw?: () => void;
-}) => {
-  const face = (
-    <>
-      {warn && <SemanticIcon name="warning" size={12} />}
-      <span>{`${formatAmount(lords)} ${LORDS}`}</span>
-    </>
-  );
-  return onWithdraw ? (
-    <button
-      type="button"
-      className="realm-panel__lords"
-      data-warn={warn || undefined}
-      aria-label={label}
-      data-tip={tip}
-      onClick={onWithdraw}
-    >
-      {face}
-    </button>
-  ) : (
-    <span role="img" className="realm-panel__lords" data-warn={warn || undefined} aria-label={label} data-tip={tip}>
-      {face}
-    </span>
   );
 };
 

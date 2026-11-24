@@ -1,0 +1,554 @@
+.frontier-crown {
+  position: fixed;
+  top: theme(spacing.4);
+  left: 50%;
+  z-index: theme(zIndex.hud-rail);
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.4);
+  transform: translateX(-50%);
+  border: 2px solid color-mix(in srgb, rgb(var(--hud-gold)) 55%, var(--hud-line-strong));
+  border-radius: 40px;
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow:
+    var(--hud-shadow-panel),
+    inset 0 1px 0 color-mix(in srgb, rgb(var(--hud-gold)) 30%, transparent);
+  padding: 4px 14px 4px 12px;
+}
+
+.frontier-crown .frontier-place-switch .ui-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  box-shadow: inset 0 1px 3px var(--hud-well);
+  padding: 3px;
+}
+.frontier-crown .frontier-place-switch .ui-tab {
+  display: inline-flex;
+  height: 30px;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  padding: 0 10px;
+  color: var(--hud-muted);
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.frontier-crown .frontier-place-switch .ui-tab:not([aria-selected="true"], :disabled):hover {
+  background: var(--hud-hover);
+  color: rgb(var(--hud-ink));
+}
+.frontier-crown .frontier-place-switch .ui-tab[aria-selected="true"] {
+  border-color: rgb(var(--hud-gold));
+  background: linear-gradient(
+    180deg,
+    rgb(var(--hud-gold)),
+    color-mix(in srgb, rgb(var(--hud-gold)) 72%, var(--hud-warn))
+  );
+  color: rgb(var(--hud-dark));
+  font-weight: var(--hud-weight-strong);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, rgb(var(--hud-ink)) 38%, transparent);
+}
+
+.frontier-crown .frontier-day-cornice {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 6px;
+}
+.frontier-crown .frontier-day-medallion {
+  width: 64px;
+  height: 64px;
+  margin: 0;
+}
+.frontier-crown .frontier-day-label {
+  font-size: var(--hud-text-display);
+}
+.frontier-crown .frontier-day-readout {
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  z-index: 4;
+  transform: translateX(-50%);
+  border: 1px solid color-mix(in srgb, rgb(var(--hud-gold)) 70%, transparent);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-surface-to);
+  padding: 1px 7px;
+  color: rgb(var(--hud-gold));
+  font-size: var(--hud-text-badge);
+  line-height: 14px;
+  font-weight: var(--hud-weight-strong);
+  white-space: nowrap;
+}
+
+.frontier-corner {
+  position: fixed;
+  top: theme(spacing.4);
+  bottom: theme(spacing.hud-base);
+  z-index: theme(zIndex.hud-rail);
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: theme(spacing.3);
+}
+.frontier-corner--left {
+  left: theme(spacing.4);
+  width: theme(spacing.hud-frontier-left);
+}
+.frontier-corner--right {
+  right: theme(spacing.4);
+}
+
+.frontier-cluster-card {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  border: 1.5px solid color-mix(in srgb, rgb(var(--hud-gold)) 45%, var(--hud-line));
+  border-radius: var(--hud-radius-panel);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow:
+    var(--hud-shadow-panel),
+    inset 0 1px 0 color-mix(in srgb, rgb(var(--hud-gold)) 22%, transparent);
+  color: rgb(var(--hud-ink));
+}
+
+.frontier-realm-card {
+  flex-shrink: 1;
+  overflow: hidden;
+}
+.frontier-realm-card__head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.2);
+  border-bottom: 1px solid var(--hud-divider);
+  padding: 12px 12px 10px;
+}
+.frontier-realm-card__identity {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.frontier-realm-card__identity:disabled {
+  cursor: default;
+}
+.frontier-realm-card__identity .frontier-aspect-medallion[data-size="lg"] {
+  margin-bottom: 0;
+}
+.frontier-realm-card__text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+.frontier-realm-card__name {
+  max-width: calc(100% - 96px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-title);
+  line-height: 1.1;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.frontier-realm-card__sub {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.frontier-realm-card__order {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.frontier-rank-up {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  height: 24px;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid rgb(var(--hud-gold));
+  border-radius: var(--hud-radius-chip);
+  background: linear-gradient(
+    180deg,
+    rgb(var(--hud-gold)),
+    color-mix(in srgb, rgb(var(--hud-gold)) 72%, var(--hud-warn))
+  );
+  padding: 0 8px;
+  color: rgb(var(--hud-dark));
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-badge);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.frontier-rank-up:hover {
+  filter: brightness(1.08);
+}
+
+.frontier-stocks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 12px;
+}
+.frontier-stocks__row {
+  display: flex;
+  gap: 6px;
+}
+.frontier-stock {
+  position: relative;
+  min-width: 0;
+  flex: 1 1 0;
+}
+.frontier-stock[data-broad] {
+  flex-grow: 1.35;
+}
+.frontier-stock__face {
+  display: flex;
+  width: 100%;
+  height: 60px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  padding: 3px 2px;
+  color: inherit;
+  text-align: center;
+}
+button.frontier-stock__face {
+  cursor: pointer;
+}
+button.frontier-stock__face:hover {
+  border-color: rgb(var(--hud-gold));
+  background: var(--hud-hover);
+}
+.frontier-stock[data-wide] .frontier-stock__face {
+  height: 44px;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 3px 4px;
+  text-align: left;
+}
+.frontier-stock__top {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+}
+.frontier-stock__icon {
+  display: inline-flex;
+  flex: none;
+}
+.frontier-stock__value {
+  font-size: var(--hud-text-strong);
+  line-height: 16px;
+  font-weight: var(--hud-weight-strong);
+  white-space: nowrap;
+}
+.frontier-stock__caption {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--hud-muted);
+  font-size: var(--hud-text-badge);
+  line-height: 13px;
+  white-space: nowrap;
+}
+.frontier-stock__caption[data-tone="good"] {
+  color: var(--hud-good);
+  font-weight: var(--hud-weight-strong);
+}
+.frontier-realm-card__buildings {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  padding: 0 12px 12px;
+}
+
+.frontier-slots {
+  flex: none;
+}
+.frontier-slots__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: theme(spacing.2);
+  border-bottom: 1px solid var(--hud-divider);
+  padding: 10px 14px;
+}
+.frontier-slots__title {
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.frontier-slots__count {
+  color: rgb(var(--hud-gold));
+  font-size: var(--hud-text-label);
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.frontier-slots__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 10px 12px;
+}
+.frontier-slot {
+  display: flex;
+  width: 100%;
+  min-height: 46px;
+  align-items: center;
+  gap: 8px;
+  border: 1px dashed var(--hud-line-strong);
+  border-radius: var(--hud-radius-control);
+  background: color-mix(in srgb, var(--hud-well) 60%, transparent);
+  padding: 6px 8px;
+  color: rgb(var(--hud-ink));
+  text-align: left;
+}
+.frontier-slot[data-slot-state="army"] {
+  border-style: solid;
+  border-color: var(--hud-line);
+  background: var(--hud-well);
+  cursor: pointer;
+}
+.frontier-slot[data-slot-state="army"]:hover {
+  border-color: var(--hud-line-strong);
+  background: var(--hud-hover);
+}
+.frontier-slot[data-slot-state="army"][aria-pressed="true"] {
+  border: 1.5px solid rgb(var(--hud-gold));
+  background: var(--hud-chosen);
+  box-shadow: 0 0 12px color-mix(in srgb, rgb(var(--hud-gold)) 35%, transparent);
+}
+.frontier-slot[data-slot-state="army"]:disabled {
+  cursor: default;
+}
+.frontier-slot[data-slot-state="locked"] {
+  min-height: 40px;
+  border-color: var(--hud-line);
+  color: var(--hud-muted);
+  opacity: 0.7;
+}
+.frontier-slot__number {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid color-mix(in srgb, rgb(var(--hud-gold)) 80%, transparent);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-surface-to);
+  color: rgb(var(--hud-gold));
+  font-size: var(--hud-text-label);
+  font-weight: var(--hud-weight-strong);
+}
+.frontier-slot[data-slot-state="army"][aria-pressed="true"] .frontier-slot__number {
+  background: rgb(var(--hud-gold));
+  color: rgb(var(--hud-dark));
+}
+.frontier-slot[data-slot-state="locked"] .frontier-slot__number {
+  border-color: var(--hud-line-strong);
+  color: var(--hud-muted);
+}
+.frontier-slot__portrait {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+.frontier-slot__portrait > .ui-portrait {
+  width: 36px;
+  height: 36px;
+}
+.frontier-slot__body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+.frontier-slot__line {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.frontier-slot__title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--hud-text-strong);
+  line-height: 17px;
+  font-weight: var(--hud-weight-strong);
+  white-space: nowrap;
+}
+.frontier-slot__figure {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  color: var(--hud-good);
+  font-size: var(--hud-text-label);
+  font-weight: var(--hud-weight-strong);
+}
+.frontier-slot__detail {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 3px;
+  overflow: hidden;
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: 15px;
+  white-space: nowrap;
+}
+.frontier-slot__detail[data-tone="good"] {
+  color: var(--hud-good);
+}
+.frontier-slot .ui-button {
+  height: 26px;
+  min-height: 26px;
+  flex: none;
+  gap: 2px;
+  padding: 0 8px;
+  font-size: var(--hud-text-badge);
+}
+.frontier-slot .ui-button img {
+  width: 12px;
+  height: 12px;
+}
+
+.frontier-commands {
+  display: flex;
+  width: theme(spacing.hud-frontier-rail);
+  flex: none;
+  align-self: flex-end;
+  align-items: center;
+  gap: 5px;
+  border: 1.5px solid color-mix(in srgb, rgb(var(--hud-gold)) 45%, var(--hud-line));
+  border-radius: 10px;
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+  padding: 5px 6px;
+}
+.frontier-places {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  gap: 5px;
+}
+.frontier-place {
+  position: relative;
+  display: inline-flex;
+  height: 32px;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  gap: 4px;
+  border: 1px solid var(--hud-line);
+  border-radius: 6px;
+  background: var(--hud-well);
+  padding: 0 5px;
+  color: rgb(var(--hud-ink));
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-label);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color var(--hud-fast) var(--hud-ease),
+    background-color var(--hud-fast) var(--hud-ease);
+}
+.frontier-place:hover {
+  border-color: var(--hud-line-strong);
+  background: var(--hud-hover);
+}
+.frontier-place[aria-selected="true"],
+.frontier-place[aria-pressed="true"] {
+  border-color: rgb(var(--hud-gold));
+  background: var(--hud-chosen);
+  color: rgb(var(--hud-gold));
+}
+.frontier-place--icon {
+  width: 32px;
+  flex: none;
+  padding: 0;
+}
+.frontier-place__badge {
+  position: absolute;
+  top: -9px;
+  right: -7px;
+  display: inline-flex;
+  min-width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  background: rgb(var(--hud-gold));
+  padding: 0 3px;
+  color: rgb(var(--hud-dark));
+  font-family: var(--hud-font);
+  font-size: var(--hud-text-badge);
+  line-height: 1;
+  font-weight: var(--hud-weight-badge);
+}
+.frontier-place__badge[data-tone="good"] {
+  background: var(--hud-good);
+}
+.frontier-place__badge[data-shape="diamond"] {
+  width: 16px;
+  padding: 0;
+  transform: rotate(45deg);
+  border: 1px solid color-mix(in srgb, rgb(var(--hud-ink)) 45%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--hud-good) 55%, transparent);
+}
+.frontier-place__badge[data-shape="diamond"] .frontier-place__badge-value {
+  transform: rotate(-45deg);
+}
+
+.frontier-corner--right[data-wide="true"] [data-wide-page] {
+  margin-top: 20px;
+}

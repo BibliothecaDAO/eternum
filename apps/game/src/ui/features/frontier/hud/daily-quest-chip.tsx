@@ -14,7 +14,13 @@ import { dayQuestFace } from "../day/day-quest-face";
 import { useHudPopover } from "./hud-popover";
 import { ProgressRing } from "./progress-ring";
 
-export const DailyQuestChip = ({ realm, look = "chip" }: { realm: NativeRows["Structure"]; look?: "chip" | "orb" }) => {
+export const DailyQuestChip = ({
+  realm,
+  layout = "desktop",
+}: {
+  realm: NativeRows["Structure"];
+  layout?: "desktop" | "phone";
+}) => {
   const { setup } = useGame();
   const now = useNowSeconds();
   useNativeRevision(DAILY_QUEST_MODELS);
@@ -27,7 +33,6 @@ export const DailyQuestChip = ({ realm, look = "chip" }: { realm: NativeRows["St
   const target = reading ? safeInteger(reading.target) : 0;
   const ready = reading?.state === "done" || reading?.state === "again";
   const count = reading ? `${formatShort(progress)}/${formatShort(target)}` : "—";
-  const layout = look === "orb" ? "phone" : "desktop";
   const icon = face?.icon ?? "explore";
 
   return (
@@ -39,26 +44,16 @@ export const DailyQuestChip = ({ realm, look = "chip" }: { realm: NativeRows["St
         data-daily-quest-chip=""
         data-ready={ready || undefined}
         aria-label={face ? `${face.name} ${count}` : DAY_BANNER_WORDS.today}
-        className={look === "orb" ? "frontier-quest-orb" : "frontier-quest-chip"}
+        className="frontier-quest-orb"
       >
-        {look === "orb" ? (
-          <>
-            <ProgressRing size="lg" share={target > 0 ? progress / target : 0} tone="calm">
-              <Icon name={icon} size={24} />
-            </ProgressRing>
-            <span className="frontier-quest-orb__count">{ready ? DAY_BANNER_WORDS.collect : count}</span>
-            {ready && (
-              <span className="frontier-quest-orb__alert" aria-hidden="true">
-                !
-              </span>
-            )}
-          </>
-        ) : (
-          <>
-            <Icon name={icon} size={16} />
-            <span className="frontier-quest-chip__label">{DAY_BANNER_WORDS.quest}</span>
-            <span className="frontier-quest-chip__count">{count}</span>
-          </>
+        <ProgressRing size="lg" share={target > 0 ? progress / target : 0} tone="calm">
+          <Icon name={icon} size={24} />
+        </ProgressRing>
+        <span className="frontier-quest-orb__count">{ready ? DAY_BANNER_WORDS.collect : count}</span>
+        {ready && (
+          <span className="frontier-quest-orb__alert" aria-hidden="true">
+            !
+          </span>
         )}
       </button>
       {popover(<DailyQuest realm={realm} layout={layout} onClose={close} />, {

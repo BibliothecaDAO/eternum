@@ -169,7 +169,7 @@ export const OpenSlot = ({
     onClick={onDeploy}
     className={cn("ui-pick", TOKEN_LOOK, "border-dashed")}
   >
-    <SlotRing pulse={pulse} filling={filling} small />
+    <SlotRing pulse={pulse} filling={filling} />
     {start && filling === undefined && <TokenStamina stamina={start.bar} />}
     <span className="text-hud-label leading-none text-hud-muted">{filling ?? label}</span>
     {stock && filling === undefined && (
@@ -181,13 +181,10 @@ export const OpenSlot = ({
 );
 
 /** An open slot's dashed ring: a plus, "…" while an army is on its way into it. */
-export const SlotRing = ({ pulse, filling, small = false }: { pulse: boolean; filling?: string; small?: boolean }) => (
+const SlotRing = ({ pulse, filling }: { pulse: boolean; filling?: string }) => (
   <span
     className={cn(
-      "flex shrink-0 items-center justify-center rounded-full text-hud-ink",
-      small
-        ? "size-6 border border-hud-line-strong bg-hud-dark text-hud-body"
-        : "size-10 border-2 border-dashed border-hud-line text-hud-title",
+      "flex size-6 shrink-0 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark text-hud-body text-hud-ink",
       (pulse || filling !== undefined) && "animate-pulse border-hud-line-strong",
     )}
   >

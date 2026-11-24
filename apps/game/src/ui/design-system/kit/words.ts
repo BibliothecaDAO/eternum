@@ -1164,6 +1164,14 @@ export const REINFORCE = {
 } as const;
 /** A realm's armies, as a list's name. */
 export const ARMIES = "Armies";
+export const ARMY_SLOT_WORDS = {
+  title: "All army slots",
+  count: (active: number, allowed: number, most: number) => `${active} / ${allowed} active (${most} max)`,
+  open: (slot: number) => `Slot ${slot} · Open`,
+  readyAtHome: (troops: string) => `${troops} ready at home`,
+  anyTroop: "Any troop type",
+  unlocksAt: (slot: number, rank: string) => `Slot ${slot} · Unlocks at ${rank}`,
+} as const;
 export const ARMY_MOVE_HINT = "Right-click a hex to move";
 /** The day-done card's count of the armies that ended with the day. */
 export const ARMIES_ENDED = "Armies ended with the day";
@@ -2174,6 +2182,8 @@ const RESEARCH_STATES = {
   locked: "Locked",
 } as const;
 
+const RESEARCH_OPEN = "Open";
+
 export const RESEARCH_TREE = {
   /** Said while the realm's knowledge, balances, prices or board rules have not all arrived. */
   onItsWay: "Loading research…",
@@ -2198,7 +2208,7 @@ export const RESEARCH_TREE = {
   },
   oaths: "Oath slots",
   oathSlots: (count: number) => `${count} Oath ${count === 1 ? "slot" : "slots"}`,
-  oathOpen: "Open",
+  oathOpen: RESEARCH_OPEN,
   oathLocked: "Locked",
   oathEarn: "Clear a site to swear an Oath",
   oathResearch: "Research for new armies",
@@ -2218,12 +2228,23 @@ export const RESEARCH_TREE = {
     rations: (value: string) => `${value} wheat per troop`,
     troops: (value: string) => `${value} troops an hour`,
   },
+  shortEffects: {
+    oaths: (now: number, next?: number) =>
+      next !== undefined ? `${figureStep(String(now), String(next))} Oaths` : `${now} Oaths`,
+    troops: (now: string, next?: string) => (next !== undefined ? `${figureStep(now, next)}/hr` : `${now}/hr`),
+    rations: (now: string, next?: string) =>
+      next !== undefined ? `${figureStep(now, next)} ${WHEAT.toLowerCase()}` : `${now} ${WHEAT.toLowerCase()}`,
+    logistics: (now: string, next?: string) => (next !== undefined ? `${figureStep(now, next)} ⚡` : `${now} ⚡`),
+    well: (percent: string) => `+${percent}% ⚡`,
+    open: (done: boolean) => (done ? RESEARCH_OPEN : "Opens"),
+  },
+  moreBelow: "More",
   nouns: { essence: ESSENCE, labor: LABOR },
   armiesFind: (site: string) => `Armies find ${site}s`,
   each: (gain: string) => `${gain} each`,
   lore: loreOf,
   opensLayers: `Opens every layer under the ${layerName(0)}`,
-  opens: "Open",
+  opens: RESEARCH_OPEN,
   closed: "Closed",
   none: "None",
   build: (building: string) => `Build a ${building}`,

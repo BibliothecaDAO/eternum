@@ -103,8 +103,8 @@ export const DayPill = ({ clock }: { clock: DayClock }) => {
         </ProgressRing>
       </span>
       <span className="frontier-day-readout">
-        {left && <span className="frontier-day-readout__left">{`${left} ${LEFT}`}</span>}
-        <span className="sr-only">{`${DAY} ${clock.day ?? "—"}`}</span>
+        {left && <span className="frontier-day-readout__left">{left}</span>}
+        <span className="sr-only">{`${DAY} ${clock.day ?? "—"}${left ? ` · ${left} ${LEFT}` : ""}`}</span>
       </span>
     </span>
   );

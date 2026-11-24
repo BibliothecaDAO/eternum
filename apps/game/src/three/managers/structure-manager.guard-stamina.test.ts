@@ -1,16 +1,25 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { StructureType, TileOccupier } from "@bibliothecadao/types";
-import { Vector3 } from "three";
+import { StructureType, TileOccupier, orderAspect } from "@bibliothecadao/types";
+import { Matrix4, Object3D, Vector3 } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import rowFixture from "../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import release from "../../../../../contracts/l3/world-native/schema/release-definition.json";
+import { getGameModeConfig } from "@/config/game-modes";
+import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import type { StructurePlate } from "../map-plates/map-plate-model";
 import { CameraView } from "../scenes/camera-view";
+import {
+  SITE_LANDMARK_MODEL_INDEX,
+  SUPPLY_POST_MODEL_INDEX,
+  frontierBeastModelIndex,
+  frontierSiteComposition,
+} from "../structures/frontier-beast";
+import { SettlementModel } from "../structures/settlement-model";
 import { StructureManager } from "./structure-manager";
 import { campBeside, SITE, SITE_TILE } from "@/ui/features/frontier/sites/site-fixture";
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
@@ -145,11 +154,176 @@ it("presents a cleared standard from its receipt after the structure and guard a
   expect(manager.getStructureMarkerFacts(SITE)).toEqual({
     isAlly: false,
     isMine: false,
-    ownerAddress: 0n,
+    ownerAddress: 0x111n,
     structureType: StructureType.Camp,
     hasWonder: false,
   });
   projection.dispose();
+});
+
+describe("Frontier camp and supply post models", () => {
+  const mode = getGameModeConfig(GAME_FAMILIES.frontier);
+
+  const makeModel = (settlement = false) => {
+    const matrices: Matrix4[] = [];
+    return Object.assign(settlement ? Object.create(SettlementModel.prototype) : {}, {
+      kind: "village",
+      height: settlement ? 0.9 : 0.73,
+      matrices,
+      setMatrixAt: vi.fn((_index: number, matrix: Matrix4) => {
+        matrices.push(matrix.clone());
+      }),
+      setCount: vi.fn(),
+      setAspectAt: vi.fn(),
+      setRelationshipAt: vi.fn(),
+      setWonderEntityAt: vi.fn(),
+    });
+  };
+
+  const placementOf = (matrix: Matrix4) => {
+    const position = new Vector3().setFromMatrixPosition(matrix);
+    const scale = new Vector3().setFromMatrixScale(matrix);
+    return {
+      x: Number(position.x.toFixed(4)),
+      y: Number(position.y.toFixed(4)),
+      z: Number(position.z.toFixed(4)),
+      scale: Number(scale.x.toFixed(4)),
+    };
+  };
+
+  const bindManager = (modelsByType: Map<StructureType, Map<number, ReturnType<typeof makeModel>>>) => {
+    const dummy = new Object3D();
+    const manager = Object.assign(Object.create(StructureManager.prototype), {
+      mode,
+      structureModelPaths: mode.assets.structureModelPaths,
+      structureModels: modelsByType,
+      structureInstanceBindings: new Map(),
+      structureInstanceSlots: new Map(),
+      structureInstanceFreeSlots: new Map(),
+      structureModelDrawCounts: new Map(),
+      dummy,
+      scratchPosition: new Vector3(),
+      resolveVisibleStructureRotationY: () => 0,
+      syncVisibleStructurePresentation: vi.fn(),
+      lightGroundAround: vi.fn(),
+    }) as {
+      dummy: Object3D;
+      getStructureModelIndices(structure: unknown): number[];
+      addVisibleStructureInstance(structure: unknown, retain: Set<number>, dirty: Set<unknown>): void;
+    };
+    return manager;
+  };
+
+  it("composes a guarded camp with both its camp model and its beast guard at the composed offset", () => {
+    const campModel = makeModel();
+    const trollModel = makeModel();
+    const composition = frontierSiteComposition(StructureType.Camp);
+    const manager = bindManager(
+      new Map([
+        [
+          StructureType.Camp,
+          new Map([
+            [SITE_LANDMARK_MODEL_INDEX, campModel],
+            [frontierBeastModelIndex("troll"), trollModel],
+          ]),
+        ],
+      ]),
+    );
+    const structure = {
+      entityId: SITE,
+      structureName: "Galecrag",
+      hexCoords: { col: 0, row: 0 },
+      stage: 0,
+      level: 0,
+      isMine: false,
+      isAlly: false,
+      owner: { address: 0n, ownerName: "", guildName: "" },
+      structureType: StructureType.Camp,
+      hasWonder: false,
+      frontierBeast: { beast: "troll" as const, name: "Troll", scale: 0.85, idle: { motion: "breath" as const } },
+    };
+    expect(manager.getStructureModelIndices(structure)).toEqual([
+      SITE_LANDMARK_MODEL_INDEX,
+      frontierBeastModelIndex("troll"),
+    ]);
+    manager.addVisibleStructureInstance(structure, new Set(), new Set());
+    expect(campModel.matrices).toHaveLength(1);
+    expect(trollModel.matrices).toHaveLength(1);
+    expect(placementOf(campModel.matrices[0])).toEqual({
+      x: 0,
+      y: 0,
+      z: composition.baseZ,
+      scale: composition.baseScale,
+    });
+    expect(placementOf(trollModel.matrices[0])).toEqual({
+      x: 0,
+      y: composition.beastY,
+      z: composition.beastZ,
+      scale: 0.85,
+    });
+    expect(manager.dummy.position.toArray()).toEqual([0, 0, 0]);
+    expect(manager.dummy.scale.toArray()).toEqual([1, 1, 1]);
+  });
+
+  it("turns a cleared camp into the supply post model with the clearing Aspect standard beside it, while other cleared sites keep only the standard", () => {
+    const supplyPost = makeModel();
+    const campStandard = makeModel(true);
+    const riftStandard = makeModel(true);
+    const composition = frontierSiteComposition(StructureType.Camp);
+    const campStandardIndex = mode.assets.structureModelPaths[StructureType.Camp].length - 1;
+    const riftStandardIndex = mode.assets.structureModelPaths[StructureType.Rift].length - 1;
+    const manager = bindManager(
+      new Map([
+        [
+          StructureType.Camp,
+          new Map([
+            [SUPPLY_POST_MODEL_INDEX, supplyPost],
+            [campStandardIndex, campStandard],
+          ]),
+        ],
+        [StructureType.Rift, new Map([[riftStandardIndex, riftStandard]])],
+      ]),
+    );
+    const clearedCamp = {
+      entityId: SITE,
+      structureName: "Galecrag",
+      hexCoords: { col: 0, row: 0 },
+      stage: 0,
+      level: 0,
+      isMine: true,
+      isAlly: false,
+      owner: { address: 0x111n, ownerName: "", guildName: "" },
+      structureType: StructureType.Camp,
+      hasWonder: false,
+      realmOrder: 1,
+      clearedSite: true as const,
+    };
+    expect(manager.getStructureModelIndices(clearedCamp)).toEqual([SUPPLY_POST_MODEL_INDEX, campStandardIndex]);
+    manager.addVisibleStructureInstance(clearedCamp, new Set(), new Set());
+    expect(supplyPost.matrices).toHaveLength(1);
+    expect(campStandard.matrices).toHaveLength(1);
+    expect(placementOf(supplyPost.matrices[0])).toEqual({ x: 0, y: 0, z: 0, scale: 1 });
+    expect(placementOf(campStandard.matrices[0])).toEqual(composition.clearedStandard);
+    expect(campStandard.setAspectAt).toHaveBeenCalledWith(0, orderAspect(1));
+    expect(campStandard.setRelationshipAt).not.toHaveBeenCalled();
+
+    const rivalClearedCamp = {
+      ...clearedCamp,
+      entityId: SITE + 2,
+      isMine: false,
+      owner: { address: 0x999n, ownerName: "", guildName: "" },
+    };
+    manager.addVisibleStructureInstance(rivalClearedCamp, new Set(), new Set());
+    expect(campStandard.setRelationshipAt).toHaveBeenCalledWith(1, "enemy");
+
+    const clearedRift = { ...clearedCamp, entityId: SITE + 1, structureType: StructureType.Rift };
+    expect(manager.getStructureModelIndices(clearedRift)).toEqual([riftStandardIndex]);
+    manager.addVisibleStructureInstance(clearedRift, new Set(), new Set());
+    expect(riftStandard.matrices).toHaveLength(1);
+    expect(placementOf(riftStandard.matrices[0])).toEqual({ x: 0, y: 0, z: 0, scale: 1 });
+    expect(riftStandard.setAspectAt).not.toHaveBeenCalled();
+    expect(riftStandard.setRelationshipAt).toHaveBeenCalledWith(0, "owned");
+  });
 });
 
 // Owner, 28 October 2026: "we dont need to put the flag labels on the map it overcrowds it a bit and there's already a

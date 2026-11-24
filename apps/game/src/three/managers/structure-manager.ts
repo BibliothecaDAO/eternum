@@ -12,7 +12,7 @@ import {
   type SiteKind,
 } from "@bibliothecadao/eternum";
 import {
-  FALLEN_REALM_RUIN_MODEL_INDEX,
+  SITE_LANDMARK_MODEL_INDEX,
   frontierBeastModelIndex,
   frontierSiteComposition,
   readStandingFrontierBeast,
@@ -548,6 +548,16 @@ export class StructureManager {
     if (!renderInfo || renderInfo.reserved) return undefined;
 
     if (renderable.clearedSite) {
+      const composition = frontierSiteComposition(renderInfo.type);
+      const gameId = configManager.getActiveGameId();
+      const site =
+        composition.clearedModelIndex !== null
+          ? this.store?.get("ExpeditionSite", { game_id: gameId, entity_id: renderable.entityId })
+          : undefined;
+      const home = site?.clear
+        ? this.store?.get("Structure", { game_id: gameId, entity_id: safeInteger(site.clear.home_id) })
+        : undefined;
+      const ownerAddress = home?.owner ?? 0n;
       return {
         entityId: renderable.entityId,
         structureName: siteDisplayName(renderable.entityId),
@@ -557,11 +567,12 @@ export class StructureManager {
         },
         stage: 0,
         level: 0,
-        isMine: false,
+        isMine: ownerAddress !== 0n && isAddressEqualToAccount(ownerAddress),
         isAlly: false,
-        owner: { address: 0n, ownerName: "", guildName: "" },
+        owner: { address: ownerAddress, ownerName: "", guildName: "" },
         structureType: renderInfo.type,
         hasWonder: false,
+        realmOrder: home?.metadata.order,
         clearedSite: true,
       };
     }
@@ -1253,8 +1264,23 @@ export class StructureManager {
     return !structure.usesFallbackCosmeticSkin;
   }
 
+  private clearedStandardModelIndex(structureType: StructureType): number {
+    return this.structureModelPaths[String(structureType)].length - 1;
+  }
+
   /** The height of the model the structure is drawn with; nothing stands over its tile until that model is loaded. */
   private resolveStructureModelHeight(structure: StructureInfo): number {
+    if (structure.clearedSite) {
+      const baseHeight = this.getModelForStructure(structure)?.height ?? 0;
+      const composition = frontierSiteComposition(structure.structureType);
+      if (composition.clearedModelIndex === null) return baseHeight;
+      const models = this.structureModels.get(structure.structureType);
+      const standardHeight =
+        (models?.get(this.clearedStandardModelIndex(structure.structureType))?.height ?? 0) *
+          composition.clearedStandard.scale +
+        composition.clearedStandard.y;
+      return Math.max(baseHeight, standardHeight);
+    }
     if (!structure.frontierBeast) return this.getModelForStructure(structure)?.height ?? 0;
     const models = this.structureModels.get(structure.structureType);
     const composition = frontierSiteComposition(structure.structureType);
@@ -1274,11 +1300,16 @@ export class StructureManager {
   }
 
   private getBaseStructureModelIndex(structure: StructureInfo): number {
-    if (structure.clearedSite) return this.structureModelPaths[String(structure.structureType)].length - 1;
+    if (structure.clearedSite) {
+      return (
+        frontierSiteComposition(structure.structureType).clearedModelIndex ??
+        this.clearedStandardModelIndex(structure.structureType)
+      );
+    }
     if (structure.frontierBeast)
       return frontierSiteComposition(structure.structureType).baseScale === 0
         ? frontierBeastModelIndex(structure.frontierBeast.beast)
-        : FALLEN_REALM_RUIN_MODEL_INDEX;
+        : SITE_LANDMARK_MODEL_INDEX;
     if (structure.structureType === StructureType.Hyperstructure) return 0;
     if (structure.structureType === StructureType.Mine) {
       const index = Object.keys(MineKinds).map(Number).indexOf(structure.mineKind!);
@@ -1297,6 +1328,10 @@ export class StructureManager {
 
   private getStructureModelIndices(structure: StructureInfo): number[] {
     const base = this.getBaseStructureModelIndex(structure);
+    if (structure.clearedSite) {
+      const standard = this.clearedStandardModelIndex(structure.structureType);
+      return base === standard ? [base] : [base, standard];
+    }
     if (structure.frontierBeast) return [...new Set([base, frontierBeastModelIndex(structure.frontierBeast.beast)])];
     return [base];
   }
@@ -1572,7 +1607,20 @@ export class StructureManager {
         });
       }
       if (binding.model instanceof SettlementModel) {
-        binding.model.setRelationshipAt(binding.instanceIndex, resolveSettlementRelationship(structure.isMine));
+        const isFriendlySupplyPost =
+          binding.model.kind === "village" &&
+          structure.clearedSite &&
+          structure.isMine &&
+          frontierSiteComposition(structure.structureType).clearedModelIndex !== null;
+        const aspect =
+          isFriendlySupplyPost && this.mode.id === "frontier" && structure.realmOrder
+            ? orderAspect(structure.realmOrder)
+            : null;
+        if (aspect !== null) {
+          binding.model.setAspectAt(binding.instanceIndex, aspect);
+        } else {
+          binding.model.setRelationshipAt(binding.instanceIndex, resolveSettlementRelationship(structure.isMine));
+        }
         binding.model.setWonderEntityAt(binding.instanceIndex, structure.entityId);
         if (binding.model.kind === "realm") binding.model.setOrderAt(binding.instanceIndex, structure.realmOrder);
       }
@@ -1594,6 +1642,19 @@ export class StructureManager {
     const model = models.get(this.getBaseStructureModelIndex(structure));
     if (!model) {
       return [];
+    }
+
+    if (structure.clearedSite) {
+      const composition = frontierSiteComposition(structure.structureType);
+      if (composition.clearedModelIndex === null) {
+        return [this.bindStructureInstance(model, structure.entityId, dirtyModels)].filter(isBoundStructureInstance);
+      }
+      const standard = models.get(this.clearedStandardModelIndex(structure.structureType));
+      const { scale, x, y, z } = composition.clearedStandard;
+      return [
+        this.bindStructureInstance(model, structure.entityId, dirtyModels),
+        standard ? this.bindSitePart(standard, structure.entityId, dirtyModels, scale, z, y, x) : undefined,
+      ].filter(isBoundStructureInstance);
     }
 
     if (!structure.frontierBeast)
@@ -1639,9 +1700,11 @@ export class StructureManager {
     scale: number,
     z: number,
     y = 0,
+    x = 0,
   ): StructureInstanceBinding | undefined {
     const originalScale = this.dummy.scale.clone();
     const originalPosition = this.dummy.position.clone();
+    this.dummy.translateX(x);
     this.dummy.translateZ(z);
     this.dummy.translateY(y);
     this.dummy.scale.multiplyScalar(scale);

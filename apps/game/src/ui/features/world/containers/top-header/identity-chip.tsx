@@ -55,7 +55,7 @@ const useIdentityChipState = (): IdentityChipState => {
  * What a mode whose players are ranked over a season (Frontier) puts in the chip in place of the game's points goal:
  * the player's place on the season's board, and the way to that board.
  */
-export type SeasonGoal = { rank: string | null; onOpen: () => void };
+type SeasonGoal = { rank: string | null; onOpen: () => void };
 
 /**
  * Player identity opens the leaderboard (or, given a `season`, the season's board), a session without a name opens the

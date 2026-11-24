@@ -50,7 +50,7 @@ const READ_ARMY_LIST = `(() => {
   const bars = nav ? [...nav.querySelectorAll('[role="meter"][aria-label="stamina"]')] : [];
   const rows = nav ? [...nav.querySelectorAll(".ui-row__words")] : [];
   return {
-    entries: nav ? nav.children.length : 0,
+    entries: nav ? [...nav.children].filter((entry) => !["open", "locked"].includes(entry.dataset.slotState)).length : 0,
     bars: bars.map((bar) => {
       const box = bar.getBoundingClientRect();
       return { left: box.left, top: box.top, width: box.width };

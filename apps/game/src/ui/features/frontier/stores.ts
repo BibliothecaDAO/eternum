@@ -12,6 +12,7 @@ type Store = {
   word: string;
   /** The building that makes it, by its research row (the row's building type, as research.cairo names it). */
   made?: { category: BuildingType; spentAt: SpentAt };
+  troop?: TroopType;
 };
 
 /**
@@ -39,18 +40,21 @@ export const FRONTIER_STORES = {
     icon: "troops",
     word: FRONTIER_TROOP_NAMES[TroopType.Knight],
     made: { category: research.BARRACKS, spentAt: "deploy" },
+    troop: TroopType.Knight,
   },
   crossbows: {
     resource: ResourcesIds.Crossbowman,
     icon: resourceMeaning(ResourcesIds.Crossbowman),
     word: FRONTIER_TROOP_NAMES[TroopType.Crossbowman],
     made: { category: research.RANGE, spentAt: "deploy" },
+    troop: TroopType.Crossbowman,
   },
   scouts: {
     resource: ResourcesIds.Paladin,
     icon: resourceMeaning(ResourcesIds.Paladin),
     word: FRONTIER_TROOP_NAMES[TroopType.Paladin],
     made: { category: research.SCOUTS_LODGE, spentAt: "deploy" },
+    troop: TroopType.Paladin,
   },
 } as const satisfies Record<string, Store>;
 
@@ -61,6 +65,8 @@ export const STORE_KINDS = Object.keys(FRONTIER_STORES) as StoreKind[];
 export type MadeStore = {
   [K in StoreKind]: (typeof FRONTIER_STORES)[K] extends { made: object } ? K : never;
 }[StoreKind];
+export const isTroopStore = (kind: StoreKind): boolean => "troop" in FRONTIER_STORES[kind];
+
 export const isMadeStore = (kind: string): kind is MadeStore =>
   kind in FRONTIER_STORES && "made" in FRONTIER_STORES[kind as StoreKind];
 export const MADE_STORES = STORE_KINDS.filter(isMadeStore);

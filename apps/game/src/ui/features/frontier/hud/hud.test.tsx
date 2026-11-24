@@ -25,7 +25,8 @@ import { MenuPage } from "./menu-page";
 import { OrderBar } from "./order-bar";
 import { PickedArmy } from "./picked-army";
 import { DayPill, DayRing } from "./day-pill";
-import { HeaderStores, TOP_BAR_STORE_KINDS } from "./header-stores";
+import { TOP_BAR_STORE_KINDS } from "./header-stores";
+import { RealmCard } from "./realm-card";
 import { PhoneTopBarView, TabletTopBarView } from "./phone-top-bar";
 import { PhoneTabBar, TabletPlaces } from "./frontier-nav";
 import { HUD_PLACES } from "./hud-places";
@@ -262,13 +263,16 @@ describe("the status strip", () => {
     expect(host.querySelector(".frontier-tablet-stocks [data-fragments-socket]")).not.toBeNull();
   });
 
-  it("shows top-bar stores in cornice order with rates, capacity fill, exact accessible labels and Fragments socket", () => {
+  it("shows the realm card's stores in order with rates, exact accessible labels and the Fragments tile", () => {
     const onShop = vi.fn();
     act(() =>
       root.render(
-        <HeaderStores
-          showPopoverCard={false}
+        <RealmCard
+          name="Duskbite"
+          kind="realm"
+          level={1}
           fragments={250}
+          lords={null}
           onShop={onShop}
           stores={[
             store("essence", 125_000),
@@ -279,21 +283,26 @@ describe("the status strip", () => {
         />,
       ),
     );
-    const plates = [...host.querySelectorAll('[role="img"]')];
-    expect(plates.map((plate) => plate.getAttribute("data-store"))).toEqual(["essence", "labor", "wheat", "troops"]);
+    const plates = [...host.querySelectorAll('[data-store] [role="img"]')];
+    expect(plates.map((plate) => plate.closest("[data-store]")!.getAttribute("data-store"))).toEqual([
+      "essence",
+      "labor",
+      "wheat",
+      "lords",
+      "troops",
+    ]);
     expect(plates.map((plate) => plate.getAttribute("aria-label"))).toEqual([
       "Essence 125,000",
       "Labor 18,000 of 18,000",
       "Wheat — of 6,000 · +5/min",
+      "LORDS",
       "Knights 420 of 1,500",
     ]);
-    expect(host.querySelector('[data-store="wheat"] .frontier-trough__rate')?.textContent).toBe("+5/min");
-    expect(host.querySelector('[data-store="labor"] .frontier-store-liquid')?.getAttribute("data-fill-share")).toBe(
-      "100",
-    );
-    const socket = host.querySelector<HTMLButtonElement>("[data-fragments-socket]");
-    expect(socket?.getAttribute("aria-label")).toBe("Fragments 250");
-    act(() => socket!.click());
+    expect(host.querySelector('[data-store="wheat"] .frontier-stock__caption')?.textContent).toBe("+5");
+    expect(host.querySelector('[data-store="labor"] .frontier-stock__caption')?.textContent).toBe("Labor");
+    const fragments = host.querySelector<HTMLButtonElement>('[data-store="fragments"] button');
+    expect(fragments?.getAttribute("aria-label")).toBe("Fragments 250");
+    act(() => fragments!.click());
     expect(onShop).toHaveBeenCalledTimes(1);
   });
 
@@ -405,14 +414,15 @@ describe("the army token", () => {
 });
 
 describe("an open slot whose army is being deployed", () => {
-  it("says Deploying…, pulses and cannot be pressed until the deploy's outcome", () => {
+  it("says Deploying… on its Deploy and cannot be pressed until the deploy's outcome", () => {
     const onDeploy = vi.fn();
-    act(() => root.render(<OpenSlotCard label="Deploy" pulse={false} filling="Deploying…" onDeploy={onDeploy} />));
-    const slot = host.querySelector("button")!;
-    expect(slot.getAttribute("aria-label")).toBe("Deploying…");
-    expect(slot.getAttribute("aria-busy")).toBe("true");
-    expect(slot.textContent).toBe("…Deploying…");
-    act(() => slot.click());
+    act(() => root.render(<OpenSlotCard number={2} primary filling="Deploying…" onDeploy={onDeploy} />));
+    const deploy = host.querySelector("button")!;
+    expect(host.textContent).toContain("Slot 2 · Open");
+    expect(deploy.getAttribute("aria-label")).toBe("Deploy");
+    expect(deploy.getAttribute("aria-busy")).toBe("true");
+    expect(deploy.textContent).toBe("Deploying…");
+    act(() => deploy.click());
     expect(onDeploy).not.toHaveBeenCalled();
   });
 });

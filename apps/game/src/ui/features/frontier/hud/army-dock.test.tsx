@@ -17,7 +17,7 @@ import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 
 import { frontierDay } from "../deploy/deploy-fixture";
-import { ArmyDock } from "./army-dock";
+import { ArmyDock, readArmySlots } from "./army-dock";
 import { frontierSeasonOnePreset } from "../../../../../../../config/source/frontier/season-one";
 import {
   formatAmount,
@@ -69,19 +69,24 @@ it.each(["phone", "desktop"])("shows every open slot and its bar on %s, and open
   );
   try {
     const slots = [...host.querySelectorAll<HTMLButtonElement>('button[aria-label="Deploy"]')];
-    expect(
-      slots.map((slot) => {
-        const meter = (slot.closest(".ui-row") ?? slot).querySelector('[role="meter"]');
-        return [
-          (slot.closest<HTMLElement>(".ui-row") ?? slot).dataset.tip,
-          meter?.getAttribute("aria-valuenow"),
-          meter?.getAttribute("aria-valuemax"),
-        ];
-      }),
-    ).toEqual([
-      ["Army 2 starts full: 150/150 stamina.", "150", "150"],
-      ["Army 3 starts on 7/150 stamina.", "7", "150"],
-    ]);
+    const startOf = (slot: HTMLButtonElement) => {
+      const row = slot.closest<HTMLElement>(".frontier-slot") ?? slot;
+      const meter = row.querySelector('[role="meter"]');
+      return mode === "desktop"
+        ? [row.dataset.tip, row.querySelector(".frontier-slot__detail")?.textContent]
+        : [row.dataset.tip, meter?.getAttribute("aria-valuenow"), meter?.getAttribute("aria-valuemax")];
+    };
+    expect(slots.map(startOf)).toEqual(
+      mode === "desktop"
+        ? [
+            ["Army 2 starts full: 150/150 stamina.", "420 Knights ready at home"],
+            ["Army 3 starts on 7/150 stamina.", "Any troop type · 7"],
+          ]
+        : [
+            ["Army 2 starts full: 150/150 stamina.", "150", "150"],
+            ["Army 3 starts on 7/150 stamina.", "7", "150"],
+          ],
+    );
     act(() => slots[1].click());
     expect(useUIStore.getState().pendingMilitaryAction).toMatchObject({ structureId: 7, slot: 2 });
   } finally {
@@ -236,7 +241,7 @@ it.each(["phone", "desktop"] as const)(
       const expectedCount = formatAmount(startingKnights);
       const expectedLabel = `${expectedCount} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`;
       if (size === "desktop") {
-        expect(slots[0].textContent).toContain(expectedLabel);
+        expect(slots[0].closest(".frontier-slot")?.textContent).toContain(`${expectedLabel} ready at home`);
       } else {
         expect(slots[0].textContent).toContain(expectedCount);
         expect(slots[0].querySelector(`[aria-label="${expectedLabel}"]`)).not.toBeNull();
@@ -249,3 +254,16 @@ it.each(["phone", "desktop"] as const)(
     }
   },
 );
+
+it("names each slot past the realm's allowance with the rank that unlocks it, up to the most any rank allows", () => {
+  const limits = { settlement_armies: 3, city_armies: 4, kingdom_armies: 4, empire_armies: 6 } as never;
+  expect(readArmySlots(limits, 1, 3)).toEqual({
+    count: "1 / 3 active (6 max)",
+    locked: [
+      { number: 4, rank: "City" },
+      { number: 5, rank: "Empire" },
+      { number: 6, rank: "Empire" },
+    ],
+  });
+  expect(readArmySlots(limits, 6, 6)).toEqual({ count: "6 / 6 active (6 max)", locked: [] });
+});

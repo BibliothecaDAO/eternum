@@ -15,12 +15,13 @@ import {
 import { mountStaticLineup, type LineupAsset, type LineupSettings } from "@/three/debug/model-lab/static-model-lineup";
 import {
   FRONTIER_BEASTS,
+  FRONTIER_CAMP_MODEL_PATH,
   frontierBeast,
   frontierSiteComposition,
   FALLEN_REALM_RUIN_PATH,
   largestBeastScale,
 } from "@/three/structures/frontier-beast";
-import { CAMP_MODEL_PATH, RiftModelPath } from "@/three/constants/scene-constants";
+import { RiftModelPath } from "@/three/constants/scene-constants";
 import { Token } from "@/three/map-plates/map-plate-token";
 import { Plate } from "@/three/map-plates/map-plates";
 import { buildStructurePlate } from "@/three/map-plates/map-plate-model";
@@ -39,7 +40,7 @@ const MODELS: readonly LineupAsset[] = MODEL_BEASTS.map(({ beast }) => ({
   parts: [{ path: FRONTIER_BEASTS[beast].path, scale: largestBeastScale(beast) }],
 }));
 const SITES = [
-  { kind: "Camp", category: StructureType.Camp, base: CAMP_MODEL_PATH },
+  { kind: "Camp", category: StructureType.Camp, base: FRONTIER_CAMP_MODEL_PATH },
   { kind: "Rift", category: StructureType.Rift, base: RiftModelPath },
   { kind: "Ruin", category: StructureType.Ruin, base: FALLEN_REALM_RUIN_PATH },
   { kind: "Beasts", category: StructureType.Beasts, base: "" },

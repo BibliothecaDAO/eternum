@@ -203,68 +203,6 @@ button.frontier-stock-chip {
   line-height: 1.1;
   color: var(--hud-muted);
 }
-.frontier-quest-orb {
-  position: relative;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  border: 0;
-  background: transparent;
-  padding: 0 0 8px;
-  color: rgb(var(--hud-ink));
-  cursor: pointer;
-}
-.frontier-quest-orb .frontier-progress-ring--lg {
-  width: 44px;
-  height: 44px;
-  border: 1.5px solid var(--hud-line-strong);
-  box-shadow: var(--hud-shadow-panel);
-}
-.frontier-quest-orb__count {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 1px solid var(--hud-line-strong);
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-surface-to);
-  padding: 2px 7px;
-  font-size: var(--hud-text-badge);
-  line-height: 1;
-  font-weight: var(--hud-weight-strong);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.frontier-quest-orb[data-ready="true"] .frontier-progress-ring--lg {
-  border-color: rgb(var(--hud-gold));
-  box-shadow: 0 0 14px rgb(var(--hud-gold) / 0.55);
-}
-.frontier-quest-orb[data-ready="true"] .frontier-quest-orb__count {
-  right: -4px;
-  left: auto;
-  transform: none;
-  border-color: rgb(var(--hud-gold));
-  background: rgb(var(--hud-gold));
-  color: rgb(var(--hud-dark));
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.frontier-quest-orb__alert {
-  position: absolute;
-  top: -3px;
-  right: -3px;
-  display: inline-flex;
-  width: 16px;
-  height: 16px;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-good);
-  color: rgb(var(--hud-dark));
-  font-size: var(--hud-text-badge);
-  line-height: 1;
-  font-weight: var(--hud-weight-badge);
-}
 .frontier-phone-foot {
   display: flex;
   align-items: flex-end;
@@ -653,4 +591,44 @@ button.frontier-stock-chip {
 }
 .frontier-quest-card__claim > .ui-button {
   width: 100%;
+}
+.frontier-realm-chip {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: theme(spacing.2);
+  border: 0;
+  background: transparent;
+  padding: 0 theme(spacing.1) 0 0;
+  color: rgb(var(--hud-ink));
+  cursor: pointer;
+  text-align: left;
+}
+.frontier-realm-chip__text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+.frontier-realm-chip__name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-title);
+  line-height: 1.05;
+  color: rgb(var(--hud-ink));
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.frontier-realm-chip__order {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--hud-text-badge);
+  line-height: 1.15;
+  color: var(--hud-muted);
+  white-space: nowrap;
 }

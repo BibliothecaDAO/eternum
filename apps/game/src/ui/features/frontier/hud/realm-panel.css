@@ -17,50 +17,6 @@
   font-size: var(--hud-text-body);
   line-height: var(--hud-leading-body);
 }
-.realm-panel__castle {
-  display: inline-flex;
-  align-items: baseline;
-  gap: theme(spacing[1.5]);
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-title);
-  line-height: var(--hud-leading-title);
-  font-weight: var(--hud-weight-title);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: rgb(var(--hud-ink));
-}
-.realm-panel__meta {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: theme(spacing[1.5]);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  color: var(--hud-muted);
-  font-variant-numeric: tabular-nums;
-}
-.realm-panel__lords {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  color: rgb(var(--hud-gold));
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  font-weight: var(--hud-weight-strong);
-  font-variant-numeric: tabular-nums;
-}
-button.realm-panel__lords {
-  cursor: pointer;
-}
-button.realm-panel__lords:hover {
-  text-decoration: underline;
-}
-.realm-panel__lords[data-warn="true"] {
-  color: var(--hud-warn);
-}
 .realm-building__max {
   padding: 0 theme(spacing.1);
   font-size: var(--hud-text-label);
