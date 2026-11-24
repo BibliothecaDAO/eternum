@@ -18,7 +18,7 @@ export const DailyQuestChip = ({ realm, look = "chip" }: { realm: NativeRows["St
   const { setup } = useGame();
   const now = useNowSeconds();
   useNativeRevision(DAILY_QUEST_MODELS);
-  const { triggerProps, popover } = useHudPopover();
+  const { triggerProps, popover, close } = useHudPopover();
   const today = readDailyQuest(setup.store, realm.game_id, safeInteger(realm.entity_id), now);
   if (!today) return null;
   const reading = today.reading.known;
@@ -61,7 +61,10 @@ export const DailyQuestChip = ({ realm, look = "chip" }: { realm: NativeRows["St
           </>
         )}
       </button>
-      {popover(<DailyQuest realm={realm} layout={layout} />, { className: "frontier-quest-popover", layout })}
+      {popover(<DailyQuest realm={realm} layout={layout} onClose={close} />, {
+        className: "frontier-quest-popover",
+        layout,
+      })}
     </div>
   );
 };

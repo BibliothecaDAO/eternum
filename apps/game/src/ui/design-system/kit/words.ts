@@ -863,6 +863,7 @@ export const DEEP_WORDS = {
 export const DAY_BANNER_WORDS = {
   today: "Today",
   quest: "Quest",
+  dailyQuest: (quest: string) => `Daily quest · ${quest}`,
   reading: "Loading today's quest…",
   reward: "Reward",
   collect: "Collect",

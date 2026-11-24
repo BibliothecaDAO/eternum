@@ -26,10 +26,8 @@ import {
 } from "@/ui/design-system/kit/words";
 
 import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-faces";
-import type { ReactNode } from "react";
+import { type ReactNode, type RefObject, useEffect, useRef, useState } from "react";
 import { reasonLine } from "@/ui/design-system/kit/reasons";
-
-const TILES_IN_VIEW = 6;
 
 export type BuildTile = {
   key: string;
@@ -71,11 +69,12 @@ export const BuildView = ({
 }) => {
   const chosenTile = tiles[chosen];
   const ordered = orderedTiles(tiles);
-  const below = ordered.slice(TILES_IN_VIEW).map(({ tile }) => tile.name);
+  const grid = useRef<HTMLDivElement>(null);
+  const below = useTilesOutOfView(grid, ordered.length).map((index) => ordered[index]!.tile.name);
   return (
     <HudSheet label={BUILD} beside={plots && <HudChip>{plotsUsed(plots.used, plots.total)}</HudChip>} onClose={onClose}>
       <div data-build-sheet className="build-sheet">
-        <div data-build-grid className="build-grid">
+        <div ref={grid} data-build-grid className="build-grid">
           {ordered.map(({ tile, index }) => (
             <TileButton key={tile.key} tile={tile} chosen={index === chosen} onChoose={() => onChoose(index)} />
           ))}
@@ -94,6 +93,27 @@ export const BuildView = ({
 };
 
 type IndexedTile = { tile: BuildTile; index: number };
+
+const useTilesOutOfView = (grid: RefObject<HTMLDivElement>, count: number): readonly number[] => {
+  const [outOfView, setOutOfView] = useState<readonly number[]>([]);
+  useEffect(() => {
+    const element = grid.current;
+    if (!element || typeof IntersectionObserver === "undefined") return;
+    const tiles = [...element.children];
+    const below = new Map<Element, boolean>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries)
+          below.set(entry.target, entry.boundingClientRect.bottom > (entry.rootBounds?.bottom ?? Infinity) + 1);
+        setOutOfView(tiles.flatMap((tile, index) => (below.get(tile) ? [index] : [])));
+      },
+      { root: element.closest(".ui-frame__body"), threshold: [0, 0.5, 0.99] },
+    );
+    for (const tile of tiles) observer.observe(tile);
+    return () => observer.disconnect();
+  }, [grid, count]);
+  return outOfView;
+};
 
 const orderedTiles = (tiles: readonly BuildTile[]): IndexedTile[] => {
   const indexed = tiles.map((tile, index) => ({ tile, index }));

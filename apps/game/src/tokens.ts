@@ -629,6 +629,7 @@ export const HUD_LAYOUT = {
    * and scrolling inside past it.
    */
   "phone-panel": `min(45dvh, max(12rem, calc(100dvh - var(--hud-phone-top, 0px) - var(--hud-phone-foot, 0px) - ${HUD_MAP_LEAST_SHARE}dvh)))`,
+  "tablet-rail": "248px",
   "chat-width": "800px",
   "chat-height": "600px",
   /**

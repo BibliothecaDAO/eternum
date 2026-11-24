@@ -68,7 +68,7 @@ import { PickedArmy } from "./hud/picked-army";
 import { ArmyOathSockets } from "./army/oath-slots";
 import { ArmyRefill, sellsStamina } from "./army/army-refill";
 import { useArmySpireStatus } from "./spire-card";
-import { OpeningProvider, usePartShown } from "./opening/opening-context";
+import { OpeningProvider } from "./opening/opening-context";
 import { OpeningOffer } from "./opening/opening-offer";
 import { useOpening } from "./opening/use-opening";
 import { useSiteAlertOffer } from "./opening/use-site-alert-offer";
@@ -182,9 +182,7 @@ const FrontierHudBody = ({
         },
   });
   const seasonRank = useSeasonRank();
-  const aspectsOpen = usePartShown("aspects");
   const fragmentsHeld = useFragmentsHeld();
-  const fragments = usePartShown("fragments-chip") ? fragmentsHeld : null;
   const ordersAllowed = useUIStore(canIssueOrders);
   const layers = useMapLayers(rules, shown, visit ? null : realm);
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
@@ -402,7 +400,7 @@ const FrontierHudBody = ({
           />
         ) : undefined
       }
-      season={aspectsOpen ? { rank: seasonRank, onOpen: () => setSurface("season") } : undefined}
+      season={{ rank: seasonRank, onOpen: () => setSurface("season") }}
       clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
       stores={
@@ -411,7 +409,7 @@ const FrontierHudBody = ({
             stores={headerStores}
             storeCards={storeCards}
             showPopoverCard
-            fragments={own ? fragments : null}
+            fragments={own ? fragmentsHeld : null}
             onShop={own ? () => setSurface("shop") : undefined}
           />
         ) : undefined

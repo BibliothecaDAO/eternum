@@ -410,7 +410,7 @@ it.each([390, 1440])(
 );
 
 it.each([390, 1440])(
-  "opens Today from the day control at %i px, docking only on desktop and leaving the map uncovered",
+  "opens Today from the day control at %i px, in the desktop's rail or the phone's foot band, the map uncovered",
   async (width) => {
     viewport.set(width);
     await renderHud();
@@ -419,8 +419,8 @@ it.each([390, 1440])(
     await act(async () => day!.click());
     const sheet = host.querySelector<HTMLElement>('section[aria-label="Today"]');
     expect(sheet).not.toBeNull();
-    expect(sheet!.hasAttribute("data-docked")).toBe(width >= 1024);
     expect(sheet!.closest("[data-rail-panel]") !== null).toBe(width >= 1024);
+    expect(sheet!.closest("[data-sheet-band]") !== null).toBe(width < 1024);
     expect(host.querySelector('section[aria-label="Realm"]') !== null).toBe(width >= 1024);
     expect(host.querySelector('nav[aria-label="Places"]')).not.toBeNull();
     expect(host.querySelector(".ui-sheet__backdrop")).toBeNull();

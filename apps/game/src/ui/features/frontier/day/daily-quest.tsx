@@ -19,7 +19,15 @@ import { DayBannerView, type DayLayout } from "./day-banner-view";
 import { dayQuestFace } from "./day-quest-face";
 import { baneMembers, teamBaneHead, triumphHead, worldBaneHead } from "./day-bane-face";
 
-export const DailyQuest = ({ realm, layout }: { realm: NativeRows["Structure"]; layout: DayLayout }) => {
+export const DailyQuest = ({
+  realm,
+  layout,
+  onClose,
+}: {
+  realm: NativeRows["Structure"];
+  layout: DayLayout;
+  onClose?: () => void;
+}) => {
   const { setup, account } = useGame();
   const now = useNowSeconds();
   useNativeRevision(DAILY_QUEST_MODELS);
@@ -80,6 +88,7 @@ export const DailyQuest = ({ realm, layout }: { realm: NativeRows["Structure"]; 
         collecting={collecting}
         onCollect={collect}
         onOpenClaim={collect}
+        onClose={onClose}
       />
     </section>
   );

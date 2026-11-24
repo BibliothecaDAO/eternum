@@ -255,7 +255,7 @@ describe("the status strip", () => {
     ]);
     expect(
       [...host.querySelectorAll('nav[aria-label="Places"] button')].map((button) => button.getAttribute("aria-label")),
-    ).toEqual(["Research", "Season", "Feed", "Chat", "Settings"]);
+    ).toEqual(["Research", "Season", "Feed", "Chat", "Menu"]);
     expect(
       [...host.querySelectorAll(".frontier-tablet-stocks [data-store]")].map((chip) => chip.getAttribute("data-store")),
     ).toEqual(["essence", "labor"]);
@@ -472,7 +472,7 @@ describe("the phone tab bar", () => {
     expect(onSurface).toHaveBeenLastCalledWith("menu");
   });
 
-  it("keeps Season on the tab bar before the opening has shown it", () => {
+  it("keeps Season on the tab bar from the first minute while Research waits on its moment", () => {
     act(() =>
       root.render(
         <OpeningProvider opened={new Set()}>
@@ -487,7 +487,7 @@ describe("the phone tab bar", () => {
         </OpeningProvider>,
       ),
     );
-    expect(barButtons()).toEqual(["World", "Research", "Season", "Chat", "Menu"]);
+    expect(barButtons()).toEqual(["World", "Season", "Chat", "Menu"]);
   });
 
   it("names a Paladin army Scouts on the picked-army row from Frontier's troop table", () => {
@@ -510,7 +510,7 @@ describe("the phone tab bar", () => {
         />,
       ),
     );
-    expect(host.textContent).toContain("Scouts · 400");
+    expect(host.textContent).toContain("Army 1 · 400 Scouts");
     expect(host.textContent).not.toContain("Paladins");
   });
 

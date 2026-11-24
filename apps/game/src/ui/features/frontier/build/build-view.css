@@ -81,11 +81,6 @@
     line-height: 1.2;
   }
 }
-@media (min-width: 768px) {
-  .build-more {
-    display: none;
-  }
-}
 @media (min-width: 1024px) {
   .build-sheet,
   .build-grid {

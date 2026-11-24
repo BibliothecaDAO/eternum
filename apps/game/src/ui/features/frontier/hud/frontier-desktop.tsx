@@ -1,6 +1,5 @@
 import "./frontier-bar.css";
 
-import { usePartShown } from "../opening/opening-context";
 import { HUD_COLUMN_MARK } from "@/three/utils/labels/hud-clearance";
 import { Icon } from "@/ui/design-system/icon";
 import { SheetDock } from "@/ui/design-system/kit/hud-elements";
@@ -12,7 +11,7 @@ import { HudFoot } from "@/ui/features/world/hud/desktop-hud";
 import { type ReactNode, useState } from "react";
 
 import type { HudSurface } from "./frontier-nav";
-import { resolveHudPlaces } from "./hud-places";
+import { useHudPlaces } from "./hud-places";
 import { useHudScale } from "./hud-scale";
 
 export const FrontierDesktop = ({
@@ -135,11 +134,7 @@ export const FrontierPlaces = ({
   chatUnread?: number;
 }) => {
   const unread = useUnreadImportantCount(surface === "feed");
-  const researchOpen = usePartShown("research");
-  const aspectsOpen = usePartShown("aspects");
-  const tabs = resolveHudPlaces({
-    aspectsOpen,
-    researchOpen,
+  const tabs = useHudPlaces({
     researchReady: research,
     feedUnread: unread,
     chatUnread,

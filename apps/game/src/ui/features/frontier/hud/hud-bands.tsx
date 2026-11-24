@@ -1,7 +1,7 @@
 import { type CSSProperties, type ReactNode, type RefObject, useLayoutEffect, useRef, useState } from "react";
 
 import { useKeyboardHeight } from "@/hooks/use-keyboard-inset";
-import { useSideways } from "@/shell/frame/layout";
+import { useSideways, useTablet } from "@/shell/frame/layout";
 import { HUD_COLUMN_MARK, HUD_FOOT_MARK, HUD_TOP_MARK } from "@/three/utils/labels/hud-clearance";
 import { SheetDock } from "@/ui/design-system/kit/hud-elements";
 
@@ -36,9 +36,10 @@ const UprightBands = ({ strip, banner, page, notices, action, dock, nav, childre
   const topBand = useRef<HTMLDivElement>(null);
   const top = useEdge(topBand, (rect) => rect.bottom + BAND_GAP);
   const [sheetBand, setSheetBand] = useState<HTMLDivElement | null>(null);
+  const tablet = useTablet();
   return (
     <div
-      data-hud-bands=""
+      data-hud-form={tablet ? "tablet" : "phone"}
       aria-label="Frontier HUD"
       className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden [&:has([data-page-fills])_[data-map-band]]:hidden"
       style={{ ...SAFE_AREA, "--hud-phone-foot": `${foot}px`, "--hud-phone-top": `${top}px` } as CSSProperties}

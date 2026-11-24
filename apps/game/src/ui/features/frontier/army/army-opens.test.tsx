@@ -106,7 +106,7 @@ const pickInDock = () =>
 /** A phone's picked army in the action row: its token, which opens its card. */
 const details = () => host.querySelector<HTMLButtonElement>('button[aria-label="Army 1: details"]');
 const rowButton = (name: RegExp) =>
-  [...details()!.parentElement!.querySelectorAll<HTMLButtonElement>("button")].find((button) =>
+  [...details()!.closest(".frontier-army-tray")!.querySelectorAll<HTMLButtonElement>("button")].find((button) =>
     name.test(button.getAttribute("aria-label") ?? button.textContent ?? ""),
   )!;
 const staminaMeter = () =>
@@ -158,14 +158,15 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
   });
 
-  it("reads stamina on its Fragments refill, which a historical LORDS balance neither fills nor unlocks", async () => {
+  it("prices its Fragments refill, which a historical LORDS balance neither fills nor unlocks", async () => {
     const store = await renderHud();
     await act(async () => store.applyFacts(sellingFragments(store) as never));
     await select(ARMY);
     const refill = () => [rowButton(/^Refill /).getAttribute("aria-label"), rowButton(/^Refill /).disabled];
-    expect(refill()).toEqual(["Refill 90/150", true]);
+    const [label, disabled] = refill();
+    expect([String(label).startsWith("Refill Stamina · "), disabled]).toEqual([true, true]);
     await act(async () => store.applyFacts([realmLords(40)] as never));
-    expect(refill()).toEqual(["Refill 90/150", true]);
+    expect(refill()).toEqual([label, true]);
     expect(host.querySelector("[data-kit-sheet]")).toBeNull();
   });
 

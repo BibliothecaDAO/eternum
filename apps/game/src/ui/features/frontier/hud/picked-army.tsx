@@ -33,7 +33,11 @@ export const PickedArmy = ({
   const category = army.troopsFact?.category;
   const title = PICKED_ARMY.title(army.label, army.troops, (category && frontierTroopName(category)) || undefined);
   return (
-    <HudPanel collapsible={false} className="pointer-events-auto" bodyClassName="frontier-army-tray">
+    <HudPanel
+      collapsible={false}
+      className="frontier-army-tray-panel pointer-events-auto"
+      bodyClassName="frontier-army-tray"
+    >
       <div className="frontier-army-tray__head">
         <button
           type="button"

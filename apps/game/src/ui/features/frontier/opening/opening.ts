@@ -79,7 +79,7 @@ export const OPENING = {
   aspects: {
     icon: "hyperstructure",
     teacher: "own",
-    parts: ["aspects"],
+    parts: [],
     reachedWhen: (ctx) => ctx.inDeep || ctx.hasActiveBane || ctx.hyperstructureAdvanced,
     showsWhen: (ctx) => ctx.inDeep || ctx.hasActiveBane || ctx.hyperstructureAdvanced,
     readyWhen: (rules) => rules.ownAspect !== undefined,
@@ -110,7 +110,7 @@ export const OPENING = {
   shop: {
     icon: "fragment",
     teacher: 2,
-    parts: ["fragments-chip"],
+    parts: [],
     reachedWhen: (ctx) => ctx.fragmentsSold && ctx.outOfStamina,
     showsWhen: (ctx) => ctx.fragmentsSold && ctx.outOfStamina,
   },

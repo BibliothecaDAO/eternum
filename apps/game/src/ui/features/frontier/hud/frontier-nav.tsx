@@ -1,9 +1,9 @@
 import "./phone-hud.css";
 
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { MENU, REALM, SETTINGS, WORLD } from "@/ui/design-system/kit/words";
+import { MENU, REALM, WORLD } from "@/ui/design-system/kit/words";
 
-import { resolveHudPlaces } from "./hud-places";
+import { useHudPlaces } from "./hud-places";
 
 export type HudSurface =
   | "realm"
@@ -28,10 +28,8 @@ type PlacesState = {
 
 const MENU_SURFACES: readonly HudSurface[] = ["menu", "feed", "today", "settings", "shop"];
 
-const placesOf = ({ surface, researchReady, feedUnread, chatUnread }: PlacesState) =>
-  resolveHudPlaces({
-    aspectsOpen: true,
-    researchOpen: true,
+const usePlaces = ({ surface, researchReady, feedUnread, chatUnread }: PlacesState) =>
+  useHudPlaces({
     researchReady,
     feedUnread,
     chatUnread,
@@ -40,7 +38,7 @@ const placesOf = ({ surface, researchReady, feedUnread, chatUnread }: PlacesStat
 
 export const PhoneTabBar = ({ isMapView, ...state }: PlacesState & { isMapView: boolean }) => {
   const { surface, onSurface } = state;
-  const places = placesOf(state);
+  const places = usePlaces(state);
   const feed = places.find((place) => place.key === "feed");
   const tabs = places.filter((place) => place.key !== "feed");
   const onMenu = surface !== null && MENU_SURFACES.includes(surface);
@@ -75,10 +73,11 @@ export const PhoneTabBar = ({ isMapView, ...state }: PlacesState & { isMapView: 
 
 export const TabletPlaces = (state: PlacesState) => {
   const { surface, onSurface } = state;
+  const places = usePlaces(state);
   const toggle = (target: HudSurface) => onSurface(surface === target ? null : target);
   return (
     <nav aria-label="Places" className="frontier-tablet-places pointer-events-auto">
-      {placesOf(state).map((place) => (
+      {places.map((place) => (
         <PlaceTab
           key={place.key}
           {...placeTab(place)}
@@ -86,7 +85,12 @@ export const TabletPlaces = (state: PlacesState) => {
           onPress={() => toggle(place.key)}
         />
       ))}
-      <PlaceTab label={SETTINGS} icon="settings" current={surface === "settings"} onPress={() => toggle("settings")} />
+      <PlaceTab
+        label={MENU}
+        icon="menu"
+        current={surface !== null && MENU_SURFACES.includes(surface)}
+        onPress={() => toggle("menu")}
+      />
     </nav>
   );
 };
@@ -134,7 +138,7 @@ const PlaceTab = ({
   </button>
 );
 
-const placeTab = (place: ReturnType<typeof placesOf>[number]) => ({
+const placeTab = (place: ReturnType<typeof usePlaces>[number]) => ({
   label: place.label,
   ariaLabel: place.ariaLabel,
   icon: place.icon,
