@@ -21,13 +21,54 @@ afterEach(() => {
 
 it("keeps a failed initial read unknown and retries without another subscriber", async () => {
   vi.useFakeTimers();
-  useIdentitySessionStore.setState({ session: null, status: "loading" });
+  useIdentitySessionStore.setState({ session: null, status: "loading", error: null });
   const session = { user: { realmsId: "0x123" } };
   client.getSession.mockRejectedValueOnce(new Error("503")).mockResolvedValueOnce(session);
   await useIdentitySessionStore.getState().refresh();
   expect(useIdentitySessionStore.getState().status).toBe("loading");
+  expect(useIdentitySessionStore.getState().error).toBeInstanceOf(Error);
   await vi.advanceTimersByTimeAsync(5_000);
-  expect(useIdentitySessionStore.getState()).toMatchObject({ status: "signed-in", session });
+  expect(useIdentitySessionStore.getState()).toMatchObject({ status: "signed-in", session, error: null });
+});
+
+it("exposes a TimeoutError immediately, backs off retries without clearing error, and recovers when the service answers", async () => {
+  vi.useFakeTimers();
+  useIdentitySessionStore.setState({ session: null, status: "loading", error: null });
+  const timeout = Object.assign(new Error("timed out"), {
+    cause: new DOMException("The app's service did not answer in time", "TimeoutError"),
+  });
+  client.getSession.mockRejectedValueOnce(timeout).mockRejectedValueOnce(timeout).mockResolvedValueOnce(null);
+  await useIdentitySessionStore.getState().refresh();
+  expect(useIdentitySessionStore.getState()).toMatchObject({ status: "loading", error: timeout });
+  await vi.advanceTimersByTimeAsync(5_000);
+  expect(client.getSession).toHaveBeenCalledTimes(2);
+  expect(useIdentitySessionStore.getState()).toMatchObject({ status: "loading", error: timeout });
+  await vi.advanceTimersByTimeAsync(9_999);
+  expect(client.getSession).toHaveBeenCalledTimes(2);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(client.getSession).toHaveBeenCalledTimes(3);
+  expect(useIdentitySessionStore.getState()).toMatchObject({ status: "anonymous", session: null, error: null });
+});
+
+it("cancels pending backoff and clears error on an explicit refresh", async () => {
+  vi.useFakeTimers();
+  useIdentitySessionStore.setState({ session: null, status: "loading", error: null });
+  const session = { user: { realmsId: "0x456" } };
+  let finish!: (value: unknown) => void;
+  client.getSession.mockRejectedValueOnce(new Error("503")).mockReturnValueOnce(
+    new Promise((resolve) => {
+      finish = resolve;
+    }),
+  );
+  await useIdentitySessionStore.getState().refresh();
+  expect(useIdentitySessionStore.getState().error).toBeInstanceOf(Error);
+  const manual = useIdentitySessionStore.getState().refresh();
+  expect(useIdentitySessionStore.getState().error).toBeNull();
+  finish(session);
+  await manual;
+  expect(useIdentitySessionStore.getState()).toMatchObject({ status: "signed-in", session, error: null });
+  await vi.advanceTimersByTimeAsync(30_000);
+  expect(client.getSession).toHaveBeenCalledTimes(2);
 });
 
 it("does not restore a session from a read that finishes after sign-out", async () => {

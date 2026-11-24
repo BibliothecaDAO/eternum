@@ -1,10 +1,8 @@
 import { type ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { Color, Scene, Vector3 } from "three";
 
-import { ArrowProjectileSystem, type ArrowImpactEvent } from "../projectiles/arrow-projectile-system";
+import { ArrowProjectileSystem } from "../projectiles/arrow-projectile-system";
 import type { ProjectileHitQuery } from "../projectiles/projectile-hit-query";
-import type { ProceduralImpactAuthority } from "../characters/collision/procedural-impact";
-import type { ProceduralProjectileReleaseSpec } from "../characters/procedural-unit-runtime";
 import { MeleeImpactSystem } from "./melee-impact-system";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
@@ -22,31 +20,8 @@ export interface CombatPresentationStats {
   melee: ReturnType<MeleeImpactSystem["getStats"]>;
 }
 
-interface CombatPresentationOptions {
-  deferEffects?: boolean;
-}
-
 interface CombatPresentationCoordinatorOptions {
   projectileHitQuery?: ProjectileHitQuery;
-}
-
-export interface ProceduralRangedPresentation {
-  authority?: ProceduralImpactAuthority;
-  ownerEntityId: number;
-  origin: Readonly<Vector3>;
-  origins?: readonly Readonly<Vector3>[];
-  presentationId?: string;
-  projectile: ProceduralProjectileReleaseSpec;
-  seed: number;
-  target: Readonly<Vector3>;
-  targetEntityId: number;
-  tier: TroopTier;
-}
-
-export interface ProceduralMeleePresentation {
-  direction: Readonly<Vector3>;
-  target: Readonly<Vector3>;
-  tier: TroopTier;
 }
 
 const WORLD_ARROW_CAPACITY = 512;
@@ -58,8 +33,6 @@ const WORLD_ARROW_CAPACITY = 512;
 export class CombatPresentationCoordinator {
   private readonly projectiles: ArrowProjectileSystem;
   private readonly meleeImpacts = new MeleeImpactSystem();
-  private readonly projectileImpactListeners = new Set<(event: ArrowImpactEvent) => void>();
-  private readonly unsubscribeProjectileImpact: () => void;
   private presentationSequence = 0;
   private disposed = false;
 
@@ -76,37 +49,14 @@ export class CombatPresentationCoordinator {
       },
       options.projectileHitQuery,
     );
-    this.unsubscribeProjectileImpact = this.projectiles.onImpact((event) => {
-      this.projectileImpactListeners.forEach((listener) => listener(event));
-    });
     scene.add(this.projectiles.group, this.meleeImpacts.group);
   }
 
-  public replayIndexed(presentation: CombatPresentation, options: CombatPresentationOptions = {}): boolean {
+  public replayIndexed(presentation: CombatPresentation): boolean {
     if (this.disposed || !supportsPresentation(presentation.troopType)) return false;
     const presentationId = `indexed:${++this.presentationSequence}`;
-    if (!options.deferEffects) this.spawnPresentation(presentation, presentationId, "indexed-replay");
+    this.spawnPresentation(presentation, presentationId);
     return true;
-  }
-
-  public presentImmediate(presentation: CombatPresentation): void {
-    if (this.disposed || !supportsPresentation(presentation.troopType)) return;
-    this.spawnPresentation(presentation, `fallback:${++this.presentationSequence}`, "indexed-replay");
-  }
-
-  public presentRangedRelease(presentation: ProceduralRangedPresentation): void {
-    if (this.disposed) return;
-    this.spawnProceduralProjectiles(presentation);
-  }
-
-  public onProjectileImpact(listener: (event: ArrowImpactEvent) => void): () => void {
-    this.projectileImpactListeners.add(listener);
-    return () => this.projectileImpactListeners.delete(listener);
-  }
-
-  public presentMeleeContact(presentation: ProceduralMeleePresentation): void {
-    if (this.disposed) return;
-    this.meleeImpacts.spawn(presentation);
   }
 
   /** The far zoom band shows no combat FX; the systems keep simulating so nothing desynchronises. */
@@ -129,19 +79,13 @@ export class CombatPresentationCoordinator {
   public dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    this.unsubscribeProjectileImpact();
-    this.projectileImpactListeners.clear();
     this.projectiles.dispose();
     this.meleeImpacts.dispose();
   }
 
-  private spawnPresentation(
-    presentation: CombatPresentation,
-    presentationId: string,
-    authority: ProceduralImpactAuthority,
-  ): void {
+  private spawnPresentation(presentation: CombatPresentation, presentationId: string): void {
     if (presentation.troopType === TroopType.Crossbowman) {
-      this.spawnRangedPresentation(presentation, presentationId, authority);
+      this.spawnRangedPresentation(presentation, presentationId);
       return;
     }
     const direction = new Vector3().copy(presentation.target).sub(presentation.origin);
@@ -150,37 +94,11 @@ export class CombatPresentationCoordinator {
     this.meleeImpacts.spawn({ direction, target: presentation.target, tier: presentation.tier });
   }
 
-  private spawnProceduralProjectiles(presentation: ProceduralRangedPresentation): void {
-    const origins = presentation.origins?.length ? presentation.origins : [presentation.origin];
-    const projectileCount = Math.max(1, Math.round(presentation.projectile.count));
-    for (let index = 0; index < projectileCount; index += 1) {
-      this.projectiles.spawnVolley({
-        authority: presentation.authority ?? "provisional",
-        color: presentation.projectile.kind === "cannonball" ? CANNONBALL_COLOR : resolveTierColor(presentation.tier),
-        count: 1,
-        flightSeconds: presentation.projectile.flightSeconds,
-        kind: presentation.projectile.kind,
-        origin: origins[index % origins.length],
-        ownerEntityId: presentation.ownerEntityId,
-        presentationId: presentation.presentationId,
-        seed: (presentation.seed + Math.imul(index + 1, 0x9e3779b1)) >>> 0,
-        spreadDegrees: presentation.projectile.spreadDegrees,
-        target: presentation.target,
-        targetEntityId: presentation.targetEntityId,
-        targetRadius: presentation.projectile.targetRadius,
-      });
-    }
-  }
-
-  private spawnRangedPresentation(
-    presentation: CombatPresentation,
-    presentationId: string,
-    authority: ProceduralImpactAuthority,
-  ): void {
+  private spawnRangedPresentation(presentation: CombatPresentation, presentationId: string): void {
     const origin = new Vector3().copy(presentation.origin).addScaledVector(WORLD_UP, 0.72);
     const target = new Vector3().copy(presentation.target).addScaledVector(WORLD_UP, 0.62);
     this.projectiles.spawnVolley({
-      authority,
+      authority: "indexed-replay",
       color: resolveTierColor(presentation.tier),
       count: resolveTierVolleyCount(presentation.tier),
       flightSeconds: 0.56 + origin.distanceTo(target) * 0.035,
@@ -197,7 +115,6 @@ export class CombatPresentationCoordinator {
 }
 
 const WORLD_UP = new Vector3(0, 1, 0);
-const CANNONBALL_COLOR = new Color(0x25272b);
 
 function supportsPresentation(troopType: TroopType): boolean {
   return troopType === TroopType.Crossbowman || troopType === TroopType.Knight || troopType === TroopType.Paladin;

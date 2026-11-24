@@ -70,7 +70,6 @@ it.each([
   ["/api/chat/blocks", "POST"],
   ["/api/chat/blocks/0x2", "DELETE"],
   ["/api/notifications/preferences", "POST"],
-  ["/api/build-orders", "POST"],
   ["/api/opening", "POST"],
   ["/api/order-intent", "POST"],
   ["/api/seal-code", "POST"],

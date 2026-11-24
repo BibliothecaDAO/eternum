@@ -1,9 +1,11 @@
 import { IdentityRequestError } from "@realms-world/identity";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, useState } from "react";
 import { Account, RpcError, hash, num } from "starknet";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { DEVICES_PATH } from "@/shell/profile/settings-route";
 
 const { identity, joinRealmsAccount, approveDeviceChange, provider } = vi.hoisted(() => ({
   identity: { session: { user: { realmsId: "0xabc" } } as { user: { realmsId: string } } | null },
@@ -24,7 +26,8 @@ vi.mock("@bibliothecadao/eternum", async () => {
 vi.mock("@bibliothecadao/eternum/game-client", () => ({
   configureGameplayAccountSubmits: (account: unknown) => account,
 }));
-vi.mock("@/hooks/context/identity-session", () => ({
+vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/hooks/context/identity-session")>()),
   identityClient: { approveDeviceChange },
   useIdentitySession: () => identity,
 }));
@@ -183,16 +186,19 @@ it.each(["entry", "boot"] as const)(
     };
     const container = document.createElement("div");
     const root = createRoot(container);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     try {
       await act(async () =>
         root.render(
-          <BrowserRouter>
-            <Entry />
-          </BrowserRouter>,
+          <QueryClientProvider client={client}>
+            <BrowserRouter>
+              <Entry />
+            </BrowserRouter>
+          </QueryClientProvider>,
         ),
       );
       expect(container.textContent).toContain("Signed in on 8 devices already.");
-      const link = container.querySelector<HTMLAnchorElement>('a[href="/profile/settings#devices"]');
+      const link = container.querySelector<HTMLAnchorElement>(`a[href="${DEVICES_PATH}"]`);
       expect(link?.textContent).toBe("Remove a device");
       expect(link?.target).toBe("_blank");
       expect(container.textContent).not.toContain("Transaction refused");

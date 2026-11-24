@@ -30,9 +30,9 @@ describe("Herald HTTP client", () => {
       .mockResolvedValueOnce(new Response("", { status: 503 }));
     const refused = await fetchHeraldGameReviewSnapshot(world, 7).catch((error: unknown) => error);
     expect(refused).toBeInstanceOf(HeraldHttpError);
-    expect(refused).toMatchObject({ status: 404, permanent: true });
+    expect(refused).toMatchObject({ status: 404, code: "review_snapshot_not_frozen", permanent: true });
     const unavailable = await fetchHeraldGameReviewSnapshot(world, 7).catch((error: unknown) => error);
-    expect(unavailable).toMatchObject({ status: 503, permanent: false });
+    expect(unavailable).toMatchObject({ status: 503, code: undefined, permanent: false });
   });
 
   it("preserves a configured path prefix for directory and selective snapshot requests", async () => {
@@ -131,5 +131,14 @@ describe("Herald leaderboards", () => {
     mockFetch.mockResolvedValue(new Response(JSON.stringify(frontier), { status: 200 }));
 
     await expect(fetchHeraldLeaderboard(world, 3)).resolves.toEqual(frontier);
+  });
+
+  it("carries Herald's season_one_ranks_aspects refusal code on a 404 leaderboard answer", async () => {
+    vi.stubGlobal("fetch", mockFetch);
+    mockFetch.mockResolvedValue(new Response(JSON.stringify({ error: "season_one_ranks_aspects" }), { status: 404 }));
+
+    const refusal = await fetchHeraldLeaderboard(world, 4).catch((error: unknown) => error);
+    expect(refusal).toBeInstanceOf(HeraldHttpError);
+    expect(refusal).toMatchObject({ status: 404, code: "season_one_ranks_aspects", permanent: true });
   });
 });

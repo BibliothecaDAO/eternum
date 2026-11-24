@@ -1,15 +1,5 @@
 import { beastOfModel } from "@bibliothecadao/types";
-import {
-  BoxGeometry,
-  Group,
-  InstancedBufferAttribute,
-  Matrix4,
-  Mesh,
-  MeshStandardMaterial,
-  Texture,
-  Vector3,
-} from "three";
-import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
+import { Matrix4, Vector3 } from "three";
 import { float } from "three/tsl";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -22,17 +12,8 @@ import {
   evaluateBeastMotionDisplacement,
 } from "./beast-motion";
 import { FRONTIER_BEASTS, type FrontierSpecies } from "./frontier-beast";
-import { FrontierModel } from "./frontier-model";
 
 const ALL_SPECIES = Object.keys(FRONTIER_BEASTS) as FrontierSpecies[];
-
-function createBeastGltf(): GLTF {
-  const geometry = new BoxGeometry(0.6, 0.9, 0.6);
-  const material = new MeshStandardMaterial({ map: new Texture(), normalMap: new Texture() });
-  const scene = new Group();
-  scene.add(new Mesh(geometry, material));
-  return { scene, animations: [] } as unknown as GLTF;
-}
 
 afterEach(() => {
   mapAnimationTime.value = 0;
@@ -81,114 +62,97 @@ describe("Pure-maths beast motion module", () => {
   });
 
   it("plays an attack once with forward lunge displacement and returns cleanly to idle", () => {
-    const model = new FrontierModel(createBeastGltf(), 4, "wyvern");
-    try {
-      model.setMatrixAt(0, new Matrix4().makeTranslation(2, 0, 3));
-      model.setCount(1);
-      mapAnimationTime.value = 1;
-      model.playMotionAt(0, "attack", 1);
-      expect(model.getMotionStateAt(0, 1).action).toBe("attack");
+    const controller = createBeastMotionController("wyvern", 4);
+    controller.setPlacementAt(0, new Matrix4().makeTranslation(2, 0, 3));
+    controller.playActionAt(0, "attack", 1);
+    expect(controller.getStateAt(0, 1).action).toBe("attack");
 
-      let maxForwardLunge = -Infinity;
-      let sawAttack = false;
-      for (let step = 1; step <= 30; step++) {
-        mapAnimationTime.value = 1 + step * 0.05;
-        model.updateAnimations(0.05);
-        const state = model.getMotionStateAt(0, mapAnimationTime.value);
-        if (state.action === "attack") {
-          sawAttack = true;
-          const disp = evaluateBeastMotionDisplacement("wyvern", [0, 0.7, 0.15], state);
-          if (disp[2] > maxForwardLunge) maxForwardLunge = disp[2];
-        }
+    let maxForwardLunge = -Infinity;
+    let sawAttack = false;
+    let now = 1;
+    for (let step = 1; step <= 30; step++) {
+      now = 1 + step * 0.05;
+      controller.update(now, [0]);
+      const state = controller.getStateAt(0, now);
+      if (state.action === "attack") {
+        sawAttack = true;
+        const disp = evaluateBeastMotionDisplacement("wyvern", [0, 0.7, 0.15], state);
+        if (disp[2] > maxForwardLunge) maxForwardLunge = disp[2];
       }
-
-      expect(sawAttack).toBe(true);
-      expect(maxForwardLunge).toBeGreaterThan(0.15);
-      expect(model.getMotionStateAt(0, mapAnimationTime.value).action).toBe("idle");
-      expect(model.getMotionStateAt(0, mapAnimationTime.value).progress).toBe(0);
-
-      const motionAttr = model.instancedMeshes[0].geometry.getAttribute("beastMotion") as InstancedBufferAttribute;
-      const versionAtIdle = motionAttr.version;
-      for (let step = 0; step < 10; step++) {
-        mapAnimationTime.value += 0.05;
-        model.updateAnimations(0.05);
-      }
-      expect(motionAttr.version).toBe(versionAtIdle);
-    } finally {
-      model.dispose();
     }
+
+    expect(sawAttack).toBe(true);
+    expect(maxForwardLunge).toBeGreaterThan(0.15);
+    expect(controller.getStateAt(0, now).action).toBe("idle");
+    expect(controller.getStateAt(0, now).progress).toBe(0);
+
+    const versionAtIdle = controller.attribute.version;
+    for (let step = 0; step < 10; step++) {
+      now += 0.05;
+      controller.update(now, [0]);
+    }
+    expect(controller.attribute.version).toBe(versionAtIdle);
   });
 
   it("runs hit flinch once and settles death to rest", () => {
-    const model = new FrontierModel(createBeastGltf(), 2, "minotaur");
-    try {
-      model.setMatrixAt(0, new Matrix4().makeTranslation(0, 0, 0));
-      model.setCount(1);
+    const controller = createBeastMotionController("minotaur", 2);
+    controller.setPlacementAt(0, new Matrix4().makeTranslation(0, 0, 0));
 
-      mapAnimationTime.value = 0;
-      model.playMotionAt(0, "hit", 0);
-      expect(model.getMotionStateAt(0, 0).action).toBe("hit");
-      for (let i = 1; i <= 20; i++) {
-        mapAnimationTime.value = i * 0.05;
-        model.updateAnimations(0.05);
-      }
-      expect(model.getMotionStateAt(0, mapAnimationTime.value).action).toBe("idle");
-
-      const deathStart = mapAnimationTime.value;
-      model.playMotionAt(0, "death", deathStart);
-      mapAnimationTime.value = deathStart + 1.5;
-      model.updateAnimations(0.05);
-      const dead = model.getMotionStateAt(0, mapAnimationTime.value);
-      expect(dead.action).toBe("death");
-      expect(dead.progress).toBe(1);
-      const fallenDisp = evaluateBeastMotionDisplacement("minotaur", [0, 0.9, 0], dead);
-      expect(fallenDisp[1]).toBeLessThan(-0.5);
-
-      model.removeInstance(0);
-      model.setMatrixAt(0, new Matrix4().makeTranslation(4, 0, 4));
-      const reused = model.getMotionStateAt(0, mapAnimationTime.value);
-      expect(reused.action).toBe("idle");
-      expect(reused.progress).toBe(0);
-      expect(reused.active).toBe(true);
-    } finally {
-      model.dispose();
+    controller.playActionAt(0, "hit", 0);
+    expect(controller.getStateAt(0, 0).action).toBe("hit");
+    let now = 0;
+    for (let i = 1; i <= 20; i++) {
+      now = i * 0.05;
+      controller.update(now, [0]);
     }
+    expect(controller.getStateAt(0, now).action).toBe("idle");
+
+    const deathStart = now;
+    controller.playActionAt(0, "death", deathStart);
+    now = deathStart + 1.5;
+    controller.update(now, [0]);
+    const dead = controller.getStateAt(0, now);
+    expect(dead.action).toBe("death");
+    expect(dead.progress).toBe(1);
+    const fallenDisp = evaluateBeastMotionDisplacement("minotaur", [0, 0.9, 0], dead);
+    expect(fallenDisp[1]).toBeLessThan(-0.5);
+
+    controller.resetSlot(0);
+    controller.setPlacementAt(0, new Matrix4().makeTranslation(4, 0, 4));
+    const reused = controller.getStateAt(0, now);
+    expect(reused.action).toBe("idle");
+    expect(reused.progress).toBe(0);
+    expect(reused.active).toBe(true);
   });
 
   it("runs nothing off screen and performs zero buffer uploads while steady", () => {
-    const model = new FrontierModel(createBeastGltf(), 4, "troll");
-    try {
-      model.setMatrixAt(0, new Matrix4().makeTranslation(1, 0, 1));
-      model.setMatrixAt(1, new Matrix4().makeTranslation(240, 0, 240));
-      model.setCount(2);
+    const controller = createBeastMotionController("troll", 4);
+    controller.setPlacementAt(0, new Matrix4().makeTranslation(1, 0, 1));
+    controller.setPlacementAt(1, new Matrix4().makeTranslation(240, 0, 240));
 
-      const offscreenContext: AnimationVisibilityContext = {
-        cameraPosition: new Vector3(0, 12, 12),
-        maxDistance: 40,
-        visibilityManager: {
-          isPointVisible: (pos: Vector3) => pos.x < 50,
-          isBoxVisible: () => true,
-        } as unknown as AnimationVisibilityContext["visibilityManager"],
-      };
+    const offscreenContext: AnimationVisibilityContext = {
+      cameraPosition: new Vector3(0, 12, 12),
+      maxDistance: 40,
+      visibilityManager: {
+        isPointVisible: (pos: Vector3) => pos.x < 50,
+        isBoxVisible: () => true,
+      } as unknown as AnimationVisibilityContext["visibilityManager"],
+    };
 
-      mapAnimationTime.value = 0.5;
-      model.updateAnimations(0.05, offscreenContext);
-      expect(model.getMotionStateAt(0, 0.5).active).toBe(true);
-      expect(model.getMotionStateAt(1, 0.5).active).toBe(false);
-      expect(evaluateBeastMotionDisplacement("troll", [0, 0.7, 0], model.getMotionStateAt(1, 0.5))).toEqual([0, 0, 0]);
+    controller.update(0.5, [0, 1], offscreenContext);
+    expect(controller.getStateAt(0, 0.5).active).toBe(true);
+    expect(controller.getStateAt(1, 0.5).active).toBe(false);
+    expect(evaluateBeastMotionDisplacement("troll", [0, 0.7, 0], controller.getStateAt(1, 0.5))).toEqual([0, 0, 0]);
 
-      model.playMotionAt(1, "attack", 0.5);
-      expect(model.getMotionStateAt(1, 0.5).action).toBe("idle");
+    controller.playActionAt(1, "attack", 0.5);
+    expect(controller.getStateAt(1, 0.5).action).toBe("idle");
 
-      const motionAttr = model.instancedMeshes[0].geometry.getAttribute("beastMotion") as InstancedBufferAttribute;
-      const versionAfterTransition = motionAttr.version;
-      for (let i = 0; i < 10; i++) {
-        mapAnimationTime.value += 0.05;
-        model.updateAnimations(0.05, offscreenContext);
-      }
-      expect(motionAttr.version).toBe(versionAfterTransition);
-    } finally {
-      model.dispose();
+    const versionAfterTransition = controller.attribute.version;
+    let now = 0.5;
+    for (let i = 0; i < 10; i++) {
+      now += 0.05;
+      controller.update(now, [0, 1], offscreenContext);
     }
+    expect(controller.attribute.version).toBe(versionAfterTransition);
   });
 });

@@ -4,16 +4,24 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { GameRef } from "@bibliothecadao/eternum/shard";
+import type { DirectoryGame } from "../herald";
 
 const DIRECTORY_DOWN = { data: undefined, isError: true, isPending: false, error: new Error("502"), refetch: vi.fn() };
 const BOARD_WAITING = { data: undefined, isError: false, isPending: true };
 const NO_HISTORY = { data: [], isError: false, isPending: false };
+const shards = vi.hoisted(() => ({
+  open: vi.fn(async () => {
+    throw new Error("unexpected shard read");
+  }),
+}));
+vi.mock("@/runtime/world/shards", () => ({ requireOpenShard: shards.open }));
 const reads = vi.hoisted(() => ({
   directory: {} as unknown,
   board: {} as unknown,
   settled: {} as unknown,
   boards: {} as Record<number, unknown>,
   player: null as string | null,
+  useRealBoard: false,
 }));
 // Identity names the past seasons' players; any other ask stays unanswered, its name waiting.
 vi.hoisted(() =>
@@ -26,6 +34,7 @@ vi.hoisted(() =>
       // Prod's archived Playtest: its first place.
       "0x4c21ba6f5c8e24182ee0eefd56de97ade5f7570041dd0ec7d7d8ece2195cc4": "Volcanic",
     };
+    if (url.pathname.includes("/aspects/")) return Promise.resolve(Response.json(rosterAnswer(url)));
     const accounts = url.searchParams.get("accounts")?.split(",") ?? [];
     if (!accounts.some((account) => names[account])) return new Promise<Response>(() => {});
     return Promise.resolve(
@@ -34,6 +43,26 @@ vi.hoisted(() =>
   }),
 );
 
+const roster = vi.hoisted(() => ({ asked: [] as string[] }));
+const rosterAnswer = (url: URL) => {
+  roster.asked.push(`${url.pathname}${url.search}`);
+  const member = (rank: number, owner: string, realm: number, glory: number) => ({
+    rank,
+    entity_id: String(realm + 1000),
+    realm_id: realm,
+    owner,
+    glory: String(BigInt(glory) * 1_000_000_000n),
+  });
+  return {
+    game_id: "1",
+    aspect: 1,
+    total: 12,
+    offset: 0,
+    limit: 10,
+    members: [member(1, "0x4c21", 7, 120), member(2, "0x510f", 1, 40)],
+  };
+};
+
 // Each shard game's board is the test's; an archived season's is the real read, from its file and never a shard.
 vi.mock("../herald", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../herald")>();
@@ -41,10 +70,13 @@ vi.mock("../herald", async (importOriginal) => {
   return {
     ...actual,
     useDirectory: () => reads.directory,
-    useLeaderboard: (game: GameRef | null) => {
-      const archived = game !== null && archivedSeason(game) !== undefined;
-      const read = actual.useLeaderboard(archived ? game : null);
-      return archived ? read : ((game && reads.boards[game.gameId]) ?? reads.board);
+    useLeaderboard: (game: GameRef | DirectoryGame | null) => {
+      const ref = game === null ? null : "game_id" in game ? actual.gameRefOf(game) : game;
+      const archived = ref !== null && archivedSeason(ref) !== undefined;
+      const real = actual.useLeaderboard(reads.useRealBoard || archived ? game : null);
+      if (reads.useRealBoard || archived) return real;
+      if (ref === null) return { data: undefined, isError: false, isPending: false };
+      return reads.boards[ref.gameId] ?? reads.board;
     },
     useSettledGames: () => reads.settled,
     useRealmsPlayer: () => ({ data: reads.player }),
@@ -56,6 +88,8 @@ afterEach(() => {
   reads.settled = NO_HISTORY;
   reads.boards = {};
   reads.player = null;
+  reads.useRealBoard = false;
+  shards.open.mockClear();
 });
 reads.directory = DIRECTORY_DOWN;
 reads.board = BOARD_WAITING;
@@ -104,8 +138,10 @@ const FRONTIER_END = Math.floor(Date.now() / 1000) + 30 * 86_400;
 const FRONTIER = {
   chainId: "0x52",
   game_id: 1,
+  name: "frontier-1",
   mode: "frontier",
   status: "Live",
+  clock_scale: 1,
   season_number: 1,
   day_index: 3,
   day_ends_at: Math.floor(Date.now() / 1000) + 3600,
@@ -232,6 +268,7 @@ const PLAYTEST_RESULTS = "/results/0x50524f44554354494f4e5f313865303764353233306
 const ended = (game_id: number, season_number: number, end_at: number, status = "Settled") => ({
   ...FRONTIER,
   game_id,
+  name: `frontier-${game_id}`,
   season_number,
   status,
   day_index: null,
@@ -398,7 +435,86 @@ it.each([390, 1440])(
       "#1",
       "djizus",
     ]);
-    // The ledger fixed no winner: no one is named.
     expect(await pastRow(fixed(0, []))).toEqual(["Season 2", "Ended 20 Nov", undefined, undefined]);
   },
 );
+
+it("lists the top of the player's Aspect outside the game, by Glory, from Herald's roster, with the player's own row lit", async () => {
+  const { canonicalRealm } = await import("@bibliothecadao/eternum");
+  const { catalogOrder } = await import("@bibliothecadao/types");
+  const aspect = catalogOrder(canonicalRealm(1).order).aspect;
+  shards.open.mockImplementation(async () => ({ url: "http://herald.test", chainId: "0x52" }) as never);
+  roster.asked = [];
+  reads.directory = {
+    data: {
+      games: [
+        {
+          ...FRONTIER,
+          aspect_members: { 1: 12, 2: 0, 3: 0, 4: 0 },
+          aspect_race: { finish_height: 7_500, season_days: 30, heights: { 1: 100, 2: 0, 3: 0, 4: 0 } },
+          player_state: {
+            structures: [
+              { entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" },
+            ],
+          },
+        },
+      ],
+    },
+    isError: false,
+    isPending: false,
+  };
+  const { container, unmount } = await mount(1440);
+  try {
+    await vi.waitFor(() => expect(container.querySelector("[data-aspect-roster]")).not.toBeNull());
+    expect(roster.asked).toEqual([`/games/1/aspects/${aspect}/members?offset=0&limit=10`]);
+    const section = container.querySelector("[data-aspect-roster]")!;
+    expect(section.textContent).toContain("Your Aspect's top players · 12 members");
+    await vi.waitFor(() => expect(section.textContent).toContain("Volcanic"));
+    const items = [...section.querySelectorAll("li.app-board__item")];
+    expect(items.map((item) => item.hasAttribute("data-own"))).toEqual([false, true]);
+    expect(items[0]!.textContent).toContain("Volcanic");
+    expect(items[0]!.textContent).toContain("120");
+    expect(items[1]!.textContent).toContain("40");
+  } finally {
+    shards.open.mockImplementation(async () => {
+      throw new Error("unexpected shard read");
+    });
+    await unmount();
+  }
+});
+
+it("renders Season 1 Aspect race from directory without calling the Season 0 leaderboard", async () => {
+  reads.directory = {
+    data: {
+      games: [
+        {
+          ...FRONTIER,
+          player_count: 142,
+          aspect_members: { 1: 40, 2: 38, 3: 34, 4: 30 },
+          aspect_race: {
+            finish_height: 7_500,
+            season_days: 30,
+            heights: { 1: 6_400, 2: 4_100, 3: 0, 4: 0 },
+          },
+        },
+      ],
+    },
+    isError: false,
+    isPending: false,
+  };
+  reads.useRealBoard = true;
+  const { container, unmount } = await mount(1440);
+  try {
+    expect(shards.open).not.toHaveBeenCalled();
+    expect(container.querySelector("[data-season-race]")).not.toBeNull();
+    expect(container.textContent).not.toContain("Season did not answer.");
+    expect(container.querySelectorAll(".hyper-tile")).toHaveLength(4);
+    expect(container.querySelector('[data-aspect-id="1"] .hyper-tile__count')?.textContent).toBe("6,400");
+    expect(container.textContent).toContain("Day 4 of 30");
+    expect(container.textContent).toContain("Clear Mist · 1,500 height");
+    expect(container.textContent).not.toContain("LORDS per height point");
+    expect(container.textContent).not.toContain("LORDS");
+  } finally {
+    await unmount();
+  }
+});

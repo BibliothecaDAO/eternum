@@ -6,13 +6,13 @@ import { AppPageHead } from "@/ui/design-system/kit/app-elements";
 
 import { paintingSources, type Painting } from "@/ui/design-system/kit/paintings";
 import { useAppNotice } from "./app-notice";
-import { EnvEdge } from "./env-mark";
 import { useDesktopKeys } from "./desktop-keys";
 import { AppFooter } from "./footer";
 import { useLayout } from "./layout";
 import { Lockup } from "./lockup";
 import { DesktopBar, TabBar, useIsPlace } from "./tabs";
 import { AppChatPane } from "../chat/app-chat";
+import { LordsBalancePill } from "../value/lords-balance-pill";
 
 type PageFrameProps = {
   /**
@@ -63,7 +63,6 @@ export const PageFrame = (props: PageFrameProps) => {
   const framed = { ...props, notice: props.notice ?? appNotice };
   return (
     <div data-surface="shell" data-layout={layout} className="bg-kit-ground font-body text-kit-cream">
-      <EnvEdge />
       {layout === "phone" ? <PhoneFrame {...framed} /> : <DesktopFrame {...framed} />}
     </div>
   );
@@ -87,9 +86,10 @@ const PhoneFrame = ({ title, notice, foot, fill = false, painting, stage = false
       )}
       <header
         data-band="top"
-        className="flex min-h-12 shrink-0 items-center gap-1 px-gutter pt-[env(safe-area-inset-top)]"
+        className="flex min-h-12 shrink-0 items-center justify-between gap-2 px-gutter pt-[env(safe-area-inset-top)]"
       >
         <PhoneHead title={title} />
+        <LordsBalancePill />
       </header>
       {/* The page fills the first screen at least, so the footer starts below it and no fold falls among its links. */}
       <div

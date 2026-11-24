@@ -1,6 +1,7 @@
 import { Suspense, useEffect, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 
+import { resetLoadingProgress } from "./game-entry/loading-progress";
 import { SCENE_ADDRESS_EVENT } from "./scene-address";
 
 /** Set on <html> while a full-screen scene is mounted; index.css stops page scroll and panning only under it. */
@@ -16,7 +17,10 @@ export const SceneRoute = ({ children, fallback }: { children: ReactNode; fallba
   useEffect(() => {
     const root = document.documentElement;
     root.classList.add(SCENE_VIEWPORT_CLASS);
-    return () => root.classList.remove(SCENE_VIEWPORT_CLASS);
+    return () => {
+      root.classList.remove(SCENE_VIEWPORT_CLASS);
+      resetLoadingProgress();
+    };
   }, []);
   useAnnounceSceneAddress();
   return <Suspense fallback={fallback}>{children}</Suspense>;

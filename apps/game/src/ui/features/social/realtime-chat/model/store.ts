@@ -216,6 +216,7 @@ const initialState: Omit<RealtimeChatStore, "actions"> = {
   blockList: null,
   heldWorldMessages: [],
   rooms: [],
+  grantedRooms: [],
   readOnlyZoneIds: [],
   roomRefusals: {},
 };
@@ -266,6 +267,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               // The transport opens the player's rooms the server allows; each says it is joined when it opens.
               set({
                 connectionStatus: "connected",
+                grantedRooms: Array.isArray(message.channels) ? (message.channels as string[]) : [],
                 identity: {
                   playerId: message.playerId as string,
                   displayName: (message.displayName as string | null | undefined) ?? undefined,

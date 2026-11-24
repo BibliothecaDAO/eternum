@@ -1,3 +1,4 @@
+import { shortString } from "starknet";
 import { expect, it } from "vitest";
 import { dayOf } from "../../../../packages/core/src/utils/days";
 import { buildNativeDirectory } from "./read-models";
@@ -16,16 +17,17 @@ const calendar = {
 };
 const input = (timestamp: number): DirectoryInput => {
   const dayUnits = [
-    { game_id: 1, settled: true, family: GAME_FAMILIES.frontier, day_unit_seconds: 14_400 },
-    { game_id: 2, settled: false, family: GAME_FAMILIES.blitz, day_unit_seconds: 0 },
-    { game_id: 3, settled: false, family: GAME_FAMILIES.frontier, day_unit_seconds: 14_400 },
+    { game_id: 1, settled: true, family: GAME_FAMILIES.frontier, day_unit_seconds: 14_400, name: "frontier-1" },
+    { game_id: 2, settled: false, family: GAME_FAMILIES.blitz, day_unit_seconds: 0, name: "blitz-2" },
+    { game_id: 3, settled: false, family: GAME_FAMILIES.frontier, day_unit_seconds: 14_400, name: "testnet-3" },
+    { game_id: 4, settled: false, family: GAME_FAMILIES.frontier, day_unit_seconds: 14_400, name: "frontier-4" },
   ];
-  const games = dayUnits.map(({ game_id, settled, family }) =>
+  const games = dayUnits.map(({ game_id, settled, family, name }) =>
     gameRegistryRow({
       game_id,
       settled,
       family,
-      name: "0x536561736f6e",
+      name: shortString.encodeShortString(name),
       start_settling_at: String(start - 100),
       start_main_at: String(start),
       scheduled_end_at: String(start + 21 * 20 * 14_400),
@@ -56,16 +58,16 @@ const input = (timestamp: number): DirectoryInput => {
   };
 };
 
-it("publishes each seeded day, tomorrow's duration and a stable Frontier-only season number counted from 0", () => {
+it("publishes each seeded day, tomorrow's duration and a season number counted from 1 over season-named games only", () => {
   let timestamp = start;
   for (let index = 0; index < 6; index++) {
     const day = dayOf(calendar, timestamp)!;
-    const entry = buildNativeDirectory(input(timestamp)).games.find((game) => game.game_id === 3)!;
+    const entry = buildNativeDirectory(input(timestamp)).games.find((game) => game.game_id === 4)!;
     expect(entry).toMatchObject({
       day_index: day.index,
       day_ends_at: day.end,
       next_day_length: dayOf(calendar, day.end)!.end - day.end,
-      season_number: 1,
+      season_number: 2,
     });
     timestamp = day.end;
   }
@@ -75,19 +77,21 @@ it("publishes each seeded day, tomorrow's duration and a stable Frontier-only se
     next_day_length: null,
     season_number: null,
   });
-  // The chain's first Frontier game is Season 0.
   expect(buildNativeDirectory(input(start)).games.find((game) => game.game_id === 1)).toMatchObject({
-    season_number: 0,
+    season_number: 1,
+  });
+  expect(buildNativeDirectory(input(start)).games.find((game) => game.game_id === 3)).toMatchObject({
+    season_number: null,
   });
 });
 
 it("never invents a current day before main starts or after the season closes", () => {
   for (const timestamp of [start - 1, start + 21 * 20 * 14_400])
-    expect(buildNativeDirectory(input(timestamp)).games.find((game) => game.game_id === 3)).toMatchObject({
+    expect(buildNativeDirectory(input(timestamp)).games.find((game) => game.game_id === 4)).toMatchObject({
       day_index: null,
       day_ends_at: null,
       next_day_length: null,
-      season_number: 1,
+      season_number: 2,
     });
 });
 

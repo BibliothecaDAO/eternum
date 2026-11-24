@@ -18,7 +18,8 @@ import {
   useRealtimeChatSelector,
 } from "@/ui/features/social";
 import type { RealtimeConnectionStatus } from "@/ui/features/social/realtime-chat/model/types";
-import { chatRooms } from "@/ui/features/social/realtime-chat/model/chat-rooms";
+import { chatRooms, gameAspectRooms } from "@/ui/features/social/realtime-chat/model/chat-rooms";
+import { useGrantedRooms } from "@/ui/features/social/realtime-chat/hooks/use-granted-rooms";
 import { chatUnread } from "@/ui/features/social/realtime-chat/model/direct-unread";
 import { messageWords, placeOf } from "@/ui/features/social/realtime-chat/model/place";
 import { usePlaceReader } from "@/ui/features/social/realtime-chat/ui/shared/use-chat-map";
@@ -44,9 +45,13 @@ const useGameChatRoom = () => {
   const signedIn = status === "signed-in";
   const game = getActiveGame();
   const gameZoneId = game ? gameChatZoneId(game.chainId, configManager.getActiveGameId()) : "";
+  const granted = useGrantedRooms();
   const rooms = useMemo(
-    () => chatRooms(game ? { zoneId: gameZoneId, mode: getGameModeId() } : null),
-    [game, gameZoneId],
+    () => [
+      ...(game ? gameAspectRooms(granted, { chainId: game.chainId, gameId: configManager.getActiveGameId() }) : []),
+      ...chatRooms(game ? { zoneId: gameZoneId, mode: getGameModeId() } : null),
+    ],
+    [game, gameZoneId, granted],
   );
   const zoneId = useRealtimeChatSelector((state) =>
     rooms.some((room) => room.zoneId === state.activeZoneId) ? state.activeZoneId! : GLOBAL_CHAT_CHANNEL_ID,

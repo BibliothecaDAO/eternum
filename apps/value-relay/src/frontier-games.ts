@@ -6,7 +6,7 @@ interface Directory {
   chain: string;
   world_address: string;
   confirmed_block: number;
-  games: { game_id: number; mode: string; status: string; clock: { end_at: number } }[];
+  games: { game_id: number; name: string; mode: string; status: string; clock: { end_at: number } }[];
 }
 
 export async function readFrontierGames(connection: ShardConnection, heraldUrl: string, network = fetch) {

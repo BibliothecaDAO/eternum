@@ -1,14 +1,21 @@
 import { aspectName, orderAspect } from "@bibliothecadao/types";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 
 vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => ({ status: "anonymous" }) }));
 
+import { advanceLoadingProgress, resetLoadingProgress } from "@/game-entry/loading-progress";
+import { FirstFrame } from "@/shell/first-frame";
 import type { DirectoryGame } from "@/shell/herald";
+import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
 
 import { DoorwayScreen } from "./doorway-screen";
 import { doorwayView } from "./doorway-view";
+
+afterEach(() => {
+  resetLoadingProgress();
+});
 
 type Mode = NonNullable<DirectoryGame["mode"]>;
 
@@ -56,11 +63,12 @@ it("keeps the first minutes to a player: a spectator's doorway shows the bar alo
   expect(page.textContent).not.toContain("First: build a Barracks");
 });
 
-it("gives the bar's place to a step that asks the player to choose", () => {
+it("gives the bar's place to a step that asks the player to choose, with no redundant mode title", () => {
   const page = draw(doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }), {
     asking: true,
   });
   expect(page.querySelector('[role="progressbar"]')).toBeNull();
+  expect(page.querySelector('[data-band="title"]')).toBeNull();
 });
 
 it("renders the Frontier lockup, Aspect Facet, Entering Realm heading, day subtitle and first-minutes tip when the realm is known", () => {
@@ -85,4 +93,40 @@ it("renders the Frontier lockup, Aspect Facet, Entering Realm heading, day subti
   expect(page.textContent).toContain(aspectName(aspect));
   expect(page.textContent).toContain("Day 6");
   expect(page.textContent).toContain("First: build a Barracks");
+});
+
+it("never shows progress or a redundant mode title on Sign in, Retry, Devices, Refused, or Ended blocker screens", () => {
+  const blockers = [
+    doorwayView({ source: "entry", phase: "account", audience: "player", signedIn: false }),
+    doorwayView({ source: "boot", phase: "error", audience: "player" }),
+    doorwayView({ source: "boot", phase: "error", audience: "player", accountError: "device_limit_reached" }),
+    doorwayView({ source: "boot", phase: "error", audience: "player", refused: "release" }),
+    doorwayView({ source: "boot", phase: "error", audience: "player", ended: true }),
+  ];
+  for (const view of blockers) {
+    const page = draw(view);
+    expect(page.querySelector('[role="progressbar"]')).toBeNull();
+    expect(page.textContent).not.toContain("Step 1 of");
+    expect(page.querySelector('[data-band="title"]')).toBeNull();
+  }
+});
+
+it("uses the Frontier lockup while game metadata is still loading and shares monotonic progress with FirstFrame", () => {
+  const page = new DOMParser().parseFromString(
+    renderToStaticMarkup(
+      <MemoryRouter>
+        <DoorwayScreen view={loadingMap()} realm={null} onRetry={() => {}} onSignIn={() => {}} />
+      </MemoryRouter>,
+    ),
+    "text/html",
+  ).body;
+  expect(page.querySelector<HTMLImageElement>(".doorway-stage__lockup")?.getAttribute("src")).toBe(AGE_LOCKUP.frontier);
+
+  advanceLoadingProgress(58);
+  const handoff = new DOMParser().parseFromString(renderToStaticMarkup(<FirstFrame />), "text/html").body;
+  expect(handoff.querySelector("[data-doorway-loading]")).not.toBeNull();
+  expect(handoff.querySelector<HTMLImageElement>(".doorway-stage__lockup")?.getAttribute("src")).toBe(
+    AGE_LOCKUP.frontier,
+  );
+  expect(handoff.querySelector('[role="progressbar"]')?.getAttribute("aria-valuenow")).toBe("58");
 });

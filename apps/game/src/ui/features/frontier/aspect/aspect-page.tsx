@@ -8,12 +8,13 @@ import { ASPECT_PAGE_WORDS } from "@/ui/design-system/kit/words";
 import { configManager, getStructureName, Position } from "@bibliothecadao/eternum";
 import {
   deepViewFor,
+  gloryAmount,
   RACE_MODELS,
   readRaceBoard,
   nativeRaceConstants,
   type RaceBoard,
 } from "@bibliothecadao/eternum/game-client";
-import { aspectLordsWorth, aspects, catalogAspectId, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { aspects, catalogAspectId } from "@bibliothecadao/types";
 import { useFrontierRealm } from "../frontier-home";
 import { realmLayers } from "../hud/map-layers";
 import { AspectInvite } from "../invite/aspect-invite";
@@ -76,7 +77,6 @@ export function aspectPage(
         stage: row.stage,
         finished: row.finished,
         own: row.aspect === board.own?.aspect,
-        lords: aspectLordsWorth(row.height, board.result?.winner === row.aspect),
       })),
       finishHeight: board.rules.stage_height * nativeRaceConstants.STAGE_COUNT,
       stages: nativeRaceConstants.STAGE_COUNT,
@@ -93,7 +93,7 @@ export function aspectPage(
         id: member.home.entity_id.toString(),
         realm: name(member.home),
         mine: member.mine,
-        glory: Number(member.glory) / RESOURCE_PRECISION,
+        glory: gloryAmount(member.glory),
         guards: member.guards.length ? member.guards.join(", ") : null,
       })),
     },

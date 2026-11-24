@@ -1,5 +1,6 @@
 import {
   HeraldHttpError,
+  type HeraldAspectRoster,
   type HeraldGameDirectory,
   type HeraldFrontierDayRanks,
   type HeraldFrontierLeaderboard,
@@ -18,10 +19,26 @@ const buildHeraldUrl = (shard: Pick<Shard, "url">, pathname: string): string => 
   return url.toString();
 };
 
+export { HeraldHttpError } from "../sync/herald-http-types";
+
+const readErrorCode = async (response: Response): Promise<string | undefined> => {
+  try {
+    const body = (await response.json()) as { error?: unknown };
+    return typeof body?.error === "string" ? body.error : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 const fetchHeraldJson = async <Payload>(url: string, description: string): Promise<Payload> => {
   const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
   if (!response.ok) {
-    throw new HeraldHttpError(`${description} failed: ${response.status} ${response.statusText}`, response.status);
+    const code = await readErrorCode(response);
+    throw new HeraldHttpError(
+      `${description} failed: ${response.status} ${response.statusText}`,
+      response.status,
+      code,
+    );
   }
   return (await response.json()) as Payload;
 };
@@ -138,6 +155,21 @@ export const fetchHeraldLeaderboard = async (shard: Shard, gameId: number): Prom
     `Herald leaderboard for ${shard.url} game ${gameId}`,
   );
   return board;
+};
+
+export const fetchHeraldAspectRoster = async (
+  shard: Shard,
+  gameId: number,
+  aspect: number,
+  page: { offset: number; limit: number },
+): Promise<HeraldAspectRoster> => {
+  const url = new URL(buildHeraldUrl(shard, `/games/${gameId}/aspects/${aspect}/members`));
+  url.searchParams.set("offset", String(page.offset));
+  url.searchParams.set("limit", String(page.limit));
+  return fetchHeraldJson<HeraldAspectRoster>(
+    url.toString(),
+    `Herald Aspect ${aspect} members for ${shard.url} game ${gameId}`,
+  );
 };
 
 /**

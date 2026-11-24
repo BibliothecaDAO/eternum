@@ -7,7 +7,6 @@ export type Service =
   | "notifications"
   | "devices"
   | "identity"
-  | "ratings"
   | "chat"
   | "ledger"
   | "market";
@@ -22,7 +21,6 @@ const FAILURE_LINES: Record<Service, string> = {
   notifications: "Notifications did not answer.",
   devices: "Devices did not answer.",
   identity: "Sign-in did not answer.",
-  ratings: "Ratings did not answer.",
   chat: "Chat did not answer.",
   /** The value ledger, or a ledger on another chain than this build's (the console names which). */
   ledger: "The ledger did not answer.",

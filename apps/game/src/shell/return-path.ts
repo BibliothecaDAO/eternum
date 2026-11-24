@@ -16,7 +16,10 @@ export const safeNextPath = (raw: string | null | undefined): string => {
 };
 
 /** A detour's return path, read from its URL's `next`. */
-export const nextOf = (search: string): string => safeNextPath(new URLSearchParams(search).get("next"));
+export const nextOf = (search: string): string | null => {
+  const params = new URLSearchParams(search);
+  return params.has("next") ? safeNextPath(params.get("next")) : null;
+};
 
 /**
  * The page a player leaves for a detour (Discord, a wallet), as the path that brings them back to it. A game's view is

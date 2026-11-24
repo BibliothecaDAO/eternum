@@ -100,6 +100,7 @@ export interface RealtimeChatState {
   heldWorldMessages: HeldWorldMessage[];
   /** The rooms the player has where they stand (chatRooms), as the transport opens them; setRooms moves them. */
   rooms: string[];
+  grantedRooms: string[];
   /** Rooms the player reads but may not write in, as each room answered at its open (a Blitz lobby's, unregistered). */
   readOnlyZoneIds: string[];
   /** Why a room did not take the player's last message, until they send again: too fast, or refused. */

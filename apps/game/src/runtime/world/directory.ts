@@ -53,14 +53,17 @@ export const fetchDirectoryHistory = async ({
   limit,
   cursor = null,
   player = null,
+  mode = null,
 }: {
   limit: number;
   cursor?: string | null;
   player?: string | null;
+  mode?: DirectoryEntry["mode"] | null;
 }): Promise<DirectoryHistoryPage> => {
   const query = new URLSearchParams({ limit: String(limit) });
   if (cursor) query.set("cursor", cursor);
   if (player) query.set("player", player);
+  if (mode) query.set("mode", mode);
   const response = await fetchApi(`/api/directory/history?${query}`, { cache: "no-store" });
   if (!response.ok) throw new Error(`History answered ${response.status}`);
   return (await response.json()) as DirectoryHistoryPage;

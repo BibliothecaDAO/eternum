@@ -13,16 +13,13 @@ import { resultsHref } from "./results-link";
 
 const ageOfGame = (game: DirectoryGame): AgeMode => (game.mode === "frontier" ? "frontier" : "blitz");
 
-/** A game's start time: "15:00". */
 export const gameStart = (game: DirectoryGame) => formatClockTime(game.clock.start_main_at);
 
-/** A finished game's title, like its lobby's: its mode and its start time ("Blitz 15:00"). */
-export const gameTitle = (game: DirectoryGame) => `${ageOf(ageOfGame(game)).name} ${gameStart(game)}`;
+const gameTitle = (game: DirectoryGame) => `${ageOf(ageOfGame(game)).name} ${gameStart(game)}`;
 
-/** The player's place in a finished game ("3rd"), and for a Frontier season the LORDS its Ruin chests paid. */
 const usePlace = (game: DirectoryGame, player: string) => {
-  const board = useLeaderboard(gameRefOf(game));
-  const own = board.data && findOwnEntry(board.data.entries, player);
+  const board = useLeaderboard(game);
+  const own = board.data ? findOwnEntry(board.data.entries, player) : undefined;
   return { rank: own?.rank, lords: own && wholeLords(own.rewards.lords) };
 };
 

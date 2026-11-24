@@ -1,5 +1,24 @@
 import { DEEP_BEASTS, beastsOfFamily, type BeastFamily, type BeastIdle } from "@bibliothecadao/types";
-import { BufferGeometry, Group, Line, LineBasicMaterial, Matrix4, Quaternion, Vector3 } from "three";
+import {
+  BufferGeometry,
+  Group,
+  InstancedBufferAttribute,
+  Line,
+  LineBasicMaterial,
+  Matrix4,
+  Quaternion,
+  Vector3,
+} from "three";
+import { float, positionLocal } from "three/tsl";
+import { FrostedStandardNodeMaterial } from "@/three/effects/game-map-material-library";
+import { mapAnimationTime } from "@/three/effects/endgame/state";
+import {
+  createBeastMotionController,
+  createBeastMotionNode,
+  encodeBeastIdle,
+  type BeastMotionAction,
+  type BeastMotionController,
+} from "@/three/structures/beast-motion";
 import { FRONTIER_BEASTS, type FrontierSpecies } from "@/three/structures/frontier-beast";
 import { FrontierModel, type BeastLayer } from "@/three/structures/frontier-model";
 import { terrainHexCorners } from "@/three/terrain/terrain-coordinates";
@@ -29,6 +48,7 @@ interface FamilyMember {
 interface MountedFamilyBeast {
   readonly member: FamilyMember;
   readonly model: FrontierModel;
+  readonly controller: BeastMotionController;
   readonly position: Vector3;
 }
 
@@ -100,17 +120,31 @@ export class BeastFamilyStage {
       const z = 0;
       const groundY = sampleGroundY(x, z);
       const model = new FrontierModel(gltfs[index], 2, member.species);
+      const controller = createBeastMotionController(member.species, 2);
+      const [idleMotion, idleSpeed, idleHeight] = encodeBeastIdle(member.idle);
+      const idleAttr = new InstancedBufferAttribute(
+        new Float32Array([idleMotion, idleSpeed, idleHeight, idleMotion, idleSpeed, idleHeight]),
+        3,
+      );
+      const displacement = createBeastMotionNode(member.species, float(mapAnimationTime));
+      for (const mesh of model.instancedMeshes) {
+        mesh.geometry.setAttribute("beastIdle", idleAttr);
+        mesh.geometry.setAttribute("beastMotion", controller.attribute);
+        if (mesh.material instanceof FrostedStandardNodeMaterial) {
+          mesh.material.positionNode = positionLocal.add(displacement);
+        }
+      }
       POS_TMP.set(x, groundY, z);
       QUAT_TMP.identity();
       SCALE_TMP.setScalar(member.scale);
       MATRIX_TMP.compose(POS_TMP, QUAT_TMP, SCALE_TMP);
       model.setMatrixAt(0, MATRIX_TMP);
-      model.setIdleAt(0, member.idle);
+      controller.setPlacementAt(0, MATRIX_TMP);
       model.setLayerAt(0, member.layer);
       model.setCount(1);
       model.needsUpdate();
       this.group.add(model.group);
-      this.mounted.push({ member, model, position: new Vector3(x, groundY, z) });
+      this.mounted.push({ member, model, controller, position: new Vector3(x, groundY, z) });
 
       const outline = createHexOutline(x, z, groundY);
       this.group.add(outline);
@@ -122,15 +156,15 @@ export class BeastFamilyStage {
     return this.activeFamily;
   }
 
-  public triggerAction(action: "idle" | "attack" | "hit" | "death"): void {
+  public triggerAction(action: BeastMotionAction): void {
     for (const entry of this.mounted) {
-      entry.model.playMotionAt(0, action);
+      entry.controller.playActionAt(0, action, mapAnimationTime.value);
     }
   }
 
-  public update(deltaSeconds: number): void {
+  public update(_deltaSeconds: number): void {
     for (const entry of this.mounted) {
-      entry.model.updateAnimations(deltaSeconds);
+      entry.controller.update(mapAnimationTime.value, [0]);
     }
   }
 

@@ -43,7 +43,18 @@ export {
   readDeepSites,
   type DeepSiteView,
 } from "./views/deep-sites";
-export { raceFinishHeight, readRaceBoard, RACE_MODELS, type RaceBoard } from "./views/race";
+export {
+  compareAspectMembers,
+  gloryAmount,
+  raceFinishHeight,
+  raceStage,
+  raceStageHeight,
+  rankRaceStandings,
+  readRaceBoard,
+  RACE_MODELS,
+  type RaceBoard,
+} from "./views/race";
+export { questBonusPercent } from "./views/quests";
 export { currentArmy, currentResourceWeight } from "../utils/deep";
 export {
   deepCenter,

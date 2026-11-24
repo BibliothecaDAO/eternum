@@ -275,6 +275,7 @@ AREAS = {
         "apps/game/build/hashed-models.ts",
         "apps/game/build/asset-links.ts",
         "apps/game/build/lab-artwork.ts",
+        "apps/game/build/app-identity-html.ts",
         "apps/android/twa-manifest.json",
         "apps/game/src/three/renderer-vite-config.ts",
         "apps/game/src/tokens.ts",
@@ -307,6 +308,7 @@ AREAS = {
         "apps/game/asset-sources/facets/**",
         "apps/game/asset-sources/festival/**",
         "apps/game/src/ui/design-system/icon-meaning.ts",
+        "apps/game/src/ui/design-system/kit/paintings.ts",
         "apps/game/src/services/home-claim-rules.ts",
         "apps/game/src/shell/generated/patch-notes.ts",
         "apps/game/src/shell/news/patch-note.ts"

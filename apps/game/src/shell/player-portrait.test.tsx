@@ -11,7 +11,8 @@ vi.mock("@/hooks/use-player-profile", async (original) => ({
   ...(await original<typeof import("@/hooks/use-player-profile")>()),
   usePlayerProfile: () => ({ name: null, portrait: null, known: true }),
 }));
-vi.mock("./herald", () => ({
+vi.mock("./herald", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./herald")>()),
   useDirectory: () => ({ data: { games: [] } }),
   useRecentResults: () => ({ data: { games: [] }, isSuccess: true }),
   useLeaderboard: () => ({}),

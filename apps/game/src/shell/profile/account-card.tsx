@@ -1,7 +1,6 @@
-import { KEEP, PROFILE_WORDS, SIGN_IN_PROVIDER_NAMES, SIGN_IN_WORDS, WALLET_WORDS } from "@/ui/design-system/kit/words";
+import { KEEP, PROFILE_WORDS, SIGN_IN_PROVIDER_NAMES, SIGN_IN_WORDS } from "@/ui/design-system/kit/words";
 import { nameRuleViolation, SOCIAL_PROVIDERS, type Session } from "@realms-world/identity";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   identityClient,
@@ -16,29 +15,16 @@ import { useLayout } from "../frame/layout";
 import { ShellWindow } from "../frame/shell-window";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { failureSentence, nameRefusal } from "@/ui/modules/identity/identity-failures";
-import { shortAddress } from "@/ui/design-system/kit/address";
 
 import { FailureLine } from "../sign-in/failure-line";
 import { NameField, PortraitGrid } from "../sign-in/fields";
-import { payoutAddressOf } from "@/hooks/context/payout-wallet";
-import { walletReturnOf } from "./settings-route";
-import { PayoutWalletPanel } from "./payout-wallet-panel";
 
-type Open = "name" | "portrait" | "payout" | null;
+type Open = "name" | "portrait" | null;
 
-/**
- * Account (spec 11), Settings' first group: the name, the portrait, how the player signs in and the payout wallet. The
- * name is edited in its own row; the portrait and the payout wallet open in the app's one sheet (ShellWindow), so the
- * page never moves and has no Back (the owner's pick A, 2 November 2026). Sent to Settings from a page that needs a
- * wallet (`?next=`), it opens on the payout wallet and returns there once one is linked.
- */
 export const AccountCard = ({ session }: { session: Session }) => {
   const refresh = useIdentitySessionStore((state) => state.refresh);
   const account = useAccountStore((state) => state.account?.address);
-  const payout = payoutAddressOf(session.user);
-  const returnTo = walletReturnOf(useLocation().search);
-  useReturnOnceLinked(returnTo, payout);
-  const [open, setOpen] = useState<Open>(returnTo && !payout ? "payout" : null);
+  const [open, setOpen] = useState<Open>(null);
   const close = () => setOpen(null);
   const done = () => {
     close();
@@ -64,18 +50,7 @@ export const AccountCard = ({ session }: { session: Session }) => {
         )}
         <AppSetting icon="edit" name={PROFILE_WORDS.portrait} onClick={() => setOpen("portrait")} />
         <AppSetting icon="lock" name={PROFILE_WORDS.signInMethods} value={<SignInMethods session={session} />} />
-        <AppSetting
-          icon="backpack"
-          name={WALLET_WORDS.payoutWallet}
-          value={payout ? shortAddress(payout) : <span data-payout-wallet="none">{PROFILE_WORDS.noWallet}</span>}
-          onClick={() => setOpen("payout")}
-        />
       </AppPanel>
-      {open === "payout" && (
-        <ShellWindow title={WALLET_WORDS.payoutWallet} onClose={close}>
-          <PayoutWalletPanel wallet={payout} email={session.user.email} onChanged={done} />
-        </ShellWindow>
-      )}
       {open === "portrait" && (
         <ShellWindow title={PROFILE_WORDS.portrait} onClose={close}>
           <PortraitSheet current={session.user.image ?? null} onDone={done} />
@@ -136,15 +111,6 @@ export const SignOut = () => {
       )}
     </>
   );
-};
-
-/** Back to the page that sent the player here once a wallet is linked; a wallet already linked on arrival stays put. */
-const useReturnOnceLinked = (returnTo: string | null, payout: string | null) => {
-  const navigate = useNavigate();
-  const [linkedOnArrival] = useState(payout !== null);
-  useEffect(() => {
-    if (returnTo && payout && !linkedOnArrival) navigate(returnTo, { replace: true });
-  }, [linkedOnArrival, navigate, payout, returnTo]);
 };
 
 /** How the player signs in: each provider linked to the account, and an email code, as the identity service lists them. */

@@ -1,27 +1,31 @@
 import "./fragments-page.css";
 
 import { useEffect, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { IdentityRequestError, type FragmentPrice } from "@realms-world/identity";
-import { STORE_PRODUCTS } from "@bibliothecadao/types";
+import { MIN_FRAGMENTS, STORE_PRODUCTS } from "@bibliothecadao/types";
 import { nativeFragmentConstants } from "@bibliothecadao/eternum/game-client";
 
 import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
-import { useDefaultWallet } from "@/hooks/context/default-wallet";
-import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { L2_LORDS } from "@/runtime/l2-rpc";
 import { Icon } from "@/ui/design-system/icon";
-import { AppButton, AppFigure, AppNotice, AppPanel } from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppField, AppFigure, AppNotice, AppPanel, AppTabs } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
-import { FRAGMENTS_PAGE_WORDS } from "@/ui/design-system/kit/words";
+import { FRAGMENTS_PAGE_WORDS, WORDS } from "@/ui/design-system/kit/words";
 
+import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
+import { gameRefOf, useDirectory } from "../herald";
 import { Loading } from "../loading";
+import { SealCodeCard } from "../play/seal-code-card";
 import { SignedInOnly } from "../profile/profile-pages";
 import { linkWalletHref } from "../profile/settings-route";
 import { nextOf } from "../return-path";
+import { SEASON_SPENDS_FRAGMENTS, chooseSeason, questBonusPercentOf, seasonTitle } from "../season";
 import { lordsOf } from "../value/ledger";
+import { invalidateLordsBalance } from "../value/use-lords-balance";
+import { usePayer } from "../value/use-payer";
 import { WalletUnread } from "../value/wallet-unread";
 import { followPayment, forgetPayment, rememberPayment, sentPaymentOf, type SentPayment } from "./fragment-payment";
 import { PAY_TOKEN_ICONS, payTokensForToken } from "./pay-tokens";
@@ -35,21 +39,90 @@ type ShopGame = { chainId: string; gameId: number };
 type Quote = NonNullable<FragmentPrice["quote"]>;
 type Refusal = keyof typeof FRAGMENTS_PAGE_WORDS.refused;
 type Paying = { fragments: number; cents: number; quote: Quote };
+type ShopZone = "buy" | "spend";
 
-export const FragmentsPage = () => {
+type DirectoryFailure = { error: unknown; retry: () => void };
+
+export const FragmentsPage = ({ spends = SEASON_SPENDS_FRAGMENTS }: { spends?: boolean } = {}) => {
+  const { session } = useIdentitySession();
+  if (!spends) {
+    return (
+      <PageFrame title={WORDS.shop}>
+        <SignedInOnly fallback={(card) => card}>
+          {() => <ShopClosed owner={session?.user.realmsId ?? null} />}
+        </SignedInOnly>
+      </PageFrame>
+    );
+  }
+  return <OpenFragmentsPage />;
+};
+
+const ShopClosed = ({ owner }: { owner: string | null }) => (
+  <div className="shop-closed" data-shop-page data-shop-closed>
+    <AppPanel title={FRAGMENTS_PAGE_WORDS.closedTitle} icon="fragment">
+      <div className="flex flex-col gap-4">
+        <AppNotice line={FRAGMENTS_PAGE_WORDS.closedLine} />
+        <SealCodeCard owner={owner} />
+      </div>
+    </AppPanel>
+  </div>
+);
+
+const OpenFragmentsPage = () => {
   const { search } = useLocation();
-  const game = shopGameOf(search);
+  const directory = useDirectory();
+  const explicitGame = shopGameOf(search);
+  const activeSeason = chooseSeason(directory.data?.games ?? [], true);
+  const game = explicitGame ?? (activeSeason ? gameRefOf(activeSeason) : null);
+  const waitingDirectory = explicitGame === null && directory.isPending;
+  const directoryFailure: DirectoryFailure | null =
+    explicitGame === null && directory.isError
+      ? { error: directory.error, retry: () => void directory.refetch() }
+      : null;
+  const seasonName = activeSeason ? seasonTitle(activeSeason) : undefined;
+  const questBonusPercent = questBonusPercentOf(activeSeason);
   return (
-    <PageFrame title={FRAGMENTS_PAGE_WORDS.title}>
+    <PageFrame title={WORDS.shop}>
       <SignedInOnly fallback={(card) => card}>
-        {(account) => game && <Purchase account={account} game={game} next={nextOf(search)} />}
+        {(account) =>
+          waitingDirectory ? (
+            <Loading />
+          ) : (
+            <ShopWorkspace
+              account={account}
+              game={game}
+              seasonName={seasonName}
+              questBonusPercent={questBonusPercent}
+              directoryFailure={directoryFailure}
+              next={nextOf(search)}
+            />
+          )
+        }
       </SignedInOnly>
     </PageFrame>
   );
 };
 
-const Purchase = ({ account, game, next }: { account: string; game: ShopGame; next: string }) => {
+const ShopWorkspace = ({
+  account,
+  game,
+  seasonName,
+  questBonusPercent,
+  directoryFailure,
+  next,
+}: {
+  account: string;
+  game: ShopGame | null;
+  seasonName?: string;
+  questBonusPercent: number | null;
+  directoryFailure: DirectoryFailure | null;
+  next: string | null;
+}) => {
+  const queryClient = useQueryClient();
+  const { session } = useIdentitySession();
   const { pathname, search } = useLocation();
+  const phone = useLayout() === "phone";
+  const [zone, setZone] = useState<ShopZone>("buy");
   const { payer, passkey, failed, retry } = usePayer();
   const [paying, setPaying] = useState<Paying | null>(null);
   const [sent, setSent] = useState<SentPayment | null>(() => sentPaymentOf(account));
@@ -59,47 +132,163 @@ const Purchase = ({ account, game, next }: { account: string; game: ShopGame; ne
       setSent(null);
       setPaying(null);
     };
-    return <Delivery sent={sent} next={next} onSettled={() => forgetPayment(account)} onAgain={again} />;
+    const onSettled = () => {
+      forgetPayment(account);
+      void invalidateLordsBalance(queryClient);
+    };
+    return <Delivery sent={sent} next={next} onSettled={onSettled} onAgain={again} />;
   }
-  if (payer === undefined) return failed ? <WalletUnread onRetry={retry} /> : <Loading />;
-  if (payer === null)
+  if (paying && payer) {
+    const onSent = (hash: string) => {
+      const payment = { quoteId: paying.quote.id, hash, fragments: paying.fragments };
+      rememberPayment(account, payment);
+      void invalidateLordsBalance(queryClient);
+      setSent(payment);
+    };
+    return <Pay payer={payer} passkey={passkey} paying={paying} onSent={onSent} />;
+  }
+  const buySection = (
+    <AppPanel title={FRAGMENTS_PAGE_WORDS.buyTab} icon="fragment">
+      {payer === undefined ? (
+        failed ? (
+          <WalletUnread onRetry={retry} />
+        ) : (
+          <Loading />
+        )
+      ) : directoryFailure ? (
+        <ServiceFailure service="season" error={directoryFailure.error} retry={directoryFailure.retry} />
+      ) : game === null ? (
+        <p className="text-app-body text-app-muted">{FRAGMENTS_PAGE_WORDS.noLiveSeason}</p>
+      ) : (
+        <Choose
+          game={game}
+          linkWalletTo={payer === null ? linkWalletHref(`${pathname}${search}`) : null}
+          onPriced={setPaying}
+        />
+      )}
+    </AppPanel>
+  );
+  const spendSection = (
+    <SpendZone owner={session?.user.realmsId ?? null} seasonName={seasonName} questBonusPercent={questBonusPercent} />
+  );
+  if (phone) {
     return (
-      <AppButton kind="primary" to={linkWalletHref(`${pathname}${search}`)}>
-        {FRAGMENTS_PAGE_WORDS.linkWallet}
-      </AppButton>
+      <div className="flex flex-col gap-4" data-shop-page>
+        <AppTabs
+          label={WORDS.shop}
+          value={zone}
+          onChange={setZone}
+          tabs={[
+            { key: "buy", label: FRAGMENTS_PAGE_WORDS.buyTab },
+            { key: "spend", label: FRAGMENTS_PAGE_WORDS.spendTab },
+          ]}
+        >
+          <div className="pt-4">{zone === "buy" ? buySection : spendSection}</div>
+        </AppTabs>
+      </div>
     );
-  if (!paying) return <Choose game={game} onPriced={setPaying} />;
-  const onSent = (hash: string) => {
-    const payment = { quoteId: paying.quote.id, hash, fragments: paying.fragments };
-    rememberPayment(account, payment);
-    setSent(payment);
-  };
-  return <Pay payer={payer} passkey={passkey} paying={paying} onSent={onSent} />;
+  }
+  return (
+    <div className="shop-hub" data-shop-page>
+      <div className="flex min-w-0 flex-col gap-5">{spendSection}</div>
+      <div className="flex min-w-0 flex-col gap-5">{buySection}</div>
+    </div>
+  );
 };
 
-const Choose = ({ game, onPriced }: { game: ShopGame; onPriced: (paying: Paying) => void }) => {
+const SpendZone = ({
+  owner,
+  seasonName,
+  questBonusPercent,
+}: {
+  owner: string | null;
+  seasonName?: string;
+  questBonusPercent: number | null;
+}) => (
+  <AppPanel title={FRAGMENTS_PAGE_WORDS.spendTab} icon="final-seal">
+    <div className="shop-spend" data-shop-spend>
+      <div className="shop-seal-hero">
+        <span className="shop-seal-hero__icon" aria-hidden="true">
+          <Icon name="final-seal" size={88} />
+        </span>
+        <div className="shop-seal-hero__body">
+          <div className="shop-seal-hero__head">
+            <h3 className="shop-seal-hero__title">{FRAGMENTS_PAGE_WORDS.sealCardTitle}</h3>
+            <span className="shop-seal-hero__cost">
+              <Icon name="fragment" size={16} />
+              {FRAGMENTS_PAGE_WORDS.pack(SEAL)}
+            </span>
+          </div>
+          {questBonusPercent !== null && questBonusPercent > 0 && (
+            <p className="text-app-label text-app-gold">
+              {FRAGMENTS_PAGE_WORDS.sealCardDetail(questBonusPercent, seasonName)}
+            </p>
+          )}
+          <p className="text-app-label text-app-muted">{FRAGMENTS_PAGE_WORDS.sealInGameNote}</p>
+        </div>
+      </div>
+      <SealCodeCard owner={owner} />
+      <div className="shop-uses">
+        <h3 className="shop-uses__title">{FRAGMENTS_PAGE_WORDS.inGameUsesTitle}</h3>
+        <ul className="shop-uses__list">
+          <li className="shop-uses__item">
+            <Icon name="stamina" size={22} />
+            <span>{FRAGMENTS_PAGE_WORDS.inGameStamina(nativeFragmentConstants.STAMINA_PER_FRAGMENT)}</span>
+          </li>
+          <li className="shop-uses__item">
+            <Icon name="refresh" size={22} />
+            <span>{FRAGMENTS_PAGE_WORDS.inGameOath(nativeFragmentConstants.OATH_REROLL_FRAGMENTS)}</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </AppPanel>
+);
+
+const Choose = ({
+  game,
+  linkWalletTo,
+  onPriced,
+}: {
+  game: ShopGame;
+  linkWalletTo: string | null;
+  onPriced: (paying: Paying) => void;
+}) => {
   const [fragments, setFragments] = useState<number>(SEAL);
+  const [customText, setCustomText] = useState("");
   const tokens = payTokensForToken(L2_LORDS);
   const price = useMutation({ mutationFn: (wanted: number) => identityClient.priceFragments(game, wanted) });
-  const pay = () =>
-    price.mutate(fragments, {
+  const parsedCustom = customText.trim() === "" ? null : Number(customText.trim());
+  const customValid = parsedCustom !== null && Number.isSafeInteger(parsedCustom) && parsedCustom >= MIN_FRAGMENTS;
+  const customError =
+    customText.trim() !== "" && !customValid ? FRAGMENTS_PAGE_WORDS.customHint(MIN_FRAGMENTS) : undefined;
+  const selectedAmount = parsedCustom !== null ? (customValid ? parsedCustom : 0) : fragments;
+  const canPay = selectedAmount >= MIN_FRAGMENTS && customError === undefined;
+  const pay = () => {
+    if (!canPay) return;
+    price.mutate(selectedAmount, {
       onSuccess: ({ fragments: priced, cents, quote }) => quote && onPriced({ fragments: priced, cents, quote }),
     });
+  };
   return (
     <div className="shop-stage">
       <div className="shop-packs" data-fragment-packs>
         {PACKS.map((pack) => {
           const isSeal = pack === SEAL;
+          const active = customText.trim() === "" && pack === fragments;
           return (
             <button
               key={pack}
               type="button"
               className="app-choice shop-pack"
-              aria-pressed={pack === fragments}
-              onClick={() => setFragments(pack)}
+              aria-pressed={active}
+              onClick={() => {
+                setCustomText("");
+                setFragments(pack);
+              }}
             >
               <span className="shop-pack__art" aria-hidden="true">
-                <Icon name={isSeal ? "final-seal" : "fragment"} size={160} />
+                <Icon name={isSeal ? "final-seal" : "fragment"} size={96} />
               </span>
               <span className="shop-pack__info">
                 <span className="shop-pack__title">{FRAGMENTS_PAGE_WORDS.pack(pack)}</span>
@@ -109,6 +298,21 @@ const Choose = ({ game, onPriced }: { game: ShopGame; onPriced: (paying: Paying)
             </button>
           );
         })}
+      </div>
+      <div className="shop-custom" data-fragment-custom>
+        <AppField
+          label={FRAGMENTS_PAGE_WORDS.customLabel}
+          type="number"
+          inputMode="numeric"
+          min={MIN_FRAGMENTS}
+          step={10}
+          placeholder={String(MIN_FRAGMENTS)}
+          hint={FRAGMENTS_PAGE_WORDS.customHint(MIN_FRAGMENTS)}
+          error={customError}
+          icon="fragment"
+          value={customText}
+          onChange={(event) => setCustomText(event.target.value)}
+        />
       </div>
       {price.data && !price.data.quote && <AppNotice tone="warn" line={FRAGMENTS_PAGE_WORDS.noPrice} />}
       {isDailyCap(price.error) && <AppNotice tone="warn" line={FRAGMENTS_PAGE_WORDS.dailyCap} />}
@@ -122,16 +326,23 @@ const Choose = ({ game, onPriced }: { game: ShopGame; onPriced: (paying: Paying)
           </span>
           <span>{FRAGMENTS_PAGE_WORDS.payWithTokens(tokens.map(({ symbol }) => symbol))}</span>
         </div>
-        <AppButton
-          kind="primary"
-          size="lg"
-          icon={fragments === SEAL ? "final-seal" : "fragment"}
-          className="w-full lg:w-auto"
-          busy={price.isPending ? FRAGMENTS_PAGE_WORDS.pricing : undefined}
-          onClick={pay}
-        >
-          {FRAGMENTS_PAGE_WORDS.pay(fragments)}
-        </AppButton>
+        {linkWalletTo ? (
+          <AppButton kind="primary" size="lg" to={linkWalletTo} className="w-full lg:w-auto">
+            {FRAGMENTS_PAGE_WORDS.linkWallet}
+          </AppButton>
+        ) : (
+          <AppButton
+            kind="primary"
+            size="lg"
+            icon={selectedAmount === SEAL ? "final-seal" : "fragment"}
+            className="w-full lg:w-auto"
+            disabled={!canPay}
+            busy={price.isPending ? FRAGMENTS_PAGE_WORDS.pricing : undefined}
+            onClick={pay}
+          >
+            {FRAGMENTS_PAGE_WORDS.pay(canPay ? selectedAmount : fragments)}
+          </AppButton>
+        )}
       </div>
     </div>
   );
@@ -170,7 +381,7 @@ const Delivery = ({
   onAgain,
 }: {
   sent: SentPayment;
-  next: string;
+  next: string | null;
   onSettled: () => void;
   onAgain: () => void;
 }) => {
@@ -201,19 +412,11 @@ const Delivery = ({
   return (
     <div className="flex flex-col gap-3" data-fragments-delivered={sent.fragments}>
       <AppNotice tone="good" icon="fragment" line={FRAGMENTS_PAGE_WORDS.delivered(sent.fragments)} />
-      <AppButton kind="primary" size="lg" icon="fragment" onClick={() => navigate(next)}>
+      <AppButton kind="primary" size="lg" icon="fragment" onClick={() => (next ? navigate(next) : onAgain())}>
         {FRAGMENTS_PAGE_WORDS.backToShop}
       </AppButton>
     </div>
   );
-};
-
-const usePayer = () => {
-  const { session } = useIdentitySession();
-  const { wallet, failed, retry } = useDefaultWallet();
-  const payer =
-    wallet === undefined ? undefined : (wallet?.address ?? (session ? payoutAddressOf(session.user) : null));
-  return { payer, passkey: Boolean(wallet), failed, retry };
 };
 
 const shopGameOf = (search: string): ShopGame | null => {

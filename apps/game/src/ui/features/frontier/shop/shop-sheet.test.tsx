@@ -115,7 +115,7 @@ describe("the shop", () => {
     const get = [...host.querySelectorAll("button")].find((button) => button.textContent === "Get Fragments")!;
     act(() => get.click());
     const opened = new URL(host.querySelector("[data-opened]")!.textContent!, "https://realms.test");
-    expect(opened.pathname).toBe("/shop/fragments");
+    expect(opened.pathname).toBe("/shop");
     expect(opened.searchParams.get("chain")).toBe("0x1");
     expect(opened.searchParams.get("game")).toBe("1");
     expect(opened.searchParams.get("next")).toBe("/g/0x1/1/map#shop");
@@ -142,7 +142,7 @@ const renderShop = (facts: object[]) => {
                   <ShopSheet realm={store.require("Structure", { game_id: 1, entity_id: 7 })} onClose={() => {}} />
                 }
               />
-              <Route path="/shop/fragments" element={<Opened />} />
+              <Route path="/shop" element={<Opened />} />
             </Routes>
           </GameProvider>
         </QueryClientProvider>

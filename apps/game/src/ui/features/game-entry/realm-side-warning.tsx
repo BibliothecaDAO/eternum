@@ -3,6 +3,7 @@ import "./home-source-picker.css";
 import { canonicalRealm } from "@bibliothecadao/eternum";
 import { aspectName, type AspectId } from "@bibliothecadao/types";
 
+import { realmQuestBonus } from "@/shell/season";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton } from "@/ui/design-system/kit/app-elements";
@@ -27,11 +28,13 @@ export const isRealmElsewhere = (side: SeasonSide | null, realmOrder: number | n
 export const RealmSideWarning = ({
   side,
   realmId,
+  questBonusPercent = null,
   onPlayRealm,
   onJoinFree,
 }: {
   side: SeasonSide;
   realmId: number;
+  questBonusPercent?: number | null;
   onPlayRealm: () => void;
   onJoinFree: () => void;
 }) => {
@@ -58,7 +61,9 @@ export const RealmSideWarning = ({
           <span className="realm-side__name">
             {realm.name} <span className="home-picker__id">{`#${realmId}`}</span>
           </span>
-          <span className="realm-side__note">{REALM_SIDE_WORDS.bonus}</span>
+          {questBonusPercent !== null && questBonusPercent > 0 && (
+            <span className="realm-side__note">{realmQuestBonus(questBonusPercent, Boolean(realm.wonder))}</span>
+          )}
         </span>
         <AspectMark aspect={realmAspect} size={32} decorative />
       </div>

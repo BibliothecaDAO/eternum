@@ -69,8 +69,105 @@
   align-self: center;
   max-width: 26rem;
 }
-.season-recap[data-cut="wide"] .season-recap__alone {
-  justify-self: start;
+.season-chronicle {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.season-chronicle .season-card {
+  min-height: 18rem;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3.25rem 1.25rem 1.25rem;
+}
+
+.season-chronicle .season-card[data-card="field"] {
+  background: radial-gradient(
+    circle at 50% 25%,
+    color-mix(in srgb, rgb(var(--app-gold)) 22%, var(--app-surface)),
+    var(--app-surface) 74%
+  );
+}
+
+.season-chronicle .season-card__step {
+  font-size: var(--app-text-label);
+}
+
+.season-chronicle .season-card__title {
+  font-size: var(--app-text-heading);
+}
+
+.season-chronicle .season-card__big {
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+}
+
+.season-chronicle .season-card__holder,
+.season-chronicle .season-card__count,
+.season-chronicle .season-card__tile small {
+  font-size: var(--app-text-label);
+}
+
+.season-chronicle .season-card__tile b {
+  font-size: var(--app-text-heading);
+}
+
+.season-chronicle .season-card__podium b {
+  font-size: var(--app-text-heading);
+}
+
+.season-chronicle__list {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.season-chronicle__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border: 1px solid rgb(var(--app-aspect, var(--app-gold)) / 0.35);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  padding: 0.45rem 0.65rem;
+  font-size: var(--app-text-label);
+  color: var(--app-ink);
+}
+
+.season-chronicle__row[data-own] {
+  border-color: rgb(var(--app-gold));
+  background: color-mix(in srgb, rgb(var(--app-gold)) 14%, var(--app-well));
+}
+
+.season-chronicle__lead {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.season-chronicle__val {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 768px) {
+  .season-chronicle {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .season-chronicle {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 .season-recap[data-cut="wide"] .season-recap__room {
   display: grid;
@@ -102,11 +199,6 @@
 .season-recap__scaler {
   width: max-content;
   transform-origin: 0 0;
-}
-/* A reader with no realm: the podium card alone. */
-.season-recap__alone {
-  display: grid;
-  width: min(100%, 420px);
 }
 .season-recap__foot {
   display: flex;

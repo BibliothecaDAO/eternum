@@ -1,22 +1,30 @@
+import { catalogOrder } from "@bibliothecadao/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
-import { IdentityRequestError, SOCIAL_PROVIDERS, type SealCodeRefusal } from "@realms-world/identity";
-import { answerLabBuildOrders } from "./lab-build-orders";
+import {
+  IdentityRequestError,
+  SOCIAL_PROVIDERS,
+  type InvitedFriends,
+  type SealCodeRefusal,
+} from "@realms-world/identity";
 
-import { BuildOrdersPage } from "../build-orders/build-orders-page";
 import { PageAddress } from "../frame/page-address";
+import type { DirectoryGame } from "../herald";
 import { CreditsPage, PrivacyPage, TermsPage } from "../legal";
 import { WhatsNewPage } from "../news/news";
 import { NotFoundPage } from "../not-found";
+import { chooseSeason, seasonPlayerAspect } from "../season";
 import { STANDING_PROMPTS } from "../standing-prompts";
 import { PlayPage } from "../play/play-page";
 import { SharedLinkPage } from "../share/shared-link-page";
 import { FragmentsPage } from "../shop/fragments-page";
 import { answerAvnuRead, answerTokenBalances, isAvnuRead } from "./lab-pay-tokens";
-import { PlayerPage, ProfilePage, SettingsPage } from "../profile/profile-pages";
+import { PlayerPage, ProfilePage, SettingsRedirect } from "../profile/profile-pages";
+import { PROFILE_PATH } from "../profile/settings-route";
+import { FRAGMENTS_PATH } from "../shop/fragments-route";
 import { ResultsPage } from "../season-tab/results-page";
 import { SeasonPage } from "../season-tab/season-page";
 import {
@@ -43,7 +51,6 @@ import {
   LAB_EMAIL_CODE,
   LAB_NAMES,
   LAB_PAYOUT_WALLETS,
-  labRatings,
   labCalendar,
   labOrderIntent,
   LAB_INVITE,
@@ -98,11 +105,10 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
     <PageAddress.Provider value={`/${page}`}>
       <Routes>
         <Route index element={<PlayPage />} />
-        <Route path="blitz/build-orders" element={<BuildOrdersPage />} />
         <Route path="season" element={<SeasonPage />} />
         <Route path="results/:id" element={<ResultsPage />} />
-        <Route path="profile" element={<ProfilePage />} />
-        <Route path="profile/settings" element={<SettingsPage />} />
+        <Route path={PROFILE_PATH.slice(1)} element={<ProfilePage />} />
+        <Route path={`${PROFILE_PATH.slice(1)}/settings`} element={<SettingsRedirect />} />
         <Route path="p/:address" element={<PlayerPage />} />
         <Route path="scroll" element={<WhatsNewPage />} />
         <Route path="chat" element={<ChatPage />} />
@@ -113,7 +119,7 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="doorway/:state" element={<LabDoorway />} />
         <Route path="s/:code" element={<SharedLinkPage />} />
         <Route path="share/day" element={<LabDayShare />} />
-        <Route path="shop/fragments" element={<FragmentsPage />} />
+        <Route path={FRAGMENTS_PATH.slice(1)} element={<FragmentsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </PageAddress.Provider>
@@ -166,9 +172,10 @@ function installLabFixtures(screen: LabScreen, field: number | null): () => void
     "sendSignInCode",
     "unlinkWallet",
     "linkWallet",
-    "getBuildOrders",
-    "saveBuildOrders",
     "shareTally",
+    "invitedFriends",
+    "chooseOrder",
+    "createInvite",
     "readDefaultWallet",
     "deleteAccount",
     "priceFragments",
@@ -219,7 +226,6 @@ const answerAppReads = (screen: LabScreen, field: number | null) => {
     "/api/factory/calendar": () => json(labCalendar(screen)),
     "/api/profiles": (url) =>
       json({ profiles: profilesOf(screen, url.searchParams.get("accounts")?.split(",") ?? []) }),
-    "/api/ratings": (url) => json(labRatings(url.searchParams.get("players")?.split(",") ?? [])),
     "/api/value/held-realms": () => {
       const held = LAB_HELD_REALMS[screen] ?? [];
       return json({ realms: held.map(({ realmId }) => realmId), held });
@@ -234,6 +240,23 @@ const answerAppReads = (screen: LabScreen, field: number | null) => {
   };
 };
 
+const LAB_INVITED_FRIENDS: InvitedFriends["friends"] = [
+  { name: "Rowan", joinedAt: 1_763_600_000, glory: 140, state: "paid" },
+  { name: "Rhoswen the Unbowed", joinedAt: 1_763_686_400, glory: 105, state: "reached" },
+  { name: "Aldric", joinedAt: 1_763_772_800, glory: 45, state: "joined" },
+];
+
+const labInviteOf = (screen: LabScreen, order: number | null) => {
+  const games: DirectoryGame[] = LAB_SCREENS[screen].games.map((game) => ({ ...game, chainId: LAB_CHAIN }));
+  const season = chooseSeason(games, LAB_SCREENS[screen].signedIn);
+  const seasonAspect = seasonPlayerAspect(season);
+  if (season && seasonAspect !== null) {
+    return { code: LAB_SHARE_CODE, aspect: seasonAspect, chainId: season.chainId, gameId: season.game_id };
+  }
+  const intentAspect = order !== null ? catalogOrder(order)?.aspect : undefined;
+  return { code: LAB_SHARE_CODE, aspect: intentAspect ?? LAB_INVITE.moment, chainId: null, gameId: null };
+};
+
 const answerIdentity = (screen: LabScreen) => {
   identityClient.listSignInProviders = async () => ["discord"];
   identityClient.availableSignInProviders = async () => [...SOCIAL_PROVIDERS];
@@ -242,13 +265,19 @@ const answerIdentity = (screen: LabScreen) => {
     if (code !== LAB_EMAIL_CODE) throw new IdentityRequestError(400, "INVALID_OTP");
   };
   identityClient.shareTally = async () => LAB_SHARE_TALLIES[screen] ?? LAB_NO_SHARES;
-  let intent = labOrderIntent(screen);
+  identityClient.invitedFriends = async () => ({
+    friends: LAB_SHARE_TALLIES[screen] ? LAB_INVITED_FRIENDS : [],
+  });
+  const baseIntent = labOrderIntent(screen);
+  let intent =
+    LAB_SHARE_TALLIES[screen] && baseIntent.order === null ? { ...baseIntent, order: LAB_INVITE.order } : baseIntent;
   identityClient.getOrderIntent = async () => intent;
   identityClient.chooseOrder = async (order) => {
     intent = { ...intent, order };
     return intent;
   };
   identityClient.createShare = async () => LAB_SHARE_CODE;
+  identityClient.createInvite = async () => labInviteOf(screen, intent.order);
   identityClient.joinedShare = async () => labJoinedShare(screen);
   identityClient.openShare = async (code) => {
     if (code !== LAB_SHARE_CODE) throw new IdentityRequestError(404, "share_unknown");
@@ -272,10 +301,8 @@ const answerIdentity = (screen: LabScreen) => {
   });
   identityClient.payFragments = async () => ({ state: "delivering" });
   identityClient.fragmentPayment = async () => ({ state: "delivered", fragments: 1_000 });
-  // The lab's player has made no Realms wallet, so the payout window offers Create my wallet.
   identityClient.readDefaultWallet = async () => null;
   identityClient.addOpeningProgress = async () => ({ reached: [], seen: STANDING_PROMPTS });
-  answerLabBuildOrders();
   Object.assign(identityClient, {
     unlinkWallet: spend,
     linkWallet: async ({ code }: { code?: string }) => spend(code).then(() => LAB_PLAYER),

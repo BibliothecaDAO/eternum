@@ -70,7 +70,6 @@ const managerWithForeignArmy = () => {
       assignModelToEntity: vi.fn(),
       assignCosmeticToEntity: vi.fn(),
       clearCosmeticForEntity: vi.fn(),
-      rebindMovementMatrixIndex: vi.fn(),
       updateInstance: vi.fn((_entityId: number, _slot: number, position: Vector3) => drawnAt.push(position.clone())),
     },
     pathRenderer: { createPath: vi.fn(), removePath: vi.fn() },

@@ -9,11 +9,11 @@ import { ArmyManager } from "./army-manager";
 const originalOverlay = useUIStore.getState().showBlankOverlay;
 afterEach(() => useUIStore.setState({ showBlankOverlay: originalOverlay }));
 
-it("requests characters only for eligible units in the visible scene and uses camera distance for LOD", () => {
+it("requests characters only for eligible units in the visible scene", () => {
   const position = new Vector3();
   let model = ModelType.Crossbowman2;
   let inFrustum = true;
-  const presented: { entityId: number; distanceToCameraSquared: number }[][] = [];
+  const presented: { entityId: number }[][] = [];
   const manager = Object.assign(Object.create(ArmyManager.prototype), {
     contentLadder: { armyModels: true, proceduralCharacters: false },
     armyPresentations: new Map([
@@ -26,16 +26,20 @@ it("requests characters only for eligible units in the visible scene and uses ca
     readyProceduralArmyEntityIds: new Set(),
     activeProceduralArmyEntityIds: new Set(),
     proceduralArmyCharacterLayer: {
-      sync: (values: (typeof presented)[number]) => presented.push(values.map((value) => ({ ...value }))),
+      sync: (values: (typeof presented)[number]) => {
+        presented.push(values.map((value) => ({ ...value })));
+      },
       hasActor: () => false,
     },
-    hexagonScene: { getCamera: () => ({ position: new Vector3(0, 20, 0) }) },
     armyModel: {
       getInstanceData: () => ({ position }),
       getAssignedModelType: () => model,
-      getEntityPace: () => undefined,
+      updateMovements: vi.fn(),
       flushInstanceUploads: vi.fn(),
     },
+    fxManager: { update: vi.fn() },
+    pathRenderer: { update: vi.fn() },
+    requestMovingArmyShadowRefresh: vi.fn(),
     labelPool: { flushBatch: vi.fn() },
     slotAuditFrameCounter: 0,
     toNumericId: (id: number) => id,
@@ -48,7 +52,7 @@ it("requests characters only for eligible units in the visible scene and uses ca
     maxDistance: 100,
     visibilityManager: { isPointVisible: () => inFrustum },
   };
-  const tick = () => manager.update(0, visibility, true);
+  const tick = (deltaTime = 0, paused = true) => manager.update(deltaTime, visibility, paused);
 
   useUIStore.setState({ showBlankOverlay: true });
   model = ModelType.Knight1;
@@ -63,8 +67,8 @@ it("requests characters only for eligible units in the visible scene and uses ca
   tick();
   expect(presented.at(-1)).toEqual([]);
   inFrustum = true;
-  tick();
-  expect(presented.at(-1)).toEqual([expect.objectContaining({ entityId: 42, distanceToCameraSquared: 400 })]);
+  tick(0.05, false);
+  expect(presented.at(-1)).toEqual([expect.objectContaining({ entityId: 42 })]);
   useUIStore.setState({ showBlankOverlay: true });
   tick();
   expect(presented.at(-1)).toEqual([]);

@@ -13,7 +13,6 @@ const SEASON_ONE_BASE: PickEffectBase = {
     release.definition.rules.troop_stamina_config.stamina_gain_per_tick /
     release.definition.rules.tick_config.armies_tick_in_seconds,
   deepLossPerTick: Number(release.definition.economy.deep.Some.loss_per_tick) / RESOURCE_PRECISION,
-  emptyRevealLimit: release.definition.economy.discovery.Some.empty_reveal_limit,
 };
 
 it("contextualizes every Oath effect against the game's live rules", () => {
@@ -24,9 +23,7 @@ it("contextualizes every Oath effect against the game's live rules", () => {
     "Damage taken guarding a site: 100% → 75% (less)",
   );
   expect(oathEffectDescription(oaths.REFLECTION, SEASON_ONE_BASE)).toBe("Well stamina refill: 40% → 80%");
-  expect(oathEffectDescription(oaths.DETECTION, SEASON_ONE_BASE)).toBe(
-    "Guaranteed find after 4 empty reveals instead of 7",
-  );
+  expect(oathEffectDescription(oaths.DETECTION, SEASON_ONE_BASE)).toBe("Guaranteed find after 4 empty reveals");
   expect(oathEffectDescription(oaths.BRILLIANCE, SEASON_ONE_BASE)).toBe("Explore rewards: 100% → 125%");
   expect(oathEffectDescription(oaths.RAGE, SEASON_ONE_BASE)).toBe("Site and guard rewards: 100% → 125%");
   expect(oathEffectDescription(oaths.ANGER, SEASON_ONE_BASE)).toBe("Attack cost: 30 → 20 stamina (less)");

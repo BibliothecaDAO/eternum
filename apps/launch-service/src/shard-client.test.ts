@@ -7,6 +7,7 @@ import { createLaunchApp } from "./app";
 import { D1CalendarStore } from "./calendar-store";
 import { launchExecutorLayer } from "./executor";
 import { processNextLaunch } from "./process-launch";
+import { testnetRequest } from "./schemas";
 import { LaunchShard } from "./shard-client";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore, databaseLayer } from "./store";
@@ -33,6 +34,7 @@ const heldRow = (params: Record<string, bigint | boolean>): GameRegistryWire => 
     end_at: endAt,
     scheduled_end_at: endAt,
     seed: String(params.seed),
+    clock_scale: Number(params.clock_scale),
   });
 };
 const createGame = (calldata: string[]) => {
@@ -151,6 +153,20 @@ test("a retried launch finds the game its first attempt created", async () => {
   expect(first.durationSeconds).toBe(season.durationSeconds);
   expect(retried).toEqual(first);
   expect(held).toHaveLength(1);
+});
+
+test("a staging rehearsal creates a dev-mode game at four times the speed, and a season one at one", async () => {
+  const createdAt = Date.parse("2026-11-20T00:00:00.000Z");
+  const rehearsal = testnetRequest(
+    { startsAt: Date.parse("2026-11-21T00:00:30Z"), endsAt: Date.parse("2026-11-22T00:00:30Z"), speed: 4 },
+    "staging",
+  );
+  await launchShard().create(season, createdAt);
+  expect(await launchShard().create(rehearsal, createdAt)).toMatchObject({ gameId: 2, gameName: rehearsal.gameName });
+  expect(held.map(({ row }) => [row.clock_scale, row.dev_mode_on])).toEqual([
+    [1, false],
+    [4, true],
+  ]);
 });
 
 test("a retried launch still finds its game after the race ended it early", async () => {

@@ -1,0 +1,41 @@
+.app-bar__holdings {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.app-bar__balance {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgb(var(--app-gold) / 0.45);
+  border-radius: var(--app-radius-round);
+  background: var(--app-well);
+  padding: 0.25rem 0.65rem;
+  font-family: var(--app-face-control);
+  font-size: var(--app-text-label);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--gold2);
+}
+
+.app-bar__seal {
+  padding: 0.25rem 0.45rem;
+}
+
+.app-bar__seal-label {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .app-bar__seal {
+    padding: 0.25rem 0.65rem;
+  }
+
+  .app-bar__seal-label {
+    display: inline;
+  }
+}

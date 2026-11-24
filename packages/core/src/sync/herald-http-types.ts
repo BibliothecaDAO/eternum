@@ -48,6 +48,7 @@ export interface HeraldPlayerQuest {
 
 export interface HeraldAspectRace {
   finish_height: number;
+  season_days: number;
   heights: Record<AspectId, number>;
 }
 
@@ -81,6 +82,7 @@ export interface HeraldGameDirectoryEntry {
   /** Homes per Aspect; null without Aspects, absent on archived directory responses. */
   aspect_members?: Record<AspectId, number> | null;
   aspect_race?: HeraldAspectRace | null;
+  quest_bonus_percent?: number | null;
   player_state: HeraldPlayerGameState | null;
   registration: HeraldGameRegistration | null;
   settled_realms_count: number;
@@ -186,6 +188,23 @@ export interface HeraldFrontierAward {
   lords: string;
 }
 
+export interface HeraldAspectRoster {
+  game_id: string;
+  aspect: number;
+  total: number;
+  offset: number;
+  limit: number;
+  members: HeraldAspectRosterMember[];
+}
+
+export interface HeraldAspectRosterMember {
+  rank: number;
+  entity_id: string;
+  realm_id: number;
+  owner: string;
+  glory: string;
+}
+
 /** Immutable ranks at a seeded day's end; confirmed_block is the last block strictly before that instant. */
 export interface HeraldFrontierDayRanks {
   game_id: string;
@@ -203,6 +222,7 @@ export class HeraldHttpError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly code?: string,
   ) {
     super(message);
     this.name = "HeraldHttpError";

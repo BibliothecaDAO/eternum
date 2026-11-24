@@ -13,6 +13,7 @@ import {
   CHAT,
   CLOSE,
   DEEP_WORDS,
+  FIGHT_WORDS,
   INVITE_WORDS,
   EXPLORE,
   MOVE,
@@ -1219,6 +1220,24 @@ describe("the Season 1 rehearsal", () => {
     });
   });
 
+  it("refuses an Oath pick that offers a Redraw while the game's rules turn RerollOath off", async () => {
+    const shown = ["[data-oath-pick]", "[data-reroll-oath]"];
+    const browser = {
+      read: (expression) => {
+        if (expression.includes("__eternumFragmentSpends")) return ["BuySeal", "BuyStamina"];
+        return shown.some((selector) => expression.includes(selector)) ? { offset: [0, 0] } : null;
+      },
+      tap: vi.fn(),
+    };
+    const answer = step("answer-a-standing-oath");
+    const played = await answer.play({ browser, extraScreenshot: () => null });
+    expect(answer.verify({ played })).toMatchObject({
+      status: "failed",
+      reason: "the Oath pick offers a Redraw the game's rules turn off",
+    });
+    expect(browser.tap).not.toHaveBeenCalled();
+  });
+
   it("presses and reads the app's own words", () => {
     expect(REHEARSAL_WORDS.startAdventure).toBe(SHARED_LINK_WORDS.play);
     expect(REHEARSAL_WORDS.copyLink).toBe(INVITE_WORDS.copy);
@@ -1229,6 +1248,12 @@ describe("the Season 1 rehearsal", () => {
     expect(REHEARSAL_WORDS.move).toBe(MOVE);
     expect(REHEARSAL_WORDS.explore).toBe(EXPLORE);
     expect(REHEARSAL_WORDS.attack).toBe(DEEP_WORDS.attack);
+    expect(REHEARSAL_WORDS.forecasts).toEqual({
+      lost: FIGHT_WORDS.armyLost,
+      holds: FIGHT_WORDS.holds,
+      earns: FIGHT_WORDS.earns,
+      clears: FIGHT_WORDS.clears,
+    });
     expect(REHEARSAL_WORDS.take).toBe(DEEP_WORDS.take);
     expect(REHEARSAL_WORDS.beast("Balrog", 900)).toBe(DEEP_WORDS.beast("Balrog", 900));
     expect(REHEARSAL_WORDS.open).toBe(DEEP_WORDS.open);
@@ -1261,6 +1286,7 @@ describe("the Season 1 rehearsal", () => {
       "build-barracks",
       "back-on-map",
       "send-an-army",
+      "fragment-spends-are-off",
       "fight-on-the-surface",
       "enter-the-deep",
       "fight-a-beast",

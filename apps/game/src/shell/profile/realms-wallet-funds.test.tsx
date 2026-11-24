@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
@@ -83,8 +84,14 @@ const mount = async () => {
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
-  await act(async () => root.render(<RealmsWalletFunds address={ADDRESS} />));
-  await act(async () => {});
+  await act(async () =>
+    root.render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <RealmsWalletFunds address={ADDRESS} />
+      </QueryClientProvider>,
+    ),
+  );
+  await vi.waitFor(() => expect(container.querySelector("button")).not.toBeNull());
   mounted.push(async () => {
     await act(async () => root.unmount());
     container.remove();
@@ -139,9 +146,8 @@ it("prices the send's fee as the form opens, offers the balance less its most as
     onFeeShort: expect.any(Function),
   });
   await press(funds, "Confirm with your passkey");
-  await act(async () => {});
+  await vi.waitFor(() => expect(funds.textContent).toContain("700 LORDS"));
   expect(funds.textContent).toContain("Sent");
-  expect(funds.textContent).toContain("700 LORDS");
 });
 
 it("sends what the wallet holds less the fee its review built when Max, taken on the form's quote, leaves too little", async () => {

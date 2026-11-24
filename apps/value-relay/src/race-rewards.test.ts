@@ -257,7 +257,13 @@ const resultSnapshot = (finished: boolean) => ({
 });
 
 it("hands a finished race to the ledger side and never reads it again once its close is final", async () => {
-  shard.games.mockResolvedValue({ confirmedBlock: 10, games: [{ game_id: 7 }, { game_id: 8 }] });
+  shard.games.mockResolvedValue({
+    confirmedBlock: 10,
+    games: [
+      { game_id: 7, name: "frontier-7" },
+      { game_id: 8, name: "frontier-8" },
+    ],
+  });
   shard.snapshot.mockImplementation(async (_connection, _herald, gameId) => resultSnapshot(gameId === 7));
   shard.race.mockResolvedValue(race);
   const finals = memoryFinalFacts();
@@ -271,6 +277,15 @@ it("hands a finished race to the ledger side and never reads it again once its c
   expect(shard.race).toHaveBeenCalledTimes(2);
 });
 
+it("never settles a testnet game's race: only a game named as a season pays", async () => {
+  shard.games.mockResolvedValue({ confirmedBlock: 10, games: [{ game_id: 9, name: "testnet-1795521600" }] });
+  shard.snapshot.mockResolvedValue(resultSnapshot(true));
+  const settle = vi.fn().mockResolvedValue(null);
+  expect(await settleFinishedRaces(connection, "http://127.0.0.1:8081", memoryFinalFacts(), settle)).toEqual([]);
+  expect(shard.snapshot).not.toHaveBeenCalled();
+  expect(settle).not.toHaveBeenCalled();
+});
+
 it("settles no race while Herald is unavailable, and one game's failure does not hold another's", async () => {
   const finals = memoryFinalFacts();
   const settle = vi.fn().mockResolvedValue(null);
@@ -279,7 +294,13 @@ it("settles no race while Herald is unavailable, and one game's failure does not
     "herald_unavailable",
   );
   expect(settle).not.toHaveBeenCalled();
-  shard.games.mockResolvedValue({ confirmedBlock: 10, games: [{ game_id: 7 }, { game_id: 8 }] });
+  shard.games.mockResolvedValue({
+    confirmedBlock: 10,
+    games: [
+      { game_id: 7, name: "frontier-7" },
+      { game_id: 8, name: "frontier-8" },
+    ],
+  });
   const error = new Error("herald_unavailable");
   shard.snapshot.mockImplementation(async (_connection, _herald, gameId) => {
     if (gameId === 7) throw error;

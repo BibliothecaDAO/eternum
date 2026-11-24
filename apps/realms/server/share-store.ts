@@ -1,6 +1,6 @@
 import { FRIEND_FRAGMENTS, FRIENDS_BONUS_FRAGMENTS, FRIENDS_LIMIT } from "@bibliothecadao/types";
 import { profileOfIdentityUser } from "@realms-world/identity";
-import type { ShareKind, ShareChannel, ShareMoment, ShareTally } from "@realms-world/identity";
+import type { InvitedFriendState, ShareKind, ShareChannel, ShareMoment, ShareTally } from "@realms-world/identity";
 
 import { newPublicCode } from "./public-codes";
 
@@ -33,6 +33,13 @@ export interface SharePayout extends ShareGame {
 }
 
 type ShareFunnel = Omit<ShareTally, "friendsPaid" | "fragmentsEarned">;
+
+export interface InvitedFriend {
+  realmsId: string;
+  name: string | null;
+  joinedAt: number;
+  state: InvitedFriendState;
+}
 
 const GMAIL = new Set(["gmail.com", "googlemail.com"]);
 
@@ -126,6 +133,12 @@ export function createShareStore(db: D1Database) {
     }
     throw new Error("share_code_unavailable");
   };
+
+  const followAspect = (sharer: string, aspect: number) =>
+    db
+      .prepare(`UPDATE "share_links" SET "moment" = ? WHERE "sharer" = ? AND "kind" = ? AND "chain_id" IS NULL`)
+      .bind(aspect, sharer, INVITE)
+      .run();
 
   /** Marks the sharer's own link posted, once; false when the link is not theirs. */
   const markPosted = async (sharer: string, code: string, now: number): Promise<boolean> => {
@@ -300,6 +313,35 @@ export function createShareStore(db: D1Database) {
           ),
         );
 
+  const invitedFriends = async (sharer: string): Promise<InvitedFriend[]> =>
+    (
+      await db
+        .prepare(
+          `SELECT j."friend" AS "realmsId", u."id", u."name", u."image", j."joined_at" AS "joinedAt",
+                  j."activated_at" AS "activatedAt", p."paid_at" AS "paidAt"
+           FROM "share_joins" j JOIN "share_links" l ON l."code" = j."code"
+           JOIN "user" u ON u."realmsId" = j."friend"
+           LEFT JOIN "share_payouts" p ON p."sharer" = l."sharer" AND p."friend" = j."friend"
+           WHERE l."sharer" = ?1 AND l."kind" = ?2
+           ORDER BY j."joined_at" DESC, j."rowid" DESC`,
+        )
+        .bind(sharer, INVITE)
+        .all<{
+          realmsId: string;
+          id: string;
+          name: string;
+          image: string | null;
+          joinedAt: number;
+          activatedAt: number | null;
+          paidAt: number | null;
+        }>()
+    ).results.map((row) => ({
+      realmsId: row.realmsId,
+      name: profileOfIdentityUser(row).name,
+      joinedAt: row.joinedAt,
+      state: row.paidAt !== null ? "paid" : row.activatedAt !== null ? "reached" : "joined",
+    }));
+
   /** What one account's links brought, every kind and moment together: one row, all zeros before its first link. */
   const tallyOf = async (sharer: string): Promise<ShareTally> => {
     const tally = await db.prepare(tallySelect("", `WHERE l."sharer" = ?`)).bind(sharer).first<ShareFunnel>();
@@ -372,6 +414,7 @@ export function createShareStore(db: D1Database) {
     sharedLink,
     joinedLink,
     openedInvite,
+    followAspect,
     recordVisit,
     settleJoins,
     pendingJoins,
@@ -380,6 +423,7 @@ export function createShareStore(db: D1Database) {
     markPaid,
     markActivated,
     tallyOf,
+    invitedFriends,
     momentReport,
     firstVisitsByTag,
     topSharers,

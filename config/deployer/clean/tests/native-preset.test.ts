@@ -35,6 +35,7 @@ import {
 } from "../../../source/common/season-clock";
 import { RESOURCE_PRECISION, ResourcesIds, deepSites } from "../../../../packages/types/src/constants";
 import { buildNativeGameParams, loadNativePresetConfiguration } from "../registrar/native-preset";
+import { launchGame } from "../launch/runner";
 
 const abi = [...Object.values(schema.types), ...schema.games.entrypoints];
 
@@ -647,6 +648,20 @@ describe("the 4x rehearsal beside Season 1", () => {
     expect(clockScale).toBe(4);
     expect(gameClockScale(nativePresets[FRONTIER_REHEARSAL_PRESET_ID]!)).toBe(4);
     expect(gameClockScale(frontierSeasonOnePreset)).toBe(1);
+  });
+
+  test("is never launched from the deployer CLI: the launch Worker creates it on staging", async () => {
+    await expect(
+      launchGame({
+        manifest: {} as never,
+        environmentId: "madara.frontier",
+        gameName: "rehearsal-cli",
+        startTime: 2_000_000_000,
+        rpcUrl: "http://127.0.0.1:1",
+        version: String(FRONTIER_REHEARSAL_PRESET_ID),
+        devModeOn: true,
+      }),
+    ).rejects.toThrow("Preset 8 runs a scaled clock: the launch Worker creates it on staging");
   });
 
   test("creates a game at 4 only in dev mode, and a Season 1 game always at 1", () => {

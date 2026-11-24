@@ -4,14 +4,14 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import type { DirectoryGame } from "./herald";
-import { chooseSeason, directoryDay, endedSeasons, seasonTitle } from "./season";
+import { chooseSeason, directoryDay, endedSeasons, isAccelerated, isRehearsal, seasonTitle } from "./season";
 import { ARCHIVED_SEASONS } from "./season-tab/archive/archive";
 
 const season = (gameId: number, startMainAt: number, ownRealm: boolean): DirectoryGame => ({
   dev_mode_on: false,
   clock_scale: 1,
   expedition: null,
-  name: "Season",
+  name: `frontier-${gameId}`,
   player_count: ownRealm ? 1 : 0,
   registration: null,
   settlement: null,
@@ -53,12 +53,13 @@ describe("the season a screen shows", () => {
   });
 });
 
-it("never picks a scaled rehearsal as the season, however late it started or whoever holds a realm in it", () => {
+it("never picks a testnet game as the season, however late it started, at whatever speed, or whoever holds a realm in it", () => {
   const playtest = season(1, 100, false);
-  const rehearsal = { ...season(2, 200, true), clock_scale: 4 };
-  for (const signedIn of [false, true]) expect(chooseSeason([rehearsal, playtest], signedIn)?.game_id).toBe(1);
-  expect(chooseSeason([rehearsal], true)).toBeUndefined();
-  const ended = { ...rehearsal, status: "Ended" } as DirectoryGame;
+  const testnet = { ...season(2, 200, true), name: "testnet-200" };
+  const rehearsal = { ...season(3, 300, true), name: "testnet-300", clock_scale: 4 };
+  for (const signedIn of [false, true]) expect(chooseSeason([rehearsal, testnet, playtest], signedIn)?.game_id).toBe(1);
+  expect(chooseSeason([testnet, rehearsal], true)).toBeUndefined();
+  const ended = { ...testnet, status: "Ended" } as DirectoryGame;
   expect(endedSeasons([ended], [ended]).map(({ game_id }) => game_id)).not.toContain(2);
 });
 
@@ -97,12 +98,23 @@ describe("Frontier's day from the directory", () => {
 
 describe("the season's number", () => {
   it("names the season by the number the directory serves", () => {
-    expect(seasonTitle({ chainId: "0x52", game_id: 3, season_number: 3 })).toBe("Season 3");
+    expect(seasonTitle({ chainId: "0x52", game_id: 3, name: "frontier-3", season_number: 3, clock_scale: 1 })).toBe(
+      "Season 3",
+    );
+    expect(seasonTitle({ chainId: "0x52", game_id: 3, name: "frontier-3", season_number: null, clock_scale: 1 })).toBe(
+      "Season",
+    );
   });
 
-  it("is a dash when the directory serves none, never a zero", () => {
-    expect(seasonTitle({ chainId: "0x52", game_id: 3 })).toBe("Season —");
-    expect(seasonTitle({ chainId: "0x52", game_id: 3, season_number: null })).toBe("Season —");
+  it("names non-season games via isRehearsal and isAccelerated: Final testnet at real speed, Rehearsal when accelerated", () => {
+    const testnet = { chainId: "0x52", game_id: 3, name: "testnet-1795479180", season_number: null, clock_scale: 1 };
+    const rehearsal = { chainId: "0x52", game_id: 3, name: "rehearsal-4x", season_number: null, clock_scale: 4 };
+    expect(isRehearsal(testnet)).toBe(true);
+    expect(isAccelerated(testnet)).toBe(false);
+    expect(seasonTitle(testnet)).toBe("Final testnet");
+    expect(isRehearsal(rehearsal)).toBe(true);
+    expect(isAccelerated(rehearsal)).toBe(true);
+    expect(seasonTitle(rehearsal)).toBe("Rehearsal");
   });
 
   it("is the one rule that reads the directory's number: no other code of the client names a season", () => {
@@ -115,8 +127,10 @@ describe("the season's number", () => {
     expect(readers).toEqual(["shell/lab/app-lab-fixtures.ts", "shell/season.ts"]);
   });
 
-  it("names Devcon's season by its number, zero", () => {
-    expect(seasonTitle({ chainId: "0x52", game_id: 4, season_number: 0 })).toBe("Season 0");
+  it("names a season by the number the directory serves: a chain's first season is Season 1", () => {
+    expect(seasonTitle({ chainId: "0x52", game_id: 4, name: "frontier-4", season_number: 1, clock_scale: 1 })).toBe(
+      "Season 1",
+    );
   });
 
   it("names prod's archived October season by its archive's name, Playtest, with no number, and only that game", () => {

@@ -1,7 +1,64 @@
-.you-grid {
+.you-hub {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: 21rem minmax(0, 1fr);
   align-items: start;
+  gap: theme(spacing.6);
+}
+
+.you-rail {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: theme(spacing.4);
+}
+
+.you-rail__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-panel);
+  background: color-mix(in srgb, var(--app-surface) 88%, transparent);
+  padding: 0.5rem;
+}
+
+.app-tabs__tab.you-rail__tab {
+  display: flex;
+  width: 100%;
+  height: auto;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.65rem;
+  border: 1px solid transparent;
+  border-radius: var(--app-radius-control);
+  padding: 0.65rem 0.875rem;
+  text-align: left;
+  font-family: var(--app-face-control);
+  font-size: var(--app-text-control);
+  font-weight: var(--app-weight-control);
+  color: var(--app-muted);
+  transition:
+    background-color var(--app-fast) var(--app-ease),
+    border-color var(--app-fast) var(--app-ease),
+    color var(--app-fast) var(--app-ease);
+}
+
+.app-tabs__tab.you-rail__tab:hover {
+  background: var(--app-hover);
+  color: var(--app-ink);
+}
+
+.app-tabs__tab.you-rail__tab[aria-selected="true"] {
+  border-color: rgb(var(--app-gold) / 0.55);
+  background: var(--app-chosen);
+  color: var(--gold2);
+  box-shadow: none;
+}
+
+.you-workspace {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
   gap: theme(spacing.5);
 }
 
@@ -52,7 +109,7 @@
 .profile-hero__name {
   margin: 0;
   font-family: var(--app-face-title);
-  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-size: clamp(1.4rem, 2.8vw, 1.85rem);
   line-height: 1.12;
   color: var(--gold2);
 }
@@ -155,7 +212,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.4rem;
   border: 1px solid var(--app-line);
   border-radius: var(--app-radius-control);
   background: var(--app-well);
@@ -177,19 +234,222 @@
   color: var(--app-muted);
 }
 
+.profile-realm-tile__bonus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border: 1px solid rgb(var(--app-gold) / 0.35);
+  border-radius: var(--app-radius-round);
+  background: rgb(var(--app-gold) / 0.1);
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--gold2);
+}
+
+.referrals-invite {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border: 1px solid rgb(var(--app-gold) / 0.45);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  padding: 0.875rem 1rem;
+}
+
+.referrals-track {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  padding: 0.875rem 1rem;
+}
+
+.referrals-track__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.referrals-slots {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.referrals-slot {
+  display: grid;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--app-radius-control);
+  background: var(--app-surface);
+  font-size: var(--app-text-label);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-muted);
+}
+
+.referrals-slot[data-final] {
+  border-style: dashed;
+  border-color: rgb(var(--app-gold) / 0.65);
+  color: var(--gold2);
+}
+
+.referrals-slot[data-reached] {
+  border-color: rgb(var(--app-gold));
+  background: rgb(var(--app-gold) / 0.22);
+  color: var(--gold2);
+}
+
+.referrals-friends {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.referrals-friends__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.referrals-friends__empty {
+  border: 1px dashed var(--app-line-strong);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  padding: 0.875rem 1rem;
+  font-size: var(--app-text-label);
+  color: var(--app-muted);
+}
+
+.referrals-friend {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "icon name glory"
+    "icon status status";
+  align-items: center;
+  column-gap: 0.75rem;
+  row-gap: 0.35rem;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  padding: 0.75rem 0.875rem;
+}
+
+.referrals-friend[data-friend-state="reached"] {
+  border-color: color-mix(in srgb, var(--app-good) 35%, var(--app-line));
+}
+
+.referrals-friend[data-friend-state="paid"] {
+  border-color: rgb(var(--app-gold) / 0.38);
+  background: color-mix(in srgb, rgb(var(--app-gold)) 7%, var(--app-well));
+}
+
+.referrals-friend__icon {
+  grid-area: icon;
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-control);
+  background: var(--app-surface);
+  color: var(--app-muted);
+}
+
+.referrals-friend[data-friend-state="reached"] .referrals-friend__icon {
+  border-color: color-mix(in srgb, var(--app-good) 45%, transparent);
+  background: color-mix(in srgb, var(--app-good) 12%, var(--app-surface));
+  color: var(--app-good);
+}
+
+.referrals-friend[data-friend-state="paid"] .referrals-friend__icon {
+  border-color: rgb(var(--app-gold) / 0.5);
+  background: rgb(var(--app-gold) / 0.14);
+  color: var(--gold2);
+}
+
+.referrals-friend__name {
+  grid-area: name;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--app-text-body);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--app-ink);
+}
+
+.referrals-friend__pill {
+  grid-area: status;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-round);
+  background: var(--app-surface-2);
+  padding: 0.125rem 0.6rem;
+  font-size: var(--app-text-label);
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  color: var(--app-muted);
+}
+
+.referrals-friend[data-friend-state="reached"] .referrals-friend__pill {
+  border-color: color-mix(in srgb, var(--app-good) 45%, transparent);
+  background: color-mix(in srgb, var(--app-good) 14%, var(--app-surface));
+  color: var(--app-good);
+}
+
+.referrals-friend[data-friend-state="paid"] .referrals-friend__pill {
+  border-color: rgb(var(--app-gold) / 0.5);
+  background: rgb(var(--app-gold) / 0.16);
+  color: var(--gold2);
+}
+
+.referrals-friend__glory {
+  grid-area: glory;
+  justify-self: end;
+  font-size: var(--app-text-label);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--gold2);
+}
+
+@media (min-width: 640px) {
+  .referrals-invite {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .referrals-slots {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+  }
+
+  .referrals-friend {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "icon name status glory";
+    row-gap: 0;
+  }
+
+  .referrals-friend__glory {
+    min-width: 5.5rem;
+    text-align: right;
+  }
+}
+
 @media (min-width: 1024px) {
-  .you-grid {
-    min-height: calc(100dvh - var(--app-bar) - 8.5rem);
-    grid-template-columns: 22rem minmax(0, 1.4fr) minmax(0, 1fr);
-    align-items: stretch;
-    gap: theme(spacing.6);
-  }
-
-  .profile-card-wrap,
-  .profile-card-wrap > .app-panel {
-    height: 100%;
-  }
-
   .profile-hero {
     flex-direction: column;
     text-align: center;

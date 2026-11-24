@@ -1,7 +1,8 @@
 import { useEffect, useMemo } from "react";
 import { create } from "zustand";
 
-import { type ChatRoom, GLOBAL_ROOM } from "@/ui/features/social/realtime-chat/model/chat-rooms";
+import { useGrantedRooms } from "@/ui/features/social/realtime-chat/hooks/use-granted-rooms";
+import { type ChatRoom, GLOBAL_ROOM, newestAspectRoom } from "@/ui/features/social/realtime-chat/model/chat-rooms";
 
 /** Where the app's chat stands. */
 type AppChatPlace = {
@@ -20,7 +21,8 @@ export const useAppChatPlace = create<AppChatPlace>(() => ({ lobby: null, pages:
 /** The app's rooms where the player stands: a lobby's room first on its page, and Global everywhere. */
 export const useAppChatRooms = (): ChatRoom[] => {
   const lobby = useAppChatPlace((state) => state.lobby);
-  return useMemo(() => (lobby ? [lobby, GLOBAL_ROOM] : [GLOBAL_ROOM]), [lobby]);
+  const granted = useGrantedRooms();
+  return useMemo(() => [...(lobby ? [lobby] : []), ...newestAspectRoom(granted), GLOBAL_ROOM], [lobby, granted]);
 };
 
 /** Whether the page draws the chat itself (Chat's page, a lobby's), so no pane stands over it. */

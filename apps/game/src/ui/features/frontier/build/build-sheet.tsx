@@ -9,7 +9,7 @@ import { useQuery } from "@/hooks/helpers/use-query";
 import { useAllInFlight, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
-import { PRICE_FACES, type PriceKind } from "@/ui/design-system/kit/price-faces";
+import { PRICE_FACES, type Price, type PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import {
   makes,
@@ -189,7 +189,7 @@ export const BuildSheet = ({
       tiles={options.map((candidate) => buildTile(candidate, holdings))}
       chosen={chosen}
       onChoose={(index) => setPicked(options[index]!.category)}
-      prices={option.cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount }))}
+      prices={optionPrices(option)}
       refusal={standing()}
       sending={sending}
       onBuild={() => void build()}
@@ -206,6 +206,9 @@ const priceKind = (resource: number): PriceKind => {
 };
 
 const isPriceKind = (kind: string): kind is PriceKind => kind in PRICE_FACES;
+
+const optionPrices = (option: BuildOption): Price[] =>
+  option.cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount }));
 
 type Holdings = {
   held: (resource: number) => number | undefined;
@@ -224,7 +227,7 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
 
 const standingOf = (option: BuildOption, { held, perHour }: Holdings): BuildTile["standing"] => {
   if (option.standing === "built") return { kind: "built" };
-  if (option.standing !== "open") return { kind: "level", level: option.standing.level };
+  if (option.standing !== "open") return { kind: "level", level: option.standing.level, prices: optionPrices(option) };
   const missing = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   const short: Extract<BuildTile["standing"], { kind: "price" }>["short"] = missing
     ? {

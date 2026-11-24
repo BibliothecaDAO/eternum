@@ -55,45 +55,80 @@ const finishedBlitz = game("blitz", { game_id: 9, status: "Settled" });
 
 const leadOf = (input: PlayBoardFacts) => {
   const { lead } = playBoard(input);
-  return lead ? `${lead.mode} ${lead.verb ?? "—"}` : "none";
+  return lead ? (lead.verb ?? "—") : "none";
 };
 
 describe("a rehearsal beside the season", () => {
-  const rehearsal = game("frontier", { game_id: 4, clock_scale: 4, clock: { ...frontier.clock, start_main_at: 200 } });
+  const rehearsal = game("frontier", {
+    game_id: 4,
+    name: "testnet-200",
+    clock_scale: 4,
+    clock: { ...frontier.clock, start_main_at: 200 },
+  });
 
-  it("keeps the real-speed season as the lead and lists the rehearsal as its own Frontier game", () => {
+  it("keeps the real-speed season as the lead and lists the rehearsal under rehearsals", () => {
     const board = playBoard(facts({ games: [rehearsal, frontier] }));
     expect([board.lead?.game.game_id, board.lead?.verb]).toEqual([2, "play"]);
-    expect(board.ages.frontier.map((item) => [item.game.game_id, item.verb])).toEqual([[4, "play"]]);
+    expect(board.rehearsals.map((item) => [item.game.game_id, item.verb])).toEqual([[4, "play"]]);
   });
 
   it("resumes the rehearsal where the player holds a realm in it, after their season", () => {
     const board = playBoard(facts({ games: [withRealm(rehearsal), withRealm(frontier)] }));
     expect([board.lead?.game.game_id, board.lead?.verb]).toEqual([2, "resume"]);
-    expect(board.ages.frontier.map((item) => [item.game.game_id, item.verb])).toEqual([[4, "resume"]]);
+    expect(board.rehearsals.map((item) => [item.game.game_id, item.verb])).toEqual([[4, "resume"]]);
+  });
+
+  it("lists the real-speed final testnet under rehearsals too: its name, not its speed, says it is not the season", () => {
+    const testnet = game("frontier", { game_id: 5, name: "testnet-1795521600", clock_scale: 1 });
+    const board = playBoard(facts({ games: [testnet, frontier] }));
+    expect([board.lead?.game.game_id, board.lead?.verb]).toEqual([2, "play"]);
+    expect(board.rehearsals.map((item) => [item.game.game_id, item.verb])).toEqual([[5, "play"]]);
+  });
+
+  it("orders real-speed testnets ahead of newer accelerated rehearsals", () => {
+    const testnet = game("frontier", {
+      game_id: 5,
+      name: "testnet-1795479180",
+      clock_scale: 1,
+      clock: { ...frontier.clock, start_main_at: 100 },
+    });
+    const newerRehearsal = game("frontier", {
+      game_id: 6,
+      name: "rehearsal-4x",
+      clock_scale: 4,
+      clock: { ...frontier.clock, start_main_at: 300 },
+    });
+    const board = playBoard(facts({ games: [newerRehearsal, testnet] }));
+    expect(board.rehearsals.map((item) => item.game.game_id)).toEqual([5, 6]);
+  });
+
+  it("never places a rehearsal in the lead slot even when it is the only Frontier game, and keeps Play non-empty", () => {
+    const board = playBoard(facts({ games: [withRealm(rehearsal)] }));
+    expect(board.lead).toBeNull();
+    expect(board.rehearsals.map((item) => [item.game.game_id, item.verb])).toEqual([[4, "resume"]]);
+  });
+
+  it("never counts an ended rehearsal as a season result or active rehearsal", () => {
+    const endedRehearsal = withRealm({ ...rehearsal, status: "Ended" });
+    const board = playBoard(facts({ games: [endedRehearsal], finished: [endedRehearsal] }));
+    expect(board.lead).toBeNull();
+    expect(board.rehearsals).toEqual([]);
+    expect(board.results).toEqual([]);
   });
 });
 
 describe("the lead: the one gold verb, first match wins", () => {
   it.each<[string, PlayBoardFacts, string]>([
-    ["a Frontier day under way: Resume", facts({ games: [withRealm(frontier)] }), "frontier resume"],
-    ["a season over and unseen, with no season live: Results", facts({ games: [endedSeason] }), "frontier results"],
-    [
-      "a Blitz of theirs finished and unseen, with no season to play: Results",
-      facts({ finished: [finishedBlitz] }),
-      "blitz results",
-    ],
+    ["a Frontier day under way: Resume", facts({ games: [withRealm(frontier)] }), "resume"],
+    ["a season over and unseen, with no season live: Results", facts({ games: [endedSeason] }), "results"],
+    ["a finished Blitz never leads Play", facts({ finished: [finishedBlitz] }), "none"],
     [
       "no realm in the live season, with a result unseen: Play the season first, as with no result",
       facts({ games: [frontier, endedSeason], finished: [finishedBlitz] }),
-      "frontier play",
+      "play",
     ],
-    ["signed in with no realm: Play", facts({ games: [frontier] }), "frontier play"],
-    [
-      "signed out: Play (free), never a result",
-      facts({ signedIn: false, games: [frontier, endedSeason] }),
-      "frontier play",
-    ],
+    ["signed in with no realm: Play", facts({ games: [frontier] }), "play"],
+    ["signed out: Play (free), never a result", facts({ signedIn: false, games: [frontier, endedSeason] }), "play"],
     ["a live Blitz in the directory offers nothing", facts({ games: [game("blitz", { game_id: 7 })] }), "none"],
     ["a retired mode never offers entry", facts({ games: [game("eternum", { status: "Registration" })] }), "none"],
     ["nothing live or scheduled: no lead", facts({}), "none"],
@@ -101,36 +136,34 @@ describe("the lead: the one gold verb, first match wins", () => {
     expect(leadOf(input)).toBe(lead);
   });
 
-  it("keeps an unseen result under the season to play in its age's column, never off the board", () => {
-    const board = playBoard(facts({ games: [frontier], finished: [finishedBlitz] }));
-    expect(board.lead?.mode).toBe("frontier");
-    expect(board.ages.blitz.map((item) => `${item.when} ${item.verb}`)).toEqual(["done results"]);
-  });
-
   it("does not resume a season that has not started its days", () => {
-    expect(leadOf(facts({ games: [withRealm({ ...frontier, status: "Registration" })] }))).toBe("frontier play");
+    expect(leadOf(facts({ games: [withRealm({ ...frontier, status: "Registration" })] }))).toBe("play");
   });
 });
 
 describe("everything else, each game once", () => {
   const board = playBoard(
     facts({
-      games: [withRealm(frontier), game("eternum", { game_id: 5, status: "Registration" })],
+      games: [withRealm(frontier), endedSeason, game("eternum", { game_id: 5, status: "Registration" })],
       finished: [finishedBlitz],
     }),
   );
   const keys = (items: readonly { key: string }[]) => items.map((item) => item.key);
 
-  it("leads with the day to resume, and keeps each age's other games under it", () => {
+  it("leads with the day to resume, keeps unseen ended seasons in results, and excludes Blitz and Eternum", () => {
     expect(board.lead?.key).toBe(gameKey(frontier));
-    expect(board.ages.blitz.map((item) => `${item.when} ${item.verb}`)).toEqual(["done results"]);
-    expect(keys(board.ages.blitz)).toEqual([gameKey(finishedBlitz)]);
-    expect(board.ages.frontier).toEqual([]);
-    expect(keys(board.ages.eternum)).toEqual([]);
+    expect(keys(board.results)).toEqual([gameKey(endedSeason)]);
   });
 
-  it("never shows a game twice", () => {
-    const all = [board.lead!, ...Object.values(board.ages).flat()];
+  it("never shows a game twice and omits seen results", () => {
+    const all = [board.lead!, ...board.results];
     expect(new Set(keys(all)).size).toBe(all.length);
+    const seen = playBoard(
+      facts({
+        games: [withRealm(frontier), endedSeason],
+        seenResults: new Set([gameKey(endedSeason)]),
+      }),
+    );
+    expect(seen.results).toEqual([]);
   });
 });

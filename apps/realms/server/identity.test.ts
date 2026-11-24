@@ -36,7 +36,7 @@ import { settleShareInvites, shareWorldOf } from "./shares";
 import { ORIGIN } from "./workerd-harness";
 import { createTestD1 } from "./test-d1";
 import { sealCodeFiles } from "../scripts/seal-codes";
-import { aspects, orders } from "@bibliothecadao/types";
+import { orders, seasonGameName, testnetGameName } from "@bibliothecadao/types";
 
 const GUARDIAN_KEY = "0x2dccce1da22003777062ee0870e9881b460a8b7eca276870f57c601f182136c";
 const CHAIN_ID = "0x5245414c4d535f53484152445f41";
@@ -52,6 +52,14 @@ const STALLED = Symbol("stalled");
 let launchDirectory: {
   chains: { chainId: string; games: { gameId: number; slotId: number | null }[] }[];
 } = { chains: [] };
+let seasonPhases: { phase: "frontier"; startsAt: string; endsAt: string }[] = [];
+const seasonFrom = (startsAt: number) => [
+  {
+    phase: "frontier" as const,
+    startsAt: new Date(startsAt).toISOString(),
+    endsAt: new Date(startsAt + 86_400_000).toISOString(),
+  },
+];
 const fetchShard = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const body = heralds.get(new URL(input instanceof Request ? input.url : input).href);
   if (body === STALLED)
@@ -236,7 +244,13 @@ beforeAll(async () => {
     CHAT_INBOX: {} as IdentityEnv["CHAT_INBOX"],
     DB: database.db,
     GUARDIAN: createGuardian(GUARDIAN_KEY),
-    LAUNCH: { fetch: vi.fn(async () => Response.json({ chains: [] })) },
+    LAUNCH: {
+      fetch: vi.fn(async (input: RequestInfo | URL) =>
+        new URL(input instanceof Request ? input.url : input).pathname === "/api/factory/calendar"
+          ? Response.json({ phases: seasonPhases })
+          : Response.json({ chains: [] }),
+      ),
+    },
     VALUE_RELAY: { fetch: relay },
     DIRECTORY_RATE_LIMIT: { limit: async () => ({ success: true }) },
     PUBLIC_RATE_LIMIT: { limit: async () => ({ success: true }) },
@@ -1231,51 +1245,6 @@ describe("identity Worker", () => {
     expect((await stranger.request(`/api/profiles?accounts=${tooMany}`)).status).toBe(400);
   });
 
-  it("keeps an account's build orders by revision, refuses one the game cannot read, and shows them to their owner only", async () => {
-    const browser = createBrowser();
-    await signInWithCode(browser, "build-orders@realms.test");
-    const owner = (await browser.session())!.user.realmsId;
-    const coalRush = {
-      name: "Coal rush",
-      steps: [
-        { rank: "City", goal: "coal", count: 2 },
-        { rank: "City", goal: "levelUp" },
-      ],
-    };
-    const book = (order: unknown) => ({ orders: [{ id: "o1", order }], active: "o1" });
-    const save = (revision: number, order: unknown) =>
-      browser.request("/api/build-orders", { body: { owner, revision, book: book(order) } });
-
-    expect(await (await browser.request("/api/build-orders")).json()).toEqual({
-      owner,
-      revision: 0,
-      book: { orders: [], active: null },
-    });
-    expect(await (await save(0, coalRush)).json()).toEqual({ owner, revision: 1, book: book(coalRush) });
-    expect((await save(0, coalRush)).status).toBe(409);
-    const unreadable = await save(1, { ...coalRush, steps: [{ rank: "City", goal: "mill", count: 2 }] });
-    expect([unreadable.status, await unreadable.json()]).toEqual([
-      400,
-      {
-        error: "invalid_build_orders",
-        message:
-          "Step 1: “mill” is not a goal: farm, wood, coal, copper, ironwood, coldIron, gold, adamantine, mithral, dragonhide, market, knightT1, knightT2, knightT3, crossbowmanT1, crossbowmanT2, crossbowmanT3, paladinT1, paladinT2, paladinT3, hut, barracks, barracksT2, barracksT3, army, armyT2, armyT3, levelUp.",
-      },
-    ]);
-    expect(((await (await browser.request("/api/build-orders")).json()) as { revision: number }).revision).toBe(1);
-    // An order of T2 and T3 steps is kept as made.
-    const ironRush = {
-      name: "Iron rush",
-      steps: [
-        { rank: "City", goal: "ironwood", count: 1 },
-        { rank: "Kingdom", goal: "knightT2", count: 1 },
-        { rank: "Kingdom", goal: "armyT3", count: 1 },
-      ],
-    };
-    expect(await (await save(1, ironRush)).json()).toEqual({ owner, revision: 2, book: book(ironRush) });
-    expect((await createBrowser().request("/api/build-orders")).status).toBe(401);
-  });
-
   it("keeps an account's opening progress as sets that any device can add to again, and shows it to its owner only", async () => {
     const browser = createBrowser();
     await signInWithCode(browser, "opening@realms.test");
@@ -1295,7 +1264,8 @@ describe("identity Worker", () => {
     expect((await createBrowser().request("/api/opening")).status).toBe(401);
   });
 
-  it("keeps each account's Order for the coming season, changed only to another Order of its Aspect, and counts every Order's members", async () => {
+  it("keeps each account's Order once the season has started, changed only to another Order of its Aspect, and counts every Order's members", async () => {
+    seasonPhases = seasonFrom(Date.now() - 1_000);
     const first = createBrowser();
     await signInWithCode(first, "order-one@realms.test");
     const second = createBrowser();
@@ -1313,6 +1283,21 @@ describe("identity Worker", () => {
     expect((await choose(first, { order: 0 })).status).toBe(400);
     expect((await choose(first, { order: "4" })).status).toBe(400);
     expect((await createBrowser().request("/api/order-intent")).status).toBe(401);
+    seasonPhases = [];
+  });
+
+  it("lets an account change its Order to any Aspect's until the season starts, and only within its Aspect from the start", async () => {
+    const player = createBrowser();
+    await signInWithCode(player, "order-change@realms.test");
+    const choose = (body: unknown) => player.request("/api/order-intent", { body });
+    seasonPhases = seasonFrom(Date.now() + 3_600_000);
+    expect(await (await choose({ order: 4 })).json()).toMatchObject({ order: 4 });
+    expect(await (await choose({ order: 16 })).json()).toMatchObject({ order: 16 });
+    seasonPhases = seasonFrom(Date.now() - 1_000);
+    const afterStart = await choose({ order: 4 });
+    expect([afterStart.status, await afterStart.json()]).toEqual([409, { error: "aspect_chosen" }]);
+    expect(await (await player.request("/api/order-intent")).json()).toMatchObject({ order: 16 });
+    seasonPhases = [];
   });
 
   it("holds one free Seal code on an account: case-blind, the same answer again, none from a taken, expired or unknown code, and no code spent on an account that has the Seal", async () => {
@@ -3000,10 +2985,10 @@ describe("shared links", () => {
         },
       ],
     });
-  const publishGames = () =>
+  const publishGames = (name = seasonGameName(1_801_000_000)) =>
     heralds.set(`${shard}/games`, {
       chain: chainId,
-      games: [{ game_id: gameId, name: "season", mode: "frontier", status: "Live", clock: { end_at: 0 } }],
+      games: [{ game_id: gameId, name, mode: "frontier", status: "Live", clock: { end_at: 0 } }],
     });
 
   beforeAll(async () => {
@@ -3218,57 +3203,45 @@ describe("shared links", () => {
         },
       ],
     });
-  const invite = (who: Awaited<ReturnType<typeof player>>, aspect: unknown) =>
-    who.browser.request("/api/shares", { body: { kind: "aspect", chainId, gameId, moment: aspect } });
+  const ownInvite = (who: Awaited<ReturnType<typeof player>>) =>
+    who.browser.request("/api/shares/invite", { method: "POST" });
+  const inviteCode = async (who: Awaited<ReturnType<typeof player>>) =>
+    ((await (await ownInvite(who)).json()) as { code: string }).code;
+  const withoutSeasonGame = () => {
+    heralds.set(`${shard}/games`, { chain: chainId, games: [] });
+    onTestFinished(() => void publishGames());
+  };
 
-  it("invites to the sharer's own Aspect only, as the game's Herald names it", async () => {
+  it("invites to the Aspect the game's Herald names for the sharer, whatever Order they pledge, and by no other route", async () => {
     const sharer = await player("inviter-luminary");
     await env.DB.prepare(`UPDATE "user" SET "name" = 'Linden' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
     publishAspects(sharer.account, 2);
-    const made = await invite(sharer, 2);
-    expect(made.status).toBe(200);
-    const code = ((await made.json()) as { code: string }).code;
-    expect(((await (await invite(sharer, 2)).json()) as { code: string }).code).toBe(code);
+    const code = await inviteCode(sharer);
     await sharer.browser.request("/api/order-intent", { body: { order: 13 } });
+    expect(await inviteCode(sharer)).toBe(code);
     expect(await visit(createBrowser(), code)).toEqual([
       200,
       { kind: "aspect", moment: 2, name: "Linden", order: null, members: null },
     ]);
-
-    // Another Aspect, or one outside the catalog, is no invite of theirs.
-    expect([(await invite(sharer, 3)).status, await (await invite(sharer, 3)).json()]).toEqual([
-      403,
-      { error: "not_in_aspect" },
-    ]);
-    expect((await invite(sharer, 5)).status).toBe(400);
-    // A Herald that cannot answer refuses the invite; it never reads as no Aspect.
-    heralds.delete(`${shard}/games/${gameId}/snapshot?models=Structure%2CHomeAspect&owner=${sharer.account}`);
-    expect([(await invite(sharer, 2)).status, await (await invite(sharer, 2)).json()]).toEqual([
-      503,
-      { error: "aspect_unavailable" },
-    ]);
+    const named = await sharer.browser.request("/api/shares", { body: { kind: "aspect", chainId, gameId, moment: 2 } });
+    expect(named.status).toBe(400);
   });
 
   it("invites to the coming season before any game, to the Aspect of the Order the sharer chose, and records the friend who came by it as joined", async () => {
+    withoutSeasonGame();
     const sharer = await player("season-inviter");
     await env.DB.prepare(`UPDATE "user" SET "name" = 'Dana' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
-    const seasonInvite = (body: Record<string, unknown>) =>
-      sharer.browser.request("/api/shares", { body: { kind: "aspect", chainId: null, gameId: null, ...body } });
     const titans = orders.find(({ fullOrderName }) => fullOrderName === "Order of Titans")!;
 
-    expect((await seasonInvite({ moment: titans.aspect })).status).toBe(403);
+    expect([(await ownInvite(sharer)).status, await (await ownInvite(sharer)).json()]).toEqual([
+      409,
+      { error: "no_aspect" },
+    ]);
     await sharer.browser.request("/api/order-intent", { body: { order: titans.orderId } });
-    const made = await seasonInvite({ moment: titans.aspect });
+    const made = await ownInvite(sharer);
     expect(made.status).toBe(200);
-    const code = ((await made.json()) as { code: string }).code;
-    expect(((await (await seasonInvite({ moment: titans.aspect })).json()) as { code: string }).code).toBe(code);
-    const another = aspects.find(({ id }) => id !== titans.aspect)!.id;
-    expect([
-      (await seasonInvite({ moment: another })).status,
-      await (await seasonInvite({ moment: another })).json(),
-    ]).toEqual([403, { error: "not_in_aspect" }]);
-    expect((await seasonInvite({ kind: "frontier-day", moment: 1 })).status).toBe(400);
-    expect((await seasonInvite({ gameId, moment: titans.aspect })).status).toBe(400);
+    const { code } = (await made.json()) as { code: string };
+    expect(await inviteCode(sharer)).toBe(code);
 
     const friendBrowser = createBrowser();
     const [status, seen] = await visit(friendBrowser, code);
@@ -3299,8 +3272,29 @@ describe("shared links", () => {
     });
   });
 
-  const inviteCode = async (who: Awaited<ReturnType<typeof player>>, aspect: number) =>
-    ((await (await invite(who, aspect)).json()) as { code: string }).code;
+  it("lands a pre-season invite in the Aspect its sharer plays for now, after a change before the season", async () => {
+    withoutSeasonGame();
+    const sharer = await player("season-switcher");
+    const titans = orders.find(({ fullOrderName }) => fullOrderName === "Order of Titans")!;
+    const elsewhere = orders.find(({ aspect }) => aspect !== null && aspect !== titans.aspect)!;
+    await sharer.browser.request("/api/order-intent", { body: { order: titans.orderId } });
+    const code = await inviteCode(sharer);
+    expect((await visit(createBrowser(), code))[1]).toMatchObject({ moment: titans.aspect, order: titans.orderId });
+    await sharer.browser.request("/api/order-intent", { body: { order: elsewhere.orderId } });
+    expect(await (await ownInvite(sharer)).json()).toEqual({
+      code,
+      aspect: elsewhere.aspect,
+      chainId: null,
+      gameId: null,
+    });
+    const friendBrowser = createBrowser();
+    expect((await visit(friendBrowser, code))[1]).toMatchObject({ moment: elsewhere.aspect, order: elsewhere.orderId });
+    const friend = await player("season-switcher-friend", friendBrowser);
+    expect(await (await friend.browser.request("/api/shares/joined")).json()).toMatchObject({
+      moment: elsewhere.aspect,
+    });
+  });
+
   const joinBy = async (code: string, name: string) => {
     const browser = createBrowser();
     await visit(browser, code);
@@ -3312,10 +3306,61 @@ describe("shared links", () => {
       .filter(([url]) => String(url).endsWith("/api/value/operator/fragments"))
       .map(([, init]) => JSON.parse(String(init!.body)) as Record<string, unknown>);
 
+  it("makes a player's own invite to the Aspect its Herald names in the open Season game, and none for a player with no Aspect", async () => {
+    const sharer = await player("own-inviter");
+    publishAspects(sharer.account, null);
+    expect([(await ownInvite(sharer)).status, await (await ownInvite(sharer)).json()]).toEqual([
+      409,
+      { error: "no_aspect" },
+    ]);
+    publishAspects(sharer.account, 4);
+    const made = await ownInvite(sharer);
+    expect(made.status).toBe(200);
+    const answer = (await made.json()) as { code: string };
+    expect(answer).toEqual({ code: expect.any(String), aspect: 4, chainId, gameId });
+    expect(await (await ownInvite(sharer)).json()).toEqual(answer);
+    heralds.delete(`${shard}/games/${gameId}/snapshot?models=Structure%2CHomeAspect&owner=${sharer.account}`);
+    expect([(await ownInvite(sharer)).status, await (await ownInvite(sharer)).json()]).toEqual([
+      503,
+      { error: "aspect_unavailable" },
+    ]);
+    expect((await createBrowser().request("/api/shares/invite", { method: "POST" })).status).toBe(401);
+  });
+
+  it("lists the friends a player's invites brought, newest first, with their Glory and how far each went", async () => {
+    const sharer = await player("friends-sharer");
+    publishAspects(sharer.account, 2);
+    const code = await inviteCode(sharer);
+    const paid = await joinBy(code, "friends-paid");
+    const playing = await joinBy(code, "friends-playing");
+    const reached = await joinBy(code, "friends-reached");
+    await env.DB.prepare(`UPDATE "user" SET "name" = 'Rowan' WHERE "realmsId" = ?`).bind(paid.realmsId).run();
+    paid.earn(100);
+    playing.earn(40);
+    await minuteCron();
+    reached.earn(120);
+    const friends = await sharer.browser.request("/api/shares/friends");
+    expect(friends.status).toBe(200);
+    expect(await friends.json()).toEqual({
+      friends: [
+        { name: null, joinedAt: expect.any(Number), glory: 120, state: "reached" },
+        { name: null, joinedAt: expect.any(Number), glory: 40, state: "joined" },
+        { name: "Rowan", joinedAt: expect.any(Number), glory: 100, state: "paid" },
+      ],
+    });
+    expect(await (await paid.browser.request("/api/shares/friends")).json()).toEqual({ friends: [] });
+    expect((await createBrowser().request("/api/shares/friends")).status).toBe(401);
+    await minuteCron();
+    const delivered = (await (await sharer.browser.request("/api/shares/friends")).json()) as {
+      friends: { state: string }[];
+    };
+    expect(delivered.friends.map(({ state }) => state)).toEqual(["paid", "joined", "paid"]);
+  });
+
   it("pays an Aspect invite's sharer 100 Fragments for each of the first 10 friends at 100 Glory, and 1,000 more at the 10th", async () => {
     const sharer = await player("payout-sharer");
     publishAspects(sharer.account, 2);
-    const code = await inviteCode(sharer, 2);
+    const code = await inviteCode(sharer);
     const friends = [];
     for (let index = 0; index < 11; index++) friends.push(await joinBy(code, `payout-friend-${index}`));
     relay.mockClear();
@@ -3327,7 +3372,7 @@ describe("shared links", () => {
     await minuteCron();
     await minuteCron();
     expect(await sharer.tally()).toMatchObject({ activated: 11, friendsPaid: 10, fragmentsEarned: 2000 });
-    const credits = fragmentCredits();
+    const credits = fragmentCredits().filter(({ realmsId }) => realmsId === sharer.realmsId);
     expect(credits.filter(({ amount }) => amount === 100)).toHaveLength(10);
     expect(credits.filter(({ amount }) => amount === 1000)).toEqual([
       {
@@ -3343,7 +3388,7 @@ describe("shared links", () => {
   it("pays nothing for a friend on the sharer's own mailbox, and the minute cron retries a credit the relay refused until it takes it, once", async () => {
     const sharer = await player("mailbox-sharer");
     publishAspects(sharer.account, 3);
-    const code = await inviteCode(sharer, 3);
+    const code = await inviteCode(sharer);
     const alt = await joinBy(code, "mailbox-sharer+alt");
     const friend = await joinBy(code, "mailbox-friend");
     alt.earn(100);
@@ -3365,16 +3410,22 @@ describe("shared links", () => {
     expect(fragmentCredits()).toEqual([paid, paid]);
   });
 
-  it("pays a pre-season invite in the season's open game where the friend earns 100 Glory", async () => {
-    const sharer = await player("preseason-sharer");
+  it("keeps the pre-season invite while only a testnet game runs, and its Glory neither pays the sharer nor uses up the friend", async () => {
+    publishGames(testnetGameName(1_801_000_000));
+    onTestFinished(() => void publishGames());
+    const sharer = await player("testnet-sharer");
     const titans = orders.find(({ fullOrderName }) => fullOrderName === "Order of Titans")!;
     await sharer.browser.request("/api/order-intent", { body: { order: titans.orderId } });
-    const made = await sharer.browser.request("/api/shares", {
-      body: { kind: "aspect", chainId: null, gameId: null, moment: titans.aspect },
-    });
-    const friend = await joinBy(((await made.json()) as { code: string }).code, "preseason-friend");
+    const made = await ownInvite(sharer);
+    const invite = (await made.json()) as { code: string };
+    expect(invite).toEqual({ code: expect.any(String), aspect: titans.aspect, chainId: null, gameId: null });
+    const friend = await joinBy(invite.code, "testnet-friend");
     relay.mockClear();
     friend.earn(100);
+    await minuteCron();
+    expect(await sharer.tally()).toMatchObject({ activated: 0, friendsPaid: 0, fragmentsEarned: 0 });
+    expect(fragmentCredits()).toEqual([]);
+    publishGames();
     await minuteCron();
     expect(await sharer.tally()).toMatchObject({ activated: 1, friendsPaid: 1, fragmentsEarned: 100 });
     expect(fragmentCredits()).toEqual([
@@ -3384,11 +3435,16 @@ describe("shared links", () => {
 
   it("counts a sharer's paid friends in the newest game that paid them, never in one whose credit still waits", async () => {
     const otherGame = gameId + 1;
+    withoutSeasonGame();
+    const sharer = await player("two-games-sharer");
+    const titans = orders.find(({ fullOrderName }) => fullOrderName === "Order of Titans")!;
+    await sharer.browser.request("/api/order-intent", { body: { order: titans.orderId } });
+    const code = await inviteCode(sharer);
     heralds.set(`${shard}/games`, {
       chain: chainId,
       games: [gameId, otherGame].map((id) => ({
         game_id: id,
-        name: "season",
+        name: seasonGameName(1_801_000_000 + id),
         mode: "frontier",
         status: "Live",
         clock: { end_at: 0 },
@@ -3398,13 +3454,6 @@ describe("shared links", () => {
       publishGames();
       heralds.delete(`${shard}/games/${otherGame}/snapshot?models=RaceMember%2CStructure`);
     });
-    const sharer = await player("two-games-sharer");
-    const titans = orders.find(({ fullOrderName }) => fullOrderName === "Order of Titans")!;
-    await sharer.browser.request("/api/order-intent", { body: { order: titans.orderId } });
-    const made = await sharer.browser.request("/api/shares", {
-      body: { kind: "aspect", chainId: null, gameId: null, moment: titans.aspect },
-    });
-    const code = ((await made.json()) as { code: string }).code;
     const first = await joinBy(code, "two-games-first");
     const third = await joinBy(code, "two-games-third");
     const second = await joinBy(code, "two-games-second");
@@ -3439,7 +3488,7 @@ describe("shared links", () => {
   it("pays nothing to a sharer who deleted their account, however late their friend earns the Glory", async () => {
     const sharer = await player("deleted-sharer");
     publishAspects(sharer.account, 4);
-    const friend = await joinBy(await inviteCode(sharer, 4), "deleted-sharer-friend");
+    const friend = await joinBy(await inviteCode(sharer), "deleted-sharer-friend");
     const user = await env.DB.prepare('SELECT * FROM "user" WHERE "realmsId" = ?').bind(sharer.realmsId).first<User>();
     await env.DB.batch(accountDeletion(env.DB, user!, sharer.realmsId, Date.now()));
     relay.mockClear();
@@ -3457,7 +3506,7 @@ describe("shared links", () => {
     const sharer = await player("inviter-havoc");
     await env.DB.prepare(`UPDATE "user" SET "name" = 'Cael' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
     publishAspects(sharer.account, 3);
-    const code = ((await (await invite(sharer, 3)).json()) as { code: string }).code;
+    const code = await inviteCode(sharer);
     const friendBrowser = createBrowser();
     await visit(friendBrowser, code);
     const friend = await player("invited-to-havoc", friendBrowser);
@@ -3477,7 +3526,7 @@ describe("shared links", () => {
     const sharer = await player("inviter-of-old-hand");
     await env.DB.prepare(`UPDATE "user" SET "name" = 'Maren' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
     publishAspects(sharer.account, 2);
-    const code = ((await (await invite(sharer, 2)).json()) as { code: string }).code;
+    const code = await inviteCode(sharer);
     const oldHand = await player("old-hand");
     expect(await (await oldHand.browser.request("/api/shares/joined")).json()).toBeNull();
     await visit(sharer.browser, code);
@@ -3490,7 +3539,7 @@ describe("shared links", () => {
     const later = await player("later-inviter-of-old-hand");
     await env.DB.prepare(`UPDATE "user" SET "name" = 'Corin' WHERE "realmsId" = ?`).bind(later.realmsId).run();
     publishAspects(later.account, 4);
-    const laterCode = ((await (await invite(later, 4)).json()) as { code: string }).code;
+    const laterCode = await inviteCode(later);
     await visit(oldHand.browser, laterCode);
     const future = `UPDATE "share_visits" SET "at" = '2099-01-01T00:00:00.000Z' WHERE "code" = ?`;
     await env.DB.prepare(future).bind(laterCode).run();
@@ -3506,7 +3555,7 @@ describe("shared links", () => {
     const sharer = await player("inviter-unfurl");
     await env.DB.prepare(`UPDATE "user" SET "name" = 'Orrin' WHERE "realmsId" = ?`).bind(sharer.realmsId).run();
     publishAspects(sharer.account, 4);
-    const code = ((await (await invite(sharer, 4)).json()) as { code: string }).code;
+    const code = await inviteCode(sharer);
     const [status, html] = await page(code);
     expect(status).toBe(200);
     expect(tag(html, "og:title")).toBe("Orrin invites you to Insight in Frontier");

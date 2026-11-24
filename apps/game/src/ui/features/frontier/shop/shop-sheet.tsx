@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { Account } from "starknet";
 import { configManager, readLaborBonus, readSeasonPass } from "@bibliothecadao/eternum";
-import { nativeFragmentConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { nativeFragmentConstants, questBonusPercent, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { FRAGMENT_CENTS, formatCharge, formatShort, MIN_FRAGMENTS } from "@bibliothecadao/types";
 import { useGame } from "@/hooks/context/game-context";
 import { notificationOwnerOf, useIdentitySessionStore } from "@/hooks/context/identity-session";
@@ -196,7 +196,7 @@ function useShopReading(
   return {
     fragments,
     pass: seal.known ? (seal.known.present ? { held: true } : { held: false, buying: sending, onBuy: buy }) : null,
-    questBonus: quest ? quest.bonus_percent - 100 : null,
+    questBonus: quest ? questBonusPercent(quest) : null,
     bonusHeld: freeBonusHolder(setup.store, realm, owner),
     bar: slice ? slice.troop_stamina_config.stamina_knight_max : null,
   };

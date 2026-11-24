@@ -1,5 +1,5 @@
-import { aspects, catalogAspectId, FRIEND_GLORY, type AspectId } from "@bibliothecadao/types";
-import { isShareChannel, isShareKind } from "@realms-world/identity";
+import { catalogAspectId, FRIEND_GLORY, type AspectId } from "@bibliothecadao/types";
+import { isDayShareKind, isShareChannel } from "@realms-world/identity";
 import type { ShareChannel, ShareMoment } from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
@@ -12,7 +12,7 @@ import { creditFragmentsOf } from "./fragment-credit";
 import { json } from "./http";
 import { intendedAspect, inviteSide } from "./order-intent";
 import { createShareStore } from "./share-store";
-import { openFrontierGames } from "./shop-game";
+import { openSeasonGames } from "./shop-game";
 import type { PendingJoin, ShareGame, SharedLink, SharePayout } from "./share-store";
 
 export interface ShareWorld {
@@ -30,7 +30,7 @@ export const shareWorldOf = (
 ): ShareWorld => ({
   db: env.DB,
   glory: (game) => gloryOn(env, fetchShard, game),
-  seasonGames: () => openFrontierGames(env, fetchShard, Math.floor(Date.now() / 1000)),
+  seasonGames: () => openSeasonGames(env, fetchShard, Math.floor(Date.now() / 1000)),
   aspectOf: (game, account) => aspectOn(env, fetchShard, game, account),
   accountOf: playerAccounts(env),
   creditFragments: (payout) => creditFragmentsOf(env)(payout),
@@ -48,28 +48,52 @@ const MOMENT_LIMIT = 10_000;
 export async function handleCreateShare(request: Request, auth: IdentityAuth, world: ShareWorld) {
   const sharer = await signedInRealmsId(request, auth);
   if (typeof sharer !== "string") return sharer;
-  const moment = readShareMoment(await request.json().catch(() => null));
+  const moment = readDayMoment(await request.json().catch(() => null));
   if (!moment) return json({ error: "invalid_share" }, 400);
-  if (moment.kind === "aspect") {
-    const refusal = await inviteRefusal(world, sharer, moment);
-    if (refusal) return refusal;
-  }
   return json({ code: await createShareStore(world.db).linkFor(sharer, moment, nowSeconds()) });
 }
 
-/** Why an invite cannot be made: Herald could not answer, or names another Aspect (or none) for its sharer. */
-const inviteRefusal = async (world: ShareWorld, sharer: string, moment: ShareMoment): Promise<Response | null> => {
-  let aspect: AspectId | null;
+export async function handleCreateInvite(request: Request, auth: IdentityAuth, world: ShareWorld) {
+  const sharer = await signedInRealmsId(request, auth);
+  if (typeof sharer !== "string") return sharer;
+  let moment: ShareMoment | null;
   try {
-    aspect =
-      moment.chainId === null
-        ? await intendedAspect(world.db, sharer)
-        : await world.aspectOf(moment, await world.accountOf(sharer));
+    moment = await ownInvite(world, sharer);
   } catch {
     return json({ error: "aspect_unavailable" }, 503);
   }
-  return aspect === moment.moment ? null : json({ error: "not_in_aspect" }, 403);
+  if (!moment) return json({ error: "no_aspect" }, 409);
+  const code = await createShareStore(world.db).linkFor(sharer, moment, nowSeconds());
+  return json({ code, aspect: moment.moment, chainId: moment.chainId, gameId: moment.gameId });
+}
+
+const ownInvite = async (world: ShareWorld, sharer: string): Promise<ShareMoment | null> => {
+  const [game] = await world.seasonGames();
+  if (!game) {
+    const aspect = await intendedAspect(world.db, sharer);
+    return aspect === null ? null : { kind: "aspect", chainId: null, gameId: null, moment: aspect };
+  }
+  const aspect = await world.aspectOf(game, await world.accountOf(sharer));
+  return aspect === null ? null : { kind: "aspect", chainId: game.chainId, gameId: game.gameId, moment: aspect };
 };
+
+export async function handleShareFriends(request: Request, auth: IdentityAuth, world: ShareWorld) {
+  const sharer = await signedInRealmsId(request, auth);
+  if (typeof sharer !== "string") return sharer;
+  const { games } = await settleShares(world, nowSeconds(), sharer);
+  const game = games[0] ?? null;
+  const store = createShareStore(world.db);
+  const glory = game ? await world.glory(game) : null;
+  const friends = await store.invitedFriends(sharer);
+  return json({
+    friends: await Promise.all(
+      friends.map(async ({ realmsId, ...friend }) => ({
+        ...friend,
+        glory: glory && (glory.get(accountKey(await world.accountOf(realmsId))) ?? 0),
+      })),
+    ),
+  });
+}
 
 /** GET /api/shares/joined: the link the signed-in account came by, its joins settled first; null for none. */
 export async function handleJoinedShare(request: Request, auth: IdentityAuth, db: D1Database) {
@@ -199,23 +223,14 @@ async function deliverSharePayouts(world: ShareWorld, games: readonly ShareGame[
   }
 }
 
-/**
- * A moment as the share sheet sends it, a day or an Aspect by its kind; null for anything else. The chain is kept in
- * one spelling, lowercase hex.
- */
-const readShareMoment = (body: unknown): ShareMoment | null => {
+const readDayMoment = (body: unknown): ShareMoment | null => {
   if (!body || typeof body !== "object") return null;
   const { kind, chainId, gameId, moment } = body as Record<string, unknown>;
-  if (!isShareKind(kind) || !isMomentOf(kind, moment)) return null;
-  if (kind === "aspect" && chainId === null && gameId === null) return { kind, chainId, gameId, moment };
+  if (!isDayShareKind(kind) || !isWholeBetween(moment, 1, MOMENT_LIMIT)) return null;
   if (!isWholeBetween(gameId, 0, Number.MAX_SAFE_INTEGER)) return null;
   const chain = chainSpelling(chainId);
   return chain ? { kind, chainId: chain, gameId, moment } : null;
 };
-
-/** A day of a season for a day's link; an Aspect of the catalog for an invite. */
-const isMomentOf = (kind: ShareMoment["kind"], moment: unknown): moment is number =>
-  kind === "aspect" ? aspects.some(({ id }) => id === moment) : isWholeBetween(moment, 1, MOMENT_LIMIT);
 
 const isWholeBetween = (value: unknown, least: number, most: number): value is number =>
   typeof value === "number" && Number.isInteger(value) && value >= least && value <= most;

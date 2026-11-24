@@ -6,7 +6,7 @@ import { loadNativePresetConfiguration } from "../../../config/deployer/clean/re
 import { buildCreateGameParams } from "../../../config/deployer/clean/registrar/preset";
 import { presetIdForEnvironment } from "../../../config/deployer/clean/constants";
 import { resolveDeploymentEnvironment } from "../../../config/deployer/clean/environment";
-import type { CreateGameRequest } from "./schemas";
+import { testnetPresetId, type CreateGameRequest } from "./schemas";
 import type { ReleaseChain } from "./release";
 import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
 import type { NativeRows } from "../../../contracts/l3/world-native/schema/client.gen";
@@ -98,7 +98,8 @@ export class LaunchShard extends ShardOperator implements ReleaseChain {
 
 function launchGameParams(request: CreateGameRequest, createdAt: number) {
   if (!request.gameStartTime) throw new Error("durable_launch_parameters_missing");
-  const presetId = presetIdForEnvironment(request.environment);
+  const presetId =
+    request.speed === undefined ? presetIdForEnvironment(request.environment) : testnetPresetId(request.speed);
   const config = applyDeploymentConfigOverrides(loadNativePresetConfiguration(request.environment, presetId), {
     startMainAt: Math.floor(Date.parse(request.gameStartTime) / 1000),
     factoryAddress: "",

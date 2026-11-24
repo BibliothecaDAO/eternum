@@ -1289,7 +1289,6 @@ export default class WorldmapScene extends WarpTravel {
       getArmyDisplayPosition: (entityId) => this.getArmyDisplayPosition(entityId),
       getStructureHexPosition: (entityId) => this.getStructureHexPosition(entityId),
     });
-    this.combatPresentationRuntime.bind();
 
     installWorldmapDebugHooks(window, {
       getProceduralArmyProductionStats: () => this.armyManager.getProceduralArmyProductionStats(),
@@ -8395,7 +8394,6 @@ export default class WorldmapScene extends WarpTravel {
       ...this.getInteractionDebugSnapshot(),
     });
     this.onSwitchOff();
-    this.combatPresentationRuntime.dispose();
     this.combatPresentation?.dispose();
     this.combatPresentation = undefined;
     this.syncUrlChangedListenerLifecycle("destroy");

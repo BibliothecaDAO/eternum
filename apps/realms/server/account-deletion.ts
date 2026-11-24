@@ -18,33 +18,6 @@ import { spendSignInCode } from "./wallet-changes";
  * (chat-inbox.ts `forgetOwner`). The request runs it at once; if it fails or the Worker stops first, the minute cron
  * finishes it from the recorded deletion (`finishAccountDeletions`). Until then the account has no session, so it opens
  * no new socket.
- *
- * | Store                                                              | Decision                                       |
- * | ------------------------------------------------------------------ | ---------------------------------------------- |
- * | `user`                                                             | anonymised: email, name, portrait, suggested   |
- * |                                                                    | name, payout wallet and visit cleared; email   |
- * |                                                                    | unverified; news emails stopped                |
- * | `session`, `account` (sign-in providers), `verification` (codes)   | deleted                                        |
- * | `notification_preferences`, `notification_push_subscriptions`      | deleted                                        |
- * | `realms_accounts`, `device_sessions`, `revoked_devices`,           | deleted: no device can be approved again       |
- * | `account_browsers`                                                 |                                                |
- * | `build_order_books`, `opening_progress`, `seal`, `news_email_sends` | deleted                                        |
- * | `fragment_credits`                                                 | deleted                                        |
- * | `store_receipts` (the payment ledger)                              | kept, its owner cleared: a receipt stays spent |
- * | `default_wallets`, `wallet_recoveries`, `sponsored_executions`     | deleted: the wallet stays on chain, owned by   |
- * |                                                                    | the player's passkey; email recovery ends      |
- * | `wallet_change_notices`                                            | deleted                                        |
- * | `ChatInbox` (direct messages, block list, rooms joined)            | emptied, and closed to new messages for good   |
- * | chat sockets (the inbox's and each room's)                         | closed                                         |
- * | `account_deletions`                                                | written: the Realms id, when, and when chat    |
- * |                                                                    | was closed                                     |
- * | `wallet_link_history`                                              | kept, its open link closed now: it says which  |
- * |                                                                    | account a wallet paid for in a past game       |
- * | `pay_decisions`                                                    | kept: the ledger's record of signed payouts    |
- * | `social_handoffs`                                                  | kept until they expire (minutes); they hold    |
- * |                                                                    | session cookies this deletion already ended    |
- * | `ChatRoom` messages, peers' `ChatInbox` copies                     | kept until 30 days old (chat/retention.ts)     |
- * | On chain: gameplay accounts, ratings by wallet, the default wallet | kept: Realms cannot delete or move them        |
  */
 export const handleAccountDeletion = async (
   request: Request,
@@ -106,7 +79,6 @@ const spendCode = async (auth: IdentityAuth, db: D1Database, user: User, otp: st
   }
 };
 
-/** Every store the account reaches by its Realms id that goes with it (the table above). */
 const DELETED_BY_REALMS_ID = [
   ["notification_preferences", "owner"],
   ["notification_push_subscriptions", "owner"],
@@ -114,7 +86,6 @@ const DELETED_BY_REALMS_ID = [
   ["device_sessions", "realmsId"],
   ["revoked_devices", "realmsId"],
   ["account_browsers", "realmsId"],
-  ["build_order_books", "owner"],
   ["opening_progress", "owner"],
   ["order_intents", "owner"],
   ["seal_grants", "owner"],

@@ -75,9 +75,11 @@ web "$CONTOUR" "$LOGOS/realms-contour.webp" 192
 magick "$LOGOS/realms-small.webp" -trim +repage -resize 84x84 -background none -gravity center -extent 96x96 \
   -channel RGB -evaluate set 100% +channel -strip "PNG32:$OUT/game-badge-96x96.png"
 # Each age's complete lockup (emblem, title and Realms stamp), with real alpha, for its painting: Play's cards.
-for age in blitz frontier eternum; do
+for age in blitz eternum; do
   web "$KIT/01-Logos/${age^}/Transparent/$age-lockup.png" "$LOGOS/$age-lockup.webp" 640
 done
+magick "$KIT/01-Logos/Frontier/Transparent/frontier-lockup.png" -trim +repage -resize 640x \
+  -crop 640x432+0+0 +repage -trim +repage -strip -quality 90 -define webp:method=6 "$LOGOS/frontier-lockup.webp"
 # The status page's header mark (40 px); that site shares no file with the app.
 web "$SMALL" "$STATUS/realms-small.webp" 160
 

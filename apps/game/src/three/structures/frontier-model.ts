@@ -8,10 +8,8 @@ import {
   Float32BufferAttribute,
   InstancedBufferAttribute,
   InstancedMesh,
-  Matrix4,
   MeshStandardMaterial,
 } from "three";
-import { beastOfModel, type BeastIdle } from "@bibliothecadao/types";
 import { MeshBasicNodeMaterial } from "three/webgpu";
 import {
   attribute,
@@ -35,21 +33,12 @@ import {
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import brandPalette from "@/brand/palette.json";
 import InstancedModel from "../managers/instanced-model";
-import type { AnimationVisibilityContext } from "../types/animation";
 import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
 import { isTripoModelMaterial } from "../materials/tripo-model-material";
 import { mapAnimationTime as time } from "../effects/endgame/state";
 import { DEEP_PALETTE } from "../terrain/deep-floor-material";
 import { createInstancedMeshWithSharedMatrices } from "../utils/create-instanced-mesh";
 import { MaterialPool } from "../utils/material-pool";
-import {
-  createBeastMotionController,
-  createBeastMotionNode,
-  encodeBeastIdle,
-  type BeastMotionAction,
-  type BeastMotionController,
-  type BeastMotionSlotState,
-} from "./beast-motion";
 import { FALLEN_REALM_RUIN_PATH, FRONTIER_BEASTS, type FrontierSpecies } from "./frontier-beast";
 import { frontierPaintedPath } from "./frontier-painted-buildings";
 
@@ -79,20 +68,16 @@ export function frontierModelKind(path: string) {
   return (Object.keys(FRONTIER_BEASTS) as FrontierSpecies[]).find((species) => FRONTIER_BEASTS[species].path === path);
 }
 
-/** GPU motion and one mist draw per ruin batch, shared by the map and its lab. */
 export class FrontierModel extends InstancedModel {
   private readonly mist?: InstancedMesh;
   private readonly embers?: InstancedMesh;
-  private readonly animatedGeometry: BufferGeometry[] = [];
-  private readonly idle: InstancedBufferAttribute;
+  private readonly layeredGeometry: BufferGeometry[] = [];
   private readonly layer: InstancedBufferAttribute;
-  private readonly motionController?: BeastMotionController;
   private disposed = false;
 
   constructor(gltf: GLTF, capacity: number, kind: "ruin" | FrontierSpecies) {
     super(gltf, capacity, false, kind, "cache");
     const slots = this.instancedMeshes[0].instanceMatrix.count;
-    this.idle = new InstancedBufferAttribute(new Float32Array(slots * 3), 3);
     this.layer = new InstancedBufferAttribute(new Float32Array(slots), 1);
     if (kind === "ruin") {
       this.mist = createInstancedMeshWithSharedMatrices(mistGeometry(), mistMaterial(), this.instancedMeshes[0]);
@@ -103,27 +88,18 @@ export class FrontierModel extends InstancedModel {
       this.mist.renderOrder = 11;
       this.group.add(this.mist);
     } else {
-      const [idleMotion, idleSpeed, idleHeight] = encodeBeastIdle(beastOfModel(kind).idle);
-      for (let i = 0; i < slots; i++) {
-        this.idle.setXYZ(i, idleMotion, idleSpeed, idleHeight);
-      }
-      this.motionController = createBeastMotionController(kind, slots);
       for (const mesh of this.instancedMeshes) {
         const previous = mesh.material as MeshStandardMaterial | FrostedStandardNodeMaterial;
-        const material = beastMaterial(previous, kind);
+        const material = beastMaterial(previous);
         mesh.material = material;
         if (material !== previous) {
           MaterialPool.getInstance().releaseMaterial(previous);
         }
         mesh.geometry = mesh.geometry.clone();
-        mesh.geometry.setAttribute("beastIdle", this.idle);
         mesh.geometry.setAttribute("beastLayer", this.layer);
-        mesh.geometry.setAttribute("beastMotion", this.motionController.attribute);
-        this.animatedGeometry.push(mesh.geometry);
+        this.layeredGeometry.push(mesh.geometry);
         mesh.geometry.computeBoundingBox();
-        mesh.geometry.boundingBox!.expandByScalar(0.32);
         mesh.geometry.computeBoundingSphere();
-        mesh.geometry.boundingSphere!.radius += 0.32;
       }
       const bounds = new Box3().setFromObject(gltf.scene);
       this.embers = createInstancedMeshWithSharedMatrices(
@@ -140,62 +116,14 @@ export class FrontierModel extends InstancedModel {
     }
   }
 
-  override setMatrixAt(index: number, matrix: Matrix4): void {
-    super.setMatrixAt(index, matrix);
-    this.motionController?.setPlacementAt(index, matrix);
-  }
-
-  setIdleAt(index: number, idle: BeastIdle): void {
-    const [motion, speed, height] = encodeBeastIdle(idle);
-    this.idle.setXYZ(index, motion, speed, height);
-    this.idle.needsUpdate = true;
-  }
-
   setLayerAt(index: number, layer: BeastLayer): void {
     this.layer.setX(index, layer);
     this.layer.needsUpdate = true;
   }
 
-  playMotionAt(index: number, action: BeastMotionAction, nowSeconds = time.value): void {
-    this.motionController?.playActionAt(index, action, nowSeconds);
-  }
-
-  getMotionStateAt(index: number, nowSeconds = time.value): BeastMotionSlotState {
-    return (
-      this.motionController?.getStateAt(index, nowSeconds) ?? {
-        action: "idle",
-        progress: 0,
-        clock: 0,
-        active: false,
-      }
-    );
-  }
-
-  override updateAnimations(deltaTime: number, visibility?: AnimationVisibilityContext): void {
-    if (this.motionController) {
-      const count = this.instancedMeshes[0]?.count ?? 0;
-      const slots: number[] = [];
-      if (visibility) {
-        for (let i = 0; i < count; i++) slots.push(i);
-      }
-      this.motionController.update(time.value, slots, visibility);
-      return;
-    }
-    super.updateAnimations(deltaTime, visibility);
-  }
-
-  override removeInstance(index: number): void {
-    super.removeInstance(index);
-    this.motionController?.resetSlot(index);
-  }
-
   override setCount(count: number): void {
-    const previous = this.instancedMeshes[0]?.count ?? 0;
     super.setCount(count);
     const next = this.instancedMeshes[0].count;
-    for (let i = next; i < previous; i++) {
-      this.motionController?.resetSlot(i);
-    }
     if (this.mist) this.mist.count = next;
     if (this.embers) this.embers.count = next;
   }
@@ -210,15 +138,13 @@ export class FrontierModel extends InstancedModel {
       (overlay.material as MeshBasicNodeMaterial).dispose();
       overlay.dispose();
     }
-    this.animatedGeometry.forEach((geometry) => geometry.dispose());
+    this.layeredGeometry.forEach((geometry) => geometry.dispose());
     super.dispose();
   }
 }
 
-function beastMaterial(source: MeshStandardMaterial | FrostedStandardNodeMaterial, species: FrontierSpecies) {
-  const displacement = createBeastMotionNode(species, float(time));
+function beastMaterial(source: MeshStandardMaterial | FrostedStandardNodeMaterial) {
   if (source instanceof FrostedStandardNodeMaterial && isTripoModelMaterial(source)) {
-    source.positionNode = positionLocal.add(displacement);
     const authoredGlow = source.emissiveMap
       ? texture(source.emissiveMap).rgb.mul(color(source.emissive)).mul(source.emissiveIntensity)
       : color(source.emissive).mul(source.emissiveIntensity);
@@ -234,7 +160,6 @@ function beastMaterial(source: MeshStandardMaterial | FrostedStandardNodeMateria
   material.roughness = source.roughness;
   material.metalness = source.metalness;
   material.side = source.side;
-  material.positionNode = positionLocal.add(displacement);
   material.emissiveNode = createBeastPhoenixGlow();
   return material;
 }

@@ -567,13 +567,13 @@ const ChipFigureSection = () => (
           <AppChip icon="people">24/24</AppChip>
           <AppChip icon="wood">1,200</AppChip>
           <AppChip icon="knight-t1">300</AppChip>
-          <AppChip icon="rating-conqueror">1,744</AppChip>
+          <AppChip icon="victory">1,744</AppChip>
           <AppChip>Ended</AppChip>
         </div>
         <div className="flex flex-wrap gap-10">
           <AppFigure icon="hourglass" value="2:03:57" label="Entry closes in" />
           <AppFigure icon="leaderboard" value="#12" label="of 1,240" tone="gold" />
-          <AppFigure icon="rating-conqueror" value="+36" label="rating" tone="good" />
+          <AppFigure icon="victory" value="+36" label="rating" tone="good" />
           <AppFigure icon="lords" value="6,878" label="LORDS" tone="gold" />
         </div>
       </div>

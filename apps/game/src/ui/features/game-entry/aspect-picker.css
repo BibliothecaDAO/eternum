@@ -68,3 +68,11 @@
   flex-direction: column;
   gap: 0.75rem;
 }
+@media (min-width: 1024px) {
+  .aspect-picker .app-aspect-card__art {
+    height: clamp(5rem, 18dvh, 13rem);
+  }
+  .aspect-picker__order {
+    min-height: clamp(5rem, 11dvh, 7.5rem);
+  }
+}

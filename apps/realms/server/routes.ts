@@ -17,7 +17,6 @@ import {
 import { ACCOUNT_CLASS_HASH, socialProvidersOf, type IdentityEnv } from "./env";
 import { json } from "./http";
 import { keepBrowser, noteBrowser } from "./browsers";
-import { handleBuildOrders } from "./build-orders";
 import { avnuQuote } from "./lords-price";
 import { handleFragmentPrice } from "./fragment-price";
 import {
@@ -32,11 +31,11 @@ import { shopAccessOf } from "./shop-game";
 import { handlePurchaseCheck, handleStoreReceipt, storeVerifiersOf } from "./store-receipts";
 import { handleOpeningProgress } from "./opening-progress";
 import { handleOrderIntent } from "./order-intent";
+import { readSeasonStart } from "./launch-calendar";
 import { handleSealCode, sealCodeWorldOf } from "./seal-codes";
 import { handleNotificationPreferences } from "./notification-preferences";
 import { handleNewsEmailOptOut, NEWS_EMAIL_OPT_OUT_PATH } from "./news-email-opt-out";
 import { handleProfile, handleProfiles } from "./profiles";
-import { handleRatings } from "./ratings";
 import { handleRatingTop } from "./rating-top";
 import { handleAccountsHealth, handleChatHealth } from "./health";
 import { handlePushSubscriptions } from "./push-notifications";
@@ -47,6 +46,8 @@ import {
   handleShareReport,
   handleSharePosted,
   handleShareTally,
+  handleCreateInvite,
+  handleShareFriends,
   handleShareVisit,
   shareWorldOf,
 } from "./shares";
@@ -115,11 +116,9 @@ export const routeIdentityRequest = async (
       accountClassHash: ACCOUNT_CLASS_HASH,
     });
   }
-  if ((pathname === "/api/ratings" || pathname === "/api/ratings/top") && request.method === "GET") {
+  if (pathname === "/api/ratings/top" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "ratings", request))) return json({ error: "too_many_requests" }, 429);
-    return pathname === "/api/ratings/top"
-      ? handleRatingTop(env, new URL(request.url))
-      : handleRatings(env, new URL(request.url));
+    return handleRatingTop(env, new URL(request.url));
   }
   if (pathname === "/api/profiles" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "profiles", request))) return json({ error: "too_many_requests" }, 429);
@@ -137,9 +136,9 @@ export const routeIdentityRequest = async (
   }
   if (pathname.startsWith("/api/chat/")) return routeChat(request, env, auth, pathname);
   if (pathname === "/api/notifications/preferences") return handleNotificationPreferences(request, auth, env.DB);
-  if (pathname === "/api/build-orders") return handleBuildOrders(request, auth, env.DB);
   if (pathname === "/api/opening") return handleOpeningProgress(request, auth, env.DB);
-  if (pathname === "/api/order-intent") return handleOrderIntent(request, auth, env.DB);
+  if (pathname === "/api/order-intent")
+    return handleOrderIntent(request, auth, env.DB, () => readSeasonStart(env.LAUNCH));
   if (pathname === "/api/seal-code") return handleSealCode(request, auth, sealCodeWorldOf(env, platform.fetchShard));
   if (pathname === "/api/shop/purchase-check")
     return handlePurchaseCheck(request, auth, { access: shopAccessOf(env, platform.fetchShard, nowSeconds) });
@@ -250,6 +249,10 @@ const routeShares = async (
   }
   if (pathname === "/api/shares" && request.method === "POST")
     return handleCreateShare(request, auth, shareWorldOf(env, platform.fetchShard));
+  if (pathname === "/api/shares/invite" && request.method === "POST")
+    return handleCreateInvite(request, auth, shareWorldOf(env, platform.fetchShard));
+  if (pathname === "/api/shares/friends" && request.method === "GET")
+    return handleShareFriends(request, auth, shareWorldOf(env, platform.fetchShard));
   if (pathname === "/api/shares/joined" && request.method === "GET") return handleJoinedShare(request, auth, env.DB);
   if (pathname === "/api/shares" && request.method === "GET")
     return handleShareTally(request, auth, shareWorldOf(env, platform.fetchShard));

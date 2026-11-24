@@ -9,8 +9,25 @@
  */
 export const API_READ_TIMEOUT_MS = 15_000;
 
-export const fetchApi = (input: string | URL, init: Omit<RequestInit, "signal"> = {}): Promise<Response> =>
-  fetch(input, isRead(init) ? { ...init, signal: timeoutSignal(API_READ_TIMEOUT_MS) } : init);
+const errorNameOf = (error: unknown): string | null =>
+  typeof error === "object" && error !== null && "name" in error && typeof error.name === "string" ? error.name : null;
+
+const isTimeoutOrAbort = (error: unknown): boolean => {
+  const name = errorNameOf(error);
+  if (name === "TimeoutError" || name === "AbortError") return true;
+  return typeof error === "object" && error !== null && "cause" in error && isTimeoutOrAbort(error.cause);
+};
+
+export const retryTransientRead = (failureCount: number, error: unknown): boolean =>
+  failureCount < 1 && !isTimeoutOrAbort(error);
+
+const readSignal = (signal: AbortSignal | null | undefined) => {
+  const timeout = timeoutSignal(API_READ_TIMEOUT_MS);
+  return signal ? AbortSignal.any([signal, timeout]) : timeout;
+};
+
+export const fetchApi = (input: string | URL, init: RequestInit = {}): Promise<Response> =>
+  fetch(input, isRead(init) ? { ...init, signal: readSignal(init.signal) } : init);
 
 const isRead = (init: RequestInit) => (init.method ?? "GET").toUpperCase() === "GET";
 

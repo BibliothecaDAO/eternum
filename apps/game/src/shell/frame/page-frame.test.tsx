@@ -1,12 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { createRoutesFromChildren, MemoryRouter, Routes, type RouteObject } from "react-router-dom";
+import { createRoutesFromChildren, MemoryRouter, Routes, useLocation, type RouteObject } from "react-router-dom";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { appRoutes, RETIRED_PATHS } from "@/app";
+import { appRoutes, RETIRED_REDIRECTS } from "@/app";
+import { FRAGMENTS_PATH } from "@/shell/shop/fragments-route";
 
 import { REALMS_MARK } from "@/ui/design-system/icon-meaning";
 
@@ -37,7 +38,7 @@ const CONTROLS = "a[href], button, input, select, textarea";
  */
 const shellPaths = (): string[] => {
   const shell = createRoutesFromChildren(appRoutes).find((route) => route.path === undefined) as RouteObject;
-  const retired: readonly string[] = RETIRED_PATHS;
+  const retired: readonly string[] = RETIRED_REDIRECTS.map(([path]) => path);
   return (shell.children ?? [])
     .map((route) => (route.index ? "/" : `/${route.path}`.replace("*", "nothing-here").replace(/:\w+/, "0x111")))
     .filter((path) => !retired.includes(path));
@@ -105,15 +106,14 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
       expect(bandOrder(container).filter((name) => name !== "body" && name !== "footer")).toEqual(
         ["top", "notice", "foot", "tabs"].filter((name) => band(container, name)),
       );
-      expect(controlsIn(band(container, "tabs")).filter((control) => control.dataset.role === "tab")).toHaveLength(4);
+      expect(controlsIn(band(container, "tabs")).filter((control) => control.dataset.role === "tab")).toHaveLength(5);
     } else {
-      // One bar across the top: the lockup as a mark, then the four places and nothing else, above every other band.
       expect(top).toBeNull();
       const bar = band(container, "bar");
       expect(bandOrder(container)[0]).toBe("bar");
       expect(bar!.querySelector('[data-role="lockup"]')!.matches(CONTROLS)).toBe(false);
       const controls = controlsIn(bar);
-      expect(controls.map((control) => control.dataset.role)).toEqual(["tab", "tab", "tab", "tab"]);
+      expect(controls.map((control) => control.dataset.role)).toEqual(["tab", "tab", "tab", "tab", "tab"]);
       expect(band(container, "tabs")).toBeNull();
     }
   });
@@ -122,7 +122,7 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
 describe("a phone's top row", () => {
   it.each([
     ["/season", null],
-    ["/profile/settings", "Settings"],
+    ["/profile/settings", null],
     ["/scroll", "What's new"],
   ])("on %s names the page by its title, a place by the lockup", async (path, title) => {
     setViewportWidth(390);
@@ -173,7 +173,7 @@ describe.each(SIZES)("the current place at %i × %i", (width) => {
       (tab) => tab.textContent,
     );
 
-  it.each(["/terms", "/privacy", "/credits"])(
+  it.each(["/terms", "/privacy", "/credits", "/scroll"])(
     "marks no place current on %s, read from the footer (qa-app-1 P3-3)",
     async (path) => {
       setViewportWidth(width);
@@ -181,10 +181,9 @@ describe.each(SIZES)("the current place at %i × %i", (width) => {
     },
   );
 
-  // What's new is read from You, so You is the place lit there.
-  it("marks You current on the patch notes", async () => {
+  it("marks Shop current on /shop", async () => {
     setViewportWidth(width);
-    expect(current(await renderPath("/scroll"))).toEqual(["You"]);
+    expect(current(await renderPath("/shop"))).toEqual(["Shop"]);
   });
 });
 
@@ -254,4 +253,28 @@ describe("the app's frame sizes itself to the visible screen", () => {
     const offenders = ROOTS.flatMap(sources).filter((path) => VIEWPORT_HEIGHT.test(readFileSync(path, "utf8")));
     expect(offenders).toEqual([]);
   });
+});
+
+it("redirects /shop/fragments to FRAGMENTS_PATH while preserving query parameters", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  let seen = { pathname: "", search: "", hash: "" };
+  const Probe = () => {
+    const { pathname, search, hash } = useLocation();
+    seen = { pathname, search, hash };
+    return null;
+  };
+  const container = document.createElement("div");
+  document.body.replaceChildren(container);
+  root = createRoot(container);
+  await act(async () =>
+    root!.render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={["/shop/fragments?chain=0x1&game=1&next=%2Fg%2F0x1%2F1"]}>
+          <Probe />
+          <Routes>{appRoutes}</Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    ),
+  );
+  expect(seen).toEqual({ pathname: FRAGMENTS_PATH, search: "?chain=0x1&game=1&next=%2Fg%2F0x1%2F1", hash: "" });
 });

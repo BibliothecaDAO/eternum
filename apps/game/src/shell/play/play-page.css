@@ -11,9 +11,12 @@
   gap: theme(spacing.4);
 }
 
-.play-side .app-age-column {
-  min-height: 11rem;
-  flex: 1;
+.play-result-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .play-hero {
@@ -59,7 +62,16 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1.5rem 1.25rem 0.5rem;
+  gap: 0.75rem;
+  padding: 1.25rem 1.25rem 0.5rem;
+}
+
+.play-hero__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
 }
 
 .play-hero__title {
@@ -68,9 +80,8 @@
 
 .play-hero__lockup {
   display: block;
-  width: auto;
-  height: 10.25rem;
-  object-fit: contain;
+  width: min(17rem, 72vw);
+  height: auto;
   filter: drop-shadow(0 8px 24px rgb(0 0 0 / 0.7));
 }
 
@@ -148,70 +159,33 @@
   width: 100%;
 }
 
-.play-aspects {
+.play-aspects-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: theme(spacing.2);
-}
-
-.play-aspect {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  border: 1px solid rgb(var(--app-aspect) / 0.4);
-  border-radius: var(--app-radius-control);
-  background: var(--app-well);
-  padding: 0.65rem 0.4rem;
-  text-align: center;
-}
-
-.play-aspect__tower {
-  display: flex;
-  height: 4.5rem;
-  width: 100%;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 0 0.5rem;
-}
-
-.play-aspect__column {
-  width: 100%;
-  max-width: 2.5rem;
-  border-radius: 6px 6px 2px 2px;
-  background: linear-gradient(180deg, rgb(var(--app-aspect)), rgb(var(--app-aspect) / 0.28));
-  box-shadow: 0 0 14px rgb(var(--app-aspect) / 0.3);
-}
-
-.play-aspect__name {
-  font-family: var(--app-face-title);
-  font-size: 0.75rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgb(var(--app-aspect));
-}
-
-.play-aspect__height {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.1rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.play-aspect__count {
-  font-size: var(--app-text-label);
-  font-weight: 700;
-  color: var(--app-ink);
-}
-
-.play-aspect__goal {
-  font-size: 0.6875rem;
-  color: var(--app-muted);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: theme(spacing.2.5);
 }
 
 .play-today {
-  display: none;
+  display: flex;
+}
+
+.play-invite {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.play-rehearsal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.play-invite__text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .play-today__quest {
@@ -270,363 +244,389 @@
   background: linear-gradient(90deg, rgb(var(--app-gold)), var(--gold2));
 }
 
-.preseason-pick {
-  display: flex;
+.preseason-grid {
+  display: grid;
   width: 100%;
-  flex: 1;
-  min-height: calc(100dvh - 12.25rem);
-  flex-direction: column;
-  gap: 0.625rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
 }
 
-.preseason-pick__head {
+.preseason-hero {
   display: flex;
+  min-width: 0;
   flex-direction: column;
-  gap: 0.15rem;
-  text-align: left;
-}
-
-.preseason-pick__title {
-  margin: 0;
-  font-family: var(--app-face-title);
-  font-size: clamp(1.5rem, 3vw, 2.35rem);
-  line-height: 1.1;
-  color: var(--gold2);
-}
-
-.preseason-pick .app-aspect-grid {
-  flex: 1;
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-  gap: 0.625rem;
-  padding-top: 0;
-}
-
-.preseason-pick .app-aspect-grid > li {
-  display: flex;
-  min-height: 0;
-}
-
-.preseason-pick .app-aspect-card {
-  position: relative;
-  height: 100%;
-  min-height: 13.25rem;
-  justify-content: flex-end;
-  border: 1.5px solid var(--app-line);
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid var(--app-line-strong);
   border-radius: var(--app-radius-panel);
-  background: var(--app-ground);
-  box-shadow: 0 12px 28px rgb(0 0 0 / 0.5);
-}
-
-.preseason-pick .app-aspect-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
   background: linear-gradient(
     180deg,
-    transparent 34%,
-    color-mix(in srgb, var(--app-ground) 72%, transparent) 66%,
-    color-mix(in srgb, var(--app-ground) 96%, transparent) 100%
+    color-mix(in srgb, var(--app-surface-2) 86%, transparent),
+    color-mix(in srgb, var(--app-surface) 94%, transparent)
   );
+  padding: 1.25rem 1rem;
+  text-align: center;
+  box-shadow: var(--app-shadow-panel);
 }
 
-.preseason-pick .app-aspect-card__art {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 22%;
-  mask-image: none;
-}
-
-.preseason-pick .app-aspect-card__body {
-  position: relative;
-  z-index: 2;
-  flex: 0 0 auto;
-  justify-content: flex-end;
-  gap: 0.4rem;
-  padding: 0.75rem 0.6rem 0.8rem;
-}
-
-.preseason-pick .app-aspect-card[aria-pressed="true"] {
-  border: 2px solid rgb(var(--app-gold));
-  box-shadow:
-    0 0 0 1px rgb(var(--app-gold) / 0.55),
-    0 18px 40px rgb(0 0 0 / 0.65);
-}
-
-.preseason-pick .app-aspect-card__name {
-  font-family: var(--app-face-title);
-  font-size: 1.35rem;
-  line-height: 1.1;
-  letter-spacing: 0.04em;
-  color: rgb(var(--app-aspect, var(--app-gold)));
-  text-shadow: 0 2px 12px rgb(0 0 0 / 0.85);
-}
-
-.preseason-pick .app-aspect-card__name > img {
-  display: none;
-}
-
-.preseason-card__meta {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding-top: 0.15rem;
-  font-size: var(--app-text-label);
-  color: var(--app-ink);
-}
-
-.preseason-card__members {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.preseason-card__lords {
-  display: none;
-  align-items: center;
-  gap: 0.3rem;
-  font-weight: 600;
-  color: var(--gold2);
-}
-
-.preseason-pick__pool {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  line-height: 1.3;
-  color: var(--app-muted);
-}
-
-.preseason-pick__orders {
+.preseason-hero__brand {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 0.625rem;
 }
 
-.countdown-stage {
-  display: flex;
-  width: 100%;
-  flex: 1;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 1.25rem;
-}
-
-.countdown-stage__head {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.875rem;
-  text-align: center;
-}
-
-.countdown-stage__hero {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.countdown-stage__lockup {
+.preseason-hero__lockup {
   display: block;
   width: auto;
-  height: clamp(7rem, 18dvh, 10rem);
+  height: clamp(4.5rem, 11dvh, 6.75rem);
   object-fit: contain;
   filter: drop-shadow(0 8px 24px rgb(0 0 0 / 0.65));
 }
 
-.countdown-stage__clock {
+.preseason-hero__title {
   margin: 0;
   font-family: var(--app-face-title);
-  font-size: clamp(2rem, 6vw, 4rem);
-  line-height: 1.05;
-  letter-spacing: 0.08em;
-  font-variant-numeric: tabular-nums;
-  color: var(--gold2);
-  text-shadow: 0 4px 20px rgb(0 0 0 / 0.65);
-}
-
-.countdown-stage__meta {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.countdown-stage__title {
-  margin: 0;
-  font-family: var(--app-face-title);
-  font-size: clamp(1.35rem, 2.5vw, 1.85rem);
-  line-height: 1.2;
+  font-size: clamp(1.35rem, 2.5vw, 1.9rem);
+  line-height: 1.15;
   color: var(--app-ink);
 }
 
-.countdown-aspects {
-  display: grid;
-  width: 100%;
-  flex: 1;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: theme(spacing.3);
+.preseason-hero__line {
+  margin: 0;
+  max-width: 34rem;
 }
 
-.countdown-aspect {
-  position: relative;
+.countdown-clock {
   display: flex;
-  min-height: 13.5rem;
-  flex-direction: column;
-  justify-content: flex-end;
-  overflow: hidden;
-  border: 1.5px solid rgb(var(--app-aspect) / 0.55);
-  border-radius: var(--app-radius-panel);
-  background: var(--app-ground);
-  box-shadow: 0 12px 28px rgb(0 0 0 / 0.5);
-}
-
-.countdown-aspect::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    transparent 38%,
-    color-mix(in srgb, var(--app-ground) 72%, transparent) 72%,
-    color-mix(in srgb, var(--app-ground) 96%, transparent) 100%
-  );
-}
-
-.countdown-aspect__art {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 22%;
+  max-width: 28rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
 }
 
-.countdown-aspect__foot {
-  position: relative;
-  z-index: 2;
+.countdown-clock__box {
   display: flex;
+  min-width: 0;
+  flex: 1 1 0;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.75rem 0.625rem 0.9rem;
+  gap: 0.2rem;
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  padding: 0.65rem 0.25rem;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
 
-.countdown-aspect__name {
+.countdown-clock__value {
   font-family: var(--app-face-title);
-  font-size: 1.35rem;
-  line-height: 1.15;
-  color: rgb(var(--app-aspect));
-  text-shadow: 0 2px 12px rgb(0 0 0 / 0.85);
+  font-size: clamp(1.5rem, 6vw, 2.75rem);
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold2);
+  text-shadow: 0 3px 16px rgb(0 0 0 / 0.6);
 }
 
-.waiting-stage {
+.countdown-clock__unit {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--app-muted);
+}
+
+.countdown-clock__sep {
+  flex: none;
+  font-family: var(--app-face-title);
+  font-size: clamp(1.25rem, 4vw, 2rem);
+  line-height: 1;
+  color: var(--app-muted);
+  padding-bottom: 0.9rem;
+}
+
+.preseason-testnet {
   display: flex;
   width: 100%;
-  flex: 1;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 1.25rem;
-}
-
-.waiting-stage__top {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  text-align: center;
-}
-
-.waiting-stage__brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.waiting-stage__badge {
-  display: flex;
-  width: 100%;
   align-items: center;
   gap: 0.875rem;
-  border: 1.5px solid rgb(var(--app-aspect, var(--app-gold)) / 0.65);
-  border-radius: var(--app-radius-panel);
+  border: 1px solid rgb(var(--app-gold) / 0.45);
+  border-radius: var(--app-radius-control);
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--app-surface-2) 94%, transparent),
-    color-mix(in srgb, var(--app-surface) 96%, transparent)
+    color-mix(in srgb, rgb(var(--app-gold)) 10%, var(--app-surface-2)),
+    color-mix(in srgb, var(--app-well) 96%, transparent)
   );
-  padding: 1rem 1.125rem;
-  box-shadow: 0 10px 26px rgb(0 0 0 / 0.45);
+  padding: 1rem;
 }
 
-.waiting-stage__title {
-  margin: 0;
-  font-family: var(--app-face-title);
-  font-size: clamp(1.35rem, 2.5vw, 1.75rem);
-  line-height: 1.15;
-  color: var(--gold2);
-}
-
-.waiting-stage__aspects {
-  display: grid;
-  width: 100%;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.preseason-testnet__head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 0.5rem;
 }
 
-.waiting-stage__aspect {
+.preseason-testnet__head > p {
+  margin: 0;
+  max-width: 30rem;
+}
+
+.preseason-testnet__actions {
   display: flex;
+  width: 100%;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius-control);
-  background: var(--app-well);
-  padding: 0.75rem 0.4rem;
-  text-align: center;
-  opacity: 0.72;
+  gap: 0.4rem;
 }
 
-.waiting-stage__aspect[data-chosen] {
-  border-color: rgb(var(--app-gold));
+.preseason-testnet__actions .app-button {
+  width: 100%;
+}
+
+.preseason-side {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.preseason-card-body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.875rem;
+  text-align: left;
+}
+
+.preseason-card-body > p {
+  margin: 0;
+}
+
+.preseason-aspects {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.625rem;
+}
+
+.preseason-aspects > li {
+  display: flex;
+  min-width: 0;
+}
+
+.preseason-aspect-tile {
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-color: rgb(var(--app-aspect) / 0.42);
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, rgb(var(--app-aspect)) 18%, var(--app-surface-2)),
-    color-mix(in srgb, var(--app-surface) 96%, transparent)
+    color-mix(in srgb, rgb(var(--app-aspect)) 10%, var(--app-surface-2)),
+    color-mix(in srgb, var(--app-well) 96%, transparent)
   );
-  box-shadow: 0 0 0 1px rgb(var(--app-gold) / 0.35);
-  opacity: 1;
+  padding: 0.7rem 0.75rem;
+  text-align: left;
+  cursor: pointer;
 }
 
-.waiting-stage__aspect-name {
+.preseason-aspect-tile:hover,
+.preseason-aspect-tile:focus-visible {
+  border-color: rgb(var(--app-aspect) / 0.85);
+}
+
+.preseason-aspect-tile[aria-pressed="true"] {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, rgb(var(--app-aspect)) 20%, var(--app-surface-2)),
+    color-mix(in srgb, var(--app-surface) 96%, transparent)
+  );
+}
+
+.preseason-aspect-tile__head {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.45rem;
+}
+
+.preseason-aspect-tile__name {
+  min-width: 0;
+  flex: 1 0 auto;
   font-family: var(--app-face-title);
-  font-size: 0.75rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 1.05rem;
+  line-height: 1.15;
   color: rgb(var(--app-aspect));
 }
 
-.waiting-stage__cards {
-  display: grid;
+.preseason-aspect-tile__joined {
+  flex: none;
+  border: 1px solid rgb(var(--app-gold) / 0.65);
+  border-radius: var(--app-radius-round);
+  background: rgb(var(--app-gold) / 0.16);
+  padding: 0.1rem 0.45rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--gold2);
+}
+
+.preseason-aspect-tile__invited {
+  display: inline-flex;
+  align-self: flex-start;
+  border: 1px solid rgb(var(--app-aspect) / 0.55);
+  border-radius: var(--app-radius-round);
+  background: rgb(var(--app-aspect) / 0.14);
+  padding: 0.1rem 0.45rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.preseason-aspect-tile__foot {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.4rem;
+}
+
+.preseason-aspect-tile__order {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: var(--app-text-label);
+  color: var(--app-ink);
+}
+
+.preseason-aspect-tile__orders {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.preseason-aspect-tile__members {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--app-text-label);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-muted);
+}
+
+.preseason-invite-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border-top: 1px solid var(--app-line);
+  padding-top: 0.875rem;
+}
+
+.preseason-invite-strip__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+}
+
+.preseason-invite-strip__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.preseason-invite-strip__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.preseason-invite-strip__row > p {
+  margin: 0;
+}
+
+.preseason-orders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.seal-disclosure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  border-top: 1px solid var(--app-line);
+  padding-top: 0.75rem;
+}
+
+.seal-disclosure--held {
+  flex-direction: row;
+  align-items: center;
+  border: 1.5px solid rgb(var(--app-gold));
+  border-radius: var(--app-radius-control);
+  padding: 0.65rem 0.8rem;
+}
+
+.seal-disclosure__held-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.seal-disclosure__toggle {
+  display: flex;
   width: 100%;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.875rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.seal-disclosure__toggle:hover,
+.seal-disclosure__toggle:focus-visible {
+  border-color: var(--app-line-strong);
+}
+
+.seal-disclosure__lead {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.seal-disclosure__action {
+  flex: none;
+  font-size: var(--app-text-label);
+  font-weight: 700;
+  color: var(--gold2);
+}
+
+.seal-disclosure__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.15rem;
+}
+
+.seal-disclosure__body > p {
+  margin: 0;
 }
 
 [data-seal-code="held"] {
@@ -640,7 +640,6 @@
 
 @media (min-width: 1024px) {
   .play-grid {
-    min-height: calc(100dvh - var(--app-bar) - 3.5rem);
     grid-template-columns: minmax(0, 1.45fr) minmax(24rem, 1fr);
     align-items: stretch;
     gap: theme(spacing.6);
@@ -648,20 +647,20 @@
 
   .play-side {
     height: 100%;
+    justify-content: flex-start;
+  }
+
+  .play-invite,
+  .play-rehearsal {
+    flex-direction: row;
+    align-items: center;
     justify-content: space-between;
   }
 
-  .play-today {
-    display: flex;
-  }
-
-  .play-aspect__tower {
-    height: 8.5rem;
-  }
-
   .play-hero {
-    min-height: 100%;
-    padding: 2.5rem 2.75rem;
+    min-height: min(36rem, calc(100dvh - var(--app-bar) - 3.5rem));
+    max-height: calc(100dvh - var(--app-bar) - 3.5rem);
+    padding: clamp(1.25rem, 2.5dvh, 2.25rem) clamp(1.5rem, 2.5vw, 2.5rem);
   }
 
   .play-hero__scrim {
@@ -681,8 +680,12 @@
     gap: 1rem;
   }
 
+  .play-hero__badges {
+    justify-content: flex-start;
+  }
+
   .play-hero__lockup {
-    height: 13.5rem;
+    width: min(21rem, 28vw);
   }
 
   .play-hero__plate {
@@ -697,81 +700,45 @@
 
   .play-hero__verb .app-button {
     width: auto;
-    min-width: 16rem;
+    min-width: 12rem;
   }
 
-  .preseason-pick {
-    min-height: calc(100dvh - var(--app-bar) - 9rem);
-    gap: 1rem;
+  .preseason-grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(23rem, 1fr);
+    gap: 1.5rem;
+    align-items: start;
   }
 
-  .preseason-pick .app-aspect-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-template-rows: minmax(0, 1fr);
+  .preseason-hero {
+    padding: clamp(1.5rem, 3dvh, 2.25rem) clamp(1.5rem, 2.5vw, 2.25rem);
     gap: 1.25rem;
   }
 
-  .preseason-pick .app-aspect-card {
-    min-height: 38rem;
+  .preseason-hero__lockup {
+    height: clamp(5.5rem, 12dvh, 7.5rem);
   }
 
-  .preseason-pick .app-aspect-card__body {
-    gap: 0.75rem;
-    padding: 1rem 1.25rem 1.35rem;
+  .countdown-clock {
+    max-width: 31rem;
+    gap: 0.5rem;
   }
 
-  .preseason-pick .app-aspect-card__name {
-    font-size: 2.1rem;
+  .countdown-clock__box {
+    padding: 0.85rem 0.5rem;
   }
 
-  .preseason-card__meta {
-    justify-content: space-between;
-    border-top: 1px solid color-mix(in srgb, var(--app-line) 70%, transparent);
-    padding-top: 0.65rem;
+  .countdown-clock__value {
+    font-size: clamp(2rem, 3.2vw, 3.25rem);
   }
 
-  .preseason-card__lords {
-    display: inline-flex;
+  .preseason-testnet__actions .app-button {
+    width: auto;
+    min-width: 15rem;
   }
 
-  .countdown-stage__head,
-  .waiting-stage__top {
+  .preseason-invite-strip__row {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    text-align: left;
-  }
-
-  .countdown-stage__hero,
-  .waiting-stage__brand,
-  .countdown-stage__meta {
-    align-items: flex-start;
-  }
-
-  .waiting-stage__badge {
-    width: auto;
-    min-width: 24rem;
-  }
-
-  .waiting-stage__cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .countdown-aspects {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: theme(spacing.5);
-  }
-
-  .countdown-aspect {
-    min-height: 29rem;
-  }
-
-  .countdown-aspect__foot {
-    padding: 1rem 1.25rem 1.35rem;
-    gap: 0.65rem;
-  }
-
-  .countdown-aspect__name {
-    font-size: 1.9rem;
   }
 }

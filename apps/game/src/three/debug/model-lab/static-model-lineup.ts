@@ -9,7 +9,6 @@ import { configureRendererColorOutput } from "../../renderer-color-output";
 import { gltfLoader } from "../../utils/utils";
 import { ModelLabEnvironment } from "./model-lab-environment";
 import { readModelLabSettings } from "./model-lab-settings";
-import type { BeastIdle } from "@bibliothecadao/types";
 import { FrontierModel, frontierModelKind } from "../../structures/frontier-model";
 import { RewardTileModel } from "../../rewards/reward-tile-model";
 import { SettlementModel } from "../../structures/settlement-model";
@@ -24,7 +23,7 @@ import {
 export interface LineupAsset {
   label: string;
   position?: { x: number; z: number };
-  parts: readonly { path: string; scale?: number; z?: number; y?: number; idle?: BeastIdle }[];
+  parts: readonly { path: string; scale?: number; z?: number; y?: number }[];
 }
 export interface LineupSettings {
   distance: number;
@@ -211,7 +210,6 @@ export async function mountStaticLineup(
           index,
         });
         batch.model.setCount(batch.count);
-        if (part.idle && batch.model instanceof FrontierModel) batch.model.setIdleAt(index, part.idle);
       }
     }
     update(settings);

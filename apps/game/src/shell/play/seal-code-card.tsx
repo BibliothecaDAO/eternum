@@ -1,22 +1,58 @@
-import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 
-import { identityClient } from "@/hooks/context/identity-session";
-import { sealCodeKey, useRedeemSealCode } from "./seal-code";
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppField } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { SEAL_CODE_WORDS } from "@/ui/design-system/kit/words";
 
-export const SealCodeCard = ({ owner }: { owner: string | null }) => {
-  const held = useQuery({ queryKey: sealCodeKey(owner), queryFn: () => identityClient.getSealCode() });
+import { useRedeemSealCode, useSealCode } from "./seal-code";
+
+export const SealCodeCard = ({ owner, compact = false }: { owner: string | null; compact?: boolean }) => {
+  const held = useSealCode(owner);
   if (held.isError) return <ServiceFailure service="season" error={held.error} retry={() => void held.refetch()} />;
   if (!held.data) return null;
+  if (compact) return <CompactSealDisclosure owner={owner} held={held.data.held} />;
   return (
     <section data-seal-code={held.data.held ? "held" : "open"} className="app-well w-full gap-3 p-4 text-left">
       <SealHeading held={held.data.held} />
       {!held.data.held && <RedeemForm owner={owner} />}
     </section>
+  );
+};
+
+const CompactSealDisclosure = ({ owner, held }: { owner: string | null; held: boolean }) => {
+  const [expanded, setExpanded] = useState(false);
+  if (held)
+    return (
+      <div data-seal-code="held" className="seal-disclosure seal-disclosure--held">
+        <Icon name="final-seal" size={24} />
+        <div className="seal-disclosure__held-text">
+          <span className="text-app-strong text-app-ink">{SEAL_CODE_WORDS.held}</span>
+          <span className="text-app-label text-app-muted">{SEAL_CODE_WORDS.heldLine}</span>
+        </div>
+      </div>
+    );
+  return (
+    <div data-seal-code="open" className="seal-disclosure">
+      <button
+        type="button"
+        className="seal-disclosure__toggle"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((open) => !open)}
+      >
+        <span className="seal-disclosure__lead">
+          <Icon name="final-seal" size={22} />
+          <span className="text-app-label text-app-ink">{SEAL_CODE_WORDS.haveCode}</span>
+        </span>
+        <span className="seal-disclosure__action">{SEAL_CODE_WORDS.redeem}</span>
+      </button>
+      {expanded && (
+        <div className="seal-disclosure__body">
+          <p className="text-app-label text-app-muted">{SEAL_CODE_WORDS.line}</p>
+          <RedeemForm owner={owner} />
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -56,7 +92,7 @@ const RedeemForm = ({ owner }: { owner: string | null }) => {
           />
         </span>
         <AppButton
-          kind="primary"
+          kind="secondary"
           type="submit"
           disabled={code.trim() === ""}
           busy={redeem.isPending ? SEAL_CODE_WORDS.redeeming : undefined}

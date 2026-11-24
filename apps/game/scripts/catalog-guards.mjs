@@ -237,9 +237,7 @@ export const planCatalogBaseline = (counts, baseline, { lowering = false } = {})
     lowering && additions.length === 0 && removals.length > 0
       ? Object.fromEntries(files.map((file) => [file, counts[file] ?? 0]).filter(([, count]) => count > 0))
       : undefined;
-  // A removal still asks for the baseline to be lowered unless this run lowers it.
-  const unlowered = write ? [] : removals;
-  return { additions, unlowered, write };
+  return { additions, write };
 };
 
 /** The guard as a flat-config block, for lint-guards.mjs and the test alike. */

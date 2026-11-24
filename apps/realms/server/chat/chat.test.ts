@@ -1,5 +1,6 @@
 import { beforeAll, expect, it } from "vitest";
 import { encodeChainName } from "@realms-world/chain";
+import { aspectChatRoom } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { response as abiResponse } from "../../../../packages/value-ledger/test-support/abi";
 import { ledgerAbi, ledgerCall } from "../../../../packages/value-ledger/test-support/ledger-abi";
@@ -351,6 +352,96 @@ it("lets two players chat in their Blitz room, keeps its history, survives evict
   secondInbox.socket!.send(JSON.stringify({ type: "direct:read", payload: { ...receipt, extra: "strip" } }));
   await waitUntil(() => ofType(inbox.received, "direct:read").length > 0, 5_000);
   expect(ofType(inbox.received, "direct:read")).toEqual([{ type: "direct:read", receipt }]);
+
+  await worker.dispose();
+}, 120_000);
+
+it("gives each Aspect of a Season game its room, read and written by its members only", async () => {
+  const room = aspectChatRoom(CHAIN_ID, 1, 2);
+  const aspectOf = new Map([
+    ["0xa1", 2],
+    ["0xb2", 2],
+    ["0xc3", 3],
+  ]);
+  const worker = await startWorker({
+    bundle,
+    storage: newStorage(),
+    vapid: await vapidKeys(),
+    outbound: (request) => {
+      const url = new URL(request.url);
+      if (url.origin === SHARD && url.pathname === "/games")
+        return Response.json({
+          chain: CHAIN_ID,
+          confirmed_block: 1,
+          games: [
+            { game_id: 1, name: "season", mode: "frontier", status: "Live", player_state: null },
+            { game_id: 2, name: "unread", mode: "frontier", status: "Live", player_state: null },
+          ],
+        });
+      if (url.origin === SHARD && url.pathname === "/games/1/snapshot") {
+        const owner = url.searchParams.get("owner") ?? "";
+        const aspect = aspectOf.get(owner);
+        return Response.json({
+          game_id: "1",
+          confirmed_block: 1,
+          models: [
+            { model: "Structure", rows: aspect ? [{ key: "7", value: { entity_id: "7", owner } }] : [] },
+            { model: "HomeAspect", rows: aspect ? [{ key: "7", value: { game_id: 1, home: "7", aspect } }] : [] },
+          ],
+        });
+      }
+      return new Response("unexpected", { status: 599 });
+    },
+  });
+  await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
+  await worker.db
+    .prepare(`INSERT INTO "shards" ("slot", "url", "chainId") VALUES (1, ?, ?)`)
+    .bind(SHARD, CHAIN_ID)
+    .run();
+  const [first, second, rival] = [await signIn(worker), await signIn(worker), await signIn(worker)];
+  for (const [player, address] of [
+    [first, "0xa1"],
+    [second, "0xb2"],
+    [rival, "0xc3"],
+  ] as const) {
+    await worker.db
+      .prepare(`INSERT INTO "realms_accounts" ("address", "realmsId") VALUES (?, ?)`)
+      .bind(address, player.realmsId)
+      .run();
+  }
+
+  const inbox = await connect(worker, first.cookie, "/api/chat/inbox");
+  await waitUntil(() => ofType(inbox.received, "connected").length > 0, 5_000);
+  expect(ofType(inbox.received, "connected")[0]!.channels).toEqual(["world:global", room]);
+  const rivalInbox = await connect(worker, rival.cookie, "/api/chat/inbox");
+  await waitUntil(() => ofType(rivalInbox.received, "connected").length > 0, 5_000);
+  expect(ofType(rivalInbox.received, "connected")[0]!.channels).toEqual([
+    "world:global",
+    aspectChatRoom(CHAIN_ID, 1, 3),
+  ]);
+
+  expect((await connect(worker, rival.cookie, `/api/chat/rooms/${encodeURIComponent(room)}`)).status).toBe(403);
+  const one = await connect(worker, first.cookie, `/api/chat/rooms/${encodeURIComponent(room)}`);
+  const two = await connect(worker, second.cookie, `/api/chat/rooms/${encodeURIComponent(room)}`);
+  await waitUntil(() => ofType(one.received, "presence:update").length > 0, 5_000);
+  one.socket!.send(
+    JSON.stringify({
+      type: "world:publish",
+      zoneId: room,
+      payload: { zoneId: room, content: "hold the spire" },
+      clientMessageId: "spire",
+    }),
+  );
+  await waitUntil(() => ofType(two.received, "world:message").length > 0, 5_000);
+  expect(ofType(two.received, "world:message")[0]!.message).toMatchObject({ content: "hold the spire" });
+  const history = (cookie: string) =>
+    worker.mf.dispatchFetch(`${ORIGIN}/api/chat/world?zoneId=${encodeURIComponent(room)}`, { headers: { cookie } });
+  expect((await history(rival.cookie)).status).toBe(403);
+  const read = (await (await history(second.cookie)).json()) as { messages: { content: string }[] };
+  expect(read.messages.map((message) => message.content)).toEqual(["hold the spire"]);
+  expect(
+    (await connect(worker, first.cookie, `/api/chat/rooms/${encodeURIComponent(`aspect:${CHAIN_ID}:1:9`)}`)).status,
+  ).toBe(400);
 
   await worker.dispose();
 }, 120_000);

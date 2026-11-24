@@ -1,40 +1,18 @@
-import "./doorway-screen.css";
-
-import { aspectName, type AspectId } from "@bibliothecadao/types";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useLayout } from "@/shell/frame/layout";
 import { PageFrame } from "@/shell/frame/page-frame";
-import { gamePainting, modeLabel } from "@/shell/game-links";
-import type { DirectoryGame } from "@/shell/herald";
+import { gamePainting } from "@/shell/game-links";
 import { DEVICES_PATH } from "@/shell/profile/settings-route";
-import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
-import { AGE_LOCKUP, REALMS_MARK } from "@/ui/design-system/icon-meaning";
 import { AppButton, AppNotice, AppPanel } from "@/ui/design-system/kit/app-elements";
-import { paintingSources, type Painting } from "@/ui/design-system/kit/paintings";
-import { ASPECT_STEP_WORDS, DAY, DOORWAY_WORDS, TRY_AGAIN, WORDS } from "@/ui/design-system/kit/words";
+import { DOORWAY_WORDS, TRY_AGAIN, WORDS } from "@/ui/design-system/kit/words";
 
 import type { DoorwayView } from "./doorway-view";
-import { EntryProgress } from "./entry-progress";
+import { LoadingStage, type DoorwayGame, type DoorwayRealm } from "./loading-stage";
 
-export interface DoorwayRealm {
-  name: string;
-  emblem: { art: string; name: string } | null;
-  aspect?: AspectId | null;
-}
-
-type DoorwayGame = Pick<DirectoryGame, "mode"> & Partial<Pick<DirectoryGame, "day_index">>;
-
-const DEFAULT_PAINTING: Painting = "frontier-mist";
-
-const modeLockup = (mode: DoorwayGame["mode"] | undefined): { src: string; alt: string } => {
-  if (mode === "frontier" || mode === "blitz" || mode === "eternum") {
-    return { src: AGE_LOCKUP[mode], alt: modeLabel({ mode }) };
-  }
-  return { src: REALMS_MARK.lettered, alt: "Realms" };
-};
+export type { DoorwayRealm };
 
 export const DoorwayScreen = ({
   view,
@@ -69,28 +47,21 @@ export const DoorwayScreen = ({
 
   if (!asking && view.blocker === null && view.spectating === null) {
     return (
-      <LoadingStage layout={layout} view={view} realm={realm} game={game} showTip={showTip}>
+      <LoadingStage view={view} realm={realm} game={game} showTip={showTip}>
         {children}
       </LoadingStage>
     );
   }
 
-  const progress = !asking && <EntryProgress view={view} showTip={showTip} />;
   const hold = <Hold view={view} onRetry={onRetry} onOpenRealm={onOpenRealm} onSignIn={onSignIn} results={results} />;
   return (
     <div data-surface="shell" className="fixed inset-0 z-50 overflow-y-auto bg-app-ground">
-      <PageFrame
-        title={game ? modeLabel(game) : undefined}
-        painting={game ? gamePainting(game) : undefined}
-        stage
-        foot={desktop ? undefined : verb}
-      >
+      <PageFrame painting={game ? gamePainting(game) : undefined} stage foot={desktop ? undefined : verb}>
         {desktop ? (
-          <div className="flex min-h-[calc(100dvh-7.5rem)] items-center justify-center">
+          <div className="flex min-h-[calc(100dvh-var(--app-bar)-3rem)] items-center justify-center py-2">
             <AppPanel className={wide ? "w-full" : "w-column"}>
               <div className="flex flex-col items-stretch gap-5">
                 {realm && <RealmRising realm={realm} />}
-                {progress}
                 {hold}
                 {children}
                 {verb}
@@ -100,7 +71,6 @@ export const DoorwayScreen = ({
         ) : (
           <div className="mx-auto flex min-h-full w-full max-w-doorway flex-col items-center justify-center gap-5 py-4">
             {realm && <RealmRising realm={realm} />}
-            {progress}
             {hold}
             {children}
           </div>
@@ -108,69 +78,6 @@ export const DoorwayScreen = ({
       </PageFrame>
     </div>
   );
-};
-
-const LoadingStage = ({
-  layout,
-  view,
-  realm,
-  game,
-  showTip,
-  children,
-}: {
-  layout: "phone" | "desktop";
-  view: DoorwayView;
-  realm: DoorwayRealm | null;
-  game?: DoorwayGame;
-  showTip: boolean;
-  children?: ReactNode;
-}) => {
-  const desktop = layout === "desktop";
-  const painting = game ? gamePainting(game) : DEFAULT_PAINTING;
-  const lockup = modeLockup(game?.mode);
-  const aspect = realm?.aspect ?? null;
-  const day = game?.day_index != null ? game.day_index + 1 : null;
-  const meta = buildStageMeta(aspect, day, desktop);
-  const stageStyle = aspect !== null ? (aspectVariables(aspect) as CSSProperties) : undefined;
-  return (
-    <div data-surface="shell" data-layout={layout} data-doorway-loading style={stageStyle} className="doorway-stage">
-      <img aria-hidden {...paintingSources(painting)} sizes="100vw" alt="" className="doorway-stage__painting" />
-      <div aria-hidden className="doorway-stage__scrim" />
-      <main data-band="body" className="doorway-stage__center">
-        <img src={lockup.src} alt={lockup.alt} className="doorway-stage__lockup" />
-        {(aspect !== null || realm?.emblem) && (
-          <div className="doorway-stage__facet">
-            {aspect !== null ? (
-              <AspectMark aspect={aspect} size={76} />
-            ) : (
-              realm?.emblem && <img src={realm.emblem.art} alt={realm.emblem.name} className="size-16 object-contain" />
-            )}
-          </div>
-        )}
-        {realm && (
-          <div className="doorway-stage__identity">
-            <h1 className="doorway-stage__heading">{DOORWAY_WORDS.enteringRealm(realm.name)}</h1>
-            {meta && <p className="doorway-stage__meta">{meta}</p>}
-          </div>
-        )}
-        {children}
-      </main>
-      <footer data-band="foot" className="doorway-stage__foot">
-        <EntryProgress view={view} showTip={showTip} />
-      </footer>
-    </div>
-  );
-};
-
-const buildStageMeta = (aspect: AspectId | null, day: number | null, desktop: boolean): string | null => {
-  const parts: string[] = [];
-  if (aspect !== null) {
-    parts.push(desktop ? ASPECT_STEP_WORDS.aspectOf(aspectName(aspect)) : aspectName(aspect));
-  }
-  if (day !== null) {
-    parts.push(`${DAY} ${day}`);
-  }
-  return parts.length > 0 ? parts.join(" · ") : null;
 };
 
 const RealmRising = ({ realm }: { realm: DoorwayRealm }) => (

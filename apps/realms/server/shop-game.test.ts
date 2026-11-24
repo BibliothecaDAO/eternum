@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { realmsAccountAddress } from "@realms-world/identity/account";
+import { seasonGameName, testnetGameName } from "@bibliothecadao/types";
 
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 import { readEnrolledAccounts } from "./day-open";
@@ -34,6 +35,7 @@ const calendar = {
 };
 const gameOf = (id: number, status = "Live", mode = "frontier") => ({
   game_id: id,
+  name: seasonGameName(START),
   mode,
   status,
   clock: { start_main_at: START, scheduled_end_at: calendar.scheduledEndAt, end_at: calendar.endAt },
@@ -81,9 +83,15 @@ const shopOn = async (games: unknown[], enrolled: string[] | Error, commandMask 
   return shopAccessOf(env, fetchShard, () => NOW);
 };
 
-it("lists every running Frontier game the account is enrolled in, and none it is not", async () => {
+it("lists every running Season game the account is enrolled in, and none it is not, nor a testnet game", async () => {
   const { env, fetchShard } = await envOn(
-    [gameOf(1), gameOf(2), gameOf(3, "Ended"), gameOf(4, "Live", "blitz")],
+    [
+      gameOf(1),
+      gameOf(2),
+      gameOf(3, "Ended"),
+      gameOf(4, "Live", "blitz"),
+      { ...gameOf(7), name: testnetGameName(START) },
+    ],
     [accountOf("0xa1")],
   );
   const entered = enteredGamesOf(env, fetchShard, () => NOW);

@@ -111,25 +111,53 @@ const frontier = (withRealm: boolean) =>
     aspect_members: { 1: 389, 2: 412, 3: 314, 4: 298 },
     aspect_race: {
       finish_height: 10_000,
+      season_days: 50,
       heights: { 1: 6_400, 2: 7_850, 3: 4_100, 4: 2_900 },
     },
+    quest_bonus_percent: 50,
     player_state: withRealm ? owned : null,
   });
 
-/** Frontier's second season, over an hour ago and not settled yet: the directory still lists it. */
 const endedFrontier = game({
   game_id: 3,
   name: "frontier-0",
   status: "Ended",
-  season_number: 2,
+  season_number: 1,
   clock: {
-    start_settling_at: NOW - 21 * DAY,
-    start_main_at: NOW - 21 * DAY,
+    start_settling_at: NOW - 50 * DAY,
+    start_main_at: NOW - 50 * DAY,
     scheduled_end_at: NOW - 3600,
     end_at: NOW - 3600,
   },
   player_count: 1240,
+  aspect_members: { 1: 389, 2: 412, 3: 314, 4: 298 },
+  aspect_race: {
+    finish_height: 10_000,
+    season_days: 50,
+    heights: { 1: 10_000, 2: 8_420, 3: 6_180, 4: 4_910 },
+  },
+  quest_bonus_percent: 50,
   player_state: owned,
+});
+
+const liveTestnet = game({
+  game_id: 4,
+  name: "testnet-1795479180",
+  mode: "frontier",
+  status: "Live",
+  clock_scale: 1,
+  season_number: null,
+  day_index: 0,
+  day_ends_at: NOW + LEFT_TODAY,
+  next_day_length: DAY,
+  clock: {
+    start_settling_at: NOW - 3600,
+    start_main_at: NOW - 3600,
+    scheduled_end_at: NOW + 7 * DAY,
+    end_at: NOW + 7 * DAY,
+  },
+  player_count: 142,
+  player_state: null,
 });
 
 const liveBlitz = (member: boolean) =>
@@ -188,6 +216,8 @@ export const LAB_SCREENS = {
   "preseason-sealed": { signedIn: true, games: [] },
   "preseason-invited": { signedIn: false, games: [] },
   "preseason-invited-pick": { signedIn: true, games: [] },
+  "preseason-testnet": { signedIn: false, games: [liveTestnet] },
+  "preseason-testnet-chosen": { signedIn: true, games: [liveTestnet] },
   fragments: { signedIn: true, games: [] },
   home: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   // Play for a player with the longest name an account takes (packages/identity account-rules), with the install
@@ -219,7 +249,7 @@ export const LAB_SCREENS = {
   // Frontier's season before its prize pool is published.
   "season-unpublished": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "realm-held": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "realm-vault": { signedIn: true, games: [frontier(false), liveBlitz(false), eternum] },
+  "realm-vault": { signedIn: true, games: [frontier(false), eternum] },
   // Your shared days on You (/profile): what a player's posted Frontier days brought.
   "shared-days": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
 } as const;
@@ -235,6 +265,15 @@ export const LAB_NO_SHARES: ShareTally = {
   fragmentsEarned: 0,
 };
 export const LAB_SHARE_TALLIES: Partial<Record<keyof typeof LAB_SCREENS, ShareTally>> = {
+  "realm-vault": {
+    links: 4,
+    posted: 3,
+    visits: 180,
+    joined: 6,
+    activated: 4,
+    friendsPaid: 3,
+    fragmentsEarned: 300,
+  },
   "shared-days": {
     links: 9,
     posted: 7,
@@ -267,6 +306,7 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, string
   "preseason-chosen": LAB_WALLET,
   "preseason-sealed": LAB_WALLET,
   "preseason-invited-pick": LAB_WALLET,
+  "preseason-testnet-chosen": LAB_WALLET,
   "season-running": LAB_WALLET,
   "realm-held": LAB_WALLET,
   "realm-vault": LAB_WALLET,
@@ -284,6 +324,8 @@ const PRESEASON_SCREENS: readonly LabScreen[] = [
   "preseason-sealed",
   "preseason-invited",
   "preseason-invited-pick",
+  "preseason-testnet",
+  "preseason-testnet-chosen",
 ];
 const LAB_ORDER_MEMBERS: Readonly<Record<number, number>> = {
   1: 12,
@@ -304,7 +346,8 @@ const LAB_ORDER_MEMBERS: Readonly<Record<number, number>> = {
   8: 4,
 };
 export const labOrderIntent = (screen: LabScreen) => ({
-  order: screen === "preseason-chosen" || screen === "preseason-sealed" ? 1 : null,
+  order:
+    screen === "preseason-chosen" || screen === "preseason-sealed" || screen === "preseason-testnet-chosen" ? 1 : null,
   members: LAB_ORDER_MEMBERS,
 });
 export const LAB_SEAL_CODE = "SEAL2345";
@@ -346,6 +389,8 @@ export const LAB_NO_HISTORY_SCREENS: readonly LabScreen[] = [
   "preseason-sealed",
   "preseason-invited",
   "preseason-invited-pick",
+  "preseason-testnet",
+  "preseason-testnet-chosen",
 ];
 
 const NAMES = [
@@ -499,14 +544,6 @@ const SEASON_ONE_NAMES = [
 const [SEASON_ONE] = ARCHIVED_SEASONS;
 const SEASON_ONE_ENTRIES = archivedSeason({ chainId: SEASON_ONE!.chainId, gameId: SEASON_ONE!.game_id })!.board.entries;
 
-/** Devcon's Season 0 as the directory lists it once over (Fri 6 Nov 18:00Z), drawn over prod's Playtest board. */
-export const LAB_DEVCON_SEASON_0 = {
-  ...SEASON_ONE!,
-  game_id: 990,
-  season_number: 0,
-  clock: { ...SEASON_ONE!.clock, end_at: Date.UTC(2026, 10, 6, 18) / 1000 },
-};
-
 /** The board before any prize pool is published (the Season tab's podium says so). */
 export const LAB_FRONTIER_UNPUBLISHED_BOARD: HeraldFrontierLeaderboard = { ...LAB_FRONTIER_BOARD, prize: null };
 
@@ -548,18 +585,10 @@ export const LAB_CHAT_PROFILES = new Map(
   ]),
 );
 
-/** Blitz ratings by wallet (/api/ratings?players): the only wallet the lab asks for is the player's own, at 1,744. */
-export const labRatings = (wallets: readonly string[]) => ({
-  block_number: 812_345,
-  block_hash: "0x5ea1",
-  ratings: Object.fromEntries(wallets.map((wallet) => [wallet, { status: "rated", player: wallet, rating: "1744" }])),
-});
-
-/** Global's chat so far, oldest first: the room every player has, in the app as in a game. */
 export const LAB_GLOBAL_CHAT = [
-  ["Isolde", "anyone up for the next Blitz?"],
+  ["Isolde", "anyone pushing Deep sites tonight?"],
   ["Corwin", "frontier day 12, the spire is open"],
-  ["Aldric", "gg everyone, see you at the lobby"],
+  ["Aldric", "gg everyone, see you on the next day"],
 ].map(([name, content], index) => ({
   id: `lab-global-${index}`,
   sender: { playerId: chatPlayerId(name), displayName: name },

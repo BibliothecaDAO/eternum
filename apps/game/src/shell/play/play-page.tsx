@@ -1,42 +1,62 @@
 import "./play-page.css";
 
 import type { HeraldAspectRace } from "@bibliothecadao/eternum/game-sync";
-import { aspects, formatExact, questCatalog, type QuestId } from "@bibliothecadao/types";
-import { ASPECT_PAGE_WORDS, BLITZ_WORDS, DAY_BANNER_WORDS, OF, WORDS } from "@/ui/design-system/kit/words";
-import type { CSSProperties, ReactNode } from "react";
+import {
+  aspectName,
+  aspects,
+  FRIEND_FRAGMENTS,
+  FRIENDS_BONUS_FRAGMENTS,
+  FRIENDS_LIMIT,
+  questCatalog,
+  type AspectId,
+  type QuestId,
+} from "@bibliothecadao/types";
+import type { ReactNode } from "react";
 
-import { aspectVariables } from "@/tokens";
-import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
-import { AppAgeColumn, AppButton, AppGameCard, AppLink, AppPanel } from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppGameCard, AppLink, AppPanel } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
+import {
+  ASPECT_PAGE_WORDS,
+  DAY_BANNER_WORDS,
+  PRESEASON_WORDS,
+  PROFILE_WORDS,
+  SEASON_INVITE_WORDS,
+  SHARED_DAYS_WORDS,
+  WORDS,
+} from "@/ui/design-system/kit/words";
 import { dayQuestFace } from "@/ui/features/frontier/day/day-quest-face";
 
-import { BuildOrdersRow } from "../build-orders/build-orders-row";
 import { PageFrame } from "../frame/page-frame";
-import type { DirectoryGame } from "../herald";
+import { type DirectoryGame, gameRefOf } from "../herald";
 import { Loading } from "../loading";
-import { directoryDay, seasonRealm } from "../season";
-import { ageOf } from "./ages";
-import { holdsNothing, idleCard, type PlayBoard, PLAY_MODES, type PlayMode } from "./play-board";
+import { aspectRaceStandings, directoryDay, seasonEnded, seasonPlayerAspect, seasonRealm } from "../season";
+import { resultsHref } from "../season-tab/results-link";
+import { useShareTally } from "../share/own-shares";
+import { useRequestSignIn } from "../sign-in/connect";
+import { HyperstructureTile } from "./hyperstructure-stage";
+import type { PlayItem } from "./play-board";
 import { type PlayFacts, type SourceGap, usePlayFacts } from "./play-facts";
-import { ItemRows, LeadCard } from "./play-item";
-import { PreseasonPlay } from "./preseason-pick";
+import { LeadCard, RehearsalCard } from "./play-item";
 import { SeasonCountdown } from "./season-countdown";
+import { CopySeasonInvite, SeasonInviteAlerts, useSeasonInvite } from "./season-invite";
 
 export const PlayPage = () => {
   const facts = usePlayFacts();
-  if (facts.opening && isPlayEmpty(facts))
-    return facts.signedIn ? (
-      <PreseasonPlay opening={facts.opening} now={facts.now} />
-    ) : (
-      <SeasonCountdown opening={facts.opening} now={facts.now} />
+  if (isPreseason(facts))
+    return (
+      <SeasonCountdown
+        opening={facts.opening}
+        rehearsals={facts.board.rehearsals}
+        signedIn={facts.signedIn}
+        now={facts.now}
+      />
     );
   const firstVisit = !facts.signedIn && facts.board?.lead?.verb === "play";
-  const ages = facts.board ? agesShown(facts.board) : [];
-  const leadFrontier = facts.board?.lead?.mode === "frontier" ? facts.board.lead.game : null;
+  const leadFrontier = facts.board?.lead?.game ?? null;
   const leadRace = leadFrontier?.aspect_race ?? null;
   const hasActiveRealm = leadFrontier !== null && leadFrontier.status === "Live" && seasonRealm(leadFrontier) !== null;
+  const playerAspect = facts.signedIn ? seasonPlayerAspect(leadFrontier) : null;
   return (
     <PageFrame painting={firstVisit ? "dark-plains" : "brooding-plains"} stage={firstVisit} offersInstall>
       <div data-play-page className="play-grid">
@@ -44,27 +64,52 @@ export const PlayPage = () => {
           <LeadOrState facts={facts} />
           {facts.board && <SourceGaps gaps={facts.gaps} />}
         </section>
-        {facts.board && (
-          <div className="play-side">
-            {leadFrontier && <AspectRacePreview race={leadRace} />}
-            {hasActiveRealm && <TodayQuestPanel game={leadFrontier} now={facts.now} />}
-            {ages.map((mode) => (
-              <AgeColumn key={mode} mode={mode} facts={facts} items={(facts.board as PlayBoard).ages[mode]} />
-            ))}
-          </div>
-        )}
+        {facts.board &&
+          (leadRace !== null ||
+            hasActiveRealm ||
+            playerAspect !== null ||
+            (!facts.signedIn && leadFrontier !== null) ||
+            facts.board.results.length > 0 ||
+            facts.board.rehearsals.length > 0) && (
+            <div className="play-side">
+              {facts.board.results.length > 0 && <UnseenResultsPanel items={facts.board.results} />}
+              {leadFrontier && leadRace !== null && (
+                <AspectRacePreview
+                  race={leadRace}
+                  members={leadFrontier.aspect_members ?? null}
+                  ownAspect={playerAspect}
+                />
+              )}
+              {hasActiveRealm && leadFrontier && <TodayQuestPanel game={leadFrontier} now={facts.now} />}
+              {playerAspect !== null ? (
+                <PlayInviteStrip />
+              ) : (
+                !facts.signedIn && leadFrontier !== null && <SignedOutInviteStrip />
+              )}
+              {facts.board.rehearsals.map((item) => (
+                <RehearsalCard key={item.key} item={item} now={facts.now} signedIn={facts.signedIn} />
+              ))}
+            </div>
+          )}
       </div>
     </PageFrame>
   );
 };
 
-const isPlayEmpty = (facts: PlayFacts) =>
-  facts.board !== undefined && holdsNothing(facts.board) && facts.gaps.length === 0;
-
-const agesShown = (board: PlayBoard): PlayMode[] =>
-  PLAY_MODES.filter((mode) => board.ages[mode].length > 0 || mode === "blitz");
+const isPreseason = (
+  facts: PlayFacts,
+): facts is PlayFacts & {
+  opening: NonNullable<PlayFacts["opening"]>;
+  board: NonNullable<PlayFacts["board"]>;
+} => facts.opening !== null && facts.board !== undefined && facts.board.lead === null && facts.gaps.length === 0;
 
 const LeadOrState = ({ facts }: { facts: PlayFacts }) => {
+  if (facts.identity.status === "loading" && facts.identity.error !== null)
+    return (
+      <QuietLead title={WORDS.play}>
+        <ServiceFailure service="identity" error={facts.identity.error} retry={facts.identity.retry} />
+      </QuietLead>
+    );
   if (facts.directory.isError)
     return (
       <QuietLead title={WORDS.play}>
@@ -105,9 +150,16 @@ const SourceGaps = ({ gaps }: { gaps: readonly SourceGap[] }) =>
     </div>
   );
 
-const AspectRacePreview = ({ race }: { race: HeraldAspectRace | null }) => {
-  const finishHeight = race?.finish_height ?? 0;
-  const showBars = race !== null && finishHeight > 0;
+const AspectRacePreview = ({
+  race,
+  members,
+  ownAspect,
+}: {
+  race: HeraldAspectRace;
+  members: Readonly<Record<AspectId, number>> | null;
+  ownAspect: AspectId | null;
+}) => {
+  const { finishHeight, byAspect } = aspectRaceStandings(race, members);
   return (
     <AppPanel
       title={ASPECT_PAGE_WORDS.race}
@@ -118,36 +170,24 @@ const AspectRacePreview = ({ race }: { race: HeraldAspectRace | null }) => {
         </AppLink>
       }
     >
-      <ul className="play-aspects">
-        {aspects.map(({ id, name }) => {
-          const height = race?.heights[id] ?? null;
-          const share =
-            height !== null && finishHeight > 0 ? Math.min(100, Math.round((height / finishHeight) * 100)) : 0;
-          return (
-            <li
-              key={id}
-              data-aspect-id={id}
-              aria-label={height !== null ? ASPECT_PAGE_WORDS.height(height, finishHeight) : name}
-              style={aspectVariables(id) as CSSProperties}
-              className="play-aspect"
-            >
-              {showBars && (
-                <div className="play-aspect__tower" aria-hidden="true">
-                  {share > 0 && <div className="play-aspect__column" style={{ height: `${share}%` }} />}
-                </div>
-              )}
-              <AspectMark aspect={id} size={38} decorative />
-              <span className="play-aspect__name">{name}</span>
-              {height !== null && (
-                <span className="play-aspect__height">
-                  <span className="play-aspect__count">{formatExact(height)}</span>
-                  <span className="play-aspect__goal">{`${OF} ${formatExact(finishHeight)}`}</span>
-                </span>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+      <div className="flex flex-col gap-3">
+        <div className="play-aspects-grid">
+          {aspects.map(({ id }) => {
+            const row = byAspect[id];
+            return (
+              <HyperstructureTile
+                key={id}
+                aspect={id}
+                height={row.height}
+                finishHeight={finishHeight}
+                members={row.members}
+                own={ownAspect === id}
+                compact
+              />
+            );
+          })}
+        </div>
+      </div>
     </AppPanel>
   );
 };
@@ -181,27 +221,66 @@ const TodayQuestPanel = ({ game, now }: { game: DirectoryGame; now: number }) =>
   );
 };
 
-const AgeColumn = ({
-  mode,
-  facts,
-  items,
-}: {
-  mode: PlayMode;
-  facts: PlayFacts;
-  items: PlayBoard["ages"][PlayMode];
-}) => {
-  const age = ageOf(mode);
-  const blitzLeads = facts.board?.lead?.mode === "blitz";
-  const buildOrders = mode === "blitz" && (items.length > 0 || blitzLeads);
-  const idle = idleCard(items, buildOrders);
+const UnseenResultsPanel = ({ items }: { items: readonly PlayItem[] }) => (
+  <AppPanel title={WORDS.results} icon="victory">
+    <div className="flex flex-col gap-2">
+      {items.map((item) => (
+        <div key={item.key} data-play-item={item.key} className="play-result-row">
+          <span className="text-app-body text-app-ink">{seasonEnded(item.game)}</span>
+          <AppButton
+            kind="secondary"
+            icon="leaderboard"
+            to={resultsHref(gameRefOf(item.game))}
+            data-play-verb="results"
+          >
+            {WORDS.results}
+          </AppButton>
+        </div>
+      ))}
+    </div>
+  </AppPanel>
+);
+
+const PlayInviteStrip = () => {
+  const invite = useSeasonInvite();
+  const tally = useShareTally();
   return (
-    <AppAgeColumn age={mode} painting={age.painting} name={age.name} idle={idle}>
-      {items.length > 0 ? (
-        <ItemRows items={items} now={facts.now} signedIn={facts.signedIn} />
-      ) : (
-        !blitzLeads && <p className="text-app-body text-app-muted">{BLITZ_WORDS.noneScheduled}</p>
-      )}
-      {buildOrders && <BuildOrdersRow />}
-    </AppAgeColumn>
+    <AppPanel title={SEASON_INVITE_WORDS.title} icon="people">
+      <div className="flex flex-col gap-3" data-play-invite>
+        <div className="play-invite">
+          <div className="play-invite__text">
+            {invite.aspect !== null && (
+              <p className="text-app-label text-app-ink">{SEASON_INVITE_WORDS.line(aspectName(invite.aspect))}</p>
+            )}
+            {tally && tally.friendsPaid > 0 && (
+              <p className="text-app-label text-app-gold">
+                {`${SHARED_DAYS_WORDS.friendsPaid}: ${SHARED_DAYS_WORDS.ofLimit(tally.friendsPaid)}`}
+              </p>
+            )}
+          </div>
+          <CopySeasonInvite invite={invite} size="md" />
+        </div>
+        <SeasonInviteAlerts invite={invite} />
+      </div>
+    </AppPanel>
+  );
+};
+
+const SignedOutInviteStrip = () => {
+  const requestSignIn = useRequestSignIn();
+  return (
+    <AppPanel title={SEASON_INVITE_WORDS.title} icon="people">
+      <div className="play-invite" data-play-invite>
+        <div className="play-invite__text">
+          <p className="text-app-label text-app-gold">
+            {PROFILE_WORDS.friendMilestone(FRIEND_FRAGMENTS, FRIENDS_BONUS_FRAGMENTS, FRIENDS_LIMIT)}
+          </p>
+          <p className="text-app-label text-app-muted">{PRESEASON_WORDS.inviteSignedOut}</p>
+        </div>
+        <AppButton kind="secondary" size="md" onClick={() => requestSignIn()}>
+          {WORDS.signIn}
+        </AppButton>
+      </div>
+    </AppPanel>
   );
 };

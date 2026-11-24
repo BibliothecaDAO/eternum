@@ -67,16 +67,15 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
       const reader = readers.get(readers.idFromName(environmentL2("staging").chain));
       await (reader as unknown as { ratingsChanged(): Promise<void> }).ratingsChanged();
     };
-    const read = () => worker.mf.dispatchFetch(`${ORIGIN}/api/ratings?players=0xa`);
-    const response = await read();
+    const top = () => worker.mf.dispatchFetch(`${ORIGIN}/api/ratings/top?player=0xa`);
+    const response = await top();
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
-    expect(await response.json()).toEqual({
+    expect(await response.json()).toMatchObject({
       block_number: 123,
       block_hash: "0xabc",
-      ratings: {
-        "0xa": { status: "rated", player: "0xa", rating: "1000" },
-      },
+      entries: [{ player: "0xa", rating: "1000", rank: 1 }],
+      self: { player: "0xa", rating: "1000", rank: 1 },
     });
     expect(calls.find((call) => call.method === "starknet_call")!.params).toMatchObject({
       request: { contract_address: dev.mmrToken, calldata: ["0xa"] },
@@ -86,14 +85,13 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
     blockNumber = 124;
     blockHash = "0xabd";
     // The ledger moved, but nobody said results were posted: the kept answer still stands.
-    expect(await (await read()).json()).toMatchObject({ ratings: { "0xa": { rating: "1000" } } });
+    expect(await (await top()).json()).toMatchObject({
+      entries: [{ player: "0xa", rating: "1000", rank: 1 }],
+    });
     await pause(5);
     await resultsPosted();
     await pause(5);
-    expect(await (await read()).json()).toMatchObject({ ratings: { "0xa": { rating: "1300" } } });
-    const top = await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings/top?player=0xa`);
-    expect(top.status).toBe(200);
-    expect(await top.json()).toMatchObject({
+    expect(await (await top()).json()).toMatchObject({
       block_number: 124,
       block_hash: "0xabd",
       entries: [{ player: "0xa", rating: "1300", rank: 1 }],
@@ -112,11 +110,6 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
       entries: [{ profile: { realmsId: player.realmsId, name: "Aster", portrait: "portrait-1" } }],
       self: { profile: { name: "Aster" } },
     });
-    await worker.db.prepare('UPDATE "user" SET "address"=? WHERE "realmsId"=?').bind("0xb", player.realmsId).run();
-    expect(
-      await (await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings?players=0x0a&block_hash=${blockHash}`)).json(),
-    ).toMatchObject({ ratings: { "0x0a": { status: "rated", player: "0xa", rating: "1300" } } });
-    await worker.db.prepare('UPDATE "user" SET "address"=? WHERE "realmsId"=?').bind("0xa", player.realmsId).run();
     const tokenCalls = calls.filter((call) => call.method === "starknet_call").length;
     await worker.db.prepare('UPDATE "user" SET "name" = ? WHERE "realmsId" = ?').bind("Renamed", player.realmsId).run();
     expect(await (await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings/top`)).json()).toMatchObject({
@@ -126,7 +119,7 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
     expect(await (await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings/top`)).json()).toMatchObject({
       entries: [{ profile: null }],
     });
-    expect(await (await read()).json()).toMatchObject({ ratings: { "0xa": { player: "0xa", rating: "1300" } } });
+    expect(await (await top()).json()).toMatchObject({ entries: [{ player: "0xa", rating: "1300", rank: 1 }] });
     // Profiles are read fresh each time; the ratings are kept, so none of these asks reached the chain.
     expect(calls.filter((call) => call.method === "starknet_call").length).toBe(tokenCalls);
     expect(
@@ -137,15 +130,20 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
       expect.objectContaining({
         address: dev.mmrToken,
         from_block: { block_number: 100 },
+        to_block: { block_number: 123 },
+      }),
+      expect.objectContaining({
+        address: dev.mmrToken,
+        from_block: { block_number: 100 },
         to_block: { block_number: 124 },
       }),
     ]);
     await worker.db.prepare('UPDATE "user" SET "address" = ? WHERE "realmsId" = ?').bind("0xa", player.realmsId).run();
     unavailable = true;
-    expect((await read()).status).toBe(200);
+    expect((await top()).status).toBe(200);
     await resultsPosted();
     await pause(5);
-    expect((await read()).status).toBe(503);
+    expect((await top()).status).toBe(503);
   } finally {
     await worker.dispose();
   }

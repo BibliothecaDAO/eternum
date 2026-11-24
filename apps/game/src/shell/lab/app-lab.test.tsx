@@ -1,8 +1,10 @@
+import { aspectName, ordersOfAspect } from "@bibliothecadao/types";
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 import { AppLabView } from "./app-lab";
+import { LAB_CHAIN, LAB_SHARE_CODE } from "./app-lab-fixtures";
 
 const identity = vi.hoisted(() => {
   const originalSession = { user: { name: "Original player" } };
@@ -15,12 +17,20 @@ const identity = vi.hoisted(() => {
   return {
     originalSession,
     state,
-    client: { sendSignInCode: vi.fn(), readDefaultWallet: vi.fn() },
+    client: {
+      sendSignInCode: vi.fn(),
+      readDefaultWallet: vi.fn(),
+      chooseOrder: vi.fn(),
+      createInvite: vi.fn(),
+    },
   };
 });
 vi.mock("@/hooks/context/identity-session", () => ({
   identityClient: identity.client,
-  useIdentitySessionStore: { getState: () => identity.state },
+  useIdentitySessionStore: Object.assign(
+    <T,>(selector: (state: typeof identity.state) => T) => selector(identity.state),
+    { getState: () => identity.state },
+  ),
   useIdentitySession: () => ({ status: "signed-out", session: null }),
   notificationOwnerOf: () => null,
   // The account's chosen name, as the real reader gives it: none while the name is still the account's id.
@@ -32,7 +42,7 @@ vi.mock("../play/age-pages", () => ({ DominionPage: () => null, EternumPage: () 
 vi.mock("../profile/profile-pages", () => ({
   PlayerPage: () => null,
   ProfilePage: () => null,
-  SettingsPage: () => null,
+  SettingsRedirect: () => null,
 }));
 vi.mock("../season-tab/results-page", () => ({ ResultsPage: () => null }));
 vi.mock("../season-tab/season-page", () => ({ SeasonPage: () => null }));
@@ -146,7 +156,33 @@ it.each([
   );
   const lab = await renderLab(`/lab/app/first-visit/${page}`);
   const places = [...lab.querySelectorAll('[data-role="tab"]')];
-  expect(places).toHaveLength(4);
+  expect(places).toHaveLength(5);
   const current = places.filter((place) => place.getAttribute("aria-current") === "page");
   expect(current.map((place) => place.textContent)).toEqual(lit);
+});
+
+it("derives createInvite aspect from the active Season player Aspect on home and from chosen order on pre-season screens", async () => {
+  await renderLab("/lab/app/home");
+  const homeInvite = await identity.client.createInvite();
+  expect(homeInvite).toEqual({ code: LAB_SHARE_CODE, aspect: 3, chainId: LAB_CHAIN, gameId: 1 });
+  expect(aspectName(homeInvite.aspect)).toBe("Havoc");
+  await act(async () => root?.unmount());
+  root = undefined;
+  container.remove();
+
+  await renderLab("/lab/app/preseason-chosen");
+  const chosenInvite = await identity.client.createInvite();
+  expect(chosenInvite).toEqual({ code: LAB_SHARE_CODE, aspect: 1, chainId: null, gameId: null });
+  expect(aspectName(chosenInvite.aspect)).toBe("Prowess");
+  await identity.client.chooseOrder(ordersOfAspect(2)[0]!.orderId);
+  const switchedInvite = await identity.client.createInvite();
+  expect(switchedInvite).toEqual({ code: LAB_SHARE_CODE, aspect: 2, chainId: null, gameId: null });
+  expect(aspectName(switchedInvite.aspect)).toBe("Luminary");
+  await act(async () => root?.unmount());
+  root = undefined;
+  container.remove();
+
+  await renderLab("/lab/app/realm-vault");
+  const vaultInvite = await identity.client.createInvite();
+  expect(vaultInvite).toEqual({ code: LAB_SHARE_CODE, aspect: 1, chainId: null, gameId: null });
 });

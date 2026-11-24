@@ -815,30 +815,6 @@
     "verdict": "equal",
     "reason": "Dragon tannery: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
   },
-  "faceted/rating-storm-lord": {
-    "verdict": "equal",
-    "reason": "Storm Lord: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
-  },
-  "faceted/rating-warlord": {
-    "verdict": "equal",
-    "reason": "Warlord: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
-  },
-  "faceted/rating-conqueror": {
-    "verdict": "equal",
-    "reason": "Conqueror: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
-  },
-  "faceted/rating-marauder": {
-    "verdict": "equal",
-    "reason": "Marauder: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
-  },
-  "faceted/rating-raider": {
-    "verdict": "equal",
-    "reason": "Raider: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
-  },
-  "faceted/rating-scrapper": {
-    "verdict": "equal",
-    "reason": "Scrapper: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
-  },
   "faceted/order-gods": {
     "verdict": "equal",
     "reason": "Order of Gods: repaint preserves the original emblem silhouette and colour at 24 and 32 px. The rejected wheat motif is removed."

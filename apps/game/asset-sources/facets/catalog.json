@@ -2911,42 +2911,6 @@
       "prompt": "prompts/dragon-tannery.txt"
     },
     {
-      "id": "rating-storm-lord",
-      "label": "Storm Lord",
-      "family": "Ratings",
-      "prompt": "prompts/rating-storm-lord.txt"
-    },
-    {
-      "id": "rating-warlord",
-      "label": "Warlord",
-      "family": "Ratings",
-      "prompt": "prompts/rating-warlord.txt"
-    },
-    {
-      "id": "rating-conqueror",
-      "label": "Conqueror",
-      "family": "Ratings",
-      "prompt": "prompts/rating-conqueror.txt"
-    },
-    {
-      "id": "rating-marauder",
-      "label": "Marauder",
-      "family": "Ratings",
-      "prompt": "prompts/rating-marauder.txt"
-    },
-    {
-      "id": "rating-raider",
-      "label": "Raider",
-      "family": "Ratings",
-      "prompt": "prompts/rating-raider.txt"
-    },
-    {
-      "id": "rating-scrapper",
-      "label": "Scrapper",
-      "family": "Ratings",
-      "prompt": "prompts/rating-scrapper.txt"
-    },
-    {
       "id": "order-gods",
       "label": "Order of Gods",
       "family": "Orders",
