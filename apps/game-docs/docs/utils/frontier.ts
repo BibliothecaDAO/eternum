@@ -13,6 +13,7 @@ import {
   nativeRuleConstants as rule,
 } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
+import { MAINNET_TOKENS } from "../../../../packages/chain/src/tokens";
 import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
 import { aspectMeaning, orderMeaning, type IconMeaning } from "../../../game/src/ui/design-system/icon-meaning";
 import {
@@ -68,7 +69,23 @@ const pct = (bps: number) => `${n(bps / 100)}%`;
 const range = (lower: number, upper: number) => `${n(lower)}–${n(upper)}`;
 const dollars = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 const perHour = (ratePerSecond: number) => n(Math.round(ratePerSecond * 3600));
-const TIER_KEYS = ["common", "uncommon", "rare", "epic", "legendary"] as const;
+const listOr = (items: readonly string[]) =>
+  items.length > 1 ? `${items.slice(0, -1).join(", ")}, or ${items.at(-1)}` : (items[0] ?? "");
+const allPayTokens = listOr(Object.values(MAINNET_TOKENS).map((token) => token.symbol));
+const swapPayTokens = listOr(
+  Object.entries(MAINNET_TOKENS)
+    .filter(([key]) => key !== "lords")
+    .map(([, token]) => token.symbol),
+);
+const chestOdds = (chest: (typeof frontierPreset.depths)[number]["chest"]) =>
+  Object.entries(chest)
+    .filter(([, bps]) => bps > 0)
+    .map(([key, bps]) => {
+      const name = TIER_WORDS.find((word) => word.toLowerCase() === key);
+      if (!name) throw new Error(`Missing TIER_WORDS entry for chest tier "${key}"`);
+      return `${name} (${pct(bps)})`;
+    })
+    .join(", ");
 
 const hoursOf = (units: number) => (units * seasonDayUnitSeconds(frontierPreset)) / 3600;
 
@@ -245,7 +262,7 @@ export const FRONTIER = {
     wheatPerTroop: n(stamina.staminaExploreWheatCost),
     well: `${n(rule.WELL_REFILL_PERCENT)}% of its maximum`,
     logisticsStep: `${n(rule.LOGISTICS_STEP_PERCENT)}%`,
-    logisticsBonus: n(logisticsBonusValue),
+    logisticsBonus: `+${n(logisticsBonusValue)}`,
     logisticsMax: n(stamina.staminaKnightMax + logisticsBonusValue),
     perFragment: n(fragments.STAMINA_PER_FRAGMENT),
   },
@@ -469,14 +486,12 @@ export const FRONTIER = {
     })),
     layerOdds: frontierPreset.depths.map((depth, index) => ({
       layer: LAYER_NAMES[index],
-      odds: TIER_KEYS.map((tier, tierIndex) => ({ name: TIER_WORDS[tierIndex], bps: depth.chest[tier] }))
-        .filter(({ bps }) => bps > 0)
-        .map(({ name, bps }) => `${name} (${pct(bps)})`)
-        .join(", "),
+      odds: chestOdds(depth.chest),
     })),
   },
   shop: {
-    lordsNote: "The Shop takes LORDS (or swaps ETH, STRK, or USDC into LORDS through AVNU) for Fragments.",
+    payTokens: allPayTokens,
+    lordsNote: `The Shop takes ${MAINNET_TOKENS.lords.symbol} (or swaps ${swapPayTokens} into ${MAINNET_TOKENS.lords.symbol} through AVNU) for Fragments.`,
     statusNote: anySpendEnabled
       ? "Spending Fragments is on."
       : `Spending Fragments is turned off during the final testnet (${SEASON_ONE_CALENDAR.testnetDates} UTC).`,

@@ -91,6 +91,7 @@ export const frontierPhrases = (
     contract,
     depthRewardPercent,
     logisticsStamina,
+    mainnetTokens,
   },
 ) => {
   const stamina = config.troop.stamina;
@@ -130,6 +131,14 @@ export const frontierPhrases = (
         `Slot ${n(nativeResearch.OATH_SLOTS_BASE + index + 1)}: ${n(step.essenceCost)} Essence, ${n(step.laborCost)} labor`,
     )
     .join("; ");
+  const listOr = (items) =>
+    items.length > 1 ? `${items.slice(0, -1).join(", ")}, or ${items.at(-1)}` : (items[0] ?? "");
+  const allPayTokens = listOr(Object.values(mainnetTokens).map((token) => token.symbol));
+  const swapPayTokens = listOr(
+    Object.entries(mainnetTokens)
+      .filter(([key]) => key !== "lords")
+      .map(([, token]) => token.symbol),
+  );
   const rerollRule = `Spend ${n(nativeFragments.OATH_REROLL_FRAGMENTS)} Fragments to replace one of the ${n(contract.oathDrawCount)} drawn cards once per draw on the Surface, Veil, and Hollow.`;
   return [
     {
@@ -233,11 +242,13 @@ export const frontierPhrases = (
         ...relicKinds.map((kind) => relicWords.kinds[kind]),
         `+${n(nativeRules.RELIC_BLADE_BPS / 100)}% damage dealt`,
         ...preset.depths.map((depth, index) => {
-          const tiers = ["common", "uncommon", "rare", "epic", "legendary"];
-          const odds = tiers
-            .map((tier, tierIndex) => ({ name: TIER_WORDS[tierIndex], bps: depth.chest[tier] }))
-            .filter(({ bps }) => bps > 0)
-            .map(({ name, bps }) => `${name} (${n(bps / 100)}%)`)
+          const odds = Object.entries(depth.chest)
+            .filter(([, bps]) => bps > 0)
+            .map(([key, bps]) => {
+              const name = TIER_WORDS.find((word) => word.toLowerCase() === key);
+              if (!name) throw new Error(`Missing TIER_WORDS entry for chest tier "${key}"`);
+              return `${name} (${n(bps / 100)}%)`;
+            })
             .join(", ");
           return `${LAYER_NAMES[index]}: ${odds}`;
         }),
@@ -267,11 +278,18 @@ export const frontierPhrases = (
       phrases: [
         ...(anySpendEnabled ? [] : [calendar.testnetDates]),
         `Custom amounts cost $${(FRAGMENT_CENTS / 100).toFixed(2)} per Fragment, from ${n(MIN_FRAGMENTS)} up to ${n(FRAGMENTS_A_DAY)} Fragments per day.`,
+        `You pay with ${allPayTokens} from your linked`,
         `${n(nativeFragments.SEAL_FRAGMENTS)} Fragments`,
         `Lasts the whole season.`,
         staminaRule,
         rerollRule,
         `reaches ${n(FRIEND_GLORY)} Glory in the Deep pays you ${n(FRIEND_FRAGMENTS)} Fragments, with no cap per season.`,
+      ],
+    },
+    {
+      page: "account/lords",
+      phrases: [
+        `The Shop takes ${mainnetTokens.lords.symbol} (or swaps ${swapPayTokens} into ${mainnetTokens.lords.symbol} through AVNU) for Fragments.`,
       ],
     },
   ];
@@ -390,6 +408,9 @@ export const loadBalanceSources = async () => {
     const { logisticsStamina } = await server.ssrLoadModule(
       join(here, "../../../packages/core/src/utils/attribute-tiers.ts"),
     );
+    const { MAINNET_TOKENS: mainnetTokens } = await server.ssrLoadModule(
+      join(here, "../../../packages/chain/src/tokens.ts"),
+    );
     const productionRelease = JSON.parse(readFileSync(join(here, "../../../deploy/release/production.json"), "utf8"));
     const heraldLimits = await server.ssrLoadModule(join(here, "../../herald/src/http-limits.ts"));
     return {
@@ -412,6 +433,7 @@ export const loadBalanceSources = async () => {
       contract,
       depthRewardPercent,
       logisticsStamina,
+      mainnetTokens,
       productionRelease,
       heraldLimits,
       payoutWalletChangeSeconds: PAYOUT_WALLET_CHANGE_SECONDS,
@@ -458,7 +480,9 @@ export const exportPages = (llm) =>
     llm.split("\n\n---\n\n").map((section) => [
       section.match(/^file: docs\/pages\/(\S+)\.mdx/)?.[1]?.replace(/\/index$/, ""),
       section
-        .replace(/\*\*|\||\\/g, " ")
+        .replace(/\\(.)/g, "$1")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\*\*|\||`/g, " ")
         .replace(/\s+/g, " ")
         .replace(/ ([:,.;)%])/g, "$1"),
     ]),
