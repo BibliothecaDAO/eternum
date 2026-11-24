@@ -536,10 +536,8 @@ const STATES = {
   "alerts-popup": { clock: CLOCK, stores: STORES, armies: ARMIES, alertsPopup: "remind" },
   "alerts-popup-install": { clock: CLOCK, stores: STORES, armies: ARMIES, alertsPopup: "install" },
   "armies-open": { clock: CLOCK, stores: STORES, armies: ARMIES.slice(0, 2) },
-  // Armies through the spire: each one in an Ethereal layer wears its layer's mark; its panel and a phone's pick too.
   "armies-ethereal": { clock: CLOCK, stores: STORES, armies: ETHEREAL_ARMIES },
   "selected-ethereal": { clock: CLOCK, stores: STORES, armies: ETHEREAL_ARMIES, selected: 1, army: { ethereal: 2 } },
-  // Deploy's slots as the Armies card draws them: no army out of three, or one, the first open one chosen.
   "deploy-slots": { clock: CLOCK, stores: STORES, armies: [], slots: 3, deploy: DEPLOY },
   // An army picked opens its panel, as the game opens it on a selection.
   selected: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, army: {} },
@@ -694,7 +692,6 @@ const STATES = {
     refill: LAB_FRAGMENTS,
     order: { ...EXPLORE, stamina: { cost: 30, held: 10, wait: 40 * 60 } },
   },
-  // A store's card, opened from its ring (desktop) or its plate (phone): filling, full, and made by no building.
   stores: { clock: CLOCK, stores: STORES, armies: ARMIES, storeCard: STORE_LINES[0] },
   research: { clock: CLOCK, stores: STORES, armies: ARMIES, research: true },
   // A refused order's notice, through the game's own notice store: on a desktop it stands at the rail's top.
@@ -775,7 +772,6 @@ const STATES = {
 
 type LabState = {
   merge?: boolean;
-  /** The order bar's Refill for its short stamina, the realm's LORDS held against its 140 price (plenty, or short of it). */
   refill?: number;
   results?: "today" | "today-earlier" | "over" | "over-strong";
   /** The realm's LORDS waiting for automatic payout. */
@@ -794,10 +790,6 @@ type LabState = {
   storeCard?: StoreLine;
   army?: LabArmySheet;
   shop?: { fragments: number; held: boolean };
-  /**
-   * A phone's picked army: the owner's Army 2 (27 October: 14/140, 100 of 126 LORDS, a level to buy), it rested, or its
-   * realm holding 500 LORDS.
-   */
   picked?: "owner";
   realmView?: "build" | "build-early" | "build-short" | "castle" | "castle-short";
   /** A building tapped on the realm's board: its own card. */
