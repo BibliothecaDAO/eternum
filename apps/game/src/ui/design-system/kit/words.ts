@@ -740,9 +740,7 @@ export const FIGHT_WORDS = {
   armyLost: "Your army is lost",
   /** Under the loss, in the panel's place, before it closes: what to do next. */
   armyLostNext: "Your troops died in battle. Deploy a new army from your Realm.",
-  /** An attack that clears the site, over the reward it earns; a site that pays nothing is only cleared. */
-  earns: "This attack earns",
-  clears: "This attack clears it",
+  victory: "Victory likely",
   holds: "The guard survives",
   hitsFirst: "Hits first",
 } as const;

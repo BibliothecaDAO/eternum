@@ -145,7 +145,7 @@ export const SiteCardView = ({
           />
           {(facing || reward) && (
             <div className="fight-spoils">
-              {facing && <Outcome facing={facing} earns={reward !== null} />}
+              {facing && <Outcome facing={facing} />}
               {reward}
             </div>
           )}
@@ -177,10 +177,10 @@ const armyLeft = ({ army, fight }: Facing) => Math.max(0, army.troops - fight.tr
 const isArmyLost = (facing: Facing) => armyLeft(facing) === 0;
 const clears = (facing: Facing) => !isArmyLost(facing) && facing.fight.guardLeft === 0;
 
-const outcomeWord = (facing: Facing, earns: boolean): string => {
+const outcomeWord = (facing: Facing): string => {
   if (isArmyLost(facing)) return FIGHT_WORDS.armyLost;
   if (!clears(facing)) return FIGHT_WORDS.holds;
-  return earns ? FIGHT_WORDS.earns : FIGHT_WORDS.clears;
+  return FIGHT_WORDS.victory;
 };
 
 const CachePay = ({ fragments }: { fragments: number }) => (
@@ -249,7 +249,7 @@ const FightPanel = ({
   />
 );
 
-const Outcome = ({ facing, earns }: { facing: Facing; earns: boolean }) => (
+const Outcome = ({ facing }: { facing: Facing }) => (
   <b
     data-fight-outcome
     className={cn(
@@ -257,7 +257,7 @@ const Outcome = ({ facing, earns }: { facing: Facing; earns: boolean }) => (
       isArmyLost(facing) ? "text-hud-bad" : clears(facing) ? "text-hud-good" : "text-hud-muted",
     )}
   >
-    {outcomeWord(facing, earns)}
+    {outcomeWord(facing)}
   </b>
 );
 

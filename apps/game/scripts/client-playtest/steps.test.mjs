@@ -1,4 +1,5 @@
 import { JSDOM } from "jsdom";
+import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it, vi } from "vitest";
 
@@ -1248,9 +1249,11 @@ describe("the Season 1 rehearsal", () => {
     expect(REHEARSAL_WORDS.forecasts).toEqual({
       lost: FIGHT_WORDS.armyLost,
       holds: FIGHT_WORDS.holds,
-      earns: FIGHT_WORDS.earns,
-      clears: FIGHT_WORDS.clears,
+      victory: FIGHT_WORDS.victory,
     });
+    expect(readFileSync(new URL("../../AGENTS.md", import.meta.url), "utf8").replace(/\s+/g, " ")).toContain(
+      `forecasts a win ("${REHEARSAL_WORDS.forecasts.victory}")`,
+    );
     expect(REHEARSAL_WORDS.take).toBe(DEEP_WORDS.take);
     expect(REHEARSAL_WORDS.beast("Balrog", 900)).toBe(DEEP_WORDS.beast("Balrog", 900));
     expect(REHEARSAL_WORDS.open).toBe(DEEP_WORDS.open);
