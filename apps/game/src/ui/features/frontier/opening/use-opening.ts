@@ -99,8 +99,7 @@ export function useOpening(
   const showEverything = useWorldAppearanceStore((state) => state.showEverything);
   const storeState = useOpeningStore((state) => state);
   const progress = accountProgress(owner, storeState);
-  const replayed = storeState.owner === owner ? storeState.replayed : undefined;
-  const ctx = useOpeningContext(rules, realm, progress.reached, replayed, openedSurface);
+  const ctx = useOpeningContext(rules, realm, progress.reached, openedSurface);
   const onState = reachedOnContext(ctx);
   const key = onState.join();
   useEffect(() => {
@@ -117,7 +116,6 @@ export function useOpening(
         ctx,
         rules: lineRules,
         seen: progress.seen,
-        replayed,
       })
     : { nextShowing: null, confirmedMoment: null, newlyCompleted: [] };
 
@@ -203,7 +201,6 @@ function useOpeningContext(
   rules: ExpeditionRules,
   realm: NativeRows["Structure"] | null,
   reached: ReadonlySet<string>,
-  replayed: ReadonlySet<string> | undefined,
   openedSurface: HudSurface | null,
 ): OpeningContext | null {
   const { setup } = useGame();
@@ -252,7 +249,7 @@ function useOpeningContext(
   const hasEssence = (stores?.essence.amount ?? 0) > 0;
   const canResearch = canResearchNow(researchTree?.nodes);
   const hasExplored =
-    (!replayed?.has("explore") && reached.has("explore")) ||
+    reached.has("explore") ||
     countExploredBeyondHomeRing(setup.store, realm, rules, now) > 0;
   const clock = dayClock(rules, now);
   const dayEndingSoon = clock.tone === "ember" && clock.secondsLeft !== undefined;

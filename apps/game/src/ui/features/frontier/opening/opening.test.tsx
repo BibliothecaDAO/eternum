@@ -130,7 +130,11 @@ describe("the interface that opens as you play", () => {
     renderMoment("essence", onDismiss, onSkipAll);
     act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
     expect(onDismiss).toHaveBeenCalledTimes(1);
-    act(() => [...host.querySelectorAll("button")].find((each) => each.textContent === "Skip tutorial")!.click());
+    const pressSkip = () =>
+      act(() => [...host.querySelectorAll("button")].find((each) => each.textContent === "Skip tutorial")!.click());
+    pressSkip();
+    expect(onSkipAll).not.toHaveBeenCalled();
+    pressSkip();
     expect(onSkipAll).toHaveBeenCalledTimes(1);
   });
 });

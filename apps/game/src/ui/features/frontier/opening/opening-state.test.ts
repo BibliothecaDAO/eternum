@@ -6,7 +6,6 @@ import { OPENING_RULES } from "./opening-fixtures";
 import {
   accountProgress,
   activeOpeningMoment,
-  effectiveSeen,
   EMPTY_OPENING_CONTEXT,
   openedMoments,
   reachedOnContext,
@@ -62,7 +61,7 @@ it("shows each contextual lesson only while its context holds and hides it autom
   expect(activeOpeningMoment(afterExplore, OPENING_RULES, new Set())).toBeNull();
 });
 
-it("opens a Deep race session on the Deep lesson even without a Barracks while keeping Replay starting at barracks", () => {
+it("opens a Deep race session on the Deep lesson even without a Barracks", () => {
   const deepRace: OpeningContext = {
     ...EMPTY_OPENING_CONTEXT,
     hasRealm: true,
@@ -77,7 +76,6 @@ it("opens a Deep race session on the Deep lesson even without a Barracks while k
   };
   expect(activeOpeningMoment(deepRace, OPENING_RULES, new Set())).toBe("deep");
   expect(reachedOnContext(deepRace)).not.toContain("essence");
-  expect(activeOpeningMoment(deepRace, OPENING_RULES, new Set(), new Set(["barracks", "deep"]))).toBe("barracks");
 });
 
 it("puts core onboarding (barracks, deploy, explore) ahead of late-game contextual lessons like bane and aspects", () => {
@@ -139,12 +137,11 @@ it("auto-skips early basics for Season 0 veterans and welcomes them once", () =>
   ).toBe("bane");
 });
 
-it("suppresses every tutorial line once skipped and restores them via effectiveSeen on replay", () => {
-  const freshRealm = { ...EMPTY_OPENING_CONTEXT, hasRealm: true };
-  const skipped = new Set([TUTORIAL_SKIPPED, "barracks"]);
-  expect(activeOpeningMoment(freshRealm, OPENING_RULES, skipped)).toBeNull();
-  const replayed = effectiveSeen(skipped, new Set([TUTORIAL_SKIPPED, "barracks"]));
-  expect(activeOpeningMoment(freshRealm, OPENING_RULES, replayed)).toBe("barracks");
+it("shows no lesson again once the tutorial is skipped, whatever the realm's state", () => {
+  const skipped = new Set([TUTORIAL_SKIPPED]);
+  for (const moment of OPENING_MOMENTS) {
+    expect(activeOpeningMoment(LIFECYCLE_CASES[moment].due, OPENING_RULES, skipped), moment).toBeNull();
+  }
 });
 
 it("reads only the current account's progress, and calls it known only once its service has answered", () => {
@@ -423,7 +420,7 @@ const LIFECYCLE_CASES: Record<OpeningMoment, { due: OpeningContext; completed?: 
   },
 };
 
-it("runs every lesson through due -> showing -> completed or dismissed -> never again -> replay", () => {
+it("runs every lesson through due -> showing -> completed or dismissed -> never again", () => {
   for (const moment of OPENING_MOMENTS) {
     const scenario = LIFECYCLE_CASES[moment];
     const shown = stepTutorialMachine({
@@ -462,17 +459,6 @@ it("runs every lesson through due -> showing -> completed or dismissed -> never 
     });
     expect(afterDone.nextShowing, `${moment} must not return once completed or dismissed`).not.toBe(moment);
     expect(afterDone.confirmedMoment).toBeNull();
-
-    const replayed = effectiveSeen(persisted, new Set([moment]));
-    const afterReplay = stepTutorialMachine({
-      showing: null,
-      confirmed: null,
-      ctx: scenario.due,
-      rules: OPENING_RULES,
-      seen: replayed,
-      replayed: new Set([moment]),
-    });
-    expect(afterReplay.nextShowing, `${moment} must return after Replay`).toBe(moment);
   }
 });
 
@@ -545,46 +531,6 @@ it("unlocks Research HUD parts on first Essence but holds the Research lesson un
   expect(activeOpeningMoment({ ...lowEssence, canResearch: true }, OPENING_RULES, new Set())).toBe("essence");
 });
 
-it("confirms a replayed lesson whose action already stands, one at a time, and never asks for it again", () => {
-  const replayed = new Set<string>(["barracks", "deploy", "explore"]);
-  const standingRealm: OpeningContext = {
-    ...EMPTY_OPENING_CONTEXT,
-    hasRealm: true,
-    hasBarracks: true,
-    troopsAtHome: 27,
-    fullArmy: 3_000,
-    deployedArmies: 1,
-    hasExplored: true,
-  };
-  const replay = (seen: string[]) =>
-    stepTutorialMachine({
-      showing: null,
-      confirmed: null,
-      ctx: standingRealm,
-      rules: OPENING_RULES,
-      seen: new Set(seen),
-      replayed: new Set([...replayed].filter((moment) => !seen.includes(moment))),
-    });
-
-  expect(replay([])).toEqual({ nextShowing: null, confirmedMoment: "barracks", newlyCompleted: ["barracks"] });
-  expect(replay(["barracks"])).toEqual({ nextShowing: null, confirmedMoment: "deploy", newlyCompleted: ["deploy"] });
-  expect(replay(["barracks", "deploy"])).toEqual({
-    nextShowing: null,
-    confirmedMoment: "explore",
-    newlyCompleted: ["explore"],
-  });
-
-  const noBarracksYet = stepTutorialMachine({
-    showing: null,
-    confirmed: null,
-    ctx: { ...EMPTY_OPENING_CONTEXT, hasRealm: true },
-    rules: OPENING_RULES,
-    seen: new Set(),
-    replayed,
-  });
-  expect(noBarracksYet).toEqual({ nextShowing: "barracks", confirmedMoment: null, newlyCompleted: [] });
-});
-
 it("asks for a deploy only when half a full army waits at home, the castle's cap read from the rules", () => {
   const atHome = (troopsAtHome: number): OpeningContext => ({
     ...EMPTY_OPENING_CONTEXT,
@@ -594,7 +540,6 @@ it("asks for a deploy only when half a full army waits at home, the castle's cap
     fullArmy: 3_000,
   });
   expect(activeOpeningMoment(atHome(27), OPENING_RULES, new Set(["barracks"]))).toBeNull();
-  expect(activeOpeningMoment(atHome(27), OPENING_RULES, new Set(["barracks"]), new Set(["deploy"]))).toBeNull();
   expect(activeOpeningMoment(atHome(1_499), OPENING_RULES, new Set(["barracks"]))).toBeNull();
   expect(activeOpeningMoment(atHome(1_500), OPENING_RULES, new Set(["barracks"]))).toBe("deploy");
   expect(activeOpeningMoment(atHome(2_003), OPENING_RULES, new Set(["barracks"]))).toBe("deploy");

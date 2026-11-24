@@ -69,8 +69,20 @@ describe("AspectEmissaryDock", () => {
     act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
     expect(onDismiss).toHaveBeenCalledTimes(1);
 
-    const skipButton = [...host.querySelectorAll("button")].find((button) => button.textContent === "Skip tutorial");
-    act(() => skipButton!.click());
+    const pressSkip = () =>
+      act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === "Skip tutorial")!.click());
+    pressSkip();
+    expect(onSkipAll).not.toHaveBeenCalled();
+    expect(dock?.textContent).toContain(OPENING_WORDS.skipFinal);
+    expect(host.querySelector('button[aria-label="Close"]')).toBeNull();
+    expect(host.querySelector(".emissary-dock__action")).toBeNull();
+
+    act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === OPENING_WORDS.keepTutorial)!.click());
+    expect(dock?.textContent).not.toContain(OPENING_WORDS.skipFinal);
+    expect(onSkipAll).not.toHaveBeenCalled();
+
+    pressSkip();
+    pressSkip();
     expect(onSkipAll).toHaveBeenCalledTimes(1);
   });
 
@@ -132,9 +144,11 @@ describe("AspectEmissaryDock", () => {
       "/icons/facets/128/emissary-insight.webp",
     );
     expect(host.querySelector(".emissary-dock__action")?.textContent).toContain(OPENING_WORDS.actions.explore);
-    const skipButton = [...host.querySelectorAll("button")].find((button) => button.textContent === "Skip tutorial");
-    expect(skipButton).toBeDefined();
-    act(() => skipButton!.click());
+    const pressSkip = () =>
+      act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === "Skip tutorial")!.click());
+    pressSkip();
+    expect(dock?.textContent).toContain(OPENING_WORDS.skipFinal);
+    pressSkip();
     expect(onSkipAll).toHaveBeenCalledTimes(1);
   });
 
