@@ -141,17 +141,21 @@ export const ReinforceSheet = ({
       cue={post && <HudChip icons={[TARGET_MARKS.Camp.icon]}>{post.name}</HudChip>}
       onClose={onClose}
     >
-      {plan && <ArmyGain army={army} before={plan.current} gain={shown} />}
-      <div className="reinforce-size">
-        <SizeRow
-          label={DEPLOY_WORDS.howMany(TROOPS)}
-          value={shown}
-          most={range.wheatMax}
-          max={range.max}
-          disabled={range.wheatMax === 0 || sending}
-          onChange={(next) => setCount(range.max > 0 && next === range.max ? "max" : next)}
-        />
-      </div>
+      {plan && (
+        <>
+          <ArmyGain army={army} before={plan.current} gain={shown} />
+          <div className="reinforce-size">
+            <SizeRow
+              label={DEPLOY_WORDS.howMany(TROOPS)}
+              value={shown}
+              most={range.wheatMax}
+              max={range.max}
+              disabled={range.wheatMax === 0 || sending}
+              onChange={(next) => setCount(range.max > 0 && next === range.max ? "max" : next)}
+            />
+          </div>
+        </>
+      )}
       {plan && march && <ReinforceLimit plan={plan} march={march} wheatStop={wheatStop} />}
       {post && (
         <p className="reinforce-until">

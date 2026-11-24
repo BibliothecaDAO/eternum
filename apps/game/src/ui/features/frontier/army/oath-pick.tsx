@@ -89,12 +89,17 @@ function OathChoice({
 }) {
   const name = oathName(id);
   return (
-    <div className="oath-choice" data-fresh={fresh || undefined} style={aspectOf(id)}>
+    <div
+      className="ui-pick oath-choice"
+      data-selected={chosen || undefined}
+      data-fresh={fresh || undefined}
+      style={aspectOf(id)}
+    >
       <button
         type="button"
-        className="ui-pick oath-choice__pick"
+        className="oath-choice__pick"
         data-oath-id={id}
-        aria-pressed={chosen}
+        aria-label={chosen ? OATH_PICK.chosen(name) : name}
         disabled={disabled}
         onClick={onChoose}
         title={oathEffectDescription(id, pickBase)}

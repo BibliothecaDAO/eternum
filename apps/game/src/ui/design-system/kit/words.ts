@@ -601,6 +601,7 @@ export const OATH_PICK = {
   slotOf: (slot: number, slots: number, troops: string, troop: string) =>
     `Slot ${formatExact(slot)} of ${formatExact(slots)} · ${troops} ${troop}`,
   swear: (oath: string) => `Swear ${oath}`,
+  chosen: (oath: string) => `${oath}, chosen`,
   replace: (oath: string) => `Replace ${oath}`,
   another: "Choose another",
   swap: "Swap",

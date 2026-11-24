@@ -65,9 +65,6 @@
   background: var(--hud-well);
   padding: theme(spacing.2) theme(spacing[2.5]);
 }
-.oath-choice:has(> .ui-pick[aria-pressed="true"]) {
-  border-color: rgb(var(--hud-gold));
-}
 .oath-choice[data-fresh] {
   background: color-mix(in srgb, var(--hud-good) 8%, transparent);
 }
