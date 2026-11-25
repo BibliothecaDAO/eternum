@@ -200,11 +200,6 @@ export class MapSiteManager {
     this.refresh();
   }
 
-  /** Terrain pages can arrive after the sites are placed; re-place them on the surface they now stand on. */
-  public refreshTerrainPlacement(): void {
-    this.refresh();
-  }
-
   public destroy(): void {
     this.destroyed = true;
     this.unsubscribe();

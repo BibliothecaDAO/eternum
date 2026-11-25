@@ -62,15 +62,6 @@ const FIELD = {
   octaveSum: fixedToNumber(ELEVATION_OCTAVES_SUM),
 };
 
-export const BIOME_ELEVATION_LEVELS = {
-  deepOcean: fixedToNumber(LEVEL.DEEP_OCEAN),
-  ocean: fixedToNumber(LEVEL.OCEAN),
-  sand: fixedToNumber(LEVEL.SAND),
-  forest: fixedToNumber(LEVEL.FOREST),
-  desert: fixedToNumber(LEVEL.DESERT),
-  mountain: fixedToNumber(LEVEL.MOUNTAIN),
-};
-
 export class Biome {
   static getBiome(col: number, row: number, climate: BiomeClimateConfig = NEUTRAL_BIOME_CLIMATE): BiomeType {
     return Biome.sampleEnvironment(col, row, climate).biome;

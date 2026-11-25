@@ -12,11 +12,6 @@ type Point = { x: number; y: number; z: number };
 type Triple = readonly [number, number, number];
 type CellGeometry = { positions: number[]; normals: number[]; indices: number[]; colors: number[] };
 
-/** Slab gaps are surface color only: every tile supports landmarks at the same height. */
-export function sampleBasaltSurface(): { height: number; normal: Triple } {
-  return { height: BASALT_SUPPORT_HEIGHT, normal: UP };
-}
-
 /** A single shared, flat hex shell supplies both close and distant terrain. */
 export function buildBasaltShell(): CellGeometry {
   const geometry: CellGeometry = { positions: [], normals: [], indices: [], colors: [] };
