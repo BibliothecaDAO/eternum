@@ -73,7 +73,10 @@ const rows = () =>
   );
 /** The tier gems as drawn: the head's, then the table's now and next. */
 const gems = () => [...card().querySelectorAll(".ui-tier")].map((gem) => gem.textContent);
-const button = (text: RegExp) => [...host.querySelectorAll("button")].find((each) => text.test(each.textContent ?? ""));
+const button = (text: RegExp) =>
+  [...host.querySelectorAll("button")].find((each) =>
+    text.test(each.getAttribute("aria-label") ?? each.textContent ?? ""),
+  );
 
 it("says what all the Farms make as one number, and their research only as gems", () => {
   draw(research.ROW_FARM, { makes: { icon: "wheat", rate: "+25/min" } });
@@ -109,7 +112,7 @@ it("keeps Research, dimmed, when the labor storage cannot hold the tier's price,
   });
   const verb = button(/^Upgrade$/)!;
   expect(verb.disabled).toBe(true);
-  expect(host.querySelector('[role="status"]')!.textContent).toBe("Labor storage 15,000 / 25,000 · Kingdom");
+  expect(verb.textContent).toBe("Labor storage 15,000 / 25,000 · Kingdom");
   act(() => verb.click());
   expect(onResearch).not.toHaveBeenCalled();
   act(() => button(/^Upgrade the Castle$/)!.click());
@@ -139,7 +142,7 @@ it("says the Essence the Workshops need against what is held, beside Research di
   const verb = button(/^Upgrade$/)!;
   expect(verb.disabled).toBe(true);
   const foot = verb.closest(".ui-window__foot")!;
-  expect(foot.textContent).toMatch(/^Needs [\d,.K]+ Essence, have 500Upgrade$/);
+  expect(foot.textContent).toMatch(/^Needs [\d,.K]+ Essence, have 500$/);
   expect(foot.querySelectorAll("button")).toHaveLength(1);
 });
 

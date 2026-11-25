@@ -99,7 +99,7 @@ const ChosenFoot = ({
 }) => {
   const standing = tile.standing;
   const raised = standing.kind === "price" ? standing.raised : undefined;
-  const cost = standing.kind !== "built" && (
+  const cost = standing.kind !== "built" && !refusal?.fix?.prices && (
     <span className="inline-flex items-center gap-1">
       <HudCost line={costLine(prices)} />
       {raised && (
@@ -111,21 +111,14 @@ const ChosenFoot = ({
   );
   const note = (
     <span className="flex flex-col items-start gap-0.5">
+      {refusal?.fix?.prices && <HudCost line={costLine(refusal.fix.prices)} />}
       {cost}
       <span data-build-does className="build-does">
         <HudRanked words={tile.does} />
       </span>
     </span>
   );
-  if (refusal)
-    return (
-      <RefusedVerb
-        word={buildNamed(tile.name)}
-        icon="build"
-        refusal={refusal}
-        note={refusal.fix?.prices && <HudCost line={costLine(refusal.fix.prices)} />}
-      />
-    );
+  if (refusal) return <RefusedVerb word={buildNamed(tile.name)} icon="build" refusal={refusal} note={note} />;
   return (
     <HudWindowFoot note={note}>
       <HudButton kind="primary" icon="build" busy={sending ? BUILDING : undefined} onClick={onBuild}>
