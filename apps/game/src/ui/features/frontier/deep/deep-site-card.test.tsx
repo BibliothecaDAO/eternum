@@ -147,7 +147,11 @@ describe("the Deep site's live native binding", () => {
       expect(kinds(altar)).not.toContain(DEEP_WORDS.kinds.bar);
       act(() =>
         hud.store.applyFacts([
-          { model: "BaneRules", key: "0xfee1", value: baneScenario("world").store.require("BaneRules", { game_id: 1 }) },
+          {
+            model: "BaneRules",
+            key: "0xfee1",
+            value: baneScenario("world").store.require("BaneRules", { game_id: 1 }),
+          },
         ]),
       );
       expect(kinds(altar)).toContain(DEEP_WORDS.kinds.bar);

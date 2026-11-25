@@ -1284,7 +1284,6 @@ describe("the Season 1 rehearsal", () => {
       `forecasts a win ("${REHEARSAL_WORDS.forecasts.victory}")`,
     );
     expect(REHEARSAL_WORDS.take).toBe(DEEP_WORDS.take);
-    expect(REHEARSAL_WORDS.open).toBe(DEEP_WORDS.open);
     expect(REHEARSAL_WORDS.lasts(14, "28m")).toBe(DEEP_WORDS.lasts(14, "28m"));
     expect(REHEARSAL_WORDS.share(40)).toBe(DEEP_WORDS.share(40));
     expect(REHEARSAL_WORDS.standingHeight(120, 900)).toBe(ASPECT_PAGE_WORDS.height(120, 900));

@@ -6016,7 +6016,6 @@ export const REHEARSAL_WORDS = {
     victory: "Victory likely",
   },
   take: "Take",
-  open: "No guard: the next army takes it",
   lasts: (ticks, time) => `${ticks} ticks left (${time})`,
   share: (percent) => `${percent}% of each tick`,
   standingHeight: (height, finish) => `${height} of ${finish}`,
