@@ -28,7 +28,6 @@ export const useAppChatRooms = (): ChatRoom[] => {
 /** Whether the page draws the chat itself (Chat's page, a lobby's), so no pane stands over it. */
 export const useChatOnPage = () => useAppChatPlace((state) => state.pages > 0);
 
-/** A page that draws the chat itself, while it stands: the pane closes, and the bar offers none. */
 export const useChatPage = () =>
   useEffect(() => {
     useAppChatPlace.setState((state) => ({ pages: state.pages + 1, paneOpen: false }));
@@ -42,8 +41,7 @@ export const useChatShown = () =>
     return () => useAppChatPlace.setState((state) => ({ shown: state.shown - 1 }));
   }, []);
 
-/** The desktop's pane: whether it is open, and the bar's Chat, which opens and closes it. */
 export const useAppChatPane = () => {
   const open = useAppChatPlace((state) => state.paneOpen);
-  return { open, toggle: () => useAppChatPlace.setState({ paneOpen: !open }) };
+  return { open, setOpen: (paneOpen: boolean) => useAppChatPlace.setState({ paneOpen }) };
 };

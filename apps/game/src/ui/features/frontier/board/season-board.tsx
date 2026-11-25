@@ -95,7 +95,7 @@ export const FrontierSeason = ({
   return race.known?.race === null ? (
     <LegacyFrontierSeason rules={rules} onVisited={onVisited} onClose={onClose} />
   ) : (
-    <FrontierAspectPage day={seasonDay(rules, now)?.day} onClose={onClose} />
+    <FrontierAspectPage day={seasonDay(rules, now)} onClose={onClose} />
   );
 };
 
