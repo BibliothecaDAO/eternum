@@ -135,6 +135,25 @@
   right: var(--popover-edge);
 }
 
+.frontier-day-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.frontier-day-wrap > .ui-sheet {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  width: 352px;
+  max-height: none;
+  transform: translateX(-50%);
+}
+.frontier-phone-today > .ui-sheet {
+  position: static;
+  width: 100%;
+  max-height: none;
+}
 .frontier-day-trigger {
   display: inline-flex;
   align-items: center;

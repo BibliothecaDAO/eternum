@@ -3,7 +3,15 @@
   flex-direction: column;
   gap: 10px;
 }
+.today-sheet__day {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .today-sheet__clock {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
   margin: 0;
   color: var(--hud-muted);
   font-size: var(--hud-text-label);

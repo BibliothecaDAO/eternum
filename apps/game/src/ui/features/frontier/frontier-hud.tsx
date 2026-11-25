@@ -298,6 +298,9 @@ const FrontierHudBody = ({
       {opening.offer && <OpeningOffer offer={opening.offer} />}
     </div>
   );
+  const todayCard = surface === "today" && (
+    <FrontierToday rules={rules} realm={realm ?? visited} own={Boolean(own)} onClose={close} />
+  );
   const topBar = (
     <FrontierTopBar
       rules={rules}
@@ -312,7 +315,8 @@ const FrontierHudBody = ({
       notice={noticeAtFoot ? undefined : openingNotice}
       spectatorChip={spectating ? <IdentityChip compact /> : undefined}
       realmCard={realmVisible ? realmCard : undefined}
-      onOpenToday={() => setSurface("today")}
+      todayCard={todayCard || undefined}
+      onOpenToday={() => setSurface(surface === "today" ? null : "today")}
     />
   );
   const notices = (
@@ -342,8 +346,6 @@ const FrontierHudBody = ({
       <HudSheet label={SETTINGS} onClose={close}>
         <SettingsPanel />
       </HudSheet>
-    ) : surface === "today" ? (
-      <FrontierToday rules={rules} realm={realm ?? visited} own={Boolean(own)} onClose={close} />
     ) : null;
   const armyDock = shown ? <DockFor realm={shown} onOpenArmy={desktop ? openArmy : pickArmy} /> : null;
   const sheets = (
@@ -362,7 +364,13 @@ const FrontierHudBody = ({
 
   return desktop ? (
     <FrontierDesktop
-      clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
+      clock={
+        <FrontierDayClock
+          rules={rules}
+          card={todayCard || undefined}
+          onOpenToday={() => setSurface(surface === "today" ? null : "today")}
+        />
+      }
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
       placeSwitch={placeSwitch}
       chat={<HudChatWindow open={surface === "chat"} onOpenChange={(open) => setSurface(open ? "chat" : null)} />}

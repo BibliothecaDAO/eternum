@@ -1,5 +1,8 @@
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { Icon } from "@/ui/design-system/icon";
+import { SheetDock } from "@/ui/design-system/kit/hud-elements";
+import type { ReactNode } from "react";
 import {
   DAY,
   dayEnds,
@@ -32,25 +35,31 @@ const dayTip = (clock: DayClock): string => {
 export const FrontierDayClock = ({
   rules,
   compact = false,
+  card,
   onOpenToday,
 }: {
   rules: ExpeditionRules;
   compact?: boolean;
+  card?: ReactNode;
   onOpenToday: () => void;
 }) => {
   const clock = dayClock(rules, useNowSeconds());
   const finished = useGameFinished();
   if (finished) return <GameFinishedPill />;
   return (
-    <button
-      type="button"
-      aria-label={TODAY}
-      data-hud-part=""
-      onClick={onOpenToday}
-      className="frontier-day-trigger pointer-events-auto"
-    >
-      <DayPill clock={clock} compact={compact} />
-    </button>
+    <div className="frontier-day-wrap pointer-events-auto">
+      <button
+        type="button"
+        aria-label={TODAY}
+        aria-expanded={Boolean(card)}
+        data-hud-part=""
+        onClick={onOpenToday}
+        className="frontier-day-trigger"
+      >
+        <DayPill clock={clock} compact={compact} />
+      </button>
+      {card && <SheetDock.Provider value={null}>{card}</SheetDock.Provider>}
+    </div>
   );
 };
 
@@ -67,7 +76,11 @@ export const DayPill = ({ clock, compact = false }: { clock: DayClock; compact?:
       data-compact={compact || undefined}
       className={cn("frontier-day-pill tabular-nums", STORE_TONES[clock.tone].text)}
     >
-      {!compact && <ProgressRing size="sm" share={elapsed} tone={clock.tone} className="frontier-day-pill__ring" />}
+      {!compact && (
+        <ProgressRing size="sm" share={elapsed} tone={clock.tone} className="frontier-day-pill__ring">
+          <Icon name="sun" size={12} />
+        </ProgressRing>
+      )}
       <span className="frontier-day-pill__day">{compact ? dayShort(day) : `${DAY} ${day}`}</span>
       {left && <span className="frontier-day-pill__left">{left}</span>}
       {elapsed !== undefined && (
