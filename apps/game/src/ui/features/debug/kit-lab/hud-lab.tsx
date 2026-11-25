@@ -1,5 +1,5 @@
 import type { EtherealLayer } from "@bibliothecadao/eternum";
-import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
+import { buildingOpensAtLevel, buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 
@@ -45,6 +45,7 @@ import { DayShareSheet } from "@/ui/features/frontier/rollover/day-share-sheet";
 import { DayEndScreen } from "@/ui/features/frontier/rollover/day-end-screen";
 import { RESTING, useDayEndStore } from "@/hooks/store/use-day-end-store";
 import { BuildView } from "@/ui/features/frontier/build/build-view";
+import { buildGroupOf } from "@/ui/features/frontier/build/build-options";
 import { CastleResearch, CastleView } from "@/ui/features/frontier/upgrade/castle-view";
 import { ArmyDetail } from "@/ui/features/frontier/army/army-panel";
 import { MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progression-fixture";
@@ -53,7 +54,6 @@ import { BuildingCardView, type CardMakes } from "@/ui/features/frontier/buildin
 import { buildingIcon, buildingName } from "@/ui/features/frontier/build/building-names";
 import { nativeResearchConstants as research, nativeStructureConstants } from "@bibliothecadao/eternum/game-client";
 import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
-import { useRealmPlots } from "@/ui/features/frontier/build/build-sheet";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
 import { FRONTIER_STORES, STORE_KINDS } from "@/ui/features/frontier/stores";
 import { type StoreReading } from "@/ui/features/frontier/hud/status-strip";
@@ -79,10 +79,10 @@ import { fragmentsToFill, RefillButton, RefillConfirm, RefillPrice } from "@/ui/
 import { OathSockets } from "@/ui/features/frontier/army/oath-slots";
 import { ShopCodeField, ShopView } from "@/ui/features/frontier/shop/shop-sheet";
 import { labQuestRulesFact } from "@/lab/game/quest-scenario";
-import { DayMedallion } from "@/ui/features/frontier/hud/day-pill";
+import { DayPill } from "@/ui/features/frontier/hud/day-pill";
 import { DailyQuestChip } from "@/ui/features/frontier/hud/daily-quest-chip";
 import type { MapLayers } from "@/ui/features/frontier/hud/map-layers";
-import { PlaceMenu, placeLines } from "@/ui/features/frontier/hud/surface-deep-switch";
+import { PlaceSwitch, placeLines } from "@/ui/features/frontier/hud/surface-deep-switch";
 import { WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 
@@ -272,12 +272,21 @@ const THIN_DAY_SHARE: SharedDay = {
 
 type LabTile = Parameters<typeof BuildView>[0]["tiles"][number];
 const tile = (
-  key: string,
+  category: BuildingType,
   icon: LabTile["icon"],
   name: string,
   gives: LabTile["gives"],
   standing: LabTile["standing"],
-): LabTile => ({ key, icon, name, does: "", gives, standing });
+): LabTile => ({
+  key: String(category),
+  group: buildGroupOf(category),
+  opensAt: buildingOpensAtLevel(category),
+  icon,
+  name,
+  does: "",
+  gives,
+  standing,
+});
 const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"], raised?: string) =>
   ({ kind: "price", prices: [{ of: "labor", amount: labor, short: short?.of === "labor" }], short, raised }) as const;
 
@@ -306,28 +315,38 @@ const LAB_BUILD_REFUSAL = {
   reason: { kind: "short", of: "essence", held: BUILD_SHORT_ESSENCE, need: SHORT_TILE_PRICES[0].amount },
 } as const;
 const BUILD_TILES: LabTile[] = [
-  tile("farm", "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, price(6_800)),
+  tile(BuildingType.ResourceWheat, "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, price(6_800)),
   tile(
-    "workshop",
+    BuildingType.ResourceLabor,
     "workshop",
     "Workshop",
     { icon: "labor", value: "+0.83/min" },
 
     price(34_000, { of: "labor", wait: 16 * HOUR }, "Costs more with each one standing: 1"),
   ),
-  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+13/min" }, price(6_800)),
-  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard), { icon: "order-skill" }, trainingPrice),
+  tile(BuildingType.ResourceKnightT1, "barracks", "Barracks", { icon: "troops", value: "+13/min" }, price(6_800)),
+  tile(
+    BuildingType.SupplyYard,
+    "supply-yard",
+    buildingName(BuildingType.SupplyYard),
+    { icon: "order-skill" },
+    trainingPrice,
+  ),
 ];
 const SHORT_TILES: LabTile[] = BUILD_TILES.map((card) =>
-  card.key === "farm" || card.key === "workshop" || card.key === "barracks"
-    ? card
-    : { ...card, standing: essenceShortPrice },
+  card.group === "unique" ? { ...card, standing: essenceShortPrice } : card,
 );
 const EARLY_TILES: LabTile[] = [
-  tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, price(800)),
-  tile("workshop", "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, price(2_000)),
-  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, price(800)),
-  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard), { icon: "order-skill" }, trainingPrice),
+  tile(BuildingType.ResourceWheat, "farm", "Farm", { icon: "wheat", value: "+5/min" }, price(800)),
+  tile(BuildingType.ResourceLabor, "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, price(2_000)),
+  tile(BuildingType.ResourceKnightT1, "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, price(800)),
+  tile(
+    BuildingType.SupplyYard,
+    "supply-yard",
+    buildingName(BuildingType.SupplyYard),
+    { icon: "order-skill" },
+    trainingPrice,
+  ),
 ];
 const CASTLE_SIDE = (level: number, wheatStore: number) => ({
   level,
@@ -822,8 +841,8 @@ export const HudLab = () => {
         strip={
           <TopBarView
             stocks={{ stores: [...lab.stores], realmName: LAB_REALM_NAME, onOpenRealm: noop }}
-            clock={<DayMedallion clock={lab.clock} size={52} />}
-            placeMenu={<LabPlaceMenu lab={lab} />}
+            clock={<DayPill clock={lab.clock} compact />}
+            placeSwitch={<LabPlaceSwitch lab={lab} />}
             quest={<LabDailyQuest />}
             realmCard={lab.storeCard && <LabRealmCard lab={lab} />}
           />
@@ -1197,20 +1216,16 @@ const LabDailyQuest = () => {
 
 const labQuestFacts = () => [labQuestRulesFact()];
 
-const LabPlaceMenu = ({ lab }: { lab: LabState }) => {
-  const { setup } = useGame();
-  const plots = useRealmPlots(setup.store.get("Structure", { game_id: 1, entity_id: 7 }) ?? null);
-  return (
-    <PlaceMenu
-      isMapView={lab.realmView === undefined}
-      layers={LAB_MAP_LAYERS}
-      onGoRealm={noop}
-      onGoSurface={noop}
-      realm={{ mark: homeIcon("realm", 1) }}
-      lines={placeLines(lab.armies, plots)}
-    />
-  );
-};
+const LabPlaceSwitch = ({ lab }: { lab: LabState }) => (
+  <PlaceSwitch
+    isMapView={lab.realmView === undefined}
+    layers={LAB_MAP_LAYERS}
+    onGoRealm={noop}
+    onGoSurface={noop}
+    realm={{ mark: homeIcon("realm", 1) }}
+    lines={placeLines(lab.armies)}
+  />
+);
 
 const LabRealmCard = ({ lab }: { lab: LabState }) => (
   <RealmCard
@@ -1241,16 +1256,17 @@ const LabBands = ({
         {lab.offline && <LabConnectionLost />}
         {desktop ? (
           <FrontierDesktop
-            clock={<DayMedallion clock={lab.clock} />}
+            clock={<DayPill clock={lab.clock} />}
             quest={<LabDailyQuest />}
             placeSwitch={
-              <PlaceMenu
+              <PlaceSwitch
                 isMapView={lab.realmView === undefined}
                 layers={LAB_MAP_LAYERS}
                 onGoRealm={noop}
                 onGoSurface={noop}
               />
             }
+            banner={slots.banner}
             realm={<LabRealmCard lab={lab} />}
             armies={slots.dock}
             page={slots.page}

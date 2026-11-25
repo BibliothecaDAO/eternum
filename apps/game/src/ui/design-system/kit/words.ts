@@ -372,6 +372,7 @@ export { type RankedWords, rankedText, skillPointGain } from "@bibliothecadao/ty
 
 export const LEFT = "left";
 export const DAY = "Day";
+export const dayShort = (day: number | string) => `D${day}`;
 /** A day of the season against its last: "Day 10 of 14". */
 export const dayOfSeason = (day: string, lastDay: string) => `${DAY} ${day} of ${lastDay}`;
 /** When the season ends, as a local day and clock time: "Season ends 31 Oct 21:40". */
@@ -526,6 +527,7 @@ export const OFFLINE_BANNER = {
 export const TRY_AGAIN = "Try again";
 export const LATER = "Later";
 export const CLOSE = "Close";
+export const OK = "OK";
 /** The safe choice on a confirm: the primary. */
 export const KEEP = "Keep";
 
@@ -544,6 +546,7 @@ export const staminaLabel = (current: number, max: number) => `${STAMINA_TITLE} 
 export const EMPIRE = "Empire";
 /** The places: the nav's words. */
 export const REALM = "Realm";
+export const MAP_VIEW = "Map view";
 export const WORLD = "World";
 /** The realm's way home from its card's header: the map centred on it. */
 export const SHOW_MY_REALM = "Show my realm";
@@ -898,6 +901,34 @@ export const DAY_BANNER_WORDS = {
   staminaBane: (percent: number) => `Stamina regen is ${formatExact(percent)}% during the bane`,
   productionBane: (percent: number) => `Realm production is ${formatExact(percent)}% during the bane`,
   fraction: (progress: number, target: number) => `${formatShort(progress)}/${formatShort(target)}`,
+  questTitle: (name: string) => `Daily Quest: ${name}`,
+  undrawnTitle: "Today's quest",
+  undrawnPill: "On 1st transaction",
+  undrawnTag: "1st tx",
+  undrawnLine: "Today's quest and bane are drawn on the first transaction anyone sends today.",
+  bane: "Bane",
+  worldBaneTitle: (name: string) => `World Bane: ${name}`,
+  teamBaneTitle: (caster: string) => `Bane from ${caster}`,
+  beastChip: (percent: number) => `${formatExact(percent)}% Guards`,
+  staminaChip: (percent: number) => `${formatExact(percent)}% Stamina`,
+  productionChip: (percent: number) => `${formatExact(percent)}% Production`,
+  heightChip: `No ${DEEP} height`,
+  heightBane: `Your Aspect's hyperstructure gains no height in the ${DEEP} while the bane lasts`,
+  baneFigures: {
+    production: "production",
+    stamina: "stamina regen",
+    guards: "guard strength",
+    height: `${DEEP} height`,
+  },
+  baneFigureLine: (name: string, figure: string, percent: number | undefined, end: string) =>
+    percent === undefined
+      ? `${name}: no ${figure} until broken or ${end}`
+      : `${name}: ${figure} ${formatExact(percent)}% until broken or ${end}`,
+  baneBreak: (completed: number, required: number) =>
+    `Break: ${formatExact(completed)}/${formatExact(required)} of your Aspect`,
+  baneClears: (left: string) => `Clears in ${left}`,
+  baneBroken: "Broken",
+  twiceIfBroken: "2× if broken",
   objectiveLine: (objective: string, target: number) => {
     const space = objective.indexOf(" ");
     return space === -1
@@ -929,6 +960,7 @@ export interface OpeningRules {
   scoutExploreStamina: number;
   exploreStamina: number;
   dayLeftSeconds?: number;
+  bane?: { title: string; chip: string };
 }
 
 const ownAspectLabel = (aspect: AspectId | undefined): string => (aspect !== undefined ? aspectName(aspect) : "");
@@ -960,7 +992,8 @@ export const OPENING_WORDS = {
       `Welcome back. Four Aspects race in the ${DEEP}, and ${ownAspectLabel(rules.ownAspect)} leads you.`,
     oath: (rules: OpeningRules) =>
       `Your Orders grant power today. Swear one Oath, or pass for ${formatGain(rules.oathPassStamina)} ${STAMINA}.`,
-    bane: () => "A bane strikes today. Your Aspect breaks it when enough members finish.",
+    bane: (rules: OpeningRules) =>
+      `${rules.bane ? `${rules.bane.title}. ${rules.bane.chip}.` : "A bane strikes today."} Your Aspect breaks it when enough members finish.`,
     "day-end": () => "Today's map and armies go at day end.",
     deep: (rules: OpeningRules) =>
       `Every ${formatExact(rules.deepTickSeconds)} seconds here, armies lose ${formatAmount(rules.deepLossPerTick)} troops. Hold sites to earn.`,
@@ -987,7 +1020,7 @@ export const OPENING_WORDS = {
   actions: {
     "season0-welcome": "Open Season to check the race.",
     oath: "Pick one Oath or pass.",
-    bane: "Open Today to see the bane quest.",
+    bane: `Press the ${DAY_BANNER_WORDS.bane} pill at the top.`,
     "day-end": "Your realm, research and Glory stay",
     deep: `Hold a ${DEEP} site or withdraw in time.`,
     aspects: "Open Season to check standings.",
@@ -1013,7 +1046,7 @@ export const OPENING_WORDS = {
     "daily-quest": { title: "Reward collected", line: "Labor and Essence added." },
     quest: { title: "Quest started", line: "Finish it, then collect the reward." },
     essence: { title: "Research opened", line: "Learn any node marked ready." },
-    "day-end": { title: "Day end noted", line: "Tap the Day medallion anytime for Today." },
+    "day-end": { title: "Day end noted", line: "Tap the Day pill anytime for Today." },
     bane: { title: "Bane checked", line: "Help your Aspect break it today." },
     aspects: { title: "Standings opened", line: "Track your Aspect's race here." },
     shop: { title: "Shop opened", line: "Refill stamina or get the Seal anytime." },
@@ -1137,6 +1170,13 @@ export const DEPLOY_WORDS = {
 export const SIZE_ROW = { fewer: "One fewer", more: "One more", max: "Max" } as const;
 export const BUILD = "Build";
 export const BUILT = "Built";
+export const BUILD_GROUPS = {
+  economy: { word: "Economy", line: "Repeatable" },
+  army: { word: "Army", line: "Repeatable" },
+  unique: { word: "One per realm", line: "Unique upgrades" },
+} as const;
+export const requiresRank = (rank: string) => `Requires ${rank}`;
+export const ONE_PER_REALM_MARK = "1×";
 export const plotsUsed = (used: number, total: number) => `${used} / ${total} plots`;
 export const armiesHere = (count: number) => (count === 1 ? "1 army" : `${count} armies`);
 export const FREE = "Free";

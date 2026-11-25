@@ -37,6 +37,7 @@ import { ArmyDock } from "./hud/army-dock";
 import { closeHudPopover } from "./hud/hud-popover";
 import { useChatKey } from "./hud/chat-key";
 import { DailyQuestChip } from "./hud/daily-quest-chip";
+import { closeQuestDock, QuestDock, useQuestDockOpen } from "./day/quest-dock";
 import { FrontierDesktop, FrontierPlaces } from "./hud/frontier-desktop";
 import { FrontierFeed } from "./hud/frontier-feed";
 import { RealmCard } from "./hud/realm-card";
@@ -47,7 +48,7 @@ import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { PhoneTabBar, type HudSurface } from "./hud/frontier-nav";
 import { selectLayer, useMapLayers } from "./hud/map-layers";
 import { FrontierTopBar } from "./hud/phone-top-bar";
-import { PlaceMenu, placeLines } from "./hud/surface-deep-switch";
+import { PlaceSwitch, placeLines } from "./hud/surface-deep-switch";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { useFirstBuild, useMarkFirstBuild } from "./build/first-build";
@@ -75,7 +76,7 @@ import { FrontierToday } from "./log/frontier-today";
 import { type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
 import { FrontierResearch } from "./research/frontier-research";
 
-import { BuildingsInFlight, useRealmPlots } from "./build/build-sheet";
+import { BuildingsInFlight } from "./build/build-sheet";
 import { STORE_KINDS } from "./stores";
 import { type LordsReading, useLordsBalance } from "@/shell/value/use-lords-balance";
 import { usePayer } from "@/shell/value/use-payer";
@@ -190,11 +191,14 @@ const FrontierHudBody = ({
   const headerFacts = useNativeFacts(REALM_HEADER_MODELS);
   const own = realm && !visit ? realm : null;
   const ownArmies = useDockArmies(own);
-  const ownPlots = useRealmPlots(own);
   const modeConfig = useGameModeConfig();
   const goToPlace = useGoToFrontierPlace(shown);
   const feedUnread = useUnreadImportantCount(surface === "feed");
   const shownName = shown ? modeConfig.structure.getName(shown).name : null;
+  const questOpen = useQuestDockOpen();
+  useEffect(() => {
+    return closeQuestDock;
+  }, []);
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
   const switchView = (toRealm: boolean) => {
@@ -227,11 +231,11 @@ const FrontierHudBody = ({
     },
     onSwitch: close,
   };
-  const placeMenu = (
-    <PlaceMenu
+  const placeSwitch = (
+    <PlaceSwitch
       {...placeChoices}
       realm={shown ? { mark: homeIcon(homeKind(shown.metadata.has_wonder), shown.base.level) } : undefined}
-      lines={own ? placeLines(ownArmies, ownPlots) : undefined}
+      lines={own ? placeLines(ownArmies) : undefined}
     />
   );
   const page =
@@ -277,9 +281,11 @@ const FrontierHudBody = ({
     (surface === "season" &&
       headerFacts.store.get("RaceRules", { game_id: configManager.getActiveGameId() }) !== undefined);
   const showOpening = !(desktop && widePage);
-  const openingNotice = showOpening && (opening.line || opening.offer) && (
+  const questDock = own && questOpen && <QuestDock realm={own} rules={rules} layout={desktop ? "desktop" : "phone"} />;
+  const openingNotice = showOpening && (questDock || opening.line || opening.offer) && (
     <div data-opening-notice className="flex flex-col gap-1.5 empty:hidden">
-      {opening.line && (
+      {questDock}
+      {!questDock && opening.line && (
         <AspectEmissaryDock
           moment={opening.line.moment}
           rules={opening.line.rules}
@@ -292,6 +298,9 @@ const FrontierHudBody = ({
       {opening.offer && <OpeningOffer offer={opening.offer} />}
     </div>
   );
+  const todayCard = surface === "today" && (
+    <FrontierToday rules={rules} realm={realm ?? visited} own={Boolean(own)} onClose={close} />
+  );
   const topBar = (
     <FrontierTopBar
       rules={rules}
@@ -301,12 +310,13 @@ const FrontierHudBody = ({
         realmOpen: realmVisible,
         onOpenRealm: () => setSurface(surface === "realm" ? null : "realm"),
       }}
-      placeMenu={placeMenu}
+      placeSwitch={placeSwitch}
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
       notice={noticeAtFoot ? undefined : openingNotice}
       spectatorChip={spectating ? <IdentityChip compact /> : undefined}
       realmCard={realmVisible ? realmCard : undefined}
-      onOpenToday={() => setSurface("today")}
+      todayCard={todayCard || undefined}
+      onOpenToday={() => setSurface(surface === "today" ? null : "today")}
     />
   );
   const notices = (
@@ -336,8 +346,6 @@ const FrontierHudBody = ({
       <HudSheet label={SETTINGS} onClose={close}>
         <SettingsPanel />
       </HudSheet>
-    ) : surface === "today" ? (
-      <FrontierToday rules={rules} realm={realm ?? visited} own={Boolean(own)} onClose={close} />
     ) : null;
   const armyDock = shown ? <DockFor realm={shown} onOpenArmy={desktop ? openArmy : pickArmy} /> : null;
   const sheets = (
@@ -355,9 +363,15 @@ const FrontierHudBody = ({
 
   return desktop ? (
     <FrontierDesktop
-      clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
+      clock={
+        <FrontierDayClock
+          rules={rules}
+          card={todayCard || undefined}
+          onOpenToday={() => setSurface(surface === "today" ? null : "today")}
+        />
+      }
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
-      placeSwitch={placeMenu}
+      placeSwitch={placeSwitch}
       chat={<HudChatWindow open={surface === "chat"} onOpenChange={(open) => setSurface(open ? "chat" : null)} />}
       realm={realmCard}
       armies={armyDock}

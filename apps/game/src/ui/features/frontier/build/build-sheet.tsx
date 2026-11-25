@@ -15,6 +15,7 @@ import {
   makes,
   ONE_A_REALM,
   priceRaised,
+  requiresRank,
   startsNewArmies,
   storesMore,
   type RankedWords,
@@ -115,11 +116,6 @@ const plotsHeld = (store: PlotStore, realm: NativeRows["Structure"]) => {
   return { used: total - openPlots(store, realm).length, total };
 };
 
-export const useRealmPlots = (realm: NativeRows["Structure"] | null) => {
-  const facts = useNativeFacts(BUILD_MODELS);
-  return realm ? plotsHeld(facts.store, realm) : undefined;
-};
-
 export const BuildSheet = ({
   realm,
   plot,
@@ -186,7 +182,7 @@ export const BuildSheet = ({
   const standing = (option: BuildOption): Refusal | undefined => {
     if (option.standing === "built") return { reason: { kind: "failed", line: ONE_A_REALM } };
     if (option.standing !== "open")
-      return { reason: { kind: "failed", line: `Requires ${rankName(option.standing.level)}` } };
+      return { reason: { kind: "failed", line: requiresRank(rankName(option.standing.level)) } };
     const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
     if (shortCost) {
       const have = held(shortCost.resource);
@@ -251,6 +247,8 @@ type Holdings = {
 
 const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
   key: String(option.category),
+  group: option.group,
+  opensAt: option.opensAt,
   icon: buildingIcon(option.category),
   name: buildingName(option.category),
   does: buildingDoes(option),
