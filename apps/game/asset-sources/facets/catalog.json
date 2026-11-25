@@ -3538,6 +3538,42 @@
         "kind": "painted",
         "sha256": "5eb5effe7af61ca4370f9c4741393c55d315be5e1cb1aba4c18325c7bdbd59ec"
       }
+    },
+    {
+      "id": "bane-blood-moon",
+      "label": "Blood Moon",
+      "family": "Banes",
+      "source": {
+        "kind": "painted",
+        "sha256": "fb7428830fbefadd307c4780ffac4609f5a1fd62aa04210c22e0b9e454c05ec5"
+      }
+    },
+    {
+      "id": "bane-mist-tide",
+      "label": "Mist Tide",
+      "family": "Banes",
+      "source": {
+        "kind": "painted",
+        "sha256": "70b08051efd02e34a3141ad19b2d56d055e5c32bd1a4cef7012bd73585afe1bb"
+      }
+    },
+    {
+      "id": "bane-ash-fall",
+      "label": "Ash Fall",
+      "family": "Banes",
+      "source": {
+        "kind": "painted",
+        "sha256": "92cc3e77fb74bb3b66b68628a38a053dc6614cb7abe54ba14b353d0d21c04b5a"
+      }
+    },
+    {
+      "id": "bane-altar-curse",
+      "label": "Altar Curse",
+      "family": "Banes",
+      "source": {
+        "kind": "painted",
+        "sha256": "dca72d4ab1c61b88c665c635444a5096ca6b07089b9835186e9c4fe1adfa6804"
+      }
     }
   ]
 }

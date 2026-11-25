@@ -5,7 +5,7 @@ import { type ReactNode, type Ref, useEffect, useRef, useState } from "react";
 import type { AspectId } from "@bibliothecadao/types";
 
 import { AspectMark } from "@/ui/design-system/aspect-mark";
-import { Icon } from "@/ui/design-system/icon";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { useOpenFrames } from "@/ui/design-system/kit/open-frames";
 import { OK, OPENING_WORDS, type OpeningRules } from "@/ui/design-system/kit/words";
 import { OPENING, teacherAspectOf, type OpeningMoment } from "../opening/opening";
@@ -193,12 +193,14 @@ export const EmissaryCard = ({
   title,
   controls,
   tone,
+  picture,
   className,
   attributes,
   dockRef,
   children,
 }: {
   aspectId: AspectId;
+  picture?: IconMeaning;
   layout: "desktop" | "phone";
   label: string;
   title: ReactNode;
@@ -212,7 +214,12 @@ export const EmissaryCard = ({
   const emissary = resolveAspectEmissary(aspectId);
   const phone = layout === "phone";
   const portrait = (size: number) => (
-    <Icon name={emissary.portrait} size={size} alt={emissary.name} className="emissary-dock__portrait" />
+    <Icon
+      name={picture ?? emissary.portrait}
+      size={size}
+      alt={picture ? label : emissary.name}
+      className="emissary-dock__portrait"
+    />
   );
   const medallion = (size: number) => (
     <span className="emissary-dock__medallion">

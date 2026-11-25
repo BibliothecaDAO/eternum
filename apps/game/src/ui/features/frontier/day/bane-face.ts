@@ -28,9 +28,10 @@ export interface BaneFace {
   percent: number | undefined;
   mark: "▾" | "▲";
   icon: IconMeaning;
+  painting: IconMeaning;
 }
 
-type WorldEffect = Pick<BaneFace, "chip" | "effect" | "figure" | "percent" | "mark">;
+type WorldEffect = Pick<BaneFace, "chip" | "effect" | "figure" | "percent" | "mark" | "painting">;
 
 const WORLD_BANE_EFFECTS = {
   [bane.BLOOD_MOON]: (rules) => ({
@@ -39,6 +40,7 @@ const WORLD_BANE_EFFECTS = {
     figure: "guards",
     percent: rules.beast_percent,
     mark: "▲",
+    painting: "bane-blood-moon",
   }),
   [bane.MIST_TIDE]: (rules) => ({
     chip: WORDS.staminaChip(rules.stamina_percent),
@@ -46,6 +48,7 @@ const WORLD_BANE_EFFECTS = {
     figure: "stamina",
     percent: rules.stamina_percent,
     mark: "▾",
+    painting: "bane-mist-tide",
   }),
   [bane.ASH_FALL]: (rules) => ({
     chip: WORDS.productionChip(rules.production_percent),
@@ -53,6 +56,7 @@ const WORLD_BANE_EFFECTS = {
     figure: "production",
     percent: rules.production_percent,
     mark: "▾",
+    painting: "bane-ash-fall",
   }),
 } satisfies Record<WorldBaneKind, (rules: BaneRules) => WorldEffect>;
 
@@ -73,6 +77,7 @@ export function baneFace(day: BaneDay, store: NativeFactStore, gameId: number): 
       percent: undefined,
       mark: "▾",
       icon: aspectMeaning(caster),
+      painting: "bane-altar-curse",
     };
   }
   const world = worldBanes.find((each) => each.id === day.kind);

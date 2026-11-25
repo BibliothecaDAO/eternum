@@ -68,6 +68,7 @@ export const QuestDockView = ({
       label={title}
       title={title}
       tone={bane ? "bane" : undefined}
+      picture={bane?.painting}
       className="quest-dock"
       attributes={{ "data-daily-quest": "", "data-quest-layout": layout }}
       controls={

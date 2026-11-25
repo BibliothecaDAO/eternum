@@ -65,6 +65,7 @@ describe("the quest dock", () => {
     draw(QUEST_DOCK_CASES["World bane"]);
     expect(host.querySelector("aside")?.getAttribute("aria-label")).toBe("Havoc: World Bane: Ash Fall");
     expect(host.querySelector("aside")?.getAttribute("data-tone")).toBe("bane");
+    expect(host.querySelector(".emissary-dock__portrait")?.getAttribute("data-icon")).toBe("bane-ash-fall");
     const bane = host.querySelector("[data-bane-row]")!;
     expect(bane.querySelector('[role="img"]')?.getAttribute("aria-label")).toBe(
       "Production runs at 50% while the bane lasts",

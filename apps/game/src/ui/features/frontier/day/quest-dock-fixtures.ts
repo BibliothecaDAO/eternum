@@ -19,6 +19,7 @@ const ashFall: BaneStanding = {
   percent: 50,
   mark: "▾",
   icon: "bane-world",
+  painting: "bane-ash-fall",
   breaking: WORDS.baneBreak(4, 12),
   clears: WORDS.baneClears("5h"),
 };
