@@ -17,13 +17,22 @@
         if (!host?.dataset.realmLoaded) return false;
         const loaded = JSON.parse(host.dataset.realmLoaded);
         const params = new URL(location.href).searchParams;
-        return ["level", "wonder", "seed", "order", "owned", "distance", "lineup", "reference", "comparison"].every(
-          (key) => {
-            const value = params.get(key);
-            if (value === null) return true;
-            return String(typeof loaded[key] === "boolean" ? Number(loaded[key]) : loaded[key]) === value;
-          },
-        );
+        return [
+          "level",
+          "wonder",
+          "seed",
+          "order",
+          "owned",
+          "distance",
+          "lineup",
+          "base",
+          "reference",
+          "comparison",
+        ].every((key) => {
+          const value = params.get(key);
+          if (value === null) return true;
+          return String(typeof loaded[key] === "boolean" ? Number(loaded[key]) : loaded[key]) === value;
+        });
       },
       null,
       { timeout: 60000 },
@@ -129,6 +138,17 @@
       await capture(`aura-${seed}-a`);
       await page.waitForTimeout(1500);
       await capture(`aura-${seed}-b`);
+    }
+    await select("Series", 0);
+    await page.getByLabel("Base City candidate").click();
+    await page.waitForURL((url) => url.searchParams.get("base") === "1");
+    await ready();
+    for (const distance of [20, 6]) {
+      await select("Distance", distance);
+      for (const owned of [1, 0]) {
+        await select("Ownership", owned);
+        await capture(`base-city-${distance}-${owned}`);
+      }
     }
     if (errors.length) throw new Error(errors.join("\n"));
     if ([...requests].some((path) => path.includes("wonder2.glb") || path.includes("/settlements/")))

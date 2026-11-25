@@ -735,7 +735,9 @@ Art → **Models** → **Realm ladder** (`/lab/models?family=realms`) shows the 
 empire at true scale. City and kingdom have warm upper glass; empire has four lower oak shutters and six upper warm
 windows. The treatment is baked into the three production models; there is no window-treatment selector. Settlement and
 wonders keep their own materials. Choose **Age**, **Series**, **Order**, **Ownership** and **Distance**; drag to orbit
-and scroll to zoom. With an external reference directory in the URL, **Revision** offers Before, After and the pair. See
+and scroll to zoom. **Base City candidate** (`base=1`) puts the image-to-3D courtyard keep City between the shipped
+City, Kingdom and Empire, with the game's own cloth at its flag anchors; the game itself does not load it. With an
+external reference directory in the URL, **Revision** offers Before, After and the pair. See
 [src/lab/README.md](src/lab/README.md#realm-revision-comparison) for the retained capture driver and reference setup.
 
 ### T1 Knight

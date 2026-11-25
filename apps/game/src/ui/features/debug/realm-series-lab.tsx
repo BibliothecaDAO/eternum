@@ -18,7 +18,8 @@ export function RealmSeriesLab() {
     distance: Number(params.get("distance") ?? 20),
     lineup: params.get("lineup") === "1",
     base: params.get("base") === "1",
-    reference: params.get("wonder") === "1" ? undefined : (params.get("reference") ?? undefined),
+    reference:
+      params.get("wonder") === "1" || params.get("base") === "1" ? undefined : (params.get("reference") ?? undefined),
     comparison:
       params.get("comparison") === "before" ? "before" : params.get("comparison") === "pair" ? "pair" : "after",
   };
@@ -79,7 +80,12 @@ export function RealmSeriesLab() {
         )}
         <label>
           Age{" "}
-          <select aria-label="Age" value={settings.level} onChange={(e) => change("level", e.target.value)}>
+          <select
+            aria-label="Age"
+            value={settings.level}
+            disabled={settings.base}
+            onChange={(e) => change("level", e.target.value)}
+          >
             {["Canvas & Thatch", "Terrace Forum", "Twin Ward", "Empire"].map((label, index) => (
               <option key={label} value={index}>
                 {label}
@@ -92,6 +98,7 @@ export function RealmSeriesLab() {
           <select
             aria-label="Series"
             value={Number(settings.wonder)}
+            disabled={settings.base}
             onChange={(e) => change("wonder", e.target.value)}
           >
             <option value="0">Normal</option>
@@ -146,7 +153,7 @@ export function RealmSeriesLab() {
           <input
             type="checkbox"
             checked={settings.lineup}
-            disabled={Boolean(settings.reference && settings.comparison !== "after")}
+            disabled={settings.base || Boolean(settings.reference && settings.comparison !== "after")}
             onChange={(e) => change("lineup", e.target.checked ? "1" : "0")}
           />{" "}
           All ages

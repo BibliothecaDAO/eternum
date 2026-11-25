@@ -69,21 +69,10 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
     resize();
     await environment.update(readModelLabSettings(new URLSearchParams("family=knight&biome=grassland")));
     signal.throwIfAborted();
-    const comparing = Boolean(settings.reference && settings.comparison !== "after");
-    let levels = settings.lineup ? [0, 1, 2, 3] : [settings.level];
-    if (comparing) levels = settings.comparison === "pair" ? [settings.level, settings.level] : [settings.level];
+    const series = realmSeries(settings);
     const labels: string[] = [];
     let height = 0;
-    const series = settings.base
-      ? [
-          REALM_ASSETS[realmModelIndex(1, false, settings.seed)],
-          ...BASE_REALM_CANDIDATES,
-          ...[2, 3].map((level) => REALM_ASSETS[realmModelIndex(level, false, settings.seed)]),
-        ]
-      : levels.map((level) => REALM_ASSETS[realmModelIndex(level, settings.wonder, settings.seed)]);
-    if (settings.base) levels = series.map((asset) => asset.level);
-    for (const [slot, asset] of series.entries()) {
-      const before = comparing && slot === 0;
+    for (const [slot, { asset, before }] of series.entries()) {
       const gltf = await gltfLoader.loadAsync(
         before ? `${settings.reference!.replace(/\/$/, "")}/${asset.id}.glb` : asset.path,
       );
@@ -92,14 +81,14 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
       models.push(model);
       await model.prepare();
       signal.throwIfAborted();
-      const x = (slot - (levels.length - 1) / 2) * Math.sqrt(3) * 2;
+      const x = (slot - (series.length - 1) / 2) * Math.sqrt(3) * 2;
       model.setMatrixAt(0, new Matrix4().makeTranslation(x, environment.terrain.sampleHeight(x, 0), 0));
       model.setCount(1);
       model.setOrderAt(0, settings.order);
       model.setRelationshipAt(0, settings.owned ? "owned" : "enemy");
       model.setWonderEntityAt(0, settings.seed);
       scene.add(model.group);
-      labels.push(before ? "Before" : comparing ? `After · ${asset.label}` : asset.label);
+      labels.push(before ? "Before" : series.some((each) => each.before) ? `After · ${asset.label}` : asset.label);
     }
     controls.target.set(0, environment.terrain.sampleHeight(0, 0) + (settings.distance <= 10 ? height / 2 : 0.5), 0);
     const pitch = resolveWorldmapCameraPitchRadians(settings.distance);
@@ -124,4 +113,26 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
     dispose();
     throw error;
   }
+}
+
+type SeriesSlot = { asset: (typeof REALM_ASSETS)[number]; before: boolean };
+
+export function realmSeries(settings: RealmSeriesSettings): SeriesSlot[] {
+  const shipped = (level: number, wonder = settings.wonder) =>
+    REALM_ASSETS[realmModelIndex(level, wonder, settings.seed)];
+  if (settings.base)
+    return [shipped(1, false), ...BASE_REALM_CANDIDATES, shipped(2, false), shipped(3, false)].map((asset) => ({
+      asset,
+      before: false,
+    }));
+  if (settings.reference && settings.comparison !== "after") {
+    const asset = shipped(settings.level);
+    return settings.comparison === "pair"
+      ? [
+          { asset, before: true },
+          { asset, before: false },
+        ]
+      : [{ asset, before: true }];
+  }
+  return (settings.lineup ? [0, 1, 2, 3] : [settings.level]).map((level) => ({ asset: shipped(level), before: false }));
 }
