@@ -296,12 +296,15 @@ const resolveApiUrl = (apiUrl: string): string =>
     ? apiUrl.replace(/\/$/, "")
     : resolveEndpoint(apiUrl, { name: "identity API URL", browserFacing: true });
 
+const READ_TIMEOUT_MS = 10_000;
+
 export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: IdentityClientOptions) => {
   const api = resolveApiUrl(apiUrl);
   const request = async (path: string, init?: RequestInit) => {
     try {
       return await fetch(`${api}${path}`, {
         ...init,
+        signal: init?.signal ?? (init?.method === "GET" ? AbortSignal.timeout(READ_TIMEOUT_MS) : undefined),
         credentials: "include",
         headers: { "content-type": "application/json", ...init?.headers },
       });

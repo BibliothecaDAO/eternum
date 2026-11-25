@@ -117,8 +117,11 @@ export const RealmCard = ({
         <li data-store="lords">
           <Cell
             icon={<Icon name="lords" size={30} />}
-            value={typeof lords === "number" ? formatShort(lords) : "—"}
-            caption={LORDS}
+            value={lordsValue(lords)}
+            caption={
+              lords === "reading" ? REALM_CARD_WORDS.reading : lords === "failed" ? REALM_CARD_WORDS.noAnswer : LORDS
+            }
+            tone={lords === "failed" ? "bad" : undefined}
             label={lordsLine(lords)}
           />
         </li>
@@ -187,7 +190,7 @@ const Cell = ({
   icon: ReactNode;
   value: ReactNode;
   caption?: string;
-  tone?: "good" | "gold";
+  tone?: "good" | "gold" | "bad";
   label: string;
   onPress?: () => void;
 }) => {
@@ -256,6 +259,15 @@ const NextRank = ({ rankUp }: { rankUp: RealmRankUp }) => (
 
 const lockedLine = ({ name, refusal }: RealmRankUp) =>
   refusal ? `${UPGRADE} · ${name}: ${refusal}` : `${UPGRADE} · ${name}`;
+
+const lordsValue = (lords: LordsReading | null) =>
+  typeof lords === "number" ? (
+    formatShort(lords)
+  ) : lords === "reading" ? (
+    <span className="ui-spinner" aria-hidden="true" />
+  ) : (
+    "—"
+  );
 
 const lordsLine = (lords: LordsReading | null) =>
   lords === null

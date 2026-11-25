@@ -139,6 +139,9 @@ button.frontier-realm-card__cell:hover {
 .frontier-realm-card__caption[data-tone="good"] {
   color: var(--hud-good);
 }
+.frontier-realm-card__caption[data-tone="bad"] {
+  color: var(--hud-bad);
+}
 .frontier-realm-card__caption[data-tone="gold"] {
   color: var(--hud-selected);
 }

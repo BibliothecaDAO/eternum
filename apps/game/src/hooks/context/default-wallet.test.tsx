@@ -43,6 +43,22 @@ afterEach(async () => {
   identity.read.mockReset();
 });
 
+it("reads again by itself a while after a failure, so the wallet arrives without a reload", async () => {
+  vi.useFakeTimers();
+  identity.realmsId = "0xd";
+  identity.read.mockRejectedValueOnce(new Error("timeout")).mockResolvedValueOnce(WALLET);
+  const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  await mount();
+  expect(seen.failed).toBe(true);
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(30_000);
+  });
+  expect(identity.read).toHaveBeenCalledTimes(2);
+  expect(seen).toMatchObject({ wallet: WALLET, failed: false });
+  logged.mockRestore();
+  vi.useRealTimers();
+});
+
 it("keeps a failed read unknown, never none, and reads again when a surface mounts", async () => {
   identity.realmsId = "0xa";
   identity.read.mockRejectedValueOnce(new Error("offline"));
