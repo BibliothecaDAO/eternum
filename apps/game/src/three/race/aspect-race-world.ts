@@ -8,7 +8,6 @@ import { worldOrigin } from "@/three/world-origin";
 import type { TerrainPageRequest } from "@/three/terrain/terrain-types";
 import { buildWorldmapTerrainPageRequests } from "@/three/terrain/worldmap-procedural-terrain";
 
-
 export interface RaceTowerEntry {
   aspectId: AspectId;
   height: number;

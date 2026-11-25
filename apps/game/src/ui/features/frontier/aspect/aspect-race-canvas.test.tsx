@@ -83,7 +83,9 @@ describe("AspectRaceCanvas lifecycle", () => {
   it("mounts the production renderer, pauses off-screen, updates standings and disposes on unmount", async () => {
     const race = MID_SEASON;
     await act(async () => {
-      root.render(<AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} deep={DEEP} surface="shell" />);
+      root.render(
+        <AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} deep={DEEP} surface="shell" />,
+      );
     });
 
     expect(mountAspectRaceRenderer).toHaveBeenCalledTimes(1);
@@ -99,7 +101,9 @@ describe("AspectRaceCanvas lifecycle", () => {
 
     const won = WON;
     await act(async () => {
-      root.render(<AspectRaceCanvas standings={won.standings} finishHeight={won.finishHeight} deep={DEEP} surface="shell" />);
+      root.render(
+        <AspectRaceCanvas standings={won.standings} finishHeight={won.finishHeight} deep={DEEP} surface="shell" />,
+      );
     });
     expect(mockHandle.setStandings).toHaveBeenLastCalledWith(won.standings, won.finishHeight);
 
@@ -110,7 +114,9 @@ describe("AspectRaceCanvas lifecycle", () => {
   it("supports shell and shell-compact variants, skips redundant standings updates, and keeps plates without WebGL", async () => {
     const race = MID_SEASON;
     await act(async () => {
-      root.render(<AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} deep={DEEP} surface="shell" />);
+      root.render(
+        <AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} deep={DEEP} surface="shell" />,
+      );
     });
     const shellStage = host.querySelector("[data-race-stage]")!;
     expect(shellStage.getAttribute("data-race-surface")).toBe("shell");
@@ -122,6 +128,7 @@ describe("AspectRaceCanvas lifecycle", () => {
         <AspectRaceCanvas
           standings={race.standings.map((entry) => ({ ...entry }))}
           finishHeight={race.finishHeight}
+          deep={DEEP}
           surface="shell-compact"
         />,
       );
@@ -138,7 +145,12 @@ describe("AspectRaceCanvas lifecycle", () => {
     root = createRoot(host);
     await act(async () => {
       root.render(
-        <AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} deep={DEEP} surface="shell-compact" />,
+        <AspectRaceCanvas
+          standings={race.standings}
+          finishHeight={race.finishHeight}
+          deep={DEEP}
+          surface="shell-compact"
+        />,
       );
     });
     expect(mountAspectRaceRenderer).not.toHaveBeenCalled();
