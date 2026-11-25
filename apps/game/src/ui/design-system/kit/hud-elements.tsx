@@ -35,6 +35,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
+import { DEPLOY_WORDS } from "./words";
 import { useModalLayer } from "./modal-layer";
 import { PRICE_FACES, type Price } from "./price-faces";
 import { useMarkFrameOpen } from "./open-frames";
@@ -396,7 +397,7 @@ export const HudTroopAmount = ({
           {held > most && " that fit"}
         </span>
       </div>
-      <HudSlider label={`${name}: how many go`} value={value} max={most} disabled={disabled} onChange={onChange} />
+      <HudSlider label={DEPLOY_WORDS.howMany(name)} value={value} max={most} disabled={disabled} onChange={onChange} />
     </div>
   );
 };
@@ -612,13 +613,18 @@ export const HudCost = ({ line }: { line: RankedWords | string }) =>
 
 export type ResourcePrice = { resource: ResourcesIds; amount: number | undefined };
 
-export const HudPrice = ({ prices }: { prices: readonly (Price | ResourcePrice)[] }) => (
+export const HudPrice = ({ prices }: { prices: readonly ((Price | ResourcePrice) & { short?: boolean })[] }) => (
   <span className="ui-price">
     {prices.length === 0 && FREE}
     {prices.map((price) => {
       const face = priceFace(price);
       return (
-        <span key={face.word} role="img" aria-label={`${formatCharge(price.amount)} ${face.word}`}>
+        <span
+          key={face.word}
+          role="img"
+          aria-label={`${formatCharge(price.amount)} ${face.word}`}
+          data-short={price.short || undefined}
+        >
           {face.icon && <Icon name={face.icon} size={20} />}
           {formatCharge(price.amount)}
         </span>

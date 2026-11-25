@@ -2,6 +2,7 @@ import { TROOP_RAISE_SHORT_REASON, type TroopRaiseCost, configManager } from "@b
 import { RESOURCE_PRECISION, type ResourcesIds, formatWait, formatFigure, resourceName } from "@bibliothecadao/types";
 
 import type { ResourcePrice } from "@/ui/design-system/kit/hud-elements";
+import { ARMY_MANAGEMENT } from "@/ui/design-system/kit/words";
 import type { SelectedTroopCombo, TroopSelectionOption } from "./types";
 
 /** Whole troops that fit both the stockpile and the selected army's remaining cap. */
@@ -85,7 +86,7 @@ function describeEmptyTroop(supply: TroopSupply): string {
   if (supply.perHour !== undefined && supply.perHour > 0 && supply.secondsToFullArmy !== null) {
     return `No ${supply.name} yet: full army in ${formatWait(Math.ceil(supply.secondsToFullArmy))}`;
   }
-  return `No ${supply.name} on hand.`;
+  return ARMY_MANAGEMENT.noTroopsAvailable(supply.name);
 }
 
 /**

@@ -57,7 +57,7 @@ const LevelUpRow = ({ step }: { step: EmpireSuggestion }) => {
   const named = levelUp.mode === "level-up" && levelUp.nextLevelName !== null;
   return (
     <BuildOrderRow
-      step={named ? { ...step, reason: `It can level up to ${levelUp.nextLevelName} now.` } : step}
+      step={named ? { ...step, reason: BUILD_ORDER_WORDS.readyToUpgrade(levelUp.nextLevelName!) } : step}
       verb={named ? BUILD_ORDER_WORDS.levelUp : levelUp.word}
       busy={levelUp.loading}
       refusal={levelUp.ready ? null : levelUp.refusal}

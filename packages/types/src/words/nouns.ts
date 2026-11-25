@@ -21,7 +21,8 @@ import { GUARD_SLOT_NAMES, type GuardSlot } from "../constants/troops";
 import { StructureType } from "../constants/structure-type";
 import { deepSites } from "../constants/deep-sites";
 import { TROOP_TYPES, TroopType } from "../types/common";
-import { nounFor } from "./count";
+import type { QuestLine } from "../constants/quests";
+import { formatCount, nounFor } from "./count";
 
 const UNKNOWN = "—";
 
@@ -277,3 +278,8 @@ export const guardedSiteKind = (type: StructureType, beast?: { name: string }): 
 export const VICTORY = "Victory";
 export const ARMY_LOST = "Army lost";
 export const GUARD_HOLDS = "Guard holds";
+
+export const questObjective = (quest: QuestLine): string => `${quest.verb} ${quest.unit.many}`;
+
+export const questLine = (quest: QuestLine, target: number): string =>
+  `${quest.verb} ${formatCount(target, quest.unit.one, quest.unit.many)}`;

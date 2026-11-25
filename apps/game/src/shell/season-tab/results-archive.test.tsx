@@ -46,6 +46,7 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
 
 import { setViewportWidth } from "../frame/test-viewport";
 import { ResultsPage } from "./results-page";
+import { SEASON_ENDINGS } from "@/ui/design-system/kit/words";
 
 const PLAYTEST = "/results/0x50524f44554354494f4e5f31386530376435323330633539393933-1";
 
@@ -93,7 +94,7 @@ it.each([390, 1440])("shows the Playtest's recap from its archive, with no shard
   expect(container.textContent).toContain("Playtest · Ended 31 Oct");
   // The Playtest goes by its name: no surface numbers it.
   expect(container.textContent).not.toMatch(/Season \d/);
-  expect(container.textContent).toContain("The mist lifted");
+  expect(container.textContent).toContain(SEASON_ENDINGS.lifted);
   expect(podium(container)).toEqual([
     ["1", "Volcanic", "166"],
     ["2", "djizus", "136"],

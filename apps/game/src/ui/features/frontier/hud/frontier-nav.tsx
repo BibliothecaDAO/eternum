@@ -44,7 +44,7 @@ export const PhoneTabBar = (state: PlacesState) => {
   const onMenu = surface !== null && MENU_SURFACES.includes(surface);
   const toggle = (target: HudSurface) => onSurface(surface === target ? null : target);
   return (
-    <nav aria-label="Places" className="frontier-tab-bar pointer-events-auto">
+    <nav aria-label="Places" className="ui-popover frontier-tab-bar pointer-events-auto">
       {tabs.map((place) => (
         <PlaceTab
           key={place.key}

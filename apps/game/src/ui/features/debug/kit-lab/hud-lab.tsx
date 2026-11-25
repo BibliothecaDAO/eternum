@@ -13,7 +13,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { homeIcon } from "@/ui/design-system/home-icons";
 import { HudIconButton, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import { ARMY_MANAGEMENT, EVENTS_WORDS, LINK_WALLET_FOR_LORDS, YOU } from "@/ui/design-system/kit/words";
+import { ARMY_MANAGEMENT, EVENTS_WORDS, LINK_WALLET_FOR_LORDS, priceRaised, YOU } from "@/ui/design-system/kit/words";
 import { readArmySlots } from "@/ui/features/frontier/hud/army-dock";
 import { armyName } from "@/ui/features/frontier/hud/dock-armies";
 import { ArmyCard, ArmySlotsCard, LockedSlotLine, OpenSlotCard } from "@/ui/features/frontier/hud/army-row";
@@ -53,7 +53,7 @@ import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
 import { BuildingCardView, type CardMakes } from "@/ui/features/frontier/building/building-card";
 import { buildingIcon, buildingName } from "@/ui/features/frontier/build/building-names";
 import { nativeResearchConstants as research, nativeStructureConstants } from "@bibliothecadao/eternum/game-client";
-import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
+import { type RealmResearchFacts, readResearchTree } from "@/ui/features/frontier/research/research-tree";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
 import { FRONTIER_STORES, STORE_KINDS } from "@/ui/features/frontier/stores";
 import { type StoreReading } from "@/ui/features/frontier/hud/status-strip";
@@ -73,6 +73,9 @@ import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { NewsHeadlineBanner } from "@/ui/features/news-headlines/news-headline-banner";
+import { OPENING_MOMENTS, type OpeningMoment } from "@/ui/features/frontier/opening/opening";
+import { OPENING_RULES } from "@/ui/features/frontier/opening/opening-fixtures";
+import { AspectEmissaryDock } from "@/ui/features/frontier/tutorial/aspect-emissary-dock";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
 import { fragmentsToFill, RefillButton, RefillConfirm, RefillPrice } from "@/ui/features/frontier/army/refill";
@@ -322,7 +325,7 @@ const BUILD_TILES: LabTile[] = [
     "Workshop",
     { icon: "labor", value: "+0.83/min" },
 
-    price(34_000, { of: "labor", wait: 16 * HOUR }, "Costs more with each one standing: 1"),
+    price(34_000, { of: "labor", wait: 16 * HOUR }, priceRaised("1")),
   ),
   tile(BuildingType.ResourceKnightT1, "barracks", "Barracks", { icon: "troops", value: "+13/min" }, price(6_800)),
   tile(
@@ -526,6 +529,7 @@ const STATES = {
   picked: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 1, picked: "owner" },
   full: { clock: CLOCK, stores: FULL_STORES, armies: ARMIES },
   offline: { clock: UNKNOWN_CLOCK, stores: UNKNOWN_STORES, armies: UNKNOWN_ARMIES, offline: true },
+  "offline-tutorial": { clock: CLOCK, stores: STORES, armies: ARMIES, offline: true, tutorial: OPENING_MOMENTS[0] },
   menu: { clock: CLOCK, stores: STORES, armies: ARMIES, menu: true },
   chat: { clock: CLOCK, stores: STORES, armies: ARMIES, chat: true },
   empty: { clock: CLOCK, stores: STORES, armies: [] },
@@ -675,7 +679,8 @@ const STATES = {
     order: { ...EXPLORE, stamina: { cost: 30, held: 10, wait: 40 * 60 } },
   },
   stores: { clock: CLOCK, stores: STORES, armies: ARMIES, storeCard: WHEAT_LINE },
-  research: { clock: CLOCK, stores: STORES, armies: ARMIES, research: true },
+  research: { clock: CLOCK, stores: STORES, armies: ARMIES, research: MID_REALM },
+  "research-short": { clock: CLOCK, stores: STORES, armies: ARMIES, research: { ...MID_REALM, essence: 717 } },
   // A refused order's notice, through the game's own notice store: on a desktop it stands at the rail's top.
   notice: { clock: CLOCK, stores: STORES, armies: ARMIES, notice: staminaShortfall(10, 30) },
   today: { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today" },
@@ -766,7 +771,7 @@ type LabState = {
   /** A notice the client raises (a refused order), as the game's notice store holds it. */
   notice?: string;
   /** Research's page: the tree on the realm some days in. */
-  research?: boolean;
+  research?: RealmResearchFacts;
   /** The card a store's ring or plate opened. */
   storeCard?: StoreLine;
   army?: LabArmySheet;
@@ -793,6 +798,7 @@ type LabState = {
   armies: readonly LabArmy[];
   selected?: number;
   offline?: boolean;
+  tutorial?: OpeningMoment;
   menu?: boolean;
   /** Chat open: a page on a phone, docked on desktop. Its controls are there to be measured for touch. */
   chat?: boolean;
@@ -844,6 +850,18 @@ export const HudLab = () => {
             clock={<DayPill clock={lab.clock} compact />}
             placeSwitch={<LabPlaceSwitch lab={lab} />}
             quest={<LabDailyQuest />}
+            notice={
+              lab.tutorial && (
+                <AspectEmissaryDock
+                  moment={lab.tutorial}
+                  rules={OPENING_RULES}
+                  layout="phone"
+                  status="showing"
+                  onDismiss={noop}
+                  onSkipAll={noop}
+                />
+              )
+            }
             realmCard={lab.storeCard && <LabRealmCard lab={lab} />}
           />
         }
@@ -851,7 +869,7 @@ export const HudLab = () => {
           chat && !desktop ? (
             chat
           ) : lab.research ? (
-            <LabResearch />
+            <LabResearch realm={lab.research} />
           ) : lab.menu ? (
             <MenuPage
               onFeed={noop}
@@ -1185,10 +1203,10 @@ const LabCastleResearch = () => (
 );
 
 /** Research's page on the realm some days in, as the game opens it: the tree alone, a tile tapped bringing its choice. */
-const LabResearch = () => {
-  const nodes = readResearchTree(MID_REALM);
+const LabResearch = ({ realm }: { realm: RealmResearchFacts }) => {
+  const nodes = readResearchTree(realm);
   const [picked, setPicked] = useState<string | null>(
-    () => (nodes.find(({ state }) => state === "ready") ?? nodes[0])?.key ?? null,
+    () => (nodes.find(({ state }) => state === "ready" || state === "short") ?? nodes[0])?.key ?? null,
   );
   return (
     <ResearchPanel
@@ -1199,7 +1217,7 @@ const LabResearch = () => {
       fixFor={() => undefined}
       onResearch={noop}
       onClose={noop}
-      castleLevel={MID_REALM.castleLevel}
+      castleLevel={realm.castleLevel}
     />
   );
 };

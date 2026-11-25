@@ -110,6 +110,12 @@ export const rules = (colors, steps) => [
     pattern: /(?<![\w-])font-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)(?![\w-])/g,
   },
   { rule: "literal font size: use --hud-text-<role>", pattern: /font-size:\s*[\d.]+(?:px|rem)/g },
+  {
+    rule: "a copied kit surface: a Frontier surface takes the kit's class (ui-popover, ui-pill, ui-row) for its rim and ground",
+    pattern: /linear-gradient\(180deg,\s*var\(--hud-surface-from\),\s*var\(--hud-surface-to\)\)/g,
+    refused: true,
+    within: `${APP}/ui/features/frontier/`,
+  },
   // The browser draws a native select in its own colours, whatever the HUD's CSS says: the sheet's HudSelect replaces
   // it. No count allows one.
   { rule: "raw <select>: use HudSelect", pattern: /<select(?![\w-])/g, refused: true },
@@ -120,13 +126,13 @@ export const rules = (colors, steps) => [
 
 /** Every refused value in one file's source, with its line; `refused` when no allowlist count can let it through. */
 export const findViolations = (source, path, colors, steps) =>
-  source
-    .split("\n")
-    .flatMap((text, index) =>
-      rules(colors, steps).flatMap(({ rule, pattern, refused = false }) =>
+  source.split("\n").flatMap((text, index) =>
+    rules(colors, steps)
+      .filter(({ within }) => within === undefined || path.startsWith(within))
+      .flatMap(({ rule, pattern, refused = false }) =>
         [...text.matchAll(pattern)].map(([match]) => ({ path, line: index + 1, rule, match, refused })),
       ),
-    );
+  );
 
 /** Each file's count against its line: over it fails, under it fails until the line is lowered. */
 export const ratchet = (counts, allowlist) => {

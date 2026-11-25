@@ -9,6 +9,7 @@ import { identityClient, useIdentitySessionStore } from "@/hooks/context/identit
 import { IdentityRequestError, type Session } from "@realms-world/identity";
 
 import { DeleteAccount } from "./account-deletion";
+import { ACCOUNT_DELETION_WORDS } from "@/ui/design-system/kit/words";
 
 const EMAIL = "leaving@mail.test";
 const SESSION = {
@@ -60,10 +61,10 @@ afterEach(async () => {
 it("says what is deleted and what stays, the wallet's recovery included, before any code is sent", async () => {
   const sendCode = vi.spyOn(identityClient, "sendSignInCode");
   await mount();
-  await press("Delete account");
+  await press(ACCOUNT_DELETION_WORDS.title);
   const sheet = document.body.textContent!;
   expect(sheet).toContain("permanent");
-  expect(sheet).toContain("Your notification settings and push alerts on every device");
+  expect(sheet).toContain(ACCOUNT_DELETION_WORDS.goes[2]);
   expect(sheet).toContain("email recovery ends");
   expect(sheet).toContain("Your game accounts stay on chain");
   expect(sheet).toContain("until they are 30 days old");
@@ -80,8 +81,8 @@ it("deletes the account with the emailed code, says a wrong one, and lands signe
     .mockRejectedValueOnce(new IdentityRequestError(400, "INVALID_OTP"))
     .mockResolvedValueOnce();
   const page = await mount();
-  await press("Delete account");
-  await press("Email me a code");
+  await press(ACCOUNT_DELETION_WORDS.title);
+  await press(ACCOUNT_DELETION_WORDS.sendCode);
   expect(sendCode).toHaveBeenCalledWith(EMAIL);
 
   await typeCode("111111");

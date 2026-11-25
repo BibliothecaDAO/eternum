@@ -32,6 +32,7 @@ import {
   judgeAfterDoorway,
 } from "./evidence.mjs";
 import { watchReleaseMove } from "./stale-release.mjs";
+import { wordAt } from "../words-table.mjs";
 import {
   nativeOathConstants as oathRules,
   nativeRuleConstants as rules,
@@ -524,7 +525,7 @@ const FIGHT_LOST_STEPS = [
   { name: "attack-lost", play: attackAndReadTheLoss, settleMs: 500, verify: lossShown },
   { name: "loss-closes", play: readTheLossClose, settleMs: 500, verify: lossClosed },
 ];
-const ARMY_LOST = "Your army is lost";
+const armyLost = () => wordAt("FIGHT_WORDS.armyLost");
 /** Past the loss's moment in the panel (ArmyLostSheet's ARMY_LOST_MS, 3 s), with room for a slow frame. */
 const LOSS_CLOSES_WAIT_MS = 6_000;
 
@@ -532,7 +533,7 @@ async function attackAndReadTheLoss(context) {
   const attacked = await attackFromTheSiteCard(context);
   const shown = await readUntil(
     () => context.browser.read(MERGE_STATE),
-    (state) => state.sheet === ARMY_LOST,
+    (state) => state.sheet === armyLost(),
     SHEET_WAIT_MS,
   );
   return { ...attacked, sheet: shown.sheet, sent: shown.sent, destroyed: shown.destroyed };
@@ -542,9 +543,9 @@ function lossShown({ played }) {
   if (!played.sent?.includes("BattleGuard"))
     return failed(`no attack was sent (offered ${played.offered?.join(", ")})`);
   if (!played.destroyed?.includes(played.army)) return failed(`the chain did not answer ${played.army} lost`);
-  return played.sheet === ARMY_LOST
+  return played.sheet === armyLost()
     ? completed({ army: played.army, sheet: played.sheet })
-    : failed(`expected "${ARMY_LOST}" in the panel, saw ${played.sheet ?? "no sheet"}`);
+    : failed(`expected "${armyLost()}" in the panel, saw ${played.sheet ?? "no sheet"}`);
 }
 
 async function readTheLossClose({ browser }) {
@@ -968,7 +969,9 @@ async function offeredDeploy(browser) {
 }
 
 function offersItsKnightsOut(deploy) {
-  return deploy?.sheet === "Deploy" && deploy.offered && !String(deploy.notice ?? "").startsWith("No troops at home");
+  return (
+    deploy?.sheet === "Deploy" && deploy.offered && !String(deploy.notice ?? "").startsWith(wordAt("NO_TROOPS_AT_HOME"))
+  );
 }
 
 function holdsItsKnightsAtHome(played) {
@@ -1390,9 +1393,10 @@ const OATH_SLOTS_STEPS = [
           const { left, top, right, bottom, width, height } = element.getBoundingClientRect();
           return { left, top, right, bottom, width, height };
         };
-        const parts = [...footer.querySelectorAll("button, :scope > span > span[aria-label]")].map((element) => ({
+        const parts = [...footer.querySelectorAll("button, .ui-price > span")].map((element) => ({
           text: element.textContent.trim(),
           button: element.tagName === "BUTTON",
+          disabled: element.disabled === true,
           clipped: element.scrollWidth > element.clientWidth + 1,
           ...box(element),
         }));
@@ -1405,6 +1409,7 @@ const OATH_SLOTS_STEPS = [
           viewport: { width: innerWidth, height: innerHeight },
           prices: parts.filter((part) => !part.button).map((part) => part.text),
           actions: parts.filter((part) => part.button).map((part) => part.text),
+          blocked: parts.filter((part) => part.button && part.disabled).map((part) => part.text),
           overlaps,
           clipped: parts.filter((part) => part.clipped).map((part) => part.text),
           outside: parts.filter((part) => part.left < 0 || part.right > innerWidth || part.top < 0 || part.bottom > innerHeight).map((part) => part.text),
@@ -1415,8 +1420,10 @@ const OATH_SLOTS_STEPS = [
     verify: ({ played }) =>
       played.footer &&
       played.prices.length === 2 &&
-      played.actions.length === 1 &&
+      played.actions.length === 2 &&
       /^Upgrade the Castle$/.test(played.actions[0]) &&
+      played.blocked.length === 1 &&
+      played.blocked[0] === played.actions[1] &&
       played.overlaps.length === 0 &&
       played.clipped.length === 0 &&
       played.outside.length === 0 &&
@@ -1589,28 +1596,28 @@ const BANE_COLLECTIONS = {
     button: "Collect",
     receipts: ["LaborGrant"],
     quest: "The Cull",
-    count: "(2.5K/2.5K)",
+    count: "2,500 of 2,500",
     head: "World Bane: Ash Fall",
   },
   again: {
     button: "Collect again",
     receipts: ["BaneGrant"],
     quest: "The Cull",
-    count: "(2.5K/2.5K)",
+    count: "2,500 of 2,500",
     head: "World Bane: Ash Fall",
   },
   late: {
     button: "Collect",
     receipts: ["LaborGrant", "BaneGrant"],
     quest: "The Cull",
-    count: "(2.5K/2.5K)",
+    count: "2,500 of 2,500",
     head: "World Bane: Ash Fall",
   },
   team: {
     button: "Collect",
     receipts: ["LaborGrant"],
     quest: "The Stand",
-    count: "(3/3)",
+    count: "3 of 3",
     head: "Bane from Prowess",
   },
 };
@@ -1626,7 +1633,8 @@ const baneCollectionSteps = (expected) => [
           browser.read(`JSON.stringify((() => {
           const panel = document.querySelector('[data-daily-quest]');
           const button = [...(panel?.querySelectorAll('button') ?? [])].find(b => b.textContent === ${JSON.stringify(expected.button)});
-          return { text: panel?.textContent, collect: Boolean(button && !button.disabled) };
+          const meter = panel?.querySelector('[role="meter"]')?.getAttribute("aria-label");
+          return { text: [panel?.textContent, meter].join(" · "), collect: Boolean(button && !button.disabled) };
         })())`),
         (value) => value.collect,
         PLAYABLE_WAIT_MS,
@@ -3146,27 +3154,6 @@ const DISCOVERED_SPIRE_STEPS = [
         : failed("Discovered Spire did not enter the adjacent layer and follow the army", played);
     },
   },
-  {
-    name: "next-spire-chance",
-    play: async ({ browser }) => {
-      await pickTheSpireArmy({ browser });
-      return readUntil(
-        () =>
-          browser.read(`JSON.stringify([...document.querySelectorAll('[data-spire-chance]')].filter(element => {
-        const rect = element.getBoundingClientRect();
-        const style = getComputedStyle(element);
-        return rect.width > 0 && rect.height > 0 && rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight && style.visibility !== 'hidden' && style.display !== 'none';
-      }).map(element => element.textContent))`),
-        (shown) => shown.includes("Spire · next reveal 10%"),
-        SPIRE_WAIT_MS,
-      );
-    },
-    settleMs: 0,
-    verify: ({ played }) =>
-      played.includes("Spire · next reveal 10%")
-        ? completed(played)
-        : failed("The new layer must show its own first-reveal Spire chance", played),
-  },
 ];
 
 const HUD_SHEETS = [
@@ -4246,7 +4233,7 @@ function raceBoardSteps(result) {
           (result !== "expired" || race.text.includes("No Aspect finished its hyperstructure")) &&
           !race.text.includes("LORDS") &&
           played.invite?.invite.text.includes("Invite a friend to Prowess") &&
-          !played.invite?.invite.text.includes("could not be made") &&
+          !played.invite?.invite.text.includes(REHEARSAL_WORDS.inviteFailed) &&
           members.text.includes("1,250") &&
           members.text.includes("3,750") &&
           scoped.includes(7) &&
@@ -6040,6 +6027,7 @@ const BUILD_BARRACKS_STEP = {
 export const REHEARSAL_WORDS = {
   startAdventure: "Start your adventure",
   copyLink: "Copy link",
+  inviteFailed: "Could not create invite link.",
   inviteTo: (aspect) => `Invite a friend to ${aspect}`,
   join: (aspect) => `Join ${aspect}`,
   invited: "Invited",

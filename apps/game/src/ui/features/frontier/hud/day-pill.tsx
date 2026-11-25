@@ -74,7 +74,7 @@ export const DayPill = ({ clock, compact = false }: { clock: DayClock; compact?:
       data-tip={dayTip(clock)}
       data-tone={clock.tone}
       data-compact={compact || undefined}
-      className={cn("frontier-day-pill tabular-nums", STORE_TONES[clock.tone].text)}
+      className={cn("ui-popover frontier-day-pill tabular-nums", STORE_TONES[clock.tone].text)}
     >
       {!compact && (
         <ProgressRing size="sm" share={elapsed} tone={clock.tone} className="frontier-day-pill__ring">

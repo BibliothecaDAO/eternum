@@ -6,11 +6,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { aspectName, aspects } from "@bibliothecadao/types";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { BUILD, MENU, OK, OPENING_WORDS, SETTINGS } from "@/ui/design-system/kit/words";
 import { OPENING_MOMENTS, teacherAspectOf, type OpeningMoment } from "../opening/opening";
 import { OPENING_RULES } from "../opening/opening-fixtures";
 import { ASPECT_EMISSARY_PORTRAITS } from "./aspect-emissaries";
 import { AspectEmissaryDock } from "./aspect-emissary-dock";
+import { BUILD, MENU, OK, OPENING_WORDS, SETTINGS } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -62,8 +62,8 @@ describe("AspectEmissaryDock", () => {
     expect(dock?.dataset.tutorialAspect).toBe("2");
     expect(dock?.dataset.tutorialLayout).toBe("desktop");
     expect(dock?.textContent).toContain("Luminary");
-    expect(dock?.textContent).toContain("It raises +1.7/min Knights.");
-    expect(dock?.textContent).toContain("Tap the lit plot to build.");
+    expect(dock?.textContent).toContain(OPENING_WORDS.lines.barracks(OPENING_RULES));
+    expect(dock?.textContent).toContain(OPENING_WORDS.actions.barracks);
     expect(host.querySelector(".emissary-dock__context")).toBeNull();
     expect(host.querySelector(".emissary-dock__well")).toBeNull();
     const portrait = host.querySelector<HTMLImageElement>('img[data-icon="emissary-luminary"]');
@@ -74,7 +74,11 @@ describe("AspectEmissaryDock", () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
 
     const pressSkip = () =>
-      act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === "Skip tutorial")!.click());
+      act(() =>
+        [...host.querySelectorAll("button")]
+          .find((button) => button.textContent === OPENING_WORDS.skipTutorial)!
+          .click(),
+      );
     pressSkip();
     expect(onSkipAll).not.toHaveBeenCalled();
     expect(dock?.textContent).toContain(OPENING_WORDS.skipFinal);
@@ -145,13 +149,17 @@ describe("AspectEmissaryDock", () => {
     expect(dock?.classList.contains("emissary-dock--phone")).toBe(true);
     expect(dock?.getAttribute("aria-label")).toContain("Insight");
     expect(dock?.textContent).toContain(OPENING_WORDS.titles.explore());
-    expect(dock?.textContent).toContain("Reveal a dark hex for 20 stamina.");
+    expect(dock?.textContent).toContain(OPENING_WORDS.lines.explore(OPENING_RULES));
     expect(host.querySelector('img[data-icon="emissary-insight"]')?.getAttribute("src")).toBe(
       "/icons/facets/128/emissary-insight.webp",
     );
     expect(host.querySelector(".emissary-dock__action")?.textContent).toContain(OPENING_WORDS.actions.explore);
     const pressSkip = () =>
-      act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === "Skip tutorial")!.click());
+      act(() =>
+        [...host.querySelectorAll("button")]
+          .find((button) => button.textContent === OPENING_WORDS.skipTutorial)!
+          .click(),
+      );
     pressSkip();
     expect(dock?.textContent).toContain(OPENING_WORDS.skipFinal);
     pressSkip();
@@ -189,7 +197,7 @@ describe("AspectEmissaryDock", () => {
     expect(dock?.textContent).toContain(OPENING_WORDS.completed.explore.line);
     expect(host.querySelector(".emissary-dock__action")).toBeNull();
     expect(
-      [...host.querySelectorAll("button")].find((button) => button.textContent === "Skip tutorial"),
+      [...host.querySelectorAll("button")].find((button) => button.textContent === OPENING_WORDS.skipTutorial),
     ).toBeUndefined();
 
     act(() => okOf(host)!.click());

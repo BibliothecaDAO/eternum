@@ -16,6 +16,7 @@ import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView, readFactView, resourceArrivalsView, seasonClockView } from "@/sync/fact-views";
+import { ARRIVAL_AUTOMATION_WORDS } from "@/ui/design-system/kit/words";
 import { actionFailure, toast } from "@/ui/features/event-feed/notify";
 import {
   startRealmProvisionRunner,
@@ -152,10 +153,10 @@ const ResourceArrivalAutoClaim = () => {
                   error instanceof AutomationPending ||
                   error instanceof ActionRefusedError
                 ) {
-                  toast.warning(`Automatic arrival claims paused: ${error.message}`, { id: "arrival-claim-pending" });
+                  toast.warning(ARRIVAL_AUTOMATION_WORDS.paused(error.message), { id: "arrival-claim-pending" });
                   return;
                 }
-                actionFailure(error, "Auto-claim arrival failed");
+                actionFailure(error, ARRIVAL_AUTOMATION_WORDS.failed);
                 lastFailureRef.current.set(arrivalKey, now);
               }
             }
@@ -163,7 +164,7 @@ const ResourceArrivalAutoClaim = () => {
         );
       } catch (error) {
         if (!signal.aborted)
-          toast.warning(error instanceof Error ? error.message : "Arrival claims are unavailable.", {
+          toast.warning(error instanceof Error ? error.message : ARRIVAL_AUTOMATION_WORDS.unavailable, {
             id: "arrival-claim-pending",
           });
       } finally {

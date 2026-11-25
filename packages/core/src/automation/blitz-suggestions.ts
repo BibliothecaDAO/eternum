@@ -110,9 +110,22 @@ const resolveBuildSuggestion = (
   };
 };
 
+export const BLITZ_SUGGESTION_WORDS = {
+  upgradeLabel: "Upgrade realm",
+  upgradeReady: "Ready to upgrade now.",
+  deployReady: (building: string, available: string, full: string) =>
+    `${building}: ${available} available, full army ${full}.`,
+} as const;
+
 const resolveUpgradeSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null =>
   input.canAffordUpgrade
-    ? createBaseSuggestion(input, "upgrade", "Level up realm", PRIORITY.upgrade, "It can level up now.")
+    ? createBaseSuggestion(
+        input,
+        "upgrade",
+        BLITZ_SUGGESTION_WORDS.upgradeLabel,
+        PRIORITY.upgrade,
+        BLITZ_SUGGESTION_WORDS.upgradeReady,
+      )
     : null;
 
 /**
@@ -179,7 +192,7 @@ const createDeploySuggestion = (
       "deploy-army",
       "Deploy an army",
       PRIORITY.deploy,
-      `${buildingName(building, false)}: ${formatExact(onHand)} on hand, a full army of ${formatExact(full)}.`,
+      BLITZ_SUGGESTION_WORDS.deployReady(buildingName(building, false), formatExact(onHand), formatExact(full)),
     ),
     buildingTypeHint: building,
     resourceHint: resource,

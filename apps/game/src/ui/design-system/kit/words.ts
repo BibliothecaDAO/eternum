@@ -359,6 +359,7 @@ import {
   tierNumeral as rankNumeral,
   asRanked,
   type RankedWords,
+  type QuestUnit,
 } from "@bibliothecadao/types";
 
 /** A step on that scale, common (1) to legendary (5). */
@@ -634,7 +635,11 @@ export const SETTINGS = "Settings";
 /** Settings' row for the keys, and the list it opens in Settings' place. */
 /** The Build order panel: its name, and what it says when no realm has a step it can take now. */
 export const BUILD_ORDER_WORDS = {
-  levelUp: "Level up",
+  levelUp: "Upgrade",
+  create: "Create",
+  upgradeTo: (level: string) => `Upgrade to ${level}`,
+  readyToUpgrade: (level: string) => `Ready to upgrade to ${level}.`,
+  upgradeFailed: "Upgrade failed.",
   title: "Build plan",
   build: "Build",
   deploy: "Deploy",
@@ -695,6 +700,7 @@ export const UNEXPLORED = "Unexplored";
 /** A reveal that paid under a unit, in the day log: what was done, with no amount (findGain). */
 /** A good held whose weight the game has not given: its donkeys cannot be counted, so it cannot be sent. */
 export const WEIGHT_UNKNOWN = "Weight unknown: cannot be sent";
+export const TRANSFER_REFUSED = "The game refused it.";
 /** A player whose name identity could not give: shown as a dash, named so for a screen reader, never the stand-in. */
 export const NAME_UNAVAILABLE = "Name unavailable";
 /** A player whose name identity has not answered yet: an ellipsis, named so for a screen reader, never the stand-in. */
@@ -724,7 +730,7 @@ export const heldAgainstNeed = (held: number | undefined, need: number): string 
 /** A training building already standing: a realm holds one of each. */
 export const ONE_A_REALM = "Built. Limit 1 per Realm.";
 /** Why a price is above its first, on the arrow beside it, in one line and no sum: "Costs more with each one standing: 2". */
-export const priceRaised = (standing: string) => `Costs more with each one standing: ${standing}`;
+export const priceRaised = (standing: string) => `Price rises per copy built: ${standing}`;
 /** What a building does, in one line on its card's tooltip: "Wheat +5/min". */
 export const makes = (noun: string, rate: string) => `${noun} ${rate}`;
 export const storesMore = (share: string) => `${WHEAT} and ${LABOR.toLowerCase()} ${STORAGE.toLowerCase()} ${share}`;
@@ -794,7 +800,6 @@ export const LAYER = "Layer";
  * commits that army to.
  */
 export const SPIRE_WORDS = {
-  nextReveal: (percent: number) => `Spire · next reveal ${percent}%`,
   title: SPIRE,
   lockedAt: (tier: Tier) => `${SPIRE} ${tierNumeral(tier)}`,
   enter: "Enter",
@@ -904,8 +909,8 @@ export const DAY_BANNER_WORDS = {
   collecting: "Collecting…",
   collected: "Collected",
   collectAgain: "Collect again",
-  count: (progress: number, target: number, unit: string) =>
-    `${formatExact(progress)} of ${formatExact(target)} ${unit}`,
+  count: (progress: number, target: number, unit: QuestUnit) =>
+    `${formatExact(progress)} of ${formatCount(target, unit.one, unit.many)}`,
   beastBane: (percent: number) => `Site guards have ${formatExact(percent)}% strength during the bane`,
   staminaBane: (percent: number) => `Stamina regen is ${formatExact(percent)}% during the bane`,
   productionBane: (percent: number) => `Realm production is ${formatExact(percent)}% during the bane`,
@@ -937,12 +942,6 @@ export const DAY_BANNER_WORDS = {
     `Aspect progress: ${formatExact(completed)}/${formatExact(required)} · Ends in ${left}`,
   baneBroken: "Bane broken",
   twiceIfBroken: "2× reward if broken",
-  objectiveLine: (objective: string, target: number) => {
-    const space = objective.indexOf(" ");
-    return space === -1
-      ? `${objective} ${formatExact(target)}`
-      : `${objective.slice(0, space)} ${formatExact(target)} ${objective.slice(space + 1)}`;
-  },
   rewardAmount: (amount: number, resource: ResourcesIds) =>
     `${formatAmount(amount)} ${resourceName(resource, configManager.isFrontier())}`,
   summary: (objective: string, progress: number, target: number, labor: number) =>
@@ -1172,7 +1171,7 @@ export const DEPLOYING = "Deploying…";
 export const DEPLOY_WORDS = {
   troopType: "Troop type",
   slot: "Slot",
-  howMany: (troop: string) => `${troop}: how many go`,
+  howMany: (troop: string) => `${troop} to deploy`,
   deployCount: (count: number) => `${DEPLOY} ${formatExact(count)}`,
 } as const;
 export const SIZE_ROW = { fewer: "One fewer", more: "One more", max: "Max" } as const;
@@ -1212,7 +1211,7 @@ export const TRANSFER_TROOPS = {
   sending: "Moving…",
   cap: (cap: number) => `An army holds at most ${formatAmount(cap)}.`,
   unalike: (picked: string, tapped: string) => `${picked} and ${tapped} hold different troops`,
-  failed: "The troops could not be moved.",
+  failed: "Could not move troops.",
   changed: "The armies' troops changed",
 } as const;
 /** Troops raised from the realm's stock into its army beside it (the realm selected, the army right-clicked). */
@@ -1655,6 +1654,7 @@ export const BLITZ_WORDS = {
 
 /** A Blitz lobby's chat: its panel, its field and the lines that stand where a message cannot go. */
 export const CHAT_WORDS = {
+  historyUnavailable: "Chat history is unavailable. Try again.",
   chat: "Chat",
   message: "Message",
   /** Under the chat of a reader the room does not let write. */
@@ -2326,9 +2326,50 @@ export const ARMY_DETAIL = {
 /** Deleting the picked army, for good. */
 export const ARMY_MANAGEMENT = {
   remove: "Delete",
+  deleteArmy: "Delete army",
+  deleting: "Deleting…",
   confirmDelete: "Delete this army?",
   loss: "Its troops, carried resources and held Oaths are lost. Its slot keeps its stamina.",
-  deleteFailed: "The army could not be deleted.",
+  deleteFailed: "Could not delete army.",
+  noTroopsAvailable: (troop: string) => `No ${troop} available.`,
+} as const;
+
+export const ORDER_BUSY = "Previous order still pending";
+
+export const GUARD_WORDS = {
+  remove: "Remove guard",
+  removing: "Removing…",
+  confirmRemove: (slot: number) => `Remove guard in slot ${slot}?`,
+  removeFailed: "Could not remove guard",
+  rebuilding: "This slot was defeated and is still rebuilding",
+} as const;
+
+export const QUICK_ATTACK_WORDS = {
+  loadingInfo: "Loading enemy info…",
+  takeUnopposed: "No defenders: take it",
+  guardSurvivors: "Guard with survivors",
+  take: "Take",
+  attack: "Attack",
+} as const;
+
+export const BATTLE_OUTCOME_WORDS = {
+  Victory: "Victory — the enemy was defeated",
+  Defeat: "Defeat — your force was defeated",
+  Draw: "Both armies survive — no decisive result",
+} as const;
+
+export const TRIBE_WORDS = {
+  deleteTribe: "Delete Tribe",
+  leaveTribe: "Leave Tribe",
+  exportTitle: "Download social data",
+} as const;
+
+export const VILLAGE_INFO_TITLE = "Village info";
+
+export const ARRIVAL_AUTOMATION_WORDS = {
+  paused: (reason: string) => `Automatic arrivals paused: ${reason}`,
+  failed: "Automatic arrival failed",
+  unavailable: "Automatic arrivals are unavailable.",
 } as const;
 
 const ARMY_RELIC_SLOTS = 3;
@@ -2366,16 +2407,16 @@ export const PICK_EFFECT_WORDS = {
   clearedSiteRewards: `Cleared site ${LABOR.toLowerCase()} & ${ESSENCE}`,
   battleDamageDealt: "Battle damage dealt",
   battleDamageTaken: "Battle damage taken",
-  damageTakenGuarding: "Damage taken while guarding a site",
-  siteRewardsUnderLoss: (loss: string) => `Site rewards if you lose under ${loss} troops`,
+  damageTakenGuarding: "Damage taken when guarding a site",
+  siteRewardsUnderLoss: (loss: string) => `Site rewards when you lose under ${loss} troops`,
   siteRewards: "Cleared site rewards",
   revealTileStamina: `${STAMINA_TITLE} to reveal a tile`,
-  twinsDamage: "Of your largest adjacent army's damage on attack",
+  twinsDamage: "Of your largest adjacent army's damage when attacking",
   furyRefund: `${STAMINA_TITLE} back when an attack defeats the enemy`,
   wellRefill: `Max ${STAMINA} refilled at a Well`,
   revealOrdinal: (ordinal: string) => `${ordinal} reveal`,
   findAfter: (emptyReveals: string) => `Guaranteed find after ${emptyReveals}`,
-  skillDamage: (below: string) => `Attack damage with under ${below} ${STAMINA} left after attacking`,
+  skillDamage: (below: string) => `Damage when an attack drops you under ${below} ${STAMINA}`,
   revealRewards: "Tile reveal rewards",
   titansMax: (from: string, to: string, gain: string) => `Max ${STAMINA} (${from} → ${to}) and ${gain} now`,
   titansMaxGain: (gain: string) => `Max ${STAMINA} and ${gain} now`,

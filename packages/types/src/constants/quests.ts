@@ -4,22 +4,24 @@ import {
 } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
 export const dailyQuests = [
-  { id: quest.HUNT, unit: "herds or bands", name: "The Hunt", objective: "Clear herds or bands" },
-  { id: quest.CAMPS, unit: "camps", name: "Camp-breakers", objective: "Clear camps" },
-  { id: quest.RIFTS, unit: "rifts", name: "Rift-closers", objective: "Clear rifts" },
-  { id: quest.RELICS, unit: "ruins", name: "Relic-seekers", objective: "Find ruins" },
-  { id: quest.VETERANS, unit: "Oaths", name: "Veterans", objective: "Take Oaths" },
-  { id: quest.FINDS, unit: "sites", name: "Pathfinders", objective: "Find sites" },
-  { id: quest.REVEALS, unit: "tiles", name: "Cartographers", objective: "Reveal tiles" },
+  { id: quest.HUNT, name: "The Hunt", verb: "Clear", unit: { one: "Beast site", many: "Beast sites" } },
+  { id: quest.CAMPS, name: "Camp-breakers", verb: "Clear", unit: { one: "Camp", many: "Camps" } },
+  { id: quest.RIFTS, name: "Rift-closers", verb: "Clear", unit: { one: "Rift", many: "Rifts" } },
+  { id: quest.RELICS, name: "Relic-seekers", verb: "Find", unit: { one: "Ruin", many: "Ruins" } },
+  { id: quest.VETERANS, name: "Veterans", verb: "Swear", unit: { one: "Oath", many: "Oaths" } },
+  { id: quest.FINDS, name: "Pathfinders", verb: "Find", unit: { one: "site", many: "sites" } },
+  { id: quest.REVEALS, name: "Cartographers", verb: "Reveal", unit: { one: "tile", many: "tiles" } },
 ] as const;
 
 export const baneQuests = [
-  { id: quest.STAND, unit: "sites", name: "The Stand", objective: "Clear guarded sites" },
-  { id: quest.LIGHTS, unit: "tiles", name: "The Lights", objective: "Reveal tiles" },
-  { id: quest.CULL, unit: "troops", name: "The Cull", objective: "Defeat guard troops" },
+  { id: quest.STAND, name: "The Stand", verb: "Clear", unit: { one: "guarded site", many: "guarded sites" } },
+  { id: quest.LIGHTS, name: "The Lights", verb: "Reveal", unit: { one: "tile", many: "tiles" } },
+  { id: quest.CULL, name: "The Cull", verb: "Defeat", unit: { one: "guard troop", many: "guard troops" } },
 ] as const;
 
 export const questCatalog = [...dailyQuests, ...baneQuests] as const;
+export type QuestLine = Pick<(typeof questCatalog)[number], "verb" | "unit">;
+export type QuestUnit = QuestLine["unit"];
 export type QuestId = (typeof questCatalog)[number]["id"];
 
 export const worldBanes = [

@@ -1,4 +1,5 @@
 import { ResourcesIds } from "../constants/resource-ids";
+import { questCatalog } from "../constants/quests";
 import { resources } from "../constants/resources";
 import { StructureType } from "../constants/structure-type";
 import { GuardSlot } from "../constants/troops";
@@ -36,6 +37,8 @@ import {
   rankedText,
   rankName,
   resourceName,
+  questLine,
+  questObjective,
   skillPointGain,
   structureName,
   troopName,
@@ -285,6 +288,15 @@ describe("nouns", () => {
     expect(resourceName(ResourcesIds.Paladin, true)).toBe(FRONTIER_TROOP_NAMES[TroopType.Paladin].many);
     expect(resourceName(ResourcesIds.Wheat, true)).toBe(resourceName(ResourcesIds.Wheat, false));
     expect(troopName(TroopType.Paladin, "T2", false)).toBe(`${TroopType.Paladin} T2`);
+  });
+
+  it("writes a quest's objective by its verb and many of its unit, and its line one or many by the target", () => {
+    for (const quest of questCatalog) {
+      expect(questObjective(quest)).toBe([quest.verb, quest.unit.many].join(" "));
+      expect(questLine(quest, 1)).toBe([quest.verb, "1", quest.unit.one].join(" "));
+      expect(questLine(quest, 2_500)).toBe([quest.verb, "2,500", quest.unit.many].join(" "));
+      expect(quest.unit.one).not.toBe(quest.unit.many);
+    }
   });
 
   it("names a rank, a structure, a guard wall and an age", () => {

@@ -13,6 +13,7 @@ import {
   pressStep,
   watchToPlayChecks,
 } from "./prove-shell.mjs";
+import { SEASON_ERROR } from "../src/ui/design-system/kit/words";
 
 /** A setting the account keeps: what Settings shows, and a write that may fail. */
 const accountSetting = (value, { writeFails = false } = {}) => {
@@ -167,7 +168,7 @@ describe("a flow whose end did not come", () => {
 
   it("failed when the only failure on the page is another service's", () => {
     expect(endVerdict({ end: "lobby" }, ["Blitz unavailable."])).toMatchObject({ status: "failed" });
-    expect(endVerdict({ end: "board", outage: "Ratings unavailable." }, ["Season unavailable."])).toMatchObject({
+    expect(endVerdict({ end: "board", outage: "Ratings unavailable." }, [SEASON_ERROR])).toMatchObject({
       status: "failed",
     });
   });

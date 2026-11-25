@@ -11,6 +11,7 @@ import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
+import { GUARD_WORDS } from "@/ui/design-system/kit/words";
 import { GuardDismissal } from "./guard-dismissal";
 
 afterEach(() => setBlockTimestampSource(null));
@@ -65,7 +66,7 @@ describe("dismissing a guard", () => {
   it("acts at once in Blitz and Eternum, where time is of the essence", async () => {
     for (const id of ["blitz", "eternum"]) {
       const view = mount(id);
-      await view.press("Dismiss guard");
+      await view.press(GUARD_WORDS.remove);
       expect(view.dialog()).toBeNull();
       expect(view.guard_delete).toHaveBeenCalledWith(expect.objectContaining({ for_structure_id: 7, slot: 0 }));
       view.unmount();
@@ -74,10 +75,10 @@ describe("dismissing a guard", () => {
 
   it("asks first in Frontier, where its troops are lost for good", async () => {
     const view = mount("frontier");
-    await view.press("Dismiss guard");
+    await view.press(GUARD_WORDS.remove);
     expect(view.guard_delete).not.toHaveBeenCalled();
-    expect(view.dialog()?.getAttribute("aria-label")).toBe("Dismiss guard in slot 1?");
-    await view.press("Confirm dismissal");
+    expect(view.dialog()?.getAttribute("aria-label")).toBe(GUARD_WORDS.confirmRemove(1));
+    await view.press(GUARD_WORDS.remove);
     expect(view.guard_delete).toHaveBeenCalledWith(expect.objectContaining({ for_structure_id: 7, slot: 0 }));
     view.unmount();
   });

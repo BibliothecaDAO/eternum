@@ -2,6 +2,7 @@ import {
   FRONTIER_TROOP_NAMES,
   ResourcesIds,
   siteName,
+  siteUsedLine,
   StructureType,
   troopName,
   TroopType,
@@ -834,10 +835,10 @@ it("writes a small army's find rounded, and one under a unit with no amount, as 
 });
 
 it.each([
-  [{ Shrine: 200 }, "Shrine used, +200 XP"],
-  [{ Well: 60 }, "Well used, +60 stamina"],
-  [{ Well: 5 }, "Well used, +5 stamina"],
-  [{ Well: 0 }, "Well used, +0 stamina"],
+  [{ Shrine: 200 }, siteUsedLine("Shrine", "200")],
+  [{ Well: 60 }, siteUsedLine("Well", "60")],
+  [{ Well: 5 }, siteUsedLine("Well", "5")],
+  [{ Well: 0 }, siteUsedLine("Well", "0")],
 ])("shows the recorded site benefit without needing the consumed site or a surviving army (%j)", (benefit, title) => {
   expect(
     buildStoryEventPresentation(story("SiteUsed", { explorer_id: 7, coord: { x: 3, y: 4 }, benefit })),

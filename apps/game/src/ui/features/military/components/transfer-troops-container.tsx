@@ -1,5 +1,5 @@
 import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
-import { MAX_ARMY_SIZE } from "@/ui/design-system/kit/words";
+import { MAX_ARMY_SIZE, TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
@@ -768,7 +768,7 @@ export const TransferTroopsContainer = ({
 
       onTransferComplete();
     } catch (error) {
-      toast.failed(error, "The troops could not be moved.");
+      toast.failed(error, TRANSFER_TROOPS.failed);
     } finally {
       setLoading(false);
     }
