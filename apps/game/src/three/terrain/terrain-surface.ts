@@ -2,6 +2,8 @@ import type { Vector3 } from "three";
 
 import type { TerrainSurfaceSample } from "./terrain-types";
 
+export const TERRAIN_GROUND_HEIGHT = 0;
+
 export interface TerrainSurface {
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample;
   sampleHeight(worldX: number, worldZ: number): number;

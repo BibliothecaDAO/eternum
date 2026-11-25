@@ -1075,29 +1075,6 @@ export class ArmyManager {
     }
   }
 
-  /** Terrain pages can arrive after an army is placed; a marching army keeps its path and lands on the new surface. */
-  public refreshTerrainPlacement(): void {
-    if (this.isDestroyed) return;
-    for (const [entityId, slot] of this.visibleArmyIndices) {
-      const army = this.armyPresentations.get(entityId);
-      if (army && this.hasTerrainMovedUnderArmy(army)) this.regroundArmy(army, slot);
-    }
-  }
-
-  private hasTerrainMovedUnderArmy(army: ArmyData): boolean {
-    const numericId = this.toNumericId(army.entityId);
-    if (this.armyModel.isEntityMoving(numericId)) return false;
-    const placedHeight = this.armyModel.getInstanceData(numericId)?.position.y;
-    return placedHeight !== undefined && placedHeight !== this.resolveArmyPlacement(army).y;
-  }
-
-  private regroundArmy(army: ArmyData, slot: number): void {
-    const modelType = this.armyModel.getAssignedModelType(this.toNumericId(army.entityId));
-    if (modelType === undefined) return;
-    this.refreshArmyInstance(army, slot, modelType);
-    this.markVisibleArmyPresentationDirty();
-  }
-
   private markVisibleArmyPresentationDirty(buffersDirty: boolean = true): void {
     this.visibleArmyPresentationDirty = true;
     this.visibleArmyBuffersDirty ||= buffersDirty;

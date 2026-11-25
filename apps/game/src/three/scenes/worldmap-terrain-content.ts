@@ -1,4 +1,8 @@
+import type { BiomeType } from "@bibliothecadao/types";
 import type { EtherealSurface } from "../terrain/ethereal-depths";
+import { BASALT_SUPPORT_HEIGHT } from "../terrain/terrain-basalt";
+import { TERRAIN_GROUND_HEIGHT } from "../terrain/terrain-surface";
+import { isTerrainWaterBiome, TERRAIN_WATER_LEVEL } from "../terrain/terrain-water";
 import type { DeepZone } from "@bibliothecadao/eternum/game-client";
 import { resolveWorldmapVisualTerrainPageKeyForHex } from "./worldmap-terrain-presentation-runtime";
 /** The biome a terrain cell draws while its tile is unexplored: its outline. */
@@ -12,11 +16,17 @@ interface TerrainCoverageCell {
 
 /** What the current facts say of one cell: its biome once explored, whether terrain levels a pad under it, its surface. */
 export interface TerrainCellFacts {
-  projectedBiome: string | undefined;
+  projectedBiome: BiomeType | undefined;
   occupied: boolean;
   surfacePresentation: EtherealSurface | undefined;
   deepZone?: DeepZone;
 }
+
+export const groundHeightOf = ({ projectedBiome, surfacePresentation, occupied }: TerrainCellFacts): number => {
+  if (projectedBiome === undefined) return TERRAIN_GROUND_HEIGHT;
+  if (surfacePresentation !== undefined) return BASALT_SUPPORT_HEIGHT;
+  return isTerrainWaterBiome(projectedBiome) && !occupied ? TERRAIN_WATER_LEVEL : TERRAIN_GROUND_HEIGHT;
+};
 
 interface CaptureTerrainContentInput {
   cells: readonly TerrainCoverageCell[];

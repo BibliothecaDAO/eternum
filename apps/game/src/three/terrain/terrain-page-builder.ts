@@ -12,7 +12,6 @@ import {
   snapTerrainCoordinate,
   type TerrainWorldCoordinate,
 } from "./terrain-coordinates";
-import { TERRAIN_FOG_GROUND_HEIGHT } from "./terrain-fog-style";
 import { TerrainField, type TerrainVisualSample } from "./terrain-field";
 import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER, prepareTerrainPropInstances } from "./terrain-props";
 import { prepareTerrainShroudInstances } from "./terrain-shroud";
@@ -76,7 +75,6 @@ class TerrainVertexSampler {
 }
 
 const DEFAULT_SUBDIVISIONS = 3;
-const FRONTIER_SKIRT_DEPTH = 0.24;
 
 /**
  * The same page as plain explored ground: its cells under their biomes, and nothing laid over them that a build can
@@ -115,7 +113,6 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
   const basalt: number[] = [];
   const borders = createBorderAccumulator();
   let fogTerrainCells = 0;
-  let frontierEdges = 0;
 
   for (const cell of canonicalCells(request.cells)) {
     if (cell.explored && cell.biome) {
@@ -128,7 +125,6 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
       }
       appendCellPatch(land, vertexSampler, cell, subdivisions, spireStoneAt(field.basaltTransition, cell));
       if (shouldAppendWaterCellPatch(field, cell)) appendWaterCellPatch(water, vertexSampler, cell, subdivisions);
-      frontierEdges += appendFrontierSkirts(land, field, cell);
       continue;
     }
     fogTerrainCells += 1;
@@ -165,7 +161,6 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
       biomeMismatchCount: field.getBiomeMismatchCount(),
       exploredSurfaceSamples: vertexSampler.exploredSamples,
       fogTerrainCells,
-      frontierEdges,
       geometryBytes,
       prepareMs,
       roadSegments: request.roadSegments.length,
@@ -388,57 +383,6 @@ function forEachSubdividedTriangle(
       if (column < columns - 1) visit([towardA, towardB, pointAt(row + 1, column + 1)]);
     }
   }
-}
-
-function appendFrontierSkirts(target: GeometryAccumulator, field: TerrainField, cell: TerrainCellInput): number {
-  const corners = terrainHexCorners(cell.col, cell.row);
-  const neighbors = terrainNeighborCoordinates(cell.col, cell.row);
-  let edgeCount = 0;
-
-  neighbors.forEach((neighbor, direction) => {
-    if (field.getCell(neighbor.col, neighbor.row)?.explored) return;
-    const start = corners[(direction + 5) % 6];
-    const end = corners[direction];
-    const length = Math.hypot(end.x - start.x, end.z - start.z);
-    const normal: [number, number, number] = [(end.z - start.z) / length, 0, (start.x - end.x) / length];
-    const startSample = { ...field.sampleVertex(start.x, start.z), normal };
-    const endSample = { ...field.sampleVertex(end.x, end.z), normal };
-    const topStart = appendFrontierVertex(target, start, startSample, startSample.height, false);
-    const topEnd = appendFrontierVertex(target, end, endSample, endSample.height, false);
-    const bottomStart = appendFrontierVertex(
-      target,
-      start,
-      startSample,
-      Math.min(TERRAIN_FOG_GROUND_HEIGHT, startSample.height - FRONTIER_SKIRT_DEPTH),
-      true,
-    );
-    const bottomEnd = appendFrontierVertex(
-      target,
-      end,
-      endSample,
-      Math.min(TERRAIN_FOG_GROUND_HEIGHT, endSample.height - FRONTIER_SKIRT_DEPTH),
-      true,
-    );
-    target.indices.push(topStart, topEnd, bottomStart, bottomStart, topEnd, bottomEnd);
-    edgeCount += 1;
-  });
-
-  return edgeCount;
-}
-
-function appendFrontierVertex(
-  target: GeometryAccumulator,
-  point: TerrainWorldCoordinate,
-  source: TerrainVisualSample,
-  height: number,
-  darken: boolean,
-): number {
-  return appendVertex(target, point, {
-    ...source,
-    color: darken ? [source.color[0] * 0.3, source.color[1] * 0.3, source.color[2] * 0.3] : source.color,
-    height,
-    roughness: 1,
-  });
 }
 
 function appendVertex(

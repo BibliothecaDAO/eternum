@@ -197,6 +197,7 @@ import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "./worl
 import type { TerrainUploadMetrics } from "@/three/terrain/procedural-terrain";
 import type { TerrainRoadAnchor, TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
 import type { GroundLights } from "@/three/terrain/ground-lights";
+import { findNearestTerrainHex } from "@/three/terrain/terrain-coordinates";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
 import { env } from "../../../env";
@@ -458,7 +459,7 @@ import {
   bindWorldmapTerrainEcologyRefresh,
   collectWorldmapTerrainEcologyAnchors,
 } from "./worldmap-terrain-ecology-refresh-runtime";
-import { takeShownTiles, WorldmapTerrainContent, type TerrainCellFacts } from "./worldmap-terrain-content";
+import { groundHeightOf, takeShownTiles, WorldmapTerrainContent, type TerrainCellFacts } from "./worldmap-terrain-content";
 import { presentResult } from "@/three/presented-results";
 import {
   WORLDMAP_CAMERA_ZOOM,
@@ -1164,8 +1165,16 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   public override getTerrainSurface(): TerrainSurface {
-    return this.proceduralTerrain;
+    return this.groundSurface;
   }
+
+  private readonly groundSurface: TerrainSurface = {
+    sampleSurface: (x, z) => this.proceduralTerrain.sampleSurface(x, z),
+    sampleHeight: (x, z) => {
+      const hex = findNearestTerrainHex(x, z);
+      return groundHeightOf(this.readTerrainCell(hex.col, hex.row));
+    },
+  };
 
   public override getGroundLights(): GroundLights {
     return this.proceduralTerrain.groundLights;
@@ -6257,22 +6266,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private handleTerrainPresentationEvent(event: TerrainPresentationEvent): void {
-    if (event.kind === "page_complete") this.regroundTerrainPlacements();
     this.recordTerrainPresentationEvent(event);
-  }
-
-  /**
-   * Managers place their content while terrain pages still stream, on the fallback surface. Everything that samples
-   * terrain height at placement re-grounds here, so a new terrain-placed manager joins this list.
-   */
-  private regroundTerrainPlacements(): void {
-    this.structureManager.refreshTerrainPlacement();
-    this.spireManager.refreshTerrainPlacement();
-    this.mapSiteManager.refreshTerrainPlacement();
-    this.deepArenaManager.refreshTerrainPlacement();
-    this.armyManager.refreshTerrainPlacement();
-    this.ownershipRings.refreshTerrainPlacement();
-    this.highlightHexManager.refreshTerrainPlacement();
   }
 
   private recordTerrainPresentationEvent(event: TerrainPresentationEvent): void {

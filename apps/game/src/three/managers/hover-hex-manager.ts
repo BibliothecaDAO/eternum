@@ -94,30 +94,16 @@ export class HoverHexManager {
   public showHover(x: number, z: number): void {
     if (!this.hoverHex) return;
 
-    this.hoverHex.position.set(x, HEX_RING_LIFT.glow, z);
+    const ground = this.terrain.sampleHeight(x, z);
+    this.hoverHex.position.set(x, ground + HEX_RING_LIFT.glow, z);
     if (this.hoverHalo) {
-      this.hoverHalo.position.set(x, HEX_RING_LIFT.halo, z);
+      this.hoverHalo.position.set(x, ground + HEX_RING_LIFT.halo, z);
     }
     if (this.hoverOutline) {
-      this.hoverOutline.position.set(x, HEX_RING_LIFT.outline, z);
+      this.hoverOutline.position.set(x, ground + HEX_RING_LIFT.outline, z);
     }
-    this.drapeOnTerrain();
     this.attachHoverFill();
     this.isVisible = true;
-  }
-
-  private drapeOnTerrain(): void {
-    for (const object of [this.hoverHex, this.hoverHalo, this.hoverOutline]) {
-      if (!object) continue;
-      const positions = object.geometry.getAttribute("position");
-      for (let index = 0; index < positions.count; index++) {
-        const worldX = object.position.x + positions.getX(index);
-        const worldZ = object.position.z - positions.getY(index);
-        positions.setZ(index, this.terrain.sampleHeight(worldX, worldZ));
-      }
-      positions.needsUpdate = true;
-      object.geometry.computeBoundingSphere();
-    }
   }
 
   /**

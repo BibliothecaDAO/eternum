@@ -15,7 +15,7 @@ import {
   Vector3,
 } from "three";
 import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
-import { drapeOnGround, layCopyOnGround } from "./hex-ring";
+import { layOnGround, layCopyOnGround } from "./hex-ring";
 import {
   HIGHLIGHT_LAYER_PALETTES,
   plotLookOn,
@@ -328,7 +328,7 @@ export class HighlightHexManager {
     layer.copies = copies;
     layer.mesh.visible = copies.length > 0;
     layer.mesh.geometry.dispose();
-    layer.mesh.geometry = drapeOnGround(this.plate, copies, this.terrain, layer.lift);
+    layer.mesh.geometry = layOnGround(this.plate, copies, this.terrain, layer.lift);
     paintCopies(layer.mesh.geometry, copies, this.plate.getAttribute("position").count);
   }
 
@@ -368,11 +368,6 @@ export class HighlightHexManager {
     [this.routeLayer, this.endpointLayer, this.frontierLayer, this.teachLayer].forEach((layer) => {
       layer.material.opacity = layer.baseOpacity + pulseFactor * layer.opacityPulseScale;
     });
-  }
-
-  /** Terrain pages stream in after a selection is lit; each one that lands lays the lit hexes on its ground again. */
-  refreshTerrainPlacement(): void {
-    this.redrawInPlace();
   }
 
   setCameraView(cameraView: number) {
@@ -468,7 +463,7 @@ export class HighlightHexManager {
     });
 
     const glow = { x: from.x, z: from.z, scale: 0.42 };
-    const glowMesh = new Mesh(drapeOnGround(this.plate, [glow], this.terrain, lift), glowMaterial);
+    const glowMesh = new Mesh(layOnGround(this.plate, [glow], this.terrain, lift), glowMaterial);
     glowMesh.frustumCulled = false;
     glowMesh.renderOrder = 8;
     glowMesh.raycast = () => {};
