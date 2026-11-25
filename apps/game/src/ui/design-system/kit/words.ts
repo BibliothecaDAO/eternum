@@ -552,6 +552,7 @@ export const REALM_CARD_WORDS = {
   stores: "Stores",
   lordsReading: "reading your wallet…",
   lordsUnread: "your wallet could not be read",
+  noAnswer: "No answer",
 } as const;
 export const RESEARCH = "Research";
 export const CHAT = "Chat";

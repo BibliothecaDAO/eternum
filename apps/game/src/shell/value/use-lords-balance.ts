@@ -6,6 +6,15 @@ import { environmentLedger, lordsOf } from "./ledger";
 export type WalletFunds = { token: string; balance: bigint; feeBalance: bigint };
 
 const WALLET_FUNDS_QUERY_KEY = ["shell", "wallet-funds"] as const;
+const READ_DEADLINE_MS = 15_000;
+
+const withinDeadline = <T>(read: Promise<T>): Promise<T> =>
+  Promise.race([
+    read,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`no answer in ${READ_DEADLINE_MS} ms`)), READ_DEADLINE_MS),
+    ),
+  ]);
 
 export const invalidateLordsBalance = (queryClient: QueryClient) =>
   queryClient.invalidateQueries({ queryKey: WALLET_FUNDS_QUERY_KEY });
@@ -16,11 +25,15 @@ export const useWalletFunds = (owner: string | null) => {
     queryKey: [...WALLET_FUNDS_QUERY_KEY, owner],
     queryFn: async (): Promise<WalletFunds> => {
       try {
-        const token = await ledger!.lordsToken();
-        const balance = await ledger!.balanceOf(token, owner!);
-        const paysFeeFromBalance = BigInt(token) === BigInt(WALLET_GAS_TOKEN);
-        const feeBalance = paysFeeFromBalance ? balance : await ledger!.balanceOf(WALLET_GAS_TOKEN, owner!);
-        return { token, balance, feeBalance };
+        return await withinDeadline(
+          (async () => {
+            const token = await ledger!.lordsToken();
+            const balance = await ledger!.balanceOf(token, owner!);
+            const paysFeeFromBalance = BigInt(token) === BigInt(WALLET_GAS_TOKEN);
+            const feeBalance = paysFeeFromBalance ? balance : await ledger!.balanceOf(WALLET_GAS_TOKEN, owner!);
+            return { token, balance, feeBalance };
+          })(),
+        );
       } catch (error) {
         console.error("lords_balance_read_failed", error);
         throw error;
