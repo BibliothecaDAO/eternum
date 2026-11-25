@@ -1312,6 +1312,10 @@ button.ui-relic:focus-visible {
   flex-basis: 100%;
 }
 
+.ui-sheet .ui-window__foot > :last-child:not(.ui-actions__note) {
+  flex: 1;
+}
+
 /* ── Window footer: the window's actions, under a rule. ── */
 .ui-window__foot:empty {
   display: none;
