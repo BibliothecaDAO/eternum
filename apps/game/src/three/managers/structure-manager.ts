@@ -132,6 +132,7 @@ import {
 } from "../frame-budget-work-queue";
 
 import { HyperstructureModel } from "../structures/hyperstructure-model";
+import { warnIfModelLoadStalls } from "../utils/model-load-watch";
 
 type StructureModel = InstancedModel | RewardTileModel;
 
@@ -938,7 +939,7 @@ export class StructureManager {
     const modelPath = this.structureModelPaths[String(structureType)]?.[modelIndex];
     if (!modelPath) throw new Error(`Missing structure model for type ${structureType}, stage ${modelIndex}`);
 
-    const pending = this.loadStructureModel(structureType, modelPath)
+    const loaded = this.loadStructureModel(structureType, modelPath)
       .then(async (model) => {
         const compileStartedAt = performance.now();
         try {
@@ -955,6 +956,7 @@ export class StructureManager {
       .finally(() => {
         this.structureModelPromises.delete(key);
       });
+    const pending = warnIfModelLoadStalls(loaded, modelPath);
     this.structureModelPromises.set(key, pending);
     return pending;
   }
@@ -1009,7 +1011,7 @@ export class StructureManager {
       return empty;
     }
 
-    pending = this.loadCosmeticStructureModels(cosmeticId, assetPaths)
+    const loaded = this.loadCosmeticStructureModels(cosmeticId, assetPaths)
       .then(async (models) => {
         await this.compileModelPipelines(models);
         this.cosmeticStructureModels.set(cosmeticId, models);
@@ -1026,6 +1028,7 @@ export class StructureManager {
         this.cosmeticStructureModelPromises.delete(cosmeticId);
       });
 
+    pending = warnIfModelLoadStalls(loaded, assetPaths.join(", "));
     this.cosmeticStructureModelPromises.set(cosmeticId, pending);
     return pending;
   }
