@@ -16,7 +16,7 @@ const drawsThrough = (renderer: { render(scene: unknown, camera: unknown): void 
 });
 
 const threeWebGpuMock = vi.hoisted(() => ({
-  rendererParameters: [] as Array<{ forceWebGL: boolean }>,
+  rendererParameters: [] as Array<{ forceWebGL: boolean; powerPreference?: string }>,
 }));
 
 vi.mock("three/webgpu", () => ({
@@ -267,7 +267,7 @@ describe("createWebGPURendererBackend", () => {
 
     const diagnostics = await backend.initialize();
 
-    expect(threeWebGpuMock.rendererParameters).toEqual([{ forceWebGL: false }]);
+    expect(threeWebGpuMock.rendererParameters).toEqual([{ forceWebGL: false, powerPreference: "high-performance" }]);
     expect(diagnostics).toEqual(expect.objectContaining({ activeMode: "webgpu", fallbackReason: null }));
     expect(backend.renderer?.shadowMap).toEqual({ enabled: true, type: PCFShadowMap });
   });

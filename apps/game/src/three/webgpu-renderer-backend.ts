@@ -90,7 +90,10 @@ async function createDefaultWebGPURenderer(input: {
   throwIfAborted(input.signal);
   const forceWebGL = input.forceWebGL;
   const rendererCreateStartedAt = performance.now();
-  const renderer = new WebGPURenderer({ forceWebGL }) as unknown as WebGPURendererSurface & {
+  const renderer = new WebGPURenderer({
+    forceWebGL,
+    powerPreference: "high-performance",
+  }) as unknown as WebGPURendererSurface & {
     library: GameMapMaterialLibrary;
   };
   renderer.library = new GameMapMaterialLibrary();
