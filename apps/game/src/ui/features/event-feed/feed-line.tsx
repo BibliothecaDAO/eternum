@@ -122,7 +122,12 @@ const FeedRow = ({
       )}
       {"reward" in line.reading && line.reading.reward && (
         <span className="ui-feed-line__reward" data-tip={line.reading.reward.name}>
-          <Icon name={line.reading.reward.icon} size={16} alt={line.reading.reward.name} className="ui-feed-line__glyph" />
+          <Icon
+            name={line.reading.reward.icon}
+            size={16}
+            alt={line.reading.reward.name}
+            className="ui-feed-line__glyph"
+          />
           {line.reading.reward.amountText}
         </span>
       )}
