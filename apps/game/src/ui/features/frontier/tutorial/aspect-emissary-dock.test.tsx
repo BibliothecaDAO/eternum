@@ -6,12 +6,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { aspectName, aspects } from "@bibliothecadao/types";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { BUILD, MENU, OK, OPENING_WORDS, SETTINGS } from "@/ui/design-system/kit/words";
 import { OPENING_MOMENTS, teacherAspectOf, type OpeningMoment } from "../opening/opening";
 import { OPENING_RULES } from "../opening/opening-fixtures";
 import { ASPECT_EMISSARY_PORTRAITS } from "./aspect-emissaries";
 import { AspectEmissaryDock } from "./aspect-emissary-dock";
-import { OPENING_WORDS } from "../../../design-system/kit/words";
+import { BUILD, MENU, OK, OPENING_WORDS, SETTINGS } from "../../../design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

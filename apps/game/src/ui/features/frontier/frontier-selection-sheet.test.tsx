@@ -47,9 +47,8 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { configManager, setBlockTimestampSource, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import { BuildingType, siteName, TileOccupier } from "@bibliothecadao/types";
 import { transferArmies, TRANSFER_TAPPED } from "./army/transfer-fixture";
-import { SUPPLY_POST } from "@/ui/design-system/kit/words";
 import { useSelectionCard } from "./frontier-selection-sheet";
-import { TRANSFER_TROOPS } from "../../design-system/kit/words";
+import { SUPPLY_POST, TRANSFER_TROOPS } from "../../design-system/kit/words";
 
 /** The selection's card as the HUD draws it. */
 const FrontierSelectionSheet = (props: Parameters<typeof useSelectionCard>[0]) =>

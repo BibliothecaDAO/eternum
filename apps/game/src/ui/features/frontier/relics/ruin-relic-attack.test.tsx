@@ -28,7 +28,6 @@ import { campBeside, placeSite, SITE, SITE_TILE } from "../sites/site-fixture";
 import { TileCard } from "../sites/tile-card";
 import { ruinRelicState } from "./ruin-relic-choice";
 import { RELIC_WORDS } from "../../../design-system/kit/words";
-import { RELIC_WORDS } from "@/ui/design-system/kit/words";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

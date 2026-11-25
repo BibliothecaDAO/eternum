@@ -12,7 +12,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { toast } from "@/ui/features/event-feed/notify";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
 import { costLine, PRICE_FACES, type Price } from "@/ui/design-system/kit/price-faces";
-import { FREE, startsNewArmies } from "@/ui/design-system/kit/words";
 import { buildingOpensAtLevel, configManager, type GameClient, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { type GameClientSetup, nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
 import {
@@ -30,7 +29,7 @@ import { FRONTIER_STORES, STORE_KINDS } from "../stores";
 import { buildingCounts, realmBoard } from "./build-fixture";
 import { buildGroupOf } from "./build-options";
 import { BuildingsInFlight, BuildSheet } from "./build-sheet";
-import { priceRaised } from "../../../design-system/kit/words";
+import { FREE, priceRaised, startsNewArmies } from "../../../design-system/kit/words";
 
 afterEach(() => {
   disposeGameSyncSession();

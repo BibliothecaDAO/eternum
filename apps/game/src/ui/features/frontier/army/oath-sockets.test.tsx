@@ -4,15 +4,10 @@ import { expect, it } from "vitest";
 
 import { nativeOathConstants } from "@bibliothecadao/eternum/game-client";
 import { GameProvider } from "@/hooks/context/game-context";
-import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 import { oathName } from "./oath-details";
 import { ArmyOathSockets } from "./oath-slots";
 import { transferArmies } from "./transfer-fixture";
 import { RESEARCH_TREE } from "../../../design-system/kit/words";
-
-it("says how an army earns an Oath as the game grants one: a site that holds an Oath, or a Shrine revealed", () => {
-  expect(RESEARCH_TREE.oathEarn).toBe(RESEARCH_TREE.oathEarn);
-});
 
 it("draws every Oath socket of an army: its Oaths as icons, each open one explaining how to earn one, the rest locked", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

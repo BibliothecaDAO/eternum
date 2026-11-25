@@ -70,9 +70,8 @@ vi.mock("@/ui/layouts/game-entry-timeline", () => ({ markGameEntryMilestone: sta
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
-import { ASPECT_STEP_WORDS } from "@/ui/design-system/kit/words";
 import { GameEntryModal } from "./game-entry-modal";
-import { COUNTDOWN_WORDS } from "../../design-system/kit/words";
+import { ASPECT_STEP_WORDS, COUNTDOWN_WORDS } from "../../design-system/kit/words";
 
 afterEach(() => {
   vi.useRealTimers();

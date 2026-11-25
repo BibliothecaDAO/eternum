@@ -30,8 +30,7 @@ import {
   ResourcesIds,
   TroopType,
 } from "@bibliothecadao/types";
-import { ARMY_SLOT_WORDS } from "../../../design-system/kit/words";
-import { startsOn } from "@/ui/design-system/kit/words";
+import { ARMY_SLOT_WORDS, startsOn } from "../../../design-system/kit/words";
 
 const BELOW_SURFACE = LAYER_NAMES.slice(1)
   .map((name) => `[aria-label="${name}"]`)

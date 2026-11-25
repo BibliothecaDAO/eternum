@@ -87,7 +87,6 @@ import { setViewportWidth } from "@/shell/frame/test-viewport";
 import { GameEntryModal } from "./game-entry-modal";
 import type { Session } from "@realms-world/identity";
 import { ASPECT_STEP_WORDS, COUNTDOWN_WORDS, DOORWAY_WORDS, HELD_REALMS_UNREADABLE, HOME_STEP_WORDS, REALM_SIDE_WORDS } from "../../design-system/kit/words";
-import { ASPECT_STEP_WORDS, HOME_STEP_WORDS, REALM_SIDE_WORDS } from "@/ui/design-system/kit/words";
 
 /** A signed-in Realms account whose linked wallet is `address` (null: none linked). */
 const signedIn = (realmsId: string, address: string | null): Session => ({

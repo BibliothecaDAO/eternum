@@ -2,7 +2,6 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
 import { questCatalog } from "@bibliothecadao/types";
 import { nativeQuestConstants } from "@bibliothecadao/eternum/game-client";
 

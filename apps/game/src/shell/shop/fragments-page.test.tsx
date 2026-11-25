@@ -63,7 +63,6 @@ import { SEASON_SPENDS_FRAGMENTS } from "../season";
 import { FragmentsPage } from "./fragments-page";
 import { fragmentsHref } from "./fragments-route";
 import { FRAGMENTS_PAGE_WORDS, SEASON_ERROR, WALLET_WORDS } from "../../ui/design-system/kit/words";
-import { FRAGMENTS_PAGE_WORDS } from "@/ui/design-system/kit/words";
 
 const WALLET = "0x4a1";
 const WEI = 10n ** 18n;

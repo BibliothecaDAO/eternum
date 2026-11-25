@@ -22,7 +22,6 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { acceptGameSyncStoryEvent, resetGameSyncStoryEvents } from "@/hooks/store/use-story-events-store";
 import { inFlight, sendOnce } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ATTACK_REFUSAL_WORDS } from "@/ui/design-system/kit/words";
 import { ActionPaths, ActionType, setBlockTimestampSource, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { nativeTilePackingConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";

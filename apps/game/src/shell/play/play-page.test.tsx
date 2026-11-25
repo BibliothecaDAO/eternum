@@ -106,8 +106,7 @@ import { setViewportWidth } from "../frame/test-viewport";
 import { PlayPage } from "./play-page";
 
 import { useConnectStore } from "../sign-in/connect";
-import { COUNTDOWN_WORDS, PLAY_WORDS, PRESEASON_WORDS, SEAL_CODE_WORDS, SEASON_ERROR, SEASON_INVITE_WORDS } from "../../ui/design-system/kit/words";
-import { PLAY_WORDS, PROFILE_WORDS, tomorrowLasts } from "@/ui/design-system/kit/words";
+import { COUNTDOWN_WORDS, PLAY_WORDS, PRESEASON_WORDS, PROFILE_WORDS, SEAL_CODE_WORDS, SEASON_ERROR, SEASON_INVITE_WORDS, tomorrowLasts } from "../../ui/design-system/kit/words";
 
 const HOUR = 3_600;
 const DAY = 24 * HOUR;

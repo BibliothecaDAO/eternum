@@ -2,12 +2,11 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BANNED_WORDS, VOICE_RULES } from "@bibliothecadao/types";
-import { OK, OPENING_WORDS } from "@/ui/design-system/kit/words";
 import { AspectEmissaryDock } from "../tutorial/aspect-emissary-dock";
 import { OpeningPartGate, OpeningProvider } from "./opening-context";
 import { OPENING, OPENING_MOMENTS, partShown, TUTORIAL_WORD_BUDGET, type OpeningMoment } from "./opening";
 import { OPENING_RULES } from "./opening-fixtures";
-import { OPENING_WORDS } from "../../../design-system/kit/words";
+import { OK, OPENING_WORDS } from "../../../design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

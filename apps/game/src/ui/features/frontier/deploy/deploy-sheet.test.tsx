@@ -48,8 +48,7 @@ import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { Direction, RESOURCE_PRECISION, TROOP_TYPES, TroopTier, TroopType } from "@bibliothecadao/types";
 import { frontierDay } from "./deploy-fixture";
 import { DeploySheet } from "./deploy-sheet";
-import { DEPLOY_WORDS, NO_OPEN_TILE, NO_TROOPS_AT_HOME } from "../../../design-system/kit/words";
-import { wheatForOnly } from "@/ui/design-system/kit/words";
+import { DEPLOY_WORDS, NO_OPEN_TILE, NO_TROOPS_AT_HOME, wheatForOnly } from "../../../design-system/kit/words";
 
 afterEach(() => {
   layout.current = "desktop";

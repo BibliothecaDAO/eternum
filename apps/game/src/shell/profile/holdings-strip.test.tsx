@@ -49,8 +49,7 @@ vi.mock("../herald", async (importOriginal) => ({
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { setViewportWidth } from "../frame/test-viewport";
 import { ProfilePage } from "./profile-pages";
-import { FRAGMENTS_PAGE_WORDS, HELD_REALMS_UNREADABLE, NO_HELD_REALMS } from "../../ui/design-system/kit/words";
-import { HOME_STEP_WORDS } from "@/ui/design-system/kit/words";
+import { FRAGMENTS_PAGE_WORDS, HELD_REALMS_UNREADABLE, HOME_STEP_WORDS, NO_HELD_REALMS } from "../../ui/design-system/kit/words";
 
 const HELD_REALMS = "/api/value/held-realms";
 const named = (realmId: number) => `${realmId} · ${canonicalRealm(realmId)!.name}`;
