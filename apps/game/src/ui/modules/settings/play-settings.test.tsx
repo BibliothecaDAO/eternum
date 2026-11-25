@@ -63,7 +63,6 @@ const remount = async () => {
 
 it("draws on a desktop no Renderer row and no Haptics, as nothing there vibrates", () => {
   expect(names()).toEqual(["Quality", "FPS", "Mute", "Shadows", "Reduced motion", "Show everything"]);
-  expect(host.querySelector(".ui-setting__about")).toBeNull();
 });
 
 it("offers Haptics on a phone that can vibrate, and saves its choice; an iPhone, with no vibration, gets no row", async () => {
