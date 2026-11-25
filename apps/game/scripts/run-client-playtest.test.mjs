@@ -29,6 +29,18 @@ describe("readPlaytestOptions", () => {
     expect(() => readPlaytestOptions(["--network", "fast"])).toThrow(/--network takes <down Mbit\/s>,<round trip ms>/);
   });
 
+  it("draws at a device pixel ratio of 1 unless --device-scale names a whole other one", () => {
+    expect(readPlaytestOptions([]).deviceScale).toBe(1);
+    expect(readPlaytestOptions(["--device-scale", "2"]).deviceScale).toBe(2);
+    expect(() => readPlaytestOptions(["--device-scale", "1.5"])).toThrow(
+      "--device-scale must be an integer of at least 1",
+    );
+  });
+
+  it("seeds a spectator's page with a saved storage file, taken from where the command was run", () => {
+    expect(readPlaytestOptions(["--storage-state", "quality.json"], "/work").storageState).toBe("/work/quality.json");
+  });
+
   it("plays at 1920 by 1080 unless --viewport names another size", () => {
     expect(readPlaytestOptions([]).viewport).toEqual({ width: 1920, height: 1080 });
     expect(readPlaytestOptions(["--viewport", "1280x800"]).viewport).toEqual({ width: 1280, height: 800 });

@@ -111,7 +111,6 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
   const player = option("--player", null);
   if (player !== null && !/^[^@\s]+@[^@\s]+$/.test(player)) throw new Error(`--player takes an email, not "${player}"`);
   const storageState = option("--storage-state", null);
-  if (storageState && !player) throw new Error("--storage-state requires --player");
   const passkeys = option("--passkeys", null);
   if (passkeys && !player) throw new Error("--passkeys requires --player");
   const ally = option("--ally", null);
@@ -157,6 +156,7 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     chainId: option("--chain-id", ""),
     comparePath: option("--compare", null) && resolve(callerDir, option("--compare")),
     cpuThrottle: integer("--cpu-throttle", DEFAULTS.cpuThrottle, 1),
+    deviceScale: integer("--device-scale", 1, 1),
     gameId: Number(option("--game-id", "0")),
     gpu,
     captureResults: argv.includes("--capture-results"),
@@ -514,6 +514,9 @@ function openBrowser(context, { label, profile }) {
   };
 }
 
+const emulateDeviceScale = (devTools, deviceScaleFactor) =>
+  devTools.send("Emulation.setDeviceMetricsOverride", { ...VIEWPORT, deviceScaleFactor, mobile: false });
+
 async function preparePage(context, page, storageState) {
   const { browser, label, releases } = page;
   const { owner } = context;
@@ -534,6 +537,7 @@ async function preparePage(context, page, storageState) {
     releases.push(owner.adopt(`client at origin ${label}`, () => page.clientAtOrigin.stop()));
   }
   await touchAtPhoneWidth(page.devTools, VIEWPORT.width);
+  if (context.deviceScale > 1) await emulateDeviceScale(page.devTools, context.deviceScale);
   return page;
 }
 
