@@ -33,9 +33,12 @@
   order: 2;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: theme(spacing.2);
   padding-top: theme(spacing.1);
+}
+.ui-settings__foot > [aria-expanded] {
+  margin-right: auto;
 }
 .ui-settings__profile {
   display: flex;

@@ -31,7 +31,7 @@ import { ContractAddress } from "@bibliothecadao/types";
 
 import { getGameModeId } from "@/config/game-modes";
 import { hudFor } from "@/ui/layouts/hud-for";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { HowToPlayRow, useHowToPlay } from "../how-to-play";
 import { AppSettings } from "./app-settings";
@@ -69,8 +69,10 @@ export const SettingsPanel = () => {
 
 const MoreSettings = ({ onShowKeys }: { onShowKeys: () => void }) => {
   const guide = useHowToPlay();
+  const shown = useRef<HTMLDivElement>(null);
+  useEffect(() => shown.current?.scrollIntoView?.({ block: "start" }), []);
   return (
-    <div className="ui-settings__more">
+    <div ref={shown} className="ui-settings__more">
       <SettingsSection title={PROFILE_WORDS.notifications}>
         <NotificationSettings />
       </SettingsSection>
