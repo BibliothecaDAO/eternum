@@ -5,6 +5,7 @@ import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { Icon } from "@/ui/design-system/icon";
 import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
+import { useTablet } from "@/shell/frame/layout";
 import { DAILY_QUEST_MODELS, readDailyQuest } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
@@ -21,6 +22,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
   useNativeRevision(DAILY_QUEST_MODELS);
   const layout = useLayout();
   const { triggerProps, popover, close } = useHudPopover();
+  const tablet = useTablet();
   const today = readDailyQuest(setup.store, realm.game_id, safeInteger(realm.entity_id), now);
   if (!today) return null;
   const reading = today.reading.known;
@@ -38,12 +40,13 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
         {...triggerProps}
         aria-haspopup="dialog"
         data-daily-quest-chip=""
+        data-hud-part=""
         data-ready={ready || undefined}
         aria-label={face ? `${face.name} ${count}` : DAY_BANNER_WORDS.today}
         className="frontier-quest-orb"
       >
         <ProgressRing size="lg" share={target > 0 ? progress / target : 0} tone="calm">
-          <Icon name={icon} size={24} />
+          <Icon name={icon} size={36} />
         </ProgressRing>
         <span className="frontier-quest-orb__count">{ready ? DAY_BANNER_WORDS.collect : count}</span>
         {ready && (
@@ -54,7 +57,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
       </button>
       {popover(<DailyQuest realm={realm} onClose={close} />, {
         className: "frontier-quest-popover",
-        layout,
+        layout: tablet && layout === "phone" ? "tablet" : layout,
       })}
     </div>
   );

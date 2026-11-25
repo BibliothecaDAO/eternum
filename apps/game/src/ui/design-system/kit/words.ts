@@ -1102,6 +1102,7 @@ export const DEPLOY_WORDS = {
 export const BUILD = "Build";
 export const BUILT = "Built";
 export const plotsUsed = (used: number, total: number) => `${used} / ${total} plots`;
+export const armiesHere = (count: number) => (count === 1 ? "1 army" : `${count} armies`);
 export const FREE = "Free";
 
 /** Default army names: "Army" and its place. */

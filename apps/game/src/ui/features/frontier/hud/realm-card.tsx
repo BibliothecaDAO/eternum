@@ -65,7 +65,11 @@ export const RealmCard = ({
   onHome?: () => void;
   onClose?: () => void;
 }) => (
-  <section aria-label={REALM} className="frontier-cluster-card frontier-realm-card pointer-events-auto">
+  <section
+    aria-label={REALM}
+    data-hud-part=""
+    className="frontier-cluster-card frontier-realm-card pointer-events-auto"
+  >
     <header className="frontier-realm-card__head">
       <button
         type="button"

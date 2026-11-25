@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { SPIRE_WORDS } from "@/ui/design-system/kit/words";
 
 import { PhoneTabBar, type HudSurface } from "./frontier-nav";
 import { selectLayer } from "./map-layers";
@@ -111,4 +112,32 @@ it("names the place shown on its pill and lists every place, the locked ones wit
   expect(rows[4]!.textContent).toBe("DeepSpire III");
   act(() => pill.click());
   expect(document.querySelector("[data-surface-deep-switch]")).toBeNull();
+});
+
+it("lists each place with what stands there, and a locked place with its lock and what opens it", () => {
+  const layers = { layers: [0, 1, 2] as const, shown: 1 as const, go };
+  act(() =>
+    root.render(
+      <PlaceMenu
+        isMapView
+        layers={layers}
+        onGoRealm={vi.fn()}
+        onGoSurface={vi.fn()}
+        lines={{ realm: "2 / 6 plots", surface: "1 army", 1: "1 army", 2: "0 armies", 3: "0 armies" }}
+      />,
+    ),
+  );
+  act(() => document.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
+  const rows = [...document.querySelectorAll<HTMLButtonElement>('[role="tab"]')].map((row) => [
+    row.getAttribute("aria-label"),
+    row.querySelector(".frontier-place-row__line")?.textContent ?? null,
+    row.dataset.locked === "true",
+  ]);
+  expect(rows).toEqual([
+    ["Realm", "2 / 6 plots", false],
+    ["Surface", "1 army", false],
+    ["Veil", "1 army", false],
+    ["Hollow", "0 armies", false],
+    ["Deep", SPIRE_WORDS.lockedAt(3), true],
+  ]);
 });

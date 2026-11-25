@@ -115,6 +115,11 @@ const plotsHeld = (store: PlotStore, realm: NativeRows["Structure"]) => {
   return { used: total - openPlots(store, realm).length, total };
 };
 
+export const useRealmPlots = (realm: NativeRows["Structure"] | null) => {
+  const facts = useNativeFacts(BUILD_MODELS);
+  return realm ? plotsHeld(facts.store, realm) : undefined;
+};
+
 export const BuildSheet = ({
   realm,
   plot,
