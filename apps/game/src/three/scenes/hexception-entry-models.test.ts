@@ -13,6 +13,14 @@ vi.mock("@/three/utils/gltf-loader", () => ({
   gltfLoader: { loadAsync: async () => ({ scene: loaded.scene, animations: [] }) },
 }));
 
+const route = vi.hoisted(() => ({ tiles: null as unknown }));
+vi.mock("@/play/navigation/play-route-target", () => ({
+  resolvePlayRouteTarget: () => ({ hexRealmPosition: { col: 3, row: 4 }, routeWorldPosition: { col: 3, row: 4 } }),
+}));
+vi.mock("@/sync/active-game-client", () => ({
+  requireActiveGameClient: () => ({ views: { buildingTiles: () => route.tiles } }),
+}));
+
 const { getGameModeConfig } = await import("@/config/game-modes");
 const { default: HexceptionScene } = await import("./hexception");
 
@@ -92,4 +100,28 @@ it("compiles a loaded model's pipelines against the realm scene before it hands 
   expect(compilePipelines).toHaveBeenCalledWith(building.model, scene.scene);
   expect(building.model.getObjectById(mesh.id)).toBe(mesh);
   expect(new Box3().setFromObject(building.model, true).min.y).toBeCloseTo(0, 6);
+});
+
+it("asks for the route realm's models while the camera flies to it, the same ones its board then lays out", () => {
+  const buildings = [
+    { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], category: BuildingType.ResourceLabor },
+    { col: BUILDINGS_CENTER[0] + 1, row: BUILDINGS_CENTER[1], category: BuildingType.ResourceWheat, tier: 3 },
+    { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] - 1, category: BuildingType.ResourceKnightT1 },
+  ];
+  route.tiles = {
+    existingBuildings: () => buildings.map((building) => ({ ...building })),
+    structureType: () => StructureType.Realm,
+    getRealmLevel: () => 0,
+    getWonder: () => undefined,
+  };
+  const board = realmBoard(buildings);
+  board.scene.readRouteStructure = () => ({ entity_id: 7 });
+
+  board.scene.prepareWhileFlying();
+
+  expect(board.requested.toSorted()).toEqual([
+    "/models/frontier/painted/barracks-1.glb",
+    "/models/frontier/painted/farm-3.glb",
+    "/models/realms/settlement.glb",
+  ]);
 });
