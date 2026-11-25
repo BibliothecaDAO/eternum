@@ -127,11 +127,12 @@ const orderRefusalWords: Record<Exclude<OrderRefusal["reason"], "stamina">, stri
   "too-far": "Too far · move closer",
 };
 
-export const refusedOrderLine = (reason: Exclude<OrderRefusal["reason"], "stamina">): RefusedOrder => ({
+export const refusedOrderLine = (reason: Exclude<OrderRefusal["reason"], "stamina">) => ({
+  reason,
   line: orderRefusalWords[reason],
 });
 
-export type RefusedOrder = { of: "stamina"; cost: Cost } | { line: string };
+export type RefusedOrder = { of: "stamina"; cost: Cost } | ReturnType<typeof refusedOrderLine>;
 
 /** The wheat and fish an order burns from its army's realm. */
 type OrderFood = { wheat: number; fish: number };

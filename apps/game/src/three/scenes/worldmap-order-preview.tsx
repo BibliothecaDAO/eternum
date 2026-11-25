@@ -57,7 +57,7 @@ const RefusedLine = ({ refused }: { refused: RefusedOrder }) => {
     return (
       <span
         className="flex min-w-0 items-center gap-1.5 whitespace-nowrap font-semibold"
-        data-refused-order
+        data-refused-order={refused.reason}
         role="alert"
       >
         <span aria-hidden className="size-2 flex-none rounded-full bg-[color:var(--hud-bad)]" />
@@ -67,7 +67,14 @@ const RefusedLine = ({ refused }: { refused: RefusedOrder }) => {
   const { cost, held, wait } = refused.cost;
   const pair = formatHeldAgainst(held, cost);
   return (
-    <span className="flex min-w-0 items-center gap-1.5 whitespace-nowrap font-semibold" data-refused-order role="alert">
+    <span
+      className="flex min-w-0 items-center gap-1.5 whitespace-nowrap font-semibold"
+      data-refused-order={refused.of}
+      data-held={held}
+      data-need={cost}
+      data-wait={wait}
+      role="alert"
+    >
       <Icon name={refused.of} size={16} />
       <span>
         <span className="text-[color:var(--hud-bad)]">{pair.held}</span>/{pair.need}
