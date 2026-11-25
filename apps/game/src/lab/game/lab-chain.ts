@@ -8,6 +8,7 @@ import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { dayOf, fragmentsSold, nativeGameModeOfFamily, readExpeditionRules } from "@bibliothecadao/eternum";
 import {
+  compareAspectMembers,
   NativeFactStore,
   ordinaryHash,
   questBonusPercent,
@@ -25,6 +26,7 @@ import {
 } from "@bibliothecadao/eternum/game-sync";
 import {
   aspects,
+  catalogAspectId,
   seasonGameName,
   type AspectId,
   type NativeWorldBindings,
@@ -265,6 +267,11 @@ export const chainOf = (scenario: LabScenario): NativeFactStore => {
  * The player's row of the lab shard's directory, as Herald derives it from the chain: registered, and settled once the
  * chain holds a structure of theirs, each listed.
  */
+const homeAspect = (chain: NativeFactStore, home: bigint) => {
+  const row = chain.get("HomeAspect", { game_id: LAB_GAME.gameId, home });
+  return row ? catalogAspectId(row.aspect) : null;
+};
+
 const playerState = (chain: NativeFactStore, player: string) => {
   const structures = [...chain.rows("Structure")]
     .filter((structure) => BigInt(structure.owner) === BigInt(player))
@@ -276,6 +283,8 @@ const playerState = (chain: NativeFactStore, player: string) => {
       coord_x: null,
       coord_y: null,
       resources_packed: String(structure.resources_packed),
+      aspect: homeAspect(chain, structure.entity_id),
+      has_wonder: structure.metadata.has_wonder,
     }));
   const entitlements = [...chain.rows("EntryEntitlement")];
   const own = entitlements.find((row) => BigInt(row.owner) === BigInt(player));
@@ -535,6 +544,8 @@ const answerHeraldRead = (
     const held = chain.get("ExpeditionSite", { game_id: LAB_GAME.gameId, entity_id: id });
     return held ? wire(held) : (scenario.farSites?.find((row) => Number(row.entity_id) === id) ?? NOT_FOUND);
   }
+  const roster = url.pathname.match(new RegExp(`^${game}/aspects/(\\d+)/members$`));
+  if (roster) return aspectRosterOf(chain, Number(roster[1]), url.searchParams);
   if (url.pathname === `${game}/leaderboard` && scenario.board)
     return { game_id: String(LAB_GAME.gameId), mode: "frontier", entries: scenario.board };
   const ranks = url.pathname.match(new RegExp(`^${game}/days/(\\d+)/ranks$`));
@@ -549,6 +560,33 @@ const answerHeraldRead = (
     };
   }
   return undefined;
+};
+
+const aspectRosterOf = (chain: NativeFactStore, aspect: number, page: URLSearchParams) => {
+  const gameId = LAB_GAME.gameId;
+  const members = [...chain.inGame("HomeAspect", gameId)]
+    .filter((row) => row.aspect === aspect)
+    .map(({ home }) => ({ home, glory: chain.require("RaceMember", { game_id: gameId, entity_id: home }).glory }))
+    .sort(compareAspectMembers);
+  const offset = Number(page.get("offset") ?? 0);
+  const limit = Number(page.get("limit") ?? members.length);
+  return {
+    game_id: String(gameId),
+    aspect,
+    total: members.length,
+    offset,
+    limit,
+    members: members.slice(offset, offset + limit).map(({ home, glory }, index) => {
+      const realm = chain.require("Structure", { game_id: gameId, entity_id: home });
+      return {
+        rank: offset + index + 1,
+        entity_id: home.toString(),
+        realm_id: Number(realm.metadata.realm_id),
+        owner: `0x${realm.owner.toString(16)}`,
+        glory: glory.toString(),
+      };
+    }),
+  };
 };
 
 const hasHappened = (event: HeraldHistoryEvent, now: number): boolean =>

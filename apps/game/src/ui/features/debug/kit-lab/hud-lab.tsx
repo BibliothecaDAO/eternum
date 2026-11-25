@@ -84,6 +84,8 @@ import { ShopCodeField, ShopView } from "@/ui/features/frontier/shop/shop-sheet"
 import { labQuestRulesFact } from "@/lab/game/quest-scenario";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
 import { DailyQuestChip } from "@/ui/features/frontier/hud/daily-quest-chip";
+import { QUEST_DOCK_CASES } from "@/ui/features/frontier/day/quest-dock-fixtures";
+import { QuestDockView } from "@/ui/features/frontier/day/quest-dock-view";
 import type { MapLayers } from "@/ui/features/frontier/hud/map-layers";
 import { PlaceSwitch, placeLines } from "@/ui/features/frontier/hud/surface-deep-switch";
 import { WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
@@ -530,6 +532,15 @@ const STATES = {
   full: { clock: CLOCK, stores: FULL_STORES, armies: ARMIES },
   offline: { clock: UNKNOWN_CLOCK, stores: UNKNOWN_STORES, armies: UNKNOWN_ARMIES, offline: true },
   "offline-tutorial": { clock: CLOCK, stores: STORES, armies: ARMIES, offline: true, tutorial: OPENING_MOMENTS[0] },
+  "quest-open": { clock: CLOCK, stores: STORES, armies: ARMIES, quest: "Quest done, Collect waits" },
+  "quest-tutorial": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    offline: true,
+    tutorial: OPENING_MOMENTS[0],
+    quest: "Quest done, Collect waits",
+  },
   menu: { clock: CLOCK, stores: STORES, armies: ARMIES, menu: true },
   chat: { clock: CLOCK, stores: STORES, armies: ARMIES, chat: true },
   empty: { clock: CLOCK, stores: STORES, armies: [] },
@@ -799,6 +810,7 @@ type LabState = {
   selected?: number;
   offline?: boolean;
   tutorial?: OpeningMoment;
+  quest?: keyof typeof QUEST_DOCK_CASES;
   menu?: boolean;
   /** Chat open: a page on a phone, docked on desktop. Its controls are there to be measured for touch. */
   chat?: boolean;
@@ -850,6 +862,7 @@ export const HudLab = () => {
             clock={<DayPill clock={lab.clock} compact />}
             placeSwitch={<LabPlaceSwitch lab={lab} />}
             quest={<LabDailyQuest />}
+            questCard={lab.quest && <QuestDockView {...QUEST_DOCK_CASES[lab.quest]} layout="phone" />}
             notice={
               lab.tutorial && (
                 <AspectEmissaryDock

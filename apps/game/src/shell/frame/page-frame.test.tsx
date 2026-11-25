@@ -7,7 +7,9 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { appRoutes, RETIRED_REDIRECTS } from "@/app";
+import { COSMETICS_PATH } from "@/shell/cosmetics/cosmetics-route";
 import { FRAGMENTS_PATH } from "@/shell/shop/fragments-route";
+import { COSMETICS_WORDS, WORDS } from "@/ui/design-system/kit/words";
 
 import { REALMS_MARK } from "@/ui/design-system/icon-meaning";
 
@@ -159,7 +161,7 @@ describe("a page's notice", () => {
     expect(notice.closest('[data-band="bar"]')).not.toBeNull();
     const connect = container.querySelector('[data-band="bar"] [data-action="connect"]')!;
     expect(notice.compareDocumentPosition(connect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(bandOrder(container).filter((name) => name !== "notice")).toEqual(["bar", "body", "footer"]);
+    expect(bandOrder(container).filter((name) => name !== "notice")).toEqual(["bar", "body", "footer", "dock"]);
   });
 
   it("sits above the phone's foot, under the content", async () => {
@@ -185,6 +187,12 @@ describe.each(SIZES)("the current place at %i × %i", (width) => {
   it("marks Shop current on /shop", async () => {
     setViewportWidth(width);
     expect(current(await renderPath("/shop"))).toEqual(["Shop"]);
+  });
+
+  it("marks Cosmetics current on a desktop's /cosmetics, and You on a phone's", async () => {
+    setViewportWidth(width);
+    const lit = current(await renderPath(COSMETICS_PATH));
+    expect(lit).toEqual(width >= 1024 ? [COSMETICS_WORDS.title] : [WORDS.connect]);
   });
 });
 
