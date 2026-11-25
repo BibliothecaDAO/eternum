@@ -1,19 +1,10 @@
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import {
-  DAY,
-  dayEnds,
-  dayLeft,
-  dayLeftCompact,
-  LEFT,
-  phraseText,
-  TODAY,
-  tomorrowLasts,
-} from "@/ui/design-system/kit/words";
+import { DAY_MEDALLION } from "@/ui/design-system/icon-meaning";
+import { DAY, dayEnds, dayLeft, dayLeftCompact, phraseText, TODAY, tomorrowLasts } from "@/ui/design-system/kit/words";
 import { useGameFinished } from "@/ui/features/world/containers/top-header/game-clock";
 import { GameFinishedPill } from "@/ui/features/world/containers/top-header/game-finished-pill";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
-import type { CSSProperties } from "react";
 
 import { dayClock, dayElapsedShare, type DayClock } from "./day-clock";
 import { ProgressRing } from "./progress-ring";
@@ -50,12 +41,12 @@ export const FrontierDayClock = ({
       onClick={onOpenToday}
       className="frontier-day-trigger pointer-events-auto"
     >
-      {compact ? <DayRing clock={clock} /> : <DayPill clock={clock} />}
+      <DayMedallion clock={clock} size={compact ? 52 : 64} />
     </button>
   );
 };
 
-export const DayRing = ({ clock }: { clock: DayClock }) => {
+export const DayMedallion = ({ clock, size = 64 }: { clock: DayClock; size?: 52 | 64 }) => {
   const left = dayLeftCompact(clock.secondsLeft);
   const label = left
     ? `${DAY} ${clock.day ?? "—"} · ${phraseText(dayLeft(clock.secondsLeft))}`
@@ -66,43 +57,21 @@ export const DayRing = ({ clock }: { clock: DayClock }) => {
       aria-label={label}
       data-tip={dayTip(clock)}
       data-tone={clock.tone}
-      className="frontier-day-disc pointer-events-auto"
-      style={{ "--day-gone": `${Math.round((dayElapsedShare(clock) ?? 0) * 100)}%` } as CSSProperties}
+      data-size={size}
+      className={cn("frontier-day-dial pointer-events-auto tabular-nums", STORE_TONES[clock.tone].text)}
     >
-      <span className="frontier-day-disc__kicker">{DAY}</span>
-      <span className="frontier-day-disc__day">{clock.day ?? "—"}</span>
-      {left && <span className="frontier-day-disc__left">{left}</span>}
-    </span>
-  );
-};
-
-export const DayPill = ({ clock }: { clock: DayClock }) => {
-  const left = dayLeftCompact(clock.secondsLeft);
-  const tip = dayTip(clock);
-  return (
-    <span
-      role="timer"
-      aria-label="Day clock"
-      data-tip={tip}
-      className={cn("frontier-day-cornice pointer-events-auto tabular-nums", STORE_TONES[clock.tone].text)}
-    >
-      <span className="frontier-day-medallion">
-        <ProgressRing
-          size="lg"
-          share={dayElapsedShare(clock)}
-          tone={clock.tone}
-          className="frontier-day-medallion__ring"
-        >
-          <span className="frontier-day-stack">
-            <span className="frontier-day-kicker">{DAY}</span>
-            <span className="frontier-day-label">{clock.day ?? "—"}</span>
-          </span>
-        </ProgressRing>
-      </span>
-      <span className="frontier-day-readout">
-        {left && <span className="frontier-day-readout__left">{left}</span>}
-        <span className="sr-only">{`${DAY} ${clock.day ?? "—"}${left ? ` · ${left} ${LEFT}` : ""}`}</span>
-      </span>
+      <img
+        src={clock.tone === "ember" ? DAY_MEDALLION[size].ember : DAY_MEDALLION[size].calm}
+        alt=""
+        className="frontier-day-dial__bezel"
+      />
+      <ProgressRing share={dayElapsedShare(clock)} tone={clock.tone} className="frontier-day-dial__ring">
+        <span className="frontier-day-dial__face" aria-hidden="true">
+          <span className="frontier-day-dial__kicker">{DAY}</span>
+          <span className="frontier-day-dial__numeral">{clock.day ?? "—"}</span>
+          {left && <span className="frontier-day-dial__left">{left}</span>}
+        </span>
+      </ProgressRing>
     </span>
   );
 };

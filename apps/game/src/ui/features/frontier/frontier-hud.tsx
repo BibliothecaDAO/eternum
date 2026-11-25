@@ -9,7 +9,7 @@ import { useRealmVisit } from "@/sync/active-game-client";
 import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { REALM_CARD_WORDS, SETTINGS } from "@/ui/design-system/kit/words";
-import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
+import { HudChatWindow, useGameChat } from "@/ui/features/world/containers/hud-chat-window";
 import { IdentityChip } from "@/ui/features/world/containers/top-header/identity-chip";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
@@ -47,7 +47,7 @@ import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { PhoneTabBar, type HudSurface } from "./hud/frontier-nav";
 import { selectLayer, useMapLayers } from "./hud/map-layers";
 import { FrontierTopBar } from "./hud/phone-top-bar";
-import { FrontierPlaceSwitch, PlaceMenu, placeLines } from "./hud/surface-deep-switch";
+import { PlaceMenu, placeLines } from "./hud/surface-deep-switch";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { useFirstBuild, useMarkFirstBuild } from "./build/first-build";
@@ -187,7 +187,7 @@ const FrontierHudBody = ({
   }, [isMapView, setSurface]);
   useBuildOpensOnEntering(desktop && !isMapView && ordersAllowed && realm && !visit ? realm : null);
   const chat = useGameChat(surface === "chat");
-  const chatPane = useChatKey(() => setSurface("chat"));
+  const chatPane = useChatKey(() => setSurface("chat"), { enabled: !desktop });
   const headerStores = useStoreReadings(shown, rules);
   const headerFacts = useNativeFacts(REALM_HEADER_MODELS);
   const own = realm && !visit ? realm : null;
@@ -229,7 +229,13 @@ const FrontierHudBody = ({
     },
     onSwitch: close,
   };
-  const placeSwitch = <FrontierPlaceSwitch {...placeChoices} />;
+  const placeMenu = (
+    <PlaceMenu
+      {...placeChoices}
+      realm={shown ? { mark: homeIcon(homeKind(shown.metadata.has_wonder), shown.base.level) } : undefined}
+      lines={own ? placeLines(ownArmies, ownPlots) : undefined}
+    />
+  );
   const page =
     surface === "research" && realm ? (
       <FrontierResearch key={researchPick} realm={realm} pick={researchPick} onClose={close} />
@@ -237,7 +243,7 @@ const FrontierHudBody = ({
       <FrontierSeason rules={rules} onVisited={close} onClose={close} />
     ) : surface === "feed" ? (
       <FrontierFeed onClose={close} />
-    ) : surface === "chat" ? (
+    ) : surface === "chat" && !desktop ? (
       <ChatPage
         rooms={chat.rooms}
         signedIn={chat.initializer !== null}
@@ -297,13 +303,7 @@ const FrontierHudBody = ({
         realmOpen: realmVisible,
         onOpenRealm: () => setSurface(surface === "realm" ? null : "realm"),
       }}
-      placeMenu={
-        <PlaceMenu
-          {...placeChoices}
-          realm={shown ? { mark: homeIcon(homeKind(shown.metadata.has_wonder), shown.base.level) } : undefined}
-          lines={own ? placeLines(ownArmies, ownPlots) : undefined}
-        />
-      }
+      placeMenu={placeMenu}
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
       notice={openingNotice}
       spectatorChip={spectating ? <IdentityChip compact /> : undefined}
@@ -358,7 +358,8 @@ const FrontierHudBody = ({
     <FrontierDesktop
       clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
-      placeSwitch={placeSwitch}
+      placeSwitch={placeMenu}
+      chat={<HudChatWindow open={surface === "chat"} onOpenChange={(open) => setSurface(open ? "chat" : null)} />}
       banner={<OfflineNotice />}
       realm={realmCard}
       armies={armyDock}
@@ -375,7 +376,6 @@ const FrontierHudBody = ({
           surface={surface}
           onSurface={setSurface}
           research={own ? canResearchNow(research?.nodes) : undefined}
-          chatUnread={chat.unread}
           lead={
             spectating ? (
               <IdentityChip compact season={{ rank: seasonRank, onOpen: () => setSurface("season") }} />

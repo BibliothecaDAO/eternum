@@ -122,8 +122,11 @@ const PHONE_PLACE_PRESSES = {
   [HUD_WORDS.season]: (browser) => browser.tapPlace(HUD_WORDS.season),
 };
 
+const DESKTOP_CHAT_STRIP = '[aria-label="Chat strip"]';
+
 async function openPlace(browser, word) {
-  if (onADesktop()) browser.clickTab(word);
+  if (onADesktop() && word === HUD_WORDS.chat) browser.run(["click", DESKTOP_CHAT_STRIP]);
+  else if (onADesktop()) browser.clickTab(word);
   else await PHONE_PLACE_PRESSES[word](browser);
 }
 
@@ -6927,7 +6930,8 @@ export const STEP_SETS = {
               h.places.includes("Research") &&
               h.places.includes("Season") &&
               h.places.includes("Feed") &&
-              h.places.includes("Chat") &&
+              h.places.includes(HUD_WORDS.settings) &&
+              !h.places.includes(HUD_WORDS.chat) &&
               !h.places.includes("Relics") &&
               h.questChip &&
               everyStock(h.desktopStores) &&
@@ -7190,7 +7194,7 @@ export const STEP_SETS = {
           const ready = await readUntil(
             () =>
               browser.read(`JSON.stringify({
-                open: Boolean(document.querySelector('${onADesktop() ? "[data-right-page] " : ""}section[aria-label="${HUD_WORDS.chat}"]')),
+                open: Boolean(document.querySelector('${onADesktop() ? "[data-chat-pane] " : ""}section[aria-label="${HUD_WORDS.chat}"]')),
               })`),
             (state) => state.open,
             SHEET_WAIT_MS,
@@ -7205,7 +7209,7 @@ export const STEP_SETS = {
         settleMs: 0,
         play: async ({ browser, extraScreenshot }) => {
           const target = onADesktop() ? HUD_WORDS.settings : HUD_WORDS.menu;
-          if (onADesktop()) browser.click(HUD_WORDS.settings);
+          if (onADesktop()) browser.clickTab(HUD_WORDS.settings);
           else browser.tapPlace(HUD_WORDS.menu);
           const ready = await readUntil(
             () =>
@@ -7649,8 +7653,7 @@ const placeSelected = (kind, selection) =>
 function openTheFarPlace(kind) {
   return async ({ browser }) => {
     if (!browser.read(farPlaceReading(kind)).chip) {
-      if (onADesktop()) browser.clickTab(HUD_WORDS.chat);
-      else browser.tapPlace(HUD_WORDS.chat);
+      await openPlace(browser, HUD_WORDS.chat);
       await sleep(1_500);
     }
     const before = browser.read(farPlaceReading(kind));

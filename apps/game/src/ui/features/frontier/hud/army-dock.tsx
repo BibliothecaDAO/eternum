@@ -16,7 +16,7 @@ import type { SlotStart } from "../deploy/deploy-plan";
 import { slotStart } from "../deploy/slot-start";
 import { useDeployPlan } from "../deploy/use-deploy-plan";
 import { useWellRefill } from "../sites/well-refill";
-import { ArmyCard, ArmySlotsCard, LockedSlotCard, OpenSlotCard } from "./army-row";
+import { ArmyCard, ArmySlotsCard, LockedSlotLine, OpenSlotCard } from "./army-row";
 import { ArmyToken, OpenSlot } from "./army-token";
 import type { DockArmy } from "./dock-armies";
 
@@ -92,9 +92,7 @@ export const ArmyDock = ({
       <ArmySlotsCard count={slotRule?.count}>
         {entries}
         {pending}
-        {(ordersAllowed ? (slotRule?.locked ?? []) : []).map((slot) => (
-          <LockedSlotCard key={`locked-${slot.number}`} number={slot.number} rank={slot.rank} />
-        ))}
+        {ordersAllowed && slotRule?.nextLocked && <LockedSlotLine {...slotRule.nextLocked} />}
       </ArmySlotsCard>
     );
   }
@@ -121,15 +119,13 @@ export const readArmySlots = (
   limits: TroopLimits,
   active: number,
   allowed: number,
-): { count: string; locked: { number: number; rank: string }[] } => {
+): { count: string; nextLocked: { number: number; rank: string } | undefined } => {
   const byRank = armiesByRank(limits);
   const most = Math.max(allowed, ...byRank);
+  const number = allowed + 1;
   return {
     count: ARMY_SLOT_WORDS.count(active, allowed, most),
-    locked: Array.from({ length: most - allowed }, (_, index) => {
-      const number = allowed + index + 1;
-      return { number, rank: rankName(byRank.findIndex((armies) => armies >= number)) };
-    }),
+    nextLocked: number <= most ? { number, rank: rankName(byRank.findIndex((armies) => armies >= number)) } : undefined,
   };
 };
 
