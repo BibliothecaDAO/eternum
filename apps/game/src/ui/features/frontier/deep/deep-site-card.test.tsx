@@ -102,7 +102,12 @@ describe("the Deep site's live native binding", () => {
         if (site.kind === nativeRuleConstants.DEEP_ALTAR)
           expect(hud.host.querySelector("[data-rate='bar']")?.getAttribute("data-tip")).toBe("300 of 1,500");
       }
-      hud.render(<DeepSiteCard site={sites.find((site) => site.kind === nativeRuleConstants.DEEP_MINE && site.open)!} onClose={() => {}} />);
+      hud.render(
+        <DeepSiteCard
+          site={sites.find((site) => site.kind === nativeRuleConstants.DEEP_MINE && site.open)!}
+          onClose={() => {}}
+        />,
+      );
       act(() =>
         hud.store.applyFacts([
           {
@@ -112,7 +117,16 @@ describe("the Deep site's live native binding", () => {
           },
         ]),
       );
-      hud.render(<DeepSiteCard site={readDeepSites(hud.store, scenario.startsAt, 1).find((site) => site.kind === nativeRuleConstants.DEEP_MINE && site.open)!} onClose={() => {}} />);
+      hud.render(
+        <DeepSiteCard
+          site={
+            readDeepSites(hud.store, scenario.startsAt, 1).find(
+              (site) => site.kind === nativeRuleConstants.DEEP_MINE && site.open,
+            )!
+          }
+          onClose={() => {}}
+        />,
+      );
       expect(hud.host.querySelector("[data-rate='labor'] b")?.textContent).toBe("+600");
     } finally {
       hud.unmount();

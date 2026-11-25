@@ -121,9 +121,7 @@ const BaneLine = ({ bane }: { bane: BaneStanding }) => (
       {bane.chip}
     </span>
     {bane.doubles && <span className="quest-dock__twice">{WORDS.twiceIfBroken}</span>}
-    <span className="quest-dock__break">
-      {bane.standing}
-    </span>
+    <span className="quest-dock__break">{bane.standing}</span>
   </span>
 );
 

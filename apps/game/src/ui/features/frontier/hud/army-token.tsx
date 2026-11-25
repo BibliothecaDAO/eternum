@@ -223,11 +223,7 @@ export const DeepDrain = ({
   const cadence = formatShortDuration(drain.tickSeconds);
   const time = formatDuration(drain.secondsLeft);
   const line = DEEP_WORDS.poisonPanel(loss, cadence, drain.ticksLeft, time);
-  const shown = compact
-    ? DEEP_WORDS.poisonCompact(loss, cadence, time)
-    : words
-      ? line
-      : DEEP_WORDS.poisonToken(loss);
+  const shown = compact ? DEEP_WORDS.poisonCompact(loss, cadence, time) : words ? line : DEEP_WORDS.poisonToken(loss);
   return (
     <span
       data-deep-drain

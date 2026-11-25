@@ -852,12 +852,13 @@ export const DEEP_WORDS = {
   heightCell: "Aspect height",
   resourceCell: (perMinute: string) => `${perMinute} · split by troops`,
   barCell: "Bane bar",
-  poisonCell: "Deep poison per guard",
+  poisonCell: `${DEEP} poison per guard`,
   poisonStrip: (troops: number, cadence: string) =>
-    `Holding drains −${formatExact(troops)} troops / ${cadence} (Deep poison)`,
+    `Holding drains −${formatExact(troops)} troops / ${cadence} (${DEEP} poison)`,
   poisonPanel: (troops: number, cadence: string, ticks: number, time: string) =>
-    `Deep poison: −${formatExact(troops)} every ${cadence} · ${formatExact(ticks)} ticks (${time})`,
-  poisonCompact: (troops: number, cadence: string, time: string) => `−${formatExact(troops)} / ${cadence} · ${time} left`,
+    `${DEEP} poison: −${formatExact(troops)} every ${cadence} · ${formatExact(ticks)} ticks (${time})`,
+  poisonCompact: (troops: number, cadence: string, time: string) =>
+    `−${formatExact(troops)} / ${cadence} · ${time} left`,
   poisonToken: (troops: number) => `−${formatExact(troops)}`,
   poisoned: "Poisoned",
   ratesWhenOpen: "Rates set when open",
@@ -883,7 +884,8 @@ export const DEEP_WORDS = {
   share: (percent: number) => `${percent}% of each tick`,
   attack: "Attack",
   take: "Take",
-  join: "Join",
+  join: "Join guard",
+  joinShort: "Join",
   pickArmy: `Select an army in the ${DEEP}`,
   guarding: "Already guarding",
   full: "All 4 slots are taken",

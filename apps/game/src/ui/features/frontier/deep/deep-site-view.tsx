@@ -5,6 +5,7 @@ import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import { oathEffectDescription, oathName } from "../army/oath-details";
 import type { PickEffectBase } from "../pick-effect-format";
+import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { type Price } from "@/ui/design-system/kit/price-faces";
 import {
@@ -115,7 +116,11 @@ export const DeepSiteView = ({
   const name = siteName(site);
   const secondary = rates && secondaryRate(rates);
   return (
-    <HudSheet label={name} title={<DeepTitle site={site} name={name} tag={siteTag(ring, opening, guard)} />} onClose={onClose}>
+    <HudSheet
+      label={name}
+      title={<DeepTitle site={site} name={name} tag={siteTag(ring, opening, guard)} />}
+      onClose={onClose}
+    >
       <div data-deep-site={site} className="deep-site">
         {rates ? <RateStrip rates={rates} /> : <LockedKinds site={site} />}
         {fight ? (
@@ -168,7 +173,8 @@ type Rate = { kind: "glory" | "height" | "essence" | "labor" | "bar" | "drain"; 
 
 const cadenceOf = (rates: DeepRates) => formatShortDuration(rates.tickSeconds);
 
-const resourceSub = (rates: DeepRates, amount: number) => DEEP_WORDS.resourceCell(formatRate(amount / rates.tickSeconds));
+const resourceSub = (rates: DeepRates, amount: number) =>
+  DEEP_WORDS.resourceCell(formatRate(amount / rates.tickSeconds));
 
 const primaryRate = (rates: DeepRates): Rate | null =>
   rates.glory > 0
@@ -203,7 +209,9 @@ const RateStrip = ({ rates }: { rates: DeepRates }) => {
         <span
           key={rate.kind}
           data-rate={rate.kind}
-          data-tip={rate.kind === "bar" && rates.bar ? DEEP_WORDS.bar(rates.bar.charge, rates.bar.threshold) : undefined}
+          data-tip={
+            rate.kind === "bar" && rates.bar ? DEEP_WORDS.bar(rates.bar.charge, rates.bar.threshold) : undefined
+          }
           className="deep-rate"
         >
           <span className="deep-rate__value">
@@ -413,7 +421,6 @@ const GuardStrip = ({
             </span>
           ))}
         </div>
-
       </div>
       {frontGuard && (
         <div data-guard-oaths={frontGuard.oaths} className="flex flex-wrap items-center gap-1.5 empty:hidden">
@@ -434,7 +441,11 @@ const GuardStrip = ({
   );
 };
 
+const verbWord = (verb: "attack" | "take" | "join", phone: boolean) =>
+  verb === "join" && phone ? DEEP_WORDS.joinShort : DEEP_WORDS[verb];
+
 const OrderFoot = ({ order }: { order: DeepOrder | DeepBlock }) => {
+  const phone = useHudLayout() !== "desktop";
   if (typeof order === "string") return <HudWindowFoot note={DEEP_WORDS[order]} />;
   if (order.kind === "closed") return null;
   const footPrices = order.kind === "move" ? order.prices : undefined;
@@ -448,7 +459,7 @@ const OrderFoot = ({ order }: { order: DeepOrder | DeepBlock }) => {
           busy={order.busy}
           onClick={order.onAct}
         >
-          {DEEP_WORDS[order.verb]}
+          {verbWord(order.verb, phone)}
           {order.stamina !== undefined && order.stamina > 0 && <AttackStamina stamina={order.stamina} />}
         </HudButton>
       )}

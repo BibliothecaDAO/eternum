@@ -244,9 +244,7 @@ describe("bane collection", () => {
     game.draw();
     expect(host.querySelector("aside")?.getAttribute("aria-label")).toBe(`Havoc: Bane from ${source.name}`);
     expect(host.querySelector(".emissary-dock__portrait")?.getAttribute("data-icon")).toBe("bane-altar-curse");
-    expect(host.querySelector("[data-bane-row]")?.textContent).toBe(
-      "▾Deep height pausedBane broken",
-    );
+    expect(host.querySelector("[data-bane-row]")?.textContent).toBe("▾Deep height pausedBane broken");
     expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("The Stand · Clear 3 guarded sites (3/3)");
     expect(host.textContent).not.toContain("2× reward if broken");
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
