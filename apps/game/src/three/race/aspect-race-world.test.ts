@@ -14,6 +14,8 @@ import {
   RACE_TOWER_HEXES,
 } from "./aspect-race-world";
 
+const DEEP = { spacing: 100, rings: [{ radius: 7 }, { radius: 11 }, { radius: 15 }, { radius: 19 }] };
+
 describe("the Aspect race 3D world layout", () => {
   it("gives every Aspect its own procedural hyperstructure seed, family, crown and masonry tint", () => {
     const designs = aspects.map(({ id }) => resolveHyperstructureDesign(ASPECT_HYPERSTRUCTURE_SEEDS[id]));
@@ -24,7 +26,7 @@ describe("the Aspect race 3D world layout", () => {
   });
 
   it("places the four towers on hexes one apart on the Deep's plaza, every cell the Deep's own floor", () => {
-    const pages = createAspectRaceTerrainRequests();
+    const pages = createAspectRaceTerrainRequests(DEEP);
     const cells = pages.flatMap((page) => page.cells);
     expect(RACE_TOWER_HEXES).toHaveLength(aspects.length);
     for (let index = 1; index < RACE_TOWER_HEXES.length; index += 1) {
@@ -67,7 +69,7 @@ describe("the Aspect race 3D world layout", () => {
   });
 
   it("fills every frustum corner with hex terrain across desktop, compact, and phone aspect ratios", () => {
-    const cells = createAspectRaceTerrainRequests().flatMap((page) => page.cells);
+    const cells = createAspectRaceTerrainRequests(DEEP).flatMap((page) => page.cells);
     const xs = cells.map(({ col, row }) => terrainHexToWorld(col, row).x);
     const zs = cells.map(({ col, row }) => terrainHexToWorld(col, row).z);
     const minX = Math.min(...xs);
@@ -104,15 +106,14 @@ describe("the Aspect race 3D world layout", () => {
     const originAnchors = projectRacePlateAnchors(originCamera, entries, [0.4, 0.4, 0.4, 0.4]);
     try {
       setWorldOrigin({ col: -1_236_511_808, row: -1_269_605_120 });
-      const pages = createAspectRaceTerrainRequests();
+      const pages = createAspectRaceTerrainRequests(DEEP);
       expect(pages.length).toBeGreaterThan(0);
       for (const page of pages) {
-        const prepared = prepareTerrainPage(page);
-        const positions = prepared.buffers.positions;
-        expect(positions.length).toBeGreaterThan(0);
-        for (let index = 0; index < positions.length; index += 3) {
-          expect(Math.abs(positions[index]!)).toBeLessThan(100);
-          expect(Math.abs(positions[index + 2]!)).toBeLessThan(100);
+        const floor = prepareTerrainPage(page).basaltInstances ?? new Float32Array();
+        expect(floor.length).toBeGreaterThan(0);
+        for (let index = 0; index < floor.length; index += 3) {
+          expect(Math.abs(floor[index]!)).toBeLessThan(100);
+          expect(Math.abs(floor[index + 1]!)).toBeLessThan(100);
         }
       }
       const shiftedCamera = new PerspectiveCamera(30, 3.6, 0.1, 200);

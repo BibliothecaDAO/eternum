@@ -8,7 +8,6 @@ import { worldOrigin } from "@/three/world-origin";
 import type { TerrainPageRequest } from "@/three/terrain/terrain-types";
 import { buildWorldmapTerrainPageRequests } from "@/three/terrain/worldmap-procedural-terrain";
 
-import release from "../../../../../contracts/l3/world-native/schema/release-definition.json";
 
 export interface RaceTowerEntry {
   aspectId: AspectId;
@@ -53,29 +52,35 @@ const MIN_VERTICAL_SPAN = 5.6;
 const TOWER_TARGET_Y = 1.35;
 const PLATE_Z_OFFSET = 1.05;
 const RACE_CLIMATE = { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 };
-const DEEP_RULES = release.definition.economy.deep.Some;
-const SPACING = release.definition.settlement.spacing;
 const RACE_CENTER = { col: (TOWER_MIN_COL + TOWER_MAX_COL) / 2, row: TOWER_ROW };
 
-const deepHexAt = (col: number, row: number) => {
-  const center = deepCenter(SPACING);
+export interface RaceDeep {
+  spacing: number;
+  rings: readonly { radius: number }[];
+}
+
+const deepHexAt = (deep: RaceDeep, col: number, row: number) => {
+  const center = deepCenter(deep.spacing);
   return { col: center.col + col - RACE_CENTER.col, row: center.row + row - RACE_CENTER.row };
 };
 
-export const raceDeepFloor = () => ({
+export const raceDeepFloor = (deep: RaceDeep) => ({
   center: latticeToWorld(RACE_CENTER.col, RACE_CENTER.row),
-  zones: deepZoneBounds(DEEP_RULES),
+  zones: deepZoneBounds(deep),
 });
 
-export function createAspectRaceTerrainRequests(origin: HexPosition = worldOrigin()): TerrainPageRequest[] {
+export function createAspectRaceTerrainRequests(
+  deep: RaceDeep,
+  origin: HexPosition = worldOrigin(),
+): TerrainPageRequest[] {
   const towerCells = new Set(RACE_TOWER_HEXES.map(({ col, row }) => `${col}:${row}`));
   const sightlineCells = new Set(RACE_TOWER_HEXES.map(({ col, row }) => `${col}:${row + 1}`));
   const cells = Array.from({ length: COLUMNS * ROWS }, (_, index) => {
     const col = index % COLUMNS;
     const row = Math.floor(index / COLUMNS);
     const key = `${col}:${row}`;
-    const hex = deepHexAt(col, row);
-    const deepZone = deepZoneAt(SPACING, DEEP_RULES, hex);
+    const hex = deepHexAt(deep, col, row);
+    const deepZone = deepZoneAt(deep.spacing, deep, hex);
     if (!deepZone) throw new Error(`The race's cell ${key} has no zone of the arena`);
     return {
       biomeKey: Biome.getBiome(hex.col, hex.row, RACE_CLIMATE),

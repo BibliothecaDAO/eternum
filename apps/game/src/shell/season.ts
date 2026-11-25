@@ -22,6 +22,7 @@ import {
   dayOfSeason,
   gameSpeed,
 } from "@/ui/design-system/kit/words";
+import type { RaceDeep } from "@/three/race/aspect-race-world";
 import { type DayClock, dayTone } from "@/ui/features/frontier/hud/day-clock";
 
 import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
@@ -88,6 +89,10 @@ export const seasonEnded = (season: DirectoryGame): string =>
 export const SEASON_SPENDS_FRAGMENTS = spendsFragments({ command_mask: BigInt(release.definition.rules.command_mask) });
 
 const SEASON_DAYS = Number(release.definition.economy.race.Some.season_days);
+export const SEASON_DEEP: RaceDeep = {
+  spacing: release.definition.settlement.spacing,
+  rings: release.definition.economy.deep.Some.rings,
+};
 export const RACE_STAGE_COUNT = nativeRaceConstants.STAGE_COUNT;
 
 export const questBonusPercentOf = (

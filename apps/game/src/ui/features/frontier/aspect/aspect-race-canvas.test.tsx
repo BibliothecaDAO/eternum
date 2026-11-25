@@ -19,6 +19,8 @@ const WON = {
   finishHeight: 10_000,
 };
 
+const DEEP = { spacing: 100, rings: [{ radius: 7 }, { radius: 11 }, { radius: 15 }, { radius: 19 }] };
+
 const mockHandle: AspectRaceRendererHandle = {
   setStandings: vi.fn(),
   setPaused: vi.fn(),
@@ -81,7 +83,7 @@ describe("AspectRaceCanvas lifecycle", () => {
   it("mounts the production renderer, pauses off-screen, updates standings and disposes on unmount", async () => {
     const race = MID_SEASON;
     await act(async () => {
-      root.render(<AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} surface="shell" />);
+      root.render(<AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} deep={DEEP} surface="shell" />);
     });
 
     expect(mountAspectRaceRenderer).toHaveBeenCalledTimes(1);
@@ -97,7 +99,7 @@ describe("AspectRaceCanvas lifecycle", () => {
 
     const won = WON;
     await act(async () => {
-      root.render(<AspectRaceCanvas standings={won.standings} finishHeight={won.finishHeight} surface="shell" />);
+      root.render(<AspectRaceCanvas standings={won.standings} finishHeight={won.finishHeight} deep={DEEP} surface="shell" />);
     });
     expect(mockHandle.setStandings).toHaveBeenLastCalledWith(won.standings, won.finishHeight);
 
@@ -108,7 +110,7 @@ describe("AspectRaceCanvas lifecycle", () => {
   it("supports shell and shell-compact variants, skips redundant standings updates, and keeps plates without WebGL", async () => {
     const race = MID_SEASON;
     await act(async () => {
-      root.render(<AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} surface="shell" />);
+      root.render(<AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} deep={DEEP} surface="shell" />);
     });
     const shellStage = host.querySelector("[data-race-stage]")!;
     expect(shellStage.getAttribute("data-race-surface")).toBe("shell");
@@ -136,7 +138,7 @@ describe("AspectRaceCanvas lifecycle", () => {
     root = createRoot(host);
     await act(async () => {
       root.render(
-        <AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} surface="shell-compact" />,
+        <AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} deep={DEEP} surface="shell-compact" />,
       );
     });
     expect(mountAspectRaceRenderer).not.toHaveBeenCalled();

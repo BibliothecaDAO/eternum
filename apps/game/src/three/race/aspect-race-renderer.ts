@@ -38,6 +38,7 @@ import {
   projectRacePlateAnchors,
   RACE_DAYLIGHT_PROGRESS,
   RACE_TOWER_HEXES,
+  type RaceDeep,
   type RaceTowerEntry,
   type TowerPlateAnchor,
 } from "./aspect-race-world";
@@ -52,6 +53,7 @@ export interface MountAspectRaceRendererInput {
   canvas: HTMLCanvasElement;
   standings: readonly RaceTowerEntry[];
   finishHeight: number;
+  deep: RaceDeep;
   onAnchors?(anchors: readonly TowerPlateAnchor[]): void;
   onReady?(): void;
   onError?(error: unknown): void;
@@ -175,7 +177,7 @@ async function createRaceRuntime(input: MountAspectRaceRendererInput): Promise<R
   let hyperstructures: HyperstructureModel | null = null;
 
   try {
-    const builtTerrain = await createWorldTerrain();
+    const builtTerrain = await createWorldTerrain(input.deep);
     terrain = builtTerrain.terrain;
     scene.add(terrain.object3d);
     atmosphere = createWorldLighting(scene, target);
@@ -233,15 +235,15 @@ async function createRenderer(
   }
 }
 
-async function createWorldTerrain(): Promise<{ terrain: ProceduralTerrain; towerHeights: number[] }> {
-  const floor = raceDeepFloor();
+async function createWorldTerrain(deep: RaceDeep): Promise<{ terrain: ProceduralTerrain; towerHeights: number[] }> {
+  const floor = raceDeepFloor(deep);
   const deepFloor = deepFloorUniforms();
   deepFloor.center.value.set(floor.center.x, floor.center.z);
   writeDeepFloorZones(deepFloor, floor.zones);
   const terrain = new ProceduralTerrain({ streaming: false, gameMode: "frontier", deepFloor });
   try {
     const origin = worldOrigin();
-    const requests = createAspectRaceTerrainRequests(origin);
+    const requests = createAspectRaceTerrainRequests(deep, origin);
     const fields = requests.map((request) => new TerrainField(request));
     const towerHeights = RACE_TOWER_HEXES.map((hex) => {
       const worldCol = hex.col + origin.col;
