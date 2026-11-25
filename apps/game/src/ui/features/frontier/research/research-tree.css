@@ -427,7 +427,7 @@
   grid-column: 1;
 }
 
-.research-bar__footer > .ui-button {
+.research-bar__verbs {
   grid-column: 2;
   grid-row: 1 / span 2;
 }
@@ -443,8 +443,9 @@
   grid-column: 1 / -1;
 }
 
-.research-bar[data-fix] .research-bar__footer > .ui-button {
-  grid-row: 2;
+.research-bar[data-fix] .research-bar__verbs {
+  grid-column: 1 / -1;
+  grid-row: auto;
 }
 
 .research-bar__meta {

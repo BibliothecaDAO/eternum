@@ -2,7 +2,7 @@ import "./research-tree.css";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudPage, HudPrice, HudRanked, HudTier } from "@/ui/design-system/kit/hud-elements";
+import { HudActions, HudButton, HudPage, HudPrice, HudRanked, HudTier } from "@/ui/design-system/kit/hud-elements";
 import type { Fix } from "@/ui/design-system/kit/refusal";
 import { RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, tierNumeral } from "@/ui/design-system/kit/words";
 import { formatAmount, formatShort, rankName } from "@bibliothecadao/types";
@@ -483,21 +483,23 @@ const NodeActionBar = ({
             </span>
           )}
         </span>
-        {node.state !== "ready" && fixing && (
-          <HudButton kind="secondary" icon={fixing.icon} onClick={fixing.onFix}>
-            {fixing.word}
-          </HudButton>
-        )}
         {node.state !== "done" && (
-          <HudButton
-            kind="primary"
-            disabled={node.state !== "ready"}
-            busy={sending ? RESEARCHING : undefined}
-            aria-label={researchActionName(node)}
-            onClick={onResearch}
-          >
-            {RESEARCH_TREE.upgrade}
-          </HudButton>
+          <HudActions className="research-bar__verbs">
+            {node.state !== "ready" && fixing && (
+              <HudButton kind="secondary" icon={fixing.icon} onClick={fixing.onFix}>
+                {fixing.word}
+              </HudButton>
+            )}
+            <HudButton
+              kind="primary"
+              disabled={node.state !== "ready"}
+              busy={sending ? RESEARCHING : undefined}
+              aria-label={researchActionName(node)}
+              onClick={onResearch}
+            >
+              {RESEARCH_TREE.upgrade}
+            </HudButton>
+          </HudActions>
         )}
       </div>
     </div>
