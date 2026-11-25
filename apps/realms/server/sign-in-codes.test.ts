@@ -14,7 +14,7 @@ it("sends the Realms sign-in email: the code first in the subject, its ten-minut
     from: "Realms <no-reply@realms.party>",
     to: ["player@realms.test"],
     subject: "123456 is your Realms sign-in code",
-    text: "Your Realms sign-in code is 123456. It expires in 10 minutes. If you did not ask for it, you can ignore this email.",
+    text: "Your Realms sign-in code is 123456. It expires in 10 minutes. If you did not request this code, you can ignore this email.",
   });
   expect(body.html).toContain(">123456</div>");
   expect(body.attachments).toEqual([expect.objectContaining({ content_id: "header", filename: "sign-in-code.jpg" })]);

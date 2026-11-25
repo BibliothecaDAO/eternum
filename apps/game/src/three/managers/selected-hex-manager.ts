@@ -24,7 +24,7 @@ export class SelectedHexManager {
 
   setPosition(x: number, z: number) {
     this.hover.showHover(x, z);
-    this.particles.setPosition(x, this.terrainSurface.sampleSurface(x, z).height + 0.1, z);
+    this.particles.setPosition(x, this.terrainSurface.sampleHeight(x, z) + 0.1, z);
   }
 
   resetPosition() {

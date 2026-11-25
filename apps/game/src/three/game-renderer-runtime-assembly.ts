@@ -42,7 +42,6 @@ interface CreateGameRendererRuntimeAssemblyInput {
   /** Puts the renderer on the page (its canvas shown, its loop running) or takes it off. */
   ownPage: (owns: boolean) => void;
   rendererOwner: object;
-  resolvePixelRatio: (pixelRatio: number) => number;
   resolveRuntimeState: () => GameRendererRuntimeState;
   windowObject: Window;
   windowResizeListener: EventListenerOrEventListenerObject;
@@ -99,7 +98,6 @@ function createGameRendererEffectsBridgeRuntime(input: CreateGameRendererRuntime
 
       return createRendererEffectsRuntime({
         backend: runtimeState.backend as RendererBackendRuntime,
-        resolvePixelRatio: input.resolvePixelRatio,
         scenes: {
           hexceptionScene: runtimeState.hexceptionScene as HexceptionScene,
           worldmapScene: runtimeState.worldmapScene as WorldmapScene,

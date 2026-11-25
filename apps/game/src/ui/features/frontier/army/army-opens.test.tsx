@@ -99,12 +99,12 @@ const spectate = async () => {
 const pickInDock = () =>
   act(async () =>
     [...host.querySelectorAll<HTMLButtonElement>("button")]
-      .find((each) => each.getAttribute("aria-label") === "Army 1")!
+      .find((each) => each.getAttribute("aria-label") === "5,000 Knights")!
       .click(),
   );
 
 /** A phone's picked army in the action row: its token, which opens its card. */
-const details = () => host.querySelector<HTMLButtonElement>('button[aria-label="Army 1: details"]');
+const details = () => host.querySelector<HTMLButtonElement>('button[aria-label="5,000 Knights: details"]');
 const rowButton = (name: RegExp) =>
   [...details()!.closest(".army-tray")!.querySelectorAll<HTMLButtonElement>("button")].find((button) =>
     name.test(button.getAttribute("aria-label") ?? button.textContent ?? ""),
@@ -132,7 +132,7 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(panel()).toBeNull();
     expect(details()).not.toBeNull();
     expect(
-      host.querySelector('nav[aria-label="Armies"] button[aria-label="Army 1"]')?.getAttribute("aria-pressed"),
+      host.querySelector('nav[aria-label="Armies"] button[aria-label="5,000 Knights"]')?.getAttribute("aria-pressed"),
     ).toBe("true");
 
     await act(async () => details()!.click());
@@ -146,8 +146,8 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     await select(ARMY);
     expect(staminaMeter().getAttribute("aria-valuenow")).toBe("90");
     expect(staminaMeter().getAttribute("aria-valuemax")).toBe("150");
-    expect(host.querySelectorAll('button[aria-label="Army 1: details"]')).toHaveLength(1);
-    expect(details()!.textContent).toContain("5K");
+    expect(host.querySelectorAll('button[aria-label="5,000 Knights: details"]')).toHaveLength(1);
+    expect(details()!.textContent).toContain("5,000 Knights");
   });
 
   it("opens the army's card from its token", async () => {

@@ -1,16 +1,16 @@
 import "./deploy-view.css";
 
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { OATH_SLOTS_MAX } from "@bibliothecadao/eternum";
-import { type TroopType, formatExact, formatShort, formatWait } from "@bibliothecadao/types";
+import { type TroopType, formatExact, formatWait } from "@bibliothecadao/types";
 import {
   HudButton,
-  HudChip,
   HudLine,
   HudNotice,
   HudPrice,
   HudSheet,
+  HudStamina,
   HudWindowFoot,
+  type StaminaBar,
 } from "@/ui/design-system/kit/hud-elements";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
 import {
@@ -23,8 +23,6 @@ import {
   NO_OPEN_TILE,
   NO_TROOPS_AT_HOME,
   noTroopsUntil,
-  RESEARCH_TREE,
-  STAMINA,
   TROOPS,
   wheatForOnly,
 } from "@/ui/design-system/kit/words";
@@ -41,7 +39,6 @@ export interface DeployTroopChoiceView {
 
 export const DeployView = ({
   troopSelection,
-  oathSlots,
   art,
   troopsAtHome,
   count,
@@ -59,7 +56,6 @@ export const DeployView = ({
   onGoToRealm,
   onClose,
 }: {
-  oathSlots: number | undefined;
   troopSelection?: {
     choices: readonly DeployTroopChoiceView[];
     selected: TroopType | undefined;
@@ -85,7 +81,7 @@ export const DeployView = ({
   const troopName =
     troopSelection?.choices.find(({ category }) => category === troopSelection.selected)?.name ?? TROOPS;
   return (
-    <HudSheet label={DEPLOY} cue={start?.start && <StartChip stamina={start.start.current} />} onClose={onClose}>
+    <HudSheet label={DEPLOY} cue={start?.start && <StartBar stamina={start.start} />} onClose={onClose}>
       {troopSelection && troopSelection.choices.length > 0 && (
         <TroopChoices
           choices={troopSelection.choices}
@@ -111,12 +107,6 @@ export const DeployView = ({
         <div className="deploy-slots">
           <span className="deploy-slots__label">{DEPLOY_WORDS.slot}</span>
           <DeploySlots open={slots.open} picked={start?.slot} onPick={slots.onPick} />
-          {oathSlots !== undefined && (
-            <>
-              <span className="deploy-slots__label deploy-slots__label--end">{DEPLOY_WORDS.oaths}</span>
-              <OathCapacity slots={oathSlots} />
-            </>
-          )}
         </div>
       )}
       {troopsAtHome === 0 ? (
@@ -152,11 +142,9 @@ export const DeployView = ({
   );
 };
 
-const StartChip = ({ stamina }: { stamina: number }) => (
-  <span data-deploy-start>
-    <HudChip icons={["stamina"]} label={`${DEPLOY_WORDS.startsOn} ${STAMINA}`}>
-      {formatShort(stamina)}
-    </HudChip>
+const StartBar = ({ stamina }: { stamina: StaminaBar }) => (
+  <span data-deploy-start className="deploy-start">
+    <HudStamina stamina={stamina} />
   </span>
 );
 
@@ -210,21 +198,6 @@ const DeploySlots = ({
       </button>
     ))}
   </div>
-);
-
-const OathCapacity = ({ slots }: { slots: number }) => (
-  <span role="img" aria-label={RESEARCH_TREE.oathSlots(slots)} className="deploy-oaths">
-    {Array.from({ length: slots }, (_, index) => (
-      <i key={index} className="deploy-oath" data-open="">
-        +
-      </i>
-    ))}
-    {slots < OATH_SLOTS_MAX && (
-      <i className="deploy-oath" data-locked="">
-        <Icon name="lock" size={12} />
-      </i>
-    )}
-  </span>
 );
 
 const WheatShort = ({

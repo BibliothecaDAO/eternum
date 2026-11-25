@@ -107,7 +107,7 @@ export async function createMapLabelFixture(
     const base = realmPositions[index];
     const x = base.x + (side * HEX_WIDTH) / 2;
     const z = base.z + ROW_HEIGHT;
-    return new Vector3(x, terrain.sampleSurface(x, z).height, z);
+    return new Vector3(x, terrain.sampleHeight(x, z), z);
   };
   const placed: Object3D[] = [];
   // Places a model and returns where its plate stands: just above the model's own top.
@@ -130,7 +130,7 @@ export async function createMapLabelFixture(
   const west = (index: number) => {
     const base = realmPositions[index];
     const x = base.x - HEX_WIDTH;
-    return new Vector3(x, terrain.sampleSurface(x, base.z).height, base.z);
+    return new Vector3(x, terrain.sampleHeight(x, base.z), base.z);
   };
   const sites: MapLabelEntity[] = [];
   for (const camp of CAMPS) {

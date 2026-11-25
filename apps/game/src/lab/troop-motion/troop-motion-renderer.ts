@@ -216,6 +216,7 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
     envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
     isMobileDevice: isCoarsePointer(),
     pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+    postProcessing: true,
     search: window.location.search,
   });
   if (input.signal.aborted) {
@@ -239,7 +240,7 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
   scene.background = new Color(0x819997);
   const environment = new ModelLabEnvironment(scene);
   await environment.update(readModelLabSettings(new URLSearchParams("family=knight&biome=grassland")));
-  const groundY = environment.terrain.sampleSurface(0, 0).height;
+  const groundY = environment.terrain.sampleHeight(0, 0);
 
   const camera = new PerspectiveCamera(34, 1, 0.1, 120);
   const controls = new OrbitControls(camera, canvas);

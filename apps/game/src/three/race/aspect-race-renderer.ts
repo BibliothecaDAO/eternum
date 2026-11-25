@@ -245,7 +245,7 @@ async function createWorldTerrain(): Promise<{ terrain: ProceduralTerrain; tower
       const worldRow = hex.row + origin.row;
       const field = fields.find((candidate) => candidate.ownsCell(worldCol, worldRow));
       const { x, z } = latticeToWorld(hex.col, hex.row);
-      return field ? field.sampleSurface(x, z).height : 0;
+      return field ? field.sampleHeight(x, z) : 0;
     });
     const prepared = await Promise.all(requests.map((request) => terrain.preparePageAsync(request)));
     const fogMask = await terrain.prepareFogMaskAsync(prepared);

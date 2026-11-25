@@ -1,19 +1,19 @@
-import { act } from "react";
-import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 
 vi.mock("@/audio/core/AudioManager", () => ({
   AudioManager: { getInstance: () => ({ play: () => Promise.resolve(null) }) },
 }));
-vi.mock("@/ui/motion/motion-layer", () => ({ flySprites: () => undefined, riseSprite: () => undefined }));
+const { rises } = vi.hoisted(() => ({ rises: [] as Array<{ label: string }> }));
+vi.mock("@/ui/motion/motion-layer", () => ({
+  flySprites: () => undefined,
+  riseSprite: (rise: { label: string }) => rises.push(rise),
+}));
 vi.mock("@/three/sound/utils", () => ({ getResourceSoundId: (id: number) => `collect.${id}` }));
 
 const { buildStoryEventPresentation, configManager, WorldUpdateListener } = await import("@bibliothecadao/eternum");
 const { NativeFactStore } = await import("@bibliothecadao/eternum/game-client");
 const { ResourcesIds } = await import("@bibliothecadao/types");
 const { playRevealYield } = await import("@/ui/motion/moments/reveal-yield");
-const { clearRevealGains } = await import("@/ui/motion/moments/reveal-gains");
-const { RevealPill } = await import("./reveal-pill");
 
 const PAYOUT = 57_600_000_000n;
 
@@ -25,30 +25,19 @@ const revealStory = (amount: bigint) => ({
   amount: String(amount),
 });
 
-it("writes a reveal's fractional pay the same on its pill as in the Log, from the story's contract amount", () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+it("writes a reveal's fractional pay the same on its tile as in the Log, from the story's contract amount", () => {
   configManager.setActiveGame(1);
   const store = new NativeFactStore();
   const listener = new WorldUpdateListener({ store } as never);
   const stop = listener.ExplorerReward.onExplorerRewardEventUpdate(({ resourceId, amount }) => {
     if (resourceId) playRevealYield({ resourceId, amount, from: { x: 0, y: 0 }, own: true, now: 1_000 });
   });
-  const host = document.createElement("div");
-  document.body.append(host);
-  const root = createRoot(host);
-  act(() => root.render(<RevealPill />));
-  act(() =>
-    store.applyEvent({
-      model: "StoryEvent",
-      key: "0x1",
-      value: { game_id: "0x1", timestamp: "0x1", owner: "0x1", story: { ExplorationReward: revealStory(PAYOUT) } },
-    } as never),
-  );
-  const pill = host.querySelector("[data-reveal-pill]")?.textContent;
-  act(() => root.unmount());
-  act(() => clearRevealGains());
+  store.applyEvent({
+    model: "StoryEvent",
+    key: "0x1",
+    value: { game_id: "0x1", timestamp: "0x1", owner: "0x1", story: { ExplorationReward: revealStory(PAYOUT) } },
+  } as never);
   stop();
-  host.remove();
 
   const log = buildStoryEventPresentation({
     storyType: "ExplorationReward",
@@ -59,11 +48,11 @@ it("writes a reveal's fractional pay the same on its pill as in the Log, from th
   } as never).title;
 
   expect(log).toBe("Explored: +58 Essence");
-  expect(pill).toBe("+58");
+  expect(rises.map(({ label }) => label)).toEqual(["+58"]);
 });
 
 it("keeps a reveal's fraction until the day's total is written", async () => {
-  const { totalToday } = await import("../log/today-totals");
+  const { totalToday } = await import("@/ui/features/frontier/log/today-totals");
   const fiveReveals = Array.from({ length: 5 }, () => ({
     story: "ExplorationReward",
     storyPayload: { resource_type: ResourcesIds.Essence, amount: String(PAYOUT) },
@@ -74,6 +63,6 @@ it("keeps a reveal's fraction until the day's total is written", async () => {
 });
 
 it("reads the season's earned Essence exactly, for the one rounding", async () => {
-  const { earnedResource } = await import("../board/standings");
+  const { earnedResource } = await import("@/ui/features/frontier/board/standings");
   expect(earnedResource(String(PAYOUT))).toBe(57.6);
 });

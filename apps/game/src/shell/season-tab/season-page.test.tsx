@@ -180,7 +180,7 @@ it("titles the page Season and names Frontier's own season on its board; an empt
       (panel) => panel.querySelector("h2")?.textContent === "Frontier",
     )!;
     expect(frontier.querySelector(".app-panel__cue")?.textContent).toBe("Season 1 · Day 4");
-    expect(frontier.textContent).toContain("No realm yet. Create one from Play.");
+    expect(frontier.textContent).toContain("No Realm yet. Create one on Play.");
     expect([...frontier.querySelectorAll("button")].map((button) => button.textContent)).toEqual(["Play"]);
   } finally {
     await unmount();
@@ -426,7 +426,7 @@ it.each([390, 1440])("keeps the last season's final board while the next is only
     const frontier = frontierPanel(container);
     expect(frontier.querySelector(".app-panel__cue")?.textContent).toBe("Season 0 · Ended 6 Nov");
     expect(frontier.querySelector("button.app-board__row .app-board__figure")?.textContent).toBe("331 sites cleared");
-    expect(frontier.textContent).not.toContain("No realm yet");
+    expect(frontier.textContent).not.toContain("No Realm yet");
   } finally {
     await unmount();
   }
@@ -565,7 +565,7 @@ it("combines all four Aspect rosters into the default Global Glory leaderboard w
     const triumphs = triumphTracks[0]!;
     expect(triumphs.textContent).toContain("Clear Mist");
     expect(triumphs.textContent).toContain("1,500 height");
-    expect(triumphs.textContent).toContain("Sites are found at 150% of the usual odds");
+    expect(triumphs.textContent).toContain("Site discovery odds are 150% of normal");
     expect(triumphs.textContent).toContain("Second Wind");
     expect(triumphs.textContent).toContain("Pale Moon");
     expect(triumphs.textContent).toContain("Spoils");
@@ -795,7 +795,7 @@ it("shows honest empty lines for empty global and Aspect boards", async () => {
   try {
     await vi.waitFor(() =>
       expect(container.querySelector("[data-global-roster]")?.textContent).toContain(
-        "No realm yet. Create one from Play.",
+        "No Realm yet. Create one on Play.",
       ),
     );
     const ownTab = [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
@@ -804,7 +804,7 @@ it("shows honest empty lines for empty global and Aspect boards", async () => {
     await act(async () => ownTab.click());
     await vi.waitFor(() =>
       expect(container.querySelector(`[data-aspect-roster="${ownAspect}"]`)?.textContent).toContain(
-        `No realms in ${aspectName(ownAspect)} yet.`,
+        `No Realms in ${aspectName(ownAspect)} yet.`,
       ),
     );
     const insightTab = [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
@@ -812,7 +812,7 @@ it("shows honest empty lines for empty global and Aspect boards", async () => {
     )!;
     await act(async () => insightTab.click());
     await vi.waitFor(() =>
-      expect(container.querySelector('[data-aspect-roster="4"]')?.textContent).toContain("No realms in Insight yet."),
+      expect(container.querySelector('[data-aspect-roster="4"]')?.textContent).toContain("No Realms in Insight yet."),
     );
   } finally {
     shards.open.mockImplementation(async () => {

@@ -239,7 +239,7 @@ it("offers to read the account's wallet again when its read failed, rather than 
   const retry = vi.fn();
   defaultWallet.read = { wallet: undefined, failed: true, retry };
   const page = await mount();
-  expect(page.textContent).toContain("Your Realms wallet could not be read.");
+  expect(page.textContent).toContain("Could not load your Realms wallet.");
   await press(page, "Try again");
   expect(retry).toHaveBeenCalledOnce();
 });

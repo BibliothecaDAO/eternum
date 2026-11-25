@@ -30,6 +30,12 @@ import {
 import type { TerrainCellInput, TerrainPageRequest, TerrainSurfaceSample } from "./terrain-types";
 import { isTerrainWaterBiome, isTerrainWaterCovered, TERRAIN_WATER_LEVEL } from "./terrain-water";
 
+interface SlopedGround {
+  biome: BiomeType;
+  height: number;
+  candidates: readonly CellFieldSample[];
+}
+
 interface CellFieldSample {
   baseHeight: number;
   biome: BiomeType;
@@ -276,6 +282,20 @@ export class TerrainField {
   }
 
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
+    const ground = this.resolveGround(worldX, worldZ);
+    if (!("candidates" in ground)) return ground;
+    return {
+      biome: ground.biome,
+      height: ground.height,
+      normal: this.sampleNormalFromCandidates(worldX, worldZ, ground.candidates),
+    };
+  }
+
+  sampleHeight(worldX: number, worldZ: number): number {
+    return this.resolveGround(worldX, worldZ).height;
+  }
+
+  private resolveGround(worldX: number, worldZ: number): TerrainSurfaceSample | SlopedGround {
     const owner = findNearestTerrainHex(worldX, worldZ);
     const cell = this.getCell(owner.col, owner.row);
     if (cell?.explored && isEtherealTerrainCell(this.request, cell)) {
@@ -299,7 +319,7 @@ export class TerrainField {
     ) {
       return { biome, height: TERRAIN_WATER_LEVEL, normal: [0, 1, 0] };
     }
-    return { biome, height, normal: this.sampleNormalFromCandidates(worldX, worldZ, candidates) };
+    return { biome, height, candidates };
   }
 
   samplePropDensityContext(
