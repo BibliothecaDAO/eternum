@@ -1,9 +1,9 @@
 import { type Camera, Vector3 } from "three";
 import type { HexPosition } from "@bibliothecadao/types";
-import { HEX_SIZE } from "../constants/scene-constants";
+import { HEX_HORIZONTAL_SPACING } from "./hex-lattice";
 import { getWorldPositionForHex } from "./utils";
 
-const EAST_EDGE = new Vector3(HEX_SIZE, 0, 0);
+const EAST_EDGE = new Vector3(HEX_HORIZONTAL_SPACING / 2, 0, 0);
 
 const mapCanvasRect = (): DOMRect => {
   const canvas = document.getElementById("main-canvas");
