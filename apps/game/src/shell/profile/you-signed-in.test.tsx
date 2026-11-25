@@ -289,8 +289,30 @@ it("shows the join-Aspect prompt on /profile#referrals only when the player has 
   const createInvite = vi.spyOn(identityClient, "createInvite");
   vi.spyOn(identityClient, "invitedFriends").mockResolvedValue({ friends: [] });
   const page = await open("/profile#referrals", 1440);
-  await vi.waitFor(() => expect(page.textContent).toContain(PROFILE_WORDS.noAspectInvite));
+  await vi.waitFor(() => expect(page.querySelector("[data-invite-locked]")).not.toBeNull());
+  const slot = page.querySelector("[data-invite-locked]")!;
+  expect(slot.textContent).toContain(PROFILE_WORDS.noAspectInviteTitle);
+  expect(slot.textContent).toContain(PROFILE_WORDS.noAspectInvite);
   expect(createInvite).not.toHaveBeenCalled();
+  const join = [...slot.querySelectorAll("button, a")].find((node) => node.textContent === PROFILE_WORDS.joinAspect);
+  expect(join?.getAttribute("data-kind")).toBe("primary");
+  await act(async () => (join as HTMLElement).click());
+  expect(currentLocation.pathname).toBe("/");
+});
+
+it("points the player's card to Play to join an Aspect when none is held, never to a link it cannot copy", async () => {
+  vi.spyOn(identityClient, "getOrderIntent").mockResolvedValue({ order: null, members: {} });
+  const page = await open("/profile", 1440);
+  await vi.waitFor(() => expect(page.querySelector("[data-you-profile]")).not.toBeNull());
+  const cardWords = () =>
+    [...page.querySelectorAll("[data-you-profile] button, [data-you-profile] a")].map((node) => node.textContent);
+  await vi.waitFor(() => expect(cardWords()).toContain(PROFILE_WORDS.joinAspect));
+  expect(cardWords()).not.toContain(INVITE_WORDS.copy);
+  const join = [...page.querySelectorAll<HTMLElement>("[data-you-profile] button, [data-you-profile] a")].find(
+    (node) => node.textContent === PROFILE_WORDS.joinAspect,
+  )!;
+  await act(async () => join.click());
+  expect(currentLocation.pathname).toBe("/");
 });
 
 describe("a session with no name claimed yet", () => {

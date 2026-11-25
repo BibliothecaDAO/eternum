@@ -4,7 +4,7 @@ import { Fragment } from "react";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { AppPanel } from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppPanel } from "@/ui/design-system/kit/app-elements";
 import {
   INVITED_FRIENDS_WORDS,
   PROFILE_WORDS,
@@ -63,7 +63,7 @@ export const SharedDaysPanel = ({
         {aspect !== null ? (
           <InviteStrip fallbackAspect={aspect} />
         ) : !aspectPending ? (
-          <p className="text-app-label text-app-muted">{PROFILE_WORDS.noAspectInvite}</p>
+          <InviteWaitsForAspect />
         ) : null}
         <p className="text-app-strong text-app-gold" data-referrals-reward>
           {PROFILE_WORDS.friendReward}
@@ -159,6 +159,18 @@ const InvitedFriendsList = ({ friends }: { friends: InvitedFriends["friends"] | 
     </section>
   );
 };
+
+const InviteWaitsForAspect = () => (
+  <div className="referrals-invite" data-invite-locked>
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <span className="text-app-strong text-app-ink">{PROFILE_WORDS.noAspectInviteTitle}</span>
+      <span className="text-app-label text-app-muted">{PROFILE_WORDS.noAspectInvite}</span>
+    </div>
+    <AppButton kind="primary" size="md" icon="play" to="/">
+      {PROFILE_WORDS.joinAspect}
+    </AppButton>
+  </div>
+);
 
 const InviteStrip = ({ fallbackAspect }: { fallbackAspect: AspectId }) => {
   const invite = useSeasonInvite();
