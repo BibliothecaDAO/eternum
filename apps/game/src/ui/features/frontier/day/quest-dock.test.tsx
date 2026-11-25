@@ -202,12 +202,12 @@ describe("bane collection", () => {
     expect(reward("Labor")).toBe("2,000 Labor");
   });
 
-  it("says the day's quest comes with the first order, inventing none, while the day's roll is not written", () => {
+  it("says the day's quest comes with the first transaction, inventing none, while the day's roll is not written", () => {
     const game = worldDay();
     game.store.applyFacts([{ model: "WorldBane", key: "0xd003", value: null }]);
     game.draw();
     expect(host.querySelector("[data-quest-undrawn]")?.textContent).toBe(
-      "Today's quest and bane are drawn with the first order anyone sends.",
+      "Today's quest and bane are drawn on the first transaction anyone sends today.",
     );
     expect(host.textContent).not.toContain("Loading today's quest");
     expect(host.textContent).not.toContain("The Cull");
