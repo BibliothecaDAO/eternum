@@ -4,12 +4,17 @@
   "fit": "lab",
   "transform": {
     "yaw_deg_about_y": 0,
-    "scale": 1.58,
+    "scale": 1.65,
     "offset_xyz": [0, 0, 0]
   },
   "flags": [
     {
-      "top": [-0.095, 0.15, 0.503],
+      "top": [-0.265, 0.33, 0.142],
+      "width": 0.07,
+      "facing": 0
+    },
+    {
+      "top": [0.315, 0.29, 0.109],
       "width": 0.07,
       "facing": 0
     }
