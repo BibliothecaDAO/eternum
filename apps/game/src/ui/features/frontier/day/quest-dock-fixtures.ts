@@ -2,19 +2,23 @@ import { DAY_BANNER_WORDS as WORDS } from "@/ui/design-system/kit/words";
 import { nativeQuestConstants as quest } from "@bibliothecadao/eternum/game-client";
 import { dayQuestFace } from "./day-quest-face";
 
-import type { QuestDockProps } from "./quest-dock-view";
+import type { BaneStanding, QuestDockProps } from "./quest-dock-view";
 
 const noop = () => {};
 const base = { layout: "desktop", speaker: 1, collecting: false, onCollect: noop, onClose: noop, bane: null } as const;
 const camps = dayQuestFace(quest.CAMPS);
 const cull = dayQuestFace(quest.CULL);
 const reward = { labor: 2_000, essence: 3_000 };
-const ashFall = {
+const ashFall: BaneStanding = {
   name: "Ash Fall",
   title: WORDS.worldBaneTitle("Ash Fall"),
   chip: WORDS.productionChip(50),
   effect: WORDS.productionBane(50),
   doubles: true,
+  figure: "production",
+  percent: 50,
+  mark: "▾",
+  icon: "bane-world",
   breaking: WORDS.baneBreak(4, 12),
   clears: WORDS.baneClears("5h"),
 };
