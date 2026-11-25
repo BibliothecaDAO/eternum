@@ -466,7 +466,7 @@ it.each([390, 1440])(
   },
 );
 
-it("merges Aspect rosters into one global Glory leaderboard sorted by compareAspectMembers and capped at top 10", () => {
+it("merges Aspect rosters into one global Glory leaderboard sorted by compareAspectMembers", () => {
   const member = (rank: number, entityId: string, realmId: number, owner: string, glory: number) => ({
     rank,
     entity_id: entityId,
@@ -495,7 +495,7 @@ it("merges Aspect rosters into one global Glory leaderboard sorted by compareAsp
     },
   ]);
   expect(merged.total).toBe(18);
-  expect(merged.rows).toHaveLength(18);
+  expect(merged.rows).toHaveLength(aspectOneMembers.length + aspectTwoMembers.length);
   expect(merged.rows.slice(0, 4).map((row) => [row.rank, row.aspect, row.member.entity_id, row.member.glory])).toEqual([
     [1, 2, "1003", "400000000000"],
     [2, 2, "9", "250000000000"],
