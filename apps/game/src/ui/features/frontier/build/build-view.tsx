@@ -88,23 +88,23 @@ export const BuildView = ({
       <div data-build-sheet className="build-sheet">
         <div className="build-groups">
           {groupedTiles(tiles).map(({ group, entries }) => (
-          <section key={group} data-build-group={group} aria-label={BUILD_GROUPS[group]} className="build-group">
-            <header className="build-group__head">
-              <SemanticIcon name={GROUP_ICONS[group]} size={16} />
-              <span className="build-group__word">{BUILD_GROUPS[group]}</span>
-            </header>
-            <div data-build-grid className="build-grid">
-              {entries.map(({ tile, index }) => (
-                <TileButton
-                  key={tile.key}
-                  tile={tile}
-                  priced={desktop}
-                  chosen={index === chosen}
-                  onChoose={() => onChoose(index)}
-                />
-              ))}
-            </div>
-          </section>
+            <section key={group} data-build-group={group} aria-label={BUILD_GROUPS[group]} className="build-group">
+              <header className="build-group__head">
+                <SemanticIcon name={GROUP_ICONS[group]} size={16} />
+                <span className="build-group__word">{BUILD_GROUPS[group]}</span>
+              </header>
+              <div data-build-grid className="build-grid">
+                {entries.map(({ tile, index }) => (
+                  <TileButton
+                    key={tile.key}
+                    tile={tile}
+                    priced={desktop}
+                    chosen={index === chosen}
+                    onChoose={() => onChoose(index)}
+                  />
+                ))}
+              </div>
+            </section>
           ))}
         </div>
         {chosenTile && (
