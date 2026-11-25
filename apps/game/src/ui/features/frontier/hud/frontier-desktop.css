@@ -7,6 +7,7 @@
   width: 380px;
   height: 40px;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-rows: 40px;
   align-items: center;
   gap: theme(spacing.4);
   transform: translateX(-50%);
