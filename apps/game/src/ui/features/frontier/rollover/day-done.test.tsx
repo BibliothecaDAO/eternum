@@ -70,7 +70,7 @@ vi.mock("@/utils/card-image", async (original) => ({
   cardFile: vi.fn(async () => CARD_FILE),
 }));
 /** The card's PNG as a phone's share sheet takes it. */
-const CARD_FILE = vi.hoisted(() => new File(["card"], DAY_SHARE_WORDS.fileName("2"), { type: "image/png" }));
+const CARD_FILE = vi.hoisted(() => new File(["card"], "day-card.png", { type: "image/png" }));
 /** The signed-in Realms account whose links the share sheet makes. */
 const SIGNED_IN = vi.hoisted(() => ({ session: { user: { realmsId: "0xa11ce" } } }));
 vi.mock("@/hooks/context/identity-session", () => ({

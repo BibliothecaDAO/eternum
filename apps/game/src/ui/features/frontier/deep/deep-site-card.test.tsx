@@ -357,8 +357,8 @@ it("shows each guard's share of the next tick from the troops it keeps after the
     const tips = [...hud.host.querySelectorAll('[data-deep-slot="filled"]')].map(
       (node) => node.getAttribute("data-tip") ?? "",
     );
-    expect(tips.join(" ")).toContain(DEEP_WORDS.share("75"));
-    expect(tips.join(" ")).toContain(DEEP_WORDS.share("25"));
+    expect(tips.join(" ")).toContain(DEEP_WORDS.share(75));
+    expect(tips.join(" ")).toContain(DEEP_WORDS.share(25));
   } finally {
     hud.unmount();
   }

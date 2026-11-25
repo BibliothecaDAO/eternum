@@ -186,7 +186,7 @@ describe("a realm's spire, from the player's path", () => {
     const hud = renderLayoutHud(store, layout);
     try {
       act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
-      expect(hud.host.textContent).toContain(SPIRE_WORDS.nextReveal("10"));
+      expect(hud.host.textContent).toContain(SPIRE_WORDS.nextReveal(10));
       for (const [reveals, chance] of [
         [3, 40],
         [9, 100],
@@ -224,7 +224,7 @@ describe("a realm's spire, from the player's path", () => {
     const hud = renderLayoutHud(store, layout);
     try {
       act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
-      expect(hud.host.textContent).toContain(SPIRE_WORDS.nextReveal("10"));
+      expect(hud.host.textContent).toContain(SPIRE_WORDS.nextReveal(10));
       for (const [reveals, chance] of [
         [3, 40],
         [9, 100],

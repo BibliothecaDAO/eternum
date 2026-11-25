@@ -79,7 +79,7 @@ it("shows a linked wallet, the co-signer's hold on a replacement, and a player w
   // Linking is the wallet and the emailed code, and nothing after them.
   expect([...linked.querySelectorAll("ol > li")].map((step) => step.textContent)).toEqual(["Wallet", "Email code"]);
   // The hours come from the co-signer's own constant (packages/value-ledger/src/payout-wallet.ts).
-  expect(linked.textContent).toContain(WALLET_WORDS.newWalletWaits("24"));
+  expect(linked.textContent).toContain(WALLET_WORDS.newWalletWaits(24));
 
   // No wallet: make one with a passkey, or link one; the old way out to Ready's sign-up is gone.
   useIdentitySessionStore.setState({

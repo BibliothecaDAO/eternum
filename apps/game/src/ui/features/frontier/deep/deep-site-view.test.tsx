@@ -80,9 +80,9 @@ describe("a Deep site's card", () => {
     expect(empty).toHaveLength(2);
     const tips = filled.map((slot) => slot.getAttribute("data-tip") ?? "");
     expect(tips[0]).toContain("Aldor · fought next");
-    expect(tips[0]).toContain(DEEP_WORDS.share("75"));
+    expect(tips[0]).toContain(DEEP_WORDS.share(75));
     expect(tips[1]).toContain("Brek");
-    expect(tips[1]).toContain(DEEP_WORDS.share("25"));
+    expect(tips[1]).toContain(DEEP_WORDS.share(25));
     for (const [index, slot] of fixture.guard.slots.entries()) {
       expect(tips[index]).toContain(`${slot.ticks.left} ticks left (${slot.ticks.time})`);
     }
@@ -101,7 +101,7 @@ describe("a Deep site's card", () => {
     act(() => join!.click());
     expect(onAct).toHaveBeenCalledTimes(1);
     const filledTip = document.querySelector('[data-deep-slot="filled"]')?.getAttribute("data-tip") ?? "";
-    expect(filledTip).toContain(DEEP_WORDS.share("100"));
+    expect(filledTip).toContain(DEEP_WORDS.share(100));
   });
 
   it("reads per-guard drain from each slot and shows a range when a guard loses more per tick", () => {
