@@ -51,7 +51,7 @@ const DESKTOP = queryStore(HUD_QUERIES.desktop);
 const SIDEWAYS = queryStore(HUD_QUERIES.sideways);
 const TABLET = queryStore(HUD_QUERIES.tablet);
 
-export type HudLayout = "phone" | "desktop";
+type HudLayout = "phone" | "desktop";
 
 export const hudLayoutNow = (): HudLayout => (DESKTOP.matches() ? "desktop" : "phone");
 

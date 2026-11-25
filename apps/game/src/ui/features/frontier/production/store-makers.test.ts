@@ -51,7 +51,11 @@ const surfaces = (bane: boolean, kind: "wheat" | "troops", category: number) => 
     {
       model: "ResourceProduction",
       key: store.wireKeyOf("ResourceProduction", troops)!,
-      value: { ...troops, production_rate: String(troops.production_rate), output_amount_left: String((1n << 128n) - 1n) },
+      value: {
+        ...troops,
+        production_rate: String(troops.production_rate),
+        output_amount_left: String((1n << 128n) - 1n),
+      },
     },
   ] as never);
   if (bane) ashFallToday(store, now);
