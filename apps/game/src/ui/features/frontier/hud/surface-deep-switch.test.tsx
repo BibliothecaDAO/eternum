@@ -38,9 +38,11 @@ describe("the place switch", () => {
     act(() => root.render(<PlaceSwitch isMapView layers={layers} onGoRealm={vi.fn()} onGoSurface={onGoSurface} />));
     expect(placeShown()).toBe("Hollow");
     expect(rowsOfMenu().map((row) => row.getAttribute("aria-selected"))).toEqual(["false", "false", "true", "false"]);
-    act(() => rowsOfMenu()[3]!.click());
+    const deep = rowsOfMenu()[3]!;
+    act(() => deep.click());
     expect(go).toHaveBeenCalledWith("deep");
-    act(() => rowsOfMenu()[0]!.click());
+    const surface = rowsOfMenu()[0]!;
+    act(() => surface.click());
     expect(onGoSurface).toHaveBeenCalledTimes(1);
   });
 
