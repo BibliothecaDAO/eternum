@@ -232,7 +232,8 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
   SiteUsed: (event, payload, components, resolvePlayerName) => {
     const benefit = payload.benefit as Record<string, unknown> | undefined;
     const well = benefit?.Well !== undefined ? toNumber(benefit.Well) : undefined;
-    if (benefit?.Shrine === undefined && (well === undefined || well === null)) throw new Error("Incomplete site use story");
+    const shrine = benefit?.Shrine !== undefined || benefit?.ShrinePoint !== undefined;
+    if (!shrine && (well === undefined || well === null)) throw new Error("Incomplete site use story");
     return {
       title: well === undefined || well === null ? SHRINE_USED_LINE : wellUsedLine(formatExact(well)),
       description: describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),

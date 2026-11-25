@@ -145,7 +145,7 @@ describe("a Shrine or a Well beside the army", () => {
   const use = [step(ActionType.Move), step(ActionType.UseSite, 0)];
   it("offers Use with what the Shrine gives: an Oath pick", () => {
     const shrine = { kind: "Shrine" as const, gain: undefined, stamina: { current: 40, max: 180 } };
-    expect(line(use, { site: shrine })).toBe(SITE_USE_WORDS.use(SHRINE));
+    expect(line(use, { site: shrine })).toBe(SITE_USE_WORDS.verb(SHRINE));
     expect(cost(use, { site: shrine })).toBe(SITE_USE_WORDS.shrineGives);
   });
 
@@ -157,7 +157,7 @@ describe("a Shrine or a Well beside the army", () => {
 
   it("offers Use with the Well's refill, only what lands under the bar's maximum", () => {
     const well = (current: number) => ({ kind: "Well" as const, gain: 72, stamina: { current, max: 180 } });
-    expect(line(use, { site: well(40) })).toBe(SITE_USE_WORDS.use(WELL));
+    expect(line(use, { site: well(40) })).toBe(SITE_USE_WORDS.verb(WELL));
     expect(cost(use, { site: well(40) })).toBe(`+72 ${STAMINA}`);
     expect(cost(use, { site: well(150) })).toBe(SITE_USE_WORDS.wellToFull("+30"));
     expect(cost(use, { site: well(180) })).toBe(SITE_USE_WORDS.wellWasted);

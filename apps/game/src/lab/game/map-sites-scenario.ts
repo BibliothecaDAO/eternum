@@ -38,7 +38,7 @@ export const mapSitesScenario = (): LabScenario => {
   return {
     ...spire,
     answer: (command, chain, now) =>
-      command.kind === "InteractSite" ? useSite(command, chain, now) : spire.answer(command, chain, now),
+      command.kind === "InteractSite" ? answerSiteUse(command, chain, now) : spire.answer(command, chain, now),
   };
 };
 
@@ -52,7 +52,7 @@ const openTilesBeside = (store: NativeFactStore, beside: Hex): Hex[] => {
   return open.slice(0, SITES.length).map(({ col, row }) => ({ col, row }));
 };
 
-const useSite = (command: LabCommand, chain: NativeFactStore, now: number): LabFact[] => {
+const answerSiteUse = (command: LabCommand, chain: NativeFactStore, now: number): LabFact[] => {
   const [rawId, alt, x, y] = command.span.slice(1);
   if (rawId === undefined || alt === undefined || x === undefined || y === undefined) return [];
   const explorerId = BigInt(rawId);

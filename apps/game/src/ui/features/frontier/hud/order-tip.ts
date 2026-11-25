@@ -88,7 +88,7 @@ const orderOf = ({ path, exploreStamina, food, site, byRealm }: TileOrder): Orde
   if (actionType === ActionType.EnterDepth) return { line, cost: null };
   if (actionType === ActionType.UseSite)
     return site
-      ? { line: SITE_USE_WORDS.use(mapSite(site.kind).name), cost: siteGainLine(site.kind, site.gain, site.stamina) }
+      ? { line: SITE_USE_WORDS.verb(mapSite(site.kind).name), cost: siteGainLine(site.kind, site.gain, site.stamina) }
       : { line, cost: null };
   const stamina = computeEffectiveStaminaCost(path.slice(1), actionType, exploreStamina);
   const pieces = [

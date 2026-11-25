@@ -37,7 +37,6 @@ import {
   resourceName,
   questLine,
   questObjective,
-  skillPointGain,
   structureName,
   troopPlural,
 } from "./nouns";
@@ -256,11 +255,6 @@ describe("nouns", () => {
       "War hall ",
       { rank: 2 },
     ]);
-  });
-
-  it("gives a skill point as its rank and +1", () => {
-    expect(skillPointGain(3)).toEqual([{ rank: 3 }, " +1"]);
-    expect(rankedText(skillPointGain(3))).toBe("III +1");
   });
 
   it("names a resource as a player reads it, never by its table key", () => {

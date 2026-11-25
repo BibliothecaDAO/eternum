@@ -370,7 +370,7 @@ export type Rank = 0 | Tier;
 /** A tier by its numeral, Common I to Legendary V; untrained is 0. */
 export const tierNumeral = (tier: Rank): string => (tier === 0 ? "0" : rankNumeral(tier));
 
-export { type RankedWords, rankedText, skillPointGain } from "@bibliothecadao/types";
+export { type RankedWords, rankedText } from "@bibliothecadao/types";
 
 export const LEFT = "left";
 export const DAY = "Day";
@@ -789,7 +789,7 @@ export const USING = "Using…";
 export const exploresBought = (count: number) => `+${count} ${count === 1 ? "explore" : "explores"}`;
 export const wellRefillShare = (percent: number): string => `${formatPercent(percent / 100)} max`;
 export const SITE_USE_WORDS = {
-  use: (site: string) => `${USE} ${site}`,
+  verb: (site: string) => `${USE} ${site}`,
   shrineGives: "Swear an Oath",
   shrineRule: "Offers this army an Oath · disappears on use",
   wellRule: (gain: string) => `${gain} ${STAMINA} · disappears on use`,
@@ -2348,8 +2348,8 @@ export const RESEARCH_TREE = {
     open: (done: boolean) => (done ? RESEARCH_OPEN : "Opens"),
   },
   nouns: { essence: ESSENCE, labor: LABOR },
-  wellLore: "Uncover Wells on the map — use one to refill stamina",
-  shrineLore: "Uncover Shrines on the map — use one to swear an Oath",
+  wellLore: `Uncover ${WELL}s on the map — use one to refill ${STAMINA}`,
+  shrineLore: `Uncover ${SHRINE}s on the map — use one to swear an Oath`,
   each: (gain: string) => `${gain} each`,
   lore: loreOf,
   opensLayers: `Opens every layer under the ${layerName(0)}`,

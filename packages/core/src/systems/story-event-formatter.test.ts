@@ -819,6 +819,7 @@ it("writes a small army's find rounded, and one under a unit with no amount, as 
 
 it.each([
   [{ Shrine: 0 }, SHRINE_USED_LINE],
+  [{ ShrinePoint: 3 }, SHRINE_USED_LINE],
   [{ Well: 60 }, wellUsedLine("60")],
   [{ Well: 5 }, wellUsedLine("5")],
   [{ Well: 0 }, wellUsedLine("0")],
@@ -826,6 +827,4 @@ it.each([
   expect(
     buildStoryEventPresentation(story("SiteUsed", { explorer_id: 7, coord: { x: 3, y: 4 }, benefit })),
   ).toMatchObject({ title, description: "Lord 0123's army" });
-});
-
 });

@@ -8,7 +8,7 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import {
   HudButton,
   HudChip,
-  HudCost,
+  HudPrice,
   HudSheet,
   HudStamina,
   HudWindowFoot,
@@ -16,7 +16,7 @@ import {
 } from "@/ui/design-system/kit/hud-elements";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { costLine } from "@/ui/design-system/kit/price-faces";
+import type { Price } from "@/ui/design-system/kit/price-faces";
 import {
   exploresBought,
   MOVE,
@@ -58,7 +58,7 @@ type SiteTaker = { art: IconMeaning; label: string; tiles: number; nearest: bool
 type SiteAction =
   | { kind: "refused"; line: string }
   | { kind: "use"; busy: string | undefined; onUse: () => void }
-  | { kind: "move"; cost: string; onMove: () => void };
+  | { kind: "move"; prices: readonly Price[]; onMove: () => void };
 
 export const MapSiteCard = ({
   selected,
@@ -101,10 +101,10 @@ export const MapSiteCard = ({
     : approach
       ? {
           kind: "move",
-          cost: costLine([
+          prices: [
             { of: "stamina", amount: approach.stamina.cost },
             { of: "wheat", amount: approach.wheat.cost },
-          ]),
+          ],
           onMove: () => requestOrderAt(approach.target),
         }
       : null;
@@ -148,7 +148,7 @@ const MapSiteCardView = ({
         note={
           <SiteGain icon={icon}>
             <GainOf kind={kind} gain={gain} stamina={army?.stamina} />
-            {action?.kind === "move" && <HudCost line={action.cost} />}
+            {action?.kind === "move" && <HudPrice prices={action.prices} />}
           </SiteGain>
         }
       >
