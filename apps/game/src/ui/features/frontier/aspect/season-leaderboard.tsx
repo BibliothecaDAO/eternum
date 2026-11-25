@@ -1,10 +1,10 @@
 import "./season-leaderboard.css";
 
-import type { HeraldAspectRosterMember } from "@bibliothecadao/eternum/game-sync";
 import { aspectName, aspects, formatCount, formatExact, formatShort, type AspectId } from "@bibliothecadao/types";
 import { useState, type CSSProperties, type ReactNode } from "react";
 
-import { type GloryRoster, type GloryRow, gloryRowOf, mergeAspectRosters } from "@/shell/season-tab/glory-rows";
+import { boardRows, type GloryRoster, type GloryRow, type OwnGloryRow } from "@/shell/season-tab/glory-rows";
+import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
@@ -56,12 +56,6 @@ export interface SeasonStanding {
   altar: { charge: number; threshold: number } | null;
 }
 
-export interface SeasonOwnRow {
-  aspect: AspectId;
-  member: HeraldAspectRosterMember;
-  place: number;
-  aspectPlace: number;
-}
 
 export interface SeasonLeaderboardProps {
   day?: { day: number; lastDay: number };
@@ -71,7 +65,7 @@ export interface SeasonLeaderboardProps {
   stages: number;
   result: { winner: string | null } | null;
   rosters: readonly { aspect: AspectId; roster: GloryRoster }[];
-  own: SeasonOwnRow | null;
+  own: OwnGloryRow | null;
   standing: SeasonStanding | null;
   invite?: ReactNode;
   goToDeep?: { go: () => void } | { refused: Refusal };
@@ -90,17 +84,18 @@ const TRIUMPH_ICONS: Record<keyof typeof ASPECT_PAGE_WORDS.triumph, IconMeaning>
 export const SeasonLeaderboard = (props: SeasonLeaderboardProps) => {
   const [tab, setTab] = useState<AspectId | 0>(0);
   const [standingShown, setStandingShown] = useState(false);
+  const phone = useHudLayout() === "phone";
   const { day, players, standing, onClose } = props;
   return (
     <HudPage
-      label={WORDS.title}
+      label={phone ? WORDS.phoneTitle : WORDS.title}
       icon="crown"
       fills
       cue={
         <span className="season-board__cue">
           {day && <HudChip icons={["hourglass"]}>{WORDS.day(day.day, day.lastDay)}</HudChip>}
-          <HudChip icons={["people"]}>{formatCount(players, PLAY_WORDS.player)}</HudChip>
-          <span className="season-board__rule">{WORDS.poolRule}</span>
+          {!phone && <HudChip icons={["people"]}>{formatCount(players, PLAY_WORDS.player)}</HudChip>}
+          {!phone && <span className="season-board__rule">{WORDS.poolRule}</span>}
         </span>
       }
       onClose={onClose}
@@ -120,14 +115,18 @@ export const SeasonLeaderboard = (props: SeasonLeaderboardProps) => {
                 onChange={setTab}
                 tabs={[
                   { key: 0, label: SEASON_WORDS.allPlayers },
-                  ...aspects.map(({ id, name }) => ({ key: id, label: name, icon: aspectMeaning(id) })),
+                  ...aspects.map(({ id, name }) =>
+                    phone
+                      ? { key: id, ariaLabel: name, title: name, icon: aspectMeaning(id) }
+                      : { key: id, label: name, icon: aspectMeaning(id) },
+                  ),
                 ]}
               />
               {standing && (
                 <span className="season-board__standing-tab">
                   <HudButton
                     kind="secondary"
-                    icon="crown"
+                    size="sm"
                     aria-pressed={standingShown}
                     onClick={() => setStandingShown((shown) => !shown)}
                   >
@@ -207,9 +206,9 @@ const GloryBoard = ({
 }: {
   rosters: readonly { aspect: AspectId; roster: GloryRoster }[];
   tab: AspectId | 0;
-  own: SeasonOwnRow | null;
+  own: OwnGloryRow | null;
 }) => {
-  const rows = gloryRows(rosters, tab, own);
+  const rows = boardRows(rosters, tab, own);
   if (tab !== 0 && rows.length === 0)
     return <span className="season-board__empty">{SEASON_WORDS.aspectRosterEmpty(aspectName(tab))}</span>;
   return (
@@ -225,24 +224,6 @@ const GloryBoard = ({
       ))}
     </div>
   );
-};
-
-const gloryRows = (
-  rosters: readonly { aspect: AspectId; roster: GloryRoster }[],
-  tab: AspectId | 0,
-  own: SeasonOwnRow | null,
-): GloryRow[] => {
-  const mine = (entityId: string) => entityId === own?.member.entity_id;
-  const rows =
-    tab === 0
-      ? mergeAspectRosters(rosters).rows.map(({ rank, member, aspect }) =>
-          gloryRowOf(rank, member, mine(member.entity_id), aspect),
-        )
-      : (rosters.find((entry) => entry.aspect === tab)?.roster.members ?? []).map((member) =>
-          gloryRowOf(member.rank, member, mine(member.entity_id), tab),
-        );
-  if (!own || rows.some((row) => row.own) || (tab !== 0 && tab !== own.aspect)) return rows;
-  return [...rows, gloryRowOf(tab === 0 ? own.place : own.aspectPlace, own.member, true, own.aspect)];
 };
 
 const GloryTableRow = ({ row }: { row: GloryRow }) => (

@@ -3,7 +3,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { openPlace } from "@/play/navigation/open-place";
 import { useAllAspectRosters } from "@/shell/herald";
-import { type GloryIdentity, nativeAspectRoster, nativeMember } from "@/shell/season-tab/glory-rows";
+import { type GloryIdentity, nativeAspectRoster, nativeMember, type OwnGloryRow } from "@/shell/season-tab/glory-rows";
 import { requireActiveGame } from "@/runtime/world";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
 import { HudPage, HudSkeleton } from "@/ui/design-system/kit/hud-elements";
@@ -32,12 +32,7 @@ import {
 import { useFrontierRealm } from "../frontier-home";
 import { deepLockLine, realmLayers } from "../hud/map-layers";
 import { AspectInvite } from "../invite/aspect-invite";
-import {
-  SeasonLeaderboard,
-  type SeasonLeaderboardProps,
-  type SeasonOwnRow,
-  type SeasonStanding,
-} from "./season-leaderboard";
+import { SeasonLeaderboard, type SeasonLeaderboardProps, type SeasonStanding } from "./season-leaderboard";
 
 export function useAspectBoard() {
   const { setup } = useGame();
@@ -157,7 +152,7 @@ function ownRowOf(
   board: RaceBoard,
   own: NonNullable<RaceBoard["own"]>,
   identityOf: (home: bigint) => GloryIdentity | null,
-): SeasonOwnRow | null {
+): OwnGloryRow | null {
   const aspectPlace = own.members.findIndex((member) => member.mine);
   if (aspectPlace < 0) return null;
   const member = nativeMember(aspectPlace + 1, own.members[aspectPlace]!, identityOf);

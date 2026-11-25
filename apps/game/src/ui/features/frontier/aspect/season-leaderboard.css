@@ -4,6 +4,7 @@
 .season-board {
   display: flex;
   min-height: 0;
+  flex: 1;
   flex-direction: column;
   gap: theme(spacing.3);
   container-type: inline-size;
@@ -122,6 +123,10 @@
   align-items: center;
   gap: theme(spacing.2);
 }
+.season-board__tabs > .ui-tabs {
+  min-width: 0;
+  flex: 1;
+}
 .season-board__standing-tab {
   display: none;
 }
@@ -237,7 +242,6 @@
 }
 
 @container (max-width: 640px) {
-  .season-board__rule,
   .season-aspect__head .season-aspect__rank,
   .season-aspect__name,
   .season-aspect__stages,
@@ -257,7 +261,15 @@
     margin: 0;
   }
   .season-board__main {
+    flex: 1;
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .season-board__glory {
+    min-height: 0;
+  }
+  .season-board__rows .ui-table-head {
+    display: none;
   }
   .season-board__standing-tab {
     display: inline-flex;
@@ -275,7 +287,8 @@
     display: none;
   }
   .season-board__rows {
-    max-height: calc(var(--hud-control) * 8);
+    flex: 1;
+    max-height: none;
   }
   .season-board__phone-foot {
     display: flex;

@@ -1064,6 +1064,7 @@ export const ASPECT_PAGE_WORDS = {
 } as const;
 export const SEASON_BOARD_WORDS = {
   title: `${COUNTDOWN_WORDS.title} Leaderboard`,
+  phoneTitle: COUNTDOWN_WORDS.title,
   day: (day: number, lastDay: number) => `Day ${formatExact(day)} of ${formatExact(lastDay)}`,
   poolRule: `${formatExact(ASPECT_REWARD.lordsPerHeight)} LORDS per height · +${formatShort(ASPECT_REWARD.finishBonus)} for 1st`,
   pool: (lords: number) => `${formatShort(lords)} LORDS`,

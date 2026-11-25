@@ -60,7 +60,7 @@ const { LabGame } = await import("@/ui/features/debug/kit-lab/lab-game");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { overrideSpectateIntent } = await import("@/utils/spectator-session");
 const { FrontierAspectPage } = await import("./aspect/aspect-page");
-const { SEASON_BOARD_WORDS } = await import("@/ui/design-system/kit/words");
+const { ASPECT_PAGE_WORDS, SEASON_BOARD_WORDS } = await import("@/ui/design-system/kit/words");
 const { setActiveGame } = await import("@/runtime/world");
 const SEASON_PAGE = `section[aria-label="${SEASON_BOARD_WORDS.title}"]`;
 const { FrontierHud } = await import("./frontier-hud");
@@ -1237,7 +1237,7 @@ it("moves to the World map at the Deep hex when Go to Deep is pressed from the R
   };
   const goToDeep = () =>
     [...host.querySelectorAll<HTMLButtonElement>(`${SEASON_PAGE} button`)].find((button) =>
-      button.textContent?.includes("Go to Deep"),
+      button.textContent?.includes(ASPECT_PAGE_WORDS.goToDeep),
     );
   try {
     window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");

@@ -1,31 +1,21 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, type ReactNode } from "react";
+import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 
-import { gloryBoardEntry } from "@/shell/season-tab/aspect-roster";
 import {
+  boardRows,
   type GloryIdentity,
   gloryRowOf,
   mergeAspectRosters,
   nativeAspectRoster,
   nativeMember,
+  type OwnGloryRow,
 } from "@/shell/season-tab/glory-rows";
-import { AppBoard } from "@/ui/design-system/kit/app-elements";
-import { YOU } from "@/ui/design-system/kit/words";
 import type { RaceMemberRow } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, type AspectId } from "@bibliothecadao/types";
-import { SeasonLeaderboard, type SeasonLeaderboardProps } from "./season-leaderboard";
-
-vi.mock("@/hooks/use-player-profile", async (original) => ({
-  ...(await original<typeof import("@/hooks/use-player-profile")>()),
-  usePlayerName: (account: string | bigint | null | undefined) =>
-    account === null || account === undefined
-      ? null
-      : { state: "named", text: `Lord ${BigInt(account).toString(16)}`, claimed: true },
-  usePlayerProfile: () => ({ name: null, portrait: null }),
-}));
+import { SeasonLeaderboard } from "./season-leaderboard";
 
 const ASPECTS = [1, 2, 3, 4] as const;
 const OWN = 7n;
@@ -37,83 +27,86 @@ const member = (home: number, glory: number): RaceMemberRow => ({
   mine: BigInt(home) === OWN,
 });
 
-const identityOf = (home: bigint): GloryIdentity => ({
-  owner: `0x${(0x100n + home).toString(16)}`,
-  realm_id: Number(home),
-});
-const lordOf = (home: bigint) => `Lord ${(0x100n + home).toString(16)}`;
+const identityOf = (home: bigint): GloryIdentity => ({ owner: `0x${(0x100n + home).toString(16)}`, realm_id: Number(home) });
 
-const herald = (members: readonly RaceMemberRow[]) => ({
-  total: members.length,
-  members: members.slice(0, 10).map((row, index) => nativeMember(index + 1, row, identityOf)!),
+const nativeRosters = (native: Record<AspectId, RaceMemberRow[]>, named = identityOf) =>
+  ASPECTS.map((aspect) => ({ aspect, roster: nativeAspectRoster(native[aspect], (home) => named(home)) }));
+
+const ownRow = (native: Record<AspectId, RaceMemberRow[]>, place: number): OwnGloryRow => {
+  const aspectPlace = native[1].findIndex((row) => row.mine) + 1;
+  return { aspect: 1, member: nativeMember(aspectPlace, native[1][aspectPlace - 1]!, identityOf)!, place, aspectPlace };
+};
+
+const SMALL: Record<AspectId, RaceMemberRow[]> = {
+  1: [member(9, 3750), member(7, 1250)],
+  2: [member(11, 2100), member(12, 640)],
+  3: [member(13, 1800)],
+  4: [],
+};
+
+it("gives the game, ranked from native rows, the same board rows the app builds from Herald's roster", () => {
+  const served = ASPECTS.map((aspect) => ({
+    aspect,
+    roster: {
+      total: SMALL[aspect].length,
+      members: SMALL[aspect].slice(0, 10).map((row, index) => nativeMember(index + 1, row, identityOf)!),
+    },
+  }));
+  const app = mergeAspectRosters(served).rows.map(({ rank, member: row, aspect }) =>
+    gloryRowOf(rank, row, row.entity_id === String(OWN), aspect),
+  );
+  const game = boardRows(nativeRosters(SMALL), 0, ownRow(SMALL, 4));
+  expect(game).toEqual(app);
+  expect(game.map(({ key, rank, own }) => [key, rank, own])).toEqual([
+    ["9", 1, false],
+    ["11", 2, false],
+    ["13", 3, false],
+    ["7", 4, true],
+    ["12", 5, false],
+  ]);
 });
 
-const rowsIn = (node: ReactNode, row: string): string[] => {
+it("keeps each Aspect's top ten that a source names, and adds the player's own row last with their place", () => {
+  const crowd = Array.from({ length: 12 }, (_, index) => member(100 + index, 5000 - index * 100));
+  const native: Record<AspectId, RaceMemberRow[]> = { 1: [...crowd, member(7, 40)], 2: [member(21, 60)], 3: [], 4: [] };
+  const rows = boardRows(
+    nativeRosters(native, (home) => (home === 21n ? null : identityOf(home))),
+    0,
+    ownRow(native, 14),
+  );
+  expect(rows.map(({ key }) => key)).toEqual([...crowd.slice(0, 10).map(({ home }) => String(home)), "7"]);
+  expect(rows.at(-1)).toMatchObject({ rank: 14, own: true, aspect: 1 });
+  expect(boardRows(nativeRosters(native), 1, ownRow(native, 14)).at(-1)).toMatchObject({ rank: 13, own: true });
+  expect(boardRows(nativeRosters(native), 2, ownRow(native, 14)).some((row) => row.own)).toBe(false);
+});
+
+it("draws one table row for each board row, the player's own lit", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const host = document.createElement("div");
   const root = createRoot(host);
+  const own = ownRow(SMALL, 4);
   act(() =>
     root.render(
       <QueryClientProvider client={new QueryClient()}>
-        <MemoryRouter>{node}</MemoryRouter>
+        <MemoryRouter>
+          <SeasonLeaderboard
+            players={5}
+            race={[]}
+            finishHeight={10_000}
+            stages={5}
+            result={null}
+            rosters={nativeRosters(SMALL)}
+            own={own}
+            standing={null}
+            onClose={() => undefined}
+          />
+        </MemoryRouter>
       </QueryClientProvider>,
     ),
   );
-  const rows = [...host.querySelectorAll(row)].map((each) => each.textContent ?? "");
+  const drawn = [...host.querySelectorAll(".ui-table-row")];
+  const rows = boardRows(nativeRosters(SMALL), 0, own);
+  expect(drawn).toHaveLength(rows.length);
+  expect(drawn.map((row) => row.hasAttribute("data-own"))).toEqual(rows.map((row) => row.own));
   act(() => root.unmount());
-  return rows;
-};
-
-const gameBoard = (
-  native: Record<AspectId, RaceMemberRow[]>,
-  named: (home: bigint) => GloryIdentity | null,
-  own: SeasonLeaderboardProps["own"],
-) => (
-  <SeasonLeaderboard
-    players={ASPECTS.reduce((sum, aspect) => sum + native[aspect].length, 0)}
-    race={[]}
-    finishHeight={10_000}
-    stages={5}
-    result={null}
-    rosters={ASPECTS.map((aspect) => ({ aspect, roster: nativeAspectRoster(native[aspect], named) }))}
-    own={own}
-    standing={null}
-    onClose={() => undefined}
-  />
-);
-
-it("ranks and draws the same members alike in the game, from native ranks, and in the app, from Herald's roster", () => {
-  const native: Record<AspectId, RaceMemberRow[]> = {
-    1: [member(9, 3750), member(7, 1250)],
-    2: [member(11, 2100), member(12, 640)],
-    3: [member(13, 1800)],
-    4: [],
-  };
-  const served = ASPECTS.map((aspect) => ({ aspect, roster: herald(native[aspect]) }));
-  const app = rowsIn(
-    <AppBoard
-      rows={9}
-      entries={mergeAspectRosters(served).rows.map(({ rank, member: row, aspect }) =>
-        gloryBoardEntry(gloryRowOf(rank, row, row.entity_id === String(OWN), aspect), () => undefined),
-      )}
-    />,
-    ".app-board__item",
-  );
-  const own = { aspect: 1 as const, member: nativeMember(2, native[1][1]!, identityOf)!, place: 4, aspectPlace: 2 };
-  const game = rowsIn(gameBoard(native, identityOf, own), ".ui-table-row");
-  expect(game).toHaveLength(5);
-  expect(game).toEqual(app);
-});
-
-it("draws each Aspect's top ten that a source names, and holds the player's own row at the foot with their place", () => {
-  const crowd = Array.from({ length: 12 }, (_, index) => member(100 + index, 5000 - index * 100));
-  const native: Record<AspectId, RaceMemberRow[]> = { 1: [...crowd, member(7, 40)], 2: [member(21, 60)], 3: [], 4: [] };
-  const unnamed = (home: bigint) => (home === 21n ? null : identityOf(home));
-  const own = { aspect: 1 as const, member: nativeMember(13, native[1][12]!, identityOf)!, place: 14, aspectPlace: 13 };
-  const rows = rowsIn(gameBoard(native, unnamed, own), ".ui-table-row");
-  expect(rows).toHaveLength(11);
-  expect(rows[0]).toContain(lordOf(100n));
-  expect(rows.some((row) => row.includes(lordOf(110n)))).toBe(false);
-  expect(rows.some((row) => row.includes(lordOf(21n)))).toBe(false);
-  expect(rows.at(-1)?.startsWith(`14${YOU}`)).toBe(true);
 });

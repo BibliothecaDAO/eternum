@@ -3,7 +3,7 @@ import { expiredRaceScenario, raceScenario } from "@/lab/game/race-scenario";
 import { rowsOf, wire } from "@/lab/game/lab-chain";
 import { NativeFactStore, raceFinishHeight, readRaceBoard } from "@bibliothecadao/eternum/game-client";
 import { configManager, getStructureName } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { aspectName, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { raceStageOf } from "@/shell/season";
 import { seasonBoard } from "./aspect-page";
 
@@ -115,7 +115,7 @@ describe("the race board from native facts", () => {
         false,
         () => null,
       ).result?.winner,
-    ).toBe("Luminary");
+    ).toBe(aspectName(2));
   });
 
   it("accepts a known zero receipt, keeps incomplete snapshots unknown, and needs no member realm in the client scope", () => {

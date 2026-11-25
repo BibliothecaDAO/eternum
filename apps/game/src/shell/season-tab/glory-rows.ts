@@ -17,6 +17,13 @@ export interface GloryRow {
   glory: string;
 }
 
+export interface OwnGloryRow {
+  aspect: AspectId;
+  member: HeraldAspectRosterMember;
+  place: number;
+  aspectPlace: number;
+}
+
 export interface GloryIdentity {
   owner: string;
   realm_id: number;
@@ -73,4 +80,22 @@ export const gloryRowOf = (
     order: order && { orderId: order.orderId, orderName: order.orderName },
     glory: formatAmount(gloryAmount(member.glory)),
   };
+};
+
+export const boardRows = (
+  rosters: readonly { aspect: AspectId; roster: GloryRoster }[],
+  tab: AspectId | 0,
+  own: OwnGloryRow | null,
+): GloryRow[] => {
+  const mine = (entityId: string) => entityId === own?.member.entity_id;
+  const rows =
+    tab === 0
+      ? mergeAspectRosters(rosters).rows.map(({ rank, member, aspect }) =>
+          gloryRowOf(rank, member, mine(member.entity_id), aspect),
+        )
+      : (rosters.find((entry) => entry.aspect === tab)?.roster.members ?? []).map((member) =>
+          gloryRowOf(member.rank, member, mine(member.entity_id), tab),
+        );
+  if (!own || rows.some((row) => row.own) || (tab !== 0 && tab !== own.aspect)) return rows;
+  return [...rows, gloryRowOf(tab === 0 ? own.place : own.aspectPlace, own.member, true, own.aspect)];
 };
