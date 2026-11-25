@@ -316,6 +316,13 @@ const essenceShortPrice: LabTile["standing"] = {
   ],
   short: { of: "essence", wait: undefined },
 };
+const BUILD_SHORT_ESSENCE = 2_400;
+const BUILD_SHORT_STORES = STORES.map((held) =>
+  held.kind === "essence" ? store("essence", BUILD_SHORT_ESSENCE) : held,
+);
+const LAB_BUILD_REFUSAL = {
+  reason: { kind: "short", of: "essence", held: BUILD_SHORT_ESSENCE, need: 6_000 },
+} as const;
 const BUILD_TILES: LabTile[] = [
   tile("farm", "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, price(6_800)),
   tile(
@@ -623,7 +630,7 @@ const STATES = {
   },
   build: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build" },
   "build-early": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-early" },
-  "build-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-short" },
+  "build-short": { clock: CLOCK, stores: BUILD_SHORT_STORES, armies: ARMIES, realmView: "build-short" },
   castle: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle" },
   "castle-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle-short" },
   "building-farm": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "farm" },
@@ -945,10 +952,10 @@ export const HudLab = () => {
                   ? SHORT_TILES
                   : BUILD_TILES
             }
-            chosen={lab.realmView === "build" ? 0 : 2}
+            chosen={lab.realmView === "build" ? 0 : lab.realmView === "build-short" ? 3 : 2}
             onChoose={noop}
             prices={[{ of: "labor", amount: lab.realmView === "build" ? 6_800 : 800 }]}
-            refusal={undefined}
+            refusal={lab.realmView === "build-short" ? LAB_BUILD_REFUSAL : undefined}
             sending={false}
             onBuild={noop}
             onClose={noop}

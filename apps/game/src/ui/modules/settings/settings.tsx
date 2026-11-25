@@ -1,3 +1,5 @@
+import "./settings.css";
+
 import { pageNavigation } from "@/utils/page-navigation";
 import { OPENING_WORDS, PROFILE_WORDS, SETTINGS_WORDS } from "@/ui/design-system/kit/words";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
@@ -42,9 +44,9 @@ export const SETTINGS_POPOVER_ID = "settings";
 const effectsCategories = Object.values(AudioCategory).filter((category) => category !== AudioCategory.MUSIC);
 
 export const SettingsPanel = () => {
-  const [page, setPage] = useState<"main" | "more" | "keys">("main");
-  if (page === "keys") return <KeyboardShortcuts />;
-  if (page === "more") return <MoreSettings onBack={() => setPage("main")} onShowKeys={() => setPage("keys")} />;
+  const [more, setMore] = useState(false);
+  const [keys, setKeys] = useState(false);
+  if (keys) return <KeyboardShortcuts />;
   return (
     <div className="ui-settings">
       <ProfileHeader />
@@ -53,24 +55,22 @@ export const SettingsPanel = () => {
       <VideoSettings />
       <ShowEverythingSwitch />
       <footer className="ui-settings__foot">
-        <HudButton kind="secondary" size="sm" onClick={() => setPage("more")}>
-          {`${SETTINGS_WORDS.more} ›`}
-        </HudButton>
+        {!more && (
+          <HudButton kind="secondary" size="sm" aria-expanded={false} onClick={() => setMore(true)}>
+            {SETTINGS_WORDS.more}
+          </HudButton>
+        )}
         <SignOut />
       </footer>
+      {more && <MoreSettings onShowKeys={() => setKeys(true)} />}
     </div>
   );
 };
 
-const MoreSettings = ({ onBack, onShowKeys }: { onBack: () => void; onShowKeys: () => void }) => {
+const MoreSettings = ({ onShowKeys }: { onShowKeys: () => void }) => {
   const guide = useHowToPlay();
   return (
-    <div className="flex flex-col gap-3 p-1">
-      <div>
-        <HudButton kind="quiet" size="sm" icon="arrow-left" onClick={onBack}>
-          {SETTINGS_WORDS.back}
-        </HudButton>
-      </div>
+    <div className="ui-settings__more">
       <SettingsSection title={PROFILE_WORDS.notifications}>
         <NotificationSettings />
       </SettingsSection>

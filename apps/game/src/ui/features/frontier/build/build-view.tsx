@@ -8,7 +8,6 @@ import {
   HudCard,
   HudChip,
   HudCost,
-  HudNotice,
   HudRanked,
   HudSheet,
   HudWindowFoot,
@@ -19,7 +18,7 @@ import { BUILD, BUILDING, BUILT, buildNamed, plotsUsed, type RankedWords } from 
 
 import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { ReactNode } from "react";
-import { reasonLine } from "@/ui/design-system/kit/reasons";
+import { RefusedVerb } from "../refused-verb";
 
 export type BuildTile = {
   key: string;
@@ -100,7 +99,7 @@ const ChosenFoot = ({
 }) => {
   const standing = tile.standing;
   const raised = standing.kind === "price" ? standing.raised : undefined;
-  const cost = standing.kind !== "built" && !refusal?.fix?.prices && (
+  const cost = standing.kind !== "built" && (
     <span className="inline-flex items-center gap-1">
       <HudCost line={costLine(prices)} />
       {raised && (
@@ -112,7 +111,6 @@ const ChosenFoot = ({
   );
   const note = (
     <span className="flex flex-col items-start gap-0.5">
-      {refusal && <RefusalNote refusal={refusal} />}
       {cost}
       <span data-build-does className="build-does">
         <HudRanked words={tile.does} />
@@ -121,13 +119,12 @@ const ChosenFoot = ({
   );
   if (refusal)
     return (
-      <HudWindowFoot note={note}>
-        {refusal.fix && (
-          <HudButton kind="primary" icon={refusal.fix.icon} onClick={refusal.fix.onFix}>
-            {refusal.fix.word}
-          </HudButton>
-        )}
-      </HudWindowFoot>
+      <RefusedVerb
+        word={buildNamed(tile.name)}
+        icon="build"
+        refusal={refusal}
+        note={refusal.fix?.prices && <HudCost line={costLine(refusal.fix.prices)} />}
+      />
     );
   return (
     <HudWindowFoot note={note}>
@@ -137,13 +134,6 @@ const ChosenFoot = ({
     </HudWindowFoot>
   );
 };
-
-const RefusalNote = ({ refusal }: { refusal: Refusal }) => (
-  <span className="flex flex-col items-start gap-1">
-    <HudNotice line={reasonLine(refusal.reason)} />
-    {refusal.fix?.prices && <HudCost line={costLine(refusal.fix.prices)} />}
-  </span>
-);
 
 const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boolean; onChoose: () => void }) => (
   <span {...rankedTip([`${tile.name}: `, ...asWords(tile.does)])} className="min-w-0">
@@ -159,6 +149,7 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
         </span>
       }
       selected={chosen}
+      tone={chosen && tile.standing.kind === "price" && tile.standing.short ? "bad" : undefined}
       data-locked={tile.standing.kind === "level" || undefined}
       onClick={onChoose}
     />

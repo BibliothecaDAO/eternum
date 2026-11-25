@@ -653,7 +653,6 @@ export const SETTINGS_WORDS = {
   appliesAfterReload: "Applies after a reload",
   reload: "Reload",
   more: "More",
-  back: "Back",
   leaveGame: "Leave game",
   copy: "Copy",
 } as const;

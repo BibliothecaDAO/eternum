@@ -5,7 +5,7 @@ import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudPage, HudRow, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { ASPECT_PAGE_WORDS as WORDS, DAY } from "@/ui/design-system/kit/words";
-import { aspectName, formatExact, type AspectId } from "@bibliothecadao/types";
+import { aspectName, formatExact, formatShort, type AspectId } from "@bibliothecadao/types";
 import type { CSSProperties, ReactNode } from "react";
 import { aspectVariables } from "@/tokens";
 import { AspectRaceCanvas } from "./aspect-race-canvas";
@@ -59,7 +59,7 @@ export const AspectPageView = ({ race, own, fights, invite, day, onGoToDeep, onC
     label={WORDS.title}
     icon="victory"
     fills
-    cue={day !== undefined && <HudChip icons={["calendar"]}>{`${DAY} ${formatExact(day)}`}</HudChip>}
+    cue={day !== undefined && <HudChip icons={["calendar"]}>{`${DAY} ${formatShort(day)}`}</HudChip>}
     onClose={onClose}
     bodyClassName="gap-3"
   >

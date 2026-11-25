@@ -635,12 +635,11 @@ it("lays a phone's Settings on one page, with what is rarely touched one press a
       "Shadows",
       "Reduced motion",
     ]);
-    await press("More ›");
-    expect(settings().querySelector(".ui-settings")).toBeNull();
+    expect(words("button")).not.toContain("Leave game");
+    await press("More");
     expect(words("section > h2")).toContain("Notifications");
     expect(words("button")).toContain("Leave game");
-    await press("Back");
-    expect(settings().querySelector(".ui-settings")).not.toBeNull();
+    expect(words("button")).not.toContain("More");
   } finally {
     window.history.replaceState(null, "", route);
   }
