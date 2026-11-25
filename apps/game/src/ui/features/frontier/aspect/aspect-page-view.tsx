@@ -3,7 +3,6 @@ import "./aspect-page-view.css";
 import { OpeningPartGate } from "../opening/opening-context";
 import { RefusedVerb } from "../refused-verb";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudPage, HudRow, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { ASPECT_PAGE_WORDS as WORDS, DAY } from "@/ui/design-system/kit/words";
@@ -22,11 +21,6 @@ export interface AspectStanding {
   own: boolean;
 }
 
-export interface AspectTriumph {
-  stage: keyof typeof WORDS.triumph;
-  day: number | null;
-}
-
 export interface AspectMember {
   id: string;
   realm: string;
@@ -36,7 +30,6 @@ export interface AspectMember {
 
 export interface OwnAspect {
   aspectId: AspectId;
-  triumphs: readonly AspectTriumph[];
   bar: { charge: number; threshold: number } | null;
   members: readonly AspectMember[];
 }
@@ -95,25 +88,6 @@ const Race = ({ race }: { race: NonNullable<AspectPageProps["race"]> }) => (
 
 const YourAspect = ({ own, invite }: { own: OwnAspect; invite?: ReactNode }) => (
   <section data-aspect-own className="flex min-w-0 flex-col gap-2">
-    <Heading>
-      <span className="inline-flex items-center gap-2">
-        <AspectMark aspect={own.aspectId} size={24} decorative />
-        {WORDS.yours(aspectName(own.aspectId))}
-      </span>
-    </Heading>
-    <div data-aspect-triumphs className="flex flex-wrap items-center gap-1">
-      <Muted>{WORDS.triumphs}:</Muted>
-      {own.triumphs.map(({ stage, day }) => (
-        <HudChip
-          key={stage}
-          icons={["star"]}
-          tone={day === null ? undefined : "good"}
-          tip={`${WORDS.triumph[stage]} · ${day === null ? WORDS.triumphAt(stage) : WORDS.triumphOn(day)}`}
-        >
-          {WORDS.triumph[stage]}
-        </HudChip>
-      ))}
-    </div>
     {own.bar && (
       <OpeningPartGate part="bane-row">
         <div data-aspect-bane className="flex flex-col gap-0.5">
@@ -173,9 +147,6 @@ const GloryAmount = ({ glory }: { glory: number }) => (
   </span>
 );
 
-const Heading = ({ children }: { children: ReactNode }) => (
-  <span className="text-hud-strong text-hud-ink">{children}</span>
-);
 const Muted = ({ children }: { children: ReactNode }) => (
   <span className="text-hud-label text-hud-muted">{children}</span>
 );

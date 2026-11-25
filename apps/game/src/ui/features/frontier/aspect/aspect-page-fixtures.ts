@@ -1,13 +1,12 @@
 import { raceStage } from "@bibliothecadao/eternum/game-client";
 import { aspects, type AspectId } from "@bibliothecadao/types";
 
-import type { AspectMember, AspectPageProps, AspectStanding, AspectTriumph, OwnAspect } from "./aspect-page-view";
+import type { AspectMember, AspectPageProps, AspectStanding, OwnAspect } from "./aspect-page-view";
 
 /** Season 1's race: a hyperstructure of 10,000 in 5 stages of 2,000; each of the first 4 stages is a Triumph. */
 const FINISH = 10_000;
 const STAGE = 2_000;
 const STAGES = 5;
-const TRIUMPH_STAGES = [1, 2, 3, 4] as const;
 /** The bane bar of 1,500 an Aspect fills by holding the Altar. */
 const BANE_THRESHOLD = 1_500;
 
@@ -26,13 +25,6 @@ const standings = (heights: Record<string, number>, own: string): AspectStanding
       own: aspect === own,
     }));
 
-/**
- * The Aspect's Triumphs: each stage built (at 2,000, 4,000, 6,000, 8,000) gives a Triumph the next day, and `fallsOn`
- * is the game day each falls on. A stage not yet built has no day: nothing stands in for it.
- */
-const triumphs = (height: number, fallsOn: Record<(typeof TRIUMPH_STAGES)[number], number>): AspectTriumph[] =>
-  TRIUMPH_STAGES.map((stage) => ({ stage, day: height >= stage * STAGE ? fallsOn[stage] : null }));
-
 const member = (id: string, realm: string, glory: number, mine = false): AspectMember => ({
   id,
   realm,
@@ -40,9 +32,8 @@ const member = (id: string, realm: string, glory: number, mine = false): AspectM
   glory,
 });
 
-const luminary = (height: number, charge: number): OwnAspect => ({
+const luminary = (charge: number): OwnAspect => ({
   aspectId: 2,
-  triumphs: triumphs(height, { 1: 12, 2: 19, 3: 26, 4: 33 }),
   bar: { charge, threshold: BANE_THRESHOLD },
   members: [
     member("a", "Aldor", 1_240),
@@ -63,7 +54,7 @@ export const ASPECT_PAGE_CASES = {
       stages: STAGES,
       result: null,
     },
-    own: luminary(5_200, 300),
+    own: luminary(300),
   },
   "Age won by another Aspect": {
     race: {
@@ -72,7 +63,7 @@ export const ASPECT_PAGE_CASES = {
       stages: STAGES,
       result: { winner: "Prowess" },
     },
-    own: luminary(7_600, 1_200),
+    own: luminary(1_200),
   },
   "No Aspect": {
     race: {

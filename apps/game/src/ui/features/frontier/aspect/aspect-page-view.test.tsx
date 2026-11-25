@@ -21,8 +21,6 @@ afterEach(() => {
 const draw = (props: Omit<AspectPageProps, "onClose">) =>
   act(() => root.render(<AspectPageView {...props} onClose={() => {}} />));
 const part = (name: string) => document.body.querySelector(`[${name}]`)?.textContent ?? "";
-const triumphTips = () =>
-  [...document.body.querySelectorAll("[data-aspect-triumphs] [data-tip]")].map((chip) => chip.getAttribute("data-tip"));
 
 describe("the Aspect page", () => {
   it("ranks the four hyperstructures by height, each stage built lit among the five, the player's own selected", () => {
@@ -46,16 +44,6 @@ describe("the Aspect page", () => {
     expect(document.body.textContent).not.toContain("10 / pt");
   });
 
-  it("shows the Triumphs of built stages with the day after the build, and the rest with their stage", () => {
-    draw(ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"]);
-    const triumphs = triumphTips();
-    expect(triumphs).toContain("Clear Mist · day 12");
-    expect(triumphs).toContain("Second Wind · day 19");
-    expect(triumphs).not.toContain("Pale Moon · day 26");
-    expect(triumphs).toContain("Pale Moon · at stage 3");
-    expect(triumphs).toContain("Spoils · at stage 4");
-  });
-
   it("shows the bane bar against its 1,500 and the members by Glory, one line each with its exact Glory", () => {
     draw(ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"]);
     expect(part("data-aspect-bane")).toContain("300 of 1,500");
@@ -76,33 +64,13 @@ describe("the Aspect page", () => {
       "Finished · 10,000 of 10,000",
       5,
     ]);
-    const triumphs = triumphTips();
-    expect(triumphs).toContain("Clear Mist · day 12");
-    expect(triumphs).toContain("Second Wind · day 19");
-    expect(triumphs).toContain("Pale Moon · day 26");
-    expect(triumphs).toContain("Spoils · at stage 4");
   });
 
-  it("gives every built stage a known, finite day in every scenario, and never prints a broken one", () => {
+  it("never prints a broken number in any scenario", () => {
     for (const props of Object.values(ASPECT_PAGE_CASES)) {
       draw(props);
       expect(document.body.textContent).not.toMatch(/NaN|undefined|Infinity/);
-      const height = props.race?.standings.find((each) => each.own)?.height ?? 0;
-      for (const { stage, day } of props.own?.triumphs ?? []) {
-        // a stage's Triumph has a day exactly when its 2,000-high stage is built
-        if (height >= stage * 2_000) expect(Number.isInteger(day)).toBe(true);
-        else expect(day).toBeNull();
-      }
     }
-  });
-
-  it("shows the day it is given, unchanged", () => {
-    const own = ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"].own;
-    draw({
-      ...ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"],
-      own: { ...own, triumphs: [{ stage: 1, day: 12 }] },
-    });
-    expect(triumphTips()).toContain("Clear Mist · day 12");
   });
 
   it("asks a player with no Aspect to join one, and says it is reading while the race is not settled", () => {

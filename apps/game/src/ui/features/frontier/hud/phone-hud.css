@@ -45,7 +45,7 @@ button.frontier-stock-chips[aria-expanded="true"] {
 .frontier-stock-chip {
   position: relative;
   display: inline-flex;
-  min-width: 0;
+  flex: none;
   align-items: center;
   gap: theme(spacing.1);
   font-size: var(--hud-text-body);
@@ -61,13 +61,14 @@ button.frontier-stock-chips[aria-expanded="true"] {
 }
 .frontier-bar .frontier-place-pill {
   height: 36px;
-  gap: theme(spacing[1.5]);
+  gap: theme(spacing.1);
   border-radius: var(--hud-radius-control);
   box-shadow: none;
   padding: 0 theme(spacing.2) 0 theme(spacing[1.5]);
 }
 .frontier-bar .frontier-place-pill__name {
   font-size: var(--hud-text-label);
+  letter-spacing: 0.02em;
 }
 .frontier-stock-chip__icon {
   display: inline-flex;
@@ -269,7 +270,24 @@ button.frontier-stock-chips[aria-expanded="true"] {
     font-size: var(--hud-text-label);
   }
   .frontier-stock-chip {
-    padding: 0 theme(spacing.1);
+    padding: 0 theme(spacing[0.5]);
+  }
+  .frontier-stock-chips {
+    padding-inline: 0;
+  }
+  .frontier-bar {
+    gap: theme(spacing.1);
+  }
+  .frontier-bar .frontier-place-pill {
+    padding-inline: theme(spacing.1) theme(spacing[1.5]);
+  }
+  .frontier-bar .frontier-place-pill__name {
+    font-size: var(--hud-text-badge);
+    letter-spacing: 0;
+  }
+  .frontier-stock-chip__icon img {
+    width: 16px;
+    height: 16px;
   }
 }
 [data-under-sheet]:has([data-army-action] > *) .frontier-phone-foot {

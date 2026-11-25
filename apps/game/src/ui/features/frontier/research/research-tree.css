@@ -66,37 +66,6 @@
   overflow-y: auto;
 }
 
-.research-scroll-cue {
-  pointer-events: none;
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  z-index: 4;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  height: 34px;
-  padding-bottom: 4px;
-  background: linear-gradient(180deg, transparent 0%, var(--hud-surface-to) 84%);
-}
-
-.research-scroll-cue__pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  border: 1px solid var(--hud-line-strong);
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-surface-from);
-  padding: 1px 8px;
-  color: rgb(var(--hud-gold));
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-badge);
-  line-height: var(--hud-leading-badge);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  box-shadow: var(--hud-shadow-control);
-}
-
 .research-tree-canvas {
   position: relative;
   display: flex;
@@ -510,7 +479,7 @@
   font-size: var(--hud-text-label);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .research-legend {
     display: inline-flex;
   }
@@ -804,7 +773,7 @@
   }
 }
 
-@media (min-width: 768px) and (max-height: 780px) {
+@media (min-width: 1024px) and (max-height: 780px) {
   .research-era-head,
   .research-era-rail-label {
     padding-block: theme(spacing[1.5]);
@@ -830,7 +799,7 @@
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .research-tree__tracks {
     gap: theme(spacing[1.5]);
   }

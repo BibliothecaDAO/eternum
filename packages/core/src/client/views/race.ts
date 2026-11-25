@@ -7,7 +7,6 @@ export const RACE_MODELS = [
   "RaceRules",
   "RaceMember",
   "AspectHyperstructure",
-  "TriumphDay",
   "RaceResult",
   "HomeAspect",
   "AspectMembers",
@@ -24,7 +23,6 @@ export interface RaceBoard {
   standings: (NativeRows["AspectHyperstructure"] & { rank: number; stage: number; finished: boolean })[];
   own: {
     aspect: number;
-    triumphs: { stage: number; day: bigint | null }[];
     bar: { charge: number; threshold: number };
     members: {
       home: NativeRows["Structure"];
@@ -89,16 +87,12 @@ function readOwnAspect(
   members.sort((a, b) =>
     compareAspectMembers({ glory: a.glory, home: a.home.entity_id }, { glory: b.glory, home: b.home.entity_id }),
   );
-  const triumphs = Array.from({ length: nativeRaceConstants.STAGE_COUNT - 1 }, (_, index) => {
-    const stage = index + 1;
-    return { stage, day: store.get("TriumphDay", { game_id: gameId, aspect, stage })?.day ?? null };
-  });
   const bar = store.requireOrAbsent("AltarBar", { game_id: gameId, aspect });
   if (!bar.known) return bar;
   const deep = store.get("DeepRules", { game_id: gameId });
   if (!deep) return { unknown: "MISSING_DEEP_RULES" };
   return {
-    known: { own: { aspect, members, triumphs, bar: { charge: bar.known.charge, threshold: deep.altar_threshold } } },
+    known: { own: { aspect, members, bar: { charge: bar.known.charge, threshold: deep.altar_threshold } } },
   };
 }
 
