@@ -39,7 +39,7 @@ const renderCard = (card: StoreLine, onSpend = vi.fn(), onBuild = vi.fn()) => {
 describe("a store's card", () => {
   it("says the store's rate, what it holds against its limit and when it is full", () => {
     const card = renderCard(line({ kind: "wheat" }));
-    expect(card.text()).toBe("WheatFull in 16h 44m+8/min9,640 / 18K");
+    expect(card.text()).toBe("WheatFull in 16h 44m+8.3/min9,640 / 18K");
     // Found by the store it is for, as the playtest's wheat-store step finds it (steps.mjs).
     expect(document.querySelectorAll('[data-store-card="wheat"]')).toHaveLength(1);
     card.done();
@@ -47,7 +47,7 @@ describe("a store's card", () => {
 
   it("shows its row's research tier inline after the rate as its rank gem", () => {
     const card = renderCard(line({ kind: "wheat", tier: 5 }));
-    expect(card.gems()).toEqual([["V", "+8/min"]]);
+    expect(card.gems()).toEqual([["V", "+8.3/min"]]);
     card.done();
     const unknown = renderCard(line({ kind: "wheat", tier: undefined }));
     expect(unknown.gems()).toEqual([]);

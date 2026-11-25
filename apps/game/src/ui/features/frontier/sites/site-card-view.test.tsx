@@ -50,7 +50,7 @@ describe("a guarded site's card", () => {
       ),
     );
     expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe("Victory likely");
-    expect(document.querySelector("[data-fight-reward]")?.textContent).toBe("+5KFull: the rest did not fit");
+    expect(document.querySelector("[data-fight-reward]")?.textContent).toBe("+5KStorage full: extra lost");
   });
 
   it("heads the attack with what it earns, and reads each side before and after as numbers alone", () => {
@@ -243,8 +243,8 @@ describe("a guarded site's card", () => {
       ),
     );
     const spoils = document.querySelector("[data-fight-reward]")!;
-    expect(spoils.textContent).toBe("+120Full: the rest did not fit");
-    expect(spoils.querySelector('[data-tip*="did not fit"]')).toBeNull();
+    expect(spoils.textContent).toBe("+120Storage full: extra lost");
+    expect(spoils.querySelector('[data-tip*="extra lost"]')).toBeNull();
     act(() =>
       buttons()
         .find((button) => button.textContent === "Realm")!
@@ -363,7 +363,7 @@ describe("a guarded site's card with no army chosen", () => {
     const card = document.querySelector("section[aria-label='North Watch Ruin']")!;
     expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
     // Its kind is in its title, as the hover says it; the guard's token, its strength under it, then its beast.
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BladeAmmit");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Ammit");
     expect(card.querySelector("header [role='img']")?.getAttribute("aria-label")).toBe("Ammit 1,100");
     expect(card.textContent?.match(/1,100|1\.1K/g)).toHaveLength(1);
   });
@@ -385,7 +385,8 @@ describe("a guarded site's card with no army chosen", () => {
       ),
     );
     const card = document.querySelector("section[data-kit-sheet]")!;
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BowFairy+3.3K");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Fairy+3.3K");
+    expect(card.querySelector<HTMLElement>("header [data-combat-mark]")?.dataset.tip).toBe("Bow");
     expect(card.querySelectorAll(".ui-row")).toHaveLength(0);
     expect(card.querySelectorAll("button")).toHaveLength(1);
     expect(card.textContent).not.toContain("Pick an army");
@@ -491,7 +492,8 @@ it("titles a single roaming Wraith by its species", () => {
     ),
   );
   expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Wraith");
-  expect(host.querySelector("[data-combat-mark]")?.textContent).toBe("Bow");
+  const badge = host.querySelector<HTMLElement>('[role="img"][aria-label="Wraith 314"] [data-combat-mark]');
+  expect(badge?.dataset.combatMark).toBe("Bow");
 });
 
 it("heads the card with the site's kind, and offers the supply post its clear opens", () => {

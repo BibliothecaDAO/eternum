@@ -13,14 +13,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { homeIcon } from "@/ui/design-system/home-icons";
 import { HudIconButton, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import {
-  ARMY,
-  ARMY_MANAGEMENT,
-  EVENTS_WORDS,
-  LINK_WALLET_FOR_LORDS,
-  REALM_CARD_WORDS,
-  YOU,
-} from "@/ui/design-system/kit/words";
+import { ARMY, ARMY_MANAGEMENT, EVENTS_WORDS, LINK_WALLET_FOR_LORDS, YOU } from "@/ui/design-system/kit/words";
 import { readArmySlots } from "@/ui/features/frontier/hud/army-dock";
 import { ArmyCard, ArmySlotsCard, LockedSlotLine, OpenSlotCard } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
@@ -76,7 +69,7 @@ import { ARCHIVED_SEASONS, archivedSeason } from "@/shell/season-tab/archive/arc
 import { SeasonPayoutRow } from "@/ui/features/frontier/value/season-payout";
 import { linkWalletLine } from "@/ui/features/frontier/value/link-wallet";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
-import { useLayout } from "@/shell/frame/layout";
+import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
@@ -794,7 +787,7 @@ const noop = () => undefined;
 export const HudLab = () => {
   const { state = "idle" } = useParams();
   const lab: LabState = STATES[state as keyof typeof STATES] ?? STATES.idle;
-  const desktop = useLayout() === "desktop";
+  const desktop = useHudLayout() === "desktop";
   // The game wears Frontier's age (world.tsx's useHudMode); the lab draws it the same.
   useHudMode("frontier");
   useLabNotice(lab.notice);
@@ -1087,17 +1080,14 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
   if (army.confirm)
     return <RefillConfirm stamina={stamina} held={army.fragments} sending={false} onRefill={noop} onCancel={noop} />;
   return (
-    <HudSheet
-      label={`${ARMY} 2`}
-      beside={<HudIconButton icon="trash" label={ARMY_MANAGEMENT.remove} kind="danger" size="sm" onClick={noop} />}
-      onClose={noop}
-    >
+    <HudSheet label={`${ARMY} 2`} onClose={noop}>
       <ArmyDetail army={view} />
-      {army.fragments !== undefined && (
-        <HudWindowFoot>
+      <HudWindowFoot>
+        {army.fragments !== undefined && (
           <RefillPrice price={fragmentsToFill(stamina)} held={army.fragments} onRefill={noop} />
-        </HudWindowFoot>
-      )}
+        )}
+        <HudIconButton icon="trash" label={ARMY_MANAGEMENT.remove} kind="danger" size="sm" onClick={noop} />
+      </HudWindowFoot>
     </HudSheet>
   );
 };
@@ -1227,11 +1217,7 @@ const LabRealmCard = ({ lab }: { lab: LabState }) => (
     name={LAB_REALM_NAME}
     kind="realm"
     level={1}
-    rankUp={
-      lab.visiting
-        ? undefined
-        : { name: rankName(2), gives: REALM_CARD_WORDS.armySlots(1), sending: false, onUpgrade: noop }
-    }
+    rankUp={lab.visiting ? undefined : { name: rankName(2), sending: false, onUpgrade: noop }}
     aspect={LAB_ASPECT}
     orderId={LAB_ORDER_ID}
     stores={everyStore(lab.stores)}
@@ -1319,7 +1305,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
     army.stamina === undefined ? undefined : { current: army.stamina, max: 150, perExplore: LAB_EXPLORE };
   const limits = useGame().setup.store.get("SliceRules", { game_id: 1 })?.troop_limit_config;
   const slotRule = limits && readArmySlots(limits, lab.armies.length, lab.slots ?? SLOTS);
-  if (useLayout() === "desktop")
+  if (useHudLayout() === "desktop")
     return (
       <ArmySlotsCard count={slotRule?.count}>
         {lab.armies.map((army, index) => (

@@ -396,7 +396,7 @@ const RELIC_FORECAST_STEPS = [
       browser.press("Escape");
       await openTheArmyPanel(browser);
       for (const [index, name] of ["Uncommon Blade", "Common Ward"].entries()) {
-        browser.run(["find", "role", "button", "click", "--name", `Switch on ${name}`]);
+        browser.run(["find", "role", "button", "click", "--name", `Use ${name}`]);
         await readUntil(
           () => browser.read(`window.__labChain?.sent.filter(row => row.command.kind === 'ApplyRelic').length ?? 0`),
           (count) => count === index + 1,
@@ -749,15 +749,15 @@ const TOWN_DEPLOY_STEPS = [
   ),
 ];
 
-const DEPLOY_SIZE = '[data-kit-sheet] .size-row input[type="range"]';
+const DEPLOY_COUNT = "[data-kit-sheet] .size-row .ui-field input";
 const setDeployCount = (browser, count) =>
   browser.read(`(() => {
-    const slider = document.querySelector(${JSON.stringify(DEPLOY_SIZE)});
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(slider, ${JSON.stringify(String(count))});
-    slider.dispatchEvent(new Event("input", { bubbles: true }));
-    return slider.value;
+    const field = document.querySelector(${JSON.stringify(DEPLOY_COUNT)});
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(field, ${JSON.stringify(String(count))});
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+    return field.value;
   })()`);
-const DEPLOY_TROOPS = `JSON.stringify(document.querySelector('[data-kit-sheet] .size-row__count')?.textContent ?? null)`;
+const DEPLOY_TROOPS = `JSON.stringify(document.querySelector(${JSON.stringify(DEPLOY_COUNT)})?.value ?? null)`;
 
 const DEPLOY_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -4695,42 +4695,8 @@ const LAB_REINFORCE_STEPS = [
 const LAB_SUPPLY_POST_STEPS = [
   { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
-  {
-    name: "open-supply-post",
-    settleMs: 0,
-    play: async ({ browser, extraScreenshot }) => {
-      const armyAt = armyOnScreen(browser, PICKED_ARMY);
-      browser.press("Escape");
-      if (!armyAt) return { found: false };
-      for (const [dx, dy] of NEIGHBOUR_RING) {
-        browser.tap([armyAt[0] + dx, armyAt[1] + dy]);
-        const state = await readUntil(
-          () => browser.read(REINFORCE_STATE),
-          (shown) => SUPPLY_POST_SHEET.test(shown.sheet ?? ""),
-          SHEET_WAIT_MS,
-        );
-        if (SUPPLY_POST_SHEET.test(state.sheet ?? "")) {
-          extraScreenshot("supply-post");
-          if (state.buttons.some(isReinforceVerb)) return { found: true, state };
-          const button = state.buttons.find((text) => text.startsWith("Reinforce Army"));
-          if (!button) return { found: false, state };
-          browser.click(button);
-          const sheet = await readUntil(
-            () => browser.read(REINFORCE_STATE),
-            (shown) => shown.buttons.some(isReinforceVerb),
-            SHEET_WAIT_MS,
-          );
-          return { found: sheet.buttons.some(isReinforceVerb), state, sheet };
-        }
-        browser.press("Escape");
-      }
-      return { found: false };
-    },
-    verify: ({ played }) =>
-      played.found
-        ? completed(played)
-        : failed("The cleared camp must offer reinforcement for its adjacent army", played),
-  },
+  { name: "open-supply-post", play: openTheSupplyPost, settleMs: 0, verify: supplyPostOpen },
+  { name: "open-reinforce", play: openTheReinforcement, settleMs: 0, verify: reinforceSheetOpen },
   {
     name: "reinforce-from-camp",
     settleMs: 1000,
@@ -4748,6 +4714,33 @@ const LAB_SUPPLY_POST_STEPS = [
     },
   },
 ];
+
+async function openTheSupplyPost({ browser, extraScreenshot }) {
+  const armyAt = armyOnScreen(browser, PICKED_ARMY);
+  browser.press("Escape");
+  if (!armyAt) return { found: false };
+  for (const [dx, dy] of NEIGHBOUR_RING) {
+    browser.tap([armyAt[0] + dx, armyAt[1] + dy]);
+    const state = await readUntil(
+      () => browser.read(REINFORCE_STATE),
+      (shown) => SUPPLY_POST_SHEET.test(shown.sheet ?? ""),
+      SHEET_WAIT_MS,
+    );
+    if (SUPPLY_POST_SHEET.test(state.sheet ?? "")) {
+      extraScreenshot("supply-post");
+      return { found: true, state };
+    }
+    browser.press("Escape");
+  }
+  return { found: false };
+}
+
+function supplyPostOpen({ played }) {
+  if (!played.found) return failed("No tile beside the army opens its supply post", played);
+  return /Armies in range/.test(played.state.text ?? "") && /1 beside post/.test(played.state.text ?? "")
+    ? completed(played)
+    : failed("The supply post must list the army beside it", played);
+}
 
 /** A tap's finger and a hold's, as the map's gesture recognizer tells them apart (its long press is 500 ms). */
 const TAP_MS = 80;
@@ -5162,19 +5155,8 @@ const LAB_HIGH_GROUND_STEPS = [
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
   { name: "lit-tiles-on-ground", play: readTheLitTiles, settleMs: 0, verify: litTilesClearTheirGround },
 ];
-/** Every lit plate's height beside the highest ground under its face, read on a 0.1 grid out to its corners. */
-const LIT_PLATES = `JSON.stringify((() => {
-  const world = window.__gameRenderer?.worldmapScene;
-  if (!world) return null;
-  const terrain = world.getTerrainSurface();
-  return world.highlightHexManager.getDebugState().plates.map(({ x, y, z }) => {
-    let ground = -Infinity;
-    for (let dx = -0.9; dx <= 0.9001; dx += 0.1)
-      for (let dz = -0.9; dz <= 0.9001; dz += 0.1)
-        if (Math.hypot(dx, dz) <= 0.9001) ground = Math.max(ground, terrain.sampleSurface(x + dx, z + dz).height);
-    return { x, z, y, ground };
-  });
-})())`;
+const LIT_PLATES = `JSON.stringify(window.__gameRenderer?.worldmapScene?.highlightHexManager.getDebugState().plates ?? null)`;
+const PLATE_FLOAT_LIMIT = 0.06;
 
 /** The selected army's lit tiles, read as drawn, once their roll-in has ended. */
 async function readTheLitTiles({ browser, extraScreenshot }) {
@@ -5183,16 +5165,21 @@ async function readTheLitTiles({ browser, extraScreenshot }) {
   return { plates: browser.read(LIT_PLATES) };
 }
 
-/** Every lit plate lies above the highest ground under it. */
 function litTilesClearTheirGround({ played }) {
   const { plates } = played;
   if (!plates) return failed("the page does not report its world (window.__gameRenderer): no plate measured");
   if (plates.length === 0) return failed("the selected army is offered no lit tile");
-  const buried = plates.filter((plate) => plate.y <= plate.ground);
-  const clearance = Math.min(...plates.map((plate) => plate.y - plate.ground));
-  return buried.length === 0
-    ? completed({ plates: plates.length, clearance })
-    : failed(`${buried.length} of ${plates.length} lit plates lie under their own ground`, { buried, clearance });
+  const buried = plates.filter((plate) => plate.lowest <= 0);
+  const floating = plates.filter((plate) => plate.highest > PLATE_FLOAT_LIMIT);
+  const clearance = {
+    lowest: Math.min(...plates.map((plate) => plate.lowest)),
+    highest: Math.max(...plates.map((plate) => plate.highest)),
+  };
+  if (buried.length > 0)
+    return failed(`${buried.length} of ${plates.length} lit plates lie under their own ground`, { buried, clearance });
+  if (floating.length > 0)
+    return failed(`${floating.length} of ${plates.length} lit plates float over their tile`, { floating, clearance });
+  return completed({ plates: plates.length, clearance });
 }
 
 /** Points on an army's model as drawn, its tile (0) to its top (1): the head is where the tile behind lay. */

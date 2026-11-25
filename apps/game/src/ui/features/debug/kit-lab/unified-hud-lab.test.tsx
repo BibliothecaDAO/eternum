@@ -63,7 +63,7 @@ it("draws the game's own Build order panel in a Blitz player's rail without a re
       </MemoryRouter>,
     ),
   );
-  const panel = host.querySelector('section[aria-label="Build order"]');
+  const panel = host.querySelector('section[aria-label="Build plan"]');
   expect(panel).not.toBeNull();
   expect(panel!.querySelector('button[aria-label="Order to follow"]')).toBeNull();
   expect(panel!.textContent).not.toContain("djizus");

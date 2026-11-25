@@ -1,7 +1,7 @@
 import "./size-row.css";
 
 import { formatExact } from "@bibliothecadao/types";
-import { HudSlider } from "@/ui/design-system/kit/hud-elements";
+import { AmountInput, HudSlider } from "@/ui/design-system/kit/hud-elements";
 import { MAXIMUM, SIZE_ROW } from "@/ui/design-system/kit/words";
 
 export const SizeRow = ({
@@ -9,7 +9,6 @@ export const SizeRow = ({
   value,
   most,
   max = most,
-  count = false,
   disabled = false,
   onChange,
 }: {
@@ -17,7 +16,6 @@ export const SizeRow = ({
   value: number;
   most: number;
   max?: number;
-  count?: boolean;
   disabled?: boolean;
   onChange: (amount: number) => void;
 }) => {
@@ -45,7 +43,7 @@ export const SizeRow = ({
       >
         +
       </button>
-      {count && <b className="size-row__count">{formatExact(value)}</b>}
+      <AmountInput label={label} value={value} max={most} disabled={disabled} onChange={set} />
       <button
         type="button"
         className="ui-pick size-row__max"

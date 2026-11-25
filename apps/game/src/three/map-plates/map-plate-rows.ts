@@ -86,8 +86,9 @@ const rewardSegment = (reward: RankedWords | string): PlateSegment =>
  * known leaves the player alone, never an empty name.
  */
 const whose = (owner: string, realm: string): PlateRow => [
-  { kind: "owner", text: owner },
-  ...(realm ? [{ kind: "divider" } as const, { kind: "title", text: realm } as const] : []),
+  ...(owner ? [{ kind: "owner", text: owner } as const] : []),
+  ...(owner && realm ? [{ kind: "divider" } as const] : []),
+  ...(realm ? [{ kind: "title", text: realm } as const] : []),
 ];
 
 /**

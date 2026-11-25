@@ -422,7 +422,7 @@ a.ui-button {
 }
 /* A phone's sheet is narrower than a full-size strip: each tab at the body's size, closer together. The phone layout's
  * width, not a container's: a strip that sizes to its tabs (the top bar's) cannot also be sized by them. */
-@media (max-width: 1023px) {
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
   .ui-tab {
     padding: 0 theme(spacing.2);
     font-size: var(--hud-text-body);
@@ -1051,7 +1051,7 @@ span.ui-row__choose {
   flex-shrink: 0;
 }
 /* A phone's frame head is one control-high row: its name and its way out, and a drag down on it closes the surface. */
-@media (max-width: 1023px) {
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
   .ui-frame__head {
     touch-action: none;
   }
@@ -1093,7 +1093,7 @@ span.ui-row__choose {
     max-height: none;
   }
 }
-@media (min-width: 1024px) {
+@media (min-width: 1024px) and (orientation: landscape), (min-width: 1440px) {
   .ui-sheet {
     inset-inline: auto;
     right: theme(spacing.2);
@@ -1175,7 +1175,7 @@ span.ui-row__choose {
 /* Below the desktop HUD a workspace is the full bottom sheet, or the drawer down the right edge on a phone held
    sideways; the drawer's height is the header clearance plus its bottom inset (popover.tsx). A SurfaceFrame takes the
    workspace size by its .ui-workspace class. */
-@media (max-width: 1023px) {
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
   .ui-window__bar[data-popover-drag-handle] {
     cursor: default;
   }
@@ -1360,7 +1360,7 @@ button.ui-relic:focus-visible {
   border-top: 1px solid var(--hud-divider);
   padding: theme(spacing.3) theme(spacing.4);
 }
-@media (max-width: 1023px) {
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
   .ui-sheet .ui-window__foot {
     padding-inline: theme(spacing.3);
   }
@@ -1536,7 +1536,7 @@ button.ui-relic:focus-visible {
 }
 /* A phone's sheet is narrower than the four columns: each row on two lines, the resource beside its amount, then the
  * slider beside the quick shares. */
-@media (max-width: 1023px) {
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
   .ui-transfer__row {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
@@ -1870,7 +1870,7 @@ button.ui-relic:focus-visible {
 .ui-notice[data-tone="warn"] {
   border-left-color: var(--hud-warn);
 }
-@media (max-width: 1023px) {
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
   .ui-notice {
     gap: theme(spacing[1.5]);
     padding: theme(spacing.1) theme(spacing.2);
@@ -1990,6 +1990,20 @@ button.ui-relic:focus-visible {
   height: 100%;
   border-radius: inherit;
   background: rgb(var(--hud-accent));
+}
+.ui-meter[data-segmented] {
+  position: relative;
+}
+.ui-meter[data-segmented]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 calc(var(--segment) - 1.5px),
+    rgb(var(--hud-dark)) calc(var(--segment) - 1.5px) var(--segment)
+  );
+  pointer-events: none;
 }
 .ui-meter[data-tone="good"] > i {
   background: var(--hud-good);

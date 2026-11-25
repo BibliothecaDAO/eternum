@@ -5,6 +5,7 @@ description: Starting resources, castle levels, Storeroom caps, research ranks, 
 
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
+import { Shot } from "@/components/Media";
 
 # Realm and research
 
@@ -36,6 +37,11 @@ Research finishes immediately with no timer, and each building research row requ
 standing on your realm. Building research has 5 ranks (I through V), paid in Essence and labor. Farms, Workshops, and
 Conscription add {FRONTIER.research.outputStep} per rank; Rations cuts {FRONTIER.realm.rationStep} deploy wheat per
 rank; Logistics adds {FRONTIER.stamina.logisticsStep} max stamina per rank.
+
+<Shot
+  name="frontier/research"
+  caption="Press Research at the top right on desktop or on the bottom bar on a phone, then tap any node to see its Essence and labor cost."
+/>
 
 | Row                                                                           | Rank I                                                                                               | Rank II                                                                                              | Rank III                                                                                             | Rank IV                                                                                              | Rank V                                                                                               |
 | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |

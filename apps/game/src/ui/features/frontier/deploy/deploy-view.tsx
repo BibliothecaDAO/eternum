@@ -100,7 +100,6 @@ export const DeployView = ({
             value={count ?? 0}
             most={amount.most}
             max={amount.max}
-            count
             onChange={onCount}
           />
           {wheatLimit && wheatLimit.troops > 0 && (

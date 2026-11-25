@@ -48,7 +48,7 @@ export const StoreCard = ({
             <StoreAsk line={line} full={full} spentAt={spentAt} onSpend={onSpend} onBuild={onBuild} />
           </span>
           <span className={`flex items-center gap-2 whitespace-nowrap tabular-nums ${full ? "text-hud-bad" : ""}`}>
-            {full ? formatRate(0) : formatRate(line.perHour === undefined ? undefined : line.perHour / 3600)}
+            {formatRate(full ? 0 : line.perHour === undefined ? undefined : line.perHour / 3600)}
             {line.tier !== undefined && <HudTier tier={line.tier} />}
           </span>
         </span>

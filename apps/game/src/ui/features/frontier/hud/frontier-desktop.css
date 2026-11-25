@@ -133,9 +133,10 @@
   gap: theme(spacing.4);
 }
 .frontier-minimap {
-  width: theme(spacing.hud-frontier-minimap);
-  height: theme(spacing.hud-frontier-minimap);
-  flex: none;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  flex: 0 1000 auto;
   margin-top: auto;
   pointer-events: auto;
 }
@@ -152,9 +153,6 @@
 }
 .frontier-chat-dock .ui-pill {
   width: 100%;
-}
-.frontier-chat-dock [data-chat-pane] {
-  height: 340px;
 }
 
 .frontier-cluster-card {
@@ -332,12 +330,7 @@
   align-self: flex-end;
   align-items: center;
   gap: 5px;
-  border: 1.5px solid color-mix(in srgb, rgb(var(--hud-gold)) 45%, var(--hud-line));
-  border-radius: 10px;
-  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
-  box-shadow: var(--hud-shadow-panel);
   height: 40px;
-  padding: 0 6px;
 }
 .frontier-places {
   display: flex;
@@ -348,15 +341,16 @@
 .frontier-place {
   position: relative;
   display: inline-flex;
-  height: 32px;
+  height: 36px;
   flex: 1 1 auto;
   align-items: center;
   justify-content: center;
   min-width: 0;
   gap: 4px;
-  border: 1px solid var(--hud-line);
-  border-radius: 6px;
-  background: var(--hud-well);
+  border: 1.5px solid color-mix(in srgb, rgb(var(--hud-gold)) 45%, var(--hud-line));
+  border-radius: var(--hud-radius-control);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
   padding: 0 5px;
   color: rgb(var(--hud-ink));
   font-family: var(--hud-font-display);
@@ -371,12 +365,13 @@
 }
 .frontier-place:hover {
   border-color: var(--hud-line-strong);
-  background: var(--hud-hover);
 }
 .frontier-place[aria-selected="true"],
 .frontier-place[aria-pressed="true"] {
   border-color: rgb(var(--hud-gold));
-  background: var(--hud-chosen);
+  background:
+    linear-gradient(var(--hud-chosen), var(--hud-chosen)),
+    linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   color: rgb(var(--hud-gold));
 }
 .frontier-place--icon {

@@ -178,7 +178,7 @@ describe("the tile card", () => {
     try {
       const card = host.querySelector(`section[aria-label="${siteName(SITE)}"]`);
       expect(card).not.toBeNull();
-      expect(card!.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BladeGolem+825");
+      expect(card!.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Golem+825");
       expect(host.querySelector('header [aria-label="Golem 1,100"]')).not.toBeNull();
       expect(button("Attack")).toBeUndefined();
 
@@ -199,7 +199,7 @@ describe("the tile card", () => {
       const card = host.querySelector('section[aria-label="North Watch"]')!;
       expect(card).not.toBeNull();
       expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
-      expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BladeGolem+825");
+      expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Golem+825");
       expect(card.textContent?.match(/Golem/g)).toHaveLength(1);
       expect(card.textContent).not.toMatch(/\bcamp\b/i);
     } finally {

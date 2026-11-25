@@ -118,8 +118,8 @@ const ORDER_REFUSAL = [
   "Needs \\d+ stamina",
   "Not enough food for the army",
   "Only neutral structures can be attacked",
-  "This game allows no transfer here",
-  "No army can enter this tile",
+  "Cannot transfer here",
+  "Tile is blocked",
   "Too far: move closer",
 ].join("|");
 

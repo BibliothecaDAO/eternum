@@ -153,7 +153,7 @@ export const PLAIN_WORDS: readonly PlainWord[] = [
   { concept: "Multipliers", word: "150% / 200%" },
   { concept: "Short of resources", word: "Not enough" },
   { concept: "Troops ready to deploy", word: "Available" },
-  { concept: "Loading or network failure", word: "Could not load / Failed" },
+  { concept: "Loading or network failure", word: "Could not load / Unavailable / Failed" },
   { concept: "In-progress state", word: "Loading / Sending / In progress" },
 ];
 
@@ -283,10 +283,10 @@ export const BANNED_WORDS: readonly BannedWord[] = [
   },
   {
     banned: "did not answer",
-    use: "could not load",
+    use: "unavailable",
     pattern: /\bdid not answer\b/i,
     bad: "Season did not answer.",
-    good: "Could not load Season.",
+    good: "Season unavailable.",
   },
   {
     banned: "could not be read",

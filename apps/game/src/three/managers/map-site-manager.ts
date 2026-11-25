@@ -552,7 +552,7 @@ const gatePlate = (aspect: AspectId, own: boolean): MapPlate => ({
   relation: own ? "own" : "neutral",
   name: aspectName(aspect),
   named: true,
-  owner: "",
+  owner: DEEP_WORDS.gate,
   icon: "portal",
   crest: ordersOfAspect(aspect)[0]!.orderId,
   guards: null,

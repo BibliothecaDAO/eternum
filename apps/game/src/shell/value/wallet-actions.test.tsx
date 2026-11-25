@@ -277,7 +277,7 @@ it("shows why a send could not be prepared (too little LORDS for its fee), and p
   try {
     const { container } = await openSend();
     await settled(() => expect(buttonsOf(container)).toEqual(["Try again"]));
-    expect(container.textContent).toContain("Check your wallet holds enough LORDS for it and its fee.");
+    expect(container.textContent).toContain("Check you have enough LORDS for the amount and fee.");
     short = false;
     await press(container, "Try again");
     await settled(() => expect(buttonsOf(container)).toEqual(["Confirm with your passkey"]));

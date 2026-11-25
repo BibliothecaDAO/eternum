@@ -1,3 +1,4 @@
+import { staminaLabel } from "@/ui/design-system/kit/words";
 import { HudStamina } from "@/ui/design-system/kit/hud-elements";
 import type { TroopType } from "@bibliothecadao/types";
 import { configManager } from "@bibliothecadao/eternum";
@@ -21,7 +22,7 @@ export const GuardStaminaBar = ({ current, max, category }: GuardStaminaBarProps
   const currentValue = Number.isFinite(rawCurrent) ? rawCurrent : 0;
   const clampedCurrent = Math.min(Math.max(currentValue, 0), maxValue);
   const share = clampedCurrent / maxValue;
-  const label = `Stamina ${Math.round(clampedCurrent)}/${Math.round(maxValue)}`;
+  const label = staminaLabel(clampedCurrent, maxValue);
 
   return (
     <span title={label} className="block w-full">

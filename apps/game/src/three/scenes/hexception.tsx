@@ -59,7 +59,7 @@ import {
   disposeClonedBuildingMaterials,
 } from "@/three/managers/building-preview";
 import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
-import { REALM_PLOT_HOVER_PALETTE } from "@/three/managers/worldmap-interaction-palette";
+import { plotLookOn } from "@/three/managers/worldmap-interaction-palette";
 import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
@@ -351,7 +351,6 @@ export default class HexceptionScene extends HexagonScene {
     this.scene.add(this.proceduralTerrain.object3d);
     this.mode = getGameModeConfig();
     this.hoverLabelManager = new HexHoverLabel(this.scene);
-    this.interactiveHexManager.applyHoverPalette(REALM_PLOT_HOVER_PALETTE);
 
     this.ambienceSystem = new HexceptionAmbienceSystem(this.scene);
     this.applyAmbienceAppearance();
@@ -1361,6 +1360,7 @@ export default class HexceptionScene extends HexagonScene {
     this.gridIsStale = false;
     // The buildable set belongs to this realm and its level; a previous realm's must not linger.
     this.interactiveHexManager.clearHexes();
+    this.applyPlotLook();
 
     for (const { center, targetHex, isMainHex } of regions) {
       if (isMainHex) {
@@ -1370,6 +1370,12 @@ export default class HexceptionScene extends HexagonScene {
       }
     }
     return terrainMatricesByBiome;
+  }
+
+  private applyPlotLook(): void {
+    const look = plotLookOn(this.localBiome(this.centerColRow[0], this.centerColRow[1]));
+    this.interactiveHexManager.applyPlotLook(look);
+    this.highlightHexManager.setLitPlotPalette(look.lit);
   }
 
   /** The terrain page request for the laid-out cells: only a cell with a building gets the packed structure pad. */

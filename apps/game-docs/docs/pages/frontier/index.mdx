@@ -6,7 +6,7 @@ description: How Frontier Season 1 works, the season calendar, the clock, and wh
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
 import { PlayLink } from "@/components/PlayLink";
-import { Video } from "@/components/Media";
+import { Shot, Video } from "@/components/Media";
 
 # Frontier
 
@@ -60,20 +60,36 @@ everything it owns.
 | Camps, rifts, ruins, shrines, wells, and beasts | Troops, wheat, labor, and Essence at home        |
 | Deployed armies, their Oaths, and active relics | Your Aspect, Order, Glory, Fragments, and Seal   |
 
+<Shot
+  name="frontier/day-recap"
+  caption="When a game day ends, the day recap shows your Essence, labor, and Glory from that day. Press Begin Day to enter the new map."
+/>
+
 ## Your first minute
 
 Entry is free and stays open all season, so players who join later start with the same resources. A new realm begins
 with {FRONTIER.realm.troops} {FRONTIER.troops.knight} waiting at home, {FRONTIER.realm.wheat} wheat, and
 {FRONTIER.realm.labor} labor. Your starting labor buys one of each starter building right away:
 {FRONTIER.realm.firstMinuteSummary}. Switch between **Realm**, **Surface**, and unlocked deeper layers from the place
-dropdown at the top center on desktop or top left on a phone. Build by tapping an open plot in **Realm** view — there is
-no separate Build button — then deploy your first army into the fog.
+dropdown at the top center on desktop or top left on a phone. Build by tapping an open plot in **Realm** view. There is
+no separate Build button. Then deploy your first army into the fog.
 
 On a phone, the bottom bar holds four tabs: **Research**, **Season**, **Chat**, and **Menu** (where **Feed**, **Today**,
 **Shop**, **Settings**, **Guide**, and **Exit** live). On desktop, **Research**, **Feed**, **Season**, and **Settings**
 sit at the top right, and **Chat** sits at the bottom right. Tap the day dial (or **Menu → Today** on a phone) to open
 **Today**, which shows time left, when the day ends, tomorrow's length, this week's quests, your Essence and labor
 gained, your Glory, and **Yesterday's recap**.
+
+<Shot
+  name="frontier/hud"
+  caption="Desktop view: your realm and army slots on the left, the place dropdown, day dial, and daily quest chip at the top center, Research, Feed, Season, and Settings at the top right, and Chat at the bottom right."
+/>
+
+<Shot
+  name="frontier/hud-phone"
+  frame="phone"
+  caption="Phone view: tap the place dropdown at the top left to switch views, tap the day dial at the top right for Today, tap an army or Deploy above the bar, and use Research, Season, Chat, and Menu along the bottom."
+/>
 
 New panels appear as your realm unlocks what they use. Open **Settings** (top right on desktop, or **Menu → Settings**
 on a phone) and turn on **Show everything** to show every panel right away.

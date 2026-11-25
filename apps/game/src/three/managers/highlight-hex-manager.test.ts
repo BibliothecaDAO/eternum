@@ -78,9 +78,6 @@ const gridSpace = {
   hexForPosition: (point: { x: number; z: number }) => ({ col: point.x, row: point.z }),
 };
 
-const ROUTE_RENDER_ORDER = 5;
-const FRONTIER_RENDER_ORDER = 7;
-
 const step = (col: number, row: number, actionType = "Move") => ({
   hex: { col, row },
   actionType,
@@ -90,19 +87,12 @@ const step = (col: number, row: number, actionType = "Move") => ({
   pathDepth: 1,
 });
 
-const drawnHexes = (scene: THREE.Scene, renderOrder = ROUTE_RENDER_ORDER) => {
-  const mesh = scene.children.find(
-    (child): child is THREE.InstancedMesh => child instanceof THREE.InstancedMesh && child.renderOrder === renderOrder,
-  )!;
-  const matrix = new THREE.Matrix4();
-  const position = new THREE.Vector3();
-  const scale = new THREE.Vector3();
-  return Array.from({ length: mesh.count }, (_, index) => {
-    mesh.getMatrixAt(index, matrix);
-    matrix.decompose(position, new THREE.Quaternion(), scale);
-    return `${position.x},${position.z}@${scale.x.toFixed(2)}`;
-  }).sort();
-};
+const drawnHexes = (manager: InstanceType<typeof HighlightHexManager>, layer = "route") =>
+  manager
+    .getDebugState()
+    .plates.filter((plate) => plate.layer === layer)
+    .map((plate) => `${plate.x},${plate.z}@${plate.scale.toFixed(2)}`)
+    .sort();
 
 let animationClock = gsap.ticker.time;
 const finishRollIn = () => gsap.updateRoot((animationClock += 10));
@@ -137,93 +127,88 @@ describe("HighlightHexManager drawing a selection", () => {
   };
 
   it("rolls a new selection's hexes in from nothing", () => {
-    const scene = new THREE.Scene();
-    const manager = new HighlightHexManager(scene, FLAT_TERRAIN_SURFACE, gridSpace);
+    const manager = new HighlightHexManager(new THREE.Scene(), FLAT_TERRAIN_SURFACE, gridSpace);
 
     manager.highlightHexes([step(1, 0), step(2, 0)] as never);
-    expect(drawnHexes(scene)).toEqual(["1,0@0.01", "2,0@0.01"]);
+    expect(drawnHexes(manager)).toEqual(["1,0@0.01", "2,0@0.01"]);
 
     finishRollIn();
-    expect(drawnHexes(scene)).toEqual(["1,0@0.92", "2,0@0.92"]);
+    expect(drawnHexes(manager)).toEqual(["1,0@0.92", "2,0@0.92"]);
   });
 
   it("leaves an unchanged selection on screen when it is published again", () => {
-    const { scene, manager } = select([step(1, 0), step(2, 0), step(3, 0, "Explore")]);
+    const { manager } = select([step(1, 0), step(2, 0), step(3, 0, "Explore")]);
 
     manager.highlightHexes([step(3, 0, "Explore"), step(2, 0), step(1, 0)] as never);
 
-    expect(drawnHexes(scene)).toEqual(["1,0@0.92", "2,0@0.92", "3,0@0.98"]);
-    expect(drawnHexes(scene, FRONTIER_RENDER_ORDER)).toEqual(["3,0@0.74"]);
+    expect(drawnHexes(manager)).toEqual(["1,0@0.92", "2,0@0.92", "3,0@0.98"]);
+    expect(drawnHexes(manager, "frontier")).toEqual(["3,0@0.74"]);
   });
 
   it("changes a selection in place: kept hexes stay, a gone hex leaves, a new hex rolls in", () => {
-    const { scene, manager } = select([step(1, 0), step(2, 0)]);
+    const { manager } = select([step(1, 0), step(2, 0)]);
 
     manager.highlightHexes([step(2, 0), step(3, 0)] as never);
-    expect(drawnHexes(scene)).toEqual(["2,0@0.92", "3,0@0.01"]);
+    expect(drawnHexes(manager)).toEqual(["2,0@0.92", "3,0@0.01"]);
 
     finishRollIn();
-    expect(drawnHexes(scene)).toEqual(["2,0@0.92", "3,0@0.92"]);
+    expect(drawnHexes(manager)).toEqual(["2,0@0.92", "3,0@0.92"]);
   });
 
   it("restyles a kept hex whose order changed without rolling it in again", () => {
-    const { scene, manager } = select([step(1, 0), step(2, 0)]);
+    const { manager } = select([step(1, 0), step(2, 0)]);
 
     manager.highlightHexes([step(1, 0), step(2, 0, "Explore")] as never);
 
-    expect(drawnHexes(scene)).toEqual(["1,0@0.92", "2,0@0.98"]);
-    expect(drawnHexes(scene, FRONTIER_RENDER_ORDER)).toEqual(["2,0@0.74"]);
+    expect(drawnHexes(manager)).toEqual(["1,0@0.92", "2,0@0.98"]);
+    expect(drawnHexes(manager, "frontier")).toEqual(["2,0@0.74"]);
   });
 
   it("rescales drawn hexes in place when the zoom band changes", () => {
-    const { scene, manager } = select([step(1, 0), step(2, 0)]);
+    const { manager } = select([step(1, 0), step(2, 0)]);
 
     manager.setCameraView(3);
 
-    expect(drawnHexes(scene)).toEqual(["1,0@0.98", "2,0@0.98"]);
+    expect(drawnHexes(manager)).toEqual(["1,0@0.98", "2,0@0.98"]);
   });
 
   it("clears every hex when the selection ends", () => {
-    const { scene, manager } = select([step(1, 0), step(2, 0, "Explore")]);
+    const { manager } = select([step(1, 0), step(2, 0, "Explore")]);
 
     manager.highlightHexes([]);
 
-    expect(drawnHexes(scene)).toEqual([]);
-    expect(drawnHexes(scene, FRONTIER_RENDER_ORDER)).toEqual([]);
+    expect(drawnHexes(manager)).toEqual([]);
+    expect(drawnHexes(manager, "frontier")).toEqual([]);
   });
 });
 
 describe("HighlightHexManager laying a lit hex on the ground", () => {
-  const ENDPOINT_RENDER_ORDER = 6;
-  const RENDER_ORDERS = [ROUTE_RENDER_ORDER, ENDPOINT_RENDER_ORDER, FRONTIER_RENDER_ORDER];
-
-  /** Ground whose height at (x, z) is `heightAt(x, z)`. */
   const groundOf = (heightAt: (x: number, z: number) => number) => ({
     sampleSurface: (x: number, z: number) => ({ biome: null, height: heightAt(x, z), normal: [0, 1, 0] as const }),
     sampleHeight: (x: number, z: number) => heightAt(x, z),
   });
 
-  /** The height of every plate drawn on any layer. */
-  const plateHeights = (scene: THREE.Scene) =>
-    RENDER_ORDERS.flatMap((renderOrder) => {
-      const mesh = scene.children.find(
-        (child): child is THREE.InstancedMesh =>
-          child instanceof THREE.InstancedMesh && child.renderOrder === renderOrder,
-      )!;
-      const matrix = new THREE.Matrix4();
-      return Array.from({ length: mesh.count }, (_, index) => {
-        mesh.getMatrixAt(index, matrix);
-        return new THREE.Vector3().setFromMatrixPosition(matrix).y;
+  const drawnVertices = (scene: THREE.Scene) =>
+    scene.children
+      .filter((child): child is THREE.Mesh => child instanceof THREE.Mesh)
+      .flatMap((mesh) => {
+        const positions = mesh.geometry.getAttribute("position");
+        return positions
+          ? Array.from({ length: positions.count }, (_, vertex) => ({
+              x: positions.getX(vertex),
+              y: positions.getY(vertex),
+              z: positions.getZ(vertex),
+            }))
+          : [];
       });
-    });
 
-  /** The highest ground anywhere under a plate centred on (x, z), read on a fine grid over its face. */
-  const highestGroundUnderPlate = (heightAt: (x: number, z: number) => number, x: number, z: number) => {
-    let highest = -Infinity;
-    for (let dx = -0.95; dx <= 0.95; dx += 0.05)
-      for (let dz = -0.95; dz <= 0.95; dz += 0.05)
-        if (Math.hypot(dx, dz) <= 0.95) highest = Math.max(highest, heightAt(x + dx, z + dz));
-    return highest;
+  const expectOnItsGround = (scene: THREE.Scene, heightAt: (x: number, z: number) => number) => {
+    const vertices = drawnVertices(scene);
+    expect(vertices.length).toBeGreaterThan(0);
+    for (const { x, y, z } of vertices) {
+      expect(y - heightAt(x, z)).toBeGreaterThan(0);
+      expect(y - heightAt(x, z)).toBeLessThanOrEqual(0.06);
+    }
   };
 
   const light = (heightAt: (x: number, z: number) => number, descriptors: ReturnType<typeof step>[]) => {
@@ -234,43 +219,77 @@ describe("HighlightHexManager laying a lit hex on the ground", () => {
     return { scene, manager };
   };
 
-  it("lays an explore target on a mound above all of its ground, the mound's top included", () => {
-    // A mound 0.31 high on the hex at (4, 0), as the playtest's snow tiles rise; the old plates lay flat at 0.2.
+  it("lays an explore target on a mound over all of it, following the slope down from its top", () => {
     const mound = (x: number, z: number) => Math.max(0.08, 0.31 - 0.2 * Math.hypot(x - 4, z));
     const { scene } = light(mound, [step(4, 0, "Explore")]);
 
-    const heights = plateHeights(scene);
-    expect(heights).toHaveLength(2);
-    for (const height of heights) expect(height).toBeGreaterThan(highestGroundUnderPlate(mound, 4, 0));
+    expectOnItsGround(scene, mound);
   });
 
   it("lays a move target on low ground just above it, not at one height for every hex", () => {
     const { scene } = light(() => 0.06, [step(1, 0), step(2, 0)]);
 
-    for (const height of plateHeights(scene)) {
-      expect(height).toBeGreaterThan(0.06);
-      expect(height).toBeLessThan(0.15);
-    }
+    expectOnItsGround(scene, () => 0.06);
   });
 
-  it("lays a plate on a sunken unexplored tile level with the ground around it", () => {
-    // The unexplored tile at (6, 0) lies at 0; the explored ground around its rim stands at 0.25.
+  it("lays a plate on a sunken unexplored tile on that tile's own ground, not level with the rim around it", () => {
     const pit = (x: number, z: number) => (Math.hypot(x - 6, z) < 0.88 ? 0 : 0.25);
     const { scene } = light(pit, [step(6, 0, "Explore")]);
 
-    for (const height of plateHeights(scene)) expect(height).toBeGreaterThan(0.25);
+    expectOnItsGround(scene, pit);
+    expect(drawnVertices(scene).filter(({ y }) => y < 0.1).length).toBeGreaterThan(0);
   });
 
   it("lays the lit hexes on their ground again when terrain lands after they were lit", () => {
     let groundHeight = 0;
     const { scene, manager } = light(() => groundHeight, [step(1, 0), step(2, 0, "Explore")]);
-    expect(Math.max(...plateHeights(scene))).toBeLessThan(0.1);
+    expectOnItsGround(scene, () => 0);
 
     groundHeight = 0.28;
     manager.refreshTerrainPlacement();
 
-    for (const height of plateHeights(scene)) expect(height).toBeGreaterThan(0.28);
-    expect(drawnHexes(scene)).toEqual(["1,0@0.92", "2,0@0.98"]);
+    expectOnItsGround(scene, () => 0.28);
+    expect(drawnHexes(manager)).toEqual(["1,0@0.92", "2,0@0.98"]);
+  });
+
+  it("reports ground that rises between a plate's points as burying it, so the playtest's check can fail", () => {
+    const ridge = (x: number, z: number) => (Math.abs(Math.hypot(x - 4, z) - 0.15) < 0.05 ? 0.2 : 0);
+    const { manager } = light(ridge, [step(4, 0, "Explore")]);
+
+    expect(Math.min(...manager.getDebugState().plates.map((plate) => plate.lowest))).toBeLessThan(0);
+  });
+
+  it("reports how far over its ground each plate lies, for the playtest's high-ground check", () => {
+    const mound = (x: number, z: number) => Math.max(0.08, 0.31 - 0.2 * Math.hypot(x - 4, z));
+    const { manager } = light(mound, [step(4, 0, "Explore")]);
+
+    for (const plate of manager.getDebugState().plates) {
+      expect(plate.lowest).toBeGreaterThan(0);
+      expect(plate.highest).toBeLessThanOrEqual(0.06);
+    }
+  });
+});
+
+describe("HighlightHexManager lighting a plot for a building", () => {
+  const build = (col: number) => ({
+    ...step(col, 0),
+    actionType: "Build",
+    kind: "destination" as const,
+    isEndpoint: true,
+  });
+
+  it("draws it in the plot palette its scene set", () => {
+    const scene = new THREE.Scene();
+    const manager = new HighlightHexManager(scene, FLAT_TERRAIN_SURFACE, gridSpace);
+
+    manager.setLitPlotPalette({ routeColor: 0x336699, endpointColor: 0x88aacc });
+    manager.highlightHexes([build(2)] as never);
+    finishRollIn();
+    const endpoint = scene.children.find(
+      (child): child is THREE.Mesh => child instanceof THREE.Mesh && child.renderOrder === 6 && child.visible,
+    )!;
+    const drawn = new THREE.Color().fromBufferAttribute(endpoint.geometry.getAttribute("color"), 0);
+    expect(drawn.getHex()).toBe(new THREE.Color(0x88aacc).lerp(new THREE.Color(0xffffff), 0.12).getHex());
   });
 });
 
@@ -279,8 +298,7 @@ describe("HighlightHexManager teach highlight", () => {
 
   const teachMesh = (scene: THREE.Scene) =>
     scene.children.find(
-      (child): child is THREE.InstancedMesh =>
-        child instanceof THREE.InstancedMesh && child.renderOrder === TEACH_RENDER_ORDER,
+      (child): child is THREE.Mesh => child instanceof THREE.Mesh && child.renderOrder === TEACH_RENDER_ORDER,
     )!;
 
   it("lights one static non-pulsing hex with the teach colour, coexists with action highlights, re-grounds on terrain updates, and clears on null", () => {
@@ -295,43 +313,38 @@ describe("HighlightHexManager teach highlight", () => {
     manager.setTeachHex({ col: 4, row: 7 });
     const mesh = teachMesh(scene);
     const material = mesh.material as THREE.MeshBasicMaterial;
-    expect(drawnHexes(scene, TEACH_RENDER_ORDER)).toEqual(["4,7@0.56", "4,7@0.96"]);
+    expect(drawnHexes(manager, "teach")).toEqual(["4,7@0.56", "4,7@0.96"]);
     expect(material.depthWrite).toBe(false);
     expect(material.opacity).toBeCloseTo(0.28, 5);
 
-    const outerColor = new THREE.Color();
-    const innerColor = new THREE.Color();
-    mesh.getColorAt(0, outerColor);
-    mesh.getColorAt(1, innerColor);
-    expect(outerColor.getHex()).toBe(0xfff5d6);
-    expect(innerColor.getHex()).toBe(0xfffdf5);
+    const colors = mesh.geometry.getAttribute("color");
+    const perCopy = colors.count / 2;
+    expect(new THREE.Color().fromBufferAttribute(colors, 0).getHex()).toBe(0xfff5d6);
+    expect(new THREE.Color().fromBufferAttribute(colors, perCopy).getHex()).toBe(0xfffdf5);
 
     manager.updateHighlightPulse(0.8);
     expect(material.opacity).toBeCloseTo(0.28, 5);
 
     manager.highlightHexes([step(1, 0)] as never);
     finishRollIn();
-    expect(drawnHexes(scene)).toEqual(["1,0@0.92"]);
-    expect(drawnHexes(scene, TEACH_RENDER_ORDER)).toEqual(["4,7@0.56", "4,7@0.96"]);
+    expect(drawnHexes(manager)).toEqual(["1,0@0.92"]);
+    expect(drawnHexes(manager, "teach")).toEqual(["4,7@0.56", "4,7@0.96"]);
 
     manager.highlightHexes([]);
-    expect(drawnHexes(scene)).toEqual([]);
-    expect(drawnHexes(scene, TEACH_RENDER_ORDER)).toEqual(["4,7@0.56", "4,7@0.96"]);
+    expect(drawnHexes(manager)).toEqual([]);
+    expect(drawnHexes(manager, "teach")).toEqual(["4,7@0.56", "4,7@0.96"]);
 
     groundHeight = 0.45;
     manager.refreshTerrainPlacement();
-    const matrix = new THREE.Matrix4();
-    for (let index = 0; index < mesh.count; index++) {
-      mesh.getMatrixAt(index, matrix);
-      expect(new THREE.Vector3().setFromMatrixPosition(matrix).y).toBeGreaterThan(0.45);
-    }
+    const positions = teachMesh(scene).geometry.getAttribute("position");
+    for (let vertex = 0; vertex < positions.count; vertex++) expect(positions.getY(vertex)).toBeGreaterThan(0.45);
     expect(manager.getDebugState().teachCount).toBe(2);
 
     manager.highlightHexes([step(2, 0)] as never);
     finishRollIn();
     manager.setTeachHex(null);
-    expect(drawnHexes(scene, TEACH_RENDER_ORDER)).toEqual([]);
-    expect(drawnHexes(scene)).toEqual(["2,0@0.92"]);
+    expect(drawnHexes(manager, "teach")).toEqual([]);
+    expect(drawnHexes(manager)).toEqual(["2,0@0.92"]);
     expect(manager.getDebugState().teachCount).toBe(0);
 
     manager.dispose();

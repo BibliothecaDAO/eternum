@@ -6,8 +6,8 @@ import { CLOSE } from "./words";
 
 /** Where a desktop sheet docks: under the match's bar, or on an app page's right under its title (under the top bar). */
 const DESKTOP_PLACEMENT = {
-  bar: "lg:right-2 lg:top-[76px] lg:max-h-[calc(100dvh-84px)]",
-  page: "lg:right-8 lg:top-[168px] lg:max-h-[calc(100dvh-192px)]",
+  bar: "hud-desk:right-2 hud-desk:top-[76px] hud-desk:max-h-[calc(100dvh-84px)]",
+  page: "hud-desk:right-8 hud-desk:top-[168px] hud-desk:max-h-[calc(100dvh-192px)]",
 } as const;
 
 /**
@@ -35,7 +35,7 @@ export const Sheet = ({
         aria-hidden
         tabIndex={-1}
         onClick={onClose}
-        className="pointer-events-auto fixed inset-0 z-30 cursor-default lg:hidden"
+        className="pointer-events-auto fixed inset-0 z-30 cursor-default hud-desk:hidden"
       />
       <section
         role="dialog"
@@ -45,7 +45,7 @@ export const Sheet = ({
           // Visible even when the panel it opened from steps aside for it (HudBands hides that panel).
           "frontier-sheet pointer-events-auto visible fixed z-40 flex flex-col font-sans",
           "inset-x-0 bottom-0 max-h-[85dvh]",
-          "lg:inset-x-auto lg:bottom-auto lg:w-[440px]",
+          "hud-desk:inset-x-auto hud-desk:bottom-auto hud-desk:w-[440px]",
           DESKTOP_PLACEMENT[placement],
         )}
       >
@@ -53,7 +53,7 @@ export const Sheet = ({
           <i className="frontier-handle" />
         </SheetHandle>
         <Mark onClose={onClose} />
-        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:pt-3.5">
+        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] hud-desk:pt-3.5">
           {children}
         </div>
       </section>
@@ -67,6 +67,6 @@ const Mark = ({ onClose }: { onClose: () => void }) => (
     type="button"
     aria-label={CLOSE}
     onClick={onClose}
-    className="absolute -top-2.5 right-3.5 z-10 hidden size-8 items-center justify-center rounded-full border-[1.5px] border-kit-line2 bg-kit-ink shadow-mark before:absolute before:h-[2.5px] before:w-3.5 before:rotate-45 before:rounded-sm before:bg-kit-gold before:content-[''] after:absolute after:h-[2.5px] after:w-3.5 after:-rotate-45 after:rounded-sm after:bg-kit-gold after:content-[''] hover:border-kit-gold lg:flex"
+    className="absolute -top-2.5 right-3.5 z-10 hidden size-8 items-center justify-center rounded-full border-[1.5px] border-kit-line2 bg-kit-ink shadow-mark before:absolute before:h-[2.5px] before:w-3.5 before:rotate-45 before:rounded-sm before:bg-kit-gold before:content-[''] after:absolute after:h-[2.5px] after:w-3.5 after:-rotate-45 after:rounded-sm after:bg-kit-gold after:content-[''] hover:border-kit-gold hud-desk:flex"
   />
 );

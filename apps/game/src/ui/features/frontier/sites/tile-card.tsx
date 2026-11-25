@@ -35,7 +35,7 @@ import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan } from "
 import { SiteCardView, type SiteVerb } from "./site-card-view";
 import { readPickEffectBase } from "../pick-effect-text";
 import { useRuinRelicChoice } from "../relics/ruin-relic-choice";
-import { RelicReplacement } from "../relics/relic-replacement";
+import { RelicPay, RelicReplacement } from "../relics/relic-replacement";
 
 const SITE_MODELS = [
   ...ATTACK_FORECAST_MODELS,
@@ -132,6 +132,8 @@ export const TileCard = ({
   const inFlight = useInFlight("army", armyId)?.order;
   const refused = useFightRefusal(armyId, targetId(selected));
   const relics = useRuinRelicChoice(selected.kind === "site" ? selected.site : null, armyId);
+  const pickBase = readPickEffectBase(setup.store, configManager.getActiveGameId());
+  const relic = relics && "relic" in relics.state ? relics.state.relic : undefined;
 
   const attackSite = async () => {
     if (!attack || !account.account || armyId === null) return;
@@ -188,14 +190,14 @@ export const TileCard = ({
       pay={sitePay(plan)}
       holdsOath={plan.holdsOath}
       opensPost={plan.opensPost}
-      relic={(relics && "relic" in relics.state && relics.state.relic) || undefined}
+      relic={relic && <RelicPay relic={relic} pickBase={pickBase} />}
       cache={relics?.state.kind === "cache" ? relics.state.fragments : undefined}
       replacement={
         relics?.state.kind === "full" && (
           <RelicReplacement
             carried={relics.state.carried}
             chosen={relics.state.chosen}
-            pickBase={readPickEffectBase(setup.store, configManager.getActiveGameId())}
+            pickBase={pickBase}
             onChoose={relics.replace}
           />
         )

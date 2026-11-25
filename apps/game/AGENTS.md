@@ -317,7 +317,7 @@ dev overlays on, at each wheel step from the closest zoom to the farthest: each 
 model, and the pointer on its model at its feet, middle and top must open its plate; `--steps lab-hover-zoom-pair` the
 same with the realm's two armies side by side, the merge game's), `--steps lab-high-ground`
 (`/lab/game?scenario=high-ground`, the spire's game on snow, bare rock and tundra, with the dev overlays on: the army
-picked, every tile it is lit on must lie above the highest ground under it), `--steps lab-day-turn`,
+picked, every tile it is lit on must lie on its ground, never under it nor 0.06 over it), `--steps lab-day-turn`,
 `--steps lab-day-later`, `--steps lab-day-turn-slow` and `--steps lab-day-later-short` (the same game on Frontier's day
 2 ending, `/lab/game?scenario=day-turn` in the session or `scenario=day-later` before it opened, over prod's recorded
 history of that day, the map opened where the realm stood on day 2: the summary's totals must be the recorded player's
@@ -602,10 +602,11 @@ The stamina effects paths are `/lab/game?scenario=stamina-mist` and `stamina-win
 its bar and Full in timer. `pnpm --dir apps/game playtest:landing lab-stamina-mist lab-stamina-wind` drives both
 recorded-effect fixtures at desktop and phone sizes. Native lifecycle tests prove Explore settlement and quorum timing.
 
-Supply posts: `/lab/game?scenario=supply-post`, select the cleared camp beside Army 1: with one army beside it the sheet
-is that army's reinforcement, opening at Max (several armies are each offered first), then Reinforce. `lab-supply-post`
-checks the signed camp ID and resulting army and home balances on desktop and phone, retaining the camp banner,
-reinforcement sheet and response evidence.
+Supply posts: `/lab/game?scenario=supply-post`, select the cleared camp beside Army 1: the map lights the armies beside
+it as it does for the realm, and its panel names the realm stock it draws from, when it ends and those armies;
+right-click (a phone holds) Army 1 or tap its row for the realm's Reinforce sheet, Max, then Reinforce.
+`lab-supply-post` checks the signed camp ID and resulting army and home balances on desktop and phone, retaining the
+post, reinforcement sheet and response evidence.
 
 Scouts are raised in Deploy by selecting Scouts from the troop choices, then a count and an open army slot. The Scouts'
 Lodge opens at City and produces the separate Scout stock; it has no Scouting research. `--steps lab-scouts` uses
