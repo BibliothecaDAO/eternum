@@ -111,7 +111,7 @@ it("unlinks only with the emailed code, and names a wrong code", async () => {
 
   await typeCode(panel, "482913");
   expect(unlink).toHaveBeenLastCalledWith("482913");
-  expect(panel.textContent).toContain("That code is not right.");
+  expect(panel.textContent).toContain("Wrong code.");
   expect(onChanged).not.toHaveBeenCalled();
 
   await typeCode(panel, "111111");

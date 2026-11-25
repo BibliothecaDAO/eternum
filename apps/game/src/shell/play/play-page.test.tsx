@@ -212,12 +212,12 @@ it("keeps the games that answered usable while the player's results fail, in ful
   reads.history = failed();
   const page = await mount();
   expect(page.text()).toContain("Enter Realm");
-  expect(page.text()).toContain("Results did not answer.");
+  expect(page.text()).toContain("Results unavailable.");
 
   reads.history = answered({ games: [], next: null, failures: [{ url: "https://shard" }] });
   await page.render();
   expect(page.text()).toContain("Enter Realm");
-  expect(page.text()).toContain("Results did not answer.");
+  expect(page.text()).toContain("Results unavailable.");
 });
 
 it.each([
@@ -429,7 +429,7 @@ it("says the season calendar did not answer when it fails", async () => {
   reads.history = answered({ games: [], next: null, failures: [] });
   reads.calendar = failed();
   const page = await mount();
-  expect(page.text()).toContain("Season did not answer.");
+  expect(page.text()).toContain("Season unavailable.");
 });
 
 describe("the season's countdown, while its first day is ahead and Play has no game to lead with", () => {
@@ -744,7 +744,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       );
       await press(document.body, `Play as ${giants!.orderName}`);
       await settle();
-      expect(document.body.textContent).toContain("Season did not answer.");
+      expect(document.body.textContent).toContain("Season unavailable.");
       expect(
         [...document.body.querySelectorAll("button")].filter((each) => each.textContent === "Try again"),
       ).toHaveLength(1);
@@ -805,7 +805,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       expect(page.container.querySelectorAll('[role="timer"]')).toHaveLength(1);
       expect(page.container.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Final testnet");
       expect(page.container.querySelectorAll("[data-aspect]")).toHaveLength(0);
-      expect(page.text()).toContain("Season did not answer.");
+      expect(page.text()).toContain("Season unavailable.");
     } finally {
       identityClient.getOrderIntent = keep;
     }
@@ -923,7 +923,7 @@ it("draws the signed-out Play board immediately while identity is pending or fai
   reads.history = answered({ games: [], next: null, failures: [] });
   const pending = await mount();
   expect(pending.text()).toContain("Play free");
-  expect(pending.text()).not.toContain("Sign-in did not answer.");
+  expect(pending.text()).not.toContain("Sign-in unavailable.");
   expect(pending.container.querySelector("[data-play-invite]")?.textContent).toContain("Sign in");
   await cleanup?.();
 
@@ -936,7 +936,7 @@ it("draws the signed-out Play board immediately while identity is pending or fai
   };
   const errored = await mount();
   expect(errored.text()).toContain("Play free");
-  expect(errored.text()).toContain("Sign-in did not answer.");
+  expect(errored.text()).toContain("Sign-in unavailable.");
   await press(errored.container, "Try again");
   expect(retry).toHaveBeenCalledTimes(1);
   await cleanup?.();
@@ -954,7 +954,7 @@ it("draws the signed-out Play board immediately while identity is pending or fai
   const upgraded = await mount();
   expect(upgraded.text()).toContain("Enter Realm");
   expect(upgraded.text()).not.toContain("Play free");
-  expect(upgraded.text()).not.toContain("Sign-in did not answer.");
+  expect(upgraded.text()).not.toContain("Sign-in unavailable.");
 });
 
 it("hides TodayQuestPanel for a Live lead season when the player has no realm, and shows it once they have one", async () => {

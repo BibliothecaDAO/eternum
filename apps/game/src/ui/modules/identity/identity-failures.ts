@@ -24,41 +24,41 @@ export class WrongNetworkError extends Error {}
  * never subtext. Where nothing can be done but wait, the wait is the action.
  */
 const NAMED_REFUSALS: Record<string, string> = {
-  INVALID_OTP: "That code is not right. Check it and try again.",
-  OTP_EXPIRED: "That code expired. Ask for another.",
-  TOO_MANY_ATTEMPTS: "Too many tries with that code. Ask for a new one.",
+  INVALID_OTP: "Wrong code. Check it and try again.",
+  OTP_EXPIRED: "Code expired. Request a new one.",
+  TOO_MANY_ATTEMPTS: "Too many tries. Request a new code.",
   too_many_codes: "Too many codes. Wait a minute.",
   WALLET_NOT_DEPLOYED: `Deploy this wallet on ${L2_CHAIN.label} first.`,
-  WALLET_LINKED_ELSEWHERE: "This wallet is on another account. Link another one.",
-  email_not_verified: "That account's email is not verified. Verify it there, or sign in with an email code.",
-  email_not_found: "That account has no email. Add one there, or sign in with an email code.",
-  account_not_linked: "This email has an account already. Sign in with an email code.",
-  access_denied: "Sign-in was cancelled. Try again.",
-  please_restart_the_process: "Sign-in took too long. Try again.",
+  WALLET_LINKED_ELSEWHERE: "Wallet is linked to another account. Use another.",
+  email_not_verified: "Verify that account's email first, or sign in with an email code.",
+  email_not_found: "That account has no email. Add one, or sign in with an email code.",
+  account_not_linked: "This email already has an account. Sign in with an email code.",
+  access_denied: "Sign-in cancelled. Try again.",
+  please_restart_the_process: "Sign-in timed out. Try again.",
   HANDOFF_NOT_STARTED: "Start signing in here first, then enter the code it shows.",
-  WALLET_ALREADY_LINKED: "This account has a payout wallet already. Reload to see it.",
-  PASSKEY_INVALID: "That passkey cannot hold a wallet. Try again on this device.",
+  WALLET_ALREADY_LINKED: "This account already has a payout wallet. Reload to see it.",
+  PASSKEY_INVALID: "This passkey cannot create a wallet. Try again.",
   // Only a recovery step is sponsored; sends pay their own fee and never meet it.
   SPONSOR_UNAVAILABLE: "Recovery opens soon. Your LORDS stay safe in your wallet.",
-  SPONSOR_CAP_REACHED: "This wallet has used today's recovery steps. Try again tomorrow.",
-  PAYMASTER_REFUSED: "The network did not take it. Check your wallet holds enough LORDS for it and its fee.",
-  RECOVERY_UNDER_WAY: "A recovery is already under way on this wallet.",
+  SPONSOR_CAP_REACHED: "Daily recovery limit reached. Try again tomorrow.",
+  PAYMASTER_REFUSED: "Transaction rejected. Check you have enough LORDS for the amount and fee.",
+  RECOVERY_UNDER_WAY: "Recovery is already in progress on this wallet.",
   // Never "not sent": the paymaster's answer was lost, and it may have gone through.
-  SEND_UNCERTAIN: "The network did not answer, so it may have gone through. Open this again in a minute to see.",
+  SEND_UNCERTAIN: "No network reply. Your transfer may still succeed. Check back in a minute.",
 };
 
 const FALLBACK: Record<IdentityAction, string> = {
-  social: "Sign-in did not complete. Try again.",
-  handoff: "That code did not sign you in. Try again.",
-  "send-code": "The code was not sent. Check the address and try again.",
-  code: "Sign-in did not complete. Try again.",
-  link: "The wallet was not linked. Try again.",
-  unlink: "The wallet was not unlinked. Try again.",
-  portrait: "The portrait was not saved. Try again.",
-  wallet: "Your wallet was not made. Try again.",
-  send: "Nothing was sent. Try again.",
-  recover: "The recovery did not start. Try again.",
-  delete: "Your account was not deleted. Try again.",
+  social: "Sign-in failed. Try again.",
+  handoff: "Code failed. Try again.",
+  "send-code": "Code not sent. Check your email address and try again.",
+  code: "Sign-in failed. Try again.",
+  link: "Could not link wallet. Try again.",
+  unlink: "Could not unlink wallet. Try again.",
+  portrait: "Could not save portrait. Try again.",
+  wallet: "Could not create wallet. Try again.",
+  send: "Transfer failed. Try again.",
+  recover: "Could not start recovery. Try again.",
+  delete: "Could not delete account. Try again.",
 };
 
 /** One sentence per failure the player can act on; the detail goes to the console. */
@@ -68,14 +68,14 @@ export const failureSentence = (action: IdentityAction, cause: unknown): string 
   if (code && NAMED_REFUSALS[code]) return NAMED_REFUSALS[code];
   if (cause instanceof WrongNetworkError) return `Switch this wallet to ${L2_CHAIN.label}.`;
   if (cause instanceof UncertainSendNotKeptError)
-    return "This browser could not keep a record of the send, so nothing was sent. Free some space, or leave private browsing.";
+    return "Browser storage is full or private, so nothing was sent. Free space or exit private mode.";
   if (cause instanceof PasskeyUnavailableError)
-    return "This browser cannot use passkeys here. Open the game in your phone's or computer's main browser.";
+    return "This browser does not support passkeys. Open the game in your main browser.";
   // Asked to make a passkey this device already holds (a recovery's excludeCredentials).
   if ((cause as { name?: unknown } | null)?.name === "InvalidStateError")
-    return "This device still has your passkey: nothing to recover. Use it to send or to cancel a recovery.";
+    return "This device already has your passkey. Use it to send or cancel recovery.";
   // The browser's own refusal: the player closed the passkey sheet, or it timed out.
-  if ((cause as { name?: unknown } | null)?.name === "NotAllowedError") return "The passkey was not used. Try again.";
+  if ((cause as { name?: unknown } | null)?.name === "NotAllowedError") return "Passkey cancelled. Try again.";
   return FALLBACK[action];
 };
 
@@ -85,5 +85,5 @@ export const nameRefusal = (cause: unknown): string => {
   if (reason === "NAME_TAKEN") return "That name is taken. Try another.";
   if (reason.startsWith("NAME_INVALID:")) return `Names use ${reason.slice("NAME_INVALID:".length)}.`;
   console.error("identity_name_claim_failed", { error: reason });
-  return "The name was not saved. Try again.";
+  return "Could not save name. Try again.";
 };

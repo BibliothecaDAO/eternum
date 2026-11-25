@@ -13,18 +13,18 @@ export type Service =
 
 /** One line per service, in the glossary's shape ("Season did not answer."). */
 const FAILURE_LINES: Record<Service, string> = {
-  directory: "Games did not answer.",
-  season: "Season did not answer.",
-  results: "Results did not answer.",
+  directory: "Games unavailable.",
+  season: "Season unavailable.",
+  results: "Results unavailable.",
   /** Entering a match: the shard, its world or its scene did not open. */
-  world: "The world did not answer.",
-  notifications: "Notifications did not answer.",
-  devices: "Devices did not answer.",
-  identity: "Sign-in did not answer.",
-  chat: "Chat did not answer.",
+  world: "World unavailable.",
+  notifications: "Notifications unavailable.",
+  devices: "Devices unavailable.",
+  identity: "Sign-in unavailable.",
+  chat: "Chat unavailable.",
   /** The value ledger, or a ledger on another chain than this build's (the console names which). */
-  ledger: "The ledger did not answer.",
-  market: "The market did not answer.",
+  ledger: "Ledger unavailable.",
+  market: "Market unavailable.",
 };
 
 /** A service's one line, for a surface that draws the failure in its own place (the doorway's plate). */

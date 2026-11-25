@@ -85,7 +85,7 @@ it("deletes the account with the emailed code, says a wrong one, and lands signe
   expect(sendCode).toHaveBeenCalledWith(EMAIL);
 
   await typeCode("111111");
-  expect(document.body.textContent).toContain("That code is not right.");
+  expect(document.body.textContent).toContain("Wrong code.");
   expect(useIdentitySessionStore.getState().session).toBe(SESSION);
 
   await typeCode("222222");
