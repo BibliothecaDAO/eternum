@@ -121,10 +121,9 @@ function realmSeries(settings: RealmSeriesSettings): SeriesSlot[] {
   const shipped = (level: number, wonder = settings.wonder) =>
     REALM_ASSETS[realmModelIndex(level, wonder, settings.seed)];
   if (settings.base)
-    return [shipped(1, false), ...BASE_REALM_CANDIDATES, shipped(2, false), shipped(3, false)].map((asset) => ({
-      asset,
-      before: false,
-    }));
+    return [0, 1, 2, 3]
+      .flatMap((level) => [shipped(level, false), ...BASE_REALM_CANDIDATES.filter((asset) => asset.level === level)])
+      .map((asset) => ({ asset, before: false }));
   if (settings.reference && settings.comparison !== "after") {
     const asset = shipped(settings.level);
     return settings.comparison === "pair"

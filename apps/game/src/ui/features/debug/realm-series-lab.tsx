@@ -164,7 +164,7 @@ export function RealmSeriesLab() {
             checked={settings.base}
             onChange={(e) => change("base", e.target.checked ? "1" : "0")}
           />{" "}
-          Base City candidate
+          Base rank candidates
         </label>
       </header>
       <p role="status" style={{ padding: "0 16px" }}>

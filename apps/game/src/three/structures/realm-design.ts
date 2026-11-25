@@ -39,6 +39,14 @@ export const ASPECT_WONDER_PATHS = ASPECT_WONDER_LIST.map((asset) => asset.path)
 
 export const BASE_REALM_CANDIDATES: readonly RealmAssetEntry[] = [
   {
+    id: "base-settlement",
+    label: "Base Settlement · thatched hamlet",
+    level: 0,
+    wonder: false,
+    source: "tripo/realms/base-settlement",
+    path: modelPath("realms/base-settlement.glb"),
+  },
+  {
     id: "base-city",
     label: "Base City · courtyard keep",
     level: 1,
