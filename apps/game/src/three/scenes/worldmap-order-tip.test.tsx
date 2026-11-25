@@ -2,7 +2,7 @@ import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useNamedTips } from "@/ui/design-system/kit/named-tips";
 import { orderTip } from "@/ui/features/frontier/hud/order-tip";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
-import { ORDER_REFUSAL_WORDS } from "@/ui/design-system/kit/words";
+import { ATTACK_REFUSAL_WORDS, ORDER_REFUSAL_WORDS } from "@/ui/design-system/kit/words";
 import { type ActionPath, ActionType, type OrderRefusal } from "@bibliothecadao/eternum";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -14,7 +14,6 @@ import { InputManager } from "../managers/input-manager";
 import type { SceneManager } from "../scene-manager";
 import { SceneName } from "../types";
 import { PointerOrderTip } from "./worldmap-order-tip";
-import { ATTACK_REFUSAL_WORDS } from "../../ui/design-system/kit/words";
 
 /** What the scene reads for the tile under the pointer, changed by each case as the game would change it. */
 const tile = {
