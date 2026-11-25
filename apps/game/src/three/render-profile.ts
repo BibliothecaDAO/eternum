@@ -19,7 +19,7 @@ type QualityProfile = { maxFps: number | null; visuals: Omit<RenderVisualProfile
 
 const ANIMATION = { animationCullDistance: 120, animationFps: 24 };
 
-export const QUALITY_PROFILES: Readonly<Record<GraphicsQuality, QualityProfile>> = {
+const QUALITY_PROFILES: Readonly<Record<GraphicsQuality, QualityProfile>> = {
   low: { maxFps: 30, visuals: { ...ANIMATION, pixelRatio: 1, postProcessing: false, shadowMapSize: 512 } },
   balanced: { maxFps: null, visuals: { ...ANIMATION, pixelRatio: 1, postProcessing: true, shadowMapSize: 1024 } },
   high: { maxFps: null, visuals: { ...ANIMATION, pixelRatio: 1.25, postProcessing: true, shadowMapSize: 1024 } },
