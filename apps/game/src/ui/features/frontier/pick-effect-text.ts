@@ -36,11 +36,7 @@ export function readPickEffectBase(
   };
 }
 
-function readArmyBasis(
-  store: Pick<NativeFactStore, "get">,
-  gameId: number,
-  explorerId: number,
-): ArmyBasis | undefined {
+function readArmyBasis(store: Pick<NativeFactStore, "get">, gameId: number, explorerId: number): ArmyBasis | undefined {
   const army = store.get("ExplorerTroops", { game_id: gameId, explorer_id: explorerId });
   if (!army) return undefined;
   const progress = store.get("ArmyProgress", { game_id: gameId, explorer_id: explorerId });
