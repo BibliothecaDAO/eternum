@@ -53,8 +53,8 @@ export const rankedText = (words: RankedWords | string): string =>
     : words.map((part) => (typeof part === "string" ? part : part.rank === 0 ? "0" : tierNumeral(part.rank))).join("");
 /** What a skill point of a rank gives: the point itself, "[III] +1" (owner, 3 November 2026: "I like B"). */
 export const skillPointGain = (rank: number): RankedWords => [{ rank }, " +1"];
-export const SHRINE_USED_LINE = "Shrine used, an Oath offered";
-export const wellUsedLine = (amount: string) => `Well used, +${amount} stamina`;
+export const SHRINE_USED_LINE = "Shrine used: Oath offered";
+export const wellUsedLine = (amount: string) => `Well used: +${amount} stamina`;
 /** What scores: "250 points", "1 point" (formatPoints). Never VP or pts. */
 export const POINTS = "points";
 export const POINT = "point";

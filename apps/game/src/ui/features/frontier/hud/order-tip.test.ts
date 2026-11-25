@@ -2,7 +2,16 @@ import { ActionType, configManager, type OrderRefusal } from "@bibliothecadao/et
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
-import { ORDER_REFUSAL_WORDS, SITE_USE_WORDS, SPIRE_WORDS, STAMINA, TRANSFER_TROOPS, USE, WHEAT } from "@/ui/design-system/kit/words";
+import {
+  ORDER_REFUSAL_WORDS,
+  SHRINE,
+  SITE_USE_WORDS,
+  SPIRE_WORDS,
+  STAMINA,
+  TRANSFER_TROOPS,
+  WELL,
+  WHEAT,
+} from "@/ui/design-system/kit/words";
 import { orderFood, orderTip } from "./order-tip";
 
 const step = (actionType: ActionType, staminaCost?: number) => ({ hex: { col: 0, row: 0 }, actionType, staminaCost });
@@ -136,13 +145,19 @@ describe("a Shrine or a Well beside the army", () => {
   const use = [step(ActionType.Move), step(ActionType.UseSite, 0)];
   it("offers Use with what the Shrine gives: an Oath pick", () => {
     const shrine = { kind: "Shrine" as const, gain: undefined, stamina: { current: 40, max: 180 } };
-    expect(line(use, { site: shrine })).toBe(USE);
+    expect(line(use, { site: shrine })).toBe(SITE_USE_WORDS.use(SHRINE));
     expect(cost(use, { site: shrine })).toBe(SITE_USE_WORDS.shrineGives);
+  });
+
+  it("asks an army further off to move beside the site, not a bare too-far", () => {
+    const shrine = { kind: "Shrine" as const, gain: undefined, stamina: { current: 40, max: 180 } };
+    expect(line(undefined, { site: shrine, refusal: { reason: "too-far" } })).toBe(SITE_USE_WORDS.moveBeside);
+    expect(line(undefined, { refusal: { reason: "too-far" } })).toBe(ORDER_REFUSAL_WORDS["too-far"]);
   });
 
   it("offers Use with the Well's refill, only what lands under the bar's maximum", () => {
     const well = (current: number) => ({ kind: "Well" as const, gain: 72, stamina: { current, max: 180 } });
-    expect(line(use, { site: well(40) })).toBe(USE);
+    expect(line(use, { site: well(40) })).toBe(SITE_USE_WORDS.use(WELL));
     expect(cost(use, { site: well(40) })).toBe(`+72 ${STAMINA}`);
     expect(cost(use, { site: well(150) })).toBe(SITE_USE_WORDS.wellToFull("+30"));
     expect(cost(use, { site: well(180) })).toBe(SITE_USE_WORDS.wellWasted);

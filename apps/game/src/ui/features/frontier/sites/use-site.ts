@@ -34,6 +34,11 @@ export const siteUseFacts = (
   };
 };
 
+const siteUseRefusal = (error: unknown): string =>
+  String(error instanceof Error ? error.message : error).includes("not a shrine or well")
+    ? SITE_USE_WORDS.alreadyUsed
+    : SITE_USE_WORDS.failed;
+
 export const sendSiteUse = async ({
   systemCalls,
   signer,
@@ -57,6 +62,6 @@ export const sendSiteUse = async ({
       return sent;
     });
   } catch (error) {
-    toast.failed(error, SITE_USE_WORDS.failed);
+    toast.failed(error, siteUseRefusal(error));
   }
 };

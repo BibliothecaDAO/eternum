@@ -30,7 +30,7 @@ import {
 import { ActionPaths, ActionType, armyOaths, configManager, journeyDistance, oathWellStamina } from "@bibliothecadao/eternum";
 import { type NativeFactStore, nativeRuleConstants, safeInteger } from "@bibliothecadao/eternum/game-client";
 import { gameSyncRegion, type TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { formatShort, formatShortChange } from "@bibliothecadao/types";
+import { formatGain, formatShort, formatShortChange } from "@bibliothecadao/types";
 import { type ReactNode, useMemo } from "react";
 
 import { useFrontierRealm } from "../frontier-home";
@@ -56,6 +56,7 @@ export const useSelectedMapSite = (): { kind: MapSiteKind; tile: TileSpatialRend
 type SiteTaker = { art: IconMeaning; label: string; tiles: number; nearest: boolean };
 
 type SiteAction =
+  | { kind: "refused"; line: string }
   | { kind: "use"; busy: string | undefined; onUse: () => void }
   | { kind: "move"; cost: string; onMove: () => void };
 
@@ -80,6 +81,9 @@ export const MapSiteCard = ({
       ? oathWellStamina(armyOaths(setup.store, user.army), army.stamina.max)
       : undefined;
   const inFlight = useInFlight("army", userId)?.order;
+  const pickWaiting =
+    userId !== null &&
+    (setup.store.get("ArmyProgress", { game_id: configManager.getActiveGameId(), explorer_id: userId })?.oath_pick ?? 0) !== 0;
 
   const use = async () => {
     if (userId === null || !account.account) return;
@@ -90,7 +94,9 @@ export const MapSiteCard = ({
       site: { kind: selected.kind, tile: siteTile },
     });
   };
-  const action: SiteAction | null = usable
+  const action: SiteAction | null = pickWaiting
+    ? { kind: "refused", line: SITE_USE_WORDS.oathPickFirst }
+    : usable
     ? { kind: "use", busy: inFlightWord(inFlight, "use", USING), onUse: use }
     : approach
       ? {
@@ -132,7 +138,12 @@ export const MapSiteCardView = ({
   const { name: word, icon } = mapSite(kind);
   return (
     <HudSheet label={word} onClose={onClose}>
-      {kind === "Shrine" ? <ShrineBody taker={taker} /> : army && <WellUser army={army} gain={gain} />}
+      {kind === "Shrine" ? <ShrineBody taker={taker} /> : <WellBody army={army} gain={gain} />}
+      {action?.kind === "refused" && (
+        <p data-site-refused className="text-hud-label text-hud-warn">
+          {action.line}
+        </p>
+      )}
       <HudWindowFoot
         note={
           <SiteGain icon={icon}>
@@ -214,6 +225,22 @@ const siteTaker = (
 const useArmyOffersUse = (siteTile: { col: number; row: number }): boolean => {
   const path = useUIStore((state) => state.entityActions.actionPaths.get(ActionPaths.posKey(siteTile)));
   return path !== undefined && ActionPaths.getActionType(path) === ActionType.UseSite;
+};
+
+const WellBody = ({ army, gain }: { army: DockArmy | undefined; gain: number | undefined }) => (
+  <div className="flex flex-col gap-1.5">
+    {army && <WellUser army={army} gain={gain} />}
+    <span data-site-rule className="text-hud-label text-hud-muted">
+      {wellRule(army?.stamina, gain)}
+    </span>
+  </div>
+);
+
+const wellRule = (stamina: StaminaBar | undefined, gain: number | undefined): string => {
+  if (!stamina || gain === undefined)
+    return SITE_USE_WORDS.wellShareRule(wellRefillShare(nativeRuleConstants.WELL_REFILL_PERCENT));
+  const lands = Math.max(0, Math.min(gain, stamina.max - stamina.current));
+  return lands === 0 ? SITE_USE_WORDS.wellFull : SITE_USE_WORDS.wellRule(formatGain(lands));
 };
 
 const WellUser = ({ army, gain }: { army: DockArmy; gain: number | undefined }) => (

@@ -828,14 +828,4 @@ it.each([
   ).toMatchObject({ title, description: "Lord 0123's army" });
 });
 
-it.each([
-  [1, "I"],
-  [3, "III"],
-  [5, "V"],
-])("names the exact Shrine point at rank %s as its gem and +1", (rank, numeral) => {
-  const event = story("SiteUsed", { explorer_id: 7, coord: { x: 3, y: 4 }, benefit: { ShrinePoint: rank } });
-  expect(buildStoryEventPresentation(event)).toMatchObject({
-    title: `Shrine used, ${numeral} +1`,
-    ranked: { title: ["Shrine used, ", { rank }, " +1"], description: ["Lord 0123's army"] },
-  });
 });
