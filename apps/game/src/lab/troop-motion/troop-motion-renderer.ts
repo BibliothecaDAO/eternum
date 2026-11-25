@@ -216,6 +216,7 @@ export async function mountTroopMotionLab(input: MountTroopMotionInput): Promise
     envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
     isMobileDevice: isCoarsePointer(),
     pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+    postProcessing: true,
     search: window.location.search,
   });
   if (input.signal.aborted) {

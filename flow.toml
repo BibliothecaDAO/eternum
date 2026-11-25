@@ -97,6 +97,9 @@ cmd = 'pnpm run build:packages && pnpm --dir apps/game playtest:landing --out "$
 [kind.playtest-perf]
 cmd = 'pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4196.lock" && flock 8 && perf() { pnpm --dir apps/game playtest --port 4196 --steps lab-realm-load --renderer-modes webgpu-auto --out "$FLOW_TMP/playtest/$1" "${@:2}"; } && perf desktop --iterations 5 && perf phone --iterations 3 --viewport 390x844 --network 20,60 --cpu-throttle 4 && perf laptop --iterations 1 --viewport 1440x900 && perf profiled --iterations 1 --profile-steps boot,first-realm && perf owner-laptop --iterations 1 --viewport 1829x1016 --device-scale 1.4 && perf zoomed-out --iterations 1 --viewport 9146x5081 --device-scale 0.3125'
 
+[kind.playtest-perf-quality]
+cmd = 'pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4196.lock" && flock 8 && run() { pnpm --dir apps/game playtest --port 4196 --steps lab-realm-load --renderer-modes webgpu-auto --device-scale 2 --storage-state "$FLOW_TMP/$1.json" --out "$FLOW_TMP/playtest/$1-$2" "${@:3}"; } && q() { echo "{\"cookies\":[],\"origins\":[{\"origin\":\"https://127.0.0.1:4196\",\"localStorage\":[{\"name\":\"eternum-quality\",\"value\":\"$1\"}]}]}" > "$FLOW_TMP/$1.json" && run $1 desktop --iterations 3 && run $1 phone --iterations 3 --viewport 390x844 --gpu low-power && run $1 laptop --iterations 1 --viewport 1440x900; } && q low && q balanced && q high'
+
 [kind.playtest-perf-explore]
 cmd = 'pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4196.lock" && flock 8 && act() { pnpm --dir apps/game playtest --port 4196 --steps lab-actions --renderer-modes webgpu-auto --out "$FLOW_TMP/playtest/$1" "${@:2}"; } && act desktop --iterations 3 && act phone --iterations 3 --viewport 390x844 --cpu-throttle 4 && act profiled --iterations 1 --viewport 390x844 --cpu-throttle 4 --profile-steps explore'
 

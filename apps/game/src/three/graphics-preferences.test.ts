@@ -1,23 +1,36 @@
 import { expect, it } from "vitest";
-import {
-  GRAPHICS_QUALITIES,
-  readGraphicsPreferences,
-  resolveGraphicsQuality,
-  writeGraphicsPreferences,
-} from "./graphics-preferences";
-it("persists quality and shadows independently across reload", () => {
-  const values = new Map<string, string>();
-  const storage = {
+
+import { readGraphicsQuality, writeGraphicsQuality } from "./graphics-preferences";
+
+const storageWith = (entries: Record<string, string>) => {
+  const values = new Map(Object.entries(entries));
+  return {
+    values,
     getItem: (key: string) => values.get(key) ?? null,
-    setItem: (key: string, value: string) => values.set(key, value),
+    removeItem: (key: string) => void values.delete(key),
+    setItem: (key: string, value: string) => void values.set(key, value),
   };
-  expect(readGraphicsPreferences(storage)).toEqual({ quality: "high", shadows: true });
-  writeGraphicsPreferences(storage, { quality: "balanced", shadows: false });
-  expect(readGraphicsPreferences(storage)).toEqual({ quality: "balanced", shadows: false });
+};
+
+it("keeps the chosen quality across reloads, Balanced on a first visit", () => {
+  const storage = storageWith({});
+  expect(readGraphicsQuality(storage)).toBe("balanced");
+  writeGraphicsQuality(storage, "low");
+  expect(readGraphicsQuality(storage)).toBe("low");
+  writeGraphicsQuality(storage, "high");
+  expect(readGraphicsQuality(storage)).toBe("high");
 });
 
-it("resolves every known quality and falls back to high for unknown values", () => {
-  for (const quality of GRAPHICS_QUALITIES) expect(resolveGraphicsQuality(quality)).toBe(quality);
-  expect(resolveGraphicsQuality("detail")).toBe("high");
-  expect(resolveGraphicsQuality(null)).toBe("high");
+it.each([
+  [{ quality: "high", shadows: true }, "balanced"],
+  [{ quality: "balanced", shadows: true }, "low"],
+  [{ quality: "high", shadows: false }, "low"],
+])("reads the retired Quality %j and Frame rate once as %s, then forgets them", (retired, quality) => {
+  const storage = storageWith({ "eternum-graphics": JSON.stringify(retired), RENDER_MODE: "capped" });
+  expect(readGraphicsQuality(storage)).toBe(quality);
+  expect([...storage.values]).toEqual([["eternum-quality", quality]]);
+});
+
+it("draws a page with no storage at Balanced", () => {
+  expect(readGraphicsQuality(null)).toBe("balanced");
 });

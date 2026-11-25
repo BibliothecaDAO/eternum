@@ -1,80 +1,38 @@
-import { readGraphicsPreferences, type GraphicsPreferences } from "./graphics-preferences";
-export type RenderMode = "uncapped" | "capped";
+import { readGraphicsQuality, type GraphicsQuality } from "./graphics-preferences";
 
 export interface RenderVisualProfile {
   animationCullDistance: number;
   animationFps: number;
   pixelRatio: number;
+  postProcessing: boolean;
   shadowMapSize: number;
   shadows: boolean;
 }
 
 interface RenderProfile {
-  mode: RenderMode;
   maxFps: number | null;
   visuals: RenderVisualProfile;
 }
 
-export const RENDER_MODE_OPTIONS: ReadonlyArray<{ label: string; mode: RenderMode }> = [
-  { label: "60", mode: "capped" },
-  { label: "Max", mode: "uncapped" },
-];
+const ANIMATION = { animationCullDistance: 120, animationFps: 24 };
 
-export const RENDER_MODE_STORAGE_KEY = "RENDER_MODE";
-export const RENDERER_PIXEL_RATIO_CAP = 1.25;
-const LEGACY_TIER_STORAGE_KEY = ["GRAPHICS", "SETTING"].join("_");
-const LEGACY_DEVICE_CHECK_STORAGE_KEY = "INITIAL_LAPTOP_CHECK";
-
-const QUALITY_VISUALS: RenderVisualProfile = {
-  animationCullDistance: 120,
-  animationFps: 24,
-  pixelRatio: RENDERER_PIXEL_RATIO_CAP,
-  shadowMapSize: 1024,
-  shadows: true,
+export const RENDER_PROFILES: Readonly<Record<GraphicsQuality, RenderProfile>> = {
+  low: {
+    maxFps: 30,
+    visuals: { ...ANIMATION, pixelRatio: 1, postProcessing: false, shadowMapSize: 512, shadows: false },
+  },
+  balanced: {
+    maxFps: null,
+    visuals: { ...ANIMATION, pixelRatio: 1.25, postProcessing: true, shadowMapSize: 1024, shadows: true },
+  },
+  high: {
+    maxFps: null,
+    visuals: { ...ANIMATION, pixelRatio: 2, postProcessing: true, shadowMapSize: 2048, shadows: true },
+  },
 };
-
-export function readRenderMode(storage: Pick<Storage, "getItem" | "removeItem" | "setItem"> | null): RenderMode {
-  if (!storage) {
-    return "uncapped";
-  }
-
-  // Read once before deletion so old clients complete the migration even when
-  // a newer mode key is already present.
-  storage.getItem(LEGACY_TIER_STORAGE_KEY);
-  storage.removeItem(LEGACY_TIER_STORAGE_KEY);
-  storage.removeItem("LOW_GRAPHICS_FLAG");
-  storage.removeItem(LEGACY_DEVICE_CHECK_STORAGE_KEY);
-
-  const storedMode = storage.getItem(RENDER_MODE_STORAGE_KEY);
-  if (storedMode === "uncapped" || storedMode === "capped") {
-    return storedMode;
-  }
-
-  // Preserve a frame limit for players who previously chose Battery.
-  const mode = storedMode === "battery" ? "capped" : "uncapped";
-  storage.setItem(RENDER_MODE_STORAGE_KEY, mode);
-  return mode;
-}
-
-export function writeRenderMode(storage: Pick<Storage, "setItem"> | null, mode: RenderMode): void {
-  storage?.setItem(RENDER_MODE_STORAGE_KEY, mode);
-}
-
-export function createRenderProfile(
-  mode: RenderMode,
-  preferences: GraphicsPreferences = { quality: "high", shadows: true },
-): RenderProfile {
-  const visuals = { ...QUALITY_VISUALS, shadows: preferences.shadows };
-  if (preferences.quality === "balanced") {
-    visuals.pixelRatio = 1;
-    visuals.shadowMapSize = 512;
-  }
-  return { mode, maxFps: mode === "uncapped" ? null : 60, visuals };
-}
 
 const browserStorage = typeof globalThis.localStorage === "undefined" ? null : globalThis.localStorage;
 
-export const renderProfile = createRenderProfile(
-  readRenderMode(browserStorage),
-  readGraphicsPreferences(browserStorage),
-);
+export const loadedGraphicsQuality = readGraphicsQuality(browserStorage);
+
+export const renderProfile = RENDER_PROFILES[loadedGraphicsQuality];

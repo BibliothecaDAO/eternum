@@ -23,6 +23,7 @@ interface InitializeRendererBackendRuntimeInput {
   isMobileDevice: boolean;
   onDeviceLost?: (event: RendererDeviceLostEvent) => void;
   pixelRatio: number;
+  postProcessing: boolean;
   search: string;
 }
 
@@ -55,6 +56,7 @@ export async function initializeRendererBackendRuntime(input: InitializeRenderer
     isMobileDevice: input.isMobileDevice,
     onDeviceLost: input.onDeviceLost,
     pixelRatio: input.pixelRatio,
+    postProcessing: input.postProcessing,
     requestedMode,
   });
   const diagnostics = await backend.initialize();

@@ -216,6 +216,11 @@ function resolveWebGpuRendererDevice(renderer: WebGPURendererSurface): WebGPURen
   return rendererWithBackend.backend?.device;
 }
 
+const drawsPlain = (renderer: RendererSurfaceLike): SceneFinish => ({
+  render: (scene, camera) => renderer.render(scene, camera),
+  dispose: () => {},
+});
+
 function readMaxTextureSize(renderer: RendererSurfaceLike): number | undefined {
   const { backend } = renderer as RendererSurfaceLike & {
     backend?: { device?: { limits?: { maxTextureDimension2D?: number } }; gl?: WebGL2RenderingContext };
@@ -389,6 +394,7 @@ export function createWebGPURendererBackend(
     isMobileDevice: boolean;
     onDeviceLost?: (event: RendererDeviceLostEvent) => void;
     pixelRatio: number;
+    postProcessing: boolean;
     requestedMode: RendererBuildMode;
   },
   dependencies: Partial<WebGPURendererBackendDependencies> = defaultDependencies,
@@ -533,7 +539,7 @@ export function createWebGPURendererBackend(
         renderer = lane.renderer;
         maxTextureSize = readMaxTextureSize(lane.renderer);
         sizeRenderer(window.innerWidth, window.innerHeight);
-        finish = resolvedDependencies.createFinish(lane.renderer);
+        finish = options.postProcessing ? resolvedDependencies.createFinish(lane.renderer) : drawsPlain(lane.renderer);
 
         return createRendererInitDiagnostics({
           activeMode: lane.activeMode,

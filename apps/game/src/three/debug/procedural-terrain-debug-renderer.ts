@@ -37,7 +37,7 @@ import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { getStructureModelPaths } from "@/three/constants/scene-constants";
 import InstancedModel from "@/three/managers/instanced-model";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
-import type { GraphicsQuality } from "@/three/graphics-preferences";
+import type { TerrainQuality } from "@/three/terrain/procedural-terrain";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import type { PreparedTerrainPage, TerrainPageRequest } from "@/three/terrain/terrain-types";
 import { TERRAIN_SHALLOW_WATER_DEPTH } from "@/three/terrain/terrain-water";
@@ -96,7 +96,7 @@ export interface ProceduralTerrainDebugStats {
   groundCoverInstances: number;
   prepareMs: number;
   propInstances: number;
-  qualityTier: GraphicsQuality;
+  qualityTier: TerrainQuality;
   realmInstances: number;
   revealProgress: number;
   roadSegments: number;
@@ -191,7 +191,7 @@ interface MountProceduralTerrainDebugRendererInput {
   captureMode: boolean;
   localRadius?: number;
   forceWebGL: boolean;
-  qualityTier: GraphicsQuality;
+  qualityTier: TerrainQuality;
   revealProgress: number;
   sceneId: TerrainVerificationSceneId;
   onError(error: unknown): void;
