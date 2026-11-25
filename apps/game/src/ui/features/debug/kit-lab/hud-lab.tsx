@@ -1240,12 +1240,11 @@ const LabRealmCard = ({ lab }: { lab: LabState }) => (
     name={LAB_REALM_NAME}
     kind="realm"
     level={1}
-    rankUp={{
-      name: rankName(2),
-      gives: REALM_CARD_WORDS.armySlots(1),
-      sending: false,
-      onUpgrade: lab.visiting ? undefined : noop,
-    }}
+    rankUp={
+      lab.visiting
+        ? undefined
+        : { name: rankName(2), gives: REALM_CARD_WORDS.armySlots(1), sending: false, onUpgrade: noop }
+    }
     aspect={LAB_ASPECT}
     orderId={LAB_ORDER_ID}
     stores={everyStore(lab.stores)}
