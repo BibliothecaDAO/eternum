@@ -6,6 +6,7 @@ description:
 
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
+import { Shot } from "@/components/Media";
 
 # The Deep
 
@@ -53,6 +54,11 @@ army to walk into. Held sites pay out on every army tick ({FRONTIER.stamina.tick
 | <GameIcon name="essence" /> **{FRONTIER.deep.sites[1].name}**        | <GameIcon name={FRONTIER.deep.sites[1].beastIcon} /> {FRONTIER.deep.sites[1].beastName} ({FRONTIER.deep.sites[1].troops}) | {FRONTIER.deep.sites[1].weapon} | {FRONTIER.deep.sites[1].bring} | {FRONTIER.deep.sites[1].pays} |
 | <GameIcon name="pickaxe" /> **{FRONTIER.deep.sites[2].name}**        | <GameIcon name={FRONTIER.deep.sites[2].beastIcon} /> {FRONTIER.deep.sites[2].beastName} ({FRONTIER.deep.sites[2].troops}) | {FRONTIER.deep.sites[2].weapon} | {FRONTIER.deep.sites[2].bring} | {FRONTIER.deep.sites[2].pays} |
 | <GameIcon name="flame" /> **{FRONTIER.deep.sites[3].name}**          | <GameIcon name={FRONTIER.deep.sites[3].beastIcon} /> {FRONTIER.deep.sites[3].beastName} ({FRONTIER.deep.sites[3].troops}) | {FRONTIER.deep.sites[3].weapon} | {FRONTIER.deep.sites[3].bring} | {FRONTIER.deep.sites[3].pays} |
+
+<Shot
+  name="frontier/deep-site"
+  caption="Select a Deep site with an army picked to view its per-tick payout, green poison drain, guard slots, and fight preview."
+/>
 
 **Glory** is earned **only** by holding Hyperstructure archives and Bane altars. Essence cores and Ethereal mines pay
 your realm directly in Essence or labor and give no Glory. Every Deep site's tick payout — including an Essence core's

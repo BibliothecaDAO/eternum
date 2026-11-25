@@ -189,6 +189,30 @@ async function pressTileOffering(page, order, button) {
   throw new Error(`no tile near the centre offers ${order}`);
 }
 
+async function tapUntil(page, { offsets, waitFor, dismiss = "Escape", button = "left", around = "center" }) {
+  const origin = await evaluate(
+    page,
+    around === "army"
+      ? `(() => {
+          const slot = [...document.querySelectorAll('.mp-at[data-key^="army:"]')].find((el) => el.firstElementChild && getComputedStyle(el).display !== "none");
+          if (!slot) return [innerWidth / 2, innerHeight / 2];
+          const r = slot.firstElementChild.getBoundingClientRect();
+          return [r.left + r.width / 2, r.top + r.height / 2 + 100];
+        })()`
+      : "[innerWidth / 2, innerHeight / 2]",
+  );
+  for (const [dx, dy] of offsets) {
+    await pointer(page, [origin[0] + dx, origin[1] + dy], button);
+    await sleep(900);
+    if (await evaluate(page, `Boolean(document.querySelector(${JSON.stringify(waitFor)}))`)) return;
+    if (dismiss) {
+      for (const type of ["keyDown", "keyUp"]) await page.send("Input.dispatchKeyEvent", { type, key: dismiss });
+      await sleep(300);
+    }
+  }
+  throw new Error(`tapUntil did not open ${waitFor}`);
+}
+
 /** One step of an item, as a player gives it: open, wait, click, type, press, point, or a page script. */
 async function step(page, action) {
   if (action.optional) {
@@ -204,6 +228,7 @@ async function step(page, action) {
     await pointer(page, readiest.at);
     await sleep(2500);
   } else if (action.findTile) await pressTileOffering(page, action.findTile, action.button);
+  else if (action.tapUntil) await tapUntil(page, action.tapUntil);
   else if (action.open) {
     await page.send("Page.navigate", { url: urlOf(action.open) });
     await sleep(500);
@@ -392,6 +417,8 @@ async function recordClip(page, item, frames) {
 }
 
 async function capture(page, item) {
+  await page.send("Page.navigate", { url: "about:blank" });
+  await sleep(200);
   await setFrame(page, item.frame);
   for (const action of item.setup ?? []) await step(page, action);
   return item.record ? clip(page, item) : shot(page, item);
