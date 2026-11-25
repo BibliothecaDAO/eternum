@@ -29,18 +29,20 @@ export const homeCampBesideArmy = (store: NativeFactStore): LabFact[] => {
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: SPIRE_ARMY });
   const tile = besideOnOpenLand(store, store.entityOccupancy(1, SPIRE_ARMY)!);
   const entityId = (7n << 32n) + BigInt(SITE);
-  const guard = { ...army.troops, count: 1_000_000_000_000n, stamina: { Inline: { amount: 0n, settled_at: 0, remainder: 0 } } };
-  return siteAt(store, tile, guard, StructureType.Camp).map(
-    (fact): LabFact => {
-      const value = fact.value as Record<string, unknown>;
-      return {
-        ...fact,
-        value: {
-          ...value,
-          ...(value.entity_id !== undefined ? { entity_id: String(entityId) } : {}),
-          ...(value.structure_id !== undefined ? { structure_id: String(entityId) } : {}),
-        },
-      };
-    },
-  );
+  const guard = {
+    ...army.troops,
+    count: 1_000_000_000_000n,
+    stamina: { Inline: { amount: 0n, settled_at: 0, remainder: 0 } },
+  };
+  return siteAt(store, tile, guard, StructureType.Camp).map((fact): LabFact => {
+    const value = fact.value as Record<string, unknown>;
+    return {
+      ...fact,
+      value: {
+        ...value,
+        ...(value.entity_id !== undefined ? { entity_id: String(entityId) } : {}),
+        ...(value.structure_id !== undefined ? { structure_id: String(entityId) } : {}),
+      },
+    };
+  });
 };
