@@ -2,7 +2,7 @@ use snforge_std::{interact_with_state, spy_events};
 use starknet::storage::StorageMapReadAccess;
 use world_test_support::tests::Deployment;
 use world_test_support::tests::play_fixture::FIXTURE_START;
-use world_test_support::tests::registrar::{discovery_root, explore_with_root};
+use world_test_support::tests::registrar::{discovery_root, explore_with_root, found_site, use_site};
 use world_test_support::tests::resource_commands::{execute_in_game, grant};
 use crate::commands::Command;
 use crate::discovery::Discovery;
@@ -213,12 +213,15 @@ fn shrine_pick(d: Deployment, key: ExplorerKey, root: u256) -> u16 {
         if !explore_with_root(d, key.game_id, key.explorer_id, root, FIXTURE_START) {
             panic!("{}", world_test_support::tests::play_fixture::rejection(ref events, d.games).reason);
         }
-        let pick = interact_with_state(d.games, || crate::logic::progression::require(key).oath_pick);
-        if pick != 0 {
-            return pick;
+        if let Some((coord, _)) = found_site(d, key) {
+            let mut events = spy_events();
+            if !use_site(d, key, coord, root, FIXTURE_START) {
+                panic!("{}", world_test_support::tests::play_fixture::rejection(ref events, d.games).reason);
+            }
+            return interact_with_state(d.games, || crate::logic::progression::require(key).oath_pick);
         }
     }
-    panic!("no shrine pick")
+    panic!("no shrine found")
 }
 
 fn ruin_relic() -> crate::army_relics::ArmyRelic {
