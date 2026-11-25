@@ -523,7 +523,7 @@ it("keeps the Realm already registered for this game, shown alone and locked, wh
   }
 });
 
-it("a founded home holding a Realm attaches it only on Add this daily claim", async () => {
+it("a founded home holding a Realm attaches it only on Add this quest bonus", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   settlement.settled = true;
   signIn("0x456");

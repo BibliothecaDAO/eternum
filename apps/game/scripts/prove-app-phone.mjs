@@ -386,7 +386,7 @@ const nameWithKeyboard = async (b, phone, out, record) => {
   })()`);
   record.checks.push(
     { check: "the on-screen keyboard is met", ok: keyboard === "open" },
-    { check: "the field and Claim name stand above the keyboard", ok: typing.field && typing.claim, typing },
+    { check: "the field and Save name stand above the keyboard", ok: typing.field && typing.claim, typing },
     { check: "the place bar steps aside while typing", ok: typing.barHidden },
   );
   shoot(b, out, "settings-name-keyboard");

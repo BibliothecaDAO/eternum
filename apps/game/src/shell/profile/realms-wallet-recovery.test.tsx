@@ -102,7 +102,7 @@ it("offers the way in for a lost passkey while no recovery stands", async () => 
   expect(onRecover).toHaveBeenCalledOnce();
 });
 
-it("shows a recovery under way with its day, and the owner's passkey cancels it", async () => {
+it("shows a recovery in progress with its day, and the owner's passkey cancels it", async () => {
   chain.answers = [escapeAnswer(1), NO_ESCAPE];
   const view = await render(<RealmsWalletRecovery address={WALLET.address} onRecover={vi.fn()} />);
   expect(view.textContent).toContain("Recovery in progress: a new passkey takes over on");

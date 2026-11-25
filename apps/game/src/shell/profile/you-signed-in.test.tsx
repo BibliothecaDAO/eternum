@@ -288,7 +288,7 @@ it("shows the join-Aspect prompt on /profile#referrals only when the player has 
 });
 
 describe("a session with no name claimed yet", () => {
-  it.each(["/profile", "/profile/settings"])("offers Claim name, and Sign out, on %s", async (path) => {
+  it.each(["/profile", "/profile/settings"])("offers Save name, and Sign out, on %s", async (path) => {
     const named = signedIn.session;
     signedIn.session = { ...named, user: { ...named.user, name: named.user.id } } as unknown as Session;
     try {

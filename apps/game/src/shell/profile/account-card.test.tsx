@@ -51,7 +51,7 @@ it("asks before signing out, with Keep as the safe choice", async () => {
   }
 });
 
-it("edits the name in its own row, offering Claim name only once it differs (qa-app-1 P3-6), Escape putting it back", async () => {
+it("edits the name in its own row, offering Save name only once it differs (qa-app-1 P3-6), Escape putting it back", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);
   const container = document.createElement("div");

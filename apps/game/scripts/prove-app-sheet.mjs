@@ -641,7 +641,7 @@ const QA1_CASES = [
       const claim = b.evaluate(
         `[...document.querySelectorAll("button")].find((button) => button.innerText.trim() === "Save name")?.disabled ?? null`,
       );
-      return [{ check: "Claim name is off for the name already held (P3-6)", ok: claim === true, claim }];
+      return [{ check: "Save name is off for the name already held (P3-6)", ok: claim === true, claim }];
     },
   },
   {
