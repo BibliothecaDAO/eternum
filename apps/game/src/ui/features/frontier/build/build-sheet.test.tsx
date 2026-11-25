@@ -367,15 +367,15 @@ describe("the build sheet", () => {
     expect(groups[0]).toEqual(["economy", ["Farm", "Workshop"]]);
     expect(groups[1]?.[1]).toEqual(expect.arrayContaining(["Barracks", "Range"]));
     expect(groups[2]?.[1]).toContain("Supply yard");
-    expect(sheet.card("Range").querySelector("[data-build-needs]")?.textContent).toBe("Requires City");
-    expect(sheet.card("Supply yard").querySelector("[data-build-needs]")?.textContent).toBe("Requires Kingdom");
+    expect(sheet.card("Range").querySelector("[data-build-needs]")?.textContent).toBe("Unlocks at City");
+    expect(sheet.card("Supply yard").querySelector("[data-build-needs]")?.textContent).toBe("Unlocks at Kingdom");
     act(() => sheet.card("Farm").click());
     expect(sheet.host.querySelector("[data-build-does]")?.textContent).toMatch(/^\+[\d,.]+\/(?:s|min)$/);
     expect(sheet.button("Build")).toBeDefined();
 
     act(() => sheet.card("Range").click());
     expect(sheet.card("Range").getAttribute("aria-pressed")).toBe("true");
-    expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe("Requires City");
+    expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe("Unlocks at City");
     expect(sheet.button("Build")).toBeUndefined();
     sheet.close();
   });
@@ -428,7 +428,7 @@ describe("the build sheet", () => {
       }
       act(() => lockedButton.click());
       expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe(
-        `Requires ${rankName(buildingOpensAtLevel(category))}`,
+        `Unlocks at ${rankName(buildingOpensAtLevel(category))}`,
       );
       expect(footPrice(sheet.host)).toBe(costLine(expected));
     }
@@ -450,7 +450,7 @@ describe("the build sheet", () => {
     const rangeButton = sheet.card(buildingName(BuildingType.ResourceCrossbowmanT1, true));
     expect(rangeButton.querySelector("[data-build-price]")?.textContent).toBe(FREE);
     act(() => rangeButton.click());
-    expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe("Requires City");
+    expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe("Unlocks at City");
     expect(footPrice(sheet.host)).toBe(FREE);
     sheet.close();
   });

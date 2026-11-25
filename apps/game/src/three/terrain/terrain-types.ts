@@ -118,7 +118,6 @@ export interface TerrainPageDiagnostics {
   biomeMismatchCount: number;
   exploredSurfaceSamples: number;
   fogTerrainCells: number;
-  frontierEdges: number;
   geometryBytes: number;
   prepareMs: number;
   roadSegments: number;

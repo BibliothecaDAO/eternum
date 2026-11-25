@@ -18,6 +18,7 @@ export interface DeepSiteView {
   ring: number;
   open: boolean;
   opensAt: number;
+  entered: number;
   buildingPay: number;
   day: number;
   beastTroops: bigint;
@@ -119,6 +120,7 @@ function deepSiteView(
     ring: site.ring,
     open: isOpen(site),
     opensAt: siteRing(today, site).realms,
+    entered,
     buildingPay: deepBuildingPay(today.rules.building_pay, openOfKind),
     day: today.index,
     beastTroops: troops,

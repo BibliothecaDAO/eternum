@@ -6,6 +6,7 @@ import { deepSites, RESOURCE_PRECISION, TileOccupier } from "@bibliothecadao/typ
 import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { gameRegistryRow } from "../../../../packages/core/src/test-support/game-registry";
+import { dayAtIndex } from "../../../../packages/core/src/utils/days";
 
 export const siteGuardTroops = (ticksUntilClear: number, clearableTroops = 1200) =>
   clearableTroops + ticksUntilClear * frontierSeasonOnePreset.deep.lossPerTick;
@@ -23,8 +24,18 @@ export const REST_TICKS = 3;
 const STAMINA_GAIN_PER_TICK = release.definition.rules.troop_stamina_config.stamina_knight_max / REST_TICKS;
 export const DAY_UNIT_SECONDS = 14_400;
 const REGION_SPACING = 100;
-export const SEASON_START = Math.floor(Date.now() / 1000) - 13 * 3_600;
-export const TODAY = 1;
+export const TODAY = frontierSeasonOnePreset.banes.quietDays;
+const TODAY_OPENS_AFTER = dayAtIndex(
+  {
+    seed: 1n,
+    startMainAt: 0,
+    scheduledEndAt: 40 * DAY_UNIT_SECONDS,
+    endAt: 40 * DAY_UNIT_SECONDS,
+    dayUnitSeconds: DAY_UNIT_SECONDS,
+  },
+  TODAY,
+).start;
+export const SEASON_START = Math.floor(Date.now() / 1000) - TODAY_OPENS_AFTER - 3_600;
 
 export type ArmyState = {
   amount: number;
@@ -51,7 +62,7 @@ export function mistFacts(endedAt: number | undefined, rolled: number | null = n
           key: "0xb01",
           value: {
             game_id: GAME_ID,
-            chance_step: 20,
+            chance_step: frontierSeasonOnePreset.banes.chanceStep,
             quorum_percent: 25,
             beast_percent: 150,
             stamina_percent: 50,
