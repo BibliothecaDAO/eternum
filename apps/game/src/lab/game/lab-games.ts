@@ -5,7 +5,7 @@ import { battleTargetScenario, deepBattleTargetScenario } from "./battle-target-
 import { townScenario } from "./town-scenario";
 import { scoutsScenario } from "./scouts-scenario";
 import { siteEffectsScenario } from "./site-effects-scenario";
-import { baneScenario } from "./bane-scenario";
+import { baneEconomyScenario, baneScenario } from "./bane-scenario";
 import { staminaScenario } from "./stamina-scenario";
 import { questScenario } from "./quest-scenario";
 import { aspectSettleInvitedScenario, aspectSettleScenario } from "./aspect-settle-scenario";
@@ -89,6 +89,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   shop: shopScenario,
   quest: questScenario,
   "bane-world": () => baneScenario("world"),
+  "bane-economy": baneEconomyScenario,
   "bane-again": () => baneScenario("again"),
   "bane-late": () => baneScenario("late"),
   "bane-team": () => baneScenario("team"),

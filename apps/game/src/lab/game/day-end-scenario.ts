@@ -16,6 +16,7 @@ import type { MadeResource } from "@/ui/features/frontier/stores";
 
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { armyProgress, spireScenario } from "./spire-scenario";
+import { UNLIMITED_OUTPUT } from "./starting-home-facts";
 
 /** The rows changed here, under the keys their fixtures write them by (deploy, kit lab and site fixtures). */
 const FIXTURE_KEYS = {
@@ -63,9 +64,14 @@ export const dayEndScenario = (): LabScenario => {
   const { endsAt } = dayClock(rules, spire.startsAt);
   if (endsAt === undefined) throw new Error("The spire's game opens outside its season");
   const startsAt = endsAt - MINUTES_LEFT * 60;
-  store.applyFacts(frontierRates(store) as never);
-  store.applyFacts([...realmProducing(store), ...armyProgressed(store, startsAt), ...researchPriced()] as never);
+  withRealmEconomy(store);
+  store.applyFacts([...armyProgressed(store, startsAt), ...researchPriced()] as never);
   return { ...spire, startsAt };
+};
+
+export const withRealmEconomy = (store: NativeFactStore) => {
+  store.applyFacts(frontierRates(store) as never);
+  store.applyFacts(realmProducing(store) as never);
 };
 
 const realmProducing = (store: NativeFactStore): LabFact[] => {
@@ -171,7 +177,7 @@ const production = (store: NativeFactStore, resource: MadeResource, buildings: n
       resource_type: resource,
       building_count: buildings + (castle ? 1 : 0),
       production_rate: String(rate),
-      output_amount_left: "0",
+      output_amount_left: String(UNLIMITED_OUTPUT),
       last_settled_at: 1,
     },
   };

@@ -11,6 +11,7 @@ import { type LabScenario, wire } from "./lab-chain";
 import { withoutArmies } from "./day-turn-scenario";
 import { questScenario } from "./quest-scenario";
 import { revealedTile } from "./spire-scenario";
+import { withRealmEconomy } from "./day-end-scenario";
 
 type BaneCase = "world" | "again" | "late" | "team";
 
@@ -127,6 +128,12 @@ export function baneScenario(stage: BaneCase): LabScenario {
       ];
     },
   };
+}
+
+export function baneEconomyScenario(): LabScenario {
+  const scenario = baneScenario("world");
+  withRealmEconomy(scenario.store);
+  return scenario;
 }
 
 function receipt(model: "LaborGrant" | "BaneGrant", account: string, labor: bigint, essence: bigint) {
