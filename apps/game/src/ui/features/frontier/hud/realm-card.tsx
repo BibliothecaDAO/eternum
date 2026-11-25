@@ -91,19 +91,28 @@ export const RealmCard = ({
           </span>
         </span>
       </button>
-      {onUpgradeCastle && rankUp && (
+      {onUpgradeCastle && rankUp && rankUp.missing === undefined && (
         <button
           type="button"
           data-realm-castle
           className="frontier-rank-up"
-          aria-label={rankUp.missing ? `${UPGRADE} · ${rankUp.name}: ${rankUp.missing}` : `${UPGRADE} · ${rankUp.name}`}
-          data-tip={rankUp.missing}
-          disabled={rankUp.missing !== undefined}
+          aria-label={`${UPGRADE} · ${rankUp.name}`}
           onClick={onUpgradeCastle}
         >
           {rankUp.name}
           <Icon name="arrow-up" size={12} />
         </button>
+      )}
+      {onUpgradeCastle && rankUp?.missing !== undefined && (
+        <span
+          role="img"
+          data-realm-castle
+          className="frontier-rank-label"
+          aria-label={`${rankUp.name}: ${rankUp.missing}`}
+          data-tip={rankUp.missing}
+        >
+          {rankUp.name}
+        </span>
       )}
       {onClose && <HudIconButton icon="close" label={CLOSE} kind="quiet" size="sm" onClick={onClose} />}
     </header>

@@ -185,10 +185,10 @@ it("drops what Chat kept once the player picks again: a bare tile is nothing to 
   }
 });
 
-it("shares the realm a desktop player selected, chat opened from its place in the top bar", async () => {
+it("shares the realm a desktop player selected, chat opened from its strip at the bottom right", async () => {
   await renderHud(1440);
   await act(async () => useUIStore.getState().selectOnMap({ kind: "structure", entityId: REALM }));
-  const chat = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Chat"]')!;
+  const chat = host.querySelector<HTMLButtonElement>('.frontier-chat-dock button[aria-label="Chat strip"]')!;
   await act(async () => chat.click());
   await connect();
   expect(useUIStore.getState().mapSelection).toBeNull();

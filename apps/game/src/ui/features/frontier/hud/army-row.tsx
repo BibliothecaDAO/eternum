@@ -125,12 +125,11 @@ export const OpenSlotCard = ({
   </div>
 );
 
-export const LockedSlotCard = ({ number, rank }: { number: number; rank: string }) => (
-  <div className="frontier-slot" data-slot-state="locked">
-    <SlotNumber number={number} />
-    <Icon name="lock" size={16} />
-    <span className="frontier-slot__detail">{ARMY_SLOT_WORDS.unlocksAt(number, rank)}</span>
-  </div>
+export const LockedSlotLine = ({ number, rank }: { number: number; rank: string }) => (
+  <p className="frontier-slots__locked">
+    <Icon name="lock" size={14} />
+    {ARMY_SLOT_WORDS.unlocksAt(number, rank)}
+  </p>
 );
 
 export const ArmySlotsCard = ({ count, children }: { count?: string; children: ReactNode }) => (

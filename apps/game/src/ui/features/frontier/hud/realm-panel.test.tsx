@@ -9,7 +9,7 @@ vi.mock("@/ui/features/event-feed/quick-feed", async (original) => ({
 }));
 
 import { dayClock } from "./day-clock";
-import { DayPill } from "./day-pill";
+import { DayMedallion } from "./day-pill";
 import { FrontierPlaces } from "./frontier-desktop";
 import { isTroopStore, STORE_KINDS } from "../stores";
 import { RealmCard } from "./realm-card";
@@ -52,10 +52,11 @@ it("says the day and the time left in the top bar, and when the day ends and how
     { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400, endAt: 21 * 20 * 14_400 },
     3_600,
   );
-  act(() => root.render(<DayPill clock={clock} />));
-  const pill = host.querySelector('[aria-label="Day clock"]')!;
-  expect(pill.textContent).toContain(`Day ${clock.day}`);
-  expect(pill.querySelector(".frontier-day-readout__left")?.textContent).toBeTruthy();
+  act(() => root.render(<DayMedallion clock={clock} />));
+  const pill = host.querySelector('[role="timer"]')!;
+  expect(pill.getAttribute("aria-label")).toContain(`Day ${clock.day}`);
+  expect(pill.querySelector(".frontier-day-dial__left")?.textContent).toBeTruthy();
+  expect(pill.querySelector("img")?.getAttribute("src")).toBe("/images/hud/day-medallion-calm.webp");
   expect(pill.getAttribute("data-tip")).toMatch(/^Day ends \d\d:\d\d · .+ left · Tomorrow lasts /);
 });
 
@@ -64,37 +65,40 @@ it("reads a 24-hour day in hours on the top bar and its hover, as Play does (liv
     { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400, endAt: 21 * 20 * 14_400 },
     3_600,
   );
-  act(() => root.render(<DayPill clock={{ ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 }} />));
-  const pill = host.querySelector('[aria-label="Day clock"]')!;
-  expect(pill.textContent).toContain(`Day ${day.day}`);
+  act(() => root.render(<DayMedallion clock={{ ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 }} />));
+  const pill = host.querySelector('[role="timer"]')!;
+  expect(pill.getAttribute("aria-label")).toContain(`Day ${day.day}`);
   expect(pill.textContent).toContain("24h");
   expect(pill.getAttribute("data-tip")).toMatch(/ · Tomorrow lasts 24h$/);
 });
 
-it("offers a desktop's four cornice places in order, each a panel its press opens and a second press closes", () => {
+it("offers a desktop's four places in order, Settings named, each a panel its press opens and a second press closes", () => {
   const onSurface = vi.fn();
-  const places = (surface: "research" | "feed" | "season" | "chat" | null, research = false) => {
+  const places = (surface: "research" | "feed" | "season" | "settings" | null, research = false) => {
     act(() => root.render(<FrontierPlaces surface={surface} onSurface={onSurface} research={research} />));
     return [...host.querySelectorAll("nav button")] as HTMLButtonElement[];
   };
   const closed = places(null, true);
-  expect(closed.map((button) => [button.getAttribute("aria-label"), button.getAttribute("aria-selected")])).toEqual([
+  expect(
+    closed.map((button) => [button.textContent?.replace(/\d/g, ""), button.getAttribute("aria-selected")]),
+  ).toEqual([
     ["Research", "false"],
-    ["Season", "false"],
     ["Feed", "false"],
-    ["Chat", "false"],
+    ["Season", "false"],
+    ["Settings", "false"],
   ]);
   expect(closed[0].querySelector('[data-shape="diamond"]')).not.toBeNull();
-  expect(closed[2].textContent).toContain("2");
-  act(() => closed[2].click());
+  expect(closed[1].textContent).toContain("2");
+  act(() => closed[1].click());
   expect(onSurface).toHaveBeenLastCalledWith("feed");
   const feed = places("feed");
-  expect(feed[2].getAttribute("aria-selected")).toBe("true");
-  expect(feed[2].textContent).not.toContain("2");
-  act(() => feed[2].click());
-  expect(onSurface).toHaveBeenLastCalledWith(null);
+  expect(feed[1].getAttribute("aria-selected")).toBe("true");
+  expect(feed[1].textContent).not.toContain("2");
   act(() => feed[1].click());
-  expect(onSurface).toHaveBeenLastCalledWith("season");
+  expect(onSurface).toHaveBeenLastCalledWith(null);
+  act(() => feed[3].click());
+  expect(onSurface).toHaveBeenLastCalledWith("settings");
+  expect(places("settings")[3].getAttribute("aria-selected")).toBe("true");
 });
 
 it("renders the Aspect medallion tinted in the Aspect color and Order of Power below the Realm name on the realm card", () => {
@@ -188,7 +192,7 @@ it("shows every stock on the desktop realm card, Fragments opening the shop and 
   expect(host.querySelector('[data-store="fragments"] button')).toBeNull();
 });
 
-it("offers the next rank only when the realm can take it now, else names what is missing", () => {
+it("offers the next rank only when the realm can take it now, else shows it as a quiet label naming what is missing", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const host = document.createElement("div");
   document.body.append(host);
@@ -208,10 +212,11 @@ it("offers the next rank only when the realm can take it now, else names what is
       />,
     ),
   );
-  const rankUp = host.querySelector<HTMLButtonElement>("[data-realm-castle]")!;
-  expect([rankUp.disabled, rankUp.getAttribute("aria-label")]).toEqual([
-    true,
-    "Upgrade · Empire: Needs 15,000 Labor, have 9,640",
+  const rankUp = host.querySelector<HTMLElement>("[data-realm-castle]")!;
+  expect([rankUp.tagName, rankUp.textContent, rankUp.getAttribute("aria-label")]).toEqual([
+    "SPAN",
+    "Empire",
+    "Empire: Needs 15,000 Labor, have 9,640",
   ]);
   act(() => rankUp.click());
   expect(onUpgradeCastle).not.toHaveBeenCalled();
