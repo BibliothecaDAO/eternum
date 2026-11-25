@@ -578,6 +578,27 @@ describe("a sheet (owner, 22 October 2026: mobile direction A)", () => {
   });
 });
 
+it("marks its body while more of what it holds lies below the edge, and not once the reader reaches the end", () => {
+  act(() =>
+    root.render(
+      <HudSheet label="Feed" onClose={vi.fn()}>
+        rows
+      </HudSheet>,
+    ),
+  );
+  const body = host.querySelector<HTMLElement>('section[aria-label="Feed"] .ui-frame__body')!;
+  expect(body.hasAttribute("data-more-below")).toBe(false);
+  Object.defineProperties(body, {
+    scrollHeight: { configurable: true, value: 500 },
+    clientHeight: { configurable: true, value: 200 },
+  });
+  act(() => body.dispatchEvent(new Event("scroll")));
+  expect(body.hasAttribute("data-more-below")).toBe(true);
+  Object.defineProperty(body, "scrollTop", { configurable: true, value: 300 });
+  act(() => body.dispatchEvent(new Event("scroll")));
+  expect(body.hasAttribute("data-more-below")).toBe(false);
+});
+
 describe("a window", () => {
   it("is dragged by its bar and closed by its way out", () => {
     const close = vi.fn();
