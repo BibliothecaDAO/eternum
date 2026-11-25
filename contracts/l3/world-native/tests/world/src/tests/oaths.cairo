@@ -408,6 +408,19 @@ fn explore_to_shrine(d: super::Deployment, key: crate::troops::ExplorerKey, time
 }
 
 #[test]
+fn a_well_grants_the_client_vectors_share_of_the_bar_with_and_without_reflection() {
+    let data = read_txt(@FileTrait::new("../fixtures/oath-well-stamina.txt"));
+    let mut fields = data.span();
+    let mut rows = 0_u32;
+    while !fields.is_empty() {
+        let (held, maximum, granted): (u16, u64, u64) = Serde::deserialize(ref fields).unwrap();
+        assert_eq!(crate::oaths::well_stamina(held, maximum), granted);
+        rows += 1;
+    }
+    assert_eq!(rows, 40);
+}
+
+#[test]
 fn deep_loss_matches_the_client_vectors_with_and_without_vitriol() {
     let data = read_txt(@FileTrait::new("../fixtures/oath-deep-loss.txt"));
     let mut fields = data.span();
