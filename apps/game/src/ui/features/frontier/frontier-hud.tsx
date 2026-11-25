@@ -252,7 +252,7 @@ const FrontierHudBody = ({
         onClose={close}
       />
     ) : surface === "menu" ? (
-      <HudMenu onOpen={setSurface} onClose={close} events={feedUnread} shop={Boolean(own) && fragmentsHeld !== null} />
+      <HudMenu onOpen={setSurface} onClose={close} events={feedUnread} shop={Boolean(own)} />
     ) : undefined;
   const realmVisible = Boolean(shown) && surface === "realm";
   const placesState = {

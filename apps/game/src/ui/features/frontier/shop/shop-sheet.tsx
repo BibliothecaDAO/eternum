@@ -49,7 +49,7 @@ export const ShopSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]; 
   return reading && <ShopView {...reading} code={<ShopCodeField />} onGetFragments={getFragments} onClose={onClose} />;
 };
 
-export const ShopClosedView = ({ code, onClose }: { code: ReactNode; onClose: () => void }) => (
+const ShopClosedView = ({ code, onClose }: { code: ReactNode; onClose: () => void }) => (
   <HudSheet label={SHOP_WORDS.title} onClose={onClose}>
     <section data-shop="closed" className="flex flex-col gap-2">
       <HudRow
