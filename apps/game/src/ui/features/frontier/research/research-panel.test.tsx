@@ -581,3 +581,40 @@ it("marks a research done only when nothing is left to learn, and greys and bloc
   expect(onResearch).not.toHaveBeenCalled();
   expect(host.querySelector("[data-research-footer] .ui-price [data-short]")).not.toBeNull();
 });
+
+it("wears a node's tier as the kit's gem and its price as the kit's price, short where the realm cannot pay", () => {
+  const broke = readResearchTree({ ...MID_REALM, essence: 717 });
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={broke}
+        picked={null}
+        onPick={vi.fn()}
+        sending={new Set()}
+        fixFor={() => undefined}
+        onResearch={vi.fn()}
+        onClose={vi.fn()}
+        castleLevel={MID_REALM.castleLevel}
+      />,
+    ),
+  );
+  const card = (node: TreeNode) => host.querySelector(`[data-node='${node.key}']`)!;
+  const gems = broke.filter((node) => node.state !== "ready" && node.state !== "done" && node.tier > 0);
+  expect(gems.length).toBeGreaterThan(0);
+  for (const node of gems) {
+    expect([node.key, card(node).querySelector(".ui-tier")?.getAttribute("data-tier")]).toEqual([
+      node.key,
+      String(node.tier),
+    ]);
+    expect(card(node).querySelector(".research-state-pill")).toBeNull();
+  }
+  const priced = broke.filter((node) => node.state === "ready" || node.state === "short");
+  const owed = (node: TreeNode) =>
+    node.needs.flatMap((need) => ((need.kind === "essence" || need.kind === "labor") && need.need > 0 ? [need] : []));
+  expect(priced.some((node) => owed(node).some((need) => !need.met))).toBe(true);
+  for (const node of priced)
+    expect([
+      node.key,
+      [...card(node).querySelectorAll(".ui-price > span")].map((price) => price.hasAttribute("data-short")),
+    ]).toEqual([node.key, owed(node).map((need) => !need.met)]);
+});

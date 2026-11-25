@@ -112,13 +112,13 @@ export const DeployView = ({
       {troopsAtHome === 0 ? (
         troopsWait === undefined ? (
           <>
-            <HudNotice tone="warn" line={NO_TROOPS_AT_HOME} />
+            <HudNotice tone="bad" line={NO_TROOPS_AT_HOME} />
             <HudButton kind="primary" icon="barracks" onClick={onGoToRealm}>
               {BUILD}
             </HudButton>
           </>
         ) : (
-          <HudNotice tone="warn" line={noTroopsUntil(formatWait(troopsWait))} />
+          <HudNotice tone="bad" line={noTroopsUntil(formatWait(troopsWait))} />
         )
       ) : (
         tile === "none" && <HudNotice tone="warn" line={NO_OPEN_TILE} />
