@@ -173,7 +173,7 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   host does below and builds a Barracks (the Build sheet's offers and their prices are recorded as `offers`); the host
   builds a Barracks, sends an army into the mist, attacks a site beside one of its armies (revealing up to six tiles to
   find one) and chooses the first card of an Oath pick the fight opens, its cards' texts recorded (one left standing by
-  an earlier run is answered first). A surface attack is pressed only on a card that forecasts a win ("Victory likely");
+  an earlier run is answered first). A surface attack is pressed only on a card that forecasts a win ("Victory");
   when no site beside its armies forecasts a win (a loss, a guard that survives, or no forecast read), the account
   deploys its troops at home once with Max and searches on. Then the host enters the Deep through its Spire once the
   realm knows Spire lore, attacks an open site's beast and so holds it. The host then measures the Deep's catch-up:

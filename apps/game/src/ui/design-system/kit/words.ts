@@ -771,7 +771,6 @@ export const FIGHT_WORDS = {
   armyLost: "Your army is lost",
   /** Under the loss, in the panel's place, before it closes: what to do next. */
   armyLostNext: "Your troops died in battle. Deploy a new army from your Realm.",
-  victory: "Victory likely",
   holds: "The guard survives",
   defeated: "Defeated",
 } as const;
