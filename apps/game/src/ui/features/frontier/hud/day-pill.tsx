@@ -1,6 +1,15 @@
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { DAY, dayEnds, dayShort, dayLeft, dayLeftCompact, phraseText, TODAY, tomorrowLasts } from "@/ui/design-system/kit/words";
+import {
+  DAY,
+  dayEnds,
+  dayShort,
+  dayLeft,
+  dayLeftCompact,
+  phraseText,
+  TODAY,
+  tomorrowLasts,
+} from "@/ui/design-system/kit/words";
 import { useGameFinished } from "@/ui/features/world/containers/top-header/game-clock";
 import { GameFinishedPill } from "@/ui/features/world/containers/top-header/game-finished-pill";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";

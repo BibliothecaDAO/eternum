@@ -47,7 +47,12 @@ export function baneFace(day: BaneDay, store: NativeFactStore, gameId: number): 
   const world = worldBanes.find((each) => each.id === day.kind);
   if (!world || !isWorldBaneKind(day.kind)) throw new Error(`Unknown world bane ${day.kind}`);
   const rules = store.require("BaneRules", { game_id: gameId });
-  return { name: world.name, title: WORDS.worldBaneTitle(world.name), ...WORLD_BANE_EFFECTS[day.kind](rules), doubles: true };
+  return {
+    name: world.name,
+    title: WORDS.worldBaneTitle(world.name),
+    ...WORLD_BANE_EFFECTS[day.kind](rules),
+    doubles: true,
+  };
 }
 
 export const baneBroken = (day: BaneDay, now: number): boolean => day.endedAt !== 0 && day.endedAt <= now;

@@ -137,9 +137,9 @@ describe("the layer switch over the real layers", () => {
     const unlocked = researchedDay(3n);
     context.mapView = false;
     act(() => root.render(<LayerSwitch rules={unlocked.rules} realm={unlocked.realm} />));
-    expect(
-      host.querySelector('[data-place-switch] button[aria-label="Realm"]')!.getAttribute("aria-pressed"),
-    ).toBe("true");
+    expect(host.querySelector('[data-place-switch] button[aria-label="Realm"]')!.getAttribute("aria-pressed")).toBe(
+      "true",
+    );
   });
 });
 

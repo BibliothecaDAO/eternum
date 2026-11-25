@@ -6,7 +6,11 @@
   border-top-color: var(--hud-bad);
   background:
     radial-gradient(ellipse at 14% 0%, color-mix(in srgb, var(--hud-bad) 30%, transparent) 0%, transparent 55%),
-    linear-gradient(180deg, color-mix(in srgb, var(--hud-bad) 14%, var(--hud-surface-from)) 0%, var(--hud-surface-to) 100%);
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--hud-bad) 14%, var(--hud-surface-from)) 0%,
+      var(--hud-surface-to) 100%
+    );
 }
 .emissary-dock[data-tone="bane"] .emissary-dock__title {
   color: var(--hud-bad);

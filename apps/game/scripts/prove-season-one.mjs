@@ -13,7 +13,12 @@ const SEASON_SPENDS_FRAGMENTS = spendsFragments({ command_mask: BigInt(RELEASE.d
 /** Season 1's client presentations in the lab: each view's every case, on a desktop and on a phone, one still each. */
 const VIEWS = [
   { name: "deep-site", path: "/lab/season-one/deep-site", cases: [0, 1, 2, 3, 4], shown: "section[role=dialog]" },
-  { name: "quest-dock", path: "/lab/season-one/quest-dock", cases: [0, 1, 2, 3, 4, 5, 6], shown: "[data-quest-dock-lab]" },
+  {
+    name: "quest-dock",
+    path: "/lab/season-one/quest-dock",
+    cases: [0, 1, 2, 3, 4, 5, 6],
+    shown: "[data-quest-dock-lab]",
+  },
   { name: "opening", path: "/lab/season-one/opening", cases: [0, 1, 3, 7, 8], shown: "[data-opening-line]" },
   { name: "race", path: "/lab/season-one/race", cases: [0, 1, 2], shown: "[data-race-stage][data-ready]" },
   { name: "race", path: "/lab/season-one/race", cases: [3], shown: "[data-aspect-page]" },

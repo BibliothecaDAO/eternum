@@ -281,9 +281,7 @@ const FrontierHudBody = ({
     (surface === "season" &&
       headerFacts.store.get("RaceRules", { game_id: configManager.getActiveGameId() }) !== undefined);
   const showOpening = !(desktop && widePage);
-  const questDock = own && questOpen && (
-    <QuestDock realm={own} rules={rules} layout={desktop ? "desktop" : "phone"} />
-  );
+  const questDock = own && questOpen && <QuestDock realm={own} rules={rules} layout={desktop ? "desktop" : "phone"} />;
   const openingNotice = showOpening && (questDock || opening.line || opening.offer) && (
     <div data-opening-notice className="flex flex-col gap-1.5 empty:hidden">
       {questDock}

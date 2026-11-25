@@ -69,7 +69,11 @@ export const QuestDock = ({
       speaker={questSpeaker(reading)}
       quest={reading ? dayQuestFace(reading.quest.id) : null}
       reading={reading ? questReading(reading) : null}
-      bane={reading?.bane ? baneStanding(baneFace(reading.bane, setup.store, realm.game_id), reading.bane, rules, now) : null}
+      bane={
+        reading?.bane
+          ? baneStanding(baneFace(reading.bane, setup.store, realm.game_id), reading.bane, rules, now)
+          : null
+      }
       collecting={collecting}
       onCollect={collect}
       onClose={closeQuestDock}

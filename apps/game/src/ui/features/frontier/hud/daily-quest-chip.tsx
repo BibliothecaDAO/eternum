@@ -46,7 +46,9 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
         data-hud-part=""
         data-ready={ready || undefined}
         data-tone={bane ? "bane" : undefined}
-        aria-label={bane ? `${DAY_BANNER_WORDS.bane}: ${bane.name}` : face ? `${face.name} ${count}` : DAY_BANNER_WORDS.today}
+        aria-label={
+          bane ? `${DAY_BANNER_WORDS.bane}: ${bane.name}` : face ? `${face.name} ${count}` : DAY_BANNER_WORDS.today
+        }
         className="frontier-quest-orb"
         onClick={toggleQuestDock}
       >

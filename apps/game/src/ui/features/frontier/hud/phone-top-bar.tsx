@@ -39,7 +39,15 @@ type TopBarViewProps = {
   realmCard?: ReactNode;
 };
 
-export const TopBarView = ({ stocks, clock, placeSwitch, quest, notice, spectatorChip, realmCard }: TopBarViewProps) => (
+export const TopBarView = ({
+  stocks,
+  clock,
+  placeSwitch,
+  quest,
+  notice,
+  spectatorChip,
+  realmCard,
+}: TopBarViewProps) => (
   <div className="frontier-phone-top">
     <div className="frontier-bar pointer-events-auto">
       {placeSwitch}

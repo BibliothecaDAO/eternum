@@ -40,7 +40,16 @@ export interface QuestDockProps {
   onClose: () => void;
 }
 
-export const QuestDockView = ({ layout, speaker, quest, reading, bane, collecting, onCollect, onClose }: QuestDockProps) => {
+export const QuestDockView = ({
+  layout,
+  speaker,
+  quest,
+  reading,
+  bane,
+  collecting,
+  onCollect,
+  onClose,
+}: QuestDockProps) => {
   const title = bane ? bane.title : quest ? questTitle(quest, layout) : WORDS.quest;
   const count = reading && !bane && (
     <span
