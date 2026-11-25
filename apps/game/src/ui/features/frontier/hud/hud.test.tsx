@@ -203,7 +203,7 @@ describe("the status strip", () => {
       ),
     );
     const bar = host.querySelector(".frontier-bar")!;
-    expect([...bar.children].map((part) => part.textContent)).toEqual(["Places", "125K9K3K", "Day111h"]);
+    expect([...bar.children].map((part) => part.textContent)).toEqual(["Places", "125K9K3K", "D111h"]);
     const realm = bar.querySelector<HTMLButtonElement>('button[aria-label="Duskbite"]')!;
     expect([...realm.querySelectorAll(".frontier-stock-chip")].map((chip) => chip.getAttribute("data-store"))).toEqual([
       "essence",

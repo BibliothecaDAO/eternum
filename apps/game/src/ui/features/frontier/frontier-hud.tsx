@@ -198,7 +198,9 @@ const FrontierHudBody = ({
   const feedUnread = useUnreadImportantCount(surface === "feed");
   const shownName = shown ? modeConfig.structure.getName(shown).name : null;
   const questOpen = useQuestDockOpen();
-  useEffect(() => closeQuestDock, []);
+  useEffect(() => {
+    return closeQuestDock;
+  }, []);
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
   const switchView = (toRealm: boolean) => {
