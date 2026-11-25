@@ -13,6 +13,7 @@
 /results/:id / 200
 /profile / 200
 /profile/settings / 200
+/cosmetics / 200
 /shop / 200
 /scroll / 200
 /chat / 200

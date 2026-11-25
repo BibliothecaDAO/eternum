@@ -219,6 +219,26 @@ describe("the status strip", () => {
     expect(host.querySelector(".frontier-phone-float__quest")?.textContent).toBe("Quest");
   });
 
+  it("opens a phone's quest on its bubble's own row and leaves the lesson showing on the row under it", () => {
+    act(() =>
+      root.render(
+        <TopBarView
+          clock={<span>Day</span>}
+          stocks={{ stores: [store("essence", 125_000)] }}
+          notice={<aside aria-label="Lesson" />}
+          quest={<button type="button" data-daily-quest-chip="" />}
+          questCard={<section data-daily-quest="" />}
+        />,
+      ),
+    );
+    const float = host.querySelector(".frontier-phone-float")!;
+    expect([...float.querySelector(".frontier-phone-float__quest")!.children].map((part) => part.outerHTML)).toEqual([
+      '<section data-daily-quest=""></section>',
+      '<button type="button" data-daily-quest-chip=""></button>',
+    ]);
+    expect(float.querySelector('.frontier-phone-float__lead > aside[aria-label="Lesson"]')).not.toBeNull();
+  });
+
   it("puts the open realm card right under the bar, in the lesson's and the quest's place", () => {
     act(() =>
       root.render(

@@ -103,6 +103,8 @@ const arrives = (id: string) =>
     } as never),
   );
 const resize = (width: number) => act(() => setViewportWidth(width));
+const strip = () => host.querySelector<HTMLElement>('[aria-label="Chat strip"]');
+const stripUnread = () => strip()?.querySelector('[aria-label^="Unread chat messages"]')?.textContent ?? null;
 
 describe("chat in the app, on a phone", () => {
   it("is a tab of its own, its unread counted on it; pressed, it opens the page the chat fills", async () => {
@@ -127,19 +129,14 @@ describe("chat in the app, on a phone", () => {
 });
 
 describe("chat in the app, page or pane, never both", () => {
-  it("keeps Chat's page, one chat and open, when the phone's window grows to a desktop's", async () => {
+  it("keeps Chat's page, one chat and open, with no dock over it, when the phone's window grows to a desktop's", async () => {
     await open("/", 390);
     act(() => place("Chat")!.click());
     await resize(1440);
     expect(host.querySelector('[data-band="bar"]')).not.toBeNull();
     expect(chats()).toEqual([["Global", "Messages"]]);
-    expect(host.querySelector('section[aria-label="Chat"]')).toBeNull();
-    expect(place("Chat")!.getAttribute("aria-current")).toBe("page");
-    expect(shellOpen()).toBe(true);
-
-    // The bar's Chat there is the place the player is: pressed, still one chat.
-    act(() => place("Chat")!.click());
-    expect(chats()).toEqual([["Global", "Messages"]]);
+    expect(strip()).toBeNull();
+    expect(place("Chat")).toBeUndefined();
     expect(shellOpen()).toBe(true);
   });
 
@@ -147,9 +144,7 @@ describe("chat in the app, page or pane, never both", () => {
     await open("/chat", 1440);
     connected();
     expect(chats()).toEqual([["Global", "Messages"]]);
-    // The bar's Chat, pressed there, and Escape: still the one chat, still open.
-    act(() => place("Chat")!.click());
-    expect(chats()).toEqual([["Global", "Messages"]]);
+    expect(strip()).toBeNull();
     act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
     expect(chats()).toEqual([["Global", "Messages"]]);
     expect(shellOpen()).toBe(true);
@@ -159,30 +154,45 @@ describe("chat in the app, page or pane, never both", () => {
     expect(useRealtimeChatStore.getState().unreadWorldTotal).toBe(0);
   });
 
-  it("opens the pane over Play from the bar, reading what was counted, and closes it with Escape: then chat is closed", async () => {
+  it("takes Chat out of a desktop's bar and docks it at the page's foot, showing the last message and what is unread", async () => {
     await open("/", 1440);
     connected();
     arrives("a1");
     arrives("a2");
-    expect(place("Chat")!.querySelector("[data-count]")!.textContent).toBe("2");
+    expect(place("Chat")).toBeUndefined();
+    expect(strip()!.textContent).toContain("hello a2");
+    expect(stripUnread()).toBe("2");
     expect(chats()).toEqual([]);
+  });
 
-    act(() => place("Chat")!.click());
+  it("opens the dock's pane over Play from its strip, reading what was counted, and closes it with Escape: then chat is closed", async () => {
+    await open("/", 1440);
+    connected();
+    arrives("a1");
+    arrives("a2");
+
+    act(() => strip()!.click());
     const pane = host.querySelector('section[aria-label="Chat"]')!;
-    // Over Play, which stays: the pane is no page of its own.
     expect(host.querySelector('[data-band="body"]')!.textContent).not.toContain("Global");
     expect(pane.querySelector('[data-hud-mode="app"]')).not.toBeNull();
     expect(chats()).toEqual([["Global", "Messages"]]);
-    expect(place("Chat")!.getAttribute("aria-current")).toBe("page");
+    expect(strip()!.getAttribute("aria-expanded")).toBe("true");
     expect(shellOpen()).toBe(true);
-    // Global, shown, is read.
-    expect(place("Chat")!.querySelector("[data-count]")).toBeNull();
+    expect(stripUnread()).toBeNull();
 
     act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
     expect(chats()).toEqual([]);
     expect(shellOpen()).toBe(false);
     arrives("a3");
-    expect(place("Chat")!.querySelector("[data-count]")!.textContent).toBe("1");
+    expect(stripUnread()).toBe("1");
+  });
+
+  it("asks a desktop player not signed in to sign in from the dock's strip, and opens no chat", async () => {
+    session.current = null;
+    await open("/", 1440);
+    expect(strip()!.textContent).toContain(CHAT_WORDS.signInToChat);
+    act(() => strip()!.click());
+    expect(chats()).toEqual([]);
   });
 });
 

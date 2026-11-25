@@ -65,7 +65,7 @@ import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
-import type { PreparedTerrainPage, TerrainCellInput } from "@/three/terrain/terrain-types";
+import type { PreparedTerrainPage, TerrainCellInput, TerrainPageRequest } from "@/three/terrain/terrain-types";
 import {
   type BuildingInstanceAction,
   buildingEntrance,
@@ -192,6 +192,21 @@ interface RealmModelContext {
 
 const structureStage = (tiles: BuildingTiles, realmId: ID): RealmLevels | StructureProgress =>
   tiles.structureType() === StructureType.Hyperstructure ? StructureProgress.STAGE_3 : tiles.getRealmLevel(realmId);
+
+interface RealmBinding {
+  tiles: BuildingTiles;
+  realmId: ID;
+  center: HexPosition;
+  stage: RealmLevels | StructureProgress;
+}
+
+interface RealmLayout {
+  matrices: Record<BiomeType | "Empty" | string, Matrix4[]>;
+  buildings: HexceptionBuilding[];
+  highlights: HexPosition[];
+  plots: { position: HexPosition; bare: boolean }[];
+  mapHexes: Set<string>;
+}
 
 const generateHexPositions = (center: HexPosition, radius: number) =>
   getLocalHexDisk(center, radius).map((cell) => ({
@@ -325,6 +340,7 @@ export default class HexceptionScene extends HexagonScene {
   // The map hexes the local view's ground shows, and whether the grid is behind its facts: one of those tiles, or the
   // castle's level, changed since it was drawn.
   private shownMapHexes = new Set<string>();
+  private pageAhead: { request: string; page: Promise<PreparedTerrainPage> } | null = null;
   private gridIsStale = false;
   private readonly localZoomPersistDebounceMs = 500;
   private localZoomPersistTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -1344,8 +1360,7 @@ export default class HexceptionScene extends HexagonScene {
     this.gridBuilds.start({
       layOut: () => runWithFrameWorkOwner("scene:hexception:grid", () => this.layOutGridCells(radius)),
       loadModels: () => this.loadLaidOutModels(mainStructureType),
-      preparePage: (terrainMatricesByBiome) =>
-        this.proceduralTerrain.preparePageAsync(this.terrainPageRequest(terrainMatricesByBiome)),
+      preparePage: (terrainMatricesByBiome) => this.prepareShownPage(terrainMatricesByBiome),
       present: (page) =>
         runWithFrameWorkOwner("scene:hexception:grid", () => this.presentGrid(page, mainStructureType)),
       release: releaseGridMatrices,
@@ -1354,24 +1369,57 @@ export default class HexceptionScene extends HexagonScene {
 
   /** Each cell of the realm and its surroundings, as a matrix under its biome; the buildable hexes are registered. */
   private layOutGridCells(radius: number): Record<BiomeType | "Empty" | string, Matrix4[]> {
-    const dummy = new Object3D();
-    const terrainMatricesByBiome = emptyTerrainMatricesByBiome();
-    const regions = getLocalTerrainRegions(this.tileManager.getHexCoords(), radius);
-    this.highlights = [];
-    this.shownMapHexes.clear();
     this.gridIsStale = false;
+    const layout = this.layOutRealm(this.shownRealmBinding(), radius);
+    this.highlights = layout.highlights;
+    this.shownMapHexes = layout.mapHexes;
+    this.buildings = layout.buildings;
     // The buildable set belongs to this realm and its level; a previous realm's must not linger.
     this.interactiveHexManager.clearHexes();
     this.applyPlotLook();
-
-    for (const { center, targetHex, isMainHex } of regions) {
-      if (isMainHex) {
-        this.computeMainHexMatrices(radius, dummy, center, targetHex, terrainMatricesByBiome);
-      } else {
-        this.computeNeighborHexMatrices(radius, dummy, center, targetHex, terrainMatricesByBiome);
-      }
+    for (const { position, bare } of layout.plots) {
+      this.interactiveHexManager.addHex({ col: position.col, row: position.row });
+      this.interactiveHexManager.setBandBare(position, bare);
     }
-    return terrainMatricesByBiome;
+    return layout.matrices;
+  }
+
+  private shownRealmBinding(): RealmBinding {
+    return {
+      tiles: this.tileManager,
+      realmId: this.shownRealmId,
+      center: { col: this.centerColRow[0], row: this.centerColRow[1] },
+      stage: this.structureStage,
+    };
+  }
+
+  private layOutRealm(binding: RealmBinding, radius: number): RealmLayout {
+    const dummy = new Object3D();
+    const layout: RealmLayout = {
+      matrices: emptyTerrainMatricesByBiome(),
+      buildings: [],
+      highlights: [],
+      plots: [],
+      mapHexes: new Set<string>(),
+    };
+    for (const { center, targetHex, isMainHex } of getLocalTerrainRegions(binding.tiles.getHexCoords(), radius)) {
+      const existingBuildings = isMainHex ? this.boardBuildings(binding.tiles, binding.realmId) : [];
+      this.computeHexMatrices(binding, layout, radius, dummy, center, targetHex, isMainHex, existingBuildings);
+    }
+    return layout;
+  }
+
+  private prepareShownPage(
+    terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>,
+  ): Promise<PreparedTerrainPage> {
+    const center = this.shownRealmBinding().center;
+    return this.preparePage(this.terrainPageRequest(terrainMatricesByBiome, this.buildings, center));
+  }
+
+  private preparePage(request: TerrainPageRequest): Promise<PreparedTerrainPage> {
+    const ahead = this.pageAhead;
+    this.pageAhead = null;
+    return ahead?.request === JSON.stringify(request) ? ahead.page : this.proceduralTerrain.preparePageAsync(request);
   }
 
   private applyPlotLook(): void {
@@ -1381,12 +1429,16 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   /** The terrain page request for the laid-out cells: only a cell with a building gets the packed structure pad. */
-  private terrainPageRequest(terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>) {
-    const fallbackBiome = this.localBiome(this.centerColRow[0], this.centerColRow[1]);
+  private terrainPageRequest(
+    terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>,
+    buildings: readonly HexceptionBuilding[],
+    realmCenter: HexPosition,
+  ) {
+    const fallbackBiome = this.localBiomeAround(realmCenter, realmCenter.col, realmCenter.row);
     const cellsByKey = new Map<string, TerrainCellInput>();
     const worldPosition = new Vector3();
     const builtKeys = new Set(
-      this.buildings.map((building) => {
+      buildings.map((building) => {
         worldPosition.setFromMatrixPosition(building.matrix);
         const coordinate = LOCAL_HEX_SPACE.hexForPosition(worldPosition);
         return `${coordinate.col}:${coordinate.row}`;
@@ -1413,7 +1465,7 @@ export default class HexceptionScene extends HexagonScene {
     return createHexceptionTerrainRequest(
       cellsByKey.values(),
       configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
-      `hexception:${this.centerColRow[0]},${this.centerColRow[1]}`,
+      `hexception:${realmCenter.col},${realmCenter.row}`,
     );
   }
 
@@ -1593,15 +1645,39 @@ export default class HexceptionScene extends HexagonScene {
 
   public override prepareWhileFlying(): void {
     const position = resolvePlayRouteTarget(window.location).hexRealmPosition;
-    const structure = position == null ? undefined : this.readRouteStructure(position);
-    if (!structure) return;
+    const realm = position == null ? undefined : this.readRouteRealm(position);
+    if (!realm) return;
+    this.loadRealmModels(realm);
+    this.preparePageAhead(realm);
+  }
+
+  private readRouteRealm(position: HexPosition): RealmBinding | undefined {
+    const structure = this.readRouteStructure(position);
+    const site = structure && structureMapPosition(this.game.store, structure);
+    if (!structure || !site) return undefined;
     const realmId = safeInteger(structure.entity_id);
     const tiles = requireActiveGameClient().views.buildingTiles(realmId);
-    const realm = { realmId, tiles, stage: structureStage(tiles, realmId), mainStructureType: tiles.structureType() };
+    return { tiles, realmId, center: { col: site.x, row: site.y }, stage: structureStage(tiles, realmId) };
+  }
+
+  private loadRealmModels({ tiles, realmId, stage }: RealmBinding): void {
+    const realm = { realmId, tiles, stage, mainStructureType: tiles.structureType() };
     for (const building of this.boardBuildings(tiles, realmId)) {
       const path = this.modelPath(this.selectRealmBuildingModel(building, realm));
       if (path) this.loadModel(path);
     }
+  }
+
+  private preparePageAhead(binding: RealmBinding): void {
+    const rebuilds =
+      !this.isInitialized || this.gridIsStale || this.lastRealmKey !== `${binding.center.col},${binding.center.row}`;
+    if (!rebuilds) return;
+    const layout = this.layOutRealm(binding, this.hexceptionRadius);
+    const request = this.terrainPageRequest(layout.matrices, layout.buildings, binding.center);
+    releaseGridMatrices(layout.matrices);
+    const page = this.proceduralTerrain.preparePageAsync(request);
+    page.catch(() => undefined);
+    this.pageAhead = { request: JSON.stringify(request), page };
   }
 
   /** The model file a selection draws: its tier's own, else its group's; a hyperstructure builds its own. */
@@ -1740,29 +1816,23 @@ export default class HexceptionScene extends HexagonScene {
     this.removeBuilding(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]);
   }
 
-  computeHexMatrices = (
+  private computeHexMatrices(
+    binding: RealmBinding,
+    layout: RealmLayout,
     radius: number,
     dummy: Object3D,
     center: number[],
     targetHex: HexPosition,
     isMainHex: boolean,
     existingBuildings: any[],
-    terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>,
-  ) => {
-    const mapHex = resolveLocalHexOnMap(this.tileManager.getHexCoords(), targetHex, {
-      col: this.centerColRow[0],
-      row: this.centerColRow[1],
-    });
-    this.shownMapHexes.add(`${mapHex.col},${mapHex.row}`);
-    const biome = this.localBiome(mapHex.col, mapHex.row);
+  ): void {
+    const terrainMatricesByBiome = layout.matrices;
+    const mapHex = resolveLocalHexOnMap(binding.tiles.getHexCoords(), targetHex, binding.center);
+    layout.mapHexes.add(`${mapHex.col},${mapHex.row}`);
+    const biome = this.localBiomeAround(binding.center, mapHex.col, mapHex.row);
     const biomeVariant = biome;
     const buildableAreaBiome = "Empty";
     const isFlat = biome === "Ocean" || biome === "DeepOcean" || isMainHex;
-
-    // reset buildings
-    if (isMainHex) {
-      this.buildings = [];
-    }
 
     let positions = generateHexPositions(
       { col: center[0] + BUILDINGS_CENTER[0], row: center[1] + BUILDINGS_CENTER[1] },
@@ -1772,7 +1842,7 @@ export default class HexceptionScene extends HexagonScene {
     if (isMainHex) {
       const buildablePositions = generateHexPositions(
         { col: center[0] + BUILDINGS_CENTER[0], row: center[1] + BUILDINGS_CENTER[1] },
-        buildableRadius(this.structureStage),
+        buildableRadius(binding.stage),
       );
 
       positions = positions.filter(
@@ -1789,15 +1859,13 @@ export default class HexceptionScene extends HexagonScene {
         dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
         dummy.updateMatrix();
 
-        this.interactiveHexManager.addHex({ col: position.col, row: position.row });
-
         const building = existingBuildings.find((value) => value.col === position.col && value.row === position.row);
-        this.interactiveHexManager.setBandBare(position, Boolean(building));
+        layout.plots.push({ position, bare: Boolean(building) });
 
         if (building) {
-          this.buildings.push({ ...building, matrix: this.createBuildingMatrix(position) });
+          layout.buildings.push({ ...building, matrix: this.createBuildingMatrix(position) });
         } else {
-          this.highlights.push(LOCAL_HEX_SPACE.hexForPosition(dummy.position));
+          layout.highlights.push(LOCAL_HEX_SPACE.hexForPosition(dummy.position));
         }
 
         const tempMatrix = MatrixPool.getInstance().getMatrix();
@@ -1825,7 +1893,7 @@ export default class HexceptionScene extends HexagonScene {
       tempMatrix.copy(dummy.matrix);
       terrainMatricesByBiome[biomeVariant].push(tempMatrix);
     });
-  };
+  }
 
   private centerBuildingCategory(structureType: StructureType, realmId: ID): BuildingType {
     if (structureType !== StructureType.Mine) return structureTypeToBuildingType[structureType];
@@ -1833,17 +1901,6 @@ export default class HexceptionScene extends HexagonScene {
     const structure = this.game.store.require("Structure", { game_id, entity_id: realmId });
     return this.game.store.require("MineKindConfig", { game_id, kind: structure.metadata.mine_kind }).building_category;
   }
-
-  computeMainHexMatrices = (
-    radius: number,
-    dummy: Object3D,
-    center: number[],
-    targetHex: HexPosition,
-    terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>,
-  ) => {
-    const existingBuildings = this.boardBuildings(this.tileManager, this.shownRealmId);
-    this.computeHexMatrices(radius, dummy, center, targetHex, true, existingBuildings, terrainMatricesByBiome);
-  };
 
   private boardBuildings(tiles: BuildingTiles, realmId: ID): any[] {
     const existingBuildings: any[] = tiles.existingBuildings();
@@ -1866,8 +1923,12 @@ export default class HexceptionScene extends HexagonScene {
    * neighbour is not revealed yet. A view opened before the realm's tile row arrives shows grassland until it is rebuilt.
    */
   private localBiome(col: number, row: number): BiomeType {
+    return this.localBiomeAround({ col: this.centerColRow[0], row: this.centerColRow[1] }, col, row);
+  }
+
+  private localBiomeAround(realmCenter: HexPosition, col: number, row: number): BiomeType {
     const stored = (hexCol: number, hexRow: number) => storedBiomeAt(this.game.store, false, hexCol, hexRow);
-    return stored(col, row) ?? stored(this.centerColRow[0], this.centerColRow[1]) ?? BiomeType.Grassland;
+    return stored(col, row) ?? stored(realmCenter.col, realmCenter.row) ?? BiomeType.Grassland;
   }
 
   /**
@@ -1911,16 +1972,6 @@ export default class HexceptionScene extends HexagonScene {
     this.gridIsStale = true;
     this.updateHexceptionGrid(this.hexceptionRadius);
   }
-
-  computeNeighborHexMatrices = (
-    radius: number,
-    dummy: Object3D,
-    center: number[],
-    targetHex: HexPosition,
-    terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>,
-  ) => {
-    this.computeHexMatrices(radius, dummy, center, targetHex, false, [], terrainMatricesByBiome);
-  };
 
   removeBuilding(innerCol: number, innerRow: number) {
     const key = `${innerCol},${innerRow}`;
