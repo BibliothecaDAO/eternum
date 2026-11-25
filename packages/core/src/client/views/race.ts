@@ -2,7 +2,6 @@ import { aspects, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { type NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeRaceConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeFactResult, NativeFactStore } from "../native-fact-store";
-import { readDeepSites } from "./deep-sites";
 
 export const RACE_MODELS = [
   "RaceRules",
@@ -38,7 +37,6 @@ export interface RaceBoard {
       glory: bigint;
       contribution: bigint;
       mine: boolean;
-      guards: string[];
     }[];
   } | null;
 }
@@ -48,7 +46,6 @@ export function readRaceBoard(
   store: NativeFactStore,
   gameId: number,
   home: bigint | null,
-  timestamp: number,
 ): NativeFactResult<{ race: RaceBoard | null }> {
   const complete = store.absenceKnown("RaceRules", { game_id: gameId });
   if (!complete.known) return complete;
@@ -61,7 +58,7 @@ export function readRaceBoard(
     rows.push(row);
   }
   const standings = rankRaceStandings(rows, rules.stage_height);
-  const own = readOwnAspect(store, gameId, home, timestamp);
+  const own = readOwnAspect(store, gameId, home);
   if (!own.known) return own;
   return {
     known: {
@@ -74,7 +71,6 @@ function readOwnAspect(
   store: NativeFactStore,
   gameId: number,
   home: bigint | null,
-  timestamp: number,
 ): NativeFactResult<{ own: RaceBoard["own"] }> {
   if (home === null) return { known: { own: null } };
   const membership = store.get("HomeAspect", { game_id: gameId, home });
@@ -84,7 +80,6 @@ function readOwnAspect(
   const memberships = [...store.inGame("HomeAspect", gameId)].filter((row) => row.aspect === aspect);
   if (!count || memberships.length !== count.members) return { unknown: "INCOMPLETE_ASPECT_MEMBERS" };
   const members: NonNullable<RaceBoard["own"]>["members"] = [];
-  const sites = readDeepSites(store, timestamp, gameId);
   for (const row of memberships) {
     const structure = store.get("Structure", { game_id: gameId, entity_id: row.home });
     if (!structure) return { unknown: "MISSING_ASPECT_MEMBER_HOME" };
@@ -95,7 +90,6 @@ function readOwnAspect(
       glory: member.known.glory,
       contribution: member.known.contribution,
       mine: row.home === home,
-      guards: sites.filter((site) => site.guards.some(({ army }) => army.owner === row.home)).map((site) => site.name),
     });
   }
   members.sort((a, b) =>

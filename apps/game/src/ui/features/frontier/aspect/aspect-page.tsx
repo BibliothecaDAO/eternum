@@ -25,9 +25,8 @@ import { AspectPageView, type AspectPageProps, type AspectTriumph } from "./aspe
 export function useAspectBoard() {
   const { setup } = useGame();
   const home = useFrontierRealm();
-  const now = useNowSeconds();
   useNativeRevision(RACE_MODELS);
-  return readRaceBoard(setup.store, configManager.getActiveGameId(), home?.entity_id ?? null, now);
+  return readRaceBoard(setup.store, configManager.getActiveGameId(), home?.entity_id ?? null);
 }
 
 export function FrontierAspectPage({ day, onClose }: { day?: number; onClose: () => void }) {

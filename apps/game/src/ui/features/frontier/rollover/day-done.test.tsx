@@ -646,8 +646,6 @@ describe("a device arriving in a new day", () => {
       await openTheGameHere();
       const card = host.querySelector(DAY_1)!;
       expect([...card.querySelectorAll("[data-total]")].map((cell) => cell.textContent)).toEqual(PROD_DAY_1);
-      // Its armies ended with day 1, not with the day that just ended: the card says nothing of them.
-      expect(card.querySelector("[aria-label='Troops']")).toBeNull();
 
       const share = [...card.querySelectorAll("button")].find((button) => button.textContent === "Share your day")!;
       await act(async () => share.click());
