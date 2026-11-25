@@ -2,7 +2,7 @@ import { Box3, Color, Matrix4, PerspectiveCamera, Scene, Vector3 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { initializeProceduralCharacterRendererRuntime } from "../../characters/procedural-character-renderer-runtime";
 import { SettlementModel } from "../../structures/settlement-model";
-import { REALM_ASSETS, realmModelIndex } from "../../structures/realm-design";
+import { BASE_REALM_CANDIDATES, REALM_ASSETS, realmModelIndex } from "../../structures/realm-design";
 import { gltfLoader } from "../../utils/utils";
 import { configureRendererColorOutput } from "../../renderer-color-output";
 import { ModelLabEnvironment } from "./model-lab-environment";
@@ -22,6 +22,7 @@ export interface RealmSeriesSettings {
   owned: boolean;
   distance: number;
   lineup: boolean;
+  base: boolean;
   reference?: string;
   comparison: "before" | "after" | "pair";
 }
@@ -73,8 +74,15 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
     if (comparing) levels = settings.comparison === "pair" ? [settings.level, settings.level] : [settings.level];
     const labels: string[] = [];
     let height = 0;
-    for (const [slot, level] of levels.entries()) {
-      const asset = REALM_ASSETS[realmModelIndex(level, settings.wonder, settings.seed)];
+    const series = settings.base
+      ? [
+          REALM_ASSETS[realmModelIndex(1, false, settings.seed)],
+          ...BASE_REALM_CANDIDATES,
+          ...[2, 3].map((level) => REALM_ASSETS[realmModelIndex(level, false, settings.seed)]),
+        ]
+      : levels.map((level) => REALM_ASSETS[realmModelIndex(level, settings.wonder, settings.seed)]);
+    if (settings.base) levels = series.map((asset) => asset.level);
+    for (const [slot, asset] of series.entries()) {
       const before = comparing && slot === 0;
       const gltf = await gltfLoader.loadAsync(
         before ? `${settings.reference!.replace(/\/$/, "")}/${asset.id}.glb` : asset.path,

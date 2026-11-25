@@ -17,6 +17,7 @@ export function RealmSeriesLab() {
     owned: params.get("owned") !== "0",
     distance: Number(params.get("distance") ?? 20),
     lineup: params.get("lineup") === "1",
+    base: params.get("base") === "1",
     reference: params.get("wonder") === "1" ? undefined : (params.get("reference") ?? undefined),
     comparison:
       params.get("comparison") === "before" ? "before" : params.get("comparison") === "pair" ? "pair" : "after",
@@ -149,6 +150,14 @@ export function RealmSeriesLab() {
             onChange={(e) => change("lineup", e.target.checked ? "1" : "0")}
           />{" "}
           All ages
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={settings.base}
+            onChange={(e) => change("base", e.target.checked ? "1" : "0")}
+          />{" "}
+          Base City candidate
         </label>
       </header>
       <p role="status" style={{ padding: "0 16px" }}>
