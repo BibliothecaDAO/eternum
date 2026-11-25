@@ -5,19 +5,13 @@ import { getHexDistance, getHexesWithinRadius } from "@bibliothecadao/types";
 
 import { clearedCampAt } from "./after-battle-scenario";
 import { type LabScenario, wire } from "./lab-chain";
-import { armyProgress, spireScenario } from "./spire-scenario";
+import { armyDay, armyProgress, spireScenario } from "./spire-scenario";
 
 /** The realm's second army, standing on a camp it cleared. */
 const SECOND_ARMY = 203;
 /** The camp cleared with nobody on it. */
 const EMPTY_CAMP = 712;
 
-/**
- * Two camps the realm's armies cleared, away from its spire (/lab/game?scenario=cleared-camp): the realm's second army
- * stands on one, the other is its cleared standard alone. The owner's phone met both on 28 October 2026: "when I click
- * on a tile that was cleared but an army is standing on it, army panel must be displayed not the cleared one"; "we dont
- * need to put the flag labels on the map it overcrowds it a bit and there's already a flag on the tile".
- */
 export const clearedCampScenario = (): LabScenario => {
   const spire = spireScenario();
   const { store } = spire;
@@ -28,6 +22,7 @@ export const clearedCampScenario = (): LabScenario => {
     { model: "ExplorerTroops", key: "0x1ab97", value: wire({ ...first, explorer_id: SECOND_ARMY }) },
     { model: "TileOccupancy", key: "0x1ab98", value: wire({ ...occupancy, ...held, entity_id: SECOND_ARMY }) },
     armyProgress(store, SECOND_ARMY, 0),
+    armyDay(store, SECOND_ARMY),
     clearedCampAt(held),
     clearedCampAt(empty, { key: "0x1ab99", entityId: EMPTY_CAMP }),
   ] as never);
