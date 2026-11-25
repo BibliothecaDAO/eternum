@@ -33,7 +33,7 @@ describe("the race board from native facts", () => {
     }
     expect(
       board.own!.members.map(({ home, glory, contribution, mine }) => ({
-        home: home.entity_id,
+        home,
         glory,
         contribution,
         mine,
@@ -43,7 +43,11 @@ describe("the race board from native facts", () => {
       { home: 7n, glory: 1250n * precision, contribution: 1300n * precision, mine: true },
     ]);
     const home = store.require("Structure", { game_id: 1, entity_id: 7 });
-    const page = seasonBoard(board, home, (realm) => getStructureName(realm, store).name, true);
+    const named = (entity: bigint) => {
+      const realm = entity === 14n ? undefined : store.get("Structure", { game_id: 1, entity_id: entity });
+      return realm ? { owner: `0x${realm.owner.toString(16)}`, realm_id: Number(realm.metadata.realm_id) } : null;
+    };
+    const page = seasonBoard(board, home, (realm) => getStructureName(realm, store).name, true, named);
     expect(page.race.map((row) => [row.aspectId, row.own, row.pool])).toEqual([
       [2, false, 64_000],
       [1, true, 52_000],
@@ -56,9 +60,10 @@ describe("the race board from native facts", () => {
     ).toEqual([
       [1, ["9", "7"]],
       [2, ["11", "12"]],
-      [3, ["13", "14"]],
+      [3, ["13"]],
       [4, ["15"]],
     ]);
+    expect(page.own).toMatchObject({ aspect: 1, member: { rank: 2, entity_id: "7", glory: String(1250n * precision) }, place: 4, aspectPlace: 2 });
     expect(page.standing).toMatchObject({
       aspectId: 1,
       aspectRank: 2,
@@ -97,22 +102,22 @@ describe("the race board from native facts", () => {
       scheduled_end_at: game.scheduled_end_at,
     });
     expect(game.end_at).toBeLessThan(game.scheduled_end_at);
-    expect(seasonBoard(board, null, () => "Realm", false).result?.winner).toBe("Luminary");
+    expect(seasonBoard(board, null, () => "Realm", false, () => null).result?.winner).toBe("Luminary");
   });
 
-  it("accepts a known zero receipt only for an existing member and keeps incomplete snapshots unknown", () => {
+  it("accepts a known zero receipt, keeps incomplete snapshots unknown, and needs no member realm in the client scope", () => {
     const { store, read, player, startsAt } = fixture();
     store.applyFacts([
       { model: "RaceMember", key: store.wireKeyOf("RaceMember", { game_id: 1, entity_id: 7 })!, value: null },
     ]);
-    expect(read().known!.race!.own!.members.find((member) => member.home.entity_id === 7n)?.glory).toBe(0n);
+    expect(read().known!.race!.own!.members.find((member) => member.home === 7n)?.glory).toBe(0n);
     store.setSnapshot({ gameId: 1, actor: player, timestamp: startsAt, complete: false });
     expect(read().unknown).toBe("INCOMPLETE_SNAPSHOT: RaceRules");
     store.setSnapshot({ gameId: 1, actor: player, timestamp: startsAt, complete: true });
     store.applyFacts([
       { model: "Structure", key: store.wireKeyOf("Structure", { game_id: 1, entity_id: 9 })!, value: null },
     ]);
-    expect(read().unknown).toBe("MISSING_ASPECT_MEMBER_HOME");
+    expect(read().known!.race!.own!.members.map(({ home }) => home)).toEqual([9n, 7n]);
   });
 });
 
@@ -124,5 +129,5 @@ it("reads an expired race from its final snapshot without inventing a finisher",
   expect(board.result?.winner).toBeNull();
   expect(board.result?.ended_at).toBe(board.result?.scheduled_end_at);
   expect(board.standings.map((row) => row.height)).toEqual([6400, 5200, 2800, 900]);
-  expect(seasonBoard(board, null, () => "Realm", false).result).toEqual({ winner: null });
+  expect(seasonBoard(board, null, () => "Realm", false, () => null).result).toEqual({ winner: null });
 });

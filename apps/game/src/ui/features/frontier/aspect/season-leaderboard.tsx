@@ -1,5 +1,6 @@
 import "./season-leaderboard.css";
 
+import type { HeraldAspectRosterMember } from "@bibliothecadao/eternum/game-sync";
 import { aspectName, aspects, formatCount, formatExact, formatShort, type AspectId } from "@bibliothecadao/types";
 import { useState, type CSSProperties, type ReactNode } from "react";
 
@@ -55,6 +56,13 @@ export interface SeasonStanding {
   altar: { charge: number; threshold: number } | null;
 }
 
+export interface SeasonOwnRow {
+  aspect: AspectId;
+  member: HeraldAspectRosterMember;
+  place: number;
+  aspectPlace: number;
+}
+
 export interface SeasonLeaderboardProps {
   day?: { day: number; lastDay: number };
   players: number;
@@ -63,7 +71,7 @@ export interface SeasonLeaderboardProps {
   stages: number;
   result: { winner: string | null } | null;
   rosters: readonly { aspect: AspectId; roster: GloryRoster }[];
-  ownEntityId: string | null;
+  own: SeasonOwnRow | null;
   standing: SeasonStanding | null;
   invite?: ReactNode;
   goToDeep?: { go: () => void } | { refused: Refusal };
@@ -128,7 +136,7 @@ export const SeasonLeaderboard = (props: SeasonLeaderboardProps) => {
                 </span>
               )}
             </div>
-            <GloryBoard rosters={props.rosters} tab={tab} ownEntityId={props.ownEntityId} />
+            <GloryBoard rosters={props.rosters} tab={tab} own={props.own} />
           </section>
           {standing && (
             <Standing standing={standing} invite={props.invite} goToDeep={props.goToDeep} stages={props.stages} />
@@ -195,13 +203,13 @@ const AspectStrip = ({
 const GloryBoard = ({
   rosters,
   tab,
-  ownEntityId,
+  own,
 }: {
   rosters: readonly { aspect: AspectId; roster: GloryRoster }[];
   tab: AspectId | 0;
-  ownEntityId: string | null;
+  own: SeasonOwnRow | null;
 }) => {
-  const rows = gloryRows(rosters, tab, ownEntityId);
+  const rows = gloryRows(rosters, tab, own);
   if (tab !== 0 && rows.length === 0)
     return <span className="season-board__empty">{SEASON_WORDS.aspectRosterEmpty(aspectName(tab))}</span>;
   return (
@@ -222,16 +230,19 @@ const GloryBoard = ({
 const gloryRows = (
   rosters: readonly { aspect: AspectId; roster: GloryRoster }[],
   tab: AspectId | 0,
-  ownEntityId: string | null,
+  own: SeasonOwnRow | null,
 ): GloryRow[] => {
-  if (tab === 0)
-    return mergeAspectRosters(rosters).rows.map(({ rank, member, aspect }) =>
-      gloryRowOf(rank, member, member.entity_id === ownEntityId, aspect),
-    );
-  const roster = rosters.find((entry) => entry.aspect === tab)?.roster;
-  return (roster?.members ?? []).map((member) =>
-    gloryRowOf(member.rank, member, member.entity_id === ownEntityId, tab),
-  );
+  const mine = (entityId: string) => entityId === own?.member.entity_id;
+  const rows =
+    tab === 0
+      ? mergeAspectRosters(rosters).rows.map(({ rank, member, aspect }) =>
+          gloryRowOf(rank, member, mine(member.entity_id), aspect),
+        )
+      : (rosters.find((entry) => entry.aspect === tab)?.roster.members ?? []).map((member) =>
+          gloryRowOf(member.rank, member, mine(member.entity_id), tab),
+        );
+  if (!own || rows.some((row) => row.own) || (tab !== 0 && tab !== own.aspect)) return rows;
+  return [...rows, gloryRowOf(tab === 0 ? own.place : own.aspectPlace, own.member, true, own.aspect)];
 };
 
 const GloryTableRow = ({ row }: { row: GloryRow }) => (

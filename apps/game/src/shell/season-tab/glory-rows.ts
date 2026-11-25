@@ -2,6 +2,7 @@ import { compareAspectMembers, gloryAmount, type RaceMemberRow } from "@biblioth
 import type { HeraldAspectRoster, HeraldAspectRosterMember } from "@bibliothecadao/eternum/game-sync";
 import { formatAmount, type AspectId } from "@bibliothecadao/types";
 
+import { ROSTER_TOP } from "../herald";
 import { realmHomeOf } from "../season";
 
 export type GloryRoster = Pick<HeraldAspectRoster, "total" | "members">;
@@ -16,16 +17,30 @@ export interface GloryRow {
   glory: string;
 }
 
-export const nativeAspectRoster = (members: readonly RaceMemberRow[]): GloryRoster => ({
+export interface GloryIdentity {
+  owner: string;
+  realm_id: number;
+}
+
+export const nativeAspectRoster = (
+  members: readonly RaceMemberRow[],
+  identityOf: (home: bigint) => GloryIdentity | null,
+): GloryRoster => ({
   total: members.length,
-  members: members.map((member, index) => ({
-    rank: index + 1,
-    entity_id: member.home.entity_id.toString(),
-    realm_id: Number(member.home.metadata.realm_id),
-    owner: `0x${member.home.owner.toString(16)}`,
-    glory: member.glory.toString(),
-  })),
+  members: members.slice(0, ROSTER_TOP).flatMap((member, index) => {
+    const named = nativeMember(index + 1, member, identityOf);
+    return named ? [named] : [];
+  }),
 });
+
+export const nativeMember = (
+  rank: number,
+  member: RaceMemberRow,
+  identityOf: (home: bigint) => GloryIdentity | null,
+): HeraldAspectRosterMember | null => {
+  const identity = identityOf(member.home);
+  return identity && { rank, entity_id: member.home.toString(), ...identity, glory: member.glory.toString() };
+};
 
 export const mergeAspectRosters = (
   rosters: readonly { aspect: AspectId; roster: GloryRoster }[],

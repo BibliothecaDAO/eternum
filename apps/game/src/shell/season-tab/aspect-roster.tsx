@@ -9,7 +9,7 @@ import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { ASPECT_PAGE_WORDS, SEASON_WORDS, WORDS } from "@/ui/design-system/kit/words";
 
 import { openedFrom } from "../frame/opened-from";
-import { type DirectoryGame, ROSTER_TOP, useAllAspectRosters, useAspectRoster } from "../herald";
+import { type DirectoryGame, gameRefOf, ROSTER_TOP, useAllAspectRosters, useAspectRoster } from "../herald";
 import { Loading } from "../loading";
 import { type GloryRow, gloryRowOf, mergeAspectRosters } from "./glory-rows";
 
@@ -22,7 +22,7 @@ export const GlobalGloryRoster = ({
   ownRealmId: number | null;
   rows: number;
 }) => {
-  const queries = useAllAspectRosters(season);
+  const queries = useAllAspectRosters(gameRefOf(season));
   const navigate = useNavigate();
   const here = useLocation();
   const failed = queries.find((query) => query.isError);
@@ -98,7 +98,7 @@ export const AspectRoster = ({
   ownAspect?: boolean;
   rows: number;
 }) => {
-  const roster = useAspectRoster(season, aspect);
+  const roster = useAspectRoster(gameRefOf(season), aspect);
   const navigate = useNavigate();
   const here = useLocation();
   if (roster.isError) {

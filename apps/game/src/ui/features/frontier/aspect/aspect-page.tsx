@@ -2,7 +2,9 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { openPlace } from "@/play/navigation/open-place";
-import { nativeAspectRoster } from "@/shell/season-tab/glory-rows";
+import { useAllAspectRosters } from "@/shell/herald";
+import { type GloryIdentity, nativeAspectRoster, nativeMember } from "@/shell/season-tab/glory-rows";
+import { requireActiveGame } from "@/runtime/world";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
 import { HudPage, HudSkeleton } from "@/ui/design-system/kit/hud-elements";
 import { ASPECT_PAGE_WORDS, SEASON_BOARD_WORDS } from "@/ui/design-system/kit/words";
@@ -14,9 +16,11 @@ import {
   RACE_MODELS,
   readRaceBoard,
   nativeRaceConstants,
+  type NativeFactStore,
   type NativeRows,
   type RaceBoard,
 } from "@bibliothecadao/eternum/game-client";
+import type { GameRef } from "@bibliothecadao/eternum/shard";
 import {
   aspectLordsWorth,
   aspectRewardShare,
@@ -28,7 +32,12 @@ import {
 import { useFrontierRealm } from "../frontier-home";
 import { deepLockLine, realmLayers } from "../hud/map-layers";
 import { AspectInvite } from "../invite/aspect-invite";
-import { SeasonLeaderboard, type SeasonLeaderboardProps, type SeasonStanding } from "./season-leaderboard";
+import {
+  SeasonLeaderboard,
+  type SeasonLeaderboardProps,
+  type SeasonOwnRow,
+  type SeasonStanding,
+} from "./season-leaderboard";
 
 export function useAspectBoard() {
   const { setup } = useGame();
@@ -38,12 +47,8 @@ export function useAspectBoard() {
 }
 
 export function FrontierAspectPage({ day, onClose }: { day?: { day: number; lastDay: number }; onClose: () => void }) {
-  const { setup } = useGame();
-  const { isMapView } = useQuery();
   const reading = useAspectBoard();
   const board = reading.known?.race;
-  const home = useFrontierRealm();
-  useNativeRevision(["DeepRules", "RealmKnowledge", "SettlementRules"]);
   if (!board)
     return (
       <HudPage label={SEASON_BOARD_WORDS.title} icon="crown" onClose={onClose}>
@@ -52,34 +57,65 @@ export function FrontierAspectPage({ day, onClose }: { day?: { day: number; last
         </div>
       </HudPage>
     );
-  const gameId = configManager.getActiveGameId();
-  const canEnterDeep = home !== null && realmLayers(setup.store, home).includes("deep");
-  const settlementRules = setup.store.get("SettlementRules", { game_id: gameId });
-  const gameOver = board.result !== null || configManager.isGameOver();
-  const goDeep = (realm: NonNullable<typeof home>, spacing: number) => {
-    const target = deepViewFor(setup.store, gameId, realm.entity_id, spacing);
-    if (isMapView) requestLayerView(target);
-    else openPlace("map", Position.fromContract({ x: target.col, y: target.row }));
-    onClose();
+  const { chainId, gameId } = requireActiveGame();
+  return <SeasonBoardPage board={board} game={{ chainId, gameId }} day={day} onClose={onClose} />;
+}
+
+function SeasonBoardPage({
+  board,
+  game,
+  day,
+  onClose,
+}: {
+  board: RaceBoard;
+  game: GameRef;
+  day?: { day: number; lastDay: number };
+  onClose: () => void;
+}) {
+  const { setup } = useGame();
+  const { isMapView } = useQuery();
+  const home = useFrontierRealm();
+  const served = useAllAspectRosters(game);
+  useNativeRevision(["DeepRules", "RealmKnowledge", "SettlementRules"]);
+  const named = new Map(served.flatMap(({ data }) => data?.members ?? []).map((member) => [member.entity_id, member]));
+  const identityOf = (realm: bigint) => {
+    const held = setup.store.get("Structure", { game_id: game.gameId, entity_id: realm });
+    return held ? { owner: `0x${held.owner.toString(16)}`, realm_id: Number(held.metadata.realm_id) } : (named.get(realm.toString()) ?? null);
   };
-  const lock = home && deepLockLine(setup.store, home);
-  const goToDeep =
-    gameOver || home === null || !settlementRules
-      ? undefined
-      : canEnterDeep
-        ? { go: () => goDeep(home, settlementRules.spacing) }
-        : lock
-          ? { refused: { reason: { kind: "failed" as const, line: ASPECT_PAGE_WORDS.deepOpensAt(lock) } } }
-          : undefined;
+  const canEnterDeep = home !== null && realmLayers(setup.store, home).includes("deep");
   return (
     <SeasonLeaderboard
-      {...seasonBoard(board, home, (realm) => getStructureName(realm, setup.store).name, canEnterDeep)}
+      {...seasonBoard(board, home, (realm) => getStructureName(realm, setup.store).name, canEnterDeep, identityOf)}
       day={day}
       invite={home && <AspectInvite realm={home} />}
-      goToDeep={goToDeep}
+      goToDeep={goToDeepOf(setup.store, board, home, canEnterDeep, isMapView, onClose)}
       onClose={onClose}
     />
   );
+}
+
+function goToDeepOf(
+  store: NativeFactStore,
+  board: RaceBoard,
+  home: NativeRows["Structure"] | null,
+  canEnterDeep: boolean,
+  isMapView: boolean,
+  onClose: () => void,
+): SeasonLeaderboardProps["goToDeep"] {
+  const gameId = configManager.getActiveGameId();
+  const settlementRules = store.get("SettlementRules", { game_id: gameId });
+  if (board.result !== null || configManager.isGameOver() || home === null || !settlementRules) return undefined;
+  if (canEnterDeep)
+    return {
+      go: () => {
+        const target = deepViewFor(store, gameId, home.entity_id, settlementRules.spacing);
+        if (isMapView) requestLayerView(target);
+        else openPlace("map", Position.fromContract({ x: target.col, y: target.row }));
+        onClose();
+      },
+    };
+  const lock = deepLockLine(store, home);
+  return lock ? { refused: { reason: { kind: "failed", line: ASPECT_PAGE_WORDS.deepOpensAt(lock) } } } : undefined;
 }
 
 export function seasonBoard(
@@ -87,6 +123,7 @@ export function seasonBoard(
   home: NativeRows["Structure"] | null,
   name: (realm: NativeRows["Structure"]) => string,
   deepOpen: boolean,
+  identityOf: (home: bigint) => GloryIdentity | null,
 ): Omit<SeasonLeaderboardProps, "onClose" | "day" | "invite" | "goToDeep"> {
   const pools = new Map(
     board.standings.map((row) => [row.aspect, aspectLordsWorth(row.height, board.result?.winner === row.aspect)]),
@@ -107,11 +144,27 @@ export function seasonBoard(
     result: board.result && { winner: board.result.winner === null ? null : aspectName(board.result.winner) },
     rosters: board.aspects.map(({ aspect, members }) => ({
       aspect: catalogAspectId(aspect),
-      roster: nativeAspectRoster(members),
+      roster: nativeAspectRoster(members, identityOf),
     })),
-    ownEntityId: home ? home.entity_id.toString() : null,
+    own: board.own && ownRowOf(board, board.own, identityOf),
     standing: home && board.own ? standingOf(board, board.own, home, name(home), pools, deepOpen) : null,
   };
+}
+
+function ownRowOf(
+  board: RaceBoard,
+  own: NonNullable<RaceBoard["own"]>,
+  identityOf: (home: bigint) => GloryIdentity | null,
+): SeasonOwnRow | null {
+  const aspectPlace = own.members.findIndex((member) => member.mine);
+  if (aspectPlace < 0) return null;
+  const member = nativeMember(aspectPlace + 1, own.members[aspectPlace]!, identityOf);
+  return member && { aspect: catalogAspectId(own.aspect), member, place: placeOf(board), aspectPlace: aspectPlace + 1 };
+}
+
+function placeOf(board: RaceBoard): number {
+  const everyone = board.aspects.flatMap(({ members }) => members).toSorted(compareAspectMembers);
+  return everyone.findIndex((member) => member.mine) + 1;
 }
 
 function standingOf(
@@ -124,12 +177,7 @@ function standingOf(
 ): SeasonStanding {
   const mine = own.members.find((member) => member.mine);
   const glory = mine?.glory ?? 0n;
-  const everyone = board.aspects
-    .flatMap(({ members }) => members)
-    .toSorted((a, b) =>
-      compareAspectMembers({ glory: a.glory, home: a.home.entity_id }, { glory: b.glory, home: b.home.entity_id }),
-    );
-  const place = everyone.findIndex((member) => member.mine);
+  const place = placeOf(board);
   const sharing = own.members.filter((member) => sharesAspectReward(member.glory));
   const pool = pools.get(own.aspect) ?? 0;
   const shares = sharesAspectReward(glory);
@@ -141,7 +189,7 @@ function standingOf(
     aspectRank: standing?.rank ?? 0,
     order: order && { orderId: order.orderId, orderName: order.orderName },
     glory: gloryAmount(glory),
-    gloryRank: place < 0 ? null : place + 1,
+    gloryRank: place > 0 ? place : null,
     shares,
     pool,
     share: shares

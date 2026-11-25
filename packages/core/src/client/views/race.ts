@@ -19,7 +19,7 @@ export const RACE_MODELS = [
 ] as const;
 
 export interface RaceMemberRow {
-  home: NativeRows["Structure"];
+  home: bigint;
   glory: bigint;
   contribution: bigint;
   mine: boolean;
@@ -91,20 +91,16 @@ function readAspectMembers(
   if (memberships.length !== (count?.members ?? 0)) return { unknown: "INCOMPLETE_ASPECT_MEMBERS" };
   const members: RaceMemberRow[] = [];
   for (const row of memberships) {
-    const structure = store.get("Structure", { game_id: gameId, entity_id: row.home });
-    if (!structure) return { unknown: "MISSING_ASPECT_MEMBER_HOME" };
     const member = store.requireOrAbsent("RaceMember", { game_id: gameId, entity_id: row.home });
     if (!member.known) return member;
     members.push({
-      home: structure,
+      home: row.home,
       glory: member.known.glory,
       contribution: member.known.contribution,
       mine: row.home === home,
     });
   }
-  members.sort((a, b) =>
-    compareAspectMembers({ glory: a.glory, home: a.home.entity_id }, { glory: b.glory, home: b.home.entity_id }),
-  );
+  members.sort(compareAspectMembers);
   return { known: { members } };
 }
 

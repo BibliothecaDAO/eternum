@@ -20,7 +20,10 @@ const boardOf = (name: keyof typeof CASES) => {
   const reading = readRaceBoard(store, 1, home.entity_id);
   const board = reading.known?.race;
   if (!board) throw new Error(`The ${name} race scenario holds no race: ${reading.unknown ?? "no race rules"}`);
-  return seasonBoard(board, home, (realm) => getStructureName(realm, store).name, true);
+  return seasonBoard(board, home, (realm) => getStructureName(realm, store).name, true, (entity) => {
+    const realm = store.get("Structure", { game_id: 1, entity_id: entity });
+    return realm && { owner: `0x${realm.owner.toString(16)}`, realm_id: Number(realm.metadata.realm_id) };
+  });
 };
 
 export function AspectPageLab() {
