@@ -3,7 +3,7 @@ import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
 import { type Reason, reasonLine } from "@/ui/design-system/kit/reasons";
 import {
   ATTACK,
-  ATTACK_REFUSAL_WORDS,
+  ORDER_REFUSAL_WORDS,
   EXPLORE,
   MOVE,
   REINFORCE,
@@ -68,7 +68,7 @@ const ORDERS: Partial<Record<ActionType, string>> = {
   [ActionType.Explore]: EXPLORE,
   [ActionType.Move]: MOVE,
   [ActionType.Attack]: ATTACK,
-  [ActionType.Help]: TRANSFER_TROOPS,
+  [ActionType.Help]: TRANSFER_TROOPS.title,
   [ActionType.SpireTravel]: "Enter the Spire",
   [ActionType.EnterDepth]: SPIRE_WORDS.order,
 };
@@ -116,22 +116,13 @@ const refusalLine = ({ refusal, staminaWait, staminaHeld, explored }: TileOrder)
   return explored ? null : UNEXPLORED;
 };
 
-const orderRefusalWords: Record<Exclude<OrderRefusal["reason"], "stamina">, string> = {
-  food: "Not enough Wheat",
-  "off-limits": ATTACK_REFUSAL_WORDS["target-must-be-unowned"],
-  "no-attack": ATTACK_REFUSAL_WORDS["no-attack"],
-  "no-transfer": "Cannot transfer here",
-  occupied: "Tile occupied",
-  "too-far": "Too far · move closer",
-};
-
 export const orderRefusalReason = (
   refusal: OrderRefusal,
   short?: { held: number | undefined; wait: number | undefined },
 ): Reason =>
   refusal.reason === "stamina"
     ? { kind: "short", of: "stamina", held: short?.held, need: refusal.need, wait: short?.wait }
-    : { kind: "failed", line: orderRefusalWords[refusal.reason] };
+    : { kind: "failed", line: ORDER_REFUSAL_WORDS[refusal.reason] };
 
 /** The wheat and fish an order burns from its army's realm. */
 type OrderFood = { wheat: number; fish: number };

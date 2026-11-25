@@ -1,8 +1,9 @@
 import { ActionType, configManager, type OrderRefusal } from "@bibliothecadao/eternum";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { reasonLine, staminaShortfall } from "@/ui/design-system/kit/reasons";
-import { orderFood, orderRefusalReason, orderTip } from "./order-tip";
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
+import { ORDER_REFUSAL_WORDS, WHEAT } from "@/ui/design-system/kit/words";
+import { orderFood, orderTip } from "./order-tip";
 
 const step = (actionType: ActionType, staminaCost?: number) => ({ hex: { col: 0, row: 0 }, actionType, staminaCost });
 type Path = ReturnType<typeof step>[];
@@ -71,7 +72,8 @@ describe("what a right-click on a tile does, said before the click", () => {
     expect(line(undefined, { refusal: { reason: "stamina", need: 21 } })).toBe(staminaShortfall(undefined, 21));
     const reasons = ["food", "off-limits", "no-attack", "no-transfer", "occupied", "too-far"] as const;
     const lines = reasons.map((reason) => line(undefined, { refusal: { reason } }));
-    expect(lines).toEqual(reasons.map((reason) => reasonLine(orderRefusalReason({ reason }))));
+    expect(lines).toEqual(reasons.map((reason) => ORDER_REFUSAL_WORDS[reason]));
+    expect(lines[0]).toContain(WHEAT);
     expect(new Set(lines).size).toBe(reasons.length);
   });
 
