@@ -42,6 +42,7 @@ const deepLoss = Number(release.definition.economy.deep.Some.loss_per_tick) / RE
 const cadence = formatDuration(RULES.tick_config.armies_tick_in_seconds);
 
 const percent = (value: number) => formatPercent(value / 100);
+const signed = (value: number) => formatPercent(value / 100, { signed: true });
 
 const CONDITIONS: Record<number, readonly string[]> = {
   [oaths.VITRIOL]: [cadence],
@@ -64,21 +65,21 @@ const CONDITIONS: Record<number, readonly string[]> = {
 
 const FIGURES: Record<number, readonly string[]> = {
   [oaths.VITRIOL]: [String(deepLoss), String(oaths.VITRIOL_LOSS_PER_TICK)],
-  [oaths.POWER]: [percent(oaths.POWER_DAMAGE_PERCENT)],
-  [oaths.GIANTS]: [percent(oaths.GIANTS_REDUCTION_PERCENT)],
-  [oaths.PROTECTION]: [percent(oaths.PROTECTION_REDUCTION_PERCENT)],
+  [oaths.POWER]: [signed(oaths.POWER_DAMAGE_PERCENT)],
+  [oaths.GIANTS]: [signed(-oaths.GIANTS_REDUCTION_PERCENT)],
+  [oaths.PROTECTION]: [signed(-oaths.PROTECTION_REDUCTION_PERCENT)],
   [oaths.REFLECTION]: [percent(rules.WELL_REFILL_PERCENT), percent(oaths.REFLECTION_WELL_PERCENT)],
   [oaths.DETECTION]: [formatOrdinal(oaths.DETECTION_EMPTY_REVEAL_LIMIT + 1)],
-  [oaths.BRILLIANCE]: [percent(oaths.BRILLIANCE_PAY_PERCENT - 100)],
-  [oaths.RAGE]: [percent(oaths.RAGE_PAY_PERCENT - 100)],
+  [oaths.BRILLIANCE]: [signed(oaths.BRILLIANCE_PAY_PERCENT - 100)],
+  [oaths.RAGE]: [signed(oaths.RAGE_PAY_PERCENT - 100)],
   [oaths.ANGER]: [String(attack), String(oaths.ANGER_ATTACK_STAMINA)],
   [oaths.TITANS]: [String(knightMax), String(knightMax + oaths.TITANS_STAMINA)],
-  [oaths.ENLIGHTENMENT]: [formatRate(perSecond)],
+  [oaths.ENLIGHTENMENT]: [signed((oaths.ENLIGHTENMENT_REGEN_BPS - 10_000) / 100), formatRate(perSecond)],
   [oaths.FOX]: [String(reveal)],
-  [oaths.SKILL]: [percent(oaths.SKILL_DAMAGE_PERCENT)],
+  [oaths.SKILL]: [signed(oaths.SKILL_DAMAGE_PERCENT)],
   [oaths.FURY]: [formatGain(Math.floor((attack * oaths.FURY_REFUND_PERCENT) / 100))],
-  [oaths.TWINS]: [percent(oaths.TWINS_DAMAGE_PERCENT)],
-  [oaths.PERFECTION]: [percent(oaths.PERFECTION_PAY_PERCENT - 100)],
+  [oaths.TWINS]: [signed(oaths.TWINS_DAMAGE_PERCENT)],
+  [oaths.PERFECTION]: [signed(oaths.PERFECTION_PAY_PERCENT - 100)],
 };
 
 describe("an Oath's card", () => {
