@@ -7909,12 +7909,14 @@ export default class WorldmapScene extends WarpTravel {
         managers: [
           {
             label: "army",
+            prewarm: () => this.armyManager.prewarmChunkAssets(chunkKey),
             recover: () =>
               this.armyManager.recoverChunkUpdateAfterStall(criticalManagerRecovery.resolveRecoveryInput()),
             run: () => this.armyManager.updateChunk(chunkKey, options),
           },
           {
             label: "structure",
+            prewarm: () => this.structureManager.prewarmChunkAssets(chunkKey),
             recover: () =>
               this.structureManager.recoverChunkUpdateAfterStall(criticalManagerRecovery.resolveRecoveryInput()),
             run: () => this.structureManager.updateChunk(chunkKey, options),

@@ -7,6 +7,7 @@ export interface WorldmapCriticalManagerCatchUpFailure {
 
 interface WorldmapCriticalManagerCatchUpTask {
   label: string;
+  prewarm: () => Promise<void>;
   run: () => Promise<void>;
   recover: () => void;
 }
@@ -80,8 +81,9 @@ async function settleCriticalManagerCatchUp(
   input: RunWorldmapCriticalManagerCatchUpInput,
 ): Promise<FailedWorldmapCriticalManagerCatchUp | null> {
   const now = input.now ?? (() => performance.now());
+  const prewarmFailure = await prewarmCriticalManager(manager);
   const startedAt = now();
-  const result = await settleCriticalManagerPromise(manager, input);
+  const result = prewarmFailure ?? (await settleCriticalManagerPromise(manager, input));
   const durationMs = now() - startedAt;
   // Console reporting is caller-injected (DEV-gated at the call site); there is
   // no production fallback — perf lines never leak into shipped builds.
@@ -104,6 +106,17 @@ async function settleCriticalManagerCatchUp(
     },
     recover: manager.recover,
   };
+}
+
+async function prewarmCriticalManager(
+  manager: WorldmapCriticalManagerCatchUpTask,
+): Promise<CriticalManagerCatchUpResult | null> {
+  try {
+    await manager.prewarm();
+    return null;
+  } catch (reason) {
+    return { status: "failed", reason };
+  }
 }
 
 async function settleCriticalManagerPromise(
