@@ -170,7 +170,9 @@ const connect = async (canWrite: boolean) => {
 const tabs = () => [...host.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent);
 /** Each message's words, as its row shows them. */
 const lines = () =>
-  [...host.querySelectorAll("li[data-message-id]")].map((row) => row.querySelector("[data-message-words]")?.textContent);
+  [...host.querySelectorAll("li[data-message-id]")].map(
+    (row) => row.querySelector("[data-message-words]")?.textContent,
+  );
 const field = () => host.querySelector<HTMLInputElement>('input[aria-label="Message"]');
 const type = async (text: string) => {
   const input = field()!;

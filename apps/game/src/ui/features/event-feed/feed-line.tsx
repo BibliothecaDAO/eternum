@@ -73,10 +73,7 @@ export const FeedLine = ({ story }: { story: ProcessedStoryEvent }) => {
       data-rule={concern}
     >
       {!desktop && (
-        <span
-          className={`my-1 w-1 shrink-0 self-stretch rounded-full ${CONCERN_RULES[concern]}`}
-          aria-hidden="true"
-        />
+        <span className={`my-1 w-1 shrink-0 self-stretch rounded-full ${CONCERN_RULES[concern]}`} aria-hidden="true" />
       )}
       {open ? (
         <button type="button" className="ui-event__open items-center" onClick={open}>
