@@ -9,7 +9,6 @@ import { useHudLayout, useHudTablet } from "@/hooks/helpers/use-compact-hud";
 import { DAILY_QUEST_MODELS, readDailyQuest } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
-
 import { DailyQuest } from "../day/daily-quest";
 import { dayQuestFace } from "../day/day-quest-face";
 import { useHudPopover } from "./hud-popover";

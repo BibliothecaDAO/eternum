@@ -28,7 +28,8 @@ type Bands = {
   children?: ReactNode;
 };
 
-export const HudBands = (bands: Bands) => (useHudSideways() ? <SidewaysBands {...bands} /> : <UprightBands {...bands} />);
+export const HudBands = (bands: Bands) =>
+  useHudSideways() ? <SidewaysBands {...bands} /> : <UprightBands {...bands} />;
 
 const UprightBands = ({ strip, banner, page, notices, action, dock, nav, children }: Bands) => {
   const bar = useRef<HTMLDivElement>(null);

@@ -7,7 +7,13 @@ import {
   readTroopRaiseCost,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { getNeighborHexes, RealmLevels, RESOURCE_PRECISION, type TroopTier, type TroopType } from "@bibliothecadao/types";
+import {
+  getNeighborHexes,
+  RealmLevels,
+  RESOURCE_PRECISION,
+  type TroopTier,
+  type TroopType,
+} from "@bibliothecadao/types";
 
 import { type LabCommand, type LabFact, type LabScenario, wire } from "./lab-chain";
 import { raisedArmyLimit } from "./merge-scenario";

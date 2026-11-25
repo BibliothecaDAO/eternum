@@ -101,7 +101,11 @@ it("hands a portrait screen under 1440 to the touch layout and keeps a landscape
   const { HUD_QUERIES } = await import("@/tokens");
   const read = (width: number, height: number) => {
     const matches = viewportMatches(width, height);
-    return [matches(HUD_QUERIES.desktop) ? "desktop" : "phone", matches(HUD_QUERIES.tablet), matches(HUD_QUERIES.sideways)];
+    return [
+      matches(HUD_QUERIES.desktop) ? "desktop" : "phone",
+      matches(HUD_QUERIES.tablet),
+      matches(HUD_QUERIES.sideways),
+    ];
   };
   expect(read(1024, 1366)).toEqual(["phone", true, false]);
   expect(read(1032, 1376)).toEqual(["phone", true, false]);
@@ -111,7 +115,15 @@ it("hands a portrait screen under 1440 to the touch layout and keeps a landscape
   expect(read(1440, 2560)).toEqual(["desktop", false, false]);
   expect(read(915, 412)).toEqual(["phone", false, true]);
   expect(read(390, 844)).toEqual(["phone", false, false]);
-  for (const [width, height] of [[1024, 1366], [1366, 1024], [1260, 735], [1440, 2560], [915, 412], [390, 844], [1439, 1440]]) {
+  for (const [width, height] of [
+    [1024, 1366],
+    [1366, 1024],
+    [1260, 735],
+    [1440, 2560],
+    [915, 412],
+    [390, 844],
+    [1439, 1440],
+  ]) {
     const matches = viewportMatches(width, height);
     expect(matches(HUD_QUERIES.compact)).toBe(!matches(HUD_QUERIES.desktop));
   }

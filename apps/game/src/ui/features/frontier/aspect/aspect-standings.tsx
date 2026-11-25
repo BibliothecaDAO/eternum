@@ -33,7 +33,9 @@ export const AspectStandings = ({
   stages?: number;
   ownTriumphs?: readonly AspectTriumph[];
 }) => (
-  <div className={stages !== undefined ? "grid grid-cols-2 gap-2 sm:grid-cols-4 hud-desk:gap-3" : "flex flex-col gap-2"}>
+  <div
+    className={stages !== undefined ? "grid grid-cols-2 gap-2 sm:grid-cols-4 hud-desk:gap-3" : "flex flex-col gap-2"}
+  >
     {standings.map((standing) => (
       <AspectStandingRow
         key={standing.aspectId}
