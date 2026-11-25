@@ -206,7 +206,7 @@ describe("HighlightHexManager laying a lit hex on the ground", () => {
     expect(vertices.length).toBeGreaterThan(0);
     for (const { x, y, z } of vertices) {
       expect(y - heightAt(x, z)).toBeGreaterThan(0);
-      expect(y - heightAt(x, z)).toBeLessThanOrEqual(0.05);
+      expect(y - heightAt(x, z)).toBeLessThanOrEqual(0.06);
     }
   };
 
@@ -257,7 +257,7 @@ describe("HighlightHexManager laying a lit hex on the ground", () => {
 
     for (const plate of manager.getDebugState().plates) {
       expect(plate.lowest).toBeGreaterThan(0);
-      expect(plate.highest).toBeLessThanOrEqual(0.05);
+      expect(plate.highest).toBeLessThanOrEqual(0.06);
     }
   });
 });

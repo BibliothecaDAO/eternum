@@ -50,11 +50,16 @@ describe("the filled hexagon plot overlay", () => {
     expect(rimVertices).toHaveLength(36);
     expect(fillVertices.every((vertex) => radiusOf(vertex) < 0.9 + 1e-6)).toBe(true);
     expect(fillVertices.filter((vertex) => radiusOf(vertex) < 0.9 * 0.34)).toHaveLength(7);
-    expect(rimVertices.every((vertex) => radiusOf(vertex) > 0.9 * Math.cos(Math.PI / 6) - 1e-6 && radiusOf(vertex) < 1 + 1e-6)).toBe(true);
+    expect(
+      rimVertices.every(
+        (vertex) => radiusOf(vertex) > 0.9 * Math.cos(Math.PI / 6) - 1e-6 && radiusOf(vertex) < 1 + 1e-6,
+      ),
+    ).toBe(true);
     expect(index.count / 3).toBe(54 + 36);
     for (let triangle = 0; triangle < index.count; triangle += 3) {
       const [a, b, c] = [0, 1, 2].map(
-        (corner) => [positions.getX(index.getX(triangle + corner)), positions.getY(index.getX(triangle + corner))] as const,
+        (corner) =>
+          [positions.getX(index.getX(triangle + corner)), positions.getY(index.getX(triangle + corner))] as const,
       );
       expect((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])).toBeGreaterThan(0);
     }

@@ -76,9 +76,9 @@ describe("a thing's token, its plate closed (the owner's 2026-10-19 pick: tokens
     expect(mark({ ...realm, guards: [...realm.guards!].reverse() })).toBe("Bow");
     expect(mark({ ...realm, guards: [] })).toBeUndefined();
     expect(mark({ ...realm, guards: null })).toBeUndefined();
-    expect(renderToStaticMarkup(<Token plate={{ ...rift, guards: [{ type: "crossbowman", tier: 1, count: 9 }] }} />)).toContain(
-      'data-combat-mark="Bow"',
-    );
+    expect(
+      renderToStaticMarkup(<Token plate={{ ...rift, guards: [{ type: "crossbowman", tier: 1, count: 9 }] }} />),
+    ).toContain('data-combat-mark="Bow"');
   });
 
   it("wears the crest its plate names on the disk's corner", () => {

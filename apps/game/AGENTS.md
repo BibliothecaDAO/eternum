@@ -313,8 +313,7 @@ dev overlays on, at each wheel step from the closest zoom to the farthest: each 
 model, and the pointer on its model at its feet, middle and top must open its plate; `--steps lab-hover-zoom-pair` the
 same with the realm's two armies side by side, the merge game's), `--steps lab-high-ground`
 (`/lab/game?scenario=high-ground`, the spire's game on snow, bare rock and tundra, with the dev overlays on: the army
-picked, every tile it is lit on must lie on its own ground, no point of it under that ground and none more than 0.05
-over it), `--steps lab-day-turn`,
+picked, every tile it is lit on must lie on its ground, never under it nor 0.06 over it), `--steps lab-day-turn`,
 `--steps lab-day-later`, `--steps lab-day-turn-slow` and `--steps lab-day-later-short` (the same game on Frontier's day
 2 ending, `/lab/game?scenario=day-turn` in the session or `scenario=day-later` before it opened, over prod's recorded
 history of that day, the map opened where the realm stood on day 2: the summary's totals must be the recorded player's

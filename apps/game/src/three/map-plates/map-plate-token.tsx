@@ -6,13 +6,7 @@ import { UNDEFENDED } from "@/ui/design-system/kit/words";
 import { combatMarkOf, type CombatMarkLook } from "@/ui/features/frontier/sites/combat-mark";
 
 import { chipWidth, labelWidth } from "./map-plate-layout";
-import {
-  attackOrder,
-  plateTroopCategory,
-  type MapPlate,
-  type PlateTroops,
-  type PlateWatched,
-} from "./map-plate-model";
+import { attackOrder, plateTroopCategory, type MapPlate, type PlateTroops, type PlateWatched } from "./map-plate-model";
 
 /**
  * What a token says: whose, what kind, how strong (tier and count, or undefended), an army's stamina. Never what a site

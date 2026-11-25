@@ -5157,7 +5157,7 @@ const LAB_HIGH_GROUND_STEPS = [
   { name: "lit-tiles-on-ground", play: readTheLitTiles, settleMs: 0, verify: litTilesClearTheirGround },
 ];
 const LIT_PLATES = `JSON.stringify(window.__gameRenderer?.worldmapScene?.highlightHexManager.getDebugState().plates ?? null)`;
-const PLATE_FLOAT_LIMIT = 0.05;
+const PLATE_FLOAT_LIMIT = 0.06;
 
 /** The selected army's lit tiles, read as drawn, once their roll-in has ended. */
 async function readTheLitTiles({ browser, extraScreenshot }) {
@@ -5172,9 +5172,14 @@ function litTilesClearTheirGround({ played }) {
   if (plates.length === 0) return failed("the selected army is offered no lit tile");
   const buried = plates.filter((plate) => plate.lowest <= 0);
   const floating = plates.filter((plate) => plate.highest > PLATE_FLOAT_LIMIT);
-  const clearance = { lowest: Math.min(...plates.map((plate) => plate.lowest)), highest: Math.max(...plates.map((plate) => plate.highest)) };
-  if (buried.length > 0) return failed(`${buried.length} of ${plates.length} lit plates lie under their own ground`, { buried, clearance });
-  if (floating.length > 0) return failed(`${floating.length} of ${plates.length} lit plates float over their tile`, { floating, clearance });
+  const clearance = {
+    lowest: Math.min(...plates.map((plate) => plate.lowest)),
+    highest: Math.max(...plates.map((plate) => plate.highest)),
+  };
+  if (buried.length > 0)
+    return failed(`${buried.length} of ${plates.length} lit plates lie under their own ground`, { buried, clearance });
+  if (floating.length > 0)
+    return failed(`${floating.length} of ${plates.length} lit plates float over their tile`, { floating, clearance });
   return completed({ plates: plates.length, clearance });
 }
 

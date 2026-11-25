@@ -76,7 +76,13 @@ const hexGrid = (radius: number): { points: [number, number][]; triangles: numbe
 export const createHexPlateGeometry = (radius: number): BufferGeometry => {
   const { points, triangles } = hexGrid(radius);
   const geometry = new BufferGeometry();
-  geometry.setAttribute("position", new Float32BufferAttribute(points.flatMap(([x, y]) => [x, y, 0]), 3));
+  geometry.setAttribute(
+    "position",
+    new Float32BufferAttribute(
+      points.flatMap(([x, y]) => [x, y, 0]),
+      3,
+    ),
+  );
   geometry.setIndex(triangles);
   return geometry;
 };
@@ -105,7 +111,13 @@ export const createFilledHexagonOverlayGeometry = (
     innerAt(index + 1),
   ]).flat();
   const geometry = new BufferGeometry();
-  geometry.setAttribute("position", new Float32BufferAttribute(points.flatMap(([x, y]) => [x, y, 0]), 3));
+  geometry.setAttribute(
+    "position",
+    new Float32BufferAttribute(
+      points.flatMap(([x, y]) => [x, y, 0]),
+      3,
+    ),
+  );
   geometry.setAttribute(
     "color",
     new Float32BufferAttribute(
@@ -116,4 +128,3 @@ export const createFilledHexagonOverlayGeometry = (
   geometry.setIndex([...fill.triangles, ...rim]);
   return geometry;
 };
-

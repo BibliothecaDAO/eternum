@@ -81,7 +81,8 @@ const createMesh = (material: MeshBasicMaterial, renderOrder: number): Mesh => {
 const paintCopies = (geometry: BufferGeometry, copies: readonly PlateCopy[], verticesPerCopy: number): void => {
   const colors = new Float32Array(copies.length * verticesPerCopy * 3);
   copies.forEach(({ color }, copy) => {
-    for (let vertex = 0; vertex < verticesPerCopy; vertex++) color.toArray(colors, (copy * verticesPerCopy + vertex) * 3);
+    for (let vertex = 0; vertex < verticesPerCopy; vertex++)
+      color.toArray(colors, (copy * verticesPerCopy + vertex) * 3);
   });
   geometry.setAttribute("color", new BufferAttribute(colors, 3));
 };
@@ -161,14 +162,14 @@ export class HighlightHexManager {
   }
 
   private createLayer(config: {
-      color: number;
-      opacity: number;
-      renderOrder: number;
-      baseOpacity: number;
-      opacityPulseScale: number;
-      targetScale: number;
-      lift: number;
-      toneMapped?: boolean;
+    color: number;
+    opacity: number;
+    renderOrder: number;
+    baseOpacity: number;
+    opacityPulseScale: number;
+    targetScale: number;
+    lift: number;
+    toneMapped?: boolean;
   }): HighlightRenderLayer {
     const material = new MeshBasicMaterial({
       color: config.color,
@@ -378,7 +379,12 @@ export class HighlightHexManager {
 
   /** What is drawn, for the page's dev report: each layer's count and the centre of every plate on every layer. */
   getDebugState() {
-    const layers = { route: this.routeLayer, endpoint: this.endpointLayer, frontier: this.frontierLayer, teach: this.teachLayer };
+    const layers = {
+      route: this.routeLayer,
+      endpoint: this.endpointLayer,
+      frontier: this.frontierLayer,
+      teach: this.teachLayer,
+    };
     return {
       cameraView: this.cameraView,
       routeCount: this.routeLayer.copies.length,
@@ -386,7 +392,13 @@ export class HighlightHexManager {
       frontierCount: this.frontierLayer.copies.length,
       teachCount: this.teachLayer.copies.length,
       plates: Object.entries(layers).flatMap(([name, layer]) =>
-        layer.copies.map((copy, index) => ({ layer: name, x: copy.x, z: copy.z, scale: copy.scale, ...this.clearance(layer, index) })),
+        layer.copies.map((copy, index) => ({
+          layer: name,
+          x: copy.x,
+          z: copy.z,
+          scale: copy.scale,
+          ...this.clearance(layer, index),
+        })),
       ),
     };
   }
@@ -397,7 +409,8 @@ export class HighlightHexManager {
     let lowest = Infinity;
     let highest = -Infinity;
     for (let vertex = copyIndex * perCopy; vertex < (copyIndex + 1) * perCopy; vertex++) {
-      const above = positions.getY(vertex) - this.terrain.sampleSurface(positions.getX(vertex), positions.getZ(vertex)).height;
+      const above =
+        positions.getY(vertex) - this.terrain.sampleSurface(positions.getX(vertex), positions.getZ(vertex)).height;
       lowest = Math.min(lowest, above);
       highest = Math.max(highest, above);
     }
