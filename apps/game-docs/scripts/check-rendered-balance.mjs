@@ -49,7 +49,7 @@ const n = (value) => value.toLocaleString("en-US");
 /** A building's price as the realm page states it: every resource it takes, by the catalog's name. */
 const buildingPrice = (config, id) =>
   config.buildings.simpleBuildingCost[id]
-    .map(({ resource, amount }) => `${n(amount)} ${resourceName(resource)}`)
+    .map(({ resource, amount }) => `${n(amount)} ${resourceName(resource, true)}`)
     .join(" + ");
 
 /**

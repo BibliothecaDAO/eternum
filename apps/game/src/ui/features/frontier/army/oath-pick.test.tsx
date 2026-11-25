@@ -61,7 +61,7 @@ vi.mock("../pick-effect-text", async (importOriginal) => ({
 }));
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { FrontierOathPick } from "./oath-pick";
+import { FrontierOathPick, holdOathPick } from "./oath-pick";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -130,6 +130,19 @@ it("waits on its army until the army is picked, then offers three compact cards 
     oath: oaths.FOX,
     replace: null,
   });
+});
+
+it("holds the pick through a find's beat, then opens it", async () => {
+  vi.useFakeTimers();
+  try {
+    holdOathPick(army.explorerId, 900);
+    draw();
+    expect(host.querySelector("[data-oath-pick]")).toBeNull();
+    act(() => vi.advanceTimersByTime(900));
+    expect(host.querySelector("[data-oath-pick]")).not.toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 it("asks which held Oath the card replaces when every slot is held, and swears it in its place", async () => {

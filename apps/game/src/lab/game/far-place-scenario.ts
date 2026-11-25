@@ -3,6 +3,7 @@ import { entityHomeNamespace, expeditionRealmSite, getEntityName, readExpedition
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
 import { LAB_GAME, type LabFact, type LabScenario } from "./lab-chain";
+import { armyDay } from "./spire-scenario";
 import { NEIGHBOUR, NEIGHBOUR_REALM, visitScenario } from "./visit-scenario";
 
 /**
@@ -34,6 +35,7 @@ export const farPlaceScenario = (): LabScenario => {
       key: "0x1ae1",
       value: wire({ ...stands, ...armyTile, entity_id: NEIGHBOUR_ARMY }),
     },
+    armyDay(game.store, NEIGHBOUR_ARMY, OWN_ARMY),
   ];
   game.store.applyFacts(facts as never);
   const realm = game.store.require("Structure", { game_id: LAB_GAME.gameId, entity_id: NEIGHBOUR_REALM });

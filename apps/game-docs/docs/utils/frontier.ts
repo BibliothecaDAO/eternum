@@ -134,7 +134,7 @@ const WHEAT = 35;
 const LABOR = 23;
 
 const priceOf = (costs: readonly { resource: number; amount: number }[]) =>
-  costs.map(({ resource, amount }) => `${n(amount)} ${resourceName(resource)}`).join(" + ");
+  costs.map(({ resource, amount }) => `${n(amount)} ${resourceName(resource, true)}`).join(" + ");
 
 const researchRow = (row: number) =>
   frontierPreset.research
