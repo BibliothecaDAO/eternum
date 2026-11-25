@@ -6,8 +6,8 @@ export interface CombatMarkLook {
   icon: IconMeaning;
 }
 
-const BLADE: CombatMarkLook = { label: "Blade", icon: "attack" };
-const BOW: CombatMarkLook = { label: "Bow", icon: "crossbowman-t1" };
+const BLADE: CombatMarkLook = { label: "Blade", icon: "combat-blade" };
+const BOW: CombatMarkLook = { label: "Bow", icon: "combat-bow" };
 
 const COMBAT_MARKS = { Knight: BLADE, Paladin: BLADE, Crossbowman: BOW } satisfies Record<TroopType, CombatMarkLook>;
 

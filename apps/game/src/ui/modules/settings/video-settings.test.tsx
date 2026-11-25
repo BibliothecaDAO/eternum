@@ -52,14 +52,14 @@ const remount = async () => {
 };
 
 it("draws on a desktop no Renderer row and no Haptics, as nothing there vibrates", () => {
-  expect(names()).toEqual(["Quality", "FPS", "Shadows", "Reduced motion"]);
+  expect(names()).toEqual(["Quality", "Shadows", "Reduced motion"]);
   expect(host.querySelector(".ui-setting__about")).toBeNull();
 });
 
 it("offers Haptics on a phone that can vibrate, and saves its choice; an iPhone, with no vibration, gets no row", async () => {
   device({ touch: true, vibrate: true });
   await remount();
-  expect(names()).toEqual(["Quality", "FPS", "Shadows", "Reduced motion", "Haptics"]);
+  expect(names()).toEqual(["Quality", "Shadows", "Reduced motion", "Haptics"]);
   const haptics = () => host.querySelector('[role="switch"][aria-label="Haptics"]')!.getAttribute("aria-checked");
   const before = haptics();
   await toggle("Haptics");
@@ -71,28 +71,28 @@ it("offers Haptics on a phone that can vibrate, and saves its choice; an iPhone,
   expect(names()).not.toContain("Haptics");
 });
 
-it("saves Shadows at once without leaving the page, says it applies after a reload, and stops saying so when undone", async () => {
-  await toggle("Shadows");
-  expect(JSON.parse(localStorage.getItem("eternum-graphics")!)).toEqual({ quality: "high", shadows: false });
+it("offers Low, Balanced and High, saves a choice at once without leaving the page, and says it applies after a reload until undone", async () => {
+  const setting = [...host.querySelectorAll(".ui-setting")].find(
+    (row) => row.querySelector(".ui-setting__name")?.textContent === "Quality",
+  )!;
+  expect([...setting.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent)).toEqual([
+    "Low",
+    "Balanced",
+    "High",
+  ]);
+  await choose("Quality", "Low");
+  expect(JSON.parse(localStorage.getItem("eternum-graphics")!)).toEqual({ quality: "low", shadows: true });
   expect(window.location.href).toBe(page);
-  expect(reloadRow()).toBe(true);
-  expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Reload")).toBe(true);
-
-  await toggle("Shadows");
-  expect(reloadRow()).toBe(false);
-});
-
-it("says a Quality or FPS choice applies after a reload", async () => {
-  await choose("Quality", "Balanced");
-  expect(JSON.parse(localStorage.getItem("eternum-graphics")!).quality).toBe("balanced");
   expect(reloadRow()).toBe(true);
   await choose("Quality", "High");
   expect(reloadRow()).toBe(false);
+});
 
-  await choose("FPS", "60");
-  expect(localStorage.getItem("RENDER_MODE")).toBe("capped");
+it("saves Shadows at once beside Quality, says it applies after a reload, and stops saying so when undone", async () => {
+  await toggle("Shadows");
+  expect(JSON.parse(localStorage.getItem("eternum-graphics")!)).toEqual({ quality: "high", shadows: false });
   expect(reloadRow()).toBe(true);
-  await choose("FPS", "Max");
+  await toggle("Shadows");
   expect(reloadRow()).toBe(false);
 });
 
@@ -107,7 +107,7 @@ it("applies Reduced motion at once, with nothing to reload", async () => {
 
 it("reloads the page as it is, a recovery's renderer in its address kept", async () => {
   window.history.replaceState(null, "", "/g/0x1/6/map?spectate=true&rendererMode=webgpu-force-webgl#world");
-  await toggle("Shadows");
+  await choose("Quality", "Low");
   const open = vi.spyOn(pageNavigation, "open").mockImplementation(() => {});
   const reload = vi.spyOn(pageNavigation, "reload").mockImplementation(() => {});
   await act(async () =>

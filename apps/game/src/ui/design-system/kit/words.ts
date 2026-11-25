@@ -619,7 +619,10 @@ export const SUPPLY_POST = {
   chip: "Post",
   open: "Post open",
   rule: "Clearing opens a Supply Post: refill adjacent armies until day end",
-  until: "Open until the day ends",
+  drawsFrom: "Draws from realm stock",
+  endsIn: (seconds: number | undefined) => `Ends in ${dayLength(seconds)}`,
+  inRange: "Armies in range",
+  beside: (count: number) => `${formatExact(count)} beside post`,
 } as const;
 export const SEASON_CLIMB = {
   rule: "Ranked by sites cleared, then deepest depth",
@@ -673,7 +676,7 @@ export const SETTINGS_WORDS = {
   effects: "Effects",
   mute: "Mute",
   quality: "Quality",
-  frameRate: "FPS",
+  qualities: { low: "Low", balanced: "Balanced", high: "High" },
   shadows: "Shadows",
   reducedMotion: "Reduced motion",
   haptics: "Haptics",
@@ -1133,7 +1136,6 @@ export const DEPLOYING = "Deploying…";
 export const DEPLOY_WORDS = {
   troopType: "Troop type",
   slot: "Slot",
-  oaths: "Oaths",
   startsOn: "Starts on",
   howMany: (troop: string) => `${troop} to deploy`,
   deployCount: (count: number) => `${DEPLOY} ${formatExact(count)}`,
@@ -1159,7 +1161,7 @@ export const TRANSFER_TROOPS = {
   waiting: "Loading army details…",
   stale: "Armies changed. Review merge.",
   merge: (army: string) => `Merge into ${army}`,
-  losesProgress: (army: string) => `${army} loses its Logistics, Oath slots and held Oaths.`,
+  losesProgress: (army: string) => `${army} will lose its Logistics, Oath slots, and Oaths.`,
   /** A second press confirms the loss of stronger Logistics training. */
   confirmMerge: (army: string) => `Confirm merge into ${army}`,
   amount: (from: string, to: string) => `Troops ${from} sends to ${to}`,
@@ -1176,8 +1178,7 @@ export const REINFORCE = {
   verb: "Reinforce",
   verbAmount: (amount: string) => `Reinforce +${amount}`,
   title: (army: string) => `Reinforce ${army}`,
-  titleAmount: (army: string, amount: string) => `Reinforce ${army} (+${amount})`,
-  fromHome: (amount: string, troops: string) => `+${amount} ${troops} from home`,
+  stockReady: (amount: string) => `From Realm stock · ${amount} ready`,
   sending: "Reinforcing…",
   failed: "Could not reinforce army.",
 } as const;
@@ -1963,8 +1964,6 @@ export const NEWS_WORDS = {
 /** The app's own states: install, update, offline, a page that does not exist. */
 export const APP_STATE_WORDS = {
   install: "Install",
-  /** The install notice's name for assistive technology: where the app will live (its icon and Install say it on screen). */
-  onHomeScreen: "Realms on your home screen",
   updateReady: "Update ready",
   update: "Update",
   updating: "Updating…",

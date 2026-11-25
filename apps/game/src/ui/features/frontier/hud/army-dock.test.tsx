@@ -85,8 +85,8 @@ it.each(["phone", "desktop"])("shows every open slot and its start on %s, and op
             ["Army 3 starts on 7/150 stamina.", "Any troop type · 7"],
           ]
         : [
-            ["Army 2 starts full: 150/150 stamina.", "+Deploy"],
-            ["Army 3 starts on 7/150 stamina.", "+Deploy"],
+            ["Army 2 starts full: 150/150 stamina.", "+"],
+            ["Army 3 starts on 7/150 stamina.", "+"],
           ],
     );
     act(() => slots[1].click());
@@ -242,7 +242,7 @@ it.each(["phone", "desktop"] as const)(
       if (size === "desktop") {
         expect(slots[0].closest(".frontier-slot")?.textContent).toContain(`${expectedLabel} ready at home`);
       } else {
-        expect(slots.map((slot) => slot.textContent)).toEqual(slots.map(() => "+Deploy"));
+        expect(slots.map((slot) => slot.textContent)).toEqual(slots.map(() => "+"));
       }
       act(() => slots[0].click());
       expect(useUIStore.getState().pendingMilitaryAction).toMatchObject({ structureId: 7, slot: 0 });

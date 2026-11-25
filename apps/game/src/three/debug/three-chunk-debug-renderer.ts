@@ -56,6 +56,7 @@ export const mountThreeChunkDebugRenderer = async (
     envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
     isMobileDevice: isCoarsePointer(),
     pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+    postProcessing: true,
     search: window.location.search,
   });
   if (input.signal.aborted) {

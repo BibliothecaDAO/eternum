@@ -47,6 +47,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { configManager, setBlockTimestampSource, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import { BuildingType, siteName, TileOccupier } from "@bibliothecadao/types";
 import { transferArmies, TRANSFER_TAPPED } from "./army/transfer-fixture";
+import { SUPPLY_POST } from "@/ui/design-system/kit/words";
 import { useSelectionCard } from "./frontier-selection-sheet";
 
 /** The selection's card as the HUD draws it. */
@@ -130,7 +131,7 @@ const clearedCamp = ({ occupied, reload }: { occupied: boolean; reload: boolean 
 
 describe("Frontier's selection sheet", () => {
   it.each([false, true])(
-    "opens the supply post's reinforcement for the player's army beside it, not the receipt the banner told (reload: %s)",
+    "opens the player's supply post on what it draws from and the army beside it, whose row opens its reinforcement (reload: %s)",
     async (reload) => {
       Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
       const store = clearedCamp({ occupied: false, reload });
@@ -152,8 +153,16 @@ describe("Frontier's selection sheet", () => {
         expect(sheet.getAttribute("aria-label")).toBe("Supply Post");
         expect(sheet.querySelector(".ui-frame__head .ui-chip")?.textContent).toBe(siteName(SITE));
         expect(sheet.textContent!.split(siteName(SITE)).length - 1).toBe(1);
-        expect(sheet.textContent).toContain("Open until the day ends");
+        expect(sheet.textContent).toContain(SUPPLY_POST.drawsFrom);
+        expect(sheet.textContent).toContain(SUPPLY_POST.beside(1));
         expect(sheet.textContent).not.toContain("Cleared · Golem");
+        const army = store.entityOccupancy(1, 201)!;
+        await act(async () => sheet.querySelector<HTMLButtonElement>("[data-supply-army]")!.click());
+        expect(useUIStore.getState().mapSelection).toEqual({
+          kind: "structure",
+          entityId: SITE,
+          tile: { col: army.col, row: army.row },
+        });
       } finally {
         act(() => root.unmount());
         useUIStore.getState().selectOnMap(null);
@@ -209,8 +218,8 @@ describe("Frontier's selection sheet", () => {
         expect(sheet.getAttribute("aria-label")).toBe("Supply Post");
         expect(sheet.querySelector(".ui-frame__head .ui-chip")?.textContent).toBe(expectedName);
         expect(sheet.textContent!.split(expectedName).length - 1).toBe(1);
-        expect(host.textContent).toContain("Cleared · Golem");
-        expect(host.textContent).toContain("550 Labor");
+        expect(host.textContent!.includes("Cleared · Golem")).toBe(foreign);
+        expect(host.textContent!.includes(SUPPLY_POST.drawsFrom)).toBe(!foreign);
         const close = host.querySelector<HTMLButtonElement>('button[aria-label="Close"]');
         expect(close).not.toBeNull();
         await act(async () => close!.click());
@@ -218,7 +227,7 @@ describe("Frontier's selection sheet", () => {
         await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE }));
         expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Supply Post");
         expect(host.querySelector("[data-kit-sheet]")!.textContent).toContain(expectedName);
-        expect(host.querySelector("[data-site-rewards]")?.textContent).toBe("550 Labor");
+        if (foreign) expect(host.querySelector("[data-site-rewards]")?.textContent).toBe("550 Labor");
       } finally {
         act(() => root.unmount());
         useUIStore.getState().selectOnMap(null);
@@ -231,7 +240,7 @@ describe("Frontier's selection sheet", () => {
 
   // Owner, 28 October 2026: "when I click on a tile that was cleared but an army is standing on it, army panel must be
   // displayed not the cleared one".
-  it("opens no card over the player's own army on a cleared site; the clear's Feed link opens its receipt", async () => {
+  it("opens no card over the player's own army on a cleared site; the clear's Feed link opens its post", async () => {
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
     const store = clearedCamp({ occupied: true, reload: false });
     tiles.current = [
@@ -266,7 +275,7 @@ describe("Frontier's selection sheet", () => {
       await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE }));
       expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Supply Post");
       expect(host.querySelector("[data-kit-sheet] .ui-frame__head .ui-chip")?.textContent).toBe(siteName(SITE));
-      expect(host.textContent).toContain("Cleared · Golem");
+      expect(host.textContent).toContain(SUPPLY_POST.drawsFrom);
     } finally {
       act(() => root.unmount());
       giveBackPositions();
@@ -348,20 +357,22 @@ it("the map's actual transfer selection shows the survivor before the player con
     expect(host.querySelector('[role="dialog"]')?.getAttribute("aria-label")).toBe("Transfer troops");
     const expectMergePreview = () => {
       expect(host.querySelector(".ui-notice")?.textContent).toBe(
-        "Army 1 loses its Logistics, Oath slots and held Oaths.",
+        "600 Knights will lose its Logistics, Oath slots, and Oaths.",
       );
       expect(host.querySelector("s")).toBeNull();
       expect(host.textContent).toContain("100/180→7");
     };
     expectMergePreview();
     expect(swap).not.toHaveBeenCalled();
-    const confirm = [...host.querySelectorAll("button")].find((button) => button.textContent === "Merge into Army 2")!;
+    const confirm = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Merge into 500 Knights",
+    )!;
     await act(async () => confirm.click());
     expect(swap).not.toHaveBeenCalled();
     // Confirming the loss preserves the preview; only the final press sends the transfer.
     expectMergePreview();
     const final = [...host.querySelectorAll("button")].find(
-      (button) => button.textContent === "Confirm merge into Army 2",
+      (button) => button.textContent === "Confirm merge into 500 Knights",
     )!;
     await act(async () => final.click());
     expect(swap).toHaveBeenCalledWith(

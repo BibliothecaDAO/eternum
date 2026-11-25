@@ -360,7 +360,7 @@ export class StudioStage implements LabStage {
   }
 
   private groundHeight(x: number, z: number): number {
-    return this.context?.terrain.sampleSurface(x, z).height ?? 0;
+    return this.context?.terrain.sampleHeight(x, z) ?? 0;
   }
 
   private requireContext(): LabStageContext {

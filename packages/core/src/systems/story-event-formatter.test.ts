@@ -203,6 +203,30 @@ it("formats Frontier battle stories with Frontier troop names, no tier prefix an
   expect(presentation.description).not.toContain("d20");
 });
 
+it("tells a Frontier army raised or reinforced by its Frontier troop name, no tier", () => {
+  const frontierStore = {
+    get: (model: string) => {
+      if (model === "SliceRules") return { day_unit_seconds: 14_400 };
+      if (model === "GameRegistry")
+        return { start_main_at: 100, end_at: 1_000_000, scheduled_end_at: 1_000_000, seed: 1n };
+      if (model === "SettlementRules") return { spacing: 1024 };
+      return undefined;
+    },
+  } as unknown as Parameters<typeof buildStoryEventPresentation>[1];
+  const describe = (storyType: string, category: string) =>
+    buildStoryEventPresentation(
+      story(storyType, { structure_id: 5, explorer_id: 7, category, tier: "T1", amount: "4535000000000" }),
+      frontierStore,
+    ).description;
+  expect(describe("ExplorerCreateStory", "Paladin")).toBe("4,535 Scouts");
+  expect(describe("ExplorerAddStory", "Crossbowman")).toBe("+4,535 Crossbows");
+  expect(
+    buildStoryEventPresentation(
+      story("ExplorerCreateStory", { category: "Paladin", tier: "T1", amount: "4535000000000" }),
+    ).description,
+  ).toBe("4,535 Paladin T1");
+});
+
 /**
  * Each BattleEvent shape combat.cairo emits, as its fields are recorded: army 20 from home 10 (player 0x123), army 22
  * from home 11 (player 0x456), structure 21 guarded by the Vanguard (player 0x0), structure 23 owned by player 0x123.
