@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
-import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
+import { loadOpening, skipTutorial } from "./opening/opening-store";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { deepViewFor, type GameClientSetup, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { sellingFragments } from "./value/fragments-fixture";
@@ -93,10 +93,11 @@ let host: HTMLDivElement;
 let root: Root;
 let shownStore: NativeFactStore;
 
-beforeEach(() => {
+beforeEach(async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   // These tests play the whole HUD; the opening interface has its own tests.
-  useWorldAppearanceStore.setState({ showEverything: true });
+  await loadOpening(null);
+  await skipTutorial();
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => new Response(JSON.stringify({ blocked: [], version: 0 }), { status: 200 })),
@@ -1297,7 +1298,6 @@ it.each([
     const route = window.location.pathname + window.location.search;
     viewport.set(width);
     localStorage.clear();
-    useWorldAppearanceStore.setState({ showEverything: false });
     useOpeningStore.setState({
       owner: null,
       loaded: false,
@@ -1522,7 +1522,6 @@ it.each([
       expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
     } finally {
       useBlockTimestampStore.setState(previousTicks);
-      useWorldAppearanceStore.setState({ showEverything: true });
       localStorage.clear();
       window.history.replaceState(null, "", route);
       window.dispatchEvent(new Event("urlChanged"));
@@ -1546,7 +1545,6 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
   const route = window.location.pathname + window.location.search;
   viewport.set(390);
   localStorage.clear();
-  useWorldAppearanceStore.setState({ showEverything: false });
   const resetMemory = () =>
     useOpeningStore.setState({
       owner: null,
@@ -1659,7 +1657,6 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
     expect(host.querySelector('[data-tutorial-dock="day-end"]')).toBeNull();
   } finally {
     useBlockTimestampStore.setState(previousTicks);
-    useWorldAppearanceStore.setState({ showEverything: true });
     localStorage.clear();
     window.history.replaceState(null, "", route);
     window.dispatchEvent(new Event("urlChanged"));
@@ -1679,7 +1676,6 @@ it.each([1920, 390])(
     const route = window.location.pathname + window.location.search;
     viewport.set(width);
     localStorage.clear();
-    useWorldAppearanceStore.setState({ showEverything: false });
     const resetMemory = () =>
       useOpeningStore.setState({
         owner: null,
@@ -1755,7 +1751,6 @@ it.each([1920, 390])(
       expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
     } finally {
       useBlockTimestampStore.setState(previousTicks);
-      useWorldAppearanceStore.setState({ showEverything: true });
       localStorage.clear();
       window.history.replaceState(null, "", route);
       window.dispatchEvent(new Event("urlChanged"));
