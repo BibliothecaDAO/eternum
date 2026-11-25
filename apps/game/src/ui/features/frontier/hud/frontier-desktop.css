@@ -237,7 +237,6 @@
 }
 
 .frontier-slots {
-  min-height: 0;
   flex: 0 1 auto;
 }
 .frontier-slots__head {
