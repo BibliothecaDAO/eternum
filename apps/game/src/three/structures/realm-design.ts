@@ -12,6 +12,7 @@ interface RealmAssetEntry {
   source?: string;
   seed?: number;
   aspect?: AspectId;
+  grownHeight?: number;
 }
 
 const ASPECT_SLUGS = {
@@ -39,12 +40,40 @@ export const ASPECT_WONDER_PATHS = ASPECT_WONDER_LIST.map((asset) => asset.path)
 
 export const BASE_REALM_CANDIDATES: readonly RealmAssetEntry[] = [
   {
+    id: "base-settlement",
+    label: "Base Settlement · thatched hamlet",
+    level: 0,
+    wonder: false,
+    source: "tripo/realms/base-settlement",
+    path: modelPath("realms/base-settlement.glb"),
+    grownHeight: 0.7,
+  },
+  {
     id: "base-city",
     label: "Base City · courtyard keep",
     level: 1,
     wonder: false,
     source: "tripo/realms/base-city",
     path: modelPath("realms/base-city.glb"),
+    grownHeight: 1,
+  },
+  {
+    id: "base-kingdom",
+    label: "Base Kingdom · blue-roofed keep",
+    level: 2,
+    wonder: false,
+    source: "tripo/realms/base-kingdom",
+    path: modelPath("realms/base-kingdom.glb"),
+    grownHeight: 1.25,
+  },
+  {
+    id: "base-empire",
+    label: "Base Empire · gold pavilion",
+    level: 3,
+    wonder: false,
+    source: "tripo/realms/base-empire",
+    path: modelPath("realms/base-empire.glb"),
+    grownHeight: 1.5,
   },
 ];
 export const REALM_ASSETS: readonly RealmAssetEntry[] = [...assets, ...ASPECT_WONDER_LIST];
