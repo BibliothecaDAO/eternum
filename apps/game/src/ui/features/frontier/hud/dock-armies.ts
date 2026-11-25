@@ -25,7 +25,7 @@ import { armyNumber, resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecad
 import { formatExact, frontierTroopName, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
-import { ARMY, TROOPS } from "@/ui/design-system/kit/words";
+import { TROOPS } from "@/ui/design-system/kit/words";
 
 const ARMY_MODELS = [
   ...STAMINA_MODELS,
@@ -119,9 +119,7 @@ export const armyArt = troopMeaning;
 const armyNames = (armies: readonly NativeRows["ExplorerTroops"][]): string[] => {
   const names = armies.map((army) => armyName(army.troops.category, troopCount(army.troops)));
   return names.map((name, index) =>
-    names.indexOf(name) === names.lastIndexOf(name)
-      ? name
-      : `${name} · ${ARMY} ${armyNumber(armies[index]) ?? index + 1}`,
+    names.indexOf(name) === names.lastIndexOf(name) ? name : `${name} (${armyNumber(armies[index]) ?? index + 1})`,
   );
 };
 

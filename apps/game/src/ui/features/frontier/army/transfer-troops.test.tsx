@@ -135,7 +135,7 @@ const sides = () =>
     name.parentElement!.querySelector(".text-hud-title")!.textContent,
   ]);
 
-const LOSS_NOTICE = /loses its Logistics, Oath slots and held Oaths\./;
+const LOSS_NOTICE = /will lose its Logistics, Oath slots, and Oaths\./;
 const CONFIRM_MERGE = /^Confirm merge /;
 
 const withOaths = (store: ReturnType<typeof transferArmies>, source: number, target: number) => {
@@ -162,7 +162,7 @@ it("confirms the loss of stronger Logistics in a 500 into 1,500 merge", async ()
   expect(amount()).toBe("500");
   expect(host.textContent).toContain("5/252");
   expect(host.textContent).toContain("15/216→5");
-  expect(host.textContent).toContain("500 Knights loses its Logistics, Oath slots and held Oaths.");
+  expect(host.textContent).toContain("500 Knights will lose its Logistics, Oath slots, and Oaths.");
   expect(host.querySelector("s")).toBeNull();
   await act(async () => button("Merge into 1,500 Knights")!.click());
   expect(swap).not.toHaveBeenCalled();
@@ -329,10 +329,10 @@ it("starts the amount again from the armies' new troops when they change while i
   expect(amount()).toBe("100");
   // Again a merge into the army tapped, over the new counts: never a count below none.
   expect(sides()).toEqual([
-    ["100 Knights · Army 1", "0"],
-    ["100 Knights · Army 2", "200"],
+    ["100 Knights (1)", "0"],
+    ["100 Knights (2)", "200"],
   ]);
-  await act(async () => button("Merge into 100 Knights · Army 2")!.click());
+  await act(async () => button("Merge into 100 Knights (2)")!.click());
   if (button(/^Confirm merge /)) await act(async () => button(/^Confirm merge /)!.click());
   expect(swap).toHaveBeenCalledOnce();
   expect(swap).toHaveBeenCalledWith(
@@ -353,7 +353,7 @@ it("tells two armies of the same troops apart by their slot", () => {
     },
   ] as never);
   render(store);
-  expect(sides().map(([name]) => name)).toEqual(["300 Knights · Army 1", "300 Knights · Army 2"]);
+  expect(sides().map(([name]) => name)).toEqual(["300 Knights (1)", "300 Knights (2)"]);
 });
 
 it.each([2, 3, 4])(
@@ -489,7 +489,7 @@ it("asks before dissolving an army with a whole upgrade more progression, then s
   expect(swap).not.toHaveBeenCalled();
   expect(close).not.toHaveBeenCalled();
   expect(host.querySelector(".ui-notice")?.textContent).toContain(
-    "600 Knights loses its Logistics, Oath slots and held Oaths.",
+    "600 Knights will lose its Logistics, Oath slots, and Oaths.",
   );
   await act(async () => button("Confirm merge into 500 Knights")!.click());
   expect(swap).toHaveBeenCalledOnce();

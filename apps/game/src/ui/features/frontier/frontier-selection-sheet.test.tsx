@@ -357,7 +357,7 @@ it("the map's actual transfer selection shows the survivor before the player con
     expect(host.querySelector('[role="dialog"]')?.getAttribute("aria-label")).toBe("Transfer troops");
     const expectMergePreview = () => {
       expect(host.querySelector(".ui-notice")?.textContent).toBe(
-        "600 Knights loses its Logistics, Oath slots and held Oaths.",
+        "600 Knights will lose its Logistics, Oath slots, and Oaths.",
       );
       expect(host.querySelector("s")).toBeNull();
       expect(host.textContent).toContain("100/180→7");
