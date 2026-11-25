@@ -1061,9 +1061,8 @@ export const OPENING_WORDS = {
       `Stamina returns ${formatRate(rules.staminaPerSecond)}. A ${FRAGMENT} refills ${formatAmount(rules.staminaPerFragment)} now or unlocks ${ANCIENT_SEAL}.`,
     relic: (rules: OpeningRules) =>
       `Relics last ${formatAmount(rules.relicMinutesPerTier)} minutes per tier. Each army carries ${ARMY_RELIC_SLOTS}.`,
-    "well-lore": () =>
-      "Well lore is learned. Uncovered wells appear on the map for any adjacent army to refill stamina.",
-    "shrine-lore": () => "Shrine lore is learned. Uncovered shrines appear on the map and offer an Oath on use.",
+    "well-lore": () => "Well lore is learned. Uncovered wells appear on the map.",
+    "shrine-lore": () => "Shrine lore is learned. Uncovered shrines appear on the map.",
     city: (rules: OpeningRules) =>
       `Scouts reveal mist for ${formatAmount(rules.scoutExploreStamina)} stamina instead of ${formatAmount(rules.exploreStamina)}.`,
     barracks: (rules: OpeningRules) => `It raises ${formatRate(rules.knightsPerSecond)} Knights.`,
@@ -1084,8 +1083,8 @@ export const OPENING_WORDS = {
     essence: "Open Research to learn a node.",
     shop: "Open Shop or wait for stamina.",
     relic: "Open your army to inspect relic slots.",
-    "well-lore": "Reveal mist to find a well, then move beside it and press Use.",
-    "shrine-lore": "Reveal mist to find a shrine, then move beside it and press Use.",
+    "well-lore": "Find a well, move beside it, press Use.",
+    "shrine-lore": "Find a shrine, move beside it, press Use.",
     city: "Train scouts for cheaper mist reveals.",
     barracks: "Tap the lit plot to build.",
     deploy: "Press Deploy in the Realm panel.",

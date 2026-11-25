@@ -1,5 +1,6 @@
 import { type RankedWords, rankedText } from "@bibliothecadao/types";
 import {
+  SHRINE_USED,
   SHRINE_USED_LINE,
   wellUsedLine,
   buildingName,
@@ -232,10 +233,17 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
   SiteUsed: (event, payload, components, resolvePlayerName) => {
     const benefit = payload.benefit as Record<string, unknown> | undefined;
     const well = benefit?.Well !== undefined ? toNumber(benefit.Well) : undefined;
-    const shrine = benefit?.Shrine !== undefined || benefit?.ShrinePoint !== undefined;
-    if (!shrine && (well === undefined || well === null)) throw new Error("Incomplete site use story");
+    const title =
+      benefit?.Shrine !== undefined
+        ? SHRINE_USED_LINE
+        : benefit?.ShrinePoint !== undefined
+          ? SHRINE_USED
+          : well !== undefined && well !== null
+            ? wellUsedLine(formatExact(well))
+            : null;
+    if (title === null) throw new Error("Incomplete site use story");
     return {
-      title: well === undefined || well === null ? SHRINE_USED_LINE : wellUsedLine(formatExact(well)),
+      title,
       description: describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
       icon: "scroll",
     };

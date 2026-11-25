@@ -52,6 +52,7 @@ export const rankedText = (words: RankedWords | string): string =>
     ? words
     : words.map((part) => (typeof part === "string" ? part : part.rank === 0 ? "0" : tierNumeral(part.rank))).join("");
 export const SHRINE_USED_LINE = "Shrine used: Oath offered";
+export const SHRINE_USED = "Shrine used";
 export const wellUsedLine = (amount: string) => `Well used: +${amount} stamina`;
 /** What scores: "250 points", "1 point" (formatPoints). Never VP or pts. */
 export const POINTS = "points";

@@ -1,4 +1,4 @@
-import { SHRINE_USED_LINE, StructureType, siteName, wellUsedLine } from "@bibliothecadao/types";
+import { SHRINE_USED, SHRINE_USED_LINE, StructureType, siteName, wellUsedLine } from "@bibliothecadao/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -818,7 +818,7 @@ it("writes a small army's find rounded, and one under a unit with no amount, as 
 
 it.each([
   [{ Shrine: 0 }, SHRINE_USED_LINE],
-  [{ ShrinePoint: 3 }, SHRINE_USED_LINE],
+  [{ ShrinePoint: 3 }, SHRINE_USED],
   [{ Well: 60 }, wellUsedLine("60")],
   [{ Well: 5 }, wellUsedLine("5")],
   [{ Well: 0 }, wellUsedLine("0")],

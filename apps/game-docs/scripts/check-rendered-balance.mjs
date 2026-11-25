@@ -213,6 +213,7 @@ export const frontierPhrases = (
         `A slot's first army of the day starts with a full bar (${n(stamina.staminaKnightMax)} stamina, plus your Logistics bonus).`,
         `Two adjacent armies of the same troop kind can merge, moving troops only.`,
         `beside any camp your realm cleared today (supply post) on the ${personalLayersOr}`,
+        `refills ${n(nativeRules.WELL_REFILL_PERCENT)}% of its maximum (${n(Math.round((stamina.staminaKnightMax * nativeRules.WELL_REFILL_PERCENT) / 100))} on a ${n(stamina.staminaKnightMax)} bar,`,
         staminaRule,
       ],
     },
