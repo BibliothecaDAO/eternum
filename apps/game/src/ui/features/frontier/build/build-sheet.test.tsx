@@ -20,7 +20,6 @@ import {
   buildingName,
   BuildingType,
   formatCharge,
-  formatExact,
   FRONTIER_BUILDING_TYPES,
   rankName,
   RESOURCE_PRECISION,
