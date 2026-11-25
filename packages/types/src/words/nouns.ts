@@ -21,6 +21,7 @@ import { GUARD_SLOT_NAMES, type GuardSlot } from "../constants/troops";
 import { StructureType } from "../constants/structure-type";
 import { deepSites } from "../constants/deep-sites";
 import { TROOP_TYPES, TroopType } from "../types/common";
+import { nounFor } from "./count";
 
 const UNKNOWN = "—";
 
@@ -88,7 +89,7 @@ export const FRONTIER_TROOP_NAMES = {
 
 export const frontierTroopName = (troop: TroopType | string, count?: number): string | undefined => {
   const words = (FRONTIER_TROOP_NAMES as Record<string, { one: string; many: string }>)[troop];
-  return words && (count === 1 ? words.one : words.many);
+  return words && (count === undefined ? words.many : nounFor(count, words.one, words.many));
 };
 
 /** Many of a troop type, by its type or its name in the game's tables: "Crossbowmen". Unknown is undefined. */
