@@ -1512,6 +1512,9 @@ const LabFeed = () => {
     told("bought", PLAYER, 18, "TierBought", { explorer_id: 201, attribute: "Logistics", tier: 3, price: 400 }),
     told("lost", PLAYER, 25, "BattleEvent", fight("0", "1028000000000")),
     told("shrine", PLAYER, 31, "SiteUsed", used({ ShrinePoint: 3 })),
+    ...[38, 46, 55, 63, 72, 84, 97, 110, 125, 140].map((minutesAgo, at) =>
+      told(`well-${minutesAgo}`, at % 2 ? PLAYER : RIVAL, minutesAgo, "SiteUsed", used({ Well: 60 })),
+    ),
   ];
   return (
     <HudSheet label={EVENTS_WORDS.feed} onClose={noop}>

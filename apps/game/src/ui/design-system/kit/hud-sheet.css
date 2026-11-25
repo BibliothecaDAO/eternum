@@ -1078,6 +1078,9 @@ span.ui-row__choose {
 .ui-frame__body:empty {
   display: none;
 }
+.ui-frame__body[data-more-below] {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - theme(spacing.8)), transparent);
+}
 /* A screen held sideways: the sheet stands in the HUD's right column, under its strip (HudBands). */
 @media (max-width: 1023px) and (orientation: landscape) {
   .ui-sheet {

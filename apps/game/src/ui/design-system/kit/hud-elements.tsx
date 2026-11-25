@@ -1610,6 +1610,7 @@ const SurfaceFrame = forwardRef<
   FrameParts & { bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children">
 >(({ label, title, icon, cue, beside, onClose, bodyClassName, className, children, ...rest }, ref) => {
   const [foot, setFoot] = useState<HTMLElement | null>(null);
+  const body = useMarksMoreBelow();
   useMarkFrameOpen(label);
   useSheetCloses(onClose);
   const drag = useDragDownCloses(onClose);
@@ -1630,13 +1631,39 @@ const SurfaceFrame = forwardRef<
         />
       </div>
       <WindowFootContext.Provider value={foot}>
-        <div className={cn("ui-frame__body", bodyClassName)}>{children}</div>
+        <div ref={body} className={cn("ui-frame__body", bodyClassName)}>
+          {children}
+        </div>
       </WindowFootContext.Provider>
       <footer ref={setFoot} className="ui-window__foot ui-actions" />
     </section>
   );
 });
 SurfaceFrame.displayName = "SurfaceFrame";
+
+const useMarksMoreBelow = () => {
+  const [body, setBody] = useState<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!body) return;
+    const mark = () => body.toggleAttribute("data-more-below", body.scrollTop + body.clientHeight < body.scrollHeight - 1);
+    const resized = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(mark);
+    const watch = () => [body, ...body.children].forEach((element) => resized?.observe(element));
+    const changed = new MutationObserver(() => {
+      watch();
+      mark();
+    });
+    watch();
+    mark();
+    changed.observe(body, { childList: true, subtree: true });
+    body.addEventListener("scroll", mark, { passive: true });
+    return () => {
+      resized?.disconnect();
+      changed.disconnect();
+      body.removeEventListener("scroll", mark);
+    };
+  }, [body]);
+  return setBody;
+};
 
 /**
  * A sheet over the stage, in the one frame, closed by its cross wherever it opened from. On a phone it rises from
