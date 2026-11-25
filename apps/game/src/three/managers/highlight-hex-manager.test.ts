@@ -263,7 +263,12 @@ describe("HighlightHexManager laying a lit hex on the ground", () => {
 });
 
 describe("HighlightHexManager lighting a plot for a building", () => {
-  const build = (col: number) => ({ ...step(col, 0), actionType: "Build", kind: "destination" as const, isEndpoint: true });
+  const build = (col: number) => ({
+    ...step(col, 0),
+    actionType: "Build",
+    kind: "destination" as const,
+    isEndpoint: true,
+  });
 
   it("draws it in the plot palette its scene set, and refuses to before one is set", () => {
     const scene = new THREE.Scene();

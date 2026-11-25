@@ -47,7 +47,12 @@ describe("worldmap interaction palette", () => {
       const { r, g, b } = requireBiomeColor(biome);
       return lightness([r, g, b]);
     };
-    for (const biome of [BiomeType.Grassland, BiomeType.Taiga, BiomeType.TemperateDesert, BiomeType.TropicalRainForest]) {
+    for (const biome of [
+      BiomeType.Grassland,
+      BiomeType.Taiga,
+      BiomeType.TemperateDesert,
+      BiomeType.TropicalRainForest,
+    ]) {
       const look = plotLookOn(biome);
       expect(lightness(look.rim)).toBeGreaterThan(lightness(look.fill));
       expect(lightness(look.fill)).toBeGreaterThan(groundOf(biome));
