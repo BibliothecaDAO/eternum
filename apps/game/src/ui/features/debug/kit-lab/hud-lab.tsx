@@ -208,6 +208,7 @@ const CAMP_CARD: LabSite = {
   guard: 1_100,
   fight: FIGHT(180),
   pay: { icon: "labor", amount: 550 },
+  opensPost: true,
   verb: ATTACK_30,
 };
 const RUIN_CARD: LabSite = {
