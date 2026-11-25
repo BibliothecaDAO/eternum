@@ -16,6 +16,7 @@ import {
   formatPoints,
   formatPopulation,
   formatPopulationInWords,
+  formatHourlyRate,
   formatRate,
   formatShort,
   formatShortChange,
@@ -100,14 +101,14 @@ describe("numbers", () => {
     expect([660, 90, 1, 100_000].map(formatDollars)).toEqual(["$6.60", "$0.90", "$0.01", "$1,000.00"]);
   });
 
-  it("writes a minute's rate whole from 1 a minute up, and to two figures below 1 (owner's rule of 26 October)", () => {
+  it("writes a minute's rate as precisely as it is read, so 1.6 a minute never shows as 2", () => {
     expect([6.3, 8.6, 12.4, 1, 1.4, 1.6, 66].map((perMinute) => formatRate(perMinute / 60))).toEqual([
-      "+6/min",
-      "+9/min",
+      "+6.3/min",
+      "+8.6/min",
       "+12/min",
       "+1/min",
-      "+1/min",
-      "+2/min",
+      "+1.4/min",
+      "+1.6/min",
       "+66/min",
     ]);
     expect([0.6, 0.25, 0.05].map((perMinute) => formatRate(perMinute / 60))).toEqual([
@@ -118,7 +119,17 @@ describe("numbers", () => {
     expect(formatRate(-0.25)).toBe("-15/min");
   });
 
-  it("writes every rate a minute's, never a second's or an hour's", () => {
+  it("writes an hour's rate by the same rule, for the stores counted per hour", () => {
+    expect([100, 50, 201.6, 4.5].map((perHour) => formatHourlyRate(perHour / 3_600))).toEqual([
+      "+100/h",
+      "+50/h",
+      "+202/h",
+      "+4.5/h",
+    ]);
+    expect(formatHourlyRate(undefined)).toBe("—");
+  });
+
+  it("writes a per-minute rate a minute's, never a second's", () => {
     // The owner's two screenshots read +1.1/s and +54/min side by side (3 November).
     expect(formatRate(1.1)).toBe("+66/min");
     expect(formatRate(54 / 60)).toBe("+54/min");

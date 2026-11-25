@@ -352,6 +352,7 @@ import {
   getRelicInfo,
   ResourcesIds,
   formatCharge,
+  formatHourlyRate,
   formatRate,
   resourceName,
   formatHeldAgainst,
@@ -537,23 +538,9 @@ export const WHEAT = resourceName(ResourcesIds.Wheat);
 /** The realm's troops, as a store and an army's figure are named. */
 export const TROOPS = "Troops";
 export const STAMINA = "stamina";
-const RATE_UNITS = {
-  minute: {
-    suffix: "/min",
-    seconds: 60,
-    figures: new Intl.NumberFormat("en-US", { maximumFractionDigits: 1, signDisplay: "exceptZero" }),
-  },
-  hour: {
-    suffix: "/h",
-    seconds: 3_600,
-    figures: new Intl.NumberFormat("en-US", { maximumFractionDigits: 0, signDisplay: "exceptZero" }),
-  },
-} as const;
-export type RatePer = keyof typeof RATE_UNITS;
-export const storeRate = (per: RatePer, perSecond: number | undefined): string =>
-  perSecond === undefined
-    ? "—"
-    : `${RATE_UNITS[per].figures.format(perSecond * RATE_UNITS[per].seconds)}${RATE_UNITS[per].suffix}`;
+const RATE_FORMATS = { minute: formatRate, hour: formatHourlyRate } as const;
+export type RatePer = keyof typeof RATE_FORMATS;
+export const storeRate = (per: RatePer, perSecond: number | undefined): string => RATE_FORMATS[per](perSecond);
 export const staminaReading = (current: number | undefined, max: number | undefined) =>
   `${formatExact(current)}/${formatExact(max)}`;
 export const staminaLabel = (current: number, max: number) => `${STAMINA_TITLE} ${staminaReading(current, max)}`;

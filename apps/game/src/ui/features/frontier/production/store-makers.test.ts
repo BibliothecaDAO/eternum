@@ -56,9 +56,9 @@ const surfaces = (bane: boolean, kind: "wheat" | "troops", category: number) => 
 
 it("gives the realm card, the building panel and Build one rate per store, cut alike while Ash Fall halves production", () => {
   expect(surfaces(false, "wheat", BuildingType.ResourceWheat)).toEqual({
-    realmCard: "+18.9/min",
-    buildingPanel: "+18.9/min",
-    buildTimesStanding: "+18.9/min",
+    realmCard: "+19/min",
+    buildingPanel: "+19/min",
+    buildTimesStanding: "+19/min",
   });
   expect(surfaces(true, "wheat", BuildingType.ResourceWheat)).toEqual({
     realmCard: "+9.5/min",
@@ -80,10 +80,10 @@ it("gives the realm card, the building panel and Build one rate per store, cut a
 it("says on a store's card what makes its rate, the buildings and the castle, so the parts add up to it", () => {
   const { store, row, now } = realm();
   expect(storeMakerLines(store, row, ResourcesIds.Labor, now)).toEqual([
-    "3 Workshops · +15.1/min",
+    "3 Workshops · +15/min",
     "Castle · +1.7/min",
   ]);
-  expect(storeMakerLines(store, row, ResourcesIds.Wheat, now)).toEqual(["3 Farms · +18.9/min"]);
+  expect(storeMakerLines(store, row, ResourcesIds.Wheat, now)).toEqual(["3 Farms · +19/min"]);
   expect(storeMakerLines(store, row, ResourcesIds.Knight, now)).toEqual(["2 Barracks · +202/h"]);
   // 3 × 5.04 + 1.68 = 16.8 labor a minute: the rate the chain stores and the card's "+17/min".
   const stored = new ResourceManager(store, 7).current(ResourcesIds.Labor)!.production!.production_rate;
@@ -109,7 +109,7 @@ it("says only what is known of a store's makers until the realm's research arriv
     },
   ] as never);
   expect(storeMakerLines(store, row, ResourcesIds.Labor, now)).toEqual([
-    "3 Workshops · +15.1/min",
+    "3 Workshops · +15/min",
     "Castle · +1.7/min",
   ]);
 });
