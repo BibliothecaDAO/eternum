@@ -52,7 +52,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
         data-ready={ready || undefined}
         data-tone={bane ? "bane" : undefined}
         data-undrawn={undrawn || undefined}
-        data-tip={baneToday?.line}
+        data-tip={baneToday?.line ?? (bane ? DAY_BANNER_WORDS.baneBroken : undefined)}
         aria-label={
           bane
             ? `${DAY_BANNER_WORDS.bane}: ${bane.name}`
