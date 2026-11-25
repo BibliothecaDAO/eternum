@@ -1,0 +1,14 @@
+{
+  "name": "base-settlement",
+  "kind": "wonder",
+  "fit": "lab",
+  "transform": {
+    "yaw_deg_about_y": 0,
+    "scale": 1.58,
+    "offset_xyz": [0, 0, 0]
+  },
+  "flags": [
+    { "role": "banner", "position": [0.04, 0.62, -0.45], "size": [0.075, 0.14], "facing": 0 },
+    { "role": "banner", "position": [0.375, 0.31, 0], "size": [0.07, 0.12], "facing": 0 }
+  ]
+}
