@@ -1594,7 +1594,6 @@ export const PLAY_WORDS = {
   resumeRehearsal: "Resume",
 } as const;
 
-/** The lore's line, on the first visit's painting and on sign-in (approved 25 September). */
 /** Frontier's pitch on the first visit's card. */
 export const PITCH = "A new land every day";
 
