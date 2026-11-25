@@ -509,6 +509,7 @@ const STATES = {
   menu: { clock: CLOCK, stores: STORES, armies: ARMIES, menu: true },
   chat: { clock: CLOCK, stores: STORES, armies: ARMIES, chat: true },
   empty: { clock: CLOCK, stores: STORES, armies: [] },
+  "empire-dock": { clock: CLOCK, stores: STORES, armies: ARMIES, slots: 6 },
   explore: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, order: EXPLORE },
   move: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, order: MOVE },
   deploy: { clock: CLOCK, stores: STORES, armies: ARMIES, deploy: DEPLOY },
