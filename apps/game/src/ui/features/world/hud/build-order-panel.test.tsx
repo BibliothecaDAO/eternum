@@ -84,7 +84,7 @@ it("shows each realm's next step under the default order and each verb takes it"
   expect(host.querySelector(".ui-select")).toBeNull();
   expect(rows()).toEqual([
     ["Egonal", "Wood: 1 of 2 built.", "Build"],
-    ["Stolsli", "It can level up to Kingdom now.", "Upgrade"],
+    ["Stolsli", "It can level up to Kingdom now.", "Level up"],
   ]);
   const [build, levelUp] = [...host.querySelectorAll<HTMLButtonElement>(".ui-row button")];
   await act(async () => build.click());
