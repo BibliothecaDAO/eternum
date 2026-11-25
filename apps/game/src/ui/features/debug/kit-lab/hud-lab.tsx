@@ -18,7 +18,6 @@ import {
   ARMY_MANAGEMENT,
   EVENTS_WORDS,
   LINK_WALLET_FOR_LORDS,
-  REALM_CARD_WORDS,
   YOU,
 } from "@/ui/design-system/kit/words";
 import { readArmySlots } from "@/ui/features/frontier/hud/army-dock";
@@ -1227,7 +1226,7 @@ const LabRealmCard = ({ lab }: { lab: LabState }) => (
     rankUp={
       lab.visiting
         ? undefined
-        : { name: rankName(2), gives: REALM_CARD_WORDS.armySlots(1), sending: false, onUpgrade: noop }
+        : { name: rankName(2), sending: false, onUpgrade: noop }
     }
     aspect={LAB_ASPECT}
     orderId={LAB_ORDER_ID}

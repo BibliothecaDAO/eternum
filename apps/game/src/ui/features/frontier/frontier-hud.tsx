@@ -8,7 +8,7 @@ import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
 import { useRealmVisit } from "@/sync/active-game-client";
 import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import { REALM_CARD_WORDS, SETTINGS } from "@/ui/design-system/kit/words";
+import { SETTINGS } from "@/ui/design-system/kit/words";
 import { HudChatWindow, useGameChat } from "@/ui/features/world/containers/hud-chat-window";
 import { IdentityChip } from "@/ui/features/world/containers/top-header/identity-chip";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
@@ -574,10 +574,8 @@ const useRankUp = (own: NativeRows["Structure"] | null): RealmRankUp | undefined
   const levelUp = useRealmLevelUp(own ? safeInteger(own.entity_id) : null);
   if (!own || !levelUp || levelUp.mode === "max") return undefined;
   const refusal = castleUpgradeRefusal(setup.store, own, levelUp, tick);
-  const slots = configManager.getArmySlots(levelUp.nextLevel) - configManager.getArmySlots(levelUp.currentLevel);
   return {
     name: rankName(levelUp.nextLevel),
-    gives: slots > 0 ? REALM_CARD_WORDS.armySlots(slots) : undefined,
     need: refusal?.reason.kind === "short" ? { of: refusal.reason.of, amount: refusal.reason.need } : undefined,
     refusal: refusal && reasonLine(refusal.reason),
     sending: levelUp.loading,

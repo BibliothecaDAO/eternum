@@ -549,7 +549,6 @@ export const WORLD = "World";
 export const SHOW_MY_REALM = "Show my realm";
 export const REALM_CARD_WORDS = {
   nextRank: "Next rank",
-  armySlots: (count: number) => `+${formatCount(count, "army slot")}`,
   needs: "Needs",
   stores: "Stores",
   lordsReading: "reading your wallet…",

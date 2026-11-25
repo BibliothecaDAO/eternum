@@ -121,15 +121,26 @@ describe("the shop", () => {
     expect(opened.searchParams.get("next")).toBe("/g/0x1/1/map#shop");
   });
 
+  it("opens closed while the game sells no Fragments: it says so and still takes an Ancient Seal code", () => {
+    renderShop([], false);
+    const closed = host.querySelector("[data-shop=closed]");
+    expect(closed?.textContent).toBe(
+      "Fragments shop closedFragments purchases and spends are closed right now. You can still use an Ancient Seal code below.Have a code?Redeem",
+    );
+    expect(closed?.querySelector("[data-shop=code]")).not.toBeNull();
+    expect(host.querySelector("[data-shop=pass]")).toBeNull();
+    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Get Fragments")).toBe(false);
+  });
+
   it("names no free bonus for a home with neither a Realm nor a ticket", () => {
     renderShop([]);
     expect(host.querySelector("[data-shop=pass]")?.textContent).not.toContain("gives this bonus already");
   });
 });
 
-const renderShop = (facts: object[]) => {
+const renderShop = (facts: object[], selling = true) => {
   const store = transferArmies();
-  store.applyFacts([...facts, ...sellingFragments(store)] as never);
+  store.applyFacts([...facts, ...(selling ? sellingFragments(store) : [])] as never);
   act(() =>
     root.render(
       <MemoryRouter initialEntries={["/g/0x1/1/map"]}>
