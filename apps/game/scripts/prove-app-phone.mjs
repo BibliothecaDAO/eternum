@@ -380,7 +380,7 @@ const nameWithKeyboard = async (b, phone, out, record) => {
   await sleep(600);
   const typing = b.evaluate(`(() => {
     const visible = (element) => { const box = element?.getBoundingClientRect(); return !!box && box.top >= ${SAFE_AREA.top} && box.bottom <= ${shown}; };
-    const claim = [...document.querySelectorAll("form button")].find((each) => each.innerText.trim() === "Claim name");
+    const claim = [...document.querySelectorAll("form button")].find((each) => each.innerText.trim() === "Save name");
     const bar = document.querySelector('[data-band="tabs"]');
     return { field: visible(document.querySelector("form input")), claim: visible(claim), barHidden: !bar || getComputedStyle(bar).display === "none" };
   })()`);

@@ -639,7 +639,7 @@ const QA1_CASES = [
     act: (b, record) => press(b, record, "Name"),
     more: (b) => {
       const claim = b.evaluate(
-        `[...document.querySelectorAll("button")].find((button) => button.innerText.trim() === "Claim name")?.disabled ?? null`,
+        `[...document.querySelectorAll("button")].find((button) => button.innerText.trim() === "Save name")?.disabled ?? null`,
       );
       return [{ check: "Claim name is off for the name already held (P3-6)", ok: claim === true, claim }];
     },
@@ -664,7 +664,7 @@ const QA1_CASES = [
       return [
         {
           check: "a session with no name has Sign out (qa-blitz-1 #3)",
-          ok: buttons.includes("Sign out") && buttons.includes("Claim name"),
+          ok: buttons.includes("Sign out") && buttons.includes("Save name"),
           buttons,
         },
       ];
@@ -678,7 +678,7 @@ const QA1_CASES = [
       return [
         {
           check: "and in Settings too (qa-blitz-1 #3)",
-          ok: buttons.includes("Sign out") && buttons.includes("Claim name"),
+          ok: buttons.includes("Sign out") && buttons.includes("Save name"),
           buttons,
         },
       ];

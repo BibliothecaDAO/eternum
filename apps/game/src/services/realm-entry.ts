@@ -14,9 +14,9 @@ export async function registerHomeSource(game: GameRef, realmId: number | null):
   const messages: Record<string, string> = {
     realm_not_owned: "Linked wallet does not hold this Realm.",
     realm_wallet_missing: "Link your Realm's wallet in Settings.",
-    realm_already_settled: "Realm already settled in this game.",
+    realm_already_settled: "Realm already used in this game.",
     realm_registration_refused: "This source cannot be attached to your home.",
-    conflicting_entry_entitlement: "Your home already has a daily claim source.",
+    conflicting_entry_entitlement: "Your Realm already has a quest bonus.",
     settlement_closed: "This game's settlement is closed.",
     realm_check_unavailable: "Realm check unavailable. Try again.",
   };

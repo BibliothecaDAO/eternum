@@ -494,8 +494,8 @@ export const SEAL_CODE_WORDS = {
   line: "Quest bonus and a Realm skin. One code, one account.",
   label: "Your code",
   placeholder: `${PRINTED_CODE_LENGTH} letters and digits`,
-  redeem: "Redeem",
-  redeeming: "Redeeming",
+  redeem: "Apply",
+  redeeming: "Applying…",
   held: `Your ${ANCIENT_SEAL} is held`,
   heldLine: "It is yours when the season opens.",
   refused: {
@@ -1375,9 +1375,9 @@ export const FRAGMENTS_PAGE_WORDS = {
   payWithTokens: (symbols: readonly string[]) => `Pay with ${symbols.join(" · ")}`,
   pricing: "Getting your price…",
   treasuryReceives: (lords: number) => `The treasury receives ${formatExact(lords)} LORDS`,
-  noPrice: "No price right now. Try again in a minute.",
+  noPrice: "Price unavailable. Try again in a minute.",
   dailyCap: `That is more ${FRAGMENTS} than one day allows.`,
-  delivering: `Your ${FRAGMENTS} are on their way…`,
+  delivering: `Sending your ${FRAGMENTS}…`,
   delivered: (fragments: number) => `+${formatCount(fragments, FRAGMENT, FRAGMENTS)}`,
   backToShop: "Back to the shop",
   linkWallet: "Link a wallet to pay",
@@ -1390,11 +1390,11 @@ export const FRAGMENTS_PAGE_WORDS = {
     `Your wallet holds too little to pay ${formatDollars(cents)}. Add ${symbols.join(", ")} to it.`,
   refused: {
     payment_refused: "The payment was refused.",
-    refund_due: "The payment came short or late. Your LORDS will be refunded.",
+    refund_due: "Payment was short or late. Your LORDS will be refunded.",
     quote_expired: "The price expired. Choose again.",
-    quote_paid: "This price was paid already.",
-    transaction_used: `That payment bought ${FRAGMENTS} already.`,
-    unknown_quote: "This price is no longer known. Choose again.",
+    quote_paid: "This price was already paid.",
+    transaction_used: `That payment already bought ${FRAGMENTS}.`,
+    unknown_quote: "This price expired. Choose again.",
   },
 } as const;
 
@@ -1412,7 +1412,7 @@ export const paidWhenResumed = (amount: string) => `Payouts paused: ${amount} wa
 /** The season's last hour of withdrawals is kept for paying the ones already made. */
 export const WITHDRAWALS_CLOSED = "Withdrawals have closed";
 export const AUTOMATIC_LORDS_PAYOUT = "LORDS are paid out automatically at season end";
-export const PAYOUTS_UNREADABLE = "Payouts cannot be read right now";
+export const PAYOUTS_UNREADABLE = "Could not load payouts right now";
 /** A withdrawal with no answer from the game: it may still apply, so it is never sent again on its own. */
 export const withdrawalUnknown = (amount: string) => `No answer yet for these ${amount}`;
 
@@ -1435,7 +1435,7 @@ export const YOUR_REALMS = "Your Realms";
 export const numberedRealm = (realmId: number, name: string | undefined) =>
   name ? `${realmId} · ${name}` : String(realmId);
 export const NO_HELD_REALMS = "Your linked wallet holds no Realm";
-export const HELD_REALMS_UNREADABLE = "Your Realms cannot be read right now";
+export const HELD_REALMS_UNREADABLE = "Could not load your Realms right now";
 export const INVALID_REALM_NUMBER = "Enter a Realm number from 1–8,000.";
 /** The Realm step: its one job, the home the player founds, and what it offers to found it with. */
 const CREATE_YOUR_REALM = "Create your Realm";
@@ -1445,7 +1445,7 @@ export const HOME_STEP_WORDS = {
   founding: "Creating your Realm…",
   loading: "Reading what you hold…",
   freeHome: "A free home",
-  freeHomeLine: "Hold a Realm to add a daily claim.",
+  freeHomeLine: "Hold a Realm for a quest bonus.",
   myRealmTab: (count: number) => `Use My Realm (${formatExact(count)})`,
   playFreeTab: "Play Free (Pick Any Aspect)",
   playFreeNote: (percent: number) =>
@@ -1456,9 +1456,9 @@ export const HOME_STEP_WORDS = {
       : `+${formatExact(percent)}% daily quest labor`,
   taken: "Taken",
   keepFree: "Continue with my free home",
-  attachTitle: "Choose a daily claim",
-  attach: "Add this daily claim",
-  attaching: "Adding daily claim…",
+  attachTitle: "Choose a quest bonus",
+  attach: "Add this quest bonus",
+  attaching: "Adding quest bonus…",
   attachLine: "One source per home. Your home keeps its existing traits.",
   linkWallet: "Link the wallet that holds your Realms",
   registered: "Registered for this game",
@@ -1576,7 +1576,7 @@ export const SIGN_IN_WORDS = {
   yourName: "Your name",
   /** Under an empty name field: an email sign-up is suggested nothing, and the name is what every board shows. */
   pickName: "Pick the name other players see on the leaderboards.",
-  claimName: "Claim name",
+  claimName: "Save name",
   saving: "Saving…",
   portrait: "Portrait",
   /** Under the ways in: most visitors from a flyer are new, and their first sign-in is their sign-up. */
@@ -1617,14 +1617,14 @@ export const CHAT_WORDS = {
   /** A message's action: answer it, its quote over the answer. */
   reply: "Reply",
   /** Over the field while a reply is written: put it away. */
-  cancelReply: "Cancel the reply",
+  cancelReply: "Cancel reply",
   /** Asked before a link off Realms' own sites opens: its whole address, then Cancel or Open. */
   leavingRealms: "Leaving Realms",
   open: "Open",
   /** Beside the field: the place selected on the map goes with the message. */
-  sharePlace: "Share the selected place",
+  sharePlace: "Share selected place",
   /** Over the field while a place goes with the message: take it off. */
-  removePlace: "Take the place off",
+  removePlace: "Remove place",
   /** In a place shared in another game, after its name: that game ("in Frontier 3"); it opens nothing here. */
   inGame: "in",
   /** In a place the map has no more (gone, or from a closed Frontier day), after its name: why it opens nothing. */
@@ -1633,14 +1633,14 @@ export const CHAT_WORDS = {
   mute: "Mute",
   unmute: "Unmute",
   /** When the server did not take a Mute or an Unmute: nothing changed. */
-  muteFailed: "Mute did not go through. Try again.",
-  unmuteFailed: "Unmute did not go through. Try again.",
+  muteFailed: "Could not mute. Try again.",
+  unmuteFailed: "Could not unmute. Try again.",
   /** Where a muted player's messages stood in a room, under their name: pressed, their card offers Unmute. */
   muted: "muted",
   /** Messages' last group: every player the player muted, each with Unmute. */
   mutedPlayers: "Muted",
   /** When the muted players could not be read: rooms wait for them, and chat reads them again by itself. */
-  mutesUnavailable: "Chat could not read who you muted. It tries again.",
+  mutesUnavailable: "Could not load muted list. Retrying…",
   /** A room while who is muted is not known yet. */
   loading: "Loading…",
   /** Beside the chat's tabs: how many players are in it now ("4 online"). */
@@ -1757,11 +1757,11 @@ export const ACCOUNT_DELETION_WORDS = {
     "Your name, portrait and payout wallet link",
     "Your notification settings and push alerts on every device",
     "Your direct messages and block list",
-    "Your build orders, referral link and news emails",
+    "Your build plans, referral link and news emails",
   ],
   staysTitle: "What stays",
   stays: [
-    "Your Realms wallet stays on Starknet with everything in it: Realms cannot take or move it. Only your passkey controls it now. This app can no longer send from it, and email recovery ends, a recovery under way included. Move what you want to keep first.",
+    "Your Realms wallet stays on Starknet with everything in it: Realms cannot take or move it. Only your passkey controls it now. This app can no longer send from it, and email recovery ends, including any in progress. Move what you want to keep first.",
     "Your game accounts stay on chain with their progress. No one can sign in to them or add a device to them again; a device already added keeps its key on chain.",
     "Ratings stay on chain under the wallets that played.",
     "Messages you sent stay with the players who got them and in chat rooms until they are 30 days old, then they are deleted.",
@@ -1817,19 +1817,19 @@ export const WALLET_WORDS = {
   feeShort: (most: string, held: string) => `The network fee needs up to ${most} LORDS. Your wallet holds ${held}.`,
   /** The wallet holds no LORDS to price its fee with. */
   noFeeLords: "Sending pays a network fee in LORDS, and your wallet holds none.",
-  pricing: "Working out the fee",
+  pricing: "Estimating fee…",
   feeRose: "The network fee went up. Check it and confirm again.",
   /** What a send asks for and its fee's max are more than the wallet holds. */
   leaveForFee: (most: string) => `Leave ${most} LORDS in your wallet for the network fee.`,
   /** The same send for what the wallet holds less its fee's max. */
   sendInstead: (lords: string) => `Send ${lords} LORDS instead`,
-  walletUnread: "Your Realms wallet could not be read.",
+  walletUnread: "Could not load your Realms wallet.",
   lostPasskey: "Lost your passkey?",
   recoverTitle: "Recover your wallet",
   recoverLine:
     "Make a new passkey on this device. In 7 days it takes over your Realms wallet; until then, the passkey you have now can cancel. We email you when it starts.",
   makeNewPasskey: "Make a new passkey",
-  recoveryUnderWay: (date: string) => `Recovery under way: a new passkey takes over this wallet on ${date}.`,
+  recoveryUnderWay: (date: string) => `Recovery in progress: a new passkey takes over on ${date}.`,
   cancelRecovery: "Not you? Cancel it",
   codeSentTo: "Code sent to",
   sending: "Sending…",
@@ -1846,7 +1846,7 @@ export const WALLET_WORDS = {
   nothingOpened: "Nothing opened? Choose again.",
   noneHere: "No wallet found in this browser",
   wrongWallet: (owner: string) => `Only ${owner} can sign this`,
-  paymentFailed: "The wallet did not confirm it",
+  paymentFailed: "Wallet did not confirm",
   tryAgain: "Try again",
   chooseWallet: "Choose your wallet",
 } as const;
@@ -1855,11 +1855,11 @@ export const WALLET_WORDS = {
 export const VALUE_WORDS = {
   confirming: "Confirming…",
   /** A send whose answer was lost: it may still land, and nothing new is sent until the chain says. */
-  onItsWay: "Your last send is on its way: the network has not confirmed it yet.",
+  onItsWay: "Last transfer pending: waiting for confirmation.",
   checkAgain: "Check again",
   sendAgain: "Send it again",
-  lastSendFailed: "Your last send did not go through.",
-  refused: "The ledger refused it.",
+  lastSendFailed: "Your last transfer failed.",
+  refused: "Transfer rejected.",
   noStrk: "No STRK for the fee",
   swapOnAvnu: "Swap on AVNU",
   /** The purse's deposit, paid over the game from the payout wallet. */
@@ -1868,7 +1868,7 @@ export const VALUE_WORDS = {
 
 /** After a paid Blitz: the rating's change and the chest the result minted. */
 export const REWARD_WORDS = {
-  unreadable: "This game's reward could not be read.",
+  unreadable: "Could not load this game's reward.",
   rating: "Blitz rating",
   chest: "Chest",
   arrives: "Arrives with the results",
@@ -2358,12 +2358,12 @@ export const ASPECT_STEP_WORDS = {
   /** A held Realm's home: its Aspect is its Order's, so the step shows it and asks nothing. */
   realmsAspect: (order: string, aspect: string) => `Your Realm's ${order} plays for ${aspect}`,
   keptAspect: (aspect: string) => `You chose ${aspect} before the season. Choose your Order in it.`,
-  keptUnread: "Your Aspect for the season could not be read. Try again.",
+  keptUnread: "Could not load your Season Aspect. Try again.",
   /** The step's line for a friend's invite, and the invited card's tag; a sender with no name yet is not named. */
   invitedTo: (sender: string | null, aspect: string) =>
     sender === null ? `You were invited to ${aspect}` : `${sender} invited you to ${aspect}`,
   invited: INVITED,
   invitedBy: (sender: string | null) => (sender === null ? INVITED : `${sender} invited you`),
   /** The step when the link the account came by could not be read: the Aspects stay open, and it can ask again. */
-  inviteUnread: "Your friend's invite could not be read. You can choose an Aspect, or try again.",
+  inviteUnread: "Could not load your friend's invite. Choose an Aspect, or try again.",
 } as const;

@@ -294,7 +294,7 @@ describe("a session with no name claimed yet", () => {
     try {
       const page = await open(path, 1440);
       const buttons = [...page.querySelectorAll("button")].map((button) => button.textContent);
-      expect(buttons).toContain("Claim name");
+      expect(buttons).toContain("Save name");
       expect(buttons).toContain("Sign out");
     } finally {
       signedIn.session = named;

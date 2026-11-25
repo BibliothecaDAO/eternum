@@ -68,9 +68,7 @@ it("edits the name in its own row, offering Claim name only once it differs (qa-
     const nameRow = [...container.querySelectorAll(".app-row")].find((row) => row.textContent === "NameMaelis")!;
     await act(async () => (nameRow as HTMLElement).click());
     const claim = () =>
-      [...document.querySelectorAll<HTMLButtonElement>("button")].find(
-        (button) => button.textContent === "Claim name",
-      )!;
+      [...document.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Save name")!;
     const field = document.querySelector<HTMLInputElement>("form input")!;
     expect(field.value).toBe("Maelis");
     // The field takes the focus the row held (review-no-back-1, P2-2).

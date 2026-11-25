@@ -105,7 +105,7 @@ it("offers the way in for a lost passkey while no recovery stands", async () => 
 it("shows a recovery under way with its day, and the owner's passkey cancels it", async () => {
   chain.answers = [escapeAnswer(1), NO_ESCAPE];
   const view = await render(<RealmsWalletRecovery address={WALLET.address} onRecover={vi.fn()} />);
-  expect(view.textContent).toContain("Recovery under way: a new passkey takes over this wallet on");
+  expect(view.textContent).toContain("Recovery in progress: a new passkey takes over on");
   expect(view.textContent).not.toContain("Lost your passkey?");
   await press(view, "Not you? Cancel it");
   expect(signs.at(-1)).toMatchObject({
@@ -147,7 +147,7 @@ it("recovers from the payout panel: a new passkey on this device, then the email
   expect(chain.wait).toHaveBeenCalledWith("0xescape", expect.anything());
   // No payout wallet changed, so the window stays open (Settings closes it on a change) and shows the recovery.
   expect(changed).not.toHaveBeenCalled();
-  expect(panel.textContent).toContain("Recovery under way");
+  expect(panel.textContent).toContain("Recovery in progress");
 });
 
 it("tells a device that still holds the passkey that there is nothing to recover", async () => {
