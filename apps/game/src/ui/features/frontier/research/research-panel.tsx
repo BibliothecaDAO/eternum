@@ -220,6 +220,7 @@ const TreeNodeCard = ({ node, picked, onPick }: { node: TreeNode; picked: boolea
     if (picked) slotRef.current?.scrollIntoView?.({ block: "nearest" });
   }, [picked]);
   const desktop = useHudLayout() === "desktop";
+  const mark = nodeMark(node);
   const look = STATE_LOOK[node.state];
   const missing = firstMissing(node);
   const price = node.needs.filter(isPrice);
@@ -245,14 +246,9 @@ const TreeNodeCard = ({ node, picked, onPick }: { node: TreeNode; picked: boolea
         <div className="research-node__head">
           <span className="research-node__icon">
             <Icon name={node.icon} size={32} />
-            {node.state === "done" && (
-              <span className="research-node__mark" data-tone="done" aria-hidden="true">
-                <Icon name="check" size={11} />
-              </span>
-            )}
-            {node.state === "locked" && node.tier === 0 && (
-              <span className="research-node__mark" data-tone="locked" aria-hidden="true">
-                <Icon name="lock" size={10} />
+            {mark && (
+              <span className="research-node__mark" data-tone={mark} aria-hidden="true">
+                <Icon name={MARK_ICON[mark]} size={11} />
               </span>
             )}
           </span>
@@ -291,31 +287,34 @@ const TreeNodeCard = ({ node, picked, onPick }: { node: TreeNode; picked: boolea
   );
 };
 
-const ResearchTile = ({ node, picked, onPick }: { node: TreeNode; picked: boolean; onPick: () => void }) => (
-  <HudCard
-    size="sm"
-    title={node.name}
-    picture={<Icon name={node.icon} size={40} />}
-    detail={
-      <span data-research-effect-short className={cn("tabular-nums", EFFECT_TONE[node.state])}>
-        {node.shortEffect}
-      </span>
-    }
-    corner={tileMark(node)}
-    selected={picked}
-    data-node={node.key}
-    data-state={node.state}
-    data-locked={node.state === "short" || node.state === "locked" || undefined}
-    onClick={onPick}
-  />
-);
+const ResearchTile = ({ node, picked, onPick }: { node: TreeNode; picked: boolean; onPick: () => void }) => {
+  const mark = nodeMark(node);
+  return (
+    <HudCard
+      size="sm"
+      title={node.name}
+      picture={<Icon name={node.icon} size={40} />}
+      detail={
+        <span data-research-effect-short className={cn("tabular-nums", EFFECT_TONE[node.state])}>
+          {node.shortEffect}
+        </span>
+      }
+      corner={mark && <Icon name={MARK_ICON[mark]} size={16} />}
+      selected={picked}
+      data-node={node.key}
+      data-state={node.state}
+      data-locked={node.state === "short" || node.state === "locked" || undefined}
+      onClick={onPick}
+    />
+  );
+};
 
-const tileMark = (node: TreeNode) =>
-  node.state === "done" ? (
-    <Icon name="check" size={16} />
-  ) : node.state === "locked" && node.tier === 0 ? (
-    <Icon name="lock" size={14} />
-  ) : undefined;
+type NodeMark = "done" | "locked";
+
+const MARK_ICON: Record<NodeMark, IconMeaning> = { done: "check", locked: "lock" };
+
+const nodeMark = (node: TreeNode): NodeMark | undefined =>
+  node.state === "done" ? "done" : node.state === "locked" && node.tier === 0 ? "locked" : undefined;
 
 const nodeBadgeLabel = (
   node: TreeNode,

@@ -561,6 +561,10 @@ it("draws each node on a phone as the shared small card: its short effect, and t
     expect(tile.classList.contains("ui-card")).toBe(true);
     expect(tile.querySelector("[data-research-effect-short]")?.textContent).toBe(node.shortEffect);
     expect(tile.hasAttribute("data-locked")).toBe(node.state === "short" || node.state === "locked");
+    expect([node.key, tile.querySelector(".ui-card__corner [data-icon]")?.getAttribute("data-icon") ?? null]).toEqual([
+      node.key,
+      node.state === "done" ? "check" : node.state === "locked" && node.tier === 0 ? "lock" : null,
+    ]);
   }
 });
 
