@@ -76,56 +76,6 @@ button.frontier-stock-chips[aria-expanded="true"] {
   width: 18px;
   height: 18px;
 }
-.frontier-day-disc {
-  position: relative;
-  display: flex;
-  width: 62px;
-  height: 62px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin: -7px 0;
-  border-radius: var(--hud-radius-round);
-  background: conic-gradient(rgb(var(--hud-gold)) 0 var(--day-gone), var(--hud-well) var(--day-gone) 100%);
-  box-shadow: var(--hud-shadow-control);
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-.frontier-day-disc::before {
-  content: "";
-  position: absolute;
-  inset: 8px;
-  border-radius: inherit;
-  background: url(/images/hud/day-disc-calm.webp) center / cover;
-}
-.frontier-day-disc[data-tone="ember"] {
-  background: conic-gradient(var(--hud-bad) 0 var(--day-gone), var(--hud-well) var(--day-gone) 100%);
-}
-.frontier-day-disc[data-tone="ember"]::before {
-  background-image: url(/images/hud/day-disc-ember.webp);
-}
-.frontier-day-disc > span {
-  position: relative;
-}
-.frontier-day-disc__kicker {
-  color: rgb(var(--hud-ink));
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-badge);
-}
-.frontier-day-disc__day {
-  color: rgb(var(--hud-gold));
-  font-family: var(--hud-font);
-  font-size: var(--hud-text-display);
-  font-weight: var(--hud-weight-display);
-}
-.frontier-day-disc__left {
-  color: rgb(var(--hud-ink));
-  font-size: var(--hud-text-badge);
-  font-weight: var(--hud-weight-badge);
-}
-.frontier-day-disc[data-tone="ember"] .frontier-day-disc__left {
-  color: var(--hud-bad);
-}
 .frontier-phone-float {
   display: flex;
   min-height: 52px;

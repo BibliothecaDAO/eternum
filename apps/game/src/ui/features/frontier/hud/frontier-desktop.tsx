@@ -2,12 +2,13 @@ import "./frontier-bar.css";
 import "./frontier-desktop.css";
 
 import { HUD_COLUMN_MARK } from "@/three/utils/labels/hud-clearance";
-import { Icon } from "@/ui/design-system/icon";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { SheetDock } from "@/ui/design-system/kit/hud-elements";
 import { REALM, SETTINGS } from "@/ui/design-system/kit/words";
 import { FeedToasts, useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { FollowingArmyPill } from "@/ui/features/world/containers/top-header/following-army-pill";
 import { HudFoot } from "@/ui/features/world/hud/desktop-hud";
+import { HudMinimap } from "@/ui/features/world/hud/minimap";
 import { type ReactNode, useState } from "react";
 
 import type { HudSurface } from "./frontier-nav";
@@ -26,6 +27,7 @@ export const FrontierDesktop = ({
   widePage = false,
   foot,
   places,
+  chat,
   children,
 }: {
   placeSwitch: ReactNode;
@@ -38,6 +40,7 @@ export const FrontierDesktop = ({
   widePage?: boolean;
   foot?: ReactNode;
   places: ReactNode;
+  chat?: ReactNode;
   children?: ReactNode;
 }) => {
   const [railPanel, setRailPanel] = useState<HTMLElement | null>(null);
@@ -65,6 +68,7 @@ export const FrontierDesktop = ({
         >
           {realm}
           {armies}
+          <HudMinimap className="frontier-minimap" />
         </aside>
         <FrontierRail
           onPanel={setRailPanel}
@@ -77,6 +81,7 @@ export const FrontierDesktop = ({
           <div className="pointer-events-none flex flex-col items-center gap-3">{foot}</div>
         </HudFoot>
         <FollowingArmyPill />
+        {chat && <div className="frontier-chat-dock pointer-events-none">{chat}</div>}
         <SheetDock.Provider value={railPanel}>{children}</SheetDock.Provider>
         <div ref={setPopoverNode} className="frontier-popover-room" />
       </div>
@@ -124,26 +129,27 @@ const FrontierRail = ({
   </aside>
 );
 
+const DESKTOP_PLACE_ORDER = ["research", "feed", "season", "settings"] as const satisfies readonly HudSurface[];
+
+const SETTINGS_PLACE = { key: "settings", label: SETTINGS, ariaLabel: SETTINGS, icon: "settings" } as const;
+
 export const FrontierPlaces = ({
   surface,
   onSurface,
   research,
-  chatUnread = 0,
   lead,
 }: {
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
   research?: boolean;
-  chatUnread?: number;
   lead?: ReactNode;
 }) => {
   const unread = useUnreadImportantCount(surface === "feed");
-  const tabs = useHudPlaces({
-    researchReady: research,
-    feedUnread: unread,
-    chatUnread,
-    chatOpen: surface === "chat",
-  });
+  const places = new Map<HudSurface, PlaceTab>(
+    useHudPlaces({ researchReady: research, feedUnread: unread, chatUnread: 0 }).map((place) => [place.key, place]),
+  );
+  places.set("settings", SETTINGS_PLACE);
+  const tabs = DESKTOP_PLACE_ORDER.flatMap((key) => places.get(key) ?? []);
   const toggle = (key: HudSurface) => onSurface(surface === key ? null : key);
   return (
     <div className="frontier-commands pointer-events-auto">
@@ -174,15 +180,16 @@ export const FrontierPlaces = ({
           </button>
         ))}
       </nav>
-      <button
-        type="button"
-        aria-label={SETTINGS}
-        aria-pressed={surface === "settings"}
-        className="ui-pick frontier-place frontier-place--icon"
-        onClick={() => toggle("settings")}
-      >
-        <Icon name="settings" size={18} />
-      </button>
     </div>
   );
+};
+
+type PlaceTab = {
+  key: HudSurface;
+  label: string;
+  ariaLabel: string;
+  icon: IconMeaning;
+  count?: number;
+  countLabel?: string;
+  countTone?: "good";
 };

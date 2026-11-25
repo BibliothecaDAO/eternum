@@ -25,14 +25,16 @@ vi.mock("@bibliothecadao/types", async (original) => ({
     setSeenRoom = vi.fn();
   },
 }));
+const identity = vi.hoisted(() => ({ status: "signed-in" as "signed-in" | "signed-out" }));
+const signIn = vi.hoisted(() => ({ request: (() => {}) as () => void }));
 vi.mock("@/hooks/context/identity-session", async (original) => ({
   ...(await original<typeof import("@/hooks/context/identity-session")>()),
   useIdentitySession: () => ({
-    status: "signed-in",
+    status: identity.status,
     session: { user: { id: "u1", realmsId: "", name: "uxplay", email: "uxplay@example.com", address: "0x7" } },
   }),
 }));
-vi.mock("@/shell/sign-in/connect", () => ({ useRequestSignIn: () => vi.fn() }));
+vi.mock("@/shell/sign-in/connect", () => ({ useRequestSignIn: () => () => signIn.request() }));
 // The realm the player visits, as the season board's Visit starts it; none until a test visits.
 const visiting = vi.hoisted(() => ({ visit: null as { player: string; structureId: number; opensOn: null } | null }));
 vi.mock("@/sync/active-game-client", async (original) => ({
@@ -812,16 +814,16 @@ it("keeps the extended season live past its old end and reloads its final day fr
   };
   viewport.set(1440);
   await boot(approved.oldEnd - 1);
-  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 10");
+  expect(host.querySelector('[role="timer"]')?.getAttribute("aria-label")).toContain("Day 10");
   await advance(approved.oldEnd);
-  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 11");
+  expect(host.querySelector('[role="timer"]')?.getAttribute("aria-label")).toContain("Day 11");
   expect(host.textContent).not.toContain("Game finished");
   await boot(approved.oldEnd);
-  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 11");
+  expect(host.querySelector('[role="timer"]')?.getAttribute("aria-label")).toContain("Day 11");
   expect(host.textContent).not.toContain("Game finished");
   expect(configManager.getSeasonConfig().endAt).toBe(approved.end);
   await boot(approved.end - 1);
-  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 15");
+  expect(host.querySelector('[role="timer"]')?.getAttribute("aria-label")).toContain("Day 15");
   expect(host.textContent).not.toContain("Game finished");
   await advance(approved.end);
   expect(host.textContent).toContain("Game finished");
@@ -1015,6 +1017,26 @@ it("opens chat on Global over the game when a mention's alert is pressed, the ga
   }
 });
 
+it("keeps chat shut for a signed-out player on a desktop: Enter opens nothing and the strip asks to sign in", async () => {
+  identity.status = "signed-out";
+  const requested = vi.fn();
+  signIn.request = requested;
+  viewport.set(1440);
+  try {
+    await renderHud();
+    await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" })));
+    expect([chatOpen(), host.querySelector("[data-chat-pane]")]).toEqual([false, null]);
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>('.frontier-chat-dock button[aria-label="Chat strip"]')!.click(),
+    );
+    expect(requested).toHaveBeenCalledOnce();
+    expect(host.querySelector("[data-chat-pane]")).toBeNull();
+  } finally {
+    identity.status = "signed-in";
+    signIn.request = () => {};
+  }
+});
+
 it("lights a plot on the player's own board for its first build, the Barracks, and none on a realm they visit", async () => {
   await renderHud();
   const own = useUIStore.getState().firstBuild;
@@ -1052,11 +1074,11 @@ it.each([1440, 390])("keeps the armies dock visible in both map and Realm views 
   }
 });
 
-it("keeps Chat reachable from the desktop top bar while visiting another realm", async () => {
+it("keeps Chat reachable from its strip at the bottom right while visiting another realm", async () => {
   viewport.set(1440);
   try {
     await renderVisit();
-    const chat = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Chat"]');
+    const chat = host.querySelector<HTMLButtonElement>('.frontier-chat-dock button[aria-label="Chat strip"]');
     expect(chat).not.toBeNull();
     expect(host.querySelector('nav[aria-label="Places"] button[aria-label="Research"]')).toBeNull();
     await act(async () => chat!.click());
@@ -1066,7 +1088,7 @@ it("keeps Chat reachable from the desktop top bar while visiting another realm",
   }
 });
 
-it("orders the desktop cornice places as Research, Season, Feed, Chat without Relics and returns to Realm on top-left crest press", async () => {
+it("orders the desktop places as Research, Feed, Season, Settings, lists the five places in the dropdown, and returns to Realm on the crest", async () => {
   viewport.set(1440);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
@@ -1075,19 +1097,14 @@ it("orders the desktop cornice places as Research, Season, Feed, Chat without Re
     const labels = [...host.querySelectorAll('nav[aria-label="Places"] button')].map((button) =>
       button.getAttribute("aria-label"),
     );
-    expect(labels).toEqual(["Research", "Season", "Feed", "Chat"]);
+    expect(labels).toEqual(["Research", "Feed", "Season", "Settings"]);
     expect(host.querySelector('button[aria-label="Relics"]')).toBeNull();
-    const placeTabs = [...host.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) => [
+    await act(async () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
+    const placeTabs = [...document.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) =>
       tab.getAttribute("aria-label"),
-      tab.textContent,
-    ]);
-    expect(placeTabs).toEqual([
-      ["Realm", "Realm"],
-      ["Surface", "Surface"],
-      ["Veil", "Veil"],
-      ["Hollow", "Hollow"],
-      ["Deep", "Deep"],
-    ]);
+    );
+    expect(placeTabs).toEqual(["Realm", "Surface", "Veil", "Hollow", "Deep"]);
+    await act(async () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
     const crest = host.querySelector<HTMLButtonElement>(".frontier-realm-card__identity")!;
     expect(crest.querySelector('img[src*="portraits"]')).toBeNull();
     await act(async () => crest.click());
