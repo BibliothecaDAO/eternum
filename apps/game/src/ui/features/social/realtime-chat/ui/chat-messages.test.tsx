@@ -164,7 +164,7 @@ describe("a room's messages", () => {
 
   it("leaves numbers as words: no place, no button in them", () => {
     expect(words("m3")).toBe("sent 1,200 knights, 3,046 left at home");
-    expect(row("m3").querySelectorAll("p:last-of-type button, p:last-of-type a")).toHaveLength(0);
+    expect(row("m3").querySelectorAll("[data-message-words] button, [data-message-words] a")).toHaveLength(0);
   });
 
   it("quotes what a reply answers over it, and shows that message when the quote is pressed", () => {
