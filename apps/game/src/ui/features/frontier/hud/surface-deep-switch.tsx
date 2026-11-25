@@ -103,7 +103,7 @@ export const PlaceSwitch = ({
   const layout = useLayout();
   return (
     <div
-      role="tablist"
+      role="group"
       aria-label={MAP_VIEW}
       data-place-switch=""
       data-place={inRealm ? REALM : shown.label}
@@ -112,11 +112,10 @@ export const PlaceSwitch = ({
     >
       <button
         type="button"
-        role="tab"
         aria-label={REALM}
-        aria-selected={inRealm}
+        aria-pressed={inRealm}
         disabled={props.canOpenRealm === false}
-        className="frontier-place-switch__realm"
+        className="ui-pick frontier-place-switch__realm"
         onClick={() => {
           close();
           props.onGoRealm();
@@ -127,9 +126,7 @@ export const PlaceSwitch = ({
       </button>
       <button
         type="button"
-        role="tab"
         {...triggerProps}
-        aria-selected={!inRealm}
         aria-haspopup="true"
         aria-label={`${MAP_VIEW}, ${shown.label}`}
         data-place-pill=""

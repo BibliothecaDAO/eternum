@@ -27,7 +27,7 @@ const rowsOfMenu = () => {
   return [...document.querySelectorAll<HTMLButtonElement>('[data-surface-deep-switch] [role="tab"]')];
 };
 
-const realmTab = () => host.querySelector<HTMLButtonElement>('[data-place-switch] [role="tab"][aria-label="Realm"]')!;
+const realmTab = () => host.querySelector<HTMLButtonElement>('[data-place-switch] button[aria-label="Realm"]')!;
 const placeShown = () => host.querySelector<HTMLElement>("[data-place-switch]")!.dataset.place;
 
 describe("the place switch", () => {
@@ -52,12 +52,12 @@ describe("the place switch", () => {
         root.render(<PlaceSwitch isMapView={isMapView} layers={layers} onGoRealm={onGoRealm} onGoSurface={vi.fn()} />),
       );
     draw(true);
-    expect(realmTab().getAttribute("aria-selected")).toBe("false");
+    expect(realmTab().getAttribute("aria-pressed")).toBe("false");
     act(() => realmTab().click());
     expect(onGoRealm).toHaveBeenCalledTimes(1);
     expect(document.querySelector("[data-surface-deep-switch]")).toBeNull();
     draw(false);
-    expect([realmTab().getAttribute("aria-selected"), placeShown()]).toEqual(["true", "Realm"]);
+    expect([realmTab().getAttribute("aria-pressed"), placeShown()]).toEqual(["true", "Realm"]);
     expect(host.querySelector("[data-place-pill]")!.textContent).toBe("Surface");
     expect(rowsOfMenu().map((row) => row.getAttribute("aria-selected"))).toEqual(["false", "false", "false", "false"]);
   });

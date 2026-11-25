@@ -1152,10 +1152,10 @@ it("orders the desktop places as Research, Feed, Season, Settings, sets Realm be
     expect(labels).toEqual(["Research", "Feed", "Season", "Settings"]);
     expect(host.querySelector('button[aria-label="Relics"]')).toBeNull();
     await act(async () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
-    const placeTabs = [...document.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) =>
-      tab.getAttribute("aria-label"),
+    const placeTabs = [...document.querySelectorAll('[aria-label="Map view"] :is([role="tab"], [aria-pressed])')].map(
+      (tab) => tab.getAttribute("aria-label"),
     );
-    expect(placeTabs).toEqual(["Realm", "Map view, Surface", "Surface", "Veil", "Hollow", "Deep"]);
+    expect(placeTabs).toEqual(["Realm", "Surface", "Veil", "Hollow", "Deep"]);
     await act(async () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
     const crest = host.querySelector<HTMLButtonElement>(".frontier-realm-card__identity")!;
     expect(crest.querySelector('img[src*="portraits"]')).toBeNull();

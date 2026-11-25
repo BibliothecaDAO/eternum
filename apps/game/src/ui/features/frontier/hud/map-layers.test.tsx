@@ -138,7 +138,7 @@ describe("the layer switch over the real layers", () => {
     context.mapView = false;
     act(() => root.render(<LayerSwitch rules={unlocked.rules} realm={unlocked.realm} />));
     expect(
-      host.querySelector('[data-place-switch] [role="tab"][aria-label="Realm"]')!.getAttribute("aria-selected"),
+      host.querySelector('[data-place-switch] button[aria-label="Realm"]')!.getAttribute("aria-pressed"),
     ).toBe("true");
   });
 });

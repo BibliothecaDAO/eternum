@@ -6920,7 +6920,7 @@ export const STEP_SETS = {
             places: [...document.querySelectorAll('nav[aria-label="Places"] button')].map((button) => button.getAttribute('aria-label') || button.textContent?.trim()),
             questChip: Boolean(document.querySelector('[data-daily-quest-chip]')),
             depthSwitch: Boolean(document.querySelector('[data-surface-deep-switch]')),
-            realmWorld: [...document.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) => tab.getAttribute('aria-label') || tab.textContent?.trim()),
+            realmWorld: [...document.querySelectorAll('[aria-label="Map view"] :is([role="tab"], [aria-pressed])')].map((tab) => tab.getAttribute('aria-label') || tab.textContent?.trim()),
             armies: document.querySelectorAll('nav[aria-label="Armies"] button').length,
             desktopStores: [...document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]')].map((tile) => tile.dataset.store),
             realmCard: Boolean(document.querySelector('.frontier-realm-card')),
