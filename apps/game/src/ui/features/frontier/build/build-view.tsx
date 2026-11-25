@@ -203,7 +203,9 @@ const TileButton = ({
               {requiresRank(rankName(tile.standing.level))}
             </span>
           )}
-          {gainShown && tile.gives.value !== undefined && tile.standing.kind !== "level" && <Gives gives={tile.gives} />}
+          {gainShown && tile.gives.value !== undefined && tile.standing.kind !== "level" && (
+            <Gives gives={tile.gives} />
+          )}
           {tile.standing.kind !== "built" && <TilePrice standing={tile.standing} />}
         </span>
       }
@@ -256,4 +258,3 @@ const TilePrice = ({ standing }: { standing: Exclude<BuildTile["standing"], { ki
     </span>
   );
 };
-
