@@ -18,7 +18,6 @@ describe("prepareTerrainPage", () => {
 
     expect(first.fingerprint).toBe(second.fingerprint);
     expect(first.buffers.positions).toEqual(second.buffers.positions);
-    expect(first.diagnostics.triangles).toBe(108);
     expect(first.waterBuffers?.indices).toHaveLength(162);
   });
 

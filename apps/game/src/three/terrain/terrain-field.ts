@@ -422,8 +422,6 @@ export class TerrainField {
     return TERRAIN_SEABED_HEIGHT + (TERRAIN_GROUND_HEIGHT - TERRAIN_SEABED_HEIGHT) * rise;
   }
 
-
-
   private sampleWeightedEnvironment(
     worldX: number,
     worldZ: number,
