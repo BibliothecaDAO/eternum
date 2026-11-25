@@ -84,7 +84,7 @@ describe("createGameSyncObserver", () => {
       observer.onConnection?.(true);
       observer.onHead?.({ block: 21, preconfirmed: false, timestamp: 9 });
       expect(useConnectionStore.getState()).toMatchObject({
-        status: "connected",
+        globalStatus: "connected",
         failedAttempts: 0,
         reconnects: 1,
         lastHeadAt: 1_004_000,

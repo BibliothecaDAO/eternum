@@ -54,7 +54,7 @@ export const FrontierDesktop = ({
           {clock}
           {quest}
         </header>
-        {banner}
+        {banner && <div className="frontier-banner pointer-events-none empty:hidden">{banner}</div>}
         <div
           aria-label="Notices"
           role="status"

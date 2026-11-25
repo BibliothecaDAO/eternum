@@ -15,7 +15,9 @@ export const ArenaHud = () => {
   return (
     <>
       <TopHeader />
-      <OfflineNotice />
+      <div className="pointer-events-none fixed inset-x-0 top-hud-header z-hud-column flex justify-center px-2 pt-2 empty:hidden">
+        <OfflineNotice />
+      </div>
       {lane ? <CompactHud lane={lane} /> : <DesktopHud />}
     </>
   );

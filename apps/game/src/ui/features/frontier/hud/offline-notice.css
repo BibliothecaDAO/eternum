@@ -1,15 +1,11 @@
 .offline-pill {
-  position: fixed;
-  top: 66px;
-  left: 50%;
-  z-index: theme(zIndex.hud-notice);
   display: flex;
   width: max-content;
   max-width: calc(100vw - 2rem);
   height: 34px;
   align-items: center;
   gap: theme(spacing.2);
-  transform: translateX(-50%);
+  margin-inline: auto;
   border: 1.5px solid color-mix(in srgb, var(--hud-warn) 72%, transparent);
   border-radius: var(--hud-radius-round);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
