@@ -619,7 +619,10 @@ export const SUPPLY_POST = {
   chip: "Post",
   open: "Post open",
   rule: "Clearing it opens a supply post: your armies refill beside it until the day ends",
-  until: "Open until the day ends",
+  drawsFrom: "Draws from realm stock",
+  endsIn: (seconds: number | undefined) => `Ends in ${dayLength(seconds)}`,
+  inRange: "Armies in range",
+  beside: (count: number) => `${formatExact(count)} beside post`,
 } as const;
 export const SEASON_CLIMB = {
   rule: "Ranked by sites cleared, then deepest depth",
@@ -1172,8 +1175,7 @@ export const REINFORCE = {
   verb: "Reinforce",
   verbAmount: (amount: string) => `Reinforce +${amount}`,
   title: (army: string) => `Reinforce ${army}`,
-  titleAmount: (army: string, amount: string) => `Reinforce ${army} (+${amount})`,
-  fromHome: (amount: string, troops: string) => `+${amount} ${troops} from home`,
+  stockReady: (amount: string) => `From Realm stock · ${amount} ready`,
   sending: "Reinforcing…",
   failed: "The army could not be reinforced.",
 } as const;

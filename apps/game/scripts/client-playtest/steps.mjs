@@ -4689,42 +4689,8 @@ const LAB_REINFORCE_STEPS = [
 const LAB_SUPPLY_POST_STEPS = [
   { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
-  {
-    name: "open-supply-post",
-    settleMs: 0,
-    play: async ({ browser, extraScreenshot }) => {
-      const armyAt = armyOnScreen(browser, PICKED_ARMY);
-      browser.press("Escape");
-      if (!armyAt) return { found: false };
-      for (const [dx, dy] of NEIGHBOUR_RING) {
-        browser.tap([armyAt[0] + dx, armyAt[1] + dy]);
-        const state = await readUntil(
-          () => browser.read(REINFORCE_STATE),
-          (shown) => SUPPLY_POST_SHEET.test(shown.sheet ?? ""),
-          SHEET_WAIT_MS,
-        );
-        if (SUPPLY_POST_SHEET.test(state.sheet ?? "")) {
-          extraScreenshot("supply-post");
-          if (state.buttons.some(isReinforceVerb)) return { found: true, state };
-          const button = state.buttons.find((text) => text.startsWith("Reinforce Army"));
-          if (!button) return { found: false, state };
-          browser.click(button);
-          const sheet = await readUntil(
-            () => browser.read(REINFORCE_STATE),
-            (shown) => shown.buttons.some(isReinforceVerb),
-            SHEET_WAIT_MS,
-          );
-          return { found: sheet.buttons.some(isReinforceVerb), state, sheet };
-        }
-        browser.press("Escape");
-      }
-      return { found: false };
-    },
-    verify: ({ played }) =>
-      played.found
-        ? completed(played)
-        : failed("The cleared camp must offer reinforcement for its adjacent army", played),
-  },
+  { name: "open-supply-post", play: openTheSupplyPost, settleMs: 0, verify: supplyPostOpen },
+  { name: "open-reinforce", play: openTheReinforcement, settleMs: 0, verify: reinforceSheetOpen },
   {
     name: "reinforce-from-camp",
     settleMs: 1000,
@@ -4742,6 +4708,33 @@ const LAB_SUPPLY_POST_STEPS = [
     },
   },
 ];
+
+async function openTheSupplyPost({ browser, extraScreenshot }) {
+  const armyAt = armyOnScreen(browser, PICKED_ARMY);
+  browser.press("Escape");
+  if (!armyAt) return { found: false };
+  for (const [dx, dy] of NEIGHBOUR_RING) {
+    browser.tap([armyAt[0] + dx, armyAt[1] + dy]);
+    const state = await readUntil(
+      () => browser.read(REINFORCE_STATE),
+      (shown) => SUPPLY_POST_SHEET.test(shown.sheet ?? ""),
+      SHEET_WAIT_MS,
+    );
+    if (SUPPLY_POST_SHEET.test(state.sheet ?? "")) {
+      extraScreenshot("supply-post");
+      return { found: true, state };
+    }
+    browser.press("Escape");
+  }
+  return { found: false };
+}
+
+function supplyPostOpen({ played }) {
+  if (!played.found) return failed("No tile beside the army opens its supply post", played);
+  return /Armies in range/.test(played.state.text ?? "") && /1 beside post/.test(played.state.text ?? "")
+    ? completed(played)
+    : failed("The supply post must list the army beside it", played);
+}
 
 /** A tap's finger and a hold's, as the map's gesture recognizer tells them apart (its long press is 500 ms). */
 const TAP_MS = 80;

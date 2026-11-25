@@ -21,9 +21,8 @@ import {
   readExpeditionRules,
   setBlockTimestampSource,
 } from "@bibliothecadao/eternum";
-import { formatExact, getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, TroopTier } from "@bibliothecadao/types";
+import { formatExact, getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, siteName, TroopTier } from "@bibliothecadao/types";
 
-import { useDockArmies } from "../hud/dock-armies";
 import { StructureType } from "@bibliothecadao/types";
 import { ReinforceSheet, useSelectedReinforcement } from "./reinforce";
 import { transferArmies } from "./transfer-fixture";
@@ -88,8 +87,12 @@ const armyBesideHome = () => {
 
 /** The selection's reinforcement card, as the HUD draws it for the realm. */
 const Card = ({ realm, onClose }: { realm: never; onClose: () => void }) => {
-  const army = useSelectedReinforcement(realm);
-  return army && <ReinforceSheet realm={realm} army={army} onClose={onClose} />;
+  const reinforcing = useSelectedReinforcement(realm);
+  return (
+    reinforcing && (
+      <ReinforceSheet realm={realm} army={reinforcing.army} post={reinforcing.post} onClose={onClose} />
+    )
+  );
 };
 
 /** The realm selected and acting on the tile beside it, as the map selects it on a right-click there. */
@@ -303,27 +306,21 @@ it("reinforces through a cleared camp with its id and refuses it after the army 
   };
   fixture.store.applyFacts([{ model: "ExpeditionSite", key: "0x712", value: site }] as never);
   const add = vi.fn().mockResolvedValue({ transaction_hash: "0x2" });
-  const SupplyCard = () => {
-    const armies = useDockArmies(fixture.realm);
-    return (
-      <ReinforceSheet
-        realm={fixture.realm}
-        army={armies.find((army) => army.explorerId === 201)!}
-        post={{ id: 711, name: "Titancrag" }}
-        onClose={() => {}}
-      />
-    );
-  };
+  useUIStore.getState().selectOnMap({ kind: "structure", entityId: 711, tile: fixture.beside });
   act(() =>
     root.render(
       <GameProvider
         value={{ store: fixture.store, systemCalls: { explorer_add: add } } as never}
         account={{ address: "0x111" } as never}
       >
-        <SupplyCard />
+        <Card realm={fixture.realm as never} onClose={() => {}} />
       </GameProvider>,
     ),
   );
+  expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Reinforce Army 1");
+  expect(host.querySelector("[data-kit-sheet] .ui-frame__head .ui-chip")?.textContent).toBe(siteName(711));
+  expect(host.textContent).toContain("From Realm stock · 420 ready");
+  expect(host.textContent).toContain("Ends in");
   await press("Max");
   await press("Reinforce");
   expect(add).toHaveBeenCalledWith(

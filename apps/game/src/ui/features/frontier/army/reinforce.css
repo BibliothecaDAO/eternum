@@ -36,3 +36,10 @@
 .reinforce-size {
   border-top: 1px solid var(--hud-divider);
 }
+.reinforce-source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: theme(spacing.1) theme(spacing.3);
+}
