@@ -60,7 +60,7 @@ describe("a thing's token, its plate closed (the owner's 2026-10-19 pick: tokens
       strength: { tier: 2, count: 300 },
       beast: null,
       undefended: false,
-      combat: { label: "Blade", icon: "attack" },
+      combat: { label: "Blade", icon: "combat-blade" },
       stamina: null,
       mark: null,
       crest: null,

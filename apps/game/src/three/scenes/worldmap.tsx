@@ -156,10 +156,12 @@ import {
   getBlockTimestamp,
   findArmyReach,
   getTileAt,
+  isSupplyPost,
   type OrderRefusal,
   recordArmyMovementLatencyPhase,
   SelectableArmy,
   StaminaManager,
+  StructureActionManager,
 } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { inFlight } from "@/hooks/store/use-actions-in-flight";
@@ -2669,6 +2671,12 @@ export default class WorldmapScene extends WarpTravel {
       ? this.getHexagonEntity(hexCoords)
       : { army: undefined, structure: undefined };
     const army = standingArmy ?? (hexCoords ? this.getOwnArmyOrderedTo(hexCoords) : undefined);
+    const post = hexCoords && !army ? this.ownSupplyPostAt(hexCoords) : null;
+    if (hexCoords && post !== null) {
+      this.handleHexSelection(hexCoords, true);
+      this.onStructureSelection(post, hexCoords);
+      return;
+    }
     const clickPlan = resolveWorldmapHexClickPlan({
       hexCoords,
       accountAddress: viewer,
@@ -3590,7 +3598,7 @@ export default class WorldmapScene extends WarpTravel {
       this.openTargetCardForSelectedArmy(targetHex);
       return;
     }
-    if (this.isFrontierHud() && selected.structure && target.army) {
+    if (this.isFrontierHud() && (selected.structure || this.isOwnSupplyPost(selectedEntityId)) && target.army) {
       this.state.selectOnMap({ kind: "structure", entityId: selectedEntityId, tile: targetHex });
       this.state.updateEntityActionHoveredHex(null);
       return;
@@ -3624,7 +3632,8 @@ export default class WorldmapScene extends WarpTravel {
 
     if (!hexCoords) return;
 
-    this.showSelectedStructure(selectedEntityId, hexCoords);
+    const post = this.isOwnSupplyPost(selectedEntityId);
+    if (!post) this.showSelectedStructure(selectedEntityId, hexCoords);
 
     const structureData = this.game.store.get("Structure", {
       game_id: configManager.getActiveGameId(),
@@ -3633,7 +3642,7 @@ export default class WorldmapScene extends WarpTravel {
     const viewer = accountAddress();
 
     const canIssueStructureOrders =
-      canIssueOrders() && Boolean(structureData && isAddressEqualToAccount(structureData.owner));
+      canIssueOrders() && (post || Boolean(structureData && isAddressEqualToAccount(structureData.owner)));
     if (viewer === null || !canIssueStructureOrders) {
       this.updateEntityActionPaths(new Map());
       this.highlightHexManager.highlightHexes([]);
@@ -3641,8 +3650,9 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    const actionPaths =
-      this.deployShown?.order.structureId === Number(selectedEntityId) && structureData
+    const actionPaths = post
+      ? this.ordersBesideSupplyPost(contractHexOf(hexCoords), viewer)
+      : this.deployShown?.order.structureId === Number(selectedEntityId) && structureData
         ? this.deployTilesOf(structureData)
         : this.ordersBesideStructure(selectedEntityId, viewer);
     this.updateEntityActionPaths(actionPaths.getPaths());
@@ -3697,6 +3707,38 @@ export default class WorldmapScene extends WarpTravel {
       }
     }
     return actionPaths;
+  }
+
+  private ordersBesideSupplyPost(post: HexPosition, viewer: ContractAddress): ActionPaths {
+    return new StructureActionManager().findActionPaths(
+      post,
+      this.buildProjectedArmyActionIndex(),
+      this.buildProjectedExploredTileIndex(),
+      viewer,
+      () => true,
+      false,
+    );
+  }
+
+  private ownSupplyPostAt(hexCoords: HexPosition): ID | null {
+    const { col, row } = contractHexOf(hexCoords);
+    const tile = getTileAt(this.game.store, activeMapLayer(), col, row);
+    if (tile?.occupier_type !== TileOccupier.SupplyPost) return null;
+    return this.isOwnSupplyPost(tile.occupier_id) ? safeInteger(tile.occupier_id) : null;
+  }
+
+  private isOwnSupplyPost(entityId: ID | bigint): boolean {
+    const gameId = configManager.getActiveGameId();
+    const site = this.game.store.get("ExpeditionSite", { game_id: gameId, entity_id: entityId });
+    const realm = site?.clear
+      ? this.game.store.get("Structure", { game_id: gameId, entity_id: site.clear.home_id })
+      : undefined;
+    return (
+      site !== undefined &&
+      realm !== undefined &&
+      isAddressEqualToAccount(realm.owner) &&
+      isSupplyPost(this.game.store, site, realm.entity_id, getBlockTimestamp().currentDefaultTick)
+    );
   }
 
   /** The tiles a shown deploy order can step out on, read as its sheet reads them (spawnRing over the same tiles). */
