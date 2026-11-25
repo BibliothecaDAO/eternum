@@ -2257,6 +2257,10 @@ button.ui-card__choose:disabled {
 .ui-card[data-disabled] .ui-card__picture {
   opacity: 0.5;
 }
+.ui-card[data-locked] .ui-card__picture,
+.ui-card[data-locked] .ui-card__foot {
+  opacity: 0.45;
+}
 .ui-card__foot {
   position: absolute;
   inset-inline: 0;

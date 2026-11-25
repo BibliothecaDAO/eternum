@@ -380,13 +380,14 @@ describe("the build sheet", () => {
     sheet.close();
   });
 
-  it("lays the three groups side by side on a phone, each tile without its price, the picked one's price at the foot", () => {
+  it("lays the three groups side by side on a phone, each tile with its price and no gain, the picked one's gain at the foot", () => {
     setViewportWidth(390);
     const { store, realm } = realmBoard();
     const sheet = open(store, realm);
     const groups = [...sheet.host.querySelectorAll<HTMLElement>(".build-groups > [data-build-group]")];
     expect(groups.map((group) => group.dataset.buildGroup)).toEqual(["economy", "army", "unique"]);
-    expect(sheet.host.querySelector("[data-build-grid] [data-build-price]")).toBeNull();
+    expect(sheet.card("Farm").querySelector("[data-build-price] .ui-price")).not.toBeNull();
+    expect(sheet.host.querySelector("[data-build-grid] .build-tile-gives")).toBeNull();
     act(() => sheet.card("Farm").click());
     expect(footPrice(sheet.host)).toBeTruthy();
     sheet.close();
@@ -535,6 +536,8 @@ describe("the build sheet", () => {
     const sheet = open(store, atKingdom(realm));
     expect(sheet.card("Farm").textContent).toMatch(/\+[\d,.]+\/(?:s|min)/);
     expect(price(sheet, "Farm")!.querySelector("[data-short]")).not.toBeNull();
+    expect(sheet.card("Farm").closest(".ui-card")?.hasAttribute("data-locked")).toBe(true);
+    expect((sheet.card("Farm") as HTMLButtonElement).disabled).toBe(false);
     expect(price(sheet, "Farm")!.textContent).toMatch(/\d+[mhd]$/);
     expect(price(sheet, "Supply yard")!.textContent).not.toContain("research");
     sheet.close();

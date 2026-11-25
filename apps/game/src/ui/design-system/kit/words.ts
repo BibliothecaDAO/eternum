@@ -1178,7 +1178,7 @@ export const BUILT = "Built";
 export const BUILD_GROUPS = {
   economy: "Economy",
   army: "Army",
-  unique: "One per realm",
+  unique: "Unique",
 } as const;
 export const requiresRank = (rank: string) => `Unlocks at ${rank}`;
 export const ONE_PER_REALM_MARK = "1×";
