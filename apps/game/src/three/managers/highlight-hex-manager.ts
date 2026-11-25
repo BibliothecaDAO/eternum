@@ -16,7 +16,11 @@ import {
 } from "three";
 import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { drapeOnGround, layCopyOnGround } from "./hex-ring";
-import { HIGHLIGHT_LAYER_PALETTES, resolveHighlightLayerPalette } from "./worldmap-interaction-palette";
+import {
+  HIGHLIGHT_LAYER_PALETTES,
+  resolveHighlightLayerPalette,
+  type HighlightLayerPalette,
+} from "./worldmap-interaction-palette";
 import { resolveHighlightViewTuning } from "./worldmap-highlight-view-policy";
 
 const FRONTIER_ACCENT_COLOR = new Color(0x84f1ff);
@@ -99,6 +103,7 @@ export class HighlightHexManager {
   private activeLaunchGlows: Array<{ mesh: Mesh; material: MeshBasicMaterial }> = [];
   private drawnDescriptors: ActionHighlightDescriptor[] = [];
   private teachHex: { col: number; row: number } | null = null;
+  private litPlotPalette: HighlightLayerPalette | null = null;
   private readonly rolloutConfig = {
     stepDelay: 0.018,
     entryDuration: 0.18,
@@ -327,15 +332,26 @@ export class HighlightHexManager {
     paintCopies(layer.mesh.geometry, copies, this.plate.getAttribute("position").count);
   }
 
+  setLitPlotPalette(palette: HighlightLayerPalette): void {
+    this.litPlotPalette = palette;
+    this.redrawInPlace();
+  }
+
+  private paletteOf(descriptor: ActionHighlightDescriptor): HighlightLayerPalette {
+    if (descriptor.actionType !== ActionType.Build) return resolveHighlightLayerPalette(descriptor.actionType);
+    if (!this.litPlotPalette) throw new Error("A plot is lit for a building before its scene set the plot palette");
+    return this.litPlotPalette;
+  }
+
   private resolveRouteColor(descriptor: ActionHighlightDescriptor): Color {
-    const palette = resolveHighlightLayerPalette(descriptor.actionType as ActionType);
+    const palette = this.paletteOf(descriptor);
     const color = new Color(palette.routeColor);
     const quietAmount = descriptor.isEndpoint ? 0.78 : descriptor.isSharedRoute ? 0.55 : 0.62;
     return color.multiplyScalar(quietAmount);
   }
 
   private resolveEndpointColor(descriptor: ActionHighlightDescriptor): Color {
-    const palette = resolveHighlightLayerPalette(descriptor.actionType as ActionType);
+    const palette = this.paletteOf(descriptor);
     const color = new Color(palette.endpointColor);
     return color.lerp(ENDPOINT_ACCENT_LIFT, 0.12);
   }

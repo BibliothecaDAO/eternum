@@ -1,14 +1,14 @@
 import { Aura } from "@/three/managers/aura";
 import { HoverHexManager, type HoverVisualMode } from "@/three/managers/hover-hex-manager";
 import { interactiveHexMaterial } from "@/three/shaders/border-hex-material";
-import { hexGeometryDebugger } from "@/three/utils/hex-geometry-debug";
-import { HexGeometryPool } from "@/three/utils/hex-geometry-pool";
 import { PerformanceMonitor } from "@/three/utils/performance-monitor";
 import * as THREE from "three";
 import type { MeshBasicNodeMaterial } from "three/webgpu";
 import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { drapeOnGround } from "./hex-ring";
-import { type HoverVisualPalette } from "./worldmap-interaction-palette";
+import { type HoverVisualPalette, type PlotLook } from "./worldmap-interaction-palette";
+import { HEX_SIZE } from "@/three/constants";
+import { createFilledHexagonOverlayGeometry } from "@/three/geometry/hexagon-geometry";
 
 import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terrain-surface";
 
@@ -27,7 +27,7 @@ export class InteractiveHexManager {
   // Store only currently visible hexes for the current chunk
   private visibleHexes: Set<string> = new Set();
   private readonly band: THREE.Mesh;
-  private readonly bandShape: THREE.BufferGeometry;
+  private bandShape: THREE.BufferGeometry | null = null;
   private hoverAura: Aura;
   private hoverHexManager: HoverHexManager;
   private readonly instanceMaterial: MeshBasicNodeMaterial;
@@ -35,7 +35,6 @@ export class InteractiveHexManager {
   private pickIntersection = new THREE.Vector3();
   private showAura: boolean = true;
   private useRimLighting: boolean = true; // New feature flag
-  private hexGeometryPool: HexGeometryPool;
   private readonly bucketSize = 16;
   private isRenderingAllHexes = false;
 
@@ -64,9 +63,6 @@ export class InteractiveHexManager {
     this.hoverAura = new Aura();
     this.hoverHexManager = new HoverHexManager(scene, terrain);
     this.instanceMaterial = interactiveHexMaterial.clone();
-    this.hexGeometryPool = HexGeometryPool.getInstance();
-    this.bandShape = this.hexGeometryPool.getGeometry("interactive");
-    hexGeometryDebugger.trackSharedGeometryUsage();
     this.band = new THREE.Mesh(new THREE.BufferGeometry(), this.instanceMaterial);
     this.band.visible = false;
     this.band.frustumCulled = false;
@@ -137,6 +133,12 @@ export class InteractiveHexManager {
 
   public applyHoverPalette(palette: HoverVisualPalette) {
     this.hoverHexManager.applyHoverPalette(palette);
+  }
+
+  public applyPlotLook(look: PlotLook): void {
+    this.bandShape?.dispose();
+    this.bandShape = createFilledHexagonOverlayGeometry(HEX_SIZE * 0.965, HEX_SIZE * 0.905, look);
+    this.applyHoverPalette(look.hover);
   }
 
   public setBandBare(hexCoords: { col: number; row: number }, bare: boolean): void {
@@ -357,6 +359,11 @@ export class InteractiveHexManager {
       : [];
     this.band.visible = open.length > 0;
     this.band.geometry.dispose();
+    if (open.length === 0) {
+      this.band.geometry = new THREE.BufferGeometry();
+      return;
+    }
+    if (!this.bandShape) throw new Error("Open plots are drawn before their scene applied a plot look");
     this.band.geometry = drapeOnGround(this.bandShape, open, this.terrain, INTERACTIVE_HEX_SURFACE_OFFSET);
   }
 
@@ -395,7 +402,7 @@ export class InteractiveHexManager {
   public destroy(): void {
     this.scene.remove(this.band);
     this.band.geometry.dispose();
-    this.hexGeometryPool.releaseGeometry("interactive");
+    this.bandShape?.dispose();
 
     // Clean up hover effects
     if (this.hoverAura.isInScene(this.scene)) {

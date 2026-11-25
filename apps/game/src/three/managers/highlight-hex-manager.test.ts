@@ -262,6 +262,25 @@ describe("HighlightHexManager laying a lit hex on the ground", () => {
   });
 });
 
+describe("HighlightHexManager lighting a plot for a building", () => {
+  const build = (col: number) => ({ ...step(col, 0), actionType: "Build", kind: "destination" as const, isEndpoint: true });
+
+  it("draws it in the plot palette its scene set, and refuses to before one is set", () => {
+    const scene = new THREE.Scene();
+    const manager = new HighlightHexManager(scene, FLAT_TERRAIN_SURFACE, gridSpace);
+    expect(() => manager.highlightHexes([build(1)] as never)).toThrow("plot palette");
+
+    manager.setLitPlotPalette({ routeColor: 0x336699, endpointColor: 0x88aacc });
+    manager.highlightHexes([build(2)] as never);
+    finishRollIn();
+    const endpoint = scene.children.find(
+      (child): child is THREE.Mesh => child instanceof THREE.Mesh && child.renderOrder === 6 && child.visible,
+    )!;
+    const drawn = new THREE.Color().fromBufferAttribute(endpoint.geometry.getAttribute("color"), 0);
+    expect(drawn.getHex()).toBe(new THREE.Color(0x88aacc).lerp(new THREE.Color(0xffffff), 0.12).getHex());
+  });
+});
+
 describe("HighlightHexManager teach highlight", () => {
   const TEACH_RENDER_ORDER = 8;
 

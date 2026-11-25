@@ -4,7 +4,10 @@ import { describe, expect, it } from "vitest";
 
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import { InteractiveHexManager } from "./interactive-hex-manager";
-import { REALM_PLOT_PALETTE } from "./worldmap-interaction-palette";
+import { BiomeType } from "@bibliothecadao/types";
+import { plotLookOn } from "./worldmap-interaction-palette";
+
+const GRASS = plotLookOn(BiomeType.Grassland);
 
 const slopedGround = (rise: number): TerrainSurface => ({
   sampleSurface: (x, z) => ({ biome: null, height: rise * (x + 2 * z), normal: [0, 1, 0] as const }),
@@ -21,6 +24,7 @@ const bandOf = (scene: THREE.Scene) =>
 const drawnPlot = (ground: TerrainSurface) => {
   const scene = new THREE.Scene();
   const manager = new InteractiveHexManager(scene, ground, AT_ORIGIN as never);
+  manager.applyPlotLook(GRASS);
   manager.addHex({ col: 0, row: 0 });
   manager.renderAllHexes();
   return { scene, manager };
@@ -62,7 +66,13 @@ describe("a buildable hex's band", () => {
     expect(manager.pick(raycaster)?.hexCoords).toEqual({ col: 0, row: 0 });
   });
 
-  it("draws open plots with the palette's green fill and rim alpha", () => {
+  it("refuses to draw open plots before its scene gave them a look", () => {
+    const manager = new InteractiveHexManager(new THREE.Scene(), slopedGround(0), AT_ORIGIN as never);
+    manager.addHex({ col: 0, row: 0 });
+    expect(() => manager.renderAllHexes()).toThrow("plot look");
+  });
+
+  it("draws open plots in the look its scene gave them, the fill soft and the rim strong", () => {
     const { scene, manager } = drawnPlot(slopedGround(0));
     const mesh = scene.children.find((child): child is THREE.Mesh => child instanceof THREE.Mesh)!;
     const material = mesh.material as THREE.Material & {
@@ -71,21 +81,18 @@ describe("a buildable hex's band", () => {
       opacity: number;
     };
     const positions = mesh.geometry.getAttribute("position");
-    const fillExpected = new THREE.Color(REALM_PLOT_PALETTE.fill);
-    const rimExpected = new THREE.Color(REALM_PLOT_PALETTE.rim);
+    const [fillExpected, rimExpected] = [GRASS.fill, GRASS.rim].map(([r, g, b]) => new THREE.Color(r, g, b));
     let fillCount = 0;
     let rimCount = 0;
     for (let index = 0; index < positions.count; index += 1) {
       const drawnRgb = evaluatePlotNode(material.colorNode, mesh.geometry, material, index);
       const [drawnAlpha] = evaluatePlotNode(material.opacityNode, mesh.geometry, material, index);
-      const isFill = Math.abs(drawnAlpha - REALM_PLOT_PALETTE.fillOpacity) < 1e-4;
+      const isFill = Math.abs(drawnAlpha - GRASS.fill[3]) < 1e-4;
       const expectedRgb = isFill ? fillExpected : rimExpected;
-      expect(drawnRgb[1]).toBeGreaterThan(drawnRgb[0]);
-      expect(drawnRgb[1]).toBeGreaterThan(drawnRgb[2]);
       expect(drawnRgb[0]).toBeCloseTo(expectedRgb.r, 4);
       expect(drawnRgb[1]).toBeCloseTo(expectedRgb.g, 4);
       expect(drawnRgb[2]).toBeCloseTo(expectedRgb.b, 4);
-      expect(drawnAlpha).toBeCloseTo(isFill ? REALM_PLOT_PALETTE.fillOpacity : REALM_PLOT_PALETTE.rimOpacity, 4);
+      expect(drawnAlpha).toBeCloseTo(isFill ? GRASS.fill[3] : GRASS.rim[3], 4);
       if (isFill) fillCount += 1;
       else rimCount += 1;
     }
