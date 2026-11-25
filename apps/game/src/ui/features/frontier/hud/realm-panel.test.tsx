@@ -221,3 +221,16 @@ it("says Upgrading on the button while the rank-up is sent, and takes no second 
   act(() => rankUp.click());
   expect(onUpgrade).not.toHaveBeenCalled();
 });
+
+it("says why the LORDS show a dash: still being read, or the wallet could not be read", () => {
+  const lordsLabel = (lords: "reading" | "failed" | number) => {
+    act(() =>
+      root.render(<RealmCard name="Duskbite" kind="realm" level={1} stores={STORES} fragments={null} lords={lords} />),
+    );
+    const cell = host.querySelector('[data-store="lords"] [aria-label]')!;
+    return [cell.textContent, cell.getAttribute("aria-label")];
+  };
+  expect(lordsLabel("reading")).toEqual(["—LORDS", "LORDS: reading your wallet…"]);
+  expect(lordsLabel("failed")).toEqual(["—LORDS", "LORDS: your wallet could not be read"]);
+  expect(lordsLabel(1_000)).toEqual(["1KLORDS", "LORDS 1K"]);
+});

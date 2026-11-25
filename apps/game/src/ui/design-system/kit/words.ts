@@ -550,6 +550,8 @@ export const REALM_CARD_WORDS = {
   armySlots: (count: number) => `+${formatCount(count, "army slot")}`,
   needs: "Needs",
   stores: "Stores",
+  lordsReading: "reading your wallet…",
+  lordsUnread: "your wallet could not be read",
 } as const;
 export const RESEARCH = "Research";
 export const CHAT = "Chat";
