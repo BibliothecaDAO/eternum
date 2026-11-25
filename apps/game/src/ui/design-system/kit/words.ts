@@ -2282,6 +2282,7 @@ export const ARMY_MANAGEMENT = {
   confirmDelete: "Delete this army?",
   loss: "Its troops, carried resources and held Oaths are lost. Its slot keeps its stamina.",
   deleteFailed: "Could not delete army.",
+  noTroopsAvailable: (troop: string) => `No ${troop} available.`,
 } as const;
 
 export const ORDER_BUSY = "Previous order still pending";

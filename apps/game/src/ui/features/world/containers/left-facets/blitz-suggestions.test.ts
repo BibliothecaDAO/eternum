@@ -3,6 +3,7 @@
 import { BuildingType, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import {
+  BLITZ_SUGGESTION_WORDS,
   buildBlitzRealmSuggestions,
   type BlitzArmy,
   type BlitzArmyState,
@@ -88,8 +89,8 @@ describe("a realm's next step on the default build order", () => {
   });
 
   it("levels up first whenever the realm can", () => {
-    expect(buildBlitzRealmSuggestions(baseInput({ canAffordUpgrade: true, population: 9 }))).toEqual([
-      expect.objectContaining({ action: "upgrade" }),
+    expect(nextStep(baseInput({ canAffordUpgrade: true, population: 9 }))).toEqual([
+      `upgrade · ${BLITZ_SUGGESTION_WORDS.upgradeReady}`,
     ]);
   });
 
@@ -152,6 +153,9 @@ describe("a realm's first army on the default build order", () => {
   it("leaves the troops to production automation: short of a full army the order goes on, and deploys a full one", () => {
     expect(nextStep(city(400))).toEqual([]);
     expect(nextStep(city(1_200, { realmLevel: 2 }))).toEqual(["build · Farm: 4 of 8 built."]);
+    expect(nextStep(city(3_000))).toEqual([
+      `deploy-army · ${BLITZ_SUGGESTION_WORDS.deployReady("Knight T1", "3,000", "3,000")}`,
+    ]);
     expect(buildBlitzRealmSuggestions(city(3_000))[0]).toMatchObject({
       action: "deploy-army",
       troops: { type: TroopType.Knight, tier: TroopTier.T1, count: 3_000 },
@@ -160,11 +164,8 @@ describe("a realm's first army on the default build order", () => {
 
   it("is not met by another troop's army, and stops once the army stands or no slot is free", () => {
     const other = army({ armies: [PALADIN_T1], onHand: { [ResourcesIds.Knight]: 3_000 } });
-    expect(buildBlitzRealmSuggestions(city(3_000, { army: other }))).toEqual([
-      expect.objectContaining({
-        action: "deploy-army",
-        troops: { type: TroopType.Knight, tier: TroopTier.T1, count: 3_000 },
-      }),
+    expect(nextStep(city(3_000, { army: other }))).toEqual([
+      `deploy-army · ${BLITZ_SUGGESTION_WORDS.deployReady("Knight T1", "3,000", "3,000")}`,
     ]);
     const standing = army({ armies: [KNIGHT_T1], onHand: { [ResourcesIds.Knight]: 3_000 } });
     expect(nextStep(city(3_000, { army: standing }))).toEqual([]);

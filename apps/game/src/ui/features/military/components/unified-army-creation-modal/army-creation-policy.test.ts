@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ARMY_MANAGEMENT } from "@/ui/design-system/kit/words";
 import {
   describeTroopSource,
   resolveArmyCreationBlockedReason,
@@ -54,7 +55,7 @@ describe("army deployment blocked states", () => {
     [{ capacityRemaining: null }, "Army capacity is still loading."],
     [{ capacityRemaining: 0 }, "Troop cap reached."],
     [{ troopCount: 3001 }, "Troop cap reached."],
-    [{ available: 0 }, expect.stringContaining("Knight T1")],
+    [{ available: 0 }, ARMY_MANAGEMENT.noTroopsAvailable("Knight T1")],
     [{ available: 999 }, "Not enough of this troop."],
     [{ troopCount: 0 }, "Choose a troop count."],
     [{ canPayRaise: false }, "Realm cannot pay to raise troops."],
@@ -86,8 +87,8 @@ describe("troop raise cost", () => {
 
 describe("troop supply", () => {
   it("says in a few words that the realm has none of a troop", () => {
-    expect(resolveTroopAvailabilityReason({ capacityRemaining: 3000, available: 0, supply: noBarracks })).toContain(
-      "Knight T1",
+    expect(resolveTroopAvailabilityReason({ capacityRemaining: 3000, available: 0, supply: noBarracks })).toBe(
+      ARMY_MANAGEMENT.noTroopsAvailable("Knight T1"),
     );
   });
   it("says when a full army is ready while a barracks trains a troop the realm has none of", () => {
