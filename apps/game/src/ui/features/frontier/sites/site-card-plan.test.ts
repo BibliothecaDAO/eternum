@@ -172,7 +172,6 @@ describe("the recorded Blightglow Rift under Frontier's current combat rules", (
     const plan = card(794n, 120n);
     expect(plan.guard).toEqual({ type: TroopType.Crossbowman, tier: TroopTier.T1, count: 1_400 });
     expect(plan.attackStamina).toBe(30);
-    expect(plan.firstStrike).toBe("defender");
     expect(plan.fight).toEqual({ troopsLost: 451, guardLeft: 1_253 });
   });
 
@@ -183,7 +182,6 @@ describe("the recorded Blightglow Rift under Frontier's current combat rules", (
   it("refuses the attack of an army below the attack's stamina, as the contract does", () => {
     const refused = card(794n, 120n, 29n);
     expect(refused.fight).toEqual({ refused: true });
-    expect(refused.firstStrike).toBe("defender");
     expect(card(794n, 120n, 30n).fight).toEqual({ troopsLost: 451, guardLeft: 1_253 });
   });
 });

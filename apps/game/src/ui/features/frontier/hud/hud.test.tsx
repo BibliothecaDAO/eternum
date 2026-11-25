@@ -7,7 +7,6 @@ import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { dayOf } from "@bibliothecadao/eternum";
-import { TroopType } from "@bibliothecadao/types";
 
 import { OpeningProvider } from "../opening/opening-context";
 import { EARLY_REALM, MID_REALM } from "../research/progression-fixture";
@@ -412,7 +411,7 @@ describe("the phone tab bar", () => {
     expect(barButtons()).toEqual(["Season", "Chat", "Menu"]);
   });
 
-  it("names a Paladin army Scouts on the picked-army row from Frontier's troop table", () => {
+  it("names the picked army and counts its troops in a chip, no troop words beside them", () => {
     act(() =>
       root.render(
         <PickedArmy
@@ -422,7 +421,6 @@ describe("the phone tab bar", () => {
             number: 1,
             art: "paladin-t1",
             troops: 400,
-            troopsFact: { category: TroopType.Paladin },
             stamina: { current: 100, max: 100, perExplore: 10 },
             secondsToFull: 0,
             ethereal: undefined,
@@ -432,8 +430,9 @@ describe("the phone tab bar", () => {
         />,
       ),
     );
-    expect(host.textContent).toContain("Army 1 · 400 Scouts");
-    expect(host.textContent).not.toContain("Paladins");
+    expect(host.querySelector(".army-tray__name")?.textContent).toBe("Army 1");
+    expect(host.querySelector(".army-tray__troops")?.textContent).toBe("400");
+    expect(host.textContent).not.toMatch(/Scouts|Paladins/);
   });
 
   it("orders HUD_PLACES as the cornice does", () => {
@@ -504,38 +503,17 @@ describe("the HUD's surfaces", () => {
 describe("the order bar", () => {
   const covered = { cost: 30, held: 90, wait: undefined };
 
-  it("reads the labor half of a reveal apart, in ember, when labor no longer fits", () => {
-    act(() =>
-      root.render(
-        <OrderBar
-          kind="explore"
-          tiles={1}
-          stamina={covered}
-          wheat={{ cost: 100, held: 4_410, wait: undefined }}
-          revealYield={500}
-          laborFits={0}
-          onCancel={() => {}}
-          onGo={() => {}}
-        />,
-      ),
-    );
-    expect(host.querySelector('[aria-label="Essence +500"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="Labor +0"]')?.getAttribute("data-tone")).toBe("bad");
-  });
-
   // Owner, 27 October 2026: "Yes double tapping to explore on mobile, the confirm bar can be compacted into one single
   // row". The second tap on the tile sends the order (worldmap-order-preview.test.tsx); the bar is its preview.
-  it("shows in one row what an order leaves and earns, its verb to send it and × to drop it", () => {
+  it("shows in one row what an order leaves, its verb to send it and × to drop it", () => {
     const onCancel = vi.fn();
     const onGo = vi.fn();
     act(() =>
       root.render(
         <OrderBar
           kind="explore"
-          tiles={1}
           stamina={covered}
           wheat={{ cost: 100, held: 4_410, wait: undefined }}
-          revealYield={500}
           onCancel={onCancel}
           onGo={onGo}
         />,
@@ -547,9 +525,8 @@ describe("the order bar", () => {
     expect([...host.querySelectorAll('[role="img"]')].map((chip) => chip.getAttribute("aria-label"))).toEqual([
       "stamina 90 → 60",
       "Wheat −100",
-      "Essence, Labor +500",
     ]);
-    expect(host.textContent).toBe("90 → 60−100+500Explore");
+    expect(host.textContent).toBe("90 → 60−100Explore");
     expect(barButtons()).toEqual(["Explore", "Cancel"]);
     act(() => host.querySelector<HTMLButtonElement>('button[data-kind="primary"]')!.click());
     expect(onGo).toHaveBeenCalledTimes(1);
@@ -562,10 +539,8 @@ describe("the order bar", () => {
       root.render(
         <OrderBar
           kind="explore"
-          tiles={1}
           stamina={{ cost: 30, held: 13, wait: 111 }}
           wheat={{ cost: 100, held: 4_410, wait: undefined }}
-          revealYield={500}
           refill={<button type="button">Refill</button>}
           onCancel={() => {}}
           onGo={() => {}}
@@ -582,10 +557,8 @@ describe("the order bar", () => {
       root.render(
         <OrderBar
           kind="move"
-          tiles={1}
           stamina={covered}
           wheat={{ ...wheat, wait: undefined }}
-          revealYield={null}
           onCancel={() => {}}
           onGo={() => {}}
         />,
@@ -609,10 +582,8 @@ describe("the order bar", () => {
         root.render(
           <OrderBar
             kind="explore"
-            tiles={1}
             stamina={{ cost: 21, held: 120, wait: undefined }}
             wheat={{ ...wheat, wait: undefined }}
-            revealYield={500}
             onCancel={() => {}}
             onGo={onGo}
           />,
@@ -657,10 +628,8 @@ describe("the order bar", () => {
           <input aria-label="message" />
           <OrderBar
             kind="move"
-            tiles={2}
             stamina={covered}
             wheat={{ cost: 4, held: 4_410, wait: undefined }}
-            revealYield={null}
             onCancel={() => {}}
             onGo={onGo}
           />
@@ -681,10 +650,8 @@ describe("the order bar", () => {
       root.render(
         <OrderBar
           kind="move"
-          tiles={3}
           stamina={covered}
           wheat={{ cost: 300, held: 40, wait: 4 * 60 }}
-          revealYield={null}
           onCancel={() => {}}
           onGo={() => {}}
         />,

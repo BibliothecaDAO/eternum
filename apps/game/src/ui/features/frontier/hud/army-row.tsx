@@ -18,7 +18,7 @@ import type { ReactNode } from "react";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import type { DeepArmyLife } from "@bibliothecadao/eternum/game-client";
 
-import { DeepDrain, EtherealMark } from "./army-token";
+import { DeepDrain, EtherealMark, OathWaitingBadge } from "./army-token";
 
 export const ArmyCard = ({
   label,
@@ -31,6 +31,7 @@ export const ArmyCard = ({
   stamina,
   ethereal,
   selected,
+  oathWaiting = false,
   onPick,
 }: {
   label: string;
@@ -43,6 +44,7 @@ export const ArmyCard = ({
   troops?: number;
   stamina: StaminaBar | undefined;
   selected: boolean;
+  oathWaiting?: boolean;
   onPick?: () => void;
 }) => (
   <button
@@ -51,11 +53,13 @@ export const ArmyCard = ({
     data-slot-state="army"
     aria-label={label}
     aria-pressed={selected}
+    data-oath-waiting={oathWaiting || undefined}
     disabled={!onPick}
     onClick={onPick}
   >
     <SlotNumber number={number} />
     <span className="frontier-slot__portrait">
+      {oathWaiting && <OathWaitingBadge />}
       {art ? <HudPortrait icon={art} label={TROOPS} /> : <HudPortrait initial={String(number ?? "")} label={label} />}
       <EtherealMark layer={ethereal} />
     </span>

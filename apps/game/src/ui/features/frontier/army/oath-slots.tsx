@@ -3,60 +3,19 @@ import "./oath-slots.css";
 import { heldOaths } from "@bibliothecadao/eternum";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
-import type { PickEffectBase } from "../pick-effect-format";
 import { usePickEffectBase } from "../pick-effect-text";
 import { oathEffectDescription, oathName } from "./oath-details";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 import { configManager, OATH_SLOTS_MAX, troopOathSlots } from "@bibliothecadao/eternum";
-import { formatExact, type TroopType } from "@bibliothecadao/types";
+import { type TroopType } from "@bibliothecadao/types";
 import { useState } from "react";
 
-export function OathSlotPips({
-  held,
-  slots,
-  pickBase,
-}: {
-  held: readonly number[];
-  slots: number;
-  pickBase: PickEffectBase;
-}) {
-  return (
-    <div className="oath-pips" aria-label={`Slots ${held.length} of ${slots}`}>
-      <div className="oath-pips__row">
-        {Array.from({ length: slots }, (_, index) => {
-          const oath = held[index];
-          const active = oath === undefined && index === held.length;
-          return (
-            <span
-              key={index}
-              className="oath-pip"
-              data-filled={oath ? "" : undefined}
-              data-active={active ? "" : undefined}
-              title={oath ? `${oathName(oath)} — ${oathEffectDescription(oath, pickBase)}` : RESEARCH_TREE.oathOpen}
-            >
-              {oath ? (
-                <Icon name={orderMeaning(oath)} size={18} />
-              ) : (
-                <span className="oath-pip__num" aria-hidden="true">
-                  {formatExact(index + 1)}
-                </span>
-              )}
-            </span>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-export function TroopOathCapacity({ category, homeId }: { category: TroopType; homeId: number }) {
+export const useHomeOathSlots = (category: TroopType | undefined, homeId: number): number | undefined => {
   const { store } = useNativeFacts(["RealmKnowledge"]);
   const learned = store.get("RealmKnowledge", { game_id: configManager.getActiveGameId(), structure_id: homeId });
-  if (!learned) return null;
-  const count = troopOathSlots(learned.learned, category);
-  return <OathSockets oaths={[]} slots={count} />;
-}
+  return learned && category !== undefined ? troopOathSlots(learned.learned, category) : undefined;
+};
 
 export function ArmyOathSockets({ explorerId }: { explorerId: number }) {
   const { store } = useNativeFacts(["ArmyProgress"]);
@@ -93,7 +52,7 @@ export function OathSockets({
               className="oath-socket"
               data-filled=""
             >
-              <Icon name={oath.icon} size={22} />
+              <Icon name={oath.icon} size={30} />
             </span>
           );
         if (index < slots)
@@ -112,7 +71,7 @@ export function OathSockets({
           );
         return (
           <span key={index} role="img" aria-label={RESEARCH_TREE.oathLocked} className="oath-socket" data-locked="">
-            <Icon name="lock" size={14} />
+            <Icon name="lock" size={15} />
           </span>
         );
       })}
