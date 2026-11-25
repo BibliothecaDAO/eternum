@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { afterEach, expect, it } from "vitest";
 import { OrthographicCamera, Vector3 } from "three";
 import { projectHexEastEdgeToScreen } from "./project-hex-to-screen";
