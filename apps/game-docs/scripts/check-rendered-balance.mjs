@@ -238,7 +238,7 @@ export const frontierPhrases = (
         `${n(contract.herdGuardMultiplier)}x its starting guard on the ${LAYER_NAMES[0]}`,
         `${n(100 / contract.campGuardDivisor)}% of its starting guard on the ${LAYER_NAMES[0]}, ${n(depthRewardPercent(1))}% of that in the ${LAYER_NAMES[1]}, ${n(depthRewardPercent(2))}% in the ${LAYER_NAMES[2]}`,
         `${n(100 * contract.riftGuardMultiplier)}% of its starting guard on the ${LAYER_NAMES[0]}`,
-        `Immediately opens an Oath pick of ${n(contract.oathDrawCount)} Oaths for the revealing army, or lets you pass for +${n(nativeOaths.PASS_STAMINA)} stamina.`,
+        `Appears on the tile until any adjacent army presses Use, opening a pick of ${n(contract.oathDrawCount)} Oaths (or pass for +${n(nativeOaths.PASS_STAMINA)} stamina) and removing the Shrine.`,
         `Each ruin holds either a relic or a Fragment cache, never both.`,
         `${nativeFragments.SURFACE_CACHE_PERCENT}% on the ${LAYER_NAMES[0]}`,
       ],
@@ -334,7 +334,7 @@ export const frontierPhrases = (
     {
       page: "frontier/oaths",
       phrases: [
-        `Revealing a shrine opens a pick of ${n(contract.oathDrawCount)} Oaths immediately for that army.`,
+        `to open a pick of ${n(contract.oathDrawCount)} Oaths and remove the shrine.`,
         `award a pick of ${n(contract.oathDrawCount)} Oaths to the army that lands the last hit.`,
         `All ${aspectOrderCount} Oaths`,
         ...aspectOrders.map(

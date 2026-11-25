@@ -17,6 +17,9 @@ export const mapSiteKind = (occupierType: number | undefined): MapSiteKind | nul
 
 export const mapSite = (kind: MapSiteKind) => ({ kind, ...SITE_FACES[kind] });
 
+export const wellRefillLands = (gain: number, stamina: { current: number; max: number }): number =>
+  Math.max(0, Math.min(gain, stamina.max - stamina.current));
+
 export const siteGainLine = (
   kind: MapSiteKind,
   gain: number | undefined,
@@ -24,7 +27,7 @@ export const siteGainLine = (
 ): string => {
   if (kind === "Shrine") return SITE_USE_WORDS.shrineGives;
   if (gain === undefined || !stamina) return `${wellRefillShare(nativeRuleConstants.WELL_REFILL_PERCENT)} ${STAMINA}`;
-  const lands = Math.max(0, Math.min(gain, stamina.max - stamina.current));
+  const lands = wellRefillLands(gain, stamina);
   if (lands === 0) return SITE_USE_WORDS.wellWasted;
   return lands < gain ? SITE_USE_WORDS.wellToFull(formatGain(lands)) : `${formatGain(gain)} ${STAMINA}`;
 };

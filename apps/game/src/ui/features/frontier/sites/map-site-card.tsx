@@ -37,7 +37,7 @@ import { useFrontierRealm } from "../frontier-home";
 import { useOrderAt } from "../hud/army-order";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
-import { type MapSiteKind, mapSite, mapSiteKind } from "./map-site-plan";
+import { type MapSiteKind, mapSite, mapSiteKind, wellRefillLands } from "./map-site-plan";
 import { useSelectedOwnArmy } from "./selected-army";
 import { inFlightWord } from "./site-card-view";
 import { sendSiteUse } from "./use-site";
@@ -120,7 +120,7 @@ export const MapSiteCard = ({
   );
 };
 
-export const MapSiteCardView = ({
+const MapSiteCardView = ({
   kind,
   gain,
   army,
@@ -147,7 +147,7 @@ export const MapSiteCardView = ({
       <HudWindowFoot
         note={
           <SiteGain icon={icon}>
-            <GainOf kind={kind} gain={gain} />
+            <GainOf kind={kind} gain={gain} stamina={army?.stamina} />
             {action?.kind === "move" && <HudCost line={action.cost} />}
           </SiteGain>
         }
@@ -167,14 +167,22 @@ export const MapSiteCardView = ({
   );
 };
 
-const GainOf = ({ kind, gain }: { kind: MapSiteKind; gain: number | undefined }) =>
+const GainOf = ({
+  kind,
+  gain,
+  stamina,
+}: {
+  kind: MapSiteKind;
+  gain: number | undefined;
+  stamina: StaminaBar | undefined;
+}) =>
   kind === "Shrine" ? (
     <HudChip icons={["shrine"]}>{SITE_OATH.label}</HudChip>
   ) : (
     <HudChip icons={["stamina"]} label={STAMINA}>
-      {gain === undefined
+      {gain === undefined || !stamina
         ? wellRefillShare(nativeRuleConstants.WELL_REFILL_PERCENT)
-        : formatShort(gain, { signed: true })}
+        : formatShort(wellRefillLands(gain, stamina), { signed: true })}
     </HudChip>
   );
 
@@ -239,7 +247,7 @@ const WellBody = ({ army, gain }: { army: DockArmy | undefined; gain: number | u
 const wellRule = (stamina: StaminaBar | undefined, gain: number | undefined): string => {
   if (!stamina || gain === undefined)
     return SITE_USE_WORDS.wellShareRule(wellRefillShare(nativeRuleConstants.WELL_REFILL_PERCENT));
-  const lands = Math.max(0, Math.min(gain, stamina.max - stamina.current));
+  const lands = wellRefillLands(gain, stamina);
   return lands === 0 ? SITE_USE_WORDS.wellFull : SITE_USE_WORDS.wellRule(formatGain(lands));
 };
 
@@ -252,7 +260,7 @@ const WellUser = ({ army, gain }: { army: DockArmy; gain: number | undefined }) 
 );
 
 const WellAfter = ({ stamina, gain }: { stamina: StaminaBar | undefined; gain: number | undefined }) => {
-  const after = stamina && gain !== undefined ? Math.min(stamina.max, stamina.current + gain) : undefined;
+  const after = stamina && gain !== undefined ? stamina.current + wellRefillLands(gain, stamina) : undefined;
   const bought = exploresOf(gain, stamina);
   return (
     <span className="flex min-w-0 flex-1 items-center gap-2 tabular-nums text-hud-ink">
@@ -267,6 +275,5 @@ const WellAfter = ({ stamina, gain }: { stamina: StaminaBar | undefined; gain: n
 
 const exploresOf = (gain: number | undefined, stamina: StaminaBar | undefined): number | undefined => {
   if (gain === undefined || !stamina || stamina.perExplore <= 0) return undefined;
-  const lands = Math.max(0, Math.min(gain, stamina.max - stamina.current));
-  return Math.floor(lands / stamina.perExplore) || undefined;
+  return Math.floor(wellRefillLands(gain, stamina) / stamina.perExplore) || undefined;
 };

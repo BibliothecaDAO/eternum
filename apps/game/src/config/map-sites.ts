@@ -5,7 +5,7 @@ export const MAP_SITES = [
   { kind: "Well", occupier: TileOccupier.Well },
 ] as const;
 
-export type MapSite = (typeof MAP_SITES)[number];
+type MapSite = (typeof MAP_SITES)[number];
 export type MapSiteKind = MapSite["kind"];
 
 export const mapSiteOf = (occupierType: number | undefined): MapSite | null =>

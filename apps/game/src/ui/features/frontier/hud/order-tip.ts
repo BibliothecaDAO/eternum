@@ -39,9 +39,7 @@ type TileOrder = {
   staminaWait: number | undefined;
   /** The stamina the army holds now, for a refused stamina need; undefined when that is unknown. */
   staminaHeld: number | undefined;
-  site:
-    | { kind: MapSiteKind; gain: number | undefined; stamina: { current: number; max: number } | undefined }
-    | undefined;
+  site?: { kind: MapSiteKind; gain: number | undefined; stamina: { current: number; max: number } | undefined };
   /** The selection is the player's realm, not an army: its Help raises troops into the army beside it. */
   byRealm: boolean;
 };
