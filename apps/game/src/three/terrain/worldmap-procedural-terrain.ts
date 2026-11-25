@@ -341,6 +341,10 @@ export class WorldmapProceduralTerrain {
     return this.terrain.sampleSurface(worldX, worldZ);
   }
 
+  sampleHeight(worldX: number, worldZ: number): number {
+    return this.terrain.sampleHeight(worldX, worldZ);
+  }
+
   getUploadMetrics(): TerrainUploadMetrics {
     return this.terrain.getUploadMetrics();
   }

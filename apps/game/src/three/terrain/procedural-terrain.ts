@@ -497,6 +497,15 @@ export class ProceduralTerrain {
     return { biome: null, height: 0, normal: [0, 1, 0] };
   }
 
+  sampleHeight(worldX: number, worldZ: number): number {
+    this.requireActive();
+    const owner = findNearestTerrainHex(worldX, worldZ);
+    for (const page of this.pages.values()) {
+      if (page.field.ownsCell(owner.col, owner.row)) return page.field.sampleHeight(worldX, worldZ);
+    }
+    return 0;
+  }
+
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;

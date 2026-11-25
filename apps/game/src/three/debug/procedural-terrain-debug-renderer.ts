@@ -509,7 +509,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   scene.add(terrain.object3d);
   if (realmModel) scene.add(realmModel.group);
   const { atmosphere, sun } = createGameLighting(scene, input.gameMode);
-  const weather = new WeatherLabRuntime(scene, sun, controls, (x, z) => terrain.sampleSurface(x, z).height);
+  const weather = new WeatherLabRuntime(scene, sun, controls, (x, z) => terrain.sampleHeight(x, z));
   atmosphere.update(50, controls.target, { snap: true });
   if (endgame || input.stage) {
     const compile = createPipelineCompiler({ getRenderer: () => renderer, getCamera: () => camera });
@@ -636,7 +636,7 @@ function createMovementInteraction(
     isMoving,
     mode,
     worldX: center.x,
-    worldY: terrain.sampleSurface(center.x, center.z).height,
+    worldY: terrain.sampleHeight(center.x, center.z),
     worldZ: center.z,
     yaw,
   };
@@ -657,7 +657,7 @@ async function createSettlementRealmModel(
 
   TERRAIN_SETTLEMENT_REGROWTH_SITES.forEach(({ col, row }, index) => {
     const center = terrainHexToWorld(col, row);
-    const position = new Vector3(center.x, terrain.sampleSurface(center.x, center.z).height + 0.05, center.z);
+    const position = new Vector3(center.x, terrain.sampleHeight(center.x, center.z) + 0.05, center.z);
     quaternion.setFromAxisAngle(up, (index * Math.PI * 2) / TERRAIN_SETTLEMENT_REGROWTH_SITES.length);
     matrix.compose(position, quaternion, scale);
     model.setMatrixAt(index, matrix);

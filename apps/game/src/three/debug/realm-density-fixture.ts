@@ -25,7 +25,7 @@ export async function createRealmDensityFixture(scene: Scene, terrain: WorldmapP
       const slot = counts.get(modelIndex) ?? 0;
       const x = center.x + ((index % 8) - 3.5) * Math.sqrt(3) * 2;
       const z = center.z + (Math.floor(index / 8) - 2.5) * 3;
-      const position = new Vector3(x, terrain.sampleSurface(x, z).height, z);
+      const position = new Vector3(x, terrain.sampleHeight(x, z), z);
       positions.push(position);
       model.setMatrixAt(slot, new Matrix4().makeTranslation(position.x, position.y, position.z));
       model.setOrderAt(slot, level);

@@ -200,6 +200,7 @@ describe("HighlightHexManager laying a lit hex on the ground", () => {
   /** Ground whose height at (x, z) is `heightAt(x, z)`. */
   const groundOf = (heightAt: (x: number, z: number) => number) => ({
     sampleSurface: (x: number, z: number) => ({ biome: null, height: heightAt(x, z), normal: [0, 1, 0] as const }),
+    sampleHeight: (x: number, z: number) => heightAt(x, z),
   });
 
   /** The height of every plate drawn on any layer. */
@@ -286,6 +287,7 @@ describe("HighlightHexManager teach highlight", () => {
     let groundHeight = 0.1;
     const terrain = {
       sampleSurface: () => ({ biome: null, height: groundHeight, normal: [0, 1, 0] as const }),
+      sampleHeight: () => groundHeight,
     };
     const scene = new THREE.Scene();
     const manager = new HighlightHexManager(scene, terrain, gridSpace);

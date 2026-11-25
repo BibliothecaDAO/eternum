@@ -1444,7 +1444,7 @@ export default class HexceptionScene extends HexagonScene {
     const key = buildingKey(position);
     if (building) {
       const matrix = building.matrix.elements;
-      matrix[13] = this.proceduralTerrain.sampleSurface(matrix[12], matrix[14]).height;
+      matrix[13] = this.proceduralTerrain.sampleHeight(matrix[12], matrix[14]);
     }
     const selection = building ? this.selectBuildingModel(building, mainStructureType) : undefined;
     // A model loads the first time a building needs it; until then the building keeps what it shows.

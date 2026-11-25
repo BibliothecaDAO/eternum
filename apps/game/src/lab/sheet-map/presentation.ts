@@ -60,7 +60,7 @@ export class MapSheetPresentation {
       MAP_CHAPTERS[chapter].forEach((name, index) => {
         const hex = specimenHex(c, index),
           p = terrainHexToWorld(hex.col, hex.row);
-        const position = new THREE.Vector3(p.x, terrain.sampleSurface(p.x, p.z).height, p.z);
+        const position = new THREE.Vector3(p.x, terrain.sampleHeight(p.x, p.z), p.z);
         this.addLabel(name, position);
         this.addSpecimen(column, index, position);
       }),
@@ -299,10 +299,7 @@ export class MapSheetPresentation {
     const geometry = new THREE.CircleGeometry(0.85, 6).rotateX(-Math.PI / 2).rotateY(Math.PI / 6);
     const positions = geometry.getAttribute("position");
     for (let i = 0; i < positions.count; i++)
-      positions.setY(
-        i,
-        this.terrain.sampleSurface(p.x + positions.getX(i), p.z + positions.getZ(i)).height + 0.025 - p.y,
-      );
+      positions.setY(i, this.terrain.sampleHeight(p.x + positions.getX(i), p.z + positions.getZ(i)) + 0.025 - p.y);
     const mesh = new THREE.Mesh(
       geometry,
       new THREE.MeshBasicMaterial({ color, opacity, transparent: true, depthWrite: false, toneMapped: false }),
@@ -325,9 +322,7 @@ export class MapSheetPresentation {
       for (let v = 0; v < vertices.count; v++)
         vertices.setY(
           v,
-          this.terrain.sampleSurface(centre.x + vertices.getX(v), centre.z + vertices.getZ(v)).height +
-            0.065 -
-            centre.y,
+          this.terrain.sampleHeight(centre.x + vertices.getX(v), centre.z + vertices.getZ(v)) + 0.065 - centre.y,
         );
       const mesh = new THREE.Mesh(
         geometry,

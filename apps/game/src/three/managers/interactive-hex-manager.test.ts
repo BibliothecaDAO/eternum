@@ -9,6 +9,7 @@ import { REALM_PLOT_PALETTE } from "./worldmap-interaction-palette";
 // Flat ground with one rise away from the hex's centre, under its edge.
 const groundWithRisingEdge = (rise: number): TerrainSurface => ({
   sampleSurface: (x, z) => ({ biome: null, height: Math.hypot(x, z) > 0.5 ? rise : 0, normal: [0, 1, 0] as const }),
+  sampleHeight: (x, z) => (Math.hypot(x, z) > 0.5 ? rise : 0),
 });
 const AT_ORIGIN = {
   positionForHex: () => new THREE.Vector3(),

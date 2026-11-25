@@ -17,6 +17,7 @@ function stageOnBareLand(onCue: (name: string, args: Record<string, unknown>) =>
   const stage = new StudioStage(onCue);
   const terrain = {
     sampleSurface: () => ({ height: 0 }),
+    sampleHeight: () => 0,
     queueShroudReveal: vi.fn(),
     present: vi.fn(),
     cancelShroudReveals: vi.fn(),

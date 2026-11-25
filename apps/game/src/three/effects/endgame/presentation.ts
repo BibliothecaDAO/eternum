@@ -86,7 +86,7 @@ export class MapEndPresentation {
     const origins = this.spires?.getSnapshot().orbOrigins.map((p) => new Vector3(p.x, p.y, p.z)) ?? [];
     if (!origins.length) {
       const p = terrainHexToWorld(this.plan.anchor.col, this.plan.anchor.row);
-      origins.push(new Vector3(p.x, this.surface.sampleSurface(p.x, p.z).height, p.z));
+      origins.push(new Vector3(p.x, this.surface.sampleHeight(p.x, p.z), p.z));
     }
     configureEndgameField(this.plan, frame, origins);
     const a = terrainHexToWorld(this.plan.bounds.minCol, this.plan.bounds.minRow),
