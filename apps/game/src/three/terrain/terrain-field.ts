@@ -28,7 +28,12 @@ import {
   terrainNeighborCoordinates,
 } from "./terrain-coordinates";
 import type { TerrainCellInput, TerrainPageRequest, TerrainSurfaceSample } from "./terrain-types";
-import { isTerrainWaterBiome, isTerrainWaterCovered, TERRAIN_DEEP_WATER_DEPTH, TERRAIN_WATER_LEVEL } from "./terrain-water";
+import {
+  isTerrainWaterBiome,
+  isTerrainWaterCovered,
+  TERRAIN_DEEP_WATER_DEPTH,
+  TERRAIN_WATER_LEVEL,
+} from "./terrain-water";
 
 interface SlopedGround {
   biome: BiomeType;
@@ -622,7 +627,6 @@ export class TerrainField {
     const secondary = terrainBiomePaint(biome, "secondary");
     const sample = {
       baseHeight: isTerrainWaterBiome(biome) ? TERRAIN_SEABED_HEIGHT : TERRAIN_GROUND_HEIGHT,
-      shoreBias: holdToWaterSide(middleHeight, isTerrainWaterBiome(biome)) - middleHeight,
       biome,
       centerX: center.x,
       centerZ: center.z,

@@ -116,7 +116,10 @@ describe("takeShownTiles", () => {
 });
 
 describe("the ground a tile's facts put under what stands on it", () => {
-  const facts = (projectedBiome: BiomeType | undefined, more: { occupied?: boolean; surfacePresentation?: "ethereal" } = {}) => ({
+  const facts = (
+    projectedBiome: BiomeType | undefined,
+    more: { occupied?: boolean; surfacePresentation?: "ethereal" } = {},
+  ) => ({
     projectedBiome,
     occupied: more.occupied ?? false,
     surfacePresentation: more.surfacePresentation,

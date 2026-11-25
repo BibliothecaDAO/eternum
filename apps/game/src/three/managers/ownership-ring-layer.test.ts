@@ -55,5 +55,4 @@ describe("OwnershipRingLayer", () => {
     layer.dispose();
     expect(ringObjects(scene)).toHaveLength(0);
   });
-
 });

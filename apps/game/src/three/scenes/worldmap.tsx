@@ -459,7 +459,12 @@ import {
   bindWorldmapTerrainEcologyRefresh,
   collectWorldmapTerrainEcologyAnchors,
 } from "./worldmap-terrain-ecology-refresh-runtime";
-import { groundHeightOf, takeShownTiles, WorldmapTerrainContent, type TerrainCellFacts } from "./worldmap-terrain-content";
+import {
+  groundHeightOf,
+  takeShownTiles,
+  WorldmapTerrainContent,
+  type TerrainCellFacts,
+} from "./worldmap-terrain-content";
 import { presentResult } from "@/three/presented-results";
 import {
   WORLDMAP_CAMERA_ZOOM,

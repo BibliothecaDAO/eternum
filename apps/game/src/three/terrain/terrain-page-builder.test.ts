@@ -26,7 +26,9 @@ describe("prepareTerrainPage", () => {
     const page = prepareTerrainPage(
       createRequest([cell(0, 0, BiomeType.Grassland), cell(1, 0, BiomeType.Snow), cell(2, 0, BiomeType.Bare)]),
     );
-    const heights = new Set(Array.from({ length: page.buffers.positions.length / 3 }, (_, at) => page.buffers.positions[at * 3 + 1]));
+    const heights = new Set(
+      Array.from({ length: page.buffers.positions.length / 3 }, (_, at) => page.buffers.positions[at * 3 + 1]),
+    );
 
     expect([...heights]).toEqual([TERRAIN_GROUND_HEIGHT]);
     expect(page.waterBuffers).toBeNull();

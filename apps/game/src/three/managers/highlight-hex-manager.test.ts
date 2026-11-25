@@ -232,7 +232,10 @@ describe("HighlightHexManager laying a lit hex on the ground", () => {
   });
 
   it("reports how far over the drawn ground each plate lies, for the playtest's ground check", () => {
-    const { manager } = light(groundOf(() => 0), [step(4, 0, "Explore")]);
+    const { manager } = light(
+      groundOf(() => 0),
+      [step(4, 0, "Explore")],
+    );
 
     for (const plate of manager.getDebugState().plates) {
       expect(plate.lowest).toBeGreaterThan(0);
