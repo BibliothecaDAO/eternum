@@ -121,6 +121,12 @@ const PHONE_PLACE_PRESSES = {
   [HUD_WORDS.feed]: (browser) => browser.tapPlace(HUD_WORDS.feed),
   [HUD_WORDS.chat]: (browser) => browser.tapPlace(HUD_WORDS.chat),
   [HUD_WORDS.season]: (browser) => browser.tapPlace(HUD_WORDS.season),
+  [HUD_WORDS.settings]: async (browser) => {
+    const tile = `section[aria-label="${HUD_WORDS.menu}"] .menu-tiles [aria-label="${HUD_WORDS.settings}"]`;
+    if (!browser.read(`Boolean(document.querySelector('${tile}'))`)) browser.tapPlace(HUD_WORDS.menu);
+    await readUntil(() => browser.read(`Boolean(document.querySelector('${tile}'))`), Boolean, SHEET_WAIT_MS);
+    browser.run(["click", tile]);
+  },
 };
 
 const DESKTOP_CHAT_STRIP = '[aria-label="Chat strip"]';
@@ -7240,6 +7246,30 @@ export const STEP_SETS = {
               played.places.includes(HUD_WORDS.chat)))
             ? completed(played)
             : failed("Menu or Settings must open from its control", played),
+      },
+      {
+        name: "panel-settings",
+        settleMs: 0,
+        play: async ({ browser, extraScreenshot }) => {
+          if (!browser.read(`Boolean(document.querySelector('.ui-settings'))`))
+            await openPlace(browser, HUD_WORDS.settings);
+          const ready = await readUntil(
+            () =>
+              browser.read(`JSON.stringify({
+                rows: [...document.querySelectorAll('.ui-settings .ui-setting__name')].map((name) => name.textContent),
+                qualities: [...document.querySelectorAll('.ui-settings .ui-setting')]
+                  .filter((row) => row.querySelector('.ui-setting__name')?.textContent === 'Quality')
+                  .flatMap((row) => [...row.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent)),
+              })`),
+            (state) => state.qualities.length > 0,
+            SHEET_WAIT_MS,
+          );
+          const shot = extraScreenshot("settings");
+          browser.run(["press", "Escape"]);
+          return { ...ready, shot };
+        },
+        verify: ({ played }) =>
+          played.qualities.length > 0 ? completed(played) : failed("Settings must open with its Quality row", played),
       },
     ],
   },

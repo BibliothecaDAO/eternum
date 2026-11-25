@@ -1452,3 +1452,11 @@ describe("the realm world's deploy sheet (lab-realm-world)", () => {
     expect(step.verify({ played }).status).toBe("completed");
   });
 });
+
+it("the panels proof ends on Settings open at its Quality row", () => {
+  const step = STEP_SETS["lab-panels"].steps.at(-1);
+  expect(step.name).toBe("panel-settings");
+  const played = { rows: ["Quality", "Reduced motion"], qualities: ["Low", "Balanced", "High"] };
+  expect(step.verify({ played }).status).toBe("completed");
+  expect(step.verify({ played: { rows: [], qualities: [] } }).status).toBe("failed");
+});
