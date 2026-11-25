@@ -113,7 +113,7 @@ it("leaves one Try again when the wallet declines, which prompts the same wallet
   vi.spyOn(console, "error").mockImplementation(() => {});
   const ready = installWallet("argentX", { account: LINKED, approves: false });
   const { container, landed } = await openSend();
-  await settled(() => expect(container.textContent).toContain("The wallet did not confirm it"));
+  await settled(() => expect(container.textContent).toContain("Wallet did not confirm"));
   expect(ready.transactions()).toHaveLength(1);
   await press(container, "Try again");
   await settled(() => expect(ready.transactions()).toHaveLength(2));
@@ -369,7 +369,7 @@ it("on re-entry with a send still uncertain, sends nothing new, and ends it once
   });
   try {
     const { container, landed } = await openSend();
-    await settled(() => expect(container.textContent).toContain("Your last send is on its way"));
+    await settled(() => expect(container.textContent).toContain("Last transfer pending"));
     expect(buttonsOf(container)).toEqual(["Check again", "Send it again"]);
     expect(prepare).not.toHaveBeenCalled();
     await press(container, "Check again");
@@ -400,7 +400,7 @@ it("on re-entry with a passkey still asked when its panel closed, offers only Ch
   });
   try {
     const { container, landed } = await openSend();
-    await settled(() => expect(container.textContent).toContain("Your last send is on its way"));
+    await settled(() => expect(container.textContent).toContain("Last transfer pending"));
     expect(buttonsOf(container)).toEqual(["Check again"]);
     expect(prepare).not.toHaveBeenCalled();
     expect(landed).not.toHaveBeenCalled();
@@ -424,7 +424,7 @@ it("on re-entry with a connected wallet's send it never heard back from, opens n
   });
   try {
     const { container, landed } = await openSend();
-    await settled(() => expect(container.textContent).toContain("Your last send is on its way"));
+    await settled(() => expect(container.textContent).toContain("Last transfer pending"));
     // Only asking the chain again: no release, no wallet, nothing new sent while the record stands.
     expect(buttonsOf(container)).toEqual(["Check again"]);
     await press(container, "Check again");

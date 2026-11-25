@@ -82,7 +82,6 @@ export interface DeepSiteProps {
   pay: DeepTickPay | null;
   guard: DeepGuard;
   fight?: DeepSiteFight;
-  attackerName?: string;
   pickBase: PickEffectBase;
   order: DeepOrder | DeepBlock;
   onClose: () => void;
@@ -95,7 +94,7 @@ const FIGHT_ORDER = Array.from(
 
 const siteName = (key: DeepSiteProps["site"]) => deepSites.find((each) => each.key === key)!.name;
 
-export const DeepSiteView = ({ site, pay, guard, fight, attackerName, pickBase, order, onClose }: DeepSiteProps) => {
+export const DeepSiteView = ({ site, pay, guard, fight, pickBase, order, onClose }: DeepSiteProps) => {
   const face = DEEP_SITE_FACES[site];
   return (
     <HudSheet label={siteName(site)} onClose={onClose}>
@@ -126,7 +125,7 @@ export const DeepSiteView = ({ site, pay, guard, fight, attackerName, pickBase, 
           )}
         </div>
       </div>
-      {fight && <FightPreview site={site} fight={fight} guard={guard} attackerName={attackerName} />}
+      {fight && <FightPreview site={site} fight={fight} guard={guard} />}
       <GuardStrip site={site} guard={guard} pickBase={pickBase} />
       {pay && <TickPay pay={pay} />}
       <OrderFoot order={order} />
@@ -139,15 +138,12 @@ const FightPreview = ({
   site,
   fight,
   guard,
-  attackerName,
 }: {
   site: DeepSiteProps["site"];
   fight: DeepSiteFight;
   guard: DeepGuard;
-  attackerName?: string;
 }) => {
   const result = fight.result && !("refused" in fight.result) ? fight.result : undefined;
-  const attackerLabel = attackerName ?? ARMY;
   const frontGuard = guard.kind === "held" ? guard.slots.find((each) => each.armyId === guard.next) : undefined;
   const defenderLabel = guard.kind === "beast" ? DEEP_BEASTS[site].name : (frontGuard?.realm ?? TROOPS);
   const defenderArt =
@@ -155,7 +151,7 @@ const FightPreview = ({
   return (
     <FightArena
       ours={{
-        label: attackerLabel,
+        label: ARMY,
         mark: <Icon name={troopMeaning(fight.attackerTroops)} size={96} className="size-full" />,
         before: fight.army,
         kept: result && fight.army - result.troopsLost,

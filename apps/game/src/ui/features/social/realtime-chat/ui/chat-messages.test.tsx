@@ -192,7 +192,7 @@ describe("a room's messages", () => {
 
   it("puts a reply away with its cross, and sends what follows as a plain message", async () => {
     act(() => buttonIn(row("m2"), "Reply")!.click());
-    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Cancel the reply"]')!.click());
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Cancel reply"]')!.click());
     type("hello");
     await send();
     expect(sendWorldMessage).toHaveBeenCalledWith(GLOBAL_CHAT_CHANNEL_ID, {

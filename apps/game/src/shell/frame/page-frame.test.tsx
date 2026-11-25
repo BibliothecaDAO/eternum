@@ -157,7 +157,8 @@ describe("a page's notice", () => {
     const container = await renderNotice(1440);
     const notice = band(container, "notice")!;
     expect(notice.closest('[data-band="bar"]')).not.toBeNull();
-    expect(notice.nextElementSibling!.textContent).toContain("Connect");
+    const connect = container.querySelector('[data-band="bar"] [data-action="connect"]')!;
+    expect(notice.compareDocumentPosition(connect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(bandOrder(container).filter((name) => name !== "notice")).toEqual(["bar", "body", "footer"]);
   });
 

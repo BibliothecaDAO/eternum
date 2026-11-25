@@ -93,7 +93,7 @@ const signedIn = (realmsId: string, address: string | null): Session => ({
   user: { id: realmsId, realmsId, address, name: realmsId, email: `${realmsId}@test` },
 });
 
-const ASPECT_INVITE_UNREAD = "Your friend's invite could not be read. You can choose an Aspect, or try again.";
+const ASPECT_INVITE_UNREAD = "Could not load your friend's invite. Choose an Aspect, or try again.";
 const keptOrder = { order: null as number | null };
 beforeEach(() => {
   vi.spyOn(identityClient, "getOrderIntent").mockImplementation(async () => ({ order: keptOrder.order, members: {} }));
@@ -370,7 +370,7 @@ it.each([{ width: 1440 }, { width: 390 }])(
     );
     const entry = await openEntry();
     try {
-      const notice = "Your Realms cannot be read right now";
+      const notice = "Could not load your Realms right now";
       await vi.waitFor(() => expect(entry.host.textContent).toContain(notice));
       // No home is offered around the failed read: neither a free home nor a lesser default, and nothing founds.
       expect(entry.featured()).toBeNull();
@@ -523,7 +523,7 @@ it("keeps the Realm already registered for this game, shown alone and locked, wh
   }
 });
 
-it("a founded home holding a Realm attaches it only on Add this daily claim", async () => {
+it("a founded home holding a Realm attaches it only on Add this quest bonus", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   settlement.settled = true;
   signIn("0x456");
@@ -532,7 +532,7 @@ it("a founded home holding a Realm attaches it only on Add this daily claim", as
   try {
     await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
     expect(registered).toEqual([]);
-    await entry.press("Add this daily claim");
+    await entry.press("Add this quest bonus");
     await vi.waitFor(() => expect(registered).toEqual([{ gameId: 8, realmId: 711 }]));
     expect(settlement.calls).toEqual([]);
   } finally {
@@ -556,7 +556,7 @@ it("a founded home chooses one of two Realms, leaves the other free, and shows u
     expect(taken?.textContent).toContain("Taken");
     expect(registered).toEqual([]);
     await entry.pick(realmChoice(712));
-    await entry.press("Add this daily claim");
+    await entry.press("Add this quest bonus");
     await vi.waitFor(() => expect(registered).toEqual([{ gameId: 8, realmId: 712 }]));
     expect(settlement.calls).toEqual([]);
   } finally {
@@ -574,11 +574,11 @@ it("offers only Continue for a founded home whose held Realm is already taken", 
   try {
     await vi.waitFor(() => expect(entry.host.textContent).toContain("Taken"));
     expect(
-      [...entry.host.querySelectorAll("button")].find((button) => button.textContent === "Add this daily claim")
+      [...entry.host.querySelectorAll("button")].find((button) => button.textContent === "Add this quest bonus")
         ?.disabled,
     ).toBe(true);
     await entry.press("Continue with my free home");
-    await vi.waitFor(() => expect(entry.host.textContent).not.toContain("Choose a daily claim"));
+    await vi.waitFor(() => expect(entry.host.textContent).not.toContain("Choose a quest bonus"));
     expect(registered).toEqual([]);
     expect(settlement.calls).toEqual([]);
   } finally {
@@ -606,7 +606,7 @@ describe("a founded Season 1 home attaching a held Realm (only one of its own As
     const entry = await openEntry();
     try {
       await vi.waitFor(() => expect(entry.host.textContent).toContain("Loading the map"));
-      expect(entry.host.textContent).not.toContain("Choose a daily claim");
+      expect(entry.host.textContent).not.toContain("Choose a quest bonus");
       expect(entry.host.textContent).not.toContain(name(otherAspect));
       expect(registered).toEqual([]);
       expect(settlement.calls).toEqual([]);
@@ -622,7 +622,7 @@ describe("a founded Season 1 home attaching a held Realm (only one of its own As
     try {
       await vi.waitFor(() => expect(entry.featured()).toBe(name(sameAspect)));
       expect(entry.host.textContent).not.toContain(name(otherAspect));
-      await entry.press("Add this daily claim");
+      await entry.press("Add this quest bonus");
       await vi.waitFor(() => expect(registered).toEqual([{ gameId: 8, realmId: sameAspect }]));
       expect(settlement.calls).toEqual([]);
     } finally {
@@ -641,7 +641,7 @@ it("resumes a home with an existing source without offering or submitting anothe
   try {
     // The entry goes straight on to the map, never stopping on the source step.
     await vi.waitFor(() => expect(entry.host.textContent).toContain("Loading the map"));
-    expect(entry.host.textContent).not.toContain("Choose a daily claim");
+    expect(entry.host.textContent).not.toContain("Choose a quest bonus");
     expect(registered).toEqual([]);
     expect(settlement.calls).toEqual([]);
   } finally {
@@ -741,9 +741,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       .mockRejectedValueOnce(new IdentityRequestError(503, "order_intent_unavailable"));
     const entry = await openEntry();
     try {
-      await vi.waitFor(() =>
-        expect(entry.host.textContent).toContain("Your Aspect for the season could not be read. Try again."),
-      );
+      await vi.waitFor(() => expect(entry.host.textContent).toContain("Could not load your Season Aspect. Try again."));
       const shut = () =>
         [...entry.host.querySelectorAll<HTMLButtonElement>(".app-aspect-card")].map((card) => card.disabled);
       expect(shut()).toEqual([true, true, true, true]);
@@ -821,7 +819,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       try {
         await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
         await vi.waitFor(() =>
-          expect(entry.host.textContent).toContain("Your Aspect for the season could not be read. Try again."),
+          expect(entry.host.textContent).toContain("Could not load your Season Aspect. Try again."),
         );
         expect(entry.found().disabled).toBe(true);
         read.mockResolvedValue({ order: 13, members: {} });
@@ -965,7 +963,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
     const entry = await openEntry();
     try {
       // The read is tried once more after a second before it is called unreadable.
-      await vi.waitFor(() => expect(entry.host.textContent).toContain("Your friend's invite could not be read"), {
+      await vi.waitFor(() => expect(entry.host.textContent).toContain("Could not load your friend's invite"), {
         timeout: 4_000,
       });
       expect(cards(entry.host)).toEqual(plainOrder);

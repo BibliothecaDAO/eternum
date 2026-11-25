@@ -592,21 +592,22 @@ before/after and actual fees from included receipts (a validation refusal has no
 or account address in those measurements and never fabricates an RPC reply or applies a release. Use a fresh evidence
 directory for each run; the handshake expires after three minutes.
 
-A founded free home's daily source is self-serve at game entry → Choose a daily claim → Add this daily claim. The picker
+A founded free home's daily source is self-serve at game entry → Choose a quest bonus → Add this quest bonus. The picker
 uses the same linked-wallet holdings as founding.
 
-The discovered-Spire path is `/lab/game?scenario=discovered-spire`: select Army 1, open Spire, then Enter Ethereal II.
-`pnpm --dir apps/game playtest:landing lab-discovered-spire` drives that path at desktop and phone sizes, asserts that
-only the next layer is offered and checks the command, new occupancy and camera arrival. The army panel then shows the
-new layer’s next-reveal Spire chance, read from its home/day/layer counter.
+The discovered-Spire path is `/lab/game?scenario=discovered-spire`: select the realm's first army, open Spire, then
+Enter Ethereal II. `pnpm --dir apps/game playtest:landing lab-discovered-spire` drives that path at desktop and phone
+sizes, asserts that only the next layer is offered and checks the command, new occupancy and camera arrival. The army
+panel then shows the new layer’s next-reveal Spire chance, read from its home/day/layer counter.
 
-The stamina effects paths are `/lab/game?scenario=stamina-mist` and `stamina-wind`: select Army 1, open its panel, read
-its bar and Full in timer. `pnpm --dir apps/game playtest:landing lab-stamina-mist lab-stamina-wind` drives both
-recorded-effect fixtures at desktop and phone sizes. Native lifecycle tests prove Explore settlement and quorum timing.
+The stamina effects paths are `/lab/game?scenario=stamina-mist` and `stamina-wind`: select the realm's first army, open
+its panel, read its bar and Full in timer. `pnpm --dir apps/game playtest:landing lab-stamina-mist lab-stamina-wind`
+drives both recorded-effect fixtures at desktop and phone sizes. Native lifecycle tests prove Explore settlement and
+quorum timing.
 
-Supply posts: `/lab/game?scenario=supply-post`, select the cleared camp beside Army 1: the map lights the armies beside
-it as it does for the realm, and its panel names the realm stock it draws from, when it ends and those armies;
-right-click (a phone holds) Army 1 or tap its row for the realm's Reinforce sheet, Max, then Reinforce.
+Supply posts: `/lab/game?scenario=supply-post`, select the cleared camp beside the realm's first army: the map lights
+the armies beside it as it does for the realm, and its panel names the realm stock it draws from, when it ends and those
+armies; right-click (a phone holds) that army or tap its row for the realm's Reinforce sheet, Max, then Reinforce.
 `lab-supply-post` checks the signed camp ID and resulting army and home balances on desktop and phone, retaining the
 post, reinforcement sheet and response evidence.
 
@@ -620,8 +621,8 @@ twice through the card, recording each command, army, guard and last-target fact
 `lab-deep-battle-target` checks the same path against a rival Deep guard. Native tests check both exchanges, rejection
 and removal. The die, Charge and Battle skill no longer modify either forecast or settlement.
 
-Oath capacity is researched at Barracks, Range and Scouts' Lodge, with two free slots and three purchases per troop.
-Deploy shows the current troop's capacity; an army's panel keeps its capacity from creation.
+Oath capacity is researched at Barracks, Range and Scouts' Lodge, with two free slots and three purchases per troop. An
+army deploys with no Oath, so Deploy shows none; an army's panel shows the capacity it keeps from creation.
 `/lab/game?scenario=oath-slots` and `lab-oath-slots` buy the third Knight slot through Research, check the exact price
 and deploy an army with three slots on desktop and phone. These are lab proofs; native tests cover immutable army
 capacity.

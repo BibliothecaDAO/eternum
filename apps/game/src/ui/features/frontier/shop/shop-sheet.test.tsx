@@ -125,7 +125,7 @@ describe("the shop", () => {
     renderShop([], false);
     const closed = host.querySelector("[data-shop=closed]");
     expect(closed?.textContent).toBe(
-      "Fragments shop closedFragments purchases and spends are closed right now. You can still use an Ancient Seal code below.Have a code?Redeem",
+      "Fragments shop closedFragments purchases and spends are closed right now. You can still use an Ancient Seal code below.Have a code?Apply",
     );
     expect(closed?.querySelector("[data-shop=code]")).not.toBeNull();
     expect(host.querySelector("[data-shop=pass]")).toBeNull();

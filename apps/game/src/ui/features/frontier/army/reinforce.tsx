@@ -35,7 +35,7 @@ import {
   siteDisplayName,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
-import { formatExact, formatShort } from "@bibliothecadao/types";
+import { formatExact, formatShort, frontierTroopName } from "@bibliothecadao/types";
 import { useState } from "react";
 
 import { type March, marchOn, wheatStopsAt } from "../deploy/deploy-plan";
@@ -196,7 +196,7 @@ const ArmyGain = ({ army, before, gain }: { army: DockArmy; before: number; gain
   <div data-supply-army className="reinforce-army">
     <HudPortrait icon={army.art} label={TROOPS} />
     <span className="reinforce-army__words">
-      <b>{army.label}</b>
+      <b>{frontierTroopName(army.troopsFact.category) ?? TROOPS}</b>
       <span className="reinforce-army__troops">
         {formatExact(before)} <span className="reinforce-army__arrow">→</span>{" "}
         <span className="reinforce-army__after">{formatExact(before + gain)}</span>
