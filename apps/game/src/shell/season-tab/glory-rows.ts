@@ -8,6 +8,7 @@ import { realmHomeOf } from "../season";
 type RosterMember = Omit<HeraldAspectRosterMember, "owner" | "realm_id"> & {
   owner: string | null;
   realm_id: number | null;
+  place?: number;
 };
 
 export interface GloryRoster {
@@ -37,13 +38,23 @@ export interface GloryIdentity {
   realm_id: number;
 }
 
+export const globalPlaces = (aspects: readonly { members: readonly RaceMemberRow[] }[]): ReadonlyMap<bigint, number> =>
+  new Map(
+    aspects
+      .flatMap(({ members }) => members)
+      .toSorted(compareAspectMembers)
+      .map((member, index) => [member.home, index + 1]),
+  );
+
 export const nativeAspectRoster = (
   members: readonly RaceMemberRow[],
   identityOf: (home: bigint) => GloryIdentity | null,
+  places: ReadonlyMap<bigint, number>,
 ): GloryRoster => ({
   total: members.length,
   members: members.slice(0, ROSTER_TOP).map((member, index) => ({
     rank: index + 1,
+    place: places.get(member.home),
     entity_id: member.home.toString(),
     glory: member.glory.toString(),
     ...(identityOf(member.home) ?? { owner: null, realm_id: null }),
@@ -77,7 +88,7 @@ export const mergeAspectRosters = <M extends RosterMember>(
         { glory: BigInt(right.member.glory), home: BigInt(right.member.entity_id) },
       ),
     )
-    .map((entry, index) => ({ ...entry, rank: index + 1 })),
+    .map((entry, index) => ({ ...entry, rank: entry.member.place ?? index + 1 })),
 });
 
 export const gloryRowOf = (

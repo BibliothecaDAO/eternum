@@ -6,6 +6,7 @@ import { expect, it, vi } from "vitest";
 
 import {
   boardRows,
+  globalPlaces,
   type GloryIdentity,
   gloryRowOf,
   mergeAspectRosters,
@@ -35,11 +36,18 @@ const identityOf = (home: bigint): GloryIdentity => ({
 const nativeRosters = (
   native: Record<AspectId, RaceMemberRow[]>,
   named: (home: bigint) => GloryIdentity | null = identityOf,
-) => ASPECTS.map((aspect) => ({ aspect, roster: nativeAspectRoster(native[aspect], named) }));
+) => {
+  const places = placesOf(native);
+  return ASPECTS.map((aspect) => ({ aspect, roster: nativeAspectRoster(native[aspect], named, places) }));
+};
 
-const ownRow = (native: Record<AspectId, RaceMemberRow[]>, place: number): OwnGloryRow => {
-  const aspectPlace = native[1].findIndex((row) => row.mine) + 1;
-  return { aspect: 1, member: nativeMember(aspectPlace, native[1][aspectPlace - 1]!, identityOf)!, place, aspectPlace };
+const placesOf = (native: Record<AspectId, RaceMemberRow[]>) => globalPlaces(ASPECTS.map((aspect) => ({ members: native[aspect] })));
+
+const ownRow = (native: Record<AspectId, RaceMemberRow[]>): OwnGloryRow => {
+  const aspect = ASPECTS.find((each) => native[each].some((row) => row.mine))!;
+  const aspectPlace = native[aspect].findIndex((row) => row.mine) + 1;
+  const member = nativeMember(aspectPlace, native[aspect][aspectPlace - 1]!, identityOf)!;
+  return { aspect, member, place: placesOf(native).get(OWN)!, aspectPlace };
 };
 
 const SMALL: Record<AspectId, RaceMemberRow[]> = {
@@ -60,7 +68,7 @@ it("gives the game, ranked from native rows, the same board rows the app builds 
   const app = mergeAspectRosters(served).rows.map(({ rank, member: row, aspect }) =>
     gloryRowOf(rank, row, row.entity_id === String(OWN), aspect),
   );
-  const game = boardRows(nativeRosters(SMALL), 0, ownRow(SMALL, 4));
+  const game = boardRows(nativeRosters(SMALL), 0, ownRow(SMALL));
   expect(game).toEqual(app);
   expect(game.map(({ key, rank, own }) => [key, rank, own])).toEqual([
     ["9", 1, false],
@@ -77,19 +85,19 @@ it("keeps each Aspect's top ten that a source names, and adds the player's own r
   const rows = boardRows(
     nativeRosters(native, (home) => (home === 21n ? null : identityOf(home))),
     0,
-    ownRow(native, 14),
+    ownRow(native),
   );
   expect(rows.map(({ key }) => key)).toEqual([...crowd.slice(0, 10).map(({ home }) => String(home)), "7"]);
   expect(rows.at(-1)).toMatchObject({ rank: 14, own: true, aspect: 1 });
-  expect(boardRows(nativeRosters(native), 1, ownRow(native, 14)).at(-1)).toMatchObject({ rank: 13, own: true });
-  expect(boardRows(nativeRosters(native), 2, ownRow(native, 14)).some((row) => row.own)).toBe(false);
+  expect(boardRows(nativeRosters(native), 1, ownRow(native)).at(-1)).toMatchObject({ rank: 13, own: true });
+  expect(boardRows(nativeRosters(native), 2, ownRow(native)).some((row) => row.own)).toBe(false);
 });
 
 it("draws one table row for each board row, the player's own lit", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const host = document.createElement("div");
   const root = createRoot(host);
-  const own = ownRow(SMALL, 4);
+  const own = ownRow(SMALL);
   act(() =>
     root.render(
       <QueryClientProvider client={new QueryClient()}>
@@ -119,7 +127,7 @@ it("draws one table row for each board row, the player's own lit", () => {
 
 it("keeps every drawn row's native place while a rival's name is still unknown", () => {
   const rivalsUnnamed = (home: bigint) => (home === 11n || home === 13n ? null : identityOf(home));
-  const rows = boardRows(nativeRosters(SMALL, rivalsUnnamed), 0, ownRow(SMALL, 4));
+  const rows = boardRows(nativeRosters(SMALL, rivalsUnnamed), 0, ownRow(SMALL));
   expect(rows.map(({ key, rank, own }) => [key, rank, own])).toEqual([
     ["9", 1, false],
     ["7", 4, true],
@@ -143,7 +151,7 @@ it("offers a retry when the names cannot be read, and never calls an Aspect with
             stages={5}
             result={null}
             rosters={nativeRosters(SMALL, (home) => (home === 11n || home === 12n ? null : identityOf(home)))}
-            own={ownRow(SMALL, 4)}
+            own={ownRow(SMALL)}
             standing={null}
             names={{ retry }}
             onClose={() => undefined}
@@ -158,4 +166,13 @@ it("offers a retry when the names cannot be read, and never calls an Aspect with
   expect(host.querySelector(".season-board__empty")).toBeNull();
   expect(host.querySelector('[role="alert"]')).not.toBeNull();
   act(() => root.unmount());
+});
+
+it("ranks the player's drawn row at the same global place as Your Standing when another Aspect's rivals are past its top ten", () => {
+  const crowd = Array.from({ length: 12 }, (_, index) => member(200 + index, 5000 - index * 100));
+  const native: Record<AspectId, RaceMemberRow[]> = { 1: [member(7, 40)], 2: crowd, 3: [], 4: [] };
+  const own = ownRow(native);
+  const drawn = boardRows(nativeRosters(native), 0, own).find((row) => row.own);
+  expect(own.place).toBe(13);
+  expect(drawn?.rank).toBe(own.place);
 });

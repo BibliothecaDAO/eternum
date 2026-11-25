@@ -3,14 +3,19 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { openPlace } from "@/play/navigation/open-place";
 import { useAllAspectRosters } from "@/shell/herald";
-import { type GloryIdentity, nativeAspectRoster, nativeMember, type OwnGloryRow } from "@/shell/season-tab/glory-rows";
+import {
+  globalPlaces,
+  type GloryIdentity,
+  nativeAspectRoster,
+  nativeMember,
+  type OwnGloryRow,
+} from "@/shell/season-tab/glory-rows";
 import { requireActiveGame } from "@/runtime/world";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
 import { HudPage, HudSkeleton } from "@/ui/design-system/kit/hud-elements";
 import { ASPECT_PAGE_WORDS, SEASON_BOARD_WORDS } from "@/ui/design-system/kit/words";
 import { configManager, getStructureName, Position } from "@bibliothecadao/eternum";
 import {
-  compareAspectMembers,
   deepViewFor,
   gloryAmount,
   RACE_MODELS,
@@ -136,6 +141,7 @@ export function seasonBoard(
   const pools = new Map(
     board.standings.map((row) => [row.aspect, aspectLordsWorth(row.height, board.result?.winner === row.aspect)]),
   );
+  const places = globalPlaces(board.aspects);
   return {
     players: board.aspects.reduce((sum, { members }) => sum + members.length, 0),
     race: board.standings.map((row) => ({
@@ -152,27 +158,23 @@ export function seasonBoard(
     result: board.result && { winner: board.result.winner === null ? null : aspectName(board.result.winner) },
     rosters: board.aspects.map(({ aspect, members }) => ({
       aspect: catalogAspectId(aspect),
-      roster: nativeAspectRoster(members, identityOf),
+      roster: nativeAspectRoster(members, identityOf, places),
     })),
-    own: board.own && ownRowOf(board, board.own, identityOf),
-    standing: home && board.own ? standingOf(board, board.own, home, name(home), pools, deepOpen) : null,
+    own: board.own && ownRowOf(board.own, identityOf, places),
+    standing: home && board.own ? standingOf(board, board.own, home, name(home), pools, places, deepOpen) : null,
   };
 }
 
 function ownRowOf(
-  board: RaceBoard,
   own: NonNullable<RaceBoard["own"]>,
   identityOf: (home: bigint) => GloryIdentity | null,
+  places: ReadonlyMap<bigint, number>,
 ): OwnGloryRow | null {
   const aspectPlace = own.members.findIndex((member) => member.mine);
-  if (aspectPlace < 0) return null;
-  const member = nativeMember(aspectPlace + 1, own.members[aspectPlace]!, identityOf);
-  return member && { aspect: catalogAspectId(own.aspect), member, place: placeOf(board), aspectPlace: aspectPlace + 1 };
-}
-
-function placeOf(board: RaceBoard): number {
-  const everyone = board.aspects.flatMap(({ members }) => members).toSorted(compareAspectMembers);
-  return everyone.findIndex((member) => member.mine) + 1;
+  const mine = own.members[aspectPlace];
+  const place = mine && places.get(mine.home);
+  const member = mine && nativeMember(aspectPlace + 1, mine, identityOf);
+  return member && place ? { aspect: catalogAspectId(own.aspect), member, place, aspectPlace: aspectPlace + 1 } : null;
 }
 
 function standingOf(
@@ -181,11 +183,11 @@ function standingOf(
   home: NativeRows["Structure"],
   realm: string,
   pools: ReadonlyMap<number, number>,
+  places: ReadonlyMap<bigint, number>,
   deepOpen: boolean,
 ): SeasonStanding {
   const mine = own.members.find((member) => member.mine);
   const glory = mine?.glory ?? 0n;
-  const place = placeOf(board);
   const sharing = own.members.filter((member) => sharesAspectReward(member.glory));
   const pool = pools.get(own.aspect) ?? 0;
   const shares = sharesAspectReward(glory);
@@ -197,7 +199,7 @@ function standingOf(
     aspectRank: standing?.rank ?? 0,
     order: order && { orderId: order.orderId, orderName: order.orderName },
     glory: gloryAmount(glory),
-    gloryRank: place > 0 ? place : null,
+    gloryRank: (mine && places.get(mine.home)) ?? null,
     shares,
     pool,
     share: shares
