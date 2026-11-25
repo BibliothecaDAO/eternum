@@ -641,6 +641,25 @@ describe("terrain wildlife lifecycle", () => {
     expect(wildlife.object3d.children).toHaveLength(0);
   });
 
+  it("stands its animals on the ground the terrain shows now, after the terrain is presented again", async () => {
+    let groundHeight = 0;
+    const wildlife = new TerrainWildlife(
+      () => ({ biome: BiomeType.Grassland, height: groundHeight, normal: [0, 1, 0] }),
+      () => {},
+    );
+    const grassland = cells().map((cell) => ({ ...cell, biome: BiomeType.Grassland }));
+    wildlife.sync(grassland, []);
+    await wildlife.load();
+    wildlife.update(0.05);
+    const heights = () => wildlife.object3d.children.map((root) => root.position.y);
+    expect(heights().filter((height) => height === 0).length).toBeGreaterThan(0);
+    groundHeight = 0.05;
+    wildlife.sync(grassland, []);
+    wildlife.update(0.001);
+    expect(heights().filter((height) => height === 0)).toEqual([]);
+    wildlife.dispose();
+  });
+
   it("shares templates, gives every animal its own joints, freezes hidden wildlife and clears released views", async () => {
     const wildlife = new TerrainWildlife(
       () => ({ biome: BiomeType.Grassland, height: 0, normal: [0, 1, 0] }),
