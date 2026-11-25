@@ -4487,7 +4487,7 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
         guard?.value.slot === 1 &&
         leftField &&
         played.opened.pay.visible &&
-        /\d labor/.test(played.opened.pay.text) &&
+        /\d labor/i.test(played.opened.pay.text) &&
         played.after.sheet === JOINED_SITE.name &&
         (played.after.slots.match(/Free slot/g) ?? []).length === 2
         ? completed(played)
