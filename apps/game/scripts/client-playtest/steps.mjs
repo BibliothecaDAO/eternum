@@ -4712,7 +4712,7 @@ function supplyPostSteps() {
       settleMs: 0,
       verify: supplyPostOpen,
     },
-    { name: "pick-army-again", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
+    { name: "pick-army-again", play: pickTheSpireArmyFromTheDock, settleMs: 0, verify: spireArmyPicked },
     {
       name: "open-supply-post-with-army",
       play: (context) => openTheSupplyPostWithTheArmyPicked(context, post),
@@ -4758,6 +4758,12 @@ async function openTheSupplyPost({ browser, extraScreenshot }, post = { offset: 
     browser.press("Escape");
   }
   return { found: false };
+}
+
+async function pickTheSpireArmyFromTheDock(context) {
+  context.browser.press("Escape");
+  await sleep(HOVER_SETTLE_MS);
+  return pickTheSpireArmy(context);
 }
 
 async function openTheSupplyPostWithTheArmyPicked({ browser, extraScreenshot }, post) {
