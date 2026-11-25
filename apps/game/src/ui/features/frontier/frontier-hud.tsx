@@ -79,7 +79,7 @@ import { FrontierResearch } from "./research/frontier-research";
 import { useBuildOpensOnEntering } from "./build/build-button";
 import { BuildingsInFlight, useRealmPlots } from "./build/build-sheet";
 import { STORE_KINDS } from "./stores";
-import { useLordsBalance } from "@/shell/value/use-lords-balance";
+import { type LordsReading, useLordsBalance } from "@/shell/value/use-lords-balance";
 import { usePayer } from "@/shell/value/use-payer";
 import { useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
 import { DayDone } from "./rollover/day-done";
@@ -585,7 +585,8 @@ const useRankUp = (own: NativeRows["Structure"] | null): RealmRankUp | undefined
   };
 };
 
-const useWalletLords = (): number | null => {
-  const { payer } = usePayer();
-  return useLordsBalance(payer ?? null).lords;
+const useWalletLords = (): LordsReading => {
+  const { payer, failed } = usePayer();
+  const { reading } = useLordsBalance(payer ?? null);
+  return failed ? "failed" : reading;
 };
