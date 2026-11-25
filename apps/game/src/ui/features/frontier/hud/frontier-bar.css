@@ -170,15 +170,9 @@
   align-items: center;
   gap: theme(spacing.2);
   overflow: hidden;
-  border: 1.5px solid rgb(var(--hud-gold) / 0.8);
   border-radius: var(--hud-radius-control);
-  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
-  box-shadow: var(--hud-shadow-panel);
   padding: 0 theme(spacing.3) 0 theme(spacing[1.5]);
   white-space: nowrap;
-}
-.frontier-day-trigger:hover .frontier-day-pill {
-  border-color: rgb(var(--hud-gold));
 }
 .frontier-day-pill__ring.frontier-progress-ring {
   width: 22px;
@@ -250,10 +244,7 @@
   flex: none;
   align-items: stretch;
   overflow: hidden;
-  border: 1.5px solid rgb(var(--hud-gold) / 0.8);
   border-radius: var(--hud-radius-control);
-  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
-  box-shadow: var(--hud-shadow-panel);
 }
 .frontier-place-switch__realm {
   display: inline-flex;
@@ -264,9 +255,6 @@
   padding: 0 theme(spacing.3) 0 theme(spacing[2.5]);
   color: var(--hud-muted);
   cursor: pointer;
-}
-.frontier-place-switch__realm[aria-pressed="true"] {
-  color: rgb(var(--hud-gold));
 }
 .frontier-place-switch__realm:disabled {
   cursor: not-allowed;

@@ -108,7 +108,7 @@ export const PlaceSwitch = ({
       data-place-switch=""
       data-place={inRealm ? REALM : shown.label}
       data-hud-part=""
-      className="frontier-place-switch pointer-events-auto"
+      className="ui-popover frontier-place-switch pointer-events-auto"
     >
       <button
         type="button"

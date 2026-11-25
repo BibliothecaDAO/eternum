@@ -8,7 +8,7 @@
   "apps/game/src/ui/features/frontier/deep/deep-site.css": 1,
   "apps/game/src/ui/features/frontier/deploy/deploy-view.css": 1,
   "apps/game/src/ui/features/frontier/hud/army-token.css": 2,
-  "apps/game/src/ui/features/frontier/hud/frontier-bar.css": 7,
+  "apps/game/src/ui/features/frontier/hud/frontier-bar.css": 4,
   "apps/game/src/ui/features/frontier/hud/frontier-desktop.css": 3,
   "apps/game/src/ui/features/frontier/hud/picked-army.css": 1,
   "apps/game/src/ui/features/frontier/research/research-tree.css": 5,
