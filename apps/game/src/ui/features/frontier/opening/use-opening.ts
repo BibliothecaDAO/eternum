@@ -33,6 +33,8 @@ import { useEffect } from "react";
 
 import type { OpeningRules } from "@/ui/design-system/kit/words";
 import { FIRST_BUILD } from "../build/first-build";
+import { baneFace } from "../day/bane-face";
+import { useQuestDockOpen } from "../day/quest-dock";
 import { dayClock } from "../hud/day-clock";
 import { useDockArmies } from "../hud/dock-armies";
 import type { HudSurface } from "../hud/frontier-nav";
@@ -170,6 +172,7 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
   const rawAspect = setup.store.get("HomeAspect", { game_id: realm.game_id, home: realm.entity_id })?.aspect;
   const ownAspect = rawAspect !== undefined ? catalogAspectId(rawAspect) : undefined;
   const clock = dayClock(rules, now);
+  const bane = readDailyQuest(setup.store, realm.game_id, safeInteger(realm.entity_id), now)?.reading.known?.bane;
   return {
     ownAspect,
     knightsPerSecond,
@@ -184,6 +187,7 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
     scoutExploreStamina: nativeRuleConstants.SCOUT_EXPLORE_STAMINA,
     exploreStamina: pickBase.revealStamina,
     dayLeftSeconds: clock.secondsLeft,
+    bane: bane ? baneFace(bane, setup.store, realm.game_id) : undefined,
   };
 }
 
@@ -202,6 +206,7 @@ function useOpeningContext(
   const stores = useRealmStores(realm, rules);
   const researchTree = useResearchTree(realm);
   const playerAddress = useAccountStore((state) => state.account?.address ?? null);
+  const questOpen = useQuestDockOpen();
 
   if (!realm) return null;
 
@@ -272,6 +277,7 @@ function useOpeningContext(
     outOfStamina,
     hasRelic,
     openedToday: openedSurface === "today",
+    openedQuest: questOpen,
     openedResearch: openedSurface === "research",
     openedSeason: openedSurface === "season",
     openedShop: openedSurface === "shop",

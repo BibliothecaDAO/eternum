@@ -102,7 +102,7 @@ export const drawPathStudy = (
   entities: MapLabelEntity[],
   study: PathStudy,
 ): (() => void) => {
-  const groundAt = (x: number, z: number) => terrain.sampleSurface(x, z).height;
+  const groundAt = (x: number, z: number) => terrain.sampleHeight(x, z);
   const onGround = (tiles: Vector3[]) => tiles.map((tile) => new Vector3(tile.x, groundAt(tile.x, tile.z), tile.z));
   const paths = new PathRenderer();
   paths.initialize(scene);

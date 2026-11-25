@@ -13,6 +13,7 @@ import {
   ASPECT_STEP_WORDS,
   CHAT,
   CLOSE,
+  OK,
   DEEP_WORDS,
   FIGHT_WORDS,
   INVITE_WORDS,
@@ -58,6 +59,7 @@ describe("the HUD's words the steps press and read", () => {
       feed: EVENTS_WORDS.feed,
       research: RESEARCH,
       close: CLOSE,
+      ok: OK,
       chat: CHAT,
       settings: SETTINGS,
       today: TODAY,
@@ -1049,10 +1051,10 @@ it("the ruin fight proof completes once the card opens with its Attack, the came
 
 it("requires an opened army panel and no retired LORDS controls", () => {
   const verify = STEP_SETS["lab-no-lords"].steps[1].verify;
-  const panel = { army: "Army 1", sheet: "Army 1" };
+  const panel = { army: "1,498 Knights", sheet: "1,498 Knights" };
   expect(verify({ played: { panel, controls: [] } }).status).toBe("completed");
   expect(verify({ played: { panel, controls: ["Refill"] } }).status).toBe("failed");
-  expect(verify({ played: { panel: { army: "Army 1" }, controls: [] } }).status).toBe("failed");
+  expect(verify({ played: { panel: { army: "1,498 Knights" }, controls: [] } }).status).toBe("failed");
 });
 
 it("requires the selected Aspect in both the founding command and its membership result", () => {
@@ -1163,10 +1165,10 @@ it("requires one quest command, its exact receipt, both balances credited by it 
 });
 
 it.each([
-  ["world", ["LaborGrant"], "The Cull: 2,500 of 2,500 troops. Ash Fall"],
-  ["again", ["BaneGrant"], "The Cull: 2,500 of 2,500 troops. Ash Fall"],
-  ["late", ["LaborGrant", "BaneGrant"], "The Cull: 2,500 of 2,500 troops. Ash Fall"],
-  ["team", ["LaborGrant"], "The Stand: 3 of 3 sites. Prowess's bane"],
+  ["world", ["LaborGrant"], "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops (2.5K/2.5K)"],
+  ["again", ["BaneGrant"], "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops (2.5K/2.5K)"],
+  ["late", ["LaborGrant", "BaneGrant"], "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops (2.5K/2.5K)"],
+  ["team", ["LaborGrant"], "Bane from Prowess · The Stand · Clear 3 guarded sites (3/3)"],
 ])(
   "requires exact %s bane receipts, each credited once whatever the balances held, identity and collected UI",
   (stage, models, text) => {
@@ -1229,6 +1231,29 @@ it("reports the failed Oath capacity assertion without trying to time a missing 
       },
     }),
   ).resolves.toMatchObject({ status: "failed", reason: "The new army did not inherit three Oath slots" });
+});
+
+describe("the supply post's steps", () => {
+  const steps = STEP_SETS["lab-supply-post"].steps;
+  const open = steps.find(({ name }) => name === "open-supply-post");
+
+  it("passes a post that lists the army beside it, then reinforces it from the map as the realm does", () => {
+    const shown = (text) => ({ found: true, state: { sheet: "Supply Post", text } });
+    expect(open.verify({ played: { found: false } }).status).toBe("failed");
+    expect(open.verify({ played: shown("Supply PostDraws from realm stockArmies in range0 beside post") }).status).toBe(
+      "failed",
+    );
+    expect(open.verify({ played: shown("Supply PostArmies in range1 beside postArmy 1 · Knights") }).status).toBe(
+      "completed",
+    );
+    expect(steps.map(({ name }) => name)).toEqual([
+      "enter-on-map",
+      "pick-army",
+      "open-supply-post",
+      "open-reinforce",
+      "reinforce-from-camp",
+    ]);
+  });
 });
 
 describe("the Season 1 rehearsal", () => {
@@ -1452,5 +1477,31 @@ describe("the realm world's deploy sheet (lab-realm-world)", () => {
       inRightRail: true,
     });
     expect(step.verify({ played }).status).toBe("completed");
+  });
+});
+
+it("the panels proof ends on Settings open at its Quality row", () => {
+  const step = STEP_SETS["lab-panels"].steps.at(-1);
+  expect(step.name).toBe("panel-settings");
+  const played = { rows: ["Quality", "Reduced motion"], qualities: ["Low", "Balanced", "High"] };
+  expect(step.verify({ played }).status).toBe("completed");
+  expect(step.verify({ played: { rows: [], qualities: [] } }).status).toBe("failed");
+});
+
+describe("lab-high-ground", () => {
+  const verify = (name) => STEP_SETS["lab-high-ground"].steps.find((step) => step.name === name).verify;
+  const plate = { layer: "route", lowest: 0.01, highest: 0.05 };
+
+  it("fails lit tiles that offer nothing to explore, so no plate on the fog's floor is measured", () => {
+    expect(verify("lit-tiles-on-ground")({ played: { plates: [plate], explores: 2 } }).status).toBe("completed");
+    expect(verify("lit-tiles-on-ground")({ played: { plates: [plate], explores: 0 } }).status).toBe("failed");
+  });
+
+  it("fails an army under its ground or over it, and a page that reports none", () => {
+    const standing = (overGround) => verify("army-on-ground")({ played: { armies: [{ entityId: 1, overGround }] } });
+    expect(standing(0.03).status).toBe("completed");
+    expect(standing(-0.2).status).toBe("failed");
+    expect(standing(0.3).status).toBe("failed");
+    expect(verify("army-on-ground")({ played: { armies: null } }).status).toBe("failed");
   });
 });

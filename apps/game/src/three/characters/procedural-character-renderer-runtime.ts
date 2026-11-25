@@ -20,6 +20,7 @@ export async function initializeProceduralCharacterRendererRuntime(
     envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
     isMobileDevice: isCoarsePointer(),
     pixelRatio: Math.min(window.devicePixelRatio || 1, input.pixelRatioCap),
+    postProcessing: true,
     search: window.location.search,
   });
   // Characters load after this: a KTX2-compressed file can only be decoded once the loader knows the renderer.

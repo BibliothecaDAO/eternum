@@ -2,7 +2,7 @@ import "./day-done.css";
 
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Icon } from "@/ui/design-system/icon";
-import { HudButton, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudActions, HudButton, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import {
   CONTINUE,
   DAY,
@@ -55,7 +55,7 @@ export const DayDoneCard = ({
     {history === "short" && <HudNotice line={DAY_TOTALS_UNKNOWN} />}
     {history === "failed" && <HudNotice tone="bad" line={DAY_TOTALS_UNKNOWN} retry={onRetry} />}
     <DayLines stories={stories} />
-    <div className="day-done__actions">
+    <HudActions className="day-done__actions">
       {onShare && (
         <HudButton kind="secondary" icon="share" onClick={onShare}>
           {DAY_SHARE_WORDS.share}
@@ -64,7 +64,7 @@ export const DayDoneCard = ({
       <HudButton kind="primary" icon="play" data-day-continue="" onClick={onContinue}>
         {clock.day !== undefined ? DAY_DONE_WORDS.beginDay(clock.day) : CONTINUE}
       </HudButton>
-    </div>
+    </HudActions>
   </HudPanel>
 );
 

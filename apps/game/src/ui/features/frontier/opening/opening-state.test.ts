@@ -288,7 +288,7 @@ const LIFECYCLE_CASES: Record<OpeningMoment, { due: OpeningContext; completed?: 
       deployedArmies: 1,
       hasExplored: true,
       hasActiveBane: true,
-      openedToday: true,
+      openedQuest: true,
     },
   },
   deep: {

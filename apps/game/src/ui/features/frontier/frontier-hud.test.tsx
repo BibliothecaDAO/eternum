@@ -412,8 +412,11 @@ it.each([390, 1440])(
   },
 );
 
+const okIn = (root: ParentNode) =>
+  [...root.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "OK") ?? null;
+
 it.each([390, 1440])(
-  "opens Today from the day control at %i px, in the desktop's rail or the phone's foot band, the map uncovered",
+  "opens Today from the day control at %i px, under the day pill on a desktop or under the phone's bar, the map uncovered",
   async (width) => {
     viewport.set(width);
     await renderHud();
@@ -422,8 +425,8 @@ it.each([390, 1440])(
     await act(async () => day!.click());
     const sheet = host.querySelector<HTMLElement>('section[aria-label="Today"]');
     expect(sheet).not.toBeNull();
-    expect(sheet!.closest("[data-rail-panel]") !== null).toBe(width >= 1024);
-    expect(sheet!.closest("[data-sheet-band]") !== null).toBe(width < 1024);
+    expect(sheet!.closest(".frontier-day-wrap") !== null).toBe(width >= 1024);
+    expect(sheet!.closest(".frontier-phone-today") !== null).toBe(width < 1024);
     expect(host.querySelector('section[aria-label="Realm"]') !== null).toBe(width >= 1024);
     expect(host.querySelector('nav[aria-label="Places"]')).not.toBeNull();
     expect(host.querySelector(".ui-sheet__backdrop")).toBeNull();
@@ -448,7 +451,7 @@ it.each([390, 1440])("opens and closes the Wheat store from its control at %i px
   expect(host.querySelector('section[aria-label="Wheat"]')).toBeNull();
 });
 
-it("gives a phone one place menu under its pill, whose places switch the scene and put a page away", async () => {
+it("gives a phone Realm beside one layer menu under its pill, whose presses switch the scene and put a page away", async () => {
   viewport.set(390);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
@@ -461,19 +464,20 @@ it("gives a phone one place menu under its pill, whose places switch the scene a
         `[data-surface-deep-switch] [role="tab"][aria-label="${word}"]`,
       )!;
     };
-    expect(pill().dataset.place).toBe("Surface");
+    const placeShown = () => host.querySelector<HTMLElement>("[data-place-switch]")!.dataset.place;
+    const realmButton = () => host.querySelector<HTMLButtonElement>('[data-place-switch] button[aria-label="Realm"]')!;
+    expect(placeShown()).toBe("Surface");
     expect(document.querySelector("[data-surface-deep-switch]")).toBeNull();
     await act(async () => pill().click());
     expect(
       [...document.querySelectorAll('[data-surface-deep-switch] [role="tab"]')].map((tab) =>
         tab.getAttribute("aria-label"),
       ),
-    ).toEqual(["Realm", "Surface", "Veil", "Hollow", "Deep"]);
-    const realm = await placeTab("Realm");
-    await act(async () => realm.click());
+    ).toEqual(["Surface", "Veil", "Hollow", "Deep"]);
+    await act(async () => realmButton().click());
     expect(window.location.pathname).toMatch(/\/hex$/);
     expect(document.querySelector("[data-surface-deep-switch]")).toBeNull();
-    expect(pill().dataset.place).toBe("Realm");
+    expect(placeShown()).toBe("Realm");
     expect(host.querySelector('section[aria-label="Realm"]')).toBeNull();
     await act(async () => host.querySelector<HTMLButtonElement>(".frontier-bar button.frontier-stock-chips")!.click());
     expect(host.querySelector('section[aria-label="Realm"]')).not.toBeNull();
@@ -483,8 +487,7 @@ it("gives a phone one place menu under its pill, whose places switch the scene a
     expect(host.querySelector('section[aria-label="Realm"]')).toBeNull();
     await fromMenu("Feed");
     expect(surfaceNamed("Feed")).not.toBeNull();
-    const realmAgain = await placeTab("Realm");
-    await act(async () => realmAgain.click());
+    await act(async () => realmButton().click());
     expect(window.location.pathname).toMatch(/\/hex$/);
     expect(surfaceNamed("Feed")).toBeNull();
   } finally {
@@ -651,7 +654,7 @@ it("lays a phone's Settings on one page, with what is rarely touched one press a
           .click(),
       );
     expect(words(".ui-settings__volume-name")).toEqual(["Master", "Music", "Effects"]);
-    expect(words(".ui-settings__choices .ui-setting__name")).toEqual(["Quality", "FPS"]);
+    expect(words(".ui-settings__choices .ui-setting__name")).toEqual(["Quality"]);
     expect(words(".ui-settings > .ui-setting .ui-setting__name").slice(0, 3)).toEqual([
       "Mute",
       "Shadows",
@@ -1141,7 +1144,7 @@ it("keeps Chat reachable from its strip at the bottom right while visiting anoth
   }
 });
 
-it("orders the desktop places as Research, Feed, Season, Settings, lists the five places in the dropdown, and returns to Realm on the crest", async () => {
+it("orders the desktop places as Research, Feed, Season, Settings, sets Realm beside the four layers' menu, and returns to Realm on the crest", async () => {
   viewport.set(1440);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
@@ -1153,8 +1156,8 @@ it("orders the desktop places as Research, Feed, Season, Settings, lists the fiv
     expect(labels).toEqual(["Research", "Feed", "Season", "Settings"]);
     expect(host.querySelector('button[aria-label="Relics"]')).toBeNull();
     await act(async () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
-    const placeTabs = [...document.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) =>
-      tab.getAttribute("aria-label"),
+    const placeTabs = [...document.querySelectorAll('[aria-label="Map view"] :is([role="tab"], [aria-pressed])')].map(
+      (tab) => tab.getAttribute("aria-label"),
     );
     expect(placeTabs).toEqual(["Realm", "Surface", "Veil", "Hollow", "Deep"]);
     await act(async () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
@@ -1461,7 +1464,7 @@ it.each([
       expect(armyButton).not.toBeNull();
       await act(async () => armyButton!.click());
       if (layout === "desktop") {
-        expect(host.querySelector('[data-rail-panel] section[aria-label="Army 1"]')).not.toBeNull();
+        expect(host.querySelector('[data-rail-panel] section[aria-label="100 Knights"]')).not.toBeNull();
       }
       expect(useOpeningStore.getState().showing).toBe("explore");
       expect(host.querySelector('[data-tutorial-dock="explore"][data-tutorial-status="showing"]')).not.toBeNull();
@@ -1483,7 +1486,7 @@ it.each([
       expect(confirmed).not.toBeNull();
       expect(confirmed?.textContent).toContain(OPENING_WORDS.completed.explore.title);
 
-      const closeConfirmed = confirmed!.querySelector<HTMLButtonElement>('button[aria-label="Close"]');
+      const closeConfirmed = okIn(confirmed!);
       if (layout === "desktop") {
         expect(closeConfirmed).not.toBeNull();
         await act(async () => closeConfirmed!.click());
@@ -1495,7 +1498,7 @@ it.each([
         '[data-tutorial-dock="aspects"][data-tutorial-status="showing"]',
       );
       expect(raceNext?.textContent).toContain(OPENING_WORDS.titles.aspects());
-      await act(async () => raceNext!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+      await act(async () => okIn(raceNext!)!.click());
       expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
 
       await act(async () => {
@@ -1736,7 +1739,7 @@ it.each([1920, 390])(
         const dock = host.querySelector<HTMLElement>("[data-tutorial-dock]");
         if (!dock) break;
         told.push(dock.dataset.tutorialDock ?? "");
-        await act(async () => dock.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+        await act(async () => okIn(dock)!.click());
         await act(async () => new Promise((settled) => setTimeout(settled, 20)));
       }
       expect(told[0]).toBe("deep");

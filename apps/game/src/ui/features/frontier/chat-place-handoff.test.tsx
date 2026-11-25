@@ -121,7 +121,7 @@ const connect = () =>
     }),
   );
 
-const share = () => host.querySelector<HTMLButtonElement>('button[aria-label="Share the selected place"]');
+const share = () => host.querySelector<HTMLButtonElement>('button[aria-label="Share selected place"]');
 const sendWithPlace = async (words: string) => {
   await act(async () => share()!.click());
   expect(host.querySelector("form [data-place]")?.textContent).toBe(realmName);

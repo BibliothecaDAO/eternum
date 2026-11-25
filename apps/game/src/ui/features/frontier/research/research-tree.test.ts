@@ -36,9 +36,9 @@ describe("the castle's tree as the contract rules it", () => {
     ]);
     expect(why(EARLY_REALM, "row-0")).toBe("Needs 500 Essence");
     expect(why(EARLY_REALM, "row-1")).toBe("Needs a Workshop");
-    expect(why(EARLY_REALM, "row-2")).toBe("Needs the Realm at City");
-    expect(why(EARLY_REALM, "row-4")).toBe("Needs the Realm at Kingdom");
-    expect(why(EARLY_REALM, "row-5")).toBe("Needs the Realm at Kingdom");
+    expect(why(EARLY_REALM, "row-2")).toBe("Needs City");
+    expect(why(EARLY_REALM, "row-4")).toBe("Needs Kingdom");
+    expect(why(EARLY_REALM, "row-5")).toBe("Needs Kingdom");
     expect(why({ ...EARLY_REALM, castleLevel: 2 }, "row-5")).toBe("Needs a Supply yard");
     expect(why(EARLY_REALM, "well")).toBe("Needs 2,500 Essence");
     expect(why(EARLY_REALM, "shrine")).toBe("Needs Well lore first");

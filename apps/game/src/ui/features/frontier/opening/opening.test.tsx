@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BANNED_WORDS, VOICE_RULES } from "@bibliothecadao/types";
-import { OPENING_WORDS } from "@/ui/design-system/kit/words";
+import { OK, OPENING_WORDS } from "@/ui/design-system/kit/words";
 import { AspectEmissaryDock } from "../tutorial/aspect-emissary-dock";
 import { OpeningPartGate, OpeningProvider } from "./opening-context";
 import { OPENING, OPENING_MOMENTS, partShown, TUTORIAL_WORD_BUDGET, type OpeningMoment } from "./opening";
@@ -98,7 +98,7 @@ describe("the interface that opens as you play", () => {
     expect(renderMoment("bane")).toContain("A bane strikes today.");
     expect(renderMoment("aspects")).toContain("Prowess races to finish its hyperstructure first.");
     expect(renderMoment("daily-quest")).toContain("Today's quest is done.");
-    expect(renderMoment("essence")).toContain("Essence buys permanent upgrades and lores for your Realm.");
+    expect(renderMoment("essence")).toContain("Essence buys permanent upgrades and lore for your Realm.");
   });
 
   it("draws a gated part once its moment is reached, and every part outside the HUD's provider", () => {
@@ -126,11 +126,11 @@ describe("the interface that opens as you play", () => {
     expect(host.querySelector("[data-part]")).not.toBeNull();
   });
 
-  it("dismisses a line with Close and skips all with Skip tutorial", () => {
+  it("dismisses a line with OK and skips all with Skip tutorial", () => {
     const onDismiss = vi.fn();
     const onSkipAll = vi.fn();
     renderMoment("essence", onDismiss, onSkipAll);
-    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+    act(() => [...host.querySelectorAll("button")].find((each) => each.textContent === OK)!.click());
     expect(onDismiss).toHaveBeenCalledTimes(1);
     const pressSkip = () =>
       act(() => [...host.querySelectorAll("button")].find((each) => each.textContent === "Skip tutorial")!.click());

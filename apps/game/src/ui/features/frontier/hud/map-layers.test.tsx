@@ -18,7 +18,7 @@ import { deepCenter, type NativeFactStore, type NativeRows } from "@bibliothecad
 import { campBeside } from "../sites/site-fixture";
 
 import { selectLayer, type MapLayers, useMapLayers } from "./map-layers";
-import { PlaceMenu } from "./surface-deep-switch";
+import { PlaceSwitch } from "./surface-deep-switch";
 
 const context = vi.hoisted(() => ({
   store: null as NativeFactStore | null,
@@ -61,18 +61,17 @@ const pressTab = (word: string) => {
 const layersShowingII = (go: MapLayers["go"]): MapLayers => ({ layers: [0, 1, 2], shown: 2, go });
 
 describe("the map's layers", () => {
-  it("lists all five places with locked Deep disabled and switches directly between unlocked layers", () => {
+  it("lists the four layers with locked Deep disabled and switches directly between unlocked layers", () => {
     const go = vi.fn();
     const layers = layersShowingII(go);
     act(() =>
       root.render(
-        <PlaceMenu isMapView layers={layers} onGoRealm={() => {}} onGoSurface={() => selectLayer(layers, 0)} />,
+        <PlaceSwitch isMapView layers={layers} onGoRealm={() => {}} onGoSurface={() => selectLayer(layers, 0)} />,
       ),
     );
     expect(
       placeRows().map((row) => [row.getAttribute("aria-label"), row.getAttribute("aria-selected"), row.disabled]),
     ).toEqual([
-      ["Realm", "false", false],
       ["Surface", "false", false],
       ["Veil", "false", false],
       ["Hollow", "true", false],
@@ -114,7 +113,7 @@ const clockAt = (store: NativeFactStore, seconds: number) =>
 const LayerSwitch = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows["Structure"] }) => {
   const layers = useMapLayers(rules, realm, realm);
   return (
-    <PlaceMenu
+    <PlaceSwitch
       isMapView={context.mapView}
       layers={layers}
       onGoRealm={() => {}}
@@ -138,7 +137,9 @@ describe("the layer switch over the real layers", () => {
     const unlocked = researchedDay(3n);
     context.mapView = false;
     act(() => root.render(<LayerSwitch rules={unlocked.rules} realm={unlocked.realm} />));
-    expect(tabNamed("Realm").getAttribute("aria-selected")).toBe("true");
+    expect(host.querySelector('[data-place-switch] button[aria-label="Realm"]')!.getAttribute("aria-pressed")).toBe(
+      "true",
+    );
   });
 });
 

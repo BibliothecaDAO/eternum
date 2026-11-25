@@ -1,38 +1,54 @@
-.offline-banner {
-  pointer-events: auto;
+.offline-pill {
   display: flex;
-  width: 100%;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  height: 34px;
   align-items: center;
-  gap: theme(spacing[2.5]);
-  border: 1px solid color-mix(in srgb, var(--hud-bad) 65%, transparent);
-  border-radius: var(--hud-radius-panel);
+  gap: theme(spacing.2);
+  margin-inline: auto;
+  border: 1.5px solid color-mix(in srgb, var(--hud-warn) 72%, transparent);
+  border-radius: var(--hud-radius-round);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  padding: 0 theme(spacing.3);
+  color: var(--hud-warn);
+  font-size: var(--hud-text-body);
+  font-weight: var(--hud-weight-title);
+  white-space: nowrap;
+  box-shadow: var(--hud-shadow-panel);
+  pointer-events: auto;
+}
+.offline-pill[data-state="lost"] {
+  border-color: color-mix(in srgb, var(--hud-bad) 78%, transparent);
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--hud-bad) 52%, var(--hud-surface-from)),
-    color-mix(in srgb, var(--hud-bad) 36%, var(--hud-surface-to))
+    color-mix(in srgb, var(--hud-bad) 18%, var(--hud-surface-from)),
+    color-mix(in srgb, var(--hud-bad) 10%, var(--hud-surface-to))
   );
-  padding: theme(spacing.2) theme(spacing.3);
+  padding-right: theme(spacing.1);
   color: rgb(var(--hud-ink));
-  font-size: var(--hud-text-body);
-  line-height: var(--hud-leading-body);
-  font-weight: var(--hud-weight-title);
-  box-shadow: var(--hud-shadow-panel);
 }
-.offline-banner__icon {
+.offline-pill__dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--hud-warn);
+  animation: offline-pill-pulse 1.2s ease-in-out infinite;
+}
+.offline-pill[data-state="lost"] .offline-pill__dot {
+  background: var(--hud-bad);
+  animation: none;
+}
+.offline-pill__icon {
   flex: none;
 }
-.offline-banner__line {
-  min-width: 0;
-  flex: 1 1 auto;
+@keyframes offline-pill-pulse {
+  50% {
+    opacity: 0.35;
+  }
 }
-.offline-banner__action {
-  flex: none;
-}
-@media (min-width: 1024px) and (orientation: landscape), (min-width: 1440px) {
-  .offline-banner {
-    width: auto;
-    min-width: 28rem;
-    max-width: min(36rem, calc(100vw - 2rem));
-    padding: theme(spacing.2) theme(spacing.3) theme(spacing.2) theme(spacing.4);
+@media (prefers-reduced-motion: reduce) {
+  .offline-pill__dot {
+    animation: none;
   }
 }

@@ -46,18 +46,6 @@ const ashFallToday = (store: ReturnType<typeof realm>["store"], now: number) => 
 const surfaces = (bane: boolean, kind: "wheat" | "troops", category: number) => {
   const { store, row, now: today } = realm();
   const now = nextDay(store, today);
-  const troops = store.require("ResourceProduction", { game_id: 1, entity_id: 7, resource_type: ResourcesIds.Knight });
-  store.applyFacts([
-    {
-      model: "ResourceProduction",
-      key: store.wireKeyOf("ResourceProduction", troops)!,
-      value: {
-        ...troops,
-        production_rate: String(troops.production_rate),
-        output_amount_left: String((1n << 128n) - 1n),
-      },
-    },
-  ] as never);
   if (bane) ashFallToday(store, now);
   const reading = readRealmStore(store, row, readExpeditionRules(store, 1)!, kind, { now });
   const build = readBuildOptions(store, row, false, now)!.find((option) => option.category === category)!;
