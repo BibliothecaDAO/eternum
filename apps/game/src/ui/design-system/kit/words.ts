@@ -1629,8 +1629,6 @@ export const PLAY_WORDS = {
   resumeRehearsal: "Resume",
 } as const;
 
-/** The lore's line, on the first visit's painting and on sign-in (approved 25 September). */
-export const LORE_LINE = "The mist forgets. Your realm remembers.";
 /** Frontier's pitch on the first visit's card. */
 export const PITCH = "A new land every day";
 
@@ -1644,6 +1642,7 @@ export const SIGN_IN_PROVIDER_NAMES = {
 
 /** The sign-in flow's words: its titles, its ways in and the steps on its buttons. */
 export const SIGN_IN_WORDS = {
+  oneAccount: "One account for every Realms game.",
   enterHeading: "Enter the Frontier",
   enterSubtitle: "Free to play · No wallet required",
   /** A provider's button, in the wording Google's and Apple's brand rules allow. */
