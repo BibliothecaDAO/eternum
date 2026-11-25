@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
+import { PICK_EFFECT_WORDS } from "@/ui/design-system/kit/words";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -149,8 +150,8 @@ it("spells what each sworn Oath grants in the panel, no hover needed", async () 
     [...row.children].map((part) => part.textContent),
   );
   expect(rows).toEqual([
-    ["Giants", `-${oaths.GIANTS_REDUCTION_PERCENT}%`, "Damage taken"],
-    ["Power", `+${oaths.POWER_DAMAGE_PERCENT}%`, "Damage dealt"],
+    ["Giants", `-${oaths.GIANTS_REDUCTION_PERCENT}%`, PICK_EFFECT_WORDS.battleDamageTaken],
+    ["Power", `+${oaths.POWER_DAMAGE_PERCENT}%`, PICK_EFFECT_WORDS.battleDamageDealt],
   ]);
   game.progress.oaths = 0;
 });

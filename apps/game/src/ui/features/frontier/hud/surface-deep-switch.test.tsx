@@ -2,7 +2,8 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MapLayers } from "./map-layers";
-import { PlaceMenu } from "./surface-deep-switch";
+import { SPIRE_WORDS } from "@/ui/design-system/kit/words";
+import { PlaceSwitch } from "./surface-deep-switch";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -26,49 +27,54 @@ const rowsOfMenu = () => {
   return [...document.querySelectorAll<HTMLButtonElement>('[data-surface-deep-switch] [role="tab"]')];
 };
 
-describe("the place menu", () => {
-  it("highlights the active deep layer or Realm and switches straight to any unlocked depth", () => {
+const realmTab = () => host.querySelector<HTMLButtonElement>('[data-place-switch] button[aria-label="Realm"]')!;
+const placeShown = () => host.querySelector<HTMLElement>("[data-place-switch]")!.dataset.place;
+
+describe("the place switch", () => {
+  it("highlights the active layer and switches straight to any unlocked depth", () => {
     const go = vi.fn();
-    const onGoRealm = vi.fn();
     const onGoSurface = vi.fn();
     const layers: MapLayers = { layers: [0, 1, 2, "deep"], shown: 2, go };
-
-    act(() => root.render(<PlaceMenu isMapView layers={layers} onGoRealm={onGoRealm} onGoSurface={onGoSurface} />));
-    expect(rowsOfMenu().map((row) => row.getAttribute("aria-selected"))).toEqual([
-      "false",
-      "false",
-      "false",
-      "true",
-      "false",
-    ]);
-    act(() => rowsOfMenu()[4]!.click());
+    act(() => root.render(<PlaceSwitch isMapView layers={layers} onGoRealm={vi.fn()} onGoSurface={onGoSurface} />));
+    expect(placeShown()).toBe("Hollow");
+    expect(rowsOfMenu().map((row) => row.getAttribute("aria-selected"))).toEqual(["false", "false", "true", "false"]);
+    const deep = rowsOfMenu()[3]!;
+    act(() => deep.click());
     expect(go).toHaveBeenCalledWith("deep");
-
-    act(() =>
-      root.render(<PlaceMenu isMapView={false} layers={layers} onGoRealm={onGoRealm} onGoSurface={onGoSurface} />),
-    );
-    expect(rowsOfMenu().map((row) => row.getAttribute("aria-selected"))).toEqual([
-      "true",
-      "false",
-      "false",
-      "false",
-      "false",
-    ]);
-    act(() => rowsOfMenu()[1]!.click());
+    const surface = rowsOfMenu()[0]!;
+    act(() => surface.click());
     expect(onGoSurface).toHaveBeenCalledTimes(1);
   });
 
-  it("lists the same five places in a phone's menu, each locked one with what opens it, and closes on a choice", () => {
+  it("opens the realm with one press of Realm, lights it while the realm stands, and names the map's layer beside it", () => {
+    const onGoRealm = vi.fn();
+    const layers: MapLayers = { layers: [0, 1], shown: 0, go: vi.fn() };
+    const draw = (isMapView: boolean) =>
+      act(() =>
+        root.render(<PlaceSwitch isMapView={isMapView} layers={layers} onGoRealm={onGoRealm} onGoSurface={vi.fn()} />),
+      );
+    draw(true);
+    expect(realmTab().getAttribute("aria-pressed")).toBe("false");
+    act(() => realmTab().click());
+    expect(onGoRealm).toHaveBeenCalledTimes(1);
+    expect(document.querySelector("[data-surface-deep-switch]")).toBeNull();
+    draw(false);
+    expect([realmTab().getAttribute("aria-pressed"), placeShown()]).toEqual(["true", "Realm"]);
+    expect(host.querySelector("[data-place-pill]")!.textContent).toBe("Surface");
+    expect(rowsOfMenu().map((row) => row.getAttribute("aria-selected"))).toEqual(["false", "false", "false", "false"]);
+  });
+
+  it("lists each layer with what stands there, each locked one with what opens it, and closes on a choice", () => {
     const go = vi.fn();
     const onSwitch = vi.fn();
     const layers: MapLayers = { layers: [0, 1], shown: 0, go };
     act(() =>
       root.render(
-        <PlaceMenu
+        <PlaceSwitch
           isMapView
           layers={layers}
           realm={{ mark: "realm-1" }}
-          lines={{ realm: "Duskbite" }}
+          lines={{ surface: "1 army", 1: "0 armies" }}
           onGoRealm={vi.fn()}
           onGoSurface={vi.fn()}
           onSwitch={onSwitch}
@@ -76,17 +82,16 @@ describe("the place menu", () => {
       ),
     );
     const pill = host.querySelector<HTMLButtonElement>("[data-place-pill]")!;
-    expect([pill.dataset.place, pill.getAttribute("aria-haspopup")]).toEqual(["Surface", "true"]);
+    expect([placeShown(), pill.getAttribute("aria-haspopup")]).toEqual(["Surface", "true"]);
     act(() => pill.click());
     const rows = [...document.querySelectorAll<HTMLButtonElement>('[data-surface-deep-switch] [role="tab"]')];
     expect(rows.map((row) => [row.textContent, row.getAttribute("aria-selected"), row.disabled])).toEqual([
-      ["RealmDuskbite", "false", false],
-      ["Surface", "true", false],
-      ["Veil", "false", false],
-      ["HollowSpire II", "false", true],
-      ["DeepSpire III", "false", true],
+      ["Surface1 army", "true", false],
+      ["Veil0 armies", "false", false],
+      [`Hollow${SPIRE_WORDS.lockedAt(2)}`, "false", true],
+      [`Deep${SPIRE_WORDS.lockedAt(3)}`, "false", true],
     ]);
-    act(() => rows[2]!.click());
+    act(() => rows[1]!.click());
     expect(go).toHaveBeenCalledWith(1);
     expect(onSwitch).toHaveBeenCalledTimes(1);
     expect(document.querySelector("[data-surface-deep-switch]")).toBeNull();

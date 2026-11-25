@@ -1628,5 +1628,30 @@
     "art": "combat-bow",
     "label": "Bow",
     "family": "Combat"
+  },
+  "bane-world": {
+    "art": "bane-world",
+    "label": "World Bane",
+    "family": "Banes"
+  },
+  "bane-blood-moon": {
+    "art": "bane-blood-moon",
+    "label": "Blood Moon",
+    "family": "Banes"
+  },
+  "bane-mist-tide": {
+    "art": "bane-mist-tide",
+    "label": "Mist Tide",
+    "family": "Banes"
+  },
+  "bane-ash-fall": {
+    "art": "bane-ash-fall",
+    "label": "Ash Fall",
+    "family": "Banes"
+  },
+  "bane-altar-curse": {
+    "art": "bane-altar-curse",
+    "label": "Altar Curse",
+    "family": "Banes"
   }
 }

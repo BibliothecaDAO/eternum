@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { aspectName, aspects } from "@bibliothecadao/types";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { BUILD, CLOSE, MENU, OPENING_WORDS, SETTINGS } from "@/ui/design-system/kit/words";
+import { BUILD, MENU, OK, OPENING_WORDS, SETTINGS } from "@/ui/design-system/kit/words";
 import { OPENING_MOMENTS, teacherAspectOf, type OpeningMoment } from "../opening/opening";
 import { OPENING_RULES } from "../opening/opening-fixtures";
 import { ASPECT_EMISSARY_PORTRAITS } from "./aspect-emissaries";
@@ -26,6 +26,9 @@ afterEach(() => {
   act(() => root.unmount());
   host.remove();
 });
+
+const okOf = (root: ParentNode) =>
+  [...root.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === OK) ?? null;
 
 describe("AspectEmissaryDock", () => {
   it("gives every Aspect its own shipped emissary portrait across all facet delivery sizes", () => {
@@ -67,7 +70,7 @@ describe("AspectEmissaryDock", () => {
     expect(portrait?.getAttribute("src")).toBe("/icons/facets/256/emissary-luminary.webp");
     expect(host.querySelector('[data-aspect-mark="2"]')).not.toBeNull();
 
-    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+    act(() => okOf(host)!.click());
     expect(onDismiss).toHaveBeenCalledTimes(1);
 
     const pressSkip = () =>
@@ -75,7 +78,7 @@ describe("AspectEmissaryDock", () => {
     pressSkip();
     expect(onSkipAll).not.toHaveBeenCalled();
     expect(dock?.textContent).toContain(OPENING_WORDS.skipFinal);
-    expect(host.querySelector('button[aria-label="Close"]')).toBeNull();
+    expect(okOf(host)).toBeNull();
     expect(host.querySelector(".emissary-dock__action")).toBeNull();
 
     act(() =>
@@ -189,7 +192,7 @@ describe("AspectEmissaryDock", () => {
       [...host.querySelectorAll("button")].find((button) => button.textContent === "Skip tutorial"),
     ).toBeUndefined();
 
-    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+    act(() => okOf(host)!.click());
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
@@ -244,7 +247,7 @@ describe("AspectEmissaryDock", () => {
     expect(dock.querySelector(".emissary-dock__title")?.textContent).toBe(OPENING_WORDS.titles.explore());
     expect(dock.querySelector(".emissary-dock__line")?.textContent).toBe(OPENING_WORDS.lines.explore(OPENING_RULES));
     expect(dock.querySelector(".emissary-dock__action")?.textContent).toBe(OPENING_WORDS.actions.explore);
-    expect(dock.querySelector('button[aria-label="Close"]')).not.toBeNull();
+    expect(okOf(dock)).not.toBeNull();
     expect(dock.querySelector(".emissary-dock__aspect")).toBeNull();
     expect(dock.querySelector(".emissary-dock__crest")).toBeNull();
   });
@@ -329,7 +332,7 @@ describe("AspectEmissaryDock", () => {
     expect(dock().dataset.tutorialForm).toBe("strip");
     expect(dock().textContent).toContain(OPENING_WORDS.titles.barracks());
     expect(dock().textContent).toContain(OPENING_WORDS.inSheet.barracks(OPENING_RULES));
-    expect(dock().querySelector(`button[aria-label="${CLOSE}"]`)).toBeNull();
+    expect(okOf(dock())).toBeNull();
 
     press(OPENING_WORDS.skipTutorial);
     expect(dock().textContent).toContain(OPENING_WORDS.skipFinal);
@@ -363,9 +366,9 @@ describe("AspectEmissaryDock", () => {
     expect(dock().dataset.tutorialForm).toBe("reminder");
   });
 
-  it("closes the lesson from the reminder's cross", () => {
+  it("closes the lesson from the reminder's OK", () => {
     const { onDismiss } = renderOverSheet("deploy", SETTINGS);
-    press(CLOSE);
+    press(OK);
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 

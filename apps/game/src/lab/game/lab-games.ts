@@ -1,11 +1,12 @@
-import { nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
+import { nativeBaneConstants, nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
+import { TroopType } from "@bibliothecadao/types";
 import { oathPickScenario, oathPassCappedScenario } from "./oath-pick-scenario";
 import { oathSlotsScenario } from "./oath-slots-scenario";
 import { battleTargetScenario, deepBattleTargetScenario } from "./battle-target-scenario";
 import { townScenario } from "./town-scenario";
 import { scoutsScenario } from "./scouts-scenario";
 import { siteEffectsScenario } from "./site-effects-scenario";
-import { baneScenario } from "./bane-scenario";
+import { baneEconomyScenario, baneScenario, bloodMoonScenario, withWorldBane } from "./bane-scenario";
 import { staminaScenario } from "./stamina-scenario";
 import { questScenario } from "./quest-scenario";
 import { aspectSettleInvitedScenario, aspectSettleScenario } from "./aspect-settle-scenario";
@@ -64,6 +65,9 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "oath-slots": oathSlotsScenario,
   "oath-vitriol": () => oathPickScenario(false, deepScenario(), oaths.VITRIOL),
   "oath-pick": () => oathPickScenario(),
+  "oath-pick-knights": () => oathPickScenario(false, spireScenario(), oaths.SKILL, TroopType.Knight),
+  "oath-pick-crossbows": () => oathPickScenario(false, spireScenario(), oaths.SKILL, TroopType.Crossbowman),
+  "oath-pick-scouts": () => oathPickScenario(false, spireScenario(), oaths.SKILL, TroopType.Paladin),
   "oath-replace": () => oathPickScenario(true),
   "oath-pass-capped": oathPassCappedScenario,
   "battle-target": battleTargetScenario,
@@ -89,9 +93,12 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   shop: shopScenario,
   quest: questScenario,
   "bane-world": () => baneScenario("world"),
+  "bane-economy": baneEconomyScenario,
   "bane-again": () => baneScenario("again"),
   "bane-late": () => baneScenario("late"),
   "bane-team": () => baneScenario("team"),
+  "bane-blood-moon": bloodMoonScenario,
+  "bane-mist-tide": () => withWorldBane(staminaScenario(false), nativeBaneConstants.MIST_TIDE),
   upkeep: upkeepScenario,
   "stamina-mist": () => staminaScenario(false),
   "stamina-wind": () => staminaScenario(true),
