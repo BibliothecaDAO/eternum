@@ -1,11 +1,8 @@
 .aspect-race-page {
   display: flex;
-  min-height: 0;
   width: 100%;
-  flex: 1 1 auto;
   flex-direction: column;
   gap: theme(spacing.4);
-  overflow-y: auto;
 }
 
 .aspect-race-page__hero {
