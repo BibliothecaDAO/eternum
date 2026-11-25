@@ -897,7 +897,7 @@ test("the bane codec preserves whole quest units and refuses invalid effects", (
     source.labor = null;
     const built = buildNativePreset(loadNativePresetConfiguration("madara.frontier", source.id), source.id);
     expect(built.economy.banes.unwrap()).toEqual({
-      chance_step: 20,
+      chance_step: 10,
       quorum_percent: 25,
       beast_percent: 150,
       stamina_percent: 50,
