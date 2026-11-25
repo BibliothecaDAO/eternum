@@ -180,6 +180,18 @@ describe("the Cosmetics page", () => {
     expect(buttonNamed(container, COSMETICS_WORDS.eventExclusive)!.disabled).toBe(true);
   });
 
+  it("says a skin's preview is coming while it has no art yet, and only then", async () => {
+    directory.games = [];
+    const container = await open();
+    const stage = () => container.querySelector<HTMLElement>("[data-preview]")!;
+    expect(stage().textContent).not.toContain(COSMETICS_WORDS.previewSoon);
+    await pick(container, "season-1-luminary");
+    expect(stage().textContent).toContain(COSMETICS_WORDS.previewSoon);
+    expect(
+      container.querySelector('[data-skin="season-1-luminary"]')!.querySelectorAll(".cosmetics__badge"),
+    ).toHaveLength(1);
+  });
+
   it("offers no Equip, and says the default order the game wears for an owned skin", async () => {
     directory.games = [];
     const container = await open();

@@ -563,6 +563,7 @@ export const COSMETICS_WORDS = {
   yourRank: (rank: string) => `Your rank: ${rank}`,
   matchingIcon: "Matching Realm Icon",
   matchingIconWhere: "HUD badge, minimap, map plates & app",
+  previewSoon: "Preview soon",
   standing: { owned: "Owned", pass: "Pass", event: "Event", wonder: "Wonder" },
   unlockInPass: "Unlock in Season 1 Pass",
   eventExclusive: "Event exclusive",

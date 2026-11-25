@@ -173,6 +173,7 @@ const SkinPreview = ({ skin, facts, rank }: { skin: RealmSkin; facts: RealmSkinF
       <div className="cosmetics__stage" data-preview={skin.id} data-rank={shown}>
         {rank !== null && <AppChip>{COSMETICS_WORDS.yourRank(rankName(rank))}</AppChip>}
         <SkinArt skin={skin} rank={shown} size={200} />
+        {!icon && <span className="cosmetics__soon-line">{COSMETICS_WORDS.previewSoon}</span>}
       </div>
       <div className="cosmetics__ranks">
         {REALM_RANKS.map((each) => (

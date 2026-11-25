@@ -72,17 +72,15 @@ const panel = (page: HTMLElement, title: string) =>
   )!;
 
 describe.each([390, 1440])("What's new at %i px", (width) => {
-  it("is read from the footer: no Back, the bar holds the five places with none lit; signed out, You is Connect", async () => {
+  it("is read from the footer: no Back, the bar holds its places with none lit; signed out, You is Connect", async () => {
     const page = await open(width);
     expect(page.querySelector('[data-role="back"]')).toBeNull();
     const places = [...page.querySelectorAll<HTMLElement>('[data-role="tab"]')];
-    expect(places.map((place) => place.getAttribute("aria-label") ?? place.textContent)).toEqual([
-      "Play",
-      "Season",
-      "Shop",
-      "Chat",
-      "Connect",
-    ]);
+    expect(places.map((place) => place.getAttribute("aria-label") ?? place.textContent)).toEqual(
+      width >= 1024
+        ? ["Play", "Season", "Cosmetics", "Shop", "Chat", "Connect"]
+        : ["Play", "Season", "Shop", "Chat", "Connect"],
+    );
     const current = places.filter((place) => place.getAttribute("aria-current") === "page");
     expect(current).toEqual([]);
     // Connect, by what it does, for a script to find it whatever its word or place (the playtest runner's sign-in).
