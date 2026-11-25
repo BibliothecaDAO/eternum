@@ -6085,7 +6085,7 @@ export const REHEARSAL_WORDS = {
   forecasts: {
     lost: "Your army is lost",
     holds: "The guard survives",
-    victory: "Victory likely",
+    victory: "Victory",
   },
   take: "Take",
   joinGuard: "Join guard",
