@@ -1393,9 +1393,10 @@ const OATH_SLOTS_STEPS = [
           const { left, top, right, bottom, width, height } = element.getBoundingClientRect();
           return { left, top, right, bottom, width, height };
         };
-        const parts = [...footer.querySelectorAll("button, :scope > span > span[aria-label]")].map((element) => ({
+        const parts = [...footer.querySelectorAll("button, .ui-price > span")].map((element) => ({
           text: element.textContent.trim(),
           button: element.tagName === "BUTTON",
+          disabled: element.disabled === true,
           clipped: element.scrollWidth > element.clientWidth + 1,
           ...box(element),
         }));
@@ -1408,6 +1409,7 @@ const OATH_SLOTS_STEPS = [
           viewport: { width: innerWidth, height: innerHeight },
           prices: parts.filter((part) => !part.button).map((part) => part.text),
           actions: parts.filter((part) => part.button).map((part) => part.text),
+          blocked: parts.filter((part) => part.button && part.disabled).map((part) => part.text),
           overlaps,
           clipped: parts.filter((part) => part.clipped).map((part) => part.text),
           outside: parts.filter((part) => part.left < 0 || part.right > innerWidth || part.top < 0 || part.bottom > innerHeight).map((part) => part.text),
@@ -1418,8 +1420,10 @@ const OATH_SLOTS_STEPS = [
     verify: ({ played }) =>
       played.footer &&
       played.prices.length === 2 &&
-      played.actions.length === 1 &&
+      played.actions.length === 2 &&
       /^Upgrade the Castle$/.test(played.actions[0]) &&
+      played.blocked.length === 1 &&
+      played.blocked[0] === played.actions[1] &&
       played.overlaps.length === 0 &&
       played.clipped.length === 0 &&
       played.outside.length === 0 &&

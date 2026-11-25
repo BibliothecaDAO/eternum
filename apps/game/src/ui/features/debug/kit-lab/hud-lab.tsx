@@ -53,7 +53,7 @@ import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
 import { BuildingCardView, type CardMakes } from "@/ui/features/frontier/building/building-card";
 import { buildingIcon, buildingName } from "@/ui/features/frontier/build/building-names";
 import { nativeResearchConstants as research, nativeStructureConstants } from "@bibliothecadao/eternum/game-client";
-import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
+import { type RealmResearchFacts, readResearchTree } from "@/ui/features/frontier/research/research-tree";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
 import { FRONTIER_STORES, STORE_KINDS } from "@/ui/features/frontier/stores";
 import { type StoreReading } from "@/ui/features/frontier/hud/status-strip";
@@ -675,7 +675,8 @@ const STATES = {
     order: { ...EXPLORE, stamina: { cost: 30, held: 10, wait: 40 * 60 } },
   },
   stores: { clock: CLOCK, stores: STORES, armies: ARMIES, storeCard: WHEAT_LINE },
-  research: { clock: CLOCK, stores: STORES, armies: ARMIES, research: true },
+  research: { clock: CLOCK, stores: STORES, armies: ARMIES, research: MID_REALM },
+  "research-short": { clock: CLOCK, stores: STORES, armies: ARMIES, research: { ...MID_REALM, essence: 717 } },
   // A refused order's notice, through the game's own notice store: on a desktop it stands at the rail's top.
   notice: { clock: CLOCK, stores: STORES, armies: ARMIES, notice: staminaShortfall(10, 30) },
   today: { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today" },
@@ -766,7 +767,7 @@ type LabState = {
   /** A notice the client raises (a refused order), as the game's notice store holds it. */
   notice?: string;
   /** Research's page: the tree on the realm some days in. */
-  research?: boolean;
+  research?: RealmResearchFacts;
   /** The card a store's ring or plate opened. */
   storeCard?: StoreLine;
   army?: LabArmySheet;
@@ -851,7 +852,7 @@ export const HudLab = () => {
           chat && !desktop ? (
             chat
           ) : lab.research ? (
-            <LabResearch />
+            <LabResearch realm={lab.research} />
           ) : lab.menu ? (
             <MenuPage
               onFeed={noop}
@@ -1185,10 +1186,10 @@ const LabCastleResearch = () => (
 );
 
 /** Research's page on the realm some days in, as the game opens it: the tree alone, a tile tapped bringing its choice. */
-const LabResearch = () => {
-  const nodes = readResearchTree(MID_REALM);
+const LabResearch = ({ realm }: { realm: RealmResearchFacts }) => {
+  const nodes = readResearchTree(realm);
   const [picked, setPicked] = useState<string | null>(
-    () => (nodes.find(({ state }) => state === "ready") ?? nodes[0])?.key ?? null,
+    () => (nodes.find(({ state }) => state === "ready" || state === "short") ?? nodes[0])?.key ?? null,
   );
   return (
     <ResearchPanel
@@ -1199,7 +1200,7 @@ const LabResearch = () => {
       fixFor={() => undefined}
       onResearch={noop}
       onClose={noop}
-      castleLevel={MID_REALM.castleLevel}
+      castleLevel={realm.castleLevel}
     />
   );
 };
