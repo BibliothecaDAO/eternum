@@ -69,7 +69,7 @@ export const DayDoneCard = ({
 );
 
 const DayLines = ({ stories }: { stories: readonly ProcessedStoryEvent[] }) => {
-  const lines = oneStoryPerAction(stories).slice(-DAY_LINES).reverse();
+  const lines = oneKindEach(oneStoryPerAction(stories).reverse()).slice(0, DAY_LINES);
   if (lines.length === 0) return null;
   return (
     <div data-day-lines className="day-done__lines">
@@ -79,3 +79,6 @@ const DayLines = ({ stories }: { stories: readonly ProcessedStoryEvent[] }) => {
     </div>
   );
 };
+
+const oneKindEach = (stories: readonly ProcessedStoryEvent[]) =>
+  stories.filter((story, index) => stories.findIndex((other) => other.story === story.story) === index);

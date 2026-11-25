@@ -259,6 +259,11 @@ const seconds = (count: number) => act(() => vi.advanceTimersByTimeAsync(count *
 it("sums the player's own day 2 as prod's history holds it, not the tail of the game's newest stories", async () => {
   const cells = await openTheGame();
   expect(cells).toEqual(PROD_DAY_2);
+  const kinds = [...host.querySelectorAll(`${SUMMARY} [data-day-lines] .ui-event__icon`)].map((icon) =>
+    icon.getAttribute("data-icon"),
+  );
+  expect(kinds.length).toBeGreaterThan(0);
+  expect(new Set(kinds).size).toBe(kinds.length);
 });
 
 it("shares day 2 as its card and a post: its best moment, the numbers it moved, and the player's own link", async () => {
