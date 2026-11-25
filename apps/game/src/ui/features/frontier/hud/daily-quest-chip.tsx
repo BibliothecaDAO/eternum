@@ -7,6 +7,7 @@ import { Icon } from "@/ui/design-system/icon";
 import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
 import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { DAILY_QUEST_MODELS, readDailyQuest, UNROLLED_WORLD_DAY } from "@bibliothecadao/eternum";
+import { questLine } from "@bibliothecadao/types";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { baneFace, useBaneToday } from "../day/bane-face";
@@ -85,7 +86,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
           reading && (
             <span className="frontier-quest-orb__words">
               <span className="frontier-quest-orb__name">{face.name}</span>
-              <span className="frontier-quest-orb__objective">{DAY_BANNER_WORDS.objectiveLine(face, target)}</span>
+              <span className="frontier-quest-orb__objective">{questLine(face, target)}</span>
             </span>
           )
         )}

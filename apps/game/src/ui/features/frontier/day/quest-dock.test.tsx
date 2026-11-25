@@ -5,7 +5,7 @@ import { GameProvider } from "@/hooks/context/game-context";
 import { chainOf } from "@/lab/game/lab-chain";
 import { questScenario } from "@/lab/game/quest-scenario";
 import { dayOf, readDailyQuest, readExpeditionRules } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, aspects } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, aspects, questCatalog, questLine } from "@bibliothecadao/types";
 import { nativeBaneConstants, nativeQuestConstants, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { useBaneToday } from "./bane-face";
@@ -250,7 +250,8 @@ describe("bane collection", () => {
     expect(host.querySelector("[data-bane-row]")?.textContent).toBe(
       "▾No Deep heightBreak: 2/2 of your Aspect · Broken",
     );
-    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("The Stand · Clear 3 guarded sites (3/3)");
+    const stand = questCatalog.find((quest) => quest.id === nativeQuestConstants.STAND)!;
+    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe(`${stand.name} · ${questLine(stand, 3)}`);
     expect(host.textContent).not.toContain("2× if broken");
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(collectAgain()).toBeUndefined();

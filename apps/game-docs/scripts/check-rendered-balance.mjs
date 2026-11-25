@@ -35,6 +35,7 @@ import {
   deepSites,
   getProducedResource,
   orders,
+  questObjective,
   rankName,
   resourceName,
   worldBanes,
@@ -392,7 +393,7 @@ export const frontierPhrases = (
       page: "frontier/quests",
       phrases: [
         `Each of the ${dailyQuests.length} daily quests comes once every ${dailyQuests.length} days`,
-        ...dailyQuests.map((quest) => `${quest.name} ${quest.objective}`),
+        ...dailyQuests.map((quest) => `${quest.name} ${questObjective(quest)}`),
         `up to ${n(config.realmMaxLevel)}x at castle level ${n(config.realmMaxLevel)} (${rankName(config.realmMaxLevel - 1)})`,
         `multiply by ${n(contract.questLevelStep)} at each castle level (${questLevelScale}).`,
         `${n(preset.dailyQuest.labor)} labor and ${n(preset.dailyQuest.essence)} Essence`,

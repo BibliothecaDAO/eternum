@@ -67,6 +67,7 @@ import {
   getProducedResource,
   orders,
   ordersOfAspect,
+  questObjective,
   rankName,
   resourceName,
   worldBanes,
@@ -754,7 +755,7 @@ export const FRONTIER = {
     }),
     list: dailyQuests.map((quest, index) => ({
       name: quest.name,
-      objective: quest.objective,
+      objective: questObjective(quest),
       baseCount: n(questPreset.baseCounts[index]!),
     })),
   },
@@ -776,7 +777,7 @@ export const FRONTIER = {
         icon: head.icon,
         effect: `${head.rule}.`,
         questName: quest.name,
-        questObjective: quest.objective,
+        questObjective: questObjective(quest),
         targets: targets.join(" / "),
       };
     }),

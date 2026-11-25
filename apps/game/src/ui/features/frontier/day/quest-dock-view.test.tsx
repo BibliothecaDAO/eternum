@@ -3,7 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
-import { questCatalog } from "@bibliothecadao/types";
+import { questCatalog, questLine } from "@bibliothecadao/types";
 
 import { QUEST_DOCK_CASES } from "./quest-dock-fixtures";
 import { QuestDockView, type QuestDockProps } from "./quest-dock-view";
@@ -33,10 +33,11 @@ describe("the quest dock", () => {
     expect(host.querySelector("aside")?.getAttribute("aria-label")).toBe("Prowess: Daily Quest: Camp-breakers");
     const { quest, reading } = QUEST_DOCK_CASES["Quest running"];
     expect(host.querySelector("[data-quest-objective]")?.textContent).toBe(
-      DAY_BANNER_WORDS.objectiveLine(quest, reading.target),
+      questLine(quest, reading.target),
     );
-    expect(host.querySelectorAll(".ui-meter")).toHaveLength(1);
-    expect(text()).toContain(DAY_BANNER_WORDS.count(reading.progress, reading.target, quest.unit));
+    expect([...host.querySelectorAll('[role="meter"]')].map((meter) => meter.getAttribute("aria-label"))).toEqual([
+      DAY_BANNER_WORDS.count(reading.progress, reading.target, quest.unit),
+    ]);
     expect(text()).not.toContain(DAY_BANNER_WORDS.fraction(reading.progress, reading.target));
     expect(reward("Labor")).toBe("2,000 Labor");
     expect(reward("Essence")).toBe("3,000 Essence");
@@ -76,7 +77,7 @@ describe("the quest dock", () => {
     expect(bane.textContent).toBe("▾50% Production2× if brokenBreak: 4/12 of your Aspect · Clears in 5h");
     const { quest, reading } = QUEST_DOCK_CASES["World bane"];
     expect(host.querySelector("[data-quest-objective]")?.textContent).toBe(
-      `${quest.name} · ${DAY_BANNER_WORDS.objectiveLine(quest, reading.target)}`,
+      `${quest.name} · ${questLine(quest, reading.target)}`,
     );
     expect(text()).not.toContain(DAY_BANNER_WORDS.fraction(reading.progress, reading.target));
   });
@@ -88,8 +89,8 @@ describe("the quest dock", () => {
 
   it("writes every quest's line with its target, one at a target of 1 and many above", () => {
     for (const entry of questCatalog) {
-      expect(DAY_BANNER_WORDS.objectiveLine(entry, 1)).toBe(`${entry.verb} 1 ${entry.unit.one}`);
-      expect(DAY_BANNER_WORDS.objectiveLine(entry, 15)).toBe(`${entry.verb} 15 ${entry.unit.many}`);
+      expect(questLine(entry, 1)).toBe(`${entry.verb} 1 ${entry.unit.one}`);
+      expect(questLine(entry, 15)).toBe(`${entry.verb} 15 ${entry.unit.many}`);
       expect(DAY_BANNER_WORDS.count(0, 1, entry.unit)).toBe(`0 of 1 ${entry.unit.one}`);
     }
   });
