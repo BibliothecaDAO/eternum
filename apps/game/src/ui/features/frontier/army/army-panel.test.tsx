@@ -23,13 +23,14 @@ it("reads the troops, when the stamina is full again and the stamina over one un
   act(() => root.render(<ArmyDetail army={{ ...EARLY_ARMY, stamina: { current: 18, max: 140, perExplore: 20 } }} />));
   const stats = host.querySelector('[data-army-step="stats"]')!;
   expect(stats.querySelector('[aria-label="1,500 troops"]')?.textContent).toBe("1,500");
+  expect(stats.querySelector('[aria-label="1,500 troops"]')?.children).toHaveLength(0);
   expect(stats.textContent).toContain("Full in 4h");
   const meter = host.querySelector('[role="meter"][aria-label="stamina"]')!;
   expect([meter.getAttribute("aria-valuenow"), meter.getAttribute("aria-valuemax")]).toEqual(["18", "140"]);
   expect([...meter.querySelectorAll<HTMLElement>("i")].map((fill) => fill.style.width)).toEqual([
     `${(18 / 140) * 100}%`,
   ]);
-  expect(meter.closest("[data-stamina-line]")!.textContent).toBe("18");
+  expect(meter.closest("[data-stamina-line]")!.textContent).toBe("18 / 140");
 
   act(() =>
     root.render(

@@ -1087,17 +1087,14 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
   if (army.confirm)
     return <RefillConfirm stamina={stamina} held={army.fragments} sending={false} onRefill={noop} onCancel={noop} />;
   return (
-    <HudSheet
-      label={`${ARMY} 2`}
-      beside={<HudIconButton icon="trash" label={ARMY_MANAGEMENT.remove} kind="danger" size="sm" onClick={noop} />}
-      onClose={noop}
-    >
+    <HudSheet label={`${ARMY} 2`} onClose={noop}>
       <ArmyDetail army={view} />
-      {army.fragments !== undefined && (
-        <HudWindowFoot>
+      <HudWindowFoot>
+        {army.fragments !== undefined && (
           <RefillPrice price={fragmentsToFill(stamina)} held={army.fragments} onRefill={noop} />
-        </HudWindowFoot>
-      )}
+        )}
+        <HudIconButton icon="trash" label={ARMY_MANAGEMENT.remove} kind="danger" size="sm" onClick={noop} />
+      </HudWindowFoot>
     </HudSheet>
   );
 };

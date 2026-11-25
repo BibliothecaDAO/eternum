@@ -2267,6 +2267,7 @@ export const RESEARCH_TREE = {
  */
 export const ARMY_DETAIL = {
   troops: (count: number) => formatCount(count, "troop"),
+  stamina: (current: number, max: number) => `${formatExact(current)} / ${formatExact(max)}`,
 } as const;
 
 /** Deleting the picked army, for good. */

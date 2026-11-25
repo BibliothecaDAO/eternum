@@ -2,7 +2,7 @@ import "./picked-army.css";
 
 import { HudChip, HudIconButton, HudPanel, HudPortrait, HudStamina } from "@/ui/design-system/kit/hud-elements";
 import { Icon } from "@/ui/design-system/icon";
-import { CLOSE, PICKED_ARMY, STAMINA, TROOPS } from "@/ui/design-system/kit/words";
+import { ARMY_DETAIL, CLOSE, PICKED_ARMY, STAMINA, TROOPS } from "@/ui/design-system/kit/words";
 import { formatAmount, formatShort } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
@@ -49,7 +49,7 @@ export const PickedArmy = ({
           <span className="army-tray__name">{army.label}</span>
           {army.troops !== undefined && (
             <span className="army-tray__troops">
-              <HudChip icons={army.art ? [army.art] : ["troops"]} label={TROOPS}>
+              <HudChip icons={army.art ? undefined : ["troops"]} label={TROOPS}>
                 {formatShort(army.troops)}
               </HudChip>
             </span>
@@ -61,7 +61,7 @@ export const PickedArmy = ({
                 <HudStamina stamina={army.stamina} />
               </span>
               <b aria-label={`${STAMINA} ${formatAmount(army.stamina.current)}`}>
-                {formatAmount(army.stamina.current)}
+                {ARMY_DETAIL.stamina(army.stamina.current, army.stamina.max)}
               </b>
             </span>
           )}
