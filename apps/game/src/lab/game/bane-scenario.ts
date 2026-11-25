@@ -1,4 +1,5 @@
 import {
+  dayAtIndex,
   dayOf,
   entityHomeNamespace,
   expeditionRealmSite,
@@ -14,12 +15,15 @@ import { revealedTile } from "./spire-scenario";
 import { withRealmEconomy } from "./day-end-scenario";
 import { homeCampBesideArmy } from "./site-effects-scenario";
 import { staminaScenario } from "./stamina-scenario";
+import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
 
 type BaneCase = "world" | "again" | "late" | "team";
 
+const BANE_DAY = frontierSeasonOnePreset.banes.quietDays;
+
 const BANE_RULES = {
   game_id: 1,
-  chance_step: 20,
+  chance_step: frontierSeasonOnePreset.banes.chanceStep,
   quorum_percent: 40,
   beast_percent: 150,
   stamina_percent: 50,
@@ -27,12 +31,11 @@ const BANE_RULES = {
   quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10_000, 15_000],
 };
 
-/** Day 1 with the confirmed result of the home's quest; collection still goes through the real provider and HUD. */
 export function baneScenario(stage: BaneCase): LabScenario {
   const scenario = questScenario();
   const store = withoutArmies(scenario.store);
   const calendar = readExpeditionRules(store, 1)!;
-  const start = dayOf(calendar, calendar.startMainAt)!.end;
+  const start = dayAtIndex(calendar, BANE_DAY).start;
   const startsAt = start + 60;
   const home = store.require("Structure", { game_id: 1, entity_id: 7 });
   const opensOn = expeditionRealmSite(calendar, entityHomeNamespace(home.entity_id), startsAt)!;
@@ -40,13 +43,13 @@ export function baneScenario(stage: BaneCase): LabScenario {
   const received = stage === "again";
   store.applyFacts([
     { model: "HomeAspect", key: "0xb01", value: { game_id: 1, home: 7, aspect: 2 } },
-    { model: "AspectActivity", key: "0xb02", value: { game_id: 1, aspect: 2, day: 0, active: 5 } },
+    { model: "AspectActivity", key: "0xb02", value: { game_id: 1, aspect: 2, day: BANE_DAY - 1, active: 5 } },
     { model: "BaneRules", key: "0xb03", value: BANE_RULES },
-    { model: "WorldBane", key: "0xb04", value: { game_id: 1, day: 0, kind: 0 } },
+    { model: "WorldBane", key: "0xb04", value: { game_id: 1, day: BANE_DAY - 1, kind: 0 } },
     {
       model: "WorldBane",
       key: "0xb05",
-      value: { game_id: 1, day: 1, kind: stage === "team" ? 0 : nativeBaneConstants.ASH_FALL },
+      value: { game_id: 1, day: BANE_DAY, kind: stage === "team" ? 0 : nativeBaneConstants.ASH_FALL },
     },
     {
       model: "QuestProgress",
@@ -54,7 +57,7 @@ export function baneScenario(stage: BaneCase): LabScenario {
       value: {
         game_id: 1,
         home: 7,
-        day: 1,
+        day: BANE_DAY,
         progress: stage === "team" ? 3 : 2500,
         completed_level: 1,
       },
@@ -65,7 +68,7 @@ export function baneScenario(stage: BaneCase): LabScenario {
       value: {
         game_id: 1,
         aspect: 2,
-        day: 1,
+        day: BANE_DAY,
         completed: ended ? 2 : 1,
         ended_at: ended ? start + 1 : 0,
       },
@@ -82,7 +85,7 @@ export function baneScenario(stage: BaneCase): LabScenario {
             value: {
               game_id: 1,
               aspect: 2,
-              day: 1,
+              day: BANE_DAY,
               source: 1,
               issued_day: 0,
               quest: nativeQuestConstants.STAND,
@@ -171,7 +174,7 @@ function receipt(model: "LaborGrant" | "BaneGrant", account: string, labor: bigi
     value: wire({
       game_id: 1,
       home: 7,
-      day: 1,
+      day: BANE_DAY,
       account,
       amount: labor,
       essence,

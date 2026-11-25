@@ -20,8 +20,7 @@ const ashFall: BaneStanding = {
   mark: "▾",
   icon: "bane-world",
   painting: "bane-ash-fall",
-  breaking: WORDS.baneBreak(4, 12),
-  clears: WORDS.baneClears("5h"),
+  standing: WORDS.baneProgress(4, 12, "5h"),
 };
 
 export const QUEST_DOCK_CASES = {

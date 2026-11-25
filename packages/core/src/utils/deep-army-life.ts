@@ -14,6 +14,7 @@ export interface DeepArmyLife {
   /** Ticks the guard holds: the smaller of the two. */
   ticksLeft: number;
   secondsLeft: number;
+  tickSeconds: number;
 }
 
 export function deepArmyLife(store: NativeFactStore, army: NativeRows["ExplorerTroops"], now: number): DeepArmyLife {
@@ -34,6 +35,7 @@ export function deepArmyLife(store: NativeFactStore, army: NativeRows["ExplorerT
     ticksInDay,
     ticksLeft: Math.min(ticksToEmpty, ticksInDay),
     secondsLeft: Math.min(day.end, emptiesAt) - now,
+    tickSeconds: interval,
   };
 }
 
