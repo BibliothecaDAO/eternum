@@ -41,7 +41,8 @@ const nativeRosters = (
   return ASPECTS.map((aspect) => ({ aspect, roster: nativeAspectRoster(native[aspect], named, places) }));
 };
 
-const placesOf = (native: Record<AspectId, RaceMemberRow[]>) => globalPlaces(ASPECTS.map((aspect) => ({ members: native[aspect] })));
+const placesOf = (native: Record<AspectId, RaceMemberRow[]>) =>
+  globalPlaces(ASPECTS.map((aspect) => ({ members: native[aspect] })));
 
 const ownRow = (native: Record<AspectId, RaceMemberRow[]>): OwnGloryRow => {
   const aspect = ASPECTS.find((each) => native[each].some((row) => row.mine))!;
