@@ -514,11 +514,8 @@ export const SEAL_CODE_WORDS = {
 /** The day-done card: "Day 12 done · Realm kept · Day 13 is open", and its one verb. */
 export const DAY_DONE = "complete";
 export const DAY_DONE_WORDS = {
-  bestMoment: (day: number) => `Best moment of ${DAY} ${formatExact(day)}`,
   beginDay: (day: number) => `Begin ${DAY} ${formatExact(day)}`,
 } as const;
-export const REALM_KEPT = "Realm kept";
-export const DAY_OPEN = "is open";
 export const CONTINUE = "Continue";
 /** Past the day end's rolling mist, to its summary. */
 export const SKIP = "Skip";
@@ -1181,8 +1178,6 @@ export const ARMY_SLOT_WORDS = {
   unlocksAt: (slot: number, rank: string) => `Slot ${slot} · Unlocks at ${rank}`,
 } as const;
 export const ARMY_MOVE_HINT = "Right-click a hex to move";
-/** The day-done card's count of the armies that ended with the day. */
-export const ARMIES_ENDED = "Armies ended with the day";
 /** The sources of a store's production, each with its combined rate. */
 export const MADE_BY = "Made by";
 export const STORE_MAKERS = {

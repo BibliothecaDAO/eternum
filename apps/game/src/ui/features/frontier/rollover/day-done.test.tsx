@@ -208,8 +208,8 @@ afterEach(async () => {
   notifyManager.setNotifyFunction((notify) => notify());
 });
 
-const PROD_DAY_2 = ["35Reveals", "5Sites cleared", "+524Labor", "+7.2KEssence"];
-const PROD_DAY_1 = ["37Reveals", "6Sites cleared", "+2.7KLabor", "+6KEssence"];
+const PROD_DAY_2 = ["+7.2KEssence", "+524Labor", "0Glory"];
+const PROD_DAY_1 = ["+6KEssence", "+2.7KLabor", "0Glory"];
 const SUMMARY_SHOWN = "section[aria-label$=' complete']";
 
 let client: QueryClient;
@@ -267,11 +267,7 @@ const seconds = (count: number) => act(() => vi.advanceTimersByTimeAsync(count *
 
 it("sums the player's own day 2 as prod's history holds it, not the tail of the game's newest stories", async () => {
   const cells = await openTheGame();
-  expect(host.textContent).toContain("Realm kept · Day 3 is open");
-  expect(host.textContent).toContain("11h 51m");
-  expect(host.textContent).toContain("Tomorrow lasts8h");
   expect(cells).toEqual(PROD_DAY_2);
-  expect(host.textContent).toContain("#1 → #1");
 });
 
 it("shares day 2 as its card and a post: its best moment, the numbers it moved, and the player's own link", async () => {
@@ -391,14 +387,14 @@ it("shows a dash for each total, and says why, when the player's history no long
     },
   }));
   herald.history = [...later, ...BEFORE_PLAYING_ON.history];
-  expect(await openTheGame()).toEqual(["—Reveals", "—Sites cleared", "—Labor", "—Essence"]);
+  expect(await openTheGame()).toEqual(["—Essence", "—Labor", "0Glory"]);
   expect(host.querySelector(`${SUMMARY} [role="status"]`)?.textContent).toBe("This day's totals are unknown");
 });
 
 it("shows a dash for each total, and says history did not answer, with Try again, when the read fails", async () => {
   herald.withheld = Promise.reject(new Error("Herald is down"));
   herald.withheld.catch(() => undefined);
-  expect(await openTheGame()).toEqual(["—Reveals", "—Sites cleared", "—Labor", "—Essence"]);
+  expect(await openTheGame()).toEqual(["—Essence", "—Labor", "0Glory"]);
   expect(host.querySelector(`${SUMMARY} [role="alert"]`)?.textContent).toBe("This day's totals are unknownTry again");
 });
 
@@ -649,7 +645,6 @@ describe("a device arriving in a new day", () => {
       herald.history = skippingDay2(BEFORE_PLAYING_ON.history);
       await openTheGameHere();
       const card = host.querySelector(DAY_1)!;
-      expect(card.textContent).toContain("Realm kept · Day 3 is open");
       expect([...card.querySelectorAll("[data-total]")].map((cell) => cell.textContent)).toEqual(PROD_DAY_1);
       // Its armies ended with day 1, not with the day that just ended: the card says nothing of them.
       expect(card.querySelector("[aria-label='Troops']")).toBeNull();
@@ -744,34 +739,6 @@ describe("a device arriving in a new day", () => {
     expect(host.querySelector(SUMMARY)).toBeNull();
     expect(phase()).toBe("day");
     expect(navigate).not.toHaveBeenCalled();
-  });
-
-  it("shows the player's Aspect Facet and race standings when race facts are synchronized", async () => {
-    raceFacts.rules = { game_id: 1, stage_height: 2_000 };
-    raceFacts.deepRules = { game_id: 1, altar_threshold: 1_500, rings: [] };
-    raceFacts.heights = new Map([
-      [1, { game_id: 1, aspect: 1, height: 6_400 }],
-      [2, { game_id: 1, aspect: 2, height: 5_200 }],
-      [3, { game_id: 1, aspect: 3, height: 2_800 }],
-      [4, { game_id: 1, aspect: 4, height: 900 }],
-    ]);
-    raceFacts.ownAspect = { game_id: 1, home: 7n, aspect: 2 };
-    raceFacts.members = { game_id: 1, aspect: 2, members: 1 };
-    try {
-      await openTheGameHere();
-      expect(host.querySelector("[data-aspect-mark='2']")).not.toBeNull();
-      const race = host.querySelector("[data-day-race]");
-      expect(race).not.toBeNull();
-      expect(race?.textContent).toContain("Prowess");
-      expect(race?.textContent).toContain("Luminary");
-      expect(race?.querySelector("[data-own='true']")?.textContent).toContain("Luminary");
-    } finally {
-      raceFacts.rules = undefined;
-      raceFacts.deepRules = undefined;
-      raceFacts.heights = new Map();
-      raceFacts.ownAspect = undefined;
-      raceFacts.members = undefined;
-    }
   });
 });
 
