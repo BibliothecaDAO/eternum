@@ -4051,7 +4051,7 @@ const RACE_BOARD_STATE = `JSON.stringify((() => {
     const pictures = [...(node?.querySelectorAll('[role="img"][aria-label]') ?? [])].map((picture) => picture.getAttribute("aria-label"));
     return { text: [node?.textContent ?? "", ...pictures].join(" "), visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
   };
-  return { race: read('[data-aspect-race]'), members: read('[data-aspect-members]'), triumphs: read('[data-aspect-triumphs]'),
+  return { race: read('[data-aspect-race]'), members: read('[data-aspect-members]'),
     invite: read('[aria-label^="Invite a friend"]'), banner: read('[data-daily-quest]'),
     stageReady: Boolean(document.querySelector('[data-race-stage][data-ready]')),
     stageError: Boolean(document.querySelector('[data-race-stage][data-error]')),

@@ -96,11 +96,6 @@ const ResearchHeaderCue = ({ readyCount }: { readyCount: number }) => (
   </span>
 );
 
-const SCROLL_CUE_THRESHOLD_PX = 4;
-
-const hasMoreBelow = (element: Pick<HTMLElement, "scrollHeight" | "clientHeight" | "scrollTop">): boolean =>
-  element.scrollHeight - element.clientHeight - element.scrollTop > SCROLL_CUE_THRESHOLD_PX;
-
 const ResearchTreeCanvas = ({
   nodes,
   links,
@@ -117,29 +112,18 @@ const ResearchTreeCanvas = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [measured, setMeasured] = useState<MeasuredLinks | null>(null);
-  const [moreBelow, setMoreBelow] = useState(false);
 
   useLayoutEffect(() => {
     const scroll = scrollRef.current;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const updateScroll = () => setMoreBelow(scroll ? hasMoreBelow(scroll) : false);
-    const update = () => {
-      setMeasured(measureResearchLinks(canvas, links));
-      updateScroll();
-    };
+    const update = () => setMeasured(measureResearchLinks(canvas, links));
     update();
-    scroll?.addEventListener("scroll", updateScroll, { passive: true });
-    window.addEventListener("resize", updateScroll);
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
     if (scroll) observer?.observe(scroll);
     observer?.observe(canvas);
     for (const nodeEl of canvas.querySelectorAll("[data-node]")) observer?.observe(nodeEl);
-    return () => {
-      scroll?.removeEventListener("scroll", updateScroll);
-      window.removeEventListener("resize", updateScroll);
-      observer?.disconnect();
-    };
+    return () => observer?.disconnect();
   }, [nodes, links, pickedKey]);
 
   return (
@@ -183,11 +167,6 @@ const ResearchTreeCanvas = ({
           </div>
         </div>
       </div>
-      {moreBelow && (
-        <div className="research-scroll-cue" data-research-scroll-cue aria-hidden="true">
-          <span className="research-scroll-cue__pill">{`${RESEARCH_TREE.moreBelow} ▾`}</span>
-        </div>
-      )}
     </div>
   );
 };
