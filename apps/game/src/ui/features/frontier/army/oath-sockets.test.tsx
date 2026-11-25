@@ -10,7 +10,7 @@ import { ArmyOathSockets } from "./oath-slots";
 import { transferArmies } from "./transfer-fixture";
 
 it("says how an army earns an Oath as the game grants one: a site that holds an Oath, or a Shrine revealed", () => {
-  expect(RESEARCH_TREE.oathEarn).toBe("Clear a site that holds an Oath, or reveal a Shrine");
+  expect(RESEARCH_TREE.oathEarn).toBe("Clear a band or reveal a Shrine for an Oath");
 });
 
 it("draws every Oath socket of an army: its Oaths as icons, each open one explaining how to earn one, the rest locked", () => {

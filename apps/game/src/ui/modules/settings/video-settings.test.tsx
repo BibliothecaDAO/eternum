@@ -36,7 +36,7 @@ afterEach(async () => {
 });
 
 const names = () => [...host.querySelectorAll(".ui-setting__name")].map((name) => name.textContent);
-const reloadRow = () => names().includes("Applies after a reload");
+const reloadRow = () => names().includes("Applies after reload");
 const toggle = (label: string) =>
   act(async () => host.querySelector<HTMLButtonElement>(`[role="switch"][aria-label="${label}"]`)!.click());
 const choose = async (label: string, word: string) => {
