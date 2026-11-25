@@ -96,20 +96,13 @@ const pressButton = (words) => `(() => {
 
 const proveSettings = async (b, out, record) => {
   const settings = settingsMeasure(b);
-  record.checks.push({
-    check: "Settings fits a 1080 px screen under the header",
-    ok: settings.height <= SETTINGS_HEIGHT_MAX,
-    settings,
-  });
-  const more = b.evaluate(pressButton("More"));
-  await sleep(SETTLE_MS / 2);
-  const rare = settingsMeasure(b);
-  record.presses.push({ press: "More", status: more ? "led" : "unavailable" });
-  record.checks.push({
-    check: "More lists no key, only the row that opens them",
-    ok: more && rare.keysListed === 0 && rare.shortcutsRow,
-    rare,
-  });
+  record.checks.push(
+    { check: "Settings fits a 1080 px screen under the header", ok: settings.height <= SETTINGS_HEIGHT_MAX, settings },
+    {
+      check: "Settings lists no key, only the row that opens them",
+      ok: settings.keysListed === 0 && settings.shortcutsRow,
+    },
+  );
   const shown = b.evaluate(pressButton("Show"));
   await sleep(SETTLE_MS / 2);
   b.run("screenshot", join(out, fileName("settings", "keyboard shortcuts")));

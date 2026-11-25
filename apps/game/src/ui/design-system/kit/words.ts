@@ -641,17 +641,6 @@ export const SETTINGS_WORDS = {
   app: "App",
   shortcuts: "Keyboard shortcuts",
   show: "Show",
-  more: "More",
-  master: "Master",
-  effects: "Effects",
-  mute: "Mute",
-  quality: "Quality",
-  frameRate: "FPS",
-  shadows: "Shadows",
-  reducedMotion: "Reduced motion",
-  haptics: "Haptics",
-  appliesAfterReload: "Applies after a reload",
-  reload: "Reload",
 } as const;
 export const EXIT = "Exit";
 export const SIGN_IN = "Sign in";
@@ -1028,6 +1017,7 @@ export const OPENING_WORDS = {
   /** The week's quests on the Today page: the day, and the quest each brings. */
   week: "This week's quests",
   weekDay: (day: number, quest: string) => `Day ${formatExact(day)}: ${quest}`,
+  interface: "Interface",
   showEverything: "Show everything",
 } as const;
 /** The Aspect page (docs/plans/frontier-season-1.md, Aspects and the hyperstructure): the race, and the player's Aspect. */

@@ -3685,6 +3685,10 @@ function labelsDrawn({ seen, played }) {
   return completed(played.labels);
 }
 
+/**
+ * The HUD's way out of the game on a phone: Menu, then Exit. A desktop's is Settings' Leave game, which loads the page
+ * afresh: the lab's game lives in the tab and does not come back from that, so a desktop leaves by Back again.
+ */
 async function leaveByTheHud({ browser, owner }) {
   if (onADesktop()) return leaveByBack({ browser, owner });
   browser.click("Menu");

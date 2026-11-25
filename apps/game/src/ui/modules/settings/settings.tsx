@@ -1,5 +1,5 @@
 import { pageNavigation } from "@/utils/page-navigation";
-import { EXIT, PROFILE_WORDS, SETTINGS_WORDS } from "@/ui/design-system/kit/words";
+import { OPENING_WORDS, PROFILE_WORDS } from "@/ui/design-system/kit/words";
 import { AudioCategory, useAudio } from "@/audio";
 import {
   identityClient,
@@ -8,16 +8,27 @@ import {
   useIdentitySessionStore,
 } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudField, HudNotice, HudPortrait, HudSlider } from "@/ui/design-system/kit/hud-elements";
+import {
+  HudButton,
+  HudField,
+  HudIconButton,
+  HudNotice,
+  HudPortrait,
+  HudSetting,
+  HudSlider,
+  HudSwitch,
+} from "@/ui/design-system/kit/hud-elements";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
 
+import { getGameModeId } from "@/config/game-modes";
+import { hudFor } from "@/ui/layouts/hud-for";
 import { useState } from "react";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { HowToPlayRow, useHowToPlay } from "../how-to-play";
@@ -25,46 +36,35 @@ import { AppSettings } from "./app-settings";
 import { SettingsSection } from "./settings-section";
 import { KeyboardShortcuts } from "./keyboard-shortcuts";
 import { NotificationSettings } from "./notification-settings";
-import { PlaySettings } from "./play-settings";
+import { VideoSettings } from "./video-settings";
 
 export const SETTINGS_POPOVER_ID = "settings";
 const effectsCategories = Object.values(AudioCategory).filter((category) => category !== AudioCategory.MUSIC);
 
-type SettingsPage = "main" | "more" | "keys";
-
+/**
+ * Player settings first; installing the app and the keys, rarely touched, then How to play (the game's guide on the
+ * docs site, in a new tab, the one help Blitz's HUD offers) come last before the session. The keys are
+ * one row whose Show opens their list in Settings' place, so Settings stays one short page; closing Settings closes it. A row a device cannot use
+ * (Haptics where none play, the keys on a touch-first device) is not drawn there.
+ */
 export const SettingsPanel = () => {
-  const [page, setPage] = useState<SettingsPage>("main");
-  if (page === "keys") return <KeyboardShortcuts />;
-  if (page === "more") return <MoreSettings onShowKeys={() => setPage("keys")} />;
-  return (
-    <div className="flex flex-col gap-2.5 p-1">
-      <ProfileHeader />
-      <AudioSliders />
-      <PlaySettings />
-      <footer className="flex items-center justify-between gap-2">
-        <HudButton kind="secondary" onClick={() => setPage("more")}>
-          {SETTINGS_WORDS.more}
-        </HudButton>
-        <SignOut />
-      </footer>
-    </div>
-  );
-};
-
-const MoreSettings = ({ onShowKeys }: { onShowKeys: () => void }) => {
+  const [shortcuts, setShortcuts] = useState(false);
   const guide = useHowToPlay();
+  if (shortcuts) return <KeyboardShortcuts />;
   return (
-    <div className="flex flex-col gap-3 p-1">
-      <AppSettings onShowKeys={onShowKeys} />
+    <div className="flex flex-col gap-4 p-1">
+      <ProfileHeader />
+      <AudioSettings />
+      <SettingsSection title="Video & Graphics">
+        <VideoSettings />
+      </SettingsSection>
+      <InterfaceSettings />
       <SettingsSection title={PROFILE_WORDS.notifications}>
         <NotificationSettings />
       </SettingsSection>
+      <AppSettings onShowKeys={() => setShortcuts(true)} />
       <HowToPlayRow guide={guide} />
-      <span>
-        <HudButton kind="secondary" icon="exit" onClick={() => pageNavigation.open("/")}>
-          {EXIT}
-        </HudButton>
-      </span>
+      <SessionActions />
     </div>
   );
 };
@@ -78,25 +78,23 @@ function ProfileHeader() {
   } = useGame();
   useNativeRevision(["Guild", "GuildMember"]);
   const [error, setError] = useState<string | null>(null);
-  const [naming, setNaming] = useState(false);
   const owner = address ? ContractAddress(address) : null;
   // The players slice already prefers the session username for the signed-in user.
   const name = profile.name;
   const guild = owner === null ? null : (getGuildFromPlayerAddress(owner, store)?.name ?? null);
   const spectating = isExplicitSpectateSession();
   const facts = [guild, spectating && name && `as ${name}`].filter(Boolean);
-  const canName = Boolean(session) && !spectating;
 
   // Who, then where they stand, then the address to copy: two lines beside the portrait.
   return (
-    <header className="flex items-center gap-3">
+    <header className="flex items-center gap-3 border-b border-hud-divider pb-2">
       {address && <HudPortrait src={playerPortraitUrl(address, profile.portrait)} label={name ?? "Player"} />}
       <div className="min-w-0 flex-1">
-        {naming ? (
-          <UsernameForm name={name} onDone={() => setNaming(false)} />
+        {session && !spectating ? (
+          <UsernameEditor name={name} />
         ) : (
           <p className="truncate text-hud-title text-hud-ink">
-            {spectating ? "Spectating" : (name ?? (canName ? "Choose a username" : "Not signed in"))}
+            {spectating ? "Spectating" : (name ?? "Not signed in")}
           </p>
         )}
         <p className="flex min-w-0 items-center gap-1 text-hud-body text-hud-muted">
@@ -114,32 +112,33 @@ function ProfileHeader() {
         </p>
         {error && <HudNotice tone="bad" line={error} />}
       </div>
-      {canName && !naming && (
-        <HudButton kind="secondary" icon="edit" aria-label="Change username" onClick={() => setNaming(true)}>
-          {PROFILE_WORDS.name}
-        </HudButton>
-      )}
     </header>
   );
 }
 
 /** The username lives on the identity account; changing it here reaches players who never open the app. */
-function UsernameForm({ name, onDone }: { name: string | null; onDone: () => void }) {
-  const [draft, setDraft] = useState(name ?? "");
+function UsernameEditor({ name }: { name: string | null }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const startEditing = () => {
+    setDraft(name ?? "");
+    setError(null);
+    setEditing(true);
+  };
   const save = async () => {
     const next = draft.trim();
     if (!next || next === name) {
-      onDone();
+      setEditing(false);
       return;
     }
     setPending(true);
     try {
       await identityClient.updateUser({ name: next });
       await useIdentitySessionStore.getState().refresh();
-      onDone();
+      setEditing(false);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not change the username");
     } finally {
@@ -147,6 +146,14 @@ function UsernameForm({ name, onDone }: { name: string | null; onDone: () => voi
     }
   };
 
+  if (!editing) {
+    return (
+      <div className="flex min-w-0 items-center gap-1">
+        <p className="truncate text-hud-title text-hud-ink">{name ?? "Choose a username"}</p>
+        <HudIconButton kind="quiet" size="sm" icon="edit" label="Change username" onClick={startEditing} />
+      </div>
+    );
+  }
   return (
     <form
       className="flex min-w-0 flex-1 flex-wrap items-center gap-2"
@@ -164,7 +171,7 @@ function UsernameForm({ name, onDone }: { name: string | null; onDone: () => voi
           disabled={pending}
           onChange={setDraft}
           onKeyDown={(event) => {
-            if (event.key === "Escape") onDone();
+            if (event.key === "Escape") setEditing(false);
             event.stopPropagation();
           }}
         />
@@ -181,58 +188,59 @@ function UsernameForm({ name, onDone }: { name: string | null; onDone: () => voi
   );
 }
 
-const VolumeSlider = ({
-  icon,
-  label,
-  value,
-  onChange,
-}: {
-  icon: IconMeaning;
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-}) => (
-  <div className="flex items-center gap-2">
-    <Icon name={icon} size={22} />
-    <span className="w-16 shrink-0 text-hud-body text-hud-ink">{label}</span>
-    <span className="min-w-0 flex-1">
-      <HudSlider label={label} value={value} max={100} onChange={onChange} />
-    </span>
-    <span className="w-8 text-right text-hud-body tabular-nums text-hud-ink">{value}</span>
-  </div>
-);
-
-function AudioSliders() {
-  const { setCategoryVolume, setMasterVolume, audioState } = useAudio();
+function InterfaceSettings() {
+  const { showEverything, setShowEverything } = useWorldAppearanceStore();
+  if (hudFor(getGameModeId(), true) !== "frontier") return null;
   return (
-    <section aria-label="Audio" className="flex flex-col gap-1.5">
+    <SettingsSection title={OPENING_WORDS.interface}>
+      <HudSetting name={OPENING_WORDS.showEverything}>
+        <HudSwitch on={showEverything} label={OPENING_WORDS.showEverything} onChange={setShowEverything} />
+      </HudSetting>
+    </SettingsSection>
+  );
+}
+
+function VolumeSlider({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+  return (
+    <HudSetting name={label}>
+      <span className="flex w-48 items-center gap-2">
+        <HudSlider label={label} value={value} max={100} onChange={onChange} />
+        <span className="w-8 text-right text-hud-body tabular-nums">{value}</span>
+      </span>
+    </HudSetting>
+  );
+}
+function AudioSettings() {
+  const { setCategoryVolume, setMasterVolume, setMuted, audioState } = useAudio();
+  return (
+    <SettingsSection title="Audio">
       <VolumeSlider
-        icon="volume"
-        label={SETTINGS_WORDS.master}
+        label="Master"
         value={Math.round((audioState?.masterVolume ?? 0) * 100)}
         onChange={(value) => setMasterVolume(value / 100)}
       />
       <VolumeSlider
-        icon="music"
-        label={PROFILE_WORDS.music}
+        label="Music"
         value={Math.round((audioState?.categoryVolumes[AudioCategory.MUSIC] ?? 0) * 100)}
         onChange={(value) => setCategoryVolume(AudioCategory.MUSIC, value / 100)}
       />
       <VolumeSlider
-        icon="notifications"
-        label={SETTINGS_WORDS.effects}
+        label="Effects"
         value={Math.round((audioState?.categoryVolumes[AudioCategory.UI] ?? 0) * 100)}
         onChange={(value) => effectsCategories.forEach((category) => setCategoryVolume(category, value / 100))}
       />
-    </section>
+      <HudSetting name="Mute">
+        <HudSwitch on={audioState?.muted ?? false} label="Mute" onChange={setMuted} />
+      </HudSetting>
+    </SettingsSection>
   );
 }
 
-function SignOut() {
+function SessionActions() {
   const { session } = useIdentitySession();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  if (!session || isExplicitSpectateSession()) return null;
+  const canSignOut = Boolean(session) && !isExplicitSpectateSession();
   const signOut = async () => {
     setPending(true);
     setError(null);
@@ -245,11 +253,16 @@ function SignOut() {
     }
   };
   return (
-    <span className="flex flex-col items-end gap-1">
-      <HudButton kind="secondary" icon="exit" busy={pending ? "Signing out…" : undefined} onClick={signOut}>
-        {PROFILE_WORDS.signOut}
+    <section aria-label="Session" className="flex flex-wrap items-center gap-2 border-t border-hud-divider pt-3">
+      {canSignOut && (
+        <HudButton kind="secondary" busy={pending ? "Signing out…" : undefined} onClick={signOut}>
+          Sign out
+        </HudButton>
+      )}
+      <HudButton kind="secondary" onClick={() => pageNavigation.open("/")}>
+        Leave game
       </HudButton>
       {error && <HudNotice tone="bad" line={error} />}
-    </span>
+    </section>
   );
 }

@@ -89,7 +89,6 @@ const SURFACES = [
     kind: "absent",
     path: "/lab/kit/windows/settings?capture=1",
     ready: "document.querySelector('button') !== null",
-    open: ["More"],
     absent: `![...document.querySelectorAll(".ui-setting__name")].some((name) => name.textContent === "Keyboard shortcuts")`,
   },
   { name: "visit-leave", kind: "view", path: "/lab/kit/hud/visiting?capture=1" },
