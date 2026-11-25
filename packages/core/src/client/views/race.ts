@@ -16,12 +16,6 @@ export const RACE_MODELS = [
   "GameRegistry",
   "AltarBar",
   "DeepRules",
-  "DeepSite",
-  "DeepEntries",
-  "DeepGuard",
-  "DeepArmy",
-  "ArmyDay",
-  "ExplorerTroops",
 ] as const;
 
 export interface RaceBoard {

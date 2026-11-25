@@ -23,24 +23,12 @@ const herald = vi.hoisted(() => ({
   game: { end_at: "1793439960" },
 }));
 /** The game's facts as the HUD and the day's turn read them: its registry, and realm 7 owned by the player. */
-const raceFacts = vi.hoisted(() => ({
-  rules: undefined as { game_id: number; stage_height: number } | undefined,
-  deepRules: undefined as { game_id: number; altar_threshold: number; rings: readonly unknown[] } | undefined,
-  heights: new Map<number, { game_id: number; aspect: number; height: number }>(),
-  ownAspect: undefined as { game_id: number; home: bigint; aspect: number } | undefined,
-  members: undefined as { game_id: number; aspect: number; members: number } | undefined,
-}));
 const facts = vi.hoisted(() => ({
-  get: (model: string, key?: { aspect?: number; home?: bigint; entity_id?: bigint }) => {
+  get: (model: string, key?: { entity_id?: bigint }) => {
     if (model === "GameRegistry")
       return { ...herald.game, start_main_at: 0, scheduled_end_at: herald.scheduledEndAt, seed: 1n };
     if (model === "SliceRules") return { day_unit_seconds: 4 * 3_600 };
     if (model === "SettlementRules") return { spacing: 100 };
-    if (model === "RaceRules") return raceFacts.rules;
-    if (model === "DeepRules") return raceFacts.deepRules;
-    if (model === "AspectHyperstructure" && key?.aspect !== undefined) return raceFacts.heights.get(key.aspect);
-    if (model === "HomeAspect" && key?.home === 7n) return raceFacts.ownAspect;
-    if (model === "AspectMembers" && key?.aspect === raceFacts.members?.aspect) return raceFacts.members;
     if (model === "Structure" && key?.entity_id === 7n) return REALM_7;
     return undefined;
   },
@@ -52,7 +40,7 @@ const facts = vi.hoisted(() => ({
       : model === "AltarBar"
         ? { known: { charge: 0 } }
         : { known: {} },
-  inGame: (model: string) => (model === "HomeAspect" && raceFacts.ownAspect ? [raceFacts.ownAspect] : []),
+  inGame: () => [],
   structuresOwnedBy: () => [{ entity_id: 7 }],
 }));
 
@@ -130,7 +118,10 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useNowSeconds: () => herald.now,
   useCurrentDefaultTick: () => 0,
 }));
-vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
+vi.mock("@/hooks/helpers/use-native-facts", () => ({
+  useNativeRevision: () => 0,
+  useNativeFacts: () => ({ store: facts }),
+}));
 // The armies are not what this card is about: none ended with the day.
 vi.mock("../frontier-home", () => ({ endedHomeArmies: () => [], homecomingAtNextDeploy: () => null }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
