@@ -1317,15 +1317,9 @@ describe("the Season 1 rehearsal", () => {
       `forecasts a win ("${REHEARSAL_WORDS.forecasts.victory}")`,
     );
     expect(REHEARSAL_WORDS.take).toBe(DEEP_WORDS.take);
-    expect(REHEARSAL_WORDS.beast("Balrog", 900)).toBe(DEEP_WORDS.beast("Balrog", 900));
-    expect(REHEARSAL_WORDS.open).toBe(DEEP_WORDS.open);
+    expect(REHEARSAL_WORDS.joinGuard).toBe(DEEP_WORDS.join);
     expect(REHEARSAL_WORDS.lasts(14, "28m")).toBe(DEEP_WORDS.lasts(14, "28m"));
     expect(REHEARSAL_WORDS.share(40)).toBe(DEEP_WORDS.share(40));
-    expect(REHEARSAL_WORDS.glory(6)).toBe(DEEP_WORDS.glory(6));
-    expect(REHEARSAL_WORDS.height(6)).toBe(DEEP_WORDS.height(6));
-    expect(REHEARSAL_WORDS.essence(6)).toBe(DEEP_WORDS.essence(6));
-    expect(REHEARSAL_WORDS.labor(6)).toBe(DEEP_WORDS.labor(6));
-    expect(REHEARSAL_WORDS.bar(6, 30, 100)).toBe(DEEP_WORDS.bar(6, 30, 100));
     expect(REHEARSAL_WORDS.standingHeight(120, 900)).toBe(ASPECT_PAGE_WORDS.height(120, 900));
     expect(REHEARSAL_WORDS.baneCharge(30, 100)).toBe(ASPECT_PAGE_WORDS.baneCharge(30, 100));
     expect(REHEARSAL_WORDS.gloryChip).toBe(ASPECT_PAGE_WORDS.glory);
@@ -1384,7 +1378,13 @@ describe("the Season 1 rehearsal", () => {
 
   it("reads a held site's pay, slot and the Season board in the app's own words", () => {
     expect(
-      readTickPay([DEEP_WORDS.glory(6), DEEP_WORDS.height(3), DEEP_WORDS.essence(1500), DEEP_WORDS.bar(2, 1200, 5000)]),
+      readTickPay([
+        { rate: "glory", value: "+6" },
+        { rate: "height", value: "+3" },
+        { rate: "essence", value: "+1,500" },
+        { rate: "bar", value: "+2" },
+        { rate: "drain", value: "−200" },
+      ]),
     ).toEqual({ glory: 6, height: 3, essence: 1500, bar: 2 });
     expect(
       readHeldSlot(

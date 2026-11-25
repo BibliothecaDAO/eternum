@@ -94,7 +94,7 @@ test("activity and realm history aggregate by Frontier day and UTC day", () => {
 test("summarizeSnapshot counts armies, Deep sites, Seals, and active World Banes", () => {
   const summary = summarizeSnapshot(
     [
-      { model: "AspectActivity", rows: [{ key: "1", value: { day: "0x1", active: "0x4" } }] },
+      { model: "AspectActivity", rows: [{ key: "1", value: { day: "0x3", active: "0x4" } }] },
       {
         model: "ExplorerTroops",
         rows: [
@@ -112,9 +112,9 @@ test("summarizeSnapshot counts armies, Deep sites, Seals, and active World Banes
         ],
       },
       { model: "Seal", rows: [{ key: "1", value: {} }] },
-      { model: "WorldBane", rows: [{ key: "1", value: { day: "0x1", kind: "0x1" } }] },
+      { model: "WorldBane", rows: [{ key: "1", value: { day: "0x3", kind: "0x1" } }] },
     ],
-    1,
+    3,
   );
   assert.equal(summary.totalArmies, 3);
   assert.equal(summary.deepArmies, 1);

@@ -70,7 +70,7 @@ describe("the quest dock", () => {
     expect(host.querySelector(".emissary-dock__portrait")?.getAttribute("data-icon")).toBe("bane-ash-fall");
     const bane = host.querySelector("[data-bane-row]")!;
     expect(bane.querySelector('[role="img"]')?.getAttribute("aria-label")).toBe(DAY_BANNER_WORDS.productionBane(50));
-    expect(bane.textContent).toBe("▾50% Production2× if brokenBreak: 4/12 of your Aspect · Clears in 5h");
+    expect(bane.textContent).toBe("▾50% Production2× reward if brokenAspect progress: 4/12 · Ends in 5h");
     const { quest, reading } = QUEST_DOCK_CASES["World bane"];
     expect(host.querySelector("[data-quest-objective]")?.textContent).toBe(
       `${quest.name} · ${questLine(quest, reading.target)}`,

@@ -7,12 +7,7 @@ import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { StrategicMarkerLayer } from "@/three/managers/strategic-marker-layer";
 import { PathRenderer } from "@/three/managers/path-renderer";
 import { resolveHoverVisualPalette, OWNERSHIP_RING_LOOK } from "@/three/managers/worldmap-interaction-palette";
-import {
-  createHexRingShapes,
-  drapeOnGround,
-  createHexRingMaterials,
-  applyHexRingLook,
-} from "@/three/managers/hex-ring";
+import { createHexRingShapes, layOnGround, createHexRingMaterials, applyHexRingLook } from "@/three/managers/hex-ring";
 import type { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import { playerColorManager } from "@/three/systems/player-colors";
@@ -258,7 +253,7 @@ export class MapSheetPresentation {
     applyHexRingLook(materials, new THREE.Color(color), intensity);
     for (const name of ["halo", "glow", "outline"] as const) {
       if (scale !== 1) shapes[name].scale(scale, scale, 1);
-      const geometry = drapeOnGround(shapes[name], [p], this.terrain, 0.04);
+      const geometry = layOnGround(shapes[name], [p], this.terrain, 0.04);
       const object =
         name === "outline"
           ? new THREE.LineSegments(geometry, materials[name])
@@ -278,7 +273,7 @@ export class MapSheetPresentation {
         casing: new THREE.Color(MAP_SHEET.casing).toArray() as [number, number, number],
       },
     );
-    const geometry = drapeOnGround(shape, [p], this.terrain, 0.07);
+    const geometry = layOnGround(shape, [p], this.terrain, 0.07);
     const mesh = new THREE.Mesh(
       geometry,
       new THREE.MeshBasicMaterial({

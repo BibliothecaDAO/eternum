@@ -20,3 +20,6 @@
     0 0 0 1.5px rgb(var(--hud-gold)),
     0 0 14px rgb(var(--hud-gold) / 0.55);
 }
+.deep-poison .ui-meter > i {
+  background: var(--hud-poison);
+}
