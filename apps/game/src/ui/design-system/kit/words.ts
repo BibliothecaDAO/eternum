@@ -1061,7 +1061,8 @@ export const OPENING_WORDS = {
       `Stamina returns ${formatRate(rules.staminaPerSecond)}. A ${FRAGMENT} refills ${formatAmount(rules.staminaPerFragment)} now or unlocks ${ANCIENT_SEAL}.`,
     relic: (rules: OpeningRules) =>
       `Relics last ${formatAmount(rules.relicMinutesPerTier)} minutes per tier. Each army carries ${ARMY_RELIC_SLOTS}.`,
-    "well-lore": () => "Well lore is learned. Uncovered wells appear on the map for any adjacent army to refill stamina.",
+    "well-lore": () =>
+      "Well lore is learned. Uncovered wells appear on the map for any adjacent army to refill stamina.",
     "shrine-lore": () => "Shrine lore is learned. Uncovered shrines appear on the map and offer an Oath on use.",
     city: (rules: OpeningRules) =>
       `Scouts reveal mist for ${formatAmount(rules.scoutExploreStamina)} stamina instead of ${formatAmount(rules.exploreStamina)}.`,

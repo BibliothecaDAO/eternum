@@ -24,7 +24,9 @@ describe("a standing Shrine or Well used by the army beside it, as release 24's 
     const bar = armyBar(chain, army, game.startsAt).stamina!;
     const granted = Math.min(oathWellStamina(armyOaths(chain, army), bar.max), bar.max - bar.current);
     expect(facts.some(({ model, value }) => model === "TileOccupancy" && value === null)).toBe(true);
-    const story = facts.find(({ model }) => model === "StoryEvent")!.value as { story: { SiteUsed: { benefit: unknown } } };
+    const story = facts.find(({ model }) => model === "StoryEvent")!.value as {
+      story: { SiteUsed: { benefit: unknown } };
+    };
     expect(story.story.SiteUsed.benefit).toEqual({ Well: granted });
     chain.applyFacts(facts.filter(({ model }) => model !== "StoryEvent") as never);
     const after = chain.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
@@ -36,7 +38,9 @@ describe("a standing Shrine or Well used by the army beside it, as release 24's 
     chain.applyFacts(facts.filter(({ model }) => model !== "StoryEvent") as never);
     expect(chain.require("ArmyProgress", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) }).oath_pick).not.toBe(0);
     expect([...chain.rows("TileOccupancy")].some((row) => Number(row.category) === TileOccupier.Shrine)).toBe(false);
-    const story = facts.find(({ model }) => model === "StoryEvent")!.value as { story: { SiteUsed: { benefit: unknown } } };
+    const story = facts.find(({ model }) => model === "StoryEvent")!.value as {
+      story: { SiteUsed: { benefit: unknown } };
+    };
     expect(story.story.SiteUsed.benefit).toEqual({ Shrine: 0 });
   });
 });

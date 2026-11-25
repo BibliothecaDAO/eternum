@@ -27,7 +27,14 @@ import {
   USING,
   wellRefillShare,
 } from "@/ui/design-system/kit/words";
-import { ActionPaths, ActionType, armyOaths, configManager, journeyDistance, oathWellStamina } from "@bibliothecadao/eternum";
+import {
+  ActionPaths,
+  ActionType,
+  armyOaths,
+  configManager,
+  journeyDistance,
+  oathWellStamina,
+} from "@bibliothecadao/eternum";
 import { type NativeFactStore, nativeRuleConstants, safeInteger } from "@bibliothecadao/eternum/game-client";
 import { gameSyncRegion, type TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { formatGain, formatShort, formatShortChange } from "@bibliothecadao/types";
@@ -83,7 +90,8 @@ export const MapSiteCard = ({
   const inFlight = useInFlight("army", userId)?.order;
   const pickWaiting =
     userId !== null &&
-    (setup.store.get("ArmyProgress", { game_id: configManager.getActiveGameId(), explorer_id: userId })?.oath_pick ?? 0) !== 0;
+    (setup.store.get("ArmyProgress", { game_id: configManager.getActiveGameId(), explorer_id: userId })?.oath_pick ??
+      0) !== 0;
 
   const use = async () => {
     if (userId === null || !account.account) return;
@@ -97,17 +105,17 @@ export const MapSiteCard = ({
   const action: SiteAction | null = pickWaiting
     ? { kind: "refused", line: SITE_USE_WORDS.oathPickFirst }
     : usable
-    ? { kind: "use", busy: inFlightWord(inFlight, "use", USING), onUse: use }
-    : approach
-      ? {
-          kind: "move",
-          prices: [
-            { of: "stamina", amount: approach.stamina.cost },
-            { of: "wheat", amount: approach.wheat.cost },
-          ],
-          onMove: () => requestOrderAt(approach.target),
-        }
-      : null;
+      ? { kind: "use", busy: inFlightWord(inFlight, "use", USING), onUse: use }
+      : approach
+        ? {
+            kind: "move",
+            prices: [
+              { of: "stamina", amount: approach.stamina.cost },
+              { of: "wheat", amount: approach.wheat.cost },
+            ],
+            onMove: () => requestOrderAt(approach.target),
+          }
+        : null;
   return (
     <MapSiteCardView
       kind={selected.kind}

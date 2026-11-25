@@ -100,7 +100,9 @@ export function oathRegenBps(oaths: number): number {
 }
 
 export function oathWellStamina(oaths: number, maximum: number): number {
-  const percent = holdsOath(oaths, oathRules.REFLECTION) ? oathRules.REFLECTION_WELL_PERCENT : gameRules.WELL_REFILL_PERCENT;
+  const percent = holdsOath(oaths, oathRules.REFLECTION)
+    ? oathRules.REFLECTION_WELL_PERCENT
+    : gameRules.WELL_REFILL_PERCENT;
   return Math.floor((maximum * percent) / 100);
 }
 

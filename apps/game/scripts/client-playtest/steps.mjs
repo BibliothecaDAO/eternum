@@ -4667,7 +4667,11 @@ async function useTheSite({ browser, extraScreenshot }, site) {
     const armyAt = armyOnScreen(browser, PICKED_ARMY);
     if (!armyAt) return { found: false };
     browser.tap([armyAt[0] + dx, armyAt[1] + dy]);
-    const state = await readUntil(() => browser.read(REINFORCE_STATE), (shown) => shown.sheet === name, SHEET_WAIT_MS);
+    const state = await readUntil(
+      () => browser.read(REINFORCE_STATE),
+      (shown) => shown.sheet === name,
+      SHEET_WAIT_MS,
+    );
     if (state.sheet !== name) {
       browser.press("Escape");
       continue;
@@ -4675,7 +4679,11 @@ async function useTheSite({ browser, extraScreenshot }, site) {
     extraScreenshot(`${site.toLowerCase()}-card`);
     const before = browser.read(LAB_CHAIN_LENGTH) ?? 0;
     browser.click(wordAt("USE"));
-    const answer = await readUntil(() => browser.read(interactSiteAnswer(before)), (shown) => shown !== null, MERGE_WAIT_MS);
+    const answer = await readUntil(
+      () => browser.read(interactSiteAnswer(before)),
+      (shown) => shown !== null,
+      MERGE_WAIT_MS,
+    );
     await sleep(1500);
     return { found: true, state, answer, pick: browser.read("Boolean(document.querySelector('[data-oath-pick]'))") };
   }
@@ -4687,7 +4695,9 @@ const usedFor = (answer, kind) => answer?.some(({ story }) => story?.SiteUsed?.b
 
 function wellUsed({ played }) {
   if (!played.found) return failed("No tile beside the army opens a Well's card", played);
-  const refilled = played.answer?.some(({ model, gone }) => (model === "ArmySlot" || model === "ExplorerTroops") && !gone);
+  const refilled = played.answer?.some(
+    ({ model, gone }) => (model === "ArmySlot" || model === "ExplorerTroops") && !gone,
+  );
   return siteGone(played.answer) && refilled && usedFor(played.answer, "Well") && !played.pick
     ? completed(played)
     : failed("Using the Well must refill the army's stamina and leave the tile", played);

@@ -43,7 +43,6 @@ const useWaitingPick = (explorerId: number) => {
 
 export const useOathWaiting = (explorerId: number) => useWaitingPick(explorerId) !== undefined;
 
-
 export function FrontierOathPick({ realm }: { realm: NativeRows["Structure"] | null }) {
   const allowed = useUIStore(canIssueOrders);
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);

@@ -1,7 +1,11 @@
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { armyBar } from "@/ui/features/frontier/hud/dock-armies";
 import { armyOaths, oathWellStamina } from "@bibliothecadao/eternum";
-import { nativeOathConstants as oaths, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  nativeOathConstants as oaths,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { getNeighborHexes, TileOccupier } from "@bibliothecadao/types";
 
 import { type LabCommand, type LabFact, type LabScenario, wire } from "./lab-chain";
@@ -46,7 +50,8 @@ const openTilesBeside = (store: NativeFactStore, beside: Hex): Hex[] => {
   const taken = new Set([...store.entries("TileOccupancy")].map(([, row]) => `${row.col},${row.row}`));
   const open = getNeighborHexes(beside.col, beside.row).filter(
     (hex) =>
-      !taken.has(`${hex.col},${hex.row}`) && store.get("TileOpt", { game_id: 1, alt: false, col: hex.col, row: hex.row }),
+      !taken.has(`${hex.col},${hex.row}`) &&
+      store.get("TileOpt", { game_id: 1, alt: false, col: hex.col, row: hex.row }),
   );
   if (open.length < SITES.length) throw new Error("The lab finds no two open tiles beside the spire's army");
   return open.slice(0, SITES.length).map(({ col, row }) => ({ col, row }));
@@ -70,7 +75,11 @@ const answerSiteUse = (command: LabCommand, chain: NativeFactStore, now: number)
   const progress = chain.require("ArmyProgress", { game_id: 1, explorer_id: explorerId });
   return [
     gone,
-    { model: "ArmyProgress", key: chain.wireKeyOf("ArmyProgress", progress)!, value: wire({ ...progress, oath_pick: OFFERED_PICK }) },
+    {
+      model: "ArmyProgress",
+      key: chain.wireKeyOf("ArmyProgress", progress)!,
+      value: wire({ ...progress, oath_pick: OFFERED_PICK }),
+    },
     siteUsed(chain, army, tile, { Shrine: 0 }, now),
   ];
 };
