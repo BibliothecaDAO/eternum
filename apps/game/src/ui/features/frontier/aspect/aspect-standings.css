@@ -6,7 +6,7 @@
   border-left: 3px solid rgb(var(--hud-aspect));
   border-radius: var(--hud-radius-control);
   background: var(--hud-well);
-  padding: theme(spacing.2);
+  padding: theme(spacing.2) theme(spacing.3);
 }
 .race-row[data-own] {
   border-color: rgb(var(--hud-aspect));
@@ -33,4 +33,15 @@
 }
 .race-row__name {
   color: rgb(var(--hud-aspect));
+}
+[data-hud-form] .race-row {
+  padding: theme(spacing.2);
+}
+[data-hud-form] .race-row [data-aspect-mark] {
+  width: theme(spacing.4);
+  height: theme(spacing.4);
+}
+[data-hud-form] .race-row__head,
+[data-hud-form] .race-row__label {
+  gap: theme(spacing.1);
 }
