@@ -1312,13 +1312,15 @@ button.ui-relic:focus-visible {
    please attack stays on the right"). Every window's foot, every confirm and the combat forecast use it. ── */
 .ui-actions {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: theme(spacing.2);
 }
+.ui-actions:has(> .ui-button ~ .ui-button),
+.ui-actions:has(> .ui-button[data-tone="bad"]) {
+  flex-wrap: wrap;
+}
 .ui-actions__note {
   order: 1;
-  flex: 1 1 0;
   min-width: 0;
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
@@ -1344,6 +1346,9 @@ button.ui-relic:focus-visible {
 /* A note that says why the verb cannot run stands beside the verb alone, so a card's foot stays one row on a phone
    (owner, 27 October: "it doesnt fit on my s22+ screen"). Beside a fix and the verb it takes its own line over them:
    there a phone's foot would squeeze it into a column a word wide. */
+.ui-actions:has(> .ui-actions__note .ui-notice):has(> :nth-child(3)) {
+  flex-wrap: wrap;
+}
 .ui-actions:has(> :nth-child(3)) > .ui-actions__note:has(.ui-notice) {
   order: -1;
   flex-basis: 100%;
