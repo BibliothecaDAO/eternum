@@ -11,6 +11,7 @@ import { nativeBaneConstants, nativeQuestConstants } from "@bibliothecadao/etern
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { useBaneToday } from "./bane-face";
 import { QuestDock } from "./quest-dock";
+import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
 
 const BANE_DAY = frontierSeasonOnePreset.banes.quietDays;
 
@@ -159,7 +160,7 @@ function worldDay() {
   return { ...fixtureGame, grant, win };
 }
 const collectAgain = () =>
-  [...host.querySelectorAll("button")].find((button) => button.textContent === "Collect again");
+  [...host.querySelectorAll("button")].find((button) => button.textContent === DAY_BANNER_WORDS.collectAgain);
 const reward = (name: string) => host.querySelector(`[data-reward="${name}"]`)?.getAttribute("aria-label");
 
 describe("bane collection", () => {
@@ -209,9 +210,7 @@ describe("bane collection", () => {
     const game = worldDay();
     game.store.applyFacts([{ model: "WorldBane", key: "0xd003", value: null }]);
     game.draw();
-    expect(host.querySelector("[data-quest-undrawn]")?.textContent).toBe(
-      "Today's quest and bane are drawn on the first transaction anyone sends today.",
-    );
+    expect(host.querySelector("[data-quest-undrawn]")?.textContent).toBe(DAY_BANNER_WORDS.undrawnLine);
     expect(host.textContent).not.toContain("Loading today's quest");
     expect(host.textContent).not.toContain("The Cull");
     expect(host.querySelector("[data-reward]")).toBeNull();
@@ -249,7 +248,7 @@ describe("bane collection", () => {
     expect(host.querySelector(".emissary-dock__portrait")?.getAttribute("data-icon")).toBe("bane-altar-curse");
     expect(host.querySelector("[data-bane-row]")?.textContent).toBe("▾Deep height pausedBane broken");
     expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("The Stand · Clear 3 guarded sites (3/3)");
-    expect(host.textContent).not.toContain("2× reward if broken");
+    expect(host.textContent).not.toContain(DAY_BANNER_WORDS.twiceIfBroken);
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(collectAgain()).toBeUndefined();
     expect(reward("Labor")).toBe("1,000 Labor");

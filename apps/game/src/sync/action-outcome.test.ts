@@ -5,6 +5,8 @@ vi.mock("./active-game-client", () => ({ requireActiveGameClient: () => ({ waitF
 
 import { ActionNotAppliedError, untilApplied } from "./action-outcome";
 
+const CHAIN_REASON = "stamina 4 < 20";
+
 afterEach(() => waitForAction.mockReset());
 
 const sent = Promise.resolve({ transaction_hash: "0xabc", statusReceipt: "PENDING" });
@@ -30,9 +32,9 @@ describe("a sent command's own outcome", () => {
       hash: "0xabc",
       block: 7,
       status: "REJECTED",
-      revertReason: "Not enough stamina",
+      revertReason: CHAIN_REASON,
     });
-    await expect(untilApplied(sent)).rejects.toThrow(new ActionNotAppliedError("Not enough stamina"));
+    await expect(untilApplied(sent)).rejects.toThrow(new ActionNotAppliedError(CHAIN_REASON));
     waitForAction.mockResolvedValueOnce({ hash: "0xabc", block: 7, status: "REVERTED" });
     await expect(untilApplied(sent)).rejects.toBeInstanceOf(ActionNotAppliedError);
   });

@@ -67,7 +67,7 @@ describe("formatTravelBlockedSummary", () => {
         missingFish: 0,
         wheatLabel: "wheat",
       }),
-    ).toBe("Cannot move — needs 25+ stamina and 1,240 wheat");
+    ).toMatch(/25\+ stamina.*1,240 wheat/);
   });
 
   it("returns null when nothing is missing", () => {

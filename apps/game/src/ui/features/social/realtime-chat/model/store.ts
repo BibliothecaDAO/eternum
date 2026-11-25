@@ -1051,7 +1051,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               [zoneId]: {
                 ...currentZone,
                 isFetchingHistory: false,
-                historyError: "Chat history is unavailable. Try again.",
+                historyError: CHAT_WORDS.historyUnavailable,
               },
             },
           };

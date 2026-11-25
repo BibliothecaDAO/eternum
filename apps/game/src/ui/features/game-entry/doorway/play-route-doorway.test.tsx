@@ -24,6 +24,7 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
 vi.mock("@/ui/debug/boot-debug-panel", () => ({ BootDebugPanel: () => null }));
 
 import { PlayRouteDoorway } from "./play-route-doorway";
+import { DOORWAY_WORDS } from "@/ui/design-system/kit/words";
 
 afterEach(() => {
   state.entry = null;
@@ -72,21 +73,21 @@ it("shows the waiting screen with Back to Play when /g/... opens a not-started g
     );
   try {
     await renderDoorway();
-    expect(container.textContent).toContain("This game has not started yet.");
+    expect(container.textContent).toContain(DOORWAY_WORDS.notStarted);
     expect(container.textContent).toContain("Starts ");
-    expect(container.textContent).not.toContain("Preparing your realm");
+    expect(container.textContent).not.toContain(DOORWAY_WORDS.realm);
     expect(container.textContent).not.toContain("Step 2 of 4");
     expect(container.querySelector('[role="progressbar"]')).toBeNull();
 
     state.entry = { ...state.entry, status: "Live" };
     await renderDoorway();
     expect(container.querySelector('[role="progressbar"]')).not.toBeNull();
-    expect(container.textContent).not.toContain("This game has not started yet.");
+    expect(container.textContent).not.toContain(DOORWAY_WORDS.notStarted);
 
     state.entry = { ...state.entry, status: "Registration" };
     await renderDoorway();
     const back = [...container.querySelectorAll<HTMLButtonElement>("button")].find(
-      (button) => button.textContent === "Back to Play",
+      (button) => button.textContent === DOORWAY_WORDS.backToPlay,
     )!;
     await act(async () => back.click());
     expect(container.querySelector("[data-play-home]")?.textContent).toBe("Play home");

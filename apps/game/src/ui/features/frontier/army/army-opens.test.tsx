@@ -7,6 +7,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { loadOpening, skipTutorial } from "../opening/opening-store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sellingFragments } from "../value/fragments-fixture";
+import { TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
 
 // The real Frontier HUD on the lab's game with an army out (the lab's frontier-army view); only the network and the
 // identity stand in.
@@ -240,7 +241,9 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(useUIStore.getState().entityActions.selectedEntityId).toBe(Number(realm.entity_id));
     expect(openPage()).toBeNull();
     expect(details()).toBeNull();
-    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Transfer troops")).toBe(false);
+    expect([...host.querySelectorAll("button")].some((button) => button.textContent === TRANSFER_TROOPS.title)).toBe(
+      false,
+    );
   });
 
   it("keeps a page open on a desktop, where it stands beside the map", async () => {

@@ -5,6 +5,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { DISPLAYED_SLOT_NUMBER_MAP, type GuardSlot } from "@bibliothecadao/types";
 import { HudButton, HudConfirm } from "@/ui/design-system/kit/hud-elements";
+import { GUARD_WORDS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 
 export const GuardDismissal = ({
@@ -47,7 +48,7 @@ export const GuardDismissal = ({
       await systemCalls.guard_delete({ signer: account, for_structure_id: structureId, slot });
       onDismissed();
     } catch (error) {
-      toast.failed(error, "Could not dismiss guard");
+      toast.failed(error, GUARD_WORDS.removeFailed);
     } finally {
       submitting.current = false;
       setPending(false);
@@ -59,8 +60,8 @@ export const GuardDismissal = ({
       {confirming ? (
         <>
           <HudConfirm
-            question={`Dismiss guard in slot ${DISPLAYED_SLOT_NUMBER_MAP[slot as GuardSlot]}?`}
-            verb={pending ? "Dismissing…" : "Confirm dismissal"}
+            question={GUARD_WORDS.confirmRemove(DISPLAYED_SLOT_NUMBER_MAP[slot as GuardSlot])}
+            verb={pending ? GUARD_WORDS.removing : GUARD_WORDS.remove}
             tone="bad"
             onConfirm={() => {
               if (!disabled && !pending) dismiss();
@@ -74,10 +75,10 @@ export const GuardDismissal = ({
         <HudButton
           kind="danger"
           disabled={disabled}
-          busy={pending ? "Dismissing…" : undefined}
+          busy={pending ? GUARD_WORDS.removing : undefined}
           onClick={confirmsDismissal ? ask : dismiss}
         >
-          Dismiss guard
+          {GUARD_WORDS.remove}
         </HudButton>
       )}
     </div>

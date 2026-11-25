@@ -283,14 +283,14 @@ describe("a registration that is not answered yet, or whose cleanup failed", () 
     const service = identityService();
     const landInsert = service.timeOutSubscribe();
     await expect(enableIosAppPush(app.bridge, OWNER, CONFIGURATION)).rejects.toThrow("The operation timed out.");
-    const [[id]] = revoked.mock.calls;
+    const [[id, token]] = revoked.mock.calls;
     expect(readIosAppPushDevice()).toBeNull();
     expect(await deviceSwitch()).toBe("off");
 
     landInsert();
     expect([...service.rows.keys()]).toEqual([]);
     await reconcileIosAppPush(app.bridge, OWNER);
-    expect(revoked.mock.calls).toEqual([[id, expect.any(String)]]);
+    expect(revoked.mock.calls).toEqual([[id, token]]);
 
     // The phone registers again, under a new id, with the same APNs token.
     expect(await deviceSwitch({ press: true })).toBe("on");

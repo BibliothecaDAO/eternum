@@ -30,6 +30,7 @@ import { PhoneTabBar } from "./frontier-nav";
 import { HUD_PLACES } from "./hud-places";
 import { OfflineBanner, OfflineNotice } from "./offline-notice";
 import { type StoreReading, storeLine, storeRateText } from "./status-strip";
+import { tomorrowLasts } from "@/ui/design-system/kit/words";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
@@ -136,7 +137,7 @@ describe("the status strip", () => {
     );
     const morning = renderToStaticMarkup(<DayPill clock={{ ...day, shareLeft: 0.75, tone: "calm" }} />);
     expect(text(morning)).not.toContain("Day ends");
-    expect(text(morning)).not.toContain("Tomorrow lasts");
+    expect(text(morning)).not.toContain(tomorrowLasts(0).words);
     expect(morning).toContain("text-hud-ink");
     expect(morning).not.toContain("text-hud-bad");
     expect(morning).toContain('data-fill-share="25"');
