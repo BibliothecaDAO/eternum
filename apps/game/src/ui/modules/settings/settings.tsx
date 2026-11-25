@@ -70,7 +70,9 @@ export const SettingsPanel = () => {
 const MoreSettings = ({ onShowKeys }: { onShowKeys: () => void }) => {
   const guide = useHowToPlay();
   const shown = useRef<HTMLDivElement>(null);
-  useEffect(() => shown.current?.scrollIntoView?.({ block: "start" }), []);
+  useEffect(() => {
+    shown.current?.scrollIntoView?.({ block: "start" });
+  }, []);
   return (
     <div ref={shown} className="ui-settings__more">
       <SettingsSection title={PROFILE_WORDS.notifications}>

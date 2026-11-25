@@ -175,7 +175,7 @@ it.each(["phone", "desktop"] as const)(
 );
 
 it.each(["phone", "desktop"] as const)(
-  "on a founded Realm with no army on %s, offers open Deploy slots and shows the preset Knights at home",
+  "on a founded Realm with no army on %s, offers open Deploy slots, the desktop naming the preset Knights at home",
   (size) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     layout.current = size;
@@ -239,8 +239,7 @@ it.each(["phone", "desktop"] as const)(
       if (size === "desktop") {
         expect(slots[0].closest(".frontier-slot")?.textContent).toContain(`${expectedLabel} ready at home`);
       } else {
-        expect(slots[0].textContent).toContain(expectedCount);
-        expect(slots[0].querySelector(`[aria-label="${expectedLabel}"]`)).not.toBeNull();
+        expect(slots.map((slot) => slot.textContent)).toEqual(slots.map(() => "+Deploy"));
       }
       act(() => slots[0].click());
       expect(useUIStore.getState().pendingMilitaryAction).toMatchObject({ structureId: 7, slot: 0 });
