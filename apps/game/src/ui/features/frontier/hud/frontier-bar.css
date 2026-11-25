@@ -201,8 +201,8 @@
 }
 .frontier-day-dial[data-size="52"] .frontier-day-dial__bezel {
   inset: 6px;
-  width: auto;
-  height: auto;
+  width: calc(100% - 12px);
+  height: calc(100% - 12px);
   border-radius: var(--hud-radius-round);
 }
 .frontier-day-dial[data-size="52"] .frontier-day-dial__ring.frontier-progress-ring {
