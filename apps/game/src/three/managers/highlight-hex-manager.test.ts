@@ -183,85 +183,56 @@ describe("HighlightHexManager drawing a selection", () => {
 });
 
 describe("HighlightHexManager laying a lit hex on the ground", () => {
-  const groundOf = (heightAt: (x: number, z: number) => number) => ({
-    sampleSurface: (x: number, z: number) => ({ biome: null, height: heightAt(x, z), normal: [0, 1, 0] as const }),
-    sampleHeight: (x: number, z: number) => heightAt(x, z),
+  const groundOf = (placed: (x: number) => number, drawn: (x: number) => number = placed) => ({
+    sampleSurface: (x: number) => ({ biome: null, height: drawn(x), normal: [0, 1, 0] as const }),
+    sampleHeight: (x: number) => placed(x),
   });
 
-  const drawnVertices = (scene: THREE.Scene) =>
-    scene.children
-      .filter((child): child is THREE.Mesh => child instanceof THREE.Mesh)
-      .flatMap((mesh) => {
-        const positions = mesh.geometry.getAttribute("position");
-        return positions
-          ? Array.from({ length: positions.count }, (_, vertex) => ({
-              x: positions.getX(vertex),
-              y: positions.getY(vertex),
-              z: positions.getZ(vertex),
-            }))
-          : [];
-      });
+  const heightsAround = (scene: THREE.Scene, col: number) =>
+    new Set(
+      scene.children
+        .filter((child): child is THREE.Mesh => child instanceof THREE.Mesh)
+        .flatMap((mesh) => {
+          const positions = mesh.geometry.getAttribute("position");
+          return positions
+            ? Array.from({ length: positions.count }, (_, vertex) => vertex)
+                .filter((vertex) => Math.abs(positions.getX(vertex) - col) < 0.5)
+                .map((vertex) => Math.round(positions.getY(vertex) * 1000))
+            : [];
+        }),
+    );
 
-  const expectOnItsGround = (scene: THREE.Scene, heightAt: (x: number, z: number) => number) => {
-    const vertices = drawnVertices(scene);
-    expect(vertices.length).toBeGreaterThan(0);
-    for (const { x, y, z } of vertices) {
-      expect(y - heightAt(x, z)).toBeGreaterThan(0);
-      expect(y - heightAt(x, z)).toBeLessThanOrEqual(0.06);
-    }
-  };
-
-  const light = (heightAt: (x: number, z: number) => number, descriptors: ReturnType<typeof step>[]) => {
+  const light = (ground: ReturnType<typeof groundOf>, descriptors: ReturnType<typeof step>[]) => {
     const scene = new THREE.Scene();
-    const manager = new HighlightHexManager(scene, groundOf(heightAt), gridSpace);
+    const manager = new HighlightHexManager(scene, ground, gridSpace);
     manager.highlightHexes(descriptors as never);
     finishRollIn();
     return { scene, manager };
   };
 
-  it("lays an explore target on a mound over all of it, following the slope down from its top", () => {
-    const mound = (x: number, z: number) => Math.max(0.08, 0.31 - 0.2 * Math.hypot(x - 4, z));
-    const { scene } = light(mound, [step(4, 0, "Explore")]);
+  it("lays each lit hex flat on its own tile's ground, a water tile's below a land tile's", () => {
+    const waterAtTwo = (x: number) => (Math.round(x) === 2 ? -0.055 : 0);
+    const { scene } = light(groundOf(waterAtTwo), [step(1, 0)]);
+    const { scene: water } = light(groundOf(waterAtTwo), [step(2, 0)]);
 
-    expectOnItsGround(scene, mound);
+    expect([...heightsAround(scene, 1)]).toEqual([30]);
+    expect([...heightsAround(water, 2)]).toEqual([-25]);
   });
 
-  it("lays a move target on low ground just above it, not at one height for every hex", () => {
-    const { scene } = light(() => 0.06, [step(1, 0), step(2, 0)]);
-
-    expectOnItsGround(scene, () => 0.06);
-  });
-
-  it("lays a plate on a sunken unexplored tile on that tile's own ground, not level with the rim around it", () => {
-    const pit = (x: number, z: number) => (Math.hypot(x - 6, z) < 0.88 ? 0 : 0.25);
-    const { scene } = light(pit, [step(6, 0, "Explore")]);
-
-    expectOnItsGround(scene, pit);
-    expect(drawnVertices(scene).filter(({ y }) => y < 0.1).length).toBeGreaterThan(0);
-  });
-
-  it("lays the lit hexes on their ground again when terrain lands after they were lit", () => {
-    let groundHeight = 0;
-    const { scene, manager } = light(() => groundHeight, [step(1, 0), step(2, 0, "Explore")]);
-    expectOnItsGround(scene, () => 0);
-
-    groundHeight = 0.28;
-    manager.refreshTerrainPlacement();
-
-    expectOnItsGround(scene, () => 0.28);
-    expect(drawnHexes(manager)).toEqual(["1,0@0.92", "2,0@0.98"]);
-  });
-
-  it("reports ground that rises between a plate's points as burying it, so the playtest's check can fail", () => {
-    const ridge = (x: number, z: number) => (Math.abs(Math.hypot(x - 4, z) - 0.15) < 0.05 ? 0.2 : 0);
-    const { manager } = light(ridge, [step(4, 0, "Explore")]);
+  it("reports a plate the drawn ground rises above as buried, so the playtest's check can fail", () => {
+    const { manager } = light(
+      groundOf(
+        () => 0,
+        () => 0.2,
+      ),
+      [step(4, 0, "Explore")],
+    );
 
     expect(Math.min(...manager.getDebugState().plates.map((plate) => plate.lowest))).toBeLessThan(0);
   });
 
-  it("reports how far over its ground each plate lies, for the playtest's high-ground check", () => {
-    const mound = (x: number, z: number) => Math.max(0.08, 0.31 - 0.2 * Math.hypot(x - 4, z));
-    const { manager } = light(mound, [step(4, 0, "Explore")]);
+  it("reports how far over the drawn ground each plate lies, for the playtest's ground check", () => {
+    const { manager } = light(groundOf(() => 0), [step(4, 0, "Explore")]);
 
     for (const plate of manager.getDebugState().plates) {
       expect(plate.lowest).toBeGreaterThan(0);
@@ -301,11 +272,10 @@ describe("HighlightHexManager teach highlight", () => {
       (child): child is THREE.Mesh => child instanceof THREE.Mesh && child.renderOrder === TEACH_RENDER_ORDER,
     )!;
 
-  it("lights one static non-pulsing hex with the teach colour, coexists with action highlights, re-grounds on terrain updates, and clears on null", () => {
-    let groundHeight = 0.1;
+  it("lights one static non-pulsing hex with the teach colour, coexists with action highlights, and clears on null", () => {
     const terrain = {
-      sampleSurface: () => ({ biome: null, height: groundHeight, normal: [0, 1, 0] as const }),
-      sampleHeight: () => groundHeight,
+      sampleSurface: () => ({ biome: null, height: 0.1, normal: [0, 1, 0] as const }),
+      sampleHeight: () => 0.1,
     };
     const scene = new THREE.Scene();
     const manager = new HighlightHexManager(scene, terrain, gridSpace);
@@ -334,10 +304,8 @@ describe("HighlightHexManager teach highlight", () => {
     expect(drawnHexes(manager)).toEqual([]);
     expect(drawnHexes(manager, "teach")).toEqual(["4,7@0.56", "4,7@0.96"]);
 
-    groundHeight = 0.45;
-    manager.refreshTerrainPlacement();
     const positions = teachMesh(scene).geometry.getAttribute("position");
-    for (let vertex = 0; vertex < positions.count; vertex++) expect(positions.getY(vertex)).toBeGreaterThan(0.45);
+    for (let vertex = 0; vertex < positions.count; vertex++) expect(positions.getY(vertex)).toBeGreaterThan(0.1);
     expect(manager.getDebugState().teachCount).toBe(2);
 
     manager.highlightHexes([step(2, 0)] as never);

@@ -25,7 +25,7 @@ describe("TerrainField", () => {
     expect(field.sampleHeight(0, 0)).toBe(-0.055);
   });
 
-  it("matches generated terrain geometry for placement across biomes, boundaries and structure pads", () => {
+  it("matches generated terrain geometry for placement across biomes and boundaries", () => {
     const biomes = Object.values(BiomeType).filter((biome) => biome !== BiomeType.None);
     const cells = biomes.map((biome, index) =>
       cell((index % 5) - 2, Math.floor(index / 5) - 2, biome, index % 3 === 0),

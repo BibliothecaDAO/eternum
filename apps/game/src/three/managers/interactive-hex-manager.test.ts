@@ -32,14 +32,11 @@ const drawnPlot = (ground: TerrainSurface) => {
 };
 
 describe("a buildable hex's band", () => {
-  it("lies on the ground under every point of it, so it neither floats over a dip nor sinks under a rise", () => {
-    const ground = slopedGround(0.2);
+  it("lies flat 0.03 over its tile's ground", () => {
+    const ground = { ...slopedGround(0.2), sampleHeight: () => 0.4 };
     const positions = bandOf(drawnPlot(ground).scene)!.getAttribute("position");
     expect(positions.count).toBeGreaterThan(0);
-    for (let vertex = 0; vertex < positions.count; vertex++) {
-      const under = ground.sampleSurface(positions.getX(vertex), positions.getZ(vertex)).height;
-      expect(positions.getY(vertex) - under).toBeCloseTo(0.03, 6);
-    }
+    for (let vertex = 0; vertex < positions.count; vertex++) expect(positions.getY(vertex)).toBeCloseTo(0.43, 6);
   });
 
   it("leaves a plot a building stands on bare, still a plot to tap, and draws it again once the building goes", () => {

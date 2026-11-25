@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { takeShownTiles, WorldmapTerrainContent } from "./worldmap-terrain-content";
+import { BiomeType } from "@bibliothecadao/types";
+import { BASALT_SUPPORT_HEIGHT } from "../terrain/terrain-basalt";
+import { TERRAIN_WATER_LEVEL } from "../terrain/terrain-water";
+import { groundHeightOf, takeShownTiles, WorldmapTerrainContent } from "./worldmap-terrain-content";
 
 const cells = [
   { biomeKey: "Grassland", col: 11, row: 0 },
   { biomeKey: "Grassland", col: 12, row: 0 },
 ];
-const input = (biomes = new Map<number, string>(), spireCol?: number) => ({
+const input = (biomes = new Map<number, BiomeType>(), spireCol?: number) => ({
   cells,
   readCell: (col: number) => ({
     projectedBiome: biomes.get(col),
@@ -19,8 +22,8 @@ describe("worldmap authoritative terrain content", () => {
   it("derives a spire surface from current occupancy without changing its biome or neighboring cells", () => {
     const content = new WorldmapTerrainContent();
     const biomes = new Map([
-      [11, "Snow"],
-      [12, "Grassland"],
+      [11, BiomeType.Snow],
+      [12, BiomeType.Grassland],
     ]);
     let spireCol: number | undefined = 11;
     const capture = () => content.capture(input(biomes, spireCol));
@@ -58,8 +61,8 @@ describe("worldmap authoritative terrain content", () => {
   it("captures a cross-page update and a removal from current facts, even with stale coverage cells", () => {
     const content = new WorldmapTerrainContent();
     const biomes = new Map([
-      [11, "Snow"],
-      [12, "Beach"],
+      [11, BiomeType.Snow],
+      [12, BiomeType.Beach],
     ]);
     content.invalidate();
     expect(content.capture(input(biomes)).cells.map((cell) => cell.biomeKey)).toEqual(["Snow", "Beach"]);
@@ -109,5 +112,23 @@ describe("takeShownTiles", () => {
 
     expect(takeShownTiles(awaiting, cells, center, { ...page, key: "0,0" })).toEqual([]);
     expect(takeShownTiles(awaiting, cells, center, page)).toEqual([["105,98", ["explore-1"]]]);
+  });
+});
+
+describe("the ground a tile's facts put under what stands on it", () => {
+  const facts = (projectedBiome: BiomeType | undefined, more: { occupied?: boolean; surfacePresentation?: "ethereal" } = {}) => ({
+    projectedBiome,
+    occupied: more.occupied ?? false,
+    surfacePresentation: more.surfacePresentation,
+  });
+
+  it("is one height for fog and every dry biome, the water's surface on water, and the basalt plane on a spire's tile", () => {
+    expect(groundHeightOf(facts(undefined))).toBe(0);
+    expect(groundHeightOf(facts(BiomeType.Snow))).toBe(0);
+    expect(groundHeightOf(facts(BiomeType.Grassland))).toBe(0);
+    expect(groundHeightOf(facts(BiomeType.Ocean))).toBe(TERRAIN_WATER_LEVEL);
+    expect(groundHeightOf(facts(BiomeType.DeepOcean))).toBe(TERRAIN_WATER_LEVEL);
+    expect(groundHeightOf(facts(BiomeType.Ocean, { occupied: true }))).toBe(0);
+    expect(groundHeightOf(facts(BiomeType.Snow, { surfacePresentation: "ethereal" }))).toBe(BASALT_SUPPORT_HEIGHT);
   });
 });
