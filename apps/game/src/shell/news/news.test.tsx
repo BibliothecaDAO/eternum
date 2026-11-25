@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { REALMS_X_URL } from "@realms-world/chain";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -50,13 +51,15 @@ const open = async (width: number) => {
   const root = createRoot(container);
   await act(async () =>
     root.render(
-      <MemoryRouter initialEntries={["/scroll"]}>
-        <Routes>
-          <Route path="/scroll" element={<WhatsNewPage />} />
-          <Route path="*" element={null} />
-        </Routes>
-        <Where />
-      </MemoryRouter>,
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={["/scroll"]}>
+          <Routes>
+            <Route path="/scroll" element={<WhatsNewPage />} />
+            <Route path="*" element={null} />
+          </Routes>
+          <Where />
+        </MemoryRouter>
+      </QueryClientProvider>,
     ),
   );
   unmount = async () => {
@@ -78,7 +81,7 @@ describe.each([390, 1440])("What's new at %i px", (width) => {
     const places = [...page.querySelectorAll<HTMLElement>('[data-role="tab"]')];
     expect(places.map((place) => place.getAttribute("aria-label") ?? place.textContent)).toEqual(
       width >= 1024
-        ? ["Play", "Season", "Cosmetics", "Shop", "Chat", "Connect"]
+        ? ["Play", "Season", "Cosmetics", "Shop", "Connect"]
         : ["Play", "Season", "Shop", "Chat", "Connect"],
     );
     const current = places.filter((place) => place.getAttribute("aria-current") === "page");

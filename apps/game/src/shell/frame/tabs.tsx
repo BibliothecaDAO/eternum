@@ -1,7 +1,6 @@
 import { CHAT_WORDS, COSMETICS_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { useRealtimeChatSelector } from "@/ui/features/social";
 import { chatUnread } from "@/ui/features/social/realtime-chat/model/direct-unread";
-import { useAppChatPane, useChatOnPage } from "../chat/app-chat-place";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { type IconMeaning } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
@@ -48,7 +47,7 @@ const COSMETICS_TAB: Place = {
 
 export const TABS: readonly Place[] = [PLAY_TAB, SEASON_TAB, SHOP_TAB, CHAT_TAB, YOU_TAB];
 
-const DESKTOP_PLACES: readonly Place[] = [PLAY_TAB, SEASON_TAB, COSMETICS_TAB, SHOP_TAB, CHAT_TAB];
+const DESKTOP_PLACES: readonly Place[] = [PLAY_TAB, SEASON_TAB, COSMETICS_TAB, SHOP_TAB];
 
 const matchesPath = (pathname: string, match: string) =>
   match === "/" ? pathname === "/" : pathname.startsWith(match);
@@ -176,9 +175,6 @@ export const DesktopBar = ({ notice }: { notice: ReactNode }) => {
   const active = useActiveTab([...DESKTOP_PLACES, YOU_TAB]);
   const player = useSignedInPlayer();
   const connect = useConnect();
-  const pane = useAppChatPane();
-  const chatOnPage = useChatOnPage();
-  const unread = useRealtimeChatSelector(chatUnread);
   const placeOf = (tab: Place) => ({
     to: tab.to,
     label: tab.word,
@@ -188,11 +184,7 @@ export const DesktopBar = ({ notice }: { notice: ReactNode }) => {
   return (
     <AppTopBar
       mark={<Lockup />}
-      places={DESKTOP_PLACES.map((tab) =>
-        tab === CHAT_TAB && !chatOnPage
-          ? { ...placeOf(tab), onSelect: pane.toggle, current: pane.open, count: unread }
-          : placeOf(tab),
-      )}
+      places={DESKTOP_PLACES.map(placeOf)}
       end={<TopBarEnd />}
       player={{
         ...placeOf(YOU_TAB),

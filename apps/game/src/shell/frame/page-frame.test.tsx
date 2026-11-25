@@ -115,7 +115,7 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
       expect(bandOrder(container)[0]).toBe("bar");
       expect(bar!.querySelector('[data-role="lockup"]')!.matches(CONTROLS)).toBe(false);
       const controls = controlsIn(bar);
-      expect(controls.map((control) => control.dataset.role)).toEqual(["tab", "tab", "tab", "tab", "tab", "tab"]);
+      expect(controls.map((control) => control.dataset.role)).toEqual(["tab", "tab", "tab", "tab", "tab"]);
       expect(band(container, "tabs")).toBeNull();
     }
   });
@@ -161,7 +161,7 @@ describe("a page's notice", () => {
     expect(notice.closest('[data-band="bar"]')).not.toBeNull();
     const connect = container.querySelector('[data-band="bar"] [data-action="connect"]')!;
     expect(notice.compareDocumentPosition(connect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(bandOrder(container).filter((name) => name !== "notice")).toEqual(["bar", "body", "footer"]);
+    expect(bandOrder(container).filter((name) => name !== "notice")).toEqual(["bar", "body", "footer", "dock"]);
   });
 
   it("sits above the phone's foot, under the content", async () => {
