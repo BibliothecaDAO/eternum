@@ -419,9 +419,13 @@
   left: calc(theme(spacing.4) * 2 + theme(spacing.hud-frontier-left));
   width: auto;
 }
-.frontier-corner--right [data-wide-page] .race-stage {
-  height: 13rem;
+.frontier-corner--right [data-wide-page] .aspect-race-page__hero {
   min-height: 0;
+}
+.frontier-corner--right [data-wide-page] .race-stage {
+  height: auto;
+  min-height: 6rem;
+  flex: 0 1 13rem;
 }
 [data-right-page] [data-feed-list] {
   --feed-row: 29px;
