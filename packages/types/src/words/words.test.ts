@@ -522,7 +522,7 @@ describe("troops", () => {
     expect(Object.fromEntries(TROOP_TYPES.map((troop) => [troop, frontierTroopName(troop)]))).toEqual({
       [TroopType.Knight]: "Knights",
       [TroopType.Paladin]: "Scouts",
-      [TroopType.Crossbowman]: "Crossbowmen",
+      [TroopType.Crossbowman]: "Crossbows",
     });
     expect(frontierTroopName("Dragon")).toBeUndefined();
     expect(resourceName(ResourcesIds.CrossbowmanT2)).toBe("Crossbowman T2");

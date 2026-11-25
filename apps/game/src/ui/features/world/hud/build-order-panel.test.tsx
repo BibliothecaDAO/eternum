@@ -80,7 +80,7 @@ const rows = () =>
 
 it("shows each realm's next step under the default order and each verb takes it", async () => {
   await draw();
-  expect(host.querySelector("section")?.getAttribute("aria-label")).toBe("Build order");
+  expect(host.querySelector("section")?.getAttribute("aria-label")).toBe("Build plan");
   expect(host.querySelector(".ui-select")).toBeNull();
   expect(rows()).toEqual([
     ["Egonal", "Wood: 1 of 2 built.", "Build"],

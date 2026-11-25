@@ -1,0 +1,75 @@
+.supply-post__band {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.2);
+  border-top: 1px solid var(--hud-divider);
+  padding-top: theme(spacing.2);
+}
+.supply-post__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: theme(spacing.3);
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+}
+.supply-post__head > span:first-child {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.supply-post__stock {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.4);
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-strong);
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+}
+.supply-post__amount {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.1);
+}
+.supply-post__amount[data-empty="true"] {
+  color: var(--hud-muted);
+}
+.supply-post__wheat {
+  margin-left: auto;
+}
+.supply-post__army {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: theme(spacing[2.5]);
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  padding: theme(spacing.2) theme(spacing.3);
+  text-align: left;
+}
+.supply-post__army:hover {
+  border-color: var(--hud-line-strong);
+}
+.supply-post__army > .ui-portrait {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--hud-good);
+}
+.supply-post__army-words {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  color: rgb(var(--hud-ink));
+  font-variant-numeric: tabular-nums;
+}
+.supply-post__army-troops {
+  white-space: nowrap;
+}
+.supply-post__arrow {
+  color: var(--hud-muted);
+}
+.supply-post__after {
+  color: var(--hud-good);
+}

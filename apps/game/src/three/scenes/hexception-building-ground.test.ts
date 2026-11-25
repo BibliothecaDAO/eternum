@@ -34,7 +34,7 @@ function boardAt(base: number) {
     pendingBuildingKeys: new Set<string>(),
     labels: [],
     models: { get: () => ({ model: template, animations: [] }) },
-    proceduralTerrain: { sampleSurface: () => ({ height: floor }), present: () => {} },
+    proceduralTerrain: { sampleSurface: () => ({ height: floor }), sampleHeight: () => floor, present: () => {} },
     interactiveHexManager: { renderAllHexes: () => {} },
     selectBuildingModel: () => ({ group: BUILDINGS_GROUPS.BUILDINGS, type: building.category }),
     modelPath: () => "building.glb",

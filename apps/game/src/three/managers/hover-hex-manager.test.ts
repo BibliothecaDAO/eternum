@@ -104,6 +104,7 @@ describe("HoverHexManager material ownership", () => {
   it("drapes every outline vertex over the sampled surface at its own world position", () => {
     const manager = new HoverHexManager(new THREE.Scene(), {
       sampleSurface: (x, z) => ({ biome: null, height: x * 0.2 - z * 0.1, normal: [0, 1, 0] }),
+      sampleHeight: (x, z) => x * 0.2 - z * 0.1,
     });
     for (const [x, z] of [
       [4, 8],
@@ -124,6 +125,7 @@ describe("HoverHexManager material ownership", () => {
       Math.max(Math.abs(x), 0.5 * Math.abs(x) + (Math.sqrt(3) / 2) * Math.abs(z)) < Math.sqrt(3) / 2;
     const manager = new HoverHexManager(new THREE.Scene(), {
       sampleSurface: (x, z) => ({ biome: null, height: inside(x, z) ? 0 : 0.4, normal: [0, 1, 0] }),
+      sampleHeight: (x, z) => (inside(x, z) ? 0 : 0.4),
     });
     manager.showHover(0, 0);
     for (const object of [
@@ -156,6 +158,7 @@ describe("HoverHexManager material ownership", () => {
   it("samples between corners so curved ground cannot leave the selection floating", () => {
     const manager = new HoverHexManager(new THREE.Scene(), {
       sampleSurface: (x, z) => ({ biome: null, height: 0.2 * Math.cos(x * 4) * Math.cos(z * 4), normal: [0, 1, 0] }),
+      sampleHeight: (x, z) => 0.2 * Math.cos(x * 4) * Math.cos(z * 4),
     });
     manager.showHover(0, 0);
     for (const object of [(manager as any).hoverHex, (manager as any).hoverOutline] as THREE.Mesh[]) {

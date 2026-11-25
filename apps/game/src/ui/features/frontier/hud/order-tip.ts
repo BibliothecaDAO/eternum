@@ -121,8 +121,8 @@ const orderRefusalWords: Record<Exclude<OrderRefusal["reason"], "stamina">, stri
   food: "Not enough food for the army",
   "off-limits": ATTACK_REFUSAL_WORDS["target-must-be-unowned"],
   "no-attack": ATTACK_REFUSAL_WORDS["no-attack"],
-  "no-transfer": "This game allows no transfer here",
-  occupied: "No army can enter this tile",
+  "no-transfer": "Cannot transfer here",
+  occupied: "Tile is blocked",
   "too-far": "Too far: move closer",
 };
 

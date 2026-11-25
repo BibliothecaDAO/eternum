@@ -55,11 +55,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.deploy-slots__label--end {
-  margin-left: auto;
-}
-.deploy-slots__pips,
-.deploy-oaths {
+.deploy-slots__pips {
   display: flex;
   align-items: center;
   gap: theme(spacing[1.5]);
@@ -82,23 +78,4 @@
 .deploy-slot[aria-pressed="true"] {
   border-style: solid;
   color: rgb(var(--hud-gold));
-}
-.deploy-oath {
-  display: inline-flex;
-  width: 26px;
-  height: 26px;
-  align-items: center;
-  justify-content: center;
-  border: 1.5px dashed rgb(var(--hud-gold));
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-well);
-  color: rgb(var(--hud-gold));
-  font-size: var(--hud-text-body);
-  font-style: normal;
-  line-height: 1;
-}
-.deploy-oath[data-locked] {
-  border-style: solid;
-  border-color: var(--hud-line-strong);
-  opacity: 0.6;
 }
