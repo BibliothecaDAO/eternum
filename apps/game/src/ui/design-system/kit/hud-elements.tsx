@@ -39,17 +39,7 @@ import { PRICE_FACES, type Price } from "./price-faces";
 import { useMarkFrameOpen } from "./open-frames";
 import { revealOwnPlace } from "./own-place";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
-import {
-  CLOSE,
-  FREE,
-  type RankedWords,
-  rankedText,
-  STAMINA,
-  type Tier,
-  type Rank,
-  tierNumeral,
-  TRY_AGAIN,
-} from "./words";
+import { CLOSE, FREE, type RankedWords, rankedText, STAMINA, type Rank, tierNumeral, TRY_AGAIN } from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -1000,19 +990,6 @@ export const rankedTip = (words: RankedWords | string) =>
     ? { "data-tip": words }
     : { "data-tip": rankedText(words), "data-tip-ranks": JSON.stringify(words) };
 
-/** A tier's next step, from the gem it holds to the next one's. */
-export const HudTierStep = ({ from, to }: { from: Rank; to: Tier }) => (
-  <span
-    className="ui-tier-step"
-    role="img"
-    aria-label={`${from === 0 ? "Untrained" : tierNumeral(from)} → ${tierNumeral(to)}`}
-  >
-    <HudTier tier={from} />
-    <span aria-hidden>→</span>
-    <HudTier tier={to} />
-  </span>
-);
-
 /**
  * A number in a ring that drains (the day, as today runs out): the ring is the share left, from 1 to 0, and takes a
  * tone near its end. `label` is all it says for assistive technology.
@@ -1610,6 +1587,7 @@ export const SheetDock = createContext<HTMLElement | null>(null);
 /** What a surface's frame holds: its name, the icon and cue its head may carry, its way out and its body. */
 type FrameParts = {
   label: string;
+  title?: string;
   icon?: IconMeaning;
   /** What the head says or offers beside the name (a lens, the player's rank), before the way out. */
   cue?: ReactNode;
@@ -1630,7 +1608,7 @@ type FrameParts = {
 const SurfaceFrame = forwardRef<
   HTMLElement,
   FrameParts & { bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children">
->(({ label, icon, cue, beside, onClose, bodyClassName, className, children, ...rest }, ref) => {
+>(({ label, title, icon, cue, beside, onClose, bodyClassName, className, children, ...rest }, ref) => {
   const [foot, setFoot] = useState<HTMLElement | null>(null);
   useMarkFrameOpen(label);
   useSheetCloses(onClose);
@@ -1639,7 +1617,7 @@ const SurfaceFrame = forwardRef<
     <section ref={ref} {...rest} aria-label={label} data-kit-frame className={cn("ui ui-panel ui-frame", className)}>
       <div className="ui-frame__head" {...drag.handlers}>
         <PanelHead
-          title={label}
+          title={title ?? label}
           icon={icon}
           beside={beside}
           cue={
@@ -1668,6 +1646,7 @@ SurfaceFrame.displayName = "SurfaceFrame";
  */
 export const HudSheet = ({
   label,
+  title,
   icon,
   beside,
   cue,
@@ -1675,6 +1654,7 @@ export const HudSheet = ({
   children,
 }: {
   label: string;
+  title?: string;
   icon?: IconMeaning;
   /** A quiet control right after the sheet's name, out of the body's flow and away from the cross (an army's Delete). */
   beside?: ReactNode;
@@ -1687,6 +1667,7 @@ export const HudSheet = ({
     <SurfaceFrame
       role="dialog"
       label={label}
+      title={title}
       icon={icon}
       beside={beside}
       cue={cue}

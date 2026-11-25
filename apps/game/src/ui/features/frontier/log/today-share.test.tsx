@@ -96,7 +96,6 @@ const { FrontierToday } = await import("./frontier-today");
 const RULES = RECORDED_DAY.calendar as never;
 /** The player's realm, as Today is handed it. */
 const REALM = { entity_id: 7, owner: BigInt(RECORDED_DAY.player), metadata: { order: 5 } } as never;
-const SHARE = "Share your day";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -135,22 +134,13 @@ const openToday = async () => {
     await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
 };
 
-/** Steps Today back to `day` with its stepper, as the player does. */
-const stepBackTo = async (day: number) => {
-  for (let shown = 3; shown > day; shown -= 1)
-    await act(async () => host.querySelector<HTMLButtonElement>(`button[aria-label="Day ${shown - 1}"]`)!.click());
-};
+const RECAP = "Yesterday's recap";
 
-it("shares a day the player played from Today's page of it, as the day-done card does: its card, its post and its link", async () => {
+it("opens yesterday's card from Today, as the day-done card does: its card, its post and its link", async () => {
   await openToday();
-  // Today is still being played: nothing to share yet.
-  expect(buttons().some((button) => button.textContent === SHARE)).toBe(false);
-
-  await stepBackTo(2);
-  expect(totalsShown()).toEqual(["35Reveals", "5Sites cleared", "+524Labor", "+7.2KEssence"]);
   await act(async () =>
     buttons()
-      .find((button) => button.textContent === SHARE)!
+      .find((button) => button.textContent === RECAP)!
       .click(),
   );
   const sheet = document.body.querySelector("section[aria-label='Share your day']")!;
@@ -169,34 +159,27 @@ it("shares a day the player played from Today's page of it, as the day-done card
   expect(intent.searchParams.get("text")).toBe("Frontier · Day 2 · #1\n🧭 35 · 🚩 5\n🐺🐺🛡️🌀🛡️🌀🐺");
   open.mockRestore();
 
-  // Closing the sheet leaves Today on day 2.
   await act(async () =>
     buttons(sheet)
       .find((button) => button.getAttribute("aria-label") === "Close")!
       .click(),
   );
   expect(document.body.querySelector("section[aria-label='Share your day']")).toBeNull();
-  expect(host.textContent).toContain("Day 2 of");
+  expect(host.textContent).toContain("Day 3 of");
 });
 
-it("offers no Share on an earlier day the player did not play", async () => {
-  // The player's history with nothing of theirs on day 1: no story from before day 2 began.
-  const day2 = dayBounds(RECORDED_DAY.calendar, RECORDED_DAY.openedAt, 2)!;
+it("offers no recap when the player did not play yesterday", async () => {
+  const day3 = dayBounds(RECORDED_DAY.calendar, RECORDED_DAY.openedAt, 3)!;
   herald.history = RECORDED_DAY.history.filter(({ value }) => {
     const { timestamp } = value as { timestamp?: string };
-    return timestamp !== undefined && Number(BigInt(timestamp)) >= day2.start;
+    return timestamp !== undefined && Number(BigInt(timestamp)) >= day3.start;
   });
   await openToday();
-  await stepBackTo(1);
-  expect(host.textContent).toContain("Day 1 of");
-  expect(totalsShown()).toEqual(["0Reveals", "0Sites cleared", "+0Labor", "+0Essence"]);
-  expect(buttons().some((button) => button.textContent === SHARE)).toBe(false);
+  expect(buttons().some((button) => button.textContent === RECAP)).toBe(false);
 });
 
-it("offers a spectator no Share on the watched player's day", async () => {
+it("offers a spectator no recap of the watched player's day", async () => {
   viewer.address = null;
   await openToday();
-  await stepBackTo(2);
-  expect(totalsShown()[0]).toBe("35Reveals");
-  expect(buttons().some((button) => button.textContent === SHARE)).toBe(false);
+  expect(buttons().some((button) => button.textContent === RECAP)).toBe(false);
 });

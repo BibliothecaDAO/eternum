@@ -1,144 +1,88 @@
-import type { RankedWords } from "@/ui/design-system/kit/words";
-import { formatAmount, formatClockTime } from "@bibliothecadao/types";
-import {
-  HudButton,
-  HudEventRow,
-  HudIconButton,
-  HudNotice,
-  HudRanked,
-  HudSheet,
-} from "@/ui/design-system/kit/hud-elements";
+import "./today-sheet.css";
+
+import { formatAmount } from "@bibliothecadao/types";
+import { Icon } from "@/ui/design-system/icon";
+import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   DAY,
-  DAY_SHARE_WORDS,
-  DAY_TOTALS_UNKNOWN,
-  dayOfSeason,
-  dayEnds,
   dayLeft,
+  dayOfSeason,
+  OPENING_WORDS,
   phraseText,
   TODAY,
-  TODAY_ERROR,
+  TODAY_WORDS,
   tomorrowLasts,
 } from "@/ui/design-system/kit/words";
 
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import type { ReactNode } from "react";
-
 import type { DayClock } from "../hud/day-clock";
 import { STORE_TONES } from "../hud/status-strip";
+import { DayGains, type DayGainsReading } from "./day-gains";
+import type { WeekDay } from "./quest-week";
 
-import { type DayTotals, DayTotalsGrid } from "./day-totals";
-import type { DayHistory } from "./player-day";
-
-/** One line of the day's log: when (unix seconds) and what happened. */
-export type LogLine = { id: string; at: number; text: RankedWords | string };
-
-/**
- * Today (wireframe 12), a sheet from the day's dial: today's clock line (when it ends, the time left, how long tomorrow
- * lasts; the strip keeps only the dial), on today's page what the day's end takes and what is left to do, the day's totals, the day's log newest first,
- * and the stepper to earlier days. An ended day the player played has Share your day under its totals, the day-done
- * card's way to post it, so a day missed at its end can still be shared. When the log did not answer, its
- * card says so, with Try again; when the history no longer reaches back to the day's start, it says so above the log.
- */
 export const TodaySheet = ({
   day,
   lastDay,
-  today,
   clock,
-  totals,
-  dayEnd,
   week,
-  lines,
-  history,
-  onRetry,
-  onShare,
-  onEarlier,
-  onLater,
+  gains,
+  onRecap,
   onClose,
 }: {
   day: number | undefined;
-  /** The season's last day, so the title reads the day against it ("Day 10 of 14"); undefined while unknown. */
   lastDay?: number;
-  /** The day shown is today. */
-  today: boolean;
-  /** Today's clock, shown under the title while the day shown is today. */
   clock: DayClock;
-  totals: DayTotals;
-  /** What the day's end takes and what is left to do (DayEndBlock), shown on today's page only. */
-  dayEnd?: ReactNode;
-  /** The week's quests, drawn once the player has reached Essence; none where the page has no quest week to show. */
-  week?: ReactNode;
-  lines: readonly LogLine[];
-  /** How much of the day the player's history gives. */
-  history: DayHistory;
-  onRetry: () => void;
-  /** Opens the day's card to share; only on an ended day the player can share (useDayShare). */
-  onShare?: () => void;
-  /** Absent on the season's first day. */
-  onEarlier?: () => void;
-  /** Absent on today. */
-  onLater?: () => void;
+  week?: readonly WeekDay[];
+  gains: DayGainsReading;
+  onRecap?: () => void;
   onClose: () => void;
-}) => {
-  const title =
-    day !== undefined && lastDay !== undefined
-      ? dayOfSeason(formatAmount(day), formatAmount(lastDay))
-      : `${DAY} ${formatAmount(day)}`;
-  return (
-    <HudSheet label={TODAY} onClose={onClose}>
-      <span className="text-hud-title">{title}</span>
-      {today && <DayClockLine clock={clock} />}
-      {today && dayEnd}
-      {week}
-      <DayTotalsGrid totals={totals} />
-      {onShare && (
-        <HudButton kind="secondary" icon="share" onClick={onShare}>
-          {DAY_SHARE_WORDS.share}
-        </HudButton>
+}) => (
+  <HudSheet
+    label={TODAY}
+    title={
+      day !== undefined && lastDay !== undefined
+        ? dayOfSeason(formatAmount(day), formatAmount(lastDay))
+        : `${DAY} ${formatAmount(day)}`
+    }
+    beside={
+      <HudChip tone={STORE_TONES[clock.tone].meter} icons={["hourglass"]} tip={phraseText(dayLeft(clock.secondsLeft))}>
+        {dayLeft(clock.secondsLeft).reading}
+      </HudChip>
+    }
+    onClose={onClose}
+  >
+    <div data-today className="today-sheet">
+      <p role="timer" className="today-sheet__clock">
+        {TODAY_WORDS.ends(clock.endsAt)} · {tomorrowLasts(clock.tomorrowSeconds).words}{" "}
+        <b>{tomorrowLasts(clock.tomorrowSeconds).reading}</b>
+      </p>
+      {week && <TodayWeek week={week} />}
+      <DayGains gains={gains} />
+      {onRecap && (
+        <span>
+          <HudButton kind="secondary" icon="arrow-right" onClick={onRecap}>
+            {TODAY_WORDS.yesterdaysRecap}
+          </HudButton>
+        </span>
       )}
+    </div>
+  </HudSheet>
+);
 
-      {history === "short" && <HudNotice line={DAY_TOTALS_UNKNOWN} />}
-      {history === "failed" ? (
-        <HudNotice tone="bad" line={TODAY_ERROR} retry={onRetry} />
-      ) : (
-        <ol className="flex max-h-hud-list flex-col overflow-y-auto">
-          {lines.map((line) => (
-            <li key={line.id}>
-              <HudEventRow time={formatClockTime(line.at)}>
-                <HudRanked words={line.text} />
-              </HudEventRow>
-            </li>
-          ))}
-        </ol>
-      )}
-      <nav className="flex items-center gap-2">
-        <HudIconButton
-          icon="arrow-left"
-          label={`${DAY} ${formatAmount(day && day - 1)}`}
-          kind="quiet"
-          disabled={!onEarlier}
-          onClick={onEarlier}
-        />
-        <span className="flex-1 text-center text-hud-strong">{today ? TODAY : title}</span>
-        <HudIconButton
-          icon="arrow-right"
-          label={`${DAY} ${formatAmount(day && day + 1)}`}
-          kind="quiet"
-          disabled={!onLater}
-          onClick={onLater}
-        />
-      </nav>
-    </HudSheet>
-  );
-};
-
-/** Today's clock in words, in the day's tone: "Day ends 21:40 · 7h 14m left · Tomorrow lasts 12h"; unknown a dash. */
-const DayClockLine = ({ clock }: { clock: DayClock }) => (
-  <p role="timer" className={cn("flex flex-wrap items-baseline gap-x-1 tabular-nums", STORE_TONES[clock.tone].text)}>
-    <span>{phraseText(dayEnds(clock.endsAt))}</span>
-    <span aria-hidden>·</span>
-    <span>{phraseText(dayLeft(clock.secondsLeft))}</span>
-    <span aria-hidden>·</span>
-    <span>{phraseText(tomorrowLasts(clock.tomorrowSeconds))}</span>
-  </p>
+const TodayWeek = ({ week }: { week: readonly WeekDay[] }) => (
+  <section data-today-week aria-label={OPENING_WORDS.week} className="today-sheet__week">
+    {week.map(({ day, quest, when, collected }) => (
+      <span
+        key={day}
+        role="img"
+        aria-label={OPENING_WORDS.weekDay(day, quest.name)}
+        data-tip={OPENING_WORDS.weekDay(day, quest.name)}
+        data-week-day={when}
+        data-collected={collected || undefined}
+        className="today-sheet__quest"
+      >
+        <Icon name={quest.icon} size={24} />
+        <i>{day}</i>
+      </span>
+    ))}
+  </section>
 );

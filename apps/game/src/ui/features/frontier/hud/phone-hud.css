@@ -341,32 +341,6 @@ button.frontier-stock-chips[aria-expanded="true"] {
   inset: auto;
   z-index: auto;
 }
-.frontier-quest-card {
-  display: flex;
-  flex-direction: column;
-  gap: theme(spacing.2);
-}
-.frontier-quest-card__head {
-  display: flex;
-  align-items: flex-start;
-  gap: theme(spacing[2.5]);
-  border-bottom: 1px solid var(--hud-divider);
-  padding-bottom: theme(spacing.2);
-}
-.frontier-quest-card__title {
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-body);
-  line-height: var(--hud-leading-body);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: rgb(var(--hud-ink));
-}
-.frontier-quest-card__claim:empty {
-  display: none;
-}
-.frontier-quest-card__claim > .ui-button {
-  width: 100%;
-}
 [data-hud-form] .frontier-army-tray-panel {
   max-height: theme(spacing.hud-phone-tray);
 }
