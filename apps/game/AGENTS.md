@@ -288,8 +288,9 @@ training must be confirmed once more), or with the owner's army after its fight 
 army's tile, found under its token, hovered with nothing selected must open that army's plate, and an emptied tile
 none), `--steps lab-reinforce` (`/lab/game?scenario=reinforce`, the army beside home: the realm selected from its tile,
 the army right-clicked for **Reinforce** (at a phone's width a finger taps the realm and holds the army, through
-DevTools' touch input), Max and Reinforce sent; the chain's RecruitExplorer answer must leave the army at 1,902, 16
-knights and 192 wheat at home: Max keeps the wheat its 5 reveals burn), `--steps lab-visit` (`/lab/game?scenario=visit`,
+DevTools' touch input), Max and Reinforce sent; the chain's answer must move at least 404 troops, pay one knight and 2
+wheat for each, and leave at least 192 wheat at home: Max keeps the wheat its 5 reveals burn, and the realm's production
+only adds to what Max may move), `--steps lab-visit` (`/lab/game?scenario=visit`,
 the painted Kingdom's game with a neighbour's Kingdom on the Season board, built in another order: Visit from the board,
 Leave, and Visit and Leave again, each arrival failing on another realm drawn, a building laid out without its model
 attached, shown and loaded, or a HUD panel past the screen's edge; each board swept point by point, each hovered then

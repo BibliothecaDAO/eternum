@@ -4652,6 +4652,8 @@ function labMergeSteps(confirm) {
 const LAB_REALM = 7;
 const ARMY_BEFORE_REINFORCE = 1_498;
 const WHEAT_PER_TROOP = 2n;
+const LEAST_REINFORCED = 404n * BigInt(RESOURCE_PRECISION);
+const WHEAT_FOR_REVEALS = 192n * BigInt(RESOURCE_PRECISION);
 /** How far below its token a realm's tile may lie at the map's zoom: the realm's token stands lower than an army's. */
 const REALM_TILE_BELOW_TOKEN_PX = [70, 50, 90];
 const REINFORCE_STATE = `JSON.stringify({
@@ -4822,8 +4824,20 @@ function armyReinforced({ played }) {
     knights: balanceChange(after.reinforced, ResourcesIds.Knight),
     wheat: balanceChange(after.reinforced, ResourcesIds.Wheat),
   };
-  if (!(moved > 0n) || paid.knights !== -moved || paid.wheat !== -WHEAT_PER_TROOP * moved)
-    return failed(`the chain moved ${moved} troops for ${paid.knights} knights and ${paid.wheat} wheat`, played);
+  const wheatLeft = BigInt(
+    after.reinforced?.answered.find(({ model, value }) => model === "ResourceBalance" && Number(value.resource_type) === ResourcesIds.Wheat)
+      ?.value.balance ?? -1,
+  );
+  if (
+    !(moved >= LEAST_REINFORCED) ||
+    paid.knights !== -moved ||
+    paid.wheat !== -WHEAT_PER_TROOP * moved ||
+    wheatLeft < WHEAT_FOR_REVEALS
+  )
+    return failed(
+      `the chain moved ${moved} troops for ${paid.knights} knights and ${paid.wheat} wheat, leaving ${wheatLeft} wheat`,
+      played,
+    );
   return completed({ chosen: played.chosen, sent: after.sent, troops, panel: after.sheet });
 }
 
