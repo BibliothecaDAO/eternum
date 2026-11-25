@@ -14,6 +14,7 @@ import { questSpeaker, QuestDock } from "./quest-dock";
 import { DailyQuestChip } from "../hud/daily-quest-chip";
 import { resolveAspectEmissary } from "../tutorial/aspect-emissaries";
 import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
+import { HUD_QUERIES } from "@/tokens";
 
 const BANE_DAY = frontierSeasonOnePreset.banes.quietDays;
 
@@ -290,16 +291,46 @@ describe("bane collection", () => {
     expect(reward("Essence")).toBe("<1 Essence");
   });
 
-  it("shows on the pill the Aspect that gives the quest, inside its ring, and no count", () => {
+  it("shows the Aspect in the orb's ring, counts the quest on a phone while it runs and wears the golden check once cleared, and puts no badge on a desktop's pill", () => {
     const game = fixture();
+    const badges = () =>
+      [...host.querySelectorAll("[data-daily-quest-chip] .frontier-quest-orb__count")].map((badge) =>
+        badge.hasAttribute("data-cleared")
+          ? badge.querySelector("[data-icon]")?.getAttribute("data-icon")
+          : badge.textContent,
+      );
+    const today = () => readDailyQuest(game.store, 1, safeInteger(game.realm().entity_id), clock.now)!;
     game.drawWith(<DailyQuestChip realm={game.realm()} />);
-    const chip = host.querySelector("[data-daily-quest-chip]")!;
-    const reading = readDailyQuest(game.store, 1, safeInteger(game.realm().entity_id), clock.now)!.reading.known!;
-    expect(chip.querySelector("[data-icon]")?.getAttribute("data-icon")).toBe(
-      resolveAspectEmissary(questSpeaker(reading)).portrait,
+    expect(today().reading.known!.state).toBe("done");
+    expect(host.querySelector("[data-daily-quest-chip] [data-icon]")?.getAttribute("data-icon")).toBe(
+      resolveAspectEmissary(questSpeaker(today().reading.known)).portrait,
     );
-    expect(chip.textContent).not.toContain(
-      DAY_BANNER_WORDS.fraction(safeInteger(reading.progress), safeInteger(reading.target)),
+    expect(badges()).toEqual(["check"]);
+
+    act(() =>
+      game.store.applyFacts([
+        {
+          model: "QuestProgress",
+          key: "0xa71",
+          value: { game_id: 1, home: 7, day: today().day, progress: 0, completed_level: 0 },
+        },
+      ] as never),
     );
+    const running = today().reading.known!;
+    expect(running.state).toBe("running");
+    expect(badges()).toEqual([DAY_BANNER_WORDS.fraction(0, safeInteger(running.target))]);
+
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === HUD_QUERIES.desktop,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    try {
+      game.drawWith(<DailyQuestChip realm={game.realm()} />);
+      expect(badges()).toEqual([]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
