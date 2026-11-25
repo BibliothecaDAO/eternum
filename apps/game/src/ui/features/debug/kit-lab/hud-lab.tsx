@@ -233,28 +233,10 @@ const FINAL_MINUTES: DayClock = { ...CLOCK, secondsLeft: 9 * 60, shareLeft: 9 / 
 const DAY_DONE = {
   endedDay: 12,
   clock: { ...NIGHT, secondsLeft: 7 * HOUR + 55 * 60 },
-  totals: { reveals: 31, cleared: 3, essence: 6_400, labor: 1_150 },
-  best: {
-    kind: "clear" as const,
-    site: "Ruin" as const,
-    guard: 3_400,
-    paid: { resource: "essence" as const, amount: 4_800 },
-  },
-  aspect: 2 as const,
-  race: {
-    finishHeight: 10_000,
-    standings: [
-      { aspectId: 2 as const, height: 9_600, own: true },
-      { aspectId: 1 as const, height: 6_200, own: false },
-      { aspectId: 3 as const, height: 4_100, own: false },
-      { aspectId: 4 as const, height: 2_900, own: false },
-    ],
-  },
+  gains: { essence: 6_400, labor: 1_150, glory: 1_180 },
   history: "whole" as const,
+  stories: [],
   onRetry: () => undefined,
-  rank: { from: 14, to: 12 },
-  armies: 3,
-  troopsLost: 6_021,
   onShare: () => undefined,
   onContinue: () => undefined,
 };
@@ -267,8 +249,8 @@ const DAY_SHARE: SharedDay = {
   player: WALLET_ADDRESS,
   game: { chainId: "0x1", gameId: 1 },
   day: DAY_DONE.endedDay,
-  totals: DAY_DONE.totals,
-  rank: DAY_DONE.rank,
+  totals: { reveals: 31, cleared: 3, essence: DAY_DONE.gains.essence, labor: DAY_DONE.gains.labor },
+  rank: { from: 14, to: 12 },
   trail: ["Ruin", "Rift", "Rift", "army-lost", "guard-holds", "Beasts", "Camp"],
   best: { kind: "clear", site: "Ruin", guard: 3_400, paid: null },
   realm: { name: "Temtinos", order: 5 },
@@ -307,14 +289,22 @@ const trainingPrice: LabTile["standing"] = {
   ],
 };
 /** A training building's price with the Essence short and the Labor held: only the Essence line is red. */
+const SHORT_TILE_PRICES = [
+  { of: "essence", amount: 6_000 },
+  { of: "labor", amount: 1_500 },
+] as const;
 const essenceShortPrice: LabTile["standing"] = {
   kind: "price",
-  prices: [
-    { of: "essence", amount: 6_000, short: true },
-    { of: "labor", amount: 1_500, short: false },
-  ],
+  prices: SHORT_TILE_PRICES.map((price) => ({ ...price, short: price.of === "essence" })),
   short: { of: "essence", wait: undefined },
 };
+const BUILD_SHORT_ESSENCE = 2_400;
+const BUILD_SHORT_STORES = STORES.map((held) =>
+  held.kind === "essence" ? store("essence", BUILD_SHORT_ESSENCE) : held,
+);
+const LAB_BUILD_REFUSAL = {
+  reason: { kind: "short", of: "essence", held: BUILD_SHORT_ESSENCE, need: SHORT_TILE_PRICES[0].amount },
+} as const;
 const BUILD_TILES: LabTile[] = [
   tile("farm", "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, price(6_800)),
   tile(
@@ -622,7 +612,7 @@ const STATES = {
   },
   build: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build" },
   "build-early": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-early" },
-  "build-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-short" },
+  "build-short": { clock: CLOCK, stores: BUILD_SHORT_STORES, armies: ARMIES, realmView: "build-short" },
   castle: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle" },
   "castle-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle-short" },
   "building-farm": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "farm" },
@@ -944,10 +934,14 @@ export const HudLab = () => {
                   ? SHORT_TILES
                   : BUILD_TILES
             }
-            chosen={lab.realmView === "build" ? 0 : 2}
+            chosen={lab.realmView === "build" ? 0 : lab.realmView === "build-short" ? 3 : 2}
             onChoose={noop}
-            prices={[{ of: "labor", amount: lab.realmView === "build" ? 6_800 : 800 }]}
-            refusal={undefined}
+            prices={
+              lab.realmView === "build-short"
+                ? SHORT_TILE_PRICES
+                : [{ of: "labor", amount: lab.realmView === "build" ? 6_800 : 800 }]
+            }
+            refusal={lab.realmView === "build-short" ? LAB_BUILD_REFUSAL : undefined}
             sending={false}
             onBuild={noop}
             onClose={noop}

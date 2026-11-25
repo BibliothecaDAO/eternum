@@ -25,13 +25,14 @@
 .frontier-stock-chips {
   display: flex;
   min-width: 0;
-  flex: 1;
+  flex: 0 1 auto;
   align-items: center;
   justify-content: center;
+  margin-inline: auto;
   border: 0;
   border-radius: var(--hud-radius-control);
   background: transparent;
-  padding: 4px 0;
+  padding: 4px theme(spacing.2);
   color: inherit;
 }
 button.frontier-stock-chips {
@@ -444,7 +445,7 @@ button.frontier-stock-chips[aria-expanded="true"] {
 .frontier-phone-top > .frontier-realm-card {
   position: relative;
   z-index: 1;
-  max-height: theme(spacing.hud-phone-sheet);
+  max-height: theme(spacing.hud-phone-browse);
   overflow-y: auto;
 }
 [data-hud-form="tablet"] .frontier-phone-top > .frontier-realm-card {

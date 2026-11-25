@@ -12,16 +12,13 @@ import { createEndgameFixture, type EndgameLabSettings } from "../endgame-mist/f
  */
 export const DAY_END_VEIL: EndgameLabSettings = { busy: false, spires: "awaken", spared: "realm" };
 
-/** The ended day's card, with the figures of the owner's screenshot of today's card: 12 h left, tomorrow 20 h. */
-export const dayEndSummary = (now: number, onContinue: () => void): Parameters<typeof DayDoneCard>[0] => ({
+export const dayEndSummary = (onContinue: () => void): Parameters<typeof DayDoneCard>[0] => ({
   endedDay: 1,
-  clock: { day: 2, endsAt: now + 12 * 3_600, secondsLeft: 12 * 3_600, tomorrowSeconds: 20 * 3_600, tone: "calm" },
-  totals: { reveals: 17, cleared: 2, essence: 969, labor: 2_027 },
-  best: { kind: "clear", site: "Ruin", guard: 1_200, paid: { resource: "essence", amount: 969 } },
+  clock: { day: 2 },
+  gains: { essence: 969, labor: 2_027, glory: 0 },
   history: "whole",
+  stories: [],
   onRetry: () => undefined,
-  armies: 0,
-  troopsLost: 0,
   onContinue,
 });
 

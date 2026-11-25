@@ -40,11 +40,11 @@ const reloadRow = () => names().includes("Applies after a reload");
 const toggle = (label: string) =>
   act(async () => host.querySelector<HTMLButtonElement>(`[role="switch"][aria-label="${label}"]`)!.click());
 const choose = async (label: string, word: string) => {
-  await act(async () => host.querySelector<HTMLButtonElement>(`.ui-select[aria-label="${label}"]`)!.click());
-  const item = [...document.querySelectorAll<HTMLButtonElement>(".ui-select__layer .ui-menu__item")].find(
-    (option) => option.textContent === word,
-  );
-  await act(async () => item!.click());
+  const setting = [...host.querySelectorAll(".ui-setting")].find(
+    (row) => row.querySelector(".ui-setting__name")?.textContent === label,
+  )!;
+  const tab = [...setting.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find((tab) => tab.textContent === word);
+  await act(async () => tab!.click());
 };
 const remount = async () => {
   await act(async () => root.unmount());
@@ -52,14 +52,14 @@ const remount = async () => {
 };
 
 it("draws on a desktop no Renderer row and no Haptics, as nothing there vibrates", () => {
-  expect(names()).toEqual(["Quality", "Frame rate", "Shadows", "Reduced motion"]);
+  expect(names()).toEqual(["Quality", "FPS", "Shadows", "Reduced motion"]);
   expect(host.querySelector(".ui-setting__about")).toBeNull();
 });
 
 it("offers Haptics on a phone that can vibrate, and saves its choice; an iPhone, with no vibration, gets no row", async () => {
   device({ touch: true, vibrate: true });
   await remount();
-  expect(names()).toEqual(["Quality", "Frame rate", "Shadows", "Reduced motion", "Haptics"]);
+  expect(names()).toEqual(["Quality", "FPS", "Shadows", "Reduced motion", "Haptics"]);
   const haptics = () => host.querySelector('[role="switch"][aria-label="Haptics"]')!.getAttribute("aria-checked");
   const before = haptics();
   await toggle("Haptics");
@@ -82,17 +82,17 @@ it("saves Shadows at once without leaving the page, says it applies after a relo
   expect(reloadRow()).toBe(false);
 });
 
-it("says a Quality or Frame rate choice applies after a reload", async () => {
+it("says a Quality or FPS choice applies after a reload", async () => {
   await choose("Quality", "Balanced");
   expect(JSON.parse(localStorage.getItem("eternum-graphics")!).quality).toBe("balanced");
   expect(reloadRow()).toBe(true);
   await choose("Quality", "High");
   expect(reloadRow()).toBe(false);
 
-  await choose("Frame rate", "60 FPS");
+  await choose("FPS", "60");
   expect(localStorage.getItem("RENDER_MODE")).toBe("capped");
   expect(reloadRow()).toBe(true);
-  await choose("Frame rate", "Uncapped");
+  await choose("FPS", "Max");
   expect(reloadRow()).toBe(false);
 });
 
