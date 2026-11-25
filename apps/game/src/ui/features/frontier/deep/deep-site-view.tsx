@@ -108,17 +108,7 @@ const FIGHT_ORDER = Array.from(
 
 const siteName = (key: DeepSiteProps["site"]) => deepSites.find((each) => each.key === key)!.name;
 
-export const DeepSiteView = ({
-  site,
-  ring,
-  rates,
-  opening,
-  guard,
-  fight,
-  pickBase,
-  order,
-  onClose,
-}: DeepSiteProps) => {
+export const DeepSiteView = ({ site, ring, rates, opening, guard, fight, pickBase, order, onClose }: DeepSiteProps) => {
   const name = siteName(site);
   const secondary = rates && secondaryRate(rates);
   return (
