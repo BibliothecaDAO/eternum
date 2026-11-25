@@ -1163,7 +1163,7 @@ export const TRANSFER_TROOPS = {
   sending: "Moving…",
   cap: (cap: number) => `An army holds at most ${formatAmount(cap)}.`,
   unalike: (picked: string, tapped: string) => `${picked} and ${tapped} hold different troops`,
-  failed: "Could not move troops.",
+  failed: "The troops could not be moved.",
   changed: "The armies' troops changed",
 } as const;
 /** Troops raised from the realm's stock into its army beside it (the realm selected, the army right-clicked). */
@@ -2275,7 +2275,7 @@ export const ARMY_MANAGEMENT = {
   remove: "Delete",
   confirmDelete: "Delete this army?",
   loss: "Its troops, carried resources and held Oaths are lost. Its slot keeps its stamina.",
-  deleteFailed: "Could not delete army.",
+  deleteFailed: "The army could not be deleted.",
 } as const;
 
 const ARMY_RELIC_SLOTS = 3;

@@ -444,7 +444,7 @@ it.each(["progress", "troops", "stamina", "position", "removed", "day"])(
     expect(close).not.toHaveBeenCalled();
     expect(failed).toHaveBeenCalledWith(
       expect.objectContaining({ message: "Armies changed. Review merge." }),
-      "Could not move troops.",
+      "The troops could not be moved.",
     );
   },
 );
@@ -564,7 +564,7 @@ it("refuses facts arriving just before the final confirmation click", async () =
   expect(close).not.toHaveBeenCalled();
   expect(failed).toHaveBeenCalledWith(
     expect.objectContaining({ message: "Armies changed. Review merge." }),
-    "Could not move troops.",
+    "The troops could not be moved.",
   );
 });
 
