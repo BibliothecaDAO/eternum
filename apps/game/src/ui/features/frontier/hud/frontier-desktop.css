@@ -3,11 +3,19 @@
   top: theme(spacing.4);
   left: 50%;
   z-index: theme(zIndex.hud-rail);
-  display: flex;
+  display: grid;
+  width: 380px;
   height: 40px;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: theme(spacing.4);
   transform: translateX(-50%);
+}
+.frontier-crown > :first-child {
+  justify-self: end;
+}
+.frontier-crown > :nth-child(3) {
+  justify-self: start;
 }
 .frontier-crown .frontier-place-pill {
   width: 142px;
