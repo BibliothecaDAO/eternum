@@ -18,7 +18,7 @@ import { deepCenter, type NativeFactStore, type NativeRows } from "@bibliothecad
 import { campBeside } from "../sites/site-fixture";
 
 import { selectLayer, type MapLayers, useMapLayers } from "./map-layers";
-import { FrontierPlaceSwitch } from "./surface-deep-switch";
+import { PlaceMenu } from "./surface-deep-switch";
 
 const context = vi.hoisted(() => ({
   store: null as NativeFactStore | null,
@@ -45,30 +45,32 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-const tabNamed = (word: string) =>
-  [...host.querySelectorAll<HTMLButtonElement>('[data-surface-deep-switch] [role="tab"]')].find(
-    (tab) => tab.getAttribute("aria-label") === word,
-  )!;
+const placeRows = () => {
+  if (!document.querySelector("[data-surface-deep-switch]"))
+    act(() => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
+  return [...document.querySelectorAll<HTMLButtonElement>('[data-surface-deep-switch] [role="tab"]')];
+};
+
+const tabNamed = (word: string) => placeRows().find((tab) => tab.getAttribute("aria-label") === word)!;
+
+const pressTab = (word: string) => {
+  const tab = tabNamed(word);
+  act(() => tab.click());
+};
 
 const layersShowingII = (go: MapLayers["go"]): MapLayers => ({ layers: [0, 1, 2], shown: 2, go });
 
 describe("the map's layers", () => {
-  it("shows all five places inline with locked Deep disabled and switches directly between unlocked layers", () => {
+  it("lists all five places with locked Deep disabled and switches directly between unlocked layers", () => {
     const go = vi.fn();
     const layers = layersShowingII(go);
     act(() =>
       root.render(
-        <FrontierPlaceSwitch
-          isMapView
-          layers={layers}
-          onGoRealm={() => {}}
-          onGoSurface={() => selectLayer(layers, 0)}
-        />,
+        <PlaceMenu isMapView layers={layers} onGoRealm={() => {}} onGoSurface={() => selectLayer(layers, 0)} />,
       ),
     );
-    const buttons = [...host.querySelectorAll<HTMLButtonElement>("[data-surface-deep-switch] button")];
     expect(
-      buttons.map((button) => [button.textContent, button.getAttribute("aria-selected"), button.disabled]),
+      placeRows().map((row) => [row.getAttribute("aria-label"), row.getAttribute("aria-selected"), row.disabled]),
     ).toEqual([
       ["Realm", "false", false],
       ["Surface", "false", false],
@@ -78,13 +80,13 @@ describe("the map's layers", () => {
     ]);
     expect(tabNamed("Hollow").querySelector("img")?.getAttribute("src")).toContain("depth-2");
 
-    act(() => tabNamed("Veil").click());
+    pressTab("Veil");
     expect(go).toHaveBeenCalledWith(1);
 
-    act(() => tabNamed("Hollow").click());
+    pressTab("Hollow");
     expect(go).toHaveBeenCalledTimes(1);
 
-    act(() => tabNamed("Surface").click());
+    pressTab("Surface");
     expect(go).toHaveBeenLastCalledWith(0);
   });
 });
@@ -112,7 +114,7 @@ const clockAt = (store: NativeFactStore, seconds: number) =>
 const LayerSwitch = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows["Structure"] }) => {
   const layers = useMapLayers(rules, realm, realm);
   return (
-    <FrontierPlaceSwitch
+    <PlaceMenu
       isMapView={context.mapView}
       layers={layers}
       onGoRealm={() => {}}
@@ -126,7 +128,12 @@ describe("the layer switch over the real layers", () => {
     const { rules, realm } = researchedDay(0n);
     context.mapView = true;
     act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
-    expect([...host.querySelectorAll<HTMLButtonElement>("[data-depth]")].every((button) => button.disabled)).toBe(true);
+    expect(
+      placeRows()
+        .filter((row) => row.dataset.depth !== undefined)
+        .every((row) => row.disabled),
+    ).toBe(true);
+    act(() => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
 
     const unlocked = researchedDay(3n);
     context.mapView = false;
@@ -167,12 +174,12 @@ describe("the shared Deep in the map layer menu", () => {
     context.mapView = true;
     useUIStore.setState({ cameraTargetHex: { col: 512, row: 512 } });
     act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
-    expect([...host.querySelectorAll<HTMLButtonElement>("[data-depth]")].map((button) => button.textContent)).toEqual([
-      "Veil",
-      "Hollow",
-      "Deep",
-    ]);
-    act(() => tabNamed("Deep").click());
+    expect(
+      placeRows()
+        .filter((row) => row.dataset.depth !== undefined)
+        .map((row) => row.getAttribute("aria-label")),
+    ).toEqual(["Veil", "Hollow", "Deep"]);
+    pressTab("Deep");
     expect(requestLayerView).toHaveBeenCalledTimes(1);
     expect(requestLayerView).toHaveBeenCalledWith(deepCenter(rules.spacing));
     act(() => useUIStore.setState({ cameraTargetHex: deepCenter(rules.spacing) }));
@@ -194,7 +201,7 @@ describe("the shared Deep in the map layer menu", () => {
     context.mapView = true;
     useUIStore.setState({ cameraTargetHex: { col: 512, row: 512 } });
     act(() => root.render(<LayerSwitch rules={rules} realm={realm} />));
-    act(() => tabNamed("Deep").click());
+    pressTab("Deep");
     expect(requestLayerView).toHaveBeenLastCalledWith({ col: 516, row: 3584 });
   });
 

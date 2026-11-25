@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 
 const SCALE_AT_WIDTH: readonly (readonly [width: number, scale: number])[] = [
   [1_024, 0.71],
+  [1_280, 0.93],
   [1_440, 1],
-  [1_920, 1.12],
-  [2_560, 1.35],
+  [1_920, 1],
+  [2_560, 1.05],
 ];
 
 export const hudScaleFor = (width: number): number => {

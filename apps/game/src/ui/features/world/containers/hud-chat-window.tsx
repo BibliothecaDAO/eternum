@@ -224,7 +224,7 @@ export function HudChatWindow({
   return (
     <div className={cn("mt-auto flex flex-col gap-2", open ? "min-h-hud-chat-least" : "shrink-0")}>
       {open && (
-        <div ref={pane} className="pointer-events-auto flex h-hud-chat-pane min-h-0 flex-col">
+        <div ref={pane} data-chat-pane className="pointer-events-auto flex h-hud-chat-pane min-h-0 flex-col">
           {/* The chat shell pads its own tabs, history and composer. */}
           <HudPage label={CHAT} icon="chat" onClose={() => onOpenChange(false)} bodyClassName="gap-0 p-0">
             <GameChatMap>
