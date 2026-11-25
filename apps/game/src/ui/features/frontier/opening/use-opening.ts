@@ -48,8 +48,8 @@ import {
   openedMoments,
   reachedOnContext,
   siteAlertOfferDue,
+  openedParts,
   stepTutorialMachine,
-  TUTORIAL_SKIPPED,
   type TutorialDisplay,
 } from "./opening-state";
 import { SITE_ALERT_OFFER } from "./use-site-alert-offer";
@@ -137,7 +137,8 @@ export function useOpening(
           : null;
 
   return {
-    opened: !realm || races !== true || !progress.ownsParts || progress.seen.has(TUTORIAL_SKIPPED) ? "all" : opened,
+    opened:
+      !realm || races !== true || !progress.ownsParts ? "all" : openedParts(progress.reached, progress.seen, onState),
     line: activeLine,
     dismiss: () => {
       if (!activeLine) return;

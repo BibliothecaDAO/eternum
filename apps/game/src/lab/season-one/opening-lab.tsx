@@ -14,7 +14,7 @@ import { OPENING_RULES } from "@/ui/features/frontier/opening/opening-fixtures";
 import {
   activeOpeningMoment,
   EMPTY_OPENING_CONTEXT,
-  openedMoments,
+  openedParts,
   reachedOnContext,
   TUTORIAL_SKIPPED,
 } from "@/ui/features/frontier/opening/opening-state";
@@ -84,7 +84,7 @@ export function OpeningLab() {
   const ctx = contextForMoment(selectedMoment);
   const rules = { ...OPENING_RULES, ownAspect };
   const active = activeOpeningMoment(ctx, rules, seen);
-  const opened = openedMoments(new Set(), reachedOnContext(ctx));
+  const opened = openedParts(new Set(), seen, reachedOnContext(ctx));
 
   const dismissActive = () => {
     if (!active) return;
