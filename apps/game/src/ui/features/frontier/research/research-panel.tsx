@@ -500,7 +500,7 @@ const NodeActionBar = ({
   const fixing = missing && fix(missing);
   const price = node.state === "done" ? [] : node.needs.filter(isPrice);
   return (
-    <div data-lab="node-choice" className="research-bar">
+    <div data-lab="node-choice" className="research-bar" data-fix={node.state !== "ready" && fixing ? "" : undefined}>
       <span data-choice-summary className="research-bar__name">
         {node.name}
         {" · "}

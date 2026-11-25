@@ -471,13 +471,18 @@
 }
 
 .research-bar__name {
-  overflow: hidden;
-  text-overflow: ellipsis;
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-strong);
   line-height: 20px;
   font-weight: 700;
-  white-space: nowrap;
+}
+
+.research-bar[data-fix] .research-bar__name {
+  grid-column: 1 / -1;
+}
+
+.research-bar[data-fix] .research-bar__footer > .ui-button {
+  grid-row: 2;
 }
 
 .research-bar__meta {
