@@ -122,7 +122,7 @@ it("offers independent Camp and Depot upgrades with their exact next output and 
     figures: [{ name: "Wheat per troop", line: "On each deploy", now: "1.4", next: "1.2" }],
   });
   expect(researchEffectLine(node(realm, `row-${research.ROW_CONSCRIPTION}`))).toBe(
-    RESEARCH_TREE.effects.troops("120 troops an hour → 140"),
+    `${RESEARCH_TREE.effects.troops("120")} → ${RESEARCH_TREE.effects.troops("140")}`,
   );
   expect(researchEffectLine(node(realm, `row-${research.ROW_RATIONS}`))).toBe(
     "1.4 wheat per troop → 1.2 wheat per troop (less)",

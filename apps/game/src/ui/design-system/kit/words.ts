@@ -1175,7 +1175,6 @@ export const DEPLOYING = "Deploying…";
 export const DEPLOY_WORDS = {
   troopType: "Troop type",
   slot: "Slot",
-  startsOn: "Starts on",
   howMany: (troop: string) => `${troop} to deploy`,
   deployCount: (count: number) => `${DEPLOY} ${formatExact(count)}`,
 } as const;

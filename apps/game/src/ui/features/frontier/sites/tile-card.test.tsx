@@ -37,6 +37,8 @@ import { campBeside, otherArmyAt, placeSite, relicEffectFact, SITE, SITE_TILE } 
 import { TileCard } from "./tile-card";
 import { ATTACK_REFUSAL_WORDS, FIGHT_WORDS, tooFarFrom } from "@/ui/design-system/kit/words";
 
+const CHAIN_REASON = "stamina 4 < 20";
+
 const APPLIED = { hash: "0x1", block: 9, status: "SUCCEEDED" };
 
 const mountedCards = new Set<() => void>();
@@ -354,8 +356,8 @@ describe("an attack in flight on the tile card", () => {
   it("says in one line why a refused attack did not happen, and frees the army", async () => {
     const { host, button, settle, unmount } = attackInFlight();
     await act(async () => button("Attack")!.click());
-    await settle({ hash: "0x1", block: 9, status: "REJECTED", revertReason: "Not enough stamina" });
-    expect(host.querySelector('[role="status"]')?.textContent).toBe(ATTACK_REFUSAL_WORDS["insufficient-stamina"]);
+    await settle({ hash: "0x1", block: 9, status: "REJECTED", revertReason: CHAIN_REASON });
+    expect(host.querySelector('[role="status"]')?.textContent).toBe(CHAIN_REASON);
     expect(inFlight("army", 201)).toBeUndefined();
     expect(button("Attack")?.disabled).toBe(false);
     // The next attack takes the line away.

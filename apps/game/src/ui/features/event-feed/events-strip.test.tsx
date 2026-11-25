@@ -90,7 +90,9 @@ import { EventLogPanel } from "./event-log-panel";
 import { QuickFeedRows, useEventsFeed } from "./quick-feed";
 import { EventsCard } from "../world/hud/events-card";
 import { HISTORY, LOG_BUTTON } from "../../../../scripts/prove-play-game.mjs";
-import { ATTACK_REFUSAL_WORDS, EVENTS_WORDS } from "@/ui/design-system/kit/words";
+import { EVENTS_WORDS } from "@/ui/design-system/kit/words";
+
+const REFUSED = "stamina 4 < 20";
 
 const fight = (id: string, at: number, attacker = "0x5", defender = "0x6") => ({
   id,
@@ -305,7 +307,7 @@ it("tells under Important a capture and the fight that won it as one row, by its
 
 it("shows the client's toasts above the stories, apart from their three: a notice in its time, the clock's milestones", () => {
   history.push(fight("r0", 99_000), fight("r1", 98_000), fight("r2", 97_000));
-  useEventFeedStore.getState().push({ kind: "error", title: "Not enough stamina", ttlMs: 60_000 });
+  useEventFeedStore.getState().push({ kind: "error", title: REFUSED, ttlMs: 60_000 });
   useHeadlineFeedStore.setState({
     headlines: [
       {
@@ -327,7 +329,7 @@ it("shows the client's toasts above the stories, apart from their three: a notic
     ],
   });
   draw();
-  expect(toasts()).toEqual(["The game has begun", ATTACK_REFUSAL_WORDS["insufficient-stamina"]]);
+  expect(toasts()).toEqual(["The game has begun", REFUSED]);
   expect(rows()).toEqual(["r0", "r1", "r2"]);
 });
 
