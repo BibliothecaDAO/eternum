@@ -545,10 +545,32 @@ export const EMPIRE = "Empire";
 /** The places: the nav's words. */
 export const REALM = "Realm";
 export const COSMETICS_WORDS = {
+  title: "Cosmetics",
   families: { wonder: "Wonder", "season-1": "Season 1", devcon: "Devcon", base: "Base" },
   devcon: "Devcon",
   goldenDevcon: "Golden Devcon",
   courtyardKeep: "Courtyard Keep",
+  realms: "Realms",
+  armies: "Armies",
+  soon: "Soon",
+  defaultOrder: (families: readonly string[]) => `Default order: ${families.join(" · ")}`,
+  ownedOf: (owned: number, total: number) => `${owned} of ${total} owned`,
+  ownedCount: (owned: number) => `${owned} owned`,
+  ownedOfPass: (owned: number, total: number) => `${owned} of ${total} owned · Season 1 Pass`,
+  familySkin: (family: string, skin: string) => `${family} · ${skin}`,
+  alwaysOwned: "Always owned",
+  exclusive: "Exclusive",
+  yourRank: (rank: string) => `Your rank: ${rank}`,
+  matchingIcon: "Matching Realm Icon",
+  matchingIconWhere: "HUD badge, minimap, map plates & app",
+  standing: { owned: "Owned", pass: "Pass", event: "Event", wonder: "Wonder" },
+  unlockInPass: "Unlock in Season 1 Pass",
+  eventExclusive: "Event exclusive",
+  eventGone: "Event exclusive · no longer available",
+  wonderOnly: "Wonder Realms only",
+  shortcutTitle: "Realm Cosmetics",
+  shortcutLine: (owned: number) => `${owned} owned · change look & icon`,
+  open: "Open",
 } as const;
 export const MAP_VIEW = "Map view";
 export const WORLD = "World";

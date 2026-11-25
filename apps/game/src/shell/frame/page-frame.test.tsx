@@ -7,7 +7,9 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { appRoutes, RETIRED_REDIRECTS } from "@/app";
+import { COSMETICS_PATH } from "@/shell/cosmetics/cosmetics-route";
 import { FRAGMENTS_PATH } from "@/shell/shop/fragments-route";
+import { COSMETICS_WORDS, WORDS } from "@/ui/design-system/kit/words";
 
 import { REALMS_MARK } from "@/ui/design-system/icon-meaning";
 
@@ -113,7 +115,7 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
       expect(bandOrder(container)[0]).toBe("bar");
       expect(bar!.querySelector('[data-role="lockup"]')!.matches(CONTROLS)).toBe(false);
       const controls = controlsIn(bar);
-      expect(controls.map((control) => control.dataset.role)).toEqual(["tab", "tab", "tab", "tab", "tab"]);
+      expect(controls.map((control) => control.dataset.role)).toEqual(["tab", "tab", "tab", "tab", "tab", "tab"]);
       expect(band(container, "tabs")).toBeNull();
     }
   });
@@ -185,6 +187,12 @@ describe.each(SIZES)("the current place at %i × %i", (width) => {
   it("marks Shop current on /shop", async () => {
     setViewportWidth(width);
     expect(current(await renderPath("/shop"))).toEqual(["Shop"]);
+  });
+
+  it("marks Cosmetics current on a desktop's /cosmetics, and You on a phone's", async () => {
+    setViewportWidth(width);
+    const lit = current(await renderPath(COSMETICS_PATH));
+    expect(lit).toEqual(width >= 1024 ? [COSMETICS_WORDS.title] : [WORDS.connect]);
   });
 });
 

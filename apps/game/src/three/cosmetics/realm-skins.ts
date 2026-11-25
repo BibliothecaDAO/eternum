@@ -4,14 +4,14 @@ import { homeIcon } from "@/ui/design-system/home-icons";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { COSMETICS_WORDS } from "@/ui/design-system/kit/words";
 
-type RealmSkinFamily = keyof typeof COSMETICS_WORDS.families;
+export type RealmSkinFamily = keyof typeof COSMETICS_WORDS.families;
 
 export const NO_MODEL_YET = "no model yet";
 const NO_PAINTING_YET = "no painting yet";
 
 type Ranked<T> = Readonly<Record<RealmLevels, T>>;
 
-interface RealmSkin {
+export interface RealmSkin {
   readonly id: string;
   readonly family: RealmSkinFamily;
   readonly name: string;
@@ -22,11 +22,11 @@ interface RealmSkin {
 
 export interface RealmSkinFacts {
   readonly sealHeld: boolean;
-  readonly aspect: AspectId | undefined;
-  readonly wonderAspect: AspectId | undefined;
+  readonly aspect: AspectId | null;
+  readonly wonderAspect: AspectId | null;
 }
 
-type RealmSkinStanding = "owned" | "pass" | "event" | "wonder";
+export type RealmSkinStanding = keyof typeof COSMETICS_WORDS.standing;
 
 export const REALM_SKIN_DEFAULT_ORDER = [
   "wonder",

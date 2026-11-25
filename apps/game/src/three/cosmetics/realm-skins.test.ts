@@ -14,7 +14,7 @@ import {
   type RealmSkinFacts,
 } from "./realm-skins";
 
-const NOTHING: RealmSkinFacts = { sealHeld: false, aspect: undefined, wonderAspect: undefined };
+const NOTHING: RealmSkinFacts = { sealHeld: false, aspect: null, wonderAspect: null };
 const skin = (id: string) => REALM_SKINS.find((each) => each.id === id)!;
 
 describe("the realm skin catalog", () => {
