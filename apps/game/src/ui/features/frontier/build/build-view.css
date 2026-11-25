@@ -148,8 +148,9 @@
 }
 .build-chosen__line {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 2px 10px;
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-strong);
   line-height: 20px;
