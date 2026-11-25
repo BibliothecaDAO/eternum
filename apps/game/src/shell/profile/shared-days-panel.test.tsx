@@ -41,7 +41,9 @@ const draw = async (client = new QueryClient({ defaultOptions: { queries: { retr
   await act(async () =>
     root.render(
       <QueryClientProvider client={client}>
-        <SharedDaysPanel />
+        <MemoryRouter>
+          <SharedDaysPanel />
+        </MemoryRouter>
       </QueryClientProvider>,
     ),
   );
