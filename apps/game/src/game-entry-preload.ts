@@ -1,21 +1,7 @@
 import { GAME_ENTRY_PREFETCH_MILESTONE, markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
+import { whenIdle } from "@/utils/when-idle";
 
 type GameRouteModule = typeof import("./game-route");
-
-const schedule = (cb: () => void, delayMs: number = 0): void => {
-  const idleCallback = (
-    globalThis as typeof globalThis & {
-      requestIdleCallback?: (fn: () => void) => number;
-    }
-  ).requestIdleCallback;
-
-  if (typeof idleCallback === "function") {
-    idleCallback(cb);
-    return;
-  }
-
-  globalThis.setTimeout(cb, delayMs);
-};
 
 export const createWebGpuRendererModulePrimer = ({
   preloadWebGpuRendererModules,
@@ -23,7 +9,7 @@ export const createWebGpuRendererModulePrimer = ({
   preloadWebGpuRendererModules: () => Promise<void> | void;
 }) => {
   return () => {
-    schedule(() => {
+    whenIdle(() => {
       void Promise.resolve()
         .then(preloadWebGpuRendererModules)
         .catch(() => undefined);

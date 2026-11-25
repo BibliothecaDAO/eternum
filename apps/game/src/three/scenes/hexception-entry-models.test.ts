@@ -125,3 +125,25 @@ it("asks for the route realm's models while the camera flies to it, the same one
     "/models/realms/settlement.glb",
   ]);
 });
+
+it("asks for the home realm's models once the map answers, and only warns when that realm cannot be read", () => {
+  route.tiles = {
+    existingBuildings: () => [
+      { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], category: BuildingType.ResourceLabor },
+    ],
+    structureType: () => StructureType.Realm,
+    getRealmLevel: () => 0,
+    getWonder: () => undefined,
+  };
+  const board = realmBoard([]);
+  board.scene.readRouteStructure = () => ({ entity_id: 7 });
+  board.scene.loadHomeRealmModels();
+  expect(board.requested).toEqual(["/models/realms/settlement.glb"]);
+
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  board.scene.readRouteStructure = () => {
+    throw new Error("the projection is not ready");
+  };
+  expect(() => board.scene.loadHomeRealmModels()).not.toThrow();
+  expect(warn).toHaveBeenCalledOnce();
+});
