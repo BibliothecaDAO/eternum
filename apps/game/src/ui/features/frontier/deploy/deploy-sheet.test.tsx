@@ -49,6 +49,7 @@ import { Direction, RESOURCE_PRECISION, TROOP_TYPES, TroopTier, TroopType } from
 import { frontierDay } from "./deploy-fixture";
 import { DeploySheet } from "./deploy-sheet";
 import { DEPLOY_WORDS, NO_OPEN_TILE, NO_TROOPS_AT_HOME } from "../../../design-system/kit/words";
+import { wheatForOnly } from "@/ui/design-system/kit/words";
 
 afterEach(() => {
   layout.current = "desktop";
@@ -412,7 +413,7 @@ describe("the Deploy sheet", () => {
     typeCount(host, 49);
     expect(wheatLine(host)).toBeNull();
     press(host, "Max");
-    expect([count(host), wheatLine(host)?.line]).toEqual(["50", "Wheat for only 50 of 420 troops"]);
+    expect([count(host), wheatLine(host)?.line]).toEqual(["50", wheatForOnly("50", "420")]);
     act(() => root.unmount());
     host.remove();
   });
@@ -477,7 +478,7 @@ describe("the Deploy sheet", () => {
     clock.tick = 13;
     draw();
     expect([count(host), slider(host).max, foot(host)]).toEqual(["9", "10", "18Deploy 9"]);
-    expect(wheatLine(host)?.line).toBe("Wheat for only 9 of 420 troops");
+    expect(wheatLine(host)?.line).toBe(wheatForOnly("9", "420"));
 
     typeCount(host, 5);
     clock.tick = 23;

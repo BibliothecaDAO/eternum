@@ -173,6 +173,7 @@ vi.mock("./use-transfer-sides", () => ({
 import { iconDefinition, resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { openTransfer } from "./transfer-window";
 import { WEIGHT_UNKNOWN } from "../../../design-system/kit/words";
+import { TRANSFER_REFUSED } from "@/ui/design-system/kit/words";
 
 const DONKEYS = iconDefinition(resourceMeaning(ResourcesIds.Donkey)).label;
 
@@ -328,7 +329,7 @@ describe("the transfer window's send", () => {
     await type("Wheat: total to send", "10");
     await send();
     expect(wheatSent()).toEqual([[A, 5]]);
-    expect(world.notices.failed).toHaveBeenCalledWith(expect.any(Error), expect.any(String), {
+    expect(world.notices.failed).toHaveBeenCalledWith(expect.any(Error), TRANSFER_REFUSED, {
       description: "Nothing reached Beta.",
     });
     // Beta stays chosen alone, with its own 5; Alpha has left the window.
@@ -431,7 +432,7 @@ describe("a shipment's outcome and the draft shown meanwhile", () => {
     expect(field("Wheat: total to send")!.value).toBe("4");
     expect(field("Wheat to Beta")).toBeNull();
     expect(sendButton().textContent).toMatch(/^Send 1 good · /);
-    expect(world.notices.failed).toHaveBeenCalledWith(expect.any(Error), expect.any(String), {
+    expect(world.notices.failed).toHaveBeenCalledWith(expect.any(Error), TRANSFER_REFUSED, {
       description: "Nothing reached Beta.",
     });
   });

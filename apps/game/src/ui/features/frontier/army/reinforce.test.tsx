@@ -34,6 +34,7 @@ import { StructureType } from "@bibliothecadao/types";
 import { ReinforceSheet, useSelectedReinforcement } from "./reinforce";
 import { transferArmies } from "./transfer-fixture";
 import { REINFORCE } from "../../../design-system/kit/words";
+import { wheatForOnly } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -196,7 +197,7 @@ it("stops Max where the wheat runs out, and says so in one line", async () => {
   render(fixture);
   await press("Max");
   expect(troops()).toBe("600 → 650");
-  expect(host.textContent).toContain("Wheat for only 50 of 420 troops");
+  expect(host.textContent).toContain(wheatForOnly("50", "420"));
 });
 
 it("stops Max where the wheat left still feeds the whole army revealing its bar", async () => {
@@ -220,7 +221,7 @@ it("stops Max where the wheat left still feeds the whole army revealing its bar"
   await press("Max");
   expect(troops()).toBe("600 → 619");
   expect(wheat()).toBe("38 Wheat");
-  expect(host.textContent).toContain("Wheat for only 19 of 420 troops");
+  expect(host.textContent).toContain(wheatForOnly("19", "420"));
 });
 
 it("still sends a count above Max that the wheat pays for, as the contract takes it", async () => {

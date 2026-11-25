@@ -21,6 +21,7 @@ import { transferArmies, transferTrainedArmies } from "./transfer-fixture";
 import { toast } from "@/ui/features/event-feed/notify";
 import { TransferTroopsSheet, useSelectedTransfer } from "./transfer-troops";
 import { TRANSFER_TROOPS } from "../../../design-system/kit/words";
+import { TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
 
 const PRECISION = 1_000_000_000n;
 /** The fixture's army (explorer 201, 1,498 knights) stands at (41, 12); its realm's second army stands beside it. */
@@ -225,7 +226,7 @@ it("opens at all the tapped army can take, and sends the amount the player slide
   ]);
   expect(amount()).toBe("2,700");
   expect(button(`Move 2,700 to ${tapped}`)).toBeDefined();
-  expect(host.textContent).toContain("An army holds at most 3,000.");
+  expect(host.textContent).toContain(TRANSFER_TROOPS.cap(3000));
 
   slide(599);
   expect(amount()).toBe("599");

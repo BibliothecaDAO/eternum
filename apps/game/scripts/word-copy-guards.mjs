@@ -74,6 +74,7 @@ const isTitle = (node, parent) =>
 const isInputValue = (ancestor, child) => ancestor.type === "Property" && ancestor.value === child;
 
 const COPY = "copy";
+const STAND_IN = "standIn";
 
 const noCopiedPhrase = {
   meta: {
@@ -83,6 +84,9 @@ const noCopiedPhrase = {
       [COPY]:
         "One source per fact: this string is a player phrase the words table holds. Read it from the table " +
         "(kit/words.ts or @bibliothecadao/types' words), so a reworded phrase cannot break the test.",
+      [STAND_IN]:
+        "A test checks what the code says: expect.any(String) checks nothing. Read the phrase from the words table, " +
+        "or match the shape the value must have.",
     },
   },
   create: (context) => {
@@ -97,6 +101,12 @@ const noCopiedPhrase = {
       if (copiesAPhrase(PHRASES, text) && isChecked(node)) context.report({ node, messageId: COPY });
     };
     return {
+      CallExpression(node) {
+        const { callee } = node;
+        const isAny = callee.type === "MemberExpression" && callee.object.name === "expect" && callee.property.name === "any";
+        if (isAny && node.arguments[0]?.type === "Identifier" && node.arguments[0].name === "String")
+          context.report({ node, messageId: STAND_IN });
+      },
       Literal(node) {
         if (typeof node.value === "string") check(node, node.value);
       },

@@ -695,6 +695,7 @@ export const UNEXPLORED = "Unexplored";
 export const TRANSFER = "Transfer";
 /** A good held whose weight the game has not given: its donkeys cannot be counted, so it cannot be sent. */
 export const WEIGHT_UNKNOWN = "Weight unknown: cannot be sent";
+export const TRANSFER_REFUSED = "The game refused it.";
 /** A player whose name identity could not give: shown as a dash, named so for a screen reader, never the stand-in. */
 export const NAME_UNAVAILABLE = "Name unavailable";
 /** A player whose name identity has not answered yet: an ellipsis, named so for a screen reader, never the stand-in. */
@@ -1636,6 +1637,7 @@ export const BLITZ_WORDS = {
 
 /** A Blitz lobby's chat: its panel, its field and the lines that stand where a message cannot go. */
 export const CHAT_WORDS = {
+  historyUnavailable: "Chat history is unavailable. Try again.",
   chat: "Chat",
   message: "Message",
   /** Under the chat of a reader the room does not let write. */

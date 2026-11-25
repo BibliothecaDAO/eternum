@@ -17,6 +17,7 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
 
 import { SharedDaysPanel } from "./shared-days-panel";
 import { SHARED_DAYS_WORDS } from "../../ui/design-system/kit/words";
+import { PROFILE_WORDS } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -95,7 +96,7 @@ it("highlights earned Fragments in the funnel alongside the reward rule", async 
   ]);
   expect(host.querySelector('[data-funnel-step="fragmentsEarned"]')?.hasAttribute("data-gold")).toBe(true);
   expect(host.querySelector("[data-referrals-reward]")?.textContent).toBe(
-    "+100 Fragments for each friend who reaches 100 Glory",
+    PROFILE_WORDS.friendReward,
   );
 });
 

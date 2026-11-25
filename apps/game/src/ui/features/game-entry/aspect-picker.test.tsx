@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AspectPicker, aspectOffer, type AspectMembers } from "./aspect-picker";
 import { ASPECT_STEP_WORDS } from "../../design-system/kit/words";
+import { ASPECT_STEP_WORDS } from "@/ui/design-system/kit/words";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -132,7 +133,7 @@ describe("AspectPicker", () => {
       null,
       null,
     ]);
-    expect(host!.querySelector(".aspect-picker__invited")?.textContent).toBe("Linden invited you to Havoc");
+    expect(host!.querySelector(".aspect-picker__invited")?.textContent).toBe(ASPECT_STEP_WORDS.invitedTo("Linden", "Havoc"));
     expect(cards.every((card) => !card.disabled)).toBe(true);
     act(() => cards[3]!.click());
     expect(onChoose).toHaveBeenCalledWith(4);
@@ -140,7 +141,7 @@ describe("AspectPicker", () => {
 
   it("names no sender when the invite's sender has no name yet", () => {
     draw({ offered: { aspect: 2, sender: null } });
-    expect(host!.querySelector(".aspect-picker__invited")?.textContent).toBe("You were invited to Luminary");
+    expect(host!.querySelector(".aspect-picker__invited")?.textContent).toBe(ASPECT_STEP_WORDS.invitedTo(null, "Luminary"));
   });
 
   it("keeps a held Realm's Aspect and the plain order whatever a link invited to", () => {

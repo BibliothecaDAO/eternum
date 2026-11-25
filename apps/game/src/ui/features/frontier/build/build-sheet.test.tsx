@@ -12,7 +12,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { toast } from "@/ui/features/event-feed/notify";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
 import { costLine, PRICE_FACES, type Price } from "@/ui/design-system/kit/price-faces";
-import { FREE } from "@/ui/design-system/kit/words";
+import { FREE, startsNewArmies } from "@/ui/design-system/kit/words";
 import { buildingOpensAtLevel, configManager, type GameClient, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { type GameClientSetup, nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
 import {
@@ -475,7 +475,7 @@ describe("the build sheet", () => {
     );
     // The tier is the tooltip's gem, not a numeral in the words.
     const ranks = JSON.parse(sheet.card("Supply yard").closest("[data-tip]")!.getAttribute("data-tip-ranks")!);
-    expect(ranks.slice(0, 3)).toEqual(["Supply yard: ", "new armies start with Logistics ", { rank: 1 }]);
+    expect(ranks.slice(0, 3)).toEqual(["Supply yard: ", startsNewArmies("Logistics", 1)[0], { rank: 1 }]);
     // No Farm stands on the board yet (the fixture's wheat comes with the realm): its price is its base.
     expect(document.querySelector("[data-price-raised]")).toBeNull();
     const base = sheet.card("Farm").querySelector("[data-build-price]")!.textContent;

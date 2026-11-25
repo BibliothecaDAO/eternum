@@ -28,6 +28,7 @@ import { campBeside, placeSite, SITE, SITE_TILE } from "../sites/site-fixture";
 import { TileCard } from "../sites/tile-card";
 import { ruinRelicState } from "./ruin-relic-choice";
 import { RELIC_WORDS } from "../../../design-system/kit/words";
+import { RELIC_WORDS } from "@/ui/design-system/kit/words";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -120,7 +121,7 @@ it("holds a full army's attack until the player picks the relic it replaces, the
   const { host, attack, button } = ruinCard(FULL);
   expect(host.querySelector("[data-relic-replacement]")).not.toBeNull();
   // The choice said once, above it; the held step says what is left to do.
-  expect(host.textContent?.split("Army holds 3 relics (max). Pick one to replace.")).toHaveLength(2);
+  expect(host.textContent?.split(RELIC_WORDS.full)).toHaveLength(2);
   expect(host.textContent).toContain(RELIC_WORDS.chooseFirst);
   // No Attack can leave before the choice: the card's step says why instead.
   expect(button("Attack")?.disabled ?? true).toBe(true);

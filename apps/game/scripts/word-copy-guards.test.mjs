@@ -52,16 +52,18 @@ describe("the player phrases the guard reads", () => {
 });
 
 describe("the guard", () => {
-  it("refuses a phrase a test asserts, finds by, compares or keeps in a table, whole or filled in by hand", async () => {
+  it("refuses a phrase a test asserts, finds by, compares or keeps in a table, whole or filled in by hand, and a stand-in for one", async () => {
     expect(await hits(TEST, `expect(text).toContain(${quoted(WALLET_WORDS.createWallet)});`)).toBe(1);
     expect(await hits(TEST, `expect(text).toBe(${quoted(DAY_BANNER_WORDS.productionBane(50))});`)).toBe(1);
     expect(await hits(TEST, `await press(ui, ${quoted(WALLET_WORDS.createWallet)});`)).toBe(1);
     expect(await hits(TEST, `it.each([["wallet", ${quoted(WALLET_WORDS.createWallet)}]])("%s", () => {});`)).toBe(1);
     expect(await hits(STEPS, `const LOST = ${quoted(FIGHT_WORDS.armyLost)};`)).toBe(1);
+    expect(await hits(TEST, "expect(line).toEqual(expect.any(String));")).toBe(1);
   });
 
   it("lets a test read the phrase, name itself, feed a fixture, say a short word, and leaves screens alone", async () => {
     expect(await hits(TEST, "expect(text).toContain(WALLET_WORDS.createWallet);")).toBe(0);
+    expect(await hits(TEST, "expect(at).toEqual(expect.stringMatching(/^\\d{4}-/));")).toBe(0);
     expect(await hits(TEST, `it(${quoted(WALLET_WORDS.createWallet)}, () => {});`)).toBe(0);
     expect(await hits(TEST, `settle({ revertReason: ${quoted(WALLET_WORDS.createWallet)} });`)).toBe(0);
     expect(await hits(TEST, `expect(text).toContain(${quoted(CLOSE)});`)).toBe(0);

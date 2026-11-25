@@ -87,6 +87,7 @@ import { setViewportWidth } from "@/shell/frame/test-viewport";
 import { GameEntryModal } from "./game-entry-modal";
 import type { Session } from "@realms-world/identity";
 import { ASPECT_STEP_WORDS, COUNTDOWN_WORDS, DOORWAY_WORDS, HELD_REALMS_UNREADABLE, HOME_STEP_WORDS, REALM_SIDE_WORDS } from "../../design-system/kit/words";
+import { ASPECT_STEP_WORDS, HOME_STEP_WORDS, REALM_SIDE_WORDS } from "@/ui/design-system/kit/words";
 
 /** A signed-in Realms account whose linked wallet is `address` (null: none linked). */
 const signedIn = (realmsId: string, address: string | null): Session => ({
@@ -241,7 +242,7 @@ it("starts a holder on their first Realm, wonders first, and founds with it", as
     await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
     expect(entry.strip()).toEqual([`${realmChoice(538)} *`, realmChoice(3)]);
     expect(entry.host.textContent).toContain("The Glowing Geyser");
-    expect(entry.host.textContent).toContain("+50% daily quest labor · +10 Fragments per quest");
+    expect(entry.host.textContent).toContain(HOME_STEP_WORDS.questBonus(50, 10));
     expect(entry.host.querySelector('input[aria-label="Realm number"]')).toBeNull();
     await entry.press(COUNTDOWN_WORDS.create);
     await vi.waitFor(() => expect(settlement.settled).toBe(true));
@@ -703,7 +704,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
           { label: "Join Insight", invite: null },
         ]),
       );
-      expect(entry.host.querySelector(".aspect-picker__invited")?.textContent).toBe("Linden invited you to Luminary");
+      expect(entry.host.querySelector(".aspect-picker__invited")?.textContent).toBe(ASPECT_STEP_WORDS.invitedTo("Linden", "Luminary"));
       await join(entry.host, "Luminary");
       await vi.waitFor(() => expect(settlement.calls).toEqual([firstOrderOf(2)]));
       expect(joined).toHaveBeenCalledTimes(1);
@@ -770,10 +771,10 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       try {
         await vi.waitFor(() => expect(warning(entry.host)).not.toBeNull());
         expect(warning(entry.host)?.querySelector("h2")?.textContent).toBe(
-          "Linden plays Luminary. Your Realm plays Havoc.",
+          REALM_SIDE_WORDS.invited("Linden", "Luminary", "Havoc"),
         );
         expect(warning(entry.host)?.textContent).toContain(name(538));
-        expect(warning(entry.host)?.textContent).toContain("You keep the quest bonus. Linden is in another Aspect.");
+        expect(warning(entry.host)?.textContent).toContain(`${REALM_SIDE_WORDS.keeps} ${REALM_SIDE_WORDS.apart("Linden")}`);
         expect(warning(entry.host)?.textContent).toContain(REALM_SIDE_WORDS.loses);
         await entry.press(REALM_SIDE_WORDS.playRealm);
         expect(warning(entry.host)).toBeNull();
@@ -868,13 +869,13 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       const entry = await openEntry();
       try {
         await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
-        expect(entry.host.textContent).toContain("+50% daily quest labor");
+        expect(entry.host.textContent).toContain(HOME_STEP_WORDS.questBonus(50));
         expect(entry.host.textContent).not.toContain("Your Realm holds the quest bonus");
         expect(entry.host.textContent).not.toContain("You play as");
         expect(entry.host.querySelectorAll(".app-aspect-card")).toHaveLength(0);
         expect(entry.host.textContent).not.toContain("Play free (without a Realm)");
         expect(entry.host.querySelector('[data-entry-mode-switch] [role="tablist"]')?.textContent).toBe(
-          "Use My Realm (1)Play Free (Pick Any Aspect)",
+          `${HOME_STEP_WORDS.myRealmTab(1)}${HOME_STEP_WORDS.playFreeTab}`,
         );
 
         await entry.press(HOME_STEP_WORDS.playFreeTab);

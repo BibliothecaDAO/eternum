@@ -63,7 +63,7 @@ describe("AspectEmissaryDock", () => {
     expect(dock?.dataset.tutorialAspect).toBe("2");
     expect(dock?.dataset.tutorialLayout).toBe("desktop");
     expect(dock?.textContent).toContain("Luminary");
-    expect(dock?.textContent).toContain("It raises +1.7/min Knights.");
+    expect(dock?.textContent).toContain(OPENING_WORDS.lines.barracks(OPENING_RULES));
     expect(dock?.textContent).toContain(OPENING_WORDS.actions.barracks);
     expect(host.querySelector(".emissary-dock__context")).toBeNull();
     expect(host.querySelector(".emissary-dock__well")).toBeNull();
@@ -146,7 +146,7 @@ describe("AspectEmissaryDock", () => {
     expect(dock?.classList.contains("emissary-dock--phone")).toBe(true);
     expect(dock?.getAttribute("aria-label")).toContain("Insight");
     expect(dock?.textContent).toContain(OPENING_WORDS.titles.explore());
-    expect(dock?.textContent).toContain("Reveal a dark hex for 20 stamina.");
+    expect(dock?.textContent).toContain(OPENING_WORDS.lines.explore(OPENING_RULES));
     expect(host.querySelector('img[data-icon="emissary-insight"]')?.getAttribute("src")).toBe(
       "/icons/facets/128/emissary-insight.webp",
     );

@@ -63,6 +63,7 @@ import { SEASON_SPENDS_FRAGMENTS } from "../season";
 import { FragmentsPage } from "./fragments-page";
 import { fragmentsHref } from "./fragments-route";
 import { FRAGMENTS_PAGE_WORDS, SEASON_ERROR, WALLET_WORDS } from "../../ui/design-system/kit/words";
+import { FRAGMENTS_PAGE_WORDS } from "@/ui/design-system/kit/words";
 
 const WALLET = "0x4a1";
 const WEI = 10n ** 18n;
@@ -267,7 +268,7 @@ it("resolves the active Frontier season on /shop, supports custom amounts >= 100
   const page = await mount("/shop");
   expect(page.querySelector("[data-shop-spend]")?.textContent).toContain("The Ancient Seal");
   expect(page.querySelector("[data-shop-spend]")?.textContent).toContain(
-    "+50% daily quest labor · Season 3 Realm skin",
+    FRAGMENTS_PAGE_WORDS.sealCardDetail(50, "Season 3"),
   );
   const customInput = page.querySelector<HTMLInputElement>("[data-fragment-custom] input")!;
   await act(async () => {

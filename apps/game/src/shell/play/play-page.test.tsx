@@ -107,6 +107,7 @@ import { PlayPage } from "./play-page";
 
 import { useConnectStore } from "../sign-in/connect";
 import { COUNTDOWN_WORDS, PLAY_WORDS, PRESEASON_WORDS, SEAL_CODE_WORDS, SEASON_ERROR, SEASON_INVITE_WORDS } from "../../ui/design-system/kit/words";
+import { PLAY_WORDS, PROFILE_WORDS, tomorrowLasts } from "@/ui/design-system/kit/words";
 
 const HOUR = 3_600;
 const DAY = 24 * HOUR;
@@ -321,7 +322,7 @@ it.each([1440, 390])(
     );
     expect(known.container.querySelector("[data-play-invite]")).not.toBeNull();
     expect(known.container.querySelectorAll('[role="timer"]')).toHaveLength(1);
-    expect(known.text()).not.toContain("Tomorrow lasts");
+    expect(known.text()).not.toContain(tomorrowLasts(0).words);
   },
 );
 
@@ -507,7 +508,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     );
     expect(countdown.querySelector("[data-preseason-testnet]")).toBeNull();
     expect(countdown.textContent).toContain(COUNTDOWN_WORDS.free);
-    expect(countdown.textContent).toContain("+100 Fragments for each friend who reaches 100 Glory");
+    expect(countdown.textContent).toContain(PROFILE_WORDS.friendReward);
     expect(countdown.querySelectorAll('button[data-kind="primary"]')).toHaveLength(1);
 
     await act(async () => countdown.querySelector<HTMLButtonElement>('[data-aspect="Luminary"]')!.click());
@@ -528,7 +529,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(countdown.textContent).toContain("Final testnet live");
     expect(countdown.textContent).not.toContain("testnet-1795479180");
     expect(countdown.textContent).toContain(
-      COUNTDOWN_WORDS.rehearsalLine("Final testnet"),
+      COUNTDOWN_WORDS.rehearsalLine(PLAY_WORDS.finalTestnet),
     );
     expect(countdown.textContent).toContain(COUNTDOWN_WORDS.free);
     expect(countdown.textContent).not.toContain(COUNTDOWN_WORDS.create);

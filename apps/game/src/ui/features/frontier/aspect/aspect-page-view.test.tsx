@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { ASPECT_PAGE_CASES } from "./aspect-page-fixtures";
 import { AspectPageView, type AspectPageProps } from "./aspect-page-view";
 import { ASPECT_PAGE_WORDS } from "../../../design-system/kit/words";
+import { ASPECT_PAGE_WORDS } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -132,7 +133,7 @@ describe("the Aspect page", () => {
       ...ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"],
       own: { ...own, members: own.members.map((member) => ({ ...member, glory: 0 })) },
     });
-    expect(part("data-aspect-members")).toContain("No Glory yet — hold Deep sites");
+    expect(part("data-aspect-members")).toContain(ASPECT_PAGE_WORDS.gloryUnearned);
     expect(document.body.querySelectorAll('[data-aspect-members] [aria-label="Glory 0"]')).toHaveLength(
       own.members.length,
     );

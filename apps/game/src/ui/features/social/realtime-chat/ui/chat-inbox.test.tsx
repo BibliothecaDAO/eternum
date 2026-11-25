@@ -197,7 +197,7 @@ describe("Messages from the server, on a client that starts empty", () => {
     // Told to the server, which recounts its unread: another device, or a reload, finds it read.
     expect(inbox.sent).toContainEqual({
       type: "direct:read",
-      payload: { threadId: THREAD, messageId: "d2", readerId: SELF, readAt: expect.any(String) },
+      payload: { threadId: THREAD, messageId: "d2", readerId: SELF, readAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/) },
     });
 
     const field = host.querySelector<HTMLInputElement>('input[aria-label="Message"]')!;
