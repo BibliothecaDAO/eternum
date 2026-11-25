@@ -565,7 +565,7 @@ it("combines all four Aspect rosters into the default Global Glory leaderboard w
     const triumphs = triumphTracks[0]!;
     expect(triumphs.textContent).toContain("Clear Mist");
     expect(triumphs.textContent).toContain("1,500 height");
-    expect(triumphs.textContent).toContain("Site discovery chance is 150%");
+    expect(triumphs.textContent).toContain("Site discovery odds are 150% of normal");
     expect(triumphs.textContent).toContain("Second Wind");
     expect(triumphs.textContent).toContain("Pale Moon");
     expect(triumphs.textContent).toContain("Spoils");
@@ -804,7 +804,7 @@ it("shows honest empty lines for empty global and Aspect boards", async () => {
     await act(async () => ownTab.click());
     await vi.waitFor(() =>
       expect(container.querySelector(`[data-aspect-roster="${ownAspect}"]`)?.textContent).toContain(
-        `No realms in ${aspectName(ownAspect)} yet.`,
+        `No Realms in ${aspectName(ownAspect)} yet.`,
       ),
     );
     const insightTab = [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
@@ -812,7 +812,7 @@ it("shows honest empty lines for empty global and Aspect boards", async () => {
     )!;
     await act(async () => insightTab.click());
     await vi.waitFor(() =>
-      expect(container.querySelector('[data-aspect-roster="4"]')?.textContent).toContain("No realms in Insight yet."),
+      expect(container.querySelector('[data-aspect-roster="4"]')?.textContent).toContain("No Realms in Insight yet."),
     );
   } finally {
     shards.open.mockImplementation(async () => {

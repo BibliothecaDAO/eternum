@@ -834,7 +834,7 @@ export const DEEP_WORDS = {
     foundation: "Holding raises your Aspect's hyperstructure and earns Glory",
     core: "Essence for you",
     mine: "Labor for you",
-    altar: "Casts Team Bane",
+    altar: "Bane on a rival",
   },
   /** A Deep site's plate on the map: nobody holds it, and what a tick held pays. */
   shared: "Every Aspect fights for it",
@@ -905,7 +905,7 @@ export const DAY_BANNER_WORDS = {
   summary: (objective: string, progress: number, target: number, labor: number) =>
     `${objective} · ${formatExact(progress)} of ${formatExact(target)} · +${formatExact(labor)} ${LABOR}`,
   triumphRule: {
-    1: (percent: number) => `Site discovery chance is ${formatExact(percent)}%`,
+    1: (percent: number) => `Site discovery odds are ${formatExact(percent)}% of normal`,
     2: (percent: number) => `Stamina regen is ${formatExact(percent)}%`,
     3: (percent: number) => `Site guards have ${formatExact(percent)}% strength`,
     4: (percent: number) => `Site rewards are ${formatExact(percent)}%`,
@@ -1049,7 +1049,7 @@ export const ASPECT_PAGE_WORDS = {
   race: "Hyperstructures",
   goToDeep: `Go to ${DEEP}`,
   deepOpensAt: (rule: string) => `${DEEP} opens at ${rule}`,
-  gloryUnearned: `No Glory yet — hold ${DEEP} Archives or Altars`,
+  gloryUnearned: `No Glory yet — hold ${DEEP} sites`,
   height: (height: number, finish: number) => `${formatExact(height)} of ${formatExact(finish)}`,
   stage: (stage: number, stages: number) => `Stage ${stage} of ${stages}`,
   finished: "Finished",
