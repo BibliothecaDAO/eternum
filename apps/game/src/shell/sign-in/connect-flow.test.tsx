@@ -34,6 +34,7 @@ import { ConnectFlow } from "./connect-flow";
 import { APP_WAIT_MS, discordAndroidIntent, discordAppUrl } from "./discord-app";
 import { forgetSocialStart, pendingSocialStart, rememberSocialStart } from "./social-pending";
 import { SIGN_IN_WORDS, WALLET_WORDS } from "@/ui/design-system/kit/words";
+import { REALMS_MARK } from "@/ui/design-system/icon-meaning";
 
 const NEXT = "/g/0x5245414c4d53/1/map?col=4&row=9&spectate=true";
 
@@ -282,6 +283,7 @@ describe("Connect", () => {
       expect(connect.textContent).toBe("Connect");
       await act(async () => connect.click());
       expect(ui.window()?.getAttribute("aria-label")).toBe("Connect");
+      expect(ui.window()?.querySelector(".signin-stage__lockup")?.getAttribute("src")).toBe(REALMS_MARK.lettered);
       expect(ui.where()).toBe("/season");
     } finally {
       await ui.unmount();
