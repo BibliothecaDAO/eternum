@@ -31,7 +31,6 @@ interface OathStatBadge {
   icon: IconMeaning;
 }
 
-
 const signedPercent = (percent: number) => formatPercent(percent / 100, { signed: true });
 const fromTo = (from: string, to: string) => `${from} → ${to}`;
 
@@ -106,8 +105,7 @@ const vitriolBadge = (base: PickEffectBase): OathStatBadge => {
       base.deepLossPerTick === undefined
         ? formatExact(loss)
         : fromTo(formatExact(base.deepLossPerTick), formatExact(loss)),
-    unit:
-      base.tickSeconds === undefined ? WORDS.deepPoison : WORDS.deepPoisonEvery(formatDuration(base.tickSeconds)),
+    unit: base.tickSeconds === undefined ? WORDS.deepPoison : WORDS.deepPoisonEvery(formatDuration(base.tickSeconds)),
     icon: "depth-1",
   };
 };
@@ -130,10 +128,7 @@ const OATH_BADGES: Record<number, (base: PickEffectBase) => OathStatBadge> = {
     icon: "defend",
   }),
   [oaths.REFLECTION]: () => ({
-    hero: fromTo(
-      formatPercent(rules.WELL_REFILL_PERCENT / 100),
-      formatPercent(oaths.REFLECTION_WELL_PERCENT / 100),
-    ),
+    hero: fromTo(formatPercent(rules.WELL_REFILL_PERCENT / 100), formatPercent(oaths.REFLECTION_WELL_PERCENT / 100)),
     unit: WORDS.wellRefill,
     icon: "well",
   }),

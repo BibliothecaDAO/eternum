@@ -8,7 +8,7 @@ import type { PickEffectBase } from "./pick-effect-format";
 
 const PICK_EFFECT_MODELS = ["SliceRules", "DeepRules", "ExplorerTroops", "ArmyProgress"] as const;
 
-export type ArmyBasis = { category: TroopType; logistics: number; oaths: number };
+type ArmyBasis = { category: TroopType; logistics: number; oaths: number };
 
 const RULES_ARMY: ArmyBasis = { category: TroopType.Knight, logistics: 0, oaths: 0 };
 
@@ -36,7 +36,7 @@ export function readPickEffectBase(
   };
 }
 
-export function readArmyBasis(
+function readArmyBasis(
   store: Pick<NativeFactStore, "get">,
   gameId: number,
   explorerId: number,

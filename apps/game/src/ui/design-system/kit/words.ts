@@ -346,7 +346,6 @@ import {
   formatShort,
   FRIEND_FRAGMENTS,
   FRIEND_GLORY,
-  FRONTIER_TROOP_NAMES,
   formatClockTime,
   formatDuration,
   getRelicInfo,
@@ -357,7 +356,6 @@ import {
   formatHeldAgainst,
   layerName,
   tierNumeral as rankNumeral,
-  TroopType,
   asRanked,
   type RankedWords,
 } from "@bibliothecadao/types";

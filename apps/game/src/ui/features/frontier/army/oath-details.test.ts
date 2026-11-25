@@ -64,7 +64,9 @@ describe("an Oath's card", () => {
   });
 
   it("reads this army's own figures: a Scout's reveal, the Knight's maximum, the cost Anger leaves Fury", () => {
-    expect(card(oaths.FOX, TroopType.Knight).hero).toBe(`${reveal} → ${Math.floor((reveal * (100 - oaths.FOX_REVEAL_DISCOUNT_PERCENT)) / 100)}`);
+    expect(card(oaths.FOX, TroopType.Knight).hero).toBe(
+      `${reveal} → ${Math.floor((reveal * (100 - oaths.FOX_REVEAL_DISCOUNT_PERCENT)) / 100)}`,
+    );
     expect(card(oaths.FOX, TroopType.Paladin).hero).toBe(
       `${rules.SCOUT_EXPLORE_STAMINA} → ${Math.floor((rules.SCOUT_EXPLORE_STAMINA * (100 - oaths.FOX_REVEAL_DISCOUNT_PERCENT)) / 100)}`,
     );
