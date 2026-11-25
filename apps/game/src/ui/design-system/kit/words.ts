@@ -641,6 +641,17 @@ export const SETTINGS_WORDS = {
   app: "App",
   shortcuts: "Keyboard shortcuts",
   show: "Show",
+  more: "More",
+  master: "Master",
+  effects: "Effects",
+  mute: "Mute",
+  quality: "Quality",
+  frameRate: "FPS",
+  shadows: "Shadows",
+  reducedMotion: "Reduced motion",
+  haptics: "Haptics",
+  appliesAfterReload: "Applies after a reload",
+  reload: "Reload",
 } as const;
 export const EXIT = "Exit";
 export const SIGN_IN = "Sign in";

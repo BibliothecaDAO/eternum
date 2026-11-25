@@ -1,5 +1,5 @@
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
-import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { HudChoice } from "@/ui/design-system/kit/hud-elements";
 import { EVENTS_WORDS } from "@/ui/design-system/kit/words";
 import type { EventsFilter, FeedLens } from "./event-stories";
 
@@ -21,20 +21,12 @@ export const LensSwitch = <Lens extends string>({
   onLens: (lens: Lens) => void;
   words: LensWords<Lens>;
 }) => (
-  <span role="group" aria-label={EVENTS_WORDS.lens} className="inline-flex items-center gap-1">
-    {(Object.keys(words.names) as Lens[]).map((id) => (
-      <HudButton
-        key={id}
-        kind="quiet"
-        size="sm"
-        aria-pressed={lens === id}
-        data-tip={words.tips[id]}
-        onClick={() => onLens(id)}
-      >
-        {words.names[id]}
-      </HudButton>
-    ))}
-  </span>
+  <HudChoice
+    label={EVENTS_WORDS.lens}
+    value={lens}
+    options={(Object.keys(words.names) as Lens[]).map((id) => ({ value: id, label: words.names[id], tip: words.tips[id] }))}
+    onChange={onLens}
+  />
 );
 
 /** Frontier's Feed: All, its default, first; then Important; then Mine. */

@@ -2,8 +2,11 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { pageNavigation } from "@/utils/page-navigation";
-import { VideoSettings } from "./video-settings";
+vi.mock("@/audio", () => ({ useAudio: () => ({ setMuted: vi.fn(), audioState: { muted: false } }) }));
+vi.mock("@/ui/layouts/hud-for", () => ({ hudFor: () => "frontier" }));
+
+const { pageNavigation } = await import("@/utils/page-navigation");
+const { PlaySettings } = await import("./play-settings");
 
 let host: HTMLDivElement;
 let root: Root;
@@ -11,7 +14,7 @@ const page = window.location.href;
 
 const render = async () => {
   root = createRoot(host);
-  await act(async () => root.render(<VideoSettings />));
+  await act(async () => root.render(<PlaySettings />));
 };
 
 /** The device the page runs on: touch-first or not, and whether its browser can vibrate. */
@@ -35,16 +38,19 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-const names = () => [...host.querySelectorAll(".ui-setting__name")].map((name) => name.textContent);
-const reloadRow = () => names().includes("Applies after a reload");
+const names = () => [
+  ...[...host.querySelectorAll('[role="group"]')].map((group) => group.getAttribute("aria-label")),
+  ...[...host.querySelectorAll('[role="switch"]')].map((toggle) => toggle.getAttribute("aria-label")),
+];
+const reloadRow = () =>
+  [...host.querySelectorAll(".ui-setting__name")].some((name) => name.textContent === "Applies after a reload");
 const toggle = (label: string) =>
   act(async () => host.querySelector<HTMLButtonElement>(`[role="switch"][aria-label="${label}"]`)!.click());
 const choose = async (label: string, word: string) => {
-  await act(async () => host.querySelector<HTMLButtonElement>(`.ui-select[aria-label="${label}"]`)!.click());
-  const item = [...document.querySelectorAll<HTMLButtonElement>(".ui-select__layer .ui-menu__item")].find(
-    (option) => option.textContent === word,
+  const option = [...host.querySelectorAll<HTMLButtonElement>(`[role="group"][aria-label="${label}"] button`)].find(
+    (button) => button.textContent === word,
   );
-  await act(async () => item!.click());
+  await act(async () => option!.click());
 };
 const remount = async () => {
   await act(async () => root.unmount());
@@ -52,14 +58,14 @@ const remount = async () => {
 };
 
 it("draws on a desktop no Renderer row and no Haptics, as nothing there vibrates", () => {
-  expect(names()).toEqual(["Quality", "Frame rate", "Shadows", "Reduced motion"]);
+  expect(names()).toEqual(["Quality", "FPS", "Mute", "Shadows", "Reduced motion", "Show everything"]);
   expect(host.querySelector(".ui-setting__about")).toBeNull();
 });
 
 it("offers Haptics on a phone that can vibrate, and saves its choice; an iPhone, with no vibration, gets no row", async () => {
   device({ touch: true, vibrate: true });
   await remount();
-  expect(names()).toEqual(["Quality", "Frame rate", "Shadows", "Reduced motion", "Haptics"]);
+  expect(names()).toEqual(["Quality", "FPS", "Mute", "Shadows", "Haptics", "Reduced motion", "Show everything"]);
   const haptics = () => host.querySelector('[role="switch"][aria-label="Haptics"]')!.getAttribute("aria-checked");
   const before = haptics();
   await toggle("Haptics");
@@ -83,16 +89,16 @@ it("saves Shadows at once without leaving the page, says it applies after a relo
 });
 
 it("says a Quality or Frame rate choice applies after a reload", async () => {
-  await choose("Quality", "Balanced");
+  await choose("Quality", "Mid");
   expect(JSON.parse(localStorage.getItem("eternum-graphics")!).quality).toBe("balanced");
   expect(reloadRow()).toBe(true);
   await choose("Quality", "High");
   expect(reloadRow()).toBe(false);
 
-  await choose("Frame rate", "60 FPS");
+  await choose("FPS", "60");
   expect(localStorage.getItem("RENDER_MODE")).toBe("capped");
   expect(reloadRow()).toBe(true);
-  await choose("Frame rate", "Uncapped");
+  await choose("FPS", "Max");
   expect(reloadRow()).toBe(false);
 });
 

@@ -2062,6 +2062,34 @@ export const HudCheck = ({
   </button>
 );
 
+/** One of a few choices, each a quiet button, the chosen one pressed. */
+export const HudChoice = <K extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: K;
+  options: readonly { value: K; label: string; tip?: string }[];
+  onChange: (value: K) => void;
+}) => (
+  <span role="group" aria-label={label} className="inline-flex items-center gap-1">
+    {options.map((option) => (
+      <HudButton
+        key={option.value}
+        kind="quiet"
+        size="sm"
+        aria-pressed={value === option.value}
+        data-tip={option.tip}
+        onClick={() => onChange(option.value)}
+      >
+        {option.label}
+      </HudButton>
+    ))}
+  </span>
+);
+
 /** A setting: what it sets, its control at the end. */
 export const HudSetting = ({ name, children }: { name: string; children: ReactNode }) => (
   <div className="ui-setting">

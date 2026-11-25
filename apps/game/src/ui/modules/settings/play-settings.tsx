@@ -1,5 +1,4 @@
 import { pageNavigation } from "@/utils/page-navigation";
-import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import {
   readGraphicsPreferences,
   writeGraphicsPreferences,
@@ -13,25 +12,23 @@ import {
   type RenderMode,
   writeRenderMode,
 } from "@/three/render-profile";
-import { HudButton, HudSelect, HudSetting, HudSwitch } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChoice, HudSetting, HudSwitch } from "@/ui/design-system/kit/hud-elements";
+import { useAudio } from "@/audio";
+import { getGameModeId } from "@/config/game-modes";
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
+import { hudFor } from "@/ui/layouts/hud-for";
 import { canPlayHaptics } from "@/ui/motion/motion-settings";
-import { useState } from "react";
+import { OPENING_WORDS, SETTINGS_WORDS } from "@/ui/design-system/kit/words";
+import { type ReactNode, useState } from "react";
 
 const QUALITY_OPTIONS = [
-  { value: "balanced", label: "Balanced" },
+  { value: "balanced", label: "Mid" },
   { value: "high", label: "High" },
 ] as const;
 
-/**
- * Video & Graphics' rows. Quality, Frame rate and Shadows are saved at once, but the game reads them when it loads: while
- * one differs from what this page loaded with, one row says so and reloads on asking. The renderer is the build's
- * (WebGPU, falling back to WebGL2 by itself), or the address's `rendererMode`. Haptics shows only where the device
- * plays them (an Android phone, the iOS app).
- */
-export function VideoSettings() {
+const useGraphicsSettings = () => {
   const [preferences, setPreferences] = useState(() => readGraphicsPreferences(localStorage));
   const [renderMode, setRenderMode] = useState(() => readRenderMode(localStorage));
-  const { reducedMotion, setReducedMotion, haptics, setHaptics } = useWorldAppearanceStore();
   const changeGraphics = (change: Partial<GraphicsPreferences>) => {
     const next = { ...preferences, ...change };
     writeGraphicsPreferences(localStorage, next);
@@ -42,42 +39,78 @@ export function VideoSettings() {
     setRenderMode(mode);
   };
   const waiting = JSON.stringify(createRenderProfile(renderMode, preferences)) !== JSON.stringify(renderProfile);
+  return { preferences, renderMode, changeGraphics, changeRenderMode, waiting };
+};
+
+type GraphicsSettings = ReturnType<typeof useGraphicsSettings>;
+
+const GraphicsChoices = ({ graphics }: { graphics: GraphicsSettings }) => (
+  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+    <Choice label={SETTINGS_WORDS.quality}>
+      <HudChoice
+        label={SETTINGS_WORDS.quality}
+        value={graphics.preferences.quality}
+        options={QUALITY_OPTIONS}
+        onChange={(quality) => graphics.changeGraphics({ quality })}
+      />
+    </Choice>
+    <Choice label={SETTINGS_WORDS.frameRate}>
+      <HudChoice
+        label={SETTINGS_WORDS.frameRate}
+        value={graphics.renderMode}
+        options={RENDER_MODE_OPTIONS.map((option) => ({ value: option.mode, label: option.label }))}
+        onChange={graphics.changeRenderMode}
+      />
+    </Choice>
+  </div>
+);
+
+const Choice = ({ label, children }: { label: string; children: ReactNode }) => (
+  <span className="flex items-center gap-2">
+    <span className="text-hud-label uppercase tracking-wide text-hud-muted">{label}</span>
+    {children}
+  </span>
+);
+
+const ReloadToApply = ({ graphics }: { graphics: GraphicsSettings }) =>
+  graphics.waiting ? (
+    <HudSetting name={SETTINGS_WORDS.appliesAfterReload}>
+      <HudButton kind="secondary" size="sm" onClick={() => pageNavigation.reload()}>
+        {SETTINGS_WORDS.reload}
+      </HudButton>
+    </HudSetting>
+  ) : null;
+
+export function PlaySettings() {
+  const graphics = useGraphicsSettings();
+  const { setMuted, audioState } = useAudio();
+  const { reducedMotion, setReducedMotion, haptics, setHaptics, showEverything, setShowEverything } =
+    useWorldAppearanceStore();
+  const switches = [
+    { name: SETTINGS_WORDS.mute, on: audioState?.muted ?? false, onChange: setMuted },
+    {
+      name: SETTINGS_WORDS.shadows,
+      on: graphics.preferences.shadows,
+      onChange: (shadows: boolean) => graphics.changeGraphics({ shadows }),
+    },
+    ...(canPlayHaptics() ? [{ name: SETTINGS_WORDS.haptics, on: haptics, onChange: setHaptics }] : []),
+    { name: SETTINGS_WORDS.reducedMotion, on: reducedMotion, onChange: setReducedMotion },
+    ...(hudFor(getGameModeId(), true) === "frontier"
+      ? [{ name: OPENING_WORDS.showEverything, on: showEverything, onChange: setShowEverything }]
+      : []),
+  ];
   return (
     <>
-      <HudSetting name="Quality">
-        <HudSelect
-          label="Quality"
-          value={preferences.quality}
-          options={QUALITY_OPTIONS}
-          onChange={(quality) => changeGraphics({ quality })}
-        />
-      </HudSetting>
-      <HudSetting name="Frame rate">
-        <HudSelect
-          label="Frame rate"
-          value={renderMode}
-          options={RENDER_MODE_OPTIONS.map((option) => ({ value: option.mode, label: option.label }))}
-          onChange={changeRenderMode}
-        />
-      </HudSetting>
-      <HudSetting name="Shadows">
-        <HudSwitch on={preferences.shadows} label="Shadows" onChange={(shadows) => changeGraphics({ shadows })} />
-      </HudSetting>
-      {waiting && (
-        <HudSetting name="Applies after a reload">
-          <HudButton kind="secondary" size="sm" onClick={() => pageNavigation.reload()}>
-            Reload
-          </HudButton>
-        </HudSetting>
-      )}
-      <HudSetting name="Reduced motion">
-        <HudSwitch on={reducedMotion} label="Reduced motion" onChange={setReducedMotion} />
-      </HudSetting>
-      {canPlayHaptics() && (
-        <HudSetting name="Haptics">
-          <HudSwitch on={haptics} label="Haptics" onChange={setHaptics} />
-        </HudSetting>
-      )}
+      <GraphicsChoices graphics={graphics} />
+      <div className="grid grid-cols-2 gap-2">
+        {switches.map((setting) => (
+          <div key={setting.name} className="flex items-center justify-between gap-2 rounded-lg bg-hud-well px-3 py-2">
+            <span className="min-w-0 text-hud-body leading-tight text-hud-ink">{setting.name}</span>
+            <HudSwitch on={setting.on} label={setting.name} onChange={setting.onChange} />
+          </div>
+        ))}
+      </div>
+      <ReloadToApply graphics={graphics} />
     </>
   );
 }
