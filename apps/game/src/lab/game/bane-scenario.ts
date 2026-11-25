@@ -12,6 +12,8 @@ import { withoutArmies } from "./day-turn-scenario";
 import { labQuestRulesFact, questScenario } from "./quest-scenario";
 import { revealedTile } from "./spire-scenario";
 import { withRealmEconomy } from "./day-end-scenario";
+import { homeCampBesideArmy } from "./site-effects-scenario";
+import { staminaScenario } from "./stamina-scenario";
 
 type BaneCase = "world" | "again" | "late" | "team";
 
@@ -132,6 +134,12 @@ export function baneEconomyScenario(): LabScenario {
   const scenario = baneScenario("world");
   withRealmEconomy(scenario.store);
   return scenario;
+}
+
+export function bloodMoonScenario(): LabScenario {
+  const scenario = staminaScenario(false);
+  scenario.store.applyFacts(homeCampBesideArmy(scenario.store) as never);
+  return withWorldBane(scenario, nativeBaneConstants.BLOOD_MOON);
 }
 
 export function withWorldBane(scenario: LabScenario, kind: number): LabScenario {

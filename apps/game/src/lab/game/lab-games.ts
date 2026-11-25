@@ -5,7 +5,7 @@ import { battleTargetScenario, deepBattleTargetScenario } from "./battle-target-
 import { townScenario } from "./town-scenario";
 import { scoutsScenario } from "./scouts-scenario";
 import { siteEffectsScenario } from "./site-effects-scenario";
-import { baneEconomyScenario, baneScenario, withWorldBane } from "./bane-scenario";
+import { baneEconomyScenario, baneScenario, bloodMoonScenario, withWorldBane } from "./bane-scenario";
 import { staminaScenario } from "./stamina-scenario";
 import { questScenario } from "./quest-scenario";
 import { aspectSettleInvitedScenario, aspectSettleScenario } from "./aspect-settle-scenario";
@@ -93,7 +93,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "bane-again": () => baneScenario("again"),
   "bane-late": () => baneScenario("late"),
   "bane-team": () => baneScenario("team"),
-  "bane-blood-moon": () => withWorldBane(siteEffectsScenario(), nativeBaneConstants.BLOOD_MOON),
+  "bane-blood-moon": bloodMoonScenario,
   "bane-mist-tide": () => withWorldBane(staminaScenario(false), nativeBaneConstants.MIST_TIDE),
   upkeep: upkeepScenario,
   "stamina-mist": () => staminaScenario(false),

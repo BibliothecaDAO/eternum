@@ -6,15 +6,30 @@ import { siteAt } from "./after-battle-scenario";
 import { raceRules } from "./race-scenario";
 import { besideOnOpenLand, spireScenario } from "./spire-scenario";
 import { wire, type LabFact, type LabScenario } from "./lab-chain";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 /** A camp on the recorded Pale Moon and Spoils day, read through the production card and map plates. */
 export function siteEffectsScenario(): LabScenario {
   const scenario = spireScenario();
   const { store } = scenario;
+  store.applyFacts([
+    ...homeCampBesideArmy(store),
+    { model: "RaceRules", key: "0xc100", value: wire(raceRules()) },
+    { model: "HomeAspect", key: "0xc101", value: { game_id: 1, home: "7", aspect: 1 } },
+    ...[nativeRaceConstants.PALE_MOON_STAGE, nativeRaceConstants.SPOILS_STAGE].map((stage) => ({
+      model: "TriumphDay",
+      key: `0xc10${stage}`,
+      value: { game_id: 1, aspect: 1, stage, day: 0 },
+    })),
+  ] as never);
+  return scenario;
+}
+
+export const homeCampBesideArmy = (store: NativeFactStore): LabFact[] => {
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: SPIRE_ARMY });
   const tile = besideOnOpenLand(store, store.entityOccupancy(1, SPIRE_ARMY)!);
   const entityId = (7n << 32n) + BigInt(SITE);
-  const facts = siteAt(store, tile, { ...army.troops, count: 1_000_000_000_000n }, StructureType.Camp).map(
+  return siteAt(store, tile, { ...army.troops, count: 1_000_000_000_000n }, StructureType.Camp).map(
     (fact): LabFact => {
       const value = fact.value as Record<string, unknown>;
       return {
@@ -27,15 +42,4 @@ export function siteEffectsScenario(): LabScenario {
       };
     },
   );
-  store.applyFacts([
-    ...facts,
-    { model: "RaceRules", key: "0xc100", value: wire(raceRules()) },
-    { model: "HomeAspect", key: "0xc101", value: { game_id: 1, home: "7", aspect: 1 } },
-    ...[nativeRaceConstants.PALE_MOON_STAGE, nativeRaceConstants.SPOILS_STAGE].map((stage) => ({
-      model: "TriumphDay",
-      key: `0xc10${stage}`,
-      value: { game_id: 1, aspect: 1, stage, day: 0 },
-    })),
-  ] as never);
-  return scenario;
-}
+};
