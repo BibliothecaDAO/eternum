@@ -29,7 +29,8 @@ export function NewsHeadlineBanner({ headline }: { headline: Headline | null }) 
   return (
     <div
       ref={band}
-      className="pointer-events-none fixed inset-x-0 top-hud-phone-header z-hud-rail flex flex-col items-center gap-2 px-4 lg:top-hud-header">
+      className="pointer-events-none fixed inset-x-0 top-hud-phone-header z-hud-rail flex flex-col items-center gap-2 px-4 lg:top-hud-header"
+    >
       <OfflineNotice />
       <AnimatePresence mode="wait">
         {headline && theme && (
