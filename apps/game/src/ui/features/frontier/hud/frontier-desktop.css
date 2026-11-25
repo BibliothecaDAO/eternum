@@ -661,13 +661,13 @@ button.frontier-stock__face:hover {
 }
 @media (pointer: coarse) {
   [data-right-page] [data-feed-list] {
-    --feed-row: calc(var(--hud-control) + 1px);
+    --feed-row: var(--hud-control);
     --feed-rows: 12;
   }
 }
 [data-right-page] [data-feed-list] [data-feed-line] {
-  height: calc(var(--feed-row) - 1px);
-  min-height: calc(var(--feed-row) - 1px);
+  height: var(--feed-row);
+  min-height: var(--feed-row);
   scroll-snap-align: start;
 }
 
