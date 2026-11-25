@@ -1311,11 +1311,9 @@ const LabDock = ({ lab }: { lab: LabState }) => {
         {lab.armies.map((army, index) => (
           <ArmyCard
             key={index}
-            label={`Army ${index + 1}`}
-            title={FRONTIER_STORES.troops.word}
+            label={armyName(TroopType.Knight, army.troops ?? 0)}
             number={index + 1}
             art={armyArt(army)}
-            troops={army.troops}
             stamina={stamina(army)}
             ethereal={army.ethereal}
             selected={lab.selected === index}

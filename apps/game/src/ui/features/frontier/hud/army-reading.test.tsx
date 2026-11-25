@@ -52,7 +52,7 @@ it.each([
           label={`Army ${index + 1}`}
           art={undefined}
           stamina={stamina}
-          troops={500}
+          {...(Army === ArmyToken && { troops: 500 })}
           selected={false}
           onPick={() => {}}
         />
