@@ -154,7 +154,10 @@ const frontierRates = (store: NativeFactStore): LabFact[] => [
   },
   ...Object.entries(REALM_RATES).map(([resource, rate]) => ({
     model: "ResourceRule",
-    key: store.wireKeyOf("ResourceRule", store.require("ResourceRule", { game_id: 1, resource_type: Number(resource) }))!,
+    key: store.wireKeyOf(
+      "ResourceRule",
+      store.require("ResourceRule", { game_id: 1, resource_type: Number(resource) }),
+    )!,
     value: {
       ...wire(store.require("ResourceRule", { game_id: 1, resource_type: Number(resource) })),
       realm_rate: scaled(rate!),
