@@ -7,9 +7,9 @@ const text = (markup: string) => new DOMParser().parseFromString(markup, "text/h
 
 describe("the failure owner", () => {
   it.each([
-    ["directory", "Games did not answer."],
-    ["season", "Season did not answer."],
-    ["results", "Results did not answer."],
+    ["directory", "Could not load games."],
+    ["season", "Could not load Season."],
+    ["results", "Could not load results."],
   ] as const)("names %s in its one line, with Try again on it", (service, line) => {
     const markup = renderToStaticMarkup(
       <ServiceFailure service={service} error={new Error("502 from shard-b")} retry={vi.fn()} />,
@@ -19,6 +19,6 @@ describe("the failure owner", () => {
   });
 
   it("offers no step when there is nothing to try again", () => {
-    expect(text(renderToStaticMarkup(<ServiceFailure service="season" error={null} />))).toBe("Season did not answer.");
+    expect(text(renderToStaticMarkup(<ServiceFailure service="season" error={null} />))).toBe("Could not load Season.");
   });
 });

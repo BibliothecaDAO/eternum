@@ -53,12 +53,12 @@ it("ends a read that never answers in the screen's failure line, and leaves a wr
       </QueryClientProvider>,
     ),
   );
-  expect(container.textContent).not.toContain("Season did not answer.");
+  expect(container.textContent).not.toContain("Could not load Season.");
   await act(async () => vi.advanceTimersByTime(API_READ_TIMEOUT_MS - 1));
-  expect(container.textContent).not.toContain("Season did not answer.");
+  expect(container.textContent).not.toContain("Could not load Season.");
   await act(async () => vi.advanceTimersByTime(1));
   await act(async () => vi.runOnlyPendingTimersAsync());
-  expect(container.textContent).toContain("Season did not answer.");
+  expect(container.textContent).toContain("Could not load Season.");
   await act(async () => root.unmount());
 
   void fetchApi("/api/value/chests/finish?tokenId=41", { method: "POST" });
@@ -91,7 +91,7 @@ it("does not retry a timed-out useSeasonCalendar read under appQueryClient defau
   );
   await act(async () => vi.advanceTimersByTime(API_READ_TIMEOUT_MS));
   await act(async () => vi.runOnlyPendingTimersAsync());
-  expect(container.textContent).toContain("Season did not answer.");
+  expect(container.textContent).toContain("Could not load Season.");
   expect(hangingFetch).toHaveBeenCalledTimes(1);
   await act(async () => root.unmount());
   appQueryClient.clear();

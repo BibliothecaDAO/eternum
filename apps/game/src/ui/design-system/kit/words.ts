@@ -552,9 +552,9 @@ export const REALM_CARD_WORDS = {
   nextRank: "Next rank",
   needs: "Needs",
   stores: "Stores",
-  lordsReading: "reading your wallet…",
-  lordsUnread: "your wallet could not be read",
-  noAnswer: "No answer",
+  lordsReading: "loading wallet…",
+  lordsUnread: "could not load wallet",
+  noAnswer: "Failed",
 } as const;
 export const RESEARCH = "Research";
 export const CHAT = "Chat";
@@ -578,7 +578,7 @@ export const FULL = "Full";
 export const STORAGE = "Storage";
 /** On a payout's Full mark: the storage took what it had room for. */
 /** A clear's payout over the store's room, on its chip: what goes past the limit is lost. */
-export const REST_DID_NOT_FIT = "Full: the rest did not fit";
+export const REST_DID_NOT_FIT = "Storage full: extra lost";
 /** The most troops one army takes, as a castle level sets it (owner, 26 October: "max army size you mean"). */
 export const MAX_ARMY_SIZE = "Max army size";
 /** What a castle level gives, on its card: the one wording for each (owner, 26 October). */
@@ -630,8 +630,8 @@ export const SETTINGS = "Settings";
 /** Settings' row for the keys, and the list it opens in Settings' place. */
 /** The Build order panel: its name, and what it says when no realm has a step it can take now. */
 export const BUILD_ORDER_WORDS = {
-  levelUp: "Level up",
-  title: "Build order",
+  levelUp: "Upgrade",
+  title: "Build plan",
   build: "Build",
   deploy: "Deploy",
   nothingNow: "Nothing to build now",
@@ -645,7 +645,7 @@ export const EVENTS_WORDS = {
   lens: "Show",
   lenses: { important: "Important", all: "All" },
   lensTips: {
-    important: "Your fights and captures, and armies lost",
+    important: "Your battles, captures, and lost armies",
     all: "Everything players do in the world",
   },
   /**
@@ -655,10 +655,10 @@ export const EVENTS_WORDS = {
   feedLenses: { all: "All", important: "Important", mine: "Mine" },
   feedLensTips: {
     all: "Everything players do in the world",
-    important: "Fights, captures and cleared sites, anyone's",
+    important: "All players' battles, captures, and clears",
     mine: "Everything you do",
   },
-  failed: "Event history could not load.",
+  failed: "Could not load events.",
 } as const;
 export const SETTINGS_WORDS = {
   app: "App",
@@ -695,7 +695,7 @@ export const WEIGHT_UNKNOWN = "Weight unknown: cannot be sent";
 /** A player whose name identity could not give: shown as a dash, named so for a screen reader, never the stand-in. */
 export const NAME_UNAVAILABLE = "Name unavailable";
 /** A player whose name identity has not answered yet: an ellipsis, named so for a screen reader, never the stand-in. */
-export const NAME_WAITING = "Name on its way";
+export const NAME_WAITING = "Loading name";
 
 export const needsHave = (need: string, noun: string, have: string) => `Needs ${need} ${noun}, have ${have}`;
 export const needsOverLimit = (need: string, noun: string, limit: string) =>
@@ -1318,7 +1318,7 @@ export const SHARED_LINK_WORDS = {
 /** A season's end, told one of two ways (story): the mist lifted, or it grew too strong. */
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
 
-export const SEASON_ERROR = "Season did not answer.";
+export const SEASON_ERROR = "Could not load Season.";
 /** A day's totals the player's history cannot give: the read keeps only the newest stories, or did not answer. */
 export const DAY_TOTALS_UNKNOWN = "This day's totals are unknown";
 
@@ -1666,16 +1666,15 @@ export const DOORWAY_WORDS = {
   notStarted: "This game has not started yet.",
   backToPlay: "Back to Play",
   ended: "This game has ended.",
-  gameRefused: "This game ran on a different version of the game and cannot be opened here.",
-  gameOnOlderNumbers:
-    "This game still runs on older balance numbers than this version of the game, so it cannot be opened here.",
-  deviceLimit: "Signed in on 8 devices already.",
+  gameRefused: "This game uses another version and cannot open here.",
+  gameOnOlderNumbers: "This game uses older balance rules and cannot open here.",
+  deviceLimit: "Signed in on 8 devices (max).",
   removeDevice: "Remove a device",
   /** A scene that could not be set up, named for what the player does not see; the cause is in the console. */
-  mapNotDrawn: "The map could not be drawn.",
-  realmNotDrawn: "The realm could not be drawn.",
+  mapNotDrawn: "Could not load the map.",
+  realmNotDrawn: "Could not load the Realm.",
   /** The way on when the map cannot be drawn: the realm view opens without it. */
-  openRealm: "Open realm",
+  openRealm: "Open Realm",
 } as const;
 
 export const SEASON_WORDS = {
@@ -1966,7 +1965,7 @@ export const APP_STATE_WORDS = {
   update: "Update",
   updating: "Updating…",
   nothingHere: "Nothing here",
-  nothingHereLine: "This trail leads into the mist. Return to Play to continue.",
+  nothingHereLine: "Page not found. Return to Play to continue.",
   /** The browser's own words, quoted on the install steps. */
   share: "Share",
   addToHomeScreen: "Add to Home Screen",

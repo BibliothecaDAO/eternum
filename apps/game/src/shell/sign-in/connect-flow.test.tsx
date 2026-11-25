@@ -507,7 +507,7 @@ describe("Your wallet", () => {
       await act(async () =>
         [...ui.container.querySelectorAll("button")].find((b) => b.textContent === "Create my wallet")!.click(),
       );
-      expect(ui.container.textContent).toContain("The passkey was not used. Try again.");
+      expect(ui.container.textContent).toContain("Passkey cancelled. Try again.");
       expect(ui.window()?.getAttribute("aria-label")).toBe("Your wallet");
     } finally {
       await ui.unmount();

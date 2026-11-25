@@ -50,7 +50,7 @@ describe("a guarded site's card", () => {
       ),
     );
     expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe("Victory likely");
-    expect(document.querySelector("[data-fight-reward]")?.textContent).toBe("+5KFull: the rest did not fit");
+    expect(document.querySelector("[data-fight-reward]")?.textContent).toBe("+5KStorage full: extra lost");
   });
 
   it("heads the attack with what it earns, and reads each side before and after as numbers alone", () => {
@@ -243,7 +243,7 @@ describe("a guarded site's card", () => {
       ),
     );
     const spoils = document.querySelector("[data-fight-reward]")!;
-    expect(spoils.textContent).toBe("+120Full: the rest did not fit");
+    expect(spoils.textContent).toBe("+120Storage full: extra lost");
     expect(spoils.querySelector('[data-tip*="did not fit"]')).toBeNull();
     act(() =>
       buttons()

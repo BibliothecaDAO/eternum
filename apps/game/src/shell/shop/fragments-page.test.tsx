@@ -285,7 +285,7 @@ it("shows a retryable failure on /shop when the season directory fails instead o
   directoryGames.refetch = refetch;
   vi.spyOn(identityClient, "getSealCode").mockResolvedValue({ held: false });
   const page = await mount("/shop");
-  expect(page.textContent).toContain("Season did not answer.");
+  expect(page.textContent).toContain("Could not load Season.");
   expect(page.textContent).not.toContain("No live Frontier season right now");
   await press(page, "Try again");
   expect(refetch).toHaveBeenCalledOnce();

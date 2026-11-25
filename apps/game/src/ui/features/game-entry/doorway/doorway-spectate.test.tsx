@@ -28,12 +28,12 @@ it("says the map could not be drawn and offers the realm beside Try again, in pl
       ),
     );
   const withRealm = render(true);
-  expect(withRealm).toContain("The map could not be drawn.");
+  expect(withRealm).toContain("Could not load the map.");
   expect(withRealm).toContain("Try again");
-  expect(withRealm).toContain("Open realm");
-  expect(withRealm).not.toContain("did not answer");
+  expect(withRealm).toContain("Open Realm");
+  expect(withRealm).not.toContain("Could not load the world.");
   // With no realm to open there is nothing to offer but the retry.
-  expect(render(false)).not.toContain("Open realm");
+  expect(render(false)).not.toContain("Open Realm");
 });
 
 it("leads a finalized game's boot to its Results, in place of the world not answering", async () => {
@@ -50,7 +50,7 @@ it("leads a finalized game's boot to its Results, in place of the world not answ
       results="/results/0xa-5"
     />
   );
-  expect(text(renderToStaticMarkup(<MemoryRouter>{doorway(false)}</MemoryRouter>))).toContain("did not answer");
+  expect(text(renderToStaticMarkup(<MemoryRouter>{doorway(false)}</MemoryRouter>))).toContain("Could not load");
   await act(async () =>
     root.render(
       <MemoryRouter initialEntries={["/g/0xa/5/map"]}>
@@ -63,7 +63,7 @@ it("leads a finalized game's boot to its Results, in place of the world not answ
   );
   try {
     expect(container.textContent).toContain("This game has ended.");
-    expect(container.textContent).not.toContain("did not answer");
+    expect(container.textContent).not.toContain("Could not load");
     const results = [...container.querySelectorAll("button")].find((button) => button.textContent === "Results");
     await act(async () => results?.click());
     expect(container.querySelector('[data-testid="results"]')?.textContent).toBe("0xa-5");
@@ -86,13 +86,13 @@ it("tells a refused game's boot plainly and offers no retry, where any other fai
       </MemoryRouter>,
     );
   const refused = text(doorway("release"));
-  expect(refused).toContain("This game ran on a different version of the game and cannot be opened here.");
+  expect(refused).toContain("This game uses another version and cannot open here.");
   const older = text(doorway("older-numbers"));
-  expect(older).toContain("This game still runs on older balance numbers than this version of the game");
+  expect(older).toContain("This game uses older balance rules and cannot open here.");
   expect(older).not.toContain("Try again");
-  expect(refused).not.toContain("did not answer");
+  expect(refused).not.toContain("Could not load");
   expect(refused).not.toContain("Try again");
   const failed = text(doorway(undefined));
-  expect(failed).toContain("The world did not answer.");
+  expect(failed).toContain("Could not load the world.");
   expect(failed).toContain("Try again");
 });
