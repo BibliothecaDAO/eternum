@@ -21,6 +21,11 @@ export interface AspectStanding {
   own: boolean;
 }
 
+export interface AspectTriumph {
+  stage: keyof typeof WORDS.triumph;
+  day: number | null;
+}
+
 export interface AspectMember {
   id: string;
   realm: string;
@@ -30,6 +35,7 @@ export interface AspectMember {
 
 export interface OwnAspect {
   aspectId: AspectId;
+  triumphs: readonly AspectTriumph[];
   bar: { charge: number; threshold: number } | null;
   members: readonly AspectMember[];
 }
@@ -62,7 +68,7 @@ export const AspectPageView = ({ race, own, fights, invite, day, goToDeep, onClo
       <Muted>{WORDS.reading}</Muted>
     ) : (
       <div data-aspect-race-page className="aspect-race-page">
-        <Race race={race} />
+        <Race race={race} triumphs={own?.triumphs} />
         {own && <GloryBoard own={own} />}
         <div className="aspect-race-page__board">
           {own ? <YourAspect own={own} invite={invite} /> : <Muted>{WORDS.noAspect}</Muted>}
@@ -74,7 +80,13 @@ export const AspectPageView = ({ race, own, fights, invite, day, goToDeep, onClo
   </HudPage>
 );
 
-const Race = ({ race }: { race: NonNullable<AspectPageProps["race"]> }) => (
+const Race = ({
+  race,
+  triumphs,
+}: {
+  race: NonNullable<AspectPageProps["race"]>;
+  triumphs?: readonly AspectTriumph[];
+}) => (
   <section data-aspect-race className="aspect-race-page__hero">
     {race.result && (
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -82,7 +94,12 @@ const Race = ({ race }: { race: NonNullable<AspectPageProps["race"]> }) => (
       </div>
     )}
     <AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} />
-    <AspectStandings standings={race.standings} finishHeight={race.finishHeight} stages={race.stages} />
+    <AspectStandings
+      standings={race.standings}
+      finishHeight={race.finishHeight}
+      stages={race.stages}
+      ownTriumphs={triumphs}
+    />
   </section>
 );
 

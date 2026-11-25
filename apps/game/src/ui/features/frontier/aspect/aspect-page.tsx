@@ -20,7 +20,7 @@ import { deepLockLine, realmLayers } from "../hud/map-layers";
 import { AspectInvite } from "../invite/aspect-invite";
 import { AspectFeedView } from "./aspect-feed-view";
 import { useAspectFights } from "./use-aspect-fights";
-import { AspectPageView, type AspectPageProps } from "./aspect-page-view";
+import { AspectPageView, type AspectPageProps, type AspectTriumph } from "./aspect-page-view";
 
 export function useAspectBoard() {
   const { setup } = useGame();
@@ -91,6 +91,10 @@ export function aspectPage(
     own: board.own && {
       aspectId: catalogAspectId(board.own.aspect),
       bar: board.own.bar,
+      triumphs: board.own.triumphs.map(({ stage, day }) => ({
+        stage: triumphStage(stage),
+        day: day === null ? null : Number(day) + 1,
+      })),
       members: board.own.members.map((member) => ({
         id: member.home.entity_id.toString(),
         realm: name(member.home),
@@ -105,4 +109,9 @@ function aspectName(id: number): string {
   const aspect = aspects.find((aspect) => aspect.id === id);
   if (!aspect) throw new Error(`Unknown race Aspect ${id}`);
   return aspect.name;
+}
+
+function triumphStage(stage: number): AspectTriumph["stage"] {
+  if (!Object.hasOwn(ASPECT_PAGE_WORDS.triumph, stage)) throw new Error(`Unknown Triumph stage ${stage}`);
+  return stage as AspectTriumph["stage"];
 }

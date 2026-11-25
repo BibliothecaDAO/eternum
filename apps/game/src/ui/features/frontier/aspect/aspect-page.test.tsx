@@ -49,6 +49,12 @@ describe("the race board from native facts", () => {
       [3, false],
       [4, false],
     ]);
+    expect(page.own?.triumphs).toEqual([
+      { stage: 1, day: 2 },
+      { stage: 2, day: 2 },
+      { stage: 3, day: null },
+      { stage: 4, day: null },
+    ]);
     expect(page.own?.members.map(({ glory }) => glory)).toEqual([3750, 1250]);
     expect(page.own?.bar).toEqual({ charge: 300, threshold: 1500 });
   });

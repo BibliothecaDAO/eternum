@@ -4,6 +4,7 @@ import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { HudMeter } from "@/ui/design-system/kit/hud-elements";
 import { ASPECT_PAGE_WORDS as WORDS } from "@/ui/design-system/kit/words";
 import { aspectName, formatExact, type AspectId } from "@bibliothecadao/types";
+import type { AspectTriumph } from "./aspect-page-view";
 
 interface AspectStandingItem {
   aspectId: AspectId;
@@ -13,6 +14,11 @@ interface AspectStandingItem {
   finished?: boolean;
 }
 
+const triumphsLine = (triumphs: readonly AspectTriumph[]): string =>
+  `${WORDS.triumphs}: ${triumphs
+    .map(({ stage, day }) => `${WORDS.triumph[stage]} ${day === null ? WORDS.triumphAt(stage) : WORDS.triumphOn(day)}`)
+    .join(", ")}`;
+
 const raceProgress = (height: number, finishHeight: number): number =>
   finishHeight > 0 ? Math.max(0, Math.min(1, height / finishHeight)) : 0;
 
@@ -20,14 +26,22 @@ export const AspectStandings = ({
   standings,
   finishHeight,
   stages,
+  ownTriumphs,
 }: {
   standings: readonly AspectStandingItem[];
   finishHeight: number;
   stages?: number;
+  ownTriumphs?: readonly AspectTriumph[];
 }) => (
   <div className={stages !== undefined ? "grid grid-cols-2 gap-2 sm:grid-cols-4 lg:gap-3" : "flex flex-col gap-2"}>
     {standings.map((standing) => (
-      <AspectStandingRow key={standing.aspectId} standing={standing} finishHeight={finishHeight} stages={stages} />
+      <AspectStandingRow
+        key={standing.aspectId}
+        standing={standing}
+        finishHeight={finishHeight}
+        stages={stages}
+        triumphs={standing.own ? ownTriumphs : undefined}
+      />
     ))}
   </div>
 );
@@ -36,10 +50,12 @@ const AspectStandingRow = ({
   standing,
   finishHeight,
   stages,
+  triumphs,
 }: {
   standing: AspectStandingItem;
   finishHeight: number;
   stages?: number;
+  triumphs?: readonly AspectTriumph[];
 }) => {
   const name = aspectName(standing.aspectId);
   const heightText = WORDS.height(standing.height, finishHeight);
@@ -68,7 +84,7 @@ const AspectStandingRow = ({
           <StageSegments
             stages={stages}
             built={standing.finished ? stages : Math.max(0, (standing.stage ?? 1) - 1)}
-            label={`${stageText} · ${heightText}`}
+            label={[stageText, heightText, triumphs && triumphsLine(triumphs)].filter(Boolean).join(" · ")}
           />
         ) : (
           <HudMeter label={name} share={raceProgress(standing.height, finishHeight)} />
