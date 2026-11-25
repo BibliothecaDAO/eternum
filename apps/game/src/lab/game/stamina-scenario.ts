@@ -4,16 +4,18 @@ import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { chainOf, wire, type LabFact, type LabScenario } from "./lab-chain";
 import { upkeepScenario } from "./upkeep-scenario";
 import { raceRules } from "./race-scenario";
+import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
 
-/** Day two's spent army under Mist Tide, with or without the Aspect's recorded Second Wind. */
+const BANE_DAY = frontierSeasonOnePreset.banes.quietDays;
+
 export function staminaScenario(wind: boolean): LabScenario {
   const scenario = upkeepScenario();
   const store = chainOf(scenario);
   const calendar = readExpeditionRules(store, 1)!;
-  const day = dayAtIndex(calendar, 1);
+  const day = dayAtIndex(calendar, BANE_DAY);
   const elapsed = day.start - calendar.startMainAt;
   const startsAt = scenario.startsAt + elapsed;
-  const rowOffset = 4 * calendar.spacing;
+  const rowOffset = BANE_DAY * 4 * calendar.spacing;
   const facts: LabFact[] = [];
   const relocated: LabFact[] = [];
   for (const model of ["TileOpt", "TileOccupancy"] as const) {
@@ -25,7 +27,7 @@ export function staminaScenario(wind: boolean): LabScenario {
     }
   }
   for (const [key, row] of store.entries("ArmyDay"))
-    facts.push({ model: "ArmyDay", key, value: wire({ ...row, day: 1 }) });
+    facts.push({ model: "ArmyDay", key, value: wire({ ...row, day: BANE_DAY }) });
   for (const [key, row] of store.entries("ArmySlot")) {
     relocated.push({ model: "ArmySlot", key, value: null });
     facts.push({
@@ -33,7 +35,7 @@ export function staminaScenario(wind: boolean): LabScenario {
       key,
       value: wire({
         ...row,
-        epoch: 1,
+        epoch: BANE_DAY,
         stamina: { ...row.stamina, settled_at: startsAt - 60 },
       }),
     });
@@ -55,13 +57,13 @@ export function staminaScenario(wind: boolean): LabScenario {
       key: store.wireKeyOf("HomeAspect", { game_id: 1, home: army.owner }) ?? "0xd01",
       value: wire({ game_id: 1, home: army.owner, aspect: 1 }),
     },
-    { model: "AspectActivity", key: "0xd02", value: { game_id: 1, aspect: 1, day: 0, active: 4 } },
+    { model: "AspectActivity", key: "0xd02", value: { game_id: 1, aspect: 1, day: BANE_DAY - 1, active: 4 } },
     {
       model: "BaneRules",
       key: "0xd03",
       value: {
         game_id: 1,
-        chance_step: 20,
+        chance_step: frontierSeasonOnePreset.banes.chanceStep,
         quorum_percent: 25,
         beast_percent: 150,
         stamina_percent: 50,
@@ -69,7 +71,7 @@ export function staminaScenario(wind: boolean): LabScenario {
         quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10000, 15000],
       },
     },
-    { model: "WorldBane", key: "0xd04", value: { game_id: 1, day: 1, kind: nativeBaneConstants.MIST_TIDE } },
+    { model: "WorldBane", key: "0xd04", value: { game_id: 1, day: BANE_DAY, kind: nativeBaneConstants.MIST_TIDE } },
     { model: "RaceRules", key: "0xd05", value: wire(raceRules()) },
   );
   if (wind)
@@ -80,7 +82,7 @@ export function staminaScenario(wind: boolean): LabScenario {
         game_id: 1,
         aspect: 1,
         stage: nativeRaceConstants.SECOND_WIND_STAGE,
-        day: 1,
+        day: BANE_DAY,
       },
     });
   store.applyFacts(relocated as never);
