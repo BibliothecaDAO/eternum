@@ -3,6 +3,7 @@ import { useDocumentClass } from "@/hooks/use-document-class";
 import { CompactHud } from "@/ui/features/world/containers/compact-hud";
 import { TopHeader } from "@/ui/features/world/containers/top-header/top-header";
 import { DesktopHud } from "@/ui/features/world/hud/desktop-hud";
+import { OfflineNotice } from "@/ui/features/frontier/hud/offline-notice";
 
 /**
  * The Blitz and Eternum HUD: the top bar, then the desktop's columns, or below `lg` the compact HUD laid out for the
@@ -14,6 +15,9 @@ export const ArenaHud = () => {
   return (
     <>
       <TopHeader />
+      <div className="pointer-events-none fixed inset-x-0 top-hud-header z-hud-column flex justify-center px-2 empty:hidden">
+        <OfflineNotice />
+      </div>
       {lane ? <CompactHud lane={lane} /> : <DesktopHud />}
     </>
   );

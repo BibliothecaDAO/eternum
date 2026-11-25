@@ -74,7 +74,11 @@ describe("createGameSyncObserver", () => {
       observer.onConnection?.(false);
       observer.onConnection?.(false);
       observer.onConnection?.(false);
-      expect(useConnectionStore.getState()).toMatchObject({ status: "degraded", failedAttempts: 3, reconnects: 0 });
+      expect(useConnectionStore.getState()).toMatchObject({
+        globalStatus: "reconnecting",
+        failedAttempts: 3,
+        reconnects: 0,
+      });
 
       vi.advanceTimersByTime(4_000);
       observer.onConnection?.(true);
