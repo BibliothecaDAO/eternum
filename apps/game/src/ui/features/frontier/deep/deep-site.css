@@ -91,9 +91,6 @@
   color: var(--hud-good);
   font-variant-numeric: tabular-nums;
 }
-.deep-rate__value b[data-tone="bad"] {
-  color: var(--hud-bad);
-}
 .deep-rate__value i {
   font-style: normal;
   font-size: var(--hud-text-label);
@@ -171,10 +168,6 @@
   font-size: var(--hud-text-body);
   font-weight: var(--hud-weight-title);
   font-variant-numeric: tabular-nums;
-}
-.deep-beast__drain {
-  font-size: var(--hud-text-badge);
-  color: var(--hud-muted);
 }
 .deep-opening {
   display: flex;

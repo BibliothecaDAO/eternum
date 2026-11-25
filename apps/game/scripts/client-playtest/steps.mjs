@@ -6016,15 +6016,9 @@ export const REHEARSAL_WORDS = {
     victory: "Victory likely",
   },
   take: "Take",
-  beast: (name, troops) => `Today's beast: ${name}, ${troops} troops`,
   open: "No guard: the next army takes it",
   lasts: (ticks, time) => `${ticks} ticks left (${time})`,
   share: (percent) => `${percent}% of each tick`,
-  glory: (amount) => `${amount} Glory`,
-  height: (amount) => `+${amount} height to your Aspect's hyperstructure`,
-  essence: (amount) => `${amount} Essence`,
-  labor: (amount) => `${amount} labor`,
-  bar: (perTick, charge, threshold) => `+${perTick} on the bane bar: ${charge} of ${threshold}`,
   standingHeight: (height, finish) => `${height} of ${finish}`,
   baneCharge: (charge, threshold) => `${charge} of ${threshold}`,
   gloryChip: "Glory",
@@ -6046,13 +6040,6 @@ const numberIn = (text, pattern) => {
   const match = pattern.exec(text ?? "");
   return match ? Number(match[1].replace(/,/g, "")) : null;
 };
-const PAY_PATTERNS = {
-  glory: wordPattern(REHEARSAL_WORDS.glory, "n"),
-  height: wordPattern(REHEARSAL_WORDS.height, "n"),
-  essence: wordPattern(REHEARSAL_WORDS.essence, "n"),
-  labor: wordPattern(REHEARSAL_WORDS.labor, "n"),
-  bar: wordPattern(REHEARSAL_WORDS.bar, "n", "any", "any"),
-};
 const SLOT_PATTERNS = {
   ticks: wordPattern(REHEARSAL_WORDS.lasts, "n", "any"),
   share: wordPattern(REHEARSAL_WORDS.share, "n"),
@@ -6064,11 +6051,11 @@ const TALLY_PATTERNS = {
   bar: wordPattern(REHEARSAL_WORDS.baneCharge, "n", "any"),
 };
 
-export function readTickPay(chips) {
+export function readTickPay(rates) {
   const pay = {};
-  for (const [part, pattern] of Object.entries(PAY_PATTERNS)) {
-    const chip = chips.find((text) => pattern.test(text));
-    if (chip) pay[part] = numberIn(chip, pattern);
+  for (const { rate, value } of rates) {
+    if (rate === "drain") continue;
+    pay[rate] = Number(value.replace(/[^\d]/g, ""));
   }
   return pay;
 }
@@ -6124,7 +6111,8 @@ const DEEP_SITE_CARD = `JSON.stringify((() => {
     name: sheet?.getAttribute("aria-label") ?? null,
     text: sheet?.textContent ?? "",
     holder: sheet?.querySelector("[data-aspect-holder]")?.dataset.side ?? null,
-    pay: [...(sheet?.querySelectorAll("[data-deep-pay] .ui-chip") ?? [])].map((chip) => chip.textContent.trim()),
+    guard: sheet?.querySelector("[data-deep-guard]")?.dataset.deepGuard ?? null,
+    pay: [...(sheet?.querySelectorAll("[data-deep-pay] [data-rate]") ?? [])].map((rate) => ({ rate: rate.dataset.rate, value: rate.querySelector("b")?.textContent ?? "" })),
     mine: sheet?.querySelector("[data-deep-slots] [data-deep-slot][data-mine]")?.getAttribute("aria-label") ?? null,
     buttons: [...(sheet?.querySelectorAll("button:not([disabled])") ?? [])].map((button) => button.getAttribute("aria-label") || button.textContent.trim()),
   };
@@ -6427,11 +6415,9 @@ async function enterTheDeep({ browser, extraScreenshot }, shared, slot) {
   return { depths: state.depths, army: state.army };
 }
 
-const BEAST_PREFIX = REHEARSAL_WORDS.beast("", "").split(":")[0];
-
 const BEAST_SITE = {
   verb: REHEARSAL_WORDS.attack,
-  matches: (card) => card.text.includes(BEAST_PREFIX),
+  matches: (card) => card.guard === "beast",
   missing: `no ${DEEP_LAYER} site in view holds today's beast`,
 };
 const RIVAL_SITE = {
@@ -6441,7 +6427,7 @@ const RIVAL_SITE = {
 };
 const EMPTY_SITE = {
   verb: REHEARSAL_WORDS.take,
-  matches: (card) => card.text.includes(REHEARSAL_WORDS.open),
+  matches: (card) => card.guard === "open",
   missing: `no ${DEEP_LAYER} site in view stands empty: each holds today's beast or a guard`,
 };
 

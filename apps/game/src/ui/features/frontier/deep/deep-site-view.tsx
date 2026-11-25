@@ -121,7 +121,7 @@ export const DeepSiteView = ({
       title={<DeepTitle site={site} name={name} tag={siteTag(ring, opening, guard)} />}
       onClose={onClose}
     >
-      <div data-deep-site={site} className="deep-site">
+      <div data-deep-site={site} data-deep-guard={guard.kind} className="deep-site">
         {rates ? <RateStrip rates={rates} /> : <LockedKinds site={site} />}
         {fight ? (
           <FightPreview site={site} fight={fight} guard={guard} attackerName={attackerName} />

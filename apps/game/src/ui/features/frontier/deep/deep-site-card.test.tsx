@@ -13,7 +13,7 @@ import { baneScenario } from "@/lab/game/bane-scenario";
 import { configManager, type ResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
-import { nativeRuleConstants, readDeepSites } from "@bibliothecadao/eternum/game-client";
+import { nativeOathConstants as oaths, nativeRuleConstants, readDeepSites } from "@bibliothecadao/eternum/game-client";
 import { DeepSiteCard } from "./deep-site-card";
 import { resolveExplorerCombatTroops, resolveExplorerTroops, staminaAt } from "@bibliothecadao/eternum/troop-stamina";
 import { FrontierArmy } from "../army/frontier-army";
@@ -265,6 +265,35 @@ it("counts only actual army-tick boundaries before a day ending between ticks", 
     );
     expect(tips.join(" ")).toContain("5 ticks left");
     expect(tips.join(" ")).not.toContain("6 ticks left");
+  } finally {
+    hud.unmount();
+  }
+});
+
+it("shows the selected army's own Deep poison, Vitriol included, on a site's drain cell", () => {
+  const hud = draw();
+  try {
+    const mine = () =>
+      readDeepSites(hud.store, hud.scenario.startsAt, 1).find(
+        (site) => site.kind === nativeRuleConstants.DEEP_MINE && site.open,
+      )!;
+    const drain = () => hud.host.querySelector("[data-rate='drain'] b")?.textContent;
+    const base = hud.store.require("DeepRules", { game_id: 1 }).loss_per_tick / BigInt(RESOURCE_PRECISION);
+    hud.render(<DeepSiteCard site={mine()} onClose={() => {}} />);
+    expect(drain()).toBe(`−${base.toLocaleString("en-US")}`);
+    const key = { game_id: 1, explorer_id: 201 };
+    const progress = hud.store.require("ArmyProgress", key);
+    act(() =>
+      hud.store.applyFacts([
+        {
+          model: "ArmyProgress",
+          key: hud.store.wireKeyOf("ArmyProgress", key)!,
+          value: { ...progress, oaths: 1 << (oaths.VITRIOL - 1) },
+        },
+      ]),
+    );
+    hud.render(<DeepSiteCard site={mine()} onClose={() => {}} />);
+    expect(drain()).toBe(`−${oaths.VITRIOL_LOSS_PER_TICK.toLocaleString("en-US")}`);
   } finally {
     hud.unmount();
   }

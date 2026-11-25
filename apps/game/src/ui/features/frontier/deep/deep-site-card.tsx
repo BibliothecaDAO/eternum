@@ -117,7 +117,7 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
     <DeepSiteView
       site={catalog.key}
       ring={site.ring}
-      rates={site.open ? siteRates(setup.store, game_id, site, selected) : null}
+      rates={site.open ? siteRates(setup.store, game_id, site, selected, now) : null}
       opening={site.open ? null : { entered: site.entered, realms: site.opensAt }}
       guard={guardView(setup.store, game_id, site, selected, now)}
       fight={
@@ -135,7 +135,13 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
 
 type Selected = ReturnType<typeof useSelectedOwnArmy>;
 
-function siteRates(store: NativeFactStore, game_id: number, site: Site, selected: Selected): DeepRates | null {
+function siteRates(
+  store: NativeFactStore,
+  game_id: number,
+  site: Site,
+  selected: Selected,
+  now: number,
+): DeepRates | null {
   const deep = store.require("DeepRules", { game_id });
   const race = store.get("RaceRules", { game_id });
   if (!race && !store.absenceKnown("RaceRules", { game_id }).known) return null;
@@ -153,7 +159,7 @@ function siteRates(store: NativeFactStore, game_id: number, site: Site, selected
   }
   return {
     tickSeconds: Number(store.require("SliceRules", { game_id }).tick_config.armies_tick_in_seconds),
-    drain: Number(deep.loss_per_tick) / RESOURCE_PRECISION,
+    drain: Number(selected ? deepArmyLife(store, selected.army, now).lossPerTick : deep.loss_per_tick) / RESOURCE_PRECISION,
     glory: paysResources || !race ? 0 : site.buildingPay,
     height: race && site.kind === nativeRuleConstants.DEEP_FOUNDATION ? site.buildingPay : 0,
     essence: site.kind === nativeRuleConstants.DEEP_CORE ? Number(deep.core_per_tick) / RESOURCE_PRECISION : 0,

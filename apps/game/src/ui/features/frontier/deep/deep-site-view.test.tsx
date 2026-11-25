@@ -46,9 +46,7 @@ describe("a Deep site's card", () => {
     expect(beast.querySelector(".deep-beast__name")?.textContent).toBe(`${DEEP_BEASTS.foundation.name}Blade`);
     expect(beast.querySelector(".deep-beast__portrait [data-combat-mark='Blade']")).not.toBeNull();
     expect(beast.textContent).toContain("15,000 troops");
-    expect(document.querySelector("[data-deep-poison]")?.textContent).toBe(
-      "Deep poison · drains 200 troops every 2m",
-    );
+    expect(document.querySelector("[data-deep-poison]")?.textContent).toBe("Deep poison · drains 200 troops every 2m");
     expect(text()).not.toContain("Today's beast");
     const [attack] = labels(["Attack"]);
     act(() => attack!.click());
@@ -126,9 +124,7 @@ describe("a Deep site's card", () => {
     expect(tips[0]).toContain("Aldor · fought next");
     expect(tips[0]).toContain("60% of each tick");
     expect(tips[1]).toContain("40% of each tick");
-    expect(document.querySelector("[data-deep-poison]")?.textContent).toBe(
-      "Deep poison · drains 200 troops every 2m",
-    );
+    expect(document.querySelector("[data-deep-poison]")?.textContent).toBe("Deep poison · drains 200 troops every 2m");
   });
 
   it("renders facing portraits named by their sides, each before → after, and stamina cost on Attack", () => {
