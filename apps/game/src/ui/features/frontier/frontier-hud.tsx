@@ -283,10 +283,11 @@ const FrontierHudBody = ({
       headerFacts.store.get("RaceRules", { game_id: configManager.getActiveGameId() }) !== undefined);
   const showOpening = !(desktop && widePage);
   const questDock = own && questOpen && <QuestDock realm={own} rules={rules} layout={desktop ? "desktop" : "phone"} />;
-  const openingNotice = showOpening && (questDock || opening.line || opening.offer) && (
+  const footQuest = noticeAtFoot && questDock;
+  const openingNotice = showOpening && (footQuest || opening.line || opening.offer) && (
     <div data-opening-notice className="flex flex-col gap-1.5 empty:hidden">
-      {questDock}
-      {!questDock && opening.line && (
+      {footQuest}
+      {!footQuest && opening.line && (
         <AspectEmissaryDock
           moment={opening.line.moment}
           rules={opening.line.rules}
@@ -313,6 +314,7 @@ const FrontierHudBody = ({
       }}
       placeSwitch={placeSwitch}
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
+      questCard={noticeAtFoot ? undefined : questDock || undefined}
       notice={noticeAtFoot ? undefined : openingNotice}
       spectatorChip={spectating ? <IdentityChip compact /> : undefined}
       realmCard={realmVisible ? realmCard : undefined}

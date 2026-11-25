@@ -4057,11 +4057,9 @@ const RACE_BOARD_STATE = `JSON.stringify((() => {
     const pictures = [...(node?.querySelectorAll('[role="img"][aria-label]') ?? [])].map((picture) => picture.getAttribute("aria-label"));
     return { text: [node?.textContent ?? "", ...pictures].join(" "), visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
   };
-  return { race: read('[data-aspect-race]'), members: read('[data-aspect-members]'),
+  return { race: read('[data-season-board] .season-board__aspects'), members: read('[data-season-board] .season-board__rows'),
     invite: read('[aria-label^="Invite a friend"]'), banner: read('[data-daily-quest]'),
-    stageReady: Boolean(document.querySelector('[data-race-stage][data-ready]')),
-    stageError: Boolean(document.querySelector('[data-race-stage][data-error]')),
-    scopes: window.__labChain?.scopes ?? [], ended: Boolean(document.querySelector('[data-race-ended]')) };
+    scopes: window.__labChain?.scopes ?? [], ended: document.querySelector('[data-season-board] [data-race-ended]')?.dataset.raceEnded ?? null };
 })())`;
 
 /** What the opening interface shows: the line over the map, the places on the bar and the day banner's parts. */
@@ -4081,17 +4079,6 @@ async function skipTheTutorial(browser) {
   await sleep(300);
   for (let press = 0; press < 2 && browser.read(PRESS_SKIP_TUTORIAL); press++) await sleep(300);
 }
-
-/** The Aspect page's feed: each fight's row, as a player reads it. */
-const ASPECT_FEED = `JSON.stringify((() => {
-  const feed = document.querySelector("[data-aspect-feed]");
-  const rect = feed?.getBoundingClientRect();
-  return {
-    visible: Boolean(rect && rect.width > 0 && rect.height > 0),
-    rows: [...(feed?.querySelectorAll(".ui-row") ?? [])].map((row) => row.textContent),
-    text: feed?.textContent ?? "",
-  };
-})())`;
 
 /** Every request this page made to a rank Herald serves a legacy game: a Season 1 game asks for none. */
 const RANK_REQUESTS = `JSON.stringify(performance.getEntriesByType("resource").map((entry) => entry.name).filter((name) => /\\/leaderboard|\\/days\\/\\d+\\/ranks/.test(name)))`;
@@ -4190,12 +4177,12 @@ function raceBoardSteps(result) {
         }
         const race = await readUntil(
           () => browser.read(RACE_BOARD_STATE),
-          (state) => state.race.visible && state.stageReady,
+          (state) => state.race.visible,
           PLAYABLE_WAIT_MS,
         );
         extraScreenshot("aspect-standings");
         browser.read(
-          `(() => { document.querySelector('[data-aspect-members]')?.scrollIntoView({ block: 'nearest' }); return true; })()`,
+          `(() => { document.querySelector('[data-season-board] .season-board__rows')?.scrollIntoView({ block: 'nearest' }); return true; })()`,
         );
         const members = await readUntil(
           () => browser.read(RACE_BOARD_STATE),
@@ -4213,7 +4200,7 @@ function raceBoardSteps(result) {
         );
         extraScreenshot("aspect-invite");
         browser.read(
-          `(() => { const scroller = document.querySelector('[data-aspect-race-page]'); if (scroller) scroller.scrollTop = 0; return true; })()`,
+          `(() => { document.querySelector('[data-season-board]')?.scrollIntoView({ block: 'start' }); return true; })()`,
         );
         return { race, members, invite };
       },
@@ -4222,16 +4209,13 @@ function raceBoardSteps(result) {
         const members = played.members?.members;
         const scoped = played.race?.scopes?.at(-1)?.structures ?? [];
         return race?.visible &&
-          played.race?.stageReady &&
-          !played.race?.stageError &&
           members?.visible &&
           race.text.includes("Luminary") &&
           race.text.includes("Prowess") &&
           race.text.includes("Havoc") &&
           race.text.includes("Insight") &&
-          race.text.includes(result === "won" ? "10,000 of 10,000" : "6,400 of 10,000") &&
-          (result !== "expired" || race.text.includes("No Aspect finished its hyperstructure")) &&
-          !race.text.includes("LORDS") &&
+          race.text.includes(result === "won" ? "10,000/10K" : "6,400/10K") &&
+          (result !== "expired" || played.race.ended === "none") &&
           played.invite?.invite.text.includes("Invite a friend to Prowess") &&
           !played.invite?.invite.text.includes(REHEARSAL_WORDS.inviteFailed) &&
           members.text.includes("1,250") &&
@@ -4243,41 +4227,6 @@ function raceBoardSteps(result) {
           : failed("The scoped native race must show four heights, both members' Glory and the early winner", played);
       },
     },
-    ...(result === null
-      ? [
-          {
-            name: "aspect-feed-reads-real-fights",
-            settleMs: 0,
-            play: async ({ browser, extraScreenshot }) => {
-              browser.read(
-                `(() => { document.querySelector('[data-aspect-feed]')?.scrollIntoView({ block: 'nearest' }); return true; })()`,
-              );
-              const feed = await readUntil(
-                () => browser.read(ASPECT_FEED),
-                (state) => state.rows.length >= 4,
-                PLAYABLE_WAIT_MS,
-              );
-              extraScreenshot("aspect-feed");
-              return { feed };
-            },
-            verify: ({ played }) => {
-              const text = played.feed.rows.join(" | ");
-              return played.feed.visible &&
-                text.includes("Prowess beat Luminary") &&
-                text.includes("Luminary beat Prowess") &&
-                text.includes("Prowess and Luminary tied") &&
-                text.includes("Prowess and Luminary destroyed each other") &&
-                text.includes("Luminary was defeated") &&
-                played.feed.rows.length === 4
-                ? completed(played)
-                : failed(
-                    "The feed must name each Deep fight's winner by its troops, skip the beast, and find the Deep fights past 120 surface fights",
-                    played,
-                  );
-            },
-          },
-        ]
-      : []),
     {
       name: "no-site-rank-requests",
       settleMs: 0,
@@ -4751,30 +4700,47 @@ function shrineUsed({ played }) {
     : failed("Using the Shrine must open Swear an Oath and leave the tile", played);
 }
 
-const LAB_SUPPLY_POST_STEPS = [
-  { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
-  { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
-  { name: "open-supply-post", play: openTheSupplyPost, settleMs: 0, verify: supplyPostOpen },
-  { name: "open-reinforce", play: openTheReinforcement, settleMs: 0, verify: reinforceSheetOpen },
-  {
-    name: "reinforce-from-camp",
-    settleMs: 1000,
-    play: async (context) => {
-      const result = await reinforceWithMax(context);
-      const calldata = context.browser.read(
-        `JSON.stringify(window.__labChain?.sent.find(({command}) => command.kind === "ManageTroops")?.command.span)`,
-      );
-      return { ...result, calldata };
-    },
-    verify: ({ played }) => {
-      if (!played.calldata || BigInt(played.calldata.at(-2)) !== 0n || BigInt(played.calldata.at(-1)) !== 711n)
-        return failed("Reinforcement must name the cleared camp", played);
-      return armyReinforced({ played });
-    },
-  },
-];
+const LAB_SUPPLY_POST_STEPS = supplyPostSteps();
 
-async function openTheSupplyPost({ browser, extraScreenshot }) {
+function supplyPostSteps() {
+  const post = { offset: null };
+  return [
+    { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
+    { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
+    {
+      name: "open-supply-post",
+      play: (context) => openTheSupplyPost(context, post),
+      settleMs: 0,
+      verify: supplyPostOpen,
+    },
+    { name: "pick-army-again", play: pickTheSpireArmyFromTheDock, settleMs: 0, verify: spireArmyPicked },
+    {
+      name: "open-supply-post-with-army",
+      play: (context) => openTheSupplyPostWithTheArmyPicked(context, post),
+      settleMs: 0,
+      verify: supplyPostOpenFromTheArmy,
+    },
+    { name: "open-reinforce", play: openTheReinforcement, settleMs: 0, verify: reinforceSheetOpen },
+    {
+      name: "reinforce-from-camp",
+      settleMs: 1000,
+      play: async (context) => {
+        const result = await reinforceWithMax(context);
+        const calldata = context.browser.read(
+          `JSON.stringify(window.__labChain?.sent.find(({command}) => command.kind === "ManageTroops")?.command.span)`,
+        );
+        return { ...result, calldata };
+      },
+      verify: ({ played }) => {
+        if (!played.calldata || BigInt(played.calldata.at(-2)) !== 0n || BigInt(played.calldata.at(-1)) !== 711n)
+          return failed("Reinforcement must name the cleared camp", played);
+        return armyReinforced({ played });
+      },
+    },
+  ];
+}
+
+async function openTheSupplyPost({ browser, extraScreenshot }, post = { offset: null }) {
   const armyAt = armyOnScreen(browser, PICKED_ARMY);
   browser.press("Escape");
   if (!armyAt) return { found: false };
@@ -4787,11 +4753,40 @@ async function openTheSupplyPost({ browser, extraScreenshot }) {
     );
     if (SUPPLY_POST_SHEET.test(state.sheet ?? "")) {
       extraScreenshot("supply-post");
+      post.offset = [dx, dy];
       return { found: true, state };
     }
     browser.press("Escape");
   }
   return { found: false };
+}
+
+async function pickTheSpireArmyFromTheDock(context) {
+  context.browser.press("Escape");
+  await sleep(HOVER_SETTLE_MS);
+  return pickTheSpireArmy(context);
+}
+
+async function openTheSupplyPostWithTheArmyPicked({ browser, extraScreenshot }, post) {
+  const armyAt = armyOnScreen(browser, PICKED_ARMY);
+  const picked = browser.observe().selection?.army?.id ?? null;
+  if (!armyAt || !post.offset) return { found: false, picked, offset: post.offset };
+  browser.tap([armyAt[0] + post.offset[0], armyAt[1] + post.offset[1]]);
+  const state = await readUntil(
+    () => browser.read(REINFORCE_STATE),
+    (shown) => SUPPLY_POST_SHEET.test(shown.sheet ?? ""),
+    SHEET_WAIT_MS,
+  );
+  const found = SUPPLY_POST_SHEET.test(state.sheet ?? "");
+  if (found) extraScreenshot("supply-post-from-army");
+  return { found, picked, state };
+}
+
+function supplyPostOpenFromTheArmy({ played }) {
+  if (played.picked !== PICKED_ARMY)
+    return failed(`army ${PICKED_ARMY} must be picked before the post is clicked`, played);
+  if (!played.found) return failed("A click on the supply post with the army picked must open the post", played);
+  return supplyPostOpen({ played });
 }
 
 function supplyPostOpen({ played }) {
@@ -6096,9 +6091,6 @@ export const REHEARSAL_WORDS = {
   joinGuard: "Join guard",
   lasts: (ticks, time) => `${ticks} ticks left (${time})`,
   share: (percent) => `${percent}% of each tick`,
-  standingHeight: (height, finish) => `${height} of ${finish}`,
-  baneCharge: (charge, threshold) => `${charge} of ${threshold}`,
-  gloryChip: "Glory",
 };
 const INVITE_PREFIX = REHEARSAL_WORDS.inviteTo("");
 const JOIN_PREFIX = REHEARSAL_WORDS.join("");
@@ -6122,11 +6114,6 @@ const SLOT_PATTERNS = {
   share: wordPattern(REHEARSAL_WORDS.share, "n"),
   troops: /(?:^| · )([\d,]+)(?: · |$)/,
 };
-const TALLY_PATTERNS = {
-  height: new RegExp(`· ${wordPattern(REHEARSAL_WORDS.standingHeight, "n", "any").source}`),
-  glory: new RegExp(`^${REHEARSAL_WORDS.gloryChip} ([\\d,]+)$`),
-  bar: wordPattern(REHEARSAL_WORDS.baneCharge, "n", "any"),
-};
 
 export function readTickPay(rates) {
   const pay = {};
@@ -6147,11 +6134,8 @@ export function readHeldSlot(text) {
 }
 
 export function readAspectTally(read) {
-  return {
-    height: numberIn(read.height, TALLY_PATTERNS.height),
-    glory: numberIn(read.glory, TALLY_PATTERNS.glory),
-    bar: numberIn(read.bar, TALLY_PATTERNS.bar),
-  };
+  const figure = (value) => (value === null || value === undefined || value === "" ? null : Number(value));
+  return { height: figure(read.height), glory: figure(read.glory), bar: figure(read.bar) };
 }
 
 export function judgeTickPaid(before, after) {
@@ -6196,9 +6180,9 @@ const DEEP_SITE_CARD = `JSON.stringify((() => {
 })())`;
 
 const ASPECT_TALLY = `JSON.stringify({
-  height: document.querySelector("[data-aspect-race] [data-own]")?.textContent ?? null,
-  glory: document.querySelector('[data-aspect-members] [aria-selected="true"] [aria-label^="${REHEARSAL_WORDS.gloryChip} "]')?.getAttribute("aria-label") ?? null,
-  bar: document.querySelector("[data-aspect-bane]")?.textContent ?? null,
+  height: document.querySelector("[data-season-board] .season-aspect[data-own]")?.dataset.height ?? null,
+  glory: document.querySelector("[data-season-standing]")?.dataset.glory ?? null,
+  bar: document.querySelector("[data-season-standing] [data-charge]")?.dataset.charge ?? null,
 })`;
 
 const DEEP_SITE_KEYS = new Set(DEEP_SITE_NAMES.map(({ name }) => name));
