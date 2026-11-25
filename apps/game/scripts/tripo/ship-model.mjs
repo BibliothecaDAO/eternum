@@ -120,7 +120,7 @@ export function readHexFit(fitPath) {
   return { scale, offset: [offset[0], offset[1], offset[2]], yaw, flags: readFlagAnchors(raw.flags, fitPath) };
 }
 
-const MIN_PLACED_BANNER_WIDTH = 0.11;
+export const MIN_PLACED_BANNER_WIDTH = 0.11;
 
 function readFlagAnchors(flags, fitPath) {
   return flags === undefined ? undefined : requireFlagAnchors(flags, fitPath);
@@ -133,7 +133,7 @@ function placeFlagAnchors(fit, fitPath) {
     const placedWidth = round(width * fit.scale);
     if (placedWidth < MIN_PLACED_BANNER_WIDTH) {
       throw new Error(
-        `A banner hangs at least ${MIN_PLACED_BANNER_WIDTH} wide once fitted, as the narrowest scripted realm banner does; ${width} x ${fit.scale} is ${placedWidth} (${fitPath})`,
+        `A banner hangs at least ${MIN_PLACED_BANNER_WIDTH} wide once fitted, as the narrowest wall banner of a scripted City, Kingdom or Empire does; ${width} x ${fit.scale} is ${placedWidth} (${fitPath})`,
       );
     }
     return {
