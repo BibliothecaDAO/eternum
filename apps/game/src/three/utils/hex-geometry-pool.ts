@@ -6,19 +6,13 @@
  */
 
 import { HEX_SIZE } from "@/three/constants";
-import {
-  createFilledHexagonOverlayGeometry,
-  createHexagonShape,
-  createRoundedHexagonShape,
-} from "@/three/geometry/hexagon-geometry";
+import { createFilledHexagonOverlayGeometry, createHexPlateGeometry } from "@/three/geometry/hexagon-geometry";
 import { REALM_PLOT_PALETTE } from "@/three/managers/worldmap-interaction-palette";
-import { type BufferGeometry, Color, ShapeGeometry } from "three";
+import { type BufferGeometry, Color } from "three";
 import { registerDebugHook, type DebugHookInstallOptions } from "./debug-hooks";
 
 interface GeometryConfig {
   size: number;
-  rounded: boolean;
-  cornerRadius?: number;
   overlay?: { innerRadius: number };
 }
 
@@ -49,23 +43,12 @@ export class HexGeometryPool {
 
   // Geometry configurations for different hex types
   private static readonly GEOMETRY_CONFIGS: Record<string, GeometryConfig> = {
-    standard: {
-      size: HEX_SIZE,
-      rounded: false,
-    },
     highlight: {
       size: HEX_SIZE * 0.975,
-      rounded: true,
-      cornerRadius: HEX_SIZE * 0.975 * 0.15,
     },
     interactive: {
       size: HEX_SIZE * 0.965,
-      rounded: false,
       overlay: { innerRadius: HEX_SIZE * 0.905 },
-    },
-    border: {
-      size: HEX_SIZE,
-      rounded: false,
     },
   };
 
@@ -127,11 +110,7 @@ export class HexGeometryPool {
   private createGeometry(config: GeometryConfig): BufferGeometry {
     const geometry = config.overlay
       ? createFilledHexagonOverlayGeometry(config.size, config.overlay.innerRadius, plotOverlayColors())
-      : new ShapeGeometry(
-          config.rounded
-            ? createRoundedHexagonShape(config.size, config.cornerRadius)
-            : createHexagonShape(config.size),
-        );
+      : createHexPlateGeometry(config.size);
 
     // Optimize geometry for sharing
     geometry.computeBoundingBox();

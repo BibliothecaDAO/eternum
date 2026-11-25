@@ -6,7 +6,7 @@ import {
   applyHexRingLook,
   createHexRingMaterials,
   createHexRingShapes,
-  drapeHexRingCopies,
+  drapeOnGround,
   HEX_RING_LIFT,
   type HexRingShapes,
 } from "./hex-ring";
@@ -77,7 +77,7 @@ export class OwnershipRingLayer {
   private drape(): void {
     for (const [name, object] of Object.entries(this.objects) as [RingLayerName, THREE.Mesh | THREE.LineSegments][]) {
       object.geometry.dispose();
-      object.geometry = drapeHexRingCopies(this.shapes[name], this.centres, this.terrain, HEX_RING_LIFT[name]);
+      object.geometry = drapeOnGround(this.shapes[name], this.centres, this.terrain, HEX_RING_LIFT[name]);
       object.visible = this.centres.length > 0;
     }
   }

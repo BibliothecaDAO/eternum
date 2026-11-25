@@ -1,22 +1,4 @@
-import { BufferGeometry, Float32BufferAttribute, Shape, Vector2 } from "three";
-
-export const createHexagonShape = (radius: number) => {
-  const shape = new Shape();
-  for (let i = 0; i < 6; i++) {
-    // Adjust the angle to start the first point at the top
-    const angle = (Math.PI / 3) * i - Math.PI / 2;
-    const x = radius * Math.cos(angle);
-    const y = radius * Math.sin(angle);
-    if (i === 0) {
-      shape.moveTo(x, y);
-    } else {
-      shape.lineTo(x, y);
-    }
-  }
-  shape.closePath();
-
-  return shape;
-};
+import { BufferGeometry, Float32BufferAttribute } from "three";
 
 const hexagonCorner = (radius: number, corner: number): [number, number] => {
   const angle = (Math.PI / 3) * corner - Math.PI / 2;
@@ -60,6 +42,45 @@ export const createCasedHexagonBandGeometry = (
   return geometry;
 };
 
+const GROUND_GRID_RINGS = 3;
+
+const hexGridPoint = (radius: number, ring: number, index: number): [number, number] => {
+  if (ring === 0) return [0, 0];
+  const side = Math.floor(index / ring);
+  const [ax, ay] = hexagonCorner((radius * ring) / GROUND_GRID_RINGS, side);
+  const [bx, by] = hexagonCorner((radius * ring) / GROUND_GRID_RINGS, side + 1);
+  const along = (index % ring) / ring;
+  return [ax + (bx - ax) * along, ay + (by - ay) * along];
+};
+
+const hexGridIndex = (ring: number, index: number): number =>
+  ring === 0 ? 0 : 1 + 3 * ring * (ring - 1) + (index % (6 * ring));
+
+const hexGrid = (radius: number): { points: [number, number][]; triangles: number[] } => {
+  const points: [number, number][] = [];
+  const triangles: number[] = [];
+  for (let ring = 0; ring <= GROUND_GRID_RINGS; ring++)
+    for (let index = 0; index < Math.max(1, 6 * ring); index++) points.push(hexGridPoint(radius, ring, index));
+  for (let ring = 1; ring <= GROUND_GRID_RINGS; ring++)
+    for (let side = 0; side < 6; side++)
+      for (let step = 0; step < ring; step++) {
+        const outer = side * ring + step;
+        const inner = hexGridIndex(ring - 1, side * (ring - 1) + step);
+        triangles.push(inner, hexGridIndex(ring, outer), hexGridIndex(ring, outer + 1));
+        if (step < ring - 1)
+          triangles.push(inner, hexGridIndex(ring, outer + 1), hexGridIndex(ring - 1, side * (ring - 1) + step + 1));
+      }
+  return { points, triangles };
+};
+
+export const createHexPlateGeometry = (radius: number): BufferGeometry => {
+  const { points, triangles } = hexGrid(radius);
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", new Float32BufferAttribute(points.flatMap(([x, y]) => [x, y, 0]), 3));
+  geometry.setIndex(triangles);
+  return geometry;
+};
+
 export const createFilledHexagonOverlayGeometry = (
   outerRadius: number,
   innerRadius: number,
@@ -68,162 +89,31 @@ export const createFilledHexagonOverlayGeometry = (
     rim: readonly [number, number, number, number];
   },
 ): BufferGeometry => {
-  const positions: number[] = [];
-  const vertexColors: number[] = [];
-  for (let corner = 0; corner < 6; corner++) {
-    const innerA = hexagonCorner(innerRadius, corner);
-    const innerB = hexagonCorner(innerRadius, corner + 1);
-    const outerA = hexagonCorner(outerRadius, corner);
-    const outerB = hexagonCorner(outerRadius, corner + 1);
-    for (const [x, y] of [[0, 0] as const, innerA, innerB]) {
-      positions.push(x, y, 0);
-      vertexColors.push(...colors.fill);
-    }
-    for (const [x, y] of [innerA, outerA, outerB, innerA, outerB, innerB]) {
-      positions.push(x, y, 0);
-      vertexColors.push(...colors.rim);
-    }
-  }
+  const fill = hexGrid(innerRadius);
+  const edge = 6 * GROUND_GRID_RINGS;
+  const rimInner = Array.from({ length: edge }, (_, index) => hexGridPoint(innerRadius, GROUND_GRID_RINGS, index));
+  const rimOuter = Array.from({ length: edge }, (_, index) => hexGridPoint(outerRadius, GROUND_GRID_RINGS, index));
+  const points = [...fill.points, ...rimInner, ...rimOuter];
+  const innerAt = (index: number) => fill.points.length + (index % edge);
+  const outerAt = (index: number) => fill.points.length + edge + (index % edge);
+  const rim = Array.from({ length: edge }, (_, index) => [
+    innerAt(index),
+    outerAt(index),
+    outerAt(index + 1),
+    innerAt(index),
+    outerAt(index + 1),
+    innerAt(index + 1),
+  ]).flat();
   const geometry = new BufferGeometry();
-  geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("color", new Float32BufferAttribute(vertexColors, 4));
+  geometry.setAttribute("position", new Float32BufferAttribute(points.flatMap(([x, y]) => [x, y, 0]), 3));
+  geometry.setAttribute(
+    "color",
+    new Float32BufferAttribute(
+      points.flatMap((_, index) => [...(index < fill.points.length ? colors.fill : colors.rim)]),
+      4,
+    ),
+  );
+  geometry.setIndex([...fill.triangles, ...rim]);
   return geometry;
 };
 
-export const createRoundedHexagonShape = (radius: number, cornerRadius: number = radius * 0.15) => {
-  const shape = new Shape();
-
-  // Calculate points of the hexagon
-  const points = [];
-  for (let i = 0; i < 6; i++) {
-    const angle = (Math.PI / 3) * i - Math.PI / 2;
-    const x = radius * Math.cos(angle);
-    const y = radius * Math.sin(angle);
-    points.push(new Vector2(x, y));
-  }
-
-  // Get rounded corner points
-  const roundedPoints = getRoundPoints(points, cornerRadius, 5);
-
-  // Create shape from rounded points
-  shape.moveTo(roundedPoints[0].x, roundedPoints[0].y);
-  for (let i = 1; i < roundedPoints.length; i++) {
-    shape.lineTo(roundedPoints[i].x, roundedPoints[i].y);
-  }
-
-  return shape;
-};
-
-// Helper functions for rounded corners
-function getLength(dx: number, dy: number): number {
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
-function getProportionPoint(point: Vector2, segment: number, length: number, dx: number, dy: number): Vector2 {
-  const factor = segment / length;
-  return new Vector2(point.x - dx * factor, point.y - dy * factor);
-}
-
-function getRoundPoints(points: Vector2[], radius: number, pointsCount: number): Vector2[] {
-  if (points.length < 3) return points;
-  if (pointsCount < 2) pointsCount = 2;
-
-  const allPoints: Vector2[] = [];
-
-  for (let i = 0; i < points.length; i++) {
-    let p1Index = i - 1;
-    const angPIndex = i;
-    let p2Index = i + 1;
-
-    if (p1Index < 0) p1Index = points.length - 1;
-    if (p2Index > points.length - 1) p2Index = 0;
-
-    const cornerPoints = getOneRoundedCorner(points[angPIndex], points[p1Index], points[p2Index], radius, pointsCount);
-
-    // Copy to return array
-    for (let j = 0; j < cornerPoints.length; j++) {
-      allPoints.push(cornerPoints[j]);
-    }
-  }
-
-  // Close the path
-  allPoints.push(allPoints[0].clone());
-
-  return allPoints;
-}
-
-function getOneRoundedCorner(
-  angularPoint: Vector2,
-  p1: Vector2,
-  p2: Vector2,
-  radius: number,
-  pointsCount: number,
-): Vector2[] {
-  // Vector 1
-  const dx1 = angularPoint.x - p1.x;
-  const dy1 = angularPoint.y - p1.y;
-
-  // Vector 2
-  const dx2 = angularPoint.x - p2.x;
-  const dy2 = angularPoint.y - p2.y;
-
-  // Angle between vector 1 and vector 2 divided by 2
-  const angle = (Math.atan2(dy1, dx1) - Math.atan2(dy2, dx2)) / 2;
-
-  // The length of segment between angular point and the points of intersection
-  // with the circle of a given radius
-  const tan = Math.abs(Math.tan(angle));
-  let segment = radius / tan;
-
-  // Check the segment
-  const length1 = getLength(dx1, dy1);
-  const length2 = getLength(dx2, dy2);
-
-  const length = Math.min(length1, length2);
-
-  if (segment > length) {
-    segment = length;
-    radius = length * tan;
-  }
-
-  // Points of intersection are calculated by the proportion between
-  // the coordinates of the vector, length of vector and the length of the segment
-  const p1Cross = getProportionPoint(angularPoint, segment, length1, dx1, dy1);
-  const p2Cross = getProportionPoint(angularPoint, segment, length2, dx2, dy2);
-
-  // Calculation of the coordinates of the circle center by the addition of angular vectors
-  const dx = angularPoint.x * 2 - p1Cross.x - p2Cross.x;
-  const dy = angularPoint.y * 2 - p1Cross.y - p2Cross.y;
-
-  const L = getLength(dx, dy);
-  const d = getLength(segment, radius);
-
-  const circlePoint = getProportionPoint(angularPoint, d, L, dx, dy);
-
-  // StartAngle and EndAngle of arc
-  const startAngle = Math.atan2(p1Cross.y - circlePoint.y, p1Cross.x - circlePoint.x);
-  const endAngle = Math.atan2(p2Cross.y - circlePoint.y, p2Cross.x - circlePoint.x);
-
-  // Sweep angle
-  let sweepAngle = endAngle - startAngle;
-
-  // Some additional checks
-  if (sweepAngle < 0) {
-    sweepAngle = 2 * Math.PI + sweepAngle;
-  }
-
-  // Array to store generated points
-  const points: Vector2[] = [];
-
-  // Generate points along the arc
-  const angleStep = sweepAngle / (pointsCount - 1);
-
-  for (let i = 0; i < pointsCount; i++) {
-    const angle = startAngle + i * angleStep;
-    const x = circlePoint.x + Math.cos(angle) * radius;
-    const y = circlePoint.y + Math.sin(angle) * radius;
-    points.push(new Vector2(x, y));
-  }
-
-  return points;
-}

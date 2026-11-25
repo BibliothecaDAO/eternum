@@ -1,23 +1,21 @@
-import { createInstancedMesh } from "../utils/create-instanced-mesh";
-import { HEX_SIZE } from "@/three/constants";
-import { hexRimOffsets, highestGroundAt, type TerrainSurface } from "@/three/terrain/terrain-surface";
+import { type TerrainSurface } from "@/three/terrain/terrain-surface";
 import { hexGeometryDebugger } from "@/three/utils/hex-geometry-debug";
 import { HexGeometryPool } from "@/three/utils/hex-geometry-pool";
 import { ActionHighlightDescriptor, ActionType } from "@bibliothecadao/eternum";
 import gsap from "gsap";
 import {
   AdditiveBlending,
+  BufferAttribute,
+  BufferGeometry,
   Color,
-  InstancedBufferAttribute,
-  InstancedMesh,
-  Matrix4,
+  DoubleSide,
   Mesh,
   MeshBasicMaterial,
-  Quaternion,
   Scene,
   Vector3,
 } from "three";
 import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
+import { drapeOnGround, layCopyOnGround } from "./hex-ring";
 import { HIGHLIGHT_LAYER_PALETTES, resolveHighlightLayerPalette } from "./worldmap-interaction-palette";
 import { resolveHighlightViewTuning } from "./worldmap-highlight-view-policy";
 
@@ -25,30 +23,22 @@ const FRONTIER_ACCENT_COLOR = new Color(0x84f1ff);
 const ENDPOINT_ACCENT_LIFT = new Color(0xffffff);
 const MAX_HIGHLIGHTS = 500;
 
-const tempMatrix = new Matrix4();
-const tempScale = new Vector3();
-const tempColor = new Color();
-const HIGHLIGHT_ROTATION = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -Math.PI / 2);
-/**
- * Where a lit hex reads the ground it lies on: its whole face, and just past its rim, so a plate on a slope or a mound
- * lies above all of it, and a plate on a sunken unexplored tile lies level with the ground around it rather than
- * behind that ground's near edge.
- */
-const PLATE_GROUND_SAMPLES = [
-  [0, 0] as const,
-  ...hexRimOffsets(HEX_SIZE * 0.5),
-  ...hexRimOffsets(HEX_SIZE * 0.95),
-  ...hexRimOffsets(HEX_SIZE * 1.06),
-];
+interface PlateCopy {
+  x: number;
+  z: number;
+  scale: number;
+  color: Color;
+}
 
 interface HighlightRenderLayer {
-  mesh: InstancedMesh;
+  mesh: Mesh;
   material: MeshBasicMaterial;
   baseOpacity: number;
   opacityPulseScale: number;
   targetScale: number;
   /** How far above its hex's ground the layer lies. */
   lift: number;
+  copies: PlateCopy[];
 }
 
 /** Which hexes roll in on a draw, and whether the first one flashes as a new selection does. */
@@ -79,31 +69,25 @@ const isAlreadyDrawn = (
   descriptors.length === drawn.size &&
   descriptors.every((descriptor) => looksTheSame(drawn.get(hexKey(descriptor)), descriptor));
 
-/** The centre of every plate a layer draws now. */
-const drawnPlateCentres = (mesh: InstancedMesh): { x: number; y: number; z: number }[] =>
-  Array.from({ length: mesh.count }, (_, index) => {
-    mesh.getMatrixAt(index, tempMatrix);
-    const { x, y, z } = new Vector3().setFromMatrixPosition(tempMatrix);
-    return { x, y, z };
-  });
-
-const createMesh = (
-  geometry: InstancedMesh["geometry"],
-  material: MeshBasicMaterial,
-  renderOrder: number,
-): InstancedMesh => {
-  const mesh = createInstancedMesh(geometry, material, MAX_HIGHLIGHTS);
-  mesh.count = 0;
-  mesh.frustumCulled = true;
+const createMesh = (material: MeshBasicMaterial, renderOrder: number): Mesh => {
+  const mesh = new Mesh(new BufferGeometry(), material);
+  mesh.visible = false;
+  mesh.frustumCulled = false;
   mesh.renderOrder = renderOrder;
-  mesh.instanceColor = new InstancedBufferAttribute(new Float32Array(MAX_HIGHLIGHTS * 3), 3);
   mesh.raycast = () => {};
   return mesh;
 };
 
+const paintCopies = (geometry: BufferGeometry, copies: readonly PlateCopy[], verticesPerCopy: number): void => {
+  const colors = new Float32Array(copies.length * verticesPerCopy * 3);
+  copies.forEach(({ color }, copy) => {
+    for (let vertex = 0; vertex < verticesPerCopy; vertex++) color.toArray(colors, (copy * verticesPerCopy + vertex) * 3);
+  });
+  geometry.setAttribute("color", new BufferAttribute(colors, 3));
+};
+
 export class HighlightHexManager {
-  private material: MeshBasicMaterial;
-  private instancedMesh: InstancedMesh;
+  private readonly plate: BufferGeometry;
   private routeLayer: HighlightRenderLayer;
   private endpointLayer: HighlightRenderLayer;
   private frontierLayer: HighlightRenderLayer;
@@ -130,10 +114,10 @@ export class HighlightHexManager {
   ) {
     this.hexGeometryPool = HexGeometryPool.getInstance();
 
-    const hexagonGeometry = this.hexGeometryPool.getGeometry("highlight");
+    this.plate = this.hexGeometryPool.getGeometry("highlight");
     hexGeometryDebugger.trackSharedGeometryUsage();
 
-    this.routeLayer = this.createLayer(hexagonGeometry, {
+    this.routeLayer = this.createLayer({
       color: 0xffffff,
       opacity: 0.16,
       renderOrder: 5,
@@ -142,7 +126,7 @@ export class HighlightHexManager {
       targetScale: 0.92,
       lift: 0.03,
     });
-    this.endpointLayer = this.createLayer(hexagonGeometry, {
+    this.endpointLayer = this.createLayer({
       color: 0xffffff,
       opacity: 0.22,
       renderOrder: 6,
@@ -151,7 +135,7 @@ export class HighlightHexManager {
       targetScale: 0.56,
       lift: 0.04,
     });
-    this.frontierLayer = this.createLayer(hexagonGeometry, {
+    this.frontierLayer = this.createLayer({
       color: 0xffffff,
       opacity: 0.3,
       renderOrder: 7,
@@ -161,7 +145,7 @@ export class HighlightHexManager {
       lift: 0.05,
       toneMapped: false,
     });
-    this.teachLayer = this.createLayer(hexagonGeometry, {
+    this.teachLayer = this.createLayer({
       color: 0xffffff,
       opacity: 0.28,
       renderOrder: 8,
@@ -172,15 +156,11 @@ export class HighlightHexManager {
       toneMapped: false,
     });
 
-    this.material = this.routeLayer.material;
-    this.instancedMesh = this.routeLayer.mesh;
     this.applyViewTuning();
     this.applyPulseToLayers(0);
   }
 
-  private createLayer(
-    geometry: InstancedMesh["geometry"],
-    config: {
+  private createLayer(config: {
       color: number;
       opacity: number;
       renderOrder: number;
@@ -189,8 +169,7 @@ export class HighlightHexManager {
       targetScale: number;
       lift: number;
       toneMapped?: boolean;
-    },
-  ): HighlightRenderLayer {
+  }): HighlightRenderLayer {
     const material = new MeshBasicMaterial({
       color: config.color,
       opacity: config.opacity,
@@ -198,10 +177,11 @@ export class HighlightHexManager {
       depthWrite: false,
       toneMapped: config.toneMapped ?? false,
       vertexColors: true,
+      side: DoubleSide,
     });
     hexGeometryDebugger.trackMaterialClone();
 
-    const mesh = createMesh(geometry, material, config.renderOrder);
+    const mesh = createMesh(material, config.renderOrder);
     this.scene.add(mesh);
 
     return {
@@ -211,6 +191,7 @@ export class HighlightHexManager {
       opacityPulseScale: config.opacityPulseScale,
       targetScale: config.targetScale,
       lift: config.lift,
+      copies: [],
     };
   }
 
@@ -246,32 +227,11 @@ export class HighlightHexManager {
       return;
     }
     const palette = HIGHLIGHT_LAYER_PALETTES.teach;
-    const position = this.space.positionForHex(this.teachHex);
-    const groundY = highestGroundAt(this.terrain, position.x, position.z, PLATE_GROUND_SAMPLES);
-    this.teachLayer.mesh.count = 2;
-
-    tempColor.setHex(palette.routeColor);
-    this.teachLayer.mesh.setColorAt(0, tempColor);
-    this.updateInstanceMatrix(
-      this.teachLayer.mesh,
-      0,
-      new Vector3(position.x, groundY + this.teachLayer.lift, position.z),
-      this.teachLayer.targetScale,
-    );
-
-    tempColor.setHex(palette.endpointColor);
-    this.teachLayer.mesh.setColorAt(1, tempColor);
-    this.updateInstanceMatrix(
-      this.teachLayer.mesh,
-      1,
-      new Vector3(position.x, groundY + this.teachLayer.lift + 0.01, position.z),
-      this.endpointLayer.targetScale,
-    );
-
-    if (this.teachLayer.mesh.instanceColor) {
-      this.teachLayer.mesh.instanceColor.needsUpdate = true;
-    }
-    this.teachLayer.mesh.computeBoundingSphere();
+    const { x, z } = this.space.positionForHex(this.teachHex);
+    this.drapeLayer(this.teachLayer, [
+      { x, z, scale: this.teachLayer.targetScale, color: new Color(palette.routeColor) },
+      { x, z, scale: this.endpointLayer.targetScale, color: new Color(palette.endpointColor) },
+    ]);
   }
 
   private drawLayers(descriptors: ActionHighlightDescriptor[], entry: HighlightEntry): void {
@@ -289,7 +249,6 @@ export class HighlightHexManager {
     }
 
     const timeline = gsap.timeline();
-    const grounds = this.resolveGroundPositions(descriptors);
     const endpointDescriptors = descriptors.filter(
       (descriptor) => descriptor.isEndpoint && descriptor.kind !== "frontier",
     );
@@ -297,7 +256,7 @@ export class HighlightHexManager {
 
     const quietEntry = { ...entry, launchGlow: false };
 
-    this.populateLayer(this.routeLayer, descriptors, grounds, timeline, entry, {
+    this.populateLayer(this.routeLayer, descriptors, timeline, entry, {
       getColor: (descriptor) => this.resolveRouteColor(descriptor),
       getScale: (descriptor) =>
         descriptor.isEndpoint
@@ -306,11 +265,11 @@ export class HighlightHexManager {
             ? this.routeLayer.targetScale - 0.04
             : this.routeLayer.targetScale,
     });
-    this.populateLayer(this.endpointLayer, endpointDescriptors, grounds, timeline, quietEntry, {
+    this.populateLayer(this.endpointLayer, endpointDescriptors, timeline, quietEntry, {
       getColor: (descriptor) => this.resolveEndpointColor(descriptor),
       getScale: () => this.endpointLayer.targetScale,
     });
-    this.populateLayer(this.frontierLayer, frontierDescriptors, grounds, timeline, quietEntry, {
+    this.populateLayer(this.frontierLayer, frontierDescriptors, timeline, quietEntry, {
       getColor: () => FRONTIER_ACCENT_COLOR,
       getScale: () => this.frontierLayer.targetScale,
     });
@@ -318,22 +277,10 @@ export class HighlightHexManager {
     this.highlightTimeline = timeline;
   }
 
-  /** Each hex's centre at the height its plate must clear: the highest ground under it and around its rim. */
-  private resolveGroundPositions(descriptors: ActionHighlightDescriptor[]): ReadonlyMap<string, Vector3> {
-    return new Map(
-      descriptors.map((descriptor) => {
-        const position = this.space.positionForHex(descriptor.hex);
-        position.y = highestGroundAt(this.terrain, position.x, position.z, PLATE_GROUND_SAMPLES);
-        return [hexKey(descriptor), position];
-      }),
-    );
-  }
-
   /** Writes a layer's instances: a hex already drawn sits at its full scale, a new one rolls in after the new ones before it. */
   private populateLayer(
     layer: HighlightRenderLayer,
     descriptors: ActionHighlightDescriptor[],
-    grounds: ReadonlyMap<string, Vector3>,
     timeline: gsap.core.Timeline,
     entry: HighlightEntry,
     style: {
@@ -341,52 +288,42 @@ export class HighlightHexManager {
       getScale: (descriptor: ActionHighlightDescriptor) => number;
     },
   ): void {
-    const count = Math.min(descriptors.length, MAX_HIGHLIGHTS);
-    layer.mesh.count = count;
+    const copies = descriptors.slice(0, MAX_HIGHLIGHTS).map((descriptor) => {
+      const { x, z } = this.space.positionForHex(descriptor.hex);
+      const scale = entry.isEntering(descriptor) ? this.rolloutConfig.initialScale : style.getScale(descriptor);
+      return { x, z, scale, color: style.getColor(descriptor).clone() };
+    });
+    this.drapeLayer(layer, copies);
+
     let enteringIndex = 0;
-
-    for (let i = 0; i < count; i++) {
-      const descriptor = descriptors[i];
-      const ground = grounds.get(hexKey(descriptor));
-      if (!ground) throw new Error(`Highlight hex ${hexKey(descriptor)} has no ground position`);
-      const instancePosition = new Vector3(ground.x, ground.y + layer.lift, ground.z);
-      const targetScale = style.getScale(descriptor);
-
-      tempColor.copy(style.getColor(descriptor));
-      layer.mesh.setColorAt(i, tempColor);
-
-      if (!entry.isEntering(descriptor)) {
-        this.updateInstanceMatrix(layer.mesh, i, instancePosition, targetScale);
-        continue;
-      }
-
+    copies.forEach((copy, index) => {
+      const descriptor = descriptors[index];
+      if (!entry.isEntering(descriptor)) return;
       const startTime = enteringIndex * this.rolloutConfig.stepDelay;
       enteringIndex += 1;
-      const animState = { currentScale: this.rolloutConfig.initialScale };
-      this.updateInstanceMatrix(layer.mesh, i, instancePosition, animState.currentScale);
       timeline.to(
-        animState,
+        copy,
         {
-          currentScale: targetScale,
+          scale: style.getScale(descriptor),
           duration: this.rolloutConfig.entryDuration,
           ease: this.rolloutConfig.ease,
-          onUpdate: () => {
-            this.updateInstanceMatrix(layer.mesh, i, instancePosition, animState.currentScale);
-          },
+          onUpdate: () => layCopyOnGround(layer.mesh.geometry, index, this.plate, copy, this.terrain, layer.lift),
         },
         startTime,
       );
-
-      if (entry.launchGlow && i === 0) {
-        this.triggerLaunchGlow(instancePosition, tempColor, timeline, startTime);
+      if (entry.launchGlow && index === 0) {
+        const ground = this.terrain.sampleSurface(copy.x, copy.z).height + layer.lift;
+        this.triggerLaunchGlow(new Vector3(copy.x, ground, copy.z), copy.color, timeline, startTime);
       }
-    }
+    });
+  }
 
-    layer.mesh.instanceMatrix.needsUpdate = true;
-    if (layer.mesh.instanceColor) {
-      layer.mesh.instanceColor.needsUpdate = true;
-    }
-    layer.mesh.computeBoundingSphere();
+  private drapeLayer(layer: HighlightRenderLayer, copies: PlateCopy[]): void {
+    layer.copies = copies;
+    layer.mesh.visible = copies.length > 0;
+    layer.mesh.geometry.dispose();
+    layer.mesh.geometry = drapeOnGround(this.plate, copies, this.terrain, layer.lift);
+    paintCopies(layer.mesh.geometry, copies, this.plate.getAttribute("position").count);
   }
 
   private resolveRouteColor(descriptor: ActionHighlightDescriptor): Color {
@@ -403,18 +340,7 @@ export class HighlightHexManager {
   }
 
   private resetLayer(layer: HighlightRenderLayer): void {
-    layer.mesh.count = 0;
-    layer.mesh.instanceMatrix.needsUpdate = true;
-    if (layer.mesh.instanceColor) {
-      layer.mesh.instanceColor.needsUpdate = true;
-    }
-  }
-
-  private updateInstanceMatrix(mesh: InstancedMesh, index: number, position: Vector3, scale: number) {
-    tempScale.set(scale, scale, scale);
-    tempMatrix.compose(position, HIGHLIGHT_ROTATION, tempScale);
-    mesh.setMatrixAt(index, tempMatrix);
-    mesh.instanceMatrix.needsUpdate = true;
+    this.drapeLayer(layer, []);
   }
 
   updateHighlightPulse(pulseFactor: number) {
@@ -452,16 +378,30 @@ export class HighlightHexManager {
 
   /** What is drawn, for the page's dev report: each layer's count and the centre of every plate on every layer. */
   getDebugState() {
+    const layers = { route: this.routeLayer, endpoint: this.endpointLayer, frontier: this.frontierLayer, teach: this.teachLayer };
     return {
       cameraView: this.cameraView,
-      routeCount: this.routeLayer.mesh.count,
-      endpointCount: this.endpointLayer.mesh.count,
-      frontierCount: this.frontierLayer.mesh.count,
-      teachCount: this.teachLayer.mesh.count,
-      plates: [this.routeLayer, this.endpointLayer, this.frontierLayer, this.teachLayer].flatMap((layer) =>
-        drawnPlateCentres(layer.mesh),
+      routeCount: this.routeLayer.copies.length,
+      endpointCount: this.endpointLayer.copies.length,
+      frontierCount: this.frontierLayer.copies.length,
+      teachCount: this.teachLayer.copies.length,
+      plates: Object.entries(layers).flatMap(([name, layer]) =>
+        layer.copies.map((copy, index) => ({ layer: name, x: copy.x, z: copy.z, scale: copy.scale, ...this.clearance(layer, index) })),
       ),
     };
+  }
+
+  private clearance(layer: HighlightRenderLayer, copyIndex: number): { lowest: number; highest: number } {
+    const positions = layer.mesh.geometry.getAttribute("position");
+    const perCopy = this.plate.getAttribute("position").count;
+    let lowest = Infinity;
+    let highest = -Infinity;
+    for (let vertex = copyIndex * perCopy; vertex < (copyIndex + 1) * perCopy; vertex++) {
+      const above = positions.getY(vertex) - this.terrain.sampleSurface(positions.getX(vertex), positions.getZ(vertex)).height;
+      lowest = Math.min(lowest, above);
+      highest = Math.max(highest, above);
+    }
+    return { lowest, highest };
   }
 
   private applyViewTuning(): void {
@@ -563,7 +503,7 @@ export class HighlightHexManager {
         layer.mesh.parent.remove(layer.mesh);
       }
       layer.material.dispose();
-      layer.mesh.dispose();
+      layer.mesh.geometry.dispose();
     });
   }
 }
