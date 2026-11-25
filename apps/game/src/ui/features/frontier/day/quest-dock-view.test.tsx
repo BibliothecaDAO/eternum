@@ -88,6 +88,7 @@ describe("the quest dock", () => {
       expect(questLine(entry, 1)).toBe(`${entry.verb} 1 ${entry.unit.one}`);
       expect(questLine(entry, 15)).toBe(`${entry.verb} 15 ${entry.unit.many}`);
       expect(DAY_BANNER_WORDS.count(0, 1, entry.unit)).toBe(`0 of 1 ${entry.unit.one}`);
+      expect(DAY_BANNER_WORDS.count(3, 12, entry.unit)).toBe(`3 of 12 ${entry.unit.many}`);
     }
   });
 });

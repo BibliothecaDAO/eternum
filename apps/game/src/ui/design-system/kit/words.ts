@@ -905,7 +905,7 @@ export const DAY_BANNER_WORDS = {
   collected: "Collected",
   collectAgain: "Collect again",
   count: (progress: number, target: number, unit: QuestUnit) =>
-    `${formatExact(progress)} of ${formatExact(target)} ${target === 1 ? unit.one : unit.many}`,
+    `${formatExact(progress)} of ${formatCount(target, unit.one, unit.many)}`,
   beastBane: (percent: number) => `Site guards have ${formatExact(percent)}% strength during the bane`,
   staminaBane: (percent: number) => `Stamina regen is ${formatExact(percent)}% during the bane`,
   productionBane: (percent: number) => `Realm production is ${formatExact(percent)}% during the bane`,

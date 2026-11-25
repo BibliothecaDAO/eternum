@@ -22,7 +22,7 @@ import { StructureType } from "../constants/structure-type";
 import { deepSites } from "../constants/deep-sites";
 import { TROOP_TYPES, TroopType } from "../types/common";
 import type { QuestLine } from "../constants/quests";
-import { formatExact } from "./amount";
+import { formatCount } from "./count";
 
 const UNKNOWN = "—";
 
@@ -280,4 +280,4 @@ export const GUARD_HOLDS = "Guard holds";
 export const questObjective = (quest: QuestLine): string => `${quest.verb} ${quest.unit.many}`;
 
 export const questLine = (quest: QuestLine, target: number): string =>
-  `${quest.verb} ${formatExact(target)} ${target === 1 ? quest.unit.one : quest.unit.many}`;
+  `${quest.verb} ${formatCount(target, quest.unit.one, quest.unit.many)}`;
