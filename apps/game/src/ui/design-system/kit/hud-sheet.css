@@ -1338,7 +1338,7 @@ button.ui-relic:focus-visible {
   order: 2;
   margin-left: auto;
 }
-@media (max-width: 1023px) {
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
   .ui-actions > .ui-button:last-child {
     flex-grow: 1;
   }

@@ -479,7 +479,7 @@ function battleTargetSteps(attack, place, withOaths = false) {
           BigInt(army.troops.count) === BigInt(attacker) * 1_000_000_000n &&
           BigInt(guard.troops.count) === BigInt(defender) * 1_000_000_000n &&
           played.forecast?.length === 2 &&
-          new RegExp(`^${ARMY_NAME}`).test(played.forecast[0]) &&
+          played.forecast[0].startsWith("Army ") &&
           new RegExp(`→ ${attacker},(?!\\d)`).test(played.forecast[0]) &&
           new RegExp(`→ ${defender},(?!\\d)`).test(played.forecast[1])
           ? { watch: "fought" }
