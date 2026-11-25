@@ -42,6 +42,7 @@ it("names a known camp by its beast on the plate, cards, receipt and Events, and
   expect(beast.name).toBe("Golem");
   const identity = { ...beast, art: "beast-troll" as const, combatClass: "Knight" as const };
   const plate = buildStructurePlate({
+    frontier: true,
     entityId: SITE,
     level: 0,
     hasWonder: false,

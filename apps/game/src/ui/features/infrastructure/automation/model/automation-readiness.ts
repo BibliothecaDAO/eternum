@@ -32,7 +32,7 @@ export const requireAutomationGameId = (): string => {
 export const readAutomationBalance = (resources: ResourceManager, tick: number, resourceId: ResourcesIds): number => {
   const balance = resources.balanceWithProduction(tick, resourceId)?.balance;
   if (balance === undefined)
-    throw new AutomationUnavailable({ message: `${resourceName(resourceId)} balance is not synchronized.` });
+    throw new AutomationUnavailable({ message: `${resourceName(resourceId, configManager.isFrontier())} balance is not synchronized.` });
   return Number(balance) / RESOURCE_PRECISION;
 };
 
@@ -47,7 +47,7 @@ export const readTransferResources = (resources: ResourceManager, tick: number, 
             balances.set(id, Math.max(0, Math.floor(readAutomationBalance(resources, tick, id))));
             const weight = configManager.getResourceWeightKg(id);
             if (weight === undefined)
-              throw new AutomationUnavailable({ message: `${resourceName(id)} weight is not synchronized.` });
+              throw new AutomationUnavailable({ message: `${resourceName(id, configManager.isFrontier())} weight is not synchronized.` });
             weights.set(id, weight);
           }
           return {

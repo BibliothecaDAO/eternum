@@ -18,7 +18,7 @@ export const RevealPill = () => {
   return (
     <p role="status" className="ui-panel reveal-pill" data-reveal-pill>
       {paid.map(([resource, amount]) => (
-        <span key={resource} aria-label={`${formatShort(amount, { signed: true })} ${resourceName(resource)}`}>
+        <span key={resource} aria-label={`${formatShort(amount, { signed: true })} ${resourceName(resource, true)}`}>
           <Icon name={resourceMeaning(resource)} size={20} />
           <b>{formatShort(amount, { signed: true })}</b>
         </span>

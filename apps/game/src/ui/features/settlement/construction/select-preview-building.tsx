@@ -626,7 +626,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
                             );
                           }}
                           active={previewBuilding?.resource === resourceId}
-                          buildingName={resourceName(resourceId)}
+                          buildingName={resourceName(resourceId, configManager.isFrontier())}
                           resource={resourceId}
                           productionStatus={productionStatus}
                           troopHint={troopHint}
@@ -703,7 +703,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
                             );
                           }}
                           active={previewBuilding?.resource === resourceId}
-                          buildingName={resourceName(resourceId)}
+                          buildingName={resourceName(resourceId, configManager.isFrontier())}
                           resource={resourceId}
                           productionStatus={productionStatus}
                           entityId={entityId}
@@ -964,7 +964,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
           <span className={useSimpleCost ? "text-hud-label text-hud-cue" : "text-hud-label"}>Resources</span>
           <HudSwitch on={useSimpleCost} label="Pay with labor" onChange={setUseSimpleCost} />
           <span className={useSimpleCost ? "text-hud-label" : "text-hud-label text-hud-cue"}>
-            {resourceName(ResourcesIds.Labor)}
+            {resourceName(ResourcesIds.Labor, configManager.isFrontier())}
           </span>
         </div>
       )}

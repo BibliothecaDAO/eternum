@@ -2,7 +2,7 @@ import { useMemo, useCallback, useState } from "react";
 import { useTransferAutomationStore, type TransferAutomationEntry } from "@/hooks/store/use-transfer-automation-store";
 import { HudButton, HudEmpty, HudField, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { ResourcesIds, RESOURCE_PRECISION, formatCharge, resourceName, formatAgo } from "@bibliothecadao/types";
-import { ResourceManager, getTotalResourceWeightKg, calculateDonkeysNeeded } from "@bibliothecadao/eternum";
+import { ResourceManager, getTotalResourceWeightKg, calculateDonkeysNeeded, configManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { toast } from "@/ui/features/event-feed/notify";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
@@ -11,11 +11,11 @@ const formatResourceSummary = (entry: TransferAutomationEntry): string => {
     return entry.resourceConfigs
       .map((cfg) => {
         const amount = Math.max(0, Math.floor(cfg.amount ?? 0));
-        return `${resourceName(cfg.resourceId)} ${formatCharge(amount)}`;
+        return `${resourceName(cfg.resourceId, configManager.isFrontier())} ${formatCharge(amount)}`;
       })
       .join(", ");
   }
-  return entry.resourceIds.map((rid) => resourceName(rid)).join(", ");
+  return entry.resourceIds.map((rid) => resourceName(rid, configManager.isFrontier())).join(", ");
 };
 
 export const TransferAutomationAdvancedModal = () => {

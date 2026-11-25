@@ -6,7 +6,14 @@ import { UNDEFENDED } from "@/ui/design-system/kit/words";
 import { combatMarkOf, type CombatMarkLook } from "@/ui/features/frontier/sites/combat-mark";
 
 import { chipWidth, labelWidth } from "./map-plate-layout";
-import { attackOrder, plateTroopCategory, type MapPlate, type PlateTroops, type PlateWatched } from "./map-plate-model";
+import {
+  attackOrder,
+  plateTroopCategory,
+  plateTroopMeaning,
+  type MapPlate,
+  type PlateTroops,
+  type PlateWatched,
+} from "./map-plate-model";
 
 /**
  * What a token says: whose, what kind, how strong (tier and count, or undefended), an army's stamina. Never what a site
@@ -34,7 +41,7 @@ interface TokenReading {
 export const tokenReading = (plate: MapPlate): TokenReading => {
   if (plate.kind === "army")
     return {
-      icon: `${plate.troops.type}-t${plate.troops.tier}` as IconMeaning,
+      icon: plateTroopMeaning(plate.troops),
       strength: { tier: plate.troops.tier, count: plate.troops.count },
       beast: null,
       undefended: false,
@@ -51,9 +58,9 @@ export const tokenReading = (plate: MapPlate): TokenReading => {
       guards.length === 0
         ? null
         : {
-            tier: guards.some((slot) => slot.beast)
+            tier: guards.some((slot) => slot.beast || slot.tier === null)
               ? null
-              : (guards.reduce<number>((top, slot) => Math.max(top, slot.tier), 1) as PlateTroops["tier"]),
+              : (guards.reduce<number>((top, slot) => Math.max(top, slot.tier ?? 1), 1) as PlateTroops["tier"]),
             count: guards.reduce((sum, slot) => sum + slot.count, 0),
           },
     beast: plate.beast ?? null,
@@ -138,7 +145,9 @@ const tokenWords = (reading: TokenReading): string =>
     reading.undefended
       ? UNDEFENDED
       : reading.strength &&
-        `${reading.strength.tier === null ? reading.beast : `T${reading.strength.tier}`} ${formatExact(reading.strength.count)}`,
+        [reading.strength.tier === null ? reading.beast : `T${reading.strength.tier}`, formatExact(reading.strength.count)]
+          .filter(Boolean)
+          .join(" "),
     reading.stamina !== null && `Stamina ${formatPercent(reading.stamina.current / reading.stamina.max)}`,
   ]
     .filter(Boolean)

@@ -1,3 +1,4 @@
+import { configManager } from "@bibliothecadao/eternum";
 import { resolveCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { type Building, type RealmInfo as RealmInfoType, ResourcesIds, resourceName } from "@bibliothecadao/types";
 
@@ -64,7 +65,7 @@ export const ProductionWorkflows = ({
               value={selectedResource === null ? "" : String(selectedResource)}
               options={[
                 { value: "", label: "Select a resource" },
-                ...producedResources.map((resource) => ({ value: String(resource), label: resourceName(resource) })),
+                ...producedResources.map((resource) => ({ value: String(resource), label: resourceName(resource, configManager.isFrontier()) })),
               ]}
               onChange={(value) => onSelectResource(value ? (Number(value) as ResourcesIds) : null)}
             />

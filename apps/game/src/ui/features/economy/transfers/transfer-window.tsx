@@ -23,7 +23,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { toast } from "@/ui/features/event-feed/notify";
 import { AllResourceArrivals as ResourceArrivals } from "./resource-arrivals";
 import { TransferAutomationAdvancedModal } from "@/ui/features/economy/transfers/transfer-automation-modal";
-import { deliveryLandsAt, isMilitaryResource, ResourceManager, shipmentTravelSeconds } from "@bibliothecadao/eternum";
+import { deliveryLandsAt, isMilitaryResource, ResourceManager, shipmentTravelSeconds, configManager } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, ResourcesIds, formatCount, formatExact, formatHeldAgainst } from "@bibliothecadao/types";
 import { useState } from "react";
 import { resourcesInTierOrder } from "@/ui/shared/resource-tier-order";
@@ -562,14 +562,14 @@ const GoodsGrid = ({
         rows={[
           ...sorted.map((good) => ({
             icon: resourceMeaning(good.resource),
-            name: resourceName(good.resource),
+            name: resourceName(good.resource, configManager.isFrontier()),
             held: good.have,
             value: sentTotal(plans.get(good.resource), good.have),
             focus: good.resource === focus,
           })),
           ...unweighed.map((good) => ({
             icon: resourceMeaning(good.resource),
-            name: resourceName(good.resource),
+            name: resourceName(good.resource, configManager.isFrontier()),
             held: good.have,
             value: 0,
             blocked: WEIGHT_UNKNOWN,
@@ -624,7 +624,7 @@ const Shares = ({
         const plan = plans.get(good.resource);
         const shares = sharesOf(plan, destinationIds, good.have);
         const honoured = honouredShares(plan, destinationIds, good.have);
-        const name = resourceName(good.resource);
+        const name = resourceName(good.resource, configManager.isFrontier());
         return (
           <HudTableRow key={good.resource} cols={cols} label={`${name} shares`}>
             <span role="cell" className="flex items-center gap-2 truncate">

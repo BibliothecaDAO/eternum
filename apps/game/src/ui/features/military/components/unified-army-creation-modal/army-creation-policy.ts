@@ -1,4 +1,4 @@
-import { TROOP_RAISE_SHORT_REASON, type TroopRaiseCost } from "@bibliothecadao/eternum";
+import { TROOP_RAISE_SHORT_REASON, type TroopRaiseCost, configManager } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, type ResourcesIds, formatWait, formatFigure, resourceName } from "@bibliothecadao/types";
 
 import type { ResourcePrice } from "@/ui/design-system/kit/hud-elements";
@@ -75,7 +75,7 @@ export function troopRaisePrices(costs: TroopRaiseCost[] | undefined): ResourceP
  */
 export function describeTroopSource(name: string, inputs: readonly { resource: ResourcesIds; perTroop: number }[]) {
   const from = inputs.length
-    ? `, from ${inputs.map(({ resource, perTroop }) => `${formatFigure(perTroop)} ${resourceName(resource).toLowerCase()}`).join(" and ")} each`
+    ? `, from ${inputs.map(({ resource, perTroop }) => `${formatFigure(perTroop)} ${resourceName(resource, configManager.isFrontier()).toLowerCase()}`).join(" and ")} each`
     : "";
   return `${name} are trained by a ${name} barracks on the realm board${from}.`;
 }

@@ -44,17 +44,17 @@ const militaryTierConfig: Array<{
     label: "Tier I",
     units: [
       {
-        label: resourceName(ResourcesIds.Crossbowman),
+        label: resourceName(ResourcesIds.Crossbowman, configManager.isFrontier()),
         building: BuildingType.ResourceCrossbowmanT1,
         resource: ResourcesIds.Crossbowman,
       },
       {
-        label: resourceName(ResourcesIds.Paladin),
+        label: resourceName(ResourcesIds.Paladin, configManager.isFrontier()),
         building: BuildingType.ResourcePaladinT1,
         resource: ResourcesIds.Paladin,
       },
       {
-        label: resourceName(ResourcesIds.Knight),
+        label: resourceName(ResourcesIds.Knight, configManager.isFrontier()),
         building: BuildingType.ResourceKnightT1,
         resource: ResourcesIds.Knight,
       },
@@ -65,17 +65,17 @@ const militaryTierConfig: Array<{
     label: "Tier II",
     units: [
       {
-        label: resourceName(ResourcesIds.CrossbowmanT2),
+        label: resourceName(ResourcesIds.CrossbowmanT2, configManager.isFrontier()),
         building: BuildingType.ResourceCrossbowmanT2,
         resource: ResourcesIds.CrossbowmanT2,
       },
       {
-        label: resourceName(ResourcesIds.PaladinT2),
+        label: resourceName(ResourcesIds.PaladinT2, configManager.isFrontier()),
         building: BuildingType.ResourcePaladinT2,
         resource: ResourcesIds.PaladinT2,
       },
       {
-        label: resourceName(ResourcesIds.KnightT2),
+        label: resourceName(ResourcesIds.KnightT2, configManager.isFrontier()),
         building: BuildingType.ResourceKnightT2,
         resource: ResourcesIds.KnightT2,
       },
@@ -86,17 +86,17 @@ const militaryTierConfig: Array<{
     label: "Tier III",
     units: [
       {
-        label: resourceName(ResourcesIds.CrossbowmanT3),
+        label: resourceName(ResourcesIds.CrossbowmanT3, configManager.isFrontier()),
         building: BuildingType.ResourceCrossbowmanT3,
         resource: ResourcesIds.CrossbowmanT3,
       },
       {
-        label: resourceName(ResourcesIds.PaladinT3),
+        label: resourceName(ResourcesIds.PaladinT3, configManager.isFrontier()),
         building: BuildingType.ResourcePaladinT3,
         resource: ResourcesIds.PaladinT3,
       },
       {
-        label: resourceName(ResourcesIds.KnightT3),
+        label: resourceName(ResourcesIds.KnightT3, configManager.isFrontier()),
         building: BuildingType.ResourceKnightT3,
         resource: ResourcesIds.KnightT3,
       },
@@ -214,7 +214,7 @@ export const createConstructionMenu = ({
 
       return createActionWithAvailability({
         suffix: `resource-${resourceId}`,
-        label: resourceName(typedResourceId),
+        label: resourceName(typedResourceId, configManager.isFrontier()),
         icon,
         building,
         resource: typedResourceId,

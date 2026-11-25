@@ -1,10 +1,10 @@
 import { staminaLabel, staminaReading } from "@/ui/design-system/kit/words";
 import { formatExact } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon } from "@/ui/design-system/icon";
 import { HudRanked, HudStamina, HudTierChip, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
 
-import { type MapPlate, type PlateTroops } from "./map-plate-model";
+import { plateTroopMeaning, type MapPlate, type PlateTroops } from "./map-plate-model";
 import { plateRows, type PlateSegment } from "./map-plate-rows";
 import { MapCombatBadge, combatOfStack } from "./map-plate-token";
 
@@ -54,12 +54,12 @@ const Troops = ({ troops }: { troops: PlateTroops }) => (
   <span className="mp-troops">
     <span className="mp-troops__icon">
       <Icon
-        name={troops.beast ? beastMeaning(troops.beast) : (`${troops.type}-t${troops.tier}` as IconMeaning)}
+        name={troops.beast ? beastMeaning(troops.beast) : plateTroopMeaning(troops)}
         size={20}
       />
       <MapCombatBadge mark={combatOfStack(troops)} />
     </span>
-    {!troops.beast && <HudTierChip tier={troops.tier} />}
+    {!troops.beast && troops.tier !== null && <HudTierChip tier={troops.tier} />}
     <span className="mp-count">{formatExact(troops.count)}</span>
     {troops.stamina && (
       <span

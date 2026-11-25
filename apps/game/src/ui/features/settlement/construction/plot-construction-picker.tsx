@@ -1,3 +1,4 @@
+import { configManager } from "@bibliothecadao/eternum";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -211,9 +212,9 @@ const PaintedCost = ({ requirements }: { requirements: Choice["requirements"] })
           "inline-flex items-center gap-0.5",
           cost.current === undefined || cost.current < cost.amount ? "text-hud-bad" : "text-hud-ink",
         )}
-        title={resourceName(cost.resource)}
+        title={resourceName(cost.resource, configManager.isFrontier())}
       >
-        <SemanticIcon name={resourceMeaning(cost.resource)} alt={resourceName(cost.resource)} className="h-4 w-4" />
+        <SemanticIcon name={resourceMeaning(cost.resource)} alt={resourceName(cost.resource, configManager.isFrontier())} className="h-4 w-4" />
         {formatCharge(cost.amount)}
       </span>
     ))}

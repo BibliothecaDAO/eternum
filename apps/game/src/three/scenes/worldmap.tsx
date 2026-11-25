@@ -7987,7 +7987,7 @@ export default class WorldmapScene extends WarpTravel {
     }
     let sparedHex = null;
     const viewer = accountAddress();
-    if (getGameModeId() === "frontier" && viewer !== null) {
+    if (configManager.isFrontier() && viewer !== null) {
       const owned = this.game.store.structuresOwnedBy(configManager.getActiveGameId(), viewer);
       const realm = [...owned].find((row) => isExpeditionRealm(this.game.store, row));
       const position = realm ? structureMapPosition(this.game.store, realm) : null;
@@ -8006,7 +8006,7 @@ export default class WorldmapScene extends WarpTravel {
     if (now === this.veilCheckedAt) return false;
     this.veilCheckedAt = now;
     if (veilIsNear(configManager.getSeasonConfig().endAt, now)) return true;
-    if (getGameModeId() !== "frontier") return false;
+    if (!configManager.isFrontier()) return false;
     const rules = readExpeditionRules(this.game.store, configManager.getActiveGameId());
     const today = rules ? dayOf(rules, now) : null;
     return today !== null && veilIsNear(today.end, now);

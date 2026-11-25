@@ -1,4 +1,5 @@
 import { ResourcesIds } from "../constants/resource-ids";
+import { resources } from "../constants/resources";
 import { StructureType } from "../constants/structure-type";
 import { GuardSlot } from "../constants/troops";
 import { describe, expect, it } from "vitest";
@@ -28,6 +29,7 @@ import { ageLine } from "./modes";
 import {
   asRanked,
   buildingName,
+  FRONTIER_TROOP_NAMES,
   frontierTroopName,
   guardSlotName,
   LAYER_NAMES,
@@ -36,6 +38,7 @@ import {
   resourceName,
   skillPointGain,
   structureName,
+  troopName,
   troopPlural,
 } from "./nouns";
 import { TROOP_TIERS, TROOP_TYPES, TroopType, troopTierIndex } from "../types/common";
@@ -261,12 +264,25 @@ describe("nouns", () => {
   });
 
   it("names a resource as a player reads it, never by its table key", () => {
-    expect(resourceName(ResourcesIds.AncientFragment)).toBe("Ancient Fragment");
-    expect(resourceName(ResourcesIds.KnightT2)).toBe("Knight T2");
-    expect(resourceName(ResourcesIds.Paladin)).toBe("Paladin T1");
-    expect(resourceName(ResourcesIds.Lords)).toBe("LORDS");
-    expect(resourceName(ResourcesIds.Wheat)).toBe("Wheat");
-    expect(resourceName(9_999)).toBe("—");
+    expect(resourceName(ResourcesIds.AncientFragment, false)).toBe("Ancient Fragment");
+    expect(resourceName(ResourcesIds.KnightT2, false)).toBe("Knight T2");
+    expect(resourceName(ResourcesIds.Paladin, false)).toBe("Paladin T1");
+    expect(resourceName(ResourcesIds.Lords, false)).toBe("LORDS");
+    expect(resourceName(ResourcesIds.Wheat, false)).toBe("Wheat");
+    expect(resourceName(9_999, false)).toBe("—");
+  });
+
+  it("names Frontier's troops by Frontier's names alone: never a Paladin, never a tier", () => {
+    expect(resourceName(ResourcesIds.Paladin, true)).toBe("Scouts");
+    expect(resourceName(ResourcesIds.Knight, true)).toBe("Knights");
+    expect(resourceName(ResourcesIds.Crossbowman, true)).toBe("Crossbowmen");
+    expect(resourceName(ResourcesIds.Wheat, true)).toBe("Wheat");
+    const frontierNames = resources.map(({ id }) => resourceName(id, true));
+    expect(frontierNames.filter((name) => /Paladin|\bT[123]\b|Tier/.test(name))).toEqual([]);
+    expect(TROOP_TYPES.map((troop) => troopName(troop, "T3", true))).toEqual(
+      TROOP_TYPES.map((troop) => FRONTIER_TROOP_NAMES[troop]),
+    );
+    expect(troopName(TroopType.Paladin, "T2", false)).toBe("Paladin T2");
   });
 
   it("names a rank, a structure, a guard wall and an age", () => {
@@ -525,7 +541,7 @@ describe("troops", () => {
       [TroopType.Crossbowman]: "Crossbowmen",
     });
     expect(frontierTroopName("Dragon")).toBeUndefined();
-    expect(resourceName(ResourcesIds.CrossbowmanT2)).toBe("Crossbowman T2");
+    expect(resourceName(ResourcesIds.CrossbowmanT2, false)).toBe("Crossbowman T2");
   });
 
   it("numbers every tier by its place in the catalog, and refuses one it does not hold", () => {

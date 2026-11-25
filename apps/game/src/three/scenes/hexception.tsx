@@ -1066,7 +1066,7 @@ export default class HexceptionScene extends HexagonScene {
         kind: "resource",
         buildingName,
         resourceId: producedResource as ResourcesIds,
-        resourceName: resourceName(producedResource as ResourcesIds),
+        resourceName: resourceName(producedResource as ResourcesIds, configManager.isFrontier()),
         isActive: production.isProducing,
       });
       return;

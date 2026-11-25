@@ -1,3 +1,4 @@
+import { configManager } from "@bibliothecadao/eternum";
 /**
  * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
  * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
@@ -531,9 +532,9 @@ export const CLOSE = "Close";
 export const KEEP = "Keep";
 
 /** The resources Frontier's stores hold, by the catalog's names: one casing, at a line's start or inside it. */
-export const ESSENCE = resourceName(ResourcesIds.Essence);
-export const LABOR = resourceName(ResourcesIds.Labor);
-export const WHEAT = resourceName(ResourcesIds.Wheat);
+export const ESSENCE = resourceName(ResourcesIds.Essence, false);
+export const LABOR = resourceName(ResourcesIds.Labor, false);
+export const WHEAT = resourceName(ResourcesIds.Wheat, false);
 /** The realm's troops, as a store and an army's figure are named. */
 export const TROOPS = "Troops";
 export const STAMINA = "stamina";
@@ -707,7 +708,7 @@ export const inTime = (duration: string) => `in ${duration}`;
  * written as one (formatHeldAgainst), so a cost not yet held never reads as held.
  */
 export const costLine = (amount: number, held: number | undefined, resource?: ResourcesIds): string => {
-  const noun = resource === undefined ? "" : ` ${resourceName(resource)}`;
+  const noun = resource === undefined ? "" : ` ${resourceName(resource, configManager.isFrontier())}`;
   const pair = formatHeldAgainst(held, amount);
   const holding = held === undefined ? "" : ` (you have ${pair.held})`;
   return `${pair.need}${noun}${holding}`;
@@ -902,7 +903,7 @@ export const DAY_BANNER_WORDS = {
       ? `${objective} ${formatExact(target)}`
       : `${objective.slice(0, space)} ${formatExact(target)} ${objective.slice(space + 1)}`;
   },
-  rewardAmount: (amount: number, resource: ResourcesIds) => `${formatAmount(amount)} ${resourceName(resource)}`,
+  rewardAmount: (amount: number, resource: ResourcesIds) => `${formatAmount(amount)} ${resourceName(resource, configManager.isFrontier())}`,
   summary: (objective: string, progress: number, target: number, labor: number) =>
     `${objective} · ${formatExact(progress)} of ${formatExact(target)} · +${formatExact(labor)} ${LABOR}`,
   triumphRule: {

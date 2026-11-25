@@ -203,6 +203,29 @@ it("formats Frontier battle stories with Frontier troop names, no tier prefix an
   expect(presentation.description).not.toContain("d20");
 });
 
+it("tells Frontier's raised, reinforced and produced troops by Frontier's names, with no tier", () => {
+  const frontierStore = {
+    get: (model: string) => {
+      if (model === "SliceRules") return { day_unit_seconds: 14_400 };
+      if (model === "GameRegistry")
+        return { start_main_at: 100, end_at: 1_000_000, scheduled_end_at: 1_000_000, seed: 1n };
+      if (model === "SettlementRules") return { spacing: 1024 };
+      return undefined;
+    },
+  } as unknown as Parameters<typeof buildStoryEventPresentation>[1];
+  const told = (storyType: string, payload: Record<string, unknown>) =>
+    buildStoryEventPresentation(story(storyType, payload), frontierStore);
+  const scouts = { category: "Paladin", tier: "T1", amount: "4535000000000" };
+  expect(told("ExplorerCreateStory", { structure_id: 5, explorer_id: 7, ...scouts }).description).toBe("4,535 Scouts");
+  expect(told("ExplorerAddStory", { explorer_id: 7, ...scouts }).description).toBe("+4,535 Scouts");
+  expect(told("ProductionStory", { received_resource_type: 32, received_amount: "1", cost: [] }).title).toMatch(
+    /^Scouts production started/,
+  );
+  expect(buildStoryEventPresentation(story("ExplorerCreateStory", { structure_id: 5, explorer_id: 7, ...scouts })).description).toBe(
+    "4,535 Paladin T1",
+  );
+});
+
 /**
  * Each BattleEvent shape combat.cairo emits, as its fields are recorded: army 20 from home 10 (player 0x123), army 22
  * from home 11 (player 0x456), structure 21 guarded by the Vanguard (player 0x0), structure 23 owned by player 0x123.

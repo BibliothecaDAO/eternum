@@ -286,7 +286,7 @@ const Nouns = () => (
   <Section title="Nouns" note="Read from the game's own tables through one function each.">
     <Rule
       head={["Resource", "resourceName"]}
-      rows={SHOWN_RESOURCES.map((id) => ({ input: String(id), cells: [resourceName(id)] }))}
+      rows={SHOWN_RESOURCES.map((id) => ({ input: String(id), cells: [resourceName(id, false)] }))}
     />
     <Rule
       head={["Structure", "structureName"]}

@@ -5,7 +5,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
+import { divideByPrecision, ResourceManager, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds, resourceName, formatShort } from "@bibliothecadao/types";
 
 interface CompactEntityInventoryProps {
@@ -131,7 +131,7 @@ export const CompactEntityInventory = memo(
 
 /** A carried resource: its painting and how much, named on hover. */
 const InventoryResource = ({ item }: { item: DisplayItem }) => {
-  const name = resourceName(item.resourceId) ?? ResourcesIds[item.resourceId] ?? "resource";
+  const name = resourceName(item.resourceId, configManager.isFrontier()) ?? ResourcesIds[item.resourceId] ?? "resource";
   return (
     <span data-tip={name}>
       <HudChip>

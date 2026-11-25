@@ -451,7 +451,7 @@ export const TransferResourcesContainer = ({
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center">
             <ResourceIcon resource={resource.resourceId} size="sm" withTooltip={false} />
-            <span className="ml-2">{resourceName(resource.resourceId)}</span>
+            <span className="ml-2">{resourceName(resource.resourceId, configManager.isFrontier())}</span>
           </div>
           <HudButton kind="secondary" size="sm" onClick={() => toggleResourceSelection(resource)}>
             {isSelected ? "Remove" : "Select"}
@@ -468,7 +468,7 @@ export const TransferResourcesContainer = ({
               rows={[
                 {
                   icon: resourceMeaning(resource.resourceId),
-                  name: resourceName(resource.resourceId),
+                  name: resourceName(resource.resourceId, configManager.isFrontier()),
                   held: displayAmount,
                   value: resourceAmounts[resource.resourceId] || 0,
                 },

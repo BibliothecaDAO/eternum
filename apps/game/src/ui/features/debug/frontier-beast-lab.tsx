@@ -126,6 +126,7 @@ export function FrontierBeastLab() {
     band === "lowly" ? bounds.beastWeakLower : bounds.beastStrongLower,
   ][site]!;
   const plate = buildStructurePlate({
+    frontier: true,
     entityId: 29,
     level: 0,
     hasWonder: false,

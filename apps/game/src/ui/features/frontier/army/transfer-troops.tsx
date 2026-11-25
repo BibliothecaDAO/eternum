@@ -12,7 +12,6 @@ import {
   HudButton,
   HudNotice,
   HudSheet,
-  HudTierChip,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
 import { TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
@@ -296,7 +295,6 @@ const ArmySide = ({
         </span>
       )}
       <span className="flex items-center gap-1 tabular-nums">
-        <HudTierChip tier={army.troopsFact.tier === "T3" ? 3 : army.troopsFact.tier === "T2" ? 2 : 1} />
         <span className="text-hud-label text-hud-muted">{formatAmount(army.troops)}</span>
         <span className="text-hud-muted">→</span>
         <span

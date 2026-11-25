@@ -140,7 +140,7 @@ export function ClearedSiteLab() {
                     <span>
                       <Icon name={resourceMeaning(reward.resourceType)} size={28} />
                       <strong>{formatAmount(Number(reward.amount) / RESOURCE_PRECISION)}</strong>{" "}
-                      {resourceName(reward.resourceType)}
+                      {resourceName(reward.resourceType, false)}
                     </span>
                   )}
                 </div>

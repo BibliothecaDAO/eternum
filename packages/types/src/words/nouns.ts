@@ -93,8 +93,8 @@ export const frontierTroopName = (troop: TroopType | string): string | undefined
 export const troopPlural = (troop: TroopType | string): string | undefined =>
   (TROOP_WORDS as Record<string, { many: string }>)[troop]?.many;
 
-/** A troop with its tier: "Knight T1", "Paladin T3". */
-const troopName = (troop: string, tier: string): string => `${troop} ${tier}`;
+export const troopName = (troop: TroopType, tier: string, frontier: boolean): string =>
+  frontier ? FRONTIER_TROOP_NAMES[troop] : `${troop} ${tier}`;
 
 const TROOP_RESOURCE = new RegExp(`^(${TROOP_TYPES.join("|")})(T[23])?$`);
 
@@ -102,13 +102,13 @@ const TROOP_RESOURCE = new RegExp(`^(${TROOP_TYPES.join("|")})(T[23])?$`);
  * A resource by its id, as a player reads it: its name in the game's table, a troop with its tier ("Knight T2", where
  * the table says "KnightT2"), LORDS in capitals. Unknown is a dash.
  */
-export const resourceName = (id: ResourcesIds | number | undefined): string => {
+export const resourceName = (id: ResourcesIds | number | undefined, frontier: boolean): string => {
   if (id === undefined) return UNKNOWN;
   if (id === ResourcesIds.Lords) return LORDS;
   const name = resources.find((resource) => resource.id === id)?.trait;
   if (!name) return UNKNOWN;
   const troop = TROOP_RESOURCE.exec(name);
-  return troop ? troopName(troop[1], troop[2] ?? "T1") : name;
+  return troop ? troopName(troop[1] as TroopType, troop[2] ?? "T1", frontier) : name;
 };
 
 export type StructureNamingMode = "frontier" | "blitz" | "eternum";

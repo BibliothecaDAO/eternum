@@ -1,3 +1,4 @@
+import { configManager } from "@bibliothecadao/eternum";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { AmountInput, HudButton } from "@/ui/design-system/kit/hud-elements";
 import { heldAgainstNeed } from "@/ui/design-system/kit/words";
@@ -50,7 +51,7 @@ export const RunInputsPanel = ({
 const RunInputRow = ({ input, onBudget }: { input: RunInput; onBudget: (amount: number) => void }) => (
   <div
     role="group"
-    aria-label={`${resourceName(input.resource)} for this run`}
+    aria-label={`${resourceName(input.resource, configManager.isFrontier())} for this run`}
     className="flex items-center gap-2 py-0.5"
   >
     <ResourceIcon resource={input.resource} size="sm" withTooltip={false} />
@@ -58,7 +59,7 @@ const RunInputRow = ({ input, onBudget }: { input: RunInput; onBudget: (amount: 
       {heldAgainstNeed(input.held, input.burn)}
     </span>
     <AmountInput
-      label={`${resourceName(input.resource)} to spend`}
+      label={`${resourceName(input.resource, configManager.isFrontier())} to spend`}
       value={input.budget ?? input.burn}
       max={Number.POSITIVE_INFINITY}
       decimals
