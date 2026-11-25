@@ -73,6 +73,9 @@ import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { NewsHeadlineBanner } from "@/ui/features/news-headlines/news-headline-banner";
+import { OPENING_MOMENTS, type OpeningMoment } from "@/ui/features/frontier/opening/opening";
+import { OPENING_RULES } from "@/ui/features/frontier/opening/opening-fixtures";
+import { AspectEmissaryDock } from "@/ui/features/frontier/tutorial/aspect-emissary-dock";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
 import { fragmentsToFill, RefillButton, RefillConfirm, RefillPrice } from "@/ui/features/frontier/army/refill";
@@ -526,6 +529,7 @@ const STATES = {
   picked: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 1, picked: "owner" },
   full: { clock: CLOCK, stores: FULL_STORES, armies: ARMIES },
   offline: { clock: UNKNOWN_CLOCK, stores: UNKNOWN_STORES, armies: UNKNOWN_ARMIES, offline: true },
+  "offline-tutorial": { clock: CLOCK, stores: STORES, armies: ARMIES, offline: true, tutorial: OPENING_MOMENTS[0] },
   menu: { clock: CLOCK, stores: STORES, armies: ARMIES, menu: true },
   chat: { clock: CLOCK, stores: STORES, armies: ARMIES, chat: true },
   empty: { clock: CLOCK, stores: STORES, armies: [] },
@@ -794,6 +798,7 @@ type LabState = {
   armies: readonly LabArmy[];
   selected?: number;
   offline?: boolean;
+  tutorial?: OpeningMoment;
   menu?: boolean;
   /** Chat open: a page on a phone, docked on desktop. Its controls are there to be measured for touch. */
   chat?: boolean;
@@ -845,6 +850,18 @@ export const HudLab = () => {
             clock={<DayPill clock={lab.clock} compact />}
             placeSwitch={<LabPlaceSwitch lab={lab} />}
             quest={<LabDailyQuest />}
+            notice={
+              lab.tutorial && (
+                <AspectEmissaryDock
+                  moment={lab.tutorial}
+                  rules={OPENING_RULES}
+                  layout="phone"
+                  status="showing"
+                  onDismiss={noop}
+                  onSkipAll={noop}
+                />
+              )
+            }
             realmCard={lab.storeCard && <LabRealmCard lab={lab} />}
           />
         }
