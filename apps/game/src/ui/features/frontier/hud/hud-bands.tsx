@@ -1,7 +1,7 @@
 import { type CSSProperties, type ReactNode, type RefObject, useLayoutEffect, useRef, useState } from "react";
 
 import { useKeyboardHeight } from "@/hooks/use-keyboard-inset";
-import { useSideways, useTablet } from "@/shell/frame/layout";
+import { useHudSideways, useHudTablet } from "@/hooks/helpers/use-compact-hud";
 import { HUD_COLUMN_MARK, HUD_FOOT_MARK, HUD_TOP_MARK } from "@/three/utils/labels/hud-clearance";
 import { SheetDock } from "@/ui/design-system/kit/hud-elements";
 
@@ -28,7 +28,8 @@ type Bands = {
   children?: ReactNode;
 };
 
-export const HudBands = (bands: Bands) => (useSideways() ? <SidewaysBands {...bands} /> : <UprightBands {...bands} />);
+export const HudBands = (bands: Bands) =>
+  useHudSideways() ? <SidewaysBands {...bands} /> : <UprightBands {...bands} />;
 
 const UprightBands = ({ strip, banner, page, notices, action, dock, nav, children }: Bands) => {
   const bar = useRef<HTMLDivElement>(null);
@@ -36,7 +37,7 @@ const UprightBands = ({ strip, banner, page, notices, action, dock, nav, childre
   const topBand = useRef<HTMLDivElement>(null);
   const top = useEdge(topBand, (rect) => rect.bottom + BAND_GAP);
   const [sheetBand, setSheetBand] = useState<HTMLDivElement | null>(null);
-  const tablet = useTablet();
+  const tablet = useHudTablet();
   return (
     <div
       data-hud-form={tablet ? "tablet" : "phone"}

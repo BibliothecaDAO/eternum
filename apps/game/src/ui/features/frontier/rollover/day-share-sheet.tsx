@@ -9,7 +9,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePlayerName, usePlayerNames } from "@/hooks/use-player-profile";
 import { getActiveGame } from "@/runtime/world";
-import { useLayout } from "@/shell/frame/layout";
+import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { ageOf } from "@/shell/play/ages";
 import { DayCard, type SharedDay } from "@/shell/share/day-card";
 import { useShareLink, useShareTally } from "@/shell/share/own-shares";
@@ -36,7 +36,7 @@ import { SystemShare } from "./system-share";
  * (useCardPublication).
  */
 export const DayShareSheet = ({ shared, onClose }: { shared: SharedDay; onClose: () => void }) => {
-  const phone = useLayout() === "phone";
+  const phone = useHudLayout() === "phone";
   const cut: CardCut = phone ? "tall" : "wide";
   const systemShare = phone && canShareCardFile();
   const size = CARD_CUTS[cut];

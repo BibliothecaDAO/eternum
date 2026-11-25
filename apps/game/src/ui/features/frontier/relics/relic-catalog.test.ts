@@ -25,7 +25,7 @@ describe("the relic catalog", () => {
       "Stamina recovery: +0.5/min → +0.8/min",
     );
     expect(relicEffect({ kind: "StaminaRegen", rank: 3 }, { staminaPerSecond: 1 / 20 })).toBe(
-      "Stamina recovery: +3/min → +5/min",
+      "Stamina recovery: +3/min → +4.8/min",
     );
     expect(relicEffect({ kind: "StaminaRegen", rank: 3 }, {})).toBe("Stamina recovery: 100% → 160%");
   });

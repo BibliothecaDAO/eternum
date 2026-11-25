@@ -11,7 +11,7 @@ import {
   selectLayer,
   unlockedLayerForTier,
 } from "./map-layers";
-import { useLayout } from "@/shell/frame/layout";
+import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { useHudPopover } from "./hud-popover";
 
 type PlaceTabKey = "realm" | "surface" | EtherealLayer;
@@ -128,7 +128,7 @@ export const PlaceMenu = ({
   }));
   const shown = entries.find((entry) => entry.selected) ?? entries[1]!;
   const { open, close, triggerProps, popover } = useHudPopover();
-  const layout = useLayout();
+  const layout = useHudLayout();
   return (
     <div className="frontier-place-menu pointer-events-auto">
       <button

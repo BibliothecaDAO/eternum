@@ -4,7 +4,6 @@ import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudPortrait, HudStamina, HudTier } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMIES,
-  ARMY_MOVE_HINT,
   ARMY_SLOT_WORDS,
   DEPLOY,
   STAMINA,
@@ -76,7 +75,6 @@ export const ArmyCard = ({
       </span>
       <HudStamina stamina={stamina} />
       {drain && <DeepDrain drain={drain} words compact />}
-      {selected && <span className="frontier-slot__detail">{ARMY_MOVE_HINT}</span>}
     </span>
   </button>
 );

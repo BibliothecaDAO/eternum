@@ -3,9 +3,8 @@ import {
   nativeResearchConstants as research,
   nativeStructureConstants as structures,
 } from "../../../../contracts/l3/world-native/schema/balance.gen";
-import { BANE_MODELS, readBaneEffects } from "../client/views/banes";
+import { BANE_MODELS, productionPercentAt, readBaneEffects } from "../client/views/banes";
 import { SCOPE_INPUT_MODELS } from "../sync/model-manifest";
-import { nativeBaneConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { productionOutput } from "../utils/production-output";
 import { isModeRuleEnabled } from "../utils/mode-rules";
 import { ID, ResourcesIds, RESOURCE_PRECISION, StructureType, type Resource } from "@bibliothecadao/types";
@@ -318,11 +317,10 @@ export class ResourceManager {
     if (!effects.known) return undefined;
     const { windows, productionPercent } = effects.known;
     const output = productionOutput(production, timestamp, windows, productionPercent);
-    const ash = windows.some(
-      (window) =>
-        window.kinds.includes(nativeBaneConstants.ASH_FALL) && window.start <= timestamp && timestamp < window.end,
-    );
-    return { ...output, rateNumerator: production.production_rate * BigInt(ash ? productionPercent : 100) };
+    return {
+      ...output,
+      rateNumerator: production.production_rate * BigInt(productionPercentAt(effects.known, timestamp)),
+    };
   }
 
   public getActiveProductions(): Array<{
