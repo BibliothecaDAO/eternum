@@ -342,6 +342,7 @@ import {
   formatExact,
   formatFigure,
   formatGain,
+  formatPercent,
   formatCount,
   formatShort,
   FRIEND_FRAGMENTS,
@@ -752,6 +753,18 @@ export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
 export const SHRINE = "Shrine";
 export const WELL = "Well";
+export const USE = "Use";
+export const USING = "Using…";
+export const exploresBought = (count: number) => `+${count} ${count === 1 ? "explore" : "explores"}`;
+export const wellRefillShare = (percent: number): string => `${formatPercent(percent / 100)} max`;
+export const SITE_USE_WORDS = {
+  shrineGives: "Opens an Oath pick",
+  shrineRule: "Using it opens Swear an Oath for this army",
+  wellWasted: "Stamina full: the well would be wasted",
+  wellToFull: (gain: string) => `${gain} ${STAMINA}, to full`,
+  failed: "The site could not be used.",
+  armyAt: (tiles: number, nearest: boolean) => `${tiles} ${tiles === 1 ? "tile" : "tiles"} away${nearest ? ", nearest" : ""}`,
+};
 export const SPIRE = "Spire";
 const loreOf = (site: string) => `${site} lore`;
 export const ATTACK = "Attack";
@@ -2264,7 +2277,7 @@ export const RESEARCH_TREE = {
   oaths: "Oath slots",
   oathSlots: (count: number) => `${count} Oath ${count === 1 ? "slot" : "slots"}`,
   oathLocked: "Locked",
-  oathEarn: `Clear a site that holds an ${SITE_OATH.label}, or reveal a ${SHRINE}`,
+  oathEarn: `Clear a site that holds an ${SITE_OATH.label}, or use a ${SHRINE}`,
   conscriptionLine: "More troops from every troop building.",
   rationsLine: "Armies cost less wheat to deploy.",
   troopsAnHour: "Troops an hour",

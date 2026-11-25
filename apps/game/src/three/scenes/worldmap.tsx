@@ -21,6 +21,7 @@ import { isMapPreviewAction } from "./worldmap-action-preview-policy";
 import { projectHexEastEdgeToScreen, projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { playRevealYield } from "@/ui/motion/moments/reveal-yield";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
+import { sendSiteUse, siteUseFacts, usableSiteAt } from "@/ui/features/frontier/sites/use-site";
 import { canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
@@ -2435,6 +2436,7 @@ export default class WorldmapScene extends WarpTravel {
     const army = this.selectedArmyRow();
     const armyTroops = army?.troops;
     const short = refusal?.reason === "stamina" ? this.selectedArmyShortOf(refusal.need) : undefined;
+    const site = this.usableSiteAt(hexCoords);
     return orderTip({
       path,
       exploreStamina: army
@@ -2445,6 +2447,7 @@ export default class WorldmapScene extends WarpTravel {
       refusal,
       staminaWait: short?.wait,
       staminaHeld: short?.held,
+      site: site ? siteUseFacts(this.game.store, site, army, getBlockTimestamp().currentDefaultTick) : undefined,
       byRealm: getLiveWorldmapEntityActions().selectedEntityId != null && this.selectedArmyId() === null,
     });
   }
@@ -2798,7 +2801,12 @@ export default class WorldmapScene extends WarpTravel {
     if (selectedEntityId === null || selectedEntityId === undefined) return false;
     const path = actionPaths.get(ActionPaths.posKey(hexCoords, true));
     const action = path && ActionPaths.getActionType(path);
-    return action === ActionType.EnterDepth || action === ActionType.CreateArmy || action === ActionType.Help;
+    return (
+      action === ActionType.UseSite ||
+      action === ActionType.EnterDepth ||
+      action === ActionType.CreateArmy ||
+      action === ActionType.Help
+    );
   }
 
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
@@ -3074,7 +3082,13 @@ export default class WorldmapScene extends WarpTravel {
         const actionType = ActionPaths.getActionType(actionPath);
 
         // Only validate army availability for army-specific actions
-        const armyActions = [ActionType.Explore, ActionType.Move, ActionType.Attack, ActionType.SpireTravel];
+        const armyActions = [
+          ActionType.Explore,
+          ActionType.Move,
+          ActionType.Attack,
+          ActionType.SpireTravel,
+          ActionType.UseSite,
+        ];
         const isArmySelection = this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined;
         if (actionType && armyActions.includes(actionType) && isArmySelection) {
           // The army isn't drawn in the map's view now (a chunk on its way): no order, and the army stays selected.
@@ -3089,6 +3103,8 @@ export default class WorldmapScene extends WarpTravel {
           this.onArmySpireTravel(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Help) {
           this.onArmyHelp(actionPath, selectedEntityId);
+        } else if (actionType === ActionType.UseSite) {
+          this.onSiteUse(actionPath, selectedEntityId);
         } else if (actionType === ActionType.CreateArmy) {
           this.onArmyCreate(actionPath, selectedEntityId);
         } else if (actionType === ActionType.EnterDepth) {
@@ -4225,7 +4241,25 @@ export default class WorldmapScene extends WarpTravel {
     })();
   }
 
+  private onSiteUse(actionPath: ActionPath[], selectedEntityId: ID) {
+    const account = useAccountStore.getState().account;
+    const site = this.usableSiteAt(sceneHexOf(actionPath[actionPath.length - 1].hex));
+    if (!account || !site) return;
+    void sendSiteUse({
+      systemCalls: this.game.systemCalls,
+      signer: account,
+      explorerId: safeInteger(selectedEntityId),
+      site,
+    });
+  }
+
+  private usableSiteAt(hexCoords: HexPosition) {
+    const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    return usableSiteAt(this.game.store, { col: contract.x, row: contract.y, alt: activeMapLayer() });
+  }
+
   private hasSiteCardAt(hexCoords: HexPosition): boolean {
+    if (this.usableSiteAt(hexCoords) !== null) return true;
     const { col, row } = contractHexOf(hexCoords);
     const occupier = getTileAt(this.game.store, activeMapLayer(), col, row)?.occupier_type;
     return occupier === TileOccupier.DeepSite || occupier === TileOccupier.SupplyPost;
