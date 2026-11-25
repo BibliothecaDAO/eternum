@@ -127,7 +127,7 @@ export const DeployView = ({
         </div>
       )}
       {amount.most > 0 && (
-        <>
+        <div className="deploy-size">
           <div className="deploy-size-bar">
             <span className="deploy-size-bar__state">
               <span>{DEPLOY_WORDS.troopCount}</span>
@@ -164,11 +164,14 @@ export const DeployView = ({
               onChange={onCount}
             />
           )}
-        </>
+        </div>
       )}
-      {slots.open && slots.open.length > 0 && (slots.open.length > 1 || !start) && (
-        <DeploySlots open={slots.open} picked={start?.slot} onPick={slots.onPick} />
-      )}
+      <div className="deploy-slots-row">
+        {slots.open && slots.open.length > 0 && (slots.open.length > 1 || !start) && (
+          <DeploySlots open={slots.open} picked={start?.slot} onPick={slots.onPick} />
+        )}
+        {oathSlots}
+      </div>
       {troopsAtHome === 0 ? (
         troopsWait === undefined ? (
           <>
@@ -183,7 +186,6 @@ export const DeployView = ({
       ) : (
         tile === "none" && <HudNotice tone="warn" line={NO_OPEN_TILE} />
       )}
-      {oathSlots}
       {wheatLimit && (
         <HudNotice
           tone="bad"
@@ -230,18 +232,16 @@ const DeploySlots = ({
   onPick: (slot: number) => void;
 }) => (
   <div role="group" aria-label="Army slots" className="flex gap-1.5">
-    {open.map((slot) => {
-      const line = slotStartLine(slot);
-      return (
-        <OpenSlot
-          key={slot.slot}
-          label={`${ARMY} ${slot.number}`}
-          pulse={false}
-          start={slot.start && line ? { bar: slot.start, words: `${line}.` } : undefined}
-          selected={slot.slot === picked}
-          onDeploy={() => onPick(slot.slot)}
-        />
-      );
-    })}
+    {open.map((slot) => (
+      <OpenSlot
+        key={slot.slot}
+        label={`${ARMY} ${slot.number}`}
+        pulse={false}
+        tip={slotStartLine(slot)}
+        bar={slot.start}
+        selected={slot.slot === picked}
+        onDeploy={() => onPick(slot.slot)}
+      />
+    ))}
   </div>
 );

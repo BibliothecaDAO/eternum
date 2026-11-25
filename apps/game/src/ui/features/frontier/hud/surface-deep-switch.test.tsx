@@ -67,7 +67,8 @@ describe("the place menu", () => {
         <PlaceMenu
           isMapView
           layers={layers}
-          realm={{ name: "Duskbite", mark: "realm-1" }}
+          realm={{ mark: "realm-1" }}
+          lines={{ realm: "Duskbite" }}
           onGoRealm={vi.fn()}
           onGoSurface={vi.fn()}
           onSwitch={onSwitch}

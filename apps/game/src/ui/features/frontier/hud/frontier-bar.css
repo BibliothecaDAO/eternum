@@ -43,21 +43,19 @@
   align-items: center;
   border: 0;
   background: transparent;
-  padding: 0 0 8px;
+  padding: 0;
   color: rgb(var(--hud-ink));
   cursor: pointer;
 }
 .frontier-quest-orb .frontier-progress-ring--lg {
-  width: 44px;
-  height: 44px;
+  width: 46px;
+  height: 46px;
   border: 1.5px solid var(--hud-line-strong);
   box-shadow: var(--hud-shadow-panel);
 }
 .frontier-quest-orb__count {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
+  margin-top: -8px;
   border: 1px solid var(--hud-line-strong);
   border-radius: var(--hud-radius-round);
   background: var(--hud-surface-to);
@@ -77,9 +75,6 @@
   box-shadow: 0 0 14px rgb(var(--hud-gold) / 0.55);
 }
 .frontier-quest-orb[data-ready="true"] .frontier-quest-orb__count {
-  right: -4px;
-  left: auto;
-  transform: none;
   border-color: rgb(var(--hud-gold));
   background: rgb(var(--hud-gold));
   color: rgb(var(--hud-dark));
@@ -121,55 +116,10 @@
 .frontier-popover[data-layout="phone"] {
   --popover-edge: theme(spacing.2);
 }
-.frontier-fragments-socket {
-  display: inline-flex;
-  height: 28px;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid color-mix(in srgb, var(--hud-warn) 72%, var(--hud-line-strong));
-  border-radius: 2px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--hud-warn) 22%, var(--hud-surface-from)),
-    color-mix(in srgb, var(--hud-warn) 12%, var(--hud-well))
-  );
-  box-shadow: inset 0 1px 0 color-mix(in srgb, rgb(var(--hud-gold)) 25%, transparent);
-  padding: 0 3px 0 4px;
-  color: rgb(var(--hud-ink));
-  font-size: var(--hud-text-label);
-  line-height: 1;
-  font-weight: var(--hud-weight-strong);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: border-color var(--hud-fast) var(--hud-ease);
-}
-.frontier-fragments-socket:hover {
-  border-color: rgb(var(--hud-gold));
-}
-.frontier-fragments-socket[data-compact="true"] {
-  height: 28px;
-  padding: 0 4px;
-}
-.frontier-fragments-socket__icon {
-  display: inline-flex;
-  flex: none;
-}
-.frontier-fragments-socket__amount {
-  color: rgb(var(--hud-ink));
-}
-.frontier-fragments-socket__plus {
-  display: inline-flex;
-  width: 18px;
-  height: 18px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 2px;
-  background: rgb(var(--hud-gold));
-  color: rgb(var(--hud-dark));
-  font-size: var(--hud-text-label);
-  line-height: 1;
-  font-weight: var(--hud-weight-strong);
+.frontier-popover[data-layout="tablet"] {
+  --popover-edge: theme(spacing.2);
+  left: auto;
+  right: var(--popover-edge);
 }
 
 .frontier-day-trigger {
@@ -179,6 +129,99 @@
   background: transparent;
   padding: 0;
   cursor: pointer;
+}
+.frontier-day-dial {
+  position: relative;
+  display: inline-flex;
+  width: 64px;
+  height: 64px;
+  flex: none;
+}
+.frontier-day-dial[data-size="52"] {
+  width: 52px;
+  height: 52px;
+}
+.frontier-day-dial__bezel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.frontier-day-dial__ring.frontier-progress-ring {
+  position: absolute;
+  top: 11%;
+  left: 15%;
+  width: 70%;
+  height: 70%;
+  border: 0;
+  background: transparent;
+}
+.frontier-day-dial__ring .frontier-progress-ring__track {
+  stroke-width: 5;
+  stroke: transparent;
+}
+.frontier-day-dial__ring .frontier-progress-ring__fill {
+  stroke-width: 5;
+  stroke: rgb(var(--hud-gold));
+  filter: drop-shadow(0 0 3px color-mix(in srgb, rgb(var(--hud-gold)) 65%, transparent));
+}
+.frontier-day-dial[data-tone="ember"] .frontier-progress-ring__fill {
+  stroke: var(--hud-bad);
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--hud-bad) 75%, transparent));
+}
+.frontier-day-dial__face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+.frontier-day-dial__kicker {
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-badge);
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--hud-muted);
+  transform: scale(0.8);
+}
+.frontier-day-dial__numeral {
+  font-family: var(--hud-font);
+  font-size: var(--hud-text-title);
+  line-height: 1;
+  font-weight: var(--hud-weight-title);
+  color: rgb(var(--hud-ink));
+}
+.frontier-day-dial__left {
+  margin-top: 1px;
+  font-family: var(--hud-font);
+  font-size: var(--hud-text-badge);
+  line-height: 1;
+  font-weight: var(--hud-weight-strong);
+  color: rgb(var(--hud-gold));
+}
+.frontier-day-dial[data-size="52"] .frontier-day-dial__bezel {
+  inset: 6px;
+  width: auto;
+  height: auto;
+  border-radius: var(--hud-radius-round);
+}
+.frontier-day-dial[data-size="52"] .frontier-day-dial__ring.frontier-progress-ring {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+.frontier-day-dial[data-size="52"] .frontier-progress-ring__track {
+  stroke: var(--hud-well);
+}
+.frontier-day-dial[data-size="52"] .frontier-day-dial__kicker {
+  transform: scale(0.68);
+  margin-bottom: -2px;
+  color: rgb(var(--hud-ink));
+}
+.frontier-day-dial[data-size="52"] .frontier-day-dial__numeral {
+  font-size: var(--hud-text-strong);
+  color: rgb(var(--hud-gold));
 }
 .frontier-progress-ring {
   position: relative;

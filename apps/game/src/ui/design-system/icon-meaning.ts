@@ -31,8 +31,8 @@ export const AGE_LOCKUP = {
 export const LINK_PREVIEW = "/images/covers/link-preview-54d58004.png";
 
 export const DAY_MEDALLION = {
-  calm: "/images/hud/day-medallion-calm.webp",
-  ember: "/images/hud/day-medallion-ember.webp",
+  64: { calm: "/images/hud/day-medallion-calm.webp", ember: "/images/hud/day-medallion-ember.webp" },
+  52: { calm: "/images/hud/day-disc-calm.webp", ember: "/images/hud/day-disc-ember.webp" },
 } as const;
 
 export type IconMeaning = keyof typeof meanings;

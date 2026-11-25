@@ -1,4 +1,3 @@
-import { aspectName } from "@bibliothecadao/types";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -14,7 +13,6 @@ import { DayMedallion } from "./day-pill";
 import { FrontierPlaces } from "./frontier-desktop";
 import { isTroopStore, STORE_KINDS } from "../stores";
 import { RealmCard } from "./realm-card";
-import { RealmEmblem } from "./realm-header-chip";
 import type { StoreReading } from "./status-strip";
 
 let host: HTMLDivElement;
@@ -103,7 +101,7 @@ it("offers a desktop's four places in order, Settings named, each a panel its pr
   expect(places("settings")[3].getAttribute("aria-selected")).toBe("true");
 });
 
-it("renders the Aspect medallion tinted in the Aspect color and Order of Power below the Realm name on the realm card and the phone's emblem", () => {
+it("renders the Aspect medallion tinted in the Aspect color and Order of Power below the Realm name on the realm card", () => {
   const onHome = vi.fn();
   act(() =>
     root.render(
@@ -131,16 +129,6 @@ it("renders the Aspect medallion tinted in the Aspect color and Order of Power b
   expect(card.querySelector('[data-order-id="12"] img')).not.toBeNull();
   act(() => identity.click());
   expect(onHome).toHaveBeenCalledTimes(1);
-
-  act(() =>
-    root.render(
-      <>
-        <RealmEmblem name="Duskbite" fallbackIcon="realm-1" aspect={1} orderId={12} onPress={onHome} />
-      </>,
-    ),
-  );
-  const label = `Duskbite, Order of Power, ${aspectName(1)}`;
-  expect(host.querySelector(".frontier-phone-emblem")?.getAttribute("aria-label")).toBe(label);
 });
 
 it("shows every stock on the desktop realm card, Fragments opening the shop and the next rank upgrading the castle", () => {

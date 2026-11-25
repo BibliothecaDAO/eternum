@@ -14,12 +14,11 @@ import { type Rank } from "@/ui/design-system/kit/words";
 import { useGoToFrontierPlace } from "../frontier-home";
 import { useRealmStores } from "../realm-stores";
 import { storeMakerLines } from "./store-makers";
-import { FRONTIER_STORES, isMadeStore, MADE_STORES, type MadeStore } from "../stores";
+import { FRONTIER_STORES, isMadeStore, type MadeStore } from "../stores";
 import { StoreCard, type StoreLine } from "./store-card";
 
 /** The stores whose ring or plate opens a card: those a building makes (Essence has no building and no limit). */
 export type CardStore = MadeStore;
-export const CARD_STORE_KINDS = MADE_STORES;
 
 export const FrontierStoreCard = ({
   rules,

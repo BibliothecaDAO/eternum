@@ -64,8 +64,12 @@ export const RealmCard = ({
   onUpgradeCastle?: () => void;
   onClose?: () => void;
 }) => (
-  <section aria-label={REALM} className="frontier-cluster-card frontier-realm-card pointer-events-auto">
-    <header className="frontier-realm-card__head" data-closable={onClose ? "" : undefined}>
+  <section
+    aria-label={REALM}
+    data-hud-part=""
+    className="frontier-cluster-card frontier-realm-card pointer-events-auto"
+  >
+    <header className="frontier-realm-card__head">
       <button
         type="button"
         className="frontier-realm-card__identity"

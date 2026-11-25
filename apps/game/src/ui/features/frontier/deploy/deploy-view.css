@@ -19,6 +19,7 @@
   gap: theme(spacing[1.5]);
 }
 .deploy-troop-card {
+  container-type: inline-size;
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -39,7 +40,7 @@
   max-width: 100%;
   overflow: hidden;
   color: rgb(var(--hud-ink));
-  font-size: var(--hud-text-body);
+  font-size: min(var(--hud-text-body), 14cqi);
   line-height: var(--hud-leading-body);
   font-weight: var(--hud-weight-strong);
   text-overflow: ellipsis;
@@ -50,6 +51,15 @@
   font-size: var(--hud-text-label);
   line-height: var(--hud-leading-label);
   font-variant-numeric: tabular-nums;
+}
+.deploy-size {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing[1.5]);
+  border: 1px solid var(--hud-divider);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  padding: theme(spacing.2) theme(spacing.3);
 }
 .deploy-size-bar {
   display: flex;
@@ -83,4 +93,14 @@
 .deploy-size-bar__count {
   color: rgb(var(--hud-gold));
   font-weight: var(--hud-weight-strong);
+}
+.deploy-slots-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: theme(spacing.2);
+}
+.deploy-slots-row:empty {
+  display: none;
 }

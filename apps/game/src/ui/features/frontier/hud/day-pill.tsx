@@ -34,7 +34,13 @@ export const FrontierDayClock = ({
   const finished = useGameFinished();
   if (finished) return <GameFinishedPill />;
   return (
-    <button type="button" aria-label={TODAY} onClick={onOpenToday} className="frontier-day-trigger pointer-events-auto">
+    <button
+      type="button"
+      aria-label={TODAY}
+      data-hud-part=""
+      onClick={onOpenToday}
+      className="frontier-day-trigger pointer-events-auto"
+    >
       <DayMedallion clock={clock} size={compact ? 52 : 64} />
     </button>
   );
@@ -55,7 +61,7 @@ export const DayMedallion = ({ clock, size = 64 }: { clock: DayClock; size?: 52 
       className={cn("frontier-day-dial pointer-events-auto tabular-nums", STORE_TONES[clock.tone].text)}
     >
       <img
-        src={clock.tone === "ember" ? DAY_MEDALLION.ember : DAY_MEDALLION.calm}
+        src={clock.tone === "ember" ? DAY_MEDALLION[size].ember : DAY_MEDALLION[size].calm}
         alt=""
         className="frontier-day-dial__bezel"
       />
