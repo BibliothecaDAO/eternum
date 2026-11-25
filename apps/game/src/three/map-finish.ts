@@ -26,28 +26,23 @@ const SATURATION = 1.1;
 const VIGNETTE = 0.18;
 
 export class MapFinish {
-  private readonly finishes = new Map<Object3D, { camera: Camera; finish: Finish }>();
+  private finish: Finish | undefined;
 
   constructor(private readonly renderer: WebGPURenderer) {}
 
   render(scene: Object3D, camera: Camera): void {
-    let entry = this.finishes.get(scene);
-    if (!entry || entry.camera !== camera) {
-      entry?.finish.dispose();
-      entry = { camera, finish: createFinish(this.renderer, scene, camera) };
-      this.finishes.set(scene, entry);
-    }
-    entry.finish.render();
+    this.finish ??= createFinish(this.renderer, scene, camera);
+    this.finish.render(scene, camera);
   }
 
   dispose(): void {
-    this.finishes.forEach(({ finish }) => finish.dispose());
-    this.finishes.clear();
+    this.finish?.dispose();
+    this.finish = undefined;
   }
 }
 
 interface Finish {
-  render(): void;
+  render(scene: Object3D, camera: Camera): void;
   dispose(): void;
 }
 
@@ -64,7 +59,11 @@ function createFinish(renderer: WebGPURenderer, scene: Object3D, camera: Camera)
   pipeline.outputColorTransform = false;
   pipeline.outputNode = asColour(smoothed).add(vec4(dither, dither, dither, 0));
   return {
-    render: () => pipeline.render(),
+    render: (shown, viewer) => {
+      scenePass.scene = shown;
+      scenePass.camera = viewer;
+      pipeline.render();
+    },
     dispose: () => [pipeline, scenePass, glow, smoothed].forEach((owned) => releasable(owned).dispose()),
   };
 }
