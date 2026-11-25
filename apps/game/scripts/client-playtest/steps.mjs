@@ -1445,10 +1445,14 @@ const OATH_SLOTS_STEPS = [
     name: "read-army-oath-slots",
     play: async ({ browser }) => {
       const name = browser.read(dockArmyName(2));
-      const army = name && browser.read(buttonLabelled(`^${name}$`));
+      const army = name && browser.read(buttonLabelled(`^${exactly(name)}$`));
       if (!army) return { army };
       browser.tap(army.offset);
-      const details = await readUntil(() => browser.read(buttonLabelled(`^${name}: details$`)), Boolean, SHEET_WAIT_MS);
+      const details = await readUntil(
+        () => browser.read(buttonLabelled(`^${exactly(name)}: details$`)),
+        Boolean,
+        SHEET_WAIT_MS,
+      );
       if (details) browser.tap(details.offset);
       await readUntil(() => browser.read(elementAt('[data-oath-slots="3"]')), Boolean, SHEET_WAIT_MS);
       return browser.read(`(() => {
@@ -1697,7 +1701,7 @@ function staminaEffectSteps(wind) {
 
 function readArmyStamina(browser) {
   return browser.read(`(() => {
-    const sheet = [...document.querySelectorAll('[data-kit-sheet]')].find((open) => new RegExp(${JSON.stringify(`^${ARMY_NAME}$`)}).test(open.getAttribute('aria-label')));
+    const sheet = document.querySelector(${JSON.stringify(ARMY_SHEET)});
     const line = sheet?.querySelector('[data-stamina-line]');
     const meter = line?.querySelector('[role="meter"][aria-label="stamina"]');
     const rect = line?.getBoundingClientRect();
@@ -1707,14 +1711,14 @@ function readArmyStamina(browser) {
 }
 
 async function openTheArmyPanel(browser) {
-  const open = browser.read(SHEET_NAME);
-  if (isArmyName(open)) {
-    return { army: open, sheet: open, region: browser.read(sheetRegion(`[data-kit-sheet][aria-label="${open}"]`)) };
+  const open = browser.read(ARMY_SHEET_NAME);
+  if (open) {
+    return { army: open, sheet: open, region: browser.read(sheetRegion(ARMY_SHEET)) };
   }
   const army = await focusTheArmyFromItsDock(browser);
   if (!army) return { army };
   if (browser.read(SHEET_NAME) !== army) {
-    const details = browser.read(buttonLabelled(`^${army}(: details)?$`));
+    const details = browser.read(buttonLabelled(`^${exactly(army)}(: details)?$`));
     if (details) browser.tap(details.offset);
   }
   const sheet = await readUntil(
@@ -1845,8 +1849,10 @@ const sheetRegion = (selector) => `JSON.stringify((() => {
 const REALM_LEVELS = ["Settlement", "City", "Kingdom", "Empire"];
 const CASTLE_SHEET_TEXT = `document.querySelector('[data-kit-sheet][aria-label="Castle"]')?.textContent ?? ""`;
 const SHEET_NAME = `JSON.stringify(document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null)`;
-const ARMY_NAME = "[\\d,]+ [A-Z][a-z]+";
-const isArmyName = (name) => new RegExp(`^${ARMY_NAME}$`).test(name ?? "");
+const ARMY_SHEET = "[data-kit-sheet]:has([data-army-step])";
+const ARMY_SHEET_NAME = `JSON.stringify(document.querySelector(${JSON.stringify(ARMY_SHEET)})?.getAttribute("aria-label") ?? null)`;
+const PICKED_ARMY_NAME = `JSON.stringify(document.querySelector("[data-picked-army]")?.dataset.pickedArmy ?? document.querySelector('nav[aria-label="Armies"] button[aria-pressed="true"]')?.getAttribute("aria-label") ?? null)`;
+const exactly = (name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const dockArmyName = (number) =>
   `JSON.stringify([...document.querySelectorAll('nav[aria-label="Armies"] button[aria-pressed]')].filter((button) => button.getAttribute("aria-label") !== "Deploy")[${number - 1}]?.getAttribute("aria-label") ?? null)`;
 const SHEET_WAIT_MS = 3_000;
@@ -3243,16 +3249,13 @@ function mapShareRead({ played }) {
 
 /** The picked army's panel: its sheet, opened by its own details button (a phone's picked army, a desktop's row). */
 async function openThePickedArmysPanel(browser) {
-  const open = browser.read(SHEET_NAME);
-  if (isArmyName(open)) return open;
-  const details = browser.read(buttonLabelled(`^${ARMY_NAME}(: details)?$`));
+  const open = browser.read(ARMY_SHEET_NAME);
+  if (open) return open;
+  const picked = browser.read(PICKED_ARMY_NAME);
+  const details = picked && browser.read(buttonLabelled(`^${exactly(picked)}(: details)?$`));
   if (!details) return null;
   browser.tap(details.offset);
-  return readUntil(
-    () => browser.read(SHEET_NAME),
-    (name) => isArmyName(name),
-    SHEET_WAIT_MS,
-  );
+  return readUntil(() => browser.read(ARMY_SHEET_NAME), Boolean, SHEET_WAIT_MS);
 }
 
 /**
@@ -3274,7 +3277,7 @@ async function openASiteCard(browser) {
       SHEET_WAIT_MS,
     );
     offered.push(sheet);
-    if (sheet !== null && !isArmyName(sheet)) return { card: sheet, offered };
+    if (sheet !== null && sheet !== browser.read(ARMY_SHEET_NAME)) return { card: sheet, offered };
     if (sheet !== null) browser.press("Escape");
   }
   return { card: null, offered };
@@ -4785,7 +4788,7 @@ async function openTheReinforcement({ browser, devTools }) {
 
 function reinforceSheetOpen({ played }) {
   if (!played.army) return failed("the map draws no token for the realm's army", played);
-  if (!new RegExp(`^Reinforce ${ARMY_NAME}$`).test(played.state?.sheet ?? ""))
+  if (!played.state?.sheet?.startsWith("Reinforce "))
     return failed(`the right-click on the army opened ${played.state?.sheet ?? "no card"}`, played);
   return completed({ sheet: played.state.sheet, buttons: played.state.buttons });
 }
