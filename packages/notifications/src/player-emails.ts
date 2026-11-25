@@ -12,11 +12,11 @@ export const signInCodeEmail = (options: { to: string; code: string; minutes: nu
     subject: `${options.code} is your Realms sign-in code`,
     preheader: `It expires in ${options.minutes} minutes.`,
     art: "sign-in-code",
-    lines: [`Enter it in Realms to sign in. It expires in ${options.minutes} minutes.`],
+    lines: [`Enter this code in Realms to sign in. It expires in ${options.minutes} minutes.`],
     code: options.code,
-    note: "If you did not ask for it, you can ignore this email.",
-    because: `Someone asked to sign in to Realms with ${options.to}.`,
-    text: `Your Realms sign-in code is ${options.code}. It expires in ${options.minutes} minutes. If you did not ask for it, you can ignore this email.`,
+    note: "If you did not request this code, you can ignore this email.",
+    because: `Someone requested a Realms sign-in code for ${options.to}.`,
+    text: `Your Realms sign-in code is ${options.code}. It expires in ${options.minutes} minutes. If you did not request this code, you can ignore this email.`,
   });
 
 /** A linked wallet, or none when it was unlinked. */
@@ -27,13 +27,13 @@ export const payoutWalletEmail = (options: {
   idempotencyKey: string;
 }): Email => {
   const secure = "If you did not make this change, sign in and secure your account.";
-  const because = `Sent to ${options.to}, the email of your Realms account.`;
+  const because = `Sent to ${options.to} for your Realms account.`;
   const shared = { to: options.to, appUrl: options.appUrl, idempotencyKey: options.idempotencyKey, note: secure };
   if (options.address === null)
     return playerEmail({
       ...shared,
       subject: "Your Realms payout wallet was unlinked",
-      preheader: "Your Realms account has no payout wallet now.",
+      preheader: "No payout wallet is linked to your Realms account.",
       art: "wallet-unlinked",
       lines: ["Your Realms payout wallet was unlinked."],
       action: "Open Realms",
@@ -63,20 +63,21 @@ export const walletRecoveryEmail = (options: {
   appUrl: string;
   idempotencyKey: string;
 }): Email => {
-  const cancel = "If you did not start it, open Realms, Settings, Payout wallet, and cancel it with your passkey.";
+  const cancel =
+    "If you did not start this recovery, open Realms, go to You → Wallet & Devices → Payout wallet, and cancel it with your passkey.";
   return playerEmail({
     to: options.to,
     appUrl: options.appUrl,
     idempotencyKey: options.idempotencyKey,
     note: cancel,
-    subject: "A recovery of your Realms wallet started",
-    preheader: "A new passkey takes over your Realms wallet in 7 days unless you cancel.",
+    subject: "Realms wallet recovery started",
+    preheader: "A new passkey will take over your Realms wallet in 7 days unless you cancel.",
     art: "wallet-recovery",
-    lines: ["A new passkey takes over your Realms wallet in 7 days:"],
+    lines: ["A new passkey will take over your Realms wallet in 7 days:"],
     detail: options.wallet,
     action: "Open Realms",
-    because: `Sent to ${options.to}, the email of your Realms account.`,
-    text: `A new passkey takes over your Realms wallet ${options.wallet} in 7 days. ${cancel}`,
+    because: `Sent to ${options.to} for your Realms account.`,
+    text: `A new passkey will take over your Realms wallet ${options.wallet} in 7 days. ${cancel}`,
   });
 };
 

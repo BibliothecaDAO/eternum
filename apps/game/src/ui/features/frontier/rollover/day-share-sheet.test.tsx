@@ -194,7 +194,7 @@ it("makes the phone's image only once Herald's closing rank has answered, and wi
   const share = phoneSheet();
   signIn("0xa");
   await openSheet({ ...sharedDay("0x1"), rank: undefined });
-  expect(button("Making the image")?.disabled).toBe(true);
+  expect(button("Creating image…")?.disabled).toBe(true);
   await openSheet(sharedDay("0x1"));
   await act(async () => button("Share").click());
   expect(await share.mock.lastCall![0].files![0]!.text()).toContain("#1 ▲2");
@@ -236,9 +236,9 @@ it("keeps Post on X waiting while the rank loads, publishes nothing then, and th
   setViewportWidth(1440);
   signIn("0xa");
   await openSheet({ ...sharedDay("0x1"), rank: undefined });
-  expect(button("Making the image")?.disabled).toBe(true);
+  expect(button("Creating image…")?.disabled).toBe(true);
   const post = [...host.querySelectorAll<HTMLButtonElement>("button")].at(-1)!;
-  expect([post.disabled, post.textContent]).toEqual([true, "Making the image"]);
+  expect([post.disabled, post.textContent]).toEqual([true, "Creating image…"]);
   await act(async () => post.click());
   await settle();
   expect(identity.client.uploadShareCard).not.toHaveBeenCalled();

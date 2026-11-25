@@ -1,15 +1,16 @@
 import "./deploy-view.css";
 
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { type TroopType, formatExact, formatShort, formatWait } from "@bibliothecadao/types";
+import { type TroopType, formatExact, formatWait } from "@bibliothecadao/types";
 import {
   HudButton,
-  HudChip,
   HudLine,
   HudNotice,
   HudPrice,
   HudSheet,
+  HudStamina,
   HudWindowFoot,
+  type StaminaBar,
 } from "@/ui/design-system/kit/hud-elements";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
 import {
@@ -22,7 +23,6 @@ import {
   NO_OPEN_TILE,
   NO_TROOPS_AT_HOME,
   noTroopsUntil,
-  STAMINA,
   TROOPS,
   wheatForOnly,
 } from "@/ui/design-system/kit/words";
@@ -81,7 +81,7 @@ export const DeployView = ({
   const troopName =
     troopSelection?.choices.find(({ category }) => category === troopSelection.selected)?.name ?? TROOPS;
   return (
-    <HudSheet label={DEPLOY} cue={start?.start && <StartChip stamina={start.start.current} />} onClose={onClose}>
+    <HudSheet label={DEPLOY} cue={start?.start && <StartBar stamina={start.start} />} onClose={onClose}>
       {troopSelection && troopSelection.choices.length > 0 && (
         <TroopChoices
           choices={troopSelection.choices}
@@ -142,11 +142,9 @@ export const DeployView = ({
   );
 };
 
-const StartChip = ({ stamina }: { stamina: number }) => (
-  <span data-deploy-start>
-    <HudChip icons={["stamina"]} label={`${DEPLOY_WORDS.startsOn} ${STAMINA}`}>
-      {formatShort(stamina)}
-    </HudChip>
+const StartBar = ({ stamina }: { stamina: StaminaBar }) => (
+  <span data-deploy-start className="deploy-start">
+    <HudStamina stamina={stamina} />
   </span>
 );
 

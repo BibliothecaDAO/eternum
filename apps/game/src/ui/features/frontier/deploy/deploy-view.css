@@ -79,3 +79,7 @@
   border-style: solid;
   color: rgb(var(--hud-gold));
 }
+.deploy-start {
+  display: block;
+  width: 6rem;
+}

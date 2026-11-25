@@ -22,7 +22,6 @@ import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/frontier-desktop";
 import { PhoneTabBar, type HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
-import { OfflineBanner } from "@/ui/features/frontier/hud/offline-notice";
 import { TopBarView } from "@/ui/features/frontier/hud/phone-top-bar";
 import { RealmCard } from "@/ui/features/frontier/hud/realm-card";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
@@ -72,6 +71,8 @@ import { linkWalletLine } from "@/ui/features/frontier/value/link-wallet";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
 import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
+import { useConnectionStore } from "@/hooks/store/use-connection-store";
+import { NewsHeadlineBanner } from "@/ui/features/news-headlines/news-headline-banner";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
 import { fragmentsToFill, RefillButton, RefillConfirm, RefillPrice } from "@/ui/features/frontier/army/refill";
@@ -876,7 +877,6 @@ export const HudLab = () => {
             )
           ) : undefined
         }
-        banner={lab.offline ? <OfflineBanner onRetry={noop} /> : undefined}
         action={
           <>
             {lab.order && !desktop && (
@@ -1236,42 +1236,52 @@ const LabBands = ({
   ...slots
 }: ComponentProps<typeof HudBands> & { desktop: boolean; lab: LabState }) => (
   <LabGame mode="frontier" facts={labQuestFacts}>
-    {() =>
-      desktop ? (
-        <FrontierDesktop
-          clock={<DayMedallion clock={lab.clock} />}
-          quest={<LabDailyQuest />}
-          placeSwitch={
-            <PlaceMenu
-              isMapView={lab.realmView === undefined}
-              layers={LAB_MAP_LAYERS}
-              onGoRealm={noop}
-              onGoSurface={noop}
-            />
-          }
-          banner={slots.banner}
-          realm={<LabRealmCard lab={lab} />}
-          armies={slots.dock}
-          page={slots.page}
-          widePage={Boolean(lab.research)}
-          foot={
-            <>
-              {slots.notices}
-              {slots.action}
-            </>
-          }
-          places={
-            !lab.visiting && <FrontierPlaces surface={labSurface(lab)} onSurface={noop} research={!lab.offline} />
-          }
-        >
-          {slots.children}
-        </FrontierDesktop>
-      ) : (
-        <HudBands {...slots} />
-      )
-    }
+    {() => (
+      <>
+        {lab.offline && <LabConnectionLost />}
+        {desktop ? (
+          <FrontierDesktop
+            clock={<DayMedallion clock={lab.clock} />}
+            quest={<LabDailyQuest />}
+            placeSwitch={
+              <PlaceMenu
+                isMapView={lab.realmView === undefined}
+                layers={LAB_MAP_LAYERS}
+                onGoRealm={noop}
+                onGoSurface={noop}
+              />
+            }
+            realm={<LabRealmCard lab={lab} />}
+            armies={slots.dock}
+            page={slots.page}
+            widePage={Boolean(lab.research)}
+            foot={
+              <>
+                {slots.notices}
+                {slots.action}
+              </>
+            }
+            places={
+              !lab.visiting && <FrontierPlaces surface={labSurface(lab)} onSurface={noop} research={!lab.offline} />
+            }
+          >
+            {slots.children}
+          </FrontierDesktop>
+        ) : (
+          <HudBands {...slots} />
+        )}
+      </>
+    )}
   </LabGame>
 );
+
+const LabConnectionLost = () => {
+  useEffect(() => {
+    useConnectionStore.getState().setGlobalStatus("failed");
+    return () => useConnectionStore.getState().setGlobalStatus("connected");
+  }, []);
+  return <NewsHeadlineBanner headline={null} />;
+};
 
 const everyStore = (stores: readonly StoreReading[]): StoreReading[] =>
   STORE_KINDS.map((kind) => stores.find((each) => each.kind === kind) ?? store(kind, 0));

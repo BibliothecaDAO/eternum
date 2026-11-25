@@ -4,7 +4,6 @@ import { getResourceSoundId } from "@/three/sound/utils";
 import type { ResourcesIds } from "@bibliothecadao/types";
 import { riseSprite } from "../motion-layer";
 import { bankedCounterTarget, findBankedCounter, flyToBankedCounter, resourceIcon } from "./banked-flight";
-import { addRevealGain } from "./reveal-gains";
 
 const POP_MS = 200;
 const MERGE_MS = 1_000;
@@ -32,14 +31,11 @@ export const playRevealYield = ({
   own: boolean;
   now?: number;
 }): void => {
-  if (own) {
-    playChainedCollect(resourceId, now);
-    addRevealGain(resourceId, amount, now);
-  }
+  if (own) playChainedCollect(resourceId, now);
   const counter = own ? findBankedCounter(resourceId) : null;
   if (counter) flyHome(resourceId, counter, from, now);
   // Under a unit a find says no amount (findGain): the resource's icon rises alone.
-  else riseSprite({ at: from, icon: resourceIcon(resourceId), label: findGain(amount) ?? "" });
+  riseSprite({ at: from, icon: resourceIcon(resourceId), label: findGain(amount) ?? "" });
 };
 
 const playChainedCollect = (resourceId: ResourcesIds, now: number) => {

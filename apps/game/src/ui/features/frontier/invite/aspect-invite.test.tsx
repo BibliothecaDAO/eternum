@@ -134,7 +134,7 @@ it("says when identity refuses the invite, and asks again on Try again", async (
   createInvite.mockRejectedValue(new Error("aspect_unavailable"));
   await renderInvite(3);
   await act(async () => new Promise((resolve) => setTimeout(resolve, 1_500)));
-  expect(host.textContent).toContain("Your invite link could not be made.");
+  expect(host.textContent).toContain("Could not create invite link.");
   createInvite.mockResolvedValue({ code: "INVT2346", aspect: 3, chainId: getActiveGame()!.chainId, gameId: 1 });
   await act(async () => button("Try again")!.click());
   await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
