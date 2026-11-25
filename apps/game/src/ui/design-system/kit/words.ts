@@ -895,6 +895,20 @@ export const DAY_BANNER_WORDS = {
   staminaBane: (percent: number) => `Stamina returns at ${formatExact(percent)}% while the bane lasts`,
   productionBane: (percent: number) => `Production runs at ${formatExact(percent)}% while the bane lasts`,
   fraction: (progress: number, target: number) => `${formatShort(progress)}/${formatShort(target)}`,
+  questTitle: (name: string) => `Daily Quest: ${name}`,
+  bane: "Bane",
+  worldBaneTitle: (name: string) => `World Bane: ${name}`,
+  teamBaneTitle: (caster: string) => `Bane from ${caster}`,
+  beastChip: (percent: number) => `${formatExact(percent)}% Guards`,
+  staminaChip: (percent: number) => `${formatExact(percent)}% Stamina`,
+  productionChip: (percent: number) => `${formatExact(percent)}% Production`,
+  heightChip: "No Deep height",
+  heightBane: "Your Aspect's hyperstructure gains no height in the Deep while the bane lasts",
+  baneBreak: (completed: number, required: number) =>
+    `Break: ${formatExact(completed)}/${formatExact(required)} of your Aspect`,
+  baneClears: (left: string) => `Clears in ${left}`,
+  baneBroken: "Broken",
+  twiceIfBroken: "2× reward if broken",
   objectiveLine: (objective: string, target: number) => {
     const space = objective.indexOf(" ");
     return space === -1
@@ -926,6 +940,7 @@ export interface OpeningRules {
   scoutExploreStamina: number;
   exploreStamina: number;
   dayLeftSeconds?: number;
+  bane?: { title: string; chip: string };
 }
 
 const ownAspectLabel = (aspect: AspectId | undefined): string => (aspect !== undefined ? aspectName(aspect) : "");
@@ -957,7 +972,8 @@ export const OPENING_WORDS = {
       `Welcome back. Four Aspects race in the ${DEEP}, and ${ownAspectLabel(rules.ownAspect)} leads you.`,
     oath: (rules: OpeningRules) =>
       `Your Orders grant power today. Swear one Oath, or pass for ${formatGain(rules.oathPassStamina)} ${STAMINA}.`,
-    bane: () => "A bane strikes today. Your Aspect breaks it when enough members finish.",
+    bane: (rules: OpeningRules) =>
+      `${rules.bane ? `${rules.bane.title}. ${rules.bane.chip}.` : "A bane strikes today."} Your Aspect breaks it when enough members finish.`,
     "day-end": () => "Today's map and armies go at day end.",
     deep: (rules: OpeningRules) =>
       `Every ${formatExact(rules.deepTickSeconds)} seconds here, armies lose ${formatAmount(rules.deepLossPerTick)} troops. Hold sites to earn.`,
@@ -984,7 +1000,7 @@ export const OPENING_WORDS = {
   actions: {
     "season0-welcome": "Open Season to check the race.",
     oath: "Pick one Oath or pass.",
-    bane: "Open Today to see the bane quest.",
+    bane: `Press the ${DAY_BANNER_WORDS.bane} pill at the top.`,
     "day-end": "Your realm, research and Glory stay",
     deep: `Hold a ${DEEP} site or withdraw in time.`,
     aspects: "Open Season to check standings.",
@@ -1010,7 +1026,7 @@ export const OPENING_WORDS = {
     "daily-quest": { title: "Reward collected", line: "Labor and Essence added." },
     quest: { title: "Quest started", line: "Finish it, then collect the reward." },
     essence: { title: "Research opened", line: "Learn any node marked ready." },
-    "day-end": { title: "Day end noted", line: "Tap the Day medallion anytime for Today." },
+    "day-end": { title: "Day end noted", line: "Tap the Day pill anytime for Today." },
     bane: { title: "Bane checked", line: "Help your Aspect break it today." },
     aspects: { title: "Standings opened", line: "Track your Aspect's race here." },
     shop: { title: "Shop opened", line: "Refill stamina or unlock seals anytime." },

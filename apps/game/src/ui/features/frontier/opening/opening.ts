@@ -32,6 +32,7 @@ export interface OpeningContext {
   readonly outOfStamina: boolean;
   readonly hasRelic: boolean;
   readonly openedToday: boolean;
+  readonly openedQuest: boolean;
   readonly openedResearch: boolean;
   readonly openedSeason: boolean;
   readonly openedShop: boolean;
@@ -136,8 +137,8 @@ export const OPENING = {
     teacher: 3,
     parts: ["bane-row"],
     reachedWhen: (ctx) => ctx.hasActiveBane || ctx.hasBrokenBane,
-    showsWhen: (ctx) => ctx.hasActiveBane && ctx.deployedArmies > 0,
-    completesWhileShowing: (ctx) => ctx.openedToday,
+    showsWhen: (ctx) => ctx.hasActiveBane,
+    completesWhileShowing: (ctx) => ctx.openedQuest,
   },
   deep: {
     icon: "depth-3",

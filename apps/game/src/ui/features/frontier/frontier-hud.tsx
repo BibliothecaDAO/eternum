@@ -38,6 +38,7 @@ import { ArmyDock } from "./hud/army-dock";
 import { closeHudPopover } from "./hud/hud-popover";
 import { useChatKey } from "./hud/chat-key";
 import { DailyQuestChip } from "./hud/daily-quest-chip";
+import { closeQuestDock, QuestDock, useQuestDockOpen } from "./day/quest-dock";
 import { FrontierDesktop, FrontierPlaces } from "./hud/frontier-desktop";
 import { FrontierFeed } from "./hud/frontier-feed";
 import { RealmCard } from "./hud/realm-card";
@@ -196,6 +197,8 @@ const FrontierHudBody = ({
   const goToPlace = useGoToFrontierPlace(shown);
   const feedUnread = useUnreadImportantCount(surface === "feed");
   const shownName = shown ? modeConfig.structure.getName(shown).name : null;
+  const questOpen = useQuestDockOpen();
+  useEffect(() => closeQuestDock, []);
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
   const switchView = (toRealm: boolean) => {
@@ -278,9 +281,13 @@ const FrontierHudBody = ({
     (surface === "season" &&
       headerFacts.store.get("RaceRules", { game_id: configManager.getActiveGameId() }) !== undefined);
   const showOpening = !(desktop && widePage);
-  const openingNotice = showOpening && (opening.line || opening.offer) && (
+  const questDock = own && questOpen && (
+    <QuestDock realm={own} rules={rules} layout={desktop ? "desktop" : "phone"} />
+  );
+  const openingNotice = showOpening && (questDock || opening.line || opening.offer) && (
     <div data-opening-notice className="flex flex-col gap-1.5 empty:hidden">
-      {opening.line && (
+      {questDock}
+      {!questDock && opening.line && (
         <AspectEmissaryDock
           moment={opening.line.moment}
           rules={opening.line.rules}

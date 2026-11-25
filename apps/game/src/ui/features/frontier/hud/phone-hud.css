@@ -99,6 +99,16 @@ button.frontier-stock-chips[aria-expanded="true"] {
 .frontier-phone-float__quest {
   margin-right: 2px;
 }
+.frontier-phone-float:has([data-daily-quest]) {
+  flex-wrap: wrap;
+}
+.frontier-phone-float:has([data-daily-quest]) .frontier-phone-float__lead {
+  order: 1;
+  flex-basis: 100%;
+}
+.frontier-phone-float:has([data-daily-quest]) .frontier-phone-float__quest {
+  margin-left: auto;
+}
 .frontier-place-pill {
   display: inline-flex;
   height: 34px;

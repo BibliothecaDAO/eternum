@@ -1,6 +1,8 @@
 import "./aspect-emissary-dock.css";
 
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, type Ref, useEffect, useRef, useState } from "react";
+
+import type { AspectId } from "@bibliothecadao/types";
 
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
@@ -75,14 +77,71 @@ export function AspectEmissaryDock({
     <Icon name={emissary.portrait} size={size} alt={emissary.name} className="emissary-dock__portrait" />
   );
 
+  const lessonLine = says(OPENING_WORDS.lines[moment](rules));
+  const action = !completed && !askingSkip && (
+    <span className="emissary-dock__action">
+      <Icon name={spec.icon} size={15} />
+      <span>{OPENING_WORDS.actions[moment]}</span>
+    </span>
+  );
+  const lessonDock = {
+    "data-tutorial-dock": moment,
+    "data-tutorial-aspect": aspectId,
+    "data-tutorial-layout": layout,
+    "data-tutorial-status": status,
+    "data-tutorial-form": form,
+  };
+
+  if (form === "card")
+    return (
+      <EmissaryCard
+        dockRef={dock}
+        aspectId={aspectId}
+        layout={layout}
+        label={title}
+        title={
+          <>
+            {phone && completed && <span className="emissary-dock__tick">✓</span>}
+            {shownTitle}
+          </>
+        }
+        controls={
+          phone ? (
+            !completed && (
+              <>
+                {skip}
+                {!askingSkip && <EmissaryClose onClose={onDismiss} />}
+              </>
+            )
+          ) : (
+            <>
+              {done}
+              {skip}
+              {!askingSkip && <EmissaryClose onClose={onDismiss} />}
+            </>
+          )
+        }
+        className={completed ? "emissary-dock--completed" : undefined}
+        attributes={lessonDock}
+      >
+        {phone ? (
+          <>
+            <span className="emissary-dock__line">{lessonLine}</span>
+            {action}
+          </>
+        ) : (
+          <p className="emissary-dock__speech">
+            <span>{lessonLine}</span>
+            {action}
+          </p>
+        )}
+      </EmissaryCard>
+    );
+
   return (
     <aside
       ref={dock}
-      data-tutorial-dock={moment}
-      data-tutorial-aspect={aspectId}
-      data-tutorial-layout={layout}
-      data-tutorial-status={status}
-      data-tutorial-form={form}
+      {...lessonDock}
       aria-label={`${emissary.name}: ${title}`}
       className={`emissary-dock emissary-dock--${form} pointer-events-auto${phone ? " emissary-dock--phone" : ""}${completed ? " emissary-dock--completed" : ""}`}
       style={emissary.style}
@@ -109,7 +168,7 @@ export function AspectEmissaryDock({
             ✕
           </button>
         </>
-      ) : form === "strip" ? (
+      ) : (
         <>
           <span className="emissary-dock__fold-portrait">{portrait(32)}</span>
           <span className="emissary-dock__strip-text">
@@ -123,38 +182,75 @@ export function AspectEmissaryDock({
             {skip}
           </span>
         </>
-      ) : phone ? (
+      )}
+    </aside>
+  );
+}
+
+export const EmissaryClose = ({ onClose }: { onClose: () => void }) => (
+  <button type="button" className="emissary-dock__btn" aria-label={CLOSE} onClick={onClose}>
+    ✕
+  </button>
+);
+
+/**
+ * The emissary's speaker card, the one dock an Aspect speaks through: a lesson, the day's quest, a bane. Its portrait
+ * and medallion are the Aspect's, its head names the speaker (a desktop's) and the title, and the body is the caller's.
+ */
+export const EmissaryCard = ({
+  aspectId,
+  layout,
+  label,
+  title,
+  controls,
+  tone,
+  className,
+  attributes,
+  dockRef,
+  children,
+}: {
+  aspectId: AspectId;
+  layout: "desktop" | "phone";
+  label: string;
+  title: ReactNode;
+  controls?: ReactNode;
+  tone?: "bane";
+  className?: string;
+  attributes?: Record<string, string | number | undefined>;
+  dockRef?: Ref<HTMLElement>;
+  children: ReactNode;
+}) => {
+  const emissary = resolveAspectEmissary(aspectId);
+  const phone = layout === "phone";
+  const portrait = (size: number) => (
+    <Icon name={emissary.portrait} size={size} alt={emissary.name} className="emissary-dock__portrait" />
+  );
+  const medallion = (size: number) => (
+    <span className="emissary-dock__medallion">
+      <AspectMark aspect={aspectId} size={size} decorative />
+    </span>
+  );
+  return (
+    <aside
+      ref={dockRef}
+      {...attributes}
+      data-tone={tone}
+      aria-label={`${emissary.name}: ${label}`}
+      className={`emissary-dock emissary-dock--card pointer-events-auto${phone ? " emissary-dock--phone" : ""}${className ? ` ${className}` : ""}`}
+      style={emissary.style}
+    >
+      {phone ? (
         <>
           <span className="emissary-dock__portrait-bay">
             <span className="emissary-dock__portrait-frame">{portrait(48)}</span>
-            <span className="emissary-dock__medallion">
-              <AspectMark aspect={aspectId} size={16} decorative />
-            </span>
+            {medallion(16)}
           </span>
           <span className="emissary-dock__body">
             <span className="emissary-dock__head">
-              <span className="emissary-dock__title">
-                {completed && <span className="emissary-dock__tick">✓</span>}
-                {shownTitle}
-              </span>
-              {!completed && (
-                <span className="emissary-dock__controls">
-                  {skip}
-                  {!askingSkip && (
-                    <button type="button" className="emissary-dock__btn" aria-label={CLOSE} onClick={onDismiss}>
-                      ✕
-                    </button>
-                  )}
-                </span>
-              )}
+              <span className="emissary-dock__title">{title}</span>
+              {controls && <span className="emissary-dock__controls">{controls}</span>}
             </span>
-            <span className="emissary-dock__line">{says(OPENING_WORDS.lines[moment](rules))}</span>
-            {!completed && !askingSkip && (
-              <span className="emissary-dock__action">
-                <Icon name={spec.icon} size={15} />
-                <span>{OPENING_WORDS.actions[moment]}</span>
-              </span>
-            )}
+            {children}
           </span>
         </>
       ) : (
@@ -168,47 +264,26 @@ export function AspectEmissaryDock({
           <span className="emissary-dock__rivet emissary-dock__rivet--bl" aria-hidden="true" />
           <span className="emissary-dock__rivet emissary-dock__rivet--br" aria-hidden="true" />
           <span className="emissary-dock__crest" aria-hidden="true" />
-
           <div className="emissary-dock__portrait-bay">
             <div className="emissary-dock__portrait-frame">{portrait(68)}</div>
-            <span className="emissary-dock__medallion">
-              <AspectMark aspect={aspectId} size={20} decorative />
-            </span>
+            {medallion(20)}
           </div>
-
           <div className="emissary-dock__body">
             <div className="emissary-dock__head">
               <span className="emissary-dock__speaker">
                 <span className="emissary-dock__gem" aria-hidden="true" />
                 <span className="emissary-dock__aspect">{emissary.name}</span>
-                <span className="emissary-dock__title">· {shownTitle}</span>
+                <span className="emissary-dock__title">· {title}</span>
               </span>
-              <span className="emissary-dock__controls">
-                {done}
-                {skip}
-                {!askingSkip && (
-                  <button type="button" className="emissary-dock__btn" aria-label={CLOSE} onClick={onDismiss}>
-                    ✕
-                  </button>
-                )}
-              </span>
+              {controls && <span className="emissary-dock__controls">{controls}</span>}
             </div>
-
-            <p className="emissary-dock__speech">
-              <span>{says(OPENING_WORDS.lines[moment](rules))}</span>
-              {!completed && !askingSkip && (
-                <span className="emissary-dock__action">
-                  <Icon name={spec.icon} size={15} />
-                  <span>{OPENING_WORDS.actions[moment]}</span>
-                </span>
-              )}
-            </p>
+            {children}
           </div>
         </>
       )}
     </aside>
   );
-}
+};
 
 const dockForm = (dock: {
   phone: boolean;

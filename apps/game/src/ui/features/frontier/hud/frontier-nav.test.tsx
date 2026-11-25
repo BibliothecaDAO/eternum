@@ -7,7 +7,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { PhoneTabBar, type HudSurface } from "./frontier-nav";
 import { selectLayer } from "./map-layers";
 import { useOnePanel } from "./one-panel";
-import { useHudPopover } from "./hud-popover";
+import { toggleQuestDock, useQuestDockOpen } from "../day/quest-dock";
 import { PlaceSwitch } from "./surface-deep-switch";
 
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
@@ -96,30 +96,19 @@ it("choosing the layer already shown puts the page away without moving the map",
   expect(page()).toBe("map");
 });
 
-function SurfacePopover() {
-  const { triggerProps, popover } = useHudPopover({ surface: true });
-  return (
-    <>
-      <button type="button" {...triggerProps}>
-        Quest
-      </button>
-      {popover(<p data-quest-card>Today's quest</p>, { className: "", layout: "phone" })}
-    </>
-  );
-}
-
 function PhoneHudWithQuest() {
   const { surface, openSurface } = useOnePanel(null, true);
   return (
     <>
       <output data-page>{surface ?? "map"}</output>
-      <SurfacePopover />
+      <button onClick={toggleQuestDock}>Quest</button>
+      {useQuestDockOpen() && <p data-quest-card>Today's quest</p>}
       <button onClick={() => openSurface("today")}>Open page</button>
     </>
   );
 }
 
-it("puts the open page away when the quest's card opens on a phone, and closes the card when a page opens", () => {
+it("puts the open page away when the quest's dock opens on a phone, and closes the dock when a page opens", () => {
   const card = () => document.querySelector("[data-quest-card]");
   act(() => root.render(<PhoneHudWithQuest />));
   press("Open page");

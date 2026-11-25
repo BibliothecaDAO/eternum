@@ -4,11 +4,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { GameProvider } from "@/hooks/context/game-context";
 import { chainOf } from "@/lab/game/lab-chain";
 import { questScenario } from "@/lab/game/quest-scenario";
-import { dayOf } from "@bibliothecadao/eternum";
+import { dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, aspects } from "@bibliothecadao/types";
 import { nativeBaneConstants, nativeQuestConstants } from "@bibliothecadao/eternum/game-client";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
-import { DailyQuest } from "./daily-quest";
+import { QuestDock } from "./quest-dock";
 
 const clock = vi.hoisted(() => ({ now: 350 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => clock.now }));
@@ -45,7 +45,11 @@ function fixture() {
           value={{ store, systemCalls: { claim_daily_quest: submit } } as unknown as GameClientSetup}
           account={{ address: scenario.player, account: { address: scenario.player } } as never}
         >
-          <DailyQuest realm={store.require("Structure", { game_id: 1, entity_id: 7 })} />
+          <QuestDock
+            realm={store.require("Structure", { game_id: 1, entity_id: 7 })}
+            rules={readExpeditionRules(store, 1)!}
+            layout="desktop"
+          />
         </GameProvider>,
       ),
     );
@@ -54,7 +58,7 @@ function fixture() {
 
 const collect = () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Collect");
 
-describe("daily quest", () => {
+describe("the quest dock", () => {
   it("submits once, keeps Collect busy, and renders only the received grant as collected", async () => {
     const game = fixture();
     game.draw();
@@ -210,7 +214,7 @@ describe("bane collection", () => {
     expect(collectAgain()).toBeUndefined();
   });
 
-  it("shows a team bane's quest alone, with no bane row, and grants no second reward when it ends", () => {
+  it("names a team bane by the Aspect that cast it, over its quest, and grants no second reward when it ends", () => {
     const game = worldDay();
     const source = aspects.find((aspect) => aspect.id !== 2)!;
     game.store.applyFacts([
@@ -236,13 +240,25 @@ describe("bane collection", () => {
     ]);
     game.win();
     game.draw();
-    expect(host.textContent).toContain("The Stand");
-    expect(host.textContent).not.toContain(source.name);
-    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("Clear 3 guarded sites");
+    expect(host.querySelector("aside")?.getAttribute("aria-label")).toBe(`Havoc: Bane from ${source.name}`);
+    expect(host.querySelector("[data-bane-row]")?.textContent).toBe(
+      "No Deep heightBreak: 2/2 of your Aspect · Broken",
+    );
+    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("The Stand · Clear 3 guarded sites (3/3)");
+    expect(host.textContent).not.toContain("2× reward if broken");
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(collectAgain()).toBeUndefined();
     expect(reward("Labor")).toBe("1,000 Labor");
   });
+
+  it("says when a world bane clears while the Aspect has not broken it", () => {
+    const game = worldDay();
+    game.draw();
+    expect(host.querySelector("[data-bane-row]")?.textContent).toMatch(
+      /^50% ProductionBreak: 0\/2 of your Aspect · Clears in \d+[hm]$/,
+    );
+  });
+
   it("shows a received sub-unit reward as less than one, never zero", () => {
     const game = worldDay();
     game.win();

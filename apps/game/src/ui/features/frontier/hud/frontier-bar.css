@@ -81,6 +81,19 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+.frontier-quest-orb__words {
+  display: none;
+}
+.frontier-quest-orb[data-tone="bane"] .frontier-progress-ring--lg {
+  border-color: var(--hud-bad);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--hud-bad) 55%, transparent);
+}
+.frontier-quest-orb[data-tone="bane"] .frontier-quest-orb__count {
+  border-color: var(--hud-bad);
+  color: var(--hud-bad);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 .frontier-quest-orb__alert {
   position: absolute;
   top: -3px;
