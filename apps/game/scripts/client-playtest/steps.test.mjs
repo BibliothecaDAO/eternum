@@ -18,6 +18,7 @@ import {
   INVITE_WORDS,
   EXPLORE,
   MOVE,
+  OPENING_WORDS,
   EVENTS_WORDS,
   MENU,
   RESEARCH,
@@ -60,6 +61,7 @@ describe("the HUD's words the steps press and read", () => {
       chat: CHAT,
       settings: SETTINGS,
       today: TODAY,
+      skipTutorial: OPENING_WORDS.skipTutorial,
     });
   });
 });

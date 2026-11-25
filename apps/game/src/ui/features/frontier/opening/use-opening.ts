@@ -3,7 +3,6 @@ import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identit
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { isSeasonZeroPlayer } from "@/shell/season-tab/archive/archive";
 import {
   type ExpeditionRules,
@@ -50,6 +49,7 @@ import {
   reachedOnContext,
   siteAlertOfferDue,
   stepTutorialMachine,
+  TUTORIAL_SKIPPED,
   type TutorialDisplay,
 } from "./opening-state";
 import { SITE_ALERT_OFFER } from "./use-site-alert-offer";
@@ -95,7 +95,6 @@ export function useOpening(
   }, []);
 
   const races = useRacesAspects();
-  const showEverything = useWorldAppearanceStore((state) => state.showEverything);
   const storeState = useOpeningStore((state) => state);
   const progress = accountProgress(owner, storeState);
   const ctx = useOpeningContext(rules, realm, progress.reached, openedSurface);
@@ -107,7 +106,7 @@ export function useOpening(
 
   const opened = openedMoments(progress.reached, onState);
   const lineRules = useOpeningRules(rules, realm);
-  const canEvaluate = Boolean(realm) && !showEverything && progress.known && storeState.loaded;
+  const canEvaluate = Boolean(realm) && progress.known && storeState.loaded;
   const transition = canEvaluate
     ? stepTutorialMachine({
         showing: storeState.showing,
@@ -120,16 +119,13 @@ export function useOpening(
 
   const completedKey = transition.newlyCompleted.join();
   useEffect(() => {
-    if (!canEvaluate) {
-      if (showEverything) void commitTutorialStep({ completed: [], showing: null, confirmed: null });
-      return;
-    }
+    if (!canEvaluate) return;
     void commitTutorialStep({
       completed: completedKey.length > 0 ? completedKey.split(",") : [],
       showing: transition.nextShowing,
       confirmed: transition.confirmedMoment,
     });
-  }, [canEvaluate, showEverything, completedKey, transition.nextShowing, transition.confirmedMoment]);
+  }, [canEvaluate, completedKey, transition.nextShowing, transition.confirmedMoment]);
 
   const activeLine: TutorialDisplay | null =
     !canEvaluate || !lineRules
@@ -141,7 +137,7 @@ export function useOpening(
           : null;
 
   return {
-    opened: showEverything || !realm || races !== true || !progress.ownsParts ? "all" : opened,
+    opened: !realm || races !== true || !progress.ownsParts || progress.seen.has(TUTORIAL_SKIPPED) ? "all" : opened,
     line: activeLine,
     dismiss: () => {
       if (!activeLine) return;

@@ -114,6 +114,7 @@ export const HUD_WORDS = {
   chat: "Chat",
   settings: "Settings",
   today: "Today",
+  skipTutorial: "Skip tutorial",
 };
 
 const PHONE_PLACE_PRESSES = {
@@ -4067,8 +4068,14 @@ const OPENING_STATE = `JSON.stringify({
   stores: [...document.querySelectorAll("[data-store-kind], [data-kind]")].map((node) => node.getAttribute("data-store-kind") ?? node.getAttribute("data-kind")),
 })`;
 
-/** Turns Show everything on in the page's saved settings and loads the lab game again, as a player's setting persists. */
-const SHOW_EVERYTHING = `JSON.stringify((() => { localStorage.setItem("eternum-world-appearance", JSON.stringify({ state: { showEverything: true, fogStyle: "clear", reducedMotion: false, haptics: true }, version: 0 })); return true; })())`;
+const UNFOLD_TUTORIAL = `JSON.stringify((() => { const fold = document.querySelector('[data-tutorial-form="reminder"] .emissary-dock__fold-btn'); fold?.click(); return Boolean(fold); })())`;
+const PRESS_SKIP_TUTORIAL = `JSON.stringify((() => { const skip = [...document.querySelectorAll("[data-tutorial-dock] button")].find((button) => button.textContent.trim() === ${JSON.stringify(HUD_WORDS.skipTutorial)}); skip?.click(); return Boolean(skip); })())`;
+
+async function skipTheTutorial(browser) {
+  browser.read(UNFOLD_TUTORIAL);
+  await sleep(300);
+  for (let press = 0; press < 2 && browser.read(PRESS_SKIP_TUTORIAL); press++) await sleep(300);
+}
 
 /** The Aspect page's feed: each fight's row, as a player reads it. */
 const ASPECT_FEED = `JSON.stringify((() => {
@@ -4143,10 +4150,10 @@ function raceBoardSteps(result) {
                 : failed("Each line must be told once, and none again after the page loads again", played),
           },
           {
-            name: "show-everything-shows-the-banner",
+            name: "skipped-tutorial-shows-the-banner",
             settleMs: 0,
             play: async (context) => {
-              context.browser.read(SHOW_EVERYTHING);
+              await skipTheTutorial(context.browser);
               const back = await reloadOn("Deep", "map", scenario)(context);
               // The lab's reloaded page offers the wallet step first; a player puts it away to play on.
               if (context.browser.read(`JSON.stringify(Boolean(document.querySelector('[aria-label="Close"]')))`))
@@ -4163,7 +4170,7 @@ function raceBoardSteps(result) {
             verify: ({ played }) =>
               played.state.banner.length > 0
                 ? completed(played)
-                : failed("With Show everything the day banner must show", played),
+                : failed("With the tutorial skipped the day banner must show", played),
           },
         ]
       : []),
@@ -6902,7 +6909,7 @@ export const STEP_SETS = {
         name: "world-screen",
         settleMs: 3_000,
         play: async ({ browser, extraScreenshot }) => {
-          browser.read(SHOW_EVERYTHING);
+          await skipTheTutorial(browser);
           browser.run(["reload"]);
           await sleep(3_000);
           if (browser.read(`JSON.stringify(Boolean(document.querySelector('[aria-label="Close"]')))`))
@@ -7147,7 +7154,7 @@ export const STEP_SETS = {
         name: "panel-research",
         settleMs: 3_000,
         play: async ({ browser, extraScreenshot }) => {
-          browser.read(SHOW_EVERYTHING);
+          await skipTheTutorial(browser);
           browser.run(["reload"]);
           await sleep(3_000);
           await openPlace(browser, HUD_WORDS.research);
