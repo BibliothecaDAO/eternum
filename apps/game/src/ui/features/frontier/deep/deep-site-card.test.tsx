@@ -122,7 +122,7 @@ describe("the Deep site's live native binding", () => {
   it("keeps the joined slot army's refilled stamina and panel after vacating its tile", async () => {
     const hud = draw();
     try {
-      expect(hud.host.textContent).toContain("Held by");
+      expect(hud.host.querySelector("[data-deep-tag]")?.textContent).toBe("Held · Prowess");
       expect(hud.host.textContent).toContain("Prowess");
       expect(hud.button("Join")?.disabled).toBe(false);
       await act(async () => hud.button("Join")!.click());
