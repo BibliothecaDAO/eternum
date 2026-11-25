@@ -77,7 +77,6 @@ import { FrontierToday } from "./log/frontier-today";
 import { type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
 import { FrontierResearch } from "./research/frontier-research";
 
-import { useBuildOpensOnEntering } from "./build/build-button";
 import { BuildingsInFlight, useRealmPlots } from "./build/build-sheet";
 import { STORE_KINDS } from "./stores";
 import { useLordsBalance } from "@/shell/value/use-lords-balance";
@@ -186,10 +185,8 @@ const FrontierHudBody = ({
     previousMapView.current = isMapView;
     setSurface(null);
   }, [isMapView, setSurface]);
-  useBuildOpensOnEntering(desktop && !isMapView && ordersAllowed && realm && !visit ? realm : null);
   const chat = useGameChat(surface === "chat");
   const chatPane = useChatKey(() => setSurface("chat"), { enabled: !desktop });
-  const [deskChat, setDeskChat] = useState(false);
   const headerStores = useStoreReadings(shown, rules);
   const headerFacts = useNativeFacts(REALM_HEADER_MODELS);
   const own = realm && !visit ? realm : null;
@@ -367,7 +364,7 @@ const FrontierHudBody = ({
       clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
       placeSwitch={placeMenu}
-      chat={<HudChatWindow open={deskChat} onOpenChange={setDeskChat} />}
+      chat={<HudChatWindow open={surface === "chat"} onOpenChange={(open) => setSurface(open ? "chat" : null)} />}
       banner={<OfflineNotice />}
       realm={realmCard}
       armies={armyDock}

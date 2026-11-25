@@ -1115,7 +1115,7 @@ it("orders the desktop places as Research, Feed, Season, Settings, lists the fiv
   }
 });
 
-it("opens Build in the desktop rail on an open plot as the player enters the Realm, and Escape puts it away", async () => {
+it("opens nothing in the desktop rail as the player enters the Realm: Build waits for a plot pressed", async () => {
   viewport.set(1440);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
@@ -1125,10 +1125,8 @@ it("opens Build in the desktop rail on an open plot as the player enters the Rea
     expect(buildSheet()).toBeNull();
     await act(async () => host.querySelector<HTMLButtonElement>(".frontier-realm-card__identity")!.click());
     expect(window.location.pathname).toMatch(/\/hex$/);
-    expect(buildSheet()).not.toBeNull();
-    expect(useUIStore.getState().selectedBuildingHex).toMatchObject({ structureId: 7 });
-    await act(async () => document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     expect(buildSheet()).toBeNull();
+    expect(useUIStore.getState().selectedBuildingHex).toBeNull();
   } finally {
     act(() => useUIStore.getState().setSelectedBuildingHex(null));
     window.history.replaceState(null, "", route);
