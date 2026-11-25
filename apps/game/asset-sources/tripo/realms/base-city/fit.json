@@ -1,0 +1,15 @@
+{
+  "name": "base-city",
+  "kind": "wonder",
+  "fit": "lab",
+  "transform": {
+    "yaw_deg_about_y": 0,
+    "scale": 1.72,
+    "offset_xyz": [0, 0, 0]
+  },
+  "flags": [
+    { "role": "banner", "position": [0, 0.362, 0.2], "size": [0.16, 0.18], "facing": 0 },
+    { "role": "banner", "position": [-0.047, 0.192, 0.415], "size": [0.06, 0.11], "facing": 0 },
+    { "role": "banner", "position": [0.142, 0.19, 0.392], "size": [0.06, 0.11], "facing": 0 }
+  ]
+}

@@ -1,6 +1,8 @@
 import { ordersOfAspect } from "@bibliothecadao/types";
 import { expect, it } from "vitest";
 
+import { readExpeditionRules } from "@bibliothecadao/eternum";
+
 import { chainOf } from "./lab-chain";
 import { LAB_SCENARIOS } from "./lab-games";
 
@@ -28,4 +30,11 @@ it.each(Object.keys(LAB_SCENARIOS))("builds the %s lab game", (name) => {
     expect(chain.require("AspectMembers", { game_id: 1, aspect: 3 }).members).toBe(1);
   }
   expect(chain.require("Structure", { game_id: 1, entity_id: 7 }).entity_id).toBe(7n);
+  if (readExpeditionRules(chain, 1))
+    for (const [, army] of chain.entries("ExplorerTroops"))
+      if (army.troops.count > 0n)
+        expect(
+          chain.get("ArmyDay", { game_id: 1, explorer_id: army.explorer_id }),
+          `army ${army.explorer_id}`,
+        ).toBeDefined();
 });

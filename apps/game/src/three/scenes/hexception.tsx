@@ -20,6 +20,7 @@ import {
   type SettlementRelationship,
 } from "../structures/settlement-appearance";
 import { isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
+import { withFlagCloth } from "../structures/flag-cloth";
 import { isAddressEqualToAccount } from "../utils/utils";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { PlotConstructionPicker } from "@/ui/features/settlement/construction/plot-construction-picker";
@@ -629,6 +630,7 @@ export default class HexceptionScene extends HexagonScene {
 
   private async loadBuildingModel(path: string): Promise<{ model: Group; animations: AnimationClip[] }> {
     const gltf = await loader.loadAsync(path);
+    if (isRealmModelPath(path)) withFlagCloth(gltf);
     const model = prepareBuildingModel(gltf.scene as Group);
     if (this.destroyed) {
       disposeBuildingModel(model);

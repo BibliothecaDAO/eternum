@@ -70,8 +70,8 @@ vi.mock("@/ui/layouts/game-entry-timeline", () => ({ markGameEntryMilestone: sta
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
-import { ASPECT_STEP_WORDS } from "@/ui/design-system/kit/words";
 import { GameEntryModal } from "./game-entry-modal";
+import { ASPECT_STEP_WORDS, COUNTDOWN_WORDS } from "@/ui/design-system/kit/words";
 
 afterEach(() => {
   vi.useRealTimers();
@@ -125,7 +125,7 @@ it.each(["play", "settle"] as const)(
     state.settled = false;
     const { host, close } = await openEntry(entryIntent);
     try {
-      expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Create your Realm")).toBe(
+      expect([...host.querySelectorAll("button")].some((button) => button.textContent === COUNTDOWN_WORDS.create)).toBe(
         false,
       );
       expect(state.navigate).toHaveBeenCalledTimes(1);
@@ -177,7 +177,7 @@ it("asks a Season 1 free home for its Aspect, then its Order, and founds in the 
     expect(state.founded).toEqual([]);
     expect(state.navigate).not.toHaveBeenCalled();
     // No other verb stands beside the cards: the tap is the founding.
-    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Create your Realm")).toBe(
+    expect([...host.querySelectorAll("button")].some((button) => button.textContent === COUNTDOWN_WORDS.create)).toBe(
       false,
     );
 

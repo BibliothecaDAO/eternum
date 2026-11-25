@@ -4,12 +4,18 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { GameProvider } from "@/hooks/context/game-context";
 import { chainOf } from "@/lab/game/lab-chain";
 import { questScenario } from "@/lab/game/quest-scenario";
-import { dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, aspects } from "@bibliothecadao/types";
-import { nativeBaneConstants, nativeQuestConstants } from "@bibliothecadao/eternum/game-client";
+import { dayAtIndex, readDailyQuest, readExpeditionRules } from "@bibliothecadao/eternum";
+import { frontierSeasonOnePreset } from "../../../../../../../config/source/frontier/season-one";
+import { RESOURCE_PRECISION, aspects, questCatalog, questLine } from "@bibliothecadao/types";
+import { nativeBaneConstants, nativeQuestConstants, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { useBaneToday } from "./bane-face";
-import { QuestDock } from "./quest-dock";
+import { questSpeaker, QuestDock } from "./quest-dock";
+import { DailyQuestChip } from "../hud/daily-quest-chip";
+import { resolveAspectEmissary } from "../tutorial/aspect-emissaries";
+import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
+
+const BANE_DAY = frontierSeasonOnePreset.banes.quietDays;
 
 const clock = vi.hoisted(() => ({ now: 350 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => clock.now }));
@@ -107,17 +113,17 @@ function worldDay() {
     endAt: Number(registry.end_at),
     dayUnitSeconds: rules.day_unit_seconds,
   };
-  const start = dayOf(calendar, calendar.startMainAt)!.end;
+  const start = dayAtIndex(calendar, BANE_DAY).start;
   clock.now = start + 20;
   store.applyFacts([
     { model: "HomeAspect", key: "0xd000", value: { game_id: 1, home: 7, aspect: 2 } },
-    { model: "AspectActivity", key: "0xd001", value: { game_id: 1, aspect: 2, day: 0, active: 5 } },
+    { model: "AspectActivity", key: "0xd001", value: { game_id: 1, aspect: 2, day: BANE_DAY - 1, active: 5 } },
     {
       model: "BaneRules",
       key: "0xd002",
       value: {
         game_id: 1,
-        chance_step: 20,
+        chance_step: frontierSeasonOnePreset.banes.chanceStep,
         quorum_percent: 40,
         beast_percent: 150,
         stamina_percent: 50,
@@ -125,11 +131,11 @@ function worldDay() {
         quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10_000, 15_000],
       },
     },
-    { model: "WorldBane", key: "0xd003", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
+    { model: "WorldBane", key: "0xd003", value: { game_id: 1, day: BANE_DAY, kind: nativeBaneConstants.ASH_FALL } },
     {
       model: "QuestProgress",
       key: "0xd004",
-      value: { game_id: 1, home: 7, day: 1, progress: 2500, completed_level: 1 },
+      value: { game_id: 1, home: 7, day: BANE_DAY, progress: 2500, completed_level: 1 },
     },
   ]);
   store.setSnapshot({ gameId: 1, complete: true, actor: fixtureGame.scenario.player, timestamp: clock.now });
@@ -139,7 +145,7 @@ function worldDay() {
     value: {
       game_id: 1,
       home: 7,
-      day: 1,
+      day: BANE_DAY,
       account: fixtureGame.scenario.player,
       amount: BigInt(labor) * BigInt(RESOURCE_PRECISION),
       essence: BigInt(essence) * BigInt(RESOURCE_PRECISION),
@@ -150,13 +156,13 @@ function worldDay() {
       {
         model: "BaneProgress",
         key: "0xd005",
-        value: { game_id: 1, aspect: 2, day: 1, completed: 2, ended_at: start + 10 },
+        value: { game_id: 1, aspect: 2, day: BANE_DAY, completed: 2, ended_at: start + 10 },
       },
     ]);
   return { ...fixtureGame, grant, win };
 }
 const collectAgain = () =>
-  [...host.querySelectorAll("button")].find((button) => button.textContent === "Collect again");
+  [...host.querySelectorAll("button")].find((button) => button.textContent === DAY_BANNER_WORDS.collectAgain);
 const reward = (name: string) => host.querySelector(`[data-reward="${name}"]`)?.getAttribute("aria-label");
 
 describe("bane collection", () => {
@@ -171,7 +177,7 @@ describe("bane collection", () => {
     expect(reward("Labor")).toBe("1,000 Labor");
     await act(async () => collectAgain()!.click());
     expect(game.submit).toHaveBeenCalledTimes(1);
-    expect(game.submit).toHaveBeenCalledWith(expect.objectContaining({ home: 7, day: 1 }));
+    expect(game.submit).toHaveBeenCalledWith(expect.objectContaining({ home: 7, day: BANE_DAY }));
     expect(host.textContent).toContain("Collecting…");
     await act(async () => {
       game.store.applyFacts([game.grant("BaneGrant", 250, 500)]);
@@ -206,9 +212,7 @@ describe("bane collection", () => {
     const game = worldDay();
     game.store.applyFacts([{ model: "WorldBane", key: "0xd003", value: null }]);
     game.draw();
-    expect(host.querySelector("[data-quest-undrawn]")?.textContent).toBe(
-      "Today's quest and bane are drawn on the first transaction anyone sends today.",
-    );
+    expect(host.querySelector("[data-quest-undrawn]")?.textContent).toBe(DAY_BANNER_WORDS.undrawnLine);
     expect(host.textContent).not.toContain("Loading today's quest");
     expect(host.textContent).not.toContain("The Cull");
     expect(host.querySelector("[data-reward]")).toBeNull();
@@ -227,7 +231,7 @@ describe("bane collection", () => {
         value: {
           game_id: 1,
           aspect: 2,
-          day: 1,
+          day: BANE_DAY,
           issued_day: 0,
           source: source.id,
           quest: nativeQuestConstants.STAND,
@@ -236,7 +240,7 @@ describe("bane collection", () => {
       {
         model: "QuestProgress",
         key: "0xd004",
-        value: { game_id: 1, home: 7, day: 1, progress: 3, completed_level: 1 },
+        value: { game_id: 1, home: 7, day: BANE_DAY, progress: 3, completed_level: 1 },
       },
       game.grant("LaborGrant"),
     ]);
@@ -245,10 +249,11 @@ describe("bane collection", () => {
     expect(host.querySelector("aside")?.getAttribute("aria-label")).toBe(`Havoc: Bane from ${source.name}`);
     expect(host.querySelector(".emissary-dock__portrait")?.getAttribute("data-icon")).toBe("bane-altar-curse");
     expect(host.querySelector("[data-bane-row]")?.textContent).toBe(
-      "▾No Deep heightBreak: 2/2 of your Aspect · Broken",
+      `▾${DAY_BANNER_WORDS.heightChip}${DAY_BANNER_WORDS.baneBroken}`,
     );
-    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("The Stand · Clear 3 guarded sites (3/3)");
-    expect(host.textContent).not.toContain("2× if broken");
+    const stand = questCatalog.find((quest) => quest.id === nativeQuestConstants.STAND)!;
+    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe(`${stand.name} · ${questLine(stand, 3)}`);
+    expect(host.textContent).not.toContain(DAY_BANNER_WORDS.twiceIfBroken);
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(collectAgain()).toBeUndefined();
     expect(reward("Labor")).toBe("1,000 Labor");
@@ -267,7 +272,7 @@ describe("bane collection", () => {
     const game = worldDay();
     game.draw();
     expect(host.querySelector("[data-bane-row]")?.textContent).toMatch(
-      /^▾50% Production2× if brokenBreak: 0\/2 of your Aspect · Clears in \d+[hm]$/,
+      /^▾50% Production2× reward if brokenAspect progress: 0\/2 · Ends in \d+[hm]$/,
     );
   });
 
@@ -283,5 +288,18 @@ describe("bane collection", () => {
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(reward("Labor")).toBe("<1 Labor");
     expect(reward("Essence")).toBe("<1 Essence");
+  });
+
+  it("shows on the pill the Aspect that gives the quest, inside its ring, and no count", () => {
+    const game = fixture();
+    game.drawWith(<DailyQuestChip realm={game.realm()} />);
+    const chip = host.querySelector("[data-daily-quest-chip]")!;
+    const reading = readDailyQuest(game.store, 1, safeInteger(game.realm().entity_id), clock.now)!.reading.known!;
+    expect(chip.querySelector("[data-icon]")?.getAttribute("data-icon")).toBe(
+      resolveAspectEmissary(questSpeaker(reading)).portrait,
+    );
+    expect(chip.textContent).not.toContain(
+      DAY_BANNER_WORDS.fraction(safeInteger(reading.progress), safeInteger(reading.target)),
+    );
   });
 });

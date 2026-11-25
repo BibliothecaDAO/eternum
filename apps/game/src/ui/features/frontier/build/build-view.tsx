@@ -27,6 +27,7 @@ import {
 
 import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { ReactNode } from "react";
+import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { RefusedVerb } from "../refused-verb";
 import type { BuildGroup } from "./build-options";
 
@@ -71,6 +72,7 @@ export const BuildView = ({
   onClose: () => void;
 }) => {
   const chosenTile = tiles[chosen];
+  const desktop = useHudLayout() === "desktop";
   return (
     <HudSheet
       label={BUILD}
@@ -84,20 +86,27 @@ export const BuildView = ({
       onClose={onClose}
     >
       <div data-build-sheet className="build-sheet">
-        {groupedTiles(tiles).map(({ group, entries }) => (
-          <section key={group} data-build-group={group} aria-label={BUILD_GROUPS[group].word} className="build-group">
-            <header className="build-group__head">
-              <SemanticIcon name={GROUP_ICONS[group]} size={16} />
-              <span className="build-group__word">{BUILD_GROUPS[group].word}</span>
-              <span className="build-group__line">{BUILD_GROUPS[group].line}</span>
-            </header>
-            <div data-build-grid data-wide={entries.length % 3 !== 0 || undefined} className="build-grid">
-              {entries.map(({ tile, index }) => (
-                <TileButton key={tile.key} tile={tile} chosen={index === chosen} onChoose={() => onChoose(index)} />
-              ))}
-            </div>
-          </section>
-        ))}
+        <div className="build-groups">
+          {groupedTiles(tiles).map(({ group, entries }) => (
+            <section key={group} data-build-group={group} aria-label={BUILD_GROUPS[group]} className="build-group">
+              <header className="build-group__head">
+                <SemanticIcon name={GROUP_ICONS[group]} size={16} />
+                <span className="build-group__word">{BUILD_GROUPS[group]}</span>
+              </header>
+              <div data-build-grid className="build-grid">
+                {entries.map(({ tile, index }) => (
+                  <TileButton
+                    key={tile.key}
+                    tile={tile}
+                    priced={desktop}
+                    chosen={index === chosen}
+                    onChoose={() => onChoose(index)}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
         {chosenTile && (
           <ChosenFoot tile={chosenTile} prices={prices} refusal={refusal} sending={sending} onBuild={onBuild} />
         )}
@@ -171,7 +180,17 @@ const ChosenLine = ({ tile, prices }: { tile: BuildTile; prices: readonly Price[
   );
 };
 
-const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boolean; onChoose: () => void }) => (
+const TileButton = ({
+  tile,
+  priced,
+  chosen,
+  onChoose,
+}: {
+  tile: BuildTile;
+  priced: boolean;
+  chosen: boolean;
+  onChoose: () => void;
+}) => (
   <span {...rankedTip([`${tile.name}: `, ...asWords(tile.does)])} className="min-w-0">
     <HudCard
       size="sm"
@@ -186,7 +205,7 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
             </span>
           )}
           {tile.gives.value !== undefined && tile.standing.kind !== "level" && <Gives gives={tile.gives} />}
-          {tile.standing.kind !== "built" && <TilePrice standing={tile.standing} />}
+          {priced && tile.standing.kind !== "built" && <TilePrice standing={tile.standing} />}
         </span>
       }
       selected={chosen}

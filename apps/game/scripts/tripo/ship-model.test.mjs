@@ -18,7 +18,7 @@ import {
   frontierPaintedBuildingPath,
 } from "../../src/three/structures/frontier-painted-buildings";
 import { DEEP_GATE_MODELS, DEEP_SITE_MODELS } from "../../src/three/structures/deep-landmarks";
-import { ASPECT_WONDER_PATHS } from "../../src/three/structures/realm-design";
+import { ASPECT_WONDER_PATHS, BASE_REALM_CANDIDATES } from "../../src/three/structures/realm-design";
 import { MODEL_BUDGETS, assertDeliveredAsset, readHexFit, shipTripoModel } from "./ship-model.mjs";
 
 const CLI = fileURLToPath(new URL("./ship-model.mjs", import.meta.url));
@@ -234,6 +234,29 @@ describe("ship-model pipeline", () => {
     ).rejects.toThrow("exceeds height limit");
   });
 
+  it("refuses a realm model whose fit declares no flags, and bakes the anchors it lists through the fit", async () => {
+    const dir = makeTempDir();
+    const input = join(dir, "realm.glb");
+    await writeSyntheticGlb(input, { width: 0.5, depth: 0.5 });
+    const bare = join(dir, "bare.json");
+    writeFileSync(bare, makeFitJson(1.5, [0, 0, 0], 90));
+    await expect(shipTripoModel({ input, fit: bare, kind: "wonder", out: join(dir, "bare.glb") })).rejects.toThrow(
+      "flag anchors",
+    );
+    const flagged = join(dir, "flagged.json");
+    const anchor = { role: "banner", position: [0.1, 0.2, 0], size: [0.1, 0.2], facing: 0 };
+    writeFileSync(flagged, JSON.stringify({ ...JSON.parse(makeFitJson(1.5, [0, 0, 0], 90)), flags: [anchor] }));
+    const out = join(dir, "flagged.glb");
+    await shipTripoModel({ input, fit: flagged, kind: "wonder", out });
+    const meshNode = (await (await createReader()).read(out))
+      .getRoot()
+      .listNodes()
+      .find((node) => node.getMesh());
+    expect(meshNode.getExtras().flagAnchors).toEqual([
+      { role: "banner", position: [0, 0.3, -0.15], size: [0.15, 0.3], facing: 90 },
+    ]);
+  });
+
   it("bakes hex fit, compresses with repo tools and is safe to run twice via CLI", async () => {
     const dir = makeTempDir();
     const input = join(dir, "tripo-raw.glb");
@@ -347,11 +370,11 @@ describe("ship-model pipeline", () => {
     }
   });
 
-  it("keeps every Aspect Wonder within wonder budget, grounded, normalized and inside the unit hex", async () => {
+  it("keeps every image-to-3D realm model within wonder budget, grounded, normalized, flag-declared and inside the unit hex", async () => {
     const io = await createReader();
     expect(ASPECT_WONDER_PATHS.length).toBe(4);
 
-    for (const publicPath of ASPECT_WONDER_PATHS) {
+    for (const publicPath of [...ASPECT_WONDER_PATHS, ...BASE_REALM_CANDIDATES.map((asset) => asset.path)]) {
       const modelPath = fileURLToPath(new URL(`../../public${publicPath}`, import.meta.url));
       await assertDeliveredAsset(io, modelPath, "wonder", MODEL_BUDGETS.wonder);
     }
@@ -395,6 +418,7 @@ describe("ship-model pipeline", () => {
       ...buildingPaths,
       ...troopPaths,
       ...ASPECT_WONDER_PATHS,
+      ...BASE_REALM_CANDIDATES.map((asset) => asset.path),
       ...Object.values(DEEP_SITE_MODELS),
       ...Object.values(DEEP_GATE_MODELS),
       ...Object.values(FRONTIER_BEASTS).map((entry) => entry.path),

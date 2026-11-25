@@ -2,7 +2,7 @@ import { ActionType, configManager, type OrderRefusal } from "@bibliothecadao/et
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
-import { ORDER_REFUSAL_WORDS, WHEAT } from "@/ui/design-system/kit/words";
+import { ORDER_REFUSAL_WORDS, SPIRE_WORDS, TRANSFER_TROOPS, WHEAT } from "@/ui/design-system/kit/words";
 import { orderFood, orderTip } from "./order-tip";
 
 const step = (actionType: ActionType, staminaCost?: number) => ({ hex: { col: 0, row: 0 }, actionType, staminaCost });
@@ -37,8 +37,8 @@ describe("what a right-click on a tile does, said before the click", () => {
     expect(line([step(ActionType.Move), step(ActionType.Explore)])).toBe("Explore");
     expect(line([step(ActionType.Move), step(ActionType.Move, 1), step(ActionType.Move, 1)])).toBe("Move");
     expect(line([step(ActionType.Move), step(ActionType.Attack, 30)])).toBe("Attack");
-    expect(line([step(ActionType.Move), step(ActionType.Help)])).toBe("Transfer troops");
-    expect(line([step(ActionType.Move), step(ActionType.SpireTravel)])).toBe("Enter the Spire");
+    expect(line([step(ActionType.Move), step(ActionType.Help)])).toBe(TRANSFER_TROOPS.title);
+    expect(line([step(ActionType.Move), step(ActionType.SpireTravel)])).toBe(SPIRE_WORDS.order);
   });
 
   it("names the realm's Help on its army beside it a reinforcement, priced on its sheet", () => {

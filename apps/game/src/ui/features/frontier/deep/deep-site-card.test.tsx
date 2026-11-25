@@ -13,7 +13,8 @@ import { baneScenario } from "@/lab/game/bane-scenario";
 import { configManager, type ResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
-import { nativeRuleConstants, readDeepSites } from "@bibliothecadao/eternum/game-client";
+import { nativeOathConstants as oaths, nativeRuleConstants, readDeepSites } from "@bibliothecadao/eternum/game-client";
+import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { DeepSiteCard } from "./deep-site-card";
 import { resolveExplorerCombatTroops, resolveExplorerTroops, staminaAt } from "@bibliothecadao/eternum/troop-stamina";
 import { FrontierArmy } from "../army/frontier-army";
@@ -79,21 +80,35 @@ describe("the Deep site's live native binding", () => {
     try {
       const rules = hud.store.require("DeepRules", { game_id: 1 });
       const perTick = (amount: bigint) => Number(amount / BigInt(RESOURCE_PRECISION));
-      expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain(`${perTick(rules.mine_per_tick)} Labor`);
+      const rate = (kind: string) => hud.host.querySelector(`[data-rate='${kind}'] b`)?.textContent;
       const sites = readDeepSites(hud.store, scenario.startsAt, 1);
       const ladder = [rules.building_pay.alone, rules.building_pay.pair, rules.building_pay.crowd];
       for (const site of sites) {
         hud.render(<DeepSiteCard site={site} onClose={() => {}} />);
-        const pay = hud.host.querySelector("[data-deep-pay]")!.textContent;
+        if (!site.open) {
+          expect(hud.host.querySelector("[data-deep-pay]")).toBeNull();
+          expect(hud.host.querySelector("[data-deep-opening]")?.textContent).toContain(
+            `${site.entered} / ${site.opensAt}`,
+          );
+          continue;
+        }
+        expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain("/ 2m");
         const openOfKind = sites.filter((other) => other.kind === site.kind && other.open).length;
         const building = ladder[Math.min(openOfKind, ladder.length) - 1];
-        if (site.kind === nativeRuleConstants.DEEP_MINE) expect(pay).toContain(`${perTick(rules.mine_per_tick)} Labor`);
+        if (site.kind === nativeRuleConstants.DEEP_MINE) expect(rate("labor")).toBe(`+${perTick(rules.mine_per_tick)}`);
         else if (site.kind === nativeRuleConstants.DEEP_CORE)
-          expect(pay).toContain(`${perTick(rules.core_per_tick)} Essence`);
-        else expect(pay).toContain(`${building} Glory`);
-        if (site.kind === nativeRuleConstants.DEEP_FOUNDATION) expect(pay).toContain(`+${building} height`);
-        if (site.kind === nativeRuleConstants.DEEP_ALTAR) expect(pay).toContain("300 of 1,500");
+          expect(rate("essence")).toBe(`+${perTick(rules.core_per_tick)}`);
+        else expect(rate("glory")).toBe(`+${building}`);
+        if (site.kind === nativeRuleConstants.DEEP_FOUNDATION) expect(rate("height")).toBe(`+${building}`);
+        if (site.kind === nativeRuleConstants.DEEP_ALTAR)
+          expect(hud.host.querySelector("[data-rate='bar']")?.getAttribute("data-tip")).toBe("300 of 1,500");
       }
+      hud.render(
+        <DeepSiteCard
+          site={sites.find((site) => site.kind === nativeRuleConstants.DEEP_MINE && site.open)!}
+          onClose={() => {}}
+        />,
+      );
       act(() =>
         hud.store.applyFacts([
           {
@@ -103,8 +118,51 @@ describe("the Deep site's live native binding", () => {
           },
         ]),
       );
-      hud.render();
-      expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain("600 Labor");
+      hud.render(
+        <DeepSiteCard
+          site={
+            readDeepSites(hud.store, scenario.startsAt, 1).find(
+              (site) => site.kind === nativeRuleConstants.DEEP_MINE && site.open,
+            )!
+          }
+          onClose={() => {}}
+        />,
+      );
+      expect(hud.host.querySelector("[data-rate='labor'] b")?.textContent).toBe("+600");
+    } finally {
+      hud.unmount();
+    }
+  });
+
+  it("lists on a locked site what its open rates pay, the Bane bar only where the game has banes", () => {
+    const scenario = raceScenario();
+    const hud = draw(undefined, scenario);
+    try {
+      const sites = readDeepSites(hud.store, scenario.startsAt, 1);
+      const kinds = (site: (typeof sites)[number]) => {
+        hud.render(<DeepSiteCard site={{ ...site, open: false }} onClose={() => {}} />);
+        return hud.host.querySelector("[data-deep-kinds]")?.textContent ?? "";
+      };
+      const altar = sites.find((site) => site.kind === nativeRuleConstants.DEEP_ALTAR)!;
+      expect(kinds(altar)).not.toContain(DEEP_WORDS.kinds.bar);
+      act(() =>
+        hud.store.applyFacts([
+          {
+            model: "BaneRules",
+            key: "0xfee1",
+            value: baneScenario("world").store.require("BaneRules", { game_id: 1 }),
+          },
+        ]),
+      );
+      expect(kinds(altar)).toContain(DEEP_WORDS.kinds.bar);
+      for (const site of sites) {
+        hud.render(<DeepSiteCard site={site} onClose={() => {}} />);
+        const paid = [...hud.host.querySelectorAll("[data-deep-pay] [data-rate]")]
+          .map((rate) => rate.getAttribute("data-rate"))
+          .filter((rate) => rate !== "drain");
+        const listed = kinds(site);
+        for (const rate of paid) expect(listed).toContain(DEEP_WORDS.kinds[rate as keyof typeof DEEP_WORDS.kinds]);
+      }
     } finally {
       hud.unmount();
     }
@@ -113,7 +171,7 @@ describe("the Deep site's live native binding", () => {
   it("keeps the joined slot army's refilled stamina and panel after vacating its tile", async () => {
     const hud = draw();
     try {
-      expect(hud.host.textContent).toContain("Held by");
+      expect(hud.host.querySelector("[data-deep-tag]")?.textContent).toBe("Held · Prowess");
       expect(hud.host.textContent).toContain("Prowess");
       expect(hud.button("Join")?.disabled).toBe(false);
       await act(async () => hud.button("Join")!.click());
@@ -137,7 +195,7 @@ describe("the Deep site's live native binding", () => {
       expect(hud.store.entityOccupancy(1, 201)).toBeUndefined();
       expect(hud.store.require("DeepGuard", { game_id: 1, explorer_id: 201 }).slot).toBe(1);
       expect(hud.button("Join")).toBeUndefined();
-      expect(hud.host.textContent).toContain("Already guarding");
+      expect(hud.host.textContent).toContain(DEEP_WORDS.guarding);
       expect(hud.host.querySelectorAll("[data-deep-slot]")).toHaveLength(4);
       const army = hud.store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
       expect(army.troops.stamina).toEqual({ Slot: 0 });
@@ -242,6 +300,35 @@ it("counts only actual army-tick boundaries before a day ending between ticks", 
     );
     expect(tips.join(" ")).toContain("5 ticks left");
     expect(tips.join(" ")).not.toContain("6 ticks left");
+  } finally {
+    hud.unmount();
+  }
+});
+
+it("shows the selected army's own Deep poison, Vitriol included, on a site's drain cell", () => {
+  const hud = draw();
+  try {
+    const mine = () =>
+      readDeepSites(hud.store, hud.scenario.startsAt, 1).find(
+        (site) => site.kind === nativeRuleConstants.DEEP_MINE && site.open,
+      )!;
+    const drain = () => hud.host.querySelector("[data-rate='drain'] b")?.textContent;
+    const base = hud.store.require("DeepRules", { game_id: 1 }).loss_per_tick / BigInt(RESOURCE_PRECISION);
+    hud.render(<DeepSiteCard site={mine()} onClose={() => {}} />);
+    expect(drain()).toBe(`−${base.toLocaleString("en-US")}`);
+    const key = { game_id: 1, explorer_id: 201 };
+    const progress = hud.store.require("ArmyProgress", key);
+    act(() =>
+      hud.store.applyFacts([
+        {
+          model: "ArmyProgress",
+          key: hud.store.wireKeyOf("ArmyProgress", key)!,
+          value: { ...progress, oaths: 1 << (oaths.VITRIOL - 1) },
+        },
+      ]),
+    );
+    hud.render(<DeepSiteCard site={mine()} onClose={() => {}} />);
+    expect(drain()).toBe(`−${oaths.VITRIOL_LOSS_PER_TICK.toLocaleString("en-US")}`);
   } finally {
     hud.unmount();
   }
@@ -356,8 +443,8 @@ it("shows each guard's share of the next tick from the troops it keeps after the
     const tips = [...hud.host.querySelectorAll('[data-deep-slot="filled"]')].map(
       (node) => node.getAttribute("data-tip") ?? "",
     );
-    expect(tips.join(" ")).toContain("75% of each tick");
-    expect(tips.join(" ")).toContain("25% of each tick");
+    expect(tips.join(" ")).toContain(DEEP_WORDS.share(75));
+    expect(tips.join(" ")).toContain(DEEP_WORDS.share(25));
   } finally {
     hud.unmount();
   }

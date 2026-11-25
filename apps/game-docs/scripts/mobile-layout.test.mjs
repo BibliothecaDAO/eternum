@@ -25,7 +25,7 @@ const MIME = {
   ".txt": "text/plain; charset=utf-8",
 };
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const READY_DEADLINE_MS = 10_000;
 
 function findInCacheDirs(dirs) {
   const rels = [
@@ -251,6 +251,30 @@ const MEASURE_EXPRESSION = `(() => {
 let host;
 let browser;
 
+const afterNextFrame = (expression) =>
+  `new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(${expression}))))`;
+
+async function waitForPage(expression, isReady, what) {
+  const deadline = Date.now() + READY_DEADLINE_MS;
+  for (;;) {
+    const seen = await browser.evaluate(afterNextFrame(expression));
+    if (isReady(seen)) return seen;
+    if (Date.now() > deadline)
+      throw new Error(`${what} not reached in ${READY_DEADLINE_MS} ms: ${JSON.stringify(seen)}`);
+  }
+}
+
+const PAGE_STATE = `({ fresh: !window.__leftForNextPage, loaded: document.readyState === "complete" && document.fonts.status === "loaded" })`;
+
+async function openPage(url) {
+  await browser.evaluate("window.__leftForNextPage = true");
+  await browser.page("Page.navigate", { url });
+  return waitForPage(PAGE_STATE, (seen) => seen.fresh && seen.loaded, `${url.slice(0, 60)} loaded`);
+}
+
+const laidOutAt = (width) =>
+  waitForPage("window.innerWidth", (seen) => seen === width, `the page laid out at ${width}px`);
+
 before(async () => {
   host = await startStaticServer(DIST);
   browser = await launchBrowser();
@@ -274,8 +298,7 @@ test("every built docs page fits inside 320, 360, 390, 414 and 768 viewports wit
       screenWidth: 390,
       screenHeight: VIEWPORT_HEIGHT,
     });
-    await browser.page("Page.navigate", { url: `${host.baseUrl}${route}` });
-    await sleep(350);
+    await openPage(`${host.baseUrl}${route}`);
     for (const width of WIDTHS) {
       await browser.page("Emulation.setDeviceMetricsOverride", {
         width,
@@ -285,7 +308,7 @@ test("every built docs page fits inside 320, 360, 390, 414 and 768 viewports wit
         screenWidth: width,
         screenHeight: VIEWPORT_HEIGHT,
       });
-      await sleep(80);
+      await laidOutAt(width);
       const report = await browser.evaluate(MEASURE_EXPRESSION);
       if (report.docScroll > width + TOLERANCE_PX || report.overflowCount > 0) {
         const items = report.overflows.map((item) => `${item.selector}[${item.left}..${item.right}]`).join(", ");
@@ -307,8 +330,7 @@ test("overflow detector catches a clipped child inside an overflow-x:hidden cont
   });
   const html =
     '<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><body style="margin:0"><footer style="overflow-x:hidden;width:100%"><div style="display:flex"><a style="flex:0 0 240px;height:48px">Left</a><a style="flex:0 0 240px;height:48px">Right</a></div></footer></body>';
-  await browser.page("Page.navigate", { url: `data:text/html;charset=utf-8,${encodeURIComponent(html)}` });
-  await sleep(100);
+  await openPage(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
   const report = await browser.evaluate(MEASURE_EXPRESSION);
   assert.equal(report.vw, 390);
   assert.equal(report.docScroll, 390);
@@ -325,9 +347,9 @@ test("phone navigation triggers and footer pager meet the 44px tap target minimu
     screenWidth: 390,
     screenHeight: VIEWPORT_HEIGHT,
   });
-  await browser.page("Page.navigate", { url: `${host.baseUrl}/frontier` });
-  await sleep(350);
-  const targets = await browser.evaluate(`(() => {
+  await openPage(`${host.baseUrl}/frontier`);
+  const targets = await waitForPage(
+    `(() => {
     const selectors = [
       ".vocs_MobileTopNav_menuTrigger",
       ".vocs_MobileTopNav_outlineTrigger",
@@ -340,15 +362,17 @@ test("phone navigation triggers and footer pager meet the 44px tap target minimu
         return { selector, height: Math.round(rect.height), width: Math.round(rect.width) };
       }),
     );
-  })()`);
+  })()`,
+    (seen) => seen.length >= 4,
+    "the phone navigation and pager targets",
+  );
   assert.ok(targets.length >= 4, `expected mobile nav and pager targets, found ${targets.length}`);
   const undersized = targets.filter((item) => item.height < 44);
   assert.deepEqual(undersized, []);
 });
 
 test("rendered body prose holds readable size, leading, gutters, and measure on phone and desktop", async () => {
-  await browser.page("Page.navigate", { url: `${host.baseUrl}/frontier` });
-  await sleep(350);
+  await openPage(`${host.baseUrl}/frontier`);
   const readMetrics = `(() => {
     const p = document.querySelector(".vocs_Content p");
     const cs = getComputedStyle(p);
@@ -371,7 +395,7 @@ test("rendered body prose holds readable size, leading, gutters, and measure on 
     screenWidth: 390,
     screenHeight: VIEWPORT_HEIGHT,
   });
-  await sleep(100);
+  await laidOutAt(390);
   const phone = await browser.evaluate(readMetrics);
   assert.ok(phone.fontSize >= 15 && phone.fontSize <= 17, `phone body size ${phone.fontSize}`);
   assert.ok(phone.lineHeight / phone.fontSize >= 1.5, `phone line height ratio ${phone.lineHeight / phone.fontSize}`);
@@ -385,7 +409,7 @@ test("rendered body prose holds readable size, leading, gutters, and measure on 
     screenWidth: 1440,
     screenHeight: 900,
   });
-  await sleep(100);
+  await laidOutAt(1440);
   const desktop = await browser.evaluate(readMetrics);
   assert.ok(desktop.fontSize >= 16 && desktop.fontSize <= 18, `desktop body size ${desktop.fontSize}`);
   assert.ok(

@@ -17,7 +17,7 @@ import {
   HudTransfer,
   HudWindow,
 } from "@/ui/design-system/kit/hud-elements";
-import { WEIGHT_UNKNOWN } from "@/ui/design-system/kit/words";
+import { TRANSFER_REFUSED, WEIGHT_UNKNOWN } from "@/ui/design-system/kit/words";
 import { iconDefinition, resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -498,7 +498,7 @@ const tellOutcomes = (outcomes: ShipmentOutcome[]) => {
   for (const outcome of outcomes) {
     const to = outcome.shipment.destinationName;
     if (outcome.status === "refused")
-      toast.failed(outcome.error, "The game refused it.", { description: `Nothing reached ${to}.` });
+      toast.failed(outcome.error, TRANSFER_REFUSED, { description: `Nothing reached ${to}.` });
     if (outcome.status === "unknown") toast.warning(`No answer for ${to} yet: check Arrivals`);
     if (outcome.status === "busy") toast.warning(`Still sending to ${to}`);
   }

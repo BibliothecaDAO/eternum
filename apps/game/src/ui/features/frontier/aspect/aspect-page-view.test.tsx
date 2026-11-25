@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { ASPECT_PAGE_CASES } from "./aspect-page-fixtures";
 import { AspectPageView, type AspectPageProps } from "./aspect-page-view";
+import { ASPECT_PAGE_WORDS } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -72,7 +73,7 @@ describe("the Aspect page", () => {
 
   it("names the Aspect that finished first once the age is won, and finished rows say so", () => {
     draw(ASPECT_PAGE_CASES["Age won by another Aspect"]);
-    expect(part("data-aspect-race")).toContain("Prowess finished 1st and won the season");
+    expect(part("data-aspect-race")).toContain(ASPECT_PAGE_WORDS.won("Prowess"));
     const finished = document.body.querySelector('[data-aspect-race] .race-steps[aria-label^="Finished"]')!;
     expect([finished.getAttribute("aria-label"), finished.querySelectorAll("[data-built]").length]).toEqual([
       "Finished · 10,000 of 10,000",
@@ -106,10 +107,10 @@ describe("the Aspect page", () => {
 
   it("asks a player with no Aspect to join one, and says it is reading while the race is not settled", () => {
     draw(ASPECT_PAGE_CASES["No Aspect"]);
-    expect(document.body.textContent).toContain("Join an Aspect to see its members");
+    expect(document.body.textContent).toContain(ASPECT_PAGE_WORDS.noAspect);
     expect(document.body.querySelector("[data-aspect-own]")).toBeNull();
     draw(ASPECT_PAGE_CASES["Facts not settled"]);
-    expect(document.body.textContent).toContain("Loading scores…");
+    expect(document.body.textContent).toContain(ASPECT_PAGE_WORDS.reading);
   });
 
   it("refuses Go to Deep with what opens the Deep while the realm cannot enter it", () => {
@@ -131,7 +132,7 @@ describe("the Aspect page", () => {
       ...ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"],
       own: { ...own, members: own.members.map((member) => ({ ...member, glory: 0 })) },
     });
-    expect(part("data-aspect-members")).toContain("No Glory yet — hold Deep sites");
+    expect(part("data-aspect-members")).toContain(ASPECT_PAGE_WORDS.gloryUnearned);
     expect(document.body.querySelectorAll('[data-aspect-members] [aria-label="Glory 0"]')).toHaveLength(
       own.members.length,
     );

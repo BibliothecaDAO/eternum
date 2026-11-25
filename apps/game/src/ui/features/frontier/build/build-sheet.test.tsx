@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { setViewportWidth } from "@/shell/frame/test-viewport";
 
 vi.mock("@/audio/core/AudioManager", () => ({
   AudioManager: { getInstance: () => ({ play: () => Promise.resolve(null) }) },
@@ -12,7 +13,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { toast } from "@/ui/features/event-feed/notify";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
 import { costLine, PRICE_FACES, type Price } from "@/ui/design-system/kit/price-faces";
-import { FREE } from "@/ui/design-system/kit/words";
+import { FREE, priceRaised, startsNewArmies } from "@/ui/design-system/kit/words";
 import { buildingOpensAtLevel, configManager, type GameClient, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { type GameClientSetup, nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
 import {
@@ -31,7 +32,10 @@ import { buildingCounts, realmBoard } from "./build-fixture";
 import { buildGroupOf } from "./build-options";
 import { BuildingsInFlight, BuildSheet } from "./build-sheet";
 
+beforeEach(() => setViewportWidth(1440));
+
 afterEach(() => {
+  vi.unstubAllGlobals();
   disposeGameSyncSession();
   setBlockTimestampSource(null);
   useUIStore.getState().setPreviewBuilding(null);
@@ -363,16 +367,28 @@ describe("the build sheet", () => {
     expect(groups[0]).toEqual(["economy", ["Farm", "Workshop"]]);
     expect(groups[1]?.[1]).toEqual(expect.arrayContaining(["Barracks", "Range"]));
     expect(groups[2]?.[1]).toContain("Supply yard");
-    expect(sheet.card("Range").querySelector("[data-build-needs]")?.textContent).toBe("Requires City");
-    expect(sheet.card("Supply yard").querySelector("[data-build-needs]")?.textContent).toBe("Requires Kingdom");
+    expect(sheet.card("Range").querySelector("[data-build-needs]")?.textContent).toBe("Unlocks at City");
+    expect(sheet.card("Supply yard").querySelector("[data-build-needs]")?.textContent).toBe("Unlocks at Kingdom");
     act(() => sheet.card("Farm").click());
     expect(sheet.host.querySelector("[data-build-does]")?.textContent).toMatch(/^\+[\d,.]+\/(?:s|min)$/);
     expect(sheet.button("Build")).toBeDefined();
 
     act(() => sheet.card("Range").click());
     expect(sheet.card("Range").getAttribute("aria-pressed")).toBe("true");
-    expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe("Requires City");
+    expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe("Unlocks at City");
     expect(sheet.button("Build")).toBeUndefined();
+    sheet.close();
+  });
+
+  it("lays the three groups side by side on a phone, each tile without its price, the picked one's price at the foot", () => {
+    setViewportWidth(390);
+    const { store, realm } = realmBoard();
+    const sheet = open(store, realm);
+    const groups = [...sheet.host.querySelectorAll<HTMLElement>(".build-groups > [data-build-group]")];
+    expect(groups.map((group) => group.dataset.buildGroup)).toEqual(["economy", "army", "unique"]);
+    expect(sheet.host.querySelector("[data-build-grid] [data-build-price]")).toBeNull();
+    act(() => sheet.card("Farm").click());
+    expect(footPrice(sheet.host)).toBeTruthy();
     sheet.close();
   });
 
@@ -412,7 +428,7 @@ describe("the build sheet", () => {
       }
       act(() => lockedButton.click());
       expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe(
-        `Requires ${rankName(buildingOpensAtLevel(category))}`,
+        `Unlocks at ${rankName(buildingOpensAtLevel(category))}`,
       );
       expect(footPrice(sheet.host)).toBe(costLine(expected));
     }
@@ -434,7 +450,7 @@ describe("the build sheet", () => {
     const rangeButton = sheet.card(buildingName(BuildingType.ResourceCrossbowmanT1, true));
     expect(rangeButton.querySelector("[data-build-price]")?.textContent).toBe(FREE);
     act(() => rangeButton.click());
-    expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe("Requires City");
+    expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe("Unlocks at City");
     expect(footPrice(sheet.host)).toBe(FREE);
     sheet.close();
   });
@@ -474,7 +490,7 @@ describe("the build sheet", () => {
     );
     // The tier is the tooltip's gem, not a numeral in the words.
     const ranks = JSON.parse(sheet.card("Supply yard").closest("[data-tip]")!.getAttribute("data-tip-ranks")!);
-    expect(ranks.slice(0, 3)).toEqual(["Supply yard: ", "new armies start with Logistics ", { rank: 1 }]);
+    expect(ranks.slice(0, 3)).toEqual(["Supply yard: ", startsNewArmies("Logistics", 1)[0], { rank: 1 }]);
     // No Farm stands on the board yet (the fixture's wheat comes with the realm): its price is its base.
     expect(document.querySelector("[data-price-raised]")).toBeNull();
     const base = sheet.card("Farm").querySelector("[data-build-price]")!.textContent;
@@ -491,8 +507,8 @@ describe("the build sheet", () => {
     const risen = open(store, realm);
     act(() => risen.card("Farm").click());
     const arrow = document.querySelector(".ui-window__foot [data-price-raised]")!;
-    expect(arrow.getAttribute("aria-label")).toBe("Costs more with each one standing: 2");
-    expect(arrow.getAttribute("data-tip")).toBe("Costs more with each one standing: 2");
+    expect(arrow.getAttribute("aria-label")).toBe(priceRaised("2"));
+    expect(arrow.getAttribute("data-tip")).toBe(priceRaised("2"));
     expect(risen.card("Farm").querySelector("[data-build-price]")!.textContent).not.toBe(base);
     risen.close();
   });

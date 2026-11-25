@@ -477,6 +477,7 @@ export const HUD_SHEET = {
   good: "#66ddab",
   bad: "#ff7b6b",
   bane: "#ff7b6b",
+  poison: "#9be64c",
   warn: "#f0b35a",
   /** Each kind of relic, what it works on: its chip's words, line and ground take this colour. */
   "relic-stamina": "#4ade80",
@@ -501,7 +502,7 @@ export const HUD_SHEET = {
   /** Corners: a chip's, a control's, a panel's, a round thing's. */
   "radius-chip": "4px",
   "radius-control": "8px",
-  "radius-panel": "12px",
+  "radius-panel": "16px",
   "radius-round": "9999px",
   /** One speed for every hover and press. */
   fast: "120ms",
@@ -510,15 +511,19 @@ export const HUD_SHEET = {
 
 /** The HUD's values built from others, declared again on every mode's root so a changed gold reaches each of them. */
 export const HUD_DERIVED = {
-  line: "rgb(var(--hud-accent) / 0.25)",
+  line: "rgb(var(--hud-accent) / 0.2)",
+  "line-top": "rgb(var(--hud-rim) / 0.28)",
+  "line-bottom": "rgb(var(--hud-accent) / 0.12)",
   "line-strong": "rgb(var(--hud-accent) / 0.5)",
-  divider: "rgb(var(--hud-accent) / 0.15)",
+  divider: "rgb(var(--hud-accent) / 0.14)",
   muted: "rgb(var(--hud-accent) / 0.75)",
   cue: "rgb(var(--hud-accent) / 0.6)",
-  hover: "rgb(var(--hud-accent) / 0.1)",
-  chosen: "rgb(var(--hud-accent) / 0.18)",
-  "shadow-panel": "0 8px 24px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(var(--hud-accent) / 0.18)",
+  hover: "rgb(var(--hud-rim) / 0.1)",
+  chosen: "rgb(var(--hud-accent-deep) / 0.55)",
+  "shadow-panel": "0 0 0 1px rgb(0 0 0 / 0.62), 0 18px 40px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(var(--hud-rim) / 0.18)",
+  "shadow-pill": "0 0 0 1px rgb(0 0 0 / 0.55), 0 8px 22px rgb(0 0 0 / 0.48), inset 0 1px 0 rgb(var(--hud-rim) / 0.2)",
   "shadow-control": "0 1px 2px rgb(0 0 0 / 0.4)",
+  "shadow-press": "0 0 0 1px rgb(0 0 0 / 0.6), inset 0 2px 6px rgb(0 0 0 / 0.68)",
   focus: "0 0 0 2px rgb(var(--hud-accent) / 0.65)",
 } as const;
 
@@ -538,6 +543,7 @@ export const HUD_COLOR_CLASSES: Record<string, string> = Object.fromEntries([
     "good",
     "bad",
     "bane",
+    "poison",
     "warn",
     "line",
     "line-strong",
@@ -564,31 +570,34 @@ const tint = (ground: string, over: string, share: number) =>
     .join("")}`;
 
 /** The brand kit's game identities (`games` in src/brand/palette.json), lower-cased. */
-const GAME = (game: keyof typeof KIT.games, role: "title" | "ground") => KIT.games[game][role].toLowerCase();
+const GAME = (game: keyof typeof KIT.games, role: "title" | "ground" | "stamp") => KIT.games[game][role].toLowerCase();
 
-/**
- * Each game is an age of the lore, and wears its age's colours (owner, 17 October 2026: "a different color for each
- * game, like in the lore each game is one age"): its accent (every line, title, label, tab and focus ring, as channels)
- * and its surface. Blitz and Frontier take the brand kit v3's (owner, 29 October 2026, of /picks/brand-v3/: "I agree
- * with the brand calls"): Blitz its Spark title on a dark Ember, Frontier its title violet on its own ground. Eternum's
- * kit ground is parchment, so on the dark HUD it keeps its gold. The elements never change; the primary button stays
- * gold in every age.
- */
+const MATERIAL = (game: keyof typeof KIT.games, name: string, tone: "light" | "shade") => {
+  const material = KIT.games[game].materials.find((each) => each.name === name);
+  if (!material) throw new Error(`The brand kit's ${game} has no material ${name}`);
+  return material[tone].hex.toLowerCase();
+};
+
+const chrome = (accent: string, deep: string) => ({
+  accent: channels(accent),
+  rim: channels(tint(accent, "#ffffff", 0.55)),
+  "accent-deep": channels(deep),
+});
+
 export const HUD_MODES = {
-  /** Blitz: Spark on Ember, laid dark on Hearth. */
   blitz: {
-    accent: channels(GAME("blitz", "title")),
+    ...chrome(MATERIAL("blitz", "Lightning", "shade"), GAME("blitz", "ground")),
     "surface-from": tint(BRAND.hearth, GAME("blitz", "ground"), 0.3),
     "surface-to": tint(BRAND.hearth, GAME("blitz", "ground"), 0.15),
   },
   /** Frontier: the title's violet on Frontier's ground. */
   frontier: {
-    accent: channels(BRAND["action-gold"]),
-    "surface-from": BRAND.plate,
-    "surface-to": BRAND.hearth,
+    ...chrome(GAME("frontier", "title"), MATERIAL("frontier", "Mist and claws", "shade")),
+    "surface-from": tint(GAME("frontier", "ground"), MATERIAL("frontier", "Mist and claws", "shade"), 0.15),
+    "surface-to": GAME("frontier", "ground"),
   },
   /** Eternum (`eternum-restoration`): the restored tower's gold over warm stone. */
-  eternum: { accent: "230 194 122", "surface-from": "#27211a", "surface-to": "#16120d" },
+  eternum: { ...chrome("#e6c27a", GAME("eternum", "stamp")), "surface-from": "#27211a", "surface-to": "#16120d" },
 };
 
 export type HudMode = keyof typeof HUD_MODES;
@@ -917,6 +926,8 @@ export const APP_SHEET = {
  */
 export const HUD_APP_MODE = {
   accent: APP_SHEET.accent,
+  rim: APP_SHEET.accent,
+  "accent-deep": channels(tint("#000000", SHELL_COLORS.peach, 0.35)),
   "surface-from": APP_SHEET["surface-2"],
   "surface-to": APP_SHEET.surface,
   ink: channels(SHELL_COLORS.cream),

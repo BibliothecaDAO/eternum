@@ -2,11 +2,11 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BANNED_WORDS, VOICE_RULES } from "@bibliothecadao/types";
-import { OK, OPENING_WORDS } from "@/ui/design-system/kit/words";
 import { AspectEmissaryDock } from "../tutorial/aspect-emissary-dock";
 import { OpeningPartGate, OpeningProvider } from "./opening-context";
 import { OPENING, OPENING_MOMENTS, partShown, TUTORIAL_WORD_BUDGET, type OpeningMoment } from "./opening";
 import { OPENING_RULES } from "./opening-fixtures";
+import { OK, OPENING_WORDS } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -85,20 +85,23 @@ describe("the interface that opens as you play", () => {
   });
 
   it("renders each moment with live rule figures and its desktop action", () => {
-    expect(renderMoment("barracks")).toContain("It raises +1.7/min Knights.");
-    expect(renderMoment("deploy")).toContain("2,000 Knights wait at home. Send an army onto the Surface.");
-    expect(renderMoment("explore")).toContain("Reveal a dark hex for 20 stamina.");
-    expect(renderMoment("oath")).toContain(`Swear one Oath, or pass for +${OPENING_RULES.oathPassStamina} stamina.`);
-    expect(renderMoment("shop")).toContain("Stamina returns +1/min. A Fragment refills 2 now or unlocks Ancient Seal.");
-    expect(renderMoment("relic")).toContain("Relics last 30 minutes per tier. Each army carries 3.");
-    expect(renderMoment("city")).toContain("Scouts reveal mist for 10 stamina instead of 20.");
-    expect(renderMoment("spire")).toContain("In the Veil, guards are 2x stronger and camps refill your armies.");
-    expect(renderMoment("deep")).toContain("Every 120 seconds here, armies lose 200 troops. Hold sites to earn.");
-    expect(renderMoment("day-end")).toContain("Today's map and armies go at day end.");
-    expect(renderMoment("bane")).toContain("A bane strikes today.");
-    expect(renderMoment("aspects")).toContain("Prowess races to finish its hyperstructure first.");
-    expect(renderMoment("daily-quest")).toContain("Today's quest is done.");
-    expect(renderMoment("essence")).toContain("Essence buys permanent upgrades and lore for your Realm.");
+    const moments = [
+      "barracks",
+      "deploy",
+      "explore",
+      "oath",
+      "shop",
+      "relic",
+      "city",
+      "spire",
+      "deep",
+      "day-end",
+      "bane",
+      "aspects",
+      "daily-quest",
+      "essence",
+    ] as const;
+    for (const moment of moments) expect(renderMoment(moment)).toContain(OPENING_WORDS.lines[moment](OPENING_RULES));
   });
 
   it("draws a gated part once its moment is reached, and every part outside the HUD's provider", () => {
@@ -133,7 +136,9 @@ describe("the interface that opens as you play", () => {
     act(() => [...host.querySelectorAll("button")].find((each) => each.textContent === OK)!.click());
     expect(onDismiss).toHaveBeenCalledTimes(1);
     const pressSkip = () =>
-      act(() => [...host.querySelectorAll("button")].find((each) => each.textContent === "Skip tutorial")!.click());
+      act(() =>
+        [...host.querySelectorAll("button")].find((each) => each.textContent === OPENING_WORDS.skipTutorial)!.click(),
+      );
     pressSkip();
     expect(onSkipAll).not.toHaveBeenCalled();
     pressSkip();
