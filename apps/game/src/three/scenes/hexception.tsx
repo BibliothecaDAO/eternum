@@ -34,11 +34,7 @@ import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-stor
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import {
-  getCurrentPlayRouteBootToken,
-  onPlayRouteBootStarted,
-  usePlayRouteReadinessStore,
-} from "@/game-entry/play-route-readiness-store";
+import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { actNowRefusal, canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveStoredLocalCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
@@ -109,7 +105,6 @@ import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { openProduction } from "@/ui/features/settlement/production/open-production";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { requireActiveGameClient } from "@/sync/active-game-client";
-import { formatReadableErrorForConsole } from "@/utils/error-message";
 import { sendBuilding } from "@/ui/features/settlement/construction/send-building";
 import { playerStructuresView, readFactView, watchFactView } from "@/sync/fact-views";
 import {
@@ -370,8 +365,6 @@ export default class HexceptionScene extends HexagonScene {
     this.state = useUIStore.getState();
 
     this.registerRealmShortcuts();
-    this.prepareHomeRealm(getCurrentPlayRouteBootToken());
-    this.storeUnsubscribes.push(onPlayRouteBootStarted(() => this.prepareHomeRealm(getCurrentPlayRouteBootToken())));
 
     if (this.GUIFolder) {
       this.GUIFolder.add(this, "structureStage", 0, 3).onFinishChange((value: RealmLevels) => {
@@ -1128,7 +1121,7 @@ export default class HexceptionScene extends HexagonScene {
   /** The projection knows what stands on a hex, including a Frontier realm raised on a site with no tile of its own. */
   /** The route's realm (pickLocalRealm) and where it stands today, which is where the view centres. */
   private selectRouteStructure(position: HexPosition): { structure: NativeRows["Structure"]; position: HexPosition } {
-    const structure = this.readLocalRealm(position);
+    const structure = this.readRouteStructure(position);
     if (!structure) throw new Error(`No structure is available at local route ${position.col},${position.row}`);
     const site = structureMapPosition(this.game.store, structure);
     if (!site) throw new Error("The expedition has not started");
@@ -1138,14 +1131,12 @@ export default class HexceptionScene extends HexagonScene {
     return { structure, position: { col: site.x, row: site.y } };
   }
 
-  private readLocalRealm(position?: HexPosition): NativeRows["Structure"] | undefined {
+  private readRouteStructure(position: HexPosition): NativeRows["Structure"] | undefined {
     const gameId = configManager.getActiveGameId();
-    const standing =
-      position &&
-      requireActiveGameSyncRuntime()
-        .requireWorldSpatialProjection()
-        .getStructuresAtHex({ alt: DEFAULT_COORD_ALT, col: position.col, row: position.row })
-        .find((entry) => entry.entityId !== null && !entry.clearedSite);
+    const standing = requireActiveGameSyncRuntime()
+      .requireWorldSpatialProjection()
+      .getStructuresAtHex({ alt: DEFAULT_COORD_ALT, col: position.col, row: position.row })
+      .find((entry) => entry.entityId !== null && !entry.clearedSite);
     return pickLocalRealm({
       atRoute: standing?.entityId
         ? this.game.store.get("Structure", { game_id: gameId, entity_id: standing.entityId })
@@ -1593,47 +1584,16 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   public override prepareWhileFlying(): void {
-    void this.loadRealmModelsAhead("the realm flown to", () => {
-      const position = resolvePlayRouteTarget(window.location).hexRealmPosition;
-      return position == null ? undefined : this.readLocalRealm(position);
-    });
-  }
-
-  private prepareHomeRealm(bootToken: number): void {
-    void this.loadRealmModelsAhead("the home realm", () => this.readLocalRealm()).then(() =>
-      usePlayRouteReadinessStore.getState().markHomeRealmPrepared(bootToken),
-    );
-  }
-
-  private loadRealmModelsAhead(
-    realmName: string,
-    readRealm: () => NativeRows["Structure"] | undefined,
-  ): Promise<unknown> {
-    if (this.destroyed) return Promise.resolve();
-    try {
-      const structure = readRealm();
-      return structure ? this.loadRealmModels(safeInteger(structure.entity_id)) : Promise.resolve();
-    } catch (error) {
-      console.warn(
-        `[Hexception] ${realmName} could not load its models ahead: ${formatReadableErrorForConsole(error)}`,
-      );
-      return Promise.resolve();
-    }
-  }
-
-  private loadRealmModels(realmId: ID): Promise<unknown> {
+    const position = resolvePlayRouteTarget(window.location).hexRealmPosition;
+    const structure = position == null ? undefined : this.readRouteStructure(position);
+    if (!structure) return;
+    const realmId = safeInteger(structure.entity_id);
     const tiles = requireActiveGameClient().views.buildingTiles(realmId);
     const realm = { realmId, tiles, stage: structureStage(tiles, realmId), mainStructureType: tiles.structureType() };
-    const paths = new Set<string>();
     for (const building of this.boardBuildings(tiles, realmId)) {
       const path = this.modelPath(this.selectRealmBuildingModel(building, realm));
-      if (path) paths.add(path);
+      if (path) this.loadModel(path);
     }
-    return this.requestModels(paths);
-  }
-
-  private requestModels(paths: Iterable<string>): Promise<unknown> {
-    return Promise.allSettled([...paths].map((path) => this.models.request(path)));
   }
 
   /** The model file a selection draws: its tier's own, else its group's; a hyperstructure builds its own. */
@@ -1650,7 +1610,7 @@ export default class HexceptionScene extends HexagonScene {
       const path = this.modelPath(this.selectBuildingModel(building, mainStructureType));
       if (path) paths.add(path);
     }
-    return this.requestModels(paths);
+    return Promise.allSettled([...paths].map((path) => this.models.request(path)));
   }
 
   /** Loads one model once, then lets every building waiting on it draw it. */

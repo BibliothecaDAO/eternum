@@ -191,7 +191,7 @@ export const resolveBootPhase = ({
   // A scene the boot waits on that failed to set up ends the wait in the error state; once ready, a later
   // failure leaves the running game as it is. A player who opens their realm after the map could not be drawn
   // waits on the realm view alone.
-  if ((!readiness.worldmapReady || !readiness.homeRealmPrepared) && !readiness.mapSkipped) {
+  if (!readiness.worldmapReady && !readiness.mapSkipped) {
     return readiness.sceneFailure ? "error" : "wait_worldmap_ready";
   }
 

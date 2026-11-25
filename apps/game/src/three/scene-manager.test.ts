@@ -85,6 +85,29 @@ describe("SceneManager transitions", () => {
     expect(sceneManager.getCurrentScene()).toBe(SceneName.Hexception);
   });
 
+  it("still sets the scene up after its flight when the work started during the flight fails", async () => {
+    const { sceneManager, transitionManager } = createTransitionHarness();
+    const flight = createDeferred<boolean>();
+    transitionManager.startSceneFlight.mockReturnValue(flight.promise);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const realm = createScene({
+      prepareWhileFlying: () => {
+        throw new Error("no realm at the route yet");
+      },
+    });
+    sceneManager.addScene(SceneName.WorldMap, createScene());
+    sceneManager.addScene(SceneName.Hexception, realm);
+    sceneManager._updateCurrentScene(SceneName.WorldMap);
+    sceneManager.switchScene(SceneName.Hexception);
+    flight.resolve(true);
+    await flushTransitionWork();
+    await flushTransitionWork();
+    expect(warn).toHaveBeenCalledOnce();
+    expect(realm.setup).toHaveBeenCalledOnce();
+    expect(sceneManager.getCurrentScene()).toBe(SceneName.Hexception);
+    warn.mockRestore();
+  });
+
   it("renders the preparing scene without releasing input while its GPU work is pending", async () => {
     const setup = createDeferred<void>();
     const { fadeOuts, sceneManager } = createTransitionHarness();
