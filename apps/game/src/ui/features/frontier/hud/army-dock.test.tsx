@@ -75,14 +75,18 @@ it.each(["phone", "desktop"])("shows every open slot and its start on %s, and op
     const startOf = (slot: HTMLButtonElement) => {
       const row = slot.closest<HTMLElement>(".frontier-slot") ?? slot;
       return mode === "desktop"
-        ? [row.dataset.tip, row.querySelector(".frontier-slot__detail")?.textContent]
+        ? [
+            row.dataset.tip,
+            row.querySelector(".frontier-slot__detail")?.textContent ??
+              row.querySelector('[role="meter"]')?.getAttribute("aria-valuenow"),
+          ]
         : [row.dataset.tip, row.textContent];
     };
     expect(slots.map(startOf)).toEqual(
       mode === "desktop"
         ? [
             ["Army 2 starts full: 150/150 stamina.", "420 Knights ready at home"],
-            ["Army 3 starts on 7/150 stamina.", "Any troop type · 7"],
+            ["Army 3 starts on 7/150 stamina.", "7"],
           ]
         : [
             ["Army 2 starts full: 150/150 stamina.", "+"],

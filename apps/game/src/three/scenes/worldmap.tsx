@@ -18,7 +18,7 @@ import { DeepArenaManager } from "../managers/deep-arena-manager";
 import { activeMapLayer } from "@/three/map-layer";
 import type { ReactNode } from "react";
 import { isMapPreviewAction } from "./worldmap-action-preview-policy";
-import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
+import { projectHexEastEdgeToScreen, projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { playRevealYield } from "@/ui/motion/moments/reveal-yield";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
 import { canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
@@ -2264,11 +2264,6 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
-  /**
-   * A paid reveal shows its yield on the revealed tile (design §3.11 §4): the player's own flies home to its banked
-   * counter, anyone else's pops and rises with its amount. The event only starts the flourish; counters roll to the
-   * balance fact.
-   */
   private handleExplorerRewardEvent(update: ExplorerRewardSystemUpdate): void {
     if (this.isRewardDebugEnabled()) {
       console.debug("[ExplorerRewardEvent] update", update);
@@ -2281,7 +2276,7 @@ export default class WorldmapScene extends WarpTravel {
     playRevealYield({
       resourceId,
       amount,
-      from: projectHexToScreen({ col: tile.x, row: tile.y }, this.camera),
+      from: projectHexEastEdgeToScreen({ col: tile.x, row: tile.y }, this.camera),
       own: ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress),
     });
   }

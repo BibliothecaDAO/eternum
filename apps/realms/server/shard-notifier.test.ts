@@ -469,7 +469,7 @@ describe.concurrent("shard notifications", () => {
         expect(push.received).toEqual([]);
         await waitUntil(() => push.received.length === 1, ticks(2) + polls(3));
         expect(Date.now()).toBeGreaterThanOrEqual(earliest);
-        expect(await push.words()).toEqual(["Ethereal mine can be taken / An army of yours can take it today."]);
+        expect(await push.words()).toEqual(["Ethereal mine can be taken / Your army can take it today."]);
         await pause(polls(3));
         expect(push.received).toEqual([201]);
       } finally {
@@ -533,7 +533,7 @@ describe.concurrent("shard notifications", () => {
     herald.state.site.lastTick = armiesTick();
     herald.siteChanged();
     await waitUntil(() => push.received.length === 1, 20000);
-    expect(await push.words()).toEqual(["Ethereal mine can be taken / An army of yours can take it today."]);
+    expect(await push.words()).toEqual(["Ethereal mine can be taken / Your army can take it today."]);
     herald.siteChanged();
     await pause(polls(2));
     expect(push.received).toEqual([201]);
@@ -554,7 +554,7 @@ describe.concurrent("shard notifications", () => {
     await worker.runCron();
     await waitUntil(() => push.received.length === 1, 20000);
     expect(await push.words()).toEqual([
-      `Ring 2 has opened / ${nativeRuleConstants.DEEP_RING_SITES} more sites can be taken today.`,
+      `Ring 2 is open / ${nativeRuleConstants.DEEP_RING_SITES} new sites are open today.`,
     ]);
     herald.siteChanged();
     await pause(polls(2));
@@ -578,7 +578,7 @@ describe.concurrent("shard notifications", () => {
       await pause(polls(2));
       expect(push.received).toEqual([]);
       await waitUntil(() => push.received.length === 1, 60000);
-      expect(await push.words()).toEqual(["Ethereal mine can be taken / An army of yours can take it today."]);
+      expect(await push.words()).toEqual(["Ethereal mine can be taken / Your army can take it today."]);
     } finally {
       await worker.dispose();
     }
@@ -912,7 +912,7 @@ describe.concurrent("shard notifications", () => {
       expect(push.times[0]).toBeGreaterThanOrEqual(opensAt);
       expect(push.times[0]).toBeLessThan(opensAt + 1000);
       expect(await push.words()).toEqual([
-        expect.stringMatching(/^Day 2 is open \/ Frontier: it ends at \d\d:\d\d UTC\.$/),
+        expect.stringMatching(/^Day 2 is open \/ Frontier: day ends at \d\d:\d\d UTC\.$/),
       ]);
       await worker.dispose();
       const restarted = await start();
@@ -1254,7 +1254,7 @@ describe.concurrent("shard notifications", () => {
       push.status = 201;
       await waitUntil(() => push.received.includes(201), 120_000);
       expect(push.received).toEqual([503, 503, 503, 503, 503, 201]);
-      expect(await push.words()).toContain("Your Blitz is settled / Blitz: see where you finished.");
+      expect(await push.words()).toContain("Your Blitz ended / Blitz: see where you finished.");
     } finally {
       await worker.dispose();
     }
@@ -1401,8 +1401,8 @@ describe.concurrent("shard notifications", () => {
   }, 45_000);
 
   it.each([
-    ["a day", false, (ends: string) => `Day 2 is open / Frontier: it ends at ${ends}.`],
-    ["the season's last day", true, (ends: string) => `The last day is open / Frontier: the season ends at ${ends}.`],
+    ["a day", false, (ends: string) => `Day 2 is open / Frontier: day ends at ${ends}.`],
+    ["the season's last day", true, (ends: string) => `Last day is open / Frontier: season ends at ${ends}.`],
   ] as const)(
     "Day open names its day's end on the phone's clock as it is sent, after the phone changed zone: %s",
     async (_case, last, words) => {
