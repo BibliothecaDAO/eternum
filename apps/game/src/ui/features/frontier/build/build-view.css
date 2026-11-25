@@ -21,53 +21,20 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.build-group__line {
-  margin-left: auto;
-  font-size: var(--hud-text-badge);
-  color: var(--hud-muted);
-}
-.build-grid {
-  --build-tile: 72px;
+.build-groups {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
   gap: 6px;
 }
-.build-grid[data-wide] {
-  --build-tile: 46px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.build-group__head {
+  justify-content: center;
 }
-.build-grid[data-wide] .ui-card__corner {
-  top: auto;
-  bottom: 5px;
-}
-.build-grid[data-wide] .ui-card[data-size="sm"] .ui-card__choose {
-  flex-direction: row;
-  justify-content: flex-start;
-  gap: 8px;
-  padding: 2px 8px;
-  text-align: left;
-}
-.build-grid[data-wide] .ui-card[data-size="sm"] .ui-card__title,
-.build-grid[data-wide] .ui-card[data-size="sm"] .ui-card__detail {
-  line-height: 12px;
-}
-.build-grid[data-wide] .ui-card[data-size="sm"] .ui-card__picture {
-  flex: none;
-}
-.build-grid[data-wide] .ui-card[data-size="sm"] .ui-card__foot {
-  min-width: 0;
-  align-items: flex-start;
-}
-.build-grid[data-wide] .build-tile-detail {
-  align-items: flex-start;
-}
-.build-grid[data-wide] .build-tile-price {
-  justify-content: flex-start;
-}
-.build-grid[data-wide] .build-tile-price img,
-.build-grid[data-wide] .build-tile-gives img {
-  width: 12px;
-  height: 12px;
+.build-grid {
+  --build-tile: 74px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
 }
 .build-tile-detail {
   display: flex;
@@ -181,8 +148,9 @@
 }
 .build-chosen__line {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 2px 10px;
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-strong);
   line-height: 20px;
@@ -203,11 +171,16 @@
   }
 }
 @media (min-width: 1024px) and (orientation: landscape), (min-width: 1440px) {
+  .build-groups {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+  .build-group__head {
+    justify-content: flex-start;
+  }
   .build-grid {
     --build-tile: 100px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
-  }
-  .build-grid[data-wide] {
-    --build-tile: 56px;
   }
 }
