@@ -72,7 +72,8 @@ export const useSelectedReinforcement = (
     return at !== undefined && !at.alt && at.col === tile.col && at.row === tile.row;
   };
   const army = armies.find(
-    (entry) => standsThere(entry) && reinforcementSource(setup.store, realm, entry.explorerId, timestamp, post) !== null,
+    (entry) =>
+      standsThere(entry) && reinforcementSource(setup.store, realm, entry.explorerId, timestamp, post) !== null,
   );
   if (!army) return null;
   return post === undefined ? { army } : { army, post: { id: post, name: siteDisplayName(post) } };

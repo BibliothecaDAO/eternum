@@ -128,7 +128,6 @@ const ArmyInRange = ({ realm, army, post }: { realm: NativeRows["Structure"]; ar
           {formatShort(range.max, { signed: true })}
         </HudChip>
       )}
-      <Icon name="chevron-right" size={16} />
     </button>
   );
 };

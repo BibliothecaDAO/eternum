@@ -599,10 +599,10 @@ its bar and Full in timer. `pnpm --dir apps/game playtest:landing lab-stamina-mi
 recorded-effect fixtures at desktop and phone sizes. Native lifecycle tests prove Explore settlement and quorum timing.
 
 Supply posts: `/lab/game?scenario=supply-post`, select the cleared camp beside Army 1: the map lights the armies beside
-it as it does for the realm, and its panel names the realm stock it draws from, when it ends and those armies; right-click
-(a phone holds) Army 1 or tap its row for the realm's Reinforce sheet, Max, then Reinforce. `lab-supply-post` checks the
-signed camp ID and resulting army and home balances on desktop and phone, retaining the post, reinforcement sheet and
-response evidence.
+it as it does for the realm, and its panel names the realm stock it draws from, when it ends and those armies;
+right-click (a phone holds) Army 1 or tap its row for the realm's Reinforce sheet, Max, then Reinforce.
+`lab-supply-post` checks the signed camp ID and resulting army and home balances on desktop and phone, retaining the
+post, reinforcement sheet and response evidence.
 
 Scouts are raised in Deploy by selecting Scouts from the troop choices, then a count and an open army slot. The Scouts'
 Lodge opens at City and produces the separate Scout stock; it has no Scouting research. `--steps lab-scouts` uses

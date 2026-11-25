@@ -21,7 +21,14 @@ import {
   readExpeditionRules,
   setBlockTimestampSource,
 } from "@bibliothecadao/eternum";
-import { formatExact, getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, siteName, TroopTier } from "@bibliothecadao/types";
+import {
+  formatExact,
+  getNeighborHexes,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  siteName,
+  TroopTier,
+} from "@bibliothecadao/types";
 
 import { StructureType } from "@bibliothecadao/types";
 import { ReinforceSheet, useSelectedReinforcement } from "./reinforce";
@@ -89,9 +96,7 @@ const armyBesideHome = () => {
 const Card = ({ realm, onClose }: { realm: never; onClose: () => void }) => {
   const reinforcing = useSelectedReinforcement(realm);
   return (
-    reinforcing && (
-      <ReinforceSheet realm={realm} army={reinforcing.army} post={reinforcing.post} onClose={onClose} />
-    )
+    reinforcing && <ReinforceSheet realm={realm} army={reinforcing.army} post={reinforcing.post} onClose={onClose} />
   );
 };
 
