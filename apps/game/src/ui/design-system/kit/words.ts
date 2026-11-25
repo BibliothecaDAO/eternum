@@ -1271,7 +1271,7 @@ export const DAY_SHARE_WORDS = {
     reveals: (count: string) => `${count} tiles revealed`,
   },
   /** Under a clear's headline: the guard the fight that won it beat. */
-  guardBeaten: (troops: string) => `Defeated ${troops} guards`,
+  guardBeaten: (troops: string) => `Defeated ${troops} troops`,
   /** What the player's shared days brought so far, once they brought anyone: "Your days brought 12 visits · 3 players". */
   brought: (visits: string, joined: string) => `Your days brought ${visits} visits · ${joined} new players`,
 } as const;
@@ -1320,7 +1320,7 @@ export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist gre
 
 export const SEASON_ERROR = "Season unavailable.";
 /** A day's totals the player's history cannot give: the read keeps only the newest stories, or did not answer. */
-export const DAY_TOTALS_UNKNOWN = "Today's totals unavailable";
+export const DAY_TOTALS_UNKNOWN = "Day totals unavailable";
 
 /** Looking at another realm, and stopping. */
 export const VISIT = "Visit";
@@ -2213,7 +2213,7 @@ export const RESEARCH_TREE = {
   oaths: "Oath slots",
   oathSlots: (count: number) => `${count} Oath ${count === 1 ? "slot" : "slots"}`,
   oathLocked: "Locked",
-  oathEarn: `Clear a band or reveal a ${SHRINE} for an ${SITE_OATH.label}`,
+  oathEarn: `Clear a site that holds an ${SITE_OATH.label}, or reveal a ${SHRINE}`,
   conscriptionLine: "More troops from every troop building.",
   rationsLine: "Armies cost less wheat to deploy.",
   troopsAnHour: "Troops an hour",

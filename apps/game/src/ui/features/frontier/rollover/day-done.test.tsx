@@ -278,7 +278,7 @@ it("shares day 2 as its card and a post: its best moment, the numbers it moved, 
   expect(shown.querySelector(".day-card__realm")?.textContent).toBe("Temtinos");
   // Prod's day 2: its strongest guard fell at a Beasts den.
   expect(shown.querySelector(".day-card__headline")?.textContent).toBe("Beasts cleared");
-  expect(shown.querySelector(".day-card__detail")?.textContent).toBe("Defeated 483 guards");
+  expect(shown.querySelector(".day-card__detail")?.textContent).toBe("Defeated 483 troops");
   // It opened no chest and paid no LORDS: neither is on the card.
   expect([...shown.querySelectorAll(".day-card__haul small")].map((label) => label.textContent)).toEqual([
     "Reveals",
@@ -384,14 +384,14 @@ it("shows a dash for each total, and says why, when the player's history no long
   }));
   herald.history = [...later, ...BEFORE_PLAYING_ON.history];
   expect(await openTheGame()).toEqual(["—Essence", "—Labor", "0Glory"]);
-  expect(host.querySelector(`${SUMMARY} [role="status"]`)?.textContent).toBe("Today's totals unavailable");
+  expect(host.querySelector(`${SUMMARY} [role="status"]`)?.textContent).toBe("Day totals unavailable");
 });
 
 it("shows a dash for each total, and says history did not answer, with Try again, when the read fails", async () => {
   herald.withheld = Promise.reject(new Error("Herald is down"));
   herald.withheld.catch(() => undefined);
   expect(await openTheGame()).toEqual(["—Essence", "—Labor", "0Glory"]);
-  expect(host.querySelector(`${SUMMARY} [role="alert"]`)?.textContent).toBe("Today's totals unavailableTry again");
+  expect(host.querySelector(`${SUMMARY} [role="alert"]`)?.textContent).toBe("Day totals unavailableTry again");
 });
 
 describe("the alerts popup, which waits for the day's end", () => {
