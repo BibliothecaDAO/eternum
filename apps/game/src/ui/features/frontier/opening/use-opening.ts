@@ -244,7 +244,7 @@ function useOpeningContext(
   const hasActiveBane = hasBaneQuorum && !hasBrokenBane;
   const dailyQuestClaimable = questReading?.state === "done" || questReading?.state === "again";
   const dailyQuestClaimed = questReading?.state === "collected";
-  const race = readRaceBoard(setup.store, realm.game_id, BigInt(home), now).known?.race;
+  const race = readRaceBoard(setup.store, realm.game_id, BigInt(home)).known?.race;
   const hyperstructureAdvanced = (race?.standings.find((row) => row.aspect === race.own?.aspect)?.stage ?? 1) > 1;
   const hasEssence = (stores?.essence.amount ?? 0) > 0;
   const canResearch = canResearchNow(researchTree?.nodes);

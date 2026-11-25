@@ -4239,8 +4239,8 @@ function raceBoardSteps(result) {
           !race.text.includes("LORDS") &&
           played.invite?.invite.text.includes("Invite a friend to Prowess") &&
           !played.invite?.invite.text.includes("could not be made") &&
-          members.text.includes("1.3K") &&
-          members.text.includes("3.8K") &&
+          members.text.includes("1,250") &&
+          members.text.includes("3,750") &&
           scoped.includes(7) &&
           scoped.includes(9) &&
           (result === null || played.race.ended)

@@ -13,7 +13,8 @@ import {
   type RenderMode,
   writeRenderMode,
 } from "@/three/render-profile";
-import { HudButton, HudSelect, HudSetting, HudSwitch } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudSetting, HudSwitch, HudTabs } from "@/ui/design-system/kit/hud-elements";
+import { SETTINGS_WORDS } from "@/ui/design-system/kit/words";
 import { canPlayHaptics } from "@/ui/motion/motion-settings";
 import { useState } from "react";
 
@@ -44,38 +45,46 @@ export function VideoSettings() {
   const waiting = JSON.stringify(createRenderProfile(renderMode, preferences)) !== JSON.stringify(renderProfile);
   return (
     <>
-      <HudSetting name="Quality">
-        <HudSelect
-          label="Quality"
-          value={preferences.quality}
-          options={QUALITY_OPTIONS}
-          onChange={(quality) => changeGraphics({ quality })}
-        />
-      </HudSetting>
-      <HudSetting name="Frame rate">
-        <HudSelect
-          label="Frame rate"
-          value={renderMode}
-          options={RENDER_MODE_OPTIONS.map((option) => ({ value: option.mode, label: option.label }))}
-          onChange={changeRenderMode}
-        />
-      </HudSetting>
-      <HudSetting name="Shadows">
-        <HudSwitch on={preferences.shadows} label="Shadows" onChange={(shadows) => changeGraphics({ shadows })} />
-      </HudSetting>
-      {waiting && (
-        <HudSetting name="Applies after a reload">
-          <HudButton kind="secondary" size="sm" onClick={() => pageNavigation.reload()}>
-            Reload
-          </HudButton>
+      <div className="ui-settings__choices">
+        <HudSetting name={SETTINGS_WORDS.quality}>
+          <HudTabs
+            size="sm"
+            tabs={QUALITY_OPTIONS.map((option) => ({ key: option.value, label: option.label }))}
+            value={preferences.quality}
+            onChange={(quality) => changeGraphics({ quality })}
+          />
         </HudSetting>
+        <HudSetting name={SETTINGS_WORDS.frameRate}>
+          <HudTabs
+            size="sm"
+            tabs={RENDER_MODE_OPTIONS.map((option) => ({ key: option.mode, label: option.label }))}
+            value={renderMode}
+            onChange={changeRenderMode}
+          />
+        </HudSetting>
+      </div>
+      {waiting && (
+        <div className="ui-settings__reload">
+          <HudSetting name={SETTINGS_WORDS.appliesAfterReload}>
+            <HudButton kind="secondary" size="sm" onClick={() => pageNavigation.reload()}>
+              {SETTINGS_WORDS.reload}
+            </HudButton>
+          </HudSetting>
+        </div>
       )}
-      <HudSetting name="Reduced motion">
-        <HudSwitch on={reducedMotion} label="Reduced motion" onChange={setReducedMotion} />
+      <HudSetting name={SETTINGS_WORDS.shadows}>
+        <HudSwitch
+          on={preferences.shadows}
+          label={SETTINGS_WORDS.shadows}
+          onChange={(shadows) => changeGraphics({ shadows })}
+        />
+      </HudSetting>
+      <HudSetting name={SETTINGS_WORDS.reducedMotion}>
+        <HudSwitch on={reducedMotion} label={SETTINGS_WORDS.reducedMotion} onChange={setReducedMotion} />
       </HudSetting>
       {canPlayHaptics() && (
-        <HudSetting name="Haptics">
-          <HudSwitch on={haptics} label="Haptics" onChange={setHaptics} />
+        <HudSetting name={SETTINGS_WORDS.haptics}>
+          <HudSwitch on={haptics} label={SETTINGS_WORDS.haptics} onChange={setHaptics} />
         </HudSetting>
       )}
     </>

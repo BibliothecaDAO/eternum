@@ -369,7 +369,7 @@ describe("the build sheet", () => {
 
     act(() => sheet.card("Range").click());
     expect(sheet.card("Range").getAttribute("aria-pressed")).toBe("true");
-    expect(sheet.host.querySelector('[role="status"]')?.textContent).toBe("Requires City");
+    expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe("Requires City");
     expect(sheet.button("Build ")).toBeUndefined();
     sheet.close();
   });
@@ -406,7 +406,7 @@ describe("the build sheet", () => {
         expect(priceEl?.textContent).toBe(formatCharge(amount));
       }
       act(() => lockedButton.click());
-      expect(sheet.host.querySelector('[role="status"]')?.textContent).toBe(
+      expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe(
         `Requires ${rankName(buildingOpensAtLevel(category))}`,
       );
       expect(footPrice(sheet.host)).toBe(costLine(expected));
@@ -429,7 +429,7 @@ describe("the build sheet", () => {
     const rangeButton = sheet.card(buildingName(BuildingType.ResourceCrossbowmanT1, true));
     expect(rangeButton.querySelector("[data-build-price]")?.textContent).toBe(FREE);
     act(() => rangeButton.click());
-    expect(sheet.host.querySelector('[role="status"]')?.textContent).toBe("Requires City");
+    expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe("Requires City");
     expect(footPrice(sheet.host)).toBe(FREE);
     sheet.close();
   });
@@ -450,7 +450,7 @@ describe("the build sheet", () => {
     ] as never);
     const sheet = open(store, realm);
     act(() => sheet.card("Workshop").click());
-    expect(sheet.host.querySelector('[role="status"]')).toBeNull();
+    expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')).toBeNull();
     expect(sheet.button("Build ")!.textContent).toBe("Build Workshop");
     expect(footPrice(sheet.host)).toBe("2,000 Labor");
     // Build and its price stand in the sheet's foot, outside the body that scrolls: the verb never scrolls away.
@@ -541,7 +541,9 @@ describe("the build sheet", () => {
     vi.spyOn(configManager, "paysRevealSupplies").mockReturnValue(true);
     const short = open(store, realm);
     act(() => short.card("Farm").click());
-    expect(short.host.querySelector('[role="status"]')!.textContent).toMatch(/^Needs [\d,]+ Labor, have 0$/);
+    expect(short.host.querySelector('.ui-window__foot button[data-tone="bad"]')!.textContent).toMatch(
+      /^Needs [\d,]+ Labor, have 0$/,
+    );
     expect(short.button("Build ")).toBeUndefined();
     expect(short.host.textContent).not.toContain("Explore");
     short.close();

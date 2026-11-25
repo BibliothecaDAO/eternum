@@ -156,7 +156,6 @@ export const OpenSlot = ({
   filling,
   tip,
   bar,
-  stock,
   selected,
   onDeploy,
 }: {
@@ -168,7 +167,6 @@ export const OpenSlot = ({
   filling?: string;
   tip?: string;
   bar?: StaminaBar;
-  stock?: { count: string; label: string };
   onDeploy: () => void;
 }) => (
   <button
@@ -186,11 +184,6 @@ export const OpenSlot = ({
     <span className="text-hud-label leading-none text-hud-gold [font-family:var(--hud-font-display)]">
       {filling ?? label}
     </span>
-    {stock && filling === undefined && (
-      <span role="img" aria-label={stock.label} className="text-hud-body leading-none text-hud-ink tabular-nums">
-        {stock.count}
-      </span>
-    )}
   </button>
 );
 

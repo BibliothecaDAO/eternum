@@ -48,7 +48,6 @@ export const ArmyDock = ({
           label: `${formatAmount(plan.troops.atHome)} ${frontierTroopName(plan.troops.type) ?? TROOPS}`,
         }
       : undefined;
-  const readyAtHome = armies.length === 0 ? homeStock : undefined;
   const limits = useNativeFacts(SLOT_RULE_MODELS).store.get("SliceRules", {
     game_id: realm.game_id,
   })?.troop_limit_config;
@@ -76,7 +75,7 @@ export const ArmyDock = ({
         realm={realm}
         slot={entry.slot}
         pulse={entry.slot === next && armies.length === 0}
-        stock={entry.slot === next ? (desktop ? homeStock : readyAtHome) : undefined}
+        stock={entry.slot === next && desktop ? homeStock : undefined}
         primary={entry.slot === next}
         wide={desktop}
       />
@@ -245,6 +244,6 @@ const DeploySlot = ({
       onDeploy={onDeploy}
     />
   ) : (
-    <OpenSlot label={DEPLOY} filling={filling} pulse={pulse} tip={start?.words} stock={stock} onDeploy={onDeploy} />
+    <OpenSlot label={DEPLOY} filling={filling} pulse={pulse} tip={start?.words} onDeploy={onDeploy} />
   );
 };
