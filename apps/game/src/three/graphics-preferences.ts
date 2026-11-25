@@ -7,22 +7,20 @@ export interface GraphicsPreferences {
 }
 
 const STORAGE_KEY = "eternum-graphics";
+const DEFAULT_QUALITY: GraphicsQuality = "high";
 
 const isGraphicsQuality = (value: unknown): value is GraphicsQuality =>
   GRAPHICS_QUALITIES.some((quality) => quality === value);
 
-export function readGraphicsPreferences(
-  storage: Pick<Storage, "getItem"> | null,
-  defaultQuality: GraphicsQuality,
-): GraphicsPreferences {
+export function readGraphicsPreferences(storage: Pick<Storage, "getItem"> | null): GraphicsPreferences {
   try {
     const stored = JSON.parse(storage?.getItem(STORAGE_KEY) ?? "null");
     return {
-      quality: isGraphicsQuality(stored?.quality) ? stored.quality : defaultQuality,
+      quality: isGraphicsQuality(stored?.quality) ? stored.quality : DEFAULT_QUALITY,
       shadows: stored?.shadows !== false,
     };
   } catch {
-    return { quality: defaultQuality, shadows: true };
+    return { quality: DEFAULT_QUALITY, shadows: true };
   }
 }
 

@@ -6,14 +6,14 @@ import {
   writeGraphicsPreferences,
   type GraphicsPreferences,
 } from "@/three/graphics-preferences";
-import { deviceDefaultQuality, loadedGraphicsPreferences } from "@/three/render-profile";
+import { loadedGraphicsPreferences } from "@/three/render-profile";
 import { HudButton, HudSetting, HudSwitch, HudTabs } from "@/ui/design-system/kit/hud-elements";
 import { SETTINGS_WORDS } from "@/ui/design-system/kit/words";
 import { canPlayHaptics } from "@/ui/motion/motion-settings";
 import { useState } from "react";
 
 export function VideoSettings() {
-  const [preferences, setPreferences] = useState(() => readGraphicsPreferences(localStorage, deviceDefaultQuality));
+  const [preferences, setPreferences] = useState(() => readGraphicsPreferences(localStorage));
   const { reducedMotion, setReducedMotion, haptics, setHaptics } = useWorldAppearanceStore();
   const changeGraphics = (change: Partial<GraphicsPreferences>) => {
     const next = { ...preferences, ...change };
