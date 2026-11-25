@@ -30,7 +30,6 @@ import { useArmyPanelOpens, usePickArmy } from "./army/army-opens";
 import { FrontierArmy } from "./army/frontier-army";
 import { FrontierOathPick } from "./army/oath-pick";
 import { FightBanner } from "./sites/fight-banner";
-import { RevealPill } from "./hud/reveal-pill";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { FrontierSurfaces } from "./frontier-surfaces";
 import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
@@ -352,7 +351,6 @@ const FrontierHudBody = ({
       <BuildingsInFlight />
       <FrontierOathPick realm={realm} />
       <FightBanner />
-      <RevealPill />
     </>
   );
 
