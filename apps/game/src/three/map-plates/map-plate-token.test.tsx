@@ -130,6 +130,14 @@ describe("a thing's token, its plate closed (the owner's 2026-10-19 pick: tokens
   });
 });
 
+describe("a plate opened", () => {
+  it("marks each troop stack's painting with how it fights, as its token did", () => {
+    const marks = (html: string) => [...html.matchAll(/data-combat-mark="(\w+)"/g)].map((match) => match[1]);
+    expect(marks(renderToStaticMarkup(<Plate plate={realm} />))).toEqual(["Blade", "Bow"]);
+    expect(marks(renderToStaticMarkup(<Plate plate={army} />))).toEqual(["Blade"]);
+  });
+});
+
 describe("a Shrine's plate opened", () => {
   it("draws its point as the gem filling its row, then +1", () => {
     const shrine: StructurePlate = {

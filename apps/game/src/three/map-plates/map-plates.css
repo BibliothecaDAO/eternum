@@ -180,7 +180,7 @@
   right: -8px;
   display: flex;
 }
-.mp-token__combat {
+.mp-combat {
   position: absolute;
   bottom: -5px;
   left: -7px;
@@ -192,6 +192,20 @@
   border: 1px solid var(--mp-side);
   border-radius: var(--hud-radius-round);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+}
+.mp-troops__icon {
+  position: relative;
+  display: inline-flex;
+}
+.mp-troops__icon .mp-combat {
+  bottom: -4px;
+  left: -4px;
+  width: 14px;
+  height: 14px;
+}
+.mp-troops__icon .mp-combat > * {
+  width: 10px;
+  height: 10px;
 }
 .mp-token__strip {
   display: flex;
