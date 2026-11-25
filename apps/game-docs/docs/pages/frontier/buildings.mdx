@@ -5,6 +5,7 @@ description: Frontier buildings, repeat copy prices, and unique buildings
 
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
+import { Shot } from "@/components/Media";
 import { PipeTable } from "@/components/PipeTable";
 
 # Buildings
@@ -13,6 +14,11 @@ Tap an open plot on your realm to build. Your castle makes {FRONTIER.realm.castl
 {FRONTIER.realm.castleLevelInline[0]}, multiplying by {FRONTIER.realm.castleLaborStep} at each castle level up to
 {FRONTIER.realm.castleLaborRates[3]}/h at {FRONTIER.realm.castleLevelInline[3]}. Each of the {FRONTIER.buildingsCount}
 buildings opens at its castle level and costs labor (plus Essence for unique buildings):
+
+<Shot
+  name="frontier/build"
+  caption="Switch to Realm from the place dropdown and tap any highlighted open plot to open Build. Pick a building to check its output and cost before placing it."
+/>
 
 | Building                                                                    | Makes                         | Opens at                      | First copy price              |
 | --------------------------------------------------------------------------- | ----------------------------- | ----------------------------- | ----------------------------- |

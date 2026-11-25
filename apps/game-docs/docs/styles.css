@@ -731,18 +731,22 @@ article.vocs_Content,
   border-radius: 8px;
   background: var(--realm-surface-iron);
 }
-.docs-media-desktop video,
-.docs-media-desktop img {
+.docs-media-desktop video {
   aspect-ratio: 16 / 9;
   object-fit: cover;
+}
+.docs-media-desktop img {
+  aspect-ratio: auto;
 }
 .docs-media-phone {
   max-width: 320px;
 }
-.docs-media-phone video,
-.docs-media-phone img {
+.docs-media-phone video {
   aspect-ratio: 9 / 16;
   object-fit: cover;
+}
+.docs-media-phone img {
+  aspect-ratio: auto;
 }
 .docs-media-wide video,
 .docs-media-wide img {
