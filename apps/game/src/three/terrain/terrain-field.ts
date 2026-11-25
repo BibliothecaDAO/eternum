@@ -3,9 +3,8 @@ import { BiomeType } from "@bibliothecadao/types/terrain";
 import { Color } from "three/src/math/Color.js";
 
 import { SurfaceBasaltTransition } from "./terrain-basalt-transition";
-import { sampleBasaltSurface } from "./terrain-basalt";
 import { isEtherealTerrainCell } from "./terrain-surface-presentation";
-import { TERRAIN_GROUND_HEIGHT } from "./terrain-surface";
+import { groundHeightOfCell, TERRAIN_GROUND_HEIGHT } from "./terrain-surface";
 import { TerrainNoise } from "./terrain-noise";
 import { TERRAIN_BIOME_ART_DIRECTIONS, type TerrainBiomeArtDirection } from "./terrain-biome-art-direction";
 import {
@@ -290,11 +289,10 @@ export class TerrainField {
   private resolveGround(worldX: number, worldZ: number): TerrainSurfaceSample | SlopedGround {
     const owner = findNearestTerrainHex(worldX, worldZ);
     const cell = this.getCell(owner.col, owner.row);
-    if (cell?.explored && isEtherealTerrainCell(this.request, cell)) {
-      return { ...sampleBasaltSurface(), biome: cell.biome };
-    }
-    if (this.getCell(owner.col, owner.row)?.explored === false) {
-      return { biome: null, height: TERRAIN_GROUND_HEIGHT, normal: [0, 1, 0] };
+    const ethereal = cell !== undefined && isEtherealTerrainCell(this.request, cell);
+    if (cell && (!cell.explored || ethereal)) {
+      const height = groundHeightOfCell({ explored: cell.explored, biome: cell.biome, ethereal });
+      return { biome: cell.explored ? cell.biome : null, height, normal: [0, 1, 0] };
     }
     const candidates = this.resolveExploredCandidates(owner.col, owner.row);
     const dominant = findDominantTerrainCandidate(worldX, worldZ, candidates);

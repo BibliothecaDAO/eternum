@@ -1,8 +1,7 @@
 import type { BiomeType } from "@bibliothecadao/types";
 import type { EtherealSurface } from "../terrain/ethereal-depths";
-import { BASALT_SUPPORT_HEIGHT } from "../terrain/terrain-basalt";
-import { TERRAIN_GROUND_HEIGHT } from "../terrain/terrain-surface";
-import { isTerrainWaterBiome, TERRAIN_WATER_LEVEL } from "../terrain/terrain-water";
+import { landUnderSettlement } from "../terrain/terrain-settlement-ground";
+import { groundHeightOfCell } from "../terrain/terrain-surface";
 import type { DeepZone } from "@bibliothecadao/eternum/game-client";
 import { resolveWorldmapVisualTerrainPageKeyForHex } from "./worldmap-terrain-presentation-runtime";
 /** The biome a terrain cell draws while its tile is unexplored: its outline. */
@@ -18,15 +17,20 @@ interface TerrainCoverageCell {
 export interface TerrainCellFacts {
   projectedBiome: BiomeType | undefined;
   occupied: boolean;
+  reclaimsLand: boolean;
   surfacePresentation: EtherealSurface | undefined;
   deepZone?: DeepZone;
 }
 
-export const groundHeightOf = ({ projectedBiome, surfacePresentation, occupied }: TerrainCellFacts): number => {
-  if (projectedBiome === undefined) return TERRAIN_GROUND_HEIGHT;
-  if (surfacePresentation !== undefined) return BASALT_SUPPORT_HEIGHT;
-  return isTerrainWaterBiome(projectedBiome) && !occupied ? TERRAIN_WATER_LEVEL : TERRAIN_GROUND_HEIGHT;
-};
+export const groundHeightOf = (
+  { projectedBiome, surfacePresentation, reclaimsLand }: TerrainCellFacts,
+  etherealPage: boolean,
+): number =>
+  groundHeightOfCell({
+    explored: projectedBiome !== undefined,
+    biome: reclaimsLand ? landUnderSettlement(projectedBiome ?? null) : (projectedBiome ?? null),
+    ethereal: etherealPage || surfacePresentation !== undefined,
+  });
 
 interface CaptureTerrainContentInput {
   cells: readonly TerrainCoverageCell[];

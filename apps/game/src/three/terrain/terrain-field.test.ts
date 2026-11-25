@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { findNearestTerrainHex, terrainHexToWorld } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
+import { applySettlementIslands } from "./terrain-settlement-ground";
+import { groundHeightOfCell } from "./terrain-surface";
 import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 import { isTerrainWaterBiome, isTerrainWaterCovered, TERRAIN_WATER_LEVEL } from "./terrain-water";
 
@@ -23,6 +25,31 @@ describe("TerrainField", () => {
     expect(field.sampleVertex(0, 0).height).toBeLessThan(-0.055);
     expect(field.sampleSurface(0, 0)).toMatchObject({ height: -0.055, normal: [0, 1, 0] });
     expect(field.sampleHeight(0, 0)).toBe(-0.055);
+  });
+
+  it("agrees with the one ground rule at every tile's centre, a reclaimed, ethereal or unknown tile among them", () => {
+    const request = applySettlementIslands(
+      createRequest([
+        cell(0, 0, BiomeType.Grassland),
+        cell(1, 0, BiomeType.Snow),
+        cell(2, 0, BiomeType.Ocean),
+        cell(3, 0, BiomeType.Ocean),
+        cell(4, 0, BiomeType.Ocean, true),
+        { ...cell(0, 1, BiomeType.Bare), surfacePresentation: "ethereal" },
+        unknownCell(1, 1, BiomeType.Ocean),
+      ]),
+    );
+    const field = new TerrainField(request);
+
+    for (const drawn of request.cells) {
+      const center = terrainHexToWorld(drawn.col, drawn.row);
+      const rule = groundHeightOfCell({
+        explored: drawn.explored,
+        biome: drawn.biome,
+        ethereal: drawn.surfacePresentation !== undefined,
+      });
+      expect(field.sampleHeight(center.x, center.z)).toBeCloseTo(rule, 6);
+    }
   });
 
   it("matches generated terrain geometry for placement across biomes and boundaries", () => {

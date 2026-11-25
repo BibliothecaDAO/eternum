@@ -13,6 +13,7 @@ const input = (biomes = new Map<number, BiomeType>(), spireCol?: number) => ({
   readCell: (col: number) => ({
     projectedBiome: biomes.get(col),
     occupied: col === spireCol,
+    reclaimsLand: false,
     surfacePresentation: col === spireCol ? ("ethereal" as const) : undefined,
   }),
   simulateAllExplored: false,
@@ -118,20 +119,23 @@ describe("takeShownTiles", () => {
 describe("the ground a tile's facts put under what stands on it", () => {
   const facts = (
     projectedBiome: BiomeType | undefined,
-    more: { occupied?: boolean; surfacePresentation?: "ethereal" } = {},
+    more: { reclaimsLand?: boolean; surfacePresentation?: "ethereal" } = {},
   ) => ({
     projectedBiome,
-    occupied: more.occupied ?? false,
+    occupied: more.reclaimsLand ?? false,
+    reclaimsLand: more.reclaimsLand ?? false,
     surfacePresentation: more.surfacePresentation,
   });
 
-  it("is one height for fog and every dry biome, the water's surface on water, and the basalt plane on a spire's tile", () => {
-    expect(groundHeightOf(facts(undefined))).toBe(0);
-    expect(groundHeightOf(facts(BiomeType.Snow))).toBe(0);
-    expect(groundHeightOf(facts(BiomeType.Grassland))).toBe(0);
-    expect(groundHeightOf(facts(BiomeType.Ocean))).toBe(TERRAIN_WATER_LEVEL);
-    expect(groundHeightOf(facts(BiomeType.DeepOcean))).toBe(TERRAIN_WATER_LEVEL);
-    expect(groundHeightOf(facts(BiomeType.Ocean, { occupied: true }))).toBe(0);
-    expect(groundHeightOf(facts(BiomeType.Snow, { surfacePresentation: "ethereal" }))).toBe(BASALT_SUPPORT_HEIGHT);
+  it("is one height for fog and every dry biome, the water's surface on water, and the basalt plane on a spire's tile or an ethereal page", () => {
+    expect(groundHeightOf(facts(undefined), false)).toBe(0);
+    expect(groundHeightOf(facts(BiomeType.Snow), false)).toBe(0);
+    expect(groundHeightOf(facts(BiomeType.Grassland), false)).toBe(0);
+    expect(groundHeightOf(facts(BiomeType.Ocean), false)).toBe(TERRAIN_WATER_LEVEL);
+    expect(groundHeightOf(facts(BiomeType.DeepOcean), false)).toBe(TERRAIN_WATER_LEVEL);
+    expect(groundHeightOf(facts(BiomeType.Ocean, { reclaimsLand: true }), false)).toBe(0);
+    expect(groundHeightOf(facts(BiomeType.Snow, { surfacePresentation: "ethereal" }), false)).toBe(BASALT_SUPPORT_HEIGHT);
+    expect(groundHeightOf(facts(BiomeType.Snow), true)).toBe(BASALT_SUPPORT_HEIGHT);
+    expect(groundHeightOf(facts(undefined), true)).toBe(0);
   });
 });
