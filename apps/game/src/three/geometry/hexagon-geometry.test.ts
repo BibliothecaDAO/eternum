@@ -41,21 +41,21 @@ describe("the filled hexagon plot overlay", () => {
   const index = geometry.getIndex()!;
   const radiusOf = (vertex: number) => Math.hypot(positions.getX(vertex), positions.getY(vertex));
 
-  it("fills the interior with translucent fill RGBA on a grid fine enough to follow the ground, framed with rim RGBA, facing +Z", () => {
+  it("fills the interior with translucent fill RGBA, framed with rim RGBA, facing +Z", () => {
     expect(colors.itemSize).toBe(4);
     const vertices = Array.from({ length: positions.count }, (_, vertex) => vertex);
     const fillVertices = vertices.filter((vertex) => Math.abs(colors.getW(vertex) - fill[3]) < 1e-5);
     const rimVertices = vertices.filter((vertex) => Math.abs(colors.getW(vertex) - rim[3]) < 1e-5);
-    expect(fillVertices).toHaveLength(37);
-    expect(rimVertices).toHaveLength(36);
+    expect(fillVertices).toHaveLength(7);
+    expect(rimVertices).toHaveLength(12);
     expect(fillVertices.every((vertex) => radiusOf(vertex) < 0.9 + 1e-6)).toBe(true);
-    expect(fillVertices.filter((vertex) => radiusOf(vertex) < 0.9 * 0.34)).toHaveLength(7);
+    expect(fillVertices.filter((vertex) => radiusOf(vertex) < 0.9 * 0.34)).toHaveLength(1);
     expect(
       rimVertices.every(
         (vertex) => radiusOf(vertex) > 0.9 * Math.cos(Math.PI / 6) - 1e-6 && radiusOf(vertex) < 1 + 1e-6,
       ),
     ).toBe(true);
-    expect(index.count / 3).toBe(54 + 36);
+    expect(index.count / 3).toBe(6 + 12);
     for (let triangle = 0; triangle < index.count; triangle += 3) {
       const [a, b, c] = [0, 1, 2].map(
         (corner) =>

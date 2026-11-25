@@ -42,39 +42,13 @@ export const createCasedHexagonBandGeometry = (
   return geometry;
 };
 
-const GROUND_GRID_RINGS = 3;
-
-const hexGridPoint = (radius: number, ring: number, index: number): [number, number] => {
-  if (ring === 0) return [0, 0];
-  const side = Math.floor(index / ring);
-  const [ax, ay] = hexagonCorner((radius * ring) / GROUND_GRID_RINGS, side);
-  const [bx, by] = hexagonCorner((radius * ring) / GROUND_GRID_RINGS, side + 1);
-  const along = (index % ring) / ring;
-  return [ax + (bx - ax) * along, ay + (by - ay) * along];
-};
-
-const hexGridIndex = (ring: number, index: number): number =>
-  ring === 0 ? 0 : 1 + 3 * ring * (ring - 1) + (index % (6 * ring));
-
-const hexGrid = (radius: number): { points: [number, number][]; triangles: number[] } => {
-  const points: [number, number][] = [];
-  const triangles: number[] = [];
-  for (let ring = 0; ring <= GROUND_GRID_RINGS; ring++)
-    for (let index = 0; index < Math.max(1, 6 * ring); index++) points.push(hexGridPoint(radius, ring, index));
-  for (let ring = 1; ring <= GROUND_GRID_RINGS; ring++)
-    for (let side = 0; side < 6; side++)
-      for (let step = 0; step < ring; step++) {
-        const outer = side * ring + step;
-        const inner = hexGridIndex(ring - 1, side * (ring - 1) + step);
-        triangles.push(inner, hexGridIndex(ring, outer), hexGridIndex(ring, outer + 1));
-        if (step < ring - 1)
-          triangles.push(inner, hexGridIndex(ring, outer + 1), hexGridIndex(ring - 1, side * (ring - 1) + step + 1));
-      }
-  return { points, triangles };
-};
+const hexFan = (radius: number): { points: [number, number][]; triangles: number[] } => ({
+  points: [[0, 0], ...Array.from({ length: 6 }, (_, corner) => hexagonCorner(radius, corner))],
+  triangles: Array.from({ length: 6 }, (_, side) => [0, 1 + side, 1 + ((side + 1) % 6)]).flat(),
+});
 
 export const createHexPlateGeometry = (radius: number): BufferGeometry => {
-  const { points, triangles } = hexGrid(radius);
+  const { points, triangles } = hexFan(radius);
   const geometry = new BufferGeometry();
   geometry.setAttribute(
     "position",
@@ -95,10 +69,10 @@ export const createFilledHexagonOverlayGeometry = (
     rim: readonly [number, number, number, number];
   },
 ): BufferGeometry => {
-  const fill = hexGrid(innerRadius);
-  const edge = 6 * GROUND_GRID_RINGS;
-  const rimInner = Array.from({ length: edge }, (_, index) => hexGridPoint(innerRadius, GROUND_GRID_RINGS, index));
-  const rimOuter = Array.from({ length: edge }, (_, index) => hexGridPoint(outerRadius, GROUND_GRID_RINGS, index));
+  const fill = hexFan(innerRadius);
+  const edge = 6;
+  const rimInner = Array.from({ length: edge }, (_, index) => hexagonCorner(innerRadius, index));
+  const rimOuter = Array.from({ length: edge }, (_, index) => hexagonCorner(outerRadius, index));
   const points = [...fill.points, ...rimInner, ...rimOuter];
   const innerAt = (index: number) => fill.points.length + (index % edge);
   const outerAt = (index: number) => fill.points.length + edge + (index % edge);

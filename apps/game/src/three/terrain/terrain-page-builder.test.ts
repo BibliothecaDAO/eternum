@@ -5,34 +5,36 @@ import { describe, expect, it } from "vitest";
 
 import { terrainHexCorners, terrainHexToWorld } from "./terrain-coordinates";
 import { plainTerrainPageRequest, prepareTerrainPage } from "./terrain-page-builder";
+import { TERRAIN_GROUND_HEIGHT } from "./terrain-surface";
 import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 
 import { createAllBiomesTerrainRequest } from "./verification/terrain-verification-fixtures";
 
 describe("prepareTerrainPage", () => {
-  it("builds deterministic indexed terrain and frontier buffers", () => {
+  it("builds deterministic indexed terrain buffers", () => {
     const request = createRequest([cell(0, 0, BiomeType.Ocean)]);
     const first = prepareTerrainPage(request);
     const second = prepareTerrainPage(request);
 
     expect(first.fingerprint).toBe(second.fingerprint);
     expect(first.buffers.positions).toEqual(second.buffers.positions);
-    expect(first.diagnostics.frontierEdges).toBe(6);
-    expect(first.diagnostics.triangles).toBe(120);
-    expect(first.waterBuffers?.indices).toHaveLength(162);
+    expect(first.waterBuffers?.indices).toEqual(second.waterBuffers?.indices);
   });
 
-  it("does not create frontier skirts between explored neighbors", () => {
-    const first = cell(0, 0, BiomeType.Grassland);
-    const second = cell(1, 0, BiomeType.Taiga);
-    const page = prepareTerrainPage(createRequest([first, second]));
+  it("lays every dry tile's ground at one height, whatever its biome", () => {
+    const page = prepareTerrainPage(
+      createRequest([cell(0, 0, BiomeType.Grassland), cell(1, 0, BiomeType.Snow), cell(2, 0, BiomeType.Bare)]),
+    );
+    const heights = new Set(
+      Array.from({ length: page.buffers.positions.length / 3 }, (_, at) => page.buffers.positions[at * 3 + 1]),
+    );
 
-    expect(page.diagnostics.frontierEdges).toBe(10);
+    expect([...heights]).toEqual([TERRAIN_GROUND_HEIGHT]);
     expect(page.waterBuffers).toBeNull();
     expect(Array.from(page.buffers.waterDepth).every((depth) => depth === 0)).toBe(true);
   });
 
-  it("draws the shore where the seed's climate crosses the waterline between an ocean and its beach", () => {
+  it("draws the shore between an ocean and its beach, wandering off their shared edge", () => {
     const [ocean, beach] = [seeded(650, 48), seeded(651, 48)];
     expect([ocean.biome, beach.biome]).toEqual([BiomeType.Ocean, BiomeType.Beach]);
     const water = prepareTerrainPage(createRequest([ocean, beach])).waterBuffers!;
@@ -90,7 +92,7 @@ describe("prepareTerrainPage", () => {
     expect(frontier.fingerprint).not.toBe(hidden.fingerprint);
   });
 
-  it("builds only revealed land with skirts beside unknown hexes", () => {
+  it("builds only revealed land beside unknown hexes", () => {
     const page = prepareTerrainPage(
       createRequest([
         cell(0, 0, BiomeType.Grassland),
@@ -101,7 +103,6 @@ describe("prepareTerrainPage", () => {
     );
 
     expect(page.diagnostics.fogTerrainCells).toBe(3);
-    expect(page.diagnostics.frontierEdges).toBe(6);
     expect(page.buffers.positions.length).toBeGreaterThan(0);
     expect(page.waterBuffers).toBeNull();
   });
@@ -148,7 +149,7 @@ describe("prepareTerrainPage", () => {
     );
   });
 
-  it("keeps shared surface attributes continuous while allowing sharp frontier wall normals", () => {
+  it("keeps shared surface attributes continuous", () => {
     const page = prepareTerrainPage(createAllBiomesTerrainRequest());
     const attributesByPosition = new Map<string, number[]>();
     const surfaceNormalsByPosition = new Map<string, number[]>();
@@ -183,7 +184,7 @@ describe("prepareTerrainPage", () => {
     );
 
     expect(page.diagnostics.exploredSurfaceSamples).toBeGreaterThan(0);
-    expect(page.diagnostics.exploredSurfaceSamples).toBeLessThan(page.diagnostics.vertices / 2);
+    expect(page.diagnostics.exploredSurfaceSamples).toBeLessThan(page.diagnostics.vertices);
   });
 
   it("warps absolute ground coordinates continuously to break visible material repetition", () => {

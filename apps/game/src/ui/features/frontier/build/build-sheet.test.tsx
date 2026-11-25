@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { setViewportWidth } from "@/shell/frame/test-viewport";
 
 vi.mock("@/audio/core/AudioManager", () => ({
   AudioManager: { getInstance: () => ({ play: () => Promise.resolve(null) }) },
@@ -31,7 +32,10 @@ import { buildingCounts, realmBoard } from "./build-fixture";
 import { buildGroupOf } from "./build-options";
 import { BuildingsInFlight, BuildSheet } from "./build-sheet";
 
+beforeEach(() => setViewportWidth(1440));
+
 afterEach(() => {
+  vi.unstubAllGlobals();
   disposeGameSyncSession();
   setBlockTimestampSource(null);
   useUIStore.getState().setPreviewBuilding(null);
@@ -373,6 +377,18 @@ describe("the build sheet", () => {
     expect(sheet.card("Range").getAttribute("aria-pressed")).toBe("true");
     expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe("Unlocks at City");
     expect(sheet.button("Build")).toBeUndefined();
+    sheet.close();
+  });
+
+  it("lays the three groups side by side on a phone, each tile without its price, the picked one's price at the foot", () => {
+    setViewportWidth(390);
+    const { store, realm } = realmBoard();
+    const sheet = open(store, realm);
+    const groups = [...sheet.host.querySelectorAll<HTMLElement>(".build-groups > [data-build-group]")];
+    expect(groups.map((group) => group.dataset.buildGroup)).toEqual(["economy", "army", "unique"]);
+    expect(sheet.host.querySelector("[data-build-grid] [data-build-price]")).toBeNull();
+    act(() => sheet.card("Farm").click());
+    expect(footPrice(sheet.host)).toBeTruthy();
     sheet.close();
   });
 
