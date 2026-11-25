@@ -135,7 +135,7 @@ export const LockedSlotLine = ({ number, rank }: { number: number; rank: string 
 export const ArmySlotsCard = ({ count, children }: { count?: string; children: ReactNode }) => (
   <section aria-label={ARMY_SLOT_WORDS.title} className="frontier-cluster-card frontier-slots pointer-events-auto">
     <header className="frontier-slots__head">
-      <span className="frontier-slots__title">{ARMY_SLOT_WORDS.title}</span>
+      <span className="frontier-slots__title">{ARMIES}</span>
       {count && <span className="frontier-slots__count">{count}</span>}
     </header>
     <nav aria-label={ARMIES} className="frontier-slots__list">
