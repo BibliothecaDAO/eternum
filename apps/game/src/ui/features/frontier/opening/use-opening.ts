@@ -175,7 +175,7 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
   const rawAspect = setup.store.get("HomeAspect", { game_id: realm.game_id, home: realm.entity_id })?.aspect;
   const ownAspect = rawAspect !== undefined ? catalogAspectId(rawAspect) : undefined;
   const clock = dayClock(rules, now);
-  const bane = readDailyQuest(setup.store, realm.game_id, home, now)?.reading.known?.bane;
+  const bane = readDailyQuest(setup.store, realm.game_id, safeInteger(realm.entity_id), now)?.reading.known?.bane;
   return {
     ownAspect,
     knightsPerSecond,
