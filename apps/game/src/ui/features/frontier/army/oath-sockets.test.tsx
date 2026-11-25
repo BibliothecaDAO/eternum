@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client";
 import { expect, it } from "vitest";
 
 import { nativeOathConstants } from "@bibliothecadao/eternum/game-client";
-import { TroopType } from "@bibliothecadao/types";
 import { GameProvider } from "@/hooks/context/game-context";
 import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 import { oathName } from "./oath-details";

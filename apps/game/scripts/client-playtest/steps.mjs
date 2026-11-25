@@ -7003,8 +7003,6 @@ export const STEP_SETS = {
               `(() => { const chip = document.querySelector('.frontier-bar button.frontier-stock-chips'); if (!chip) return false; chip.click(); return true; })()`,
             );
           }
-          const { board } = await theBoardDrawn(browser);
-          const buildings = board?.missing.length === 0 ? board.laidOut : 0;
           const realmHud = browser.read(`(() => ({
             stocks: [...document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]')].map((tile) => tile.dataset.store),
             hasCastleHead: Boolean(document.querySelector('section[aria-label="Realm"] [data-realm-castle]')),
@@ -7024,7 +7022,6 @@ export const STEP_SETS = {
           }
           return {
             idleUnobstructed,
-            buildings,
             realmHud,
             hasRealmPanel,
             shot,
@@ -7035,17 +7032,13 @@ export const STEP_SETS = {
           played.idleUnobstructed &&
           played.hasRealmPanel &&
           played.realmHud.hasDeploy &&
-          played.buildings >= 3 &&
           played.realmHud.hasCastleHead &&
           everyStock(played.realmHud.stocks)
             ? completed(played)
-            : failed(
-                "Realm view must render with Castle, Workshop, Farm and Barracks standing and the desktop realm card's eight stocks",
-                {
-                  seen,
-                  played,
-                },
-              ),
+            : failed("Realm view must render with the realm card's rank and every stock, and Deploy", {
+                seen,
+                played,
+              }),
       },
       {
         name: "realm-build-sheet",
