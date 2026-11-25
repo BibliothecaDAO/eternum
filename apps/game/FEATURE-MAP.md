@@ -722,10 +722,11 @@ empire at true scale. City and kingdom have warm upper glass; empire has four lo
 windows. The treatment is baked into the three production models; there is no window-treatment selector. Settlement and
 wonders keep their own materials. Choose **Age**, **Series**, **Order**, **Ownership** and **Distance**; drag to orbit
 and scroll to zoom. **Base rank candidates** (`base=1`) puts each image-to-3D rank beside the shipped model of its rank,
-Settlement to Empire, with the game's own cloth at its flag anchors; the game itself does not load them. **Ranks grow**
-(`grow=1`) draws each candidate at its own height, so the ranks rise instead of each filling the hex. With an external
-reference directory in the URL, **Revision** offers Before, After and the pair. See
-[src/lab/README.md](src/lab/README.md#realm-revision-comparison) for the retained capture driver and reference setup.
+Settlement to Empire, each hanging the game's own portrait Order banners on its walls at its flag anchors; the game
+itself does not load them. **Ranks grow** (`grow=1`) draws each candidate at its own height, so the ranks rise instead
+of each filling the hex. With an external reference directory in the URL, **Revision** offers Before, After and the
+pair. See [src/lab/README.md](src/lab/README.md#realm-revision-comparison) for the retained capture driver and reference
+setup.
 
 ### T1 Knight
 
