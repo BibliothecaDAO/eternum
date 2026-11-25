@@ -905,7 +905,12 @@ export const DAY_BANNER_WORDS = {
   productionChip: (percent: number) => `${formatExact(percent)}% Production`,
   heightChip: `No ${DEEP} height`,
   heightBane: `Your Aspect's hyperstructure gains no height in the ${DEEP} while the bane lasts`,
-  baneFigures: { production: "production", stamina: "stamina regen", guards: "guard strength", height: `${DEEP} height` },
+  baneFigures: {
+    production: "production",
+    stamina: "stamina regen",
+    guards: "guard strength",
+    height: `${DEEP} height`,
+  },
   baneFigureLine: (name: string, figure: string, percent: number | undefined, end: string) =>
     percent === undefined
       ? `${name}: no ${figure} until broken or ${end}`
