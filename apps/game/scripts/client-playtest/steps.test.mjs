@@ -9,7 +9,6 @@ import { ARMY_LABEL_POINT } from "./plates.mjs";
 import { MAP_LEAST_SHARE } from "./hud-layout.mjs";
 import { HUD_MAP_LEAST_SHARE } from "../../src/tokens";
 import {
-  ASPECT_PAGE_WORDS,
   ASPECT_STEP_WORDS,
   CHAT,
   CLOSE,
@@ -1321,9 +1320,6 @@ describe("the Season 1 rehearsal", () => {
     expect(REHEARSAL_WORDS.joinGuard).toBe(DEEP_WORDS.join);
     expect(REHEARSAL_WORDS.lasts(14, "28m")).toBe(DEEP_WORDS.lasts(14, "28m"));
     expect(REHEARSAL_WORDS.share(40)).toBe(DEEP_WORDS.share(40));
-    expect(REHEARSAL_WORDS.standingHeight(120, 900)).toBe(ASPECT_PAGE_WORDS.height(120, 900));
-    expect(REHEARSAL_WORDS.baneCharge(30, 100)).toBe(ASPECT_PAGE_WORDS.baneCharge(30, 100));
-    expect(REHEARSAL_WORDS.gloryChip).toBe(ASPECT_PAGE_WORDS.glory);
   });
 
   it("plays the friend's founding and Deep turns in the second account's page and everything else in the host's", () => {
@@ -1392,13 +1388,16 @@ describe("the Season 1 rehearsal", () => {
         `Ashfall · ${DEEP_WORDS.facesNext} · 2,800 · ${DEEP_WORDS.drainTick(70)} · ${DEEP_WORDS.lasts(14, "28m")} · ${DEEP_WORDS.share(100)}`,
       ),
     ).toEqual({ ticks: 14, share: 100, troops: 2800 });
-    expect(
-      readAspectTally({
-        height: `1Might${ASPECT_PAGE_WORDS.stage(1, 5)} · ${ASPECT_PAGE_WORDS.height(1240, 9000)}`,
-        glory: `${ASPECT_PAGE_WORDS.glory} 42`,
-        bar: `${ASPECT_PAGE_WORDS.baneBar}: ${ASPECT_PAGE_WORDS.baneCharge(30, 100)}`,
-      }),
-    ).toEqual({ height: 1240, glory: 42, bar: 30 });
+    expect(readAspectTally({ height: "1240", glory: "42.5", bar: "30" })).toEqual({
+      height: 1240,
+      glory: 42.5,
+      bar: 30,
+    });
+    expect(readAspectTally({ height: null, glory: "", bar: undefined })).toEqual({
+      height: null,
+      glory: null,
+      bar: null,
+    });
   });
 
   it("judges a tick paid only when the guard drained and each tally rose by whole ticks of the card's pay", () => {

@@ -7,10 +7,9 @@ import type { RaceTowerEntry, TowerPlateAnchor } from "@/three/race/aspect-race-
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 
-type AspectRaceCanvasSurface = "hud" | "shell" | "shell-compact";
+type AspectRaceCanvasSurface = "shell" | "shell-compact";
 
 const SURFACE_CLASS: Record<AspectRaceCanvasSurface, string> = {
-  hud: "race-stage",
   shell: "race-stage race-stage--shell",
   "shell-compact": "race-stage race-stage--shell-compact",
 };
@@ -41,11 +40,11 @@ const standingsSignature = (standings: readonly RaceTowerEntry[], finishHeight: 
 export function AspectRaceCanvas({
   standings,
   finishHeight,
-  surface = "hud",
+  surface,
 }: {
   standings: readonly RaceTowerEntry[];
   finishHeight: number;
-  surface?: AspectRaceCanvasSurface;
+  surface: AspectRaceCanvasSurface;
 }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
