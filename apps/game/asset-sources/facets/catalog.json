@@ -3531,6 +3531,18 @@
       }
     },
     {
+      "id": "combat-blade",
+      "label": "Blade",
+      "family": "Combat",
+      "prompt": "prompts/combat-blade.txt"
+    },
+    {
+      "id": "combat-bow",
+      "label": "Bow",
+      "family": "Combat",
+      "prompt": "prompts/combat-bow.txt"
+    },
+    {
       "id": "bane-world",
       "label": "World Bane",
       "family": "Banes",

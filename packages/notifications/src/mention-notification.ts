@@ -31,7 +31,7 @@ export function buildMentionNotification(value: unknown, now: number): LocalNoti
       tag: lobby ? `mention:lobby:${input.place.slot}` : "mention:global",
       owner: input.recipientOwner,
       title: `${sender} mentioned you`,
-      body: lobby ? "In a Blitz lobby. Open Realms to read it." : "In Global. Open Realms to read it.",
+      body: lobby ? "In a Blitz lobby. Open Realms to read it." : "In Global chat. Open Realms to read it.",
       target: input.place.kind === "lobby" ? lobbyPath(input.place.slot) : CHAT_PATH,
       createdAt: input.createdAt,
       expiresAt: input.createdAt + lifetimeOf("messages"),

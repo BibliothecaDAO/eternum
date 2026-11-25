@@ -21,7 +21,7 @@ first {FRONTIER.banes.quietDays} days included, adds +{FRONTIER.banes.chanceStep
 The chance is 0% the day after a World Bane. Once any Aspect issues the season's first Team Bane, World Banes stop for
 the rest of the season. An Aspect never has a World Bane and a Team Bane on the same day.
 
-| World Bane                                                                          | Effect while active              | Bane quest to end it                                                              | Target (Levels 1 / 2 / 3 / 4)     |
+| World Bane                                                                          | Effect while active              | Bane quest to end it                                                              | Target ({FRONTIER.realm.ranks})   |
 | ----------------------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------- | --------------------------------- |
 | <GameIcon name={FRONTIER.banes.world[0].icon} /> **{FRONTIER.banes.world[0].name}** | {FRONTIER.banes.world[0].effect} | **{FRONTIER.banes.world[0].questName}:** {FRONTIER.banes.world[0].questObjective} | {FRONTIER.banes.world[0].targets} |
 | <GameIcon name={FRONTIER.banes.world[1].icon} /> **{FRONTIER.banes.world[1].name}** | {FRONTIER.banes.world[1].effect} | **{FRONTIER.banes.world[1].questName}:** {FRONTIER.banes.world[1].questObjective} | {FRONTIER.banes.world[1].targets} |
@@ -33,7 +33,7 @@ Each player receives a personal bane quest — there is no single shared quest, 
 players who finish their own quest and press **Collect** that same day receive the daily quest reward. Once
 {FRONTIER.banes.quorum} of your Aspect's members who deployed at least one army on the previous game day finish theirs,
 the World Bane ends for your Aspect and finishers can press **Collect again** for a second equal reward (World Banes
-only, not Team Banes). Players who did not finish receive no reward, only the bane's penalties removed.
+only, not Team Banes). Players who did not finish receive no reward, though the bane's penalties still end for them.
 
 ## Rival Team Banes
 

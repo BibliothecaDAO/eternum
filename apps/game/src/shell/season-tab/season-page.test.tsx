@@ -148,7 +148,7 @@ it("says Season did not answer in the glossary's words, with Try again", async (
   const { container, unmount } = await mount(390);
   try {
     const body = container.querySelector('[data-band="body"]')!;
-    expect(body.textContent).toContain("Season did not answer.");
+    expect(body.textContent).toContain("Season unavailable.");
     expect(body.textContent).not.toContain("502");
   } finally {
     await unmount();
@@ -180,7 +180,7 @@ it("titles the page Season and names Frontier's own season on its board; an empt
       (panel) => panel.querySelector("h2")?.textContent === "Frontier",
     )!;
     expect(frontier.querySelector(".app-panel__cue")?.textContent).toBe("Season 1 · Day 4");
-    expect(frontier.textContent).toContain("No realm yet. Create one from Play.");
+    expect(frontier.textContent).toContain("No Realm yet. Create one on Play.");
     expect([...frontier.querySelectorAll("button")].map((button) => button.textContent)).toEqual(["Play"]);
   } finally {
     await unmount();
@@ -426,7 +426,7 @@ it.each([390, 1440])("keeps the last season's final board while the next is only
     const frontier = frontierPanel(container);
     expect(frontier.querySelector(".app-panel__cue")?.textContent).toBe("Season 0 · Ended 6 Nov");
     expect(frontier.querySelector("button.app-board__row .app-board__figure")?.textContent).toBe("331 sites cleared");
-    expect(frontier.textContent).not.toContain("No realm yet");
+    expect(frontier.textContent).not.toContain("No Realm yet");
   } finally {
     await unmount();
   }
@@ -565,7 +565,7 @@ it("combines all four Aspect rosters into the default Global Glory leaderboard w
     const triumphs = triumphTracks[0]!;
     expect(triumphs.textContent).toContain("Clear Mist");
     expect(triumphs.textContent).toContain("1,500 height");
-    expect(triumphs.textContent).toContain("Sites are found at 150% of the usual odds");
+    expect(triumphs.textContent).toContain("Site discovery odds are 150% of normal");
     expect(triumphs.textContent).toContain("Second Wind");
     expect(triumphs.textContent).toContain("Pale Moon");
     expect(triumphs.textContent).toContain("Spoils");
@@ -641,7 +641,7 @@ it.each([1440, 390])(
       expect(container.querySelectorAll("[data-race-stage]")).toHaveLength(1);
       expect(container.querySelector("[data-race-stage]")?.getAttribute("data-race-surface")).toBe("shell");
       expect(container.querySelectorAll(".hyper-art__svg")).toHaveLength(0);
-      expect(container.textContent).not.toContain("Season did not answer.");
+      expect(container.textContent).not.toContain("Season unavailable.");
       const cards = [...container.querySelectorAll(".hyper-tile")];
       expect(cards).toHaveLength(4);
       expect(cards.map((card) => card.querySelector(".hyper-tile__count")?.textContent)).toEqual([
@@ -795,7 +795,7 @@ it("shows honest empty lines for empty global and Aspect boards", async () => {
   try {
     await vi.waitFor(() =>
       expect(container.querySelector("[data-global-roster]")?.textContent).toContain(
-        "No realm yet. Create one from Play.",
+        "No Realm yet. Create one on Play.",
       ),
     );
     const ownTab = [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
@@ -804,7 +804,7 @@ it("shows honest empty lines for empty global and Aspect boards", async () => {
     await act(async () => ownTab.click());
     await vi.waitFor(() =>
       expect(container.querySelector(`[data-aspect-roster="${ownAspect}"]`)?.textContent).toContain(
-        `No realms in ${aspectName(ownAspect)} yet.`,
+        `No Realms in ${aspectName(ownAspect)} yet.`,
       ),
     );
     const insightTab = [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
@@ -812,7 +812,7 @@ it("shows honest empty lines for empty global and Aspect boards", async () => {
     )!;
     await act(async () => insightTab.click());
     await vi.waitFor(() =>
-      expect(container.querySelector('[data-aspect-roster="4"]')?.textContent).toContain("No realms in Insight yet."),
+      expect(container.querySelector('[data-aspect-roster="4"]')?.textContent).toContain("No Realms in Insight yet."),
     );
   } finally {
     shards.open.mockImplementation(async () => {
@@ -851,7 +851,7 @@ it("shows ServiceFailure with Try again on the Global Glory leaderboard when Her
   const { container, unmount } = await mount(1440);
   try {
     const section = () => container.querySelector("[data-global-roster]")!;
-    await vi.waitFor(() => expect(section().textContent).toContain("Season did not answer."));
+    await vi.waitFor(() => expect(section().textContent).toContain("Season unavailable."));
     const retry = [...section().querySelectorAll<HTMLButtonElement>("button")].find(
       (button) => button.textContent === "Try again",
     )!;

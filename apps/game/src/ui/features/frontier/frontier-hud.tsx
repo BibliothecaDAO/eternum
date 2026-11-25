@@ -30,7 +30,6 @@ import { useArmyPanelOpens, usePickArmy } from "./army/army-opens";
 import { FrontierArmy } from "./army/frontier-army";
 import { FrontierOathPick } from "./army/oath-pick";
 import { FightBanner } from "./sites/fight-banner";
-import { RevealPill } from "./hud/reveal-pill";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { FrontierSurfaces } from "./frontier-surfaces";
 import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
@@ -38,6 +37,7 @@ import { ArmyDock } from "./hud/army-dock";
 import { closeHudPopover } from "./hud/hud-popover";
 import { useChatKey } from "./hud/chat-key";
 import { DailyQuestChip } from "./hud/daily-quest-chip";
+import { BaneDayProvider } from "./day/bane-mark";
 import { closeQuestDock, QuestDock, useQuestDockOpen } from "./day/quest-dock";
 import { FrontierDesktop, FrontierPlaces } from "./hud/frontier-desktop";
 import { FrontierFeed } from "./hud/frontier-feed";
@@ -62,7 +62,6 @@ import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { useFragmentsHeld } from "./value/fragments";
 import { ShopSheet, useReturnToShop } from "./shop/shop-sheet";
 import { homeIcon, homeKind } from "@/ui/design-system/home-icons";
-import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { PickedArmy } from "./hud/picked-army";
@@ -360,11 +359,10 @@ const FrontierHudBody = ({
       <BuildingsInFlight />
       <FrontierOathPick realm={realm} />
       <FightBanner />
-      <RevealPill />
     </>
   );
 
-  return desktop ? (
+  const layout = desktop ? (
     <FrontierDesktop
       clock={
         <FrontierDayClock
@@ -376,7 +374,6 @@ const FrontierHudBody = ({
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
       placeSwitch={placeSwitch}
       chat={<HudChatWindow open={surface === "chat"} onOpenChange={(open) => setSurface(open ? "chat" : null)} />}
-      banner={<OfflineNotice />}
       realm={realmCard}
       armies={armyDock}
       page={page}
@@ -405,7 +402,6 @@ const FrontierHudBody = ({
   ) : (
     <HudBands
       strip={topBar}
-      banner={<OfflineNotice />}
       page={page}
       notices={notices}
       action={action}
@@ -419,6 +415,7 @@ const FrontierHudBody = ({
       {sheets}
     </HudBands>
   );
+  return <BaneDayProvider realm={shown}>{layout}</BaneDayProvider>;
 };
 
 const REALM_HEADER_MODELS = ["RaceRules"] as const;

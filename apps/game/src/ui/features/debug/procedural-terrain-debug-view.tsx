@@ -16,7 +16,7 @@ import {
   type ProceduralTerrainDebugRendererHandle,
   type ProceduralTerrainDebugStats,
 } from "@/three/debug/procedural-terrain-debug-renderer";
-import { GRAPHICS_QUALITIES, resolveGraphicsQuality, type GraphicsQuality } from "@/three/graphics-preferences";
+import { TERRAIN_QUALITIES, resolveTerrainQuality, type TerrainQuality } from "@/three/terrain/procedural-terrain";
 import { TERRAIN_BIOME_DESCRIPTORS, TERRAIN_BIOME_ORDER } from "@/three/terrain/terrain-palette";
 import {
   TERRAIN_VERIFICATION_SCENE_IDS,
@@ -113,7 +113,7 @@ export const ProceduralTerrainDebugView = () => {
   const [entryEdge, setEntryEdge] = useState(0);
   const [preparingBuilding, setPreparingBuilding] = useState(false);
   const [preparingExploration, setPreparingExploration] = useState(false);
-  const qualityTier = resolveGraphicsQuality(searchParams.get("quality"));
+  const qualityTier = resolveTerrainQuality(searchParams.get("quality"));
   const revealProgress = resolveRevealProgress(searchParams.get("reveal"));
   const [preview, setPreview] = useState<TerrainLabPreview>(DEFAULT_TERRAIN_LAB_PREVIEW);
   const [buildingCount, setBuildingCount] = useState(0);
@@ -584,7 +584,7 @@ export const ProceduralTerrainDebugView = () => {
               onChange={(event) => changeSceneSetting("quality", event.target.value)}
               className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium text-white"
             >
-              {GRAPHICS_QUALITIES.map((value) => (
+              {TERRAIN_QUALITIES.map((value) => (
                 <option key={value} value={value}>
                   {formatSceneLabel(value)}
                 </option>
@@ -787,7 +787,7 @@ function resolveRevealProgress(value: string | null): number {
   return Number.isFinite(progress) ? Math.min(1, Math.max(0, progress)) : 0;
 }
 
-function formatSceneLabel(value: GraphicsQuality | TerrainVerificationSceneId): string {
+function formatSceneLabel(value: TerrainQuality | TerrainVerificationSceneId): string {
   return value
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))

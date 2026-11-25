@@ -182,9 +182,9 @@ it("tells the season and its ending, then the player's four cards: their place, 
   ]);
   expect([...deck(host)!.querySelectorAll(".season-card__step")].map((step) => step.textContent)).toEqual([
     "1 · Your place",
-    "2 · The podium",
+    "2 · Podium",
     "3 · Your sites",
-    "4 · Your haul",
+    "4 · Rewards",
   ]);
   const place = card(host, "place")!;
   expect(
@@ -192,7 +192,7 @@ it("tells the season and its ending, then the player's four cards: their place, 
   ).toEqual(["#3", "of 45 realms", "Canzi"]);
   // No pool that season: no prize on the card.
   expect(place.querySelector(".season-card__prize")).toBeNull();
-  expect(text(card(host, "podium")!.querySelector("h2"))).toBe("Volcanic took the season");
+  expect(text(card(host, "podium")!.querySelector("h2"))).toBe("Volcanic won the season");
   // Camps, rifts, ruins and beasts, as Herald counts them; no Depth for a realm that never went through.
   const sites = card(host, "sites")!;
   expect(text(sites.querySelector(".season-card__big"))).toBe("114");
@@ -277,7 +277,7 @@ it("shows a reader with no realm on the board a full four-card season overview, 
     "sites",
     "haul",
   ]);
-  expect(host.querySelector(".season-card__step")?.textContent).toBe("The podium");
+  expect(host.querySelector(".season-card__step")?.textContent).toBe("Podium");
   expect(podium(host)).toHaveLength(3);
   expect(steps(host).map(([word]) => word)).toEqual(["Exit"]);
   expect(hint(host)).toBeNull();
@@ -391,7 +391,7 @@ it("says the image could not be made when the copy fails, and keeps Copy image t
   snapshot.fails = true;
   const host = await open({ width: 1440 });
   await press(host, "Copy image");
-  expect(host.querySelector("[role=alert]")?.textContent).toBe("The image could not be made.");
+  expect(host.querySelector("[role=alert]")?.textContent).toBe("Could not create image.");
   expect(steps(host).slice(-2)).toEqual([
     ["Copy image", "secondary"],
     ["Post on X", "primary"],
@@ -467,9 +467,7 @@ it("in the iOS app, falls back to the two steps when the sheet does not open, an
   shareSheet(refusal("NotAllowedError"));
   const host = await open({ width: 390 });
   await press(host, "Share");
-  expect(host.querySelector("[role=alert]")?.textContent).toBe(
-    "Sharing did not open. Copy the image and post it instead.",
-  );
+  expect(host.querySelector("[role=alert]")?.textContent).toBe("Could not open share menu. Copy the image instead.");
   expect(steps(host)).toEqual([
     ["Exit", "secondary"],
     ["Copy image", "secondary"],
@@ -523,7 +521,7 @@ it("in the iOS app, makes no image before the season is known, then one with its
   // The directory has not answered: the deck's foot reads "Frontier" for now, and Share waits.
   await recap.show(undefined, CANZI);
   expect(snapshot.calls).toEqual([]);
-  expect(steps(recap.host).at(-1)).toEqual(["Making the image", "primary"]);
+  expect(steps(recap.host).at(-1)).toEqual(["Creating image…", "primary"]);
   await recap.show(ARCHIVED_SEASONS[0], CANZI);
   expect(recap.host.textContent).toContain("Playtest");
   expect(snapshot.calls).toHaveLength(1);

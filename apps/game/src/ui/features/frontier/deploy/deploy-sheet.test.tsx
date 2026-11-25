@@ -100,7 +100,8 @@ const slotsOffered = (host: HTMLElement) =>
 const slotButton = (host: HTMLElement, name: string) =>
   host.querySelector<HTMLButtonElement>(`[aria-label="Army slots"] button[aria-label="${name}"]`)!;
 
-const startReading = (host: HTMLElement) => host.querySelector("[data-deploy-start]")?.textContent ?? null;
+const startReading = (host: HTMLElement) =>
+  host.querySelector('[data-deploy-start] [role="meter"]')?.getAttribute("aria-valuenow") ?? null;
 
 const foot = (host: HTMLElement) => host.querySelector(".ui-window__foot")?.textContent ?? "";
 /** The red line the wheat draws when it holds the count down: its words, its mark and its one press. */

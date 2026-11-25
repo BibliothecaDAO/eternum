@@ -69,15 +69,15 @@ it("shows the relics running with their time left, then the three slots with wha
   expect(host.querySelector("[data-relics-running]")?.textContent).toBe("Rare Ward · 30m left");
   const rows = [...host.querySelectorAll("[data-army-relics] .ui-row")].map((row) => row.textContent);
   expect(rows).toEqual([
-    "Uncommon BladeDamage dealt: 100% → 120%Switch on",
+    "Uncommon BladeDamage dealt: 100% → 120%Use",
     "Empty slot",
-    "Common PlunderCleared site labor & Essence: 100% → 120%Switch on",
+    "Common PlunderCleared site labor & Essence: 100% → 120%Use",
   ]);
 });
 
 it("switches a relic on for free, naming its slot and the id the contract decodes", async () => {
   const { host, apply } = draw(armyWithRelics());
-  const button = host.querySelector<HTMLButtonElement>('button[aria-label="Switch on Common Plunder"]')!;
+  const button = host.querySelector<HTMLButtonElement>('button[aria-label="Use Common Plunder"]')!;
   await act(async () => button.click());
   expect(apply).toHaveBeenCalledTimes(1);
   expect(apply).toHaveBeenCalledWith(expect.objectContaining({ entity_id: 201, relic_resource_id: 11, relic_slot: 2 }));
