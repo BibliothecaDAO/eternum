@@ -82,18 +82,18 @@ const TodayWeek = ({ week }: { week: readonly WeekDay[] }) => (
     <h4 className="today-sheet__label">{OPENING_WORDS.week}</h4>
     <span className="today-sheet__week">
       {week.map(({ day, quest, when, collected }) => (
-      <span
-        key={day}
-        role="img"
-        aria-label={OPENING_WORDS.weekDay(day, quest.name)}
-        data-tip={OPENING_WORDS.weekDay(day, quest.name)}
-        data-week-day={when}
-        data-collected={collected || undefined}
-        className="today-sheet__quest"
-      >
-        <Icon name={quest.icon} size={24} />
-        <i>{day}</i>
-      </span>
+        <span
+          key={day}
+          role="img"
+          aria-label={OPENING_WORDS.weekDay(day, quest.name)}
+          data-tip={OPENING_WORDS.weekDay(day, quest.name)}
+          data-week-day={when}
+          data-collected={collected || undefined}
+          className="today-sheet__quest"
+        >
+          <Icon name={quest.icon} size={24} />
+          <i>{day}</i>
+        </span>
       ))}
     </span>
   </section>
