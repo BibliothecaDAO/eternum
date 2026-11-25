@@ -1345,7 +1345,7 @@ button.ui-relic:focus-visible {
   flex-basis: 100%;
 }
 
-[data-hud-form] .ui-window__foot > :last-child:not(.ui-actions__note) {
+:is([data-hud-form], [data-frontier-rail]) .ui-window__foot > :last-child:not(.ui-actions__note) {
   flex: 1;
 }
 

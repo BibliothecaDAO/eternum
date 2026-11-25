@@ -21,6 +21,11 @@
   border-radius: 16px;
   color: rgb(var(--hud-ink));
 }
+@media (min-width: 1024px) {
+  .oath-pick {
+    max-width: 540px;
+  }
+}
 .oath-pick__head {
   display: flex;
   height: 54px;
