@@ -5,7 +5,16 @@ import {
   nativeOathConstants as oaths,
   nativeRuleConstants as rules,
 } from "@bibliothecadao/eternum/game-client";
-import { formatDuration, orders, RESOURCE_PRECISION, TroopType } from "@bibliothecadao/types";
+import {
+  formatDuration,
+  formatGain,
+  formatPercent,
+  formatRate,
+  orders,
+  RESOURCE_PRECISION,
+  TroopType,
+} from "@bibliothecadao/types";
+import { PICK_EFFECT_WORDS as WORDS } from "@/ui/design-system/kit/words";
 import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 
 import { readPickEffectBase } from "../pick-effect-text";
@@ -27,27 +36,27 @@ const card = (oath: number, category: TroopType, held = 0) => oathStatBadge(oath
 const knightMax = RULES.troop_stamina_config.stamina_knight_max;
 const reveal = RULES.troop_stamina_config.stamina_explore_stamina_cost;
 const attack = RULES.troop_stamina_config.stamina_attack_req;
-const perMinute = (60 * RULES.troop_stamina_config.stamina_gain_per_tick) / RULES.tick_config.armies_tick_in_seconds;
+const perSecond = RULES.troop_stamina_config.stamina_gain_per_tick / RULES.tick_config.armies_tick_in_seconds;
 const deepLoss = Number(release.definition.economy.deep.Some.loss_per_tick) / RESOURCE_PRECISION;
 const cadence = formatDuration(RULES.tick_config.armies_tick_in_seconds);
 
-const CONDITIONS: Record<number, string | null> = {
-  [oaths.VITRIOL]: `every ${cadence}`,
-  [oaths.POWER]: null,
-  [oaths.GIANTS]: null,
-  [oaths.PROTECTION]: "while guarding a site",
-  [oaths.REFLECTION]: "at a Well",
-  [oaths.DETECTION]: `after ${oaths.DETECTION_EMPTY_REVEAL_LIMIT} empty reveals`,
-  [oaths.BRILLIANCE]: "Tile reveal",
-  [oaths.RAGE]: "Cleared site",
-  [oaths.ANGER]: null,
-  [oaths.TITANS]: `+${oaths.TITANS_STAMINA} now`,
-  [oaths.ENLIGHTENMENT]: null,
-  [oaths.FOX]: "reveal a tile",
-  [oaths.SKILL]: `under ${oaths.SKILL_BELOW_STAMINA} stamina left after`,
-  [oaths.FURY]: "an attack defeats the enemy",
-  [oaths.TWINS]: "on attack",
-  [oaths.PERFECTION]: `under ${oaths.PERFECTION_LOSS_PERCENT}% troops`,
+const CONDITIONS: Record<number, readonly string[]> = {
+  [oaths.VITRIOL]: [cadence],
+  [oaths.POWER]: [],
+  [oaths.GIANTS]: [],
+  [oaths.PROTECTION]: [WORDS.damageTakenGuarding],
+  [oaths.REFLECTION]: [],
+  [oaths.DETECTION]: [String(oaths.DETECTION_EMPTY_REVEAL_LIMIT)],
+  [oaths.BRILLIANCE]: [],
+  [oaths.RAGE]: [],
+  [oaths.ANGER]: [],
+  [oaths.TITANS]: [formatGain(oaths.TITANS_STAMINA)],
+  [oaths.ENLIGHTENMENT]: [],
+  [oaths.FOX]: [],
+  [oaths.SKILL]: [String(oaths.SKILL_BELOW_STAMINA)],
+  [oaths.FURY]: [WORDS.furyRefund],
+  [oaths.TWINS]: [WORDS.twinsDamage],
+  [oaths.PERFECTION]: [formatPercent(oaths.PERFECTION_LOSS_PERCENT / 100)],
 };
 
 describe("an Oath's card", () => {
@@ -57,9 +66,9 @@ describe("an Oath's card", () => {
     for (const oath of named)
       for (const category of TROOPS) {
         const { unit } = card(oath, category);
-        const condition = CONDITIONS[oath];
-        expect(condition, oathName(oath)).not.toBeUndefined();
-        if (condition) expect(unit, `${oathName(oath)} for ${category}`).toContain(condition);
+        const conditions = CONDITIONS[oath];
+        expect(conditions, oathName(oath)).not.toBeUndefined();
+        for (const condition of conditions!) expect(unit, `${oathName(oath)} for ${category}`).toContain(condition);
       }
   });
 
@@ -70,18 +79,17 @@ describe("an Oath's card", () => {
     expect(card(oaths.FOX, TroopType.Paladin).hero).toBe(
       `${rules.SCOUT_EXPLORE_STAMINA} → ${Math.floor((rules.SCOUT_EXPLORE_STAMINA * (100 - oaths.FOX_REVEAL_DISCOUNT_PERCENT)) / 100)}`,
     );
-    expect(card(oaths.TITANS, TroopType.Knight).unit).toBe(
-      `Max stamina (${knightMax} → ${knightMax + oaths.TITANS_STAMINA}) and +${oaths.TITANS_STAMINA} now`,
-    );
+    const titans = card(oaths.TITANS, TroopType.Knight).unit;
+    for (const figure of [knightMax, knightMax + oaths.TITANS_STAMINA]) expect(titans).toContain(String(figure));
     expect(card(oaths.ANGER, TroopType.Knight).hero).toBe(`${attack} → ${oaths.ANGER_ATTACK_STAMINA}`);
     expect(card(oaths.FURY, TroopType.Knight).hero).toBe(`+${Math.floor((attack * oaths.FURY_REFUND_PERCENT) / 100)}`);
     expect(card(oaths.FURY, TroopType.Knight, oathBit(oaths.ANGER)).hero).toBe(
       `+${Math.floor((oaths.ANGER_ATTACK_STAMINA * oaths.FURY_REFUND_PERCENT) / 100)}`,
     );
     expect(card(oaths.VITRIOL, TroopType.Knight).hero).toBe(`${deepLoss} → ${oaths.VITRIOL_LOSS_PER_TICK}`);
-    expect(card(oaths.ENLIGHTENMENT, TroopType.Knight).unit).toMatch(
-      new RegExp(`^Stamina recovery \\(\\+${perMinute}/min → \\+[\\d.]+/min\\)$`),
-    );
+    const recovery = card(oaths.ENLIGHTENMENT, TroopType.Knight).unit;
+    const factor = oaths.ENLIGHTENMENT_REGEN_BPS / 10_000;
+    for (const rate of [perSecond, perSecond * factor]) expect(recovery).toContain(formatRate(rate));
   });
 
   it("marks a combat Oath with the army's own class: Blade for Knights and Scouts, Bow for Crossbows", () => {

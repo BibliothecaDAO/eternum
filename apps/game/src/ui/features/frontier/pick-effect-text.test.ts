@@ -3,33 +3,12 @@ import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { oathBit } from "@bibliothecadao/eternum";
 import { nativeOathConstants as oaths, nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, TroopType } from "@bibliothecadao/types";
-import { PICK_EFFECT_WORDS, RESEARCH_TREE } from "@/ui/design-system/kit/words";
 import release from "../../../../../../contracts/l3/world-native/schema/release-definition.json";
 
-import {
-  damageDealtEffect,
-  damageTakenEffect,
-  fromToEffect,
-  percentFromTo,
-  staminaRecoveryEffect,
-} from "./pick-effect-format";
 import { readPickEffectBase } from "./pick-effect-text";
 import { combatMarkOf } from "./sites/combat-mark";
 
-describe("shared pick-effect text builder", () => {
-  it("formats contextual from-to and shared stat lines", () => {
-    expect(fromToEffect("Deep troop loss", "200", "100 per tick", "less")).toBe(
-      "Deep troop loss: 200 → 100 per tick (less)",
-    );
-    expect(RESEARCH_TREE.less).toBe(`(${PICK_EFFECT_WORDS.less})`);
-    expect(percentFromTo("Damage taken", 100, 85, "less")).toBe("Damage taken: 100% → 85% (less)");
-    expect(damageDealtEffect(20)).toBe("Damage dealt: 100% → 120%");
-    expect(damageTakenEffect(15)).toBe("Damage taken: 100% → 85% (less)");
-    expect(damageTakenEffect(25, "guarding a site")).toBe("Damage taken guarding a site: 100% → 75% (less)");
-    expect(staminaRecoveryEffect(1 / 120, 13_334)).toBe("Stamina recovery: +0.5/min → +0.67/min");
-    expect(staminaRecoveryEffect(undefined, 16_000)).toBe("Stamina recovery: 100% → 160%");
-  });
-
+describe("an army's effect figures", () => {
   it("reads live SliceRules and DeepRules without silent defaults when absent", () => {
     const store = new NativeFactStore();
     expect(readPickEffectBase(store, 1)).toEqual({

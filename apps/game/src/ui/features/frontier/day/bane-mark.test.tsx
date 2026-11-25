@@ -1,5 +1,6 @@
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useNamedTips } from "@/ui/design-system/kit/named-tips";
+import { TROOPS } from "@/ui/design-system/kit/words";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -7,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ArmyDetail } from "../army/army-panel";
 import { ArmyCard } from "../hud/army-row";
 import { RealmCard } from "../hud/realm-card";
-import type { StoreReading } from "../hud/status-strip";
+import { storeLine, type StoreReading } from "../hud/status-strip";
 import { StoreCard, type StoreLine } from "../production/store-card";
 import { FightArena } from "../sites/fight-side";
 import { SiteCardView } from "../sites/site-card-view";
@@ -171,7 +172,7 @@ describe("a bane day on the figures it cuts", () => {
     onBaneDay("production");
     draw(everyFigure);
     expect(hover(host.querySelector('[data-store="wheat"] [data-bane-figure]')!)).toEqual([
-      "Wheat 6,352 of 18,000 · +5/min · Full in 11h 7m",
+      storeLine(wheat),
       LINES.production.line,
     ]);
     expect(hover(host.querySelector('[data-store-card="wheat"] [data-bane-figure]')!)).toEqual([LINES.production.line]);
@@ -194,7 +195,7 @@ describe("a bane day on the figures it cuts", () => {
     draw(card("Camp"));
     expect(marked("guards")).toEqual(["180▲"]);
     expect(hover(host.querySelector('[data-bane-figure="guards"] [role="img"]')!)).toEqual([
-      "Troops 180",
+      `${TROOPS} 180`,
       LINES.guards.line,
     ]);
     act(() => root!.render(<BaneDayProvider realm={null}>{card("Army")}</BaneDayProvider>));
