@@ -1403,7 +1403,7 @@ describe("the realm world's deploy sheet (lab-realm-world)", () => {
           "beforeend",
           `<div data-rail-panel><section data-kit-sheet aria-label="Deploy">
             <div aria-label="Troop type"><button aria-label="Knights"></button><button aria-label="Crossbowmen"></button><button aria-label="Scouts"></button></div>
-            <button>Adjust size</button>
+            <div class="size-row"><input type="range" /></div>
             <div class="ui-window__foot"><button data-kind="primary">Deploy</button></div>
           </section></div>`,
         );
@@ -1418,7 +1418,7 @@ describe("the realm world's deploy sheet (lab-realm-world)", () => {
     expect(clicked).toEqual(["Deploy"]);
     expect(played.deployHud).toEqual({
       troopCards: ["Knights", "Crossbowmen", "Scouts"],
-      hasAdjust: true,
+      hasSize: true,
       deployEnabled: true,
       inRightRail: true,
     });

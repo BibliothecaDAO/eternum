@@ -86,9 +86,3 @@
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
-[data-hud-form="phone"]
-  .ui-sheet:has(.fight-arena)
-  .ui-actions:has(> .ui-actions__note:empty):not(:has(> :nth-child(3)))
-  > :last-child {
-  flex: 1;
-}

@@ -1335,6 +1335,12 @@ button.ui-relic:focus-visible {
   border-top: 1px solid var(--hud-divider);
   padding: theme(spacing.3) theme(spacing.4);
 }
+/* A phone's and a tablet's sheet carries its verb wide: it takes the rest of the foot, its price and notes left of it. */
+@media (max-width: 1023px) {
+  .ui-sheet .ui-window__foot > :last-child {
+    flex: 1;
+  }
+}
 
 /* ── Troop amount: the count typed, +500 and Max beside it, then out of how many can, for a quick deploy. ── */
 /* The painting, the count typed, +500, Max and out of how many on one line, centred on one axis; the field gives up

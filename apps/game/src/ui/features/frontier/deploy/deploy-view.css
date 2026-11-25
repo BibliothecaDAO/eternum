@@ -1,7 +1,7 @@
 .deploy-troops {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: theme(spacing[1.5]);
+  gap: theme(spacing.1);
 }
 .deploy-troop-card {
   display: flex;
@@ -14,7 +14,7 @@
   border: 1px solid var(--hud-line-strong);
   border-radius: var(--hud-radius-panel);
   background: var(--hud-well);
-  padding: theme(spacing.1);
+  padding: theme(spacing.1) theme(spacing[0.5]);
   text-align: center;
   cursor: pointer;
 }
