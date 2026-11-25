@@ -23,6 +23,7 @@ button[class^="ui"] {
   flex-direction: column;
   pointer-events: auto;
   border: 1px solid var(--hud-line);
+  border-color: var(--hud-line-top) var(--hud-line) var(--hud-line-bottom);
   border-radius: var(--hud-radius-panel);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow: var(--hud-shadow-panel);
@@ -363,6 +364,9 @@ a.ui-button {
   align-items: center;
   gap: theme(spacing.1);
 }
+.ui-price > [data-short] {
+  color: var(--hud-bad);
+}
 
 /* ── Tabs: a strip of choices; the chosen one in gold over a gold rule. ── */
 /* A strip too wide for its place wraps to a second row: no tab ever leaves the panel it stands in. */
@@ -423,9 +427,8 @@ a.ui-button {
   white-space: nowrap;
 }
 .ui-tabs[data-size="sm"] .ui-tab[aria-selected="true"] {
-  border-color: rgb(var(--hud-accent));
   background: var(--hud-chosen);
-  color: rgb(var(--hud-gold));
+  color: rgb(var(--hud-ink));
 }
 /* A phone's sheet is narrower than a full-size strip: each tab at the body's size, closer together. The phone layout's
  * width, not a container's: a strip that sizes to its tabs (the top bar's) cannot also be sized by them. */
@@ -447,7 +450,8 @@ a.ui-button {
 }
 .ui-tab[aria-selected="true"] {
   border-bottom-color: rgb(var(--hud-accent));
-  color: rgb(var(--hud-accent));
+  background: var(--hud-chosen);
+  color: rgb(var(--hud-ink));
 }
 .ui-tab:is(:disabled, [aria-disabled="true"]) {
   cursor: not-allowed;
@@ -752,8 +756,8 @@ button.ui-ring:focus-visible .ui-ring__face {
   min-height: var(--hud-control);
   align-items: center;
   gap: theme(spacing.2);
-  border-left: 2px solid transparent;
-  border-radius: var(--hud-radius-chip);
+  border-left: 3px solid transparent;
+  border-radius: var(--hud-radius-control);
   padding: theme(spacing.1) theme(spacing.2);
   transition: background-color var(--hud-fast) var(--hud-ease);
 }
@@ -764,6 +768,11 @@ button.ui-ring:focus-visible .ui-ring__face {
 .ui-row:is([aria-selected="true"], [aria-pressed="true"], [data-selected]) {
   border-left-color: rgb(var(--hud-accent));
   background: var(--hud-chosen);
+  box-shadow: inset 0 1px 0 rgb(var(--hud-rim) / 0.14);
+}
+:is(button.ui-row, a.ui-row, .ui-row:has(> button.ui-row__choose)):is(:active, [data-state="pressed"]),
+.ui-row[data-state="pressed"] {
+  box-shadow: var(--hud-shadow-press);
 }
 /* A row that is pressed to choose it is a button with the row's look. */
 button.ui-row {
@@ -1116,6 +1125,7 @@ span.ui-row__choose {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--hud-line);
+  border-color: var(--hud-line-top) var(--hud-line) var(--hud-line-bottom);
   border-radius: var(--hud-radius-panel);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow: var(--hud-shadow-panel);
@@ -1157,6 +1167,7 @@ span.ui-row__choose {
    stay the panel's utilities so a caller can size it. */
 .ui-popover {
   border: 1px solid var(--hud-line);
+  border-color: var(--hud-line-top) var(--hud-line) var(--hud-line-bottom);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow: var(--hud-shadow-panel);
 }
@@ -1628,7 +1639,8 @@ button.ui-relic:focus-visible {
   display: flex;
   min-width: 12rem;
   flex-direction: column;
-  border: 1px solid var(--hud-line-strong);
+  border: 1px solid var(--hud-line);
+  border-color: var(--hud-line-top) var(--hud-line) var(--hud-line-bottom);
   border-radius: var(--hud-radius-control);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow: var(--hud-shadow-panel);
@@ -2130,9 +2142,10 @@ button.ui-relic:focus-visible {
   align-items: center;
   gap: theme(spacing.3);
   border: 1px solid var(--hud-line);
+  border-color: var(--hud-line-top) var(--hud-line) var(--hud-line-bottom);
   border-radius: var(--hud-radius-round);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
-  box-shadow: var(--hud-shadow-panel);
+  box-shadow: var(--hud-shadow-pill);
   padding: 0 theme(spacing.4);
 }
 /* A strip that is one button: it lights under the pointer and while what it opens is open. */
@@ -2141,6 +2154,10 @@ button.ui-pill {
   transition:
     border-color var(--hud-fast) var(--hud-ease),
     background-color var(--hud-fast) var(--hud-ease);
+}
+button.ui-pill:is(:active, [data-state="pressed"]) {
+  box-shadow: var(--hud-shadow-press);
+  transform: translateY(1px);
 }
 button.ui-pill:is(:hover, [data-state="hover"], [aria-expanded="true"]) {
   border-color: var(--hud-line-strong);
@@ -2194,12 +2211,10 @@ button.ui-pill:focus-visible {
 .ui-pick:is([aria-pressed="true"], [aria-selected="true"], [data-selected]) {
   border-color: rgb(var(--hud-accent));
   background: var(--hud-chosen);
-  outline: 2px solid rgb(var(--hud-accent));
-  outline-offset: -2px;
+  box-shadow: inset 0 1px 0 rgb(var(--hud-rim) / 0.14);
 }
 .ui-pick[data-selected][data-tone="bad"] {
   border-color: var(--hud-bad);
-  outline-color: var(--hud-bad);
 }
 
 /* ── Card: a painting to pick (a building to build), its name and words on the foot, its actions and badge over it. ── */

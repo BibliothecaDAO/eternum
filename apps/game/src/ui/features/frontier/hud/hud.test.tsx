@@ -233,7 +233,7 @@ describe("the status strip", () => {
     );
     const top = host.querySelector(".frontier-phone-top")!;
     expect([...top.children].map((part) => part.className || part.getAttribute("aria-label"))).toEqual([
-      "frontier-bar pointer-events-auto",
+      "ui-popover frontier-bar pointer-events-auto",
       "Duskbite",
     ]);
   });

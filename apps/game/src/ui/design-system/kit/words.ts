@@ -358,6 +358,7 @@ import {
   tierNumeral as rankNumeral,
   asRanked,
   type RankedWords,
+  type QuestUnit,
 } from "@bibliothecadao/types";
 
 /** A step on that scale, common (1) to legendary (5). */
@@ -827,7 +828,6 @@ export const LAYER = "Layer";
  * commits that army to.
  */
 export const SPIRE_WORDS = {
-  nextReveal: (percent: number) => `Spire · next reveal ${percent}%`,
   title: SPIRE,
   lockedAt: (tier: Tier) => `${SPIRE} ${tierNumeral(tier)}`,
   enter: "Enter",
@@ -937,8 +937,8 @@ export const DAY_BANNER_WORDS = {
   collecting: "Collecting…",
   collected: "Collected",
   collectAgain: "Collect again",
-  count: (progress: number, target: number, unit: string) =>
-    `${formatExact(progress)} of ${formatExact(target)} ${unit}`,
+  count: (progress: number, target: number, unit: QuestUnit) =>
+    `${formatExact(progress)} of ${formatCount(target, unit.one, unit.many)}`,
   beastBane: (percent: number) => `Site guards have ${formatExact(percent)}% strength during the bane`,
   staminaBane: (percent: number) => `Stamina regen is ${formatExact(percent)}% during the bane`,
   productionBane: (percent: number) => `Realm production is ${formatExact(percent)}% during the bane`,
@@ -970,12 +970,6 @@ export const DAY_BANNER_WORDS = {
     `Aspect progress: ${formatExact(completed)}/${formatExact(required)} · Ends in ${left}`,
   baneBroken: "Bane broken",
   twiceIfBroken: "2× reward if broken",
-  objectiveLine: (objective: string, target: number) => {
-    const space = objective.indexOf(" ");
-    return space === -1
-      ? `${objective} ${formatExact(target)}`
-      : `${objective.slice(0, space)} ${formatExact(target)} ${objective.slice(space + 1)}`;
-  },
   rewardAmount: (amount: number, resource: ResourcesIds) => `${formatAmount(amount)} ${resourceName(resource)}`,
   summary: (objective: string, progress: number, target: number, labor: number) =>
     `${objective} · ${formatExact(progress)} of ${formatExact(target)} · +${formatExact(labor)} ${LABOR}`,
@@ -2440,16 +2434,16 @@ export const PICK_EFFECT_WORDS = {
   clearedSiteRewards: `Cleared site ${LABOR.toLowerCase()} & ${ESSENCE}`,
   battleDamageDealt: "Battle damage dealt",
   battleDamageTaken: "Battle damage taken",
-  damageTakenGuarding: "Damage taken while guarding a site",
-  siteRewardsUnderLoss: (loss: string) => `Site rewards if you lose under ${loss} troops`,
+  damageTakenGuarding: "Damage taken when guarding a site",
+  siteRewardsUnderLoss: (loss: string) => `Site rewards when you lose under ${loss} troops`,
   siteRewards: "Cleared site rewards",
   revealTileStamina: `${STAMINA_TITLE} to reveal a tile`,
-  twinsDamage: "Of your largest adjacent army's damage on attack",
+  twinsDamage: "Of your largest adjacent army's damage when attacking",
   furyRefund: `${STAMINA_TITLE} back when an attack defeats the enemy`,
   wellRefill: `Max ${STAMINA} refilled at a Well`,
   revealOrdinal: (ordinal: string) => `${ordinal} reveal`,
   findAfter: (emptyReveals: string) => `Guaranteed find after ${emptyReveals}`,
-  skillDamage: (below: string) => `Attack damage with under ${below} ${STAMINA} left after attacking`,
+  skillDamage: (below: string) => `Damage when an attack drops you under ${below} ${STAMINA}`,
   revealRewards: "Tile reveal rewards",
   titansMax: (from: string, to: string, gain: string) => `Max ${STAMINA} (${from} → ${to}) and ${gain} now`,
   titansMaxGain: (gain: string) => `Max ${STAMINA} and ${gain} now`,
