@@ -4,9 +4,10 @@ import { OpeningPartGate, usePartShown } from "../opening/opening-context";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudPage, HudRow, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import { ASPECT_PAGE_WORDS as WORDS } from "@/ui/design-system/kit/words";
-import { aspectName, formatShort, type AspectId } from "@bibliothecadao/types";
-import type { ReactNode } from "react";
+import { ASPECT_PAGE_WORDS as WORDS, DAY } from "@/ui/design-system/kit/words";
+import { aspectName, formatExact, formatShort, type AspectId } from "@bibliothecadao/types";
+import type { CSSProperties, ReactNode } from "react";
+import { aspectVariables } from "@/tokens";
 import { AspectRaceCanvas } from "./aspect-race-canvas";
 import { AspectStandings } from "./aspect-standings";
 
@@ -29,7 +30,6 @@ export interface AspectMember {
   realm: string;
   mine: boolean;
   glory: number;
-  guards: string | null;
 }
 
 export interface OwnAspect {
@@ -49,12 +49,20 @@ export interface AspectPageProps {
   own: OwnAspect | null;
   fights?: ReactNode;
   invite?: ReactNode;
+  day?: number;
   onGoToDeep?: () => void;
   onClose: () => void;
 }
 
-export const AspectPageView = ({ race, own, fights, invite, onGoToDeep, onClose }: AspectPageProps) => (
-  <HudPage label={WORDS.title} icon="victory" fills onClose={onClose} bodyClassName="gap-3">
+export const AspectPageView = ({ race, own, fights, invite, day, onGoToDeep, onClose }: AspectPageProps) => (
+  <HudPage
+    label={WORDS.title}
+    icon="victory"
+    fills
+    cue={day !== undefined && <HudChip icons={["calendar"]}>{`${DAY} ${formatShort(day)}`}</HudChip>}
+    onClose={onClose}
+    bodyClassName="gap-3"
+  >
     {race === null ? (
       <Muted>{WORDS.reading}</Muted>
     ) : (
@@ -122,30 +130,35 @@ const YourAspect = ({ own, invite }: { own: OwnAspect; invite?: ReactNode }) => 
 const GloryBoard = ({ own }: { own: OwnAspect }) => {
   const ranked = usePartShown("glory");
   return (
-    <section data-aspect-members className="aspect-glory-board">
-      <span className="flex items-baseline justify-between gap-2">
-        <Heading>{ranked ? WORDS.gloryBoard : WORDS.members}</Heading>
-        <Muted>{aspectName(own.aspectId)}</Muted>
+    <section data-aspect-members className="aspect-glory-board" style={aspectVariables(own.aspectId) as CSSProperties}>
+      <span className="aspect-glory-board__head">
+        <span>{ranked ? WORDS.glory : WORDS.members}</span>
+        <span>{aspectName(own.aspectId)}</span>
       </span>
       {own.members.map((member, index) => (
         <HudRow
           key={member.id}
           lead={ranked ? <b className="aspect-glory-board__rank">#{index + 1}</b> : <Icon name="realm" size={32} />}
-          title={member.realm}
-          selected={member.mine}
-          detail={member.guards ? WORDS.guards(member.guards) : undefined}
-          trail={
-            ranked && (
-              <HudChip icons={["crown"]} label={WORDS.glory}>
-                {formatShort(member.glory)}
-              </HudChip>
-            )
+          title={
+            <span className="flex min-w-0 items-center gap-2">
+              <i className="aspect-glory-board__dot" aria-hidden="true" />
+              <span className="truncate">{member.realm}</span>
+            </span>
           }
+          selected={member.mine}
+          trail={ranked && <GloryAmount glory={member.glory} />}
         />
       ))}
     </section>
   );
 };
+
+const GloryAmount = ({ glory }: { glory: number }) => (
+  <span role="img" aria-label={`${WORDS.glory} ${formatExact(glory)}`} className="aspect-glory-board__glory">
+    <Icon name="crown" size={16} />
+    {formatExact(glory)}
+  </span>
+);
 
 const Heading = ({ children }: { children: ReactNode }) => (
   <span className="text-hud-strong text-hud-ink">{children}</span>

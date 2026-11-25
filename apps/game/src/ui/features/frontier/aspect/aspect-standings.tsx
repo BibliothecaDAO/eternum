@@ -60,11 +60,7 @@ const AspectStandingRow = ({
         <div className="flex min-w-0 items-center justify-between gap-2">
           <span className="flex min-w-0 items-center gap-1.5">
             <AspectMark aspect={standing.aspectId} size={22} decorative />
-            <span
-              className={standing.own ? "truncate text-hud-strong text-hud-ink" : "truncate text-hud-body text-hud-ink"}
-            >
-              {name}
-            </span>
+            <span className="race-row__name truncate text-hud-body">{name}</span>
           </span>
           <span className="shrink-0 text-hud-strong tabular-nums text-hud-ink">{formatExact(standing.height)}</span>
         </div>
@@ -90,9 +86,7 @@ const StageSegments = ({ stages, built, label }: { stages: number; built: number
         className="race-step"
         data-built={index < built || undefined}
         data-current={index === built || undefined}
-      >
-        ★{formatExact(index + 1)}
-      </span>
+      />
     ))}
   </span>
 );

@@ -29,7 +29,7 @@ describe("the day's end", () => {
     expect(endedDay({ ...rules, endAt: first.end }, second.end + 60)).toBeNull();
   });
 
-  it("tells the day done, the realm kept, the new day's end, tomorrow's length, the totals and the troops taken", () => {
+  it("tells the day done in three numbers, then Share and Begin", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const onContinue = vi.fn();
     const host = document.createElement("div");
@@ -39,65 +39,29 @@ describe("the day's end", () => {
       root.render(
         <DayDoneCard
           endedDay={12}
-          clock={{
-            day: 13,
-            endsAt: undefined,
-            secondsLeft: 7 * 3_600 + 55 * 60,
-            tomorrowSeconds: 20 * 3_600,
-            tone: "calm",
-          }}
-          totals={{ reveals: 31, cleared: 3, essence: 6_400, labor: undefined }}
+          clock={{ day: 13 }}
+          gains={{ essence: 6_400, labor: undefined, glory: 900 }}
           history="whole"
+          stories={[]}
           onRetry={vi.fn()}
-          armies={3}
-          troopsLost={6_021}
+          onShare={vi.fn()}
           onContinue={onContinue}
         />,
       ),
     );
     const card = host.querySelector("section[aria-label='Day 12 complete']")!;
-    expect(card.textContent).toContain("Realm kept · Day 13 is open");
-    expect(card.textContent).toContain("7h 55m");
-    expect(card.textContent).toContain("Tomorrow lasts20h");
-    expect(card.textContent).toContain("+6.4K");
-    expect(card.textContent).toContain("—");
-    expect(card.textContent).toContain("−6K");
-    // The troops the armies took stand under the troops' mark, with no empty portrait beside them.
-    expect(card.querySelector('[aria-label="troops"] [data-icon="troops"]')).not.toBeNull();
-    expect(card.querySelector(".rounded-full.border")).toBeNull();
-    act(() => host.querySelector<HTMLButtonElement>("button")!.click());
+    expect([...card.querySelectorAll("[data-total]")].map((cell) => cell.textContent)).toEqual([
+      "+6.4KEssence",
+      "—Labor",
+      "900Glory",
+    ]);
+    expect(card.querySelector("[data-day-lines]")).toBeNull();
+    const buttons = [...card.querySelectorAll<HTMLButtonElement>("button")];
+    expect(buttons.map((button) => button.textContent)).toEqual(["Share your day", "Begin Day 13"]);
+    act(() => buttons[1]!.click());
     expect(onContinue).toHaveBeenCalled();
     act(() => root.unmount());
     host.remove();
-  });
-
-  it("counts the armies that ended with the day beside the troops they took, never as a row of empty circles", () => {
-    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    const host = document.createElement("div");
-    const root = createRoot(host);
-    for (const armies of [1, 3, 5]) {
-      act(() =>
-        root.render(
-          <DayDoneCard
-            endedDay={12}
-            clock={{ day: 13, endsAt: undefined, secondsLeft: 3_600, tomorrowSeconds: 20 * 3_600, tone: "calm" }}
-            totals={{ reveals: 0, cleared: 0, essence: 0, labor: 0 }}
-            history="whole"
-            onRetry={vi.fn()}
-            armies={armies}
-            troopsLost={6_021}
-            onContinue={vi.fn()}
-          />,
-        ),
-      );
-      const line = host.querySelector("[aria-label='troops']")!;
-      expect(line.querySelector("[role='img']")?.getAttribute("aria-label")).toBe(
-        `Armies ended with the day ×${armies}`,
-      );
-      expect(line.textContent).toBe(`×${armies}−6K`);
-      expect(line.querySelectorAll(".rounded-full")).toHaveLength(0);
-    }
-    act(() => root.unmount());
   });
 
   it("draws the day's end over the map: nothing on a plain day, Skip in the mist, the summary until Continue, the black", () => {

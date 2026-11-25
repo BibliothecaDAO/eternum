@@ -23,24 +23,12 @@ const herald = vi.hoisted(() => ({
   game: { end_at: "1793439960" },
 }));
 /** The game's facts as the HUD and the day's turn read them: its registry, and realm 7 owned by the player. */
-const raceFacts = vi.hoisted(() => ({
-  rules: undefined as { game_id: number; stage_height: number } | undefined,
-  deepRules: undefined as { game_id: number; altar_threshold: number; rings: readonly unknown[] } | undefined,
-  heights: new Map<number, { game_id: number; aspect: number; height: number }>(),
-  ownAspect: undefined as { game_id: number; home: bigint; aspect: number } | undefined,
-  members: undefined as { game_id: number; aspect: number; members: number } | undefined,
-}));
 const facts = vi.hoisted(() => ({
-  get: (model: string, key?: { aspect?: number; home?: bigint; entity_id?: bigint }) => {
+  get: (model: string, key?: { entity_id?: bigint }) => {
     if (model === "GameRegistry")
       return { ...herald.game, start_main_at: 0, scheduled_end_at: herald.scheduledEndAt, seed: 1n };
     if (model === "SliceRules") return { day_unit_seconds: 4 * 3_600 };
     if (model === "SettlementRules") return { spacing: 100 };
-    if (model === "RaceRules") return raceFacts.rules;
-    if (model === "DeepRules") return raceFacts.deepRules;
-    if (model === "AspectHyperstructure" && key?.aspect !== undefined) return raceFacts.heights.get(key.aspect);
-    if (model === "HomeAspect" && key?.home === 7n) return raceFacts.ownAspect;
-    if (model === "AspectMembers" && key?.aspect === raceFacts.members?.aspect) return raceFacts.members;
     if (model === "Structure" && key?.entity_id === 7n) return REALM_7;
     return undefined;
   },
@@ -52,7 +40,7 @@ const facts = vi.hoisted(() => ({
       : model === "AltarBar"
         ? { known: { charge: 0 } }
         : { known: {} },
-  inGame: (model: string) => (model === "HomeAspect" && raceFacts.ownAspect ? [raceFacts.ownAspect] : []),
+  inGame: () => [],
   structuresOwnedBy: () => [{ entity_id: 7 }],
 }));
 
@@ -130,14 +118,17 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useNowSeconds: () => herald.now,
   useCurrentDefaultTick: () => 0,
 }));
-vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
+vi.mock("@/hooks/helpers/use-native-facts", () => ({
+  useNativeRevision: () => 0,
+  useNativeFacts: () => ({ store: facts }),
+}));
 // The armies are not what this card is about: none ended with the day.
 vi.mock("../frontier-home", () => ({ endedHomeArmies: () => [], homecomingAtNextDeploy: () => null }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
   const { RECORDED_DAY: recorded } = await import("./recorded-day-history");
   return {
     ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
-    buildStoryEventPresentation: () => ({}),
+    buildStoryEventPresentation: () => ({ title: "" }),
     configManager: { getActiveGameId: () => 1 },
     // Realm 7's name, as the card writes it.
     getStructureName: () => ({ name: "Temtinos", originalName: "Temtinos" }),
@@ -208,8 +199,8 @@ afterEach(async () => {
   notifyManager.setNotifyFunction((notify) => notify());
 });
 
-const PROD_DAY_2 = ["35Reveals", "5Sites cleared", "+524Labor", "+7.2KEssence"];
-const PROD_DAY_1 = ["37Reveals", "6Sites cleared", "+2.7KLabor", "+6KEssence"];
+const PROD_DAY_2 = ["+7.2KEssence", "+524Labor", "0Glory"];
+const PROD_DAY_1 = ["+6KEssence", "+2.7KLabor", "0Glory"];
 const SUMMARY_SHOWN = "section[aria-label$=' complete']";
 
 let client: QueryClient;
@@ -267,11 +258,12 @@ const seconds = (count: number) => act(() => vi.advanceTimersByTimeAsync(count *
 
 it("sums the player's own day 2 as prod's history holds it, not the tail of the game's newest stories", async () => {
   const cells = await openTheGame();
-  expect(host.textContent).toContain("Realm kept · Day 3 is open");
-  expect(host.textContent).toContain("11h 51m");
-  expect(host.textContent).toContain("Tomorrow lasts8h");
   expect(cells).toEqual(PROD_DAY_2);
-  expect(host.textContent).toContain("#1 → #1");
+  const kinds = [...host.querySelectorAll(`${SUMMARY} [data-day-lines] .ui-event__icon`)].map((icon) =>
+    icon.getAttribute("data-icon"),
+  );
+  expect(kinds.length).toBeGreaterThan(0);
+  expect(new Set(kinds).size).toBe(kinds.length);
 });
 
 it("shares day 2 as its card and a post: its best moment, the numbers it moved, and the player's own link", async () => {
@@ -391,14 +383,14 @@ it("shows a dash for each total, and says why, when the player's history no long
     },
   }));
   herald.history = [...later, ...BEFORE_PLAYING_ON.history];
-  expect(await openTheGame()).toEqual(["—Reveals", "—Sites cleared", "—Labor", "—Essence"]);
+  expect(await openTheGame()).toEqual(["—Essence", "—Labor", "0Glory"]);
   expect(host.querySelector(`${SUMMARY} [role="status"]`)?.textContent).toBe("This day's totals are unknown");
 });
 
 it("shows a dash for each total, and says history did not answer, with Try again, when the read fails", async () => {
   herald.withheld = Promise.reject(new Error("Herald is down"));
   herald.withheld.catch(() => undefined);
-  expect(await openTheGame()).toEqual(["—Reveals", "—Sites cleared", "—Labor", "—Essence"]);
+  expect(await openTheGame()).toEqual(["—Essence", "—Labor", "0Glory"]);
   expect(host.querySelector(`${SUMMARY} [role="alert"]`)?.textContent).toBe("This day's totals are unknownTry again");
 });
 
@@ -649,10 +641,7 @@ describe("a device arriving in a new day", () => {
       herald.history = skippingDay2(BEFORE_PLAYING_ON.history);
       await openTheGameHere();
       const card = host.querySelector(DAY_1)!;
-      expect(card.textContent).toContain("Realm kept · Day 3 is open");
       expect([...card.querySelectorAll("[data-total]")].map((cell) => cell.textContent)).toEqual(PROD_DAY_1);
-      // Its armies ended with day 1, not with the day that just ended: the card says nothing of them.
-      expect(card.querySelector("[aria-label='Troops']")).toBeNull();
 
       const share = [...card.querySelectorAll("button")].find((button) => button.textContent === "Share your day")!;
       await act(async () => share.click());
@@ -744,34 +733,6 @@ describe("a device arriving in a new day", () => {
     expect(host.querySelector(SUMMARY)).toBeNull();
     expect(phase()).toBe("day");
     expect(navigate).not.toHaveBeenCalled();
-  });
-
-  it("shows the player's Aspect Facet and race standings when race facts are synchronized", async () => {
-    raceFacts.rules = { game_id: 1, stage_height: 2_000 };
-    raceFacts.deepRules = { game_id: 1, altar_threshold: 1_500, rings: [] };
-    raceFacts.heights = new Map([
-      [1, { game_id: 1, aspect: 1, height: 6_400 }],
-      [2, { game_id: 1, aspect: 2, height: 5_200 }],
-      [3, { game_id: 1, aspect: 3, height: 2_800 }],
-      [4, { game_id: 1, aspect: 4, height: 900 }],
-    ]);
-    raceFacts.ownAspect = { game_id: 1, home: 7n, aspect: 2 };
-    raceFacts.members = { game_id: 1, aspect: 2, members: 1 };
-    try {
-      await openTheGameHere();
-      expect(host.querySelector("[data-aspect-mark='2']")).not.toBeNull();
-      const race = host.querySelector("[data-day-race]");
-      expect(race).not.toBeNull();
-      expect(race?.textContent).toContain("Prowess");
-      expect(race?.textContent).toContain("Luminary");
-      expect(race?.querySelector("[data-own='true']")?.textContent).toContain("Luminary");
-    } finally {
-      raceFacts.rules = undefined;
-      raceFacts.deepRules = undefined;
-      raceFacts.heights = new Map();
-      raceFacts.ownAspect = undefined;
-      raceFacts.members = undefined;
-    }
   });
 });
 

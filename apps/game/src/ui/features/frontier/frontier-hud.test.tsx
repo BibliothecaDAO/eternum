@@ -614,6 +614,38 @@ const fromMenu = async (word: string) => {
   await act(async () => menuRow(word).click());
 };
 
+it("lays a phone's Settings on one page, with what is rarely touched one press away under More", async () => {
+  viewport.set(390);
+  const route = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  try {
+    await renderHud();
+    await fromMenu("Settings");
+    const settings = () => surfaceNamed("Settings")!;
+    const words = (selector: string) => [...settings().querySelectorAll(selector)].map((part) => part.textContent);
+    const press = (word: string) =>
+      act(async () =>
+        [...settings().querySelectorAll<HTMLButtonElement>("button")]
+          .find((button) => button.textContent === word)!
+          .click(),
+      );
+    expect(words(".ui-settings__volume-name")).toEqual(["Master", "Music", "Effects"]);
+    expect(words(".ui-settings__choices .ui-setting__name")).toEqual(["Quality", "FPS"]);
+    expect(words(".ui-settings > .ui-setting .ui-setting__name").slice(0, 3)).toEqual([
+      "Mute",
+      "Shadows",
+      "Reduced motion",
+    ]);
+    expect(words("button")).not.toContain("Leave game");
+    await press("More");
+    expect(words("section > h2")).toContain("Notifications");
+    expect(words("button")).toContain("Leave game");
+    expect(words("button")).not.toContain("More");
+  } finally {
+    window.history.replaceState(null, "", route);
+  }
+});
+
 const PHONE_SURFACES = {
   research: { label: "Research", open: () => pressPlace("Research") },
   feed: { label: "Feed", open: () => fromMenu("Feed") },
