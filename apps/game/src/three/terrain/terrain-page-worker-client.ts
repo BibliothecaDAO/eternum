@@ -20,30 +20,26 @@ interface TerrainPageWorkerResponse {
   page?: PreparedTerrainPage;
 }
 
-let sharedWorker: Worker | null = null;
-let nextRequestId = 1;
-
-const sharedTerrainPageWorker = (): Worker =>
-  (sharedWorker ??= new Worker(new URL("./terrain-page-worker.ts", import.meta.url), {
-    name: "procedural-terrain-page-builder",
-    type: "module",
-  }));
-
 export class TerrainPageWorkerClient {
   private readonly pending = new Map<number, PendingTerrainPage>();
   private readonly pendingFogMasks = new Map<number, PendingTerrainFogMask>();
-  private readonly worker = sharedTerrainPageWorker();
+  private readonly worker: Worker;
+  private nextId = 1;
   private disposed = false;
 
   constructor() {
+    this.worker = new Worker(new URL("./terrain-page-worker.ts", import.meta.url), {
+      name: "procedural-terrain-page-builder",
+      type: "module",
+    });
     this.worker.addEventListener("message", this.handleMessage);
     this.worker.addEventListener("error", this.handleWorkerError);
   }
 
   prepare(request: TerrainPageRequest): Promise<PreparedTerrainPage> {
     if (this.disposed) return Promise.reject(new Error("Terrain page worker has been disposed"));
-    const id = nextRequestId;
-    nextRequestId += 1;
+    const id = this.nextId;
+    this.nextId += 1;
     return new Promise((resolve, reject) => {
       this.pending.set(id, { reject, resolve });
       // The worker's module has its own origin; a page is built around the caller's.
@@ -53,8 +49,8 @@ export class TerrainPageWorkerClient {
 
   prepareFogMask(instances: readonly TerrainShroudInstance[]): Promise<TerrainFogMask | null> {
     if (this.disposed) return Promise.reject(new Error("Terrain page worker has been disposed"));
-    const id = nextRequestId;
-    nextRequestId += 1;
+    const id = this.nextId;
+    this.nextId += 1;
     return new Promise((resolve, reject) => {
       this.pendingFogMasks.set(id, { reject, resolve });
       this.worker.postMessage({ id, instances, kind: "fog-mask" });
@@ -66,6 +62,7 @@ export class TerrainPageWorkerClient {
     this.disposed = true;
     this.worker.removeEventListener("message", this.handleMessage);
     this.worker.removeEventListener("error", this.handleWorkerError);
+    this.worker.terminate();
     this.rejectAll(new Error("Terrain page worker was disposed before completing pending work"));
   }
 
