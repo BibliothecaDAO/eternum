@@ -100,14 +100,14 @@ describe("numbers", () => {
     expect([660, 90, 1, 100_000].map(formatDollars)).toEqual(["$6.60", "$0.90", "$0.01", "$1,000.00"]);
   });
 
-  it("writes a minute's rate whole from 1 a minute up, and to two figures below 1 (owner's rule of 26 October)", () => {
+  it("writes a minute's rate as precisely as it is read, so 1.6 a minute never shows as 2", () => {
     expect([6.3, 8.6, 12.4, 1, 1.4, 1.6, 66].map((perMinute) => formatRate(perMinute / 60))).toEqual([
-      "+6/min",
-      "+9/min",
+      "+6.3/min",
+      "+8.6/min",
       "+12/min",
       "+1/min",
-      "+1/min",
-      "+2/min",
+      "+1.4/min",
+      "+1.6/min",
       "+66/min",
     ]);
     expect([0.6, 0.25, 0.05].map((perMinute) => formatRate(perMinute / 60))).toEqual([

@@ -29,7 +29,7 @@ import { paintedBuildingsScenario } from "./painted-buildings-scenario";
 import { realmHeightScenario } from "./realm-height-scenario";
 import { realmScenario, realmWorldScenario } from "./realm-scenario";
 import { supplyPostScenario } from "./supply-post-scenario";
-import { reinforceScenario } from "./reinforce-scenario";
+import { empireArmiesScenario, reinforceScenario } from "./reinforce-scenario";
 import { researchScenario } from "./research-scenario";
 import { shopScenario } from "./shop-scenario";
 import { ruinFarScenario, ruinFightScenario } from "./ruin-fight-scenario";
@@ -75,6 +75,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "merge-loses-training": mergeScenario("picked"),
   "merge-keeps-tapped": mergeScenario("tapped"),
   reinforce: reinforceScenario,
+  "empire-armies": empireArmiesScenario,
   "supply-post": supplyPostScenario,
   "after-battle": afterBattleScenario,
   "point-spent": pointSpentScenario,

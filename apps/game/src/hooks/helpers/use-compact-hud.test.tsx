@@ -85,3 +85,46 @@ it("follows a rotation live and unsubscribes from both queries on unmount", asyn
   await unmount();
   expect(media.listenerCounts()).toEqual([0, 0]);
 });
+
+const viewportMatches = (width: number, height: number) => (media: string) =>
+  media.split(",").some((alternative) =>
+    [...alternative.matchAll(/\(([\w-]+):\s*([\w]+)\)/g)].every(([, feature, value]) => {
+      if (feature === "min-width") return width >= Number.parseInt(value, 10);
+      if (feature === "max-width") return width <= Number.parseInt(value, 10);
+      if (feature === "max-height") return height <= Number.parseInt(value, 10);
+      if (feature === "orientation") return (value === "portrait") === height >= width;
+      throw new Error(`Unread media feature ${feature}`);
+    }),
+  );
+
+it("hands a portrait screen under 1440 to the touch layout and keeps a landscape iPad Pro on the desktop", async () => {
+  const { HUD_QUERIES } = await import("@/tokens");
+  const read = (width: number, height: number) => {
+    const matches = viewportMatches(width, height);
+    return [
+      matches(HUD_QUERIES.desktop) ? "desktop" : "phone",
+      matches(HUD_QUERIES.tablet),
+      matches(HUD_QUERIES.sideways),
+    ];
+  };
+  expect(read(1024, 1366)).toEqual(["phone", true, false]);
+  expect(read(1032, 1376)).toEqual(["phone", true, false]);
+  expect(read(834, 1194)).toEqual(["phone", true, false]);
+  expect(read(1366, 1024)).toEqual(["desktop", false, false]);
+  expect(read(1260, 735)).toEqual(["desktop", false, false]);
+  expect(read(1440, 2560)).toEqual(["desktop", false, false]);
+  expect(read(915, 412)).toEqual(["phone", false, true]);
+  expect(read(390, 844)).toEqual(["phone", false, false]);
+  for (const [width, height] of [
+    [1024, 1366],
+    [1366, 1024],
+    [1260, 735],
+    [1440, 2560],
+    [915, 412],
+    [390, 844],
+    [1439, 1440],
+  ]) {
+    const matches = viewportMatches(width, height);
+    expect(matches(HUD_QUERIES.compact)).toBe(!matches(HUD_QUERIES.desktop));
+  }
+});

@@ -59,17 +59,12 @@ fn recorded_second_wind_multiplies_mist_tide_and_changes_real_exploration_refill
     pay(d, game_id, DEEP_FOUNDATION, 1, shares, stage(), FIXTURE_START + 120);
     pay(d, game_id, DEEP_FOUNDATION, 1, shares, stage(), FIXTURE_START + 240);
     let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
+    super::banes::given_world_bane(d, game_id, 1, crate::banes::MIST_TIDE);
     assert!(
-        world_test_support::tests::play_fixture::play(
-            d.games,
-            world_test_support::tests::play_fixture::TestAction {
-                game_id,
-                actor: d.actor,
-                command: Command::SetEntityName(
-                    crate::names::SetEntityName { entity_id: home.entity_id, name: 'wind proof' },
-                ),
-            },
-            super::banes::root_for(game_id, 1, 20, crate::banes::MIST_TIDE),
+        execute_in_game(
+            d,
+            game_id,
+            Command::SetEntityName(crate::names::SetEntityName { entity_id: home.entity_id, name: 'wind proof' }),
             tomorrow,
         ),
     );
@@ -404,20 +399,10 @@ fn blood_and_pale_moons_project_each_battle_and_preserve_base_losses() {
         world_test_support::tests::resource_commands::grant(
             d, home, crate::resources::WHEAT, 10000 * RESOURCE_PRECISION,
         );
-        assert!(
-            world_test_support::tests::play_fixture::play(
-                d.games,
-                world_test_support::tests::play_fixture::TestAction {
-                    game_id, actor: d.actor, command: super::army_activity::muster(home.entity_id, 0, 0, 40),
-                },
-                super::banes::root_for(game_id, 1, 20, if blood {
-                    crate::banes::BLOOD_MOON
-                } else {
-                    0
-                }),
-                now,
-            ),
-        );
+        if blood {
+            super::banes::given_world_bane(d, game_id, 1, crate::banes::BLOOD_MOON);
+        }
+        assert!(execute_in_game(d, game_id, super::army_activity::muster(home.entity_id, 0, 0, 40), now));
         let key = crate::troops::ExplorerKey {
             game_id,
             explorer_id: super::army_activity::slot_army(
@@ -481,20 +466,10 @@ fn blood_and_pale_moons_project_each_battle_and_preserve_base_losses() {
         let retained = interact_with_state(d.games, || crate::logic::guards::guard(guard).troops.count);
         let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 2);
         assert!(
-            world_test_support::tests::play_fixture::play(
-                d.games,
-                world_test_support::tests::play_fixture::TestAction {
-                    game_id,
-                    actor: d.actor,
-                    command: Command::SetEntityName(
-                        crate::names::SetEntityName { entity_id: home.entity_id, name: 'after moons' },
-                    ),
-                },
-                super::banes::root_for(game_id, 2, if blood {
-                    0
-                } else {
-                    40
-                }, 0),
+            execute_in_game(
+                d,
+                game_id,
+                Command::SetEntityName(crate::names::SetEntityName { entity_id: home.entity_id, name: 'after moons' }),
                 tomorrow,
             ),
         );
@@ -541,16 +516,7 @@ fn spoils_clear(category: u8) {
     world_test_support::tests::resource_commands::grant(
         d, home, crate::troops::troop_resource(crate::troops::TroopType::Knight, 0), 3000 * RESOURCE_PRECISION,
     );
-    assert!(
-        world_test_support::tests::play_fixture::play(
-            d.games,
-            world_test_support::tests::play_fixture::TestAction {
-                game_id, actor: d.actor, command: super::army_activity::muster(home.entity_id, 0, 0, 3000),
-            },
-            super::banes::root_for(game_id, 1, 20, 0),
-            now,
-        ),
-    );
+    assert!(execute_in_game(d, game_id, super::army_activity::muster(home.entity_id, 0, 0, 3000), now));
     let key = crate::troops::ExplorerKey {
         game_id,
         explorer_id: super::army_activity::slot_army(

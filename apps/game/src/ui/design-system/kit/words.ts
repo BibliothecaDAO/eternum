@@ -552,9 +552,9 @@ export const REALM_CARD_WORDS = {
   nextRank: "Next rank",
   needs: "Needs",
   stores: "Stores",
-  lordsReading: "reading your wallet…",
-  lordsUnread: "your wallet could not be read",
-  noAnswer: "No answer",
+  lordsReading: "loading wallet…",
+  lordsUnread: "could not load wallet",
+  noAnswer: "Failed",
 } as const;
 export const RESEARCH = "Research";
 export const CHAT = "Chat";
@@ -578,7 +578,7 @@ export const FULL = "Full";
 export const STORAGE = "Storage";
 /** On a payout's Full mark: the storage took what it had room for. */
 /** A clear's payout over the store's room, on its chip: what goes past the limit is lost. */
-export const REST_DID_NOT_FIT = "Full: the rest did not fit";
+export const REST_DID_NOT_FIT = "Storage full: extra lost";
 /** The most troops one army takes, as a castle level sets it (owner, 26 October: "max army size you mean"). */
 export const MAX_ARMY_SIZE = "Max army size";
 /** What a castle level gives, on its card: the one wording for each (owner, 26 October). */
@@ -594,10 +594,10 @@ export const SEASON = "Season";
 export const RANK = "Rank";
 export const SITES = "Sites";
 export const SITES_CLEARED = "Sites cleared";
-export const OATH_WAITING = "An Oath waits: pick the army to swear it";
+export const OATH_WAITING = "Oath ready: select the army to pick";
 export const OATH_PICK = {
   title: "Swear an Oath",
-  replaceTitle: "Choose an Oath to replace",
+  replaceTitle: "Pick an Oath to replace",
   slotOf: (slot: number, slots: number, troops: string, troop: string) =>
     `Slot ${formatExact(slot)} of ${formatExact(slots)} · ${troops} ${troop}`,
   swear: (oath: string) => `Swear ${oath}`,
@@ -610,16 +610,19 @@ export const OATH_PICK = {
   used: "Used",
   fresh: "New",
   pass: "Pass",
-  notChosen: "The Oath could not be chosen.",
-  notRedrawn: "The card could not be rerolled.",
+  notChosen: "Could not choose Oath.",
+  notRedrawn: "Could not reroll Oath.",
 } as const;
 export const SITE_OATH = { label: "Oath", rule: "Clearing it opens an Oath pick" } as const;
 export const SUPPLY_POST = {
   title: "Supply Post",
   chip: "Post",
   open: "Post open",
-  rule: "Clearing it opens a supply post: your armies refill beside it until the day ends",
-  until: "Open until the day ends",
+  rule: "Clearing opens a Supply Post: refill adjacent armies until day end",
+  drawsFrom: "Draws from realm stock",
+  endsIn: (seconds: number | undefined) => `Ends in ${dayLength(seconds)}`,
+  inRange: "Armies in range",
+  beside: (count: number) => `${formatExact(count)} beside post`,
 } as const;
 export const SEASON_CLIMB = {
   rule: "Ranked by sites cleared, then deepest depth",
@@ -631,7 +634,7 @@ export const SETTINGS = "Settings";
 /** The Build order panel: its name, and what it says when no realm has a step it can take now. */
 export const BUILD_ORDER_WORDS = {
   levelUp: "Level up",
-  title: "Build order",
+  title: "Build plan",
   build: "Build",
   deploy: "Deploy",
   nothingNow: "Nothing to build now",
@@ -645,7 +648,7 @@ export const EVENTS_WORDS = {
   lens: "Show",
   lenses: { important: "Important", all: "All" },
   lensTips: {
-    important: "Your fights and captures, and armies lost",
+    important: "Your battles, captures, and lost armies",
     all: "Everything players do in the world",
   },
   /**
@@ -655,10 +658,10 @@ export const EVENTS_WORDS = {
   feedLenses: { all: "All", important: "Important", mine: "Mine" },
   feedLensTips: {
     all: "Everything players do in the world",
-    important: "Fights, captures and cleared sites, anyone's",
+    important: "All players' battles, captures, and clears",
     mine: "Everything you do",
   },
-  failed: "Event history could not load.",
+  failed: "Could not load events.",
 } as const;
 export const SETTINGS_WORDS = {
   app: "App",
@@ -695,7 +698,7 @@ export const WEIGHT_UNKNOWN = "Weight unknown: cannot be sent";
 /** A player whose name identity could not give: shown as a dash, named so for a screen reader, never the stand-in. */
 export const NAME_UNAVAILABLE = "Name unavailable";
 /** A player whose name identity has not answered yet: an ellipsis, named so for a screen reader, never the stand-in. */
-export const NAME_WAITING = "Name on its way";
+export const NAME_WAITING = "Loading name";
 
 export const needsHave = (need: string, noun: string, have: string) => `Needs ${need} ${noun}, have ${have}`;
 export const needsOverLimit = (need: string, noun: string, limit: string) =>
@@ -797,9 +800,9 @@ export const SPIRE_WORDS = {
   enter: "Enter",
   /** The order on the spire's tile; its card then picks the Ethereal layer to enter. */
   order: "Enter the Spire",
-  foreign: "Another realm's spire",
-  pickArmy: "Select an army beside the spire",
-  away: (army: string) => `${army} must be beside the spire`,
+  foreign: "Another Realm's Spire",
+  pickArmy: "Select an army beside the Spire",
+  away: (army: string) => `${army} must be beside the Spire`,
   inDepth: (army: string, depth: string) => `${army} is in ${depth} today`,
   landingTaken: "Entry tile is blocked",
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
@@ -813,10 +816,10 @@ export const ATTACK_REFUSAL_WORDS = {
   "guarding-deep-site": `This army guards a ${DEEP} site`,
   "target-guards-deep-site": `Attack the ${DEEP} site it guards`,
   "expired-army": "An army from an earlier day",
-  "deep-ring-closed": "This ring has not opened today",
+  "deep-ring-closed": "Ring not open yet",
   "target-must-be-unowned": "Only neutral structures can be attacked",
   "own-target": "You already control this",
-  "no-attack": "This game allows no attack here",
+  "no-attack": "Cannot attack here",
   allied: "Allied armies cannot attack each other",
   "season-immunity": "Under season immunity",
   "village-immunity": "The village is under immunity",
@@ -829,6 +832,7 @@ export const ATTACK_REFUSAL_WORDS = {
 
 export const DEEP_WORDS = {
   title: DEEP,
+  gate: "Gate",
   orderFailed: `The ${DEEP} order could not be sent.`,
   purpose: {
     foundation: "One site every Aspect fights for: holding it raises your Aspect's hyperstructure",
@@ -1150,8 +1154,8 @@ export const PICKED_ARMY = {
 /** Troops between two of the realm's armies side by side (Frontier's Transfer troops, desktop and phone). */
 export const TRANSFER_TROOPS = {
   title: "Transfer troops",
-  waiting: "Waiting for both armies’ progress.",
-  stale: "The armies changed: review the merge",
+  waiting: "Loading army details…",
+  stale: "Armies changed. Review merge.",
   merge: (army: string) => `Merge into ${army}`,
   losesProgress: (army: string) => `${army} loses its Logistics, Oath slots and held Oaths.`,
   /** A second press confirms the loss of stronger Logistics training. */
@@ -1170,10 +1174,9 @@ export const REINFORCE = {
   verb: "Reinforce",
   verbAmount: (amount: string) => `Reinforce +${amount}`,
   title: (army: string) => `Reinforce ${army}`,
-  titleAmount: (army: string, amount: string) => `Reinforce ${army} (+${amount})`,
-  fromHome: (amount: string, troops: string) => `+${amount} ${troops} from home`,
+  stockReady: (amount: string) => `From Realm stock · ${amount} ready`,
   sending: "Reinforcing…",
-  failed: "The army could not be reinforced.",
+  failed: "Could not reinforce army.",
 } as const;
 /** A realm's armies, as a list's name. */
 export const ARMIES = "Armies";
@@ -1185,7 +1188,6 @@ export const ARMY_SLOT_WORDS = {
   anyTroop: "Any troop type",
   unlocksAt: (slot: number, rank: string) => `Slot ${slot} unlocks at ${rank}`,
 } as const;
-export const ARMY_MOVE_HINT = "Right-click a hex to move";
 /** The sources of a store's production, each with its combined rate. */
 export const MADE_BY = "Made by";
 export const STORE_MAKERS = {
@@ -1317,7 +1319,7 @@ export const SHARED_LINK_WORDS = {
 /** A season's end, told one of two ways (story): the mist lifted, or it grew too strong. */
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
 
-export const SEASON_ERROR = "Season did not answer.";
+export const SEASON_ERROR = "Season unavailable.";
 /** A day's totals the player's history cannot give: the read keeps only the newest stories, or did not answer. */
 export const DAY_TOTALS_UNKNOWN = "This day's totals are unknown";
 
@@ -1665,16 +1667,15 @@ export const DOORWAY_WORDS = {
   notStarted: "This game has not started yet.",
   backToPlay: "Back to Play",
   ended: "This game has ended.",
-  gameRefused: "This game ran on a different version of the game and cannot be opened here.",
-  gameOnOlderNumbers:
-    "This game still runs on older balance numbers than this version of the game, so it cannot be opened here.",
-  deviceLimit: "Signed in on 8 devices already.",
+  gameRefused: "This game uses another version and cannot open here.",
+  gameOnOlderNumbers: "This game uses older balance rules and cannot open here.",
+  deviceLimit: "Signed in on 8 devices (max).",
   removeDevice: "Remove a device",
   /** A scene that could not be set up, named for what the player does not see; the cause is in the console. */
-  mapNotDrawn: "The map could not be drawn.",
-  realmNotDrawn: "The realm could not be drawn.",
+  mapNotDrawn: "Could not load the map.",
+  realmNotDrawn: "Could not load the Realm.",
   /** The way on when the map cannot be drawn: the realm view opens without it. */
-  openRealm: "Open realm",
+  openRealm: "Open Realm",
 } as const;
 
 export const SEASON_WORDS = {
@@ -1963,7 +1964,7 @@ export const APP_STATE_WORDS = {
   update: "Update",
   updating: "Updating…",
   nothingHere: "Nothing here",
-  nothingHereLine: "This trail leads into the mist. Return to Play to continue.",
+  nothingHereLine: "Page not found. Return to Play to continue.",
   /** The browser's own words, quoted on the install steps. */
   share: "Share",
   addToHomeScreen: "Add to Home Screen",
@@ -2080,11 +2081,11 @@ export const getArmyReadinessTitle = ({
   const travelBlocked = hasTravelStaminaWarning || hasTravelFoodWarning;
   const exploreBlocked = hasExploreStaminaWarning || hasExploreFoodWarning;
 
-  if (travelBlocked && exploreBlocked) return "Travel and explore blocked";
-  if (travelBlocked) return "Travel blocked";
-  if (exploreBlocked) return "Explore blocked";
+  if (travelBlocked && exploreBlocked) return "Cannot move or explore";
+  if (travelBlocked) return "Cannot move";
+  if (exploreBlocked) return "Cannot explore";
 
-  return "Ready to travel or explore";
+  return "Ready to move or explore";
 };
 
 /** Tooltip for a movement-blocked stamina bar; null when travel is possible. */
@@ -2108,7 +2109,7 @@ export const formatTravelBlockedSummary = ({
 
   if (requirements.length === 0) return null;
 
-  return `Cannot travel — needs ${requirements.join(" and ")}`;
+  return `Cannot move — needs ${requirements.join(" and ")}`;
 };
 
 /** The visible reason food keeps an army still: what one step costs it (a charge) and what its realm holds. */
@@ -2132,7 +2133,7 @@ export const formatFoodBlock = (block: {
   ]
     .filter(Boolean)
     .join(" and ");
-  const verb = block.action === "travel" ? "Can't march" : "Can't explore";
+  const verb = block.action === "travel" ? "Can't move" : "Can't explore";
   const step = block.action === "travel" ? "each step" : "each explore";
   return `${verb}: ${step} costs ${cost}, has ${held}`;
 };
@@ -2282,8 +2283,8 @@ export const RELIC_WORDS = {
   cache: (fragments: number) => `Ancient cache: ${formatExact(fragments)} ${FRAGMENTS}`,
   kinds: { Blade: "Blade", Ward: "Ward", Plunder: "Plunder", StaminaRegen: "Stamina" },
   empty: "Empty slot",
-  switchOn: "Switch on",
-  switching: "Switching on…",
+  switchOn: "Use",
+  switching: "Using…",
   /** A running relic and its time left: "Rare Ward · 20m left". */
   runs: (relic: string, left: string) => `${relic} · ${left} left`,
   /** Switching on a relic whose kind already runs: the new one takes its place. */
@@ -2291,14 +2292,14 @@ export const RELIC_WORDS = {
   /** A ruin's relic, before the fight: the beast is as big as the relic is rare. */
   guards: (relic: string) => `Reward: ${relic}`,
   /** Choosing which of three carried relics the ruin's relic replaces, before the attack. */
-  full: `Your army carries ${ARMY_RELIC_SLOTS} relics. Choose the one this relic replaces.`,
+  full: `Army holds ${ARMY_RELIC_SLOTS} relics (max). Pick one to replace.`,
   replace: (relic: string) => `Replace ${relic}`,
   /** The held attack's step while the army's relics are not known yet: whether it must choose cannot be told. */
   reading: "Loading relics…",
   /** The held attack's step while what the ruin pays is not known yet: whether a relic comes cannot be told. */
   readingRuin: "Loading ruin reward…",
   /** The held attack's step while no relic is chosen: the choice itself is said just above it. */
-  chooseFirst: "Choose the relic to replace first",
+  chooseFirst: "Pick a relic to replace first",
 } as const;
 
 const STAMINA_TITLE = `${STAMINA[0]!.toUpperCase()}${STAMINA.slice(1)}`;
@@ -2324,7 +2325,7 @@ export const PICK_EFFECT_WORDS = {
   revealCost: "Reveal cost",
   scoutCostNote: (from: string, to: string) => `${FRONTIER_TROOP_NAMES[TroopType.Paladin]} ${from} → ${to}`,
   lowStaminaAttackDamage: (threshold: string) =>
-    `Attack damage when the army has less than ${threshold} ${STAMINA} left after the attack`,
+    `Attack damage with under ${threshold} ${STAMINA} left after attacking`,
   wonBattleRefund: `Won battle ${STAMINA} refund`,
   shareOf: (percent: string, base: string) => `${percent} of ${base}`,
   nearbyAllyDamage: "Adjacent own army's damage added",

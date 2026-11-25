@@ -1618,5 +1618,15 @@
     "art": "emissary-insight",
     "label": "Insight Emissary",
     "family": "Aspects"
+  },
+  "combat-blade": {
+    "art": "combat-blade",
+    "label": "Blade",
+    "family": "Combat"
+  },
+  "combat-bow": {
+    "art": "combat-bow",
+    "label": "Bow",
+    "family": "Combat"
   }
 }

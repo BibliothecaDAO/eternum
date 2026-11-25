@@ -75,6 +75,7 @@ export interface NativePreset {
     altarThreshold: number;
   };
   banes: null | {
+    quietDays: number;
     chanceStep: number;
     quorumPercent: number;
     beastPercent: number;

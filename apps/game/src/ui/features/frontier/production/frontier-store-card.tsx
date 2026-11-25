@@ -13,6 +13,7 @@ import { type Rank } from "@/ui/design-system/kit/words";
 
 import { useGoToFrontierPlace } from "../frontier-home";
 import { useRealmStores } from "../realm-stores";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { storeMakerLines } from "./store-makers";
 import { FRONTIER_STORES, isMadeStore, type MadeStore } from "../stores";
 import { StoreCard, type StoreLine } from "./store-card";
@@ -33,6 +34,7 @@ export const FrontierStoreCard = ({
 }) => {
   const { setup } = useGame();
   const reading = useRealmStores(realm, rules)?.[store];
+  const tick = useCurrentDefaultTick();
   const goToPlace = useGoToFrontierPlace(realm);
   const {
     resource,
@@ -50,7 +52,7 @@ export const FrontierStoreCard = ({
     tone: reading?.tone ?? "calm",
     fullIn: reading?.fullIn,
     noBuilding: manager.current(resource)?.production?.building_count === 0,
-    makers: storeMakerLines(setup.store, realm, resource),
+    makers: storeMakerLines(setup.store, realm, resource, tick),
   };
   return (
     <StoreCard

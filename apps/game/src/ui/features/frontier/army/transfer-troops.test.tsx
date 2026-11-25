@@ -459,7 +459,7 @@ it.each(["progress", "troops", "stamina", "position", "removed", "day"])(
     expect(swap).not.toHaveBeenCalled();
     expect(close).not.toHaveBeenCalled();
     expect(failed).toHaveBeenCalledWith(
-      expect.objectContaining({ message: "The armies changed: review the merge" }),
+      expect.objectContaining({ message: "Armies changed. Review merge." }),
       "The troops could not be moved.",
     );
   },
@@ -478,7 +478,7 @@ it("waits for both armies' progress instead of guessing the survivor", () => {
   const store = transferArmies();
   store.applyFacts([{ model: "ArmyProgress", key: "0xf2022", value: null }]);
   const { swap } = render(store);
-  expect(host.textContent).toContain("Waiting for both armies’ progress.");
+  expect(host.textContent).toContain("Loading army details…");
   expect(button(/^Move /)!.disabled).toBe(true);
   expect(swap).not.toHaveBeenCalled();
 });
@@ -579,7 +579,7 @@ it("refuses facts arriving just before the final confirmation click", async () =
   expect(swap).not.toHaveBeenCalled();
   expect(close).not.toHaveBeenCalled();
   expect(failed).toHaveBeenCalledWith(
-    expect.objectContaining({ message: "The armies changed: review the merge" }),
+    expect.objectContaining({ message: "Armies changed. Review merge." }),
     "The troops could not be moved.",
   );
 });

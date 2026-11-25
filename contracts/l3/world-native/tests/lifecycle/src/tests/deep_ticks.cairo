@@ -161,19 +161,12 @@ fn delayed_altar_ticks_preserve_the_prepared_world_day_and_issue_for_the_followi
     );
     let glory: u128 = pay.into() * RESOURCE_PRECISION;
     let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
-    assert!(
-        world_test_support::tests::play_fixture::play(
-            d.games,
-            world_test_support::tests::play_fixture::TestAction {
-                game_id,
-                actor: d.actor,
-                command: Command::SetEntityName(
-                    crate::names::SetEntityName { entity_id: home.entity_id, name: 'late altar' },
-                ),
-            },
-            super::banes::root_for(game_id, 1, 20, crate::banes::ASH_FALL),
-            tomorrow,
-        ),
+    super::banes::given_world_bane(d, game_id, 1, crate::banes::ASH_FALL);
+    applied(
+        d,
+        game_id,
+        Command::SetEntityName(crate::names::SetEntityName { entity_id: home.entity_id, name: 'late altar' }),
+        tomorrow,
     );
     interact_with_state(
         d.games,

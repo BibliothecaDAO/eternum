@@ -1229,6 +1229,29 @@ it("reports the failed Oath capacity assertion without trying to time a missing 
   ).resolves.toMatchObject({ status: "failed", reason: "The new army did not inherit three Oath slots" });
 });
 
+describe("the supply post's steps", () => {
+  const steps = STEP_SETS["lab-supply-post"].steps;
+  const open = steps.find(({ name }) => name === "open-supply-post");
+
+  it("passes a post that lists the army beside it, then reinforces it from the map as the realm does", () => {
+    const shown = (text) => ({ found: true, state: { sheet: "Supply Post", text } });
+    expect(open.verify({ played: { found: false } }).status).toBe("failed");
+    expect(open.verify({ played: shown("Supply PostDraws from realm stockArmies in range0 beside post") }).status).toBe(
+      "failed",
+    );
+    expect(open.verify({ played: shown("Supply PostArmies in range1 beside postArmy 1 · Knights") }).status).toBe(
+      "completed",
+    );
+    expect(steps.map(({ name }) => name)).toEqual([
+      "enter-on-map",
+      "pick-army",
+      "open-supply-post",
+      "open-reinforce",
+      "reinforce-from-camp",
+    ]);
+  });
+});
+
 describe("the Season 1 rehearsal", () => {
   const steps = STEP_SETS["s1-rehearsal"].steps;
   const step = (name) => steps.find((candidate) => candidate.name === name);

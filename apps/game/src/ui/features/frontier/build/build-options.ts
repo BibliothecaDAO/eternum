@@ -14,9 +14,8 @@ import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliotheca
 import { BuildingType, FRONTIER_BUILDING_TYPES, getProducedResource, ResourcesIds } from "@bibliothecadao/types";
 
 import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
-import { type BuildingOutput, buildingOutput } from "@/ui/shared/lib/building-output";
 
-import { madePicks } from "../production/store-makers";
+import { buildingRate } from "../production/store-makers";
 import { madeStoreOf, type MadeResource } from "../stores";
 
 /** Each training building and the attribute it trains every new army in. */
@@ -30,7 +29,7 @@ type Product = MadeResource;
 const isProduct = (resource: ResourcesIds | undefined): resource is Product => madeStoreOf(resource) !== undefined;
 
 export type BuildEffect =
-  | { kind: "produces"; resource: Product; perHour: number; output: BuildingOutput }
+  | { kind: "produces"; resource: Product; perHour: number | undefined }
   | { kind: "trains"; attribute: "Logistics" }
   | { kind: "stores"; shareBps: number }
   | { kind: "research"; line: string; icon: "troops" | "wheat" };
@@ -64,7 +63,7 @@ export const readBuildOptions = (
   for (const category of FRONTIER_BUILDING_TYPES) {
     const cost = getBuildingCosts(safeInteger(realm.entity_id), store, category, useSimpleCost);
     if (cost === undefined) return undefined;
-    const effect = readBuildingEffect(store, realm, category, learned);
+    const effect = readBuildingEffect(store, realm, category, tick);
     const change = wheatChange(effect);
     const row = researchRowOf(category);
     options.push({
@@ -104,7 +103,7 @@ const readBuildingEffect = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   category: BuildingType,
-  learned: bigint,
+  tick: number,
 ): BuildEffect => {
   if (category === BuildingType.ConscriptionCamp)
     return { kind: "research", line: RESEARCH_TREE.conscriptionLine, icon: "troops" };
@@ -116,10 +115,10 @@ const readBuildingEffect = (
     return { kind: "stores", shareBps: store.require("BoardRules", { game_id: realm.game_id }).storage_step_bps };
   const resource = getProducedResource(category);
   if (!isProduct(resource)) throw new Error(`Building ${category} makes nothing a Frontier realm stores`);
-  const output = buildingOutput(store, realm, category, madePicks(resource, learned));
-  return { kind: "produces", resource, perHour: output.total * 3600, output };
+  const perSecond = buildingRate(store, realm, resource, tick);
+  return { kind: "produces", resource, perHour: perSecond === undefined ? undefined : perSecond * 3600 };
 };
 
 /** A farm adds its wheat; nothing a building produces consumes any (armies pay theirs when they deploy). */
 const wheatChange = (effect: BuildEffect): number =>
-  effect.kind === "produces" && effect.resource === ResourcesIds.Wheat ? effect.perHour : 0;
+  effect.kind === "produces" && effect.resource === ResourcesIds.Wheat ? (effect.perHour ?? 0) : 0;

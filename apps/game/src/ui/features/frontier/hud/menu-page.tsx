@@ -1,6 +1,6 @@
 import "./phone-hud.css";
 
-import { useTablet } from "@/shell/frame/layout";
+import { useHudTablet } from "@/hooks/helpers/use-compact-hud";
 
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudPage } from "@/ui/design-system/kit/hud-elements";
@@ -31,7 +31,7 @@ export const MenuPage = ({
   onExit: () => void;
   onClose: () => void;
 }) => {
-  const tablet = useTablet();
+  const tablet = useHudTablet();
   return (
     <HudPage label={MENU} icon="menu" onClose={onClose}>
       <nav className="menu-tiles">

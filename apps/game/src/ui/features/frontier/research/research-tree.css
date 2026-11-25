@@ -479,7 +479,7 @@
   font-size: var(--hud-text-label);
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1024px) and (orientation: landscape), (min-width: 1440px) {
   .research-legend {
     display: inline-flex;
   }
@@ -799,7 +799,7 @@
   }
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
   .research-tree__tracks {
     gap: theme(spacing[1.5]);
   }

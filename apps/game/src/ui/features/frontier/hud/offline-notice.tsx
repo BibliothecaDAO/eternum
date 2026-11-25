@@ -1,14 +1,14 @@
 import "./offline-notice.css";
 
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
-import { useLayout } from "@/shell/frame/layout";
+import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { OFFLINE, OFFLINE_BANNER } from "@/ui/design-system/kit/words";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
 
 export const OfflineBanner = ({ onRetry, reconnecting = true }: { onRetry: () => unknown; reconnecting?: boolean }) => {
-  const compact = useLayout() !== "desktop";
+  const compact = useHudLayout() !== "desktop";
   const line = reconnecting
     ? compact
       ? OFFLINE_BANNER.reconnecting

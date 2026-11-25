@@ -27,8 +27,14 @@ import {
 } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { multiplyByPrecision } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  configManager,
+  isSupplyPost,
+  multiplyByPrecision,
+  readExpeditionRules,
+  siteDisplayName,
+} from "@bibliothecadao/eternum";
+import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { formatExact, formatShort, frontierTroopName } from "@bibliothecadao/types";
 import { useState } from "react";
 
@@ -36,6 +42,7 @@ import { type March, marchOn, wheatStopsAt } from "../deploy/deploy-plan";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { TARGET_MARKS } from "../sites/site-marks";
 import { SizeRow } from "../size-row";
+import { dayClock } from "../hud/day-clock";
 import { reinforcementSource, readReinforcePlan, type ReinforcePlan, reinforceRange } from "./reinforce-plan";
 
 const REINFORCE_MODELS = [
@@ -48,29 +55,35 @@ const REINFORCE_MODELS = [
   "ExpeditionSite",
 ] as const;
 
-/**
- * The reinforcement the map has selected: the player's realm acting on the tile of one of its armies standing beside
- * it, as Blitz reinforces (the realm selected, the army right-clicked or, on a phone, held). Null for anything else, an
- * army that has left the realm's side, and a viewer, who orders no army.
- */
-export const useSelectedReinforcement = (realm: NativeRows["Structure"] | null): DockArmy | null => {
+export const useSelectedReinforcement = (
+  realm: NativeRows["Structure"] | null,
+): { army: DockArmy; post?: SupplyPostName } | null => {
   const { setup } = useGame();
   const armies = useDockArmies(realm);
   const timestamp = useCurrentDefaultTick();
   const selection = useUIStore((state) => state.mapSelection);
   const ordersAllowed = useUIStore(canIssueOrders);
   if (!realm || !ordersAllowed || selection?.kind !== "structure" || !selection.tile) return null;
-  if (Number(selection.entityId) !== Number(realm.entity_id)) return null;
+  const post = Number(selection.entityId) === Number(realm.entity_id) ? undefined : Number(selection.entityId);
+  if (post !== undefined && !ownSupplyPost(setup.store, realm, post, timestamp)) return null;
   const tile = selection.tile;
   const standsThere = (army: DockArmy) => {
     const at = setup.store.entityOccupancy(realm.game_id, army.explorerId);
     return at !== undefined && !at.alt && at.col === tile.col && at.row === tile.row;
   };
-  return (
-    armies.find(
-      (army) => standsThere(army) && reinforcementSource(setup.store, realm, army.explorerId, timestamp) !== null,
-    ) ?? null
+  const army = armies.find(
+    (entry) =>
+      standsThere(entry) && reinforcementSource(setup.store, realm, entry.explorerId, timestamp, post) !== null,
   );
+  if (!army) return null;
+  return post === undefined ? { army } : { army, post: { id: post, name: siteDisplayName(post) } };
+};
+
+type SupplyPostName = { id: number; name: string };
+
+const ownSupplyPost = (store: NativeFactStore, realm: NativeRows["Structure"], post: number, timestamp: number) => {
+  const site = store.get("ExpeditionSite", { game_id: realm.game_id, entity_id: post });
+  return site !== undefined && isSupplyPost(store, site, realm.entity_id, timestamp);
 };
 
 export const useReinforceRange = (realm: NativeRows["Structure"], army: DockArmy) => {
@@ -91,7 +104,7 @@ export const ReinforceSheet = ({
 }: {
   realm: NativeRows["Structure"];
   army: DockArmy;
-  post?: { id: number; name: string };
+  post?: SupplyPostName;
   onClose: () => void;
 }) => {
   const { setup, account } = useGame();
@@ -127,7 +140,7 @@ export const ReinforceSheet = ({
 
   return (
     <HudSheet
-      label={post ? SUPPLY_POST.title : REINFORCE.title(army.label)}
+      label={REINFORCE.title(army.label)}
       cue={post && <HudChip icons={[TARGET_MARKS.Camp.icon]}>{post.name}</HudChip>}
       onClose={onClose}
     >
@@ -147,7 +160,7 @@ export const ReinforceSheet = ({
         </>
       )}
       {plan && march && <ReinforceLimit plan={plan} march={march} wheatStop={wheatStop} />}
-      {post && <HudLine icon="hourglass" line={SUPPLY_POST.until} />}
+      {plan && <ReinforceSource stock={plan.stock} post={post !== undefined} />}
       {plan && range.wheatMax > 0 && (
         <HudWindowFoot note={<HudPrice prices={[{ of: "wheat", amount: plan.raise.wheatFor(shown) }]} />}>
           <HudButton
@@ -163,6 +176,20 @@ export const ReinforceSheet = ({
       )}
     </HudSheet>
   );
+};
+
+const ReinforceSource = ({ stock, post }: { stock: number; post: boolean }) => (
+  <div className="reinforce-source">
+    <HudLine icon="troops" line={REINFORCE.stockReady(formatExact(stock))} />
+    {post && <SupplyPostEnds />}
+  </div>
+);
+
+export const SupplyPostEnds = () => {
+  const { setup } = useGame();
+  const rules = readExpeditionRules(setup.store, configManager.getActiveGameId());
+  const now = useCurrentDefaultTick();
+  return <HudLine icon="hourglass" line={SUPPLY_POST.endsIn(rules ? dayClock(rules, now).secondsLeft : undefined)} />;
 };
 
 const ArmyGain = ({ army, before, gain }: { army: DockArmy; before: number; gain: number }) => (

@@ -22,7 +22,7 @@ import { buildingTierModelPath } from "../structures/building-tiers";
 import { frontierPaintedBuildingPath } from "../structures/frontier-painted-buildings";
 import { REALM_PATHS, realmModelIndex } from "../structures/realm-design";
 
-interface BoardBuilding {
+export interface BoardBuilding {
   category: BUILDINGS_CATEGORIES_TYPES;
   col: number;
   row: number;

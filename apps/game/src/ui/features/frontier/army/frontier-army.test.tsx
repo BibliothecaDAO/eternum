@@ -74,7 +74,10 @@ vi.mock("@/hooks/helpers/use-navigate", () => ({ useSelectArmyOnMap: () => game.
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: (pick: (state: unknown) => unknown) => pick({ account: { address: "0x111" } }),
 }));
-vi.mock("@/shell/frame/layout", () => ({ useLayout: () => "desktop" }));
+vi.mock("@/hooks/helpers/use-compact-hud", async (original) => ({
+  ...(await original<typeof import("@/hooks/helpers/use-compact-hud")>()),
+  useHudLayout: () => "desktop",
+}));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => true }));
 vi.mock("../deploy/use-deploy-plan", () => ({ useDeployPlan: () => ({ open: [] }) }));
 vi.mock("../sites/well-refill", () => ({ useWellRefill: (_id: number, ratio: number) => ({ shown: ratio }) }));

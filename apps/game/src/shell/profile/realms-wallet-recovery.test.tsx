@@ -158,5 +158,5 @@ it("tells a device that still holds the passkey that there is nothing to recover
   const panel = await render(<PayoutWalletPanel wallet={WALLET.address} email="you@mail.test" onChanged={vi.fn()} />);
   await press(panel, "Lost your passkey?");
   await press(panel, "Make a new passkey");
-  expect(panel.textContent).toContain("This device still has your passkey: nothing to recover.");
+  expect(panel.textContent).toContain("This device already has your passkey.");
 });

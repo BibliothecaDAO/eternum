@@ -54,6 +54,7 @@ async function completeFade(fadeOut: Deferred<boolean>) {
 function createScene(overrides: Partial<HexagonScene> = {}) {
   return {
     setup: vi.fn(async () => {}),
+    prepareWhileFlying: vi.fn(),
     onSwitchOff: vi.fn(),
     moveCameraToURLLocation: vi.fn(),
     whenPresentable: vi.fn(async () => {}),
@@ -73,6 +74,7 @@ describe("SceneManager transitions", () => {
     sceneManager._updateCurrentScene(SceneName.WorldMap);
     sceneManager.switchScene(SceneName.Hexception);
     expect(sceneManager.getRenderingScene()).toBe(SceneName.WorldMap);
+    expect(realm.prepareWhileFlying).toHaveBeenCalledOnce();
     expect(realm.setup).not.toHaveBeenCalled();
     expect(map.onSwitchOff).not.toHaveBeenCalled();
     flight.resolve(true);
@@ -81,6 +83,29 @@ describe("SceneManager transitions", () => {
     expect(map.onSwitchOff).toHaveBeenCalledWith(SceneName.Hexception);
     expect(realm.setup).toHaveBeenCalledOnce();
     expect(sceneManager.getCurrentScene()).toBe(SceneName.Hexception);
+  });
+
+  it("still sets the scene up after its flight when the work started during the flight fails", async () => {
+    const { sceneManager, transitionManager } = createTransitionHarness();
+    const flight = createDeferred<boolean>();
+    transitionManager.startSceneFlight.mockReturnValue(flight.promise);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const realm = createScene({
+      prepareWhileFlying: () => {
+        throw new Error("no realm at the route yet");
+      },
+    });
+    sceneManager.addScene(SceneName.WorldMap, createScene());
+    sceneManager.addScene(SceneName.Hexception, realm);
+    sceneManager._updateCurrentScene(SceneName.WorldMap);
+    sceneManager.switchScene(SceneName.Hexception);
+    flight.resolve(true);
+    await flushTransitionWork();
+    await flushTransitionWork();
+    expect(warn).toHaveBeenCalledOnce();
+    expect(realm.setup).toHaveBeenCalledOnce();
+    expect(sceneManager.getCurrentScene()).toBe(SceneName.Hexception);
+    warn.mockRestore();
   });
 
   it("renders the preparing scene without releasing input while its GPU work is pending", async () => {
