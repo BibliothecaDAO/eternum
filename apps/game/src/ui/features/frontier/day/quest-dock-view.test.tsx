@@ -67,9 +67,7 @@ describe("the quest dock", () => {
     expect(host.querySelector("aside")?.getAttribute("data-tone")).toBe("bane");
     expect(host.querySelector(".emissary-dock__portrait")?.getAttribute("data-icon")).toBe("bane-ash-fall");
     const bane = host.querySelector("[data-bane-row]")!;
-    expect(bane.querySelector('[role="img"]')?.getAttribute("aria-label")).toBe(
-      "Production runs at 50% while the bane lasts",
-    );
+    expect(bane.querySelector('[role="img"]')?.getAttribute("aria-label")).toBe(DAY_BANNER_WORDS.productionBane(50));
     expect(bane.textContent).toBe("▾50% Production2× reward if brokenAspect progress: 4/12 · Ends in 5h");
     expect(host.querySelector("[data-quest-objective]")?.textContent).toBe(
       "The Cull · Defeat 6,000 guard troops (3K/6K)",
