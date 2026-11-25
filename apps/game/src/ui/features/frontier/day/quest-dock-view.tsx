@@ -88,9 +88,13 @@ export const QuestDockView = ({
           <span className="quest-dock__foot">
             <Amount resource={ResourcesIds.Labor} amount={reading.reward.labor} />
             <Amount resource={ResourcesIds.Essence} amount={reading.reward.essence} />
-            {bane?.doubles && <span className="quest-dock__twice">{WORDS.twiceIfBroken}</span>}
             <span className="flex-1" />
-            <End state={reading.state} collecting={collecting} onCollect={onCollect} />
+            <End
+              state={reading.state}
+              size={layout === "phone" ? "sm" : "md"}
+              collecting={collecting}
+              onCollect={onCollect}
+            />
           </span>
         </>
       ) : (
@@ -109,6 +113,7 @@ const BaneLine = ({ bane }: { bane: BaneStanding }) => (
       <Icon name="flame" size={14} />
       {bane.chip}
     </span>
+    {bane.doubles && <span className="quest-dock__twice">{WORDS.twiceIfBroken}</span>}
     <span className="quest-dock__break">
       {bane.breaking} · {bane.clears}
     </span>
@@ -147,10 +152,12 @@ const Amount = ({ resource, amount }: { resource: ResourcesIds; amount: number }
 
 const End = ({
   state,
+  size,
   collecting,
   onCollect,
 }: {
   state: DayQuestReading["state"];
+  size: "sm" | "md";
   collecting: boolean;
   onCollect: () => void;
 }) => {
@@ -162,7 +169,13 @@ const End = ({
       </span>
     );
   return (
-    <HudButton kind="primary" icon="reward" busy={collecting ? WORDS.collecting : undefined} onClick={onCollect}>
+    <HudButton
+      kind="primary"
+      size={size}
+      icon="reward"
+      busy={collecting ? WORDS.collecting : undefined}
+      onClick={onCollect}
+    >
       {state === "again" ? WORDS.collectAgain : WORDS.collect}
     </HudButton>
   );

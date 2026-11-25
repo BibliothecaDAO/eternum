@@ -320,16 +320,16 @@ const LAB_BUILD_REFUSAL = {
   reason: { kind: "short", of: "essence", held: BUILD_SHORT_ESSENCE, need: SHORT_TILE_PRICES[0].amount },
 } as const;
 const BUILD_TILES: LabTile[] = [
-  tile(BuildingType.Farm, "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, price(6_800)),
+  tile(BuildingType.ResourceWheat, "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, price(6_800)),
   tile(
-    BuildingType.Workshop,
+    BuildingType.ResourceLabor,
     "workshop",
     "Workshop",
     { icon: "labor", value: "+0.83/min" },
 
     price(34_000, { of: "labor", wait: 16 * HOUR }, "Costs more with each one standing: 1"),
   ),
-  tile(BuildingType.Barracks, "barracks", "Barracks", { icon: "troops", value: "+13/min" }, price(6_800)),
+  tile(BuildingType.ResourceKnightT1, "barracks", "Barracks", { icon: "troops", value: "+13/min" }, price(6_800)),
   tile(
     BuildingType.SupplyYard,
     "supply-yard",
@@ -342,9 +342,9 @@ const SHORT_TILES: LabTile[] = BUILD_TILES.map((card) =>
   card.group === "unique" ? { ...card, standing: essenceShortPrice } : card,
 );
 const EARLY_TILES: LabTile[] = [
-  tile(BuildingType.Farm, "farm", "Farm", { icon: "wheat", value: "+5/min" }, price(800)),
-  tile(BuildingType.Workshop, "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, price(2_000)),
-  tile(BuildingType.Barracks, "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, price(800)),
+  tile(BuildingType.ResourceWheat, "farm", "Farm", { icon: "wheat", value: "+5/min" }, price(800)),
+  tile(BuildingType.ResourceLabor, "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, price(2_000)),
+  tile(BuildingType.ResourceKnightT1, "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, price(800)),
   tile(
     BuildingType.SupplyYard,
     "supply-yard",

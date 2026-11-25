@@ -1,13 +1,25 @@
 .frontier-crown {
   position: fixed;
   top: theme(spacing.4);
-  left: 50%;
+  right: calc(theme(spacing.hud-frontier-rail) + theme(spacing.8));
+  left: calc(theme(spacing.hud-frontier-left) + theme(spacing.8));
   z-index: theme(zIndex.hud-rail);
   display: flex;
   height: 40px;
   align-items: center;
+  justify-content: center;
   gap: theme(spacing[2.5]);
-  transform: translateX(-50%);
+  container-type: inline-size;
+}
+@container (max-width: 680px) {
+  .frontier-crown .frontier-quest-orb__objective {
+    display: none;
+  }
+}
+@container (max-width: 560px) {
+  .frontier-crown .frontier-quest-orb__words {
+    display: none;
+  }
 }
 .frontier-crown .frontier-place-pill {
   min-width: 132px;

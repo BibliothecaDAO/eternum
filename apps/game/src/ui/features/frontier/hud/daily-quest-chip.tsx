@@ -6,6 +6,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { Icon } from "@/ui/design-system/icon";
 import { aspectMeaning } from "@/ui/design-system/icon-meaning";
 import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
+import { useLayout } from "@/shell/frame/layout";
 import { DAILY_QUEST_MODELS, readDailyQuest } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
@@ -24,6 +25,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
   const now = useNowSeconds();
   useNativeRevision(DAILY_QUEST_MODELS);
   const open = useQuestDockOpen();
+  const desktop = useLayout() === "desktop";
   const today = readDailyQuest(setup.store, realm.game_id, safeInteger(realm.entity_id), now);
   if (!today) return null;
   const reading = today.reading.known;
@@ -34,7 +36,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
   const count = reading ? DAY_BANNER_WORDS.fraction(progress, target) : "—";
   const bane = reading?.bane ? baneFace(reading.bane, setup.store, realm.game_id) : null;
   const icon = bane ? aspectMeaning(questSpeaker(reading)) : (face?.icon ?? "explore");
-  const tag = ready ? DAY_BANNER_WORDS.collect : bane ? DAY_BANNER_WORDS.bane : count;
+  const tag = bane ? DAY_BANNER_WORDS.bane : ready && !desktop ? DAY_BANNER_WORDS.collect : count;
 
   return (
     <div className="frontier-quest-wrap pointer-events-auto">

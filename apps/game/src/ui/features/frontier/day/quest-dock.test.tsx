@@ -243,7 +243,7 @@ describe("bane collection", () => {
     expect(host.querySelector("aside")?.getAttribute("aria-label")).toBe(`Havoc: Bane from ${source.name}`);
     expect(host.querySelector("[data-bane-row]")?.textContent).toBe("No Deep heightBreak: 2/2 of your Aspect · Broken");
     expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("The Stand · Clear 3 guarded sites (3/3)");
-    expect(host.textContent).not.toContain("2× reward if broken");
+    expect(host.textContent).not.toContain("2× if broken");
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(collectAgain()).toBeUndefined();
     expect(reward("Labor")).toBe("1,000 Labor");
@@ -253,7 +253,7 @@ describe("bane collection", () => {
     const game = worldDay();
     game.draw();
     expect(host.querySelector("[data-bane-row]")?.textContent).toMatch(
-      /^50% ProductionBreak: 0\/2 of your Aspect · Clears in \d+[hm]$/,
+      /^50% Production2× if brokenBreak: 0\/2 of your Aspect · Clears in \d+[hm]$/,
     );
   });
 

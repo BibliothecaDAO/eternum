@@ -908,7 +908,7 @@ export const DAY_BANNER_WORDS = {
     `Break: ${formatExact(completed)}/${formatExact(required)} of your Aspect`,
   baneClears: (left: string) => `Clears in ${left}`,
   baneBroken: "Broken",
-  twiceIfBroken: "2× reward if broken",
+  twiceIfBroken: "2× if broken",
   objectiveLine: (objective: string, target: number) => {
     const space = objective.indexOf(" ");
     return space === -1

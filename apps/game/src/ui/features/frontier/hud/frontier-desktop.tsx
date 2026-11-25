@@ -49,7 +49,7 @@ export const FrontierDesktop = ({
   return (
     <HudPopoverRoot.Provider value={{ node: popoverNode, scale }}>
       <div style={{ zoom: scale }}>
-        <header aria-label="Game controls" className="frontier-crown pointer-events-auto">
+        <header aria-label="Game controls" className="frontier-crown pointer-events-none">
           {placeSwitch}
           {clock}
           {quest}

@@ -96,3 +96,9 @@
   color: rgb(var(--hud-gold));
   white-space: nowrap;
 }
+.emissary-dock--phone .quest-dock__foot {
+  flex-wrap: nowrap;
+}
+.emissary-dock--phone .quest-dock__reward {
+  padding: 0 6px;
+}
