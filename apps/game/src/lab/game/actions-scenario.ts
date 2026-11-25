@@ -23,10 +23,13 @@ import {
 
 import { exploreStaminaCost, musterStamina, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
 import {
+  nativeOathConstants as oaths,
   nativeResearchConstants as research,
+  nativeRuleConstants as rules,
   safeInteger,
   type NativeFactStore,
 } from "@bibliothecadao/eternum/game-client";
+import { armyBar } from "@/ui/features/frontier/hud/dock-armies";
 
 import { standTheArmyAtTheEdge } from "./explore-scenario";
 import { wire, type LabCommand, type LabFact, type LabScenario } from "./lab-chain";
@@ -59,6 +62,45 @@ export const actionsScenario = (): LabScenario => {
     ...realm,
     answer: (command, chain, now) => (answers[command.kind] ?? realm.answer)(command, chain, now),
   };
+};
+
+export const findScenario = (find: "well" | "shrine"): LabScenario => {
+  const game = actionsScenario();
+  return {
+    ...game,
+    answer: (command, chain, now) =>
+      command.kind === "Explore" ? exploreFinds(find, command, chain, now) : game.answer(command, chain, now),
+  };
+};
+
+const exploreFinds = (find: "well" | "shrine", command: LabCommand, chain: NativeFactStore, now: number) => {
+  const explorerId = BigInt(command.fields.explorer_id);
+  const army = chain.require("ExplorerTroops", { game_id: 1, explorer_id: explorerId });
+  const to = walk(chain.entityOccupancy(1, Number(explorerId))!, [Number(command.fields.direction)]);
+  const cost = exploreStaminaCost(
+    chain.require("SliceRules", { game_id: 1 }),
+    army.troops.category,
+    armyOaths(chain, { game_id: 1, explorer_id: explorerId }),
+  );
+  const bar = armyBar(chain, army, now).stamina!;
+  const refilled = Math.min(bar.max, bar.current - cost + Math.floor((bar.max * rules.WELL_REFILL_PERCENT) / 100));
+  const progress = chain.require("ArmyProgress", { game_id: 1, explorer_id: explorerId });
+  return [
+    revealedTile(`0x1ae${to.col}${to.row}`, to, BiomeType.Grassland),
+    armySpent(chain, explorerId, find === "well" ? bar.current - refilled : cost, now),
+    ...(find === "shrine"
+      ? [
+          {
+            model: "ArmyProgress",
+            key: chain.wireKeyOf("ArmyProgress", progress)!,
+            value: wire({
+              ...progress,
+              oath_pick: oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8),
+            }),
+          },
+        ]
+      : []),
+  ];
 };
 
 /** A command's span after its variant, as felts: fields and spans in ABI order. */
