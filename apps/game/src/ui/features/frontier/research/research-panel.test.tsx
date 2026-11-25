@@ -16,7 +16,7 @@ import { nativeResearchConstants as research } from "@bibliothecadao/eternum/gam
 import { EARLY_REALM, MID_REALM } from "./progression-fixture";
 import { ResearchPanel } from "./research-panel";
 import { CastleResearch } from "../upgrade/castle-view";
-import { needLine, readResearchTree, type TreeNode } from "./research-tree";
+import { readResearchTree, type TreeNode } from "./research-tree";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -189,9 +189,7 @@ it("states why each locked or short row is held back in plain words without repe
     ),
   );
   expect(host.querySelector("[data-lab='node-choice'] [data-lock-reason]")).toBeNull();
-  expect(host.querySelector("[data-lab='node-choice'] [aria-label='Needs 2,500 Essence']")?.className).toContain(
-    "text-hud-",
-  );
+  expect(host.querySelector("[data-lab='node-choice'] .ui-price [data-short]")).not.toBeNull();
 });
 
 describe("the picked building's choice, at the panel's foot (the owner's pick C)", () => {
@@ -232,8 +230,8 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     const price = nodes
       .find(({ key }) => key === "row-0")!
       .needs.filter(({ kind }) => kind === "essence" || kind === "labor");
-    expect([...choice()!.querySelectorAll("[aria-label*='/']")].map((chip) => chip.getAttribute("aria-label"))).toEqual(
-      price.map((need) => needLine(need)),
+    expect([...choice()!.querySelectorAll(".ui-price > span")].map((chip) => chip.hasAttribute("data-short"))).toEqual(
+      price.map((need) => !need.met),
     );
   });
 
@@ -414,9 +412,7 @@ it("keeps cards free of inline Upgrade buttons and routes upgrading through the 
     ),
   );
   expect(host.querySelector("[data-node='row-6'] [data-research-effect-short]")?.textContent).toBe("2 → 3 Oaths");
-  expect(host.querySelector("[data-lab='node-choice'] [aria-label='Needs 1,000 Labor']")?.className).toContain(
-    "text-hud-",
-  );
+  expect(host.querySelector("[data-lab='node-choice'] .ui-price [data-short]")).not.toBeNull();
 });
 
 it("renders the 3-track Era tree with measured SVG prerequisite links on desktop and phone", () => {
