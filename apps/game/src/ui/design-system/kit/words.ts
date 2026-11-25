@@ -359,6 +359,8 @@ import {
   asRanked,
   type RankedWords,
   type QuestUnit,
+  ASPECT_REWARD,
+  formatOrdinal,
 } from "@bibliothecadao/types";
 
 /** A step on that scale, common (1) to legendary (5). */
@@ -545,6 +547,35 @@ export const staminaLabel = (current: number, max: number) => `${STAMINA_TITLE} 
 export const EMPIRE = "Empire";
 /** The places: the nav's words. */
 export const REALM = "Realm";
+export const COSMETICS_WORDS = {
+  title: "Cosmetics",
+  families: { wonder: "Wonder", "season-1": "Season 1", devcon: "Devcon", base: "Base" },
+  devcon: "Devcon",
+  goldenDevcon: "Golden Devcon",
+  courtyardKeep: "Courtyard Keep",
+  realms: "Realms",
+  armies: "Armies",
+  soon: "Soon",
+  defaultOrder: (families: readonly string[]) => `Default order: ${families.join(" · ")}`,
+  ownedOf: (owned: number, total: number) => `${owned} of ${total} owned`,
+  ownedCount: (owned: number) => `${owned} owned`,
+  ownedOfPass: (owned: number, total: number) => `${owned} of ${total} owned · Season 1 Pass`,
+  familySkin: (family: string, skin: string) => `${family} · ${skin}`,
+  alwaysOwned: "Always owned",
+  exclusive: "Exclusive",
+  yourRank: (rank: string) => `Your rank: ${rank}`,
+  matchingIcon: "Matching Realm Icon",
+  matchingIconWhere: "HUD badge, minimap, map plates & app",
+  previewSoon: "Preview soon",
+  standing: { owned: "Owned", pass: "Pass", event: "Event", wonder: "Wonder" },
+  unlockInPass: "Unlock in Season 1 Pass",
+  eventExclusive: "Event exclusive",
+  eventGone: "Event exclusive · no longer available",
+  wonderOnly: "Wonder Realms only",
+  shortcutTitle: "Realm Cosmetics",
+  shortcutLine: (owned: number) => `${owned} owned · change look & icon`,
+  open: "Open",
+} as const;
 export const MAP_VIEW = "Map view";
 export const WORLD = "World";
 /** The realm's way home from its card's header: the map centred on it. */
@@ -620,7 +651,7 @@ export const SUPPLY_POST = {
   chip: "Post",
   open: "Post open",
   rule: "Clearing opens a Supply Post: refill adjacent armies until day end",
-  drawsFrom: "Draws from realm stock",
+  drawsFrom: "Draws from Realm stock",
   endsIn: (seconds: number | undefined) => `Ends in ${dayLength(seconds)}`,
   inRange: "Armies in range",
   beside: (count: number) => `${formatExact(count)} beside post`,
@@ -1086,35 +1117,39 @@ export const OPENING_WORDS = {
 } as const;
 /** The Aspect page (docs/plans/frontier-season-1.md, Aspects and the hyperstructure): the race, and the player's Aspect. */
 export const ASPECT_PAGE_WORDS = {
-  title: "Aspect Race",
   race: "Hyperstructures",
   goToDeep: `Go to ${DEEP}`,
   deepOpensAt: (rule: string) => `${DEEP} opens at ${rule}`,
-  gloryUnearned: `No Glory yet — hold ${DEEP} sites`,
   height: (height: number, finish: number) => `${formatExact(height)} of ${formatExact(finish)}`,
   stage: (stage: number, stages: number) => `Stage ${stage} of ${stages}`,
   finished: "Finished",
   won: (aspect: string) => `${aspect} finished 1st and won the season`,
   noFinisher: "The season ended. No Aspect finished its hyperstructure.",
-  triumphs: "Triumphs",
   triumph: { 1: "Clear Mist", 2: "Second Wind", 3: "Pale Moon", 4: "Spoils" },
-  triumphOn: (day: number) => `day ${formatExact(day)}`,
-  triumphAt: (stage: number) => `at stage ${stage}`,
-  baneBar: "Bane bar",
-  baneCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
   glory: "Glory",
-  noAspect: "Join an Aspect to see its members",
-  fights: `${DEEP} battles`,
-  noFights: `No ${DEEP} battles yet`,
-  fight: (winner: string, loser: string) => `${winner} beat ${loser}`,
-  fightLosses: (first: string, firstLost: number, second: string, secondLost: number) =>
-    `${first} lost ${formatExact(firstLost)}, ${second} lost ${formatExact(secondLost)} troops`,
-  standoff: (first: string, second: string) => `${first} and ${second} tied`,
-  mutual: (first: string, second: string) => `${first} and ${second} destroyed each other`,
-  readingFights: `Loading ${DEEP} battles…`,
-  fightsFailed: `Could not load ${DEEP} battles.`,
-  wiped: (aspect: string) => `${aspect} was defeated`,
-  reading: "Loading scores…",
+} as const;
+export const SEASON_BOARD_WORDS = {
+  title: `${COUNTDOWN_WORDS.title} Leaderboard`,
+  phoneTitle: COUNTDOWN_WORDS.title,
+  day: (day: number, lastDay: number) => `Day ${formatExact(day)} of ${formatExact(lastDay)}`,
+  poolRule: `${formatExact(ASPECT_REWARD.lordsPerHeight)} LORDS per height · +${formatShort(ASPECT_REWARD.finishBonus)} for 1st`,
+  pool: (lords: number) => `${formatShort(lords)} LORDS`,
+  yourGlory: (rank: number) => `Your Glory · ${formatOrdinal(rank)}`,
+  aspectPlace: (aspect: string, rank: number) => `${aspect} · ${formatOrdinal(rank)}`,
+  place: (rank: number) => formatOrdinal(rank),
+  qualifies: `${formatExact(ASPECT_REWARD.gloryToShare)}+ qualifies`,
+  aspectPool: (aspect: string) => `${aspect} pool`,
+  yourShare: (lords: number) => `Est. ~${formatShort(lords)} yours`,
+  triumphs: (stage: number, stages: number) => `Aspect Triumphs · ${ASPECT_PAGE_WORDS.stage(stage, stages)}`,
+  altar: `${DEEP} Altar charge`,
+  altarCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
+  standing: "Standing",
+  player: "Player",
+  order: "Order",
+  footer: (rank: number, realm: string, glory: number) =>
+    `${formatOrdinal(rank)} · ${realm} · ${formatExact(glory)} Glory`,
+  footerPool: (pool: number, share: number) => `Pool ${formatShort(pool)} LORDS · ~${formatShort(share)} yours`,
+  deep: DEEP,
 } as const;
 export const RESEARCHING = "Researching…";
 export const BUILDING = "Building…";

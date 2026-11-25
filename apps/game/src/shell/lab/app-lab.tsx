@@ -24,6 +24,8 @@ import { STANDING_PROMPTS } from "../standing-prompts";
 import { PlayPage } from "../play/play-page";
 import { SharedLinkPage } from "../share/shared-link-page";
 import { FragmentsPage } from "../shop/fragments-page";
+import { CosmeticsPage } from "../cosmetics/cosmetics-page";
+import { COSMETICS_PATH } from "../cosmetics/cosmetics-route";
 import { answerAvnuRead, answerTokenBalances, isAvnuRead } from "./lab-pay-tokens";
 import { PlayerPage, ProfilePage, SettingsRedirect } from "../profile/profile-pages";
 import { PROFILE_PATH } from "../profile/settings-route";
@@ -122,6 +124,7 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="doorway/:state" element={<LabDoorway />} />
         <Route path="s/:code" element={<SharedLinkPage />} />
         <Route path="share/day" element={<LabDayShare />} />
+        <Route path={COSMETICS_PATH.slice(1)} element={<CosmeticsPage />} />
         <Route path={FRAGMENTS_PATH.slice(1)} element={<FragmentsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

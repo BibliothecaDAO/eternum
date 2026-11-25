@@ -124,7 +124,17 @@ const RIFTS = questCatalog.find((quest) => quest.id === nativeQuestConstants.RIF
 const HOUR = 3_600;
 const DAY = 24 * HOUR;
 
-const REALM = { entity_id: 1, category: 1, realm_id: 3098, level: 1, coord_x: 0, coord_y: 0, resources_packed: "0" };
+const REALM = {
+  entity_id: 1,
+  category: 1,
+  realm_id: 3098,
+  level: 1,
+  coord_x: 0,
+  coord_y: 0,
+  resources_packed: "0",
+  aspect: null,
+  has_wonder: false,
+};
 const game = (over: Partial<DirectoryGame>): DirectoryGame =>
   ({
     chainId: "0xa",
