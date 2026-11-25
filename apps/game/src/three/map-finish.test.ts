@@ -20,35 +20,42 @@ function watchReleases() {
   return () => released.map((spy) => spy.mock.calls.length);
 }
 
+function watchPasses() {
+  const made: Array<{ scene: unknown; camera: unknown }> = [];
+  const passClass = classOf(pass(new Scene(), new PerspectiveCamera())) as unknown as { setMRT(mrt: unknown): unknown };
+  const setMRT = passClass.setMRT;
+  vi.spyOn(passClass, "setMRT").mockImplementation(function (this: { scene: unknown; camera: unknown }, mrt) {
+    made.push(this);
+    return setMRT.call(this, mrt);
+  });
+  return made;
+}
+
 describe("the map's finish", () => {
-  it("releases a scene's offscreen passes when its camera is replaced, and the rest when the map leaves", () => {
+  it("draws the realm and the map through one set of offscreen passes, each frame the scene and camera asked", () => {
     const releases = watchReleases();
+    const passes = watchPasses();
     const finish = new MapFinish({} as WebGPURenderer);
-    const scene = new Scene();
-    finish.render(scene, new PerspectiveCamera());
-    finish.render(scene, new PerspectiveCamera());
-    expect(releases()).toEqual([1, 1, 1]);
+    const map = { scene: new Scene(), camera: new PerspectiveCamera() };
+    const realm = { scene: new Scene(), camera: new PerspectiveCamera() };
 
-    finish.render(new Scene(), new PerspectiveCamera());
-    finish.dispose();
-    expect(releases()).toEqual([3, 3, 3]);
-  });
+    finish.render(map.scene, map.camera);
+    finish.render(realm.scene, realm.camera);
+    expect(passes).toHaveLength(1);
+    expect(passes[0]).toMatchObject({ scene: realm.scene, camera: realm.camera });
 
-  it("releases nothing twice when the map leaves twice", () => {
-    const releases = watchReleases();
-    const finish = new MapFinish({} as WebGPURenderer);
-    finish.render(new Scene(), new PerspectiveCamera());
-    finish.dispose();
-    finish.dispose();
-    expect(releases()).toEqual([1, 1, 1]);
-  });
-
-  it("keeps one finish per scene and camera across frames", () => {
-    const releases = watchReleases();
-    const finish = new MapFinish({} as WebGPURenderer);
-    const scene = new Scene();
-    const camera = new PerspectiveCamera();
-    for (let frame = 0; frame < 5; frame += 1) finish.render(scene, camera);
+    finish.render(map.scene, map.camera);
+    expect(passes[0]).toMatchObject({ scene: map.scene, camera: map.camera });
     expect(releases()).toEqual([0, 0, 0]);
+  });
+
+  it("releases its offscreen passes once when the map leaves, however often it leaves", () => {
+    const releases = watchReleases();
+    const finish = new MapFinish({} as WebGPURenderer);
+    finish.render(new Scene(), new PerspectiveCamera());
+    finish.render(new Scene(), new PerspectiveCamera());
+    finish.dispose();
+    finish.dispose();
+    expect(releases()).toEqual([1, 1, 1]);
   });
 });
