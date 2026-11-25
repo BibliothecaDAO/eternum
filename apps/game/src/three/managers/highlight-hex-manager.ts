@@ -437,7 +437,7 @@ export class HighlightHexManager {
             .multiplyScalar(1 - (u + v) / FACE_STEPS)
             .addScaledVector(b, u / FACE_STEPS)
             .addScaledVector(c, v / FACE_STEPS);
-          const above = point.y - this.terrain.sampleSurface(point.x, point.z).height;
+          const above = point.y - this.terrain.sampleHeight(point.x, point.z);
           lowest = Math.min(lowest, above);
           highest = Math.max(highest, above);
         }
