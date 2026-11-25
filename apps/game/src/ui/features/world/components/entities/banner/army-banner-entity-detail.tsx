@@ -1,4 +1,9 @@
-import { formatFoodBlock, formatTravelBlockedSummary, getArmyFoodRequirementLabel, staminaReading } from "@/ui/design-system/kit/words";
+import {
+  formatFoodBlock,
+  formatTravelBlockedSummary,
+  getArmyFoodRequirementLabel,
+  staminaReading,
+} from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { armyOaths, configManager } from "@bibliothecadao/eternum";

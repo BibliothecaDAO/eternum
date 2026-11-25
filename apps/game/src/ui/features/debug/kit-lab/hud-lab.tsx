@@ -13,13 +13,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { homeIcon } from "@/ui/design-system/home-icons";
 import { HudIconButton, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import {
-  ARMY,
-  ARMY_MANAGEMENT,
-  EVENTS_WORDS,
-  LINK_WALLET_FOR_LORDS,
-  YOU,
-} from "@/ui/design-system/kit/words";
+import { ARMY, ARMY_MANAGEMENT, EVENTS_WORDS, LINK_WALLET_FOR_LORDS, YOU } from "@/ui/design-system/kit/words";
 import { readArmySlots } from "@/ui/features/frontier/hud/army-dock";
 import { ArmyCard, ArmySlotsCard, LockedSlotLine, OpenSlotCard } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
@@ -1223,11 +1217,7 @@ const LabRealmCard = ({ lab }: { lab: LabState }) => (
     name={LAB_REALM_NAME}
     kind="realm"
     level={1}
-    rankUp={
-      lab.visiting
-        ? undefined
-        : { name: rankName(2), sending: false, onUpgrade: noop }
-    }
+    rankUp={lab.visiting ? undefined : { name: rankName(2), sending: false, onUpgrade: noop }}
     aspect={LAB_ASPECT}
     orderId={LAB_ORDER_ID}
     stores={everyStore(lab.stores)}

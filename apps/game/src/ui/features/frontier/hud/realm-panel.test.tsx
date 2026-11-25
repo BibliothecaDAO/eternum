@@ -171,7 +171,15 @@ it("shows every stock with its rate, Fragments opening the shop, and the next ra
 
   act(() =>
     root.render(
-      <RealmCard name="Duskbite" kind="realm" level={3} stores={STORES} fragments={null} lords={null} onShop={onShop} />,
+      <RealmCard
+        name="Duskbite"
+        kind="realm"
+        level={3}
+        stores={STORES}
+        fragments={null}
+        lords={null}
+        onShop={onShop}
+      />,
     ),
   );
   expect(host.querySelector("[data-realm-castle]")).toBeNull();
