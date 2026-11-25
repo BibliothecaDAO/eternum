@@ -151,7 +151,7 @@ export const FrontierPlaces = ({
             role="tab"
             aria-selected={surface === tab.key}
             aria-label={tab.ariaLabel}
-            className="ui-pick frontier-place"
+            className="ui-popover ui-pick frontier-place"
             onClick={() => toggle(tab.key)}
           >
             <Icon name={tab.icon} size={16} />

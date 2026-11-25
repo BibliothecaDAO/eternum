@@ -14,6 +14,7 @@ import {
   Vector2,
 } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
+import type Node from "three/src/nodes/core/Node.js";
 import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
 import { createPooledInstancedMaterial, releasePooledInstancedMaterial } from "../managers/army-model-materials";
 import InstancedModel from "../managers/instanced-model";
@@ -132,6 +133,26 @@ describe("Tripo unified model material setup", () => {
     expect(authored.roughnessNode).toBeNull();
     expect(authored.metalnessNode).toBeNull();
     authored.dispose();
+  });
+
+  it("shades from the base texture as the material colour already holds it, never from a second sample of it", () => {
+    const baseMap = new Texture();
+    const material = createTripoModelMaterial(new MeshStandardMaterial({ map: baseMap, roughness: 0.9, metalness: 0 }));
+    const samplesOfBaseMap = (node: Node | null) => {
+      let samples = 0;
+      node?.traverse((child) => {
+        if ((child as Node & { isTextureNode?: boolean; value?: unknown }).isTextureNode && "value" in child) {
+          if (child.value === baseMap) samples += 1;
+        }
+      });
+      return samples;
+    };
+
+    expect(material.colorNode).not.toBeNull();
+    expect(samplesOfBaseMap(material.colorNode)).toBe(0);
+    expect(samplesOfBaseMap(material.roughnessNode)).toBe(0);
+    expect(samplesOfBaseMap(material.metalnessNode)).toBe(0);
+    material.dispose();
   });
 
   it("routes shipped Tripo meshes through the unified material in InstancedModel while leaving legacy meshes pooled", () => {

@@ -108,7 +108,7 @@ export const PlaceSwitch = ({
       data-place-switch=""
       data-place={inRealm ? REALM : shown.label}
       data-hud-part=""
-      className="frontier-place-switch pointer-events-auto"
+      className="ui-popover frontier-place-switch pointer-events-auto"
     >
       <button
         type="button"
@@ -130,7 +130,7 @@ export const PlaceSwitch = ({
         aria-haspopup="true"
         aria-label={`${MAP_VIEW}, ${shown.label}`}
         data-place-pill=""
-        className="frontier-place-pill"
+        className="ui-pill frontier-place-pill"
       >
         <Icon name={shown.mark} size={22} />
         <span className="frontier-place-pill__name">{shown.label}</span>
@@ -143,7 +143,7 @@ export const PlaceSwitch = ({
               key={entry.key}
               type="button"
               role="tab"
-              className="ui-pick frontier-place-row"
+              className="ui-row frontier-place-row"
               data-depth={entry.depth === undefined ? undefined : String(entry.depth)}
               data-locked={entry.locked || undefined}
               aria-label={entry.label}
@@ -163,7 +163,7 @@ export const PlaceSwitch = ({
             </button>
           ))}
         </div>,
-        { className: "frontier-place-popover", layout },
+        { className: "ui-popover frontier-place-popover", layout },
       )}
     </div>
   );

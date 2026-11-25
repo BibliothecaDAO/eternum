@@ -68,7 +68,7 @@ export const RealmCard = ({
   <section
     aria-label={REALM}
     data-hud-part=""
-    className="frontier-cluster-card frontier-realm-card pointer-events-auto"
+    className="ui-popover frontier-cluster-card frontier-realm-card pointer-events-auto"
   >
     <header className="frontier-realm-card__head">
       <button

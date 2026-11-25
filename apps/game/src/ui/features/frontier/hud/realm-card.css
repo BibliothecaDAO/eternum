@@ -5,12 +5,6 @@
   flex-direction: column;
   gap: 8px;
   overflow: hidden;
-  border: 1.5px solid color-mix(in srgb, rgb(var(--hud-gold)) 45%, var(--hud-line));
-  border-radius: 16px;
-  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
-  box-shadow:
-    var(--hud-shadow-panel),
-    inset 0 1px 0 color-mix(in srgb, rgb(var(--hud-gold)) 22%, transparent);
   padding: 10px 10px 12px;
   color: rgb(var(--hud-ink));
 }

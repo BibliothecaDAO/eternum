@@ -64,7 +64,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
                 ? `${DAY_BANNER_WORDS.undrawnTitle}: ${DAY_BANNER_WORDS.undrawnPill}`
                 : DAY_BANNER_WORDS.today
         }
-        className="frontier-quest-orb"
+        className={desktop ? "ui-popover frontier-quest-orb" : "frontier-quest-orb"}
         onClick={toggleQuestDock}
       >
         <ProgressRing size="lg" share={share} tone={bane ? "ember" : "calm"}>
