@@ -137,7 +137,7 @@ export const OPENING = {
     teacher: 3,
     parts: ["bane-row"],
     reachedWhen: (ctx) => ctx.hasActiveBane || ctx.hasBrokenBane,
-    showsWhen: (ctx) => ctx.hasActiveBane,
+    showsWhen: (ctx) => ctx.hasActiveBane && ctx.deployedArmies > 0,
     completesWhileShowing: (ctx) => ctx.openedQuest,
   },
   deep: {

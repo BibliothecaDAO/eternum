@@ -118,6 +118,7 @@ const BaneLine = ({ bane }: { bane: BaneStanding }) => (
   <span className="quest-dock__bane" data-bane-row>
     <span className="quest-dock__effect" data-tip={bane.effect} aria-label={bane.effect} role="img">
       <Icon name="flame" size={14} />
+      <span aria-hidden="true">{bane.mark}</span>
       {bane.chip}
     </span>
     {bane.doubles && <span className="quest-dock__twice">{WORDS.twiceIfBroken}</span>}

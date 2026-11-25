@@ -9,7 +9,7 @@ import { useLayout } from "@/shell/frame/layout";
 import { DAILY_QUEST_MODELS, readDailyQuest, UNROLLED_WORLD_DAY } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
-import { baneFace } from "../day/bane-face";
+import { baneFace, useBaneToday } from "../day/bane-face";
 import { dayQuestFace } from "../day/day-quest-face";
 import { toggleQuestDock, useQuestDockOpen } from "../day/quest-dock";
 import { ProgressRing } from "./progress-ring";
@@ -20,6 +20,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
   useNativeRevision(DAILY_QUEST_MODELS);
   const open = useQuestDockOpen();
   const desktop = useLayout() === "desktop";
+  const baneToday = useBaneToday(realm);
   const today = readDailyQuest(setup.store, realm.game_id, safeInteger(realm.entity_id), now);
   if (!today) return null;
   const reading = today.reading.known;
@@ -51,6 +52,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
         data-ready={ready || undefined}
         data-tone={bane ? "bane" : undefined}
         data-undrawn={undrawn || undefined}
+        data-tip={baneToday?.line}
         aria-label={
           bane
             ? `${DAY_BANNER_WORDS.bane}: ${bane.name}`

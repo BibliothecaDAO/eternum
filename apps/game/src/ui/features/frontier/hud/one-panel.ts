@@ -71,8 +71,8 @@ export const useOnePanel = (
   }, []);
   const questOpen = useQuestDockOpen();
   useEffect(() => {
-    if (yieldsToMap && questOpen) setSurface(null);
-  }, [yieldsToMap, questOpen]);
+    if (questOpen) setSurface(null);
+  }, [questOpen]);
 
   if (card !== seen.card || deploying !== seen.deploying || pick !== seen.pick || surfacePressed) {
     const cardOpened = card !== null && card !== seen.card;

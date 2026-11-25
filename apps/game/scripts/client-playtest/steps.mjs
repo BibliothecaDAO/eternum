@@ -111,6 +111,7 @@ export const HUD_WORDS = {
   feed: "Feed",
   research: "Research",
   close: "Close",
+  ok: "OK",
   chat: "Chat",
   settings: "Settings",
   today: "Today",
@@ -4172,7 +4173,7 @@ function raceBoardSteps(result) {
       play: async ({ browser, extraScreenshot }) => {
         if (result === null) {
           browser.read(
-            `(() => { [...document.querySelectorAll('[data-daily-quest] button')].find((button) => button.textContent === "OK")?.click(); return true; })()`,
+            `(() => { [...document.querySelectorAll('[data-daily-quest] button')].find((button) => button.textContent === ${JSON.stringify(HUD_WORDS.ok)})?.click(); return true; })()`,
           );
           await openPlace(browser, HUD_WORDS.season);
         }
