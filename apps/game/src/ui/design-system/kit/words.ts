@@ -1151,7 +1151,7 @@ export const BUILD = "Build";
 export const buildNamed = (building: string) => `${BUILD} ${building}`;
 export const BUILT = "Built";
 export const plotsUsed = (used: number, total: number) => `${used} / ${total} plots`;
-export const moreBelow = (names: readonly string[]) => `More below: ${names.join(", ")}`;
+export const armiesHere = (count: number) => (count === 1 ? "1 army" : `${count} armies`);
 export const FREE = "Free";
 
 /** Default army names: "Army" and its place. */

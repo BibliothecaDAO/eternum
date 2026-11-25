@@ -1024,7 +1024,7 @@ span.ui-row__choose {
   bottom: var(--hud-phone-foot, env(safe-area-inset-bottom));
   z-index: theme(zIndex.hud-sheet);
   display: flex;
-  max-height: theme(spacing.hud-phone-panel);
+  max-height: theme(spacing.hud-phone-sheet);
   flex-direction: column;
   /* Shown even while the panel it opened from steps aside for it. */
   visibility: visible;

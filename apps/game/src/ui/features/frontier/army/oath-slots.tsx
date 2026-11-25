@@ -31,9 +31,9 @@ export function TroopOathSlots({ category, explorerId }: { category: TroopType; 
   const pickBase = usePickEffectBase();
   const game_id = configManager.getActiveGameId();
   const progress = store.get("ArmyProgress", { game_id, explorer_id: explorerId });
-  const count = progress?.oath_slots;
-  if (count === undefined) return null;
-  const held = heldOaths(progress?.oaths ?? 0);
+  if (!progress) return null;
+  const count = progress.oath_slots;
+  const held = heldOaths(progress.oaths);
   return (
     <div data-oath-slots={count} className="oath-board">
       <div className="oath-board__head">
