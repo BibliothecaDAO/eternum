@@ -42,7 +42,6 @@ import { useArmySpireStatus } from "./spire-card";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { useOnePanel } from "./hud/one-panel";
 import { SPIRE_ARMY, SPIRE_DAY_NOW, discoveredSpireDay, spireDay as spireFixture } from "./spire-fixture";
-import { SPIRE_WORDS } from "@/ui/design-system/kit/words";
 
 const ARMY = SPIRE_ARMY;
 const NOW = SPIRE_DAY_NOW;
