@@ -59,8 +59,8 @@ describe("AspectEmissaryDock", () => {
     expect(dock?.dataset.tutorialAspect).toBe("2");
     expect(dock?.dataset.tutorialLayout).toBe("desktop");
     expect(dock?.textContent).toContain("Luminary");
-    expect(dock?.textContent).toContain("Build a Barracks on the glowing plot. It raises +2/min Knights.");
-    expect(dock?.textContent).toContain("Click the lit plot to build.");
+    expect(dock?.textContent).toContain("It raises +2/min Knights.");
+    expect(dock?.textContent).toContain("Tap the lit plot to build.");
     expect(host.querySelector(".emissary-dock__context")).toBeNull();
     expect(host.querySelector(".emissary-dock__well")).toBeNull();
     const portrait = host.querySelector<HTMLImageElement>('img[data-icon="emissary-luminary"]');
@@ -140,9 +140,9 @@ describe("AspectEmissaryDock", () => {
 
     const dock = host.querySelector<HTMLElement>("[data-tutorial-dock='explore']");
     expect(dock?.classList.contains("emissary-dock--phone")).toBe(true);
-    expect(dock?.textContent).toContain("Insight");
-    expect(dock?.textContent).toContain(OPENING_WORDS.titles.explore);
-    expect(dock?.textContent).toContain("Reveal one dark hex for 20 stamina.");
+    expect(dock?.getAttribute("aria-label")).toContain("Insight");
+    expect(dock?.textContent).toContain(OPENING_WORDS.titles.explore());
+    expect(dock?.textContent).toContain("Reveal a dark hex for 20 stamina.");
     expect(host.querySelector('img[data-icon="emissary-insight"]')?.getAttribute("src")).toBe(
       "/icons/facets/128/emissary-insight.webp",
     );
@@ -183,7 +183,7 @@ describe("AspectEmissaryDock", () => {
     expect(dock?.dataset.tutorialStatus).toBe("completed");
     expect(dock?.classList.contains("emissary-dock--completed")).toBe(true);
     expect(host.querySelector('[role="status"]')?.textContent).toContain(OPENING_WORDS.completedLabel);
-    expect(dock?.textContent).toContain(OPENING_WORDS.completed.explore);
+    expect(dock?.textContent).toContain(OPENING_WORDS.completed.explore.line);
     expect(host.querySelector(".emissary-dock__action")).toBeNull();
     expect(
       [...host.querySelectorAll("button")].find((button) => button.textContent === "Skip tutorial"),
@@ -226,6 +226,60 @@ describe("AspectEmissaryDock", () => {
       vi.unstubAllGlobals();
       vi.useRealTimers();
     }
+  });
+
+  it("draws a phone's lesson as the still does: portrait, title, one line, the gold action and its close, no speaker name", () => {
+    act(() =>
+      root.render(
+        <AspectEmissaryDock
+          moment="explore"
+          rules={OPENING_RULES}
+          layout="phone"
+          onDismiss={vi.fn()}
+          onSkipAll={vi.fn()}
+        />,
+      ),
+    );
+    const dock = host.querySelector<HTMLElement>("[data-tutorial-dock='explore']")!;
+    expect(dock.querySelector(".emissary-dock__title")?.textContent).toBe(OPENING_WORDS.titles.explore());
+    expect(dock.querySelector(".emissary-dock__line")?.textContent).toBe(OPENING_WORDS.lines.explore(OPENING_RULES));
+    expect(dock.querySelector(".emissary-dock__action")?.textContent).toBe(OPENING_WORDS.actions.explore);
+    expect(dock.querySelector('button[aria-label="Close"]')).not.toBeNull();
+    expect(dock.querySelector(".emissary-dock__aspect")).toBeNull();
+    expect(dock.querySelector(".emissary-dock__crest")).toBeNull();
+  });
+
+  it("draws a phone's done lesson with a tick, its confirmation title and line, and nothing to press", () => {
+    act(() =>
+      root.render(
+        <AspectEmissaryDock
+          moment="barracks"
+          rules={OPENING_RULES}
+          layout="phone"
+          status="completed"
+          onDismiss={vi.fn()}
+        />,
+      ),
+    );
+    const dock = host.querySelector<HTMLElement>("[data-tutorial-dock='barracks']")!;
+    expect(dock.querySelector(".emissary-dock__title")?.textContent).toBe(`✓${OPENING_WORDS.completed.barracks.title}`);
+    expect(dock.querySelector(".emissary-dock__line")?.textContent).toBe(OPENING_WORDS.completed.barracks.line);
+    expect(dock.querySelector("button")).toBeNull();
+    expect(dock.querySelector(".emissary-dock__action")).toBeNull();
+  });
+
+  it("titles the day-end lesson with the time the day has left", () => {
+    act(() =>
+      root.render(
+        <AspectEmissaryDock
+          moment="day-end"
+          rules={{ ...OPENING_RULES, dayLeftSeconds: 30 * 60 }}
+          layout="phone"
+          onDismiss={vi.fn()}
+        />,
+      ),
+    );
+    expect(host.querySelector(".emissary-dock__title")?.textContent).toBe("Day ends in 30m");
   });
 
   it("never retires a lesson that is still showing", () => {
@@ -273,7 +327,7 @@ describe("AspectEmissaryDock", () => {
   it("folds to the guidance strip over the sheet its lesson asks for, keeping Skip's two steps", () => {
     const { dock, onSkipAll } = renderOverSheet("barracks", BUILD);
     expect(dock().dataset.tutorialForm).toBe("strip");
-    expect(dock().textContent).toContain(OPENING_WORDS.titles.barracks);
+    expect(dock().textContent).toContain(OPENING_WORDS.titles.barracks());
     expect(dock().textContent).toContain(OPENING_WORDS.inSheet.barracks(OPENING_RULES));
     expect(dock().querySelector(`button[aria-label="${CLOSE}"]`)).toBeNull();
 
@@ -288,7 +342,7 @@ describe("AspectEmissaryDock", () => {
     const { dock, onDismiss } = renderOverSheet("barracks", SETTINGS);
     expect(dock().dataset.tutorialForm).toBe("reminder");
     expect(dock().textContent).toContain(OPENING_WORDS.tutorial);
-    expect(dock().textContent).toContain(OPENING_WORDS.titles.barracks);
+    expect(dock().textContent).toContain(OPENING_WORDS.titles.barracks());
 
     press(OPENING_WORDS.showLesson);
     expect(dock().dataset.tutorialForm).toBe("card");

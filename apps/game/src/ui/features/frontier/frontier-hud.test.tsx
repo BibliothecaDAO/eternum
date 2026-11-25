@@ -547,7 +547,7 @@ const pressPlace = (word: string) =>
   );
 const surfaceNamed = (label: string) => document.querySelector<HTMLElement>(`section[aria-label="${label}"]`);
 const menuRow = (word: string) =>
-  [...surfaceNamed("Menu")!.querySelectorAll<HTMLElement>(".menu-place-tile, .ui-row")].find(
+  [...surfaceNamed("Menu")!.querySelectorAll<HTMLElement>(".menu-tile")].find(
     (row) => row.getAttribute("aria-label") === word || row.textContent?.startsWith(word),
   )!;
 
@@ -579,7 +579,7 @@ it.each([
   ["Today", "Today"],
   ["Settings", "Settings"],
 ])(
-  "opens %s from a phone's Menu whichever part of its row is tapped: its icon, its words or its chevron",
+  "opens %s from a phone's Menu whichever part of its tile is tapped: its painting or its word",
   async (row, opens) => {
     viewport.set(390);
     const route = window.location.pathname + window.location.search;
@@ -587,9 +587,8 @@ it.each([
     try {
       await renderHud();
       const parts = {
-        icon: (row: HTMLElement) => row.querySelector("[data-icon]")!,
-        words: (row: HTMLElement) => row.querySelector(".ui-row__title")!,
-        chevron: (row: HTMLElement) => [...row.querySelectorAll("[data-icon]")].at(-1)!,
+        icon: (tile: HTMLElement) => tile.querySelector("[data-icon]")!,
+        words: (tile: HTMLElement) => tile.querySelector(".menu-tile__label")!,
       };
       const opened: Record<string, boolean> = {};
       for (const [part, of] of Object.entries(parts)) {
@@ -601,7 +600,7 @@ it.each([
           surfaceNamed(opens)?.querySelector<HTMLButtonElement>('button[aria-label="Close"]')?.click(),
         );
       }
-      expect(opened).toEqual({ icon: true, words: true, chevron: true });
+      expect(opened).toEqual({ icon: true, words: true });
     } finally {
       window.history.replaceState(null, "", route);
     }
@@ -1226,7 +1225,7 @@ it.each([
   async (layout, width) => {
     const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
     const { OPENING_WORDS } = await import("@/ui/design-system/kit/words");
-    const { useOpeningStore } = await import("./opening/opening-store");
+    const { clearConfirmedTutorial, useOpeningStore } = await import("./opening/opening-store");
     const { entityHomeNamespace, expeditionRealmSite, setBuildingCount } = await import("@bibliothecadao/eternum");
     const { nativeResearchConstants } = await import("@bibliothecadao/eternum/game-client");
     const { ResourcesIds, TileOccupier, RESOURCE_PRECISION } = await import("@bibliothecadao/types");
@@ -1396,7 +1395,7 @@ it.each([
       expect(initialDock?.dataset.tutorialLayout).toBe(layout);
       if (layout === "phone") {
         expect(initialDock?.dataset.tutorialForm).toBe("reminder");
-        expect(initialDock?.textContent).toContain(OPENING_WORDS.titles.explore);
+        expect(initialDock?.textContent).toContain(OPENING_WORDS.titles.explore());
       } else {
         expect(initialDock?.querySelector(".emissary-dock__action")?.textContent).toContain(
           OPENING_WORDS.actions.explore,
@@ -1434,14 +1433,20 @@ it.each([
         '[data-tutorial-dock="explore"][data-tutorial-status="completed"]',
       );
       expect(confirmed).not.toBeNull();
-      expect(confirmed?.textContent).toContain(OPENING_WORDS.completedLabel);
-      expect(confirmed?.textContent).toContain(OPENING_WORDS.completed.explore);
+      expect(confirmed?.textContent).toContain(OPENING_WORDS.completed.explore.title);
 
-      await act(async () => confirmed!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+      const closeConfirmed = confirmed!.querySelector<HTMLButtonElement>('button[aria-label="Close"]');
+      if (layout === "desktop") {
+        expect(closeConfirmed).not.toBeNull();
+        await act(async () => closeConfirmed!.click());
+      } else {
+        expect(closeConfirmed).toBeNull();
+        await act(async () => clearConfirmedTutorial());
+      }
       const raceNext = host.querySelector<HTMLElement>(
         '[data-tutorial-dock="aspects"][data-tutorial-status="showing"]',
       );
-      expect(raceNext?.textContent).toContain(OPENING_WORDS.titles.aspects);
+      expect(raceNext?.textContent).toContain(OPENING_WORDS.titles.aspects());
       await act(async () => raceNext!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
       expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
 
@@ -1479,7 +1484,7 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
   const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
   const { OPENING_WORDS } = await import("@/ui/design-system/kit/words");
   const { buildingOutput } = await import("@/ui/shared/lib/building-output");
-  const { useOpeningStore } = await import("./opening/opening-store");
+  const { clearConfirmedTutorial, useOpeningStore } = await import("./opening/opening-store");
   const previousTicks = {
     currentBlockTimestamp: useBlockTimestampStore.getState().currentBlockTimestamp,
     currentDefaultTick: useBlockTimestampStore.getState().currentDefaultTick,
@@ -1577,7 +1582,10 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
     );
     expect(dayEndDock).not.toBeNull();
     expect(dayEndDock?.dataset.tutorialAspect).toBe("1");
-    expect(dayEndDock?.textContent).toContain(OPENING_WORDS.titles["day-end"]);
+    const { OPENING_RULES } = await import("./opening/opening-fixtures");
+    expect(dayEndDock?.textContent).toContain(
+      OPENING_WORDS.titles["day-end"]({ ...OPENING_RULES, dayLeftSeconds: 60 }),
+    );
 
     await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Today"]')!.click());
     await act(async () => new Promise((settled) => setTimeout(settled, 20)));
@@ -1589,7 +1597,8 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
       '[data-tutorial-dock="day-end"][data-tutorial-status="completed"]',
     );
     expect(dayEndConfirmed).not.toBeNull();
-    await act(async () => dayEndConfirmed!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+    expect(dayEndConfirmed!.querySelector('button[aria-label="Close"]')).toBeNull();
+    await act(async () => clearConfirmedTutorial());
     expect(host.querySelector('[data-tutorial-dock="day-end"]')).toBeNull();
 
     resetMemory();
