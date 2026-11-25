@@ -1,5 +1,5 @@
 import { type IconMeaning, resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { ESSENCE, LABOR, RATE_PER, WHEAT } from "@/ui/design-system/kit/words";
+import { ESSENCE, LABOR, type RatePer, storeRate, WHEAT } from "@/ui/design-system/kit/words";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { FRONTIER_TROOP_NAMES, TroopType, BuildingType, ResourcesIds } from "@bibliothecadao/types";
 
@@ -10,7 +10,7 @@ type Store = {
   resource: ResourcesIds;
   icon: IconMeaning;
   word: string;
-  per: keyof typeof RATE_PER;
+  per: RatePer;
   /** The building that makes it, by its research row (the row's building type, as research.cairo names it). */
   made?: { category: BuildingType; spentAt: SpentAt };
   troop?: TroopType;
@@ -23,7 +23,12 @@ type Store = {
  * limit.
  */
 export const FRONTIER_STORES = {
-  essence: { resource: ResourcesIds.Essence, icon: resourceMeaning(ResourcesIds.Essence), word: ESSENCE, per: "minute" },
+  essence: {
+    resource: ResourcesIds.Essence,
+    icon: resourceMeaning(ResourcesIds.Essence),
+    word: ESSENCE,
+    per: "minute",
+  },
   labor: {
     resource: ResourcesIds.Labor,
     icon: resourceMeaning(ResourcesIds.Labor),
@@ -67,16 +72,8 @@ export const FRONTIER_STORES = {
 export type StoreKind = keyof typeof FRONTIER_STORES;
 export const STORE_KINDS = Object.keys(FRONTIER_STORES) as StoreKind[];
 
-const RATE_UNITS = {
-  minute: { seconds: 60, figures: new Intl.NumberFormat("en-US", { maximumFractionDigits: 1, signDisplay: "exceptZero" }) },
-  hour: { seconds: 3_600, figures: new Intl.NumberFormat("en-US", { maximumFractionDigits: 0, signDisplay: "exceptZero" }) },
-} as const satisfies Record<keyof typeof RATE_PER, { seconds: number; figures: Intl.NumberFormat }>;
-
-export const formatStoreRate = (kind: StoreKind, perSecond: number | undefined): string => {
-  if (perSecond === undefined) return "—";
-  const per = FRONTIER_STORES[kind].per;
-  return `${RATE_UNITS[per].figures.format(perSecond * RATE_UNITS[per].seconds)}${RATE_PER[per]}`;
-};
+export const formatStoreRate = (kind: StoreKind, perSecond: number | undefined): string =>
+  storeRate(FRONTIER_STORES[kind].per, perSecond);
 
 /** A store a building makes. */
 export type MadeStore = {

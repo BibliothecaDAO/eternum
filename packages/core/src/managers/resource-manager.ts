@@ -317,7 +317,10 @@ export class ResourceManager {
     if (!effects.known) return undefined;
     const { windows, productionPercent } = effects.known;
     const output = productionOutput(production, timestamp, windows, productionPercent);
-    return { ...output, rateNumerator: production.production_rate * BigInt(productionPercentAt(effects.known, timestamp)) };
+    return {
+      ...output,
+      rateNumerator: production.production_rate * BigInt(productionPercentAt(effects.known, timestamp)),
+    };
   }
 
   public getActiveProductions(): Array<{

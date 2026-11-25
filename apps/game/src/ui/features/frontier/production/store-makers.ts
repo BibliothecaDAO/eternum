@@ -75,11 +75,16 @@ export const storeMakerLines = (
     count > 0
       ? [each === undefined ? standing : STORE_MAKERS.buildings(standing, formatStoreRate(kind, each * count))]
       : [];
-  if (resource === ResourcesIds.Labor) lines.push(STORE_MAKERS.castle(formatStoreRate(kind, castleLabor(store, realm, now))));
+  if (resource === ResourcesIds.Labor)
+    lines.push(STORE_MAKERS.castle(formatStoreRate(kind, castleLabor(store, realm, now))));
   return lines;
 };
 
-export const castleLabor = (store: NativeFactStore, realm: NativeRows["Structure"], now: number): number | undefined => {
+export const castleLabor = (
+  store: NativeFactStore,
+  realm: NativeRows["Structure"],
+  now: number,
+): number | undefined => {
   const percent = readProductionPercent(store, realm.game_id, realm.entity_id, now);
   const rate = store.require("ResourceRule", { game_id: realm.game_id, resource_type: ResourcesIds.Labor }).realm_rate;
   return percent === undefined ? undefined : (Number(rate) / RESOURCE_PRECISION) * (percent / 100);

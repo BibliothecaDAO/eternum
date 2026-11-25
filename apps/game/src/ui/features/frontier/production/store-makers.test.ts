@@ -45,9 +45,8 @@ const surfaces = (bane: boolean, kind: "wheat" | "troops", category: number) => 
   if (bane) ashFallToday(store, now);
   const reading = readRealmStore(store, row, readExpeditionRules(store, 1)!, kind, { now });
   const build = readBuildOptions(store, row, false, now)!.find((option) => option.category === category)!;
-  const standing = new ResourceManager(store, 7).current(
-    kind === "wheat" ? ResourcesIds.Wheat : ResourcesIds.Knight,
-  )!.production!.building_count;
+  const standing = new ResourceManager(store, 7).current(kind === "wheat" ? ResourcesIds.Wheat : ResourcesIds.Knight)!
+    .production!.building_count;
   return {
     realmCard: storeRateText({ ...reading, kind, flyTarget: kind }),
     buildingPanel: formatStoreRate(kind, buildingsMake(store, row, category, now)!.perSecond),
@@ -80,7 +79,10 @@ it("gives the realm card, the building panel and Build one rate per store, cut a
 
 it("says on a store's card what makes its rate, the buildings and the castle, so the parts add up to it", () => {
   const { store, row, now } = realm();
-  expect(storeMakerLines(store, row, ResourcesIds.Labor, now)).toEqual(["3 Workshops · +15.1/min", "Castle · +1.7/min"]);
+  expect(storeMakerLines(store, row, ResourcesIds.Labor, now)).toEqual([
+    "3 Workshops · +15.1/min",
+    "Castle · +1.7/min",
+  ]);
   expect(storeMakerLines(store, row, ResourcesIds.Wheat, now)).toEqual(["3 Farms · +18.9/min"]);
   expect(storeMakerLines(store, row, ResourcesIds.Knight, now)).toEqual(["2 Barracks · +202/h"]);
   // 3 × 5.04 + 1.68 = 16.8 labor a minute: the rate the chain stores and the card's "+17/min".
@@ -106,7 +108,10 @@ it("says only what is known of a store's makers until the realm's research arriv
       value: { game_id: 1, structure_id: "7", learned: String(knowledge.learned) },
     },
   ] as never);
-  expect(storeMakerLines(store, row, ResourcesIds.Labor, now)).toEqual(["3 Workshops · +15.1/min", "Castle · +1.7/min"]);
+  expect(storeMakerLines(store, row, ResourcesIds.Labor, now)).toEqual([
+    "3 Workshops · +15.1/min",
+    "Castle · +1.7/min",
+  ]);
 });
 
 it("says what all of a type's buildings make together for its card, and nothing until the realm's research arrives", () => {
