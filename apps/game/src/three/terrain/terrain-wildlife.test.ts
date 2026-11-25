@@ -246,6 +246,21 @@ describe("biome creature herds", () => {
     expect(followers.filter((creature) => apart(creature) < 1.6).length).toBeGreaterThan(followers.length * 0.6);
   });
 
+  it("lets a follower look for its place beside the leader at most twice a second", () => {
+    const searches = new Map<number, number>();
+    const population = new BiomeCreaturePopulation((from) => {
+      const follower = from as RoamingCreature;
+      if (follower.leader !== null && follower.leader !== undefined)
+        searches.set(follower.id, (searches.get(follower.id) ?? 0) + 1);
+      return true;
+    });
+    population.sync(cells());
+    const seconds = 60;
+    for (let frame = 0; frame < seconds * 20; frame++) population.update(0.05);
+    expect(searches.size).toBeGreaterThan(0);
+    for (const checks of searches.values()) expect(checks / seconds).toBeLessThanOrEqual(2);
+  });
+
   it("follows its eldest when the leader is gone, still one herd to its region", () => {
     const population = new BiomeCreaturePopulation();
     population.sync(cells());
