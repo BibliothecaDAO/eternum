@@ -41,7 +41,6 @@ const atKingdom = (realm: ReturnType<typeof realmBoard>["realm"]) => ({
   base: { ...realm.base, level: nativeResearchConstants.SUPPLY_YARD_LEVEL },
 });
 
-/** The price a sheet's foot shows, as its paintings name it ("2,000 Labor · 600 Essence"), or Free. */
 const footPrice = (host: HTMLElement) => {
   const price = host.querySelector(".ui-window__foot .ui-price");
   const named = [...(price?.querySelectorAll('[role="img"]') ?? [])].map((part) => part.getAttribute("aria-label"));

@@ -13,23 +13,14 @@ import { create } from "zustand";
 
 import type { SiteClear } from "./site-outcome";
 
-/** How long the banner stands over the map before it goes by itself: long enough to read its three chips. */
 const FIGHT_BANNER_MS = 3_000;
 
-/**
- * The player's last clear, while its banner stands: a flourish the clear's story starts, never a game fact. What it
- * paid lands in the stores from their own rows.
- */
 const useFightBannerStore = create<{ clear: SiteClear | null }>(() => ({ clear: null }));
 
 export const showClearBanner = (clear: SiteClear): void => useFightBannerStore.setState({ clear });
 
 const hideClearBanner = (): void => useFightBannerStore.setState({ clear: null });
 
-/**
- * The fight's result over the map (option B): Victory, the site cleared, what it paid, the supply post it opened and the
- * troops it cost, then gone by itself or at a tap. The map is back at once; an Oath it opened waits on the army's token.
- */
 export const FightBanner = () => {
   const clear = useFightBannerStore((state) => state.clear);
   useEffect(() => {
@@ -64,7 +55,6 @@ const ClearBanner = ({ clear }: { clear: SiteClear }) => {
   );
 };
 
-/** Whether the cleared site became a supply post for the home that cleared it, by the game's one rule. */
 const useClearOpenedPost = (siteId: SiteClear["siteId"]) => {
   const { setup } = useGame();
   const now = useCurrentDefaultTick();

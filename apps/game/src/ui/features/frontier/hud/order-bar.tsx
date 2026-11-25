@@ -23,12 +23,6 @@ import { useEnterConfirms } from "./enter-confirms";
 /** The order the row stands for, as assistive technology names it: its icons and numbers say it on screen. */
 const VERBS = { explore: EXPLORE, move: MOVE } as const;
 
-/**
- * The order tray with an order pending, in one line (Neon's reveal result): what it costs, stamina before → after and
- * the wheat, the gold verb and × to drop it. The same tile tapped again sends it (owner, 27 October 2026: "Yes double
- * tapping to explore on mobile, the confirm bar can be compacted into one single row"); Enter does on a keyboard. A
- * short cost turns ember with its exact wait, and the refill stands in the row in the verb's place.
- */
 export const OrderBar = ({
   kind,
   stamina,
@@ -85,7 +79,6 @@ export const NextOrderBar = ({ onCancel }: { onCancel: () => void }) => (
   </div>
 );
 
-/** A cost on the tray: its painting and what it leaves when covered, or held against needed in ember with its wait. */
 const CostLine = ({
   icon,
   label,

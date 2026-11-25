@@ -7,7 +7,6 @@ import { formatGain, resourceName } from "@bibliothecadao/types";
 import { showClearBanner } from "./fight-banner";
 import { payoutSprites, type SiteClear } from "./site-outcome";
 
-/** The guard falls, the Victory banner rises over the map and any resource payout flies to its banked counter. */
 const GUARD_FALLS_MS = 300;
 
 export const playSiteClear = ({

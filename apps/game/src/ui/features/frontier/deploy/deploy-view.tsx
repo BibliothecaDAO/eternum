@@ -31,10 +31,6 @@ export interface DeployTroopChoiceView {
   atHome: number;
 }
 
-/**
- * Raise an army in one sheet (Opus's deploy): the troop, how many, its slot and the Oaths it can hold, then one gold
- * Deploy naming the count with the wheat it burns beside it. The stamina it starts on stands in the head.
- */
 export const DeployView = ({
   troopSelection,
   oathSlots,
@@ -206,7 +202,6 @@ const DeploySlots = ({
   </div>
 );
 
-/** The Oaths a new army of this troop can hold: an open socket each, and a lock for the next one research opens. */
 const OathCapacity = ({ slots }: { slots: number }) => (
   <span role="img" aria-label={RESEARCH_TREE.oathSlots(slots)} className="deploy-oaths">
     {Array.from({ length: slots }, (_, index) => (

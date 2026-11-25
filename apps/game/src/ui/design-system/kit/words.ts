@@ -591,7 +591,6 @@ export const RANK = "Rank";
 export const SITES = "Sites";
 export const SITES_CLEARED = "Sites cleared";
 export const OATH_WAITING = "An Oath waits: pick the army to swear it";
-/** An earned Oath's pick: three cards, one redraw, Pass for stamina, and the card chosen sworn by name. */
 export const OATH_PICK = {
   title: "Swear an Oath",
   replaceTitle: "Choose an Oath to replace",
@@ -611,7 +610,6 @@ export const OATH_PICK = {
   notRedrawn: "The card could not be rerolled.",
 } as const;
 export const SITE_OATH = { label: "Oath", rule: "Clearing it opens an Oath pick" } as const;
-/** A camp the player's army clears on today's band: their armies refill beside it until the day ends. */
 export const SUPPLY_POST = {
   title: "Supply Post",
   chip: "Post",
@@ -619,12 +617,6 @@ export const SUPPLY_POST = {
   rule: "Clearing it opens a supply post: your armies refill beside it until the day ends",
   until: "Open until the day ends",
 } as const;
-/**
- * How the Season board ranks, said where players look (owner, 4 November 2026: "ppl have asked how to increase sites in the
- * leaderboard"): Herald ranks by sites cleared, then deepest depth (frontier-leaderboard.ts compareStandings), and every
- * guarded site an army clears counts one (creditSiteClear). The Sites column's tip and the board's line while the player
- * is off the podium.
- */
 export const SEASON_CLIMB = {
   rule: "Ranked by sites cleared, then deepest depth",
   climb: "Clear sites with your armies to climb",
@@ -768,7 +760,6 @@ export const FIGHT_WORDS = {
  * What an attack costs a side, under its bar (a player: "# of troops lost, % lost/remaining"; owner, 3 November 2026:
  * "A probably good enough"): "−601 · 76% lost", a range where the dice decide it ("−994–1,100 · 20–22% lost").
  */
-/** A clear's banner over the map: the word, and the site it cleared. */
 export const FIGHT_RESULT = {
   victory: "Victory",
   cleared: (site: string) => `${site} cleared`,
@@ -1144,7 +1135,6 @@ export const DEPLOY_WORDS = {
   howMany: (troop: string) => `${troop}: how many go`,
   deployCount: (count: number) => `${DEPLOY} ${formatExact(count)}`,
 } as const;
-/** The size row of a sheet that raises or refills an army: one fewer, one more, the most. */
 export const SIZE_ROW = { fewer: "One fewer", more: "One more", max: "Max" } as const;
 export const BUILD = "Build";
 export const buildNamed = (building: string) => `${BUILD} ${building}`;

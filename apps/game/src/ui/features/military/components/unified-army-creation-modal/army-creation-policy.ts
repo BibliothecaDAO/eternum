@@ -62,10 +62,6 @@ export function resolveArmyCreationBlockedReason(status: ArmyCreationStatus): st
   return null;
 }
 
-/**
- * What deploying the chosen troops costs beyond the troops, each resource and its amount, beside the Deploy verb;
- * undefined while the cost is unknown or nothing is chosen, so the foot names no price it does not know.
- */
 export function troopRaisePrices(costs: TroopRaiseCost[] | undefined): ResourcePrice[] | undefined {
   const prices = (costs ?? [])
     .filter(({ amount }) => amount > 0n)

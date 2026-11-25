@@ -23,7 +23,6 @@ type FightArenaSide = {
   kept: Kept;
 };
 
-/** Two sides of one fight, each before → after, VS between them (Opus's fight forecast). */
 export const FightArena = ({ ours, theirs }: { ours?: FightArenaSide; theirs?: FightArenaSide }) => {
   if (!ours && !theirs) return null;
   return (
@@ -37,10 +36,6 @@ export const FightArena = ({ ours, theirs }: { ours?: FightArenaSide; theirs?: F
   );
 };
 
-/**
- * One side: its painting ringed in its side's colour, its troops before → after on one line, and under it what the
- * fight takes (a guard left with none reads Defeated). Its name and the share lost are its spoken label and its tip.
- */
 export const FightSide = ({
   label,
   mark,
@@ -84,10 +79,6 @@ export const FightSide = ({
 
 const SHORT_FROM = 10_000_000;
 
-/**
- * A side's figures: before and after exactly up to eight digits (short from ten million, exactly again where two would
- * read alike), what the fight takes as the side shows it ("−325"), and in words with its share ("−325 · 16% lost").
- */
 export const fightFigures = (
   before: number | undefined,
   kept: Kept,

@@ -66,7 +66,6 @@ export const EtherealMark = ({ layer, at = "corner" }: { layer: EtherealLayer | 
     </span>
   );
 
-/** An Oath the army's clear opened, waiting on its token as a gold shrine; picking the army opens the pick. */
 export const OathWaitingBadge = () => (
   <span role="img" aria-label={OATH_WAITING} data-tip={OATH_WAITING} className="army-oath-badge">
     <SemanticIcon name="shrine" size={22} />
@@ -97,7 +96,6 @@ export const ArmyToken = ({
   stamina: StaminaBar | undefined;
   troops: number | undefined;
   selected: boolean;
-  /** An Oath pick waits for this army. */
   oathWaiting?: boolean;
   /** Where a gain flies into the portrait. */
   flyTarget?: string;

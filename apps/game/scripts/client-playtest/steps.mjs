@@ -739,7 +739,6 @@ const TOWN_DEPLOY_STEPS = [
   ),
 ];
 
-/** Deploy's count: its size row's slider, set as a finger drags it, and the count the row shows. */
 const DEPLOY_SIZE = '[data-kit-sheet] .size-row input[type="range"]';
 const setDeployCount = (browser, count) =>
   browser.read(`(() => {
@@ -4733,7 +4732,6 @@ const LAB_SUPPLY_POST_STEPS = [
         );
         if (SUPPLY_POST_SHEET.test(state.sheet ?? "")) {
           extraScreenshot("supply-post");
-          // One army beside the post: the sheet is its reinforcement. Several: each is offered first.
           if (state.buttons.some(isReinforceVerb)) return { found: true, state };
           const button = state.buttons.find((text) => text.startsWith("Reinforce Army"));
           if (!button) return { found: false, state };
@@ -4822,9 +4820,7 @@ function reinforceSheetOpen({ played }) {
 }
 
 /** Max, then Reinforce, then the chain's answer: the army's token reads more troops than before. */
-/** The sheet's verb, which names the troops it adds ("Reinforce +404"). */
 const isReinforceVerb = (name) => /^Reinforce \+/.test(name);
-/** A supply post's sheet, its reinforcement or its armies to choose from. */
 const SUPPLY_POST_SHEET = /^Supply post/i;
 
 async function reinforceWithMax({ browser, extraScreenshot }) {
@@ -6654,7 +6650,6 @@ async function fragmentSpendsAreOff({ browser, extraScreenshot }) {
   return { army, absent: controls, enabledForTheGame: enabled };
 }
 
-/** The army an Oath waits for, picked from its shrine-marked token, and its pick read once it opens. */
 async function openTheWaitingOath(browser) {
   const token = await readUntil(() => browser.read(elementAt(OATH_WAITING)), Boolean, SHEET_WAIT_MS);
   if (token && !browser.read(elementAt(OATH_PICK))) browser.tap(token.offset);

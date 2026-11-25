@@ -1,10 +1,8 @@
 import type { ResourcesIds } from "@bibliothecadao/types";
 import { create } from "zustand";
 
-/** How long a reveal's gains stand under the bar; another reveal within it adds to them and holds them again. */
 export const REVEAL_GAINS_MS = 2_500;
 
-/** What the player's own reveals just paid, by resource, while their pill stands: a flourish, never a game fact. */
 export const useRevealGains = create<{ gains: ReadonlyMap<ResourcesIds, number>; at: number }>(() => ({
   gains: new Map(),
   at: 0,

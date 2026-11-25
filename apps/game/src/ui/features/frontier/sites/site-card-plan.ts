@@ -65,7 +65,6 @@ export interface SiteCardPlan {
   fight: SiteFight | undefined;
   blocked: AttackRefusal | undefined;
   holdsOath: boolean;
-  /** Whether this army's clear would make the site a supply post its armies refill beside today. */
   opensPost: boolean;
 }
 
@@ -107,7 +106,6 @@ export const readSiteCard = (
   };
 };
 
-/** The supply post rule asked of the site as this army's clear would leave it. */
 const clearOpensPost = (store: NativeFactStore, site: NativeRows["ExpeditionSite"], { army, timestamp }: SiteAttack) =>
   isSupplyPost(
     store,

@@ -78,7 +78,6 @@ const render = (store: unknown, row: unknown, onClose = () => {}) => {
   return { host, root, draw };
 };
 
-/** The size row's slider: its value is the count, its end the most that can go. */
 const slider = (host: HTMLElement) => host.querySelector<HTMLInputElement>(".size-row input[type=range]")!;
 const typeCount = (host: HTMLElement, value: number) => {
   const field = slider(host);
@@ -100,7 +99,6 @@ const slotsOffered = (host: HTMLElement) =>
 const slotButton = (host: HTMLElement, name: string) =>
   host.querySelector<HTMLButtonElement>(`[aria-label="Army slots"] button[aria-label="${name}"]`)!;
 
-/** The stamina the new army starts on, as the sheet's head names it. */
 const startReading = (host: HTMLElement) => host.querySelector("[data-deploy-start]")?.textContent ?? null;
 
 const foot = (host: HTMLElement) => host.querySelector(".ui-window__foot")?.textContent ?? "";

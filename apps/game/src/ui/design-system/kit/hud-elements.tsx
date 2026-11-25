@@ -619,13 +619,8 @@ export const HudCost = ({ line }: { line: RankedWords | string }) =>
     </span>
   ) : null;
 
-/** A price in one of the game's resources, where the verb pays in any of them (Blitz's military window). */
 export type ResourcePrice = { resource: ResourcesIds; amount: number | undefined };
 
-/**
- * What a verb pays, the one way a surface shows a price: each price's painting and its amount, named in words when
- * asked; Free when it costs nothing. The map's order line under the pointer is HudCost's words.
- */
 export const HudPrice = ({ prices }: { prices: readonly (Price | ResourcePrice)[] }) => (
   <span className="ui-price">
     {prices.length === 0 && FREE}
@@ -1680,7 +1675,6 @@ export const HudSheet = ({
   icon?: IconMeaning;
   /** A quiet control right after the sheet's name, out of the body's flow and away from the cross (an army's Delete). */
   beside?: ReactNode;
-  /** What the head shows before the cross: the one fact the whole sheet stands on (a site's kind, a start's stamina). */
   cue?: ReactNode;
   onClose: () => void;
   children: ReactNode;

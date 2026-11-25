@@ -73,11 +73,6 @@ export const useSelectedReinforcement = (realm: NativeRows["Structure"] | null):
   );
 };
 
-/**
- * Troops from the realm's stock into its army beside it (owner, 4 November 2026: "can we just do it like in blitz ?
- * right click from the realm to the army opens the reinforcement"). The range it reads: the most troops the stock, the
- * army's room and the wheat allow. The contract adds troops of the army's own kind, so the stock is that kind's alone.
- */
 export const useReinforceRange = (realm: NativeRows["Structure"], army: DockArmy) => {
   const { setup } = useGame();
   const defaultTick = useCurrentDefaultTick();
@@ -88,11 +83,6 @@ export const useReinforceRange = (realm: NativeRows["Structure"], army: DockArmy
   return { plan, march, range };
 };
 
-/**
- * Troops from home into one army, in one sheet (Opus's supply post with Neon's slider): the army's troops before → after
- * and the troops it gains, the size row at Max, and Reinforce naming the gain with its wheat beside it. At a supply post
- * the head names the camp and the sheet says how long the post stays open.
- */
 export const ReinforceSheet = ({
   realm,
   army,
@@ -180,7 +170,6 @@ export const ReinforceSheet = ({
   );
 };
 
-/** The army the troops go to: its painting, its name, its troops before → after, and the gain as a chip. */
 const ArmyGain = ({ army, before, gain }: { army: DockArmy; before: number; gain: number }) => (
   <div data-supply-army className="reinforce-army">
     <HudPortrait icon={army.art} label={TROOPS} />

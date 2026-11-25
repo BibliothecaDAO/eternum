@@ -35,21 +35,14 @@ import { oathEffectDescription, oathName, oathStatBadge } from "./oath-details";
 const REDRAW_COST = nativeFragmentConstants.OATH_REROLL_FRAGMENTS;
 const REDRAW_PRICE = formatCount(REDRAW_COST, FRAGMENT, FRAGMENTS);
 
-/** The army's Oath pick, while one waits for it: its clear opened three cards the army must answer before it acts. */
 const useWaitingPick = (explorerId: number) => {
   const { store } = useNativeFacts(["ArmyProgress"]);
   const progress = store.get("ArmyProgress", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
   return progress && progress.oath_pick !== 0 ? progress : undefined;
 };
 
-/** Whether an Oath pick waits for this army: its token wears the shrine until the pick is answered. */
 export const useOathWaiting = (explorerId: number) => useWaitingPick(explorerId) !== undefined;
 
-/**
- * The Oath pick of the picked army, when one waits for it (option B of the fight result: the clear's banner goes by
- * itself, the Oath waits on the army's token, and picking the army opens its pick). It cannot be put away: the army
- * acts again once the pick is answered.
- */
 export function FrontierOathPick({ realm }: { realm: NativeRows["Structure"] | null }) {
   const allowed = useUIStore(canIssueOrders);
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
@@ -69,7 +62,6 @@ const WaitingOathPick = ({ army, fragments }: { army: DockArmy; fragments: numbe
   );
 };
 
-/** One Oath offered: its ring, its name with what it does beside it, and its Swap while the pick's redraw stands. */
 function OathChoice({
   id,
   pickBase,
@@ -129,7 +121,6 @@ function OathChoice({
   );
 }
 
-/** An Oath's ring in its Aspect's colour, its name, the effect's painting and figure, and the effect named under it. */
 const OathFace = ({ id, pickBase }: { id: number; pickBase: PickEffectBase }) => {
   const badge = oathStatBadge(id, pickBase);
   return (
@@ -156,11 +147,6 @@ const aspectOf = (id: number): CSSProperties | undefined => {
   return aspect !== null ? (aspectVariables(aspect) as CSSProperties) : undefined;
 };
 
-/**
- * The pick as one sheet (Neon's cards, Opus's button): the army and its slot in the head with the redraw's price (or
- * Used once spent), three compact cards to choose from, each with its Swap, Pass for stamina, and one gold button
- * swearing the card chosen by name. With every slot held, swearing asks which held Oath it replaces.
- */
 function ArmyOathPick({
   army,
   progress,
@@ -305,7 +291,6 @@ function ArmyOathPick({
   );
 }
 
-/** Pass: no Oath, the stamina it gives instead, and the bar before → after (capped at its maximum). */
 const PassRow = ({
   stamina,
   disabled,

@@ -4,11 +4,6 @@ import { formatExact } from "@bibliothecadao/types";
 import { HudSlider } from "@/ui/design-system/kit/hud-elements";
 import { MAXIMUM, SIZE_ROW } from "@/ui/design-system/kit/words";
 
-/**
- * How many troops go, in one row: one fewer, the slider up to the most that can go, one more, the count when the
- * sheet's button does not carry it, and Max, lit while the count is at it. Max takes `max`, the most the player should
- * send (the wheat a march burns kept back); the slider still reaches `most`, what the contract takes.
- */
 export const SizeRow = ({
   label,
   value,

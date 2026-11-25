@@ -110,7 +110,6 @@ const render = (fixture: ReturnType<typeof armyBesideHome>, tile = fixture.besid
   return { add, close };
 };
 
-/** A button by its words; Reinforce by the verb its words start with, as it names the troops it adds. */
 const button = (text: string) =>
   [...host.querySelectorAll("button")].find((each) =>
     text === "Reinforce" ? each.textContent?.startsWith("Reinforce +") : each.textContent === text,
@@ -119,9 +118,7 @@ const press = async (text: string) => {
   expect(button(text)).toBeDefined();
   await act(async () => button(text)!.click());
 };
-/** The army's troops before and after, as its row reads them. */
 const troops = () => host.querySelector(".reinforce-army__troops")?.textContent ?? null;
-/** The wheat the verb pays, as its price beside it names it. */
 const wheat = () => host.querySelector('.ui-price [role="img"]')?.getAttribute("aria-label") ?? null;
 
 it("opens on the army beside the realm at the most it can take, and names the troops it adds on Reinforce", async () => {

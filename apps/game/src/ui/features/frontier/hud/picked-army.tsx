@@ -14,10 +14,6 @@ export type PickedArmyView = Pick<
   "explorerId" | "label" | "number" | "art" | "stamina" | "secondsToFull" | "troops" | "ethereal" | "drain"
 >;
 
-/**
- * The picked army's tray (Opus's army picked): its painting with its layer as a badge, its name, its troops, one smooth
- * stamina bar with what is left, its Oath sockets, and the one verb it has where it stands.
- */
 export const PickedArmy = ({
   army,
   oaths,

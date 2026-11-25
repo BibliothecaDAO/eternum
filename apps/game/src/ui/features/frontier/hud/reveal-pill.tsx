@@ -6,7 +6,6 @@ import { clearRevealGains, REVEAL_GAINS_MS, useRevealGains } from "@/ui/motion/m
 import { formatShort, resourceName } from "@bibliothecadao/types";
 import { useEffect } from "react";
 
-/** What the player's reveals just paid, as one pill under the bar (Neon's reveal result), gone by itself. */
 export const RevealPill = () => {
   const { gains, at } = useRevealGains();
   useEffect(() => {

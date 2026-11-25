@@ -14,10 +14,6 @@ import { ReinforceSheet, useReinforceRange } from "../army/reinforce";
 import { reinforcementSource } from "../army/reinforce-plan";
 import { TARGET_MARKS } from "./site-marks";
 
-/**
- * A supply post: the camp's receipt over its reinforcement from the clearing home's stores. With one army beside it the
- * sheet is that army's reinforcement; with several, each is offered first.
- */
 export function SupplyPostSheet({
   site,
   children,

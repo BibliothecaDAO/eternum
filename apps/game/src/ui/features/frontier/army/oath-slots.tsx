@@ -18,7 +18,6 @@ import {
 import { RESOURCE_PRECISION, type TroopType } from "@bibliothecadao/types";
 import { useState } from "react";
 
-/** How many Oaths a new army of this troop raised at this home can hold, from what the home has researched. */
 export const useHomeOathSlots = (category: TroopType | undefined, homeId: number): number | undefined => {
   const { store } = useNativeFacts(["RealmKnowledge"]);
   const learned = store.get("RealmKnowledge", { game_id: configManager.getActiveGameId(), structure_id: homeId });

@@ -11,7 +11,6 @@ const drawn = (before: number | undefined, kept: Kept, side: "ours" | "theirs" =
     "text/html",
   );
 
-/** The side as a player reads it: its troops before → after, and under them what the fight takes, with its tone. */
 const read = (page: Document) => ({
   nums: page.querySelector(".fight-side__nums")?.textContent,
   taken: page.querySelector(".fight-side__taken")?.textContent,

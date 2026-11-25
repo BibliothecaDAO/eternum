@@ -44,7 +44,6 @@ export const ArmyCard = ({
   troops?: number;
   stamina: StaminaBar | undefined;
   selected: boolean;
-  /** An Oath pick waits for this army. */
   oathWaiting?: boolean;
   onPick?: () => void;
 }) => (
