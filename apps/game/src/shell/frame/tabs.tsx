@@ -159,7 +159,7 @@ export const TabBar = () => {
 };
 
 export const TopBarEnd = () => (
-  <span className="flex shrink-0 items-center gap-2">
+  <span className="flex shrink-0 items-center gap-2 empty:hidden">
     <InstallButton />
     <LordsBalancePill />
   </span>
