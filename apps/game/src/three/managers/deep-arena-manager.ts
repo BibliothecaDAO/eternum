@@ -103,7 +103,7 @@ export class DeepArenaManager {
     if (!rules || !settlement) return;
     const center = this.worldAt(deepCenter(settlement.spacing));
     DEEP_FLOOR.center.value.set(center.x, center.z);
-    writeDeepFloorZones(deepZoneBounds(rules));
+    writeDeepFloorZones(DEEP_FLOOR, deepZoneBounds(rules));
     const gates = deepGateTiles(rules.gate_distance, settlement.spacing);
     this.writeFloorEdges(deepCenter(settlement.spacing), center, gates);
     const own = viewerAspects(this.store, gameId, accountAddress() ?? null);
@@ -205,7 +205,6 @@ function squareBorder(middle: { col: number; row: number }, half: number): { col
     { col: middle.col + step, row: middle.row + half - 1 },
   ]);
 }
-
 
 function gatewayVeil(): BufferGeometry {
   return new PlaneGeometry(VEIL_WIDTH, VEIL_HEIGHT).translate(0, VEIL_CENTER_Y, 0);

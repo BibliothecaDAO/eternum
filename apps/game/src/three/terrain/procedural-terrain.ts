@@ -1,7 +1,7 @@
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import { Biome } from "@bibliothecadao/eternum/biome";
 import type { LayerPlace } from "@bibliothecadao/types";
-import { createDeepFloorMaterial } from "./deep-floor-material";
+import { createDeepFloorMaterial, DEEP_FLOOR, type DeepFloorUniforms } from "./deep-floor-material";
 import { layerOfSurface, type PersonalLayer } from "./layer-biomes";
 import { createLayerFloorMaterial } from "./layer-floor-material";
 import { DEEP_SURFACE_CODE } from "./ethereal-depths";
@@ -141,6 +141,7 @@ export class ProceduralTerrain {
   private readonly etherealMaterial = createEtherealTerrainMaterial();
   private readonly layerFloors = new Map<PersonalLayer, MeshStandardNodeMaterial>();
   private deepFloor: MeshStandardNodeMaterial | null = null;
+  private readonly deepFloorUniforms: DeepFloorUniforms;
   private basaltGeometry: BufferGeometry | null = null;
   private readonly etherealBorders = createEtherealBorderMaterial();
   private surfacePresentation: "world" | "ethereal" = "world";
@@ -158,7 +159,11 @@ export class ProceduralTerrain {
   private isPropTileOccupied: (col: number, row: number) => boolean = () => false;
   private readonly releaseAppearance: () => void;
 
-  constructor({ streaming = false }: { streaming?: boolean; gameMode?: GameModeId } = {}) {
+  constructor({
+    streaming = false,
+    deepFloor = DEEP_FLOOR,
+  }: { streaming?: boolean; gameMode?: GameModeId; deepFloor?: DeepFloorUniforms } = {}) {
+    this.deepFloorUniforms = deepFloor;
     this.fogField = new TerrainFogField();
     if (streaming) this.fogField.enableStreaming();
     this.object3d.name = "procedural-terrain";
@@ -603,7 +608,7 @@ export class ProceduralTerrain {
     const layer = layerOfSurface(code);
     if (layer) return this.layerFloor(layer);
     if (!this.deepFloor) {
-      this.deepFloor = createDeepFloorMaterial();
+      this.deepFloor = createDeepFloorMaterial(this.deepFloorUniforms);
       this.fogField.applyRevealToMaterial(this.deepFloor);
     }
     return this.deepFloor;

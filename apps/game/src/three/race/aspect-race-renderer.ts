@@ -22,7 +22,7 @@ import { configureRendererColorOutput } from "@/three/renderer-color-output";
 import { HYPERSTRUCTURE_MODEL_PATH } from "@/three/structures/hyperstructure-design";
 import { HyperstructureModel } from "@/three/structures/hyperstructure-model";
 import { resolveStructureRotationY } from "@/three/structures/structure-orientation";
-import { DEEP_FLOOR, writeDeepFloorZones } from "@/three/terrain/deep-floor-material";
+import { deepFloorUniforms, writeDeepFloorZones } from "@/three/terrain/deep-floor-material";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import { TerrainField } from "@/three/terrain/terrain-field";
 import { TERRAIN_DEEP_FOG_COLOR } from "@/three/terrain/terrain-fog-style";
@@ -234,15 +234,13 @@ async function createRenderer(
 }
 
 async function createWorldTerrain(): Promise<{ terrain: ProceduralTerrain; towerHeights: number[] }> {
-  const terrain = new ProceduralTerrain({ streaming: false, gameMode: "frontier" });
+  const floor = raceDeepFloor();
+  const deepFloor = deepFloorUniforms();
+  deepFloor.center.value.set(floor.center.x, floor.center.z);
+  writeDeepFloorZones(deepFloor, floor.zones);
+  const terrain = new ProceduralTerrain({ streaming: false, gameMode: "frontier", deepFloor });
   try {
-    await terrain.loadProps().catch((error: unknown) => {
-      console.warn("[AspectRace] Optional procedural terrain props failed to load", error);
-    });
     const origin = worldOrigin();
-    const floor = raceDeepFloor();
-    DEEP_FLOOR.center.value.set(floor.center.x, floor.center.z);
-    writeDeepFloorZones(floor.zones);
     const requests = createAspectRaceTerrainRequests(origin);
     const fields = requests.map((request) => new TerrainField(request));
     const towerHeights = RACE_TOWER_HEXES.map((hex) => {

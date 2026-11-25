@@ -25,48 +25,55 @@ const SQRT3 = Math.sqrt(3);
 
 export const DEEP_PALETTE: Readonly<Record<keyof typeof palette, string>> = palette;
 
-export const DEEP_FLOOR = {
+export const deepFloorUniforms = () => ({
   center: uniform(new Vector2()),
   plazaBelow: uniform(4),
   ringRadii: uniform(new Vector4(-1, -1, -1, -1)),
   rimBeyond: uniform(12),
   edges: uniform(new Vector4(-43, 43, -37, 37)),
   edgeFade: uniform(8),
-};
+});
 
-export function writeDeepFloorZones(bounds: { plazaBelow: number; ringRadii: number[]; rimBeyond: number }): void {
+export type DeepFloorUniforms = ReturnType<typeof deepFloorUniforms>;
+
+export const DEEP_FLOOR = deepFloorUniforms();
+
+export function writeDeepFloorZones(
+  floor: DeepFloorUniforms,
+  bounds: { plazaBelow: number; ringRadii: number[]; rimBeyond: number },
+): void {
   const [first, second, third, fourth, ...beyond] = bounds.ringRadii;
   if (beyond.length) throw new Error(`The floor draws four ring radii, not ${bounds.ringRadii.length}`);
-  DEEP_FLOOR.plazaBelow.value = bounds.plazaBelow;
-  DEEP_FLOOR.ringRadii.value.set(first ?? -1, second ?? -1, third ?? -1, fourth ?? -1);
-  DEEP_FLOOR.rimBeyond.value = bounds.rimBeyond;
+  floor.plazaBelow.value = bounds.plazaBelow;
+  floor.ringRadii.value.set(first ?? -1, second ?? -1, third ?? -1, fourth ?? -1);
+  floor.rimBeyond.value = bounds.rimBeyond;
 }
 
-const ringRadii = () => [
-  DEEP_FLOOR.ringRadii.x,
-  DEEP_FLOOR.ringRadii.y,
-  DEEP_FLOOR.ringRadii.z,
-  DEEP_FLOOR.ringRadii.w,
+const ringRadii = (floor: DeepFloorUniforms) => [
+  floor.ringRadii.x,
+  floor.ringRadii.y,
+  floor.ringRadii.z,
+  floor.ringRadii.w,
 ];
 
-const anyRing = (each: (radius: Node<"float">) => Node<"float">): Node<"float"> =>
-  ringRadii()
+const anyRing = (floor: DeepFloorUniforms, each: (radius: Node<"float">) => Node<"float">): Node<"float"> =>
+  ringRadii(floor)
     .map(each)
     .reduce((found, next) => found.max(next));
 
-export function createDeepFloorMaterial(): MeshStandardNodeMaterial {
+export function createDeepFloorMaterial(floor: DeepFloorUniforms): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ roughness: 0.78, metalness: 0 });
   material.name = "terrain-deep-floor";
-  const hex = arenaHex(positionWorld.xz.sub(DEEP_FLOOR.center));
-  const stone = dressedStone(hex);
-  const inlay = ringInlays(hex);
+  const hex = arenaHex(positionWorld.xz.sub(floor.center));
+  const stone = dressedStone(hex, floor);
+  const inlay = ringInlays(hex, floor);
   const top = smoothstep(0.5, 0.9, normalWorld.y);
   const inlaid = mix(stone, color(DEEP_PALETTE.ivory), inlay.mul(0.85));
   const ground = mix(stone.mul(0.55), inlaid, top);
   const air = layerFloorAir(positionWorld.xz, LAYER_DEPTHS.deep);
-  const fade = air.sheets.add(air.haze.mul(0.85)).min(0.9).max(edgeFade(hex)).mul(top);
+  const fade = air.sheets.add(air.haze.mul(0.85)).min(0.9).max(edgeFade(hex, floor)).mul(top);
   material.colorNode = applyEndgameFrost(mix(ground, air.colour, fade).add(air.flash.mul(top)));
-  const glow = ringGlow(hex);
+  const glow = ringGlow(hex, floor);
   material.emissiveNode = color(DEEP_PALETTE.gold)
     .mul(inlay.mul(glow).mul(0.8).add(glow.mul(0.05)))
     .mul(top);
@@ -107,7 +114,7 @@ function arenaHex(offset: Node<"vec2">): ArenaHex {
   };
 }
 
-function dressedStone(hex: ArenaHex): Node<"vec3"> {
+function dressedStone(hex: ArenaHex, floor: DeepFloorUniforms): Node<"vec3"> {
   const { local } = hex;
   const edge = max(local.x.abs(), local.dot(vec2(0.5, SQRT3 / 2)).abs(), local.dot(vec2(-0.5, SQRT3 / 2)).abs());
   const joint = smoothstep(0.035, 0.065, float(SQRT3 / 2).sub(edge));
@@ -127,9 +134,9 @@ function dressedStone(hex: ArenaHex): Node<"vec3"> {
     .sin()
     .mul(hex.offset.y.mul(8.3).sin())
     .mul(0.04);
-  const plaza = hex.distance.lessThan(DEEP_FLOOR.plazaBelow).select(float(1), float(0));
-  const rim = smoothstep(DEEP_FLOOR.rimBeyond, DEEP_FLOOR.rimBeyond.add(3), hex.distance);
-  const onRing = anyRing((radius) => hex.distance.equal(radius).select(float(1), float(0)));
+  const plaza = hex.distance.lessThan(floor.plazaBelow).select(float(1), float(0));
+  const rim = smoothstep(floor.rimBeyond, floor.rimBeyond.add(3), hex.distance);
+  const onRing = anyRing(floor, (radius) => hex.distance.equal(radius).select(float(1), float(0)));
   const field = mix(color(DEEP_PALETTE.slate), color(DEEP_PALETTE.cobalt), plaza.add(rim.mul(0.3)));
   const slab = mix(field, color(DEEP_PALETTE.ivory), onRing.mul(0.14));
   const lit = slab.mul(tone.mul(0.22).add(0.86).add(grain));
@@ -148,24 +155,24 @@ function inlayLine(distance: Node<"float">, width: number): Node<"float"> {
   return smoothstep(half.add(pixel), half, distance.abs());
 }
 
-function ringInlays(hex: ArenaHex): Node<"float"> {
+function ringInlays(hex: ArenaHex, floor: DeepFloorUniforms): Node<"float"> {
   const line = (radius: Node<"float">) => inlayLine(hex.norm.sub(radius), 0.03);
-  return anyRing(line);
+  return anyRing(floor, line);
 }
 
-function ringGlow(hex: ArenaHex): Node<"float"> {
+function ringGlow(hex: ArenaHex, floor: DeepFloorUniforms): Node<"float"> {
   const near = (radius: Node<"float">) => smoothstep(0.5, 0, hex.norm.sub(radius).abs());
-  const rings = anyRing(near);
-  const plaza = smoothstep(DEEP_FLOOR.plazaBelow.add(0.5), DEEP_FLOOR.plazaBelow.sub(0.5), hex.norm);
+  const rings = anyRing(floor, near);
+  const plaza = smoothstep(floor.plazaBelow.add(0.5), floor.plazaBelow.sub(0.5), hex.norm);
   return max(rings, plaza.mul(0.8));
 }
 
-function edgeFade(hex: ArenaHex): Node<"float"> {
-  const { edges } = DEEP_FLOOR;
+function edgeFade(hex: ArenaHex, floor: DeepFloorUniforms): Node<"float"> {
+  const { edges } = floor;
   const inside = hex.offset.x
     .sub(edges.x)
     .min(edges.y.sub(hex.offset.x))
     .min(hex.offset.y.sub(edges.z))
     .min(edges.w.sub(hex.offset.y));
-  return smoothstep(DEEP_FLOOR.edgeFade.max(0.05), 0, inside);
+  return smoothstep(floor.edgeFade.max(0.05), 0, inside);
 }

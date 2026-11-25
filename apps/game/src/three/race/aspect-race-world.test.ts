@@ -42,7 +42,9 @@ describe("the Aspect race 3D world layout", () => {
     for (const hex of RACE_TOWER_HEXES) {
       expect(cells.find((each) => each.col === hex.col && each.row === hex.row)?.deepZone).toBe("plaza");
     }
-    expect([...new Set(cells.map((cell) => cell.deepZone))]).toEqual(expect.arrayContaining(["plaza", "ring", "field"]));
+    expect([...new Set(cells.map((cell) => cell.deepZone))]).toEqual(
+      expect.arrayContaining(["plaza", "ring", "field"]),
+    );
   });
 
   it("projects four ordered plate anchors centered below the four towers on desktop and phone", () => {
