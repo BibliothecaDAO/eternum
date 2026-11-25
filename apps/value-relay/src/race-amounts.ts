@@ -1,4 +1,4 @@
-import { ASPECT_REWARD, RESOURCE_PRECISION, aspectLordsWorth, aspects } from "@bibliothecadao/types";
+import { aspectLordsWorth, aspectRewardShare, aspects, sharesAspectReward } from "@bibliothecadao/types";
 
 export interface RaceFacts {
   winner: number | null;
@@ -13,7 +13,6 @@ export interface RaceReward {
 }
 
 const LORDS = 10n ** 18n;
-const GLORY_TO_SHARE = BigInt(ASPECT_REWARD.gloryToShare) * BigInt(RESOURCE_PRECISION);
 
 export function raceRewards(facts: RaceFacts): { total: bigint; rewards: RaceReward[] } {
   const heights = aspectHeights(facts);
@@ -31,12 +30,12 @@ function aspectAmount(height: number, finishedFirst: boolean) {
 function shareAspectAmount(aspect: number, amount: bigint, members: RaceFacts["members"]): RaceReward[] {
   const glory = members.reduce((sum, member) => sum + member.glory, 0n);
   return members
-    .map((member) => ({ home: member.home, aspect, amount: (amount * member.glory) / glory }))
+    .map((member) => ({ home: member.home, aspect, amount: aspectRewardShare(amount, member.glory, glory) }))
     .filter((reward) => reward.amount > 0n);
 }
 
 function eligibleMembers(facts: RaceFacts, aspect: number) {
-  return facts.members.filter((member) => member.aspect === aspect && member.glory >= GLORY_TO_SHARE);
+  return facts.members.filter((member) => member.aspect === aspect && sharesAspectReward(member.glory));
 }
 
 function aspectHeights(facts: RaceFacts) {
