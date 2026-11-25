@@ -94,6 +94,7 @@ const baneStanding = (
   now: number,
 ): BaneStanding => ({
   ...face,
-  breaking: WORDS.baneBreak(bane.completed, bane.required),
-  clears: baneBroken(bane, now) ? WORDS.baneBroken : WORDS.baneClears(dayLeftCompact(dayClock(rules, now).secondsLeft)),
+  standing: baneBroken(bane, now)
+    ? WORDS.baneBroken
+    : WORDS.baneProgress(bane.completed, bane.required, dayLeftCompact(dayClock(rules, now).secondsLeft)),
 });
