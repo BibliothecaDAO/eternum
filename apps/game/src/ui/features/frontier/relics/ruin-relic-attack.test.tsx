@@ -84,9 +84,10 @@ const FULL = [
   { kind: "Plunder", rank: 1 },
 ] as [unknown, unknown, unknown];
 
-it("names the relic the ruin guards in what its clear pays", () => {
+it("names the relic the ruin guards in what its clear pays, and what that relic does", () => {
   const { host } = ruinCard([null, null, null]);
   expect(host.querySelector("[data-ruin-relic]")?.getAttribute("aria-label")).toBe("Reward: Epic Blade");
+  expect(host.querySelector("[data-relic-effect]")?.textContent).toBe("Damage dealt: 100% → 140%");
 });
 
 it("names a ruin's Ancient cache in place of its relic, and sends a full army's attack without a replacement", async () => {

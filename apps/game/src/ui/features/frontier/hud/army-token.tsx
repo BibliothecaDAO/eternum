@@ -9,6 +9,8 @@ import { DEEP_WORDS, OATH_WAITING, TROOPS } from "@/ui/design-system/kit/words";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import type { DeepArmyLife } from "@bibliothecadao/eternum/game-client";
 
+import type { ReactNode } from "react";
+
 import { reachMark } from "../depth-art";
 
 const TOKEN_FRAME = "relative flex w-14 shrink-0 flex-col items-center justify-start gap-1 rounded-xl py-1";
@@ -29,9 +31,11 @@ export const GuardToken = ({
   art,
   troops,
   tip,
+  mark,
 }: {
   label: string;
   art: IconMeaning;
+  mark?: ReactNode;
   /** Its strength; none where the card says it elsewhere (beside the army's, in the fight). */
   troops?: number;
   tip?: string;
@@ -44,6 +48,7 @@ export const GuardToken = ({
   >
     <span className="relative size-10 shrink-0">
       <Portrait art={art} />
+      {mark}
     </span>
     {troops !== undefined && (
       <span className="text-hud-body leading-none text-hud-ink tabular-nums">{formatAmount(troops)}</span>

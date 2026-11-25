@@ -491,7 +491,8 @@ it("titles a single roaming Wraith by its species", () => {
     ),
   );
   expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Wraith");
-  expect(host.querySelector("[data-combat-mark]")?.textContent).toBe("Bow");
+  const badge = host.querySelector('[role="img"][aria-label="Wraith 314"] [data-combat-mark]');
+  expect(badge?.getAttribute("aria-label")).toBe("Bow");
 });
 
 it("heads the card with the site's kind, and offers the supply post its clear opens", () => {

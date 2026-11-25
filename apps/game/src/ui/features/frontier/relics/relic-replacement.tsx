@@ -9,7 +9,12 @@ import { relicEffect, relicName, type ArmyRelic } from "./relic-catalog";
 export const RelicPay = ({ relic }: { relic: ArmyRelic }) => (
   <span className="flex items-center gap-1.5" data-ruin-relic aria-label={RELIC_WORDS.guards(relicName(relic))}>
     <Icon name={relicMeaning(relic.kind)} size={20} />
-    <span className="text-hud-label text-hud-ink">{relicName(relic)}</span>
+    <span className="flex min-w-0 flex-col">
+      <span className="text-hud-label text-hud-ink">{relicName(relic)}</span>
+      <span data-relic-effect className="text-hud-label text-hud-muted">
+        {relicEffect(relic, {})}
+      </span>
+    </span>
   </span>
 );
 

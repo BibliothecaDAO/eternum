@@ -31,7 +31,7 @@ import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
 import { GuardToken } from "../hud/army-token";
 import { AttackStamina, FightArena } from "./fight-side";
-import { CombatMark } from "./combat-mark";
+import { CombatBadge } from "./combat-mark";
 import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
 import type { ArmyRelic } from "../relics/relic-catalog";
@@ -120,12 +120,16 @@ export const SiteCardView = ({
       {armyless ? (
         <header className="flex items-center gap-3">
           {typeof guard === "number" ? (
-            <GuardToken label={beast?.name ?? TROOPS} art={guardIcon} troops={guard} />
+            <GuardToken
+              label={beast?.name ?? TROOPS}
+              art={guardIcon}
+              troops={guard}
+              mark={beast && <CombatBadge category={beast.combatClass} />}
+            />
           ) : (
             <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
           )}
           <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-            {beast && <CombatMark category={beast.combatClass} />}
             {what && <span className="text-hud-label text-hud-muted">{what}</span>}
             {reward}
           </span>
@@ -224,7 +228,12 @@ const FightPanel = ({
       guard !== null
         ? {
             label: beast?.name ?? TROOPS,
-            mark: <SemanticIcon name={guardIcon} size={96} className="size-full" />,
+            mark: (
+              <span className="relative block size-full">
+                <SemanticIcon name={guardIcon} size={96} className="size-full" />
+                {beast && <CombatBadge category={beast.combatClass} />}
+              </span>
+            ),
             before: guard,
             kept: facing?.fight.guardLeft,
           }
