@@ -116,18 +116,6 @@ export const armyBar = (
 
 export const armyArt = troopMeaning;
 
-/**
- * An army as every line outside the dock names it (the day log): by the same name as its card. An army no longer on
- * the map has no number left to read, and is "Army".
- */
-export const armyLabel = (store: NativeFactStore, explorerId: number, timestamp: number): string => {
-  const army = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
-  if (!army) return ARMY;
-  const home = liveHomeArmies(store, safeInteger(army.owner), army.game_id, timestamp);
-  const index = home.findIndex((each) => each.explorer_id === army.explorer_id);
-  return index < 0 ? armyName(army.troops.category, troopCount(army.troops)) : armyNames(home)[index];
-};
-
 const armyNames = (armies: readonly NativeRows["ExplorerTroops"][]): string[] => {
   const names = armies.map((army) => armyName(army.troops.category, troopCount(army.troops)));
   return names.map((name, index) =>
