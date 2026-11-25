@@ -101,11 +101,15 @@ describe("Today", () => {
     unmount();
   });
 
-  it("says when today ends, the hours left and how long tomorrow lasts", () => {
+  it("says when today ends, the hours left in the day dial's tone, and how long tomorrow lasts", () => {
     const { host, unmount } = render({});
     expect(host.querySelector('[role="timer"]')?.textContent).toMatch(/^Ends \d\d:\d\d · Tomorrow lasts 12h$/);
     expect(host.querySelector('[data-tip="7h 14m left"]')?.textContent).toBe("7h 14m");
+    expect(host.querySelector('[data-tip="7h 14m left"]')?.getAttribute("data-tone")).toBeNull();
     unmount();
+    const lastHour = render({ clock: { ...CLOCK, secondsLeft: 42 * 60, tone: "ember" } });
+    expect(lastHour.host.querySelector('[data-tip="42m left"]')?.getAttribute("data-tone")).toBe("bad");
+    lastHour.unmount();
   });
 
   it("marks the week's collected quests and today's, and offers yesterday's recap only when there is one", () => {

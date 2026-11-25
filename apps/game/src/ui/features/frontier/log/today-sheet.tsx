@@ -15,6 +15,7 @@ import {
 } from "@/ui/design-system/kit/words";
 
 import type { DayClock } from "../hud/day-clock";
+import { STORE_TONES } from "../hud/status-strip";
 import { DayGains, type DayGainsReading } from "./day-gains";
 import type { WeekDay } from "./quest-week";
 
@@ -43,7 +44,7 @@ export const TodaySheet = ({
         : `${DAY} ${formatAmount(day)}`
     }
     beside={
-      <HudChip tone="warn" icons={["hourglass"]} tip={phraseText(dayLeft(clock.secondsLeft))}>
+      <HudChip tone={STORE_TONES[clock.tone].meter} icons={["hourglass"]} tip={phraseText(dayLeft(clock.secondsLeft))}>
         {dayLeft(clock.secondsLeft).reading}
       </HudChip>
     }
