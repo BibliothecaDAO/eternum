@@ -221,8 +221,6 @@ type AppBarPlace = {
   /** The place's own word where it shows the player ("You"): what assistive technology names it, with the player. */
   place?: string;
   current: boolean;
-  /** What waits behind the place (Chat's unread), beside its word; none shows nothing. */
-  count?: number;
 };
 
 /**
@@ -270,11 +268,6 @@ const AppBarLink = ({ place }: { place: AppBarPlace }) =>
     >
       {place.icon && <Icon name={place.icon} size={24} />}
       {place.label}
-      {place.count ? (
-        <span data-count className="app-bar__count">
-          {place.count}
-        </span>
-      ) : null}
     </button>
   ) : (
     <AppLink

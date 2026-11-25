@@ -20,8 +20,7 @@ const VIEWS = [
     shown: "[data-quest-dock-lab]",
   },
   { name: "opening", path: "/lab/season-one/opening", cases: [0, 1, 3, 7, 8], shown: "[data-opening-line]" },
-  { name: "race", path: "/lab/season-one/race", cases: [0, 1, 2], shown: "[data-race-stage][data-ready]" },
-  { name: "race", path: "/lab/season-one/race", cases: [3], shown: "[data-aspect-page]" },
+  { name: "race", path: "/lab/season-one/race", cases: [0, 1, 2], shown: "[data-season-board]" },
 ];
 const PRESEASON_SCREENS = [
   ["preseason", "[data-season-countdown]"],

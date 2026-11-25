@@ -117,7 +117,7 @@ reads.settled = NO_HISTORY;
 vi.spyOn(console, "error").mockImplementation(() => undefined);
 
 import { setViewportWidth } from "../frame/test-viewport";
-import { mergeAspectRosters } from "./aspect-roster";
+import { mergeAspectRosters } from "./glory-rows";
 import { SeasonPage } from "./season-page";
 import { DAY_BANNER_WORDS, POOL_NOT_PUBLISHED, SEASON_ERROR, SEASON_WORDS, WORDS } from "@/ui/design-system/kit/words";
 
@@ -467,7 +467,7 @@ it.each([390, 1440])(
   },
 );
 
-it("merges Aspect rosters into one global Glory leaderboard sorted by compareAspectMembers and capped at top 10", () => {
+it("merges Aspect rosters into one global Glory leaderboard sorted by compareAspectMembers", () => {
   const member = (rank: number, entityId: string, realmId: number, owner: string, glory: number) => ({
     rank,
     entity_id: entityId,
@@ -488,15 +488,15 @@ it("merges Aspect rosters into one global Glory leaderboard sorted by compareAsp
   const merged = mergeAspectRosters([
     {
       aspect: 1 as const,
-      roster: { game_id: "1", aspect: 1, total: 10, offset: 0, limit: 10, members: aspectOneMembers },
+      roster: { total: 10, members: aspectOneMembers },
     },
     {
       aspect: 2 as const,
-      roster: { game_id: "1", aspect: 2, total: 8, offset: 0, limit: 10, members: aspectTwoMembers },
+      roster: { total: 8, members: aspectTwoMembers },
     },
   ]);
   expect(merged.total).toBe(18);
-  expect(merged.rows).toHaveLength(10);
+  expect(merged.rows).toHaveLength(aspectOneMembers.length + aspectTwoMembers.length);
   expect(merged.rows.slice(0, 4).map((row) => [row.rank, row.aspect, row.member.entity_id, row.member.glory])).toEqual([
     [1, 2, "1003", "400000000000"],
     [2, 2, "9", "250000000000"],
@@ -539,7 +539,17 @@ it("combines all four Aspect rosters into the default Global Glory leaderboard w
           },
           player_state: {
             structures: [
-              { entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" },
+              {
+                entity_id: 1001,
+                category: 1,
+                level: 1,
+                realm_id: 1,
+                coord_x: 0,
+                coord_y: 0,
+                resources_packed: "0",
+                aspect: null,
+                has_wonder: false,
+              },
             ],
           },
         },
@@ -721,6 +731,8 @@ it.each([
                       coord_x: 0,
                       coord_y: 0,
                       resources_packed: "0",
+                      aspect: null,
+                      has_wonder: false,
                     },
                   ],
                 }
@@ -783,7 +795,17 @@ it("shows honest empty lines for empty global and Aspect boards", async () => {
           },
           player_state: {
             structures: [
-              { entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" },
+              {
+                entity_id: 1001,
+                category: 1,
+                level: 1,
+                realm_id: 1,
+                coord_x: 0,
+                coord_y: 0,
+                resources_packed: "0",
+                aspect: null,
+                has_wonder: false,
+              },
             ],
           },
         },
@@ -840,7 +862,17 @@ it("shows ServiceFailure with Try again on the Global Glory leaderboard when Her
           },
           player_state: {
             structures: [
-              { entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" },
+              {
+                entity_id: 1001,
+                category: 1,
+                level: 1,
+                realm_id: 1,
+                coord_x: 0,
+                coord_y: 0,
+                resources_packed: "0",
+                aspect: null,
+                has_wonder: false,
+              },
             ],
           },
         },

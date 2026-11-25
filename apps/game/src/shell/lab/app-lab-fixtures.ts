@@ -49,6 +49,8 @@ const REALM = {
   coord_x: null,
   coord_y: null,
   resources_packed: "0",
+  aspect: null,
+  has_wonder: false,
 };
 
 const game = (over: Partial<DirectoryGame>): DirectoryGame => ({
