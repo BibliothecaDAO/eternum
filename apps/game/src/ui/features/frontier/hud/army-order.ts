@@ -66,6 +66,9 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
   const staminaHeld = Number(StaminaManager.getStamina(troops, tick).amount);
   // Frontier's preset charges no fish; the wheat is the order's whole food.
   const wheatCost = orderFood(path, troops).wheat;
+  const wheatBalance = getBalance(safeInteger(army.owner), ResourcesIds.Wheat, tick, setup.store).balance;
+  const wheatHeld = wheatBalance === undefined ? undefined : divideByPrecision(wheatBalance, false);
+  const wheatPerHour = new ResourceManager(setup.store, safeInteger(army.owner)).wheatPerHour(tick);
 
   return {
     kind: explore ? "explore" : "move",
@@ -75,20 +78,8 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
       held: staminaHeld,
       wait: staminaHeld < staminaCost ? secondsUntilStamina(troops, staminaCost, tick) : undefined,
     },
-    wheat: realmWheatAgainst(setup.store, safeInteger(army.owner), wheatCost, tick),
+    wheat: { cost: wheatCost, held: wheatHeld, wait: secondsUntilHeld(wheatHeld, wheatCost, wheatPerHour) },
   };
-};
-
-export const realmWheatAgainst = (
-  store: Parameters<typeof getBalance>[3],
-  realmId: number,
-  need: number,
-  tick: number,
-): Cost => {
-  const balance = getBalance(realmId, ResourcesIds.Wheat, tick, store).balance;
-  const held = balance === undefined ? undefined : divideByPrecision(balance, false);
-  const perHour = new ResourceManager(store, realmId).wheatPerHour(tick);
-  return { cost: need, held, wait: secondsUntilHeld(held, need, perHour) };
 };
 
 /**

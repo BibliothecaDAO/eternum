@@ -116,7 +116,6 @@ const LEADERBOARD_DETAIL_FITS = `(() => {
 // Each reason the planner gives a tile no order, as the map's line words it (order-tip.ts).
 const ORDER_REFUSAL = [
   "Needs \\d+ stamina",
-  "\\d[\\d,.]*K?/\\d",
   "Not enough Wheat",
   "Cannot attack owned site",
   "Cannot transfer here",

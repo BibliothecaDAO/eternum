@@ -131,7 +131,7 @@ export const refusedOrderLine = (reason: Exclude<OrderRefusal["reason"], "stamin
   line: orderRefusalWords[reason],
 });
 
-export type RefusedOrder = { of: "stamina" | "wheat"; cost: Cost } | { line: string };
+export type RefusedOrder = { of: "stamina"; cost: Cost } | { line: string };
 
 /** The wheat and fish an order burns from its army's realm. */
 type OrderFood = { wheat: number; fish: number };
