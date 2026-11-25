@@ -185,7 +185,7 @@ describe("the status strip", () => {
     act(() =>
       root.render(
         <TopBarView
-          clock={<DayPill clock={day} size={52} />}
+          clock={<DayPill clock={day} compact />}
           stocks={{
             realmName: "Duskbite",
             onOpenRealm,
