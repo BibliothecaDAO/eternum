@@ -1358,13 +1358,7 @@ export default class HexceptionScene extends HexagonScene {
     this.gridBuilds.start({
       layOut: () => runWithFrameWorkOwner("scene:hexception:grid", () => this.layOutGridCells(radius)),
       loadModels: () => this.loadLaidOutModels(mainStructureType),
-      preparePage: (terrainMatricesByBiome) =>
-        this.preparePage(
-          this.terrainPageRequest(terrainMatricesByBiome, this.buildings, {
-            col: this.centerColRow[0],
-            row: this.centerColRow[1],
-          }),
-        ),
+      preparePage: (terrainMatricesByBiome) => this.prepareShownPage(terrainMatricesByBiome),
       present: (page) =>
         runWithFrameWorkOwner("scene:hexception:grid", () => this.presentGrid(page, mainStructureType)),
       release: releaseGridMatrices,
@@ -1411,6 +1405,13 @@ export default class HexceptionScene extends HexagonScene {
       this.computeHexMatrices(binding, layout, radius, dummy, center, targetHex, isMainHex, existingBuildings);
     }
     return layout;
+  }
+
+  private prepareShownPage(
+    terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>,
+  ): Promise<PreparedTerrainPage> {
+    const center = this.shownRealmBinding().center;
+    return this.preparePage(this.terrainPageRequest(terrainMatricesByBiome, this.buildings, center));
   }
 
   private preparePage(request: TerrainPageRequest): Promise<PreparedTerrainPage> {
@@ -1642,17 +1643,27 @@ export default class HexceptionScene extends HexagonScene {
 
   public override prepareWhileFlying(): void {
     const position = resolvePlayRouteTarget(window.location).hexRealmPosition;
-    const structure = position == null ? undefined : this.readRouteStructure(position);
-    if (!structure) return;
+    const realm = position == null ? undefined : this.readRouteRealm(position);
+    if (!realm) return;
+    this.loadRealmModels(realm);
+    this.preparePageAhead(realm);
+  }
+
+  private readRouteRealm(position: HexPosition): RealmBinding | undefined {
+    const structure = this.readRouteStructure(position);
+    const site = structure && structureMapPosition(this.game.store, structure);
+    if (!structure || !site) return undefined;
     const realmId = safeInteger(structure.entity_id);
     const tiles = requireActiveGameClient().views.buildingTiles(realmId);
-    const realm = { realmId, tiles, stage: structureStage(tiles, realmId), mainStructureType: tiles.structureType() };
+    return { tiles, realmId, center: { col: site.x, row: site.y }, stage: structureStage(tiles, realmId) };
+  }
+
+  private loadRealmModels({ tiles, realmId, stage }: RealmBinding): void {
+    const realm = { realmId, tiles, stage, mainStructureType: tiles.structureType() };
     for (const building of this.boardBuildings(tiles, realmId)) {
       const path = this.modelPath(this.selectRealmBuildingModel(building, realm));
       if (path) this.loadModel(path);
     }
-    const site = structureMapPosition(this.game.store, structure);
-    if (site) this.preparePageAhead({ tiles, realmId, center: { col: site.x, row: site.y }, stage: realm.stage });
   }
 
   private preparePageAhead(binding: RealmBinding): void {
