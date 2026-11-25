@@ -16,6 +16,9 @@ const realm = () => {
   return { store, row: store.require("Structure", { game_id: 1, entity_id: 7 }), now: startsAt };
 };
 
+const nextDay = (store: ReturnType<typeof realm>["store"], now: number) =>
+  dayOf(readExpeditionRules(store, 1)!, now)!.end + 60;
+
 const ashFallToday = (store: ReturnType<typeof realm>["store"], now: number) => {
   const day = dayOf(readExpeditionRules(store, 1)!, now)!.index;
   store.applyFacts([
@@ -42,7 +45,8 @@ const ashFallToday = (store: ReturnType<typeof realm>["store"], now: number) => 
 };
 
 const surfaces = (bane: boolean, kind: "wheat" | "troops", category: number) => {
-  const { store, row, now } = realm();
+  const { store, row, now: today } = realm();
+  const now = nextDay(store, today);
   if (bane) ashFallToday(store, now);
   const reading = readRealmStore(store, row, readExpeditionRules(store, 1)!, kind, { now });
   const build = readBuildOptions(store, row, false, now)!.find((option) => option.category === category)!;
