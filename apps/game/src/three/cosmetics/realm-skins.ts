@@ -4,14 +4,14 @@ import { homeIcon } from "@/ui/design-system/home-icons";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { COSMETICS_WORDS } from "@/ui/design-system/kit/words";
 
-export type RealmSkinFamily = keyof typeof COSMETICS_WORDS.families;
+type RealmSkinFamily = keyof typeof COSMETICS_WORDS.families;
 
 export const NO_MODEL_YET = "no model yet";
 const NO_PAINTING_YET = "no painting yet";
 
 type Ranked<T> = Readonly<Record<RealmLevels, T>>;
 
-export interface RealmSkin {
+interface RealmSkin {
   readonly id: string;
   readonly family: RealmSkinFamily;
   readonly name: string;
@@ -26,7 +26,7 @@ export interface RealmSkinFacts {
   readonly wonderAspect: AspectId | undefined;
 }
 
-export type RealmSkinStanding = "owned" | "pass" | "event" | "wonder";
+type RealmSkinStanding = "owned" | "pass" | "event" | "wonder";
 
 export const REALM_SKIN_DEFAULT_ORDER = [
   "wonder",
@@ -58,22 +58,26 @@ export const BASE_REALM_SKIN: RealmSkin = {
 };
 
 export const REALM_SKINS: readonly RealmSkin[] = [
-  ...aspects.map(({ id }) => ({
-    id: `wonder-${slugOf(id)}`,
-    family: "wonder" as const,
-    name: aspectName(id),
-    aspect: id,
-    models: everyRank(`wonder-${slugOf(id)}`),
-    paintings: "wonder" as const,
-  })),
-  ...aspects.map(({ id }) => ({
-    id: `season-1-${slugOf(id)}`,
-    family: "season-1" as const,
-    name: aspectName(id),
-    aspect: id,
-    models: everyRank(NO_MODEL_YET),
-    paintings: NO_PAINTING_YET,
-  })),
+  ...aspects.map(
+    ({ id }): RealmSkin => ({
+      id: `wonder-${slugOf(id)}`,
+      family: "wonder",
+      name: aspectName(id),
+      aspect: id,
+      models: everyRank(`wonder-${slugOf(id)}`),
+      paintings: "wonder",
+    }),
+  ),
+  ...aspects.map(
+    ({ id }): RealmSkin => ({
+      id: `season-1-${slugOf(id)}`,
+      family: "season-1",
+      name: aspectName(id),
+      aspect: id,
+      models: everyRank(NO_MODEL_YET),
+      paintings: NO_PAINTING_YET,
+    }),
+  ),
   {
     id: "devcon",
     family: "devcon",
