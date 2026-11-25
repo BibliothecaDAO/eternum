@@ -11,6 +11,8 @@ interface PlayRouteReadinessState {
   bootToken: number;
   hexCoordinates: SceneCoordinates | null;
   hexReady: boolean;
+  homeRealmPrepared: boolean;
+  markHomeRealmPrepared: (token: number) => void;
   markHexReady: (token: number, coords?: SceneCoordinates | null) => void;
   /** A scene the boot waits on failed to set up: the boot ends in its error state instead of waiting on. */
   markSceneFailed: (token: number, scene: PlayScene, error: Error) => void;
@@ -30,6 +32,8 @@ export const usePlayRouteReadinessStore = create<PlayRouteReadinessState>((set, 
   bootToken: 0,
   hexCoordinates: null,
   hexReady: false,
+  homeRealmPrepared: false,
+  markHomeRealmPrepared: (token) => set((state) => (token === state.bootToken ? { homeRealmPrepared: true } : state)),
   markHexReady: (token, coords = null) =>
     set((state) => {
       if (token !== state.bootToken) {
@@ -74,6 +78,7 @@ export const usePlayRouteReadinessStore = create<PlayRouteReadinessState>((set, 
       bootToken: token,
       hexCoordinates: null,
       hexReady: false,
+      homeRealmPrepared: false,
       mapSkipped: false,
       sceneFailure: null,
       worldmapConverged: false,

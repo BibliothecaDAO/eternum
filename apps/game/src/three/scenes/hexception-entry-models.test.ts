@@ -22,6 +22,7 @@ vi.mock("@/sync/active-game-client", () => ({
 }));
 
 const { getGameModeConfig } = await import("@/config/game-modes");
+const { usePlayRouteReadinessStore } = await import("@/game-entry/play-route-readiness-store");
 const { default: HexceptionScene } = await import("./hexception");
 
 beforeEach(() => {
@@ -126,7 +127,7 @@ it("asks for the route realm's models while the camera flies to it, the same one
   ]);
 });
 
-it("asks for the selected realm's models once the map answers, and only warns when that realm cannot be read", () => {
+it("prepares the home realm's models on the loading screen, and lets the loading end when they cannot be read", async () => {
   route.tiles = {
     existingBuildings: () => [
       { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], category: BuildingType.ResourceLabor },
@@ -135,15 +136,20 @@ it("asks for the selected realm's models once the map answers, and only warns wh
     getRealmLevel: () => 0,
     getWonder: () => undefined,
   };
+  const readiness = () => usePlayRouteReadinessStore.getState();
   const board = realmBoard([]);
   board.scene.readLocalRealm = () => ({ entity_id: 7 });
-  board.scene.loadSelectedRealmModels();
+  const boot = readiness().startBoot();
+  board.scene.prepareHomeRealm(boot);
   expect(board.requested).toEqual(["/models/realms/settlement.glb"]);
+  await vi.waitFor(() => expect(readiness().homeRealmPrepared).toBe(true));
 
   const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
   board.scene.readLocalRealm = () => {
     throw new Error("the projection is not ready");
   };
-  expect(() => board.scene.loadSelectedRealmModels()).not.toThrow();
+  const next = readiness().startBoot();
+  expect(() => board.scene.prepareHomeRealm(next)).not.toThrow();
+  await vi.waitFor(() => expect(readiness().homeRealmPrepared).toBe(true));
   expect(warn).toHaveBeenCalledOnce();
 });

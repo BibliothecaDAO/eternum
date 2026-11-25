@@ -105,7 +105,6 @@ import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { openProduction } from "@/ui/features/settlement/production/open-production";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { requireActiveGameClient } from "@/sync/active-game-client";
-import { afterWorldInteractive } from "@/game-entry/world-interactive";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
 import { sendBuilding } from "@/ui/features/settlement/construction/send-building";
 import { playerStructuresView, readFactView, watchFactView } from "@/sync/fact-views";
@@ -367,7 +366,8 @@ export default class HexceptionScene extends HexagonScene {
     this.state = useUIStore.getState();
 
     this.registerRealmShortcuts();
-    afterWorldInteractive(() => this.loadSelectedRealmModels());
+    this.prepareHomeRealm(getCurrentPlayRouteBootToken());
+    this.storeUnsubscribes.push(onPlayRouteBootStarted(() => this.prepareHomeRealm(getCurrentPlayRouteBootToken())));
 
     if (this.GUIFolder) {
       this.GUIFolder.add(this, "structureStage", 0, 3).onFinishChange((value: RealmLevels) => {
@@ -1589,35 +1589,47 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   public override prepareWhileFlying(): void {
-    this.loadRealmModelsAhead("the realm flown to", () => {
+    void this.loadRealmModelsAhead("the realm flown to", () => {
       const position = resolvePlayRouteTarget(window.location).hexRealmPosition;
       return position == null ? undefined : this.readLocalRealm(position);
     });
   }
 
-  private loadSelectedRealmModels(): void {
-    this.loadRealmModelsAhead("the selected realm", () => this.readLocalRealm());
+  private prepareHomeRealm(bootToken: number): void {
+    void this.loadRealmModelsAhead("the home realm", () => this.readLocalRealm()).then(() =>
+      usePlayRouteReadinessStore.getState().markHomeRealmPrepared(bootToken),
+    );
   }
 
-  private loadRealmModelsAhead(realmName: string, readRealm: () => NativeRows["Structure"] | undefined): void {
-    if (this.destroyed) return;
+  private loadRealmModelsAhead(
+    realmName: string,
+    readRealm: () => NativeRows["Structure"] | undefined,
+  ): Promise<unknown> {
+    if (this.destroyed) return Promise.resolve();
     try {
       const structure = readRealm();
-      if (structure) this.loadRealmModels(safeInteger(structure.entity_id));
+      return structure ? this.loadRealmModels(safeInteger(structure.entity_id)) : Promise.resolve();
     } catch (error) {
       console.warn(
         `[Hexception] ${realmName} could not load its models ahead: ${formatReadableErrorForConsole(error)}`,
       );
+      return Promise.resolve();
     }
   }
 
-  private loadRealmModels(realmId: ID): void {
+  private loadRealmModels(realmId: ID): Promise<unknown> {
     const tiles = requireActiveGameClient().views.buildingTiles(realmId);
     const realm = { realmId, tiles, stage: structureStage(tiles, realmId), mainStructureType: tiles.structureType() };
+    const paths = new Set<string>();
     for (const building of this.boardBuildings(tiles, realmId)) {
       const path = this.modelPath(this.selectRealmBuildingModel(building, realm));
-      if (path) this.loadModel(path);
+      if (path) paths.add(path);
     }
+    return this.requestModels(paths);
+  }
+
+  private requestModels(paths: Iterable<string>): Promise<unknown> {
+    return Promise.allSettled([...paths].map((path) => this.models.request(path)));
   }
 
   /** The model file a selection draws: its tier's own, else its group's; a hyperstructure builds its own. */
@@ -1634,7 +1646,7 @@ export default class HexceptionScene extends HexagonScene {
       const path = this.modelPath(this.selectBuildingModel(building, mainStructureType));
       if (path) paths.add(path);
     }
-    return Promise.allSettled([...paths].map((path) => this.models.request(path)));
+    return this.requestModels(paths);
   }
 
   /** Loads one model once, then lets every building waiting on it draw it. */
