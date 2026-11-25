@@ -39,7 +39,6 @@ const firstOwned = (facts: RealmSkinFacts) =>
   REALM_SKIN_DEFAULT_ORDER.flatMap(skinsOf).find((skin) => realmSkinStanding(skin, facts) === "owned") ??
   REALM_SKINS[0];
 
-/** On a desktop, Cosmetics is a place of its own; a phone opens it inside You. */
 export const CosmeticsPage = () => {
   if (useLayout() !== "desktop") return <Navigate to={{ pathname: PROFILE_PATH, hash: COSMETICS_HASH }} replace />;
   return (
@@ -52,7 +51,6 @@ export const CosmeticsPage = () => {
 const defaultOrderLine = () =>
   COSMETICS_WORDS.defaultOrder(REALM_SKIN_DEFAULT_ORDER.map((family) => COSMETICS_WORDS.families[family]));
 
-/** Every realm skin, its family and its standing for this player, with one picked to see at every rank. */
 export const CosmeticsWorkspace = () => {
   const { facts, rank } = useCosmeticStanding();
   const [picked, pick] = useState<RealmSkin>(() => firstOwned(facts));
@@ -154,7 +152,6 @@ const StandingBadge = ({ standing }: { standing: RealmSkinStanding }) => (
   </span>
 );
 
-/** A skin's picture at a rank: its painting, or its Aspect's mark while it has none yet. */
 const SkinArt = ({ skin, rank, size }: { skin: RealmSkin; rank: RealmLevels; size: number }) => {
   const icon = realmSkinIcon(skin, rank);
   if (icon) return <Icon name={icon} size={size} />;
@@ -204,7 +201,6 @@ const SkinPreview = ({ skin, facts, rank }: { skin: RealmSkin; facts: RealmSkinF
   );
 };
 
-/** What the player can do about a skin they see: nothing to do for one owned, since the game wears the default order. */
 const StandingAction = ({ standing }: { standing: RealmSkinStanding }) => {
   if (standing === "owned") return <p className="cosmetics__note">{defaultOrderLine()}</p>;
   if (standing === "pass")
@@ -229,7 +225,6 @@ const StandingAction = ({ standing }: { standing: RealmSkinStanding }) => {
   );
 };
 
-/** The phone's way in from Your Realms: how many skins the player owns, and Open for You's Cosmetics. */
 export const RealmCosmeticsShortcut = ({ onOpen }: { onOpen: () => void }) => {
   const { facts, rank } = useCosmeticStanding();
   return (

@@ -10,7 +10,6 @@ export interface CosmeticStanding {
   readonly rank: number | null;
 }
 
-/** What the player's season game records of them that decides which realm skins they own, and their highest rank. */
 export const cosmeticStandingOf = (game: DirectoryGame | undefined): CosmeticStanding => {
   const state = game?.player_state;
   const realms = (state?.structures ?? []).filter((structure) => isRealmCategory(structure.category));

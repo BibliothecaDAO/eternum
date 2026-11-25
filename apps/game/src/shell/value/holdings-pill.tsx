@@ -3,7 +3,6 @@ import { chooseRehearsal, chooseSeason } from "../season-pick";
 
 type Holdings = { fragments: number | null; ancientSeal: boolean };
 
-/** The season game whose standing the app shows: the live one of the season and its rehearsal, else either. */
 export const playedSeasonGame = (games: readonly DirectoryGame[]): DirectoryGame | undefined => {
   const season = chooseSeason(games, true);
   const testnet = chooseRehearsal(games, true);

@@ -46,10 +46,8 @@ const COSMETICS_TAB: Place = {
   matches: [COSMETICS_PATH],
 };
 
-/** A phone's tab bar: Cosmetics opens inside You there. */
 export const TABS: readonly Place[] = [PLAY_TAB, SEASON_TAB, SHOP_TAB, CHAT_TAB, YOU_TAB];
 
-/** A desktop's top bar, You at its end: Cosmetics is a place of its own there, before Shop. */
 const DESKTOP_PLACES: readonly Place[] = [PLAY_TAB, SEASON_TAB, COSMETICS_TAB, SHOP_TAB, CHAT_TAB];
 
 const matchesPath = (pathname: string, match: string) =>
