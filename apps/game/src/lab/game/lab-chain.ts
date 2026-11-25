@@ -639,7 +639,7 @@ const labAccount = (
  * A fact under the key its row is held by on the chain, as Herald names every row by one key: a later answer that
  * finds the row in the chain's store (its entries) and changes or removes it then names the row the game holds.
  */
-const heldBefore = (chain: NativeFactStore, answered: LabFact[], events: Set<string>) =>
+const heldBefore = (chain: NativeFactStore, answered: LabFact[], events: ReadonlySet<string>) =>
   answered.map((fact) => {
     if (fact.value === null || events.has(fact.model)) return null;
     const scratch = new NativeFactStore();
