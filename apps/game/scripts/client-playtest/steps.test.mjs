@@ -1163,9 +1163,17 @@ it("requires one quest command, its exact receipt, both balances credited by it 
 });
 
 it.each([
-  ["world", ["LaborGrant"], "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops · 2,500 of 2,500 guard troops"],
+  [
+    "world",
+    ["LaborGrant"],
+    "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops · 2,500 of 2,500 guard troops",
+  ],
   ["again", ["BaneGrant"], "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops · 2,500 of 2,500 guard troops"],
-  ["late", ["LaborGrant", "BaneGrant"], "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops · 2,500 of 2,500 guard troops"],
+  [
+    "late",
+    ["LaborGrant", "BaneGrant"],
+    "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops · 2,500 of 2,500 guard troops",
+  ],
   ["team", ["LaborGrant"], "Bane from Prowess · The Stand · Clear 3 guarded sites · 3 of 3 guarded sites"],
 ])(
   "requires exact %s bane receipts, each credited once whatever the balances held, identity and collected UI",
