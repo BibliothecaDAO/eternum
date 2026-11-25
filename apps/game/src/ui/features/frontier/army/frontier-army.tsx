@@ -30,9 +30,11 @@ const ArmyPanel = ({ army, onClose }: { army: DockArmy; onClose: () => void }) =
       <ArmyRelicSlots explorerId={army.explorerId} />
       {deleting && <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />}
       <HudWindowFoot note={<ArmyOathSockets explorerId={army.explorerId} />}>
-        {refill}
-        {spire}
-        <ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />
+        <span className="army-foot__verbs">
+          {refill}
+          {spire}
+          <ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />
+        </span>
       </HudWindowFoot>
     </HudSheet>
   );
