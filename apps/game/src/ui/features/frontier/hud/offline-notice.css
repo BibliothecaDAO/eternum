@@ -8,7 +8,7 @@
   margin-inline: auto;
   border: 1.5px solid color-mix(in srgb, var(--hud-warn) 72%, transparent);
   border-radius: var(--hud-radius-round);
-  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  background: var(--hud-surface-to);
   padding: 0 theme(spacing.3);
   color: var(--hud-warn);
   font-size: var(--hud-text-body);
