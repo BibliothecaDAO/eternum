@@ -1,5 +1,5 @@
 {
-  "release": 22,
+  "release": 23,
   "definition": {
     "rules": {
       "battle_config": {
@@ -2207,7 +2207,7 @@
       },
       "banes": {
         "Some": {
-          "chance_step": 20,
+          "chance_step": 10,
           "quorum_percent": 25,
           "beast_percent": 150,
           "stamina_percent": 50,

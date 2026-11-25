@@ -760,6 +760,8 @@ export const FRONTIER = {
   },
   banes: {
     count: n(baneQuests.length),
+    quietDays: n(banesPreset.quietDays),
+    firstDay: n(banesPreset.quietDays + 1),
     chanceStep: `${n(banesPreset.chanceStep)}%`,
     quorum: `${n(banesPreset.quorumPercent)}%`,
     productionBaneName: worldBaneHead(baneConstants.ASH_FALL, baneRules).name,

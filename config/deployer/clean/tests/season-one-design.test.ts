@@ -99,6 +99,7 @@ function generatedSeasonOne(): Design {
       staminaBar: stamina.stamina_initial,
       dayUnitSeconds: definition.rules.day_unit_seconds,
       seasonDays: Number(seasonRace.season_days),
+      baneQuietDays: nativePresetForId(FRONTIER_S1_PRESET_ID).banes!.quietDays,
       baneChanceStepPercent: banes.chance_step,
       speed: gameClockScale(nativePresetForId(FRONTIER_S1_PRESET_ID)),
     },
