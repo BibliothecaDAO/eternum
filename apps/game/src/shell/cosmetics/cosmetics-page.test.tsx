@@ -7,10 +7,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { HeraldPlayerStructure } from "@bibliothecadao/eternum/game-sync";
 import { seasonGameName, StructureType } from "@bibliothecadao/types";
 
-const directory = vi.hoisted(() => ({ games: [] as unknown[] }));
+const directory = vi.hoisted(() => ({ games: [] as unknown[] | null }));
 vi.mock("../herald", async (original) => ({
   ...(await original<typeof import("../herald")>()),
-  useDirectory: () => ({ data: { games: directory.games }, isPending: false, isError: false }),
+  useDirectory: () => ({
+    data: directory.games === null ? undefined : { games: directory.games },
+    isPending: directory.games === null,
+    isError: false,
+  }),
 }));
 
 import { REALM_SKINS } from "@/three/cosmetics/realm-skins";
@@ -64,9 +68,15 @@ const open = async (width = 1440) => {
   const container = document.createElement("div");
   document.body.replaceChildren(container);
   root = createRoot(container);
-  await act(async () =>
+  await drawAgain();
+  return container;
+};
+
+const queries = new QueryClient();
+const drawAgain = () =>
+  act(async () =>
     root!.render(
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider client={queries}>
         <MemoryRouter initialEntries={[COSMETICS_PATH]}>
           <Routes>
             <Route path={COSMETICS_PATH} element={<CosmeticsPage />} />
@@ -76,8 +86,6 @@ const open = async (width = 1440) => {
       </QueryClientProvider>,
     ),
   );
-  return container;
-};
 
 const standings = (container: HTMLElement) =>
   Object.fromEntries(
@@ -141,6 +149,20 @@ describe("the Cosmetics page", () => {
     const stage = container.querySelector<HTMLElement>("[data-preview]")!;
     expect(stage.dataset.preview).toBe("wonder-prowess");
     expect(stage.dataset.rank).toBe("3");
+  });
+
+  it("moves the preview to the player's own skin and rank once the directory answers, until they pick one", async () => {
+    directory.games = null;
+    const container = await open();
+    const stage = () => container.querySelector<HTMLElement>("[data-preview]")!;
+    expect(stage().dataset.preview).toBe("base");
+    directory.games = [season([realm({ aspect: 4, has_wonder: true, level: 1 })], false)];
+    await drawAgain();
+    expect([stage().dataset.preview, stage().dataset.rank]).toEqual(["wonder-insight", "1"]);
+    await pick(container, "devcon");
+    directory.games = [season([realm({ aspect: 4, has_wonder: true, level: 2 })], false)];
+    await drawAgain();
+    expect([stage().dataset.preview, stage().dataset.rank]).toEqual(["devcon", "2"]);
   });
 
   it("sends a skin locked to the pass to the Shop", async () => {

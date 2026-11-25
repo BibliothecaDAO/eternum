@@ -5,12 +5,12 @@ import type { RealmSkinFacts } from "@/three/cosmetics/realm-skins";
 import { type DirectoryGame, useDirectory } from "../herald";
 import { playedSeasonGame } from "../value/holdings-pill";
 
-export interface CosmeticStanding {
+interface CosmeticStanding {
   readonly facts: RealmSkinFacts;
   readonly rank: number | null;
 }
 
-export const cosmeticStandingOf = (game: DirectoryGame | undefined): CosmeticStanding => {
+const cosmeticStandingOf = (game: DirectoryGame | undefined): CosmeticStanding => {
   const state = game?.player_state;
   const realms = (state?.structures ?? []).filter((structure) => isRealmCategory(structure.category));
   return {

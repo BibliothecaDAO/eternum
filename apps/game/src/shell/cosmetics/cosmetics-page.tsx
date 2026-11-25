@@ -53,7 +53,8 @@ const defaultOrderLine = () =>
 
 export const CosmeticsWorkspace = () => {
   const { facts, rank } = useCosmeticStanding();
-  const [picked, pick] = useState<RealmSkin>(() => firstOwned(facts));
+  const [chosen, pick] = useState<RealmSkin | null>(null);
+  const picked = chosen ?? firstOwned(facts);
   const ownedCount = ownedCountOf(facts);
   return (
     <div className="cosmetics" data-cosmetics>
@@ -159,7 +160,8 @@ const SkinArt = ({ skin, rank, size }: { skin: RealmSkin; rank: RealmLevels; siz
 };
 
 const SkinPreview = ({ skin, facts, rank }: { skin: RealmSkin; facts: RealmSkinFacts; rank: RealmLevels | null }) => {
-  const [shown, show] = useState<RealmLevels>(rank ?? RealmLevels.Kingdom);
+  const [chosenRank, show] = useState<RealmLevels | null>(null);
+  const shown = chosenRank ?? rank ?? RealmLevels.Kingdom;
   const standing = realmSkinStanding(skin, facts);
   const icon = realmSkinIcon(skin, shown);
   return (

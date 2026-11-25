@@ -6,17 +6,13 @@ import { COSMETICS_WORDS } from "@/ui/design-system/kit/words";
 
 export type RealmSkinFamily = keyof typeof COSMETICS_WORDS.families;
 
-export const NO_MODEL_YET = "no model yet";
 const NO_PAINTING_YET = "no painting yet";
-
-type Ranked<T> = Readonly<Record<RealmLevels, T>>;
 
 export interface RealmSkin {
   readonly id: string;
   readonly family: RealmSkinFamily;
   readonly name: string;
   readonly aspect?: AspectId;
-  readonly models: Ranked<string | typeof NO_MODEL_YET>;
   readonly paintings: keyof typeof paintings | typeof NO_PAINTING_YET;
 }
 
@@ -37,26 +33,12 @@ export const REALM_SKIN_DEFAULT_ORDER = [
 
 export const REALM_RANKS = Object.values(RealmLevels).filter((rank): rank is RealmLevels => typeof rank === "number");
 
-const everyRank = <T>(value: T): Ranked<T> =>
-  ({
-    [RealmLevels.Settlement]: value,
-    [RealmLevels.City]: value,
-    [RealmLevels.Kingdom]: value,
-    [RealmLevels.Empire]: value,
-  }) satisfies Record<RealmLevels, T>;
-
 const slugOf = (aspect: AspectId) => aspectName(aspect).toLowerCase();
 
 export const BASE_REALM_SKIN: RealmSkin = {
   id: "base",
   family: "base",
   name: COSMETICS_WORDS.courtyardKeep,
-  models: {
-    [RealmLevels.Settlement]: "settlement",
-    [RealmLevels.City]: "city",
-    [RealmLevels.Kingdom]: "kingdom",
-    [RealmLevels.Empire]: "empire",
-  } satisfies Record<RealmLevels, string>,
   paintings: "realm",
 };
 
@@ -67,7 +49,6 @@ export const REALM_SKINS: readonly RealmSkin[] = [
       family: "wonder",
       name: aspectName(id),
       aspect: id,
-      models: everyRank(`wonder-${slugOf(id)}`),
       paintings: "wonder",
     }),
   ),
@@ -77,7 +58,6 @@ export const REALM_SKINS: readonly RealmSkin[] = [
       family: "season-1",
       name: aspectName(id),
       aspect: id,
-      models: everyRank(NO_MODEL_YET),
       paintings: NO_PAINTING_YET,
     }),
   ),
@@ -85,14 +65,12 @@ export const REALM_SKINS: readonly RealmSkin[] = [
     id: "devcon",
     family: "devcon",
     name: COSMETICS_WORDS.devcon,
-    models: everyRank(NO_MODEL_YET),
     paintings: "devcon",
   },
   {
     id: "devcon-golden",
     family: "devcon",
     name: COSMETICS_WORDS.goldenDevcon,
-    models: everyRank(NO_MODEL_YET),
     paintings: "devcon-golden",
   },
   BASE_REALM_SKIN,
