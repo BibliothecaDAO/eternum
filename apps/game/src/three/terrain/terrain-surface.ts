@@ -1,7 +1,6 @@
 import type { Vector3 } from "three";
 
 import type { BiomeType } from "@bibliothecadao/types/terrain";
-import { BASALT_SUPPORT_HEIGHT } from "./terrain-basalt";
 import type { TerrainSurfaceSample } from "./terrain-types";
 import { isTerrainWaterBiome, TERRAIN_WATER_LEVEL } from "./terrain-water";
 
@@ -16,8 +15,7 @@ export const groundHeightOfCell = ({
   biome: BiomeType | null;
   ethereal: boolean;
 }): number => {
-  if (!explored) return TERRAIN_GROUND_HEIGHT;
-  if (ethereal) return BASALT_SUPPORT_HEIGHT;
+  if (!explored || ethereal) return TERRAIN_GROUND_HEIGHT;
   return isTerrainWaterBiome(biome) ? TERRAIN_WATER_LEVEL : TERRAIN_GROUND_HEIGHT;
 };
 
