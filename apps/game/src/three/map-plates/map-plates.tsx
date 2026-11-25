@@ -53,10 +53,7 @@ const Segment = ({ segment }: { segment: PlateSegment }) => {
 const Troops = ({ troops }: { troops: PlateTroops }) => (
   <span className="mp-troops">
     <span className="mp-troops__icon">
-      <Icon
-        name={troops.beast ? beastMeaning(troops.beast) : plateTroopMeaning(troops)}
-        size={20}
-      />
+      <Icon name={troops.beast ? beastMeaning(troops.beast) : plateTroopMeaning(troops)} size={20} />
       <MapCombatBadge mark={combatOfStack(troops)} />
     </span>
     {!troops.beast && troops.tier !== null && <HudTierChip tier={troops.tier} />}

@@ -903,7 +903,8 @@ export const DAY_BANNER_WORDS = {
       ? `${objective} ${formatExact(target)}`
       : `${objective.slice(0, space)} ${formatExact(target)} ${objective.slice(space + 1)}`;
   },
-  rewardAmount: (amount: number, resource: ResourcesIds) => `${formatAmount(amount)} ${resourceName(resource, configManager.isFrontier())}`,
+  rewardAmount: (amount: number, resource: ResourcesIds) =>
+    `${formatAmount(amount)} ${resourceName(resource, configManager.isFrontier())}`,
   summary: (objective: string, progress: number, target: number, labor: number) =>
     `${objective} · ${formatExact(progress)} of ${formatExact(target)} · +${formatExact(labor)} ${LABOR}`,
   triumphRule: {

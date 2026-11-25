@@ -2,7 +2,12 @@ import { useMemo, useCallback, useState } from "react";
 import { useTransferAutomationStore, type TransferAutomationEntry } from "@/hooks/store/use-transfer-automation-store";
 import { HudButton, HudEmpty, HudField, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { ResourcesIds, RESOURCE_PRECISION, formatCharge, resourceName, formatAgo } from "@bibliothecadao/types";
-import { ResourceManager, getTotalResourceWeightKg, calculateDonkeysNeeded, configManager } from "@bibliothecadao/eternum";
+import {
+  ResourceManager,
+  getTotalResourceWeightKg,
+  calculateDonkeysNeeded,
+  configManager,
+} from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { toast } from "@/ui/features/event-feed/notify";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";

@@ -221,9 +221,10 @@ it("tells Frontier's raised, reinforced and produced troops by Frontier's names,
   expect(told("ProductionStory", { received_resource_type: 32, received_amount: "1", cost: [] }).title).toMatch(
     /^Scouts production started/,
   );
-  expect(buildStoryEventPresentation(story("ExplorerCreateStory", { structure_id: 5, explorer_id: 7, ...scouts })).description).toBe(
-    "4,535 Paladin T1",
-  );
+  expect(
+    buildStoryEventPresentation(story("ExplorerCreateStory", { structure_id: 5, explorer_id: 7, ...scouts }))
+      .description,
+  ).toBe("4,535 Paladin T1");
 });
 
 /**

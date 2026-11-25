@@ -23,7 +23,13 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { toast } from "@/ui/features/event-feed/notify";
 import { AllResourceArrivals as ResourceArrivals } from "./resource-arrivals";
 import { TransferAutomationAdvancedModal } from "@/ui/features/economy/transfers/transfer-automation-modal";
-import { deliveryLandsAt, isMilitaryResource, ResourceManager, shipmentTravelSeconds, configManager } from "@bibliothecadao/eternum";
+import {
+  deliveryLandsAt,
+  isMilitaryResource,
+  ResourceManager,
+  shipmentTravelSeconds,
+  configManager,
+} from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, ResourcesIds, formatCount, formatExact, formatHeldAgainst } from "@bibliothecadao/types";
 import { useState } from "react";
 import { resourcesInTierOrder } from "@/ui/shared/resource-tier-order";

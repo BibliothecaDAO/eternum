@@ -223,7 +223,10 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     const category = toNumber(payload.category);
     if (category === null || payload.reward === undefined) throw new Error("Incomplete site payout story");
     const label = guardedSiteKind(category, fightBeast(payload.site_id, components));
-    const reward = payload.reward === null ? "No resource reward" : formatResourceList([payload.reward], isFrontierStore(components));
+    const reward =
+      payload.reward === null
+        ? "No resource reward"
+        : formatResourceList([payload.reward], isFrontierStore(components));
     if (!reward) throw new Error("Incomplete site resource reward");
     const siteId = toNumber(payload.site_id);
     if (siteId === null) throw new Error("Site payout story names no site");
@@ -267,10 +270,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     };
   },
   RealmCreatedStory: (event, payload, components, resolvePlayerName) => {
-    const coord =
-      isFrontierStore(components)
-        ? undefined
-        : formatCoord(payload.coord);
+    const coord = isFrontierStore(components) ? undefined : formatCoord(payload.coord);
     const ownerLabel = nameOwner(event.ownerAddress, components, resolvePlayerName);
     const realm = describeStructureName(event.entityId, components);
     return {
@@ -375,7 +375,9 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
   },
   RaidEvent: (_, payload, components) => ({
     title: `Raid on ${subjectOf(payload.structure_id, components)} ${payload.success ? "succeeded" : "repelled"}`,
-    description: payload.success ? formatResourceList(payload.requested_loot, isFrontierStore(components)) : "Nothing taken",
+    description: payload.success
+      ? formatResourceList(payload.requested_loot, isFrontierStore(components))
+      : "Nothing taken",
     icon: "battle",
   }),
   // Either end may be a structure or an army; one no longer in the store is left unsaid rather than guessed.
@@ -944,12 +946,7 @@ function nameFightParticipant(
   resolvePlayerName?: PlayerNameResolver,
 ): string | undefined {
   const siteId = toNumber(entityId);
-  if (
-    toBigIntSafe(owner) === 0n &&
-    siteId !== null &&
-    isFrontierStore(store)
-  )
-    return siteDisplayName(siteId);
+  if (toBigIntSafe(owner) === 0n && siteId !== null && isFrontierStore(store)) return siteDisplayName(siteId);
   return nameOwner(owner, store, resolvePlayerName);
 }
 

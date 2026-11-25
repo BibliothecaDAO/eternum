@@ -102,16 +102,24 @@ export const ResourceProductionControls = ({
 
   if (compact)
     return (
-      <section aria-label={`${resourceName(selectedResource, configManager.isFrontier())} production`} className="flex flex-col gap-2">
+      <section
+        aria-label={`${resourceName(selectedResource, configManager.isFrontier())} production`}
+        className="flex flex-col gap-2"
+      >
         <span className="flex flex-col gap-1">
-          <span className="text-hud-label text-hud-muted">Amount of {resourceName(selectedResource, configManager.isFrontier())}</span>
+          <span className="text-hud-label text-hud-muted">
+            Amount of {resourceName(selectedResource, configManager.isFrontier())}
+          </span>
           {amountField}
         </span>
         <p className="text-hud-label">
           {run === undefined
             ? "—"
             : `${runOutputLine(run, selectedResource)} from ${run.inputs
-                .map((input) => `${formatCharge(fromUnits(input.units))} ${resourceName(input.resource, configManager.isFrontier())}`)
+                .map(
+                  (input) =>
+                    `${formatCharge(fromUnits(input.units))} ${resourceName(input.resource, configManager.isFrontier())}`,
+                )
                 .join(" · ")}`}
         </p>
         {failure ? (
@@ -148,7 +156,11 @@ export const ResourceProductionControls = ({
   );
 
   return (
-    <HudPanel kind="section" title={`Start production · ${resourceName(selectedResource, configManager.isFrontier())}`} collapsible={false}>
+    <HudPanel
+      kind="section"
+      title={`Start production · ${resourceName(selectedResource, configManager.isFrontier())}`}
+      collapsible={false}
+    >
       <div className="flex flex-col gap-3">
         <div className="grid grid-cols-1 gap-4">
           <div className="flex flex-col gap-2">

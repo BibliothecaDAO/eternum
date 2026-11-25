@@ -7,13 +7,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { Icon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import {
-  AmountInput,
-  HudButton,
-  HudNotice,
-  HudSheet,
-  HudWindowFoot,
-} from "@/ui/design-system/kit/hud-elements";
+import { AmountInput, HudButton, HudNotice, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { configManager, multiplyByPrecision } from "@bibliothecadao/eternum";

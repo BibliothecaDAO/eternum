@@ -109,7 +109,9 @@ const renderStructure = (game: RunnerGame, structure: Structure, realm: RealmInf
 const renderBalances = (client: GameClient, entityId: ID, resources: ResourcesIds[]): string => {
   const manager = client.views.resources(entityId);
   const unique = [...new Set(resources)];
-  return unique.map((resource) => `${resourceName(resource, false)} ${formatAmount(manager.balance(resource))}`).join(", ");
+  return unique
+    .map((resource) => `${resourceName(resource, false)} ${formatAmount(manager.balance(resource))}`)
+    .join(", ");
 };
 
 const renderBuildings = (client: GameClient, structureId: ID): string => {

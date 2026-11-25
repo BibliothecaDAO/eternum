@@ -214,7 +214,11 @@ const PaintedCost = ({ requirements }: { requirements: Choice["requirements"] })
         )}
         title={resourceName(cost.resource, configManager.isFrontier())}
       >
-        <SemanticIcon name={resourceMeaning(cost.resource)} alt={resourceName(cost.resource, configManager.isFrontier())} className="h-4 w-4" />
+        <SemanticIcon
+          name={resourceMeaning(cost.resource)}
+          alt={resourceName(cost.resource, configManager.isFrontier())}
+          className="h-4 w-4"
+        />
         {formatCharge(cost.amount)}
       </span>
     ))}

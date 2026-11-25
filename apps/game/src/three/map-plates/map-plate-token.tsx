@@ -145,7 +145,10 @@ const tokenWords = (reading: TokenReading): string =>
     reading.undefended
       ? UNDEFENDED
       : reading.strength &&
-        [reading.strength.tier === null ? reading.beast : `T${reading.strength.tier}`, formatExact(reading.strength.count)]
+        [
+          reading.strength.tier === null ? reading.beast : `T${reading.strength.tier}`,
+          formatExact(reading.strength.count),
+        ]
           .filter(Boolean)
           .join(" "),
     reading.stamina !== null && `Stamina ${formatPercent(reading.stamina.current / reading.stamina.max)}`,
