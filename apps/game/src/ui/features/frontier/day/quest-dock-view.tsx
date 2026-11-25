@@ -60,7 +60,7 @@ export const QuestDockView = ({
       tone={bane ? "bane" : undefined}
       picture={bane?.painting}
       className="quest-dock"
-      attributes={{ "data-daily-quest": "", "data-quest-layout": layout }}
+      attributes={{ "data-daily-quest": "", "data-quest-layout": layout, "data-hud-part": "" }}
       controls={<EmissaryOk onClose={onClose} />}
     >
       {bane && <BaneLine bane={bane} />}
