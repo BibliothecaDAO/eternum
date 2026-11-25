@@ -49,4 +49,3 @@ export const normalizePresentationTroops = (value?: string): string | undefined 
   }
   return undefined;
 };
-
