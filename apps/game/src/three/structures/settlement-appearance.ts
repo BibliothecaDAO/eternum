@@ -1,5 +1,4 @@
 import { ASPECT_HEX } from "@/tokens";
-import { createCanvasTexture } from "../utils/canvas-texture";
 import { iconUrl, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { aspects, orders, type AspectId } from "@bibliothecadao/types";
 import {
@@ -111,7 +110,10 @@ export class SettlementAppearance {
 }
 
 function createBannerTexture(): CanvasTexture {
-  const { texture } = createCanvasTexture(256, 512);
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 512;
+  const texture = new CanvasTexture(canvas);
   texture.name = "Camp horned helmet imprint";
   texture.colorSpace = SRGBColorSpace;
   texture.flipY = false;
@@ -206,7 +208,10 @@ function drawStampPolygon(context: CanvasRenderingContext2D, points: readonly (r
 
 /** Two fixed atlas rows keep each instanced village's cloth and emblem independent. */
 export function createVillageBannerAtlas(): CanvasTexture {
-  const { texture: atlas, context } = createCanvasTexture(256, 512 * VILLAGE_BANNER_ROWS);
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 512 * VILLAGE_BANNER_ROWS;
+  const context = canvas.getContext("2d");
   if (!context) throw new Error("Village banner atlas canvas is unavailable");
   const stamp = createBannerTexture();
   for (const [row, relationship] of SETTLEMENT_RELATIONSHIP_ORDER.entries()) {
@@ -218,6 +223,7 @@ export function createVillageBannerAtlas(): CanvasTexture {
     context.drawImage(stamp.image as HTMLCanvasElement, 0, resolveVillageAspectRow(aspect.id) * 512);
   }
   stamp.dispose();
+  const atlas = new CanvasTexture(canvas);
   atlas.name = "Village relationship banners";
   atlas.colorSpace = SRGBColorSpace;
   atlas.flipY = false;
@@ -253,14 +259,17 @@ export function resolveRealmBannerRow(
 }
 
 export function createRealmBannerAtlas(): CanvasTexture {
-  const { texture: atlas, context } = createCanvasTexture(REALM_ATLAS_COLUMNS * 128, REALM_ATLAS_ROWS * 256);
+  const canvas = document.createElement("canvas");
+  canvas.width = REALM_ATLAS_COLUMNS * 128;
+  canvas.height = REALM_ATLAS_ROWS * 256;
+  const context = canvas.getContext("2d");
   if (!context) throw new Error("Realm banner atlas canvas is unavailable");
-  const canvas = atlas.image as HTMLCanvasElement;
   // Missing order metadata leaves unmarked cloth in the current ownership color.
   for (const [group, relationship] of SETTLEMENT_RELATIONSHIP_ORDER.entries()) {
     context.fillStyle = SETTLEMENT_RELATIONSHIPS[relationship].color;
     context.fillRect(0, group * REALM_GROUP_ROWS * 256, canvas.width, REALM_GROUP_ROWS * 256);
   }
+  const atlas = new CanvasTexture(canvas);
   atlas.name = "Realm order banners";
   atlas.colorSpace = SRGBColorSpace;
   atlas.flipY = false;

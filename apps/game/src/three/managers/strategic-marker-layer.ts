@@ -1,10 +1,10 @@
 import { HOME_KINDS, homeIcon, type HomeKind } from "@/ui/design-system/home-icons";
-import { createCanvasTexture } from "../utils/canvas-texture";
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { StructureType } from "@bibliothecadao/types";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import {
+  CanvasTexture,
   Color,
   DoubleSide,
   DynamicDrawUsage,
@@ -329,7 +329,10 @@ function loadTextureFromPath(path: string): Promise<Texture> {
 function createTierGlyphTexture(iconTexture: Texture, glyph: string): Texture {
   if (typeof document === "undefined") return iconTexture;
   const size = 256;
-  const { texture, context } = createCanvasTexture(size, size);
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext("2d");
   if (!context) return iconTexture;
   const image = iconTexture.image as CanvasImageSource | undefined;
   if (image) context.drawImage(image, 0, 0, size, size);
@@ -341,6 +344,7 @@ function createTierGlyphTexture(iconTexture: Texture, glyph: string): Texture {
   context.fillStyle = "#ffffff";
   context.strokeText(glyph, size - size * 0.06, size - size * 0.04);
   context.fillText(glyph, size - size * 0.06, size - size * 0.04);
+  const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
   return texture;
 }

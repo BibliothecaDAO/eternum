@@ -1,5 +1,4 @@
 import { CanvasTexture, SRGBColorSpace } from "three";
-import { createCanvasTexture } from "../../utils/canvas-texture";
 import type { ShipArmyClass } from "./ship-design";
 
 export const SAIL_STRIPE_U = { start: 150 / 512, end: 362 / 512 } as const;
@@ -14,7 +13,9 @@ export interface SailIdentity {
 
 /** One texture can be shared by every ship belonging to the same player. */
 export function createSailPrint(identity: SailIdentity, artwork?: ImageBitmap): CanvasTexture {
-  const { texture, context: ctx } = createCanvasTexture(512, 512);
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 512;
+  const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Sail print canvas is unavailable");
   paintLinen(ctx, identity.color);
   if (artwork) {
@@ -33,6 +34,7 @@ export function createSailPrint(identity: SailIdentity, artwork?: ImageBitmap): 
     );
   // A permanent class badge keeps army type legible when the center carries a player's custom print.
   paintEmblem(ctx, identity.army, identity.ink ?? "#e9bb58", 256, 440, 0.22);
+  const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
   texture.flipY = false;
   texture.anisotropy = 4;

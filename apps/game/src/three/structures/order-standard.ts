@@ -1,5 +1,4 @@
 import brandPalette from "@/brand/palette.json";
-import { createCanvasTexture } from "../utils/canvas-texture";
 import { aspects, catalogOrder, orders, type AspectId } from "@bibliothecadao/types";
 import {
   BoxGeometry,
@@ -438,10 +437,14 @@ function signumEmblemMaterial(atlas: CanvasTexture): MeshBasicNodeMaterial {
 }
 
 function createSignumAtlas(): CanvasTexture {
-  const { texture: atlas, context } = createCanvasTexture(ATLAS_SIZE, ATLAS_SIZE);
+  const canvas = document.createElement("canvas");
+  canvas.width = ATLAS_SIZE;
+  canvas.height = ATLAS_SIZE;
+  const context = canvas.getContext("2d");
   if (!context) throw new Error("Order signum atlas canvas is unavailable");
   context.fillStyle = SLATE_HEX;
   context.fillRect(0, 0, ATLAS_SIZE, ATLAS_SIZE);
+  const atlas = new CanvasTexture(canvas);
   atlas.name = "Order signum facets";
   atlas.colorSpace = SRGBColorSpace;
   atlas.flipY = false;
