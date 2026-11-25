@@ -85,6 +85,7 @@ button.frontier-stock-chips[aria-expanded="true"] {
 .frontier-phone-float {
   display: flex;
   min-height: 52px;
+  margin-top: var(--hud-notice-band, 0px);
   align-items: flex-start;
   justify-content: space-between;
   gap: theme(spacing.2);

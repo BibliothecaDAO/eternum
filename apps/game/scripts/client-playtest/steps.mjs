@@ -1596,28 +1596,28 @@ const BANE_COLLECTIONS = {
     button: "Collect",
     receipts: ["LaborGrant"],
     quest: "The Cull",
-    count: "(2.5K/2.5K)",
+    count: "2,500 of 2,500",
     head: "World Bane: Ash Fall",
   },
   again: {
     button: "Collect again",
     receipts: ["BaneGrant"],
     quest: "The Cull",
-    count: "(2.5K/2.5K)",
+    count: "2,500 of 2,500",
     head: "World Bane: Ash Fall",
   },
   late: {
     button: "Collect",
     receipts: ["LaborGrant", "BaneGrant"],
     quest: "The Cull",
-    count: "(2.5K/2.5K)",
+    count: "2,500 of 2,500",
     head: "World Bane: Ash Fall",
   },
   team: {
     button: "Collect",
     receipts: ["LaborGrant"],
     quest: "The Stand",
-    count: "(3/3)",
+    count: "3 of 3",
     head: "Bane from Prowess",
   },
 };
@@ -1633,7 +1633,8 @@ const baneCollectionSteps = (expected) => [
           browser.read(`JSON.stringify((() => {
           const panel = document.querySelector('[data-daily-quest]');
           const button = [...(panel?.querySelectorAll('button') ?? [])].find(b => b.textContent === ${JSON.stringify(expected.button)});
-          return { text: panel?.textContent, collect: Boolean(button && !button.disabled) };
+          const meter = panel?.querySelector('[role="meter"]')?.getAttribute("aria-label");
+          return { text: [panel?.textContent, meter].join(" · "), collect: Boolean(button && !button.disabled) };
         })())`),
         (value) => value.collect,
         PLAYABLE_WAIT_MS,
@@ -3152,27 +3153,6 @@ const DISCOVERED_SPIRE_STEPS = [
         ? completed(played)
         : failed("Discovered Spire did not enter the adjacent layer and follow the army", played);
     },
-  },
-  {
-    name: "next-spire-chance",
-    play: async ({ browser }) => {
-      await pickTheSpireArmy({ browser });
-      return readUntil(
-        () =>
-          browser.read(`JSON.stringify([...document.querySelectorAll('[data-spire-chance]')].filter(element => {
-        const rect = element.getBoundingClientRect();
-        const style = getComputedStyle(element);
-        return rect.width > 0 && rect.height > 0 && rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight && style.visibility !== 'hidden' && style.display !== 'none';
-      }).map(element => element.textContent))`),
-        (shown) => shown.includes("Spire · next reveal 10%"),
-        SPIRE_WAIT_MS,
-      );
-    },
-    settleMs: 0,
-    verify: ({ played }) =>
-      played.includes("Spire · next reveal 10%")
-        ? completed(played)
-        : failed("The new layer must show its own first-reveal Spire chance", played),
   },
 ];
 

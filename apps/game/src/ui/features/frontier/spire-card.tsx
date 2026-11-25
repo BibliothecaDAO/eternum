@@ -13,7 +13,6 @@ import { ARMY, dayLeft, MOVE, SPIRE_WORDS, STAMINA } from "@/ui/design-system/ki
 import { toast } from "@/ui/features/event-feed/notify";
 import {
   armyAtItsSpire,
-  armySpireChance,
   DEEP_DEPTH,
   configManager,
   entityMapPosition,
@@ -70,7 +69,6 @@ export const useSelectedSpire = (): Spire | null => {
   );
 };
 
-/** The army's discovery chance, or the way into its found Spire while it stands beside it. */
 export const useArmySpireStatus = (explorerId: number) => {
   const { setup } = useGame();
   const { isMapView } = useQuery();
@@ -79,13 +77,7 @@ export const useArmySpireStatus = (explorerId: number) => {
   if (!isMapView) return null;
   const gameId = configManager.getActiveGameId();
   const spire = armyAtItsSpire(setup.store, gameId, explorerId, now);
-  if (spire) return <SpireButton explorerId={explorerId} spire={spire} />;
-  const chance = armySpireChance(setup.store, gameId, explorerId, now);
-  return chance === null ? null : (
-    <p data-spire-chance className="text-hud-small text-hud-ink">
-      {SPIRE_WORDS.nextReveal(chance)}
-    </p>
-  );
+  return spire ? <SpireButton explorerId={explorerId} spire={spire} /> : null;
 };
 
 /**

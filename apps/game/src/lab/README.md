@@ -152,7 +152,9 @@ Open **Models & motion → Realm ladder**, or `/lab/models?family=realms`. Age, 
 controls exercise the same `SettlementModel` used by the world map. All ages compares the ladder at true scale; Close,
 Gameplay and Far use distances 6, 20 and 45. The default is Gameplay; field of view and pitch come from the world-map
 camera profile, along +Z. Drag to orbit and scroll to zoom. The entity picker exposes both city and kingdom designs and
-all seven imperial crowns. The separate sculpt is a study, not a runtime option.
+all seven imperial crowns. The separate sculpt is a study, not a runtime option. **Base City candidate** (`base=1`)
+shows the image-to-3D courtyard keep City (`BASE_REALM_CANDIDATES`, lab only) beside the shipped City, Kingdom and
+Empire; Age, Series, All ages and Revision do not apply to it.
 
 `/lab/terrain-benchmark?realms=1` adds 48 production realm placements (24 normal, 24 wonder) to the existing terrain
 trace. The checkbox is also available in the benchmark UI. Its fingerprint ends in `:realms48`; compare identical

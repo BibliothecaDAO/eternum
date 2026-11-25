@@ -5,16 +5,14 @@ import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudButton, HudLoading, HudMeter } from "@/ui/design-system/kit/hud-elements";
 import { DAY_BANNER_WORDS as WORDS } from "@/ui/design-system/kit/words";
-import { type AspectId, formatAmount, ResourcesIds } from "@bibliothecadao/types";
+import { type AspectId, formatAmount, type QuestLine, questLine, ResourcesIds } from "@bibliothecadao/types";
 
 import { EmissaryCard, EmissaryOk } from "../tutorial/aspect-emissary-dock";
 import type { BaneFace } from "./bane-face";
 
-export interface DayQuestFace {
+export interface DayQuestFace extends QuestLine {
   icon: IconMeaning;
   name: string;
-  unit: string;
-  objective: string;
 }
 
 export interface DayQuestReading {
@@ -52,16 +50,6 @@ export const QuestDockView = ({
   onClose,
 }: QuestDockProps) => {
   const title = bane ? bane.title : quest ? questTitle(quest, layout) : undrawn ? WORDS.undrawnTitle : WORDS.quest;
-  const count = reading && !bane && (
-    <span
-      data-quest-count
-      className="quest-dock__count"
-      data-done={reading.state !== "running" || undefined}
-      aria-label={quest ? WORDS.count(reading.progress, reading.target, quest.unit) : undefined}
-    >
-      {WORDS.fraction(reading.progress, reading.target)}
-    </span>
-  );
   return (
     <EmissaryCard
       aspectId={speaker}
@@ -72,12 +60,7 @@ export const QuestDockView = ({
       picture={bane?.painting}
       className="quest-dock"
       attributes={{ "data-daily-quest": "", "data-quest-layout": layout, "data-hud-part": "" }}
-      controls={
-        <>
-          {count}
-          <EmissaryOk onClose={onClose} />
-        </>
-      }
+      controls={<EmissaryOk onClose={onClose} />}
     >
       {bane && <BaneLine bane={bane} />}
       {quest && reading ? (
@@ -126,14 +109,14 @@ const BaneLine = ({ bane }: { bane: BaneStanding }) => (
 );
 
 const QuestLine = ({ quest, reading, named }: { quest: DayQuestFace; reading: DayQuestReading; named: boolean }) => {
-  const objective = WORDS.objectiveLine(quest.objective, reading.target);
+  const objective = questLine(quest, reading.target);
   return (
     <span data-quest-objective className="quest-dock__objective">
       {named ? (
         <>
           <Icon name={quest.icon} size={20} className="quest-dock__quest-icon" />
           <span>
-            <strong>{quest.name}</strong> · {objective} ({WORDS.fraction(reading.progress, reading.target)})
+            <strong>{quest.name}</strong> · {objective}
           </span>
         </>
       ) : (

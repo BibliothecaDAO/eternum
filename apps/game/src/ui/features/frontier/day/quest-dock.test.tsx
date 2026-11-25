@@ -4,13 +4,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { GameProvider } from "@/hooks/context/game-context";
 import { chainOf } from "@/lab/game/lab-chain";
 import { questScenario } from "@/lab/game/quest-scenario";
-import { dayAtIndex, readExpeditionRules } from "@bibliothecadao/eternum";
+import { dayAtIndex, readDailyQuest, readExpeditionRules } from "@bibliothecadao/eternum";
 import { frontierSeasonOnePreset } from "../../../../../../../config/source/frontier/season-one";
-import { RESOURCE_PRECISION, aspects } from "@bibliothecadao/types";
-import { nativeBaneConstants, nativeQuestConstants } from "@bibliothecadao/eternum/game-client";
+import { RESOURCE_PRECISION, aspects, questCatalog, questLine } from "@bibliothecadao/types";
+import { nativeBaneConstants, nativeQuestConstants, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { useBaneToday } from "./bane-face";
-import { QuestDock } from "./quest-dock";
+import { questSpeaker, QuestDock } from "./quest-dock";
+import { DailyQuestChip } from "../hud/daily-quest-chip";
+import { resolveAspectEmissary } from "../tutorial/aspect-emissaries";
 import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
 
 const BANE_DAY = frontierSeasonOnePreset.banes.quietDays;
@@ -246,8 +248,11 @@ describe("bane collection", () => {
     game.draw();
     expect(host.querySelector("aside")?.getAttribute("aria-label")).toBe(`Havoc: Bane from ${source.name}`);
     expect(host.querySelector(".emissary-dock__portrait")?.getAttribute("data-icon")).toBe("bane-altar-curse");
-    expect(host.querySelector("[data-bane-row]")?.textContent).toBe("▾Deep height pausedBane broken");
-    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("The Stand · Clear 3 guarded sites (3/3)");
+    expect(host.querySelector("[data-bane-row]")?.textContent).toBe(
+      `▾${DAY_BANNER_WORDS.heightChip}${DAY_BANNER_WORDS.baneBroken}`,
+    );
+    const stand = questCatalog.find((quest) => quest.id === nativeQuestConstants.STAND)!;
+    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe(`${stand.name} · ${questLine(stand, 3)}`);
     expect(host.textContent).not.toContain(DAY_BANNER_WORDS.twiceIfBroken);
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(collectAgain()).toBeUndefined();
@@ -283,5 +288,18 @@ describe("bane collection", () => {
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(reward("Labor")).toBe("<1 Labor");
     expect(reward("Essence")).toBe("<1 Essence");
+  });
+
+  it("shows on the pill the Aspect that gives the quest, inside its ring, and no count", () => {
+    const game = fixture();
+    game.drawWith(<DailyQuestChip realm={game.realm()} />);
+    const chip = host.querySelector("[data-daily-quest-chip]")!;
+    const reading = readDailyQuest(game.store, 1, safeInteger(game.realm().entity_id), clock.now)!.reading.known!;
+    expect(chip.querySelector("[data-icon]")?.getAttribute("data-icon")).toBe(
+      resolveAspectEmissary(questSpeaker(reading)).portrait,
+    );
+    expect(chip.textContent).not.toContain(
+      DAY_BANNER_WORDS.fraction(safeInteger(reading.progress), safeInteger(reading.target)),
+    );
   });
 });
