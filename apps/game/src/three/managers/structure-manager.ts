@@ -30,7 +30,12 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { resolveStructureRotationY } from "../structures/structure-orientation";
 import { SettlementModel } from "../structures/settlement-model";
 import { resolveSettlementRelationship } from "../structures/settlement-appearance";
-import { RiftModelPath, isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
+import {
+  RiftModelPath,
+  SUPPLY_POST_STANDARD_MODEL_PATH,
+  isRealmModelPath,
+  isSettlementModelPath,
+} from "../constants/scene-constants";
 import { onSidesChanged, watchedSide } from "@/utils/entity-ownership";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
@@ -229,6 +234,9 @@ function isWithinBounds(hexCoords: { col: number; row: number }, bounds: WorldSp
     hexCoords.row <= bounds.maxRow
   );
 }
+
+const isClearedSite = ({ clearedSite, occupierType }: StructureSpatialRenderable): boolean =>
+  clearedSite === true && occupierType !== TileOccupier.SupplyPost;
 
 export class StructureManager {
   private scene: Scene;
@@ -512,7 +520,7 @@ export class StructureManager {
   }
 
   private resolveStructureInfo(renderable: StructureSpatialRenderable): StructureInfo | undefined {
-    if (renderable.reserved) return undefined;
+    if (renderable.reserved || isClearedSite(renderable)) return undefined;
 
     const cached = this.structureInfoCache.get(renderable.entityId);
     if (cached) {
@@ -585,10 +593,6 @@ export class StructureManager {
     if (renderable.occupierType === TileOccupier.SupplyPost) return this.buildSupplyPostInfo(renderable);
     const renderInfo = getStructureInfoFromTileOccupier(renderable.occupierType);
     if (!renderInfo || renderInfo.reserved) return undefined;
-
-    if (renderable.clearedSite) {
-      return { ...this.buildSiteInfo(renderable, renderInfo.type, 0n), clearedSite: true };
-    }
 
     const structureComponent = this.store?.get("Structure", {
       game_id: configManager.getActiveGameId(),
@@ -1272,15 +1276,15 @@ export class StructureManager {
    */
   private hasCosmeticSkin(structure: StructureInfo): boolean {
     // Frontier sites retain their landmark and guard composition.
-    if (structure.frontierBeast || structure.clearedSite || structure.supplyPost) return false;
+    if (structure.frontierBeast || structure.supplyPost) return false;
     if (!structure.cosmeticId || !structure.cosmeticAssetPaths?.length) {
       return false;
     }
     return !structure.usesFallbackCosmeticSkin;
   }
 
-  private clearedStandardModelIndex(structureType: StructureType): number {
-    return this.structureModelPaths[String(structureType)].length - 1;
+  private supplyPostStandardModelIndex(): number {
+    return this.structureModelPaths[String(StructureType.Camp)].indexOf(SUPPLY_POST_STANDARD_MODEL_PATH);
   }
 
   /** The height of the model the structure is drawn with; nothing stands over its tile until that model is loaded. */
@@ -1289,12 +1293,11 @@ export class StructureManager {
       const baseHeight = this.getModelForStructure(structure)?.height ?? 0;
       const models = this.structureModels.get(structure.structureType);
       const standardHeight =
-        (models?.get(this.clearedStandardModelIndex(structure.structureType))?.height ?? 0) *
+        (models?.get(this.supplyPostStandardModelIndex())?.height ?? 0) *
           SUPPLY_POST_STANDARD.scale +
         SUPPLY_POST_STANDARD.y;
       return Math.max(baseHeight, standardHeight);
     }
-    if (structure.clearedSite) return this.getModelForStructure(structure)?.height ?? 0;
     if (!structure.frontierBeast) return this.getModelForStructure(structure)?.height ?? 0;
     const models = this.structureModels.get(structure.structureType);
     const composition = frontierSiteComposition(structure.structureType);
@@ -1315,7 +1318,6 @@ export class StructureManager {
 
   private getBaseStructureModelIndex(structure: StructureInfo): number {
     if (structure.supplyPost) return SUPPLY_POST_MODEL_INDEX;
-    if (structure.clearedSite) return this.clearedStandardModelIndex(structure.structureType);
     if (structure.frontierBeast)
       return frontierSiteComposition(structure.structureType).baseScale === 0
         ? frontierBeastModelIndex(structure.frontierBeast.beast)
@@ -1338,7 +1340,7 @@ export class StructureManager {
 
   private getStructureModelIndices(structure: StructureInfo): number[] {
     const base = this.getBaseStructureModelIndex(structure);
-    if (structure.supplyPost) return [base, this.clearedStandardModelIndex(structure.structureType)];
+    if (structure.supplyPost) return [base, this.supplyPostStandardModelIndex()];
     if (structure.frontierBeast) return [...new Set([base, frontierBeastModelIndex(structure.frontierBeast.beast)])];
     return [base];
   }
@@ -1648,7 +1650,7 @@ export class StructureManager {
     }
 
     if (structure.supplyPost) {
-      const standard = models.get(this.clearedStandardModelIndex(structure.structureType));
+      const standard = models.get(this.supplyPostStandardModelIndex());
       const { scale, x, y, z } = SUPPLY_POST_STANDARD;
       return [
         this.bindStructureInstance(model, structure.entityId, dirtyModels),
@@ -1840,13 +1842,8 @@ export class StructureManager {
     });
   }
 
-  /**
-   * The one place a plate is set: the band's text tier gates it for every caller. A cleared site has none: the standard
-   * on its tile says it (owner, 28 October 2026: "we dont need to put the flag labels on the map it overcrowds it a bit
-   * and there's already a flag on the tile").
-   */
   private updateStructureCompactLabel(structure: StructureInfo, position: Vector3): void {
-    if (!this.contentLadder.labels || structure.clearedSite || structure.supplyPost) {
+    if (!this.contentLadder.labels || structure.supplyPost) {
       this.removeStructureCompactLabel(structure.entityId);
       return;
     }

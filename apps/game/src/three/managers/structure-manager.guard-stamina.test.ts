@@ -271,7 +271,7 @@ describe("Frontier camp and supply post models", () => {
     expect(manager.dummy.scale.toArray()).toEqual([1, 1, 1]);
   });
 
-  it("draws a supply post from its tile's occupier with the clearing Aspect's standard beside it, while a cleared site without one keeps only its standard", () => {
+  it("draws a supply post from its tile's occupier with the clearing Aspect's standard beside it", () => {
     const { store } = campBeside();
     store.applyFacts([
       {
@@ -296,9 +296,7 @@ describe("Frontier camp and supply post models", () => {
 
     const supplyPost = makeModel();
     const campStandard = makeModel(true);
-    const riftStandard = makeModel(true);
     const campStandardIndex = mode.assets.structureModelPaths[StructureType.Camp].length - 1;
-    const riftStandardIndex = mode.assets.structureModelPaths[StructureType.Rift].length - 1;
     const manager = bindManager(
       new Map([
         [
@@ -308,7 +306,6 @@ describe("Frontier camp and supply post models", () => {
             [campStandardIndex, campStandard],
           ]),
         ],
-        [StructureType.Rift, new Map([[riftStandardIndex, riftStandard]])],
       ]),
     );
     const builder = Object.assign(manager, { store }) as unknown as {
@@ -324,7 +321,6 @@ describe("Frontier camp and supply post models", () => {
       realmOrder: home.metadata.order,
       owner: { address: home.owner },
     });
-    expect(post.clearedSite).toBeUndefined();
     projection.dispose();
 
     const friendlyPost = { ...post, isMine: true, realmOrder: 1 };
@@ -339,36 +335,10 @@ describe("Frontier camp and supply post models", () => {
 
     manager.addVisibleStructureInstance({ ...post, entityId: SITE + 2, isMine: false }, new Set(), new Set());
     expect(campStandard.setRelationshipAt).toHaveBeenCalledWith(1, "enemy");
-
-    const clearedSite = {
-      entityId: SITE + 1,
-      structureName: "Galecrag",
-      hexCoords: { col: 0, row: 0 },
-      stage: 0,
-      level: 0,
-      isMine: false,
-      isAlly: false,
-      owner: { address: 0n, ownerName: "", guildName: "" },
-      structureType: StructureType.Rift,
-      hasWonder: false,
-      clearedSite: true as const,
-    };
-    expect(manager.getStructureModelIndices(clearedSite)).toEqual([riftStandardIndex]);
-    manager.addVisibleStructureInstance(clearedSite, new Set(), new Set());
-    expect(placementOf(riftStandard.matrices[0])).toEqual({ x: 0, y: 0, z: 0, scale: 1 });
-    expect(riftStandard.setAspectAt).not.toHaveBeenCalled();
-    expect(riftStandard.setRelationshipAt).toHaveBeenCalledWith(0, "enemy");
-
-    const receiptOnlyCamp = { ...clearedSite, entityId: SITE + 3, structureType: StructureType.Camp };
-    expect(manager.getStructureModelIndices(receiptOnlyCamp)).toEqual([campStandardIndex]);
-    manager.addVisibleStructureInstance(receiptOnlyCamp, new Set(), new Set());
-    expect(supplyPost.matrices).toHaveLength(2);
   });
 });
 
-// Owner, 28 October 2026: "we dont need to put the flag labels on the map it overcrowds it a bit and there's already a
-// flag on the tile".
-it("sets no plate on a cleared site, and takes away the one it had: the standard on its tile says it", () => {
+it("draws nothing on a cleared site: no model and no plate, and takes away the plate it had", () => {
   const { store, site } = campBeside();
   store.applyFacts([
     {
@@ -397,6 +367,7 @@ it("sets no plate on a cleared site, and takes away the one it had: the standard
   }) as { refreshStructurePresentation(entityId: number): void; compactLabelIds: Set<number> };
   chainAt(400);
   manager.refreshStructurePresentation(SITE);
+  expect((manager as unknown as { resolveStructureInfoByEntityId(id: number): unknown }).resolveStructureInfoByEntityId(SITE)).toBeUndefined();
   expect(plates.setLabel).not.toHaveBeenCalled();
   expect(plates.removeLabel).toHaveBeenCalledWith(SITE);
   expect(manager.compactLabelIds.has(SITE)).toBe(false);
