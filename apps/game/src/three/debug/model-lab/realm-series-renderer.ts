@@ -23,6 +23,7 @@ export interface RealmSeriesSettings {
   distance: number;
   lineup: boolean;
   base: boolean;
+  grow: boolean;
   reference?: string;
   comparison: "before" | "after" | "pair";
 }
@@ -76,13 +77,20 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
       const gltf = await gltfLoader.loadAsync(
         before ? `${settings.reference!.replace(/\/$/, "")}/${asset.id}.glb` : asset.path,
       );
-      height = Math.max(height, new Box3().setFromObject(gltf.scene).max.y);
+      const modelHeight = new Box3().setFromObject(gltf.scene).max.y;
+      const scale = settings.grow && asset.grownHeight ? asset.grownHeight / modelHeight : 1;
+      height = Math.max(height, modelHeight * scale);
       const model = new SettlementModel(gltf, 1, "realm", asset.wonder);
       models.push(model);
       await model.prepare();
       signal.throwIfAborted();
       const x = (slot - (series.length - 1) / 2) * Math.sqrt(3) * 2;
-      model.setMatrixAt(0, new Matrix4().makeTranslation(x, environment.terrain.sampleHeight(x, 0), 0));
+      model.setMatrixAt(
+        0,
+        new Matrix4()
+          .makeTranslation(x, environment.terrain.sampleHeight(x, 0), 0)
+          .multiply(new Matrix4().makeScale(scale, scale, scale)),
+      );
       model.setCount(1);
       model.setOrderAt(0, settings.order);
       model.setRelationshipAt(0, settings.owned ? "owned" : "enemy");

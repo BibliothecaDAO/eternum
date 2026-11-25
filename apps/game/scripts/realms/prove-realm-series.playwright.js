@@ -26,6 +26,7 @@
           "distance",
           "lineup",
           "base",
+          "grow",
           "reference",
           "comparison",
         ].every((key) => {
@@ -148,6 +149,16 @@
       for (const owned of [1, 0]) {
         await select("Ownership", owned);
         await capture(`base-ranks-${distance}-${owned}`);
+      }
+    }
+    await page.getByLabel("Ranks grow").click();
+    await page.waitForURL((url) => url.searchParams.get("grow") === "1");
+    await ready();
+    for (const distance of [20, 6]) {
+      await select("Distance", distance);
+      for (const owned of [1, 0]) {
+        await select("Ownership", owned);
+        await capture(`base-ranks-grow-${distance}-${owned}`);
       }
     }
     if (errors.length) throw new Error(errors.join("\n"));
