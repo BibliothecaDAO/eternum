@@ -1,7 +1,7 @@
 import "./reinforce.css";
 
 import { useGame } from "@/hooks/context/game-context";
-import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -188,7 +188,7 @@ const ReinforceSource = ({ stock, post }: { stock: number; post: boolean }) => (
 export const SupplyPostEnds = () => {
   const { setup } = useGame();
   const rules = readExpeditionRules(setup.store, configManager.getActiveGameId());
-  const now = useNowSeconds();
+  const now = useCurrentDefaultTick();
   return <HudLine icon="hourglass" line={SUPPLY_POST.endsIn(rules ? dayClock(rules, now).secondsLeft : undefined)} />;
 };
 
