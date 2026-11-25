@@ -1,6 +1,7 @@
 import { Box3, Color, Matrix4, PerspectiveCamera, Scene, Vector3 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { initializeProceduralCharacterRendererRuntime } from "../../characters/procedural-character-renderer-runtime";
+import { ORDER_STANDARD_NAME } from "../../structures/order-standard";
 import { SettlementModel } from "../../structures/settlement-model";
 import { BASE_REALM_CANDIDATES, REALM_ASSETS, realmModelIndex } from "../../structures/realm-design";
 import { gltfLoader } from "../../utils/utils";
@@ -81,6 +82,7 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
       const scale = settings.grow && asset.grownHeight ? asset.grownHeight / modelHeight : 1;
       height = Math.max(height, modelHeight * scale);
       const model = new SettlementModel(gltf, 1, "realm", asset.wonder);
+      model.group.getObjectByName(ORDER_STANDARD_NAME)!.visible = false;
       models.push(model);
       await model.prepare();
       signal.throwIfAborted();
