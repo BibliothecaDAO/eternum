@@ -247,15 +247,6 @@ export const DeepDrain = ({
  * A desktop row's stamina: the bar in segments, and its exact count beside it ("58/120") in a column wide enough for
  * "150/150", so a full bar and an emptier one end their bars at the same place.
  */
-export const StaminaReading = ({ stamina }: { stamina: StaminaBar | undefined }) => (
-  <span className="flex flex-1 items-center gap-2">
-    <span className="min-w-8 flex-1">
-      <HudStamina stamina={stamina} />
-    </span>
-    <span className="min-w-14 text-right">{`${formatAmount(stamina?.current)}/${formatAmount(stamina?.max)}`}</span>
-  </span>
-);
-
 /** A token's stamina: the kit's bar, inset from the token's edge. */
 const TokenStamina = ({ stamina }: { stamina: StaminaBar | undefined }) => (
   <span className="w-full px-1.5">

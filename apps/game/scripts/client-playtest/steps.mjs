@@ -738,8 +738,16 @@ const TOWN_DEPLOY_STEPS = [
   ),
 ];
 
-const DEPLOY_TROOPS_INPUT = '[data-kit-sheet] input[aria-label="Troops"]';
-const DEPLOY_TROOPS = `JSON.stringify(document.querySelector(${JSON.stringify(DEPLOY_TROOPS_INPUT)})?.value ?? null)`;
+/** Deploy's count: its size row's slider, set as a finger drags it, and the count the row shows. */
+const DEPLOY_SIZE = '[data-kit-sheet] .size-row input[type="range"]';
+const setDeployCount = (browser, count) =>
+  browser.read(`(() => {
+    const slider = document.querySelector(${JSON.stringify(DEPLOY_SIZE)});
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(slider, ${JSON.stringify(String(count))});
+    slider.dispatchEvent(new Event("input", { bubbles: true }));
+    return slider.value;
+  })()`);
+const DEPLOY_TROOPS = `JSON.stringify(document.querySelector('[data-kit-sheet] .size-row__count')?.textContent ?? null)`;
 
 const DEPLOY_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -756,12 +764,8 @@ async function deployFromTheDock({ browser }, amount, troopName, atMost = Infini
   );
   if (sheet !== "Deploy") return { sheet };
   if (troopName) browser.click(troopName);
-  if (amount !== undefined || Number.isFinite(atMost)) {
-    browser.click("Adjust size");
-    if (amount !== undefined) browser.run(["fill", DEPLOY_TROOPS_INPUT, String(amount)]);
-    if (Number(String(browser.read(DEPLOY_TROOPS)).replace(/,/g, "")) > atMost)
-      browser.run(["fill", DEPLOY_TROOPS_INPUT, String(atMost)]);
-  }
+  if (amount !== undefined) setDeployCount(browser, amount);
+  if (Number(String(browser.read(DEPLOY_TROOPS)).replace(/,/g, "")) > atMost) setDeployCount(browser, atMost);
   const deploy = await readUntil(() => browser.read(sheetButton("^Deploy$")), Boolean, SHEET_WAIT_MS);
   if (!deploy) return { sheet, deploy };
   browser.tap(deploy.offset);
@@ -4694,20 +4698,22 @@ const LAB_SUPPLY_POST_STEPS = [
         browser.tap([armyAt[0] + dx, armyAt[1] + dy]);
         const state = await readUntil(
           () => browser.read(REINFORCE_STATE),
-          (shown) => shown.sheet?.startsWith("Supply post"),
+          (shown) => SUPPLY_POST_SHEET.test(shown.sheet ?? ""),
           SHEET_WAIT_MS,
         );
-        if (state.sheet?.startsWith("Supply post")) {
+        if (SUPPLY_POST_SHEET.test(state.sheet ?? "")) {
           extraScreenshot("supply-post");
+          // One army beside the post: the sheet is its reinforcement. Several: each is offered first.
+          if (state.buttons.some(isReinforceVerb)) return { found: true, state };
           const button = state.buttons.find((text) => text.startsWith("Reinforce Army"));
           if (!button) return { found: false, state };
           browser.click(button);
           const sheet = await readUntil(
             () => browser.read(REINFORCE_STATE),
-            (shown) => shown.sheet?.startsWith("Reinforce"),
+            (shown) => shown.buttons.some(isReinforceVerb),
             SHEET_WAIT_MS,
           );
-          return { found: sheet.sheet?.startsWith("Reinforce"), state, sheet };
+          return { found: sheet.buttons.some(isReinforceVerb), state, sheet };
         }
         browser.press("Escape");
       }
@@ -4786,12 +4792,18 @@ function reinforceSheetOpen({ played }) {
 }
 
 /** Max, then Reinforce, then the chain's answer: the army's token reads more troops than before. */
+/** The sheet's verb, which names the troops it adds ("Reinforce +404"). */
+const isReinforceVerb = (name) => /^Reinforce \+/.test(name);
+/** A supply post's sheet, its reinforcement or its armies to choose from. */
+const SUPPLY_POST_SHEET = /^Supply post/i;
+
 async function reinforceWithMax({ browser, extraScreenshot }) {
   browser.click("Max");
   await sleep(HOVER_SETTLE_MS);
   const chosen = browser.read(REINFORCE_STATE);
   extraScreenshot("max");
-  browser.click("Reinforce");
+  const verb = chosen.buttons.find(isReinforceVerb);
+  if (verb) browser.click(verb);
   const after = await readUntil(
     () => browser.read(REINFORCE_STATE),
     (shown) =>
@@ -4807,7 +4819,7 @@ function armyReinforced({ played }) {
   const troops = Number((after.armyToken ?? "").replace(/^T\d/, "").replaceAll(",", ""));
   if (!(troops > ARMY_BEFORE_REINFORCE))
     return failed(`the army's token reads ${after.armyToken} after the reinforcement`, played);
-  if (after.sheet?.startsWith("Reinforce")) return failed("the Reinforce sheet stays open after the answer", played);
+  if (after.buttons.some(isReinforceVerb)) return failed("the Reinforce sheet stays open after the answer", played);
   if (JSON.stringify(after.answered) !== JSON.stringify(REINFORCED))
     return failed(`the chain left ${JSON.stringify(after.answered)}, not ${JSON.stringify(REINFORCED)}`, played);
   return completed({ chosen: played.chosen, sent: after.sent, troops, panel: after.sheet });
@@ -7102,7 +7114,7 @@ export const STEP_SETS = {
           await sleep(1_000);
           const deployHud = browser.read(`(() => ({
             troopCards: [...document.querySelectorAll('[data-kit-sheet] [aria-label="Troop type"] button')].map((b) => b.getAttribute("aria-label")),
-            hasAdjust: [...document.querySelectorAll('[data-kit-sheet] button')].some((b) => b.textContent?.trim() === "Adjust size"),
+            hasSize: Boolean(document.querySelector('[data-kit-sheet] .size-row input[type="range"]')),
             deployEnabled: Boolean(document.querySelector('[data-kit-sheet] .ui-window__foot button[data-kind="primary"]:not([disabled])')),
             inRightRail: Boolean(document.querySelector('[data-rail-panel] [data-kit-sheet][aria-label="Deploy"]')),
           }))()`);
@@ -7115,11 +7127,11 @@ export const STEP_SETS = {
         verify: ({ played }) =>
           played.sheet === "Deploy" &&
           played.deployHud.troopCards.length >= 3 &&
-          played.deployHud.hasAdjust &&
+          played.deployHud.hasSize &&
           played.deployHud.deployEnabled &&
           (!onADesktop() || played.deployHud.inRightRail)
             ? completed(played)
-            : failed("Deploy sheet must open at full stack with troop cards, Adjust size and enabled Deploy", played),
+            : failed("Deploy sheet must open at full stack with troop cards, its size row and enabled Deploy", played),
       },
     ],
   },

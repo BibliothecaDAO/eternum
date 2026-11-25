@@ -14,7 +14,7 @@ import { create } from "zustand";
 import type { SiteClear } from "./site-outcome";
 
 /** How long the banner stands over the map before it goes by itself: long enough to read its three chips. */
-export const FIGHT_BANNER_MS = 3_000;
+const FIGHT_BANNER_MS = 3_000;
 
 /**
  * The player's last clear, while its banner stands: a flourish the clear's story starts, never a game fact. What it

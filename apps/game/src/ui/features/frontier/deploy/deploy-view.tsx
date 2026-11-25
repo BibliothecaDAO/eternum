@@ -170,7 +170,7 @@ const TroopChoices = ({
   selected: TroopType | undefined;
   onPick: (category: TroopType) => void;
 }) => (
-  <div role="group" aria-label={TROOPS} className="deploy-troops">
+  <div role="group" aria-label={DEPLOY_WORDS.troopType} className="deploy-troops">
     {choices.map((choice) => (
       <button
         key={choice.category}

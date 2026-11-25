@@ -613,7 +613,7 @@ export const OATH_PICK = {
   notChosen: "The Oath could not be chosen.",
   notRedrawn: "The card could not be rerolled.",
 } as const;
-export const SITE_OATH = { label: "Oath", holds: "Holds an Oath", rule: "Clearing it opens an Oath pick" } as const;
+export const SITE_OATH = { label: "Oath", rule: "Clearing it opens an Oath pick" } as const;
 /** A camp the player's army clears on today's band: their armies refill beside it until the day ends. */
 export const SUPPLY_POST = {
   title: "Supply Post",
@@ -1145,6 +1145,7 @@ export const wheatForOnly = (troops: string, of: string) => `${WHEAT} for only $
 export const GET_WHEAT = `Get ${WHEAT}`;
 export const DEPLOYING = "Deploying…";
 export const DEPLOY_WORDS = {
+  troopType: "Troop type",
   slot: "Slot",
   oaths: "Oaths",
   startsOn: "Starts on",

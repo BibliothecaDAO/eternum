@@ -54,7 +54,7 @@ export const SizeRow = ({
       <button
         type="button"
         className="ui-pick size-row__max"
-        aria-label={`${MAXIMUM} ${formatExact(max)}`}
+        data-tip={`${MAXIMUM} ${formatExact(max)}`}
         aria-pressed={value === max && max > 0}
         disabled={disabled}
         onClick={() => set(max)}
