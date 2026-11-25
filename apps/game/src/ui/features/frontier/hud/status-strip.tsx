@@ -6,7 +6,7 @@ import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { FRONTIER_STORES, type StoreKind } from "../stores";
+import { formatStoreRate, FRONTIER_STORES, type StoreKind } from "../stores";
 
 /**
  * One store on the strip: what it holds, its limit (Essence has none), its rate an hour and when it is full (0 once it
