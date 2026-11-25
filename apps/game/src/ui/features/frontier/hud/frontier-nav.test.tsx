@@ -143,7 +143,6 @@ it("lists each place with what stands there, and a locked place with its lock an
   ]);
 });
 
-/** A HUD popover that is a surface of its own, as the daily quest's card is. */
 function SurfacePopover() {
   const { triggerProps, popover } = useHudPopover({ surface: true });
   return (
