@@ -342,6 +342,7 @@ import {
   formatExact,
   formatFigure,
   formatGain,
+  formatPercent,
   formatCount,
   formatShort,
   FRIEND_FRAGMENTS,
@@ -783,6 +784,26 @@ export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
 export const SHRINE = "Shrine";
 export const WELL = "Well";
+export const USE = "Use";
+export const USING = "Using…";
+export const exploresBought = (count: number) => `+${count} ${count === 1 ? "explore" : "explores"}`;
+export const wellRefillShare = (percent: number): string => `${formatPercent(percent / 100)} max`;
+export const SITE_USE_WORDS = {
+  use: (site: string) => `${USE} ${site}`,
+  shrineGives: "Swear an Oath",
+  shrineRule: "Offers this army an Oath · disappears on use",
+  wellRule: (gain: string) => `${gain} ${STAMINA} · disappears on use`,
+  wellShareRule: (share: string) => `Refills ${share} ${STAMINA} · disappears on use`,
+  wellFull: "Stamina full",
+  wellWasted: "Stamina full · this Well would be wasted",
+  wellToFull: (gain: string) => `${gain} ${STAMINA} · full`,
+  moveBeside: "Move beside to use",
+  alreadyUsed: "Site already used",
+  oathPickFirst: "Finish your army's Oath pick first",
+  failed: "Could not use this site.",
+  armyAt: (tiles: number, nearest: boolean) =>
+    `${tiles} ${tiles === 1 ? "tile" : "tiles"} away${nearest ? " · nearest" : ""}`,
+};
 export const SPIRE = "Spire";
 const loreOf = (site: string) => `${site} lore`;
 export const ATTACK = "Attack";
@@ -1045,8 +1066,8 @@ export const OPENING_WORDS = {
       `Stamina returns ${formatRate(rules.staminaPerSecond)}. A ${FRAGMENT} refills ${formatAmount(rules.staminaPerFragment)} now or unlocks ${ANCIENT_SEAL}.`,
     relic: (rules: OpeningRules) =>
       `Relics last ${formatAmount(rules.relicMinutesPerTier)} minutes per tier. Each army carries ${ARMY_RELIC_SLOTS}.`,
-    "well-lore": () => "Well lore is learned. Your armies can now uncover wells.",
-    "shrine-lore": () => "Shrine lore is learned. Your armies can now uncover shrines.",
+    "well-lore": () => "Well lore is learned. Uncovered wells appear on the map for any adjacent army to refill stamina.",
+    "shrine-lore": () => "Shrine lore is learned. Uncovered shrines appear on the map and offer an Oath on use.",
     city: (rules: OpeningRules) =>
       `Scouts reveal mist for ${formatAmount(rules.scoutExploreStamina)} stamina instead of ${formatAmount(rules.exploreStamina)}.`,
     barracks: (rules: OpeningRules) => `It raises ${formatRate(rules.knightsPerSecond)} Knights.`,
@@ -1067,8 +1088,8 @@ export const OPENING_WORDS = {
     essence: "Open Research to learn a node.",
     shop: "Open Shop or wait for stamina.",
     relic: "Open your army to inspect relic slots.",
-    "well-lore": "Explore mist hexes to find wells.",
-    "shrine-lore": "Explore mist hexes to find shrines.",
+    "well-lore": "Reveal mist to find a well, then move beside it and press Use.",
+    "shrine-lore": "Reveal mist to find a shrine, then move beside it and press Use.",
     city: "Train scouts for cheaper mist reveals.",
     barracks: "Tap the lit plot to build.",
     deploy: "Press Deploy in the Realm panel.",
@@ -2299,7 +2320,7 @@ export const RESEARCH_TREE = {
   oaths: "Oath slots",
   oathSlots: (count: number) => `${count} Oath ${count === 1 ? "slot" : "slots"}`,
   oathLocked: "Locked",
-  oathEarn: `Clear a site that holds an ${SITE_OATH.label}, or reveal a ${SHRINE}`,
+  oathEarn: `Clear a site that holds an ${SITE_OATH.label}, or use a ${SHRINE}`,
   conscriptionLine: "More troops from every troop building.",
   rationsLine: "Armies cost less wheat to deploy.",
   troopsAnHour: "Troops an hour",
@@ -2327,7 +2348,8 @@ export const RESEARCH_TREE = {
     open: (done: boolean) => (done ? RESEARCH_OPEN : "Opens"),
   },
   nouns: { essence: ESSENCE, labor: LABOR },
-  armiesFind: (site: string) => `Armies find ${site}s`,
+  wellLore: "Uncover Wells on the map — use one to refill stamina",
+  shrineLore: "Uncover Shrines on the map — use one to swear an Oath",
   each: (gain: string) => `${gain} each`,
   lore: loreOf,
   opensLayers: `Opens every layer under the ${layerName(0)}`,

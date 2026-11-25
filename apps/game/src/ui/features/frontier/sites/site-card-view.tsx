@@ -322,7 +322,7 @@ const Verb = ({
   );
 };
 
-const inFlightWord = (inFlight: OrderInFlight | undefined, own: OrderInFlight, word: string) =>
+export const inFlightWord = (inFlight: OrderInFlight | undefined, own: OrderInFlight, word: string) =>
   inFlight && (inFlight === own ? word : ON_ITS_WAY);
 
 const verbLine = (verb: SiteVerb, site: string): { line: string | undefined; warns: boolean } => {

@@ -132,6 +132,8 @@ export const isTileOccupierMapSite = (tileOccupier: number) => {
   return kind === "usable-site" || kind === "dormant-spire" || kind === "deep-site" || kind === "supply-post";
 };
 
+export const isTileOccupierUsableSite = (tileOccupier: number) => tileOccupantKind(tileOccupier) === "usable-site";
+
 export const isTileOccupierReservedHyperstructure = (tileOccupier: TileOccupier) => {
   return tileOccupantKind(tileOccupier) === "reserved-hyperstructure";
 };

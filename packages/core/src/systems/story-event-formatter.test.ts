@@ -1,4 +1,4 @@
-import { StructureType, siteName, siteUsedLine } from "@bibliothecadao/types";
+import { SHRINE_USED_LINE, StructureType, siteName, wellUsedLine } from "@bibliothecadao/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -818,24 +818,14 @@ it("writes a small army's find rounded, and one under a unit with no amount, as 
 });
 
 it.each([
-  [{ Shrine: 200 }, siteUsedLine("Shrine", "200")],
-  [{ Well: 60 }, siteUsedLine("Well", "60")],
-  [{ Well: 5 }, siteUsedLine("Well", "5")],
-  [{ Well: 0 }, siteUsedLine("Well", "0")],
+  [{ Shrine: 0 }, SHRINE_USED_LINE],
+  [{ Well: 60 }, wellUsedLine("60")],
+  [{ Well: 5 }, wellUsedLine("5")],
+  [{ Well: 0 }, wellUsedLine("0")],
 ])("shows the recorded site benefit without needing the consumed site or a surviving army (%j)", (benefit, title) => {
   expect(
     buildStoryEventPresentation(story("SiteUsed", { explorer_id: 7, coord: { x: 3, y: 4 }, benefit })),
   ).toMatchObject({ title, description: "Lord 0123's army" });
 });
 
-it.each([
-  [1, "I"],
-  [3, "III"],
-  [5, "V"],
-])("names the exact Shrine point at rank %s as its gem and +1", (rank, numeral) => {
-  const event = story("SiteUsed", { explorer_id: 7, coord: { x: 3, y: 4 }, benefit: { ShrinePoint: rank } });
-  expect(buildStoryEventPresentation(event)).toMatchObject({
-    title: `Shrine used, ${numeral} +1`,
-    ranked: { title: ["Shrine used, ", { rank }, " +1"], description: ["Lord 0123's army"] },
-  });
 });

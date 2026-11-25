@@ -29,7 +29,7 @@ import { StaminaManager } from "./stamina-manager";
 import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils/army-movement-utils";
 import { isViewerOwner } from "../utils/viewer";
 import { armyRealmSpire, isAtExpeditionSpire } from "../utils/expeditions";
-import { isTileOccupierMapSite } from "../utils/map/hex";
+import { isTileOccupierMapSite, isTileOccupierUsableSite } from "../utils/map/hex";
 
 /**
  * What bounds an army's orders as chain time passes: its spendable stamina, the steps its stamina and its owner's food
@@ -161,6 +161,19 @@ export class ArmyActionManager {
   private isMapSiteHex(position: HexPosition): boolean {
     const tile = getTileAt(this.store, this._getCurrentPosition().alt, position.col, position.row);
     return tile !== undefined && isTileOccupierMapSite(tile.occupier_type);
+  }
+
+  private isUsableSiteHex(position: HexPosition): boolean {
+    const tile = getTileAt(this.store, this._getCurrentPosition().alt, position.col, position.row);
+    return (
+      tile !== undefined &&
+      isTileOccupierUsableSite(tile.occupier_type) &&
+      configManager.isCommandEnabled("InteractSite")
+    );
+  }
+
+  private heldTileRefusal(position: HexPosition): OrderRefusal {
+    return this.isUsableSiteHex(position) ? { reason: "too-far" } : { reason: "occupied" };
   }
 
   /**
@@ -304,6 +317,12 @@ export class ArmyActionManager {
     const foodBoundsSteps = maxHex < this.staminaSteps(armyStamina);
 
     const troopType = this._getTroopType();
+    const alive =
+      currentArmy(
+        this.store,
+        this.store.require("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: this.entityId }),
+        currentDefaultTick,
+      ).troops.count > 0n;
     // One truth: paths plan from the same ExplorerTroops coord the submit
     // freshness guard checks. Callers must not substitute a visual position.
     const startPos = this._getCurrentPosition();
@@ -358,6 +377,13 @@ export class ArmyActionManager {
           });
       }
 
+      if (alive && this.isUsableSiteHex({ col, row })) {
+        actionPaths.set(key, [
+          { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
+          { hex: { col, row }, actionType: ActionType.UseSite, staminaCost: 0 },
+        ]);
+        continue;
+      }
       // Each tile skipped here says why (ActionPaths.refuse), so the map can name the reason where no order leads.
       if (!isSpire && !isExplored && !canExplore) {
         actionPaths.refuse(key, this.exploreRefusal(armyStamina));
@@ -483,7 +509,7 @@ export class ArmyActionManager {
           if (hasSpire || (hasArmy && armiesBlock) || hasStructure) continue;
           const passing = hasArmy;
           if (!passing && this.isOccupiedHex({ col, row })) {
-            actionPaths.refuse(neighborKey, { reason: "occupied" });
+            actionPaths.refuse(neighborKey, this.heldTileRefusal({ col, row }));
             continue;
           }
           if (!isExplored) continue;
@@ -538,6 +564,7 @@ export class ArmyActionManager {
 
     this.refuseTargetsBeyondStep(actionPaths, startPos, [armyHexes, structureHexes]);
     this.addDepthEntry(actionPaths, startPos, currentDefaultTick);
+    this.refuseSitesBeyondStep(actionPaths, startPos);
     return actionPaths;
   }
 
@@ -579,8 +606,17 @@ export class ArmyActionManager {
           const hex = { col: col + this.FELT_CENTER, row: row + this.FELT_CENTER };
           const key = ActionPaths.posKey(hex);
           if (key === startKey || actionPaths.decided(key)) continue;
-          actionPaths.refuse(key, this.isMapSiteHex(hex) ? { reason: "occupied" } : { reason: "too-far" });
+          actionPaths.refuse(key, this.isMapSiteHex(hex) ? this.heldTileRefusal(hex) : { reason: "too-far" });
         }
+  }
+
+  private refuseSitesBeyondStep(actionPaths: ActionPaths, startPos: HexPosition & { alt: boolean }) {
+    if (!configManager.isCommandEnabled("InteractSite")) return;
+    for (const occupancy of this.store.inGame("TileOccupancy", configManager.getActiveGameId())) {
+      if (occupancy.alt !== startPos.alt || !isTileOccupierUsableSite(occupancy.category)) continue;
+      const key = ActionPaths.posKey({ col: occupancy.col, row: occupancy.row });
+      if (!actionPaths.decided(key)) actionPaths.refuse(key, { reason: "too-far" });
+    }
   }
 
   private readonly _findDirection = (path: HexPosition[], spire = false) => {
