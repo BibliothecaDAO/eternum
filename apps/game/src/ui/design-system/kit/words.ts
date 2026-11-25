@@ -793,7 +793,6 @@ export const LAYER = "Layer";
  * commits that army to.
  */
 export const SPIRE_WORDS = {
-  nextReveal: (percent: number) => `Spire · next reveal ${percent}%`,
   title: SPIRE,
   lockedAt: (tier: Tier) => `${SPIRE} ${tierNumeral(tier)}`,
   enter: "Enter",

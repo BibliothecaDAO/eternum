@@ -3146,27 +3146,6 @@ const DISCOVERED_SPIRE_STEPS = [
         : failed("Discovered Spire did not enter the adjacent layer and follow the army", played);
     },
   },
-  {
-    name: "next-spire-chance",
-    play: async ({ browser }) => {
-      await pickTheSpireArmy({ browser });
-      return readUntil(
-        () =>
-          browser.read(`JSON.stringify([...document.querySelectorAll('[data-spire-chance]')].filter(element => {
-        const rect = element.getBoundingClientRect();
-        const style = getComputedStyle(element);
-        return rect.width > 0 && rect.height > 0 && rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight && style.visibility !== 'hidden' && style.display !== 'none';
-      }).map(element => element.textContent))`),
-        (shown) => shown.includes("Spire · next reveal 10%"),
-        SPIRE_WAIT_MS,
-      );
-    },
-    settleMs: 0,
-    verify: ({ played }) =>
-      played.includes("Spire · next reveal 10%")
-        ? completed(played)
-        : failed("The new layer must show its own first-reveal Spire chance", played),
-  },
 ];
 
 const HUD_SHEETS = [
