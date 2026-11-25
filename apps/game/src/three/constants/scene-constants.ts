@@ -68,7 +68,9 @@ export function isRealmModelPath(path: string): boolean {
 }
 
 export function isSettlementModelPath(path: string): boolean {
-  return [VILLAGE_MODEL_PATH, CAMP_MODEL_PATH, SUPPLY_POST_STANDARD_MODEL_PATH].includes(path) || isRealmModelPath(path);
+  return (
+    [VILLAGE_MODEL_PATH, CAMP_MODEL_PATH, SUPPLY_POST_STANDARD_MODEL_PATH].includes(path) || isRealmModelPath(path)
+  );
 }
 
 export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths([

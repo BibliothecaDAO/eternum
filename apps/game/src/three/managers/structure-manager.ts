@@ -1293,8 +1293,7 @@ export class StructureManager {
       const baseHeight = this.getModelForStructure(structure)?.height ?? 0;
       const models = this.structureModels.get(structure.structureType);
       const standardHeight =
-        (models?.get(this.supplyPostStandardModelIndex())?.height ?? 0) *
-          SUPPLY_POST_STANDARD.scale +
+        (models?.get(this.supplyPostStandardModelIndex())?.height ?? 0) * SUPPLY_POST_STANDARD.scale +
         SUPPLY_POST_STANDARD.y;
       return Math.max(baseHeight, standardHeight);
     }

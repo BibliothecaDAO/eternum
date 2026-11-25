@@ -965,11 +965,12 @@ the phone); `pnpm --dir apps/game prove:day-end --port 4199 --out <fresh-dir>` p
 ## Cleared Frontier sites
 
 On the world map, win the adjacent fight at a guarded site. The structure leaves its tile, which shows its plain ground;
-select that tile to read the credited resource. A tap on your own army standing there selects the army and shows its panel; the clear's row
-in the Feed, with the resource reward recorded by the receipt, selects the tile itself and shows the receipt. The tile
-carries no model, token or plate; a camp that becomes a supply post shows the post. The receipt (in another army's card too) and the
-clear's line in Events both name the site by its map name. The normal Move order enters the cleared tile. The receipt
-remains after a snapshot reload. Yesterday’s sites leave the current region with the new day.
+select that tile to read the credited resource. A tap on your own army standing there selects the army and shows its
+panel; the clear's row in the Feed, with the resource reward recorded by the receipt, selects the tile itself and shows
+the receipt. The tile carries no model, token or plate; a camp that becomes a supply post shows the post. The receipt
+(in another army's card too) and the clear's line in Events both name the site by its map name. The normal Move order
+enters the cleared tile. The receipt remains after a snapshot reload. Yesterday’s sites leave the current region with
+the new day.
 
 ## Frontier beast guards
 

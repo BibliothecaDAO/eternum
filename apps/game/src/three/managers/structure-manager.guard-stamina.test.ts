@@ -364,10 +364,20 @@ it("draws nothing on a cleared site: no model and no plate, and takes away the p
     resolveStructureCompactLabelPosition: () => new Vector3(),
     requestVisibleStructuresRefreshForEntities: vi.fn(),
     plates,
+    attachmentManager: { removeAttachments: vi.fn() },
+    activeStructureAttachmentEntities: new Set(),
+    structureAttachmentSignatures: new Map(),
+    structuresWithActiveTimedLabels: new Set(),
+    incomingTroopArrivalsByStructure: new Map(),
+    battleDirectionsByStructure: new Map(),
   }) as { refreshStructurePresentation(entityId: number): void; compactLabelIds: Set<number> };
   chainAt(400);
   manager.refreshStructurePresentation(SITE);
-  expect((manager as unknown as { resolveStructureInfoByEntityId(id: number): unknown }).resolveStructureInfoByEntityId(SITE)).toBeUndefined();
+  expect(
+    (manager as unknown as { resolveStructureInfoByEntityId(id: number): unknown }).resolveStructureInfoByEntityId(
+      SITE,
+    ),
+  ).toBeUndefined();
   expect(plates.setLabel).not.toHaveBeenCalled();
   expect(plates.removeLabel).toHaveBeenCalledWith(SITE);
   expect(manager.compactLabelIds.has(SITE)).toBe(false);

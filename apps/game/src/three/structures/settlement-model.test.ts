@@ -71,7 +71,10 @@ describe("gameplay villages", () => {
       SUPPLY_POST_MODEL_PATH,
       SUPPLY_POST_STANDARD_MODEL_PATH,
     ]);
-    expect(getStructureModelPaths()[StructureType.Beasts]).toEqual([FRONTIER_BEASTS.cyclops.path, ...FRONTIER_BEAST_PATHS]);
+    expect(getStructureModelPaths()[StructureType.Beasts]).toEqual([
+      FRONTIER_BEASTS.cyclops.path,
+      ...FRONTIER_BEAST_PATHS,
+    ]);
     expect(new Set([VILLAGE_MODEL_PATH, CAMP_MODEL_PATH]).size).toBe(2);
     expect(buildingModelPaths()[BUILDINGS_GROUPS.VILLAGE][StructureType.Village]).toBe(VILLAGE_MODEL_PATH);
     expect(buildingModelPaths()[BUILDINGS_GROUPS.VILLAGE][StructureType.Camp]).toBe(CAMP_MODEL_PATH);
