@@ -2027,6 +2027,8 @@ button.ui-relic:focus-visible {
 
 /* ── Loading: a spinner where an answer is awaited, rows standing in for a list, a line while the game comes in. ── */
 .ui-spinner {
+  display: inline-block;
+  vertical-align: middle;
   width: 18px;
   height: 18px;
   border: 2px solid rgb(var(--hud-accent) / 0.25);

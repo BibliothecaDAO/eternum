@@ -230,7 +230,7 @@ it("shows the LORDS being read, then their amount, or says the read had no answe
     const cell = host.querySelector('[data-store="lords"] [aria-label]')!;
     return [cell.textContent, cell.getAttribute("aria-label")];
   };
-  expect(lordsLabel("reading")).toEqual(["Reading…", "LORDS: reading your wallet…"]);
+  expect(lordsLabel("reading")).toEqual(["LORDS", "LORDS: reading your wallet…"]);
   expect(host.querySelector('[data-store="lords"] .ui-spinner')).not.toBeNull();
   expect(lordsLabel("failed")).toEqual(["—No answer", "LORDS: your wallet could not be read"]);
   expect(lordsLabel(1_000)).toEqual(["1KLORDS", "LORDS 1K"]);

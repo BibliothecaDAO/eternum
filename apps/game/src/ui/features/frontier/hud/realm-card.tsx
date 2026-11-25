@@ -118,9 +118,7 @@ export const RealmCard = ({
           <Cell
             icon={<Icon name="lords" size={30} />}
             value={lordsValue(lords)}
-            caption={
-              lords === "reading" ? REALM_CARD_WORDS.reading : lords === "failed" ? REALM_CARD_WORDS.noAnswer : LORDS
-            }
+            caption={lords === "failed" ? REALM_CARD_WORDS.noAnswer : LORDS}
             tone={lords === "failed" ? "bad" : undefined}
             label={lordsLine(lords)}
           />
