@@ -1255,6 +1255,8 @@ const LabRealmCard = ({ lab }: { lab: LabState }) => (
     stores={everyStore(lab.stores)}
     fragments={LAB_FRAGMENTS}
     lords={lab.visiting ? null : (lab.purse?.lords ?? LAB_LORDS)}
+    storeCard={lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
+    onStore={noop}
     onShop={noop}
     onHome={noop}
   />

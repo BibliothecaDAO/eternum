@@ -1569,6 +1569,7 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
     expect(dayEndDock?.textContent).toContain(
       OPENING_WORDS.titles["day-end"]({ ...OPENING_RULES, dayLeftSeconds: 60 }),
     );
+    expect(dayEndDock?.textContent).toContain("Today's map and armies go at day end.");
 
     await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Today"]')!.click());
     await act(async () => new Promise((settled) => setTimeout(settled, 20)));
