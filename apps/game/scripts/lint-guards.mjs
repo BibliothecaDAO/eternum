@@ -204,6 +204,14 @@ const UNUSED = {
 // lists useNativeFacts' `facts` and reads `facts.store`; an effect that runs on its own trigger reads useLatest.
 const HOOK_DEPENDENCIES = { "react-hooks/exhaustive-deps": "error" };
 
+const CANVAS_TEXTURE_ON_THE_CPU = [
+  {
+    selector: "NewExpression[callee.name='CanvasTexture']",
+    message:
+      "A canvas becomes a texture through createCanvasTexture (three/utils/canvas-texture.ts), which draws it on the CPU: uploading a GPU-backed 2D canvas held the realm's first frame 167-460 ms.",
+  },
+];
+
 const eslint = new ESLint({
   cwd: REPO,
   overrideConfigFile: true,
@@ -223,6 +231,21 @@ const eslint = new ESLint({
       files: ["apps/game/src/**/*.{ts,tsx}"],
       rules: {
         ...HOOK_DEPENDENCIES,
+        "no-restricted-syntax": [
+          "error",
+          ...NO_BITWISE_ID,
+          ...HUD_ROLE_OPACITY,
+          ...NO_HEAD_RENDER,
+          ...HAND_WRITTEN_GAIN,
+          ...SHORT_IN_CHIPS,
+          ...STAMINA_IS_SEGMENTED,
+          ...CANVAS_TEXTURE_ON_THE_CPU,
+        ],
+      },
+    },
+    {
+      files: ["apps/game/src/three/utils/canvas-texture.ts"],
+      rules: {
         "no-restricted-syntax": [
           "error",
           ...NO_BITWISE_ID,
@@ -257,6 +280,7 @@ const eslint = new ESLint({
           ...CHOSEN_STATE_IS_THE_KIT,
           ...CHOSEN_LOOK_IS_THE_KIT,
           ...PRICE_IS_HUD_PRICE,
+          ...CANVAS_TEXTURE_ON_THE_CPU,
         ],
       },
     },
