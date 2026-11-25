@@ -8,6 +8,7 @@ import {
 import {
   formatDuration,
   formatGain,
+  formatOrdinal,
   formatPercent,
   formatRate,
   orders,
@@ -40,6 +41,8 @@ const perSecond = RULES.troop_stamina_config.stamina_gain_per_tick / RULES.tick_
 const deepLoss = Number(release.definition.economy.deep.Some.loss_per_tick) / RESOURCE_PRECISION;
 const cadence = formatDuration(RULES.tick_config.armies_tick_in_seconds);
 
+const percent = (value: number) => formatPercent(value / 100);
+
 const CONDITIONS: Record<number, readonly string[]> = {
   [oaths.VITRIOL]: [cadence],
   [oaths.POWER]: [],
@@ -56,7 +59,26 @@ const CONDITIONS: Record<number, readonly string[]> = {
   [oaths.SKILL]: [String(oaths.SKILL_BELOW_STAMINA)],
   [oaths.FURY]: [WORDS.furyRefund],
   [oaths.TWINS]: [WORDS.twinsDamage],
-  [oaths.PERFECTION]: [formatPercent(oaths.PERFECTION_LOSS_PERCENT / 100)],
+  [oaths.PERFECTION]: [percent(oaths.PERFECTION_LOSS_PERCENT)],
+};
+
+const FIGURES: Record<number, readonly string[]> = {
+  [oaths.VITRIOL]: [String(deepLoss), String(oaths.VITRIOL_LOSS_PER_TICK)],
+  [oaths.POWER]: [percent(oaths.POWER_DAMAGE_PERCENT)],
+  [oaths.GIANTS]: [percent(oaths.GIANTS_REDUCTION_PERCENT)],
+  [oaths.PROTECTION]: [percent(oaths.PROTECTION_REDUCTION_PERCENT)],
+  [oaths.REFLECTION]: [percent(rules.WELL_REFILL_PERCENT), percent(oaths.REFLECTION_WELL_PERCENT)],
+  [oaths.DETECTION]: [formatOrdinal(oaths.DETECTION_EMPTY_REVEAL_LIMIT + 1)],
+  [oaths.BRILLIANCE]: [percent(oaths.BRILLIANCE_PAY_PERCENT - 100)],
+  [oaths.RAGE]: [percent(oaths.RAGE_PAY_PERCENT - 100)],
+  [oaths.ANGER]: [String(attack), String(oaths.ANGER_ATTACK_STAMINA)],
+  [oaths.TITANS]: [String(knightMax), String(knightMax + oaths.TITANS_STAMINA)],
+  [oaths.ENLIGHTENMENT]: [formatRate(perSecond)],
+  [oaths.FOX]: [String(reveal)],
+  [oaths.SKILL]: [percent(oaths.SKILL_DAMAGE_PERCENT)],
+  [oaths.FURY]: [formatGain(Math.floor((attack * oaths.FURY_REFUND_PERCENT) / 100))],
+  [oaths.TWINS]: [percent(oaths.TWINS_DAMAGE_PERCENT)],
+  [oaths.PERFECTION]: [percent(oaths.PERFECTION_PAY_PERCENT - 100)],
 };
 
 describe("an Oath's card", () => {
@@ -70,6 +92,17 @@ describe("an Oath's card", () => {
         expect(conditions, oathName(oath)).not.toBeUndefined();
         for (const condition of conditions!) expect(unit, `${oathName(oath)} for ${category}`).toContain(condition);
       }
+  });
+
+  it("shows each Oath's own rule figures, and no two Oaths read alike", () => {
+    const named = orders.filter((order) => order.orderId > 0 && order.orderId <= 16).map((order) => order.orderId);
+    for (const oath of named) {
+      const { hero, unit } = card(oath, TroopType.Knight);
+      expect(FIGURES[oath], oathName(oath)).not.toBeUndefined();
+      for (const figure of FIGURES[oath]!) expect(`${hero} ${unit}`, oathName(oath)).toContain(figure);
+    }
+    const texts = named.map((oath) => oathEffectDescription(oath, baseOf(TroopType.Knight)));
+    expect(new Set(texts).size).toBe(named.length);
   });
 
   it("reads this army's own figures: a Scout's reveal, the Knight's maximum, the cost Anger leaves Fury", () => {

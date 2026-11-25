@@ -12,7 +12,7 @@ export interface PickEffectBase {
   deepLossPerTick?: number;
 }
 
-export const fromToEffect = (label: string, from: string, to: string, note?: string): string =>
+const fromToEffect = (label: string, from: string, to: string, note?: string): string =>
   note ? `${label}: ${from} → ${to} (${note})` : `${label}: ${from} → ${to}`;
 
 export const percentFromTo = (label: string, fromPercent: number, toPercent: number, note?: string): string =>
