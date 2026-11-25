@@ -12,7 +12,6 @@ import {
   type Rank,
 } from "@/ui/design-system/kit/words";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import { formatAmount } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import type { EtherealLayer } from "@bibliothecadao/eternum";
@@ -97,12 +96,7 @@ export const OpenSlotCard = ({
           {ARMY_SLOT_WORDS.readyAtHome(stock.label)}
         </span>
       ) : (
-        start && (
-          <span className="frontier-slot__detail">
-            {`${ARMY_SLOT_WORDS.anyTroop} · ${formatAmount(start.bar.current)}`}
-            <Icon name="stamina" size={14} alt={STAMINA} />
-          </span>
-        )
+        start && <HudStamina stamina={start.bar} />
       )}
     </span>
     <HudButton

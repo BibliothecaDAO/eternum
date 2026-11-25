@@ -1132,7 +1132,6 @@ export const DEPLOYING = "Deploying…";
 export const DEPLOY_WORDS = {
   troopType: "Troop type",
   slot: "Slot",
-  startsOn: "Starts on",
   howMany: (troop: string) => `${troop}: how many go`,
   deployCount: (count: number) => `${DEPLOY} ${formatExact(count)}`,
 } as const;
@@ -1185,7 +1184,6 @@ export const ARMY_SLOT_WORDS = {
   count: (active: number, allowed: number) => `${active}/${allowed}`,
   open: (slot: number) => `Slot ${slot} · Open`,
   readyAtHome: (troops: string) => `${troops} ready at home`,
-  anyTroop: "Any troop type",
   unlocksAt: (slot: number, rank: string) => `Slot ${slot} unlocks at ${rank}`,
 } as const;
 /** The sources of a store's production, each with its combined rate. */
