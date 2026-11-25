@@ -220,9 +220,11 @@ it("tells a Frontier army raised or reinforced by its Frontier troop name, no ti
     ).description;
   expect(describe("ExplorerCreateStory", "Paladin")).toBe("4,535 Scouts");
   expect(describe("ExplorerAddStory", "Crossbowman")).toBe("+4,535 Crossbows");
-  expect(buildStoryEventPresentation(story("ExplorerCreateStory", { category: "Paladin", tier: "T1", amount: "4535000000000" })).description).toBe(
-    "4,535 Paladin T1",
-  );
+  expect(
+    buildStoryEventPresentation(
+      story("ExplorerCreateStory", { category: "Paladin", tier: "T1", amount: "4535000000000" }),
+    ).description,
+  ).toBe("4,535 Paladin T1");
 });
 
 /**

@@ -258,10 +258,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     };
   },
   RealmCreatedStory: (event, payload, components, resolvePlayerName) => {
-    const coord =
-      isFrontier(components)
-        ? undefined
-        : formatCoord(payload.coord);
+    const coord = isFrontier(components) ? undefined : formatCoord(payload.coord);
     const ownerLabel = nameOwner(event.ownerAddress, components, resolvePlayerName);
     const realm = describeStructureName(event.entityId, components);
     return {
@@ -537,11 +534,7 @@ function describeLevel(level: number): string {
 }
 
 /** Troops a story moved, as a player reads them: "+500 Knight T1". */
-function describeTroops(
-  payload: Record<string, unknown>,
-  sign: "+" | "",
-  store?: NativeFactStore,
-): string | undefined {
+function describeTroops(payload: Record<string, unknown>, sign: "+" | "", store?: NativeFactStore): string | undefined {
   const amount = formatResourceAmount(payload.amount) ?? formatNumber(payload.amount ?? null) ?? undefined;
   const troops = isFrontier(store)
     ? (formatFrontierTroop(payload.category) ?? "")
@@ -947,12 +940,7 @@ function nameFightParticipant(
   resolvePlayerName?: PlayerNameResolver,
 ): string | undefined {
   const siteId = toNumber(entityId);
-  if (
-    toBigIntSafe(owner) === 0n &&
-    siteId !== null &&
-    isFrontier(store)
-  )
-    return siteDisplayName(siteId);
+  if (toBigIntSafe(owner) === 0n && siteId !== null && isFrontier(store)) return siteDisplayName(siteId);
   return nameOwner(owner, store, resolvePlayerName);
 }
 

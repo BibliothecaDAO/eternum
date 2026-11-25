@@ -7005,7 +7005,10 @@ export const STEP_SETS = {
         verify: ({ played }) =>
           played.selected && played.detailsShown
             ? completed(played)
-            : failed("Selecting the first army on World must highlight it and show its army panel or picked row", played),
+            : failed(
+                "Selecting the first army on World must highlight it and show its army panel or picked row",
+                played,
+              ),
       },
       {
         name: "realm-screen",
