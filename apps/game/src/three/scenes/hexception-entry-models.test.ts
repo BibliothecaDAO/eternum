@@ -115,7 +115,7 @@ it("asks for the route realm's models while the camera flies to it, the same one
     getWonder: () => undefined,
   };
   const board = realmBoard(buildings);
-  board.scene.readRouteStructure = () => ({ entity_id: 7 });
+  board.scene.readLocalRealm = () => ({ entity_id: 7 });
 
   board.scene.prepareWhileFlying();
 
@@ -124,4 +124,26 @@ it("asks for the route realm's models while the camera flies to it, the same one
     "/models/frontier/painted/farm-3.glb",
     "/models/realms/settlement.glb",
   ]);
+});
+
+it("asks for the selected realm's models once the map answers, and only warns when that realm cannot be read", () => {
+  route.tiles = {
+    existingBuildings: () => [
+      { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], category: BuildingType.ResourceLabor },
+    ],
+    structureType: () => StructureType.Realm,
+    getRealmLevel: () => 0,
+    getWonder: () => undefined,
+  };
+  const board = realmBoard([]);
+  board.scene.readLocalRealm = () => ({ entity_id: 7 });
+  board.scene.loadSelectedRealmModels();
+  expect(board.requested).toEqual(["/models/realms/settlement.glb"]);
+
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  board.scene.readLocalRealm = () => {
+    throw new Error("the projection is not ready");
+  };
+  expect(() => board.scene.loadSelectedRealmModels()).not.toThrow();
+  expect(warn).toHaveBeenCalledOnce();
 });

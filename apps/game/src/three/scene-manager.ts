@@ -31,16 +31,6 @@ const markScene = (sceneName: SceneName, stage: "requested" | "presentable"): vo
   performance.mark(`scene:${sceneName}:${stage}`);
 };
 
-const startPreparingWhileFlying = (sceneName: SceneName, scene: HexagonScene): void => {
-  try {
-    scene.prepareWhileFlying();
-  } catch (error) {
-    console.warn(
-      `[SceneManager] ${sceneName} could not start before its flight landed: ${formatReadableErrorForConsole(error)}`,
-    );
-  }
-};
-
 type SceneSetupResult = { succeeded: true } | { error: unknown; succeeded: false };
 
 interface SceneSetupOwnership {
@@ -119,7 +109,7 @@ export class SceneManager {
     this.transitionInProgress = true;
     const setupOwnership = this.createSetupOwnership(transitionToken);
     const flight = this.transitionManager.startSceneFlight(previousScene, this.currentScene, sceneNameToTransition);
-    if (flight) startPreparingWhileFlying(sceneNameToTransition, pendingScene);
+    if (flight) pendingScene.prepareWhileFlying();
     const fadeOutCompletion = flight ?? this.transitionManager.fadeOut();
     const prepare = () => {
       if (!setupOwnership.context.isCurrent())
