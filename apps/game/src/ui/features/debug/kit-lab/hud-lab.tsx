@@ -2,7 +2,6 @@ import type { EtherealLayer } from "@bibliothecadao/eternum";
 import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
-import { FeedLine } from "@/ui/features/event-feed/feed-line";
 
 import { BuildingType, FRONTIER_TROOP_NAMES, rankName, TroopType, type AspectId } from "@bibliothecadao/types";
 import type { AlertsPopupAsk } from "@/shell/profile/alerts-ask";
@@ -33,6 +32,7 @@ import { HOW_TO_PLAY_BY_MODE } from "@/shell/community";
 import { MenuPage } from "@/ui/features/frontier/hud/menu-page";
 import { installLabRoom } from "./chat-lab";
 import { ChatPage } from "@/ui/features/frontier/hud/chat-page";
+import { FrontierFeedLine } from "@/ui/features/frontier/hud/frontier-feed";
 import { GLOBAL_ROOM } from "@/ui/features/social/realtime-chat/model/chat-rooms";
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
 import { PickedArmy, type PickedArmyView } from "@/ui/features/frontier/hud/picked-army";
@@ -1532,7 +1532,7 @@ const LabFeed = () => {
     <HudSheet label={EVENTS_WORDS.feed} onClose={noop}>
       <div className="flex flex-col">
         {stories.map((story) => (
-          <FeedLine key={story.id} story={story} />
+          <FrontierFeedLine key={story.id} story={story} />
         ))}
       </div>
     </HudSheet>

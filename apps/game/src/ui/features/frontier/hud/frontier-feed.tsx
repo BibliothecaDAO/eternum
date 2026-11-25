@@ -2,7 +2,9 @@ import { HudNotice, HudPage } from "@/ui/design-system/kit/hud-elements";
 import { EVENTS_WORDS } from "@/ui/design-system/kit/words";
 import { type FeedLens } from "@/ui/features/event-feed/event-stories";
 import { FEED_LENSES, LensSwitch } from "@/ui/features/event-feed/events-filter-switch";
-import { FeedLine } from "@/ui/features/event-feed/feed-line";
+import { FeedLine, FeedRuleLine } from "@/ui/features/event-feed/feed-line";
+import { useLayout } from "@/shell/frame/layout";
+import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { useFeedStories } from "@/ui/features/event-feed/quick-feed";
 import { useState } from "react";
 
@@ -40,8 +42,11 @@ const FeedStories = ({ lens }: { lens: FeedLens }) => {
   return (
     <div className="flex flex-col divide-y divide-hud-divider">
       {events.stories.map((event) => (
-        <FeedLine key={event.id} story={event} />
+        <FrontierFeedLine key={event.id} story={event} />
       ))}
     </div>
   );
 };
+
+export const FrontierFeedLine = ({ story }: { story: ProcessedStoryEvent }) =>
+  useLayout() === "desktop" ? <FeedLine story={story} /> : <FeedRuleLine story={story} />;

@@ -41,7 +41,7 @@ vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
   requireShard: () => ({ url: "http://herald.test", chainId: "0x1", worldAddress: "0xabc" }),
 }));
 
-const { FeedLine } = await import("./feed-line");
+const { FeedLine, FeedRuleLine } = await import("./feed-line");
 const { useAccountStore } = await import("@/hooks/store/use-account-store");
 const { useChainTimeStore } = await import("@/hooks/store/use-chain-time-store");
 
@@ -113,11 +113,11 @@ const story = (owner: string, kind: string, payload: Record<string, unknown>): P
 /** A reward of `units` of a resource, at the chain's precision. */
 const scaled = (units: number) => String(BigInt(Math.round(units * 1_000_000_000)));
 
-const draw = async (row: ProcessedStoryEvent) => {
+const draw = async (row: ProcessedStoryEvent, Line = FeedLine) => {
   await act(async () =>
     root.render(
       <QueryClientProvider client={queries}>
-        <FeedLine story={row} />
+        <Line story={row} />
       </QueryClientProvider>,
     ),
   );
@@ -202,7 +202,7 @@ it("says a fight's army was lost", async () => {
   expect((await draw(row)).words).toBe(`djizus attacked ${siteDisplayName(CAMP)} · Army lost`);
 });
 
-it("marks each row with who it concerns, the player's own fights by how they went, and says how long ago it was", async () => {
+it("marks each ruled row with who it concerns, the player's own fights by how they went, and says how long ago it was", async () => {
   const fight = (attacker: string, armyAfter: string, guardAfter: string) =>
     story(attacker, "BattleEvent", {
       attacker_id: 70,
@@ -218,7 +218,7 @@ it("marks each row with who it concerns, the player's own fights by how they wen
       defender: { player: "0x0", category: "Knight", tier: "T1", before: "1400000000000", after: guardAfter, roll: 0 },
     });
   const rule = async (row: ProcessedStoryEvent) => {
-    await draw(row);
+    await draw(row, FeedRuleLine);
     const line = host.querySelector("[data-feed-line]")!;
     return [line.getAttribute("data-rule"), line.querySelector(".ui-event__time")!.textContent];
   };
@@ -298,7 +298,7 @@ it("draws the guard a fight was against as the map draws it, for every kind of s
       },
     ] as never);
     await draw(fightAt(CAMP));
-    expect(paintings()).toEqual([painting]);
+    expect(paintings()).toEqual(["attack", painting]);
   }
 });
 
@@ -319,7 +319,7 @@ it("draws the guard of a fight far from the player's armies from Herald's row of
     });
     const read = await draw(fightAt(far));
     expect(read.words).toBe(`Krump attacked ${siteDisplayName(far)} · Army lost`);
-    expect(paintings()).toEqual([painting]);
+    expect(paintings()).toEqual(["attack", painting]);
   }
 });
 
@@ -336,11 +336,11 @@ it("keeps a site's guard once the player's map lets the site go, as when their a
     clear: null,
   });
   await draw(fightAt(CAMP));
-  expect(paintings()).toEqual(["beast-golem"]);
+  expect(paintings()).toEqual(["attack", "beast-golem"]);
   await act(async () => game.store.applyFacts([{ model: "ExpeditionSite", key: "0x1:0x2329", value: null }] as never));
   await act(async () => new Promise((settled) => setTimeout(settled, 0)));
   expect(game.store.get("ExpeditionSite", { game_id: 1, entity_id: CAMP })).toBeUndefined();
-  expect(paintings()).toEqual(["beast-golem"]);
+  expect(paintings()).toEqual(["attack", "beast-golem"]);
 });
 
 it("reads a clear's credited resources near or far without retired progression rewards", async () => {
@@ -379,7 +379,7 @@ it("reads a clear's credited resources near or far without retired progression r
 
 it("draws no guard, never an old or guessed one, for a site neither the map nor Herald holds", async () => {
   await draw(fightAt(4_300));
-  expect(paintings()).toEqual([]);
+  expect(paintings()).toEqual(["attack"]);
 });
 
 /** The gems a row draws in its words, each by its name and size (owner, 3 November 2026: the Feed keeps its alignment). */

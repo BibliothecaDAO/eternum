@@ -7,9 +7,9 @@ import { usePlayerNames } from "@/hooks/use-player-profile";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Icon } from "@/ui/design-system/icon";
 import { type RankedWords } from "@/ui/design-system/kit/words";
+import type { ReactNode } from "react";
 import { formatClockTime, formatShortDuration } from "@bibliothecadao/types";
 import { storyMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { useLayout } from "@/shell/frame/layout";
 import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 
 import { type FeedReading, readFeedStory, type ToldReading } from "./feed-reading";
@@ -27,17 +27,51 @@ const CONCERN_RULES: Record<Concern, string> = {
 };
 
 export const FeedLine = ({ story }: { story: ProcessedStoryEvent }) => {
+  const line = useToldLine(story);
+  return (
+    <FeedRow story={story} line={line} className="ui-event ui-feed-line items-center py-2">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-hud-divider bg-hud-surface">
+        <Icon name={storyMeaning(story.story)} size={24} className="ui-event__icon" />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        {line.words}
+        <span className="ui-event__time">{formatClockTime(story.timestampMs / 1000)}</span>
+      </span>
+    </FeedRow>
+  );
+};
+
+export const FeedRuleLine = ({ story }: { story: ProcessedStoryEvent }) => {
+  const line = useToldLine(story);
+  const now = useCoarseNowSeconds(10);
+  return (
+    <FeedRow
+      story={story}
+      line={line}
+      className="ui-event ui-feed-line items-center"
+      lead={
+        <span
+          className={`my-1 w-1 shrink-0 self-stretch rounded-full ${CONCERN_RULES[line.concern]}`}
+          aria-hidden="true"
+        />
+      }
+      end={<span className="ui-event__time">{formatShortDuration(Math.max(1, now - story.timestampMs / 1000))}</span>}
+    >
+      {line.words}
+    </FeedRow>
+  );
+};
+
+type ToldLine = ReturnType<typeof useToldLine>;
+
+const useToldLine = (story: ProcessedStoryEvent) => {
   const {
     setup: { store },
   } = useGame();
   const names = usePlayerNames();
-  const open = useStoryOpener(story);
-  const desktop = useLayout() === "desktop";
-  const now = useCoarseNowSeconds(10, !desktop);
   const player = useAccountStore((state) => state.account?.address ?? null);
   const reading = readFeedStory(story, store);
   const own = involvesPlayer(story, player);
-  const concern = whoItConcerns(reading, own, own && feltEquals(reading.actor, player));
   const words = (
     <span className="ui-event__text">
       {"words" in reading ? (
@@ -51,46 +85,48 @@ export const FeedLine = ({ story }: { story: ProcessedStoryEvent }) => {
       )}
     </span>
   );
-  const shown = desktop ? (
-    <>
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-hud-divider bg-hud-surface">
-        <Icon name={storyMeaning(story.story)} size={24} className="ui-event__icon" />
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        {words}
-        <span className="ui-event__time">{formatClockTime(story.timestampMs / 1000)}</span>
-      </span>
-    </>
-  ) : (
-    words
-  );
+  return { reading, own, concern: whoItConcerns(reading, own, own && feltEquals(reading.actor, player)), words };
+};
+
+const FeedRow = ({
+  story,
+  line,
+  className,
+  lead,
+  end,
+  children,
+}: {
+  story: ProcessedStoryEvent;
+  line: ToldLine;
+  className: string;
+  lead?: ReactNode;
+  end?: ReactNode;
+  children: ReactNode;
+}) => {
+  const open = useStoryOpener(story);
   return (
     <div
-      className={`ui-event ui-feed-line items-center${desktop ? " py-2" : ""}`}
+      className={className}
       data-feed-line
       data-story={story.story}
-      data-own={own || undefined}
-      data-rule={concern}
+      data-own={line.own || undefined}
+      data-rule={line.concern}
     >
-      {!desktop && (
-        <span className={`my-1 w-1 shrink-0 self-stretch rounded-full ${CONCERN_RULES[concern]}`} aria-hidden="true" />
-      )}
+      {lead}
       {open ? (
         <button type="button" className="ui-event__open items-center" onClick={open}>
-          {shown}
+          {children}
         </button>
       ) : (
-        shown
+        children
       )}
-      {"reward" in reading && reading.reward && (
-        <span className="ui-feed-line__reward" data-tip={reading.reward.name}>
-          <Icon name={reading.reward.icon} size={16} alt={reading.reward.name} className="ui-feed-line__glyph" />
-          {reading.reward.amountText}
+      {"reward" in line.reading && line.reading.reward && (
+        <span className="ui-feed-line__reward" data-tip={line.reading.reward.name}>
+          <Icon name={line.reading.reward.icon} size={16} alt={line.reading.reward.name} className="ui-feed-line__glyph" />
+          {line.reading.reward.amountText}
         </span>
       )}
-      {!desktop && (
-        <span className="ui-event__time">{formatShortDuration(Math.max(1, now - story.timestampMs / 1000))}</span>
-      )}
+      {end}
     </div>
   );
 };
