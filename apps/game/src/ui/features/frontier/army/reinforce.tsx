@@ -147,9 +147,7 @@ export const ReinforceSheet = ({
         </>
       )}
       {plan && march && <ReinforceLimit plan={plan} march={march} wheatStop={wheatStop} />}
-      {post && (
-        <HudLine icon="hourglass" line={SUPPLY_POST.until} />
-      )}
+      {post && <HudLine icon="hourglass" line={SUPPLY_POST.until} />}
       {plan && range.wheatMax > 0 && (
         <HudWindowFoot note={<HudPrice prices={[{ of: "wheat", amount: plan.raise.wheatFor(shown) }]} />}>
           <HudButton

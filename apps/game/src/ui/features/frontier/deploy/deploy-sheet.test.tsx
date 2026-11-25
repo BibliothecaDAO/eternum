@@ -478,13 +478,12 @@ describe("the Deploy sheet", () => {
 
     expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Build")).toBe(false);
     press(host, "Max");
-    act(() => host.querySelector<HTMLButtonElement>(".ui-notice__fix button")!.click());
-    expect([place.goTo, onClose.mock.calls.length]).toEqual([[false], 1]);
+    expect([count(host), wheatLine(host)]).toEqual(["10", { line: "Wheat for only 10 of 420 troops" }]);
     act(() => root.unmount());
     host.remove();
   });
 
-  it("with wheat short of one troop, is at its cap at 0: says what one needs against what is held, and Deploy stays off", () => {
+  it("with wheat short of one troop, is at its cap at 0: says what one needs against what is held, Deploy stays off, and Get Wheat goes to the realm", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     store.applyFacts([
@@ -494,10 +493,13 @@ describe("the Deploy sheet", () => {
         value: { game_id: 1, entity_id: 7, resource_type: 35, balance: String(BigInt(RESOURCE_PRECISION)) },
       },
     ] as never);
-    const { host, root } = render(store, row);
+    const onClose = vi.fn();
+    const { host, root } = render(store, row, onClose);
     click(host.querySelector('button[aria-label="Army 2"]')!);
     expect(wheatLine(host)).toEqual({ line: "Needs 2 Wheat, have 1", press: "Get Wheat" });
     expect(deployButton(host)?.disabled).toBe(true);
+    act(() => host.querySelector<HTMLButtonElement>(".ui-notice__fix button")!.click());
+    expect([place.goTo, onClose.mock.calls.length]).toEqual([[false], 1]);
     act(() => root.unmount());
     host.remove();
   });
