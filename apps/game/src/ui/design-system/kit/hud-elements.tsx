@@ -1502,6 +1502,13 @@ export const HudNotice = ({
   </div>
 );
 
+export const HudLine = ({ icon, line }: { icon: IconMeaning; line: string }) => (
+  <p className="ui-line">
+    <Icon name={icon} size={16} />
+    {line}
+  </p>
+);
+
 /**
  * News across the top of the map: what kind it is (its painting and a word over the headline), the headline and a
  * line; its side in the news' tone (bad for a war report, warn for a timer). It is read, never pressed: it takes no

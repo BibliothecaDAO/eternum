@@ -39,6 +39,9 @@
   border-radius: var(--hud-radius-panel);
   background: var(--hud-well);
 }
+.deploy-size > .ui-line {
+  padding: 0 theme(spacing.3) theme(spacing.2);
+}
 .deploy-slots {
   display: flex;
   align-items: center;

@@ -3,7 +3,15 @@ import "./deploy-view.css";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { OATH_SLOTS_MAX } from "@bibliothecadao/eternum";
 import { type TroopType, formatExact, formatShort, formatWait } from "@bibliothecadao/types";
-import { HudButton, HudChip, HudNotice, HudPrice, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
+import {
+  HudButton,
+  HudChip,
+  HudLine,
+  HudNotice,
+  HudPrice,
+  HudSheet,
+  HudWindowFoot,
+} from "@/ui/design-system/kit/hud-elements";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
 import {
   ARMY,
@@ -95,6 +103,9 @@ export const DeployView = ({
             count
             onChange={onCount}
           />
+          {wheatLimit && wheatLimit.troops > 0 && (
+            <HudLine icon="wheat" line={wheatForOnly(formatExact(wheatLimit.troops), formatExact(wheatLimit.of))} />
+          )}
         </div>
       )}
       {slots.open && slots.open.length > 0 && (
@@ -123,7 +134,7 @@ export const DeployView = ({
       ) : (
         tile === "none" && <HudNotice tone="warn" line={NO_OPEN_TILE} />
       )}
-      {wheatLimit && <WheatLimit limit={wheatLimit} onGoToRealm={onGoToRealm} />}
+      {wheatLimit?.troops === 0 && <WheatShort limit={wheatLimit} onGoToRealm={onGoToRealm} />}
       {canDeploy && wheatCost !== undefined && (
         <HudWindowFoot note={<HudPrice prices={[{ of: "wheat", amount: wheatCost }]} />}>
           <HudButton
@@ -217,7 +228,7 @@ const OathCapacity = ({ slots }: { slots: number }) => (
   </span>
 );
 
-const WheatLimit = ({
+const WheatShort = ({
   limit,
   onGoToRealm,
 }: {
@@ -227,11 +238,7 @@ const WheatLimit = ({
   <HudNotice
     tone="bad"
     icon="wheat"
-    line={
-      limit.troops === 0
-        ? shortfallLine({ kind: "short", of: "wheat", held: limit.held, need: limit.perTroop, wait: limit.wait })
-        : wheatForOnly(formatExact(limit.troops), formatExact(limit.of))
-    }
+    line={shortfallLine({ kind: "short", of: "wheat", held: limit.held, need: limit.perTroop, wait: limit.wait })}
     fix={{ label: GET_WHEAT, onClick: onGoToRealm }}
   />
 );

@@ -5,10 +5,10 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Icon } from "@/ui/design-system/icon";
 import {
   HudButton,
   HudChip,
+  HudLine,
   HudNotice,
   HudPortrait,
   HudPrice,
@@ -148,10 +148,7 @@ export const ReinforceSheet = ({
       )}
       {plan && march && <ReinforceLimit plan={plan} march={march} wheatStop={wheatStop} />}
       {post && (
-        <p className="reinforce-until">
-          <Icon name="hourglass" size={16} />
-          {SUPPLY_POST.until}
-        </p>
+        <HudLine icon="hourglass" line={SUPPLY_POST.until} />
       )}
       {plan && range.wheatMax > 0 && (
         <HudWindowFoot note={<HudPrice prices={[{ of: "wheat", amount: plan.raise.wheatFor(shown) }]} />}>
@@ -199,15 +196,14 @@ const ReinforceLimit = ({
   if (plan.current >= plan.cap) return <HudNotice tone="warn" line={TRANSFER_TROOPS.cap(plan.cap)} />;
   if (plan.stock === 0) return <HudNotice tone="warn" line={NO_TROOPS_AT_HOME} />;
   if (!wheatStop) return null;
-  const line =
-    wheatStop.troops === 0
-      ? shortfallLine({
-          kind: "short",
-          of: "wheat",
-          held: plan.raise.wheat,
-          need: plan.raise.wheatToGo(1, march),
-          wait: undefined,
-        })
-      : wheatForOnly(formatExact(wheatStop.troops), formatExact(wheatStop.of));
+  if (wheatStop.troops > 0)
+    return <HudLine icon="wheat" line={wheatForOnly(formatExact(wheatStop.troops), formatExact(wheatStop.of))} />;
+  const line = shortfallLine({
+    kind: "short",
+    of: "wheat",
+    held: plan.raise.wheat,
+    need: plan.raise.wheatToGo(1, march),
+    wait: undefined,
+  });
   return <HudNotice tone="bad" icon="wheat" line={line} />;
 };
