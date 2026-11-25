@@ -544,6 +544,12 @@ export const staminaLabel = (current: number, max: number) => `${STAMINA_TITLE} 
 export const EMPIRE = "Empire";
 /** The places: the nav's words. */
 export const REALM = "Realm";
+export const COSMETICS_WORDS = {
+  families: { wonder: "Wonder", "season-1": "Season 1", devcon: "Devcon", base: "Base" },
+  devcon: "Devcon",
+  goldenDevcon: "Golden Devcon",
+  courtyardKeep: "Courtyard Keep",
+} as const;
 export const MAP_VIEW = "Map view";
 export const WORLD = "World";
 /** The realm's way home from its card's header: the map centred on it. */

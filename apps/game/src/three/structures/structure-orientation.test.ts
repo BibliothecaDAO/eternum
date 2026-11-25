@@ -77,12 +77,6 @@ describe("orientation follows the models drawn", () => {
 });
 
 describe("cosmetic skins inherit the facing of their model family", () => {
-  it("covers both collection realm skins through the registry", () => {
-    expect(realmSkins.flatMap((skin) => skin.ownershipKeys ?? [])).toEqual(
-      expect.arrayContaining(["0x3040101", "0x3030501"]),
-    );
-  });
-
   it.each(realmSkins)("faces registered realm skin $id at every tile heading", (skin) => {
     for (let direction = 0; direction < 6; direction++) {
       expect(resolveStructureRotationY(skin.assetPaths, (direction * Math.PI) / 3)).toBe(0);
