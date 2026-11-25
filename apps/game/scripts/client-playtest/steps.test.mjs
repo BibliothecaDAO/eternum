@@ -1114,18 +1114,29 @@ it("requires the selected Aspect in both the founding command and its membership
     );
 });
 
-it("requires one quest command, its exact receipt, both credited balances and the collected UI", () => {
+it("requires one quest command, its exact receipt, both balances credited by it whatever they held, and the collected UI", () => {
   const verify = STEP_SETS["lab-daily-quest"].steps[1].verify;
   const sent = {
     command: { fields: { home: "7", day: "0" } },
     answered: [
       { model: "LaborGrant", value: { home: "7", day: "0", amount: "1000000000000", essence: "1500000000000" } },
-      { model: "ResourceBalance", value: { balance: "1500000000000" } },
-      { model: "ResourceBalance", value: { balance: "1500000000000" } },
+      { model: "ResourceBalance", value: { resource_type: 23, balance: "1500000000000" } },
+      { model: "ResourceBalance", value: { resource_type: 38, balance: "1500000000000" } },
     ],
+    before: [null, { balance: "500000000000" }, null],
   };
   const played = { ready: { collect: true }, collected: true, grants: [sent] };
   expect(verify({ played }).status).toBe("completed");
+  const produced = {
+    ...sent,
+    answered: [
+      sent.answered[0],
+      { model: "ResourceBalance", value: { resource_type: 23, balance: "1777000000000" } },
+      { model: "ResourceBalance", value: { resource_type: 38, balance: "1500000000000" } },
+    ],
+    before: [null, { balance: "777000000000" }, null],
+  };
+  expect(verify({ played: { ...played, grants: [produced] } }).status).toBe("completed");
   for (const failed of [
     { ...played, collected: false },
     { ...played, grants: [] },
@@ -1150,47 +1161,59 @@ it("requires one quest command, its exact receipt, both credited balances and th
 });
 
 it.each([
-  ["world", ["LaborGrant"], "1500000000000", "1500000000000", "The Cull: 2,500 of 2,500 troops. Ash Fall"],
-  ["again", ["BaneGrant"], "2500000000000", "3000000000000", "The Cull: 2,500 of 2,500 troops. Ash Fall"],
-  ["late", ["LaborGrant", "BaneGrant"], "2500000000000", "3000000000000", "The Cull: 2,500 of 2,500 troops. Ash Fall"],
-  ["team", ["LaborGrant"], "1500000000000", "1500000000000", "The Stand: 3 of 3 sites. Prowess's bane"],
-])("requires exact %s bane receipts, balances, identity and collected UI", (stage, models, labor, essence, text) => {
-  const verify = STEP_SETS[`lab-bane-${stage}`].steps[1].verify;
-  const sent = {
-    command: { fields: { home: "7", day: "1" } },
-    answered: [
-      ...models.map((model) => ({
-        model,
-        value: { home: "7", day: "1", amount: "1000000000000", essence: "1500000000000" },
-      })),
-      { model: "ResourceBalance", value: { resource_type: 23, balance: labor } },
-      { model: "ResourceBalance", value: { resource_type: 38, balance: essence } },
-    ],
-  };
-  const played = { ready: { collect: true, text }, collected: true, grants: [sent] };
-  expect(verify({ played }).status).toBe("completed");
-  const withAnswers = (answered) => ({ ...played, grants: [{ ...sent, answered }] });
-  for (const bad of [
-    { ...played, collected: false },
-    { ...played, ready: { collect: true, text: "A different quest" } },
-    { ...played, grants: [sent, sent] },
-    { ...played, grants: [{ ...sent, command: { fields: { home: "7", day: "0" } } }] },
-    withAnswers(sent.answered.slice(1)),
-    withAnswers([...sent.answered, sent.answered[0]]),
-    withAnswers(
-      sent.answered.map((fact) =>
-        fact.model === models[0] ? { ...fact, value: { ...fact.value, amount: "0" } } : fact,
+  ["world", ["LaborGrant"], "The Cull: 2,500 of 2,500 troops. Ash Fall"],
+  ["again", ["BaneGrant"], "The Cull: 2,500 of 2,500 troops. Ash Fall"],
+  ["late", ["LaborGrant", "BaneGrant"], "The Cull: 2,500 of 2,500 troops. Ash Fall"],
+  ["team", ["LaborGrant"], "The Stand: 3 of 3 sites. Prowess's bane"],
+])(
+  "requires exact %s bane receipts, each credited once whatever the balances held, identity and collected UI",
+  (stage, models, text) => {
+    const verify = STEP_SETS[`lab-bane-${stage}`].steps[1].verify;
+    const held = { labor: 731_000_000_000n, essence: 42_000_000_000n };
+    const credited = (each) => String(BigInt(models.length) * each);
+    const sent = {
+      command: { fields: { home: "7", day: "1" } },
+      answered: [
+        ...models.map((model) => ({
+          model,
+          value: { home: "7", day: "1", amount: "1000000000000", essence: "1500000000000" },
+        })),
+        {
+          model: "ResourceBalance",
+          value: { resource_type: 23, balance: String(held.labor + BigInt(credited(1_000_000_000_000n))) },
+        },
+        {
+          model: "ResourceBalance",
+          value: { resource_type: 38, balance: String(held.essence + BigInt(credited(1_500_000_000_000n))) },
+        },
+      ],
+      before: [...models.map(() => null), { balance: String(held.labor) }, { balance: String(held.essence) }],
+    };
+    const played = { ready: { collect: true, text }, collected: true, grants: [sent] };
+    expect(verify({ played }).status).toBe("completed");
+    const withAnswers = (answered) => ({ ...played, grants: [{ ...sent, answered }] });
+    for (const bad of [
+      { ...played, collected: false },
+      { ...played, ready: { collect: true, text: "A different quest" } },
+      { ...played, grants: [sent, sent] },
+      { ...played, grants: [{ ...sent, command: { fields: { home: "7", day: "0" } } }] },
+      withAnswers(sent.answered.slice(1)),
+      withAnswers([...sent.answered, sent.answered[0]]),
+      withAnswers(
+        sent.answered.map((fact) =>
+          fact.model === models[0] ? { ...fact, value: { ...fact.value, amount: "0" } } : fact,
+        ),
       ),
-    ),
-    withAnswers(
-      sent.answered.map((fact) =>
-        fact.model === "ResourceBalance" ? { ...fact, value: { ...fact.value, balance: "0" } } : fact,
+      withAnswers(
+        sent.answered.map((fact) =>
+          fact.model === "ResourceBalance" ? { ...fact, value: { ...fact.value, balance: "0" } } : fact,
+        ),
       ),
-    ),
-    withAnswers(sent.answered.filter((fact) => fact.model !== "ResourceBalance")),
-  ])
-    expect(verify({ played: bad }).status).toBe("failed");
-});
+      withAnswers(sent.answered.filter((fact) => fact.model !== "ResourceBalance")),
+    ])
+      expect(verify({ played: bad }).status).toBe("failed");
+  },
+);
 
 it("reports the failed Oath capacity assertion without trying to time a missing result", async () => {
   const step = STEP_SETS["lab-oath-slots"].steps.find(({ name }) => name === "deploy-with-oath-slots");
