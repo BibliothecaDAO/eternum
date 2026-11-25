@@ -357,7 +357,7 @@ it("projects daily quest rules from verified registration, without a legacy clai
 
 it("projects optional bane rules from the verified preset with whole Cull counts", () => {
   const rules = {
-    chance_step: 20,
+    chance_step: frontierSeasonOnePreset.banes.chanceStep,
     quorum_percent: 25,
     beast_percent: 150,
     stamina_percent: 50,

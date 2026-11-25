@@ -4,11 +4,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { GameProvider } from "@/hooks/context/game-context";
 import { chainOf } from "@/lab/game/lab-chain";
 import { questScenario } from "@/lab/game/quest-scenario";
-import { dayOf } from "@bibliothecadao/eternum";
+import { dayAtIndex } from "@bibliothecadao/eternum";
+import { frontierSeasonOnePreset } from "../../../../../../../config/source/frontier/season-one";
 import { RESOURCE_PRECISION, aspects } from "@bibliothecadao/types";
 import { nativeBaneConstants, nativeQuestConstants } from "@bibliothecadao/eternum/game-client";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { DailyQuest } from "./daily-quest";
+
+const BANE_DAY = frontierSeasonOnePreset.banes.quietDays;
 
 const clock = vi.hoisted(() => ({ now: 350 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => clock.now }));
@@ -104,17 +107,17 @@ function worldDay() {
     endAt: Number(registry.end_at),
     dayUnitSeconds: rules.day_unit_seconds,
   };
-  const start = dayOf(calendar, calendar.startMainAt)!.end;
+  const start = dayAtIndex(calendar, BANE_DAY).start;
   clock.now = start + 20;
   store.applyFacts([
     { model: "HomeAspect", key: "0xd000", value: { game_id: 1, home: 7, aspect: 2 } },
-    { model: "AspectActivity", key: "0xd001", value: { game_id: 1, aspect: 2, day: 0, active: 5 } },
+    { model: "AspectActivity", key: "0xd001", value: { game_id: 1, aspect: 2, day: BANE_DAY - 1, active: 5 } },
     {
       model: "BaneRules",
       key: "0xd002",
       value: {
         game_id: 1,
-        chance_step: 20,
+        chance_step: frontierSeasonOnePreset.banes.chanceStep,
         quorum_percent: 40,
         beast_percent: 150,
         stamina_percent: 50,
@@ -122,11 +125,11 @@ function worldDay() {
         quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10_000, 15_000],
       },
     },
-    { model: "WorldBane", key: "0xd003", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
+    { model: "WorldBane", key: "0xd003", value: { game_id: 1, day: BANE_DAY, kind: nativeBaneConstants.ASH_FALL } },
     {
       model: "QuestProgress",
       key: "0xd004",
-      value: { game_id: 1, home: 7, day: 1, progress: 2500, completed_level: 1 },
+      value: { game_id: 1, home: 7, day: BANE_DAY, progress: 2500, completed_level: 1 },
     },
   ]);
   store.setSnapshot({ gameId: 1, complete: true, actor: fixtureGame.scenario.player, timestamp: clock.now });
@@ -136,7 +139,7 @@ function worldDay() {
     value: {
       game_id: 1,
       home: 7,
-      day: 1,
+      day: BANE_DAY,
       account: fixtureGame.scenario.player,
       amount: BigInt(labor) * BigInt(RESOURCE_PRECISION),
       essence: BigInt(essence) * BigInt(RESOURCE_PRECISION),
@@ -147,7 +150,7 @@ function worldDay() {
       {
         model: "BaneProgress",
         key: "0xd005",
-        value: { game_id: 1, aspect: 2, day: 1, completed: 2, ended_at: start + 10 },
+        value: { game_id: 1, aspect: 2, day: BANE_DAY, completed: 2, ended_at: start + 10 },
       },
     ]);
   return { ...fixtureGame, grant, win };
@@ -168,7 +171,7 @@ describe("bane collection", () => {
     expect(reward("Labor")).toBe("1,000 Labor");
     await act(async () => collectAgain()!.click());
     expect(game.submit).toHaveBeenCalledTimes(1);
-    expect(game.submit).toHaveBeenCalledWith(expect.objectContaining({ home: 7, day: 1 }));
+    expect(game.submit).toHaveBeenCalledWith(expect.objectContaining({ home: 7, day: BANE_DAY }));
     expect(host.textContent).toContain("Collecting…");
     await act(async () => {
       game.store.applyFacts([game.grant("BaneGrant", 250, 500)]);
@@ -221,7 +224,7 @@ describe("bane collection", () => {
         value: {
           game_id: 1,
           aspect: 2,
-          day: 1,
+          day: BANE_DAY,
           issued_day: 0,
           source: source.id,
           quest: nativeQuestConstants.STAND,
@@ -230,7 +233,7 @@ describe("bane collection", () => {
       {
         model: "QuestProgress",
         key: "0xd004",
-        value: { game_id: 1, home: 7, day: 1, progress: 3, completed_level: 1 },
+        value: { game_id: 1, home: 7, day: BANE_DAY, progress: 3, completed_level: 1 },
       },
       game.grant("LaborGrant"),
     ]);

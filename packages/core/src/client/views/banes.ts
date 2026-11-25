@@ -2,6 +2,7 @@ import { readOptionalSeasonRow } from "./season-rows";
 import { StructureType, worldBanes } from "@bibliothecadao/types";
 import type { NativeFactResult, NativeFactStore } from "../native-fact-store";
 import { dayOf } from "../../utils/days";
+import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
 
 export const BANE_MODELS = [
   "BaneRules",
@@ -14,6 +15,7 @@ export const BANE_MODELS = [
 ] as const;
 
 const NO_WORLD_BANE = 0;
+const QUIET_DAYS = frontierSeasonOnePreset.banes.quietDays;
 const UNROLLED_WORLD_DAY = "UNROLLED_WORLD_DAY";
 const ANY_WORLD_BANE: readonly number[] = worldBanes.map((bane) => bane.id);
 
@@ -102,7 +104,7 @@ function readWorldKind(
   day: number,
   stopped: boolean,
 ): NativeFactResult<{ kind: number }> {
-  if (stopped || followsWorldBane(store, gameId, day)) return { known: { kind: NO_WORLD_BANE } };
+  if (stopped || day < QUIET_DAYS || followsWorldBane(store, gameId, day)) return { known: { kind: NO_WORLD_BANE } };
   const rolled = readOptionalSeasonRow(store, "WorldBane", { game_id: gameId, day });
   if (!rolled.known) return rolled;
   if (!rolled.known.row) return { unknown: UNROLLED_WORLD_DAY };
