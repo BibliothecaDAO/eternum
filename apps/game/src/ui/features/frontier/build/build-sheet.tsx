@@ -47,6 +47,7 @@ import { useEffect, useMemo, useState } from "react";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 
 import { FRONTIER_STORES, madeStore, STORE_KINDS } from "../stores";
+import { BaneFigure } from "../day/bane-mark";
 import { usePartShown } from "../opening/opening-context";
 import { type BuildOption, readBuildOptions } from "./build-options";
 import { disclosedBuildOptions } from "./first-build";
@@ -298,7 +299,10 @@ const storageShare = (bps: number) => formatPercent(bps / 10_000, { signed: true
 
 const givesOf = ({ effect }: BuildOption): BuildTile["gives"] =>
   effect.kind === "produces"
-    ? { icon: FRONTIER_STORES[madeStore(effect.resource)].icon, value: buildRate(effect) }
+    ? {
+        icon: FRONTIER_STORES[madeStore(effect.resource)].icon,
+        value: <BaneFigure figure="production">{buildRate(effect)}</BaneFigure>,
+      }
     : effect.kind === "trains"
       ? { icon: "stamina" }
       : effect.kind === "research"

@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
+import { loadOpening, skipTutorial } from "../opening/opening-store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sellingFragments } from "../value/fragments-fixture";
 
@@ -36,10 +36,11 @@ const layout = (desktop: boolean) =>
     removeEventListener: () => {},
   }));
 
-beforeEach(() => {
+beforeEach(async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   // These tests play the whole HUD; the opening interface has its own tests.
-  useWorldAppearanceStore.setState({ showEverything: true });
+  await loadOpening(null);
+  await skipTutorial();
   layout(true);
   vi.stubGlobal(
     "fetch",
@@ -99,12 +100,12 @@ const spectate = async () => {
 const pickInDock = () =>
   act(async () =>
     [...host.querySelectorAll<HTMLButtonElement>("button")]
-      .find((each) => each.getAttribute("aria-label") === "Army 1")!
+      .find((each) => each.getAttribute("aria-label") === "5,000 Knights")!
       .click(),
   );
 
 /** A phone's picked army in the action row: its token, which opens its card. */
-const details = () => host.querySelector<HTMLButtonElement>('button[aria-label="Army 1: details"]');
+const details = () => host.querySelector<HTMLButtonElement>('button[aria-label="5,000 Knights: details"]');
 const rowButton = (name: RegExp) =>
   [...details()!.closest(".army-tray")!.querySelectorAll<HTMLButtonElement>("button")].find((button) =>
     name.test(button.getAttribute("aria-label") ?? button.textContent ?? ""),
@@ -132,7 +133,7 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(panel()).toBeNull();
     expect(details()).not.toBeNull();
     expect(
-      host.querySelector('nav[aria-label="Armies"] button[aria-label="Army 1"]')?.getAttribute("aria-pressed"),
+      host.querySelector('nav[aria-label="Armies"] button[aria-label="5,000 Knights"]')?.getAttribute("aria-pressed"),
     ).toBe("true");
 
     await act(async () => details()!.click());
@@ -146,8 +147,8 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     await select(ARMY);
     expect(staminaMeter().getAttribute("aria-valuenow")).toBe("90");
     expect(staminaMeter().getAttribute("aria-valuemax")).toBe("150");
-    expect(host.querySelectorAll('button[aria-label="Army 1: details"]')).toHaveLength(1);
-    expect(details()!.textContent).toContain("5K");
+    expect(host.querySelectorAll('button[aria-label="5,000 Knights: details"]')).toHaveLength(1);
+    expect(details()!.textContent).toContain("5,000 Knights");
   });
 
   it("opens the army's card from its token", async () => {

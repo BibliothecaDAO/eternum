@@ -85,7 +85,7 @@ export const TROOP_WORDS = {
 export const FRONTIER_TROOP_NAMES = {
   [TroopType.Knight]: TROOP_WORDS[TroopType.Knight].many,
   [TroopType.Paladin]: "Scouts",
-  [TroopType.Crossbowman]: TROOP_WORDS[TroopType.Crossbowman].many,
+  [TroopType.Crossbowman]: "Crossbows",
 } satisfies Record<TroopType, string>;
 
 export const frontierTroopName = (troop: TroopType | string): string | undefined =>

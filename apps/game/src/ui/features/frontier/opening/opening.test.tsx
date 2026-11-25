@@ -46,7 +46,7 @@ describe("the interface that opens as you play", () => {
     expect(partShown(new Set<OpeningMoment>(["essence"]), "essence-store")).toBe(true);
   });
 
-  it("shows every part with Show everything, outside the game's HUD or while watching", () => {
+  it("shows every part once all is open: the tutorial skipped, outside the game's HUD or while watching", () => {
     for (const moment of OPENING_MOMENTS)
       for (const part of OPENING[moment].parts) expect(partShown("all", part)).toBe(true);
   });
@@ -98,7 +98,7 @@ describe("the interface that opens as you play", () => {
     expect(renderMoment("bane")).toContain("A bane strikes today.");
     expect(renderMoment("aspects")).toContain("Prowess races to finish its hyperstructure first.");
     expect(renderMoment("daily-quest")).toContain("Today's quest is done.");
-    expect(renderMoment("essence")).toContain("Essence buys permanent upgrades and lores for your Realm.");
+    expect(renderMoment("essence")).toContain("Essence buys permanent upgrades and lore for your Realm.");
   });
 
   it("draws a gated part once its moment is reached, and every part outside the HUD's provider", () => {

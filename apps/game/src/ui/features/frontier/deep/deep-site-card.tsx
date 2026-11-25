@@ -25,7 +25,6 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import { catalogAspectId, deepSites, formatDuration, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
-import { armyLabel } from "../hud/dock-armies";
 import { useApproachTile } from "../sites/approach";
 import { readDeepSiteFight } from "../sites/site-card-plan";
 import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
@@ -123,7 +122,6 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
           ? readDeepSiteFight(setup.store, site, { army: selected.army, timestamp: now })
           : undefined
       }
-      attackerName={userId !== null ? armyLabel(setup.store, userId) : undefined}
       pickBase={readPickEffectBase(setup.store, game_id)}
       order={order}
       onClose={onClose}

@@ -805,7 +805,7 @@ export class StructureManager {
     const terrain = this.resolveTerrainSurface();
     for (const [entityId, bindings] of this.structureInstanceBindings) {
       // Every page completion visits every bound structure: sample from the binding and read the store only on a change.
-      const height = terrain.sampleSurface(bindings[0].worldX, bindings[0].worldZ).height;
+      const height = terrain.sampleHeight(bindings[0].worldX, bindings[0].worldZ);
       if (bindings.every((binding) => binding.terrainHeight === height)) continue;
       const structure = this.resolveStructureInfoByEntityId(entityId);
       if (!structure) continue;
@@ -1748,7 +1748,7 @@ export class StructureManager {
     dirtyModels.add(model);
 
     const { x: worldX, z: worldZ } = this.dummy.position;
-    const terrainHeight = this.resolveTerrainSurface().sampleSurface(worldX, worldZ).height;
+    const terrainHeight = this.resolveTerrainSurface().sampleHeight(worldX, worldZ);
     return { instanceIndex, model, terrainHeight, worldX, worldZ };
   }
 

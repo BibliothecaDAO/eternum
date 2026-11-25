@@ -80,7 +80,7 @@ describe("the shop", () => {
 
   it("tells an account whose Realm already pays the quest bonus that it does, beside the Seal's offer", () => {
     view({ bonusHeld: "Realm" });
-    expect(host.querySelector("[data-shop=pass]")?.textContent).toContain("Your Realm gives this bonus already");
+    expect(host.querySelector("[data-shop=pass]")?.textContent).toContain("Your Realm already gives this bonus");
     expect(getPass()).toBeDefined();
   });
 
@@ -106,7 +106,7 @@ describe("the shop", () => {
 
   it("tells the holder of a Realm settled as this home that its Realm pays the quest bonus already", () => {
     renderShop([{ model: "SettledRealm", key: "0x5e7", value: { game_id: 1, realm_id: 42, home: "7" } }]);
-    expect(host.querySelector("[data-shop=pass]")?.textContent).toContain("Your Realm gives this bonus already");
+    expect(host.querySelector("[data-shop=pass]")?.textContent).toContain("Your Realm already gives this bonus");
     expect(getPass()).toBeDefined();
   });
 
@@ -125,7 +125,7 @@ describe("the shop", () => {
     renderShop([], false);
     const closed = host.querySelector("[data-shop=closed]");
     expect(closed?.textContent).toBe(
-      "Fragments shop closedFragments purchases and spends are closed right now. You can still use an Ancient Seal code below.Have a code?Redeem",
+      "Fragments shop closedFragments purchases and spends are closed right now. You can still use an Ancient Seal code below.Have a code?Apply",
     );
     expect(closed?.querySelector("[data-shop=code]")).not.toBeNull();
     expect(host.querySelector("[data-shop=pass]")).toBeNull();
@@ -134,7 +134,7 @@ describe("the shop", () => {
 
   it("names no free bonus for a home with neither a Realm nor a ticket", () => {
     renderShop([]);
-    expect(host.querySelector("[data-shop=pass]")?.textContent).not.toContain("gives this bonus already");
+    expect(host.querySelector("[data-shop=pass]")?.textContent).not.toContain("already gives this bonus");
   });
 });
 

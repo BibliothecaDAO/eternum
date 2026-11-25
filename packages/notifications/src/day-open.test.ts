@@ -23,7 +23,7 @@ it("tells the player the day is open and when it ends", () => {
   expect(buildDayOpen(day)).toMatchObject({
     kind: "day-open",
     title: "Day 2 is open",
-    body: "Frontier: it ends at 20:00.",
+    body: "Frontier: day ends at 20:00.",
     target: "/g/0x0a/6",
     createdAt: opensAt,
     expiresAt: opensAt + 5 * HOUR,
@@ -32,16 +32,16 @@ it("tells the player the day is open and when it ends", () => {
 
 it("names the last day with the season's end", () => {
   expect(buildDayOpen({ ...day, day: 9, last: true })).toMatchObject({
-    title: "The last day is open",
-    body: "Frontier: the season ends at 20:00.",
+    title: "Last day is open",
+    body: "Frontier: season ends at 20:00.",
   });
 });
 
 it.each([
-  ["Asia/Kolkata", "Frontier: it ends at 20:00."],
-  ["UTC", "Frontier: it ends at 14:30."],
-  ["America/New_York", "Frontier: it ends at 09:30."],
-  [null, "Frontier: it ends at 14:30 UTC."],
+  ["Asia/Kolkata", "Frontier: day ends at 20:00."],
+  ["UTC", "Frontier: day ends at 14:30."],
+  ["America/New_York", "Frontier: day ends at 09:30."],
+  [null, "Frontier: day ends at 14:30 UTC."],
 ] as const)("names the day's end on the clock of the phone it goes to (%s), with one id and expiry", (zone, body) => {
   const sent = buildDayOpen({ ...day, timeZone: zone, sendAt: opensAt + HOUR });
   expect(sent).toMatchObject({ body, createdAt: opensAt + HOUR, expiresAt: opensAt + 5 * HOUR });

@@ -25,6 +25,12 @@ export const shortfallLine = ({ of, held, need, counted, wait }: Extract<Reason,
   return wait === undefined ? line : `${line} · ${inTime(formatWait(wait))}`;
 };
 
+export const shortfallFace = ({ of, held, need, wait }: Extract<Reason, { kind: "short" }>) => ({
+  icon: PRICE_FACES[of].icon,
+  ...formatHeldAgainst(held, need),
+  wait: wait === undefined ? undefined : inTime(formatWait(wait)),
+});
+
 /** Any reason in its one line: what is short against what there is, or the line that names what failed. */
 export const reasonLine = (reason: Reason): string => (reason.kind === "short" ? shortfallLine(reason) : reason.line);
 

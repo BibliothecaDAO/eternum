@@ -553,6 +553,7 @@ export const FRONTIER = {
     firstMinuteSummary: `${buildingName(research.WORKSHOP, true)} (${n(workshopBaseLabor)}) + ${buildingName(research.BARRACKS, true)} (${n(barracksBaseLabor)}) + ${buildingName(research.FARM, true)} (${n(farmBaseLabor)}) = ${n(workshopBaseLabor + barracksBaseLabor + farmBaseLabor)} labor`,
     castleLevels: Array.from({ length: config.realmMaxLevel }, (_, level) => castleLevelLabel(level)),
     castleLevelInline: Array.from({ length: config.realmMaxLevel }, (_, level) => castleLevelInline(level)),
+    ranks: Array.from({ length: config.realmMaxLevel }, (_, level) => rankName(level)).join(" / "),
     maxLevel: n(config.realmMaxLevel),
     plots: Array.from({ length: config.realmMaxLevel }, (_, level) => n(buildablePlotCount(level))),
     armies: [limit.settlementArmies, limit.cityArmies, limit.kingdomArmies, limit.empireArmies].map(n),

@@ -34,7 +34,6 @@ import { createEtherealTerrainMaterial } from "./terrain-ethereal-material";
 import type { TerrainFogMask } from "./terrain-fog-mask";
 import { TerrainBiomeMap } from "./terrain-biome-map";
 import { GroundLights } from "./ground-lights";
-import type { GraphicsPreferences } from "../graphics-preferences";
 import { createTerrainMaterials, TERRAIN_GRID_NO_FOCUS, type TerrainMaterials } from "./terrain-material";
 import { TerrainPageWorkerClient } from "./terrain-page-worker-client";
 import { isTerrainPropFootprintClear } from "./terrain-prop-footprint";
@@ -42,7 +41,11 @@ import { TerrainPropPools, type TerrainPropPoolStats } from "./terrain-prop-pool
 import type { TerrainPropLod } from "./terrain-prop-catalog";
 import { TerrainFogField, type TerrainFogFieldStats } from "./terrain-fog-field";
 
-type TerrainQuality = GraphicsPreferences["quality"];
+export const TERRAIN_QUALITIES = ["balanced", "high"] as const;
+export type TerrainQuality = (typeof TERRAIN_QUALITIES)[number];
+
+export const resolveTerrainQuality = (value: unknown): TerrainQuality =>
+  TERRAIN_QUALITIES.find((quality) => quality === value) ?? "high";
 
 interface TerrainQualityProfile {
   dustInteractionStrength: number;
@@ -492,6 +495,15 @@ export class ProceduralTerrain {
       if (page.field.ownsCell(owner.col, owner.row)) return page.field.sampleSurface(worldX, worldZ);
     }
     return { biome: null, height: 0, normal: [0, 1, 0] };
+  }
+
+  sampleHeight(worldX: number, worldZ: number): number {
+    this.requireActive();
+    const owner = findNearestTerrainHex(worldX, worldZ);
+    for (const page of this.pages.values()) {
+      if (page.field.ownsCell(owner.col, owner.row)) return page.field.sampleHeight(worldX, worldZ);
+    }
+    return 0;
   }
 
   dispose(): void {

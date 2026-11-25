@@ -129,7 +129,7 @@ describe("the season list", () => {
     const { host, unmount } = render(
       <SeasonList rank={undefined} rows={[]} state="failed" onRetry={onRetry} onOpen={vi.fn()} onClose={vi.fn()} />,
     );
-    expect(host.textContent).toContain("Season did not answer.");
+    expect(host.textContent).toContain("Season unavailable.");
     expect(host.querySelector("[aria-label='Season —']")).not.toBeNull();
     act(() => button(host, "Try again").click());
     expect(onRetry).toHaveBeenCalled();

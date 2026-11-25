@@ -15,6 +15,7 @@ import {
   nativeResearchConstants as research,
 } from "@bibliothecadao/eternum/game-client";
 import { encodeNativeCommand } from "@bibliothecadao/provider";
+import type { TroopType } from "@bibliothecadao/types";
 import { nativeBindings } from "@/runtime/world/native-bindings";
 import { currentArmy, currentResourceWeight, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
@@ -24,8 +25,13 @@ import { fragmentsSpent, holdFragments } from "./shop-scenario";
 
 const FRAGMENTS_HELD = 100n;
 
-export function oathPickScenario(full = false, game = spireScenario(), fightOath: number = oaths.POWER): LabScenario {
-  prepareOathArmy(game.store, full, fightOath);
+export function oathPickScenario(
+  full = false,
+  game = spireScenario(),
+  fightOath: number = oaths.POWER,
+  category?: TroopType,
+): LabScenario {
+  prepareOathArmy(game.store, full, fightOath, category);
   holdFragments(game.store, game.player, FRAGMENTS_HELD);
   return {
     ...game,
@@ -60,7 +66,7 @@ export function oathPassCappedScenario(): LabScenario {
   return game;
 }
 
-function prepareOathArmy(store: NativeFactStore, full: boolean, fightOath: number) {
+function prepareOathArmy(store: NativeFactStore, full: boolean, fightOath: number, category?: TroopType) {
   const key = { game_id: 1, explorer_id: SPIRE_ARMY };
   const progress = store.require("ArmyProgress", key);
   const army = store.require("ExplorerTroops", key);
@@ -72,7 +78,10 @@ function prepareOathArmy(store: NativeFactStore, full: boolean, fightOath: numbe
     {
       model: "ExplorerTroops",
       key: store.wireKeyOf("ExplorerTroops", key)!,
-      value: wire({ ...army, troops: { ...army.troops, stamina: { Slot: slot.slot } } }),
+      value: wire({
+        ...army,
+        troops: { ...army.troops, category: category ?? army.troops.category, stamina: { Slot: slot.slot } },
+      }),
     },
     {
       model: "ArmySlot",

@@ -109,7 +109,7 @@ it.each([
   ["device_revoked", "device_removed"],
   ["account_not_secured", "Sign in with Discord or a code."],
   ["not_your_account", "This game account is not yours."],
-  ["device_limit", "Signed in on 8 devices already."],
+  ["device_limit", "Signed in on 8 devices (max)."],
 ])("shows the recovery for guardian refusal %s", async (code, expected) => {
   provider.getClassHashAt.mockRejectedValueOnce({ code: 20 });
   approveDeviceChange.mockRejectedValueOnce(new IdentityRequestError(403, code));
@@ -197,7 +197,7 @@ it.each(["entry", "boot"] as const)(
           </QueryClientProvider>,
         ),
       );
-      expect(container.textContent).toContain("Signed in on 8 devices already.");
+      expect(container.textContent).toContain("Signed in on 8 devices (max).");
       const link = container.querySelector<HTMLAnchorElement>(`a[href="${DEVICES_PATH}"]`);
       expect(link?.textContent).toBe("Remove a device");
       expect(link?.target).toBe("_blank");

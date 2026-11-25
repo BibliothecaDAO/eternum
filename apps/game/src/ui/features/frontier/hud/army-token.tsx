@@ -13,7 +13,7 @@ import type { ReactNode } from "react";
 
 import { reachMark } from "../depth-art";
 
-const TOKEN_FRAME = "relative flex w-14 shrink-0 flex-col items-center justify-start gap-1 rounded-xl py-1";
+const TOKEN_FRAME = "relative flex w-14 min-w-0 flex-col items-center justify-start gap-1 rounded-xl py-1";
 
 /** A token's portrait: the painting in its ring, as every token draws it. */
 const Portrait = ({ art }: { art: IconMeaning | undefined }) => (
@@ -186,9 +186,6 @@ export const OpenSlot = ({
   >
     <SlotRing pulse={pulse} filling={filling} />
     {bar && filling === undefined && <TokenStamina stamina={bar} />}
-    <span className="text-hud-label leading-none text-hud-gold [font-family:var(--hud-font-display)]">
-      {filling ?? label}
-    </span>
   </button>
 );
 
@@ -196,7 +193,7 @@ export const OpenSlot = ({
 const SlotRing = ({ pulse, filling }: { pulse: boolean; filling?: string }) => (
   <span
     className={cn(
-      "flex size-8 shrink-0 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark text-hud-title text-hud-gold",
+      "flex size-10 shrink-0 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark text-hud-title text-hud-gold",
       (pulse || filling !== undefined) && "animate-pulse border-hud-line-strong",
     )}
   >

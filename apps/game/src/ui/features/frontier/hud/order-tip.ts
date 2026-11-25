@@ -1,15 +1,15 @@
 import { asRanked, formatCharge, type RankedWords } from "@bibliothecadao/types";
 import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
-import { staminaShortfall } from "@/ui/design-system/kit/reasons";
+import { type Reason, reasonLine } from "@/ui/design-system/kit/reasons";
 import {
   ATTACK,
-  ATTACK_REFUSAL_WORDS,
+  ORDER_REFUSAL_WORDS,
   EXPLORE,
   MOVE,
   REINFORCE,
   SPIRE_WORDS,
   STAMINA,
-  TRANSFER,
+  TRANSFER_TROOPS,
   UNEXPLORED,
 } from "@/ui/design-system/kit/words";
 import {
@@ -68,7 +68,7 @@ const ORDERS: Partial<Record<ActionType, string>> = {
   [ActionType.Explore]: EXPLORE,
   [ActionType.Move]: MOVE,
   [ActionType.Attack]: ATTACK,
-  [ActionType.Help]: `${TRANSFER} troops`,
+  [ActionType.Help]: TRANSFER_TROOPS.title,
   [ActionType.SpireTravel]: "Enter the Spire",
   [ActionType.EnterDepth]: SPIRE_WORDS.order,
 };
@@ -112,19 +112,17 @@ export const refusedOrderVerb = ({
  * revealed one it said nothing of has nothing to say.
  */
 const refusalLine = ({ refusal, staminaWait, staminaHeld, explored }: TileOrder): string | null => {
-  if (refusal?.reason === "stamina") return staminaShortfall(staminaHeld, refusal.need, staminaWait);
-  if (refusal) return orderRefusalWords[refusal.reason];
+  if (refusal) return reasonLine(orderRefusalReason(refusal, { held: staminaHeld, wait: staminaWait }));
   return explored ? null : UNEXPLORED;
 };
 
-const orderRefusalWords: Record<Exclude<OrderRefusal["reason"], "stamina">, string> = {
-  food: "Not enough food for the army",
-  "off-limits": ATTACK_REFUSAL_WORDS["target-must-be-unowned"],
-  "no-attack": ATTACK_REFUSAL_WORDS["no-attack"],
-  "no-transfer": "This game allows no transfer here",
-  occupied: "No army can enter this tile",
-  "too-far": "Too far: move closer",
-};
+export const orderRefusalReason = (
+  refusal: OrderRefusal,
+  short?: { held: number | undefined; wait: number | undefined },
+): Reason =>
+  refusal.reason === "stamina"
+    ? { kind: "short", of: "stamina", held: short?.held, need: refusal.need, wait: short?.wait }
+    : { kind: "failed", line: ORDER_REFUSAL_WORDS[refusal.reason] };
 
 /** The wheat and fish an order burns from its army's realm. */
 type OrderFood = { wheat: number; fish: number };
