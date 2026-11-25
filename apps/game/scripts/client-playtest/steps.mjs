@@ -5162,21 +5162,25 @@ const LAB_HIGH_GROUND_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
   { name: "lit-tiles-on-ground", play: readTheLitTiles, settleMs: 0, verify: litTilesClearTheirGround },
+  { name: "army-on-ground", play: readTheArmies, settleMs: 0, verify: armiesStandOnTheirGround },
 ];
-const LIT_PLATES = `JSON.stringify(window.__gameRenderer?.worldmapScene?.highlightHexManager.getDebugState().plates ?? null)`;
+const LIT_PLATES = `JSON.stringify(window.__gameRenderer?.worldmapScene?.highlightHexManager.getDebugState() ?? null)`;
+const STANDING_ARMIES = `JSON.stringify(window.__gameRenderer?.worldmapScene?.armyManager.getDebugState().armies ?? null)`;
 const PLATE_FLOAT_LIMIT = 0.06;
 
 /** The selected army's lit tiles, read as drawn, once their roll-in has ended. */
 async function readTheLitTiles({ browser, extraScreenshot }) {
   await sleep(HOVER_SETTLE_MS);
   extraScreenshot("lit");
-  return { plates: browser.read(LIT_PLATES) };
+  const lit = browser.read(LIT_PLATES);
+  return { plates: lit?.plates ?? null, explores: lit?.exploreCount ?? 0 };
 }
 
 function litTilesClearTheirGround({ played }) {
-  const { plates } = played;
+  const { plates, explores } = played;
   if (!plates) return failed("the page does not report its world (window.__gameRenderer): no plate measured");
   if (plates.length === 0) return failed("the selected army is offered no lit tile");
+  if (explores === 0) return failed("the selected army is offered no tile to explore: no plate on the fog's floor");
   const buried = plates.filter((plate) => plate.lowest <= 0);
   const floating = plates.filter((plate) => plate.highest > PLATE_FLOAT_LIMIT);
   const clearance = {
@@ -5188,6 +5192,21 @@ function litTilesClearTheirGround({ played }) {
   if (floating.length > 0)
     return failed(`${floating.length} of ${plates.length} lit plates float over their tile`, { floating, clearance });
   return completed({ plates: plates.length, clearance });
+}
+
+async function readTheArmies({ browser }) {
+  return { armies: browser.read(STANDING_ARMIES) };
+}
+
+function armiesStandOnTheirGround({ played }) {
+  const { armies } = played;
+  if (!armies?.length) return failed("the page reports no army standing on the map");
+  const sunk = armies.filter((army) => army.overGround < 0);
+  const floating = armies.filter((army) => army.overGround > PLATE_FLOAT_LIMIT);
+  if (sunk.length > 0) return failed(`${sunk.length} of ${armies.length} armies stand under their ground`, { sunk });
+  if (floating.length > 0)
+    return failed(`${floating.length} of ${armies.length} armies float over their ground`, { floating });
+  return completed({ armies });
 }
 
 /** Points on an army's model as drawn, its tile (0) to its top (1): the head is where the tile behind lay. */
