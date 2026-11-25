@@ -138,8 +138,9 @@ afterEach(() => {
 });
 
 const row = (id: string) => host.querySelector<HTMLElement>(`li[data-message-id="${id}"]`)!;
-const sender = (id: string) => row(id).querySelector("p button")?.textContent ?? null;
-const words = (id: string) => row(id).querySelector("[data-message-words]")?.textContent;
+/** The run head's name over a message, if it starts a run. */
+const runName = (id: string) => row(id).querySelector("p button")?.textContent ?? null;
+const words = (id: string) => [...row(id).querySelectorAll("p")].at(-1)?.textContent;
 const buttonIn = (element: Element, text: string) =>
   [...element.querySelectorAll("button")].find((button) => button.textContent === text);
 const field = () => host.querySelector<HTMLInputElement>('input[aria-label="Message"]')!;
@@ -152,15 +153,18 @@ const type = (text: string) =>
 const send = () => act(async () => host.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
 
 describe("a room's messages", () => {
-  it("draws every message on one line: its time, its sender, then its words", () => {
-    expect(["m1", "m2", "m3", "m4", "m5"].map(sender)).toEqual(["Aldric", "Aldric", "Corwin", "Corwin", "Aldric"]);
-    expect(row("m3").querySelector("p")!.textContent).toMatch(/^\d\d:\d\dCorwinsent 1,200 knights/);
+  it("draws a sender's run under one name and time, and starts a run for a new sender, a gap and a reply", () => {
+    expect(runName("m1")).toBe("Aldric");
+    expect(runName("m2")).toBeNull();
+    expect(runName("m3")).toBe("Corwin");
+    expect(runName("m4")).toBe("Corwin");
+    expect(runName("m5")).toBe("Aldric");
     expect(host.textContent).not.toMatch(/<Aldric>|\[\d\d:\d\d\]/);
   });
 
   it("leaves numbers as words: no place, no button in them", () => {
     expect(words("m3")).toBe("sent 1,200 knights, 3,046 left at home");
-    expect(row("m3").querySelectorAll("[data-message-words] button, [data-message-words] a")).toHaveLength(0);
+    expect(row("m3").querySelectorAll("p:last-of-type button, p:last-of-type a")).toHaveLength(0);
   });
 
   it("quotes what a reply answers over it, and shows that message when the quote is pressed", () => {

@@ -10,7 +10,7 @@ import {
 } from "../../hooks/use-realtime-chat";
 import { receiptDue } from "../../model/direct-unread";
 import type { DirectMessage } from "../../model/types";
-import { computeDateSeparators } from "../../model/message-grouping";
+import { computeDateSeparators, startsRun } from "../../model/message-grouping";
 import { placeMetadata, placeOf } from "../../model/place";
 import { replyMetadata, replyOf } from "../../model/reply";
 import { PlaceChip } from "../shared/chat-map";
@@ -146,6 +146,12 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, className }: D
                 {thread.messages.map((message, index) => {
                   const reply = replyOf(message.metadata);
                   const place = placeOf(message.metadata);
+                  const previous = thread.messages[index - 1];
+                  const run = startsRun(previous, {
+                    senderId: message.senderId,
+                    createdAt: message.createdAt,
+                    replies: reply !== null,
+                  });
                   return (
                     <Fragment key={message.id}>
                       {dateSeparators.has(index) && (
@@ -157,7 +163,15 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, className }: D
                       )}
                       <MessageRow
                         id={message.id}
-                        from={{ name: labelOf(message.senderId), time: toDisplayTime(message) }}
+                        run={
+                          run || dateSeparators.has(index)
+                            ? {
+                                name: labelOf(message.senderId),
+                                playerId: message.senderId,
+                                time: toDisplayTime(message),
+                              }
+                            : undefined
+                        }
                         quote={
                           reply
                             ? {

@@ -8,10 +8,11 @@ import { useChatPeople } from "@/ui/features/social/realtime-chat/hooks/use-chat
 import { getGameModeId } from "@/config/game-modes";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
-import { HudChip, HudPill } from "@/ui/design-system/kit/hud-elements";
-import { ChatPage } from "@/ui/features/frontier/hud/chat-page";
-import { CHAT_WORDS } from "@/ui/design-system/kit/words";
+import { HudChip, HudPage, HudPill } from "@/ui/design-system/kit/hud-elements";
+import { CHAT, CHAT_WORDS } from "@/ui/design-system/kit/words";
 import {
+  GameChatMap,
+  RealtimeChatShell,
   type InitializeRealtimeClientParams,
   useRealtimeChatInitializer,
   useRealtimeChatSelector,
@@ -174,7 +175,7 @@ export function HudChatWindow({
   foldToIcon?: boolean;
 }) {
   const { initializer, requestSignIn, rooms, unread, stripLine } = useGameChat(open);
-  const pane = useRef<HTMLElement>(null);
+  const pane = useRef<HTMLDivElement>(null);
   useChatRevealed(() => onOpenChange(true));
 
   useEffect(() => {
@@ -223,20 +224,16 @@ export function HudChatWindow({
   return (
     <div className={cn("mt-auto flex flex-col gap-2", open ? "min-h-hud-chat-least" : "shrink-0")}>
       {open && (
-        <div data-chat-pane className="pointer-events-auto flex h-hud-chat-pane min-h-0 flex-col">
-          <ChatPage
-            rooms={rooms}
-            signedIn={Boolean(initializer)}
-            onSignIn={requestSignIn}
-            pane={pane}
-            onClose={() => onOpenChange(false)}
-          />
+        <div ref={pane} data-chat-pane className="pointer-events-auto flex h-hud-chat-pane min-h-0 flex-col">
+          {/* The chat shell pads its own tabs, history and composer. */}
+          <HudPage label={CHAT} icon="chat" onClose={() => onOpenChange(false)} bodyClassName="gap-0 p-0">
+            <GameChatMap>
+              <RealtimeChatShell rooms={rooms} className="min-h-0 flex-1" />
+            </GameChatMap>
+          </HudPage>
         </div>
       )}
-      <div
-        hidden={open}
-        className={cn("pointer-events-auto shrink-0", foldToIcon && "portrait:w-auto portrait:self-start")}
-      >
+      <div className={cn("pointer-events-auto shrink-0", foldToIcon && "portrait:w-auto portrait:self-start")}>
         <HudPill
           label="Chat strip"
           aria-expanded={open}

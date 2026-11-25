@@ -261,7 +261,7 @@ it("draws a mention of a player as their name, and marks a message that mentions
   expect(mention(rows[2]!)).toEqual([]);
   expect(rows[2]!.hasAttribute("data-mentions-me")).toBe(false);
   // The words stay as typed, under their sender's name.
-  expect(rows.map((row) => row.querySelector("[data-message-words]")?.textContent)).toEqual([
+  expect(rows.map((row) => [...row.querySelectorAll("p")].at(-1)?.textContent)).toEqual([
     "@Aldric hold the ridge",
     "@maelis your army is at the gate",
     "write to ada@realms.test, Maelis",

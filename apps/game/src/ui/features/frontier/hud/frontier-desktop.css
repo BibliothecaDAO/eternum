@@ -147,9 +147,6 @@
 .frontier-chat-dock [data-chat-pane] {
   height: 340px;
 }
-.frontier-chat-dock [data-chat-pane] .ui-panel__name {
-  display: none;
-}
 
 .frontier-cluster-card {
   display: flex;
