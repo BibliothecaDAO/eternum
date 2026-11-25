@@ -14,6 +14,7 @@ import { readStaminaEffects } from "./stamina";
 const calendar = { seed: 5n, startMainAt: 100, endAt: 10_000, scheduledEndAt: 10_000, dayUnitSeconds: 100 };
 const BANE_DAY = frontierSeasonOnePreset.banes.quietDays;
 const day = dayAtIndex(calendar, BANE_DAY);
+const EPOCH = BigInt(BANE_DAY);
 function fixture() {
   const store = new NativeFactStore();
   store.applyFacts([
@@ -83,7 +84,7 @@ function fixture() {
 
 it("multiplies Second Wind and Mist Tide, then restores the Triumph rate at the exact quorum second", () => {
   const store = fixture();
-  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0, 0)).toEqual({
+  expect(readStaminaEffects(store, 1, 7, EPOCH, day.start, 0, 0)).toEqual({
     known: {
       until: day.end,
       windows: [{ start: day.start, end: day.end, rateBps: 5_000 }],
@@ -101,7 +102,7 @@ it("multiplies Second Wind and Mist Tide, then restores the Triumph rate at the 
       },
     },
   ]);
-  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0, 0)).toEqual({ known: { until: day.end, windows: [] } });
+  expect(readStaminaEffects(store, 1, 7, EPOCH, day.start, 0, 0)).toEqual({ known: { until: day.end, windows: [] } });
   store.applyFacts([
     {
       model: "BaneProgress",
@@ -115,27 +116,29 @@ it("multiplies Second Wind and Mist Tide, then restores the Triumph rate at the 
       },
     },
   ]);
-  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0, 0)).toEqual({
+  expect(readStaminaEffects(store, 1, 7, EPOCH, day.start, 0, 0)).toEqual({
     known: {
       until: day.end,
       windows: [{ start: day.start + 60, end: day.end, rateBps: 20_000 }],
     },
   });
-  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 3, 0)).toEqual({ known: { until: day.end, windows: [] } });
+  expect(readStaminaEffects(store, 1, 7, EPOCH, day.start, 3, 0)).toEqual({ known: { until: day.end, windows: [] } });
 });
 
 it("regenerates no faster than Mist Tide allows through a day no command has rolled yet, and at the roll's own rate once rolled", () => {
   const store = fixture();
   store.applyFacts([{ model: "WorldBane", key: "1:1", value: null }]);
   const quiet = dayAtIndex(calendar, BANE_DAY - 1);
-  expect(readStaminaEffects(store, 1, 7, 1n, quiet.start, 0, 0)).toEqual({ known: { until: quiet.end, windows: [] } });
-  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0, 0)).toEqual({
+  expect(readStaminaEffects(store, 1, 7, EPOCH - 1n, quiet.start, 0, 0)).toEqual({
+    known: { until: quiet.end, windows: [] },
+  });
+  expect(readStaminaEffects(store, 1, 7, EPOCH, day.start, 0, 0)).toEqual({
     known: { until: day.end, windows: [{ start: day.start, end: day.end, rateBps: 5_000 }] },
   });
   store.applyFacts([{ model: "WorldBane", key: "1:1", value: { game_id: 1, day: BANE_DAY, kind: 0 } }]);
-  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0, 0)).toEqual({ known: { until: day.end, windows: [] } });
+  expect(readStaminaEffects(store, 1, 7, EPOCH, day.start, 0, 0)).toEqual({ known: { until: day.end, windows: [] } });
   store.setSnapshot({ gameId: 1, actor: "0x111", complete: false, timestamp: day.start });
-  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0, 0).unknown).toContain("INCOMPLETE_SNAPSHOT");
+  expect(readStaminaEffects(store, 1, 7, EPOCH, day.start, 0, 0).unknown).toContain("INCOMPLETE_SNAPSHOT");
 });
 
 it("ignores a scheduled Triumph after an early finish without changing its calendar identity", () => {
@@ -149,7 +152,7 @@ it("ignores a scheduled Triumph after an early finish without changing its calen
       value: { game_id: 1, aspect: 1, stage: nativeRaceConstants.SECOND_WIND_STAGE, day: BANE_DAY + 1 },
     },
   ]);
-  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0, 0)).toEqual({
+  expect(readStaminaEffects(store, 1, 7, EPOCH, day.start, 0, 0)).toEqual({
     known: {
       until: day.start + 90,
       windows: [{ start: day.start, end: day.start + 90, rateBps: 5_000 }],
@@ -160,10 +163,10 @@ it("ignores a scheduled Triumph after an early finish without changing its calen
 it("runs an Enlightenment army's whole day a third faster, under Mist Tide, Second Wind and in the Deep", () => {
   const store = fixture();
   const enlightened = 1 << (nativeOathConstants.ENLIGHTENMENT - 1);
-  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0, enlightened)).toEqual({
+  expect(readStaminaEffects(store, 1, 7, EPOCH, day.start, 0, enlightened)).toEqual({
     known: { until: day.end, windows: [{ start: day.start, end: day.end, rateBps: 6_667 }] },
   });
-  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 3, enlightened)).toEqual({
+  expect(readStaminaEffects(store, 1, 7, EPOCH, day.start, 3, enlightened)).toEqual({
     known: { until: day.end, windows: [{ start: day.start, end: day.end, rateBps: 13_334 }] },
   });
   store.applyFacts([
@@ -173,7 +176,7 @@ it("runs an Enlightenment army's whole day a third faster, under Mist Tide, Seco
       value: { game_id: 1, aspect: 1, stage: nativeRaceConstants.SECOND_WIND_STAGE, day: BANE_DAY },
     },
   ]);
-  expect(readStaminaEffects(store, 1, 7, 1n, day.start, 0, enlightened)).toEqual({
+  expect(readStaminaEffects(store, 1, 7, EPOCH, day.start, 0, enlightened)).toEqual({
     known: { until: day.end, windows: [{ start: day.start, end: day.end, rateBps: 13_334 }] },
   });
 });
