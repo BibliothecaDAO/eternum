@@ -191,7 +191,7 @@ it("shares the realm a desktop player selected, chat opened from its strip at th
   const chat = host.querySelector<HTMLButtonElement>('.frontier-chat-dock button[aria-label="Chat strip"]')!;
   await act(async () => chat.click());
   await connect();
-  expect(useUIStore.getState().mapSelection).toBeNull();
+  expect(useUIStore.getState().mapSelection).toEqual({ kind: "structure", entityId: REALM });
   expect(share()?.disabled).toBe(false);
   await sendWithPlace("meet here");
 });

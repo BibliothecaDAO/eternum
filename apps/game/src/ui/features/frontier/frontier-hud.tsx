@@ -189,6 +189,7 @@ const FrontierHudBody = ({
   useBuildOpensOnEntering(desktop && !isMapView && ordersAllowed && realm && !visit ? realm : null);
   const chat = useGameChat(surface === "chat");
   const chatPane = useChatKey(() => setSurface("chat"), { enabled: !desktop });
+  const [deskChat, setDeskChat] = useState(false);
   const headerStores = useStoreReadings(shown, rules);
   const headerFacts = useNativeFacts(REALM_HEADER_MODELS);
   const own = realm && !visit ? realm : null;
@@ -366,7 +367,7 @@ const FrontierHudBody = ({
       clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
       placeSwitch={placeMenu}
-      chat={<HudChatWindow open={surface === "chat"} onOpenChange={(open) => setSurface(open ? "chat" : null)} />}
+      chat={<HudChatWindow open={deskChat} onOpenChange={setDeskChat} />}
       banner={<OfflineNotice />}
       realm={realmCard}
       armies={armyDock}
