@@ -4,7 +4,9 @@ import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { aspects, ordersOfAspect } from "@bibliothecadao/types";
+import { aspects, ordersOfAspect, questCatalog, questObjective } from "@bibliothecadao/types";
+import { nativeQuestConstants } from "@bibliothecadao/eternum/game-client";
+import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
 
 import release from "../../../../../contracts/l3/world-native/schema/release-definition.json";
 
@@ -116,6 +118,8 @@ import {
   SEASON_INVITE_WORDS,
   tomorrowLasts,
 } from "@/ui/design-system/kit/words";
+
+const RIFTS = questCatalog.find((quest) => quest.id === nativeQuestConstants.RIFTS)!;
 
 const HOUR = 3_600;
 const DAY = 24 * HOUR;
@@ -326,7 +330,7 @@ it.each([1440, 390])(
       "9",
     ]);
     expect(known.container.querySelector("[data-play-today]")?.textContent).toContain(
-      "Clear rifts · 0 of 1 · +1,500 Labor",
+      DAY_BANNER_WORDS.summary(questObjective(RIFTS), 0, 1, 1_500),
     );
     expect(known.container.querySelector("[data-play-invite]")).not.toBeNull();
     expect(known.container.querySelectorAll('[role="timer"]')).toHaveLength(1);
@@ -1003,7 +1007,7 @@ it("hides TodayQuestPanel for a Live lead season when the player has no realm, a
   });
   const withRealm = await mount();
   expect(withRealm.container.querySelector("[data-play-today]")?.textContent).toContain(
-    "Clear rifts · 0 of 1 · +1,500 Labor",
+    DAY_BANNER_WORDS.summary(questObjective(RIFTS), 0, 1, 1_500),
   );
   expect(withRealm.text()).toContain("Today");
 });

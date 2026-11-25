@@ -15,7 +15,7 @@ import { nativeResearchConstants as research } from "@bibliothecadao/eternum/gam
 import { EARLY_REALM, MID_REALM } from "./progression-fixture";
 import { ResearchPanel } from "./research-panel";
 import { CastleResearch } from "../upgrade/castle-view";
-import { needLine, readResearchTree, type TreeNode } from "./research-tree";
+import { readResearchTree, type TreeNode } from "./research-tree";
 import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
@@ -112,10 +112,10 @@ it("holds a locked node's verb, says why, and offers the step that opens it", ()
   );
   expect(host.textContent).toContain(RESEARCH_TREE.store("15,000", "25,000", "Kingdom"));
   expect(host.querySelector("[data-node='row-5'] button[aria-label^='Upgrade ']")).toBeNull();
-  expect(host.querySelector("button[aria-label='Upgrade Supply yard']")).toBeNull();
+  expect(host.querySelector<HTMLButtonElement>("button[aria-label='Upgrade Supply yard']")?.disabled).toBe(true);
   expect(
-    [...host.querySelectorAll<HTMLButtonElement>("[data-research-footer] button")].map((each) => each.textContent),
-  ).toEqual([RESEARCH_TREE.levelUpCastle]);
+    [...host.querySelectorAll<HTMLButtonElement>("[data-research-footer] button")].map((each) => each.disabled),
+  ).toEqual([false, true]);
   act(() => button(/Upgrade the Castle/)!.click());
   expect(onFix).toHaveBeenCalledOnce();
 });
@@ -189,9 +189,7 @@ it("states why each locked or short row is held back in plain words without repe
     ),
   );
   expect(host.querySelector("[data-lab='node-choice'] [data-lock-reason]")).toBeNull();
-  expect(host.querySelector("[data-lab='node-choice'] [aria-label='Needs 2,500 Essence']")?.className).toContain(
-    "text-hud-",
-  );
+  expect(host.querySelector("[data-lab='node-choice'] .ui-price [data-short]")).not.toBeNull();
 });
 
 describe("the picked building's choice, at the panel's foot (the owner's pick C)", () => {
@@ -232,8 +230,8 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     const price = nodes
       .find(({ key }) => key === "row-0")!
       .needs.filter(({ kind }) => kind === "essence" || kind === "labor");
-    expect([...choice()!.querySelectorAll("[aria-label*='/']")].map((chip) => chip.getAttribute("aria-label"))).toEqual(
-      price.map((need) => needLine(need)),
+    expect([...choice()!.querySelectorAll(".ui-price > span")].map((chip) => chip.hasAttribute("data-short"))).toEqual(
+      price.map((need) => !need.met),
     );
   });
 
@@ -414,9 +412,7 @@ it("keeps cards free of inline Upgrade buttons and routes upgrading through the 
     ),
   );
   expect(host.querySelector("[data-node='row-6'] [data-research-effect-short]")?.textContent).toBe("2 → 3 Oaths");
-  expect(host.querySelector("[data-lab='node-choice'] [aria-label='Needs 1,000 Labor']")?.className).toContain(
-    "text-hud-",
-  );
+  expect(host.querySelector("[data-lab='node-choice'] .ui-price [data-short]")).not.toBeNull();
 });
 
 it("renders the 3-track Era tree with measured SVG prerequisite links on desktop and phone", () => {
@@ -553,4 +549,35 @@ it("renders concise phone short effects and legible locked titles", () => {
   expect(host.querySelector("[data-node='row-4'] [data-research-effect-short]")?.textContent).toBe("2 → 1.8 wheat");
   expect(host.querySelector("[data-node='well'] [data-research-effect-short]")?.textContent).toBe("+40% ⚡");
   expect(host.querySelector("[data-node='row-6'] .research-node__title--locked")).not.toBeNull();
+});
+
+it("marks a research done only when nothing is left to learn, and greys and blocks one the realm cannot pay for", () => {
+  const broke = readResearchTree({ ...MID_REALM, essence: 0, labor: 0 });
+  const short = broke.find((node) => node.state === "short" && node.tier > 0)!;
+  expect(short).toBeDefined();
+  const onResearch = vi.fn();
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={broke}
+        picked={short.key}
+        onPick={vi.fn()}
+        sending={new Set()}
+        fixFor={() => undefined}
+        onResearch={onResearch}
+        onClose={vi.fn()}
+        castleLevel={MID_REALM.castleLevel}
+      />,
+    ),
+  );
+  for (const node of broke)
+    expect([node.key, Boolean(host.querySelector(`[data-node='${node.key}'] [data-tone='done']`))]).toEqual([
+      node.key,
+      node.state === "done",
+    ]);
+  const verb = [...host.querySelectorAll<HTMLButtonElement>("[data-research-footer] button")].at(-1)!;
+  expect(verb.disabled).toBe(true);
+  act(() => verb.click());
+  expect(onResearch).not.toHaveBeenCalled();
+  expect(host.querySelector("[data-research-footer] .ui-price [data-short]")).not.toBeNull();
 });

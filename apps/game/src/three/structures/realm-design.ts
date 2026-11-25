@@ -36,6 +36,17 @@ const ASPECT_WONDER_LIST: readonly RealmAssetEntry[] = (Object.entries(ASPECT_SL
 );
 
 export const ASPECT_WONDER_PATHS = ASPECT_WONDER_LIST.map((asset) => asset.path);
+
+export const BASE_REALM_CANDIDATES: readonly RealmAssetEntry[] = [
+  {
+    id: "base-city",
+    label: "Base City · courtyard keep",
+    level: 1,
+    wonder: false,
+    source: "tripo/realms/base-city",
+    path: modelPath("realms/base-city.glb"),
+  },
+];
 export const REALM_ASSETS: readonly RealmAssetEntry[] = [...assets, ...ASPECT_WONDER_LIST];
 export const REALM_PATHS = REALM_ASSETS.map((asset) => asset.path);
 

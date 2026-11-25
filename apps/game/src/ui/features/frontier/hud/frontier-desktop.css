@@ -204,8 +204,7 @@
 .frontier-minimap {
   width: 100%;
   height: auto;
-  min-height: 0;
-  flex: 0 1000 auto;
+  flex: none;
   margin-top: auto;
   pointer-events: auto;
 }

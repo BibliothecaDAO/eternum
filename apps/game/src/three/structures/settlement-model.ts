@@ -1,5 +1,6 @@
 import type { AspectId } from "@bibliothecadao/types";
 import { OrderStandard } from "./order-standard";
+import { withFlagCloth } from "./flag-cloth";
 import { RealmLivingAura } from "./realm-living-aura";
 import {
   BufferGeometry,
@@ -51,7 +52,13 @@ export class SettlementModel extends InstancedModel {
     wonder = false,
     sourceAssetOwnership: "cache" | "consumer" = "consumer",
   ) {
-    super(gltf, capacity, false, kind === "village" ? "Village" : "Realm", sourceAssetOwnership);
+    super(
+      kind === "realm" ? withFlagCloth(gltf) : gltf,
+      capacity,
+      false,
+      kind === "village" ? "Village" : "Realm",
+      sourceAssetOwnership,
+    );
     this.bannerAtlas = kind === "village" ? createVillageBannerAtlas() : createRealmBannerAtlas();
     const cloth = new Map<string, boolean>();
     gltf.scene.traverse((node) => {
