@@ -46,7 +46,7 @@ export function balanceModules(definition: PresetDefinition): Record<string, str
     rules: rulesModule(definition.rules, assertSwitchesPlayable),
     expeditions: expeditionsModule(definition),
     quests: questsModule(present<QuestRules>(definition.economy.quests, "daily quests")),
-    banes: banesModule(present<BaneRules>(definition.economy.banes, "world banes")),
+    banes: banesModule(present<BaneRules>(definition.economy.banes, "world banes"), quietDays()),
     deep: deepModule(present<DeepRow>(definition.economy.deep, "the Deep")),
     race: raceModule(present<CairoRow>(definition.economy.race, "the race")),
     settlement: settlementModule(definition.settlement),
@@ -500,9 +500,16 @@ function questsModule(quests: QuestRules): string {
   ].join("\n\n");
 }
 
-function banesModule(banes: BaneRules): string {
-  assertBanesPlayable(banes);
+function quietDays(): number {
+  const banes = nativePresetForId(FRONTIER_S1_PRESET_ID).banes;
+  if (!banes) throw new Error("The release's preset must have world banes");
+  return banes.quietDays;
+}
+
+function banesModule(banes: BaneRules, quietDays: number): string {
+  assertBanesPlayable(banes, quietDays);
   return [
+    number("QUIET_DAYS", "u64", quietDays),
     number("CHANCE_STEP_PERCENT", "u16", banes.chance_step),
     number("QUORUM_PERCENT", "u16", banes.quorum_percent),
     number("BEAST_PERCENT", "u16", banes.beast_percent),
@@ -527,13 +534,14 @@ function assertQuestsPlayable(quests: QuestRules): void {
     refuse("the reward exceeds a resource amount");
 }
 
-function assertBanesPlayable(banes: BaneRules): void {
+function assertBanesPlayable(banes: BaneRules, quietDays: number): void {
   const percent = (field: Exclude<keyof BaneRules, "quest_counts">) => Number(banes[field]);
   const within = (value: number) => value > 0 && value <= 100;
   const refuse = (reason: string) => {
     throw new Error(`Season 1 banes: ${reason}`);
   };
   if (!within(percent("chance_step")) || !within(percent("quorum_percent"))) refuse("invalid chance or quorum");
+  if (!Number.isSafeInteger(quietDays) || quietDays < 0) refuse("invalid quiet days");
   if (percent("beast_percent") < 100) refuse("a world bane weakens beasts");
   if (!within(percent("stamina_percent")) || !within(percent("production_percent"))) refuse("invalid rate");
   if (banes.quest_counts.length !== 12 || banes.quest_counts.some((count) => Number(count) === 0))

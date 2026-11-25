@@ -10,7 +10,8 @@ export const seasonOneDesign = {
     staminaBar: 180,
     dayUnitSeconds: 14400,
     seasonDays: 50,
-    baneChanceStepPercent: 20,
+    baneQuietDays: 3,
+    baneChanceStepPercent: 10,
     speed: 1,
   },
   realm: {

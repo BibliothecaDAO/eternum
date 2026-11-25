@@ -403,6 +403,8 @@ export const frontierPhrases = (
     {
       page: "frontier/banes",
       phrases: [
+        `The first ${n(preset.banes.quietDays)} game days never have a World Bane. From day ${n(preset.banes.quietDays + 1)} onward`,
+        `adds +${n(preset.banes.chanceStep)}% to the chance of one on the next day.`,
         `${worldBaneHead(nativeBane.ASH_FALL, baneRules).name} applies to all realm building production (wheat, labor, and troop training).`,
         `Once ${n(preset.banes.quorumPercent)}% of your Aspect's members who deployed at least one army on the previous game day finish theirs, the World Bane ends for your Aspect`,
         `Archive guards still earn their full Glory (${n(preset.deep.buildingPay.alone)} / ${n(preset.deep.buildingPay.pair)} / ${n(preset.deep.buildingPay.crowd)} per tick, split by troop count) during a Team Bane.`,

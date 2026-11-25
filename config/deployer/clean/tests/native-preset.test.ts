@@ -876,6 +876,7 @@ test("the daily quest codec replaces legacy labor and preserves whole reward uni
 });
 
 const baneFixture = () => ({
+  quietDays: 3,
   chanceStep: 20,
   quorumPercent: 25,
   beastPercent: 150,
