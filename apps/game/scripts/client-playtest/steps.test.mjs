@@ -1452,3 +1452,21 @@ describe("the realm world's deploy sheet (lab-realm-world)", () => {
     expect(step.verify({ played }).status).toBe("completed");
   });
 });
+
+describe("lab-high-ground", () => {
+  const verify = (name) => STEP_SETS["lab-high-ground"].steps.find((step) => step.name === name).verify;
+  const plate = { layer: "route", lowest: 0.01, highest: 0.05 };
+
+  it("fails lit tiles that offer nothing to explore, so no plate on the fog's floor is measured", () => {
+    expect(verify("lit-tiles-on-ground")({ played: { plates: [plate], explores: 2 } }).status).toBe("completed");
+    expect(verify("lit-tiles-on-ground")({ played: { plates: [plate], explores: 0 } }).status).toBe("failed");
+  });
+
+  it("fails an army under its ground or over it, and a page that reports none", () => {
+    const standing = (overGround) => verify("army-on-ground")({ played: { armies: [{ entityId: 1, overGround }] } });
+    expect(standing(0.03).status).toBe("completed");
+    expect(standing(-0.2).status).toBe("failed");
+    expect(standing(0.3).status).toBe("failed");
+    expect(verify("army-on-ground")({ played: { armies: null } }).status).toBe("failed");
+  });
+});
