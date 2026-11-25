@@ -13,7 +13,7 @@ const TOKEN_FRAME = "relative flex w-14 shrink-0 flex-col items-center justify-s
 
 /** A token's portrait: the painting in its ring, as every token draws it. */
 const Portrait = ({ art }: { art: IconMeaning | undefined }) => (
-  <span className="block size-full overflow-hidden rounded-full border border-hud-line bg-hud-surface">
+  <span className="block size-full overflow-hidden rounded-full border-2 border-hud-line-strong bg-hud-surface">
     {art && <SemanticIcon name={art} alt="" className="size-full object-cover" />}
   </span>
 );
@@ -57,7 +57,7 @@ export const EtherealMark = ({ layer, at = "corner" }: { layer: EtherealLayer | 
       data-tip={layerName(layer)}
       className={cn(
         "absolute flex size-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark leading-none",
-        at === "corner" ? "-bottom-1.5 -left-1.5" : "-bottom-1 -right-2.5",
+        at === "corner" ? "-bottom-1.5 -left-1.5" : "-left-2 -top-1.5",
       )}
     >
       <SemanticIcon name={reachMark(layer)} size={14} />
@@ -94,10 +94,10 @@ export const ArmyToken = ({
 }) => {
   const body = (
     <>
-      <span data-fly-target={flyTarget} className="relative size-8 shrink-0">
+      <span data-fly-target={flyTarget} className="relative size-10 shrink-0">
         <Portrait art={art} />
         {number !== undefined && (
-          <span className="absolute -left-2.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark px-1 text-hud-strong leading-none text-hud-ink tabular-nums">
+          <span className="absolute -right-2 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark px-1 text-hud-strong leading-none text-hud-ink tabular-nums">
             {number}
           </span>
         )}
@@ -142,7 +142,8 @@ export const OpenSlot = ({
   label,
   pulse,
   filling,
-  start,
+  tip,
+  bar,
   stock,
   selected,
   onDeploy,
@@ -153,8 +154,8 @@ export const OpenSlot = ({
   selected?: boolean;
   /** An army is on its way into this slot, by the word that says so: the slot cannot be pressed until it is known. */
   filling?: string;
-  /** The bar the slot starts its army on, and that in words ("Army 2 starts on 7/150 stamina…"); none while unknown. */
-  start?: { bar: StaminaBar; words: string };
+  tip?: string;
+  bar?: StaminaBar;
   stock?: { count: string; label: string };
   onDeploy: () => void;
 }) => (
@@ -164,13 +165,15 @@ export const OpenSlot = ({
     aria-busy={filling !== undefined}
     aria-pressed={selected}
     disabled={filling !== undefined}
-    data-tip={filling === undefined ? start?.words : undefined}
+    data-tip={filling === undefined ? tip : undefined}
     onClick={onDeploy}
     className={cn("ui-pick", TOKEN_LOOK, "border-dashed")}
   >
     <SlotRing pulse={pulse} filling={filling} />
-    {start && filling === undefined && <TokenStamina stamina={start.bar} />}
-    <span className="text-hud-label leading-none text-hud-muted">{filling ?? label}</span>
+    {bar && filling === undefined && <TokenStamina stamina={bar} />}
+    <span className="text-hud-label leading-none text-hud-gold [font-family:var(--hud-font-display)]">
+      {filling ?? label}
+    </span>
     {stock && filling === undefined && (
       <span role="img" aria-label={stock.label} className="text-hud-body leading-none text-hud-ink tabular-nums">
         {stock.count}
@@ -183,7 +186,7 @@ export const OpenSlot = ({
 const SlotRing = ({ pulse, filling }: { pulse: boolean; filling?: string }) => (
   <span
     className={cn(
-      "flex size-6 shrink-0 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark text-hud-body text-hud-ink",
+      "flex size-8 shrink-0 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark text-hud-title text-hud-gold",
       (pulse || filling !== undefined) && "animate-pulse border-hud-line-strong",
     )}
   >

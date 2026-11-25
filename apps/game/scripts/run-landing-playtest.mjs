@@ -26,11 +26,13 @@ export const LANDING_SCENARIOS = [
   "lab-realm-world",
   "lab-race",
   "lab-panels",
+  "lab-hud-sheets",
 ];
 
 const VIEWPORTS = ["1920x1080", "390x844"];
 const SCENARIO_VIEWPORTS = {
   "lab-realm-world": ["1440x900", "1920x1080", "390x844"],
+  "lab-hud-sheets": ["360x800", "390x844", "768x1024"],
 };
 const RENDERER_MODE = "webgpu-force-webgl";
 const DEFAULT_PORT = 4188;

@@ -25,14 +25,16 @@ vi.mock("@bibliothecadao/types", async (original) => ({
     setSeenRoom = vi.fn();
   },
 }));
+const identity = vi.hoisted(() => ({ status: "signed-in" as "signed-in" | "signed-out" }));
+const signIn = vi.hoisted(() => ({ request: (() => {}) as () => void }));
 vi.mock("@/hooks/context/identity-session", async (original) => ({
   ...(await original<typeof import("@/hooks/context/identity-session")>()),
   useIdentitySession: () => ({
-    status: "signed-in",
+    status: identity.status,
     session: { user: { id: "u1", realmsId: "", name: "uxplay", email: "uxplay@example.com", address: "0x7" } },
   }),
 }));
-vi.mock("@/shell/sign-in/connect", () => ({ useRequestSignIn: () => vi.fn() }));
+vi.mock("@/shell/sign-in/connect", () => ({ useRequestSignIn: () => () => signIn.request() }));
 // The realm the player visits, as the season board's Visit starts it; none until a test visits.
 const visiting = vi.hoisted(() => ({ visit: null as { player: string; structureId: number; opensOn: null } | null }));
 vi.mock("@/sync/active-game-client", async (original) => ({
@@ -433,7 +435,10 @@ it.each([390, 1440])(
 it.each([390, 1440])("opens and closes the Wheat store from its control at %i px", async (width) => {
   viewport.set(width);
   await renderHud();
-  const control = host.querySelector('[aria-label^="Wheat "]')?.closest("button");
+  if (width < 1024)
+    await act(async () => host.querySelector<HTMLButtonElement>(".frontier-bar button.frontier-stock-chips")!.click());
+  const scope = width < 1024 ? host.querySelector(".frontier-realm-card")! : host;
+  const control = scope.querySelector('[aria-label^="Wheat "]')?.closest("button");
   expect(control).toBeTruthy();
   expect(host.querySelector('section[aria-label="Wheat"]')).toBeNull();
   await act(async () => control!.click());
@@ -470,7 +475,7 @@ it("gives a phone one place menu under its pill, whose places switch the scene a
     expect(document.querySelector("[data-surface-deep-switch]")).toBeNull();
     expect(pill().dataset.place).toBe("Realm");
     expect(host.querySelector('section[aria-label="Realm"]')).toBeNull();
-    await act(async () => host.querySelector<HTMLButtonElement>(".frontier-phone-emblem")!.click());
+    await act(async () => host.querySelector<HTMLButtonElement>(".frontier-bar button.frontier-stock-chips")!.click());
     expect(host.querySelector('section[aria-label="Realm"]')).not.toBeNull();
     const surface = await placeTab("Surface");
     await act(async () => surface.click());
@@ -545,7 +550,7 @@ const pressPlace = (word: string) =>
   );
 const surfaceNamed = (label: string) => document.querySelector<HTMLElement>(`section[aria-label="${label}"]`);
 const menuRow = (word: string) =>
-  [...surfaceNamed("Menu")!.querySelectorAll<HTMLElement>(".menu-place-tile, .ui-row")].find(
+  [...surfaceNamed("Menu")!.querySelectorAll<HTMLElement>(".menu-tile")].find(
     (row) => row.getAttribute("aria-label") === word || row.textContent?.startsWith(word),
   )!;
 
@@ -577,7 +582,7 @@ it.each([
   ["Today", "Today"],
   ["Settings", "Settings"],
 ])(
-  "opens %s from a phone's Menu whichever part of its row is tapped: its icon, its words or its chevron",
+  "opens %s from a phone's Menu whichever part of its tile is tapped: its painting or its word",
   async (row, opens) => {
     viewport.set(390);
     const route = window.location.pathname + window.location.search;
@@ -585,9 +590,8 @@ it.each([
     try {
       await renderHud();
       const parts = {
-        icon: (row: HTMLElement) => row.querySelector("[data-icon]")!,
-        words: (row: HTMLElement) => row.querySelector(".ui-row__title")!,
-        chevron: (row: HTMLElement) => [...row.querySelectorAll("[data-icon]")].at(-1)!,
+        icon: (tile: HTMLElement) => tile.querySelector("[data-icon]")!,
+        words: (tile: HTMLElement) => tile.querySelector(".menu-tile__label")!,
       };
       const opened: Record<string, boolean> = {};
       for (const [part, of] of Object.entries(parts)) {
@@ -599,7 +603,7 @@ it.each([
           surfaceNamed(opens)?.querySelector<HTMLButtonElement>('button[aria-label="Close"]')?.click(),
         );
       }
-      expect(opened).toEqual({ icon: true, words: true, chevron: true });
+      expect(opened).toEqual({ icon: true, words: true });
     } finally {
       window.history.replaceState(null, "", route);
     }
@@ -652,7 +656,7 @@ it("routes the phone Realm panel through the one-panel state so it replaces Toda
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
   try {
     await renderHud();
-    const realmChip = () => host.querySelector<HTMLButtonElement>(".frontier-phone-emblem")!;
+    const realmChip = () => host.querySelector<HTMLButtonElement>(".frontier-bar button.frontier-stock-chips")!;
     expect(realmChip().getAttribute("aria-expanded")).toBe("false");
     await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Today"]')!.click());
     expect(surfaceNamed("Today")).not.toBeNull();
@@ -1014,6 +1018,26 @@ it("opens chat on Global over the game when a mention's alert is pressed, the ga
   }
 });
 
+it("keeps chat shut for a signed-out player on a desktop: Enter opens nothing and the strip asks to sign in", async () => {
+  identity.status = "signed-out";
+  const requested = vi.fn();
+  signIn.request = requested;
+  viewport.set(1440);
+  try {
+    await renderHud();
+    await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" })));
+    expect([chatOpen(), host.querySelector("[data-chat-pane]")]).toEqual([false, null]);
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>('.frontier-chat-dock button[aria-label="Chat strip"]')!.click(),
+    );
+    expect(requested).toHaveBeenCalledOnce();
+    expect(host.querySelector("[data-chat-pane]")).toBeNull();
+  } finally {
+    identity.status = "signed-in";
+    signIn.request = () => {};
+  }
+});
+
 it("lights a plot on the player's own board for its first build, the Barracks, and none on a realm they visit", async () => {
   await renderHud();
   const own = useUIStore.getState().firstBuild;
@@ -1111,8 +1135,8 @@ it("opens Build in the desktop rail on an open plot as the player enters the Rea
   }
 });
 
-it.each([1440, 390])("opens Shop from the %i px top bar Fragments socket once Fragments are held", async (width) => {
-  viewport.set(width);
+it("opens Shop from the 1440 px top bar Fragments socket once Fragments are held", async () => {
+  viewport.set(1440);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
   try {
@@ -1204,7 +1228,7 @@ it.each([
   async (layout, width) => {
     const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
     const { OPENING_WORDS } = await import("@/ui/design-system/kit/words");
-    const { useOpeningStore } = await import("./opening/opening-store");
+    const { clearConfirmedTutorial, useOpeningStore } = await import("./opening/opening-store");
     const { entityHomeNamespace, expeditionRealmSite, setBuildingCount } = await import("@bibliothecadao/eternum");
     const { nativeResearchConstants } = await import("@bibliothecadao/eternum/game-client");
     const { ResourcesIds, TileOccupier, RESOURCE_PRECISION } = await import("@bibliothecadao/types");
@@ -1374,7 +1398,7 @@ it.each([
       expect(initialDock?.dataset.tutorialLayout).toBe(layout);
       if (layout === "phone") {
         expect(initialDock?.dataset.tutorialForm).toBe("reminder");
-        expect(initialDock?.textContent).toContain(OPENING_WORDS.titles.explore);
+        expect(initialDock?.textContent).toContain(OPENING_WORDS.titles.explore());
       } else {
         expect(initialDock?.querySelector(".emissary-dock__action")?.textContent).toContain(
           OPENING_WORDS.actions.explore,
@@ -1412,14 +1436,20 @@ it.each([
         '[data-tutorial-dock="explore"][data-tutorial-status="completed"]',
       );
       expect(confirmed).not.toBeNull();
-      expect(confirmed?.textContent).toContain(OPENING_WORDS.completedLabel);
-      expect(confirmed?.textContent).toContain(OPENING_WORDS.completed.explore);
+      expect(confirmed?.textContent).toContain(OPENING_WORDS.completed.explore.title);
 
-      await act(async () => confirmed!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+      const closeConfirmed = confirmed!.querySelector<HTMLButtonElement>('button[aria-label="Close"]');
+      if (layout === "desktop") {
+        expect(closeConfirmed).not.toBeNull();
+        await act(async () => closeConfirmed!.click());
+      } else {
+        expect(closeConfirmed).toBeNull();
+        await act(async () => clearConfirmedTutorial());
+      }
       const raceNext = host.querySelector<HTMLElement>(
         '[data-tutorial-dock="aspects"][data-tutorial-status="showing"]',
       );
-      expect(raceNext?.textContent).toContain(OPENING_WORDS.titles.aspects);
+      expect(raceNext?.textContent).toContain(OPENING_WORDS.titles.aspects());
       await act(async () => raceNext!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
       expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
 
@@ -1457,7 +1487,7 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
   const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
   const { OPENING_WORDS } = await import("@/ui/design-system/kit/words");
   const { buildingOutput } = await import("@/ui/shared/lib/building-output");
-  const { useOpeningStore } = await import("./opening/opening-store");
+  const { clearConfirmedTutorial, useOpeningStore } = await import("./opening/opening-store");
   const previousTicks = {
     currentBlockTimestamp: useBlockTimestampStore.getState().currentBlockTimestamp,
     currentDefaultTick: useBlockTimestampStore.getState().currentDefaultTick,
@@ -1555,7 +1585,10 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
     );
     expect(dayEndDock).not.toBeNull();
     expect(dayEndDock?.dataset.tutorialAspect).toBe("1");
-    expect(dayEndDock?.textContent).toContain(OPENING_WORDS.titles["day-end"]);
+    const { OPENING_RULES } = await import("./opening/opening-fixtures");
+    expect(dayEndDock?.textContent).toContain(
+      OPENING_WORDS.titles["day-end"]({ ...OPENING_RULES, dayLeftSeconds: 60 }),
+    );
 
     await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Today"]')!.click());
     await act(async () => new Promise((settled) => setTimeout(settled, 20)));
@@ -1567,7 +1600,8 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
       '[data-tutorial-dock="day-end"][data-tutorial-status="completed"]',
     );
     expect(dayEndConfirmed).not.toBeNull();
-    await act(async () => dayEndConfirmed!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+    expect(dayEndConfirmed!.querySelector('button[aria-label="Close"]')).toBeNull();
+    await act(async () => clearConfirmedTutorial());
     expect(host.querySelector('[data-tutorial-dock="day-end"]')).toBeNull();
 
     resetMemory();

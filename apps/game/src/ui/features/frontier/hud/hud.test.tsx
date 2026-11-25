@@ -24,8 +24,8 @@ import { OrderBar } from "./order-bar";
 import { PickedArmy } from "./picked-army";
 import { DayMedallion } from "./day-pill";
 import { RealmCard } from "./realm-card";
-import { PhoneTopBarView, TabletTopBarView } from "./phone-top-bar";
-import { PhoneTabBar, TabletPlaces } from "./frontier-nav";
+import { TopBarView } from "./phone-top-bar";
+import { PhoneTabBar } from "./frontier-nav";
 import { HUD_PLACES } from "./hud-places";
 import { OfflineBanner, OfflineNotice } from "./offline-notice";
 import { type StoreReading, storeLine, storeRateText } from "./status-strip";
@@ -149,7 +149,7 @@ describe("the status strip", () => {
     expect(lastHour).toContain("/images/hud/day-medallion-ember.webp");
   });
 
-  it("draws the phone's day medallion with clamped elapsed progress, the day, the time left and ember in the last hour", () => {
+  it("draws the phone's day on its bronze disc: the day, the hours left inside it, the ember disc in the last hour", () => {
     const day = dayClock(
       {
         dayUnitSeconds: 4 * 3_600,
@@ -165,16 +165,14 @@ describe("the status strip", () => {
     );
     const timer = host.querySelector('[role="timer"]')!;
     expect(timer.getAttribute("data-size")).toBe("52");
-    expect(timer.querySelector("img")?.getAttribute("src")).toBe("/images/hud/day-medallion-ember.webp");
+    expect(timer.querySelector("img")?.getAttribute("src")).toBe("/images/hud/day-disc-ember.webp");
     expect(timer.querySelector(".frontier-day-dial__numeral")?.textContent).toBe(String(day.day));
     expect(timer.querySelector(".frontier-day-dial__left")?.textContent).toBe("15m");
     expect(timer.getAttribute("aria-label")).toContain(`Day ${day.day} · 15m left`);
     expect(timer.getAttribute("data-tip")).toContain("15m left");
-    expect(timer.className).toContain("text-hud-bad");
-    expect(timer.querySelector("[data-fill-share]")?.getAttribute("data-fill-share")).toBe("100");
   });
 
-  it("lays a phone's one top row: the realm's emblem, Essence, Labor and Wheat chips, Fragments and the day", () => {
+  it("lays a phone's and a tablet's one bar: the place switch, Essence, Labor and Wheat opening the realm, the day; the lesson and the quest under it", () => {
     const day = dayClock(
       {
         dayUnitSeconds: 4 * 3_600,
@@ -185,16 +183,14 @@ describe("the status strip", () => {
       },
       3_600,
     );
-    const onShop = vi.fn();
     const onOpenRealm = vi.fn();
     act(() =>
       root.render(
-        <PhoneTopBarView
-          realm={{ icon: "realm-1", label: "Duskbite", aspect: 1, orderId: 12 }}
+        <TopBarView
           clock={<DayMedallion clock={day} size={52} />}
           stocks={{
-            fragments: 0,
-            onShop,
+            realmName: "Duskbite",
+            onOpenRealm,
             stores: [
               store("essence", 125_000),
               { ...store("labor", 9_000, 18_000), perHour: 180 },
@@ -203,58 +199,42 @@ describe("the status strip", () => {
             ],
           }}
           placeMenu={<button type="button">Places</button>}
+          notice={<aside aria-label="Lesson" />}
           quest={<button type="button">Quest</button>}
-          onOpenRealm={onOpenRealm}
         />,
       ),
     );
-    const cornice = host.querySelector(".frontier-phone-cornice")!;
-    expect(cornice.querySelector('[role="timer"]')?.textContent).toContain(`Day${day.day}`);
-    const chips = [...cornice.querySelectorAll(".frontier-stock-chip")];
-    expect(chips.map((chip) => chip.getAttribute("data-store"))).toEqual(["essence", "labor", "wheat"]);
-    expect(chips.map((chip) => chip.querySelector(".frontier-stock-chip__value")?.textContent)).toEqual([
-      "125K",
-      "9K",
-      "3K",
+    const bar = host.querySelector(".frontier-bar")!;
+    expect([...bar.children].map((part) => part.textContent)).toEqual(["Places", "125K9K3K", "Day111h"]);
+    const realm = bar.querySelector<HTMLButtonElement>('button[aria-label="Duskbite"]')!;
+    expect([...realm.querySelectorAll(".frontier-stock-chip")].map((chip) => chip.getAttribute("data-store"))).toEqual([
+      "essence",
+      "labor",
+      "wheat",
     ]);
-    const emblem = cornice.querySelector<HTMLButtonElement>(".frontier-phone-emblem")!;
-    expect(emblem.querySelector('[data-aspect-mark="1"]')).not.toBeNull();
-    expect(emblem.getAttribute("aria-label")).toContain("Duskbite");
-    act(() => emblem.click());
+    act(() => realm.click());
     expect(onOpenRealm).toHaveBeenCalledTimes(1);
-    const fragmentsSocket = cornice.querySelector<HTMLButtonElement>("[data-fragments-socket]");
-    expect(fragmentsSocket?.getAttribute("aria-label")).toBe("Fragments 0");
-    act(() => fragmentsSocket!.click());
-    expect(onShop).toHaveBeenCalledTimes(1);
-    expect([...host.querySelectorAll(".frontier-phone-float button")].map((button) => button.textContent)).toEqual([
-      "Places",
-      "Quest",
-    ]);
+    expect(host.querySelector('.frontier-phone-float__lead > aside[aria-label="Lesson"]')).not.toBeNull();
+    expect(host.querySelector(".frontier-phone-float__quest")?.textContent).toBe("Quest");
   });
 
-  it("gives a tablet its own bar: the day, quest and place, the places right, and the realm card under it", () => {
+  it("puts the open realm card right under the bar, in the lesson's and the quest's place", () => {
     act(() =>
       root.render(
-        <TabletTopBarView
-          realm={{ icon: "realm-1", label: "Duskbite", aspect: 1, orderId: 12 }}
-          clock={<span role="timer">Day</span>}
-          stocks={{ fragments: 3, onShop: vi.fn(), stores: [store("essence", 200), store("labor", 2_300)] }}
-          placeMenu={<button type="button">Places</button>}
+        <TopBarView
+          clock={<span>Day</span>}
+          stocks={{ stores: [store("essence", 125_000)] }}
+          notice={<aside aria-label="Lesson" />}
           quest={<button type="button">Quest</button>}
-          places={<TabletPlaces surface={null} onSurface={vi.fn()} researchReady feedUnread={0} chatUnread={2} />}
-          realmCard={<section aria-label="Realm" />}
+          realmCard={<section aria-label="Duskbite" />}
         />,
       ),
     );
-    expect([...host.querySelectorAll(".frontier-tablet-bar__centre > *")].map((part) => part.textContent)).toEqual([
-      "Day",
-      "Quest",
-      "Places",
+    const top = host.querySelector(".frontier-phone-top")!;
+    expect([...top.children].map((part) => part.className || part.getAttribute("aria-label"))).toEqual([
+      "frontier-bar pointer-events-auto",
+      "Duskbite",
     ]);
-    expect(
-      [...host.querySelectorAll('nav[aria-label="Places"] button')].map((button) => button.getAttribute("aria-label")),
-    ).toEqual(["Research", "Season", "Feed", "Chat", "Menu"]);
-    expect(host.querySelector('.frontier-tablet-realm > section[aria-label="Realm"]')).not.toBeNull();
   });
 
   it("shows the realm card's stores in order with rates, exact accessible labels and the Fragments tile", () => {
@@ -478,10 +458,10 @@ describe("the Menu", () => {
       onClose: vi.fn(),
     };
     act(() => root.render(<MenuPage events={2} guide="https://docs.realms.party/frontier/" {...handlers} />));
-    const words = [...document.querySelectorAll("section[aria-label='Menu'] nav .ui-row")].map(
-      (row) => row.textContent,
+    const words = [...document.querySelectorAll("section[aria-label='Menu'] nav .menu-tile")].map(
+      (tile) => tile.textContent,
     );
-    expect(words).toEqual(["Feed2", "Today", "Shop", "Settings", "How to playdocs.realms.party"]);
+    expect(words).toEqual(["Feed2", "Today", "Shop", "Settings", "How to playdocs.realms.party", "Exit"]);
     const button = (word: string) =>
       [...document.querySelectorAll<HTMLButtonElement>("section[aria-label='Menu'] button")].find((candidate) =>
         candidate.textContent?.startsWith(word),

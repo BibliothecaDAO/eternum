@@ -407,9 +407,6 @@ export const phraseText = ({ words, reading, readingFirst }: ClockPhrase): strin
  * is the contract's: each day is its own map, and an army lives only on its day's map (expeditions.cairo).
  */
 export const DAY_END = {
-  endsIn: (day: number | undefined, secondsLeft: number | undefined) =>
-    `${DAY} ${day ?? "—"} ends in ${dayLength(secondsLeft)}`,
-  open: "Open",
   goes: "At day end, today's map and armies go",
 } as const;
 
@@ -904,31 +901,32 @@ export interface OpeningRules {
   relicMinutesPerTier: number;
   scoutExploreStamina: number;
   exploreStamina: number;
-  tomorrowSeconds?: number;
+  dayLeftSeconds?: number;
 }
 
 const ownAspectLabel = (aspect: AspectId | undefined): string => (aspect !== undefined ? aspectName(aspect) : "");
 
 export const OPENING_WORDS = {
   titles: {
-    "season0-welcome": "Welcome Back",
-    oath: "Swear an Oath",
-    bane: "Break the Bane",
-    "day-end": "Day Ending",
-    deep: `The ${DEEP}`,
-    aspects: "Aspect Race",
-    spire: `Enter the ${layerName(1)}`,
-    quest: "Today's Quest",
-    "daily-quest": "Quest Ready",
-    essence: "Realm Research",
-    shop: "Stamina and Seal",
-    relic: "Army Relics",
-    "well-lore": "Well Lore",
-    "shrine-lore": "Shrine Lore",
-    city: "Scouts Unlocked",
-    barracks: "Build a Barracks",
-    deploy: "Deploy Your Army",
-    explore: "Explore the Mist",
+    "season0-welcome": () => "Welcome Back",
+    oath: () => "Swear an Oath",
+    bane: () => "Break the Bane",
+    "day-end": (rules: OpeningRules) =>
+      rules.dayLeftSeconds !== undefined ? `Day ends in ${dayLength(rules.dayLeftSeconds)}` : "Day Ending",
+    deep: () => `The ${DEEP}`,
+    aspects: () => "Aspect Race",
+    spire: () => `Enter the ${layerName(1)}`,
+    quest: () => "Today's Quest",
+    "daily-quest": () => "Quest Ready",
+    essence: () => "Realm Research",
+    shop: () => "Stamina and Seal",
+    relic: () => "Army Relics",
+    "well-lore": () => "Well Lore",
+    "shrine-lore": () => "Shrine Lore",
+    city: () => "Scouts Unlocked",
+    barracks: () => "Build a Barracks",
+    deploy: () => "Deploy Your Army",
+    explore: () => "Explore the Mist",
   },
   lines: {
     "season0-welcome": (rules: OpeningRules) =>
@@ -936,10 +934,7 @@ export const OPENING_WORDS = {
     oath: (rules: OpeningRules) =>
       `Your Orders grant power today. Swear one Oath, or pass for ${formatGain(rules.oathPassStamina)} ${STAMINA}.`,
     bane: () => "A bane strikes today. Your Aspect breaks it when enough members finish.",
-    "day-end": (rules: OpeningRules) =>
-      rules.tomorrowSeconds !== undefined
-        ? `Map and armies clear soon; Realm, buildings, Research, Glory stay. ${phraseText(tomorrowLasts(rules.tomorrowSeconds))}.`
-        : "Today's map and armies clear soon. Your Realm, buildings, Research, and Glory stay.",
+    "day-end": () => "Today's map and armies go at day end.",
     deep: (rules: OpeningRules) =>
       `Every ${formatExact(rules.deepTickSeconds)} seconds here, armies lose ${formatAmount(rules.deepLossPerTick)} troops. Hold sites to earn.`,
     aspects: (rules: OpeningRules) =>
@@ -957,18 +952,16 @@ export const OPENING_WORDS = {
     "shrine-lore": () => "Shrine lore is learned. Your armies can now uncover shrines.",
     city: (rules: OpeningRules) =>
       `Scouts reveal mist for ${formatAmount(rules.scoutExploreStamina)} stamina instead of ${formatAmount(rules.exploreStamina)}.`,
-    barracks: (rules: OpeningRules) =>
-      `Build a Barracks on the glowing plot. It raises ${formatRate(rules.knightsPerSecond)} Knights.`,
+    barracks: (rules: OpeningRules) => `It raises ${formatRate(rules.knightsPerSecond)} Knights.`,
     deploy: (rules: OpeningRules) =>
       `${formatExact(rules.troopsAtHome)} Knights wait at home. Send an army onto the ${layerName(0)}.`,
-    explore: (rules: OpeningRules) =>
-      `Mist hides sites and Essence. Reveal one dark hex for ${formatAmount(rules.exploreStamina)} stamina.`,
+    explore: (rules: OpeningRules) => `Reveal a dark hex for ${formatAmount(rules.exploreStamina)} stamina.`,
   },
   actions: {
     "season0-welcome": "Open Season to check the race.",
     oath: "Pick one Oath or pass.",
     bane: "Open Today to see the bane quest.",
-    "day-end": "Tap the Day medallion anytime for Today's recap.",
+    "day-end": "Your realm, research and Glory stay",
     deep: `Hold a ${DEEP} site or withdraw in time.`,
     aspects: "Open Season to check standings.",
     spire: "Clear camps to refill stamina and troops.",
@@ -980,24 +973,24 @@ export const OPENING_WORDS = {
     "well-lore": "Explore mist hexes to find wells.",
     "shrine-lore": "Explore mist hexes to find shrines.",
     city: "Train scouts for cheaper mist reveals.",
-    barracks: "Click the lit plot to build.",
+    barracks: "Tap the lit plot to build.",
     deploy: "Press Deploy in the Realm panel.",
-    explore: "Select your army and click dark mist.",
+    explore: "Pick an army, tap the mist",
   },
   completed: {
-    "season0-welcome": "Season standings opened. Welcome back to Season 1.",
-    barracks: "Barracks built. Knights are training now.",
-    deploy: `Army deployed onto the ${layerName(0)}.`,
-    explore: "Mist revealed. Sites and Essence await.",
-    oath: "Oath choice settled.",
-    quest: "Quest started. Finish it, then collect the reward.",
-    "daily-quest": "Quest reward collected. Labor and Essence added.",
-    essence: "Research opened. Learn any node marked ready.",
-    "day-end": "Day ending noted. Tap the Day medallion anytime for Today.",
-    bane: "Bane checked. Help your Aspect break it today.",
-    aspects: "Season standings opened. Track your Aspect race here.",
-    shop: "Shop opened. Refill stamina or unlock seals anytime.",
-    relic: "Army relics checked. Equip relics on your armies here.",
+    "season0-welcome": { title: "Standings opened", line: "Welcome back to Season 1." },
+    barracks: { title: "Barracks built", line: "Knights are training now." },
+    deploy: { title: "Army deployed", line: `It stands on the ${layerName(0)}.` },
+    explore: { title: "Mist revealed", line: "Sites and Essence await." },
+    oath: { title: "Oath settled", line: "Your army's choice is made." },
+    "daily-quest": { title: "Reward collected", line: "Labor and Essence added." },
+    quest: { title: "Quest started", line: "Finish it, then collect the reward." },
+    essence: { title: "Research opened", line: "Learn any node marked ready." },
+    "day-end": { title: "Day end noted", line: "Tap the Day medallion anytime for Today." },
+    bane: { title: "Bane checked", line: "Help your Aspect break it today." },
+    aspects: { title: "Standings opened", line: "Track your Aspect's race here." },
+    shop: { title: "Shop opened", line: "Refill stamina or unlock seals anytime." },
+    relic: { title: "Relics checked", line: "Equip relics on your armies here." },
   },
   inSheet: {
     barracks: (rules: OpeningRules) => `Pick Barracks below · ${formatRate(rules.knightsPerSecond)} Knights`,
@@ -1125,7 +1118,7 @@ export const BUILD = "Build";
 export const buildNamed = (building: string) => `${BUILD} ${building}`;
 export const BUILT = "Built";
 export const plotsUsed = (used: number, total: number) => `${used} / ${total} plots`;
-export const moreBelow = (names: readonly string[]) => `More below: ${names.join(", ")}`;
+export const armiesHere = (count: number) => (count === 1 ? "1 army" : `${count} armies`);
 export const FREE = "Free";
 
 /** Default army names: "Army" and its place. */

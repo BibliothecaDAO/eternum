@@ -1,5 +1,5 @@
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { REALM, SPIRE_WORDS } from "@/ui/design-system/kit/words";
+import { armiesHere, plotsUsed, REALM, SPIRE_WORDS } from "@/ui/design-system/kit/words";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import {
   DEEP_LAYER_TIERS,
@@ -22,6 +22,20 @@ type PlaceSwitchProps = {
   onGoRealm: () => void;
   onGoSurface: () => void;
   onSwitch?: () => void;
+};
+
+export const placeLines = (
+  armies: readonly { ethereal?: EtherealLayer }[],
+  plots: { used: number; total: number } | undefined,
+): Partial<Record<PlaceTabKey, string>> => {
+  const on = (layer: EtherealLayer | undefined) => armiesHere(armies.filter((army) => army.ethereal === layer).length);
+  return {
+    realm: plots && plotsUsed(plots.used, plots.total),
+    surface: on(undefined),
+    1: on(1),
+    2: on(2),
+    3: on(3),
+  };
 };
 
 type PlaceEntry = {
@@ -101,10 +115,16 @@ const placeEntries = ({
   ];
 };
 
-export const PlaceMenu = ({ realm, ...props }: PlaceSwitchProps & { realm?: { name: string; mark: IconMeaning } }) => {
-  const entries = placeEntries(props).map((entry) =>
-    entry.key === "realm" && realm ? { ...entry, mark: realm.mark, line: realm.name } : entry,
-  );
+export const PlaceMenu = ({
+  realm,
+  lines,
+  ...props
+}: PlaceSwitchProps & { realm?: { mark: IconMeaning }; lines?: Partial<Record<PlaceTabKey, string>> }) => {
+  const entries = placeEntries(props).map((entry) => ({
+    ...entry,
+    mark: entry.key === "realm" && realm ? realm.mark : entry.mark,
+    line: entry.locked ? entry.line : lines?.[entry.key],
+  }));
   const shown = entries.find((entry) => entry.selected) ?? entries[1]!;
   const { open, close, triggerProps, popover } = useHudPopover();
   const layout = useLayout();
@@ -116,6 +136,7 @@ export const PlaceMenu = ({ realm, ...props }: PlaceSwitchProps & { realm?: { na
         aria-haspopup="true"
         aria-label={`Map view, ${shown.label}`}
         data-place-pill=""
+        data-hud-part=""
         data-place={shown.label}
         className="frontier-place-pill"
       >

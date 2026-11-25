@@ -38,7 +38,7 @@ afterEach(() => {
   useUIStore.getState().setPendingMilitaryAction(null);
 });
 
-it.each(["phone", "desktop"])("shows every open slot and its bar on %s, and opens the chosen slot", (mode) => {
+it.each(["phone", "desktop"])("shows every open slot and its start on %s, and opens the chosen slot", (mode) => {
   layout.current = mode;
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store, row } = frontierDay();
@@ -71,10 +71,9 @@ it.each(["phone", "desktop"])("shows every open slot and its bar on %s, and open
     const slots = [...host.querySelectorAll<HTMLButtonElement>('button[aria-label="Deploy"]')];
     const startOf = (slot: HTMLButtonElement) => {
       const row = slot.closest<HTMLElement>(".frontier-slot") ?? slot;
-      const meter = row.querySelector('[role="meter"]');
       return mode === "desktop"
         ? [row.dataset.tip, row.querySelector(".frontier-slot__detail")?.textContent]
-        : [row.dataset.tip, meter?.getAttribute("aria-valuenow"), meter?.getAttribute("aria-valuemax")];
+        : [row.dataset.tip, row.textContent];
     };
     expect(slots.map(startOf)).toEqual(
       mode === "desktop"
@@ -83,8 +82,8 @@ it.each(["phone", "desktop"])("shows every open slot and its bar on %s, and open
             ["Army 3 starts on 7/150 stamina.", "Any troop type · 7"],
           ]
         : [
-            ["Army 2 starts full: 150/150 stamina.", "150", "150"],
-            ["Army 3 starts on 7/150 stamina.", "7", "150"],
+            ["Army 2 starts full: 150/150 stamina.", "+Deploy420"],
+            ["Army 3 starts on 7/150 stamina.", "+Deploy"],
           ],
     );
     act(() => slots[1].click());

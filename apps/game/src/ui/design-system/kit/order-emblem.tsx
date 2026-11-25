@@ -2,7 +2,7 @@ import { catalogOrder } from "@bibliothecadao/types";
 import { Icon } from "@/ui/design-system/icon";
 import { iconUrl, orderMeaning } from "@/ui/design-system/icon-meaning";
 
-export const resolvedOrder = (orderId?: number) => (orderId && orderId > 0 ? catalogOrder(orderId) : undefined);
+const resolvedOrder = (orderId?: number) => (orderId && orderId > 0 ? catalogOrder(orderId) : undefined);
 
 export const orderEmblem = (order: number): { art: string; name: string } => {
   const meaning = orderMeaning(order);

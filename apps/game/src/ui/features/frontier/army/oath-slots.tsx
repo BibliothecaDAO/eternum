@@ -58,27 +58,26 @@ export function OathSlotPips({
   );
 }
 
-export function TroopOathSlots({
-  category,
-  homeId,
-  explorerId,
-}: {
-  category: TroopType;
-  homeId?: number;
-  explorerId?: number;
-}) {
-  const { store } = useNativeFacts(["ArmyProgress", "RealmKnowledge", "ResearchPrice"]);
+export function TroopOathCapacity({ category, homeId }: { category: TroopType; homeId: number }) {
+  const { store } = useNativeFacts(["RealmKnowledge"]);
+  const learned = store.get("RealmKnowledge", { game_id: configManager.getActiveGameId(), structure_id: homeId });
+  if (!learned) return null;
+  const count = troopOathSlots(learned.learned, category);
+  return (
+    <div data-oath-slots={count}>
+      <OathSockets oaths={[]} slots={count} />
+    </div>
+  );
+}
+
+export function TroopOathSlots({ category, explorerId }: { category: TroopType; explorerId: number }) {
+  const { store } = useNativeFacts(["ArmyProgress", "ResearchPrice"]);
   const pickBase = usePickEffectBase();
   const game_id = configManager.getActiveGameId();
-  const learned = homeId === undefined ? undefined : store.get("RealmKnowledge", { game_id, structure_id: homeId });
-  const count =
-    explorerId === undefined
-      ? learned && troopOathSlots(learned.learned, category)
-      : store.get("ArmyProgress", { game_id, explorer_id: explorerId })?.oath_slots;
-  if (count === undefined) return null;
-  const progress =
-    explorerId === undefined ? undefined : store.get("ArmyProgress", { game_id, explorer_id: explorerId });
-  const held = heldOaths(progress?.oaths ?? 0);
+  const progress = store.get("ArmyProgress", { game_id, explorer_id: explorerId });
+  if (!progress) return null;
+  const count = progress.oath_slots;
+  const held = heldOaths(progress.oaths);
   return (
     <div data-oath-slots={count} className="oath-board">
       <div className="oath-board__head">
