@@ -216,6 +216,17 @@ function resolveWebGpuRendererDevice(renderer: WebGPURendererSurface): WebGPURen
   return rendererWithBackend.backend?.device;
 }
 
+function readMaxTextureSize(renderer: RendererSurfaceLike): number | undefined {
+  const { backend } = renderer as RendererSurfaceLike & {
+    backend?: { device?: { limits?: { maxTextureDimension2D?: number } }; gl?: WebGL2RenderingContext };
+  };
+  return backend?.device?.limits?.maxTextureDimension2D ?? backend?.gl?.getParameter(backend.gl.MAX_TEXTURE_SIZE);
+}
+
+function fitPixelRatioToDevice(pixelRatio: number, width: number, height: number, maxTextureSize?: number): number {
+  return maxTextureSize === undefined ? pixelRatio : Math.min(pixelRatio, maxTextureSize / Math.max(width, height, 1));
+}
+
 function resolveWebGpuAdapterInfo(device?: WebGPURendererDevice): RendererAdapterInfo | undefined {
   const adapterInfo = device?.adapterInfo;
   if (!adapterInfo) {
@@ -335,6 +346,7 @@ function renderMainFrameWithRecovery(
   renderer: RendererSurfaceLike,
   finish: SceneFinish,
   pipeline: RendererFramePipeline,
+  sizeToWindow: () => void,
 ): void {
   renderer.info.reset();
 
@@ -348,7 +360,7 @@ function renderMainFrameWithRecovery(
 
     recordRendererDiagnosticUncapturedError((error as TypeError).message);
     logRecoverableWebGpuFrameError(error as TypeError);
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    sizeToWindow();
 
     try {
       renderClearedMainScene(renderer, finish, pipeline);
@@ -387,6 +399,13 @@ export function createWebGPURendererBackend(
   } satisfies WebGPURendererBackendDependencies;
   let renderer: RendererSurfaceLike | undefined;
   let finish: SceneFinish | undefined;
+  let requestedPixelRatio = options.pixelRatio;
+  let maxTextureSize: number | undefined;
+  const sizeRenderer = (width: number, height: number) => {
+    if (!renderer) return;
+    renderer.setPixelRatio(fitPixelRatioToDevice(requestedPixelRatio, width, height, maxTextureSize));
+    renderer.setSize(width, height);
+  };
   let cleanupDeviceDiagnostics: (() => void) | undefined;
 
   const startRendererLane = async (forceWebGL: boolean): Promise<InitializedRendererLane> => {
@@ -492,9 +511,9 @@ export function createWebGPURendererBackend(
         return;
       }
 
-      renderer.setPixelRatio(input.pixelRatio);
+      requestedPixelRatio = input.pixelRatio;
       renderer.shadowMap.enabled = input.shadows;
-      renderer.setSize(input.width, input.height);
+      sizeRenderer(input.width, input.height);
     },
     dispose() {
       cleanupDeviceDiagnostics?.();
@@ -512,6 +531,8 @@ export function createWebGPURendererBackend(
         cleanupDeviceDiagnostics?.();
         cleanupDeviceDiagnostics = lane.releaseDeviceDiagnostics;
         renderer = lane.renderer;
+        maxTextureSize = readMaxTextureSize(lane.renderer);
+        sizeRenderer(window.innerWidth, window.innerHeight);
         finish = resolvedDependencies.createFinish(lane.renderer);
 
         return createRendererInitDiagnostics({
@@ -529,11 +550,13 @@ export function createWebGPURendererBackend(
     },
     renderFrame(pipeline: RendererFramePipeline) {
       if (!renderer || !finish) return;
-      renderMainFrameWithRecovery(renderer, finish, pipeline);
+      renderMainFrameWithRecovery(renderer, finish, pipeline, () =>
+        sizeRenderer(window.innerWidth, window.innerHeight),
+      );
       renderRendererOverlayPasses(renderer, pipeline);
     },
     resize(width: number, height: number) {
-      renderer?.setSize(width, height);
+      sizeRenderer(width, height);
     },
   };
 }

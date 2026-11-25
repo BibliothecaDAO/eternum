@@ -408,6 +408,17 @@ export const DESKTOP_MIN_PX = 1024;
 
 export const TABLET_MIN_PX = 768;
 
+const HUD_PORTRAIT_DESKTOP_MIN_PX = 1440;
+
+export const HUD_QUERIES = {
+  desktop: `(min-width: ${DESKTOP_MIN_PX}px) and (orientation: landscape), (min-width: ${HUD_PORTRAIT_DESKTOP_MIN_PX}px)`,
+  compact: `(max-width: ${DESKTOP_MIN_PX - 1}px), (orientation: portrait) and (max-width: ${HUD_PORTRAIT_DESKTOP_MIN_PX - 1}px)`,
+  sideways: `(max-width: ${DESKTOP_MIN_PX - 1}px) and (orientation: landscape)`,
+  upright: `(orientation: portrait) and (max-width: ${HUD_PORTRAIT_DESKTOP_MIN_PX - 1}px)`,
+  tablet: `(min-width: ${TABLET_MIN_PX}px) and (orientation: portrait) and (max-width: ${HUD_PORTRAIT_DESKTOP_MIN_PX - 1}px)`,
+  shortDesktop: `(min-width: ${DESKTOP_MIN_PX}px) and (max-height: 780px)`,
+} as const;
+
 export const SCREENS = {
   /** Tailwind's own value, restated so `lg:` and the JS layout read one number. */
   lg: `${DESKTOP_MIN_PX}px`,
@@ -642,7 +653,6 @@ export const HUD_LAYOUT = {
   "frontier-page": "440px",
   "frontier-left": "304px",
   "frontier-rail": "384px",
-  "frontier-minimap": "208px",
   "frontier-page-top": "76px",
   "frontier-card": "92px",
   "frontier-build-card": "136px",

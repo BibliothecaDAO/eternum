@@ -17,7 +17,7 @@ import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { configManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { catalogAspectId, rankName } from "@bibliothecadao/types";
-import { useLayout, useTablet } from "@/shell/frame/layout";
+import { useHudLayout, useHudTablet } from "@/hooks/helpers/use-compact-hud";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { type ComponentType, type ReactNode, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -151,8 +151,8 @@ const FrontierHudBody = ({
       setSurface("research");
     },
   });
-  const desktop = useLayout() === "desktop";
-  const noticeAtFoot = useTablet() || desktop;
+  const desktop = useHudLayout() === "desktop";
+  const noticeAtFoot = useHudTablet() || desktop;
   const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null, !desktop);
   useEffect(() => {
     onSurfaceChange(surface);

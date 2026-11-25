@@ -62,7 +62,7 @@ describe("AspectEmissaryDock", () => {
     expect(dock?.dataset.tutorialAspect).toBe("2");
     expect(dock?.dataset.tutorialLayout).toBe("desktop");
     expect(dock?.textContent).toContain("Luminary");
-    expect(dock?.textContent).toContain("It raises +2/min Knights.");
+    expect(dock?.textContent).toContain("It raises +1.7/min Knights.");
     expect(dock?.textContent).toContain("Tap the lit plot to build.");
     expect(host.querySelector(".emissary-dock__context")).toBeNull();
     expect(host.querySelector(".emissary-dock__well")).toBeNull();

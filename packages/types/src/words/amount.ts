@@ -166,11 +166,8 @@ export const formatPercent = (fraction: number | undefined, { signed = false } =
   return `${text}%`;
 };
 
-export const formatRate = (perSecond: number | undefined): string => {
-  if (perSecond === undefined) return "—";
-  const perMinute = perSecond * 60;
-  return `${Math.abs(perMinute) >= 1 ? SIGN(WHOLE).format(perMinute) : formatFigure(perMinute, { signed: true })}/min`;
-};
+export const formatRate = (perSecond: number | undefined): string =>
+  perSecond === undefined ? "—" : `${formatFigure(perSecond * 60, { signed: true })}/min`;
 
 const ORDINAL = new Intl.PluralRules("en-US", { type: "ordinal" });
 const ORDINAL_ENDINGS: Record<string, string> = { one: "st", two: "nd", few: "rd", other: "th" };

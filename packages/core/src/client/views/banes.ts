@@ -2,6 +2,7 @@ import { readOptionalSeasonRow } from "./season-rows";
 import { StructureType, worldBanes } from "@bibliothecadao/types";
 import type { NativeFactResult, NativeFactStore } from "../native-fact-store";
 import { dayOf } from "../../utils/days";
+import { nativeBaneConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 
 export const BANE_MODELS = [
   "BaneRules",
@@ -189,4 +190,25 @@ export function readBaneEffects(
       beastPercent: rules.beast_percent,
     },
   };
+}
+
+export function productionPercentAt(
+  effects: { windows: readonly BaneWindow[]; productionPercent: number },
+  timestamp: number,
+): number {
+  const cut = effects.windows.some(
+    (window) =>
+      window.kinds.includes(nativeBaneConstants.ASH_FALL) && window.start <= timestamp && timestamp < window.end,
+  );
+  return cut ? effects.productionPercent : 100;
+}
+
+export function readProductionPercent(
+  store: NativeFactStore,
+  gameId: number,
+  home: number | bigint,
+  timestamp: number,
+): number | undefined {
+  const effects = readBaneEffects(store, gameId, home, timestamp, timestamp + 1);
+  return effects.known ? productionPercentAt(effects.known, timestamp) : undefined;
 }

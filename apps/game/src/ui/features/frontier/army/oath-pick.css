@@ -1,4 +1,4 @@
-@media (max-width: 1023px) {
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
   .ui-modal:has(> .oath-pick) {
     align-items: flex-end;
     padding: 0 6px 74px;
@@ -21,7 +21,7 @@
   border-radius: 16px;
   color: rgb(var(--hud-ink));
 }
-@media (min-width: 1024px) {
+@media (min-width: 1024px) and (orientation: landscape), (min-width: 1440px) {
   .oath-pick {
     max-width: 540px;
   }

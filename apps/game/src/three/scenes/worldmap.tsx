@@ -308,7 +308,7 @@ import {
   stepBackOnEscape,
 } from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
-import { layoutNow } from "@/shell/frame/layout";
+import { hudLayoutNow } from "@/hooks/helpers/use-compact-hud";
 import { type OrderTip, orderFood, orderTip, refusedOrderVerb } from "@/ui/features/frontier/hud/order-tip";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
@@ -2357,7 +2357,7 @@ export default class WorldmapScene extends WarpTravel {
    * every mode a right-click (a long-press) sends the order at once.
    */
   private hudCarriesOrderVerb(): boolean {
-    return orderVerbOnHud({ frontier: this.isFrontierHud(), layout: layoutNow() });
+    return orderVerbOnHud({ frontier: this.isFrontierHud(), layout: hudLayoutNow() });
   }
 
   private isFrontierHud(): boolean {
@@ -2729,7 +2729,7 @@ export default class WorldmapScene extends WarpTravel {
    * wanna be able to select an army and do all kind of actions without deselecting and reselecting the army").
    */
   private keepsArmyOnClick(hexCoords: HexPosition): boolean {
-    return layoutNow() !== "phone" && this.selectedArmyId() !== null && !this.isBareGround(hexCoords);
+    return hudLayoutNow() !== "phone" && this.selectedArmyId() !== null && !this.isBareGround(hexCoords);
   }
 
   /**
@@ -2742,7 +2742,7 @@ export default class WorldmapScene extends WarpTravel {
    */
   private tapActsForSelection(hexCoords: HexPosition): boolean {
     if (this.holdsOwnSelectable(hexCoords)) return false;
-    return layoutNow() === "phone" || !this.isBareGround(hexCoords);
+    return hudLayoutNow() === "phone" || !this.isBareGround(hexCoords);
   }
 
   /**
@@ -2859,7 +2859,7 @@ export default class WorldmapScene extends WarpTravel {
       site: (structure !== undefined && this.isStandingExpeditionSite(structure.id)) || this.hasSiteCardAt(hexCoords),
       // An army of the player's standing on the spire is selected by the tap, as on any site.
       ownSpire: this.isArmysSpire(selectedEntityId, hexCoords) && !this.holdsOwnSelectable(hexCoords),
-      onPhone: layoutNow() === "phone",
+      onPhone: hudLayoutNow() === "phone",
       refused: this.refusalAt(hexCoords),
       hud: this.hudCarriesOrderVerb()
         ? {

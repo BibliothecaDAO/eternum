@@ -17,9 +17,9 @@ vi.mock("../frontier-home", async (original) => ({
 }));
 // The screen the sheet is drawn on: a desktop's rows for the slots, a phone's tokens.
 const layout = vi.hoisted(() => ({ current: "desktop" as "desktop" | "phone" }));
-vi.mock("@/shell/frame/layout", async (original) => ({
-  ...(await original<typeof import("@/shell/frame/layout")>()),
-  useLayout: () => layout.current,
+vi.mock("@/hooks/helpers/use-compact-hud", async (original) => ({
+  ...(await original<typeof import("@/hooks/helpers/use-compact-hud")>()),
+  useHudLayout: () => layout.current,
 }));
 // The production clock the sheet reads; a test moves it to watch a store fill.
 const clock = vi.hoisted(() => ({ tick: 3 }));

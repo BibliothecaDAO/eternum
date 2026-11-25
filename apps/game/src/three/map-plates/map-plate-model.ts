@@ -6,7 +6,15 @@ import type { FrontierSpecies } from "../structures/frontier-beast";
 import { beastMeaning, mineMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import { NEUTRAL_OWNER_NAME, StructureType, structureName, frontierSiteName, formatExact } from "@bibliothecadao/types";
+import {
+  NEUTRAL_OWNER_NAME,
+  StructureType,
+  TROOP_TYPES,
+  structureName,
+  frontierSiteName,
+  formatExact,
+  type TroopType,
+} from "@bibliothecadao/types";
 
 import { SIDE_COLOURS, type SeatSide, type Side } from "@/tokens";
 import { sideOf } from "@/utils/entity-ownership";
@@ -139,6 +147,12 @@ const troopType = (category: string | null | undefined): PlateTroops["type"] => 
     default:
       return "knight";
   }
+};
+
+export const plateTroopCategory = (type: PlateTroops["type"]): TroopType => {
+  const category = TROOP_TYPES.find((candidate) => candidate.toLowerCase() === type);
+  if (!category) throw new Error(`Unknown troop type ${type}`);
+  return category;
 };
 
 const tierOf = (tier: number | string): PlateTroops["tier"] => {

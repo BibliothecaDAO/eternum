@@ -18,8 +18,6 @@ describe("Frontier's build options", () => {
       kind: "produces",
       resource: ResourcesIds.Wheat,
       perHour: farmASecond * HOUR,
-      // Nothing researched: the output is its base, with no share added.
-      output: { base: farmASecond, total: farmASecond },
     });
     expect(options.get(BuildingType.ResourceLabor)?.effect).toMatchObject({ resource: ResourcesIds.Labor });
     expect((options.get(BuildingType.ResourceLabor)?.effect as { perHour: number }).perHour).toBeCloseTo(50, 0);

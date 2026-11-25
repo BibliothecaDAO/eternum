@@ -6,6 +6,7 @@ import { HudRanked, HudStamina, HudTierChip, type StaminaBar } from "@/ui/design
 
 import { type MapPlate, type PlateTroops } from "./map-plate-model";
 import { plateRows, type PlateSegment } from "./map-plate-rows";
+import { MapCombatBadge, combatOfStack } from "./map-plate-token";
 
 /**
  * A map plate (the owner's pick, map-labels rounds 2 to 5), opened in its token's place: the rows `plateRows` says, on
@@ -51,10 +52,13 @@ const Segment = ({ segment }: { segment: PlateSegment }) => {
  */
 const Troops = ({ troops }: { troops: PlateTroops }) => (
   <span className="mp-troops">
-    <Icon
-      name={troops.beast ? beastMeaning(troops.beast) : (`${troops.type}-t${troops.tier}` as IconMeaning)}
-      size={20}
-    />
+    <span className="mp-troops__icon">
+      <Icon
+        name={troops.beast ? beastMeaning(troops.beast) : (`${troops.type}-t${troops.tier}` as IconMeaning)}
+        size={20}
+      />
+      <MapCombatBadge mark={combatOfStack(troops)} />
+    </span>
     {!troops.beast && <HudTierChip tier={troops.tier} />}
     <span className="mp-count">{formatExact(troops.count)}</span>
     {troops.stamina && (

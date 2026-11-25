@@ -5157,19 +5157,8 @@ const LAB_HIGH_GROUND_STEPS = [
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
   { name: "lit-tiles-on-ground", play: readTheLitTiles, settleMs: 0, verify: litTilesClearTheirGround },
 ];
-/** Every lit plate's height beside the highest ground under its face, read on a 0.1 grid out to its corners. */
-const LIT_PLATES = `JSON.stringify((() => {
-  const world = window.__gameRenderer?.worldmapScene;
-  if (!world) return null;
-  const terrain = world.getTerrainSurface();
-  return world.highlightHexManager.getDebugState().plates.map(({ x, y, z }) => {
-    let ground = -Infinity;
-    for (let dx = -0.9; dx <= 0.9001; dx += 0.1)
-      for (let dz = -0.9; dz <= 0.9001; dz += 0.1)
-        if (Math.hypot(dx, dz) <= 0.9001) ground = Math.max(ground, terrain.sampleSurface(x + dx, z + dz).height);
-    return { x, z, y, ground };
-  });
-})())`;
+const LIT_PLATES = `JSON.stringify(window.__gameRenderer?.worldmapScene?.highlightHexManager.getDebugState().plates ?? null)`;
+const PLATE_FLOAT_LIMIT = 0.06;
 
 /** The selected army's lit tiles, read as drawn, once their roll-in has ended. */
 async function readTheLitTiles({ browser, extraScreenshot }) {
@@ -5178,16 +5167,21 @@ async function readTheLitTiles({ browser, extraScreenshot }) {
   return { plates: browser.read(LIT_PLATES) };
 }
 
-/** Every lit plate lies above the highest ground under it. */
 function litTilesClearTheirGround({ played }) {
   const { plates } = played;
   if (!plates) return failed("the page does not report its world (window.__gameRenderer): no plate measured");
   if (plates.length === 0) return failed("the selected army is offered no lit tile");
-  const buried = plates.filter((plate) => plate.y <= plate.ground);
-  const clearance = Math.min(...plates.map((plate) => plate.y - plate.ground));
-  return buried.length === 0
-    ? completed({ plates: plates.length, clearance })
-    : failed(`${buried.length} of ${plates.length} lit plates lie under their own ground`, { buried, clearance });
+  const buried = plates.filter((plate) => plate.lowest <= 0);
+  const floating = plates.filter((plate) => plate.highest > PLATE_FLOAT_LIMIT);
+  const clearance = {
+    lowest: Math.min(...plates.map((plate) => plate.lowest)),
+    highest: Math.max(...plates.map((plate) => plate.highest)),
+  };
+  if (buried.length > 0)
+    return failed(`${buried.length} of ${plates.length} lit plates lie under their own ground`, { buried, clearance });
+  if (floating.length > 0)
+    return failed(`${floating.length} of ${plates.length} lit plates float over their tile`, { floating, clearance });
+  return completed({ plates: plates.length, clearance });
 }
 
 /** Points on an army's model as drawn, its tile (0) to its top (1): the head is where the tile behind lay. */

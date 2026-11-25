@@ -13,7 +13,7 @@ import {
   selectLayer,
   unlockedLayerForTier,
 } from "./map-layers";
-import { useLayout } from "@/shell/frame/layout";
+import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { useHudPopover } from "./hud-popover";
 
 type LayerKey = "surface" | EtherealLayer;
@@ -100,7 +100,7 @@ export const PlaceSwitch = ({
   const shown = entries.find((entry) => entry.key === shownKey) ?? entries[0]!;
   const inRealm = !props.isMapView;
   const { open, close, triggerProps, popover } = useHudPopover();
-  const layout = useLayout();
+  const layout = useHudLayout();
   return (
     <div
       role="group"

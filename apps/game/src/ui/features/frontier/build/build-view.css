@@ -202,7 +202,7 @@
     line-height: 13px;
   }
 }
-@media (min-width: 1024px) {
+@media (min-width: 1024px) and (orientation: landscape), (min-width: 1440px) {
   .build-grid {
     --build-tile: 100px;
     gap: 8px;

@@ -1,5 +1,5 @@
 {
-  "release": 22,
+  "release": 23,
   "logic": {
     "season": "0x236ea032e700ea8e5f495d18fdf0bfa490f1bd9d293bc2705a198c58cf64fca",
     "map": "0x419f7f1db3c2436ea3f533dad114db6defdf2f5722d76efe43d611d2e4622c8",
@@ -14,8 +14,8 @@
     "prizes": "0x42ece931444ef3be568237ba6d1b41b2eb634c4d4f1e027167500e4beeb4bc6",
     "registry": "0x59caa0c04e247f206cd1536a01d33df3903044b5fae5282c48cb0de48e3f00a",
     "combat": "0x673afe12fb2c66ad92d36a095ff4adc1a916cd9db0c301ad8c123ed8f598a19",
-    "bridge": "0x38813650ed7cc39890c38edbcbb5644b0c29fd2610c175e7cc53ce5a1694a89",
-    "relics": "0x3a5364e3bc684e9cc30501535403c94b52c582195ca0e7911b3299e68527fb3",
+    "bridge": "0x20cef58a2df2ab88a57cee35ec51369c76dbf673671c100cd3aa040cc08f914",
+    "relics": "0x5bd96e2ed2fcc494d616d1a64fc2ccdf784babee3fd8f3f907303641fa065f8",
     "movement": "0x6eba43670f39f4b8fa59ca60ccbb67f8dd8a5aec3e607f1855d9cf0a63d5355"
   }
 }
