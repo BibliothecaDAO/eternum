@@ -1,9 +1,10 @@
-import { useAccountStore } from "@/hooks/store/use-account-store";
 import { HudNotice, HudPage } from "@/ui/design-system/kit/hud-elements";
 import { EVENTS_WORDS } from "@/ui/design-system/kit/words";
-import { type FeedLens, involvesPlayer } from "@/ui/features/event-feed/event-stories";
+import { type FeedLens } from "@/ui/features/event-feed/event-stories";
 import { FEED_LENSES, LensSwitch } from "@/ui/features/event-feed/events-filter-switch";
-import { FeedLine } from "@/ui/features/event-feed/feed-line";
+import { FeedLine, FeedRuleLine } from "@/ui/features/event-feed/feed-line";
+import { useLayout } from "@/shell/frame/layout";
+import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { useFeedStories } from "@/ui/features/event-feed/quick-feed";
 import { useState } from "react";
 
@@ -35,15 +36,17 @@ export const FrontierFeed = ({ onClose }: { onClose: () => void }) => {
 
 /** What the lens shows, newest first, each action once; the player's own rows in gold. */
 const FeedStories = ({ lens }: { lens: FeedLens }) => {
-  const address = useAccountStore((state) => state.account?.address ?? null);
   const events = useFeedStories(lens);
   if (events.isError) return <HudNotice tone="bad" line={EVENTS_WORDS.failed} retry={events.retry} />;
   if (events.stories.length === 0) return <p className="text-hud-label text-hud-muted">{EVENTS_WORDS.nothingYet}</p>;
   return (
     <div className="flex flex-col divide-y divide-hud-divider">
       {events.stories.map((event) => (
-        <FeedLine key={event.id} story={event} own={involvesPlayer(event, address)} />
+        <FrontierFeedLine key={event.id} story={event} />
       ))}
     </div>
   );
 };
+
+export const FrontierFeedLine = ({ story }: { story: ProcessedStoryEvent }) =>
+  useLayout() === "desktop" ? <FeedLine story={story} /> : <FeedRuleLine story={story} />;

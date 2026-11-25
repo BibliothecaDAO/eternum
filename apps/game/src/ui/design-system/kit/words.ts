@@ -1711,7 +1711,7 @@ export const PROFILE_WORDS = {
   tabsLabel: "Account sections",
   noAspectInvite: "Join an Aspect on Play to get your personal invite link.",
   friendReward: `+${formatExact(FRIEND_FRAGMENTS)} ${FRAGMENTS} for each friend who reaches ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory}`,
-  howToPlay: "How to play",
+  guide: "Guide",
   account: "Account",
   notifications: "Notifications",
   devices: "Devices",

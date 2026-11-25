@@ -140,7 +140,7 @@ afterEach(() => {
 const row = (id: string) => host.querySelector<HTMLElement>(`li[data-message-id="${id}"]`)!;
 /** The run head's name over a message, if it starts a run. */
 const runName = (id: string) => row(id).querySelector("p button")?.textContent ?? null;
-const words = (id: string) => [...row(id).querySelectorAll("p")].at(-1)?.textContent;
+const words = (id: string) => row(id).querySelector("[data-message-words]")?.textContent;
 const buttonIn = (element: Element, text: string) =>
   [...element.querySelectorAll("button")].find((button) => button.textContent === text);
 const field = () => host.querySelector<HTMLInputElement>('input[aria-label="Message"]')!;
@@ -164,7 +164,7 @@ describe("a room's messages", () => {
 
   it("leaves numbers as words: no place, no button in them", () => {
     expect(words("m3")).toBe("sent 1,200 knights, 3,046 left at home");
-    expect(row("m3").querySelectorAll("p:last-of-type button, p:last-of-type a")).toHaveLength(0);
+    expect(row("m3").querySelectorAll("[data-message-words] button, [data-message-words] a")).toHaveLength(0);
   });
 
   it("quotes what a reply answers over it, and shows that message when the quote is pressed", () => {
