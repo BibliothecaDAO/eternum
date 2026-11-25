@@ -12,13 +12,13 @@ function fixture(finished = false) {
   const { store, player, startsAt } = scenario;
   store.setSnapshot({ gameId: 1, actor: player, timestamp: startsAt, complete: true });
   configManager.setActiveGame(1);
-  return { ...scenario, read: () => readRaceBoard(store, 1, 7n, startsAt) };
+  return { ...scenario, read: () => readRaceBoard(store, 1, 7n) };
 }
 
 const precision = BigInt(RESOURCE_PRECISION);
 
 describe("the race board from native facts", () => {
-  it("ranks all Aspects, preserves raw weighted Glory and shows the current guard sites", () => {
+  it("ranks all Aspects and preserves raw weighted Glory", () => {
     const { read, store } = fixture();
     const board = read().known!.race!;
     expect(board.standings.map(({ aspect, rank, height, stage }) => ({ aspect, rank, height, stage }))).toEqual([
@@ -32,16 +32,15 @@ describe("the race board from native facts", () => {
       expect(raceStageOf(row.height, finishHeight)).toBe(row.stage);
     }
     expect(
-      board.own!.members.map(({ home, glory, contribution, mine, guards }) => ({
+      board.own!.members.map(({ home, glory, contribution, mine }) => ({
         home: home.entity_id,
         glory,
         contribution,
         mine,
-        guards,
       })),
     ).toEqual([
-      { home: 9n, glory: 3750n * precision, contribution: 3900n * precision, mine: false, guards: ["Ethereal mine"] },
-      { home: 7n, glory: 1250n * precision, contribution: 1300n * precision, mine: true, guards: [] },
+      { home: 9n, glory: 3750n * precision, contribution: 3900n * precision, mine: false },
+      { home: 7n, glory: 1250n * precision, contribution: 1300n * precision, mine: true },
     ]);
     const page = aspectPage(board, (home) => getStructureName(home, store).name);
     expect(page.race?.standings.map((row) => [row.aspectId, row.own])).toEqual([
@@ -65,10 +64,10 @@ describe("the race board from native facts", () => {
     const restored = new NativeFactStore();
     restored.applyFacts(rowsOf(store).map((fact) => ({ ...fact, value: wire(fact.value) })));
     restored.setSnapshot({ gameId: 1, actor: player, timestamp: startsAt, complete: true });
-    expect(readRaceBoard(restored, 1, 7n, startsAt)).toEqual(read());
+    expect(readRaceBoard(restored, 1, 7n)).toEqual(read());
   });
 
-  it("reads the winner and both dates after early finish without future guard projections", () => {
+  it("reads the winner and both dates after early finish", () => {
     const { read, store } = fixture(true);
     const board = read().known!.race!;
     const game = store.require("GameRegistry", { game_id: 1 });
@@ -79,7 +78,6 @@ describe("the race board from native facts", () => {
       scheduled_end_at: game.scheduled_end_at,
     });
     expect(game.end_at).toBeLessThan(game.scheduled_end_at);
-    expect(board.own!.members.every((member) => member.guards.length === 0)).toBe(true);
     expect(aspectPage(board, () => "Realm").race?.result?.winner).toBe("Luminary");
   });
 
@@ -102,7 +100,7 @@ describe("the race board from native facts", () => {
 it("reads an expired race from its final snapshot without inventing a finisher", () => {
   const scenario = expiredRaceScenario();
   scenario.store.setSnapshot({ gameId: 1, actor: scenario.player, timestamp: scenario.startsAt, complete: true });
-  const reading = readRaceBoard(scenario.store, 1, 7n, scenario.startsAt);
+  const reading = readRaceBoard(scenario.store, 1, 7n);
   const board = reading.known!.race!;
   expect(board.result?.winner).toBeNull();
   expect(board.result?.ended_at).toBe(board.result?.scheduled_end_at);

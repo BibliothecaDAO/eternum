@@ -91,10 +91,11 @@ export const FrontierSeason = ({
   onClose: () => void;
 }) => {
   const race = useAspectBoard();
+  const now = useNowSeconds();
   return race.known?.race === null ? (
     <LegacyFrontierSeason rules={rules} onVisited={onVisited} onClose={onClose} />
   ) : (
-    <FrontierAspectPage onClose={onClose} />
+    <FrontierAspectPage day={seasonDay(rules, now)?.day} onClose={onClose} />
   );
 };
 

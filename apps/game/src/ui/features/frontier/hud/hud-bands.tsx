@@ -53,7 +53,7 @@ const UprightBands = ({ strip, banner, page, notices, action, dock, nav, childre
         <div className="flex flex-col gap-1.5">{notices}</div>
         <div ref={setSheetBand} data-sheet-band className="flex min-h-0 flex-col empty:hidden" />
         {page ? (
-          <PageBand className="max-h-hud-phone-sheet [&:has([data-page-fills])]:max-h-hud-phone-browse [&:has([data-page-fills])]:flex-1">
+          <PageBand className="mt-auto max-h-hud-phone-sheet [&:has([data-page-fills])]:max-h-hud-phone-browse [&:has([data-page-fills])]:flex-1">
             {page}
           </PageBand>
         ) : (

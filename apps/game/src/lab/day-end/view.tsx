@@ -40,7 +40,6 @@ export function DayEndLabView() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { phase, continueDay, showSummary } = useDayEndStore();
-  const [now] = useState(() => Math.floor(Date.now() / 1000));
   const setQuery = (name: string, value: string) =>
     setParams((previous) => {
       const next = new URLSearchParams(previous);
@@ -95,7 +94,7 @@ export function DayEndLabView() {
     <main className="day-end-lab" data-day-end-lab data-ready={ready} data-phase={phase}>
       <div className="day-end-screen">
         <canvas ref={canvas} aria-label="The map at the day's end" />
-        <DayEndScreen summary={<DayDoneCard {...dayEndSummary(now, continueDay)} />} />
+        <DayEndScreen summary={<DayDoneCard {...dayEndSummary(continueDay)} />} />
       </div>
       {panel && (
         <aside className="day-end-panel" aria-label="Day end controls">

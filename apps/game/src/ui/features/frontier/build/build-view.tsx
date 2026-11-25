@@ -8,7 +8,6 @@ import {
   HudCard,
   HudChip,
   HudCost,
-  HudNotice,
   HudRanked,
   HudSheet,
   HudWindowFoot,
@@ -19,7 +18,7 @@ import { BUILD, BUILDING, BUILT, plotsUsed, type RankedWords } from "@/ui/design
 
 import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { ReactNode } from "react";
-import { reasonLine } from "@/ui/design-system/kit/reasons";
+import { RefusedVerb } from "../refused-verb";
 
 export type BuildTile = {
   key: string;
@@ -111,22 +110,15 @@ const ChosenFoot = ({
     <span data-build-chosen className="build-chosen">
       <b className="build-chosen__name">{tile.name}</b>
       <ChosenLine tile={tile} prices={prices} />
-      {refusal && <RefusalNote refusal={refusal} />}
+      {refusal?.fix?.prices && <HudCost line={costLine(refusal.fix.prices)} />}
     </span>
   );
+  if (refusal) return <RefusedVerb word={BUILD} icon="build" refusal={refusal} note={note} />;
   return (
     <HudWindowFoot note={note}>
-      {refusal ? (
-        refusal.fix && (
-          <HudButton kind="primary" icon={refusal.fix.icon} onClick={refusal.fix.onFix}>
-            {refusal.fix.word}
-          </HudButton>
-        )
-      ) : (
-        <HudButton kind="primary" icon="build" busy={sending ? BUILDING : undefined} onClick={onBuild}>
-          {BUILD}
-        </HudButton>
-      )}
+      <HudButton kind="primary" icon="build" busy={sending ? BUILDING : undefined} onClick={onBuild}>
+        {BUILD}
+      </HudButton>
     </HudWindowFoot>
   );
 };
@@ -152,13 +144,6 @@ const ChosenLine = ({ tile, prices }: { tile: BuildTile; prices: readonly Price[
   );
 };
 
-const RefusalNote = ({ refusal }: { refusal: Refusal }) => (
-  <span className="flex flex-col items-start gap-1">
-    <HudNotice line={reasonLine(refusal.reason)} />
-    {refusal.fix?.prices && <HudCost line={costLine(refusal.fix.prices)} />}
-  </span>
-);
-
 const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boolean; onChoose: () => void }) => (
   <span {...rankedTip([`${tile.name}: `, ...asWords(tile.does)])} className="min-w-0">
     <HudCard
@@ -173,6 +158,7 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
         </span>
       }
       selected={chosen}
+      tone={chosen && tile.standing.kind === "price" && tile.standing.short ? "bad" : undefined}
       data-locked={tile.standing.kind === "level" || undefined}
       onClick={onChoose}
     />

@@ -4,40 +4,22 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type DaySummary, useDayEndStore } from "@/hooks/store/use-day-end-store";
 import { configManager, type readExpeditionRules } from "@bibliothecadao/eternum";
-import { nativeRaceConstants, readRaceBoard, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { catalogAspectId, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AlertsPopup } from "../alerts-popup";
 import { endedHomeArmies } from "../frontier-home";
 import { dayClock, dayToRecap, endedDay, nextDayOf } from "../hud/day-clock";
+import { useGloryHeld } from "../log/day-gains";
 import { useOwnActs, usePlayerDay } from "../log/player-day";
-import { DayDoneCard, type DayDoneRace } from "./day-done-card";
-import { dayBest } from "./day-share";
+import { DayDoneCard } from "./day-done-card";
 import { useDayShare } from "./day-share-sheet";
 import { DayEndScreen } from "./day-end-screen";
-import { useClosingRankChange } from "./day-ranks";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 
 const ARMY_MODELS = ["ExplorerTroops", "TileOccupancy"] as const;
 
-/**
- * A Frontier day's end in the HUD (use-day-end-store): the summary over the map, the black and the way past them
- * (DayEndScreen). Each device goes through each ended day's end once: the black, behind which the camera comes onto the
- * realm's new site, and the summary before it when there is one. The summary is the day-done card for the last day the
- * player played (dayToRecap), when this device has gone through no day's end since it: a player back after a day they
- * skipped is offered the day before it. It gives that day's totals (the player's day as Today reads it, usePlayerDay),
- * the rank it closed at against the day before and, when it is the day that just ended, the troops its armies took. It waits for the player's history to answer (the moment's summary phase
- * waits with it, for a while), and says when that history cannot give the day. With no day played since the last end
- * gone through (none of their own stories, no army ended with the day), and on a visit to another realm, there is none;
- * the moment then passes without it. Nor does a device show it once the player has played on since its day, on this
- * device or another (owner, 2026-10-25: the recap shows "until you act"): their own history says so on every device, so
- * no device keeps a "seen" for the account. In the game as the day ends, ExpeditionRollover begins the moment; opening
- * the game after it ended (owner, 2026-10-25: "it doesnt automatically move me to the new day area"), or once history
- * answers after the moment went on without the summary, this does. The season's end is no day's end (endedDay): the
- * season-over card tells it. Once no day's end is owed, the map is clear for the alerts popup (AlertsPopup).
- */
 export const DayDone = ({
   rules,
   realm,
@@ -56,7 +38,7 @@ export const DayDone = ({
   const ended = endedDay(rules, now);
   const recap = dayToRecap(rules, now, useOwnActs(player));
   const played = usePlayerDay(player, recap);
-  const rank = useClosingRankChange(recap?.day);
+  const glory = useGloryHeld(realm);
   const openedAt = useOpenedAt(now);
   const { phase, summaryMissed, landReady, begin, continueDay, showSummary } = useDayEndStore();
   const { onShare, sheet } = useDayShare(realm, recap?.day, played);
@@ -74,36 +56,14 @@ export const DayDone = ({
     const gone = justEnded ? endedHomeArmies(setup.store, realm, now) : [];
     // Only a whole history says the day was not played; one that failed or stops short shows the card with dashes.
     if (played.history === "whole" && gone.length === 0 && played.stories.length === 0) return null;
-    const taken = gone.reduce((sum, army) => sum + Number(army.troops.count / BigInt(RESOURCE_PRECISION)), 0);
-    const raceBoard = readRaceBoard(setup.store, gameId, realm.entity_id, now).known?.race;
-    const raceSummary: DayDoneRace | undefined = raceBoard
-      ? {
-          finishHeight: raceBoard.rules.stage_height * nativeRaceConstants.STAGE_COUNT,
-          standings: raceBoard.standings.map((row) => ({
-            aspectId: catalogAspectId(row.aspect),
-            height: row.height,
-            own: row.aspect === raceBoard.own?.aspect,
-          })),
-        }
-      : undefined;
-    const ownAspect = raceBoard?.own ? catalogAspectId(raceBoard.own.aspect) : undefined;
-    const best =
-      played.history === "whole" && played.stories.length > 0
-        ? dayBest(played.stories, played.totals.reveals ?? 0)
-        : undefined;
     return (
       <DayDoneCard
         endedDay={recap.day}
         clock={dayClock(rules, now)}
-        totals={totals}
+        gains={{ essence: totals.essence, labor: totals.labor, glory }}
         history={played.history}
+        stories={played.stories}
         onRetry={played.retry}
-        rank={rank}
-        aspect={ownAspect}
-        best={best}
-        race={raceSummary}
-        armies={gone.length}
-        troopsLost={taken}
         onShare={onShare}
         onContinue={continueDay}
       />

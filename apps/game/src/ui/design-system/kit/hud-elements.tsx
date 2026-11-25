@@ -1324,6 +1324,7 @@ export const HudCard = ({
   selected = false,
   disabled = false,
   refusal,
+  tone,
   onClick,
   ...rest
 }: {
@@ -1337,6 +1338,7 @@ export const HudCard = ({
   selected?: boolean;
   disabled?: boolean;
   refusal?: string;
+  tone?: "bad";
   onClick?: () => void;
 } & Omit<HTMLAttributes<HTMLDivElement>, "title" | "onClick">) => {
   const refusalId = useId();
@@ -1364,6 +1366,7 @@ export const HudCard = ({
       data-size={size}
       data-selected={selected || undefined}
       data-disabled={disabled || undefined}
+      data-tone={tone}
     >
       {onClick ? (
         <button

@@ -210,6 +210,20 @@ button.ui-panel__name[data-action]:hover {
 .ui-button[data-tone="bad"]:disabled {
   opacity: 1;
 }
+.ui-button[data-kind="primary"][data-tone="bad"] {
+  height: auto;
+  min-height: var(--hud-control);
+  min-width: 0;
+  white-space: normal;
+  border-color: var(--hud-bad);
+  background: color-mix(in srgb, var(--hud-bad) 30%, rgb(var(--hud-dark)));
+  color: rgb(var(--hud-ink));
+  box-shadow: none;
+  font-family: inherit;
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-leading-strong);
+  letter-spacing: normal;
+}
 /* A button that opens an address (a guide) is a link with the button's look. */
 a.ui-button {
   text-decoration: none;
@@ -1291,6 +1305,16 @@ button.ui-relic:focus-visible {
   line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
+.ui-actions__note:empty {
+  display: none;
+}
+.ui-actions:has(> .ui-button[data-tone="bad"]) {
+  flex-wrap: wrap;
+}
+.ui-actions:has(> .ui-button[data-tone="bad"]) > .ui-actions__note {
+  order: -1;
+  flex-basis: 100%;
+}
 .ui-actions > :last-child:not(.ui-actions__note) {
   order: 2;
   margin-left: auto;
@@ -1304,6 +1328,10 @@ button.ui-relic:focus-visible {
 .ui-actions:has(> :nth-child(3)) > .ui-actions__note:has(.ui-notice) {
   order: -1;
   flex-basis: 100%;
+}
+
+[data-hud-form] .ui-window__foot > :last-child:not(.ui-actions__note) {
+  flex: 1;
 }
 
 /* ── Window footer: the window's actions, under a rule. ── */
@@ -2109,6 +2137,10 @@ button.ui-pill:focus-visible {
   background: var(--hud-chosen);
   outline: 2px solid rgb(var(--hud-accent));
   outline-offset: -2px;
+}
+.ui-pick[data-selected][data-tone="bad"] {
+  border-color: var(--hud-bad);
+  outline-color: var(--hud-bad);
 }
 
 /* ── Card: a painting to pick (a building to build), its name and words on the foot, its actions and badge over it. ── */
