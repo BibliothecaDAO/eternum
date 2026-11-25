@@ -23,6 +23,7 @@ export interface RealmSeriesSettings {
   distance: number;
   lineup: boolean;
   base: boolean;
+  grow: boolean;
   reference?: string;
   comparison: "before" | "after" | "pair";
 }
@@ -76,13 +77,20 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
       const gltf = await gltfLoader.loadAsync(
         before ? `${settings.reference!.replace(/\/$/, "")}/${asset.id}.glb` : asset.path,
       );
-      height = Math.max(height, new Box3().setFromObject(gltf.scene).max.y);
+      const modelHeight = new Box3().setFromObject(gltf.scene).max.y;
+      const scale = settings.grow && asset.grownHeight ? asset.grownHeight / modelHeight : 1;
+      height = Math.max(height, modelHeight * scale);
       const model = new SettlementModel(gltf, 1, "realm", asset.wonder);
       models.push(model);
       await model.prepare();
       signal.throwIfAborted();
       const x = (slot - (series.length - 1) / 2) * Math.sqrt(3) * 2;
-      model.setMatrixAt(0, new Matrix4().makeTranslation(x, environment.terrain.sampleHeight(x, 0), 0));
+      model.setMatrixAt(
+        0,
+        new Matrix4()
+          .makeTranslation(x, environment.terrain.sampleHeight(x, 0), 0)
+          .multiply(new Matrix4().makeScale(scale, scale, scale)),
+      );
       model.setCount(1);
       model.setOrderAt(0, settings.order);
       model.setRelationshipAt(0, settings.owned ? "owned" : "enemy");
@@ -121,10 +129,9 @@ function realmSeries(settings: RealmSeriesSettings): SeriesSlot[] {
   const shipped = (level: number, wonder = settings.wonder) =>
     REALM_ASSETS[realmModelIndex(level, wonder, settings.seed)];
   if (settings.base)
-    return [shipped(1, false), ...BASE_REALM_CANDIDATES, shipped(2, false), shipped(3, false)].map((asset) => ({
-      asset,
-      before: false,
-    }));
+    return [0, 1, 2, 3]
+      .flatMap((level) => [shipped(level, false), ...BASE_REALM_CANDIDATES.filter((asset) => asset.level === level)])
+      .map((asset) => ({ asset, before: false }));
   if (settings.reference && settings.comparison !== "after") {
     const asset = shipped(settings.level);
     return settings.comparison === "pair"

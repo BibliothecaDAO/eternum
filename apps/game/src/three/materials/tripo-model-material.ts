@@ -49,7 +49,7 @@ class TripoStandardNodeMaterial extends FrostedStandardNodeMaterial {
       super.setupDiffuseColor(builder);
       return;
     }
-    const baseRgb = this.map ? texture(this.map).rgb.mul(materialColor.rgb) : materialColor.rgb;
+    const baseRgb = materialColor.rgb;
     const calibrated = buildCalibratedColorNode(baseRgb, true);
     const hasInstanceColor = Boolean((builder.object as Mesh & { instanceColor?: unknown }).instanceColor);
     const painted = applyTroopOwnershipCloth(baseRgb, calibrated, hasInstanceColor);
@@ -170,7 +170,7 @@ function attachShadingNodes(
   target: FrostedStandardNodeMaterial,
   ownershipCloth: boolean,
 ): void {
-  const sampled = sampleBaseRgb(source);
+  const sampled = sampleBaseRgb();
   if (!ownershipCloth) {
     target.colorNode = buildCalibratedColorNode(sampled, false);
   }
@@ -187,8 +187,8 @@ function attachShadingNodes(
   }
 }
 
-function sampleBaseRgb(source: MeshStandardMaterial) {
-  return source.map ? texture(source.map).rgb.mul(materialColor.rgb) : materialColor.rgb;
+function sampleBaseRgb() {
+  return materialColor.rgb;
 }
 
 function buildCalibratedColorNode(baseRgb: ReturnType<typeof sampleBaseRgb>, troopLift: boolean) {
@@ -259,7 +259,7 @@ function classifyMaterialMasks(baseRgb: ReturnType<typeof sampleBaseRgb>) {
   const gold = smoothstep(0.14, 0.28, luma)
     .mul(smoothstep(0.28, 0.45, sat))
     .mul(smoothstep(0.0, 0.05, baseRgb.r.sub(baseRgb.g.mul(1.04))))
-    .mul(smoothstep(0.0, 0.06, baseRgb.g.sub(baseRgb.b.mul(1.4))));
+    .mul(smoothstep(0.42, 0.28, baseRgb.b.div(max(baseRgb.g, float(0.0001)))));
   const wood = float(1)
     .sub(gold)
     .mul(smoothstep(0.0, 0.04, baseRgb.r.sub(baseRgb.g.mul(1.12))))
