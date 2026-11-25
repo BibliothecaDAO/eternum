@@ -82,7 +82,6 @@ it("reads a phone's picked army from its tray while the dock under it is hidden,
           art: "knight-t1",
           stamina: STAMINAS[0],
           secondsToFull: undefined,
-          troops: 500,
           ethereal: undefined,
         }}
         refill={null}

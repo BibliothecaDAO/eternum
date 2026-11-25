@@ -7,6 +7,7 @@ import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { dayOf } from "@bibliothecadao/eternum";
+import { TroopType } from "@bibliothecadao/types";
 
 import { OpeningProvider } from "../opening/opening-context";
 import { EARLY_REALM, MID_REALM } from "../research/progression-fixture";
@@ -16,6 +17,7 @@ import { ArmyCard, OpenSlotCard } from "./army-row";
 import { ArmyToken, OpenSlot } from "./army-token";
 import { useChatKey } from "./chat-key";
 import { dayClock, dayBounds, endedDay, seasonDay } from "./day-clock";
+import { armyName } from "./dock-armies";
 import { HudBands } from "./hud-bands";
 import { useOnePanel } from "./one-panel";
 import { MenuPage } from "./menu-page";
@@ -411,16 +413,17 @@ describe("the phone tab bar", () => {
     expect(barButtons()).toEqual(["Season", "Chat", "Menu"]);
   });
 
-  it("names the picked army and counts its troops in a chip, no troop words beside them", () => {
+  it("names an army by its troops, and the picked army by that name alone, with no chip for the count", () => {
+    expect(armyName(TroopType.Paladin, 6_938)).toBe("6,938 Scouts");
+    expect(armyName(TroopType.Crossbowman, 1)).toBe("1 Crossbows");
     act(() =>
       root.render(
         <PickedArmy
           army={{
             explorerId: 7,
-            label: "Army 1",
+            label: armyName(TroopType.Paladin, 400),
             number: 1,
             art: "paladin-t1",
-            troops: 400,
             stamina: { current: 100, max: 100, perExplore: 10 },
             secondsToFull: 0,
             ethereal: undefined,
@@ -430,9 +433,8 @@ describe("the phone tab bar", () => {
         />,
       ),
     );
-    expect(host.querySelector(".army-tray__name")?.textContent).toBe("Army 1");
-    expect(host.querySelector(".army-tray__troops")?.textContent).toBe("400");
-    expect(host.textContent).not.toMatch(/Scouts|Paladins/);
+    expect(host.querySelector(".army-tray__name")?.textContent).toBe("400 Scouts");
+    expect(host.querySelector(".ui-chip")).toBeNull();
   });
 
   it("orders HUD_PLACES as the cornice does", () => {

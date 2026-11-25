@@ -13,8 +13,9 @@ import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { homeIcon } from "@/ui/design-system/home-icons";
 import { HudIconButton, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import { ARMY, ARMY_MANAGEMENT, EVENTS_WORDS, LINK_WALLET_FOR_LORDS, YOU } from "@/ui/design-system/kit/words";
+import { ARMY_MANAGEMENT, EVENTS_WORDS, LINK_WALLET_FOR_LORDS, YOU } from "@/ui/design-system/kit/words";
 import { readArmySlots } from "@/ui/features/frontier/hud/army-dock";
+import { armyName } from "@/ui/features/frontier/hud/dock-armies";
 import { ArmyCard, ArmySlotsCard, LockedSlotLine, OpenSlotCard } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
@@ -1046,14 +1047,13 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; fragments: number
   const base = {
     explorerId: index + 1,
     number: index + 1,
-    label: `${ARMY} ${index + 1}`,
     art: "knight-t1" as const,
     ethereal: lab.armies[index]?.ethereal,
   };
   if (lab.picked) {
     const army = {
       ...base,
-      troops: 1_342,
+      label: armyName(TroopType.Knight, 1_342),
       stamina: { current: 14, max: 140, perExplore: 20 },
       secondsToFull: 4 * HOUR + 11 * 60,
     };
@@ -1064,7 +1064,7 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; fragments: number
   return {
     army: {
       ...base,
-      troops: army.troops ?? 0,
+      label: armyName(TroopType.Knight, army.troops ?? 0),
       stamina: { current, max: 150, perExplore: LAB_EXPLORE },
       secondsToFull: (150 - current) * 60,
     },
@@ -1079,7 +1079,7 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
   if (army.confirm)
     return <RefillConfirm stamina={stamina} held={army.fragments} sending={false} onRefill={noop} onCancel={noop} />;
   return (
-    <HudSheet label={`${ARMY} 2`} onClose={noop}>
+    <HudSheet label={armyName(TroopType.Knight, base.troops)} onClose={noop}>
       <ArmyDetail army={view} />
       <HudWindowFoot>
         {army.fragments !== undefined && (

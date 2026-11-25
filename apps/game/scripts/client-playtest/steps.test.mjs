@@ -1047,10 +1047,10 @@ it("the ruin fight proof completes once the card opens with its Attack, the came
 
 it("requires an opened army panel and no retired LORDS controls", () => {
   const verify = STEP_SETS["lab-no-lords"].steps[1].verify;
-  const panel = { army: "Army 1", sheet: "Army 1" };
+  const panel = { army: "1,498 Knights", sheet: "1,498 Knights" };
   expect(verify({ played: { panel, controls: [] } }).status).toBe("completed");
   expect(verify({ played: { panel, controls: ["Refill"] } }).status).toBe("failed");
-  expect(verify({ played: { panel: { army: "Army 1" }, controls: [] } }).status).toBe("failed");
+  expect(verify({ played: { panel: { army: "1,498 Knights" }, controls: [] } }).status).toBe("failed");
 });
 
 it("requires the selected Aspect in both the founding command and its membership result", () => {

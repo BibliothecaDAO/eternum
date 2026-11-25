@@ -88,7 +88,7 @@ const SupplyPostArmy = ({
         >
           <HudPortrait icon={army.art} label={TROOPS} />
           <span className="flex min-w-0 flex-col tabular-nums">
-            <b className="text-hud-label text-hud-ink">{`${army.label} · ${formatExact(plan.current)} → ${formatExact(plan.current + range.max)}`}</b>
+            <b className="text-hud-label text-hud-ink">{`${troops} · ${formatExact(plan.current)} → ${formatExact(plan.current + range.max)}`}</b>
             <span className="text-hud-label text-hud-good">{REINFORCE.fromHome(amount, troops)}</span>
           </span>
         </div>

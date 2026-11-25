@@ -12,7 +12,6 @@ import {
   armyOaths,
   configManager,
   type EtherealLayer,
-  getArmyName,
   liveHomeArmies,
 } from "@bibliothecadao/eternum";
 import {
@@ -23,14 +22,13 @@ import {
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
 import { armyNumber, resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { formatExact, frontierTroopName, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
-import { ARMY } from "@/ui/design-system/kit/words";
+import { ARMY, TROOPS } from "@/ui/design-system/kit/words";
 
 const ARMY_MODELS = [
   ...STAMINA_MODELS,
-  "EntityName",
   "DeepGuard",
   "DeepArmy",
   "ArmyDay",
@@ -78,11 +76,11 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
       explorerId,
       number,
       troopsFact: army.troops,
-      label: armyName(setup.store, explorerId, number),
+      label: armyName(army.troops.category, troopCount(army.troops)),
       art: armyArt(army.troops),
       stamina,
       secondsToFull,
-      troops: Number(army.troops.count / BigInt(RESOURCE_PRECISION)),
+      troops: troopCount(army.troops),
       ethereal: armyEtherealLayer(setup.store, army.game_id, explorerId),
       drain: armyDrain(setup.store, army, timestamp),
     };
@@ -123,12 +121,11 @@ export const armyArt = troopMeaning;
  */
 export const armyLabel = (store: NativeFactStore, explorerId: number): string => {
   const army = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
-  return armyName(store, explorerId, army && armyNumber(army));
+  return army ? armyName(army.troops.category, troopCount(army.troops)) : ARMY;
 };
 
-/** The army's own name when it has one; otherwise its number, never its entity id. */
-const armyName = (store: NativeFactStore, explorerId: number, number: number | undefined): string => {
-  const named = store.get("EntityName", { game_id: configManager.getActiveGameId(), entity_id: explorerId });
-  if (named && named.name !== 0n) return getArmyName(explorerId, store);
-  return number === undefined ? ARMY : `${ARMY} ${number}`;
-};
+const troopCount = (troops: NativeRows["ExplorerTroops"]["troops"]): number =>
+  Number(troops.count / BigInt(RESOURCE_PRECISION));
+
+export const armyName = (category: string, troops: number): string =>
+  `${formatExact(troops)} ${frontierTroopName(category) ?? TROOPS}`;
