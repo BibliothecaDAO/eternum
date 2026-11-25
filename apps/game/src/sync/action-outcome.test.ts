@@ -4,6 +4,7 @@ const waitForAction = vi.fn();
 vi.mock("./active-game-client", () => ({ requireActiveGameClient: () => ({ waitForAction }) }));
 
 import { ActionNotAppliedError, untilApplied } from "./action-outcome";
+import { ATTACK_REFUSAL_WORDS } from "../ui/design-system/kit/words";
 
 afterEach(() => waitForAction.mockReset());
 
@@ -32,7 +33,7 @@ describe("a sent command's own outcome", () => {
       status: "REJECTED",
       revertReason: "Not enough stamina",
     });
-    await expect(untilApplied(sent)).rejects.toThrow(new ActionNotAppliedError("Not enough stamina"));
+    await expect(untilApplied(sent)).rejects.toThrow(new ActionNotAppliedError(ATTACK_REFUSAL_WORDS["insufficient-stamina"]));
     waitForAction.mockResolvedValueOnce({ hash: "0xabc", block: 7, status: "REVERTED" });
     await expect(untilApplied(sent)).rejects.toBeInstanceOf(ActionNotAppliedError);
   });

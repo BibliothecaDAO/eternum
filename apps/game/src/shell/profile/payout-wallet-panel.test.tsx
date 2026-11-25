@@ -32,6 +32,7 @@ import { identityClient, useIdentitySessionStore } from "@/hooks/context/identit
 import { IdentityRequestError } from "@realms-world/identity";
 
 import { PayoutWalletPanel } from "./payout-wallet-panel";
+import { WALLET_WORDS } from "../../ui/design-system/kit/words";
 
 const mounted: (() => Promise<void>)[] = [];
 
@@ -74,11 +75,11 @@ afterEach(async () => {
 it("shows a linked wallet, the co-signer's hold on a replacement, and a player with none the two ways to one: make or link", async () => {
   const linked = await mount("0x04a1000000000000000000000000000000000000000000000000000000009c2e");
   expect(linked.textContent).toContain("0x04a1…9c2e");
-  expect(linked.textContent).toContain("Prizes go here");
+  expect(linked.textContent).toContain(WALLET_WORDS.prizesGoHere);
   // Linking is the wallet and the emailed code, and nothing after them.
   expect([...linked.querySelectorAll("ol > li")].map((step) => step.textContent)).toEqual(["Wallet", "Email code"]);
   // The hours come from the co-signer's own constant (packages/value-ledger/src/payout-wallet.ts).
-  expect(linked.textContent).toContain("Replace or relink: the new wallet's first Frontier payout waits 24 hours");
+  expect(linked.textContent).toContain(WALLET_WORDS.newWalletWaits("24"));
 
   // No wallet: make one with a passkey, or link one; the old way out to Ready's sign-up is gone.
   useIdentitySessionStore.setState({
@@ -90,9 +91,9 @@ it("shows a linked wallet, the co-signer's hold on a replacement, and a player w
   });
   vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
   const none = await mount(null);
-  expect(none.textContent).toContain("Create my wallet");
-  expect(none.textContent).toContain("I have a wallet");
-  expect(none.textContent).toContain("Ready · Braavos · Controller");
+  expect(none.textContent).toContain(WALLET_WORDS.createWallet);
+  expect(none.textContent).toContain(WALLET_WORDS.haveOne);
+  expect(none.textContent).toContain(WALLET_WORDS.haveOneLine);
   expect(none.textContent).not.toContain("I need one");
 });
 
@@ -126,7 +127,7 @@ it("links a wallet with its SIWS proof and the emailed code, through the service
   const panel = await mount(null, onChanged);
 
   await act(async () =>
-    [...panel.querySelectorAll("button")].find((button) => button.textContent?.includes("I have a wallet"))!.click(),
+    [...panel.querySelectorAll("button")].find((button) => button.textContent?.includes(WALLET_WORDS.haveOne))!.click(),
   );
   await act(async () => (await vi.waitFor(() => screenButton(panel, "Pick wallet"))).click());
   expect(panel.textContent).toContain("Code sent to you@mail.test");
@@ -152,6 +153,6 @@ it("offers no wallet to link inside the iOS app, where none can open: the Realms
   });
   vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
   const none = await mount(null);
-  expect(none.textContent).toContain("Create my wallet");
-  expect(none.textContent).not.toContain("I have a wallet");
+  expect(none.textContent).toContain(WALLET_WORDS.createWallet);
+  expect(none.textContent).not.toContain(WALLET_WORDS.haveOne);
 });

@@ -30,6 +30,7 @@ import {
   ResourcesIds,
   TroopType,
 } from "@bibliothecadao/types";
+import { ARMY_SLOT_WORDS } from "../../../design-system/kit/words";
 
 const BELOW_SURFACE = LAYER_NAMES.slice(1)
   .map((name) => `[aria-label="${name}"]`)
@@ -85,7 +86,7 @@ it.each(["phone", "desktop"])("shows every open slot and its start on %s, and op
     expect(slots.map(startOf)).toEqual(
       mode === "desktop"
         ? [
-            ["Army 2 starts full: 150/150 stamina.", "420 Knights ready at home"],
+            ["Army 2 starts full: 150/150 stamina.", ARMY_SLOT_WORDS.readyAtHome("420 Knights")],
             ["Army 3 starts on 7/150 stamina.", "7"],
           ]
         : [

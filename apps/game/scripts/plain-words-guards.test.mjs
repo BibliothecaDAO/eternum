@@ -14,6 +14,7 @@ import {
   readBannedWords,
 } from "./plain-words-guards.mjs";
 import { scanSource } from "../../../scripts/words/check.mjs";
+import { COUNTDOWN_WORDS } from "../src/ui/design-system/kit/words";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const BASE = {
@@ -85,7 +86,7 @@ describe("plain-words guard refuses banned words in player-facing text", () => {
   });
 
   it.each([
-    ["Create your Realm", `export const TITLE = "Create your Realm";`],
+    [COUNTDOWN_WORDS.create, `export const TITLE = "Create your Realm";`],
     ["Not found error screen", `export const A = () => <p>Not found</p>;`],
     ["Sites are found while exploring", `export const A = () => <p>Sites are found at 100%</p>;`],
     ["property key named founding", `export const WORDS = { founding: "Creating your Realm…" };`],

@@ -7,6 +7,7 @@ import { expect, it, vi } from "vitest";
 vi.hoisted(() => vi.stubGlobal("fetch", () => new Promise<Response>(() => {})));
 
 import { FrontierRows } from "./frontier-rows";
+import { SEASON_WORDS } from "../../ui/design-system/kit/words";
 
 it("says what each of a board row's counts is, on hover and to a screen reader, never a bare number (qa-app-1 P3-7)", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -34,7 +35,7 @@ it("says what each of a board row's counts is, on hover and to a screen reader, 
     expect(container.querySelector('[role="img"][aria-label="Wonder · Settlement"]')).not.toBeNull();
     const figures = [...container.querySelectorAll<HTMLElement>(".app-board__figure")];
     expect(figures.map((figure) => [figure.textContent, figure.title])).toEqual([
-      ["12 sites cleared", "sites cleared"],
+      ["12 sites cleared", SEASON_WORDS.sitesCleared],
       ["340 LORDS", "LORDS"],
     ]);
   } finally {

@@ -12,6 +12,7 @@ import { InputManager } from "../managers/input-manager";
 import type { SceneManager } from "../scene-manager";
 import { SceneName } from "../types";
 import { PointerOrderTip } from "./worldmap-order-tip";
+import { ATTACK_REFUSAL_WORDS } from "../../ui/design-system/kit/words";
 
 /** What the scene reads for the tile under the pointer, changed by each case as the game would change it. */
 const tile = {
@@ -160,8 +161,8 @@ describe("the line under a still pointer", () => {
     expect(shownLine()).toBeNull();
 
     // This click's own order refused in turn says its own words.
-    pointer.sayRefusal({ col: 1, row: 0 }, "Not enough stamina");
-    expect([shownLine(), shownAt()]).toEqual(["Not enough stamina", { x: 400, y: 300 }]);
+    pointer.sayRefusal({ col: 1, row: 0 }, ATTACK_REFUSAL_WORDS["insufficient-stamina"]);
+    expect([shownLine(), shownAt()]).toEqual([ATTACK_REFUSAL_WORDS["insufficient-stamina"], { x: 400, y: 300 }]);
   });
 
   it("leaves another surface's tooltip in place of a refusal while the camera moves", () => {

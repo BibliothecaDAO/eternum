@@ -17,6 +17,7 @@ import { installLabChain } from "./lab-chain";
 import { ruinFightScenario } from "./ruin-fight-scenario";
 import { LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { WALLET_WORDS } from "../../ui/design-system/kit/words";
 
 it("keeps the playing ruin scenario clear of wallet onboarding and answers wallet reads locally", async () => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
@@ -53,7 +54,7 @@ it("keeps the playing ruin scenario clear of wallet onboarding and answers walle
     await act(async () => {
       useIdentitySessionStore.getState().applySession(LAB_SESSION);
     });
-    expect(document.body.querySelector('[role="dialog"]')?.textContent).toContain("Create my wallet");
+    expect(document.body.querySelector('[role="dialog"]')?.textContent).toContain(WALLET_WORDS.createWallet);
     expect(network).not.toHaveBeenCalled();
   } finally {
     await act(async () => root.unmount());

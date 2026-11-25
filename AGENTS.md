@@ -45,7 +45,12 @@ verifiable gate).
    modules it refuses a list or a partial map of a catalog's members and an image path. `catalog-copies-baseline.json`
    counts the copies that stood when it came; a file may not hold more (a lower count passes plain `lint:guards` so
    merges are not blocked when copies are removed), and `--write-catalog-baseline` only lowers a count, writing nothing
-   while any file gains a copy.
+   while any file gains a copy. A test checks behaviour through the words table, never a typed copy: a test or playtest step reads a
+   player phrase from the table, a template called with the test's own values so its figure stays checked (a step, which
+   runs in node, through `apps/game/scripts/words-table.mjs`). `apps/game/scripts/word-copy-guards.mjs`, in the same
+   `lint:guards`, refuses a string of 12 characters or more equal to a phrase of `kit/words.ts` or
+   `@bibliothecadao/types`' words (a template's phrase matched by its fixed parts) wherever a test asserts, finds,
+   compares or tabulates it, and refuses `expect.any(String)` standing in for one.
 4. **Success of systemic work is deletion.** When a layer becomes trustworthy, the bespoke fallbacks, holds, TTLs, and
    timers stacked above it should disappear. A systemic "fix" that only adds code is suspect.
 5. **Evidence before optimization.** Instrument, convict, then fix what the data names. Performance and bug-fix changes

@@ -33,6 +33,7 @@ import {
 import { StructureType } from "@bibliothecadao/types";
 import { ReinforceSheet, useSelectedReinforcement } from "./reinforce";
 import { transferArmies } from "./transfer-fixture";
+import { REINFORCE } from "../../../design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -324,7 +325,7 @@ it("reinforces through a cleared camp with its id and refuses it after the army 
   );
   expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Reinforce 600 Knights");
   expect(host.querySelector("[data-kit-sheet] .ui-frame__head .ui-chip")?.textContent).toBe(siteName(711));
-  expect(host.textContent).toContain("From Realm stock · 420 ready");
+  expect(host.textContent).toContain(REINFORCE.stockReady("420"));
   expect(host.textContent).toContain("Ends in");
   await press("Max");
   await press("Reinforce");

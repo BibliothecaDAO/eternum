@@ -15,6 +15,7 @@ import { nameGuardConfigs } from "./name-guards.mjs";
 import { noBackGuardConfigs } from "./no-back-guards.mjs";
 import { PLAIN_WORDS_RULE, plainWordsGuardConfigs } from "./plain-words-guards.mjs";
 import { threeDebugGuardConfigs } from "./three-debug-guards.mjs";
+import { wordCopyGuardConfigs } from "./word-copy-guards.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const SOURCES = ["apps/game/src/**/*.{ts,tsx}", "packages/*/src/**/*.{ts,tsx}"];
@@ -274,6 +275,7 @@ const eslint = new ESLint({
     ...modelUrlGuardConfigs,
     ...catalogGuardConfigs,
     ...plainWordsGuardConfigs,
+    ...wordCopyGuardConfigs,
   ],
 });
 

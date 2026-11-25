@@ -17,6 +17,7 @@ import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 
 import { API_READ_TIMEOUT_MS, fetchApi, retryTransientRead } from "./app-api";
 import { appQueryClient } from "./query-client";
+import { SEASON_ERROR } from "../ui/design-system/kit/words";
 
 /** A service that takes the request and never answers; it gives up only when the caller aborts. */
 const hangingFetch = vi.fn(
@@ -53,12 +54,12 @@ it("ends a read that never answers in the screen's failure line, and leaves a wr
       </QueryClientProvider>,
     ),
   );
-  expect(container.textContent).not.toContain("Season unavailable.");
+  expect(container.textContent).not.toContain(SEASON_ERROR);
   await act(async () => vi.advanceTimersByTime(API_READ_TIMEOUT_MS - 1));
-  expect(container.textContent).not.toContain("Season unavailable.");
+  expect(container.textContent).not.toContain(SEASON_ERROR);
   await act(async () => vi.advanceTimersByTime(1));
   await act(async () => vi.runOnlyPendingTimersAsync());
-  expect(container.textContent).toContain("Season unavailable.");
+  expect(container.textContent).toContain(SEASON_ERROR);
   await act(async () => root.unmount());
 
   void fetchApi("/api/value/chests/finish?tokenId=41", { method: "POST" });
@@ -91,7 +92,7 @@ it("does not retry a timed-out useSeasonCalendar read under appQueryClient defau
   );
   await act(async () => vi.advanceTimersByTime(API_READ_TIMEOUT_MS));
   await act(async () => vi.runOnlyPendingTimersAsync());
-  expect(container.textContent).toContain("Season unavailable.");
+  expect(container.textContent).toContain(SEASON_ERROR);
   expect(hangingFetch).toHaveBeenCalledTimes(1);
   await act(async () => root.unmount());
   appQueryClient.clear();

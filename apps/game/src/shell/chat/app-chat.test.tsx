@@ -4,6 +4,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CHAT_WORDS } from "../../ui/design-system/kit/words";
 
 // The app as it runs: its shell (which opens the one chat connection for a signed-in player), the lobby's chat, the real
 // store and transport. Only the network stands in: the sockets, the server's answers, and the identity.
@@ -207,7 +208,7 @@ it("reads the lobby's history and its room as one list, oldest first, each messa
 it("lets a registered player write to the lobby's room, and takes the field away when the room refuses for want of registration", async () => {
   await draw("lobby");
   await connect(true);
-  expect(host.textContent).not.toContain("Players registered in this Blitz write here.");
+  expect(host.textContent).not.toContain(CHAT_WORDS.registeredWrite);
   await type("hold the east");
   expect(lobbySocket().sent.at(-1)).toMatchObject({
     type: "world:publish",
@@ -216,7 +217,7 @@ it("lets a registered player write to the lobby's room, and takes the field away
   });
   await act(async () => lobbySocket().receive({ type: "error", code: "registration_required", message: "no" }));
   expect(field()).toBeNull();
-  expect(host.textContent).toContain("Players registered in this Blitz write here.");
+  expect(host.textContent).toContain(CHAT_WORDS.registeredWrite);
   // A room's refusal is no fault of the connection.
   expect(useRealtimeChatStore.getState().connectionStatus).toBe("connected");
 });
@@ -226,8 +227,8 @@ it("tells a reader who may not write who writes there, and says an empty room is
   await draw("lobby");
   await connect(false);
   expect(field()).toBeNull();
-  expect(host.textContent).toContain("Players registered in this Blitz write here.");
-  expect(host.textContent).toContain("No messages yet");
+  expect(host.textContent).toContain(CHAT_WORDS.registeredWrite);
+  expect(host.textContent).toContain(CHAT_WORDS.noMessages);
 });
 
 it("opens the room again when the registration changes, since the room decides its writers at the open", async () => {
@@ -248,7 +249,7 @@ it("says why a message was not taken, and takes it out of the list", async () =>
   await type("spam");
   expect(lines().some((line) => line?.includes("spam"))).toBe(true);
   await act(async () => lobbySocket().receive({ type: "error", code: "rate_limited", message: "slow" }));
-  expect(host.textContent).toContain("Too fast. Wait a moment.");
+  expect(host.textContent).toContain(CHAT_WORDS.rateLimited);
   expect(lines().some((line) => line?.includes("spam"))).toBe(false);
 });
 
@@ -275,10 +276,10 @@ describe.each([
   const expectWriting = () => {
     if (canWrite) {
       expect(field()!.disabled).toBe(false);
-      expect(host.textContent).not.toContain("Players registered in this Blitz write here.");
+      expect(host.textContent).not.toContain(CHAT_WORDS.registeredWrite);
     } else {
       expect(field()).toBeNull();
-      expect(host.textContent).toContain("Players registered in this Blitz write here.");
+      expect(host.textContent).toContain(CHAT_WORDS.registeredWrite);
     }
   };
   /** A message arriving in the lobby's room, and, for a writer, one sent there on the socket that stands. */
@@ -436,6 +437,6 @@ describe("a pressed alert for a lobby's mention", () => {
 it("asks a signed-out player to sign in, and opens no chat at all", async () => {
   session.current = null;
   await draw("lobby");
-  expect(host.textContent).toContain("Sign in to chat");
+  expect(host.textContent).toContain(CHAT_WORDS.signInToChat);
   expect(FakeSocket.made).toEqual([]);
 });

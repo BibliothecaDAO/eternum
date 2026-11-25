@@ -22,6 +22,7 @@ import { GLOBAL_ROOM } from "../model/chat-rooms";
 import { useRealtimeChatStore } from "../model/store";
 import type { DirectMessage, WorldChatMessage } from "../model/types";
 import { RealtimeChatShell } from "./realtime-chat-shell";
+import { CHAT_WORDS } from "../../../../design-system/kit/words";
 
 const SELF = "0x7";
 const ALDRIC = "0xa1d";
@@ -253,7 +254,7 @@ describe("links", () => {
   it("asks before leaving Realms, the whole address shown, and opens only on Open", () => {
     act(() => link("www.youtube.com").click());
     const asking = host.querySelector('[role="dialog"]')!;
-    expect(asking.getAttribute("aria-label")).toBe("Leaving Realms");
+    expect(asking.getAttribute("aria-label")).toBe(CHAT_WORDS.leavingRealms);
     expect(asking.textContent).toContain(VIDEO);
     expect(opened).not.toHaveBeenCalled();
     act(() => buttonIn(document.body, "Cancel")!.click());

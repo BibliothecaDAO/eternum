@@ -16,6 +16,7 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
 }));
 
 import { SharedDaysPanel } from "./shared-days-panel";
+import { SHARED_DAYS_WORDS } from "../../ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -62,7 +63,7 @@ it("counts each step a friend took through the player's shared days in one inlin
     fragmentsEarned: 0,
   });
   await draw();
-  expect(host.querySelector("section")?.getAttribute("aria-label")).toBe("Your shared days");
+  expect(host.querySelector("section")?.getAttribute("aria-label")).toBe(SHARED_DAYS_WORDS.title);
   expect(host.querySelectorAll(".app-figure")).toHaveLength(0);
   expect(host.querySelector("[data-referrals-empty]")).toBeNull();
   expect(funnelSteps()).toEqual([

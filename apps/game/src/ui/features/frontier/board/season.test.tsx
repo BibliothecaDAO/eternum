@@ -9,6 +9,7 @@ import { SeasonList, type SeasonListRow } from "./season-list";
 import { seasonPodium } from "./season-pool";
 import { TARGET_MARKS } from "../sites/site-marks";
 import { LAYER_NAMES } from "@bibliothecadao/types";
+import { LORDS_EARNED, POOL_NOT_PUBLISHED, SEASON_CLIMB, SEASON_ERROR } from "../../../design-system/kit/words";
 
 const namesALayerBelow = (host: HTMLElement) => LAYER_NAMES.slice(1).some((name) => host.textContent?.includes(name));
 
@@ -82,7 +83,7 @@ describe("the season list", () => {
     ]);
     expect(
       [...host.querySelectorAll(".ui-table-head > [data-tip]")].map((head) => head.getAttribute("data-tip")),
-    ).toEqual(["Ranked by sites cleared, then deepest depth", "LORDS earned"]);
+    ).toEqual([SEASON_CLIMB.rule, LORDS_EARNED]);
     const own = host.querySelector("button[aria-current='true']")!;
     expect(own.textContent).toContain("Realm 12");
     expect(host.querySelector("[aria-label='Season #12']")).not.toBeNull();
@@ -129,7 +130,7 @@ describe("the season list", () => {
     const { host, unmount } = render(
       <SeasonList rank={undefined} rows={[]} state="failed" onRetry={onRetry} onOpen={vi.fn()} onClose={vi.fn()} />,
     );
-    expect(host.textContent).toContain("Season unavailable.");
+    expect(host.textContent).toContain(SEASON_ERROR);
     expect(host.querySelector("[aria-label='Season —']")).not.toBeNull();
     act(() => button(host, "Try again").click());
     expect(onRetry).toHaveBeenCalled();
@@ -290,7 +291,7 @@ describe("the season's prizes in game", () => {
       }
       expect(tiles(unpublished.host)).toEqual(["2—", "1—", "3—"]);
       expect(unpublished.host.querySelector('ol[aria-label="Season prizes"]')!.textContent).toContain(
-        "Pool not published yet",
+        POOL_NOT_PUBLISHED,
       );
       unpublished.unmount();
       const none = sheet([], width);

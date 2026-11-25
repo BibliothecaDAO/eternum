@@ -9,6 +9,7 @@ import { RESTING, useDayEndStore, type DayEndPhase } from "@/hooks/store/use-day
 import { endedDay } from "../hud/day-clock";
 import { DayDoneCard } from "./day-done-card";
 import { DayEndScreen } from "./day-end-screen";
+import { DAY_SHARE_WORDS } from "../../../design-system/kit/words";
 
 describe("the day's end", () => {
   const rules = {
@@ -57,7 +58,7 @@ describe("the day's end", () => {
     ]);
     expect(card.querySelector("[data-day-lines]")).toBeNull();
     const buttons = [...card.querySelectorAll<HTMLButtonElement>("button")];
-    expect(buttons.map((button) => button.textContent)).toEqual(["Share your day", "Begin Day 13"]);
+    expect(buttons.map((button) => button.textContent)).toEqual([DAY_SHARE_WORDS.share, "Begin Day 13"]);
     act(() => buttons[1]!.click());
     expect(onContinue).toHaveBeenCalled();
     act(() => root.unmount());

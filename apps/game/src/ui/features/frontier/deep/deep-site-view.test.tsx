@@ -6,6 +6,7 @@ import { DEEP_BEASTS } from "@bibliothecadao/types";
 
 import { DEEP_SITE_CASES } from "./deep-site-fixtures";
 import { DeepSiteView, type DeepSiteProps } from "./deep-site-view";
+import { DEEP_WORDS } from "../../../design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -33,7 +34,7 @@ describe("a Deep site's card", () => {
     draw({ ...props, order: { kind: "act", verb: "attack", onAct } });
     expect(text()).toContain("Hyperstructure archive");
     expect(text()).toContain("6 Glory");
-    expect(text()).toContain("+6 height to your Aspect's hyperstructure");
+    expect(text()).toContain(DEEP_WORDS.height(6));
     expect(text()).toContain(`Guard: ${DEEP_BEASTS.foundation.name}, 10,000 troops`);
     const [attack] = labels(["Attack"]);
     act(() => attack!.click());
@@ -48,7 +49,7 @@ describe("a Deep site's card", () => {
 
   it("says how many Realms must enter today before a closed ring opens, and offers no order", () => {
     draw({ ...DEEP_SITE_CASES["Foundation, today's beast, army in reach"], order: { kind: "closed", realms: 50 } });
-    expect(text()).toContain("Opens at 50 Realms today");
+    expect(text()).toContain(DEEP_WORDS.opensAt(50));
     expect(labels(["Attack"])).toHaveLength(0);
   });
 
@@ -58,7 +59,7 @@ describe("a Deep site's card", () => {
       ...DEEP_SITE_CASES["Altar, open, army away"],
       order: { kind: "move", prices: [{ of: "stamina", amount: 30 }], onMove },
     });
-    expect(text()).toContain("Unguarded: next army takes it");
+    expect(text()).toContain(DEEP_WORDS.open);
     expect(text()).toContain("1,500");
     act(() => labels(["Move"])[0]!.click());
     expect(onMove).toHaveBeenCalledTimes(1);
@@ -79,14 +80,14 @@ describe("a Deep site's card", () => {
     expect(empty).toHaveLength(2);
     const tips = filled.map((slot) => slot.getAttribute("data-tip") ?? "");
     expect(tips[0]).toContain("Aldor · fought next");
-    expect(tips[0]).toContain("75% of each tick");
+    expect(tips[0]).toContain(DEEP_WORDS.share("75"));
     expect(tips[1]).toContain("Brek");
-    expect(tips[1]).toContain("25% of each tick");
+    expect(tips[1]).toContain(DEEP_WORDS.share("25"));
     for (const [index, slot] of fixture.guard.slots.entries()) {
       expect(tips[index]).toContain(`${slot.ticks.left} ticks left (${slot.ticks.time})`);
     }
     expect(document.querySelector("[data-deep-drain]")?.textContent).toContain("/ tick");
-    expect(text()).toContain("Held by a rival Aspect");
+    expect(text()).toContain(DEEP_WORDS.rival);
   });
 
   it("offers one Join action and draws free slots as non-interactive indicators", () => {
@@ -100,7 +101,7 @@ describe("a Deep site's card", () => {
     act(() => join!.click());
     expect(onAct).toHaveBeenCalledTimes(1);
     const filledTip = document.querySelector('[data-deep-slot="filled"]')?.getAttribute("data-tip") ?? "";
-    expect(filledTip).toContain("100% of each tick");
+    expect(filledTip).toContain(DEEP_WORDS.share("100"));
   });
 
   it("reads per-guard drain from each slot and shows a range when a guard loses more per tick", () => {

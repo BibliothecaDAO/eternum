@@ -61,6 +61,7 @@ vi.mock("@/ui/modules/identity/wallet-send", () => ({ prepareDefaultWalletSend: 
 const FEE = { estimated: 7_880_000_000_000_000_000n, max: 9_120_000_000_000_000_000n };
 
 import { RealmsWalletFunds } from "./realms-wallet-funds";
+import { WALLET_WORDS } from "../../ui/design-system/kit/words";
 
 const ADDRESS = "0x6c3d70a2d9197da8e24ee33ec8e26b00faccfaafe0fa9bd0003c0eb11397b4f";
 const EXCHANGE = "0x0213c67ed78bc280887234fe5ed5e77272465317978ae86c25a71531d9332a2d";
@@ -127,14 +128,14 @@ it("prices the send's fee as the form opens, offers the balance less its most as
   // The balance less the most the fee may take, every decimal kept.
   expect(amount!.value).toBe("1691.38");
   await type(to!, "0xnot");
-  expect(funds.textContent).toContain("Not a Starknet address");
+  expect(funds.textContent).toContain(WALLET_WORDS.notAnAddress);
   expect(button(funds, "Review")!.disabled).toBe(true);
   await type(to!, ADDRESS);
   expect(button(funds, "Review")!.disabled).toBe(true);
   await type(to!, EXCHANGE);
   // The whole balance leaves nothing for the fee.
   await type(amount!, "1700.5");
-  expect(funds.textContent).toContain("Enter an amount up to what your wallet holds, less the fee");
+  expect(funds.textContent).toContain(WALLET_WORDS.notAnAmount);
   expect(button(funds, "Review")!.disabled).toBe(true);
   await type(amount!, "1000");
   await press(funds, "Review");
@@ -145,7 +146,7 @@ it("prices the send's fee as the form opens, offers the balance less its most as
     onLanded: expect.any(Function),
     onFeeShort: expect.any(Function),
   });
-  await press(funds, "Confirm with your passkey");
+  await press(funds, WALLET_WORDS.confirmPasskey);
   await vi.waitFor(() => expect(funds.textContent).toContain("700 LORDS"));
   expect(funds.textContent).toContain("Sent");
 });
@@ -178,14 +179,14 @@ it("reads a wallet short of its quoted fee as priced, saying how much the fee ne
   quote.mockRejectedValue(new FeeRoomShortError(FEE));
   const funds = await mount();
   await press(funds, "Send");
-  expect(funds.textContent).toContain("The network fee needs up to 9.12 LORDS. Your wallet holds 5.00.");
+  expect(funds.textContent).toContain(WALLET_WORDS.feeShort("9.12", "5.00"));
 });
 
 it("says how much the fee needs when the balance cannot cover it, and offers no Max or Review", async () => {
   holding(LORDS, { [LORDS]: [5n * WEI] });
   const funds = await mount();
   await press(funds, "Send");
-  expect(funds.textContent).toContain("The network fee needs up to 9.12 LORDS. Your wallet holds 5.00.");
+  expect(funds.textContent).toContain(WALLET_WORDS.feeShort("9.12", "5.00"));
   expect(button(funds, "Max")).toBeUndefined();
   const [to, amount] = [...funds.querySelectorAll("input")];
   await type(to!, EXCHANGE);
@@ -206,7 +207,7 @@ it("on dev with no real LORDS says the fee needs some, without asking the paymas
   holding(TEST_LORDS, { [TEST_LORDS]: [1_000n * WEI], [LORDS]: [0n] });
   const funds = await mount();
   await press(funds, "Send");
-  expect(funds.textContent).toContain("Sending pays a network fee in LORDS, and your wallet holds none.");
+  expect(funds.textContent).toContain(WALLET_WORDS.noFeeLords);
   expect(quote).not.toHaveBeenCalled();
   expect(button(funds, "Max")).toBeUndefined();
 });

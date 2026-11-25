@@ -30,6 +30,7 @@ import { FRONTIER_STORES, STORE_KINDS } from "../stores";
 import { buildingCounts, realmBoard } from "./build-fixture";
 import { buildGroupOf } from "./build-options";
 import { BuildingsInFlight, BuildSheet } from "./build-sheet";
+import { priceRaised } from "../../../design-system/kit/words";
 
 afterEach(() => {
   disposeGameSyncSession();
@@ -491,8 +492,8 @@ describe("the build sheet", () => {
     const risen = open(store, realm);
     act(() => risen.card("Farm").click());
     const arrow = document.querySelector(".ui-window__foot [data-price-raised]")!;
-    expect(arrow.getAttribute("aria-label")).toBe("Costs more with each one standing: 2");
-    expect(arrow.getAttribute("data-tip")).toBe("Costs more with each one standing: 2");
+    expect(arrow.getAttribute("aria-label")).toBe(priceRaised("2"));
+    expect(arrow.getAttribute("data-tip")).toBe(priceRaised("2"));
     expect(risen.card("Farm").querySelector("[data-build-price]")!.textContent).not.toBe(base);
     risen.close();
   });

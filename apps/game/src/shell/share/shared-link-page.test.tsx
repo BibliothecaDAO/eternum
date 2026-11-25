@@ -23,6 +23,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import { setViewportWidth } from "../frame/test-viewport";
 import { SharedLinkPage } from "./shared-link-page";
+import { COUNTDOWN_WORDS, SHARED_LINK_WORDS } from "../../ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -63,7 +64,7 @@ const frontierNames = () => [
   ...[...host.querySelectorAll("img")].map((image) => image.alt).filter((alt) => alt === "Frontier"),
 ];
 const play = () =>
-  [...host.querySelectorAll("a, button")].find((each) => each.textContent?.includes("Start your adventure"));
+  [...host.querySelectorAll("a, button")].find((each) => each.textContent?.includes(SHARED_LINK_WORDS.play));
 
 it("records the visit and says who shared which day, with the way into Frontier", async () => {
   service.openShare.mockResolvedValue({ kind: "frontier-day", moment: 12, name: "Ashwalker" });
@@ -84,7 +85,7 @@ it("names who invites the friend to which Aspect, its members and its four Order
   expect(invite()).toBe(
     "Linden invites youJoin Luminary31 members · Order of Perfection, Brilliance, Protection, Enlightenment",
   );
-  expect(pageLine()).toBe("Members of one Aspect never fight each other.");
+  expect(pageLine()).toBe(SHARED_LINK_WORDS.allies);
 });
 
 it("names no members for an invite into a running game, whose members the game counts", async () => {
@@ -118,8 +119,8 @@ it("before the season, shows the time left and asks a signed-out friend to creat
   expect(host.textContent).toContain("Starts");
   expect(pageLine()).toBe("Members of one Aspect never fight each other. Dana plays Order of Titans.");
   const verbs = [...host.querySelectorAll("button, a")].map((each) => each.textContent);
-  expect(verbs).toContain("Create your Realm");
-  expect(verbs).not.toContain("Start your adventure");
+  expect(verbs).toContain(COUNTDOWN_WORDS.create);
+  expect(verbs).not.toContain(SHARED_LINK_WORDS.play);
 });
 
 it("tells identity the channel the link was posted from, and nothing for one no player's link carries", async () => {
@@ -136,13 +137,13 @@ it("tells identity the channel the link was posted from, and nothing for one no 
 it("still leads into the game from a link that leads to no shared day, and asks identity nothing for a malformed one", async () => {
   service.openShare.mockRejectedValue(new IdentityRequestError(404, "share_unknown"));
   await open("/s/ABCD2345");
-  expect(host.textContent).toContain("This link is not valid.");
+  expect(host.textContent).toContain(SHARED_LINK_WORDS.unknown);
   expect(play()).toBeDefined();
 
   service.openShare.mockClear();
   await open("/s/not-a-code");
   expect(service.openShare).not.toHaveBeenCalled();
-  expect(host.textContent).toContain("This link is not valid.");
+  expect(host.textContent).toContain(SHARED_LINK_WORDS.unknown);
 });
 
 it("names Frontier once, as its crest, with the shared day as the page's one heading, on a phone and a desktop", async () => {

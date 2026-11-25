@@ -10,6 +10,7 @@ import { nativeBaneConstants, nativeQuestConstants } from "@bibliothecadao/etern
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { useBaneToday } from "./bane-face";
 import { QuestDock } from "./quest-dock";
+import { DAY_BANNER_WORDS } from "../../../design-system/kit/words";
 
 const clock = vi.hoisted(() => ({ now: 350 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => clock.now }));
@@ -156,7 +157,7 @@ function worldDay() {
   return { ...fixtureGame, grant, win };
 }
 const collectAgain = () =>
-  [...host.querySelectorAll("button")].find((button) => button.textContent === "Collect again");
+  [...host.querySelectorAll("button")].find((button) => button.textContent === DAY_BANNER_WORDS.collectAgain);
 const reward = (name: string) => host.querySelector(`[data-reward="${name}"]`)?.getAttribute("aria-label");
 
 describe("bane collection", () => {
@@ -207,7 +208,7 @@ describe("bane collection", () => {
     game.store.applyFacts([{ model: "WorldBane", key: "0xd003", value: null }]);
     game.draw();
     expect(host.querySelector("[data-quest-undrawn]")?.textContent).toBe(
-      "Today's quest and bane are drawn on the first transaction anyone sends today.",
+      DAY_BANNER_WORDS.undrawnLine,
     );
     expect(host.textContent).not.toContain("Loading today's quest");
     expect(host.textContent).not.toContain("The Cull");
@@ -248,7 +249,7 @@ describe("bane collection", () => {
       "▾No Deep heightBreak: 2/2 of your Aspect · Broken",
     );
     expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("The Stand · Clear 3 guarded sites (3/3)");
-    expect(host.textContent).not.toContain("2× if broken");
+    expect(host.textContent).not.toContain(DAY_BANNER_WORDS.twiceIfBroken);
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(collectAgain()).toBeUndefined();
     expect(reward("Labor")).toBe("1,000 Labor");

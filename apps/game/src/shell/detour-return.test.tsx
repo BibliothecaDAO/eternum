@@ -31,6 +31,7 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { ProfilePage, SettingsRedirect } from "./profile/profile-pages";
 import { linkWalletHref } from "./profile/settings-route";
 import { useConnectStore } from "./sign-in/connect";
+import { WALLET_WORDS } from "../ui/design-system/kit/words";
 
 const FROM = "/season";
 const unlinked = {
@@ -92,7 +93,7 @@ const press = (word: string) =>
 it("opens Wallet & Devices when sent to link a wallet, and returns where it was sent from once it is linked", async () => {
   identity.session = unlinked;
   const render = await mount(linkWalletHref(FROM), () => <ProfilePage />);
-  expect(document.body.textContent).toContain("I have a wallet");
+  expect(document.body.textContent).toContain(WALLET_WORDS.haveOne);
   expect(where).toContain("/profile");
 
   identity.session = linked;

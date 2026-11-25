@@ -106,6 +106,7 @@ import { setViewportWidth } from "../frame/test-viewport";
 import { PlayPage } from "./play-page";
 
 import { useConnectStore } from "../sign-in/connect";
+import { COUNTDOWN_WORDS, PLAY_WORDS, PRESEASON_WORDS, SEAL_CODE_WORDS, SEASON_ERROR, SEASON_INVITE_WORDS } from "../../ui/design-system/kit/words";
 
 const HOUR = 3_600;
 const DAY = 24 * HOUR;
@@ -344,7 +345,7 @@ it("renders rehearsal games as compact secondary cards under InviteCard with spe
   expect(card.textContent).toContain("4× Rehearsal");
   expect(card.textContent).toContain("Day 3 · 18 players");
   const joinBtn = card.querySelector<HTMLButtonElement>("button")!;
-  expect(joinBtn.textContent).toBe("Join rehearsal");
+  expect(joinBtn.textContent).toBe(PLAY_WORDS.joinRehearsal);
   expect(joinBtn.dataset.kind).toBe("secondary");
   expect(card.querySelector('button[data-kind="primary"]')).toBeNull();
   await cleanup?.();
@@ -368,7 +369,7 @@ it("renders rehearsal games as compact secondary cards under InviteCard with spe
   const signedOutBtn = signedOut.container
     .querySelector('[data-play-item="0xa:4"]')!
     .querySelector<HTMLButtonElement>("button")!;
-  expect(signedOutBtn.textContent).toBe("Join rehearsal");
+  expect(signedOutBtn.textContent).toBe(PLAY_WORDS.joinRehearsal);
   await act(async () => signedOutBtn.click());
   expect(gameEntryPreload.primeGameEntry).toHaveBeenCalledTimes(1);
   expect(useConnectStore.getState().request?.next).toBe("/g/0xa/4");
@@ -429,7 +430,7 @@ it("says the season calendar did not answer when it fails", async () => {
   reads.history = answered({ games: [], next: null, failures: [] });
   reads.calendar = failed();
   const page = await mount();
-  expect(page.text()).toContain("Season unavailable.");
+  expect(page.text()).toContain(SEASON_ERROR);
 });
 
 describe("the season's countdown, while its first day is ahead and Play has no game to lead with", () => {
@@ -505,7 +506,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       aspects.map(({ name }) => name),
     );
     expect(countdown.querySelector("[data-preseason-testnet]")).toBeNull();
-    expect(countdown.textContent).toContain("Free to play");
+    expect(countdown.textContent).toContain(COUNTDOWN_WORDS.free);
     expect(countdown.textContent).toContain("+100 Fragments for each friend who reaches 100 Glory");
     expect(countdown.querySelectorAll('button[data-kind="primary"]')).toHaveLength(1);
 
@@ -513,7 +514,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(useConnectStore.getState().request).toEqual({ next: null });
 
     useConnectStore.setState({ request: null });
-    await press(page.container, "Create your Realm");
+    await press(page.container, COUNTDOWN_WORDS.create);
     expect(useConnectStore.getState().request).toEqual({ next: null });
   });
 
@@ -527,10 +528,10 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(countdown.textContent).toContain("Final testnet live");
     expect(countdown.textContent).not.toContain("testnet-1795479180");
     expect(countdown.textContent).toContain(
-      "Final testnet is live. Learn the game before Season 1 opens and get a head start.",
+      COUNTDOWN_WORDS.rehearsalLine("Final testnet"),
     );
-    expect(countdown.textContent).toContain("Free to play");
-    expect(countdown.textContent).not.toContain("Create your Realm");
+    expect(countdown.textContent).toContain(COUNTDOWN_WORDS.free);
+    expect(countdown.textContent).not.toContain(COUNTDOWN_WORDS.create);
     const primaries = countdown.querySelectorAll('button[data-kind="primary"]');
     expect(primaries).toHaveLength(1);
     expect(primaries[0]?.textContent).toBe("Play Final testnet");
@@ -557,7 +558,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     reads.calendar = answered(seasonOne(startsAt));
     quietPlay();
     const pending = await mount();
-    expect(pending.text()).not.toContain("Final testnet");
+    expect(pending.text()).not.toContain(PLAY_WORDS.finalTestnet);
     expect(pending.text()).not.toContain("rehearsal-4x");
     expect(pending.text()).not.toContain("live");
     expect(pending.text()).toContain("Rehearsal opens soon.");
@@ -590,10 +591,10 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(countdown.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Final testnet");
     expect(countdown.querySelectorAll('button[data-kind="primary"]')).toHaveLength(1);
     expect(countdown.textContent).toContain(
-      "Optional — choose your Season 1 Aspect now or later. You can change it any time until Season 1 opens.",
+      PRESEASON_WORDS.optionalLine,
     );
     expect(countdown.textContent).toContain(
-      "Pick an Aspect above to unlock your Season 1 invite link — friends start in your Aspect when Season 1 opens.",
+      PRESEASON_WORDS.invitePickPrompt,
     );
     expect(countdown.querySelector('[data-aspect="Prowess"]')?.textContent).toContain("39");
     expect(countdown.querySelector("[data-aspect-shared]")).toBeNull();
@@ -631,9 +632,9 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(prowessCard.querySelector("[data-chosen-order]")?.textContent).toContain(giants!.fullOrderName);
     expect(reads.shared).toEqual([1]);
     expect(page.container.querySelector("[data-season-invite]")?.textContent).toContain(
-      "Copy your Prowess link. A friend who opens it starts in Prowess.",
+      SEASON_INVITE_WORDS.line("Prowess"),
     );
-    await press(page.container, "Copy invite link");
+    await press(page.container, SEASON_INVITE_WORDS.copy);
     await settle();
     expect(written).toEqual([`${window.location.origin}/s/MRGHT234?via=system`]);
     expect(page.text()).toContain("Link copied");
@@ -657,7 +658,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(luminaryCard.querySelector("[data-chosen-order]")?.textContent).toContain(perfection!.fullOrderName);
     expect(reads.shared).toEqual([1, 2]);
     expect(page.container.querySelector("[data-season-invite]")?.textContent).toContain(
-      "Copy your Luminary link. A friend who opens it starts in Luminary.",
+      SEASON_INVITE_WORDS.line("Luminary"),
     );
     expect(page.text()).not.toContain("Link copied");
   });
@@ -695,7 +696,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
 
     const card = () => page.container.querySelector("[data-seal-code]")!;
     expect(card().getAttribute("data-seal-code")).toBe("open");
-    expect(card().textContent).toContain("Have an Ancient Seal code?");
+    expect(card().textContent).toContain(SEAL_CODE_WORDS.haveCode);
     expect(card().querySelector("input")).toBeNull();
 
     await act(async () => card().querySelector<HTMLButtonElement>(".seal-disclosure__toggle")!.click());
@@ -713,7 +714,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     await type("TAKEN234");
     await act(async () => submitBtn.click());
     await settle();
-    expect(card().querySelector(".app-field__line")?.textContent).toBe("Code is used, expired, or invalid.");
+    expect(card().querySelector(".app-field__line")?.textContent).toBe(SEAL_CODE_WORDS.refused.code_unavailable);
     await type("seal2345");
     expect(card().querySelector(".app-field__line")).toBeNull();
     await act(async () => submitBtn.click());
@@ -742,7 +743,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       );
       await press(document.body, `Play as ${giants!.orderName}`);
       await settle();
-      expect(document.body.textContent).toContain("Season unavailable.");
+      expect(document.body.textContent).toContain(SEASON_ERROR);
       expect(
         [...document.body.querySelectorAll("button")].filter((each) => each.textContent === "Try again"),
       ).toHaveLength(1);
@@ -803,7 +804,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
       expect(page.container.querySelectorAll('[role="timer"]')).toHaveLength(1);
       expect(page.container.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Final testnet");
       expect(page.container.querySelectorAll("[data-aspect]")).toHaveLength(0);
-      expect(page.text()).toContain("Season unavailable.");
+      expect(page.text()).toContain(SEASON_ERROR);
     } finally {
       identityClient.getOrderIntent = keep;
     }
@@ -880,7 +881,7 @@ it("renders a real-speed Final testnet card without a speed chip and with Play/R
   reads.history = answered({ games: [], next: null, failures: [] });
   const joinable = await mount();
   const card = joinable.container.querySelector('[data-play-item="0xa:6"]')!.closest(".app-panel")!;
-  expect(card.querySelector(".app-panel__head h2")?.textContent).toBe("Final testnet");
+  expect(card.querySelector(".app-panel__head h2")?.textContent).toBe(PLAY_WORDS.finalTestnet);
   expect(card.querySelector(".app-panel__cue")).toBeNull();
   expect(card.textContent).not.toContain("testnet-1795479180");
   const playBtn = card.querySelector<HTMLButtonElement>("button")!;

@@ -5,6 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import type { SharedDay } from "@/shell/share/day-card";
+import { SHARE_WORDS } from "../../../design-system/kit/words";
 
 /** The signed-in Realms account as the app holds it, and identity answering as the Worker does for that account. */
 const identity = vi.hoisted(() => {
@@ -194,7 +195,7 @@ it("makes the phone's image only once Herald's closing rank has answered, and wi
   const share = phoneSheet();
   signIn("0xa");
   await openSheet({ ...sharedDay("0x1"), rank: undefined });
-  expect(button("Creating image…")?.disabled).toBe(true);
+  expect(button(SHARE_WORDS.making)?.disabled).toBe(true);
   await openSheet(sharedDay("0x1"));
   await act(async () => button("Share").click());
   expect(await share.mock.lastCall![0].files![0]!.text()).toContain("#1 ▲2");
@@ -236,9 +237,9 @@ it("keeps Post on X waiting while the rank loads, publishes nothing then, and th
   setViewportWidth(1440);
   signIn("0xa");
   await openSheet({ ...sharedDay("0x1"), rank: undefined });
-  expect(button("Creating image…")?.disabled).toBe(true);
+  expect(button(SHARE_WORDS.making)?.disabled).toBe(true);
   const post = [...host.querySelectorAll<HTMLButtonElement>("button")].at(-1)!;
-  expect([post.disabled, post.textContent]).toEqual([true, "Creating image…"]);
+  expect([post.disabled, post.textContent]).toEqual([true, SHARE_WORDS.making]);
   await act(async () => post.click());
   await settle();
   expect(identity.client.uploadShareCard).not.toHaveBeenCalled();

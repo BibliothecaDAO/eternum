@@ -50,6 +50,7 @@ vi.mock("@/ui/features/social", () => ({
 }));
 
 import { HudChatWindow } from "./hud-chat-window";
+import { CHAT_WORDS } from "../../../design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -132,7 +133,7 @@ it("keeps a signed-out player's sign-in action pressable at once", () => {
   fixture.status = "anonymous";
   draw(false);
   const strip = host.querySelector<HTMLButtonElement>('button[aria-label="Chat strip"]')!;
-  expect(strip.textContent).toContain("Sign in to chat");
+  expect(strip.textContent).toContain(CHAT_WORDS.signInToChat);
   act(() => strip.click());
   expect(fixture.signIn).toHaveBeenCalledTimes(1);
   expect(onOpenChange).not.toHaveBeenCalled();
@@ -153,7 +154,7 @@ it("says chat is loading until the room's history answers, never an empty room i
 it("says the room is empty only once its history answered with no message", () => {
   fixture.zone = { messages: [], lastFetchedCursor: null, isFetchingHistory: false };
   draw(false);
-  expect(stripLine()).toBe("No messages yet");
+  expect(stripLine()).toBe(CHAT_WORDS.noMessages);
 });
 
 it("says chat is unavailable when the history read or the connection failed, never that the room is empty", () => {

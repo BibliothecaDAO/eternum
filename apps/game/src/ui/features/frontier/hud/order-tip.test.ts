@@ -2,6 +2,7 @@ import { ActionType, configManager, type OrderRefusal } from "@bibliothecadao/et
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { orderFood, orderTip } from "./order-tip";
+import { ATTACK_REFUSAL_WORDS, SPIRE_WORDS, TRANSFER_TROOPS } from "../../../design-system/kit/words";
 
 const step = (actionType: ActionType, staminaCost?: number) => ({ hex: { col: 0, row: 0 }, actionType, staminaCost });
 type Path = ReturnType<typeof step>[];
@@ -35,8 +36,8 @@ describe("what a right-click on a tile does, said before the click", () => {
     expect(line([step(ActionType.Move), step(ActionType.Explore)])).toBe("Explore");
     expect(line([step(ActionType.Move), step(ActionType.Move, 1), step(ActionType.Move, 1)])).toBe("Move");
     expect(line([step(ActionType.Move), step(ActionType.Attack, 30)])).toBe("Attack");
-    expect(line([step(ActionType.Move), step(ActionType.Help)])).toBe("Transfer troops");
-    expect(line([step(ActionType.Move), step(ActionType.SpireTravel)])).toBe("Enter the Spire");
+    expect(line([step(ActionType.Move), step(ActionType.Help)])).toBe(TRANSFER_TROOPS.title);
+    expect(line([step(ActionType.Move), step(ActionType.SpireTravel)])).toBe(SPIRE_WORDS.order);
   });
 
   it("names the realm's Help on its army beside it a reinforcement, priced on its sheet", () => {
@@ -71,7 +72,7 @@ describe("what a right-click on a tile does, said before the click", () => {
     expect(line(undefined, { ...short, staminaWait: 3_600 })).toBe("Needs 21 stamina, have 9 · in 1h");
     expect(line(undefined, { refusal: { reason: "stamina", need: 21 } })).toBe("Needs 21 stamina, have —");
     expect(line(undefined, { refusal: { reason: "food" } })).toBe("Not enough food for the army");
-    expect(line(undefined, { refusal: { reason: "off-limits" } })).toBe("Only neutral structures can be attacked");
+    expect(line(undefined, { refusal: { reason: "off-limits" } })).toBe(ATTACK_REFUSAL_WORDS["target-must-be-unowned"]);
     expect(line(undefined, { refusal: { reason: "no-transfer" } })).toBe("Cannot transfer here");
     expect(line(undefined, { refusal: { reason: "occupied" } })).toBe("Tile is blocked");
     expect(line(undefined, { refusal: { reason: "too-far" } })).toBe("Too far: move closer");

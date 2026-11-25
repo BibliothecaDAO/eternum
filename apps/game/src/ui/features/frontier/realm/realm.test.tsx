@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CastleView } from "../upgrade/castle-view";
+import { MAX_ARMY_SIZE } from "../../../design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -84,7 +85,7 @@ describe("the castle", () => {
       ["Army slots", "4", "→", "5"],
       ["Wheat storage", "18K", "→", "40K"],
       ["Labor storage", "15K", "→", "50K"],
-      ["Max army size", "9,000", "→", "25K"],
+      [MAX_ARMY_SIZE, "9,000", "→", "25K"],
     ]);
     expect(host.querySelector('.ui-window__foot .ui-price [role="img"]')?.getAttribute("aria-label")).toBe("15K Labor");
     expect(

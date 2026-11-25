@@ -34,6 +34,7 @@ vi.mock("@/ui/modules/entity-details/hooks/use-realm-level-up", () => ({
 }));
 
 import { BuildOrderPanel } from "./build-order-panel";
+import { BUILD_ORDER_WORDS } from "../../../design-system/kit/words";
 
 const WOOD = {
   id: "1-build-wood",
@@ -97,7 +98,7 @@ it("says when no realm has a step it can take now", async () => {
   game.steps = [];
   await draw();
   expect(rows()).toEqual([]);
-  expect(host.textContent).toContain("Nothing to build now");
+  expect(host.textContent).toContain(BUILD_ORDER_WORDS.nothingNow);
 });
 
 it("draws nothing where there is no build order to follow: outside a Blitz, or for a viewer who gives no orders", async () => {

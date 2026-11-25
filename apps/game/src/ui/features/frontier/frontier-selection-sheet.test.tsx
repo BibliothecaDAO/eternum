@@ -49,6 +49,7 @@ import { BuildingType, siteName, TileOccupier } from "@bibliothecadao/types";
 import { transferArmies, TRANSFER_TAPPED } from "./army/transfer-fixture";
 import { SUPPLY_POST } from "@/ui/design-system/kit/words";
 import { useSelectionCard } from "./frontier-selection-sheet";
+import { TRANSFER_TROOPS } from "../../design-system/kit/words";
 
 /** The selection's card as the HUD draws it. */
 const FrontierSelectionSheet = (props: Parameters<typeof useSelectionCard>[0]) =>
@@ -354,10 +355,10 @@ it("the map's actual transfer selection shows the survivor before the player con
         </GameProvider>,
       ),
     );
-    expect(host.querySelector('[role="dialog"]')?.getAttribute("aria-label")).toBe("Transfer troops");
+    expect(host.querySelector('[role="dialog"]')?.getAttribute("aria-label")).toBe(TRANSFER_TROOPS.title);
     const expectMergePreview = () => {
       expect(host.querySelector(".ui-notice")?.textContent).toBe(
-        "600 Knights will lose its Logistics, Oath slots, and Oaths.",
+        TRANSFER_TROOPS.losesProgress("600 Knights"),
       );
       expect(host.querySelector("s")).toBeNull();
       expect(host.textContent).toContain("100/180→7");
@@ -372,7 +373,7 @@ it("the map's actual transfer selection shows the survivor before the player con
     // Confirming the loss preserves the preview; only the final press sends the transfer.
     expectMergePreview();
     const final = [...host.querySelectorAll("button")].find(
-      (button) => button.textContent === "Confirm merge into 500 Knights",
+      (button) => button.textContent === TRANSFER_TROOPS.confirmMerge("500 Knights"),
     )!;
     await act(async () => final.click());
     expect(swap).toHaveBeenCalledWith(

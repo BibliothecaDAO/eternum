@@ -17,6 +17,7 @@ import { EARLY_REALM, MID_REALM } from "./progression-fixture";
 import { ResearchPanel } from "./research-panel";
 import { CastleResearch } from "../upgrade/castle-view";
 import { needLine, readResearchTree, type TreeNode } from "./research-tree";
+import { RESEARCH_TREE } from "../../../design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -110,12 +111,12 @@ it("holds a locked node's verb, says why, and offers the step that opens it", ()
       />,
     ),
   );
-  expect(host.textContent).toContain("Labor storage 15,000 / 25,000 · Kingdom");
+  expect(host.textContent).toContain(RESEARCH_TREE.store("15,000", "25,000", "Kingdom"));
   expect(host.querySelector("[data-node='row-5'] button[aria-label^='Upgrade ']")).toBeNull();
   expect(host.querySelector("button[aria-label='Upgrade Supply yard']")).toBeNull();
   expect(
     [...host.querySelectorAll<HTMLButtonElement>("[data-research-footer] button")].map((each) => each.textContent),
-  ).toEqual(["Upgrade the Castle"]);
+  ).toEqual([RESEARCH_TREE.levelUpCastle]);
   act(() => button(/Upgrade the Castle/)!.click());
   expect(onFix).toHaveBeenCalledOnce();
 });
@@ -148,7 +149,7 @@ it("states why each locked or short row is held back in plain words without repe
   const campReason = campChoice.querySelector("[data-lock-reason]")!.textContent;
   const campButton = campChoice.querySelector<HTMLButtonElement>("[data-research-footer] button")!.textContent;
   expect(campReason).toBe("Needs City");
-  expect(campButton).toBe("Upgrade the Castle");
+  expect(campButton).toBe(RESEARCH_TREE.levelUpCastle);
   expect(campReason).not.toBe(campButton);
 
   const city = readResearchTree({ ...EARLY_REALM, castleLevel: 1 });
@@ -240,7 +241,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
   it("says to tap a node while none is picked, and opens on the tile tapped", () => {
     const onPick = vi.fn();
     draw(null, vi.fn(), onPick);
-    expect(host.querySelector(".research-bar-idle")?.textContent).toBe("Tap a node to see its price");
+    expect(host.querySelector(".research-bar-idle")?.textContent).toBe(RESEARCH_TREE.promptPick);
     expect(choice()).toBeNull();
     expect(host.querySelectorAll("[data-node]")).toHaveLength(nodes.length);
     act(() => host.querySelector<HTMLButtonElement>("[data-node='row-1']")!.click());

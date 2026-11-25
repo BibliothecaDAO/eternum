@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, it } from "vitest";
 import { useShortcutStore } from "@/hooks/store/use-shortcut-store";
 
 import { KeyboardShortcuts, KeyboardShortcutsSetting } from "./keyboard-shortcuts";
+import { SETTINGS_WORDS } from "../../design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -44,11 +45,11 @@ const keysListed = () =>
 
 it("lists no key in Settings, only the row that opens them, one press away, and no Back with them", async () => {
   await act(async () => root.render(<SettingsKeys />));
-  expect(host.querySelector(".ui-setting__name")!.textContent).toBe("Keyboard shortcuts");
+  expect(host.querySelector(".ui-setting__name")!.textContent).toBe(SETTINGS_WORDS.shortcuts);
   expect(keysListed()).toEqual([]);
 
   await press("Show");
-  expect(host.querySelector("h2")!.textContent).toBe("Keyboard shortcuts");
+  expect(host.querySelector("h2")!.textContent).toBe(SETTINGS_WORDS.shortcuts);
   expect(keysListed()).toEqual([
     ["B", "Open Build"],
     ["Enter", "Open chat"],

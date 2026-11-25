@@ -172,6 +172,7 @@ vi.mock("./use-transfer-sides", () => ({
 
 import { iconDefinition, resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { openTransfer } from "./transfer-window";
+import { WEIGHT_UNKNOWN } from "../../../design-system/kit/words";
 
 const DONKEYS = iconDefinition(resourceMeaning(ResourcesIds.Donkey)).label;
 
@@ -239,7 +240,7 @@ describe("the transfer window's amounts", () => {
       element.textContent?.includes("Essence"),
     )!;
     expect(row.textContent).toContain("300 held");
-    expect(row.textContent).toContain("Weight unknown: cannot be sent");
+    expect(row.textContent).toContain(WEIGHT_UNKNOWN);
     expect(row.getAttribute("aria-disabled")).toBe("true");
     expect(row.querySelector("input, button")).toBeNull();
     // The goods that do have a weight still plan and send as before.

@@ -90,6 +90,7 @@ import { EventLogPanel } from "./event-log-panel";
 import { QuickFeedRows, useEventsFeed } from "./quick-feed";
 import { EventsCard } from "../world/hud/events-card";
 import { HISTORY, LOG_BUTTON } from "../../../../scripts/prove-play-game.mjs";
+import { ATTACK_REFUSAL_WORDS, EVENTS_WORDS } from "../../design-system/kit/words";
 
 const fight = (id: string, at: number, attacker = "0x5", defender = "0x6") => ({
   id,
@@ -186,12 +187,12 @@ it("says so under Important before anything important has happened, and stops on
   history.push(...routineStories(2, 1_000));
   draw();
   expect(rows()).toEqual([]);
-  expect(host.textContent).toBe("Nothing here yet.");
+  expect(host.textContent).toBe(EVENTS_WORDS.nothingYet);
 
   history.push(fight("mine", 2_000, PLAYER));
   draw();
   expect(rows()).toEqual(["mine"]);
-  expect(host.textContent).not.toContain("Nothing here yet.");
+  expect(host.textContent).not.toContain(EVENTS_WORDS.nothingYet);
 });
 
 it("shows the game's three newest stories, newest on top, however long the clock runs on", () => {
@@ -326,7 +327,7 @@ it("shows the client's toasts above the stories, apart from their three: a notic
     ],
   });
   draw();
-  expect(toasts()).toEqual(["The game has begun", "Not enough stamina"]);
+  expect(toasts()).toEqual(["The game has begun", ATTACK_REFUSAL_WORDS["insufficient-stamina"]]);
   expect(rows()).toEqual(["r0", "r1", "r2"]);
 });
 

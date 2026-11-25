@@ -4,6 +4,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { INVITE_WORDS } from "../../../design-system/kit/words";
 
 // The invite on the lab's game, signed in as the lab's player; identity's link-making and the browser's clipboard and
 // new tab stand in.
@@ -84,14 +85,14 @@ it("offers nothing to a home that joined no Aspect", async () => {
 it("invites to the Aspect identity names by its name and its Orders' crests, posting and copying the player's own link", async () => {
   createInvite.mockResolvedValue({ code: "INVT2345", aspect: 2, chainId: getActiveGame()!.chainId, gameId: 1 });
   await renderInvite(2);
-  await vi.waitFor(() => expect(panel()!.textContent).toContain("Invite a friend to Luminary"));
+  await vi.waitFor(() => expect(panel()!.textContent).toContain(INVITE_WORDS.title("Luminary")));
   expect(panel()!.querySelectorAll("[data-icon], img, svg").length).toBeGreaterThanOrEqual(4);
   expect(createInvite).toHaveBeenCalledOnce();
 
   await vi.waitFor(() => expect(button("Post on X")?.hasAttribute("disabled")).toBe(false));
   await act(async () => button("Post on X")!.click());
   const post = new URL(opened.mock.calls[0]![0] as string);
-  expect(post.searchParams.get("text")).toBe("Join me in Luminary in Frontier.");
+  expect(post.searchParams.get("text")).toBe(INVITE_WORDS.line("Luminary"));
   expect(post.searchParams.get("url")).toBe(`${window.location.origin}/s/INVT2345?via=x`);
 
   await act(async () => button("Copy link")!.click());
@@ -102,7 +103,7 @@ it("invites to the Aspect identity names by its name and its Orders' crests, pos
 it("names the Aspect the link lands in, the season's, when the home in this game joined another", async () => {
   createInvite.mockResolvedValue({ code: "INVT2347", aspect: 1, chainId: null, gameId: null });
   await renderInvite(2);
-  await vi.waitFor(() => expect(panel()!.textContent).toContain("Invite a friend to Prowess"));
+  await vi.waitFor(() => expect(panel()!.textContent).toContain(INVITE_WORDS.title("Prowess")));
   expect(panel()!.textContent).not.toContain("Luminary");
 });
 
@@ -126,7 +127,7 @@ it("asks identity again for an invite it had none for once the panel opens again
   await act(async () => root.render(<></>));
   createInvite.mockResolvedValue({ code: "INVT2348", aspect: 2, chainId: getActiveGame()!.chainId, gameId: 1 });
   await renderInvite(2, queries);
-  await vi.waitFor(() => expect(panel()!.textContent).toContain("Invite a friend to Luminary"));
+  await vi.waitFor(() => expect(panel()!.textContent).toContain(INVITE_WORDS.title("Luminary")));
   expect(createInvite).toHaveBeenCalledTimes(2);
 });
 
@@ -134,7 +135,7 @@ it("says when identity refuses the invite, and asks again on Try again", async (
   createInvite.mockRejectedValue(new Error("aspect_unavailable"));
   await renderInvite(3);
   await act(async () => new Promise((resolve) => setTimeout(resolve, 1_500)));
-  expect(host.textContent).toContain("Could not create invite link.");
+  expect(host.textContent).toContain(INVITE_WORDS.failed);
   createInvite.mockResolvedValue({ code: "INVT2346", aspect: 3, chainId: getActiveGame()!.chainId, gameId: 1 });
   await act(async () => button("Try again")!.click());
   await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));

@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { expect, it } from "vitest";
 
 import { AccountDeletionPage, PrivacyPage, TermsPage } from "./legal";
+import { ACCOUNT_DELETION_WORDS } from "../ui/design-system/kit/words";
 
 /** The document's own text, without the frame around it (the footer links realms.world, the DAO's site). */
 const textOf = (page: React.ReactElement) => {
@@ -52,11 +53,11 @@ it("explains account deletion in public, links to Settings' row, and says what s
     </MemoryRouter>,
   );
   const page = container.querySelector("article")!;
-  expect(page.querySelector('a[href="/profile#delete-account"]')?.textContent).toBe("Open Settings");
+  expect(page.querySelector('a[href="/profile#delete-account"]')?.textContent).toBe(ACCOUNT_DELETION_WORDS.openSettings);
   const text = page.textContent!.replace(/\s+/g, " ");
   expect(text).toContain("Enter the code we email you.");
-  expect(text).toContain("Your notification settings and push alerts on every device");
+  expect(text).toContain(ACCOUNT_DELETION_WORDS.goes[2]);
   expect(text).toContain("email recovery ends");
-  expect(text).toContain("Ratings stay on chain under the wallets that played.");
+  expect(text).toContain(ACCOUNT_DELETION_WORDS.stays[2]);
   expect(textOf(<PrivacyPage />)).toContain("You can delete your Realms account yourself, in Settings.");
 });

@@ -16,6 +16,7 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
 });
 
 import { RealmAutomationPanel } from "./realm-automation-panel";
+import { NOTHING_TO_AUTOMATE } from "../../../design-system/kit/words";
 
 const automationOf = (producedResources: ResourcesIds[]) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -30,7 +31,7 @@ const automationOf = (producedResources: ResourcesIds[]) => {
 };
 
 it("tells a realm whose farm and huts produce on their own that there is nothing to automate, not that nothing produces", () => {
-  expect(automationOf([ResourcesIds.Wheat, ResourcesIds.Labor])).toBe("Nothing to automate yet");
+  expect(automationOf([ResourcesIds.Wheat, ResourcesIds.Labor])).toBe(NOTHING_TO_AUTOMATE);
 });
 
 it("offers a resource building's output to automate", () => {

@@ -9,6 +9,7 @@ vi.mock("@/hooks/context/starknet-provider", async () => ({
 import { installWallet } from "@/ui/modules/identity/test-wallet";
 import { WalletPicker, WalletSign } from "./wallet-actions";
 import { rememberOpened } from "@/ui/modules/identity/wallet-holder";
+import { VALUE_WORDS, WALLET_WORDS } from "../../ui/design-system/kit/words";
 
 const LINKED = "0x04a1000000000000000000000000000000000000000000000000000000003e9f";
 const OTHER = "0x0777000000000000000000000000000000000000000000000000000000000001";
@@ -73,14 +74,14 @@ it("refuses a wallet that answers with another account, naming the linked addres
   rememberOpened(LINKED, "argentX");
   const ready = installWallet("argentX", { account: OTHER });
   const { container, landed } = await openSend();
-  await settled(() => expect(container.textContent).toContain("Only 0x04a1…3e9f can sign this"));
+  await settled(() => expect(container.textContent).toContain(WALLET_WORDS.wrongWallet("0x04a1…3e9f")));
   expect(ready.transactions()).toEqual([]);
   expect(landed).not.toHaveBeenCalled();
   expect(buttonsOf(container)).toEqual(["Try again"]);
 
   // The other account's visit does not unseat the linked wallet: the next send refuses it again, and offers no wallets.
   const next = await openSend();
-  await settled(() => expect(next.container.textContent).toContain("Only 0x04a1…3e9f can sign this"));
+  await settled(() => expect(next.container.textContent).toContain(WALLET_WORDS.wrongWallet("0x04a1…3e9f")));
   expect(buttonsOf(next.container)).toEqual(["Try again"]);
 });
 
@@ -97,7 +98,7 @@ it("asks which wallet only where this browser never opened it, and opens it unas
   const ready = installWallet("argentX", { account: LINKED, locked: true });
   installWallet("braavos", { account: OTHER, locked: true });
   const first = await openSend();
-  await settled(() => expect(first.container.textContent).toContain("Choose your wallet"));
+  await settled(() => expect(first.container.textContent).toContain(WALLET_WORDS.chooseWallet));
   expect(ready.connections()).toEqual([]);
   await press(first.container, "Ready");
   await settled(() => expect(first.landed).toHaveBeenCalledOnce());
@@ -113,7 +114,7 @@ it("leaves one Try again when the wallet declines, which prompts the same wallet
   vi.spyOn(console, "error").mockImplementation(() => {});
   const ready = installWallet("argentX", { account: LINKED, approves: false });
   const { container, landed } = await openSend();
-  await settled(() => expect(container.textContent).toContain("Wallet did not confirm"));
+  await settled(() => expect(container.textContent).toContain(WALLET_WORDS.paymentFailed));
   expect(ready.transactions()).toHaveLength(1);
   await press(container, "Try again");
   await settled(() => expect(ready.transactions()).toHaveLength(2));
@@ -143,7 +144,7 @@ it("keeps every wallet open to try while one never answers, and says what to do"
   await settled(() => expect(container.textContent).toContain("Opening…"));
   const braavos = [...container.querySelectorAll("button")].find((b) => b.textContent?.includes("Braavos"))!;
   expect(braavos.disabled).toBe(false);
-  expect(container.textContent).toContain("Nothing opened? Choose again.");
+  expect(container.textContent).toContain(WALLET_WORDS.nothingOpened);
 
   await press(container, "Braavos");
   await settled(() => expect(proven).toHaveBeenCalledOnce());
@@ -156,7 +157,7 @@ it("leaves Try again live while the linked wallet never answers, and prompts it 
   const ready = installWallet("argentX", { account: LINKED, answers: false });
   const { container, landed } = await openSend();
   await settled(() => expect(ready.connections()).toHaveLength(1));
-  expect(container.textContent).toContain("Confirm in your wallet");
+  expect(container.textContent).toContain(WALLET_WORDS.confirmInWallet);
   const tryAgain = [...container.querySelectorAll("button")].find((b) => b.textContent === "Try again")!;
   expect(tryAgain.disabled).toBe(false);
   await press(container, "Try again");
@@ -204,10 +205,10 @@ it("shows the Realms wallet's fee in LORDS before its passkey confirms, and open
   const braavos = installWallet("braavos", { account: LINKED });
   try {
     const { container, landed } = await openSend();
-    await settled(() => expect(buttonsOf(container)).toEqual(["Confirm with your passkey"]));
-    expect(container.textContent).toContain("Network fee about 7.89 LORDS, at most 9.12");
+    await settled(() => expect(buttonsOf(container)).toEqual([WALLET_WORDS.confirmPasskey]));
+    expect(container.textContent).toContain(WALLET_WORDS.networkFee("7.89", "9.12"));
     expect(prepare).toHaveBeenCalledWith(LINKED, CALLS, expect.anything(), 0n);
-    await press(container, "Confirm with your passkey");
+    await press(container, WALLET_WORDS.confirmPasskey);
     await settled(() => expect(landed).toHaveBeenCalledOnce());
     expect(sendFromDefault).toHaveBeenCalledWith(
       realmsWallet,
@@ -240,14 +241,14 @@ it("signs nothing whose fee rose past the one shown: a stale send is priced agai
     await settled(() => expect(container.textContent).toContain("at most 9.00"));
     // The player comes back two minutes later: the prepared send is stale, and the network fee went up meanwhile.
     vi.spyOn(Date, "now").mockReturnValue(now + 120_000);
-    await press(container, "Confirm with your passkey");
+    await press(container, WALLET_WORDS.confirmPasskey);
     await settled(() =>
-      expect(container.textContent).toContain("The network fee went up. Check it and confirm again."),
+      expect(container.textContent).toContain(WALLET_WORDS.feeRose),
     );
     expect(container.textContent).toContain("at most 10.00");
     expect(sendFromDefault).not.toHaveBeenCalled();
     // Confirmed again, the fee now shown: it sends the execution priced at that fee.
-    await press(container, "Confirm with your passkey");
+    await press(container, WALLET_WORDS.confirmPasskey);
     await settled(() => expect(landed).toHaveBeenCalledOnce());
     expect(sendFromDefault).toHaveBeenCalledWith(
       expect.anything(),
@@ -280,7 +281,7 @@ it("shows why a send could not be prepared (too little LORDS for its fee), and p
     expect(container.textContent).toContain("Check you have enough LORDS for the amount and fee.");
     short = false;
     await press(container, "Try again");
-    await settled(() => expect(buttonsOf(container)).toEqual(["Confirm with your passkey"]));
+    await settled(() => expect(buttonsOf(container)).toEqual([WALLET_WORDS.confirmPasskey]));
     expect(container.textContent).toContain("at most 9.00");
     expect(sendFromDefault).not.toHaveBeenCalled();
   } finally {
@@ -299,9 +300,9 @@ it("says how much LORDS to leave for the fee, offers what fits beside it, and si
   try {
     const fit = vi.fn();
     const { container } = await openSend(fit);
-    await settled(() => expect(buttonsOf(container)).toEqual(["Send 64.85 LORDS instead"]));
-    expect(container.textContent).toContain("Leave 35.15 LORDS in your wallet for the network fee.");
-    await press(container, "Send 64.85 LORDS instead");
+    await settled(() => expect(buttonsOf(container)).toEqual([WALLET_WORDS.sendInstead("64.85")]));
+    expect(container.textContent).toContain(WALLET_WORDS.leaveForFee("35.15"));
+    await press(container, WALLET_WORDS.sendInstead("64.85"));
     expect(fit).toHaveBeenCalledWith(64_850_000_000_000_000_000n);
     expect(sendFromDefault).not.toHaveBeenCalled();
   } finally {
@@ -322,10 +323,10 @@ it("says how much LORDS to leave for the fee where the amount is fixed (an entry
   try {
     const { container } = await openSend();
     await settled(() => expect(buttonsOf(container)).toEqual(["Try again"]));
-    expect(container.textContent).toContain("Leave 35.00 LORDS in your wallet for the network fee.");
+    expect(container.textContent).toContain(WALLET_WORDS.leaveForFee("35.00"));
     held = 120n * LORDS;
     await press(container, "Try again");
-    await settled(() => expect(buttonsOf(container)).toEqual(["Confirm with your passkey"]));
+    await settled(() => expect(buttonsOf(container)).toEqual([WALLET_WORDS.confirmPasskey]));
   } finally {
     signOut();
     vi.restoreAllMocks();
@@ -370,7 +371,7 @@ it("on re-entry with a send still uncertain, sends nothing new, and ends it once
   try {
     const { container, landed } = await openSend();
     await settled(() => expect(container.textContent).toContain("Last transfer pending"));
-    expect(buttonsOf(container)).toEqual(["Check again", "Send it again"]);
+    expect(buttonsOf(container)).toEqual(["Check again", VALUE_WORDS.sendAgain]);
     expect(prepare).not.toHaveBeenCalled();
     await press(container, "Check again");
     await settled(() => expect(landed).toHaveBeenCalledOnce());

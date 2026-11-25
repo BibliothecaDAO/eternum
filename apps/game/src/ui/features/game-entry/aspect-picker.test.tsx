@@ -4,6 +4,7 @@ import { ordersOfAspect } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AspectPicker, aspectOffer, type AspectMembers } from "./aspect-picker";
+import { ASPECT_STEP_WORDS } from "../../design-system/kit/words";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -106,7 +107,7 @@ describe("AspectPicker", () => {
     expect(orders).toHaveLength(0);
     expect(host!.querySelector(".aspect-picker__head h2")?.textContent).toBe("Your Aspect");
     expect(host!.querySelector(".aspect-picker__head p")?.textContent).toBe(
-      "Your Realm's Order of the Fox plays for Insight",
+      ASPECT_STEP_WORDS.realmsAspect("Order of the Fox", "Insight"),
     );
     expect(cards.map((card) => card.getAttribute("aria-pressed") === "true")).toEqual([false, false, false, true]);
     expect(cards.every((card) => card.disabled)).toBe(true);

@@ -62,6 +62,7 @@ import { setViewportWidth } from "../frame/test-viewport";
 import { SEASON_SPENDS_FRAGMENTS } from "../season";
 import { FragmentsPage } from "./fragments-page";
 import { fragmentsHref } from "./fragments-route";
+import { FRAGMENTS_PAGE_WORDS, SEASON_ERROR, WALLET_WORDS } from "../../ui/design-system/kit/words";
 
 const WALLET = "0x4a1";
 const WEI = 10n ** 18n;
@@ -156,7 +157,7 @@ it("offers the store's packs in dollars, the Ancient Seal's chosen, and pays its
   expect(page.textContent).not.toContain("ETH");
   await press(page, "Pay $10.00");
   expect(price).toHaveBeenCalledWith(GAME, 1_000);
-  expect(page.textContent).toContain("The treasury receives 2,750 LORDS");
+  expect(page.textContent).toContain(FRAGMENTS_PAGE_WORDS.treasuryReceives(2750));
   expect(page.textContent).not.toContain("Paid as");
   await settled(() => expect(wallet.transactions()).toHaveLength(1));
   expect(wallet.transactions()[0]).toEqual([
@@ -169,7 +170,7 @@ it("offers the store's packs in dollars, the Ancient Seal's chosen, and pays its
   await settled(() => expect(page.querySelector("[data-fragments-delivered]")).not.toBeNull());
   expect(pay).toHaveBeenCalledWith(QUOTE.id, "0xtx");
   expect(page.textContent).toContain("+1,000 Fragments");
-  await press(page, "Back to the shop");
+  await press(page, FRAGMENTS_PAGE_WORDS.backToShop);
   expect(page.querySelector("[data-where]")?.textContent).toBe("/g/0x52/7/map#shop");
 });
 
@@ -179,7 +180,7 @@ it("names the wallet whose balances it lists", async () => {
   const page = await mount();
   await press(page, "Pay $10.00");
   await settled(() => expect(page.querySelector("[data-pay-tokens]")).not.toBeNull());
-  expect(page.textContent).toContain("Pay from your wallet 0x4a1");
+  expect(page.textContent).toContain(FRAGMENTS_PAGE_WORDS.payFrom("0x4a1"));
   expect(page.querySelector("[data-pay-tokens] button")?.textContent).toContain("Holds 1,000,000");
   expect(page.textContent).not.toContain("You hold");
 });
@@ -192,7 +193,7 @@ it("says a price that expired before the payment was read, and offers the packs 
   const page = await mount();
   await press(page, "500 Fragments");
   await press(page, "Pay $5.00");
-  await settled(() => expect(page.textContent).toContain("The price expired. Choose again."));
+  await settled(() => expect(page.textContent).toContain(FRAGMENTS_PAGE_WORDS.refused.quote_expired));
   await press(page, "Get Fragments");
   expect(page.querySelector("[data-fragment-packs]")).not.toBeNull();
 });
@@ -202,7 +203,7 @@ it("says when a day's Fragments are bought already, and pays nothing", async () 
   vi.spyOn(identityClient, "priceFragments").mockRejectedValue(new IdentityRequestError(429, "daily_cap"));
   const page = await mount();
   await press(page, "Pay $10.00");
-  await settled(() => expect(page.textContent).toContain("That is more Fragments than one day allows."));
+  await settled(() => expect(page.textContent).toContain(FRAGMENTS_PAGE_WORDS.dailyCap));
   expect(wallet.transactions()).toEqual([]);
 });
 
@@ -239,7 +240,7 @@ it("offers to read the account's wallet again when its read failed, rather than 
   const retry = vi.fn();
   defaultWallet.read = { wallet: undefined, failed: true, retry };
   const page = await mount();
-  expect(page.textContent).toContain("Could not load your Realms wallet.");
+  expect(page.textContent).toContain(WALLET_WORDS.walletUnread);
   await press(page, "Try again");
   expect(retry).toHaveBeenCalledOnce();
 });
@@ -285,7 +286,7 @@ it("shows a retryable failure on /shop when the season directory fails instead o
   directoryGames.refetch = refetch;
   vi.spyOn(identityClient, "getSealCode").mockResolvedValue({ held: false });
   const page = await mount("/shop");
-  expect(page.textContent).toContain("Season unavailable.");
+  expect(page.textContent).toContain(SEASON_ERROR);
   expect(page.textContent).not.toContain("No live Frontier season right now");
   await press(page, "Try again");
   expect(refetch).toHaveBeenCalledOnce();
@@ -302,7 +303,7 @@ it.each([1440, 390])(
     expect(page.querySelector("[data-shop-closed]")).not.toBeNull();
     expect(page.textContent).toContain("Fragments shop closed");
     expect(page.textContent).toContain(
-      "Fragments purchases and spends are closed right now. You can still use an Ancient Seal code below.",
+      FRAGMENTS_PAGE_WORDS.closedLine,
     );
     expect(page.querySelector("[data-fragment-packs]")).toBeNull();
     expect(page.querySelector("[data-fragment-custom]")).toBeNull();

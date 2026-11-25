@@ -8,6 +8,7 @@ import { nativeQuestConstants } from "@bibliothecadao/eternum/game-client";
 
 import { QUEST_DOCK_CASES } from "./quest-dock-fixtures";
 import { QuestDockView, type QuestDockProps } from "./quest-dock-view";
+import { DAY_BANNER_WORDS } from "../../../design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -52,12 +53,12 @@ describe("the quest dock", () => {
 
   it("offers Collect again when a second reward waits", () => {
     draw(QUEST_DOCK_CASES["Second reward waits"]);
-    expect(button("Collect again")).toBeDefined();
+    expect(button(DAY_BANNER_WORDS.collectAgain)).toBeDefined();
   });
 
   it("says it is reading, and offers nothing, while the facts are not settled", () => {
     draw(QUEST_DOCK_CASES["Facts not settled"]);
-    expect(text()).toContain("Loading today's quest…");
+    expect(text()).toContain(DAY_BANNER_WORDS.reading);
     expect(button("Collect")).toBeUndefined();
   });
 
