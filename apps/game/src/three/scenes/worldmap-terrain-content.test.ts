@@ -134,7 +134,9 @@ describe("the ground a tile's facts put under what stands on it", () => {
     expect(groundHeightOf(facts(BiomeType.Ocean), false)).toBe(TERRAIN_WATER_LEVEL);
     expect(groundHeightOf(facts(BiomeType.DeepOcean), false)).toBe(TERRAIN_WATER_LEVEL);
     expect(groundHeightOf(facts(BiomeType.Ocean, { reclaimsLand: true }), false)).toBe(0);
-    expect(groundHeightOf(facts(BiomeType.Snow, { surfacePresentation: "ethereal" }), false)).toBe(BASALT_SUPPORT_HEIGHT);
+    expect(groundHeightOf(facts(BiomeType.Snow, { surfacePresentation: "ethereal" }), false)).toBe(
+      BASALT_SUPPORT_HEIGHT,
+    );
     expect(groundHeightOf(facts(BiomeType.Snow), true)).toBe(BASALT_SUPPORT_HEIGHT);
     expect(groundHeightOf(facts(undefined), true)).toBe(0);
   });

@@ -4363,7 +4363,7 @@ export default class WorldmapScene extends WarpTravel {
       deepZone,
       occupied: spire || structures.length > 0,
       reclaimsLand: structures.some((structure) => {
-        const category = this.structureFactsOf(structure.entityId)?.base.category;
+        const category = structure.entityId === null ? undefined : this.structureFactsOf(structure.entityId)?.base.category;
         return category !== undefined && reclaimsLandFromWater(category);
       }),
     };
