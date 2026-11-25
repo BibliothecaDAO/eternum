@@ -137,5 +137,276 @@
       }
     ],
     "seconds": 7
+  },
+  {
+    "name": "frontier/hud",
+    "frame": "desktop",
+    "live": true,
+    "setup": [
+      {
+        "open": "/"
+      },
+      {
+        "clickText": "Resume"
+      },
+      {
+        "waitFor": "[data-place-pill]",
+        "ms": 60000
+      },
+      {
+        "wait": 4000
+      }
+    ]
+  },
+  {
+    "name": "frontier/hud-phone",
+    "frame": "phone",
+    "live": true,
+    "setup": [
+      {
+        "open": "/"
+      },
+      {
+        "clickText": "Resume"
+      },
+      {
+        "waitFor": "[data-place-pill]",
+        "ms": 60000
+      },
+      {
+        "wait": 4000
+      }
+    ]
+  },
+  {
+    "name": "frontier/places",
+    "frame": "phone",
+    "live": true,
+    "setup": [
+      {
+        "open": "/"
+      },
+      {
+        "clickText": "Resume"
+      },
+      {
+        "waitFor": "[data-place-pill]",
+        "ms": 60000
+      },
+      {
+        "wait": 3000
+      },
+      {
+        "click": "[data-place-pill]"
+      },
+      {
+        "wait": 800
+      }
+    ]
+  },
+  {
+    "name": "frontier/build",
+    "frame": "desktop",
+    "live": true,
+    "setup": [
+      {
+        "open": "/"
+      },
+      {
+        "clickText": "Resume"
+      },
+      {
+        "waitFor": "[data-place-pill]",
+        "ms": 60000
+      },
+      {
+        "click": "[data-place-pill]"
+      },
+      {
+        "click": "[data-surface-deep-switch] button[aria-label=\"Realm\"]"
+      },
+      {
+        "wait": 3500
+      }
+    ]
+  },
+  {
+    "name": "frontier/deploy",
+    "frame": "desktop",
+    "live": true,
+    "setup": [
+      {
+        "open": "/"
+      },
+      {
+        "clickText": "Resume"
+      },
+      {
+        "waitFor": "[data-place-pill]",
+        "ms": 60000
+      },
+      {
+        "click": "aside[aria-label=\"Realm\"] button[aria-label=\"Deploy\"]"
+      },
+      {
+        "wait": 2000
+      }
+    ]
+  },
+  {
+    "name": "frontier/army",
+    "frame": "desktop",
+    "live": true,
+    "setup": [
+      {
+        "open": "/"
+      },
+      {
+        "clickText": "Resume"
+      },
+      {
+        "waitFor": "[data-place-pill]",
+        "ms": 60000
+      },
+      {
+        "click": "aside[aria-label=\"Realm\"] button[aria-label=\"Army 1\"]"
+      },
+      {
+        "wait": 2000
+      }
+    ]
+  },
+  {
+    "name": "frontier/fight-card",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/game?scenario=camp"
+      },
+      {
+        "waitFor": "aside[aria-label=\"Realm\"] button[aria-label*=\"Army\"]",
+        "ms": 60000
+      },
+      {
+        "wait": 3500
+      },
+      {
+        "click": "aside[aria-label=\"Realm\"] button[aria-label*=\"Army\"]"
+      },
+      {
+        "wait": 2500
+      }
+    ]
+  },
+  {
+    "name": "frontier/oath-pick",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/game?scenario=oath-pick"
+      },
+      {
+        "waitFor": "aside[aria-label=\"Realm\"] button[aria-label*=\"Army\"]",
+        "ms": 60000
+      },
+      {
+        "wait": 3500
+      },
+      {
+        "click": "aside[aria-label=\"Realm\"] button[aria-label*=\"Army\"]"
+      },
+      {
+        "waitFor": "[data-oath-pick]",
+        "ms": 15000
+      }
+    ]
+  },
+  {
+    "name": "frontier/research",
+    "frame": "desktop",
+    "live": true,
+    "setup": [
+      {
+        "open": "/"
+      },
+      {
+        "clickText": "Resume"
+      },
+      {
+        "waitFor": "[data-place-pill]",
+        "ms": 60000
+      },
+      {
+        "click": "nav[aria-label=\"Places\"] button[aria-label*=\"Research\"]"
+      },
+      {
+        "wait": 1500
+      }
+    ]
+  },
+  {
+    "name": "frontier/season",
+    "frame": "desktop",
+    "live": true,
+    "setup": [
+      {
+        "open": "/"
+      },
+      {
+        "clickText": "Resume"
+      },
+      {
+        "waitFor": "[data-place-pill]",
+        "ms": 60000
+      },
+      {
+        "click": "nav[aria-label=\"Places\"] button[aria-label*=\"Season\"]"
+      },
+      {
+        "wait": 1500
+      }
+    ]
+  },
+  {
+    "name": "frontier/today",
+    "frame": "desktop",
+    "live": true,
+    "setup": [
+      {
+        "open": "/"
+      },
+      {
+        "clickText": "Resume"
+      },
+      {
+        "waitFor": "[data-place-pill]",
+        "ms": 60000
+      },
+      {
+        "click": "header[aria-label=\"Game controls\"] button[aria-label=\"Today\"]"
+      },
+      {
+        "wait": 1500
+      }
+    ]
+  },
+  {
+    "name": "frontier/day-recap",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/day-end?case=later&panel=0&capture=1"
+      },
+      {
+        "until": "document.querySelector('[data-day-end-lab][data-ready=\"true\"]')",
+        "ms": 60000
+      },
+      {
+        "eval": "window.__dayEnd.endTheDay('later')"
+      },
+      {
+        "wait": 2500
+      }
+    ]
   }
 ]
