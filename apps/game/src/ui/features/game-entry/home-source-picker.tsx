@@ -172,7 +172,7 @@ export function HomeSourcePicker({
   );
 }
 
-export type Choice = {
+type Choice = {
   kind: "realm";
   realmId: number;
   taken?: boolean;
@@ -183,7 +183,7 @@ export type Choice = {
   wonder: string | null;
 };
 
-export const realmChoice = (held: HeldRealm): Choice => ({ kind: "realm", ...held, ...canonicalRealm(held.realmId) });
+const realmChoice = (held: HeldRealm): Choice => ({ kind: "realm", ...held, ...canonicalRealm(held.realmId) });
 const isTaken = (choice: Choice) => choice.taken === true;
 const valueOf = (choice: Choice) => String(choice.realmId);
 
@@ -501,7 +501,7 @@ const matchesFilter = (choice: Choice, aspectFilter: AspectId | null, query: str
   return choice.name.toLowerCase().includes(asked) || String(choice.realmId).startsWith(asked);
 };
 
-export function ChoiceButton({
+function ChoiceButton({
   choice,
   picked,
   onPick,

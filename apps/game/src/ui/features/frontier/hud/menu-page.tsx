@@ -3,11 +3,10 @@ import "./phone-hud.css";
 import { useTablet } from "@/shell/frame/layout";
 
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudPage, HudRow } from "@/ui/design-system/kit/hud-elements";
+import { HudPage } from "@/ui/design-system/kit/hud-elements";
 import { EXIT, MENU, SETTINGS, SHOP_WORDS, TODAY, unreadFeedEvents } from "@/ui/design-system/kit/words";
-import { HowToPlayRow } from "@/ui/modules/how-to-play";
+import { HowToPlayTile } from "@/ui/modules/how-to-play";
 import { formatAmount } from "@bibliothecadao/types";
-import type { ReactNode } from "react";
 
 import { HUD_PLACES } from "./hud-places";
 
@@ -35,38 +34,26 @@ export const MenuPage = ({
   const tablet = useTablet();
   return (
     <HudPage label={MENU} icon="menu" onClose={onClose}>
-      <nav className="menu-nav">
+      <nav className="menu-tiles">
         {!tablet && (
-          <MenuRow
+          <MenuTile
             icon={FEED.icon}
             label={FEED.label}
-            badge={
-              events > 0 ? (
-                <span className="text-hud-body tabular-nums" aria-label={unreadFeedEvents(events)}>
-                  {formatAmount(events)}
-                </span>
-              ) : undefined
-            }
+            badge={events > 0 ? { count: formatAmount(events), label: unreadFeedEvents(events) } : undefined}
             onClick={onFeed}
           />
         )}
-        <MenuRow icon="clock" label={TODAY} onClick={onToday} />
-        {onShop && <MenuRow icon="fragment" label={SHOP_WORDS.title} onClick={onShop} />}
-        <MenuRow icon="settings" label={SETTINGS} onClick={onSettings} />
-        <div className="menu-nav__wide">
-          <HowToPlayRow guide={guide} />
-        </div>
+        <MenuTile icon="calendar" label={TODAY} onClick={onToday} />
+        {onShop && <MenuTile icon="fragment" label={SHOP_WORDS.title} onClick={onShop} />}
+        <MenuTile icon="settings" label={SETTINGS} onClick={onSettings} />
+        <HowToPlayTile guide={guide} className="menu-tile" />
+        <MenuTile icon="exit" label={EXIT} onClick={onExit} />
       </nav>
-      <div className="grid">
-        <HudButton kind="secondary" icon="exit" onClick={onExit}>
-          {EXIT}
-        </HudButton>
-      </div>
     </HudPage>
   );
 };
 
-const MenuRow = ({
+const MenuTile = ({
   icon,
   label,
   badge,
@@ -74,8 +61,16 @@ const MenuRow = ({
 }: {
   icon: IconMeaning;
   label: string;
-  badge?: ReactNode;
+  badge?: { count: string; label: string };
   onClick: () => void;
 }) => (
-  <HudRow lead={<SemanticIcon name={icon} size={22} />} label={label} title={label} trail={badge} onClick={onClick} />
+  <button type="button" className="menu-tile" aria-label={label} onClick={onClick}>
+    <SemanticIcon name={icon} size={40} />
+    <span className="menu-tile__label">{label}</span>
+    {badge && (
+      <span className="menu-tile__badge" aria-label={badge.label}>
+        {badge.count}
+      </span>
+    )}
+  </button>
 );

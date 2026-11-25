@@ -114,7 +114,26 @@ test("Realms home shows Games card without quick-link panels, and Frontier omits
   const frontierHtml = readFileSync(join(dist, "frontier", "index.html"), "utf8");
   assert.equal(frontierHtml.includes("docs-frontier-landing-nav"), false);
   assert.equal(frontierHtml.includes("docs-home-quick"), false);
-  assert.ok(frontierHtml.includes(`href="${sources.appAddress}"`));
+  const expectedPlayOrigin = sources.dashboardOrigins.identityOrigin;
+  const expectedPlayHost = new URL(expectedPlayOrigin).host;
+  assert.ok(
+    frontierHtml.includes(`href="${expectedPlayOrigin}"`),
+    `expected ${expectedPlayOrigin} play link on /frontier`,
+  );
+  assert.ok(frontierHtml.includes(`>${expectedPlayHost}<`), `expected ${expectedPlayHost} play link text on /frontier`);
+  if (sources.devBuild) {
+    const prodHost = new URL(sources.productionPlayOrigin).host;
+    assert.equal(
+      frontierHtml.includes(sources.productionPlayOrigin),
+      false,
+      `dev /frontier must not link to production play origin ${sources.productionPlayOrigin}`,
+    );
+    assert.equal(
+      frontierHtml.includes(prodHost),
+      false,
+      `dev /frontier must not name production play host ${prodHost}`,
+    );
+  }
 });
 
 const parseCssVars = (css) => {
