@@ -50,9 +50,8 @@
   white-space: nowrap;
 }
 [data-build-sheet] .ui-card[data-size="sm"] {
-  min-height: 0;
-  height: var(--build-tile);
-  container-type: size;
+  min-height: var(--build-tile);
+  height: auto;
   border-radius: 12px;
   background: var(--hud-well);
 }
@@ -62,10 +61,10 @@
   padding: 4px 3px;
 }
 [data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture {
-  height: 40px;
+  height: 24px;
 }
 [data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture img {
-  max-height: 40px;
+  max-height: 24px;
   width: auto;
 }
 [data-build-sheet] .ui-card[data-size="sm"] .ui-card__foot {
@@ -78,19 +77,15 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   font-size: min(var(--hud-text-label), 12cqi);
-  line-height: 15px;
+  line-height: 13px;
   white-space: normal;
   text-wrap: balance;
 }
 [data-build-sheet] .ui-card[data-size="sm"] .ui-card__detail {
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-label);
-  line-height: 15px;
+  line-height: 13px;
   font-weight: 700;
-}
-.build-grid .ui-card[data-locked] .ui-card__picture,
-.build-grid .ui-card[data-locked] .ui-card__foot {
-  opacity: 0.45;
 }
 [data-build-sheet] .ui-card__corner {
   top: 5px;
@@ -133,6 +128,17 @@
   gap: 2px;
   white-space: nowrap;
 }
+.build-tile-price .ui-price {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 6px;
+  font-size: var(--hud-text-label);
+  line-height: inherit;
+}
+.build-tile-price .ui-price img {
+  width: 13px;
+  height: 13px;
+}
 .build-chosen {
   display: flex;
   min-width: 0;
@@ -159,17 +165,6 @@
 .build-does {
   color: var(--hud-good);
 }
-@container (max-height: 90px) {
-  [data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture,
-  [data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture img {
-    height: 22px;
-    max-height: 22px;
-  }
-  [data-build-sheet] .ui-card[data-size="sm"] .ui-card__title,
-  [data-build-sheet] .ui-card[data-size="sm"] .ui-card__detail {
-    line-height: 13px;
-  }
-}
 @media (min-width: 1024px) and (orientation: landscape), (min-width: 1440px) {
   .build-groups {
     grid-template-columns: minmax(0, 1fr);
@@ -182,5 +177,14 @@
     --build-tile: 100px;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
+  }
+  [data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture,
+  [data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture img {
+    height: 40px;
+    max-height: 40px;
+  }
+  [data-build-sheet] .ui-card[data-size="sm"] .ui-card__title,
+  [data-build-sheet] .ui-card[data-size="sm"] .ui-card__detail {
+    line-height: 15px;
   }
 }
