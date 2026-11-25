@@ -55,7 +55,6 @@ type PageFrameProps = {
  */
 export const PageFrame = (props: PageFrameProps) => {
   const layout = useLayout();
-  // The page's own notice first (a refusal it caused); else the app's (offline, an update).
   const appNotice = useAppNotice();
   const framed = { ...props, notice: props.notice ?? appNotice };
   return (
