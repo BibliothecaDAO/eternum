@@ -33,5 +33,8 @@ it.each(Object.keys(LAB_SCENARIOS))("builds the %s lab game", (name) => {
   if (readExpeditionRules(chain, 1))
     for (const [, army] of chain.entries("ExplorerTroops"))
       if (army.troops.count > 0n)
-        expect(chain.get("ArmyDay", { game_id: 1, explorer_id: army.explorer_id }), `army ${army.explorer_id}`).toBeDefined();
+        expect(
+          chain.get("ArmyDay", { game_id: 1, explorer_id: army.explorer_id }),
+          `army ${army.explorer_id}`,
+        ).toBeDefined();
 });
