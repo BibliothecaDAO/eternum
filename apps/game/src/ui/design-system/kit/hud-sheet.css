@@ -1991,6 +1991,20 @@ button.ui-relic:focus-visible {
   border-radius: inherit;
   background: rgb(var(--hud-accent));
 }
+.ui-meter[data-segmented] {
+  position: relative;
+}
+.ui-meter[data-segmented]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 calc(var(--segment) - 1.5px),
+    rgb(var(--hud-dark)) calc(var(--segment) - 1.5px) var(--segment)
+  );
+  pointer-events: none;
+}
 .ui-meter[data-tone="good"] > i {
   background: var(--hud-good);
 }

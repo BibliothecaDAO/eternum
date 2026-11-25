@@ -2207,23 +2207,33 @@ export const HudStamina = ({
   stamina: StaminaBar | undefined;
   tone?: Tone;
   filling?: boolean;
-}) => (
-  <span
-    role="meter"
-    aria-label={STAMINA}
-    aria-valuenow={stamina?.current}
-    aria-valuemin={0}
-    aria-valuemax={stamina?.max}
-    className="ui-meter block w-full"
-    data-tone={tone}
-    data-filling={filling || undefined}
-  >
-    <i style={{ width: `${staminaShare(stamina) * 100}%` }} />
-  </span>
-);
+}) => {
+  const segment = staminaSegment(stamina);
+  return (
+    <span
+      role="meter"
+      aria-label={STAMINA}
+      aria-valuenow={stamina?.current}
+      aria-valuemin={0}
+      aria-valuemax={stamina?.max}
+      className="ui-meter block w-full"
+      data-tone={tone}
+      data-filling={filling || undefined}
+      data-segmented={segment ? "" : undefined}
+      style={segment ? ({ "--segment": segment } as React.CSSProperties) : undefined}
+    >
+      <i style={{ width: `${staminaShare(stamina) * 100}%` }} />
+    </span>
+  );
+};
+
+const STAMINA_SEGMENT = 30;
 
 const staminaShare = (stamina: StaminaBar | undefined): number =>
   !stamina || stamina.max <= 0 ? 0 : Math.min(1, Math.max(0, stamina.current / stamina.max));
+
+const staminaSegment = (stamina: StaminaBar | undefined): string | undefined =>
+  stamina && stamina.max > STAMINA_SEGMENT ? `${(STAMINA_SEGMENT / stamina.max) * 100}%` : undefined;
 
 /** What a relic works on: its chip takes that kind's colour. */
 type RelicKind = "stamina" | "damage" | "damage-reduction" | "exploration" | "production";
