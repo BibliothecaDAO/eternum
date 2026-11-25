@@ -11,7 +11,7 @@ import { AppFooter } from "./footer";
 import { useLayout } from "./layout";
 import { Lockup } from "./lockup";
 import { DesktopBar, TabBar, TopBarEnd, useIsPlace } from "./tabs";
-import { AppChatPane } from "../chat/app-chat";
+import { AppChatDock } from "../chat/app-chat";
 
 type PageFrameProps = {
   /**
@@ -147,7 +147,7 @@ const DesktopFrame = ({
         {foot ? <div data-band="foot">{foot}</div> : null}
         <AppFooter />
       </div>
-      <AppChatPane />
+      <AppChatDock />
     </div>
   );
 };

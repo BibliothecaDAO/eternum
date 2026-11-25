@@ -406,43 +406,11 @@ const DEFAULT_EXTRA_ARMY_SKINS: CosmeticRegistryEntry[] = [
   },
 ];
 
-const DEFAULT_EXTRA_STRUCTURE_SKINS: CosmeticRegistryEntry[] = [
-  {
-    id: "structure:realm:castle-s1-lvl2",
-    category: "structure-skin",
-    appliesTo: [formatStructureCosmeticTarget(StructureType.Realm, 2)],
-    assetPaths: [lowResPath("0x3040101")], // Legacy Keep
-    metadata: {
-      lod: {
-        high: lowResPath("0x3040101"),
-        low: lowResPath("0x3040101"),
-      },
-      trait: CosmeticTraitType.RealmSkin,
-    },
-    ownershipKeys: ["0x3040101"],
-  },
-  {
-    id: "structure:realm:castle-winter-l3",
-    category: "structure-skin",
-    appliesTo: [formatStructureCosmeticTarget(StructureType.Realm, 3)],
-    assetPaths: [lowResPath("0x3030501")], // Winterhold
-    metadata: {
-      lod: {
-        high: lowResPath("0x3030501"),
-        low: lowResPath("0x3030501"),
-      },
-      trait: CosmeticTraitType.RealmSkin,
-    },
-    ownershipKeys: ["0x3030501"],
-  },
-];
-
 const DEFAULT_ENTRIES: CosmeticRegistryEntry[] = [
   ...buildDefaultArmyEntries(),
   ...buildDefaultStructureEntries(),
   ...DEFAULT_ATTACHMENT_ENTRIES,
   ...DEFAULT_EXTRA_ARMY_SKINS,
-  ...DEFAULT_EXTRA_STRUCTURE_SKINS,
 ];
 
 export function seedDefaultCosmetics(options?: { force?: boolean }) {

@@ -31,6 +31,7 @@ import { setViewportWidth } from "../frame/test-viewport";
 import { SEASON_SPENDS_FRAGMENTS } from "../season";
 import { ProfilePage, SettingsRedirect } from "./profile-pages";
 import {
+  COSMETICS_WORDS,
   INVITED_FRIENDS_WORDS,
   INVITE_WORDS,
   PROFILE_WORDS,
@@ -97,14 +98,30 @@ describe.each([1440, 390])("You, signed in, at %i px", (width) => {
   it("swaps Overview, Referrals, Wallet and Settings inline on /profile and syncs the URL hash", async () => {
     const page = await open("/profile", width);
     const tabs = [...page.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
-    expect(tabs).toHaveLength(4);
+    expect(tabs).toHaveLength(width >= 1024 ? 4 : 5);
     expect(page.querySelector("[data-you-tab]")?.getAttribute("data-you-tab")).toBe("overview");
-    await act(async () => tabs[3]!.click());
+    await act(async () => tabs.at(-1)!.click());
     expect(page.querySelector("[data-you-tab]")?.getAttribute("data-you-tab")).toBe("settings");
     expect(currentLocation).toMatchObject({ pathname: "/profile", hash: "#settings" });
     expect(page.textContent).toContain(PROFILE_WORDS.notifications);
     expect(page.textContent).toContain("Sign out");
   });
+});
+
+it("opens Cosmetics beside Realms on a phone, from its tab or from the card under Your Realms", async () => {
+  const page = await open("/profile", 390);
+  const tabs = [...page.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+  expect(tabs.slice(0, 2).map((tab) => tab.textContent)).toEqual([PROFILE_WORDS.overviewShort, COSMETICS_WORDS.title]);
+  const shortcut = page.querySelector("[data-cosmetics-shortcut]")!;
+  await act(async () => shortcut.querySelector("button")!.click());
+  expect(currentLocation).toMatchObject({ pathname: "/profile", hash: "#cosmetics" });
+  expect(page.querySelector("[data-you-tab]")?.getAttribute("data-you-tab")).toBe("cosmetics");
+  expect(page.querySelector("[data-cosmetics]")).not.toBeNull();
+});
+
+it("sends a desktop's You Cosmetics to the Cosmetics place", async () => {
+  await open("/profile#cosmetics", 1440);
+  expect(currentLocation.pathname).toBe("/cosmetics");
 });
 
 it("keeps the desktop's games plate with no finished game, saying they will show there", async () => {

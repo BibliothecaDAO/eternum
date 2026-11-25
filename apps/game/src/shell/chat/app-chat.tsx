@@ -8,11 +8,13 @@ import { useChatRevealed } from "@/ui/features/social/realtime-chat/hooks/use-ch
 import { CHAT_PATH } from "@bibliothecadao/notifications";
 import { layoutNow } from "../frame/layout";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { AppButton, AppIconButton, AppPanel } from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppPanel } from "@/ui/design-system/kit/app-elements";
 import { CHAT_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { RealtimeChatShell, useRealtimeChatInitializer, useRealtimeChatSelector } from "@/ui/features/social";
 import { useSeenRoom } from "@/ui/features/social/realtime-chat/hooks/use-seen-room";
 import { lobbyRoom } from "@/ui/features/social/realtime-chat/model/chat-rooms";
+import { ChatDock, useChatStrip } from "@/ui/features/social/realtime-chat/ui/chat-dock";
+import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
 import { useRequestSignIn } from "../sign-in/connect";
 import {
@@ -84,43 +86,35 @@ const AppChatView = ({ className }: { className?: string }) => {
   );
 };
 
-/**
- * Chat as a page (/chat: the phone's Chat tab, and on a desktop the bar's Chat lit there): it fills the page between
- * the top and the tabs, and no pane stands over it.
- */
 export const AppChatPage = () => {
   useChatPage();
   return <AppChatView className="h-full" />;
 };
 
-/**
- * Chat over a desktop page (the bar's Chat), at the page's right, as in a game: its rooms and Messages, closed by the
- * cross in its head or Escape. A page that draws the chat itself (Chat's, a lobby's) has no pane.
- */
-export const AppChatPane = () => {
-  const { open, toggle } = useAppChatPane();
+export const AppChatDock = () => {
+  const { session } = useIdentitySession();
+  const requestSignIn = useRequestSignIn();
+  const { open, setOpen } = useAppChatPane();
   const onPage = useChatOnPage();
-  useEffect(() => {
-    if (!open) return;
-    const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape") useAppChatPlace.setState({ paneOpen: false });
-    };
-    window.addEventListener("keydown", close);
-    return () => window.removeEventListener("keydown", close);
-  }, [open]);
-  if (!open || onPage) return null;
+  const rooms = useAppChatRooms();
+  const zoneId = useRealtimeChatSelector((state) =>
+    rooms.some((room) => room.zoneId === state.activeZoneId) ? state.activeZoneId! : GLOBAL_CHAT_CHANNEL_ID,
+  );
+  const { stripLine, unread } = useChatStrip({ zoneId, signedIn: session !== null, readPlace: (place) => place.name });
+  if (onPage) return null;
   return (
-    <AppPanel
-      icon="chat"
-      title={CHAT_WORDS.chat}
-      label={CHAT_WORDS.chat}
-      cue={<AppIconButton icon="close" label={CHAT_WORDS.closeChat} onClick={toggle} />}
-      flush
-      fill
-      className="fixed bottom-4 right-4 z-40 h-[min(40rem,calc(100dvh-7rem))] w-[26rem]"
-    >
-      <AppChatView className="flex-1" />
-    </AppPanel>
+    <div data-band="dock" className="fixed bottom-4 right-4 z-40 w-hud-frontier-rail">
+      <ChatDock
+        open={open}
+        onOpenChange={setOpen}
+        signedIn={session !== null}
+        onSignIn={() => requestSignIn()}
+        stripLine={stripLine}
+        unread={unread}
+      >
+        <AppChatView className="flex-1" />
+      </ChatDock>
+    </div>
   );
 };
 
