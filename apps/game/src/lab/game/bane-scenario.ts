@@ -145,9 +145,17 @@ export function withWorldBane(scenario: LabScenario, kind: number): LabScenario 
     ...(store.get("QuestRules", { game_id: 1 }) ? [] : [labQuestRulesFact("0xb30")]),
     ...(store.get("QuestProgress", { game_id: 1, home: 7, day })
       ? []
-      : [{ model: "QuestProgress", key: "0xb31", value: { game_id: 1, home: 7, day, progress: 0, completed_level: 0 } }]),
+      : [
+          {
+            model: "QuestProgress",
+            key: "0xb31",
+            value: { game_id: 1, home: 7, day, progress: 0, completed_level: 0 },
+          },
+        ]),
     { model: "HomeAspect", key: keyOf("HomeAspect", membership, "0xb32"), value: { game_id: 1, home: 7, aspect } },
-    ...(day > 0 ? [{ model: "AspectActivity", key: "0xb33", value: { game_id: 1, aspect, day: day - 1, active: 5 } }] : []),
+    ...(day > 0
+      ? [{ model: "AspectActivity", key: "0xb33", value: { game_id: 1, aspect, day: day - 1, active: 5 } }]
+      : []),
     {
       model: "BaneRules",
       key: keyOf("BaneRules", store.get("BaneRules", { game_id: 1 }), "0xb34"),

@@ -125,7 +125,12 @@ export const useNamedTips = (): void => {
     const show = ({ anchor, line, bane }: Named, held: boolean) => {
       window.clearTimeout(linger);
       shown = anchor;
-      setTooltip({ content: <NamedTip line={line} bane={bane} />, anchorElement: anchor, position: sideFor(anchor), held });
+      setTooltip({
+        content: <NamedTip line={line} bane={bane} />,
+        anchorElement: anchor,
+        position: sideFor(anchor),
+        held,
+      });
     };
     const hide = () => {
       window.clearTimeout(linger);

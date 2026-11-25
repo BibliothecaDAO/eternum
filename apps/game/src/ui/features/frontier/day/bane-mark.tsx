@@ -8,9 +8,13 @@ import { type BaneFigure as Figure, useBaneToday } from "./bane-face";
 
 const BaneDay = createContext<ReturnType<typeof useBaneToday>>(null);
 
-export const BaneDayProvider = ({ realm, children }: { realm: NativeRows["Structure"] | null; children: ReactNode }) => (
-  <BaneDay.Provider value={useBaneToday(realm)}>{children}</BaneDay.Provider>
-);
+export const BaneDayProvider = ({
+  realm,
+  children,
+}: {
+  realm: NativeRows["Structure"] | null;
+  children: ReactNode;
+}) => <BaneDay.Provider value={useBaneToday(realm)}>{children}</BaneDay.Provider>;
 
 const useBaneCut = (figure: Figure) => {
   const today = useContext(BaneDay);
