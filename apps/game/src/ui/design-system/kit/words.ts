@@ -882,7 +882,7 @@ export const DEEP_WORDS = {
   share: (percent: number) => `${percent}% of each tick`,
   attack: "Attack",
   take: "Take",
-  join: "Join garrison",
+  join: "Join",
   pickArmy: `Select an army in the ${DEEP}`,
   guarding: "Already guarding",
   full: "All 4 slots are taken",
