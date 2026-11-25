@@ -614,7 +614,7 @@ twice through the card, recording each command, army, guard and last-target fact
 and removal. The die, Charge and Battle skill no longer modify either forecast or settlement.
 
 Oath capacity is researched at Barracks, Range and Scouts' Lodge, with two free slots and three purchases per troop.
-Deploy shows the current troop's capacity; an army's panel keeps its capacity from creation.
+An army deploys with no Oath, so Deploy shows none; an army's panel shows the capacity it keeps from creation.
 `/lab/game?scenario=oath-slots` and `lab-oath-slots` buy the third Knight slot through Research, check the exact price
 and deploy an army with three slots on desktop and phone. These are lab proofs; native tests cover immutable army
 capacity.

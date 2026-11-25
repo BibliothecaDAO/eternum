@@ -68,6 +68,7 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
     () => (realmId === null ? [] : liveHomeArmies(facts.store, realmId, configManager.getActiveGameId(), timestamp)),
     [realmId, facts, timestamp],
   );
+  const names = armyNames(armies);
   return armies.map((army, index) => {
     const explorerId = safeInteger(army.explorer_id);
     const { stamina, secondsToFull } = armyBar(setup.store, army, timestamp);
@@ -76,7 +77,7 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
       explorerId,
       number,
       troopsFact: army.troops,
-      label: armyName(army.troops.category, troopCount(army.troops)),
+      label: names[index],
       art: armyArt(army.troops),
       stamina,
       secondsToFull,
@@ -119,9 +120,19 @@ export const armyArt = troopMeaning;
  * An army as every line outside the dock names it (the day log): by the same name as its card. An army no longer on
  * the map has no number left to read, and is "Army".
  */
-export const armyLabel = (store: NativeFactStore, explorerId: number): string => {
+export const armyLabel = (store: NativeFactStore, explorerId: number, timestamp: number): string => {
   const army = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
-  return army ? armyName(army.troops.category, troopCount(army.troops)) : ARMY;
+  if (!army) return ARMY;
+  const home = liveHomeArmies(store, safeInteger(army.owner), army.game_id, timestamp);
+  const index = home.findIndex((each) => each.explorer_id === army.explorer_id);
+  return index < 0 ? armyName(army.troops.category, troopCount(army.troops)) : armyNames(home)[index];
+};
+
+const armyNames = (armies: readonly NativeRows["ExplorerTroops"][]): string[] => {
+  const names = armies.map((army) => armyName(army.troops.category, troopCount(army.troops)));
+  return names.map((name, index) =>
+    names.indexOf(name) === names.lastIndexOf(name) ? name : `${name} · ${ARMY} ${armyNumber(armies[index]) ?? index + 1}`,
+  );
 };
 
 const troopCount = (troops: NativeRows["ExplorerTroops"]["troops"]): number =>

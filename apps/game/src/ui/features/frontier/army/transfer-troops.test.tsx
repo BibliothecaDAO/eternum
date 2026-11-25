@@ -340,6 +340,18 @@ it("starts the amount again from the armies' new troops when they change while i
   );
 });
 
+it("tells two armies of the same troops apart by their slot", () => {
+  const store = twoArmies();
+  const now = (id: number) => store.require("ExplorerTroops", { game_id: 1, explorer_id: id });
+  const wire = (value: unknown) =>
+    JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
+  store.applyFacts([
+    { model: "ExplorerTroops", key: "0x74", value: wire({ ...now(201), troops: { ...now(201).troops, count: 300n * PRECISION } }) },
+  ] as never);
+  render(store);
+  expect(sides().map(([name]) => name)).toEqual(["300 Knights · Army 1", "300 Knights · Army 2"]);
+});
+
 it.each([2, 3, 4])(
   "keeps the tapped army and its Logistics rank %s after confirming a stronger source is lost",
   async (tappedLogistics) => {

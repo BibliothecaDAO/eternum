@@ -123,7 +123,7 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
           ? readDeepSiteFight(setup.store, site, { army: selected.army, timestamp: now })
           : undefined
       }
-      attackerName={userId !== null ? armyLabel(setup.store, userId) : undefined}
+      attackerName={userId !== null ? armyLabel(setup.store, userId, now) : undefined}
       pickBase={readPickEffectBase(setup.store, game_id)}
       order={order}
       onClose={onClose}
