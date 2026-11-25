@@ -16,10 +16,6 @@ pnpm --dir apps/game optimize:outposts /absolute/external/build/standard.glb /ab
 ```
 
 The first command also retains the derived editable `.blend` and triangle summary beside its raw export. Review the
-compressed result before copying it to `public/models/outposts/cleared-standard.glb`. The production catalog and lab use
-the same delivery, settlement loader and ownership material. The cleared site selects this model from its category’s
-catalog; its original standing model remains for uncleared sites.
-
-The two-site lab comparison uses the world renderer, terrain and camera profile. The selected standard uses the
-production receipt component over native fixture facts. Exact credits live in `ExpeditionSite.clear`; its coordinate
-retains the marker after occupancy is removed.
+compressed result before copying it to `public/models/outposts/cleared-standard.glb`. It stands only beside a supply
+post, as part of the post's model (`SUPPLY_POST_STANDARD_MODEL_PATH` in the camp catalog), with the same delivery,
+settlement loader and ownership material. A cleared site without a post shows no model.

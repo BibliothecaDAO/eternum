@@ -2,7 +2,7 @@ import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 import { type LabCommand, type LabFact, type LabScenario, wire } from "./lab-chain";
-import { armyProgress, besideOnOpenLand, spireScenario } from "./spire-scenario";
+import { armyDay, armyProgress, besideOnOpenLand, spireScenario } from "./spire-scenario";
 
 /** The realm's second army, beside its first. */
 const MERGE_ARMY = 202;
@@ -31,14 +31,7 @@ export const mergeScenario = (progressed: Progressed) => (): LabScenario => {
   const first = store.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
   store.applyFacts([
     raisedArmyLimit(store),
-    {
-      model: "ArmyDay",
-      key: "0xad302",
-      value: wire({
-        ...store.require("ArmyDay", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) }),
-        explorer_id: MERGE_ARMY,
-      }),
-    },
+    armyDay(store, MERGE_ARMY),
     {
       model: "ExplorerTroops",
       key: "0x1ab90",
