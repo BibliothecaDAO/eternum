@@ -2062,7 +2062,6 @@ export const HudCheck = ({
   </button>
 );
 
-/** One of a few choices, each a quiet button, the chosen one pressed. */
 export const HudChoice = <K extends string>({
   label,
   value,
