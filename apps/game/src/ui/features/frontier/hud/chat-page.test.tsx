@@ -51,16 +51,13 @@ const page = (signedIn: boolean, onClose = vi.fn(), onSignIn = vi.fn()) => {
   return { frame, head: frame.querySelector<HTMLElement>(".ui-frame__head")! };
 };
 
-it("shows the Chat header with who is online and places the room tabs cleanly above the history and field", () => {
+it("shows the Chat header with its room tabs and who is online, the history and field under it", () => {
   const onClose = vi.fn();
   const { frame, head } = page(true, onClose);
   expect(head.querySelector(".ui-panel__title")!.textContent).toBe("Chat");
   expect(head.querySelector(".ui-panel__icon")).not.toBeNull();
   expect(head.querySelector(".ui-panel__cue")!.textContent).toBe("2 online");
-  expect([...frame.querySelectorAll('.ui-frame__body [role="tab"]')].map((tab) => tab.textContent)).toEqual([
-    "Global",
-    "Messages",
-  ]);
+  expect([...head.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent)).toEqual(["Global", "Messages"]);
   expect(frame.querySelector(".ui-frame__body input[aria-label='Message Global']")).not.toBeNull();
   act(() => head.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
   expect(onClose).toHaveBeenCalledOnce();

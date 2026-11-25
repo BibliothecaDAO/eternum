@@ -31,7 +31,9 @@ vi.mock("@bibliothecadao/types", async (importOriginal) => ({
   GLOBAL_CHAT_CHANNEL_ID: "global",
 }));
 vi.mock("@/ui/features/social", () => ({
-  RealtimeChatShell: () => <input aria-label="Message" />,
+  RealtimeChatBody: () => <input aria-label="Message" />,
+  RealtimeChatTabs: () => null,
+  RealtimeChatOnline: () => null,
   GameChatMap: ({ children }: { children: ReactNode }) => children,
   useRealtimeChatInitializer: () => {},
   useRealtimeChatSelector: (select: (state: unknown) => unknown) =>

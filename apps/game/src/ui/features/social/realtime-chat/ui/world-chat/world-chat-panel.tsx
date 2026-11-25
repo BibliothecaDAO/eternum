@@ -45,10 +45,6 @@ const formatWorldMessageTime = (message: WorldChatMessage) => {
   return "Now";
 };
 
-/**
- * A room: its messages, each sender's run under their name, replies quoting what they answer, and the field. A name
- * pressed opens the conversation with that player in Messages: private messages are never written in a room.
- */
 /** Why a room did not take the player's last message. */
 const REFUSALS = { "rate-limited": CHAT_WORDS.rateLimited, refused: CHAT_WORDS.refused } as const;
 
@@ -178,19 +174,14 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
                       )}
                       <MessageRow
                         id={message.id}
-                        run={
-                          head
-                            ? {
-                                name: senderName,
-                                playerId: senderId,
-                                time: formatWorldMessageTime(message),
-                                onName:
-                                  senderId === self
-                                    ? undefined
-                                    : () => setCard((open) => (open === message.id ? null : message.id)),
-                              }
-                            : undefined
-                        }
+                        from={{
+                          name: senderName,
+                          time: formatWorldMessageTime(message),
+                          onName:
+                            senderId === self
+                              ? undefined
+                              : () => setCard((open) => (open === message.id ? null : message.id)),
+                        }}
                         quote={
                           reply && !isMuted
                             ? {
