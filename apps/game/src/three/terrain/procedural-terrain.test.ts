@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 import { DEEP_SURFACE_CODE } from "./ethereal-depths";
 import { terrainHexToWorld } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
-import { BASALT_SUPPORT_HEIGHT } from "./terrain-basalt";
+import { TERRAIN_GROUND_HEIGHT } from "./terrain-surface";
 import { TerrainFogField } from "./terrain-fog-field";
 import { ProceduralTerrain } from "./procedural-terrain";
 import { prepareTerrainPage } from "./terrain-page-builder";
@@ -126,7 +126,7 @@ describe("ProceduralTerrain", () => {
       const field = new TerrainField(page.request);
       for (const cell of page.request.cells) {
         const center = terrainHexToWorld(cell.col, cell.row);
-        expect(field.sampleSurface(center.x, center.z).height).toBe(BASALT_SUPPORT_HEIGHT);
+        expect(field.sampleSurface(center.x, center.z).height).toBe(TERRAIN_GROUND_HEIGHT);
       }
     }
     terrain.present([pages[0]]);
