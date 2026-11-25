@@ -154,5 +154,8 @@ const catalogAspect = (aspect: number) => {
 /** An Aspect's name by its id; throws outside the catalog. */
 export const aspectName = (aspect: number): string => catalogAspect(aspect).name;
 
+/** An Aspect id read from a fact, narrowed to the catalog; throws outside it. */
+export const catalogAspectId = (aspect: number): AspectId => catalogAspect(aspect).id;
+
 /** A number read from elsewhere (a link, a row) as the catalog's Aspect; throws outside the catalog. */
 export const catalogAspectId = (aspect: number): AspectId => catalogAspect(aspect).id;

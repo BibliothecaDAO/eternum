@@ -538,7 +538,17 @@ it("combines all four Aspect rosters into the default Global Glory leaderboard w
           },
           player_state: {
             structures: [
-              { entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" },
+              {
+                entity_id: 1001,
+                category: 1,
+                level: 1,
+                realm_id: 1,
+                coord_x: 0,
+                coord_y: 0,
+                resources_packed: "0",
+                aspect: null,
+                has_wonder: false,
+              },
             ],
           },
         },
@@ -720,6 +730,8 @@ it.each([
                       coord_x: 0,
                       coord_y: 0,
                       resources_packed: "0",
+                      aspect: null,
+                      has_wonder: false,
                     },
                   ],
                 }
@@ -782,7 +794,17 @@ it("shows honest empty lines for empty global and Aspect boards", async () => {
           },
           player_state: {
             structures: [
-              { entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" },
+              {
+                entity_id: 1001,
+                category: 1,
+                level: 1,
+                realm_id: 1,
+                coord_x: 0,
+                coord_y: 0,
+                resources_packed: "0",
+                aspect: null,
+                has_wonder: false,
+              },
             ],
           },
         },
@@ -839,7 +861,17 @@ it("shows ServiceFailure with Try again on the Global Glory leaderboard when Her
           },
           player_state: {
             structures: [
-              { entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" },
+              {
+                entity_id: 1001,
+                category: 1,
+                level: 1,
+                realm_id: 1,
+                coord_x: 0,
+                coord_y: 0,
+                resources_packed: "0",
+                aspect: null,
+                has_wonder: false,
+              },
             ],
           },
         },
