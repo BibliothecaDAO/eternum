@@ -330,7 +330,6 @@ import {
 } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { AttackRefusal } from "@bibliothecadao/eternum";
-import type { GraphicsQuality } from "../../../three/graphics-preferences";
 import {
   aspectName,
   type AspectId,
@@ -673,7 +672,7 @@ export const SETTINGS_WORDS = {
   effects: "Effects",
   mute: "Mute",
   quality: "Quality",
-  qualities: { low: "Low", balanced: "Balanced", high: "High" } satisfies Record<GraphicsQuality, string>,
+  qualities: { low: "Low", balanced: "Balanced", high: "High" },
   shadows: "Shadows",
   reducedMotion: "Reduced motion",
   haptics: "Haptics",
