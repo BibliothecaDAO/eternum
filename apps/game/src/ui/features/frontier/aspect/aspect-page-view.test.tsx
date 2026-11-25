@@ -36,7 +36,10 @@ describe("the Aspect page", () => {
       row.querySelectorAll("[data-built]").length,
     ]);
     expect(stages).toContainEqual(["Stage 4 of 5 · 6,400 of 10,000", 3]);
-    expect(stages).toContainEqual(["Stage 3 of 5 · 5,200 of 10,000", 2]);
+    expect(stages).toContainEqual([
+      "Stage 3 of 5 · 5,200 of 10,000 · Triumphs: Clear Mist day 12, Second Wind day 19, Pale Moon at stage 3, Spoils at stage 4",
+      2,
+    ]);
     expect(stages).toContainEqual(["Stage 1 of 5 · 900 of 10,000", 0]);
   });
 
