@@ -60,8 +60,12 @@ describe("the race board from native facts", () => {
     ).toEqual([
       [1, ["9", "7"]],
       [2, ["11", "12"]],
-      [3, ["13"]],
+      [3, ["13", "14"]],
       [4, ["15"]],
+    ]);
+    expect(page.rosters.find(({ aspect }) => aspect === 3)?.roster.members.map(({ owner }) => owner !== null)).toEqual([
+      true,
+      false,
     ]);
     expect(page.own).toMatchObject({
       aspect: 1,
