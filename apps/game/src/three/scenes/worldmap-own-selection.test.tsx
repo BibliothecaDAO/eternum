@@ -6,7 +6,7 @@ vi.mock("@/utils/can-issue-orders", async (original) => ({
   refusedBeforePlay: () => false,
 }));
 
-const { ActionPaths, ActionType, Position } = await import("@bibliothecadao/eternum");
+const { ActionPaths, ActionType, configManager, Position } = await import("@bibliothecadao/eternum");
 const { useAccountStore } = await import("@/hooks/store/use-account-store");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { default: WorldmapScene } = await import("./worldmap");
@@ -100,13 +100,14 @@ const mapWithArmySelected = (target: Tile) => {
   return { selections, armies, attacks, cleared };
 };
 
-const ARMY_KEPT_FOR_TARGET = { kind: "army", entityId: ARMY, tile: contract(TARGET) };
+const armyKeptForTarget = () => ({ kind: "army", entityId: ARMY, tile: contract(TARGET) });
 
 describe.each([
   ["a desktop", true],
   ["a phone", false],
 ])("on %s, with an army selected, a click on", (_, desktop) => {
   beforeEach(() => {
+    vi.spyOn(configManager, "getMapCenter").mockReturnValue(2147483646);
     screen(desktop);
     useAccountStore.setState({ account: { address: `0x${VIEWER.toString(16)}` } } as never);
     useUIStore.setState((state) => ({
@@ -116,6 +117,7 @@ describe.each([
   afterEach(() => {
     useAccountStore.setState({ account: null });
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it("the player's own supply post selects the post and opens its panel, letting the army go", () => {
@@ -139,12 +141,13 @@ describe.each([
 
   it("a Deep site keeps the army and opens the site's card for it", () => {
     const { selections, armies } = mapWithArmySelected({ structure: { id: 40, owner: RIVAL }, siteCard: true });
-    expect([selections, armies]).toEqual([[ARMY_KEPT_FOR_TARGET], []]);
+    expect([selections, armies]).toEqual([[armyKeptForTarget()], []]);
   });
 });
 
 describe("on a desktop, with an army selected, a click on", () => {
   beforeEach(() => {
+    vi.spyOn(configManager, "getMapCenter").mockReturnValue(2147483646);
     screen(true);
     useAccountStore.setState({ account: { address: `0x${VIEWER.toString(16)}` } } as never);
     useUIStore.setState((state) => ({
@@ -154,6 +157,7 @@ describe("on a desktop, with an army selected, a click on", () => {
   afterEach(() => {
     useAccountStore.setState({ account: null });
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it("a rival's army the army can attack is that army's attack", () => {
@@ -177,7 +181,7 @@ describe("on a desktop, with an army selected, a click on", () => {
 
   it("a rival's supply post keeps the army and opens that tile's card for it", () => {
     const { selections, armies } = mapWithArmySelected({ structure: { id: 31, owner: RIVAL }, siteCard: true });
-    expect([selections, armies]).toEqual([[ARMY_KEPT_FOR_TARGET], []]);
+    expect([selections, armies]).toEqual([[armyKeptForTarget()], []]);
   });
 
   it("bare ground lets the army go", () => {
