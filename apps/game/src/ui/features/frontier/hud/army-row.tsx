@@ -12,12 +12,12 @@ import {
   type Rank,
 } from "@/ui/design-system/kit/words";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import { formatAmount } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import type { DeepArmyLife } from "@bibliothecadao/eternum/game-client";
 
+import { BaneFigure } from "../day/bane-mark";
 import { DeepDrain, EtherealMark, OathWaitingBadge } from "./army-token";
 
 export const ArmyCard = ({
@@ -97,12 +97,7 @@ export const OpenSlotCard = ({
           {ARMY_SLOT_WORDS.readyAtHome(stock.label)}
         </span>
       ) : (
-        start && (
-          <span className="frontier-slot__detail">
-            {`${ARMY_SLOT_WORDS.anyTroop} · ${formatAmount(start.bar.current)}`}
-            <Icon name="stamina" size={14} alt={STAMINA} />
-          </span>
-        )
+        start && <HudStamina stamina={start.bar} />
       )}
     </span>
     <HudButton
@@ -145,7 +140,9 @@ const SlotNumber = ({ number }: { number: number | undefined }) => (
 
 const StaminaFigure = ({ current, max }: { current: number | undefined; max: number | undefined }) => (
   <span className="frontier-slot__figure tabular-nums">
-    {staminaReading(current, max)}
-    <Icon name="stamina" size={14} alt={STAMINA} />
+    <BaneFigure figure="stamina" altered={current !== undefined && max !== undefined && current < max}>
+      {staminaReading(current, max)}
+      <Icon name="stamina" size={14} alt={STAMINA} />
+    </BaneFigure>
   </span>
 );

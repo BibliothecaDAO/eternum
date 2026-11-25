@@ -78,26 +78,28 @@ export const flySprites = ({ from, to, icon, count, speed = 1, popMs = 0, onArri
 const RISE_MS = 1_000;
 const RISE_PX = 48;
 const RISE_POP_SHARE = 0.2;
+const STILL_SHARE = 0.9;
 
-/**
- * A sprite that pops where something was found and rises 48 px as it fades, with its label beside it: the tile's own
- * beat when nothing on screen receives it. Reduced motion, or no free sprite, shows nothing.
- */
 export const riseSprite = ({ at, icon, label }: { at: Point; icon: string; label: string }): void => {
   const sprite = pool.find((candidate) => !busy.has(candidate));
-  if (useWorldAppearanceStore.getState().reducedMotion || !sprite) return;
+  if (!sprite) return;
   busy.add(sprite);
   dress(sprite, icon, label);
   const start = { x: at.x - SPRITE_PX / 2, y: at.y - SPRITE_PX / 2 };
+  const still = useWorldAppearanceStore.getState().reducedMotion;
   void animate(
     sprite,
     {
       x: [start.x, start.x, start.x],
-      y: [start.y, start.y, start.y - RISE_PX],
-      opacity: [0, 1, 0],
-      scale: [0.6, 1.15, 1],
+      y: [start.y, start.y, still ? start.y : start.y - RISE_PX],
+      opacity: still ? [1, 1, 0] : [0, 1, 0],
+      scale: still ? [1, 1, 1] : [0.6, 1.15, 1],
     },
-    { duration: RISE_MS / 1000, times: [0, RISE_POP_SHARE, 1], ease: [EASE.outQuart, EASE.inCubic] },
+    {
+      duration: RISE_MS / 1000,
+      times: [0, still ? STILL_SHARE : RISE_POP_SHARE, 1],
+      ease: still ? "linear" : [EASE.outQuart, EASE.inCubic],
+    },
   ).then(() => busy.delete(sprite));
 };
 

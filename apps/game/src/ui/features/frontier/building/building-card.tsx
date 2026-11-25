@@ -18,6 +18,7 @@ import { type ReactNode, useState } from "react";
 
 import { buildingIcon, buildingName } from "../build/building-names";
 import { buildingsMake, standingBuildings } from "../production/store-makers";
+import { BaneFigure, BaneLine } from "../day/bane-mark";
 import { RefusedVerb } from "../refused-verb";
 import { formatRate } from "@bibliothecadao/types";
 import { useResearchActions } from "../research/research-actions";
@@ -153,11 +154,14 @@ export const BuildingCardView = ({
           {makes && (
             <span className="flex items-center gap-1.5 text-hud-title tabular-nums text-hud-ink">
               <Icon name={makes.icon} size={28} />
-              {makes.rate}
+              <BaneFigure figure="production" pill>
+                {makes.rate}
+              </BaneFigure>
             </span>
           )}
           {orders?.demolish}
         </div>
+        {makes && <BaneLine figure="production" />}
         {node && (
           <CompareRows
             now={isOathResearch(node.row) ? <HudRanked words={node.gives.now} /> : <HudTier tier={tierOf(node.tier)} />}

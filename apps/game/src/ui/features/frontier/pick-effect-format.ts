@@ -1,7 +1,10 @@
 import { formatPercent, formatRate } from "@bibliothecadao/types";
+import type { IconMeaning } from "../../design-system/icon-meaning";
 import { PICK_EFFECT_WORDS } from "../../design-system/kit/words";
 
 export interface PickEffectBase {
+  combatIcon?: IconMeaning;
+  tickSeconds?: number;
   attackStamina?: number;
   revealStamina?: number;
   maxStamina?: number;
@@ -9,7 +12,7 @@ export interface PickEffectBase {
   deepLossPerTick?: number;
 }
 
-export const fromToEffect = (label: string, from: string, to: string, note?: string): string =>
+const fromToEffect = (label: string, from: string, to: string, note?: string): string =>
   note ? `${label}: ${from} → ${to} (${note})` : `${label}: ${from} → ${to}`;
 
 export const percentFromTo = (label: string, fromPercent: number, toPercent: number, note?: string): string =>

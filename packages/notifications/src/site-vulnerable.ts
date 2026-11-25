@@ -17,7 +17,7 @@ export function buildSiteVulnerableNotification(
 ): LocalNotificationPayload | null {
   return deepAlert(input, `site:v1:${input.chainId}:${input.gameId}:${input.owner}:${input.kind}:${input.day}`, {
     title: `${input.siteName} can be taken`,
-    body: "An army of yours can take it today.",
+    body: "Your army can take it today.",
   });
 }
 
@@ -25,8 +25,8 @@ export function buildRingOpenNotification(
   input: DeepPlace & { ring: number; sites: number },
 ): LocalNotificationPayload | null {
   return deepAlert(input, `ring:v1:${input.chainId}:${input.gameId}:${input.owner}:${input.ring}:${input.day}`, {
-    title: `Ring ${input.ring + 1} has opened`,
-    body: `${input.sites} more sites can be taken today.`,
+    title: `Ring ${input.ring + 1} is open`,
+    body: `${input.sites} new sites are open today.`,
   });
 }
 

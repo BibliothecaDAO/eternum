@@ -1,6 +1,7 @@
 import "./phone-hud.css";
 
 import { Icon } from "@/ui/design-system/icon";
+import { SheetDock } from "@/ui/design-system/kit/hud-elements";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
@@ -32,21 +33,31 @@ export const FrontierTopBar = ({
 type TopBarViewProps = {
   stocks: Stocks;
   clock: ReactNode;
-  placeMenu?: ReactNode;
+  placeSwitch?: ReactNode;
   quest?: ReactNode;
   notice?: ReactNode;
   spectatorChip?: ReactNode;
   realmCard?: ReactNode;
+  todayCard?: ReactNode;
 };
 
-export const TopBarView = ({ stocks, clock, placeMenu, quest, notice, spectatorChip, realmCard }: TopBarViewProps) => (
+export const TopBarView = ({
+  stocks,
+  clock,
+  placeSwitch,
+  quest,
+  notice,
+  spectatorChip,
+  realmCard,
+  todayCard,
+}: TopBarViewProps) => (
   <div className="frontier-phone-top">
     <div className="frontier-bar pointer-events-auto">
-      {placeMenu}
+      {placeSwitch}
       <StockChips {...stocks} />
       <div className="frontier-bar__day">{clock}</div>
     </div>
-    {realmCard ?? (
+    {realmCard ?? (todayCard && <TodayUnderBar card={todayCard} />) ?? (
       <div data-map-cluster className="frontier-phone-float">
         <div className="frontier-phone-float__lead">
           {notice}
@@ -55,6 +66,12 @@ export const TopBarView = ({ stocks, clock, placeMenu, quest, notice, spectatorC
         {quest && <div className="frontier-phone-float__quest">{quest}</div>}
       </div>
     )}
+  </div>
+);
+
+const TodayUnderBar = ({ card }: { card: ReactNode }) => (
+  <div className="frontier-phone-today">
+    <SheetDock.Provider value={null}>{card}</SheetDock.Provider>
   </div>
 );
 

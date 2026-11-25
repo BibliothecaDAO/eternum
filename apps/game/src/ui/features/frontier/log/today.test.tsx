@@ -103,7 +103,7 @@ describe("Today", () => {
 
   it("says when today ends, the hours left in the day dial's tone, and how long tomorrow lasts", () => {
     const { host, unmount } = render({});
-    expect(host.querySelector('[role="timer"]')?.textContent).toMatch(/^Ends \d\d:\d\d · Tomorrow lasts 12h$/);
+    expect(host.querySelector('[role="timer"]')?.textContent).toMatch(/^Ends \d\d:\d\dTomorrow lasts 12h$/);
     expect(host.querySelector('[data-tip="7h 14m left"]')?.textContent).toBe("7h 14m");
     expect(host.querySelector('[data-tip="7h 14m left"]')?.getAttribute("data-tone")).toBeNull();
     unmount();
