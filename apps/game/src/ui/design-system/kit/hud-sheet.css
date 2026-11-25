@@ -2335,6 +2335,7 @@ button.ui-card__choose:disabled {
   justify-content: flex-start;
   padding: 0;
   background: none;
+  text-align: center;
 }
 /* The name keeps its size until the card is too narrow for "Scouts' lodge" (a 360-wide phone), then shrinks with it. */
 .ui-card[data-size="sm"] .ui-card__title {
