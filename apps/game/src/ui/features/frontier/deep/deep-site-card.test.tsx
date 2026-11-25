@@ -89,6 +89,9 @@ describe("the Deep site's live native binding", () => {
           expect(hud.host.querySelector("[data-deep-opening]")?.textContent).toContain(
             `${site.entered} / ${site.opensAt}`,
           );
+          expect(hud.host.querySelector("[data-deep-kinds]")?.textContent?.includes("Bane bar")).toBe(
+            site.kind === nativeRuleConstants.DEEP_ALTAR,
+          );
           continue;
         }
         expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain("/ 2m");
@@ -128,6 +131,21 @@ describe("the Deep site's live native binding", () => {
         />,
       );
       expect(hud.host.querySelector("[data-rate='labor'] b")?.textContent).toBe("+600");
+    } finally {
+      hud.unmount();
+    }
+  });
+
+  it("lists on a locked site only what its rules pay: no Bane bar where the game has no banes", () => {
+    const scenario = raceScenario();
+    const hud = draw(undefined, scenario);
+    try {
+      const locked = readDeepSites(hud.store, scenario.startsAt, 1).filter((site) => !site.open);
+      expect(locked.length).toBeGreaterThan(0);
+      for (const site of locked) {
+        hud.render(<DeepSiteCard site={site} onClose={() => {}} />);
+        expect(hud.host.querySelector("[data-deep-kinds]")?.textContent).not.toContain("Bane bar");
+      }
     } finally {
       hud.unmount();
     }

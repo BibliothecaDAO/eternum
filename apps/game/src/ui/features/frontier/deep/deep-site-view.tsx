@@ -48,6 +48,14 @@ export interface DeepRates {
   drain: number;
 }
 
+export type DeepPay = keyof typeof DEEP_WORDS.kinds;
+
+export interface DeepOpening {
+  entered: number;
+  realms: number;
+  pays: readonly DeepPay[];
+}
+
 export interface DeepSlot {
   slot: number;
   armyId: number;
@@ -85,7 +93,7 @@ export interface DeepSiteProps {
   site: (typeof deepSites)[number]["key"];
   ring: number;
   rates: DeepRates | null;
-  opening: { entered: number; realms: number } | null;
+  opening: DeepOpening | null;
   guard: DeepGuard;
   fight?: DeepSiteFight;
   attackerName?: string;
@@ -122,7 +130,7 @@ export const DeepSiteView = ({
       onClose={onClose}
     >
       <div data-deep-site={site} data-deep-guard={guard.kind} className="deep-site">
-        {rates ? <RateStrip rates={rates} /> : <LockedKinds site={site} />}
+        {rates ? <RateStrip rates={rates} /> : opening && <LockedKinds pays={opening.pays} />}
         {fight ? (
           <FightPreview site={site} fight={fight} guard={guard} attackerName={attackerName} />
         ) : (
@@ -228,16 +236,9 @@ const RateStrip = ({ rates }: { rates: DeepRates }) => {
   );
 };
 
-const SITE_KINDS = {
-  foundation: ["glory", "height"],
-  core: ["essence"],
-  mine: ["labor"],
-  altar: ["glory", "bar"],
-} as const satisfies Record<DeepSiteProps["site"], readonly (keyof typeof DEEP_WORDS.kinds)[]>;
-
-const LockedKinds = ({ site }: { site: DeepSiteProps["site"] }) => (
+const LockedKinds = ({ pays }: { pays: readonly DeepPay[] }) => (
   <div data-deep-kinds className="deep-kinds">
-    {SITE_KINDS[site].map((kind) => (
+    {pays.map((kind) => (
       <span key={kind} className="deep-kinds__kind">
         <Icon name={RATE_ICONS[kind]} size={16} />
         {DEEP_WORDS.kinds[kind]}
@@ -254,7 +255,7 @@ const PoisonStrip = ({ rates }: { rates: DeepRates }) => (
   </span>
 );
 
-const OpeningBar = ({ opening }: { opening: { entered: number; realms: number } }) => (
+const OpeningBar = ({ opening }: { opening: DeepOpening }) => (
   <div data-deep-opening className="deep-opening">
     <span className="deep-opening__line">
       <Icon name="lock" size={14} />

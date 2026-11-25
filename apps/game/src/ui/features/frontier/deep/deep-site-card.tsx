@@ -31,7 +31,15 @@ import { readDeepSiteFight } from "../sites/site-card-plan";
 import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { useSelectedOwnArmy } from "../sites/selected-army";
 import { readPickEffectBase } from "../pick-effect-text";
-import { DeepSiteView, type DeepBlock, type DeepGuard, type DeepOrder, type DeepRates } from "./deep-site-view";
+import {
+  DeepSiteView,
+  type DeepBlock,
+  type DeepGuard,
+  type DeepOpening,
+  type DeepOrder,
+  type DeepPay,
+  type DeepRates,
+} from "./deep-site-view";
 
 const MODELS = [...STAMINA_MODELS, ...GUARD_MODELS, "DeepSite", "DeepEntries", "ArmyRelicEffect", "AltarBar"] as const;
 
@@ -118,7 +126,7 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
       site={catalog.key}
       ring={site.ring}
       rates={site.open ? siteRates(setup.store, game_id, site, selected, now) : null}
-      opening={site.open ? null : { entered: site.entered, realms: site.opensAt }}
+      opening={site.open ? null : siteOpening(setup.store, game_id, site)}
       guard={guardView(setup.store, game_id, site, selected, now)}
       fight={
         verb === "attack" && selected
@@ -143,16 +151,12 @@ function siteRates(
   now: number,
 ): DeepRates | null {
   const deep = store.require("DeepRules", { game_id });
-  const race = store.get("RaceRules", { game_id });
-  if (!race && !store.absenceKnown("RaceRules", { game_id }).known) return null;
-  const banes = store.get("BaneRules", { game_id });
-  if (!banes && !store.absenceKnown("BaneRules", { game_id }).known) return null;
-  const paysResources = site.kind === nativeRuleConstants.DEEP_CORE || site.kind === nativeRuleConstants.DEEP_MINE;
-  const altar = site.kind === nativeRuleConstants.DEEP_ALTAR;
+  const pays = sitePays(store, game_id, site);
+  if (!pays) return null;
   const home = site.guards[0]?.army.owner ?? selected?.army.owner;
   const holder = home === undefined ? undefined : homeAspect(store, game_id, home);
   let bar: DeepRates["bar"] = null;
-  if (altar && banes && holder !== undefined) {
+  if (pays.includes("bar") && holder !== undefined) {
     const reading = store.requireOrAbsent("AltarBar", { game_id, aspect: holder });
     if (!reading.known) return null;
     bar = { perTick: site.buildingPay, charge: reading.known.charge, threshold: deep.altar_threshold };
@@ -161,12 +165,32 @@ function siteRates(
     tickSeconds: Number(store.require("SliceRules", { game_id }).tick_config.armies_tick_in_seconds),
     drain:
       Number(selected ? deepArmyLife(store, selected.army, now).lossPerTick : deep.loss_per_tick) / RESOURCE_PRECISION,
-    glory: paysResources || !race ? 0 : site.buildingPay,
-    height: race && site.kind === nativeRuleConstants.DEEP_FOUNDATION ? site.buildingPay : 0,
-    essence: site.kind === nativeRuleConstants.DEEP_CORE ? Number(deep.core_per_tick) / RESOURCE_PRECISION : 0,
-    labor: site.kind === nativeRuleConstants.DEEP_MINE ? Number(deep.mine_per_tick) / RESOURCE_PRECISION : 0,
+    glory: pays.includes("glory") ? site.buildingPay : 0,
+    height: pays.includes("height") ? site.buildingPay : 0,
+    essence: pays.includes("essence") ? Number(deep.core_per_tick) / RESOURCE_PRECISION : 0,
+    labor: pays.includes("labor") ? Number(deep.mine_per_tick) / RESOURCE_PRECISION : 0,
     bar,
   };
+}
+
+function siteOpening(store: NativeFactStore, game_id: number, site: Site): DeepOpening {
+  return { entered: site.entered, realms: site.opensAt, pays: sitePays(store, game_id, site) ?? [] };
+}
+
+function sitePays(store: NativeFactStore, game_id: number, site: Site): DeepPay[] | null {
+  const race = store.get("RaceRules", { game_id });
+  if (!race && !store.absenceKnown("RaceRules", { game_id }).known) return null;
+  const banes = store.get("BaneRules", { game_id });
+  if (!banes && !store.absenceKnown("BaneRules", { game_id }).known) return null;
+  const resources = site.kind === nativeRuleConstants.DEEP_CORE || site.kind === nativeRuleConstants.DEEP_MINE;
+  const pays: (DeepPay | false)[] = [
+    !resources && Boolean(race) && "glory",
+    Boolean(race) && site.kind === nativeRuleConstants.DEEP_FOUNDATION && "height",
+    site.kind === nativeRuleConstants.DEEP_CORE && "essence",
+    site.kind === nativeRuleConstants.DEEP_MINE && "labor",
+    Boolean(banes) && site.kind === nativeRuleConstants.DEEP_ALTAR && "bar",
+  ];
+  return pays.filter((pay): pay is DeepPay => pay !== false);
 }
 
 function selectionBlock(

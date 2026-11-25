@@ -69,7 +69,7 @@ export const DEEP_SITE_CASES = {
     site: "altar",
     ring: 1,
     rates: null,
-    opening: { entered: 12, realms: 50 },
+    opening: { entered: 12, realms: 50, pays: ["glory", "bar"] },
     guard: { kind: "beast", category: "Crossbowman", troops: 15_000 },
     order: { kind: "closed" },
   },
