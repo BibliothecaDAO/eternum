@@ -3,6 +3,7 @@ import { HudBanner } from "@/ui/design-system/kit/hud-elements";
 import { HEADLINE_EYEBROWS } from "@/ui/design-system/kit/words";
 import { OfflineNotice } from "@/ui/features/frontier/hud/offline-notice";
 import { AnimatePresence, motion } from "framer-motion";
+import { type RefObject, useLayoutEffect, useRef } from "react";
 
 import { HeadlineLine } from "./headline-line";
 import type { Headline, HeadlineType } from "./headline-types";
@@ -23,8 +24,12 @@ const HEADLINE_THEME_MAP: Record<HeadlineType, { icon: IconMeaning; tone?: "good
  */
 export function NewsHeadlineBanner({ headline }: { headline: Headline | null }) {
   const theme = headline ? HEADLINE_THEME_MAP[headline.icon] : null;
+  const band = useRef<HTMLDivElement>(null);
+  usePublishedHeight(band, NOTICE_BAND);
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-hud-phone-header z-hud-rail flex flex-col items-center gap-2 px-4 lg:top-hud-header">
+    <div
+      ref={band}
+      className="pointer-events-none fixed inset-x-0 top-hud-phone-header z-hud-rail flex flex-col items-center gap-2 px-4 lg:top-hud-header">
       <OfflineNotice />
       <AnimatePresence mode="wait">
         {headline && theme && (
@@ -49,3 +54,25 @@ export function NewsHeadlineBanner({ headline }: { headline: Headline | null }) 
     </div>
   );
 }
+
+const NOTICE_BAND = "--hud-notice-band";
+
+const usePublishedHeight = (ref: RefObject<HTMLElement>, variable: string) => {
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const root = document.documentElement.style;
+    const publish = () => {
+      const height = element.getBoundingClientRect().height;
+      const gap = Number.parseFloat(getComputedStyle(element).rowGap) || 0;
+      root.setProperty(variable, `${height > 0 ? Math.round(height + gap) : 0}px`);
+    };
+    publish();
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(publish) : null;
+    observer?.observe(element);
+    return () => {
+      observer?.disconnect();
+      root.removeProperty(variable);
+    };
+  }, [ref, variable]);
+};
