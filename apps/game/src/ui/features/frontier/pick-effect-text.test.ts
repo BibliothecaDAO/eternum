@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { oathBit } from "@bibliothecadao/eternum";
+import { nativeOathConstants as oaths, nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
+import { RESOURCE_PRECISION, TroopType } from "@bibliothecadao/types";
 import { PICK_EFFECT_WORDS, RESEARCH_TREE } from "@/ui/design-system/kit/words";
 import release from "../../../../../../contracts/l3/world-native/schema/release-definition.json";
 
@@ -30,6 +32,8 @@ describe("shared pick-effect text builder", () => {
   it("reads live SliceRules and DeepRules without silent defaults when absent", () => {
     const store = new NativeFactStore();
     expect(readPickEffectBase(store, 1)).toEqual({
+      category: TroopType.Knight,
+      tickSeconds: undefined,
       attackStamina: undefined,
       revealStamina: undefined,
       maxStamina: undefined,
@@ -64,11 +68,27 @@ describe("shared pick-effect text builder", () => {
       },
     ] as never);
     expect(readPickEffectBase(store, 1)).toEqual({
+      category: TroopType.Knight,
+      tickSeconds: 60,
       attackStamina: 40,
       revealStamina: 25,
       maxStamina: 200,
       staminaPerSecond: 1 / 60,
       deepLossPerTick: 350,
     });
+    const scouts = { category: TroopType.Paladin, logistics: 0, oaths: 0 };
+    expect(readPickEffectBase(store, 1, scouts).revealStamina).toBe(nativeRuleConstants.SCOUT_EXPLORE_STAMINA);
+    const sworn = (oath: number) => readPickEffectBase(store, 1, { ...scouts, oaths: oathBit(oath) });
+    expect(sworn(oaths.FOX).revealStamina).toBe(
+      Math.floor((nativeRuleConstants.SCOUT_EXPLORE_STAMINA * (100 - oaths.FOX_REVEAL_DISCOUNT_PERCENT)) / 100),
+    );
+    expect(sworn(oaths.ANGER).attackStamina).toBe(oaths.ANGER_ATTACK_STAMINA);
+    expect(sworn(oaths.VITRIOL).deepLossPerTick).toBe(oaths.VITRIOL_LOSS_PER_TICK);
+    expect(sworn(oaths.TITANS).maxStamina! - readPickEffectBase(store, 1, scouts).maxStamina!).toBe(
+      oaths.TITANS_STAMINA,
+    );
+    expect(readPickEffectBase(store, 1, { ...scouts, logistics: 2 }).maxStamina).toBeGreaterThan(
+      readPickEffectBase(store, 1, scouts).maxStamina!,
+    );
   });
 });

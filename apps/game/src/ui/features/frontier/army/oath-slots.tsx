@@ -19,14 +19,14 @@ export const useHomeOathSlots = (category: TroopType | undefined, homeId: number
 
 const useHeldOaths = (explorerId: number) => {
   const { store } = useNativeFacts(["ArmyProgress"]);
-  const pickBase = usePickEffectBase();
+  const baseFor = usePickEffectBase(explorerId);
   const progress = store.get("ArmyProgress", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
   if (!progress) return undefined;
   const oaths = heldOaths(progress.oaths).map((oath) => ({
     icon: orderMeaning(oath),
     name: oathName(oath),
-    effect: oathEffectDescription(oath, pickBase),
-    badge: oathStatBadge(oath, pickBase),
+    effect: oathEffectDescription(oath, baseFor(oath)),
+    badge: oathStatBadge(oath, baseFor(oath)),
   }));
   return { oaths, slots: progress.oath_slots };
 };

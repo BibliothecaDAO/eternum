@@ -28,7 +28,7 @@ export const ArmyRelicSlots = ({ explorerId }: { explorerId: number }) => {
   const now = useCurrentBlockTimestamp();
   useNativeRevision(ARMY_RELIC_MODELS);
   const shown = usePartShown("relic-slots");
-  const pickBase = usePickEffectBase();
+  const pickBase = usePickEffectBase(explorerId)();
   const switching = useInFlight("army", explorerId) !== undefined;
   // The slot pressed last: the one that says it is switching on while the army's order is out; the others wait.
   const [pressed, setPressed] = useState<0 | 1 | 2 | null>(null);

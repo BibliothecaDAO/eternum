@@ -56,7 +56,7 @@ vi.mock("../hud/dock-armies", () => ({ useDockArmies: () => [army] }));
 vi.mock("../value/fragments", () => ({ useFragmentsHeld: () => state.fragments }));
 vi.mock("../pick-effect-text", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../pick-effect-text")>()),
-  usePickEffectBase: () => state.pickBase,
+  usePickEffectBase: () => () => state.pickBase,
 }));
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -108,9 +108,9 @@ it("waits on its army until the army is picked, then offers three compact cards 
     "+25%",
   ]);
   expect(cards().map((card) => card.querySelector(".oath-choice__unit")?.textContent)).toEqual([
-    "Damage dealt",
-    "Reveal cost",
-    "Site and guard rewards",
+    "Battle damage dealt",
+    "Stamina to reveal a tile",
+    "Cleared site rewards",
   ]);
   expect(host.querySelectorAll("[data-reroll-oath]")).toHaveLength(3);
   expect(host.querySelector(".oath-pick__head .ui-chip")?.textContent).toBe(

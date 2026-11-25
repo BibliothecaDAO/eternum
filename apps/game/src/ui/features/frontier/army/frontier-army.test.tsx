@@ -149,8 +149,8 @@ it("spells what each sworn Oath grants in the panel, no hover needed", async () 
     [...row.children].map((part) => part.textContent),
   );
   expect(rows).toEqual([
-    ["Giants", `-${oaths.GIANTS_REDUCTION_PERCENT}%`, "Damage taken"],
-    ["Power", `+${oaths.POWER_DAMAGE_PERCENT}%`, "Damage dealt"],
+    ["Giants", `-${oaths.GIANTS_REDUCTION_PERCENT}%`, "Battle damage taken"],
+    ["Power", `+${oaths.POWER_DAMAGE_PERCENT}%`, "Battle damage dealt"],
   ]);
   game.progress.oaths = 0;
 });

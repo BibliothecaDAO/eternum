@@ -1,4 +1,5 @@
 import { nativeBaneConstants, nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
+import { TroopType } from "@bibliothecadao/types";
 import { oathPickScenario, oathPassCappedScenario } from "./oath-pick-scenario";
 import { oathSlotsScenario } from "./oath-slots-scenario";
 import { battleTargetScenario, deepBattleTargetScenario } from "./battle-target-scenario";
@@ -64,6 +65,9 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "oath-slots": oathSlotsScenario,
   "oath-vitriol": () => oathPickScenario(false, deepScenario(), oaths.VITRIOL),
   "oath-pick": () => oathPickScenario(),
+  "oath-pick-knights": () => oathPickScenario(false, spireScenario(), oaths.SKILL, TroopType.Knight),
+  "oath-pick-crossbows": () => oathPickScenario(false, spireScenario(), oaths.SKILL, TroopType.Crossbowman),
+  "oath-pick-scouts": () => oathPickScenario(false, spireScenario(), oaths.SKILL, TroopType.Paladin),
   "oath-replace": () => oathPickScenario(true),
   "oath-pass-capped": oathPassCappedScenario,
   "battle-target": battleTargetScenario,

@@ -1,7 +1,9 @@
-import { formatPercent, formatRate } from "@bibliothecadao/types";
+import { formatPercent, formatRate, type TroopType } from "@bibliothecadao/types";
 import { PICK_EFFECT_WORDS } from "../../design-system/kit/words";
 
 export interface PickEffectBase {
+  category?: TroopType;
+  tickSeconds?: number;
   attackStamina?: number;
   revealStamina?: number;
   maxStamina?: number;
