@@ -50,18 +50,18 @@ const open = async (path: string, width: number) => {
 
 const body = (page: HTMLElement) => page.querySelector('[data-band="body"]')!;
 
-it("offers a signed-out reader Sign in cleanly while What's new, How to play and Market live in the footer", async () => {
+it("offers a signed-out reader Sign in cleanly while What's new, the Guide and Market live in the footer", async () => {
   const page = await open("/profile", 390);
   const controls = [...body(page).querySelectorAll("a, button")].map((control) => control.textContent);
   expect(controls).toEqual(["Sign in"]);
   const footer = page.querySelector('[data-band="footer"]')!;
   const footerText = footer.textContent ?? "";
   expect(footerText).toContain("What's new");
-  expect(footerText).toContain("How to play");
+  expect(footerText).toContain("Guide");
   expect(footerText).toContain("Market");
 });
 
-it("opens How to play on a page the docs site has", () => {
+it("opens the Guide on a page the docs site has", () => {
   const { pathname } = new URL(HOW_TO_PLAY);
   const apps = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
   const page = [`${pathname}.mdx`, `${pathname}/index.mdx`]

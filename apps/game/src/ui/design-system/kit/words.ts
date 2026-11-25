@@ -550,6 +550,8 @@ export const REALM_CARD_WORDS = {
   armySlots: (count: number) => `+${formatCount(count, "army slot")}`,
   needs: "Needs",
   stores: "Stores",
+  lordsReading: "reading your wallet…",
+  lordsUnread: "your wallet could not be read",
 } as const;
 export const RESEARCH = "Research";
 export const CHAT = "Chat";
@@ -1043,6 +1045,8 @@ export const ASPECT_PAGE_WORDS = {
   title: "Aspect Race",
   race: "The hyperstructures",
   goToDeep: `Go to ${DEEP}`,
+  deepOpensAt: (rule: string) => `${DEEP} opens at ${rule}`,
+  gloryUnearned: `No Glory yet: it comes from holding ${DEEP} sites`,
   height: (height: number, finish: number) => `${formatExact(height)} of ${formatExact(finish)}`,
   stage: (stage: number, stages: number) => `Stage ${stage} of ${stages}`,
   finished: "Finished",
@@ -1055,7 +1059,6 @@ export const ASPECT_PAGE_WORDS = {
   triumphAt: (stage: number) => `at stage ${stage}`,
   baneBar: "Bane bar",
   baneCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
-  members: "Members",
   glory: "Glory",
   noAspect: "Join an Aspect to see its members",
   fights: `Fights in the ${DEEP}`,
@@ -1708,7 +1711,7 @@ export const PROFILE_WORDS = {
   tabsLabel: "Account sections",
   noAspectInvite: "Join an Aspect on Play to get your personal invite link.",
   friendReward: `+${formatExact(FRIEND_FRAGMENTS)} ${FRAGMENTS} for each friend who reaches ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory}`,
-  howToPlay: "How to play",
+  guide: "Guide",
   account: "Account",
   notifications: "Notifications",
   devices: "Devices",

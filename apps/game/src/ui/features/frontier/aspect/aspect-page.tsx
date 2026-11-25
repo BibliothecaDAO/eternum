@@ -16,7 +16,7 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import { aspects, catalogAspectId } from "@bibliothecadao/types";
 import { useFrontierRealm } from "../frontier-home";
-import { realmLayers } from "../hud/map-layers";
+import { deepLockLine, realmLayers } from "../hud/map-layers";
 import { AspectInvite } from "../invite/aspect-invite";
 import { AspectFeedView } from "./aspect-feed-view";
 import { useAspectFights } from "./use-aspect-fights";
@@ -43,22 +43,28 @@ export function FrontierAspectPage({ day, onClose }: { day?: number; onClose: ()
   const canEnterDeep = home !== null && realmLayers(setup.store, home).includes("deep");
   const settlementRules = setup.store.get("SettlementRules", { game_id: gameId });
   const gameOver = board.result !== null || configManager.isGameOver();
-  const onGoToDeep =
-    !gameOver && canEnterDeep && settlementRules
-      ? () => {
-          const target = deepViewFor(setup.store, gameId, home.entity_id, settlementRules.spacing);
-          if (isMapView) requestLayerView(target);
-          else openPlace("map", Position.fromContract({ x: target.col, y: target.row }));
-          onClose();
-        }
-      : undefined;
+  const goDeep = (realm: NonNullable<typeof home>, spacing: number) => {
+    const target = deepViewFor(setup.store, gameId, realm.entity_id, spacing);
+    if (isMapView) requestLayerView(target);
+    else openPlace("map", Position.fromContract({ x: target.col, y: target.row }));
+    onClose();
+  };
+  const lock = home && deepLockLine(setup.store, home);
+  const goToDeep =
+    gameOver || home === null || !settlementRules
+      ? undefined
+      : canEnterDeep
+        ? { go: () => goDeep(home, settlementRules.spacing) }
+        : lock
+          ? { refused: { reason: { kind: "failed" as const, line: ASPECT_PAGE_WORDS.deepOpensAt(lock) } } }
+          : undefined;
   return (
     <AspectPageView
       {...aspectPage(board, (home) => getStructureName(home, setup.store).name)}
       fights={<AspectFeedView reading={fights} now={now} />}
       invite={home && <AspectInvite realm={home} />}
       day={day}
-      onGoToDeep={onGoToDeep}
+      goToDeep={goToDeep}
       onClose={onClose}
     />
   );

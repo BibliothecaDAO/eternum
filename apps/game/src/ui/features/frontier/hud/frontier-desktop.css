@@ -447,6 +447,27 @@
   min-height: var(--feed-row);
   scroll-snap-align: start;
 }
+[data-right-page] [data-feed-line] {
+  padding-block: 0;
+}
+[data-right-page] .ui-feed-line__tile {
+  width: auto;
+  height: auto;
+  border: 0;
+  background: transparent;
+}
+[data-right-page] .ui-feed-line__tile .ui-event__icon {
+  width: 18px;
+  height: 18px;
+}
+[data-right-page] .ui-feed-line__told {
+  flex-direction: row;
+  align-items: baseline;
+  gap: theme(spacing.2);
+}
+[data-right-page] .ui-feed-line__told .ui-event__time {
+  order: -1;
+}
 
 [data-frontier-rail] [data-build-grid] .ui-card__title {
   overflow: visible;

@@ -1,4 +1,5 @@
 import { ECONOMY_STEPS } from "./economy-steps.mjs";
+import { balanceChange, troopChange } from "./lab-answers.mjs";
 import {
   DEEP_BEASTS,
   deepSites,
@@ -779,26 +780,26 @@ async function deployFromTheDock({ browser }, amount, troopName, atMost = Infini
   return { sheet, before, locate };
 }
 
+const DEPLOYED = 400n * BigInt(RESOURCE_PRECISION);
+
 function scoutsDeployed(context) {
-  return troopDeployment(context, "Paladin", 32, 200_000_000_000n);
+  return troopDeployment(context, "Paladin", ResourcesIds.Paladin, 800n * BigInt(RESOURCE_PRECISION));
 }
 
 function crossbowsDeployed(context) {
-  return troopDeployment(context, "Crossbowman", 29, 280_000_000_000n);
+  return troopDeployment(context, "Crossbowman", ResourcesIds.Crossbowman, 720n * BigInt(RESOURCE_PRECISION));
 }
 
 function troopDeployment(context, category, resource, wheat) {
   const answer = (context.actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "CreateExplorer").at(-1);
   if (!answer) return undefined;
   const army = answer.answered.find(({ model }) => model === "ExplorerTroops")?.value;
-  const balances = answer.answered.filter(({ model }) => model === "ResourceBalance").map(({ value }) => value);
-  const balance = (resource) => balances.find(({ resource_type }) => Number(resource_type) === resource)?.balance;
   if (
     army?.troops.category !== category ||
-    BigInt(army.troops.count) !== 400_000_000_000n ||
-    BigInt(balance(resource) ?? -1) !== 200_000_000_000n ||
-    BigInt(balance(35) ?? -1) !== wheat ||
-    balance(26) !== undefined
+    BigInt(army.troops.count) !== DEPLOYED ||
+    balanceChange(answer, resource) !== -DEPLOYED ||
+    balanceChange(answer, ResourcesIds.Wheat) !== -wheat ||
+    balanceChange(answer, ResourcesIds.Knight) !== undefined
   )
     throw new Error("Deployment changed the wrong troops or price");
   return armyDeployed(context);
@@ -963,16 +964,14 @@ function offersItsKnightsOut(deploy) {
 }
 
 function holdsItsKnightsAtHome(played) {
-  const rows = played.founded?.[0]?.answered ?? [];
-  const balance = (resource) =>
-    rows.find(({ model, value }) => model === "ResourceBalance" && Number(value.resource_type) === resource)?.value
-      .balance;
+  const [founded] = played.founded ?? [];
+  const rows = founded?.answered ?? [];
   return (
     !rows.some(({ model }) => ["ExplorerTroops", "ArmySlot", "ArmyDay"].includes(model)) &&
     release.definition.settlement.realms.resources.every(
-      ({ resource_type, amount }) => BigInt(balance(resource_type) ?? -1) === BigInt(amount),
+      ({ resource_type, amount }) => balanceChange(founded, Number(resource_type)) === BigInt(amount),
     ) &&
-    BigInt(balance(38) ?? -1) === 0n
+    balanceChange(founded, ResourcesIds.Essence) === 0n
   );
 }
 
@@ -1361,13 +1360,14 @@ const OATH_SLOTS_STEPS = [
     ({ played, actionLatency }) => {
       const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "Research").at(-1);
       if (!answer) return undefined;
-      const balances = answer.answered.filter(({ model }) => model === "ResourceBalance").map(({ value }) => value);
-      const balance = (id) => BigInt(balances.find(({ resource_type }) => Number(resource_type) === id)?.balance ?? -1);
-      if (
-        balance(ResourcesIds.Essence) !== 15000n * BigInt(RESOURCE_PRECISION) ||
-        balance(ResourcesIds.Labor) !== 4000n * BigInt(RESOURCE_PRECISION)
-      )
-        return failed("Oath research charged the wrong price", { balances });
+      const paid = {
+        essence: balanceChange(answer, ResourcesIds.Essence),
+        labor: balanceChange(answer, ResourcesIds.Labor),
+      };
+      if (paid.essence !== -5000n * BigInt(RESOURCE_PRECISION) || paid.labor !== -1000n * BigInt(RESOURCE_PRECISION))
+        return failed("Oath research charged the wrong price", {
+          paid: { essence: String(paid.essence), labor: String(paid.labor) },
+        });
       return played.watching && { watch: "oath-researched" };
     },
   ),
@@ -1563,7 +1563,8 @@ const DAILY_QUEST_STEPS = [
         receipt?.amount === "1000000000000" &&
         receipt?.essence === "1500000000000" &&
         balances.length === 2 &&
-        balances.every(({ value }) => value.balance === "1500000000000")
+        balanceChange(sent, ResourcesIds.Labor) === BigInt(receipt.amount) &&
+        balanceChange(sent, ResourcesIds.Essence) === BigInt(receipt.essence)
         ? completed(played)
         : failed("Collect must send the exact home/day and display its confirmed reward receipt", played);
     },
@@ -1574,8 +1575,6 @@ const BANE_COLLECTIONS = {
   world: {
     button: "Collect",
     receipts: ["LaborGrant"],
-    labor: "1500000000000",
-    essence: "1500000000000",
     quest: "The Cull",
     count: "2,500 of 2,500 troops",
     head: "Ash Fall",
@@ -1583,8 +1582,6 @@ const BANE_COLLECTIONS = {
   again: {
     button: "Collect again",
     receipts: ["BaneGrant"],
-    labor: "2500000000000",
-    essence: "3000000000000",
     quest: "The Cull",
     count: "2,500 of 2,500 troops",
     head: "Ash Fall",
@@ -1592,8 +1589,6 @@ const BANE_COLLECTIONS = {
   late: {
     button: "Collect",
     receipts: ["LaborGrant", "BaneGrant"],
-    labor: "2500000000000",
-    essence: "3000000000000",
     quest: "The Cull",
     count: "2,500 of 2,500 troops",
     head: "Ash Fall",
@@ -1601,8 +1596,6 @@ const BANE_COLLECTIONS = {
   team: {
     button: "Collect",
     receipts: ["LaborGrant"],
-    labor: "1500000000000",
-    essence: "1500000000000",
     quest: "The Stand",
     count: "3 of 3 sites",
     head: "Prowess's bane",
@@ -1660,8 +1653,10 @@ const baneCollectionSteps = (expected) => [
             value.essence === "1500000000000",
         ) &&
         balances.length === 2 &&
-        balances.some(({ value }) => Number(value.resource_type) === 23 && value.balance === expected.labor) &&
-        balances.some(({ value }) => Number(value.resource_type) === 38 && value.balance === expected.essence);
+        balanceChange(sent, ResourcesIds.Labor) ===
+          receipts.reduce((sum, { value }) => sum + BigInt(value.amount), 0n) &&
+        balanceChange(sent, ResourcesIds.Essence) ===
+          receipts.reduce((sum, { value }) => sum + BigInt(value.essence), 0n);
       return exact
         ? completed(played)
         : failed("Bane collection must name the recorded quest and credit each exact receipt once", played);
@@ -3185,13 +3180,6 @@ const HUD_SHEET_STEPS = [
   })),
 ];
 
-/**
- * The map's share of the page on an odd device (owner, 4 November: "on some weird mobile devices with weird shapes the
- * map is like 15%"), on the lab's sites game: the map at rest, the army picked, its panel, a site's card beside it,
- * Chat and the Menu. Each step reads the share as a player sees it (MAP_SHARE_EXPRESSION) and which HUD part takes
- * the rest, and fails under MAP_LEAST_SHARE (Chat, which fills the band, excepted); a step that could not reach its
- * state is blocked, never read as the map's. Run it at each device's size with --viewport.
- */
 const HUD_DEVICE_STEPS = [
   { name: "map", play: readTheMapShare, settleMs: 3_000, verify: mapShareRead },
   {
@@ -3222,7 +3210,7 @@ const HUD_DEVICE_STEPS = [
       return readTheMapShare({ browser });
     },
     settleMs: 0,
-    verify: mapShareReadUnheld,
+    verify: mapShareRead,
   },
   {
     name: "menu",
@@ -3246,11 +3234,6 @@ function mapShareRead({ played }) {
   if (played.share.map < MAP_LEAST_SHARE)
     return failed(`the map shows ${played.share.map}% of the page, under ${MAP_LEAST_SHARE}%`, played);
   return completed(played);
-}
-
-/** Chat's share, read but not held to the least: Chat fills the band by the owner's call (3 November). */
-function mapShareReadUnheld({ played }) {
-  return played.share?.canvas ? completed(played) : blocked("the map's canvas is not on the page", played);
 }
 
 /** The picked army's panel: its sheet, opened by its own details button (a phone's picked army, a desktop's row). */
@@ -4666,15 +4649,11 @@ function labMergeSteps(confirm) {
   ];
 }
 
-/** Realm 7, the lab's player realm, the troops its army holds before it is reinforced, and what Max then leaves. */
 const LAB_REALM = 7;
 const ARMY_BEFORE_REINFORCE = 1_498;
-const AT_THE_CHAIN = 1_000_000_000n;
-const REINFORCED = {
-  troops: String(1_902n * AT_THE_CHAIN),
-  26: String(16n * AT_THE_CHAIN),
-  35: String(192n * AT_THE_CHAIN),
-};
+const WHEAT_PER_TROOP = 2n;
+const LEAST_REINFORCED = 404n * BigInt(RESOURCE_PRECISION);
+const WHEAT_FOR_REVEALS = 192n * BigInt(RESOURCE_PRECISION);
 /** How far below its token a realm's tile may lie at the map's zoom: the realm's token stands lower than an army's. */
 const REALM_TILE_BELOW_TOKEN_PX = [70, 50, 90];
 const REINFORCE_STATE = `JSON.stringify({
@@ -4684,11 +4663,7 @@ const REINFORCE_STATE = `JSON.stringify({
   sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
   armyToken: document.querySelector('.mp-at[data-key="army:${PICKED_ARMY}"]')?.textContent ?? null,
   structure: window.__eternumMapSelection?.structure?.id ?? null,
-  // The chain's answer to the reinforcement: the army's troops and each balance the realm paid from, as they stand after.
-  answered: Object.fromEntries((window.__labChain?.sent ?? [])
-    .filter(({ command }) => command.kind === "ManageTroops")
-    .flatMap(({ answered }) => answered)
-    .map(({ model, value }) => model === "ExplorerTroops" ? ["troops", String(value.troops.count)] : [String(value?.resource_type), String(value?.balance)])),
+  reinforced: (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "ManageTroops").at(-1) ?? null,
 })`;
 const REALM_TOKEN = `JSON.stringify((() => {
   const slot = document.querySelector('.mp-at[data-key="structure:${LAB_REALM}"]');
@@ -4844,8 +4819,26 @@ function armyReinforced({ played }) {
   if (!(troops > ARMY_BEFORE_REINFORCE))
     return failed(`the army's token reads ${after.armyToken} after the reinforcement`, played);
   if (after.buttons.some(isReinforceVerb)) return failed("the Reinforce sheet stays open after the answer", played);
-  if (JSON.stringify(after.answered) !== JSON.stringify(REINFORCED))
-    return failed(`the chain left ${JSON.stringify(after.answered)}, not ${JSON.stringify(REINFORCED)}`, played);
+  const moved = troopChange(after.reinforced);
+  const paid = {
+    knights: balanceChange(after.reinforced, ResourcesIds.Knight),
+    wheat: balanceChange(after.reinforced, ResourcesIds.Wheat),
+  };
+  const wheatLeft = BigInt(
+    after.reinforced?.answered.find(
+      ({ model, value }) => model === "ResourceBalance" && Number(value.resource_type) === ResourcesIds.Wheat,
+    )?.value.balance ?? -1,
+  );
+  if (
+    !(moved >= LEAST_REINFORCED) ||
+    paid.knights !== -moved ||
+    paid.wheat !== -WHEAT_PER_TROOP * moved ||
+    wheatLeft < WHEAT_FOR_REVEALS
+  )
+    return failed(
+      `the chain moved ${moved} troops for ${paid.knights} knights and ${paid.wheat} wheat, leaving ${wheatLeft} wheat`,
+      played,
+    );
   return completed({ chosen: played.chosen, sent: after.sent, troops, panel: after.sheet });
 }
 

@@ -41,7 +41,7 @@ const UprightBands = ({ strip, banner, page, notices, action, dock, nav, childre
     <div
       data-hud-form={tablet ? "tablet" : "phone"}
       aria-label="Frontier HUD"
-      className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-page-fills])_:is([data-map-band],[data-map-cluster])]:hidden"
+      className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-page-fills])_:is([data-map-band],[data-map-cluster])]:hidden [html[data-keyboard]_&:has([data-page])_[data-map-band]]:hidden"
       style={{ ...SAFE_AREA, "--hud-phone-foot": `${foot}px`, "--hud-phone-top": `${top}px` } as CSSProperties}
     >
       <div ref={topBand} {...HUD_TOP_MARK} data-keyboard-hides className="flex flex-col gap-1.5">
@@ -49,11 +49,14 @@ const UprightBands = ({ strip, banner, page, notices, action, dock, nav, childre
         {banner}
       </div>
       <div data-map-band className="relative min-h-0 flex-1" />
-      <div {...HUD_FOOT_MARK} className="flex min-h-0 flex-col gap-1.5 [&:has([data-page-fills])]:flex-1">
+      <div
+        {...HUD_FOOT_MARK}
+        className="flex min-h-0 flex-col gap-1.5 [&:has([data-page-fills])]:flex-1 [html[data-keyboard]_&:has([data-page])]:flex-1"
+      >
         <div className="flex flex-col gap-1.5">{notices}</div>
         <div ref={setSheetBand} data-sheet-band className="flex min-h-0 flex-col empty:hidden" />
         {page ? (
-          <PageBand className="mt-auto max-h-hud-phone-sheet [&:has([data-page-fills])]:max-h-hud-phone-browse [&:has([data-page-fills])]:flex-1">
+          <PageBand className="mt-auto max-h-hud-phone-sheet [&:has([data-page-fills])]:max-h-hud-phone-browse [&:has([data-page-fills])]:flex-1 [html[data-keyboard]_&]:max-h-none [html[data-keyboard]_&]:flex-1">
             {page}
           </PageBand>
         ) : (

@@ -59,7 +59,7 @@ export function RealtimeChatTabs({ rooms }: { rooms: readonly ChatRoom[] }) {
 }
 
 /** How many players are online, once any are. */
-export function RealtimeChatOnline() {
+function RealtimeChatOnline() {
   const online = useRealtimeChatSelector((state) => Object.keys(state.onlinePlayers).length);
   if (online === 0) return null;
   return (

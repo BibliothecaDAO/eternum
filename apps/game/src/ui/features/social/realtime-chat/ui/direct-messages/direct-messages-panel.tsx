@@ -167,7 +167,6 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, className }: D
                           run || dateSeparators.has(index)
                             ? {
                                 name: labelOf(message.senderId),
-                                playerId: message.senderId,
                                 time: toDisplayTime(message),
                               }
                             : undefined

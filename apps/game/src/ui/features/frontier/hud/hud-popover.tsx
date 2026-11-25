@@ -18,7 +18,10 @@ import { create } from "zustand";
 
 const POPOVER_GAP = 8;
 
-const useOpenPopover = create<{ open: string | null }>(() => ({ open: null }));
+const useOpenPopover = create<{ open: string | null; surface: boolean }>(() => ({ open: null, surface: false }));
+
+export const useSurfacePopoverShown = () => useOpenPopover((state) => state.open !== null && state.surface);
+export const closeHudPopover = () => useOpenPopover.setState({ open: null, surface: false });
 
 export const closeHudPopover = () => useOpenPopover.setState({ open: null });
 
@@ -29,14 +32,14 @@ export const popoverAnchor = (trigger: Pick<DOMRect, "left" | "bottom" | "width"
 
 export const HudPopoverRoot = createContext<{ node: HTMLElement | null; scale: number }>({ node: null, scale: 1 });
 
-export const useHudPopover = () => {
+export const useHudPopover = ({ surface = false }: { surface?: boolean } = {}) => {
   const root = useContext(HudPopoverRoot);
   const id = useId();
   const open = useOpenPopover((state) => state.open === id);
   const trigger = useRef<HTMLButtonElement>(null);
   const layer = useRef<HTMLDivElement>(null);
   const close = useCallback(
-    () => useOpenPopover.setState((state) => (state.open === id ? { open: null } : state)),
+    () => useOpenPopover.setState((state) => (state.open === id ? { open: null, surface: false } : state)),
     [id],
   );
   const anchor = useTriggerAnchor(trigger, open, root.scale);
@@ -55,7 +58,7 @@ export const useHudPopover = () => {
     ref: trigger,
     "aria-expanded": open,
     "aria-controls": open ? id : undefined,
-    onClick: () => useOpenPopover.setState({ open: open ? null : id }),
+    onClick: () => useOpenPopover.setState(open ? { open: null, surface: false } : { open: id, surface }),
     onKeyDown: closeOnEscape,
   };
   const popover = (children: ReactNode, attributes: { className: string; layout?: string }) =>

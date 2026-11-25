@@ -14,7 +14,7 @@ export const useHowToPlay = (): string => HOW_TO_PLAY_BY_MODE[useGameModeConfig(
 export const HowToPlayRow = ({ guide }: { guide: string }) => (
   <HudRow
     lead={<Icon name="guide" size={22} />}
-    title={PROFILE_WORDS.howToPlay}
+    title={PROFILE_WORDS.guide}
     detail={new URL(guide).host}
     href={guide}
   />
@@ -23,7 +23,6 @@ export const HowToPlayRow = ({ guide }: { guide: string }) => (
 export const HowToPlayTile = ({ guide, className }: { guide: string; className: string }) => (
   <a className={className} href={guide} target="_blank" rel="noopener noreferrer">
     <Icon name="guide" size={40} />
-    <span className={`${className}__label`}>{PROFILE_WORDS.howToPlay}</span>
-    <span className={`${className}__detail`}>{new URL(guide).host}</span>
+    <span className={`${className}__label`}>{PROFILE_WORDS.guide}</span>
   </a>
 );

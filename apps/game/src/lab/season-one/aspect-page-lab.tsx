@@ -20,7 +20,7 @@ export function AspectPageLab() {
       </nav>
       <AspectPageView
         {...ASPECT_PAGE_CASES[NAMES[index]!]}
-        onGoToDeep={() => undefined}
+        goToDeep={{ go: () => undefined }}
         onClose={() => setParams({ case: "0" })}
       />
     </div>
