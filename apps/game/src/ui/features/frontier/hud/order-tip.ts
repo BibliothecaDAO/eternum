@@ -9,7 +9,7 @@ import {
   REINFORCE,
   SPIRE_WORDS,
   STAMINA,
-  TRANSFER,
+  TRANSFER_TROOPS,
   UNEXPLORED,
 } from "@/ui/design-system/kit/words";
 import {
@@ -68,7 +68,7 @@ const ORDERS: Partial<Record<ActionType, string>> = {
   [ActionType.Explore]: EXPLORE,
   [ActionType.Move]: MOVE,
   [ActionType.Attack]: ATTACK,
-  [ActionType.Help]: `${TRANSFER} troops`,
+  [ActionType.Help]: TRANSFER_TROOPS,
   [ActionType.SpireTravel]: "Enter the Spire",
   [ActionType.EnterDepth]: SPIRE_WORDS.order,
 };

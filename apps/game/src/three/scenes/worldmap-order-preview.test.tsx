@@ -4,7 +4,7 @@ import { deepScenario } from "@/lab/game/deep-scenario";
 import { createRoot } from "react-dom/client";
 import type { ActionPath } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
-import { EXPLORE, MOVE } from "@/ui/design-system/kit/words";
+import { EXPLORE, MOVE, TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
 import { PerspectiveCamera } from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
@@ -885,7 +885,9 @@ describe("the click matrix: what is selected × what is clicked", () => {
       return [
         ...did,
         ...(drawn
-          ? [`${drawn.id}: ${drawn.host.querySelector<HTMLElement>("[data-refused-order]")?.dataset.refusedOrder}`]
+          ? [
+              `${drawn.id}: ${drawn.host.querySelector<HTMLElement>("[data-refused-order]")?.dataset.refusedOrder} ${drawn.host.querySelector("button:not([aria-label])")?.textContent}`,
+            ]
           : []),
         ...map.sent.map(() => "its order runs"),
         ...map.pinned.filter(Boolean).map(() => "order pinned"),
@@ -958,13 +960,13 @@ describe("the click matrix: what is selected × what is clicked", () => {
       nothing: { ...none, "your realm beside": "realm menu" },
       army: {
         "your army beside": "its order runs",
-        "your army far": "order-preview: too-far",
-        "your army on its spire": "order-preview: too-far",
-        "your army on a cleared site": "order-preview: too-far",
+        "your army far": `order-preview: too-far ${TRANSFER_TROOPS}`,
+        "your army on its spire": `order-preview: too-far ${TRANSFER_TROOPS}`,
+        "your army on a cleared site": `order-preview: too-far ${TRANSFER_TROOPS}`,
         "your realm beside": "its order runs",
         "enemy army": "its order runs",
         "bare ground in reach": "its order runs",
-        "bare ground far": "order-preview: too-far",
+        "bare ground far": `order-preview: too-far ${EXPLORE}`,
       },
       realm: { ...none, "your realm beside": "realm menu" },
     });

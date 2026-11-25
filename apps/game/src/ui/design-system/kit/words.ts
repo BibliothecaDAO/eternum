@@ -690,6 +690,7 @@ export const CANCEL = "Cancel";
 export const UNEXPLORED = "Unexplored";
 /** A reveal that paid under a unit, in the day log: what was done, with no amount (findGain). */
 export const TRANSFER = "Transfer";
+export const TRANSFER_TROOPS = `${TRANSFER} troops`;
 /** A good held whose weight the game has not given: its donkeys cannot be counted, so it cannot be sent. */
 export const WEIGHT_UNKNOWN = "Weight unknown: cannot be sent";
 /** A player whose name identity could not give: shown as a dash, named so for a screen reader, never the stand-in. */
