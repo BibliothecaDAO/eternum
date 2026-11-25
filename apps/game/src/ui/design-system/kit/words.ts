@@ -594,10 +594,10 @@ export const SEASON = "Season";
 export const RANK = "Rank";
 export const SITES = "Sites";
 export const SITES_CLEARED = "Sites cleared";
-export const OATH_WAITING = "An Oath waits: pick the army to swear it";
+export const OATH_WAITING = "Oath ready: select the army to pick";
 export const OATH_PICK = {
   title: "Swear an Oath",
-  replaceTitle: "Choose an Oath to replace",
+  replaceTitle: "Pick an Oath to replace",
   slotOf: (slot: number, slots: number, troops: string, troop: string) =>
     `Slot ${formatExact(slot)} of ${formatExact(slots)} · ${troops} ${troop}`,
   swear: (oath: string) => `Swear ${oath}`,
@@ -610,15 +610,15 @@ export const OATH_PICK = {
   used: "Used",
   fresh: "New",
   pass: "Pass",
-  notChosen: "The Oath could not be chosen.",
-  notRedrawn: "The card could not be rerolled.",
+  notChosen: "Could not choose Oath.",
+  notRedrawn: "Could not reroll Oath.",
 } as const;
 export const SITE_OATH = { label: "Oath", rule: "Clearing it opens an Oath pick" } as const;
 export const SUPPLY_POST = {
   title: "Supply Post",
   chip: "Post",
   open: "Post open",
-  rule: "Clearing it opens a supply post: your armies refill beside it until the day ends",
+  rule: "Clearing opens a Supply Post: refill adjacent armies until day end",
   until: "Open until the day ends",
 } as const;
 export const SEASON_CLIMB = {
@@ -797,9 +797,9 @@ export const SPIRE_WORDS = {
   enter: "Enter",
   /** The order on the spire's tile; its card then picks the Ethereal layer to enter. */
   order: "Enter the Spire",
-  foreign: "Another realm's spire",
-  pickArmy: "Select an army beside the spire",
-  away: (army: string) => `${army} must be beside the spire`,
+  foreign: "Another Realm's Spire",
+  pickArmy: "Select an army beside the Spire",
+  away: (army: string) => `${army} must be beside the Spire`,
   inDepth: (army: string, depth: string) => `${army} is in ${depth} today`,
   landingTaken: "Entry tile is blocked",
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
@@ -813,10 +813,10 @@ export const ATTACK_REFUSAL_WORDS = {
   "guarding-deep-site": `This army guards a ${DEEP} site`,
   "target-guards-deep-site": `Attack the ${DEEP} site it guards`,
   "expired-army": "An army from an earlier day",
-  "deep-ring-closed": "This ring has not opened today",
+  "deep-ring-closed": "Ring not open yet",
   "target-must-be-unowned": "Only neutral structures can be attacked",
   "own-target": "You already control this",
-  "no-attack": "This game allows no attack here",
+  "no-attack": "Cannot attack here",
   allied: "Allied armies cannot attack each other",
   "season-immunity": "Under season immunity",
   "village-immunity": "The village is under immunity",
@@ -1151,8 +1151,8 @@ export const PICKED_ARMY = {
 /** Troops between two of the realm's armies side by side (Frontier's Transfer troops, desktop and phone). */
 export const TRANSFER_TROOPS = {
   title: "Transfer troops",
-  waiting: "Waiting for both armies’ progress.",
-  stale: "The armies changed: review the merge",
+  waiting: "Loading army details…",
+  stale: "Armies changed. Review merge.",
   merge: (army: string) => `Merge into ${army}`,
   losesProgress: (army: string) => `${army} loses its Logistics, Oath slots and held Oaths.`,
   /** A second press confirms the loss of stronger Logistics training. */
@@ -1163,7 +1163,7 @@ export const TRANSFER_TROOPS = {
   sending: "Moving…",
   cap: (cap: number) => `An army holds at most ${formatAmount(cap)}.`,
   unalike: (picked: string, tapped: string) => `${picked} and ${tapped} hold different troops`,
-  failed: "The troops could not be moved.",
+  failed: "Could not move troops.",
   changed: "The armies' troops changed",
 } as const;
 /** Troops raised from the realm's stock into its army beside it (the realm selected, the army right-clicked). */
@@ -1174,7 +1174,7 @@ export const REINFORCE = {
   titleAmount: (army: string, amount: string) => `Reinforce ${army} (+${amount})`,
   fromHome: (amount: string, troops: string) => `+${amount} ${troops} from home`,
   sending: "Reinforcing…",
-  failed: "The army could not be reinforced.",
+  failed: "Could not reinforce army.",
 } as const;
 /** A realm's armies, as a list's name. */
 export const ARMIES = "Armies";
@@ -2082,11 +2082,11 @@ export const getArmyReadinessTitle = ({
   const travelBlocked = hasTravelStaminaWarning || hasTravelFoodWarning;
   const exploreBlocked = hasExploreStaminaWarning || hasExploreFoodWarning;
 
-  if (travelBlocked && exploreBlocked) return "Travel and explore blocked";
-  if (travelBlocked) return "Travel blocked";
-  if (exploreBlocked) return "Explore blocked";
+  if (travelBlocked && exploreBlocked) return "Cannot move or explore";
+  if (travelBlocked) return "Cannot move";
+  if (exploreBlocked) return "Cannot explore";
 
-  return "Ready to travel or explore";
+  return "Ready to move or explore";
 };
 
 /** Tooltip for a movement-blocked stamina bar; null when travel is possible. */
@@ -2110,7 +2110,7 @@ export const formatTravelBlockedSummary = ({
 
   if (requirements.length === 0) return null;
 
-  return `Cannot travel — needs ${requirements.join(" and ")}`;
+  return `Cannot move — needs ${requirements.join(" and ")}`;
 };
 
 /** The visible reason food keeps an army still: what one step costs it (a charge) and what its realm holds. */
@@ -2134,7 +2134,7 @@ export const formatFoodBlock = (block: {
   ]
     .filter(Boolean)
     .join(" and ");
-  const verb = block.action === "travel" ? "Can't march" : "Can't explore";
+  const verb = block.action === "travel" ? "Can't move" : "Can't explore";
   const step = block.action === "travel" ? "each step" : "each explore";
   return `${verb}: ${step} costs ${cost}, has ${held}`;
 };
@@ -2275,7 +2275,7 @@ export const ARMY_MANAGEMENT = {
   remove: "Delete",
   confirmDelete: "Delete this army?",
   loss: "Its troops, carried resources and held Oaths are lost. Its slot keeps its stamina.",
-  deleteFailed: "The army could not be deleted.",
+  deleteFailed: "Could not delete army.",
 } as const;
 
 const ARMY_RELIC_SLOTS = 3;
@@ -2284,8 +2284,8 @@ export const RELIC_WORDS = {
   cache: (fragments: number) => `Ancient cache: ${formatExact(fragments)} ${FRAGMENTS}`,
   kinds: { Blade: "Blade", Ward: "Ward", Plunder: "Plunder", StaminaRegen: "Stamina" },
   empty: "Empty slot",
-  switchOn: "Switch on",
-  switching: "Switching on…",
+  switchOn: "Use",
+  switching: "Using…",
   /** A running relic and its time left: "Rare Ward · 20m left". */
   runs: (relic: string, left: string) => `${relic} · ${left} left`,
   /** Switching on a relic whose kind already runs: the new one takes its place. */
@@ -2293,14 +2293,14 @@ export const RELIC_WORDS = {
   /** A ruin's relic, before the fight: the beast is as big as the relic is rare. */
   guards: (relic: string) => `Reward: ${relic}`,
   /** Choosing which of three carried relics the ruin's relic replaces, before the attack. */
-  full: `Your army carries ${ARMY_RELIC_SLOTS} relics. Choose the one this relic replaces.`,
+  full: `Army holds ${ARMY_RELIC_SLOTS} relics (max). Pick one to replace.`,
   replace: (relic: string) => `Replace ${relic}`,
   /** The held attack's step while the army's relics are not known yet: whether it must choose cannot be told. */
   reading: "Loading relics…",
   /** The held attack's step while what the ruin pays is not known yet: whether a relic comes cannot be told. */
   readingRuin: "Loading ruin reward…",
   /** The held attack's step while no relic is chosen: the choice itself is said just above it. */
-  chooseFirst: "Choose the relic to replace first",
+  chooseFirst: "Pick a relic to replace first",
 } as const;
 
 const STAMINA_TITLE = `${STAMINA[0]!.toUpperCase()}${STAMINA.slice(1)}`;
@@ -2326,7 +2326,7 @@ export const PICK_EFFECT_WORDS = {
   revealCost: "Reveal cost",
   scoutCostNote: (from: string, to: string) => `${FRONTIER_TROOP_NAMES[TroopType.Paladin]} ${from} → ${to}`,
   lowStaminaAttackDamage: (threshold: string) =>
-    `Attack damage when the army has less than ${threshold} ${STAMINA} left after the attack`,
+    `Attack damage with under ${threshold} ${STAMINA} left after attacking`,
   wonBattleRefund: `Won battle ${STAMINA} refund`,
   shareOf: (percent: string, base: string) => `${percent} of ${base}`,
   nearbyAllyDamage: "Adjacent own army's damage added",

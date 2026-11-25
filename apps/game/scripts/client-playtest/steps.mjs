@@ -390,7 +390,7 @@ const RELIC_FORECAST_STEPS = [
       browser.press("Escape");
       await openTheArmyPanel(browser);
       for (const [index, name] of ["Uncommon Blade", "Common Ward"].entries()) {
-        browser.run(["find", "role", "button", "click", "--name", `Switch on ${name}`]);
+        browser.run(["find", "role", "button", "click", "--name", `Use ${name}`]);
         await readUntil(
           () => browser.read(`window.__labChain?.sent.filter(row => row.command.kind === 'ApplyRelic').length ?? 0`),
           (count) => count === index + 1,

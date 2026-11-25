@@ -67,7 +67,7 @@ describe("formatTravelBlockedSummary", () => {
         missingFish: 0,
         wheatLabel: "wheat",
       }),
-    ).toBe("Cannot travel — needs 25+ stamina and 1,240 wheat");
+    ).toBe("Cannot move — needs 25+ stamina and 1,240 wheat");
   });
 
   it("returns null when nothing is missing", () => {
@@ -94,7 +94,7 @@ describe("food-blocked armies", () => {
       food: { wheat: 5.5, fish: 0 },
     });
     expect(starved.canTravel).toBe(false);
-    expect(formatFoodBlock(starved.foodBlock!)).toBe("Can't march: each step costs 31 wheat, has 6 wheat");
+    expect(formatFoodBlock(starved.foodBlock!)).toBe("Can't move: each step costs 31 wheat, has 6 wheat");
   });
 
   it("clears the reason once the realm holds a step's wheat", () => {
