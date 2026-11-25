@@ -105,11 +105,12 @@ function readWorldKind(
   day: number,
   stopped: boolean,
 ): NativeFactResult<{ kind: number }> {
-  if (stopped || day < QUIET_DAYS || followsWorldBane(store, gameId, day)) return { known: { kind: NO_WORLD_BANE } };
+  if (stopped || followsWorldBane(store, gameId, day)) return { known: { kind: NO_WORLD_BANE } };
   const rolled = readOptionalSeasonRow(store, "WorldBane", { game_id: gameId, day });
   if (!rolled.known) return rolled;
-  if (!rolled.known.row) return { unknown: UNROLLED_WORLD_DAY };
-  return { known: { kind: rolled.known.row.kind } };
+  if (rolled.known.row) return { known: { kind: rolled.known.row.kind } };
+  if (day < QUIET_DAYS) return { known: { kind: NO_WORLD_BANE } };
+  return { unknown: UNROLLED_WORLD_DAY };
 }
 
 function followsWorldBane(store: NativeFactStore, gameId: number, day: number) {

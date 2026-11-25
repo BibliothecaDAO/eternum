@@ -550,6 +550,17 @@ it("waits for optional-rule absence before showing ordinary quests or production
   expect(read()?.reading.known?.quest.id).toBe(nativeQuestConstants.REVEALS);
 });
 
+it("keeps a world bane a quiet day recorded before the quiet days began, as the chain reads its stored roll", () => {
+  const store = baneFixture();
+  store.applyFacts([
+    { model: "WorldBane", key: "1:0", value: { game_id: 1, day: BANE_DAY - 1, kind: nativeBaneConstants.ASH_FALL } },
+  ]);
+  expect(readBaneDay(store, 1, 7, lastQuietDay).known?.bane).toMatchObject({
+    type: "world",
+    kind: nativeBaneConstants.ASH_FALL,
+  });
+});
+
 it("reads the first days as calm before any roll, as the chain rolls no world bane on them", () => {
   const store = baneFixture();
   store.applyFacts([{ model: "WorldBane", key: "1:0", value: null }]);
