@@ -34,8 +34,9 @@ import { useModalLayer } from "./modal-layer";
 type Tone = "good" | "bad" | "warn";
 type Age = "blitz" | "frontier" | "eternum";
 
-type AppButtonProps = {
-  kind: "primary" | "secondary" | "quiet";
+type AppButtonLook = { kind: "secondary"; tone?: "bad" } | { kind: "primary" | "quiet" | "danger"; tone?: never };
+
+type AppButtonProps = AppButtonLook & {
   /** lg: the page's one verb at the size it leads with (Play's Resume, the lobby's Pay and join). */
   size?: "md" | "lg";
   icon?: IconMeaning;
@@ -43,8 +44,6 @@ type AppButtonProps = {
   step?: boolean;
   /** Its step is on its way: this word in place of its own, and no second press. */
   busy?: string;
-  /** A secondary or quiet button that loses something (Sign out, Remove a device), or a primary that still costs. */
-  tone?: "bad";
   /** A verb that leads somewhere: the route it opens, after `onClick` has run. */
   to?: To;
   children?: ReactNode;
@@ -114,14 +113,12 @@ export const AppIconButton = ({
   icon,
   label,
   kind = "quiet",
-  tone,
   disabled,
   onClick,
 }: {
   icon: IconMeaning;
   label: string;
   kind?: "secondary" | "quiet";
-  tone?: "bad";
   disabled?: boolean;
   onClick: () => void;
 }) => (
@@ -130,7 +127,6 @@ export const AppIconButton = ({
     className="app-button"
     data-kind={kind}
     data-size="icon"
-    data-tone={tone}
     aria-label={label}
     title={label}
     disabled={disabled}
