@@ -11,13 +11,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import {
-  HudButton,
-  HudField,
-  HudNotice,
-  HudPortrait,
-  HudSlider,
-} from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudField, HudNotice, HudPortrait, HudSlider } from "@/ui/design-system/kit/hud-elements";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";

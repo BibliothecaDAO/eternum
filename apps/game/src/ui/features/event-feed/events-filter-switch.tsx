@@ -24,7 +24,11 @@ export const LensSwitch = <Lens extends string>({
   <HudChoice
     label={EVENTS_WORDS.lens}
     value={lens}
-    options={(Object.keys(words.names) as Lens[]).map((id) => ({ value: id, label: words.names[id], tip: words.tips[id] }))}
+    options={(Object.keys(words.names) as Lens[]).map((id) => ({
+      value: id,
+      label: words.names[id],
+      tip: words.tips[id],
+    }))}
     onChange={onLens}
   />
 );
