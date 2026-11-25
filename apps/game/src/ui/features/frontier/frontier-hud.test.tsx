@@ -732,11 +732,13 @@ it("routes the phone Realm panel through the one-panel state so it replaces Toda
 /** History moves a moment after it is asked to: a closed frame's step back, or the system back, lands by then. */
 const historySettles = async () => {
   await act(async () => new Promise((settled) => setTimeout(settled)));
-  await act(async () => vi.waitFor(() => expect(stepsBackInFlight).toBe(0)));
+  await act(async () => vi.waitFor(() => expect(stepsBackInFlight, backTraces.join("\n=====\n")).toBe(0)));
 };
 let stepsBackInFlight = 0;
 const browserBack = window.history.back.bind(window.history);
+const backTraces: string[] = [];
 window.history.back = () => {
+  backTraces.push(`${expect.getState().currentTestName} ${window.location.pathname} ${new Error().stack}`);
   stepsBackInFlight += 1;
   browserBack();
 };
