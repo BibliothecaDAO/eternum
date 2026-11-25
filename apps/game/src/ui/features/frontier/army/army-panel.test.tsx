@@ -19,40 +19,22 @@ afterEach(() => {
   act(() => root.unmount());
   host.remove();
 });
-it("reads on its first step when the stamina is full again and what each tile explored sends home", () => {
-  act(() => root.render(<ArmyDetail army={EARLY_ARMY} />));
+it("reads the troops, when the stamina is full again and the stamina over one unbroken bar with its value", () => {
+  act(() => root.render(<ArmyDetail army={{ ...EARLY_ARMY, stamina: { current: 18, max: 140, perExplore: 20 } }} />));
   const stats = host.querySelector('[data-army-step="stats"]')!;
+  expect(stats.querySelector('[aria-label="1,500 troops"]')?.textContent).toBe("1,500");
   expect(stats.textContent).toContain("Full in 4h");
-  expect(stats.textContent).toContain("+75 a tile");
-  // A reveal pays one of the two, as the contract draws it: its chip's name says "or", and "a tile" once.
-  expect(stats.querySelector('[aria-label^="Essence"]')!.getAttribute("aria-label")).toBe(
-    "Essence or Labor, +75 a tile",
-  );
+  const meter = host.querySelector('[role="meter"][aria-label="stamina"]')!;
+  expect([meter.getAttribute("aria-valuenow"), meter.getAttribute("aria-valuemax")]).toEqual(["18", "140"]);
+  expect([...meter.querySelectorAll<HTMLElement>("i")].map((fill) => fill.style.width)).toEqual([
+    `${(18 / 140) * 100}%`,
+  ]);
+  expect(meter.closest("[data-stamina-line]")!.textContent).toBe("18");
 
-  // A full army in a game whose reveals pay nothing reads neither.
   act(() =>
     root.render(
-      <ArmyDetail
-        army={{
-          ...EARLY_ARMY,
-          stamina: { current: 120, max: 120, perExplore: 20 },
-          secondsToFull: 0,
-          revealYield: null,
-        }}
-      />,
+      <ArmyDetail army={{ ...EARLY_ARMY, stamina: { current: 120, max: 120, perExplore: 20 }, secondsToFull: 0 }} />,
     ),
   );
   expect(host.textContent).not.toContain("Full in");
-  expect(host.textContent).not.toMatch(/\+\S+ a tile/);
-});
-it("reads its stamina on one row: its word, 18/140 and when it is full, over one unbroken bar", () => {
-  const army = { ...EARLY_ARMY, title: "Knights", stamina: { current: 18, max: 140, perExplore: 20 } };
-  act(() => root.render(<ArmyDetail army={army} />));
-  const meter = host.querySelector('[role="meter"][aria-label="stamina"]')!;
-  expect([meter.getAttribute("aria-valuenow"), meter.getAttribute("aria-valuemax")]).toEqual(["18", "140"]);
-  const fills = [...meter.querySelectorAll<HTMLElement>("i")].map((fill) => fill.style.width);
-  expect(fills).toEqual([`${(18 / 140) * 100}%`]);
-  expect(meter.closest("[data-stamina-line]")!.textContent).toBe("Stamina18/140Full in 4h");
-  expect(host.querySelector(".army-detail__title")?.textContent).toBe("Knights");
-  expect(host.querySelector(".army-detail__sub")?.textContent).toMatch(/troops.*\+75 a tile$/);
 });

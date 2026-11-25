@@ -189,36 +189,32 @@
   min-height: 0;
   flex-direction: column;
   overflow-y: auto;
-  gap: 8px;
-  padding: 10px 10px 12px;
+  gap: 0;
+  padding: 0;
 }
 .frontier-slot {
   display: flex;
   width: 100%;
-  min-height: 46px;
+  min-height: 42px;
   align-items: center;
   gap: 8px;
-  border: 1px dashed var(--hud-line-strong);
-  border-radius: var(--hud-radius-control);
-  background: color-mix(in srgb, var(--hud-well) 60%, transparent);
-  padding: 6px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--hud-divider);
+  border-left: 3px solid transparent;
+  background: transparent;
+  padding: 6px 12px 6px 9px;
   color: rgb(var(--hud-ink));
   text-align: left;
 }
 .frontier-slot[data-slot-state="army"] {
-  border-style: solid;
-  border-color: var(--hud-line);
-  background: var(--hud-well);
   cursor: pointer;
 }
 .frontier-slot[data-slot-state="army"]:hover {
-  border-color: var(--hud-line-strong);
   background: var(--hud-hover);
 }
 .frontier-slot[data-slot-state="army"][aria-pressed="true"] {
-  border: 1.5px solid rgb(var(--hud-gold));
+  border-left-color: rgb(var(--hud-gold));
   background: var(--hud-chosen);
-  box-shadow: 0 0 12px color-mix(in srgb, rgb(var(--hud-gold)) 35%, transparent);
 }
 .frontier-slot[data-slot-state="army"]:disabled {
   cursor: default;
@@ -228,8 +224,7 @@
   align-items: center;
   gap: theme(spacing[1.5]);
   margin: 0;
-  border-top: 1px solid var(--hud-divider);
-  padding-top: theme(spacing[1.5]);
+  padding: theme(spacing.2) 12px;
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
 }
@@ -428,4 +423,12 @@
   white-space: normal;
   text-overflow: clip;
   text-wrap: balance;
+}
+[data-rail-panel] .oath-sockets {
+  gap: theme(spacing[1.5]);
+}
+[data-rail-panel] .oath-socket {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--hud-radius-round);
 }

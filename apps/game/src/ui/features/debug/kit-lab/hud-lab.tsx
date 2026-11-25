@@ -1101,7 +1101,7 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
     return <RefillConfirm stamina={stamina} held={army.fragments} sending={false} onRefill={noop} onCancel={noop} />;
   return (
     <HudSheet
-      label={base.name}
+      label={`${ARMY} 2`}
       beside={<HudIconButton icon="trash" label={ARMY_MANAGEMENT.remove} kind="danger" size="sm" onClick={noop} />}
       onClose={noop}
     >

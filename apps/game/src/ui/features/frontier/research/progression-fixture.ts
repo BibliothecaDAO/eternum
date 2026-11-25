@@ -58,19 +58,15 @@ export const MID_REALM = realmOn(
 );
 
 export const EARLY_ARMY: ArmyView = {
-  name: "Army 1",
   art: "knight-t1",
   troops: 1_500,
   stamina: { current: 4, max: 120, perExplore: 20 },
   secondsToFull: 4 * 3_600,
-  revealYield: 75,
 };
 
 export const VETERAN_ARMY: ArmyView = {
-  name: "Army 2",
   art: "knight-t1",
   troops: 1_240,
   stamina: { current: 96, max: 120, perExplore: 20 },
   secondsToFull: 2 * 3_600,
-  revealYield: 120,
 };
