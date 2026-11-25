@@ -590,7 +590,7 @@ before/after and actual fees from included receipts (a validation refusal has no
 or account address in those measurements and never fabricates an RPC reply or applies a release. Use a fresh evidence
 directory for each run; the handshake expires after three minutes.
 
-A founded free home's daily source is self-serve at game entry → Choose a daily claim → Add this daily claim. The picker
+A founded free home's daily source is self-serve at game entry → Choose a quest bonus → Add this quest bonus. The picker
 uses the same linked-wallet holdings as founding.
 
 The discovered-Spire path is `/lab/game?scenario=discovered-spire`: select Army 1, open Spire, then Enter Ethereal II.

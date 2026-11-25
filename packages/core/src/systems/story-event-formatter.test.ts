@@ -131,14 +131,14 @@ it("names a LORDS withdrawal by its whole amount, and another player's by the pl
   const withdrawn = (view: Event) => buildStoryEventPresentation(view, undefined, djizus);
   expect(withdrawn(own("LordsWithdrawn", { account: "0x123", amount: 200 }))).toMatchObject({
     title: "LORDS withdrawn",
-    description: "200 LORDS to L2",
+    description: "200 LORDS to wallet",
   });
   expect(withdrawn(story("LordsWithdrawn", { account: "0x123", amount: 50 }))).toMatchObject({
     title: "djizus withdrew LORDS",
-    description: "50 LORDS to L2",
+    description: "50 LORDS to wallet",
   });
   expect(withdrawn(own("LordsWithdrawn", { account: "0x123", amount: 12_000 }))).toMatchObject({
-    description: "12K LORDS to L2",
+    description: "12K LORDS to wallet",
   });
 });
 
@@ -545,7 +545,7 @@ describe("every story the chain can tell", () => {
       buildStoryEventPresentation(story("BuildingPlacementStory", { coord, category: 37, change }, 7)).title;
     // The realm is not in this store: its player tells it.
     expect(placed("Created")).toMatch(/^Lord 0123 built an? .+$/);
-    expect(placed("Destroyed")).toMatch(/^Lord 0123's .+ demolished$/);
+    expect(placed("Destroyed")).toMatch(/^Lord 0123's .+ deleted$/);
     expect(placed("Paused")).toMatch(/^Lord 0123's .+ paused$/);
     expect(() => buildStoryEventPresentation(story("BuildingPlacementStory", { coord, category: 37 }, 7))).toThrow(
       "Incomplete building placement story",
@@ -656,7 +656,7 @@ describe("a story's subject", () => {
     );
     expect(title("GuardAddStory", { structure_id: 5, slot: 1, ...troops })).toBe("djizus reinforced the Castle Wall");
     expect(title("ExplorerAddStory", { explorer_id: 7, ...troops })).toBe("djizus reinforced an army");
-    expect(title("ExplorerDeleteStory", { explorer_id: 7 })).toBe("djizus disbanded an army");
+    expect(title("ExplorerDeleteStory", { explorer_id: 7 })).toBe("djizus deleted an army");
     expect(title("StructureLevelUpStory", { new_level: 1 })).toBe("djizus's realm became a City");
     expect(title("ResourceBurnStory", { resources: [] })).toBe("djizus spent resources");
     expect(title("RealmCreatedStory", { coord: { x: 1, y: 1 } })).toBe("djizus created a Realm");

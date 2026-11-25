@@ -51,7 +51,7 @@ const labAt = (view: string) => (
 );
 const forecast = () => document.querySelector('[data-popover-panel="quick-attack"]');
 
-it("draws the game's own Build order panel in a Blitz player's rail without a redundant order choice when signed out", async () => {
+it("draws the game's own Build plan panel in a Blitz player's rail without a redundant order choice when signed out", async () => {
   await act(async () =>
     root.render(
       <MemoryRouter initialEntries={["/unified/blitz"]}>

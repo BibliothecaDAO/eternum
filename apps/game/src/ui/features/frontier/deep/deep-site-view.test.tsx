@@ -34,7 +34,7 @@ describe("a Deep site's card", () => {
     expect(text()).toContain("Hyperstructure archive");
     expect(text()).toContain("6 Glory");
     expect(text()).toContain("+6 height to your Aspect's hyperstructure");
-    expect(text()).toContain(`Today's beast: ${DEEP_BEASTS.foundation.name}, 10,000 troops`);
+    expect(text()).toContain(`Guard: ${DEEP_BEASTS.foundation.name}, 10,000 troops`);
     const [attack] = labels(["Attack"]);
     act(() => attack!.click());
     expect(onAct).toHaveBeenCalledTimes(1);
@@ -58,7 +58,7 @@ describe("a Deep site's card", () => {
       ...DEEP_SITE_CASES["Altar, open, army away"],
       order: { kind: "move", prices: [{ of: "stamina", amount: 30 }], onMove },
     });
-    expect(text()).toContain("No guard: the next army takes it");
+    expect(text()).toContain("Unguarded: next army takes it");
     expect(text()).toContain("1,500");
     act(() => labels(["Move"])[0]!.click());
     expect(onMove).toHaveBeenCalledTimes(1);
@@ -86,7 +86,7 @@ describe("a Deep site's card", () => {
       expect(tips[index]).toContain(`${slot.ticks.left} ticks left (${slot.ticks.time})`);
     }
     expect(document.querySelector("[data-deep-drain]")?.textContent).toContain("/ tick");
-    expect(text()).toContain("Another Aspect holds it");
+    expect(text()).toContain("Held by a rival Aspect");
   });
 
   it("offers one Join action and draws free slots as non-interactive indicators", () => {

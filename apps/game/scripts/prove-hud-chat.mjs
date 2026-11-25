@@ -511,7 +511,7 @@ const PLACES = `(() => {
       painted: Boolean(image && image.complete && image.naturalWidth > 0),
     };
   };
-  const share = pane?.querySelector('button[aria-label="Share the selected place"]');
+  const share = pane?.querySelector('button[aria-label="Share selected place"]');
   const picked = pane?.querySelector("form [data-place]");
   const last = [...(pane?.querySelectorAll("li[data-message-id]") ?? [])].at(-1);
   const lastChip = last?.querySelector("[data-place]");
@@ -554,7 +554,7 @@ const provePlaces = async (b, out, record, phone) => {
   );
   b.run("screenshot", join(out, `places-history-${tag}.png`));
 
-  const pressed = clickAsPlayer(b, '[data-lab="chat"] button[aria-label="Share the selected place"]');
+  const pressed = clickAsPlayer(b, '[data-lab="chat"] button[aria-label="Share selected place"]');
   record.presses.push({ press: "the place button", status: pressed ?? "led" });
   await sleep(300);
   record.measures.picked = b.evaluate(PLACES).picked;

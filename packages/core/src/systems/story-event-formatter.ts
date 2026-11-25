@@ -117,7 +117,7 @@ const archivedFormatters = {
     icon: "resource",
   }),
   FaithPointsClaimedStory: (_event, payload, components) => ({
-    title: "Faith points claimed",
+    title: "Faith points earned",
     description: joinPieces([
       describeStructureName(payload.wonder_id, components),
       `+${formatNumber(payload.new_points) ?? "—"} (${formatNumber(payload.total_points) ?? "—"} in all)`,
@@ -125,7 +125,7 @@ const archivedFormatters = {
     icon: "prize",
   }),
   FaithPledged: (_event, payload, components) => ({
-    title: "Faith pledged",
+    title: "Faith given",
     description: `${describeStructureName(payload.structure_id, components) ?? "—"} → ${describeStructureName(payload.wonder_id, components) ?? "—"}`,
     icon: "realm",
   }),
@@ -253,7 +253,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
       title: isViewer(event.ownerAddress, event.viewerAddress ?? null)
         ? "LORDS withdrawn"
         : `${playerOf(event, components, resolvePlayerName)} withdrew LORDS`,
-      description: `${formatCharge(amount)} LORDS to L2`,
+      description: `${formatCharge(amount)} LORDS to wallet`,
       icon: "prize",
     };
   },
@@ -268,7 +268,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
       // Another player's realm, which this client never synced, is told by its settler.
       title: realm ? `${realm} created` : `${ownerLabel ?? "Someone"} created a Realm`,
       description: joinPieces([
-        realm && ownerLabel ? `Settled by ${ownerLabel}` : undefined,
+        realm && ownerLabel ? `Created by ${ownerLabel}` : undefined,
         coord ? `at ${coord}` : undefined,
       ]),
       icon: "realm",
@@ -414,8 +414,8 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     const at = describeEntity(payload.structure_id ?? event.entityId, components);
     return {
       title: at
-        ? `${at}'s ${formatSlotLabel(payload.slot) ?? "guard"} dismissed`
-        : `${playerOf(event, components, resolvePlayerName)} dismissed the ${formatSlotLabel(payload.slot) ?? "guard"}`,
+        ? `${at}'s ${formatSlotLabel(payload.slot) ?? "guard"} removed`
+        : `${playerOf(event, components, resolvePlayerName)} removed the ${formatSlotLabel(payload.slot) ?? "guard"}`,
       icon: "troop",
     };
   },
@@ -438,7 +438,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
   ExplorerDeleteStory: (event, payload, components, resolvePlayerName) => {
     const army = nameArmy(payload.explorer_id, components);
     return {
-      title: army ? `${army} disbanded` : `${playerOf(event, components, resolvePlayerName)} disbanded an army`,
+      title: army ? `${army} deleted` : `${playerOf(event, components, resolvePlayerName)} deleted an army`,
       icon: "troop",
     };
   },
@@ -517,9 +517,9 @@ function formatBuildingCategory(value: unknown, store: NativeFactStore | undefin
 }
 
 /** What each change a placement story carries (the contract's BuildingChange) reads as. */
-const BUILDING_STATUS: Record<string, "built" | "demolished" | "paused" | "resumed"> = {
+const BUILDING_STATUS: Record<string, "built" | "deleted" | "paused" | "resumed"> = {
   Created: "built",
-  Destroyed: "demolished",
+  Destroyed: "deleted",
   Paused: "paused",
   Resumed: "resumed",
 };

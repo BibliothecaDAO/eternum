@@ -131,7 +131,7 @@ describe("the Aspect page", () => {
       ...ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"],
       own: { ...own, members: own.members.map((member) => ({ ...member, glory: 0 })) },
     });
-    expect(part("data-aspect-members")).toContain("No Glory yet: it comes from holding Deep sites");
+    expect(part("data-aspect-members")).toContain("No Glory yet — hold Deep sites");
     expect(document.body.querySelectorAll('[data-aspect-members] [aria-label="Glory 0"]')).toHaveLength(
       own.members.length,
     );
