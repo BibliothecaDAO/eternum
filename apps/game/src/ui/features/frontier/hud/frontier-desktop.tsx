@@ -54,6 +54,7 @@ export const FrontierDesktop = ({
           {clock}
           {quest}
         </header>
+        {banner}
         <div
           aria-label="Notices"
           role="status"
@@ -70,13 +71,7 @@ export const FrontierDesktop = ({
           {armies}
           <HudMinimap className="frontier-minimap" />
         </aside>
-        <FrontierRail
-          onPanel={setRailPanel}
-          places={places}
-          banner={banner}
-          page={page}
-          wide={widePage && Boolean(page)}
-        />
+        <FrontierRail onPanel={setRailPanel} places={places} page={page} wide={widePage && Boolean(page)} />
         <HudFoot>
           <div className="pointer-events-none flex flex-col items-center gap-3">{foot}</div>
         </HudFoot>
@@ -92,13 +87,11 @@ export const FrontierDesktop = ({
 const FrontierRail = ({
   onPanel,
   places,
-  banner,
   page,
   wide,
 }: {
   onPanel: (panel: HTMLElement | null) => void;
   places: ReactNode;
-  banner?: ReactNode;
   page?: ReactNode;
   wide: boolean;
 }) => (
@@ -111,7 +104,6 @@ const FrontierRail = ({
     className="frontier-corner frontier-corner--right pointer-events-none"
   >
     {places}
-    {banner && <div className="pointer-events-none flex shrink-0 justify-center empty:hidden">{banner}</div>}
     <div ref={onPanel} data-rail-panel className="flex min-h-0 flex-1 flex-col gap-2 empty:hidden" />
     {page && (
       <div

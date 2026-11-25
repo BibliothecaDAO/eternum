@@ -519,7 +519,6 @@ export const OF = "of";
 
 export const OFFLINE = "Offline";
 export const OFFLINE_BANNER = {
-  connectionLostReconnecting: "Connection lost · Reconnecting…",
   connectionLost: "Connection lost",
   reconnecting: "Reconnecting…",
   retry: "Retry",
