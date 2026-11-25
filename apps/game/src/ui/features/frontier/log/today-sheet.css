@@ -22,6 +22,20 @@
   color: rgb(var(--hud-ink));
   font-weight: 700;
 }
+.today-sheet__weekly {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.today-sheet__label {
+  margin: 0;
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-badge);
+  font-weight: var(--hud-weight-body);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hud-muted);
+}
 .today-sheet__week {
   display: flex;
   gap: 5px;

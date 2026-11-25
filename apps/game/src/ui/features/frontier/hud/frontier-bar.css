@@ -196,6 +196,12 @@
   text-transform: uppercase;
   color: rgb(var(--hud-ink));
 }
+.frontier-day-pill__numeral {
+  font-family: var(--hud-font);
+  font-size: var(--hud-text-body);
+  font-weight: var(--hud-weight-title);
+  letter-spacing: 0;
+}
 .frontier-day-pill__left {
   border-left: 1px solid var(--hud-divider);
   padding-left: theme(spacing.2);

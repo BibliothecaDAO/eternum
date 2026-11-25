@@ -78,8 +78,10 @@ export const TodaySheet = ({
 );
 
 const TodayWeek = ({ week }: { week: readonly WeekDay[] }) => (
-  <section data-today-week aria-label={OPENING_WORDS.week} className="today-sheet__week">
-    {week.map(({ day, quest, when, collected }) => (
+  <section data-today-week aria-label={OPENING_WORDS.week} className="today-sheet__weekly">
+    <h4 className="today-sheet__label">{OPENING_WORDS.week}</h4>
+    <span className="today-sheet__week">
+      {week.map(({ day, quest, when, collected }) => (
       <span
         key={day}
         role="img"
@@ -92,6 +94,7 @@ const TodayWeek = ({ week }: { week: readonly WeekDay[] }) => (
         <Icon name={quest.icon} size={24} />
         <i>{day}</i>
       </span>
-    ))}
+      ))}
+    </span>
   </section>
 );

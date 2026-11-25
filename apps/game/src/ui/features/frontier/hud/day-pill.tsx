@@ -81,7 +81,15 @@ export const DayPill = ({ clock, compact = false }: { clock: DayClock; compact?:
           <Icon name="sun" size={12} />
         </ProgressRing>
       )}
-      <span className="frontier-day-pill__day">{compact ? dayShort(day) : `${DAY} ${day}`}</span>
+      <span className="frontier-day-pill__day">
+        {compact ? (
+          dayShort(day)
+        ) : (
+          <>
+            {DAY} <span className="frontier-day-pill__numeral">{day}</span>
+          </>
+        )}
+      </span>
       {left && <span className="frontier-day-pill__left">{left}</span>}
       {elapsed !== undefined && (
         <span
