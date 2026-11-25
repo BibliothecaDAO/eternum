@@ -23,7 +23,7 @@ export function createRendererEffectsRuntime(input: CreateRendererEffectsRuntime
       replaceRendererDiagnosticDegradations(["environmentIbl"], policy.degradations);
     },
     applyRenderVisualProfile(features) {
-      const devicePixelRatio = Math.max(window.devicePixelRatio || 1, 1);
+      const devicePixelRatio = window.devicePixelRatio || 1;
       const requestedPixelRatio = Math.min(devicePixelRatio, features.pixelRatio);
       const pixelRatio = input.resolvePixelRatio?.(requestedPixelRatio) ?? requestedPixelRatio;
       input.backend.applyRenderVisuals({
