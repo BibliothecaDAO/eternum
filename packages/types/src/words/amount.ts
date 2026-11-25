@@ -169,9 +169,6 @@ export const formatPercent = (fraction: number | undefined, { signed = false } =
 export const formatRate = (perSecond: number | undefined): string =>
   perSecond === undefined ? "—" : `${formatFigure(perSecond * 60, { signed: true })}/min`;
 
-export const formatHourlyRate = (perSecond: number | undefined): string =>
-  perSecond === undefined ? "—" : `${formatFigure(perSecond * 3_600, { signed: true })}/h`;
-
 const ORDINAL = new Intl.PluralRules("en-US", { type: "ordinal" });
 const ORDINAL_ENDINGS: Record<string, string> = { one: "st", two: "nd", few: "rd", other: "th" };
 

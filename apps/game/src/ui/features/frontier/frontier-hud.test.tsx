@@ -1528,7 +1528,7 @@ it.each([
 );
 
 it("shows the day-end tutorial once in the last hour with own Aspect and reads non-zero Barracks output on a fresh realm", async () => {
-  const { formatStoreRate } = await import("./stores");
+  const { formatRate } = await import("@bibliothecadao/types");
   const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
   const { OPENING_WORDS } = await import("@/ui/design-system/kit/words");
   const { buildingOutput } = await import("@/ui/shared/lib/building-output");
@@ -1605,8 +1605,7 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
     await mountWithDayUnit(3_600);
     const barracksDock = host.querySelector<HTMLElement>('[data-tutorial-dock="barracks"]');
     expect(barracksDock).not.toBeNull();
-    const expectedRate = formatStoreRate(
-      "troops",
+    const expectedRate = formatRate(
       buildingOutput(
         shownStore!,
         shownStore!.require("Structure", { game_id: 1, entity_id: 7 }),
@@ -1614,7 +1613,7 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
         0,
       ).total,
     );
-    expect(expectedRate).not.toBe("0/h");
+    expect(expectedRate).not.toBe("0/min");
     expect(barracksDock?.textContent).toContain(`${expectedRate} Knights`);
 
     resetMemory();

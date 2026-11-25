@@ -19,7 +19,7 @@ import { type ReactNode, useState } from "react";
 import { buildingIcon, buildingName } from "../build/building-names";
 import { buildingsMake, standingBuildings } from "../production/store-makers";
 import { RefusedVerb } from "../refused-verb";
-import { formatStoreRate, madeStore } from "../stores";
+import { formatRate } from "@bibliothecadao/types";
 import { useResearchActions } from "../research/research-actions";
 import { useResearchTree } from "../research/research-facts";
 import { firstMissing, type Need, needLine, researchVerb, type TreeNode } from "../research/research-tree";
@@ -101,7 +101,7 @@ const useDemolish = (realm: NativeRows["Structure"], building: TappedBuilding) =
 
 /** What all of the type make, as the card says it: one rate. */
 const cardMakes = (makes: ReturnType<typeof buildingsMake>): CardMakes | undefined =>
-  makes && { icon: resourceMeaning(makes.resource), rate: formatStoreRate(madeStore(makes.resource), makes.perSecond) };
+  makes && { icon: resourceMeaning(makes.resource), rate: formatRate(makes.perSecond) };
 
 /** What a player's own building's card orders: its next tier's Research (or what it needs, with the fix) and Delete. */
 type BuildingOrders = {

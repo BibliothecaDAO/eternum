@@ -40,7 +40,6 @@ import type { HudSurface } from "../hud/frontier-nav";
 import { useRacesAspects } from "../aspect/races-aspects";
 import { readPickEffectBase } from "../pick-effect-text";
 import { buildingRate } from "../production/store-makers";
-import { formatStoreRate } from "../stores";
 import { useRealmStores } from "../realm-stores";
 import { useResearchTree } from "../research/research-facts";
 import { canResearchNow } from "../research/research-tree";
@@ -176,7 +175,7 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
   const clock = dayClock(rules, now);
   return {
     ownAspect,
-    knightsRate: formatStoreRate("troops", knightsPerSecond),
+    knightsPerSecond,
     troopsAtHome: stores?.troops.amount ?? 0,
     deepTickSeconds: tickSeconds,
     deepLossPerTick: pickBase.deepLossPerTick,

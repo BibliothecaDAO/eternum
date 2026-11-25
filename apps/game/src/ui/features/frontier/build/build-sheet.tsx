@@ -1,4 +1,5 @@
-import { rankName } from "@bibliothecadao/types";
+import { rankName   formatRate,
+} from "@bibliothecadao/types";
 import { usePlayerNames } from "@/hooks/use-player-profile";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -44,7 +45,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 
-import { formatStoreRate, FRONTIER_STORES, madeStore, STORE_KINDS } from "../stores";
+import { FRONTIER_STORES, madeStore, STORE_KINDS } from "../stores";
 import { usePartShown } from "../opening/opening-context";
 import { type BuildOption, readBuildOptions } from "./build-options";
 import { disclosedBuildOptions } from "./first-build";
@@ -280,7 +281,7 @@ const standingOf = (option: BuildOption, { held, perHour }: Holdings): BuildTile
 };
 
 const buildRate = (effect: Extract<BuildOption["effect"], { kind: "produces" }>): string =>
-  formatStoreRate(madeStore(effect.resource), effect.perHour === undefined ? undefined : effect.perHour / 3_600);
+  formatRate(effect.perHour === undefined ? undefined : effect.perHour / 3_600);
 
 const buildingDoes = ({ effect, tier }: BuildOption): RankedWords =>
   effect.kind === "produces"

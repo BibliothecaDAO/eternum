@@ -352,7 +352,6 @@ import {
   getRelicInfo,
   ResourcesIds,
   formatCharge,
-  formatHourlyRate,
   formatRate,
   resourceName,
   formatHeldAgainst,
@@ -538,9 +537,6 @@ export const WHEAT = resourceName(ResourcesIds.Wheat);
 /** The realm's troops, as a store and an army's figure are named. */
 export const TROOPS = "Troops";
 export const STAMINA = "stamina";
-const RATE_FORMATS = { minute: formatRate, hour: formatHourlyRate } as const;
-export type RatePer = keyof typeof RATE_FORMATS;
-export const storeRate = (per: RatePer, perSecond: number | undefined): string => RATE_FORMATS[per](perSecond);
 export const staminaReading = (current: number | undefined, max: number | undefined) =>
   `${formatExact(current)}/${formatExact(max)}`;
 export const staminaLabel = (current: number, max: number) => `${STAMINA_TITLE} ${staminaReading(current, max)}`;
@@ -918,7 +914,7 @@ export const DAY_BANNER_WORDS = {
 /** What a moment's one line needs from the game's rules; the caller reads them, the line only names them. */
 export interface OpeningRules {
   ownAspect: AspectId | undefined;
-  knightsRate: string;
+  knightsPerSecond: number;
   troopsAtHome: number;
   deepTickSeconds: number;
   deepLossPerTick?: number;
@@ -980,7 +976,7 @@ export const OPENING_WORDS = {
     "shrine-lore": () => "Shrine lore is learned. Your armies can now uncover shrines.",
     city: (rules: OpeningRules) =>
       `Scouts reveal mist for ${formatAmount(rules.scoutExploreStamina)} stamina instead of ${formatAmount(rules.exploreStamina)}.`,
-    barracks: (rules: OpeningRules) => `It raises ${rules.knightsRate} Knights.`,
+    barracks: (rules: OpeningRules) => `It raises ${formatRate(rules.knightsPerSecond)} Knights.`,
     deploy: (rules: OpeningRules) =>
       `${formatExact(rules.troopsAtHome)} Knights wait at home. Send an army onto the ${layerName(0)}.`,
     explore: (rules: OpeningRules) => `Reveal a dark hex for ${formatAmount(rules.exploreStamina)} stamina.`,
@@ -1021,7 +1017,7 @@ export const OPENING_WORDS = {
     relic: { title: "Relics checked", line: "Equip relics on your armies here." },
   },
   inSheet: {
-    barracks: (rules: OpeningRules) => `Pick Barracks below · ${rules.knightsRate} Knights`,
+    barracks: (rules: OpeningRules) => `Pick Barracks below · ${formatRate(rules.knightsPerSecond)} Knights`,
     deploy: () => `Pick the Knights, then press ${DEPLOY}`,
   },
   tutorial: "Tutorial",

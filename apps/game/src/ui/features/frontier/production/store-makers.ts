@@ -2,10 +2,10 @@ import { STORE_MAKERS } from "@/ui/design-system/kit/words";
 import { buildingOutput } from "@/ui/shared/lib/building-output";
 import { buildingMakePicks, getBuildingQuantity, readProductionPercent, realmLearned } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, formatCount, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, formatCount, formatRate, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
 import { buildingName } from "../build/building-names";
-import { formatStoreRate, FRONTIER_STORES, madeStore, type MadeResource, storeBuilding, storeMadeBy } from "../stores";
+import { FRONTIER_STORES, madeStore, type MadeResource, storeBuilding, storeMadeBy } from "../stores";
 
 /**
  * The buildings of a type standing on a realm, from its facts (the packed counts Blitz's tables read too). The castle's
@@ -73,10 +73,10 @@ export const storeMakerLines = (
   const standing = formatCount(count, name, name.endsWith("s") ? name : `${name}s`);
   const lines =
     count > 0
-      ? [each === undefined ? standing : STORE_MAKERS.buildings(standing, formatStoreRate(kind, each * count))]
+      ? [each === undefined ? standing : STORE_MAKERS.buildings(standing, formatRate(each * count))]
       : [];
   if (resource === ResourcesIds.Labor)
-    lines.push(STORE_MAKERS.castle(formatStoreRate(kind, castleLabor(store, realm, now))));
+    lines.push(STORE_MAKERS.castle(formatRate(castleLabor(store, realm, now))));
   return lines;
 };
 

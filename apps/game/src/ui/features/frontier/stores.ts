@@ -1,5 +1,5 @@
 import { type IconMeaning, resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { ESSENCE, LABOR, type RatePer, storeRate, WHEAT } from "@/ui/design-system/kit/words";
+import { ESSENCE, LABOR, WHEAT } from "@/ui/design-system/kit/words";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { FRONTIER_TROOP_NAMES, TroopType, BuildingType, ResourcesIds } from "@bibliothecadao/types";
 
@@ -10,7 +10,6 @@ type Store = {
   resource: ResourcesIds;
   icon: IconMeaning;
   word: string;
-  per: RatePer;
   /** The building that makes it, by its research row (the row's building type, as research.cairo names it). */
   made?: { category: BuildingType; spentAt: SpentAt };
   troop?: TroopType;
@@ -27,27 +26,23 @@ export const FRONTIER_STORES = {
     resource: ResourcesIds.Essence,
     icon: resourceMeaning(ResourcesIds.Essence),
     word: ESSENCE,
-    per: "minute",
   },
   labor: {
     resource: ResourcesIds.Labor,
     icon: resourceMeaning(ResourcesIds.Labor),
     word: LABOR,
-    per: "minute",
     made: { category: research.WORKSHOP, spentAt: "realm" },
   },
   wheat: {
     resource: ResourcesIds.Wheat,
     icon: resourceMeaning(ResourcesIds.Wheat),
     word: WHEAT,
-    per: "minute",
     made: { category: research.FARM, spentAt: "deploy" },
   },
   troops: {
     resource: ResourcesIds.Knight,
     icon: "troops",
     word: FRONTIER_TROOP_NAMES[TroopType.Knight],
-    per: "hour",
     made: { category: research.BARRACKS, spentAt: "deploy" },
     troop: TroopType.Knight,
   },
@@ -55,7 +50,6 @@ export const FRONTIER_STORES = {
     resource: ResourcesIds.Crossbowman,
     icon: resourceMeaning(ResourcesIds.Crossbowman),
     word: FRONTIER_TROOP_NAMES[TroopType.Crossbowman],
-    per: "hour",
     made: { category: research.RANGE, spentAt: "deploy" },
     troop: TroopType.Crossbowman,
   },
@@ -63,7 +57,6 @@ export const FRONTIER_STORES = {
     resource: ResourcesIds.Paladin,
     icon: resourceMeaning(ResourcesIds.Paladin),
     word: FRONTIER_TROOP_NAMES[TroopType.Paladin],
-    per: "hour",
     made: { category: research.SCOUTS_LODGE, spentAt: "deploy" },
     troop: TroopType.Paladin,
   },
@@ -72,8 +65,6 @@ export const FRONTIER_STORES = {
 export type StoreKind = keyof typeof FRONTIER_STORES;
 export const STORE_KINDS = Object.keys(FRONTIER_STORES) as StoreKind[];
 
-export const formatStoreRate = (kind: StoreKind, perSecond: number | undefined): string =>
-  storeRate(FRONTIER_STORES[kind].per, perSecond);
 
 /** A store a building makes. */
 export type MadeStore = {

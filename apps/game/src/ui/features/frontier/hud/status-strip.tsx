@@ -1,4 +1,4 @@
-import { formatAmount, formatExact, formatDuration } from "@bibliothecadao/types";
+import { formatAmount, formatExact, formatDuration, formatRate } from "@bibliothecadao/types";
 import type { Tone } from "@/ui/design-system/kit/tone";
 import { FULL, FULL_IN, OF } from "@/ui/design-system/kit/words";
 import { useLandingDelta } from "@/ui/motion/landing-hold";
@@ -6,7 +6,7 @@ import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { formatStoreRate, FRONTIER_STORES, type StoreKind } from "../stores";
+import { FRONTIER_STORES, type StoreKind } from "../stores";
 
 /**
  * One store on the strip: what it holds, its limit (Essence has none), its rate an hour and when it is full (0 once it
@@ -35,7 +35,7 @@ export const STORE_TONES: Record<Tone, { text: string; meter: "warn" | "bad" | u
  */
 export const storeRateText = (store: StoreReading): string | null => {
   if (store.perHour === undefined || store.perHour <= 0 || store.fullIn === 0) return null;
-  return formatStoreRate(store.kind, store.perHour / 3600);
+  return formatRate(store.perHour / 3600);
 };
 
 export const storeLine = (store: StoreReading): string => {

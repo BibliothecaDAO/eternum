@@ -85,7 +85,7 @@ describe("the interface that opens as you play", () => {
   });
 
   it("renders each moment with live rule figures and its desktop action", () => {
-    expect(renderMoment("barracks")).toContain("It raises +100/h Knights.");
+    expect(renderMoment("barracks")).toContain("It raises +1.7/min Knights.");
     expect(renderMoment("deploy")).toContain("2,000 Knights wait at home. Send an army onto the Surface.");
     expect(renderMoment("explore")).toContain("Reveal a dark hex for 20 stamina.");
     expect(renderMoment("oath")).toContain("Swear one Oath, or pass for +20 stamina.");

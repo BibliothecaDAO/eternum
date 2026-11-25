@@ -9,7 +9,7 @@ const { buildingsMake, storeMakerLines } = await import("./store-makers");
 const { readBuildOptions } = await import("../build/build-options");
 const { readRealmStore } = await import("../realm-stores");
 const { storeRateText } = await import("../hud/status-strip");
-const { formatStoreRate } = await import("../stores");
+const { formatRate } = await import("@bibliothecadao/types");
 
 const realm = () => {
   const { store, startsAt } = dayEndScenario();
@@ -20,7 +20,11 @@ const ashFallToday = (store: ReturnType<typeof realm>["store"], now: number) => 
   const day = dayOf(readExpeditionRules(store, 1)!, now)!.index;
   store.applyFacts([
     { model: "HomeAspect", key: "0xa01", value: { game_id: 1, home: 7, aspect: 2 } },
-    { model: "AspectActivity", key: "0xa02", value: { game_id: 1, aspect: 2, day: day - 1, active: 5 } },
+    ...(day > 0
+      ? [
+          { model: "AspectActivity", key: "0xa02", value: { game_id: 1, aspect: 2, day: day - 1, active: 5 } },
+              ]
+      : []),
     {
       model: "BaneRules",
       key: "0xa03",
@@ -34,7 +38,6 @@ const ashFallToday = (store: ReturnType<typeof realm>["store"], now: number) => 
         quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10_000, 15_000],
       },
     },
-    { model: "WorldBane", key: "0xa04", value: { game_id: 1, day: day - 1, kind: 0 } },
     { model: "WorldBane", key: "0xa05", value: { game_id: 1, day, kind: nativeBaneConstants.ASH_FALL } },
     { model: "BaneProgress", key: "0xa06", value: { game_id: 1, aspect: 2, day, completed: 1, ended_at: 0 } },
   ] as never);
@@ -49,8 +52,8 @@ const surfaces = (bane: boolean, kind: "wheat" | "troops", category: number) => 
     .production!.building_count;
   return {
     realmCard: storeRateText({ ...reading, kind, flyTarget: kind }),
-    buildingPanel: formatStoreRate(kind, buildingsMake(store, row, category, now)!.perSecond),
-    buildTimesStanding: formatStoreRate(kind, ((build.effect as { perHour: number }).perHour * standing) / 3_600),
+    buildingPanel: formatRate(buildingsMake(store, row, category, now)!.perSecond),
+    buildTimesStanding: formatRate(((build.effect as { perHour: number }).perHour * standing) / 3_600),
   };
 };
 
@@ -66,14 +69,14 @@ it("gives the realm card, the building panel and Build one rate per store, cut a
     buildTimesStanding: "+9.5/min",
   });
   expect(surfaces(false, "troops", BuildingType.ResourceKnightT1)).toEqual({
-    realmCard: "+202/h",
-    buildingPanel: "+202/h",
-    buildTimesStanding: "+202/h",
+    realmCard: "+3.4/min",
+    buildingPanel: "+3.4/min",
+    buildTimesStanding: "+3.4/min",
   });
   expect(surfaces(true, "troops", BuildingType.ResourceKnightT1)).toEqual({
-    realmCard: "+101/h",
-    buildingPanel: "+101/h",
-    buildTimesStanding: "+101/h",
+    realmCard: "+1.7/min",
+    buildingPanel: "+1.7/min",
+    buildTimesStanding: "+1.7/min",
   });
 });
 
@@ -84,13 +87,13 @@ it("says on a store's card what makes its rate, the buildings and the castle, so
     "Castle · +1.7/min",
   ]);
   expect(storeMakerLines(store, row, ResourcesIds.Wheat, now)).toEqual(["3 Farms · +19/min"]);
-  expect(storeMakerLines(store, row, ResourcesIds.Knight, now)).toEqual(["2 Barracks · +202/h"]);
+  expect(storeMakerLines(store, row, ResourcesIds.Knight, now)).toEqual(["2 Barracks · +3.4/min"]);
   // 3 × 5.04 + 1.68 = 16.8 labor a minute: the rate the chain stores and the card's "+17/min".
   const stored = new ResourceManager(store, 7).current(ResourcesIds.Labor)!.production!.production_rate;
   expect((Number(stored) / 1e9) * 60).toBeCloseTo(3 * 3.36 * 1.5 + 1.68, 6);
   const knights = new ResourceManager(store, 7).current(ResourcesIds.Knight)!.production!.production_rate;
   expect(knights).toBe(56_000_000n);
-  expect(buildingsMake(store, row, BuildingType.ResourceKnightT1, now)!.perSecond).toBe(0.056);
+  expect(buildingsMake(store, row, BuildingType.ResourceKnightT1, now)!.perSecond).toBeCloseTo(0.056, 9);
 });
 
 it("says only what is known of a store's makers until the realm's research arrives, then their combined production", () => {

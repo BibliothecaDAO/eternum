@@ -16,7 +16,6 @@ import {
   formatPoints,
   formatPopulation,
   formatPopulationInWords,
-  formatHourlyRate,
   formatRate,
   formatShort,
   formatShortChange,
@@ -119,17 +118,7 @@ describe("numbers", () => {
     expect(formatRate(-0.25)).toBe("-15/min");
   });
 
-  it("writes an hour's rate by the same rule, for the stores counted per hour", () => {
-    expect([100, 50, 201.6, 4.5].map((perHour) => formatHourlyRate(perHour / 3_600))).toEqual([
-      "+100/h",
-      "+50/h",
-      "+202/h",
-      "+4.5/h",
-    ]);
-    expect(formatHourlyRate(undefined)).toBe("—");
-  });
-
-  it("writes a per-minute rate a minute's, never a second's", () => {
+  it("writes every rate a minute's, never a second's or an hour's", () => {
     // The owner's two screenshots read +1.1/s and +54/min side by side (3 November).
     expect(formatRate(1.1)).toBe("+66/min");
     expect(formatRate(54 / 60)).toBe("+54/min");

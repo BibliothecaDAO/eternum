@@ -1,11 +1,11 @@
-import { formatAmount } from "@bibliothecadao/types";
+import { formatAmount, formatRate } from "@bibliothecadao/types";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudPanel, HudTier } from "@/ui/design-system/kit/hud-elements";
 import { HUD_TONE, type Tone } from "@/ui/design-system/kit/tone";
 import { BUILD, DEPLOY, FULL, MADE_BY, type Rank, REALM } from "@/ui/design-system/kit/words";
 
 import { FullIn } from "../full-in";
-import { formatStoreRate, FRONTIER_STORES, type MadeStore, type SpentAt } from "../stores";
+import { FRONTIER_STORES, type MadeStore, type SpentAt } from "../stores";
 
 export type StoreLine = {
   kind: MadeStore;
@@ -48,7 +48,7 @@ export const StoreCard = ({
             <StoreAsk line={line} full={full} spentAt={spentAt} onSpend={onSpend} onBuild={onBuild} />
           </span>
           <span className={`flex items-center gap-2 whitespace-nowrap tabular-nums ${full ? "text-hud-bad" : ""}`}>
-            {formatStoreRate(line.kind, full ? 0 : line.perHour === undefined ? undefined : line.perHour / 3600)}
+            {formatRate(full ? 0 : line.perHour === undefined ? undefined : line.perHour / 3600)}
             {line.tier !== undefined && <HudTier tier={line.tier} />}
           </span>
         </span>

@@ -10,13 +10,12 @@ import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import { knownAmount } from "@/ui/utils/utils";
 import { buildablePlotCount, configManager, getBalance, ResourceManager } from "@bibliothecadao/eternum";
-import { BUILDINGS_CENTER, RESOURCE_PRECISION, ResourcesIds, TroopTier } from "@bibliothecadao/types";
+import { BUILDINGS_CENTER, RESOURCE_PRECISION, ResourcesIds, TroopTier, formatRate } from "@bibliothecadao/types";
 
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { CastleResearch, type CastleSide, type CastleUpgradeOrder, CastleView } from "./castle-view";
 import { useResearchTree } from "../research/research-facts";
 import { castleLabor } from "../production/store-makers";
-import { formatStoreRate } from "../stores";
 
 /** Whether the keep of `realm`, the realm the board draws, is tapped in the realm view: a player's or a viewer's. */
 export const useKeepSelected = (realm: NativeRows["Structure"] | null): boolean => {
@@ -54,7 +53,7 @@ export const CastleUpgrade = ({
   return (
     <CastleView
       now={castleSide(setup.store, realm.game_id, levelUp.currentLevel, realm.metadata.has_wonder)}
-      laborRate={formatStoreRate("labor", castleLabor(setup.store, realm, tick))}
+      laborRate={formatRate(castleLabor(setup.store, realm, tick))}
       research={
         ordersAllowed &&
         tree && (
