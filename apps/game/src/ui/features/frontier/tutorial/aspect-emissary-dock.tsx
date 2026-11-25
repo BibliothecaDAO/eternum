@@ -193,10 +193,6 @@ export const EmissaryClose = ({ onClose }: { onClose: () => void }) => (
   </button>
 );
 
-/**
- * The emissary's speaker card, the one dock an Aspect speaks through: a lesson, the day's quest, a bane. Its portrait
- * and medallion are the Aspect's, its head names the speaker (a desktop's) and the title, and the body is the caller's.
- */
 export const EmissaryCard = ({
   aspectId,
   layout,

@@ -35,7 +35,6 @@ export type BuildEffect =
   | { kind: "stores"; shareBps: number }
   | { kind: "research"; line: string; icon: "troops" | "wheat" };
 
-/** Where a building stands in the Build sheet: what the catalog says it makes, or that a realm holds one. */
 export type BuildGroup = "economy" | "army" | "unique";
 
 export const buildGroupOf = (category: BuildingType): BuildGroup => {
@@ -48,7 +47,6 @@ export const buildGroupOf = (category: BuildingType): BuildGroup => {
 export interface BuildOption {
   category: BuildingType;
   group: BuildGroup;
-  /** The realm rank it opens at. */
   opensAt: number;
   /** Its type's tier, 1 (common) to 5 (legendary): tiers apply to every building of the type. */
   tier: 0 | 1 | 2 | 3 | 4 | 5;

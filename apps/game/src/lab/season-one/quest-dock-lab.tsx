@@ -5,7 +5,6 @@ import { QuestDockView } from "@/ui/features/frontier/day/quest-dock-view";
 
 const NAMES = Object.keys(QUEST_DOCK_CASES) as (keyof typeof QUEST_DOCK_CASES)[];
 
-/** `/lab/season-one/quest-dock?case=<n>`: the day's quest and bane as their Aspect speaks them, on its fixtures. */
 export function QuestDockLab() {
   const [params, setParams] = useSearchParams();
   const index = Math.min(Number(params.get("case") ?? 0) || 0, NAMES.length - 1);

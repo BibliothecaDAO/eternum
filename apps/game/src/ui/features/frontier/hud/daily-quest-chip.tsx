@@ -15,11 +15,6 @@ import { dayQuestFace } from "../day/day-quest-face";
 import { questSpeaker, toggleQuestDock, useQuestDockOpen } from "../day/quest-dock";
 import { ProgressRing } from "./progress-ring";
 
-/**
- * Today's quest in the top bar: its painting in a ring that fills as the quest does, its name, what it asks and its
- * count. On a bane day it is the bane's: the speaking Aspect's mark in the same one ring, the word Bane and its name.
- * A press opens the quest's dock.
- */
 export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) => {
   const { setup } = useGame();
   const now = useNowSeconds();

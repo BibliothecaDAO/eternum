@@ -24,7 +24,6 @@ export const closeQuestDock = () => useQuestDockState.setState({ open: false });
 
 type QuestReading = NonNullable<NonNullable<ReturnType<typeof readDailyQuest>>["reading"]["known"]>;
 
-/** Who speaks the day's quest and its bane: the Aspect the tutorial's own lesson on each gives the word to. */
 export const questSpeaker = (reading: QuestReading | undefined): AspectId => {
   const moment = reading?.bane ? "bane" : "quest";
   const speaker = teacherAspectOf(moment, undefined);
@@ -32,10 +31,6 @@ export const questSpeaker = (reading: QuestReading | undefined): AspectId => {
   return speaker;
 };
 
-/**
- * Today's quest spoken by an Aspect in the emissary's card: its count, reward and Collect; on a bane day the bane over
- * it, what it does, how close the player's Aspect is to breaking it and when it clears.
- */
 export const QuestDock = ({
   realm,
   rules,
