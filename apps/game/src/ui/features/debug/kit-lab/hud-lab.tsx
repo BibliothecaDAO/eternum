@@ -1266,7 +1266,6 @@ const LabBands = ({
                 onGoSurface={noop}
               />
             }
-            banner={slots.banner}
             realm={<LabRealmCard lab={lab} />}
             armies={slots.dock}
             page={slots.page}
