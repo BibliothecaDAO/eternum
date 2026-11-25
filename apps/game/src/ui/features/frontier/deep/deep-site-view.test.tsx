@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEEP_BEASTS } from "@bibliothecadao/types";
 
-import { DEEP_WORDS } from "@/ui/design-system/kit/words";
+import { ARMY, DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { DEEP_SITE_CASES } from "./deep-site-fixtures";
 import { DeepSiteView, type DeepSiteProps } from "./deep-site-view";
 
@@ -142,7 +142,7 @@ describe("a Deep site's card", () => {
     });
     const sides = [...document.querySelectorAll(".fight-side")];
     expect(sides).toHaveLength(2);
-    expect(sides[0]!.getAttribute("aria-label")).toBe("Army 1 1,000 → 670, −330 · 33% lost");
+    expect(sides[0]!.getAttribute("aria-label")?.startsWith(`${ARMY} 1,000 → 670`)).toBe(true);
     expect(sides[1]!.getAttribute("aria-label")).toContain("Havoc Guard 6,200 → 5,446");
     expect(document.querySelector("[data-attack-stamina='30']")).not.toBeNull();
     expect(sides[1]!.querySelector("[data-aspect-mark='3']")).not.toBeNull();

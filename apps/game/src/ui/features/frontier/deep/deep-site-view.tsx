@@ -169,8 +169,7 @@ type Rate = { kind: "glory" | "height" | "essence" | "labor" | "bar" | "drain"; 
 
 const cadenceOf = (rates: DeepRates) => formatShortDuration(rates.tickSeconds);
 
-const resourceSub = (rates: DeepRates, amount: number) =>
-  DEEP_WORDS.splitCell(formatRate(amount / rates.tickSeconds));
+const resourceSub = (rates: DeepRates, amount: number) => DEEP_WORDS.splitCell(formatRate(amount / rates.tickSeconds));
 
 const primaryRate = (rates: DeepRates): Rate | null =>
   rates.glory > 0
