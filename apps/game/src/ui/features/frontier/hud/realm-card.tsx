@@ -94,7 +94,7 @@ export const RealmCard = ({
       {onClose && <HudIconButton icon="close" label={CLOSE} kind="quiet" size="sm" onClick={onClose} />}
     </header>
     <div role="group" aria-label={REALM_CARD_WORDS.stores} className="frontier-realm-card__stores">
-      <ul className="frontier-realm-card__cells" data-count="5">
+      <ul className="frontier-realm-card__cells">
         {stores
           .filter((store) => !isTroopStore(store.kind))
           .map((store) => (
@@ -121,7 +121,7 @@ export const RealmCard = ({
           />
         </li>
       </ul>
-      <ul className="frontier-realm-card__cells" data-count="3">
+      <ul className="frontier-realm-card__cells">
         {stores
           .filter((store) => isTroopStore(store.kind))
           .map((store) => (

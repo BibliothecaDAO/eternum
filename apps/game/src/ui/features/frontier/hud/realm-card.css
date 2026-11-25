@@ -81,15 +81,10 @@
 }
 .frontier-realm-card__cells {
   display: grid;
-  grid-template-columns: repeat(var(--cells), minmax(0, 1fr));
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
   border-top: 1px solid var(--hud-divider);
   padding: 6px 0;
-}
-.frontier-realm-card__cells[data-count="5"] {
-  --cells: 5;
-}
-.frontier-realm-card__cells[data-count="3"] {
-  --cells: 3;
 }
 .frontier-realm-card__cells > li {
   position: relative;
