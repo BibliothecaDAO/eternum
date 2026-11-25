@@ -29,12 +29,11 @@ describe("readPlaytestOptions", () => {
     expect(() => readPlaytestOptions(["--network", "fast"])).toThrow(/--network takes <down Mbit\/s>,<round trip ms>/);
   });
 
-  it("draws at a device pixel ratio of 1 unless --device-scale names a whole other one", () => {
+  it("draws at a device pixel ratio of 1 unless --device-scale names another, a zoomed-out page's below one included", () => {
     expect(readPlaytestOptions([]).deviceScale).toBe(1);
     expect(readPlaytestOptions(["--device-scale", "2"]).deviceScale).toBe(2);
-    expect(() => readPlaytestOptions(["--device-scale", "1.5"])).toThrow(
-      "--device-scale must be an integer of at least 1",
-    );
+    expect(readPlaytestOptions(["--device-scale", "0.3125"]).deviceScale).toBe(0.3125);
+    expect(() => readPlaytestOptions(["--device-scale", "0"])).toThrow("--device-scale must be a number above 0");
   });
 
   it("seeds a spectator's page with a saved storage file, taken from where the command was run", () => {

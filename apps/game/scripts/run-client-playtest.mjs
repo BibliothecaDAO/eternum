@@ -100,6 +100,11 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
       throw new Error(`${name} must be an integer of at least ${minimum}`);
     return value;
   };
+  const positiveNumber = (name, fallback) => {
+    const value = Number(option(name, String(fallback)));
+    if (!(value > 0)) throw new Error(`${name} must be a number above 0`);
+    return value;
+  };
   const rendererModes = option("--renderer-modes", DEFAULTS.rendererModes.join(","))
     .split(",")
     .map((mode) => mode.trim())
@@ -156,7 +161,7 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     chainId: option("--chain-id", ""),
     comparePath: option("--compare", null) && resolve(callerDir, option("--compare")),
     cpuThrottle: integer("--cpu-throttle", DEFAULTS.cpuThrottle, 1),
-    deviceScale: integer("--device-scale", 1, 1),
+    deviceScale: positiveNumber("--device-scale", 1),
     gameId: Number(option("--game-id", "0")),
     gpu,
     captureResults: argv.includes("--capture-results"),
@@ -537,7 +542,7 @@ async function preparePage(context, page, storageState) {
     releases.push(owner.adopt(`client at origin ${label}`, () => page.clientAtOrigin.stop()));
   }
   await touchAtPhoneWidth(page.devTools, VIEWPORT.width);
-  if (context.deviceScale > 1) await emulateDeviceScale(page.devTools, context.deviceScale);
+  if (context.deviceScale !== 1) await emulateDeviceScale(page.devTools, context.deviceScale);
   return page;
 }
 
