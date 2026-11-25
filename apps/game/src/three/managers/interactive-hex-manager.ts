@@ -5,7 +5,7 @@ import { PerformanceMonitor } from "@/three/utils/performance-monitor";
 import * as THREE from "three";
 import type { MeshBasicNodeMaterial } from "three/webgpu";
 import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
-import { drapeOnGround } from "./hex-ring";
+import { layOnGround } from "./hex-ring";
 import { plotLookOn, type HoverVisualPalette, type PlotLook } from "./worldmap-interaction-palette";
 import { BiomeType } from "@bibliothecadao/types";
 import { HEX_SIZE } from "@/three/constants";
@@ -367,7 +367,7 @@ export class InteractiveHexManager {
       this.band.geometry = new THREE.BufferGeometry();
       return;
     }
-    this.band.geometry = drapeOnGround(this.bandShape, open, this.terrain, INTERACTIVE_HEX_SURFACE_OFFSET);
+    this.band.geometry = layOnGround(this.bandShape, open, this.terrain, INTERACTIVE_HEX_SURFACE_OFFSET);
   }
 
   update(deltaTime: number = 0) {
