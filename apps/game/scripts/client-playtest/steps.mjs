@@ -1698,7 +1698,7 @@ function staminaEffectSteps(wind) {
           reading.current >= minimum &&
           reading.current < minimum + 10 &&
           reading.maximum === T2_KNIGHT_STAMINA_MAX &&
-          reading.text.includes("Full in")
+          reading.refills
           ? completed(played)
           : failed("Army bar and refill time must reflect the recorded stamina effects", played);
       },
@@ -1713,7 +1713,8 @@ function readArmyStamina(browser) {
     const meter = line?.querySelector('[role="meter"][aria-label="stamina"]');
     const rect = line?.getBoundingClientRect();
     return { current: Number(meter?.getAttribute('aria-valuenow')), maximum: Number(meter?.getAttribute('aria-valuemax')),
-      text: line?.textContent, visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
+      refills: Boolean(sheet?.querySelector('.army-detail__full')),
+      visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
   })()`);
 }
 

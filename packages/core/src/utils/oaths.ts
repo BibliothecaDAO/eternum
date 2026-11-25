@@ -4,6 +4,10 @@ import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeOathConstants as oathRules } from "../../../../contracts/l3/world-native/schema/balance.gen";
 
+export function oathBit(oath: number): number {
+  return 1 << (oath - 1);
+}
+
 export function heldOaths(mask: number): number[] {
   return Array.from({ length: 16 }, (_, index) => index + 1).filter((id) => holdsOath(mask, id));
 }
@@ -46,9 +50,9 @@ export function chooseOath(
     if (!oathCards(expected).includes(oath) || held.includes(oath)) throw new Error("Oath not offered");
     if (held.length === progress.oath_slots) {
       if (replace === null || !held.includes(replace)) throw new Error("Choose an Oath to replace");
-      oaths &= ~(1 << (replace - 1));
+      oaths &= ~oathBit(replace);
     } else if (replace !== null) throw new Error("Empty Oath slot available");
-    oaths |= 1 << (oath - 1);
+    oaths |= oathBit(oath);
   } else if (replace !== null) throw new Error("Decline cannot replace");
   if (heldOaths(oaths).length > progress.oath_slots) throw new Error("Too many Oaths");
   return { ...progress, oaths, oath_pick: 0 };
@@ -130,5 +134,5 @@ export function oathDamageMultiplier(attacker: number, defender: number, guardin
 }
 
 export function holdsOath(oaths: number, oath: number): boolean {
-  return (oaths & (1 << (oath - 1))) !== 0;
+  return (oaths & oathBit(oath)) !== 0;
 }
