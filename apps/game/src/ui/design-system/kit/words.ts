@@ -330,7 +330,7 @@ import {
 } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { AttackRefusal } from "@bibliothecadao/eternum";
-import type { GraphicsQuality } from "@/three/graphics-preferences";
+import type { GraphicsQuality } from "../../../three/graphics-preferences";
 import {
   aspectName,
   type AspectId,
