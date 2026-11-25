@@ -8,6 +8,7 @@ import {
   activeOpeningMoment,
   EMPTY_OPENING_CONTEXT,
   openedMoments,
+  openedParts,
   reachedOnContext,
   siteAlertOfferDue,
   stepTutorialMachine,
@@ -620,4 +621,9 @@ it("completes oath on pass while never flashing false completion on day-end or u
   });
   expect(alreadyBrokenBeforeLogin.confirmedMoment).toBeNull();
   expect(alreadyBrokenBeforeLogin.newlyCompleted).not.toContain("bane");
+});
+
+it("opens every part once the tutorial is skipped, and only the reached ones before", () => {
+  expect(openedParts(new Set(["essence"]), new Set(), ["barracks"])).toEqual(new Set(["essence", "barracks"]));
+  expect(openedParts(new Set(), new Set([TUTORIAL_SKIPPED]), [])).toBe("all");
 });

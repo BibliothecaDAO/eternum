@@ -12,7 +12,7 @@ it("offers the first Barracks alone while it is open, and every option once the 
   expect(disclosedBuildOptions([farm, barracks], true)).toEqual([farm, barracks]);
 });
 
-it("keeps every option for a realm whose Barracks is not open, with no Show everything", () => {
+it("keeps every option for a realm whose Barracks is not open, with nothing opened ahead", () => {
   expect(disclosedBuildOptions([farm, option(FIRST_BUILD, "built")], false)).toEqual([
     farm,
     option(FIRST_BUILD, "built"),

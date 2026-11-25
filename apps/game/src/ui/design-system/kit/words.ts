@@ -692,7 +692,6 @@ export const CANCEL = "Cancel";
 /** A highlighted tile on its tooltip: ground not yet seen, and troops passed to another of the player's armies. */
 export const UNEXPLORED = "Unexplored";
 /** A reveal that paid under a unit, in the day log: what was done, with no amount (findGain). */
-export const TRANSFER = "Transfer";
 /** A good held whose weight the game has not given: its donkeys cannot be counted, so it cannot be sent. */
 export const WEIGHT_UNKNOWN = "Weight unknown: cannot be sent";
 /** A player whose name identity could not give: shown as a dash, named so for a screen reader, never the stand-in. */
@@ -1075,7 +1074,6 @@ export const OPENING_WORDS = {
   /** The week's quests on the Today page: the day, and the quest each brings. */
   week: "This week's quests",
   weekDay: (day: number, quest: string) => `Day ${formatExact(day)}: ${quest}`,
-  showEverything: "Show everything",
 } as const;
 /** The Aspect page (docs/plans/frontier-season-1.md, Aspects and the hyperstructure): the race, and the player's Aspect. */
 export const ASPECT_PAGE_WORDS = {
@@ -1229,6 +1227,15 @@ export const STORE_MAKERS = {
   buildings: (count: string, total: string) => `${count} · ${total}`,
   castle: (rate: string) => `${CASTLE} · ${rate}`,
 };
+
+export const ORDER_REFUSAL_WORDS = {
+  food: `Not enough ${WHEAT}`,
+  "off-limits": ATTACK_REFUSAL_WORDS["target-must-be-unowned"],
+  "no-attack": ATTACK_REFUSAL_WORDS["no-attack"],
+  "no-transfer": "Cannot transfer here",
+  occupied: "Tile occupied",
+  "too-far": "Too far · move closer",
+} as const;
 
 /** A day's count of tiles explored, on its total. */
 export const REVEALS = "Reveals";
