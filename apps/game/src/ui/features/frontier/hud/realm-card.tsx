@@ -21,6 +21,7 @@ import type { ReactNode } from "react";
 
 import type { LordsReading } from "@/shell/value/use-lords-balance";
 
+import { BaneFigure } from "../day/bane-mark";
 import { FRONTIER_STORES, isMadeStore, isTroopStore, type StoreKind } from "../stores";
 import { AspectMedallion } from "./realm-header-chip";
 import { LandingDelta, STORE_TONES, storeLine, storeRateText, type StoreReading } from "./status-strip";
@@ -158,7 +159,13 @@ const StoreCell = ({
           </span>
         }
         value={<StoreValue store={store} />}
-        caption={rate ?? (troop ? undefined : FRONTIER_STORES[store.kind].word)}
+        caption={
+          rate ? (
+            <BaneFigure figure="production">{rate}</BaneFigure>
+          ) : troop ? undefined : (
+            FRONTIER_STORES[store.kind].word
+          )
+        }
         tone={rate ? "good" : undefined}
         label={storeLine(store)}
         onPress={onOpen && isMadeStore(store.kind) ? () => onOpen(store.kind) : undefined}
@@ -186,7 +193,7 @@ const Cell = ({
 }: {
   icon: ReactNode;
   value: ReactNode;
-  caption?: string;
+  caption?: ReactNode;
   tone?: "good" | "gold" | "bad";
   label: string;
   onPress?: () => void;

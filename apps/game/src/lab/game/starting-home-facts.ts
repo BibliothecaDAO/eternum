@@ -3,6 +3,8 @@ import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/
 import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
 import { type LabFact, wire } from "./lab-chain";
 
+export const UNLIMITED_OUTPUT = (1n << 128n) - 1n;
+
 export function startingHomeFacts(founded: LabFact[], store: NativeFactStore, now: number): LabFact[] {
   const parsed = new NativeFactStore();
   parsed.applyFacts(founded as never);
@@ -28,7 +30,7 @@ function castleProductionRows(home: bigint, store: NativeFactStore, now: number)
         resource_type: ResourcesIds.Labor,
         building_count: 1,
         production_rate: store.require("ResourceRule", { game_id: 1, resource_type: ResourcesIds.Labor }).realm_rate,
-        output_amount_left: (1n << 128n) - 1n,
+        output_amount_left: UNLIMITED_OUTPUT,
         last_settled_at: now,
       }),
     },

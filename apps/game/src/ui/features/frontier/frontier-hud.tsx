@@ -37,6 +37,7 @@ import { ArmyDock } from "./hud/army-dock";
 import { closeHudPopover } from "./hud/hud-popover";
 import { useChatKey } from "./hud/chat-key";
 import { DailyQuestChip } from "./hud/daily-quest-chip";
+import { BaneDayProvider } from "./day/bane-mark";
 import { closeQuestDock, QuestDock, useQuestDockOpen } from "./day/quest-dock";
 import { FrontierDesktop, FrontierPlaces } from "./hud/frontier-desktop";
 import { FrontierFeed } from "./hud/frontier-feed";
@@ -361,7 +362,7 @@ const FrontierHudBody = ({
     </>
   );
 
-  return desktop ? (
+  const layout = desktop ? (
     <FrontierDesktop
       clock={
         <FrontierDayClock
@@ -414,6 +415,7 @@ const FrontierHudBody = ({
       {sheets}
     </HudBands>
   );
+  return <BaneDayProvider realm={shown}>{layout}</BaneDayProvider>;
 };
 
 const REALM_HEADER_MODELS = ["RaceRules"] as const;

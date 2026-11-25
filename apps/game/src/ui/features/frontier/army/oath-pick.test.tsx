@@ -1,3 +1,4 @@
+import { PICK_EFFECT_WORDS } from "@/ui/design-system/kit/words";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -56,7 +57,7 @@ vi.mock("../hud/dock-armies", () => ({ useDockArmies: () => [army] }));
 vi.mock("../value/fragments", () => ({ useFragmentsHeld: () => state.fragments }));
 vi.mock("../pick-effect-text", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../pick-effect-text")>()),
-  usePickEffectBase: () => state.pickBase,
+  usePickEffectBase: () => () => state.pickBase,
 }));
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -108,9 +109,9 @@ it("waits on its army until the army is picked, then offers three compact cards 
     "+25%",
   ]);
   expect(cards().map((card) => card.querySelector(".oath-choice__unit")?.textContent)).toEqual([
-    "Damage dealt",
-    "Reveal cost",
-    "Site and guard rewards",
+    PICK_EFFECT_WORDS.battleDamageDealt,
+    PICK_EFFECT_WORDS.revealTileStamina,
+    PICK_EFFECT_WORDS.siteRewards,
   ]);
   expect(host.querySelectorAll("[data-reroll-oath]")).toHaveLength(3);
   expect(host.querySelector(".oath-pick__head .ui-chip")?.textContent).toBe(
