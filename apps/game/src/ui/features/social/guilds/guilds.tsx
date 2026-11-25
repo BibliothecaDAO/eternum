@@ -12,6 +12,7 @@ import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 
 import { useMemo, useState } from "react";
 import { HudButton, HudField } from "@/ui/design-system/kit/hud-elements";
+import { TRIBE_WORDS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 
 export const Guilds = ({
@@ -217,7 +218,7 @@ export const Guilds = ({
             <HudButton kind="secondary" onClick={() => setGuildsViewGuildInvites(!guildsViewGuildInvites)}>
               {guildsViewGuildInvites ? "Show All Tribes" : "Show Tribe Invites"}
             </HudButton>
-            <HudButton kind="quiet" icon="download" onClick={downloadSocialData} title="Download social data as JSON">
+            <HudButton kind="quiet" icon="download" onClick={downloadSocialData} title={TRIBE_WORDS.exportTitle}>
               Export Data
             </HudButton>
           </div>

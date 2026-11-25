@@ -45,6 +45,7 @@ import { useArmySpireStatus } from "./spire-card";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { useOnePanel } from "./hud/one-panel";
 import { SPIRE_ARMY, SPIRE_DAY_NOW, discoveredSpireDay, spireDay as spireFixture } from "./spire-fixture";
+import { SPIRE_WORDS } from "@/ui/design-system/kit/words";
 
 const ARMY = SPIRE_ARMY;
 const NOW = SPIRE_DAY_NOW;
@@ -185,7 +186,7 @@ describe("a realm's spire, from the player's path", () => {
     const hud = renderLayoutHud(store, layout);
     try {
       act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
-      expect(hud.host.textContent).toContain("Spire · next reveal 10%");
+      expect(hud.host.textContent).toContain(SPIRE_WORDS.nextReveal(10));
       for (const [reveals, chance] of [
         [3, 40],
         [9, 100],
@@ -223,7 +224,7 @@ describe("a realm's spire, from the player's path", () => {
     const hud = renderLayoutHud(store, layout);
     try {
       act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
-      expect(hud.host.textContent).toContain("Spire · next reveal 10%");
+      expect(hud.host.textContent).toContain(SPIRE_WORDS.nextReveal(10));
       for (const [reveals, chance] of [
         [3, 40],
         [9, 100],

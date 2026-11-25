@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { type InstallPrompt, useInstallState } from "@/pwa/install-state";
 
 import { AppSettings } from "./app-settings";
+import { SETTINGS_WORDS } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -34,8 +35,8 @@ const appSection = async ({ touch, installed }: { touch: boolean; installed: boo
 };
 
 it("offers on a desktop Install and the keys, and the keys alone once the app is installed", async () => {
-  expect(await appSection({ touch: false, installed: false })).toEqual(["App", "Install", "Keyboard shortcuts"]);
-  expect(await appSection({ touch: false, installed: true })).toEqual(["App", "Keyboard shortcuts"]);
+  expect(await appSection({ touch: false, installed: false })).toEqual(["App", "Install", SETTINGS_WORDS.shortcuts]);
+  expect(await appSection({ touch: false, installed: true })).toEqual(["App", SETTINGS_WORDS.shortcuts]);
 });
 
 it("offers on a phone no keys, and no App section at all once the app is installed", async () => {

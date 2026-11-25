@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MapViewControls } from "@/ui/features/world/containers/top-header/map-view-controls";
 
 import { SpireTravelModal } from "./spire-travel-modal";
+import { ETERNUM_MAP_NAMES } from "@bibliothecadao/types";
 
 const army = vi.hoisted(() => ({ alt: false }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: {} } }) }));
@@ -70,17 +71,17 @@ describe("Eternum's spire destination", () => {
     mapSwitch(false, true);
     expect(tabs()).toEqual([
       ["Surface", "false"],
-      ["Ethereal Layer", "true"],
+      [ETERNUM_MAP_NAMES[1], "true"],
     ]);
     mapSwitch(false, false);
     expect(tabs()).toEqual([
       ["Surface", "true"],
-      ["Ethereal Layer", "false"],
+      [ETERNUM_MAP_NAMES[1], "false"],
     ]);
     const compactSwitch = () => host.querySelector('button[aria-label^="Map layer:"]');
     mapSwitch(true, true);
     expect([compactSwitch()?.textContent, compactSwitch()?.getAttribute("aria-label")]).toEqual([
-      "Ethereal Layer",
+      ETERNUM_MAP_NAMES[1],
       "Map layer: Ethereal Layer. Switch to Surface",
     ]);
     mapSwitch(true, false);

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { CONNECT, destinationOf, judge, playRecordWhere } from "./prove-play.mjs";
 import { problemsOf } from "./prove-run.mjs";
+import { PLAY_WORDS } from "../src/ui/design-system/kit/words";
 
 const BASE = "https://127.0.0.1:4176";
 
@@ -10,7 +11,7 @@ describe("where a press must lead", () => {
     expect(destinationOf("Watch", { item: "game:0xa:3" })).toBe("/g/0xa/3?spectate=true");
     expect(destinationOf("Enter", { item: "game:0xa:3" })).toBe("/g/0xa/3");
     expect(destinationOf("Enter Realm", { item: "0xa:1" })).toBe("/g/0xa/1");
-    expect(destinationOf("Join rehearsal", { item: "0xa:4" })).toBe("/g/0xa/4");
+    expect(destinationOf(PLAY_WORDS.joinRehearsal, { item: "0xa:4" })).toBe("/g/0xa/4");
     expect(destinationOf("Resume", { item: "0xa:4" })).toBe("/g/0xa/4");
     expect(destinationOf("Play free", { item: "0xa:1" })).toBe(CONNECT);
     expect(destinationOf("Results", { item: "0xa:7" })).toBe("/results/0xa-7");

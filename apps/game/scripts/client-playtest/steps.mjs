@@ -32,6 +32,7 @@ import {
   judgeAfterDoorway,
 } from "./evidence.mjs";
 import { watchReleaseMove } from "./stale-release.mjs";
+import { wordAt } from "../words-table.mjs";
 import {
   nativeOathConstants as oathRules,
   nativeRuleConstants as rules,
@@ -524,7 +525,7 @@ const FIGHT_LOST_STEPS = [
   { name: "attack-lost", play: attackAndReadTheLoss, settleMs: 500, verify: lossShown },
   { name: "loss-closes", play: readTheLossClose, settleMs: 500, verify: lossClosed },
 ];
-const ARMY_LOST = "Your army is lost";
+const armyLost = () => wordAt("FIGHT_WORDS.armyLost");
 /** Past the loss's moment in the panel (ArmyLostSheet's ARMY_LOST_MS, 3 s), with room for a slow frame. */
 const LOSS_CLOSES_WAIT_MS = 6_000;
 
@@ -532,7 +533,7 @@ async function attackAndReadTheLoss(context) {
   const attacked = await attackFromTheSiteCard(context);
   const shown = await readUntil(
     () => context.browser.read(MERGE_STATE),
-    (state) => state.sheet === ARMY_LOST,
+    (state) => state.sheet === armyLost(),
     SHEET_WAIT_MS,
   );
   return { ...attacked, sheet: shown.sheet, sent: shown.sent, destroyed: shown.destroyed };
@@ -542,9 +543,9 @@ function lossShown({ played }) {
   if (!played.sent?.includes("BattleGuard"))
     return failed(`no attack was sent (offered ${played.offered?.join(", ")})`);
   if (!played.destroyed?.includes(played.army)) return failed(`the chain did not answer ${played.army} lost`);
-  return played.sheet === ARMY_LOST
+  return played.sheet === armyLost()
     ? completed({ army: played.army, sheet: played.sheet })
-    : failed(`expected "${ARMY_LOST}" in the panel, saw ${played.sheet ?? "no sheet"}`);
+    : failed(`expected "${armyLost()}" in the panel, saw ${played.sheet ?? "no sheet"}`);
 }
 
 async function readTheLossClose({ browser }) {
@@ -968,7 +969,9 @@ async function offeredDeploy(browser) {
 }
 
 function offersItsKnightsOut(deploy) {
-  return deploy?.sheet === "Deploy" && deploy.offered && !String(deploy.notice ?? "").startsWith("No troops at home");
+  return (
+    deploy?.sheet === "Deploy" && deploy.offered && !String(deploy.notice ?? "").startsWith(wordAt("NO_TROOPS_AT_HOME"))
+  );
 }
 
 function holdsItsKnightsAtHome(played) {
@@ -4250,7 +4253,7 @@ function raceBoardSteps(result) {
           (result !== "expired" || race.text.includes("No Aspect finished its hyperstructure")) &&
           !race.text.includes("LORDS") &&
           played.invite?.invite.text.includes("Invite a friend to Prowess") &&
-          !played.invite?.invite.text.includes("could not be made") &&
+          !played.invite?.invite.text.includes(REHEARSAL_WORDS.inviteFailed) &&
           members.text.includes("1,250") &&
           members.text.includes("3,750") &&
           scoped.includes(7) &&
@@ -6044,6 +6047,7 @@ const BUILD_BARRACKS_STEP = {
 export const REHEARSAL_WORDS = {
   startAdventure: "Start your adventure",
   copyLink: "Copy link",
+  inviteFailed: "Could not create invite link.",
   inviteTo: (aspect) => `Invite a friend to ${aspect}`,
   join: (aspect) => `Join ${aspect}`,
   invited: "Invited",

@@ -13,6 +13,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import { env } from "../../../../../env";
 import { HudButton, HudTabs } from "@/ui/design-system/kit/hud-elements";
+import { TRIBE_WORDS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 
 interface GuildMembersProps {
@@ -197,7 +198,7 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
             busy={isLoading ? "Leaving…" : undefined}
             onClick={() => (userGuild.isOwner ? disbandGuild() : leaveGuild())}
           >
-            {userGuild.isOwner ? "Disband Tribe" : "Leave Tribe"}
+            {userGuild.isOwner ? TRIBE_WORDS.deleteTribe : TRIBE_WORDS.leaveTribe}
           </HudButton>
         )}
         {!userGuild?.entityId && (selectedGuild?.isPublic || userIsInvited) && (

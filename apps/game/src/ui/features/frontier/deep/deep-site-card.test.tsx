@@ -195,7 +195,7 @@ describe("the Deep site's live native binding", () => {
       expect(hud.store.entityOccupancy(1, 201)).toBeUndefined();
       expect(hud.store.require("DeepGuard", { game_id: 1, explorer_id: 201 }).slot).toBe(1);
       expect(hud.button("Join")).toBeUndefined();
-      expect(hud.host.textContent).toContain("Already guarding");
+      expect(hud.host.textContent).toContain(DEEP_WORDS.guarding);
       expect(hud.host.querySelectorAll("[data-deep-slot]")).toHaveLength(4);
       const army = hud.store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
       expect(army.troops.stamina).toEqual({ Slot: 0 });
@@ -443,8 +443,8 @@ it("shows each guard's share of the next tick from the troops it keeps after the
     const tips = [...hud.host.querySelectorAll('[data-deep-slot="filled"]')].map(
       (node) => node.getAttribute("data-tip") ?? "",
     );
-    expect(tips.join(" ")).toContain("75% of each tick");
-    expect(tips.join(" ")).toContain("25% of each tick");
+    expect(tips.join(" ")).toContain(DEEP_WORDS.share(75));
+    expect(tips.join(" ")).toContain(DEEP_WORDS.share(25));
   } finally {
     hud.unmount();
   }

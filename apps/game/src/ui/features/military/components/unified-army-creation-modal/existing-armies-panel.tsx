@@ -1,4 +1,4 @@
-import { staminaLabel } from "@/ui/design-system/kit/words";
+import { ARMY_MANAGEMENT, staminaLabel } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -105,7 +105,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
       bumpMilitaryMapVersion();
       close();
     } catch (error) {
-      toast.failed(error, "The army could not be deleted.");
+      toast.failed(error, ARMY_MANAGEMENT.deleteFailed);
     } finally {
       setDeleting(false);
     }
@@ -148,7 +148,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
         <HudIconButton icon="map" label="Navigate to army" kind="quiet" onClick={handleJump} />
         <HudIconButton
           icon="trash"
-          label="Disband army"
+          label={ARMY_MANAGEMENT.deleteArmy}
           kind="quiet"
           disabled={deleting}
           onClick={confirmsDisband ? ask : handleConfirmDelete}
@@ -157,8 +157,8 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
       {confirming && (
         <div className="basis-full">
           <HudConfirm
-            question="Disband this army?"
-            verb={deleting ? "Disbanding…" : "Disband"}
+            question={ARMY_MANAGEMENT.confirmDelete}
+            verb={deleting ? ARMY_MANAGEMENT.deleting : ARMY_MANAGEMENT.remove}
             tone="bad"
             onConfirm={handleConfirmDelete}
             onCancel={close}

@@ -33,6 +33,7 @@ import { accountAnswers, deviceLastPlayedBeforeTheAnswer, leaveThePage } from ".
 import { ConnectFlow } from "./connect-flow";
 import { APP_WAIT_MS, discordAndroidIntent, discordAppUrl } from "./discord-app";
 import { forgetSocialStart, pendingSocialStart, rememberSocialStart } from "./social-pending";
+import { SIGN_IN_WORDS, WALLET_WORDS } from "@/ui/design-system/kit/words";
 
 const NEXT = "/g/0x5245414c4d53/1/map?col=4&row=9&spectate=true";
 
@@ -163,7 +164,7 @@ describe("Connect", () => {
       const name = ui.query<HTMLInputElement>('input[autocomplete="nickname"]')!;
       expect(name.value).toBe("");
       expect(name.getAttribute("aria-invalid")).toBeNull();
-      expect(ui.window()?.textContent).toContain("Pick the name other players see on the leaderboards.");
+      expect(ui.window()?.textContent).toContain(SIGN_IN_WORDS.pickName);
       expect(ui.query<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(true);
 
       await ui.type('input[autocomplete="nickname"]', "Ysolde");
@@ -393,10 +394,10 @@ describe("Your wallet", () => {
     const ui = await mount("/g/0x5245414c4d53/1/map");
     try {
       expect(ui.window()?.getAttribute("aria-label")).toBe("Your wallet");
-      expect(ui.container.textContent).toContain("I have a wallet");
+      expect(ui.container.textContent).toContain(WALLET_WORDS.haveOne);
       expect(ui.container.textContent).not.toContain("I need one");
       await act(async () =>
-        [...ui.container.querySelectorAll("button")].find((b) => b.textContent === "Create my wallet")!.click(),
+        [...ui.container.querySelectorAll("button")].find((b) => b.textContent === WALLET_WORDS.createWallet)!.click(),
       );
       expect(passkeys.create).toHaveBeenCalledWith({ realmsId: "0x7", email: "you@mail.test", name: "Ysolde" });
       expect(create).toHaveBeenCalledWith({ passkey: { credentialId: "cred", publicKey: "spki" } });
@@ -420,7 +421,7 @@ describe("Your wallet", () => {
     const ui = await mount("/");
     try {
       await act(async () =>
-        [...ui.container.querySelectorAll("button")].find((b) => b.textContent === "Create my wallet")!.click(),
+        [...ui.container.querySelectorAll("button")].find((b) => b.textContent === WALLET_WORDS.createWallet)!.click(),
       );
       expect(ui.container.textContent).toContain("Code sent to you@mail.test");
       await ui.type('input[autocomplete="one-time-code"]', "123456");
@@ -479,7 +480,7 @@ describe("Your wallet", () => {
     try {
       expect(settings.window()).toBeNull();
       await act(async () => settings.query<HTMLAnchorElement>('[data-testid="needs-wallet"]')!.click());
-      expect(settings.query('[data-payout-wallet="none"]')?.textContent).toContain("Create my wallet");
+      expect(settings.query('[data-payout-wallet="none"]')?.textContent).toContain(WALLET_WORDS.createWallet);
     } finally {
       await settings.unmount();
     }
@@ -505,7 +506,7 @@ describe("Your wallet", () => {
     const ui = await mount("/");
     try {
       await act(async () =>
-        [...ui.container.querySelectorAll("button")].find((b) => b.textContent === "Create my wallet")!.click(),
+        [...ui.container.querySelectorAll("button")].find((b) => b.textContent === WALLET_WORDS.createWallet)!.click(),
       );
       expect(ui.container.textContent).toContain("Passkey cancelled. Try again.");
       expect(ui.window()?.getAttribute("aria-label")).toBe("Your wallet");
@@ -536,7 +537,7 @@ describe("Connect with a provider", () => {
     const left = navigations();
     const asked = await mount("/", NEXT);
     try {
-      await press(asked, "Continue with Google");
+      await press(asked, SIGN_IN_WORDS.continueWith("google"));
       expect(start).toHaveBeenLastCalledWith("google", NEXT);
       expect(left.mock.calls).toEqual([[PROVIDER]]);
     } finally {
@@ -547,7 +548,7 @@ describe("Connect with a provider", () => {
     forgetSocialStart();
     const here = await mount("/season?tab=frontier");
     try {
-      await press(here, "Continue with Discord");
+      await press(here, SIGN_IN_WORDS.continueWith("discord"));
       expect(start).toHaveBeenLastCalledWith("discord", "/season?tab=frontier");
     } finally {
       await here.unmount();
@@ -565,9 +566,9 @@ describe("Connect with a provider", () => {
       .mockResolvedValue(sessionOf({ name: "Ysolde", image: "04" }));
     const ui = await mount("/", NEXT);
     try {
-      await press(ui, "Continue with X");
+      await press(ui, SIGN_IN_WORDS.continueWith("twitter"));
       expect(ui.window()?.getAttribute("aria-label")).toBe("X");
-      expect(ui.container.textContent).toContain("Finished with X? Enter the code its page showed you.");
+      expect(ui.container.textContent).toContain(SIGN_IN_WORDS.handoff("twitter"));
       await ui.type('input[autocomplete="one-time-code"]', "111111");
       await act(async () => {});
       expect(ui.container.textContent).toContain("Wrong code.");
@@ -592,7 +593,7 @@ describe("Connect with a provider", () => {
       .spyOn(identityClient, "claimSocialHandoff")
       .mockResolvedValue(sessionOf({ name: "Ysolde", image: "04" }));
     const before = await mount("/", NEXT);
-    await press(before, "Continue with Apple");
+    await press(before, SIGN_IN_WORDS.continueWith("apple"));
     await before.unmount();
     // A reload: the page and its memory are gone; only what the browser keeps is left.
     useConnectStore.setState({ request: null, nameDismissed: false });
@@ -678,7 +679,7 @@ describe("Connect with a provider", () => {
         expect(providerButtons().map((button) => button.textContent)).toEqual(buttons);
         expect(view.query('input[type="email"]')).not.toBeNull();
         // Most visitors from a flyer are new: the one sheet says their first sign-in is their sign-up, whichever way in.
-        expect(document.body.textContent).toContain("New here? Your first sign-in creates your Realms account.");
+        expect(document.body.textContent).toContain(SIGN_IN_WORDS.firstSignIn);
       } finally {
         await view.unmount();
       }
@@ -694,8 +695,8 @@ describe("Connect with a provider", () => {
       await view.ask();
       await act(async () => {});
       expect(providerButtons().map((button) => button.textContent)).toEqual([
-        "Continue with Google",
-        "Continue with Discord",
+        SIGN_IN_WORDS.continueWith("google"),
+        SIGN_IN_WORDS.continueWith("discord"),
       ]);
     } finally {
       await view.unmount();
@@ -778,7 +779,7 @@ describe("Connect with Discord on a phone", () => {
       expect(asked.mock.calls).toEqual([["discord", NEXT]]);
       await slow.send(WEB);
       act(() => {
-        button("Continue with Discord")!.click();
+        button(SIGN_IN_WORDS.continueWith("discord"))!.click();
         // Inside the tap itself: no wait between the press and the app's address.
         expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)]]);
       });
@@ -800,26 +801,26 @@ describe("Connect with Discord on a phone", () => {
       const { ui, opened } = await openOn(userAgent);
       const codeBoxes = () => ui.query('input[autocomplete="one-time-code"]');
       try {
-        await press("Continue with Discord");
+        await press(SIGN_IN_WORDS.continueWith("discord"));
         expect(opened).toHaveBeenCalledTimes(1);
         expect(ui.window()?.getAttribute("aria-label")).toBe("Connect");
         expect(codeBoxes()).toBeNull();
         // Discord's button waits with the kit's spinner while the app comes up.
-        expect(button("Continue with Discord")).toBeUndefined();
+        expect(button(SIGN_IN_WORDS.continueWith("discord"))).toBeUndefined();
         expect(button("Opening Discord…")?.disabled).toBe(true);
         expect(button("Opening Discord…")?.getAttribute("aria-busy")).toBe("true");
         expect(button("Opening Discord…")?.querySelector(".ui-spinner")).not.toBeNull();
-        expect(button("Continue with Google")?.disabled).toBe(false);
+        expect(button(SIGN_IN_WORDS.continueWith("google"))?.disabled).toBe(false);
 
         // In the Discord app: the page behind it is hidden, then the player comes back without a sign-in here.
         await setVisibility("hidden");
         expect(codeBoxes()).toBeNull();
         await setVisibility("visible");
         expect(ui.window()?.getAttribute("aria-label")).toBe("Discord");
-        expect(ui.container.textContent).toContain("Finished with Discord? Enter the code its page showed you.");
+        expect(ui.container.textContent).toContain(SIGN_IN_WORDS.handoff("discord"));
         expect(codeBoxes()).not.toBeNull();
         expect(button("Try Discord again")).toBeDefined();
-        expect(button("Continue in browser")).toBeDefined();
+        expect(button(SIGN_IN_WORDS.continueInBrowser)).toBeDefined();
         expect(button("Opening Discord…")).toBeUndefined();
         expect(opened).toHaveBeenCalledTimes(1);
       } finally {
@@ -837,9 +838,9 @@ describe("Connect with Discord on a phone", () => {
       await slow.send(WEB);
       expect(opened).not.toHaveBeenCalled();
       expect(pendingSocialStart()).toBeNull();
-      expect(button("Continue with Discord")?.disabled).toBe(false);
+      expect(button(SIGN_IN_WORDS.continueWith("discord"))?.disabled).toBe(false);
       act(() => {
-        button("Continue with Discord")!.click();
+        button(SIGN_IN_WORDS.continueWith("discord"))!.click();
         expect(opened.mock.calls).toEqual([[discordAndroidIntent(WEB)]]);
       });
       expect(asked).toHaveBeenCalledTimes(1);
@@ -854,11 +855,11 @@ describe("Connect with Discord on a phone", () => {
     try {
       await slow.fail(new IdentityRequestError(503, "unavailable"));
       asked.mockImplementation(async () => WEB);
-      await press("Continue with Discord");
+      await press(SIGN_IN_WORDS.continueWith("discord"));
       expect(asked).toHaveBeenCalledTimes(2);
       expect(opened).not.toHaveBeenCalled();
       act(() => {
-        button("Continue with Discord")!.click();
+        button(SIGN_IN_WORDS.continueWith("discord"))!.click();
         expect(opened.mock.calls).toEqual([[discordAndroidIntent(WEB)]]);
       });
       expect(asked).toHaveBeenCalledTimes(2);
@@ -872,7 +873,7 @@ describe("Connect with Discord on a phone", () => {
     const { ui, asked, opened } = await openOn(ANDROID);
     const LATER = WEB.replace("state=first", "state=later");
     try {
-      await press("Continue with Discord");
+      await press(SIGN_IN_WORDS.continueWith("discord"));
       await setVisibility("hidden");
       await setVisibility("visible");
       await wait(8 * 60_000);
@@ -893,7 +894,7 @@ describe("Connect with Discord on a phone", () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
     const { ui, opened } = await openOn(IPHONE);
     try {
-      await press("Continue with Discord");
+      await press(SIGN_IN_WORDS.continueWith("discord"));
       await wait(APP_WAIT_MS - 1);
       await act(async () => ui.query<HTMLButtonElement>('button[aria-label="Close"]')!.click());
       expect(ui.window()).toBeNull();
@@ -909,7 +910,7 @@ describe("Connect with Discord on a phone", () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
     const { ui, asked, opened } = await openOn(IPHONE);
     try {
-      await press("Continue with Discord");
+      await press(SIGN_IN_WORDS.continueWith("discord"));
       await wait(1000);
       // The busy button takes no second tap.
       await press("Opening Discord…");
@@ -943,7 +944,7 @@ describe("Connect with Discord on a phone", () => {
       await ui.ask();
       await act(async () => {});
       expect(asked).not.toHaveBeenCalled();
-      await press("Continue with Google");
+      await press(SIGN_IN_WORDS.continueWith("google"));
       expect(asked).toHaveBeenCalledTimes(1);
       await act(async () => ui.query<HTMLButtonElement>('button[aria-label="Close"]')!.click());
       await slow.send(WEB);
@@ -959,7 +960,7 @@ describe("Connect with Discord on a phone", () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
     const { ui, asked, opened } = await openOn(IPHONE);
     try {
-      await press("Continue with Discord");
+      await press(SIGN_IN_WORDS.continueWith("discord"));
       await setVisibility("hidden");
       await setVisibility("visible");
       await wait(APP_WAIT_MS * 4);
@@ -967,7 +968,7 @@ describe("Connect with Discord on a phone", () => {
       expect(ui.window()?.getAttribute("aria-label")).toBe("Discord");
       expect(ui.query('input[autocomplete="one-time-code"]')).not.toBeNull();
 
-      await press("Continue in browser");
+      await press(SIGN_IN_WORDS.continueInBrowser);
       expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)], [WEB]]);
       expect(asked).toHaveBeenCalledTimes(1);
       expect(pendingSocialStart()?.next).toBe(NEXT);
@@ -983,12 +984,12 @@ describe("Connect with Discord on a phone", () => {
     const { ui, asked, opened } = await openOn(IPHONE);
     asked.mockImplementation(async (provider) => (provider === "google" ? google.answer : WEB));
     try {
-      await press("Continue with Discord");
+      await press(SIGN_IN_WORDS.continueWith("discord"));
       await wait(1000);
       // Google's address takes longer than the iPhone's wait has left.
-      await press("Continue with Google");
+      await press(SIGN_IN_WORDS.continueWith("google"));
       expect(button("Opening Discord…")).toBeUndefined();
-      expect(button("Continue with Discord")).toBeDefined();
+      expect(button(SIGN_IN_WORDS.continueWith("discord"))).toBeDefined();
       await wait(APP_WAIT_MS * 4);
       expect(opened.mock.calls).toEqual([[discordAppUrl(WEB)]]);
       await google.send(GOOGLE);
@@ -1021,7 +1022,7 @@ describe("Connect with Discord on a phone", () => {
       const { ui, asked, opened } = await openOn(IPHONE);
       try {
         await ui.type('input[type="email"]', "you@mail.test");
-        await press("Continue with Discord");
+        await press(SIGN_IN_WORDS.continueWith("discord"));
         await sendCode(ui);
         await wait(APP_WAIT_MS * 4);
         if (held) await email.send();
@@ -1043,10 +1044,10 @@ describe("Connect with Discord on a phone", () => {
     const { ui, asked, opened } = await openOn(ANDROID);
     try {
       await ui.type('input[type="email"]', "you@mail.test");
-      await press("Continue with Discord");
+      await press(SIGN_IN_WORDS.continueWith("discord"));
       await sendCode(ui);
       expect(button("Opening Discord…")).toBeUndefined();
-      expect(button("Continue with Discord")).toBeDefined();
+      expect(button(SIGN_IN_WORDS.continueWith("discord"))).toBeDefined();
       await setVisibility("hidden");
       await setVisibility("visible");
       expect(ui.window()?.getAttribute("aria-label")).toBe("Connect");
@@ -1067,10 +1068,10 @@ describe("Connect with Discord on a phone", () => {
   it("on Android, Continue in browser opens the website of the attempt the app was handed", async () => {
     const { ui, asked, opened } = await openOn(ANDROID);
     try {
-      await press("Continue with Discord");
+      await press(SIGN_IN_WORDS.continueWith("discord"));
       await setVisibility("hidden");
       await setVisibility("visible");
-      await press("Continue in browser");
+      await press(SIGN_IN_WORDS.continueInBrowser);
       expect(opened.mock.calls).toEqual([[discordAndroidIntent(WEB)], [WEB]]);
       expect(asked).toHaveBeenCalledTimes(1);
     } finally {
@@ -1083,14 +1084,14 @@ describe("Connect with Discord on a phone", () => {
     const { ui, asked, opened } = await openOn(ANDROID);
     asked.mockImplementation(async (provider) => (provider === "google" ? GOOGLE : WEB));
     try {
-      await press("Continue with Google");
+      await press(SIGN_IN_WORDS.continueWith("google"));
       expect(asked.mock.calls).toEqual([
         ["discord", NEXT],
         ["google", NEXT],
       ]);
       expect(opened.mock.calls).toEqual([[GOOGLE]]);
       expect(ui.window()?.getAttribute("aria-label")).toBe("Google");
-      expect(button("Continue in browser")).toBeUndefined();
+      expect(button(SIGN_IN_WORDS.continueInBrowser)).toBeUndefined();
       expect(pendingSocialStart()?.provider).toBe("google");
     } finally {
       await ui.unmount();
@@ -1109,7 +1110,7 @@ describe("Connect with Discord on a phone", () => {
         ["discord", NEXT],
       ]);
       act(() => {
-        button("Continue with Discord")!.click();
+        button(SIGN_IN_WORDS.continueWith("discord"))!.click();
         expect(opened.mock.calls).toEqual([[discordAndroidIntent(RENEWED)]]);
       });
     } finally {
@@ -1125,7 +1126,7 @@ describe("Connect with Discord on a phone", () => {
     asked.mockImplementation(async (provider) => (provider === "google" ? google.answer : WEB));
     try {
       await wait(8 * 60_000 - 1000);
-      await press("Continue with Google");
+      await press(SIGN_IN_WORDS.continueWith("google"));
       await wait(2000);
       await google.send(GOOGLE);
       expect(asked.mock.calls).toEqual([
@@ -1149,9 +1150,9 @@ describe("Connect with Discord on a phone", () => {
     try {
       await ui.ask();
       await act(async () => {});
-      await press("Continue with Discord");
+      await press(SIGN_IN_WORDS.continueWith("discord"));
       expect(opened.mock.calls).toEqual([[WEB]]);
-      expect(button("Continue in browser")).toBeUndefined();
+      expect(button(SIGN_IN_WORDS.continueInBrowser)).toBeUndefined();
     } finally {
       await ui.unmount();
     }

@@ -86,6 +86,14 @@ import { identityClient, useIdentitySessionStore } from "@/hooks/context/identit
 import { setViewportWidth } from "@/shell/frame/test-viewport";
 import { GameEntryModal } from "./game-entry-modal";
 import type { Session } from "@realms-world/identity";
+import {
+  ASPECT_STEP_WORDS,
+  COUNTDOWN_WORDS,
+  DOORWAY_WORDS,
+  HELD_REALMS_UNREADABLE,
+  HOME_STEP_WORDS,
+  REALM_SIDE_WORDS,
+} from "@/ui/design-system/kit/words";
 
 /** A signed-in Realms account whose linked wallet is `address` (null: none linked). */
 const signedIn = (realmsId: string, address: string | null): Session => ({
@@ -93,7 +101,7 @@ const signedIn = (realmsId: string, address: string | null): Session => ({
   user: { id: realmsId, realmsId, address, name: realmsId, email: `${realmsId}@test` },
 });
 
-const ASPECT_INVITE_UNREAD = "Could not load your friend's invite. Choose an Aspect, or try again.";
+const ASPECT_INVITE_UNREAD = ASPECT_STEP_WORDS.inviteUnread;
 const keptOrder = { order: null as number | null };
 beforeEach(() => {
   vi.spyOn(identityClient, "getOrderIntent").mockImplementation(async () => ({ order: keptOrder.order, members: {} }));
@@ -162,7 +170,7 @@ const openEntry = async () => {
     query.clear();
   };
   const found = () =>
-    [...host.querySelectorAll("button")].find((button) => button.textContent === "Create your Realm")!;
+    [...host.querySelectorAll("button")].find((button) => button.textContent === COUNTDOWN_WORDS.create)!;
   /** The tiles wearing the chosen mark (its check), by name. */
   const checked = () =>
     [...host.querySelectorAll(".home-picker__choice")]
@@ -240,9 +248,9 @@ it("starts a holder on their first Realm, wonders first, and founds with it", as
     await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
     expect(entry.strip()).toEqual([`${realmChoice(538)} *`, realmChoice(3)]);
     expect(entry.host.textContent).toContain("The Glowing Geyser");
-    expect(entry.host.textContent).toContain("+50% daily quest labor · +10 Fragments per quest");
+    expect(entry.host.textContent).toContain(HOME_STEP_WORDS.questBonus(50, 10));
     expect(entry.host.querySelector('input[aria-label="Realm number"]')).toBeNull();
-    await entry.press("Create your Realm");
+    await entry.press(COUNTDOWN_WORDS.create);
     await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(registered).toEqual([{ gameId: 8, realmId: 538 }]);
   } finally {
@@ -267,11 +275,11 @@ it("lets a refused Realm claimant found with another Realm", async () => {
   try {
     await vi.waitFor(() => expect(entry.strip()).toHaveLength(2));
     await entry.pick(realmChoice(711));
-    await entry.press("Create your Realm");
+    await entry.press(COUNTDOWN_WORDS.create);
     await vi.waitFor(() => expect(entry.host.textContent).toContain("This source cannot be attached to your home."));
     expect(settlement.calls).toEqual([]);
     await entry.pick(realmChoice(712));
-    await entry.press("Create your Realm");
+    await entry.press(COUNTDOWN_WORDS.create);
     await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(sent).toEqual([711, 712]);
   } finally {
@@ -301,7 +309,7 @@ it("shows each account its own Realms in the same tab, and lets a pick of anothe
     await act(async () => useIdentitySessionStore.setState({ session: signedIn("0x3", "0xabc") }));
     await vi.waitFor(() => expect(entry.featured()).toBe(name(12)));
     expect(asked).toEqual(["0x456", "0x789", "0xabc"]);
-    await entry.press("Create your Realm");
+    await entry.press(COUNTDOWN_WORDS.create);
     await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(registered).toEqual([{ gameId: 8, realmId: 12 }]);
   } finally {
@@ -332,7 +340,7 @@ it.each([
     expect(asked.includes(HELD_REALMS)).toBe(wallet !== null);
     // No picker and no press: the step never asked.
     expect(entry.featured()).toBeNull();
-    expect(entry.host.textContent).not.toContain("Create your Realm");
+    expect(entry.host.textContent).not.toContain(COUNTDOWN_WORDS.create);
   } finally {
     await entry.close();
   }
@@ -370,7 +378,7 @@ it.each([{ width: 1440 }, { width: 390 }])(
     );
     const entry = await openEntry();
     try {
-      const notice = "Could not load your Realms right now";
+      const notice = HELD_REALMS_UNREADABLE;
       await vi.waitFor(() => expect(entry.host.textContent).toContain(notice));
       // No home is offered around the failed read: neither a free home nor a lesser default, and nothing founds.
       expect(entry.featured()).toBeNull();
@@ -382,7 +390,7 @@ it.each([{ width: 1440 }, { width: 390 }])(
       await entry.press("Try again");
       await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
       expect(entry.host.textContent).not.toContain(notice);
-      await entry.press("Create your Realm");
+      await entry.press(COUNTDOWN_WORDS.create);
       await vi.waitFor(() => expect(settlement.settled).toBe(true));
       expect(registered).toEqual([{ gameId: 8, realmId: 711 }]);
     } finally {
@@ -401,14 +409,14 @@ it("waits to found until it knows what the account holds, so a holder never foun
     await vi.waitFor(() => expect(entry.host.querySelector(".home-picker__waiting")).not.toBeNull());
     // The step says what it waits for; Found is faint, not busy.
     expect(entry.host.querySelector('.home-picker__waiting [role="status"]')?.textContent).toBe(
-      "Reading what you hold…",
+      HOME_STEP_WORDS.loading,
     );
     expect(entry.found().disabled).toBe(true);
     expect(entry.found().getAttribute("aria-busy")).toBeNull();
     await act(async () => answer(held(711)));
     await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
     expect(entry.found().disabled).toBe(false);
-    await entry.press("Create your Realm");
+    await entry.press(COUNTDOWN_WORDS.create);
     await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(registered).toEqual([{ gameId: 8, realmId: 711 }]);
   } finally {
@@ -432,10 +440,10 @@ it("spins while the realm is founded and says so, at full strength, until the fo
   const entry = await openEntry();
   try {
     await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
-    await entry.press("Create your Realm");
+    await entry.press(COUNTDOWN_WORDS.create);
     const founding = await vi.waitFor(() => {
       const button = [...entry.host.querySelectorAll("button")].find(
-        (candidate) => candidate.textContent === "Creating your Realm…",
+        (candidate) => candidate.textContent === HOME_STEP_WORDS.founding,
       );
       expect(button?.getAttribute("aria-busy")).toBe("true");
       return button!;
@@ -484,7 +492,7 @@ it.each([
           search.dispatchEvent(new Event("input", { bubbles: true }));
         });
       await type("zzzz");
-      expect(entry.host.textContent).toContain("No Realm matches");
+      expect(entry.host.textContent).toContain(HOME_STEP_WORDS.noMatch);
       await type("42");
       expect(grid().map((choice) => choice.getAttribute("aria-label"))).toEqual([realmChoice(42)]);
       await type(name(17).slice(0, 5));
@@ -492,7 +500,7 @@ it.each([
       await entry.pick(realmChoice(17));
       expect(entry.featured()).toBe(name(17));
       expect(grid()).toHaveLength(0);
-      await entry.press("Create your Realm");
+      await entry.press(COUNTDOWN_WORDS.create);
       await vi.waitFor(() => expect(settlement.settled).toBe(true));
       expect(registered).toEqual([{ gameId: 8, realmId: 17 }]);
     } finally {
@@ -509,12 +517,12 @@ it("keeps the Realm already registered for this game, shown alone and locked, wh
   const entry = await openEntry();
   try {
     await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
-    expect(entry.host.textContent).toContain("Registered for this game");
+    expect(entry.host.textContent).toContain(HOME_STEP_WORDS.registered);
     expect(entry.strip()).toEqual([]);
     await act(async () => useIdentitySessionStore.setState({ session: signedIn("0x2", null) }));
     await entry.askHoldingsAgain();
     expect(entry.featured()).toBe(name(711));
-    await entry.press("Create your Realm");
+    await entry.press(COUNTDOWN_WORDS.create);
     await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(registered).toEqual([]);
     expect(settlement.order).toEqual(["settle"]);
@@ -532,7 +540,7 @@ it("a founded home holding a Realm attaches it only on Add this quest bonus", as
   try {
     await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
     expect(registered).toEqual([]);
-    await entry.press("Add this quest bonus");
+    await entry.press(HOME_STEP_WORDS.attach);
     await vi.waitFor(() => expect(registered).toEqual([{ gameId: 8, realmId: 711 }]));
     expect(settlement.calls).toEqual([]);
   } finally {
@@ -556,7 +564,7 @@ it("a founded home chooses one of two Realms, leaves the other free, and shows u
     expect(taken?.textContent).toContain("Taken");
     expect(registered).toEqual([]);
     await entry.pick(realmChoice(712));
-    await entry.press("Add this quest bonus");
+    await entry.press(HOME_STEP_WORDS.attach);
     await vi.waitFor(() => expect(registered).toEqual([{ gameId: 8, realmId: 712 }]));
     expect(settlement.calls).toEqual([]);
   } finally {
@@ -574,11 +582,11 @@ it("offers only Continue for a founded home whose held Realm is already taken", 
   try {
     await vi.waitFor(() => expect(entry.host.textContent).toContain("Taken"));
     expect(
-      [...entry.host.querySelectorAll("button")].find((button) => button.textContent === "Add this quest bonus")
+      [...entry.host.querySelectorAll("button")].find((button) => button.textContent === HOME_STEP_WORDS.attach)
         ?.disabled,
     ).toBe(true);
-    await entry.press("Continue with my free home");
-    await vi.waitFor(() => expect(entry.host.textContent).not.toContain("Choose a quest bonus"));
+    await entry.press(HOME_STEP_WORDS.keepFree);
+    await vi.waitFor(() => expect(entry.host.textContent).not.toContain(HOME_STEP_WORDS.attachTitle));
     expect(registered).toEqual([]);
     expect(settlement.calls).toEqual([]);
   } finally {
@@ -605,8 +613,8 @@ describe("a founded Season 1 home attaching a held Realm (only one of its own As
     const registered = relay(() => held(otherAspect));
     const entry = await openEntry();
     try {
-      await vi.waitFor(() => expect(entry.host.textContent).toContain("Loading the map"));
-      expect(entry.host.textContent).not.toContain("Choose a quest bonus");
+      await vi.waitFor(() => expect(entry.host.textContent).toContain(DOORWAY_WORDS.map));
+      expect(entry.host.textContent).not.toContain(HOME_STEP_WORDS.attachTitle);
       expect(entry.host.textContent).not.toContain(name(otherAspect));
       expect(registered).toEqual([]);
       expect(settlement.calls).toEqual([]);
@@ -622,7 +630,7 @@ describe("a founded Season 1 home attaching a held Realm (only one of its own As
     try {
       await vi.waitFor(() => expect(entry.featured()).toBe(name(sameAspect)));
       expect(entry.host.textContent).not.toContain(name(otherAspect));
-      await entry.press("Add this quest bonus");
+      await entry.press(HOME_STEP_WORDS.attach);
       await vi.waitFor(() => expect(registered).toEqual([{ gameId: 8, realmId: sameAspect }]));
       expect(settlement.calls).toEqual([]);
     } finally {
@@ -640,8 +648,8 @@ it("resumes a home with an existing source without offering or submitting anothe
   const entry = await openEntry();
   try {
     // The entry goes straight on to the map, never stopping on the source step.
-    await vi.waitFor(() => expect(entry.host.textContent).toContain("Loading the map"));
-    expect(entry.host.textContent).not.toContain("Choose a quest bonus");
+    await vi.waitFor(() => expect(entry.host.textContent).toContain(DOORWAY_WORDS.map));
+    expect(entry.host.textContent).not.toContain(HOME_STEP_WORDS.attachTitle);
     expect(registered).toEqual([]);
     expect(settlement.calls).toEqual([]);
   } finally {
@@ -702,7 +710,9 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
           { label: "Join Insight", invite: null },
         ]),
       );
-      expect(entry.host.querySelector(".aspect-picker__invited")?.textContent).toBe("Linden invited you to Luminary");
+      expect(entry.host.querySelector(".aspect-picker__invited")?.textContent).toBe(
+        ASPECT_STEP_WORDS.invitedTo("Linden", "Luminary"),
+      );
       await join(entry.host, "Luminary");
       await vi.waitFor(() => expect(settlement.calls).toEqual([firstOrderOf(2)]));
       expect(joined).toHaveBeenCalledTimes(1);
@@ -717,7 +727,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
     const entry = await openEntry();
     try {
       await vi.waitFor(() => expect(entry.host.querySelectorAll(".aspect-picker__order")).toHaveLength(4));
-      expect(entry.host.textContent).toContain("You chose Prowess before the season. Choose your Order in it.");
+      expect(entry.host.textContent).toContain(ASPECT_STEP_WORDS.keptAspect("Prowess"));
       expect(cards(entry.host)).toEqual(plainOrder);
       expect(
         [...entry.host.querySelectorAll<HTMLButtonElement>(".app-aspect-card")].every((card) => card.disabled),
@@ -741,7 +751,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       .mockRejectedValueOnce(new IdentityRequestError(503, "order_intent_unavailable"));
     const entry = await openEntry();
     try {
-      await vi.waitFor(() => expect(entry.host.textContent).toContain("Could not load your Season Aspect. Try again."));
+      await vi.waitFor(() => expect(entry.host.textContent).toContain(ASPECT_STEP_WORDS.keptUnread));
       const shut = () =>
         [...entry.host.querySelectorAll<HTMLButtonElement>(".app-aspect-card")].map((card) => card.disabled);
       expect(shut()).toEqual([true, true, true, true]);
@@ -769,14 +779,16 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       try {
         await vi.waitFor(() => expect(warning(entry.host)).not.toBeNull());
         expect(warning(entry.host)?.querySelector("h2")?.textContent).toBe(
-          "Linden plays Luminary. Your Realm plays Havoc.",
+          REALM_SIDE_WORDS.invited("Linden", "Luminary", "Havoc"),
         );
         expect(warning(entry.host)?.textContent).toContain(name(538));
-        expect(warning(entry.host)?.textContent).toContain("You keep the quest bonus. Linden is in another Aspect.");
-        expect(warning(entry.host)?.textContent).toContain("You lose the quest bonus.");
-        await entry.press("Play my Realm");
+        expect(warning(entry.host)?.textContent).toContain(
+          `${REALM_SIDE_WORDS.keeps} ${REALM_SIDE_WORDS.apart("Linden")}`,
+        );
+        expect(warning(entry.host)?.textContent).toContain(REALM_SIDE_WORDS.loses);
+        await entry.press(REALM_SIDE_WORDS.playRealm);
         expect(warning(entry.host)).toBeNull();
-        await entry.press("Create your Realm");
+        await entry.press(COUNTDOWN_WORDS.create);
         await vi.waitFor(() => expect(settlement.settled).toBe(true));
         expect(registered).toEqual([{ gameId: 8, realmId: 538 }]);
         expect(settlement.calls).toEqual([expect.objectContaining({ order: undefined })]);
@@ -791,10 +803,8 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       const entry = await openEntry();
       try {
         await vi.waitFor(() => expect(warning(entry.host)).not.toBeNull());
-        expect(warning(entry.host)?.querySelector("h2")?.textContent).toBe(
-          "You chose Prowess before the season. Your Realm plays Havoc.",
-        );
-        await entry.press("Join Prowess for free");
+        expect(warning(entry.host)?.querySelector("h2")?.textContent).toBe(REALM_SIDE_WORDS.kept("Prowess", "Havoc"));
+        await entry.press(REALM_SIDE_WORDS.joinFree("Prowess"));
         expect(warning(entry.host)).toBeNull();
         expect(entry.host.querySelector(".home-picker__featured")).toBeNull();
         const titans = await vi.waitFor(() => {
@@ -818,9 +828,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       const entry = await openEntry();
       try {
         await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
-        await vi.waitFor(() =>
-          expect(entry.host.textContent).toContain("Could not load your Season Aspect. Try again."),
-        );
+        await vi.waitFor(() => expect(entry.host.textContent).toContain(ASPECT_STEP_WORDS.keptUnread));
         expect(entry.found().disabled).toBe(true);
         read.mockResolvedValue({ order: 13, members: {} });
         await entry.press("Try again");
@@ -867,26 +875,26 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       const entry = await openEntry();
       try {
         await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
-        expect(entry.host.textContent).toContain("+50% daily quest labor");
+        expect(entry.host.textContent).toContain(HOME_STEP_WORDS.questBonus(50));
         expect(entry.host.textContent).not.toContain("Your Realm holds the quest bonus");
         expect(entry.host.textContent).not.toContain("You play as");
         expect(entry.host.querySelectorAll(".app-aspect-card")).toHaveLength(0);
         expect(entry.host.textContent).not.toContain("Play free (without a Realm)");
         expect(entry.host.querySelector('[data-entry-mode-switch] [role="tablist"]')?.textContent).toBe(
-          "Use My Realm (1)Play Free (Pick Any Aspect)",
+          `${HOME_STEP_WORDS.myRealmTab(1)}${HOME_STEP_WORDS.playFreeTab}`,
         );
 
-        await entry.press("Play Free (Pick Any Aspect)");
+        await entry.press(HOME_STEP_WORDS.playFreeTab);
         await vi.waitFor(() => expect(entry.host.querySelectorAll(".app-aspect-card")).toHaveLength(4));
         expect(entry.host.querySelector(".home-picker__featured")).toBeNull();
         expect(entry.host.textContent).toContain("No +50% daily quest labor bonus unless you get an Ancient Seal.");
         expect(entry.host.textContent).not.toContain("Use one of my Realms instead");
 
-        await entry.press("Use My Realm (1)");
+        await entry.press(HOME_STEP_WORDS.myRealmTab(1));
         await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
         expect(entry.host.querySelectorAll(".app-aspect-card")).toHaveLength(0);
 
-        await entry.press("Play Free (Pick Any Aspect)");
+        await entry.press(HOME_STEP_WORDS.playFreeTab);
         await join(entry.host, "Luminary");
         await vi.waitFor(() => expect(settlement.calls).toEqual([firstOrderOf(2)]));
         expect(registered).toEqual([{ gameId: 8 }]);
@@ -910,7 +918,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       const entry = await openEntry();
       try {
         await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
-        await entry.press("Create your Realm");
+        await entry.press(COUNTDOWN_WORDS.create);
         await vi.waitFor(() => {
           const tabs = [...entry.host.querySelectorAll<HTMLButtonElement>('[data-entry-mode-switch] [role="tab"]')];
           expect(tabs.map((tab) => tab.disabled)).toEqual([true, true]);
@@ -1029,7 +1037,7 @@ it("filters a multi-Realm vault by Aspect on desktop and founds with the chosen 
     expect(entry.strip()).toHaveLength(matching.length);
     await entry.pick(realmChoice(902));
     expect(entry.featured()).toBe(name(902));
-    await entry.press("Create your Realm");
+    await entry.press(COUNTDOWN_WORDS.create);
     await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(registered).toEqual([{ gameId: 8, realmId: 902 }]);
   } finally {

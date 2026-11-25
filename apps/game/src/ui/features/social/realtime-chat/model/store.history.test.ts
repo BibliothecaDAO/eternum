@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { useRealtimeChatStore } from "./store";
+import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -18,7 +19,7 @@ it("reports a failed history load in the zone and clears it on explicit retry", 
   await load();
   expect(useRealtimeChatStore.getState().worldZones["game:28"]).toMatchObject({
     isFetchingHistory: false,
-    historyError: expect.any(String),
+    historyError: CHAT_WORDS.historyUnavailable,
   });
   expect(fetch).toHaveBeenCalledTimes(1);
   await load();
