@@ -453,7 +453,7 @@ describe("the phone tab bar", () => {
 });
 
 describe("the Menu", () => {
-  it("holds what the tab bar does not: the Feed with its unread count, Today, Shop, Settings and How to play, then Exit", () => {
+  it("holds what the tab bar does not: the Feed with its unread count, Today, Shop, Settings and the Guide, then Exit", () => {
     const handlers = {
       onFeed: vi.fn(),
       onShop: vi.fn(),
@@ -466,7 +466,7 @@ describe("the Menu", () => {
     const words = [...document.querySelectorAll("section[aria-label='Menu'] nav .menu-tile")].map(
       (tile) => tile.textContent,
     );
-    expect(words).toEqual(["Feed2", "Today", "Shop", "Settings", "How to playdocs.realms.party", "Exit"]);
+    expect(words).toEqual(["Feed2", "Today", "Shop", "Settings", "Guide", "Exit"]);
     const button = (word: string) =>
       [...document.querySelectorAll<HTMLButtonElement>("section[aria-label='Menu'] button")].find((candidate) =>
         candidate.textContent?.startsWith(word),

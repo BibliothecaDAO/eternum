@@ -38,7 +38,7 @@ export const APP_SPEC: readonly SpecPage[] = [
   {
     page: "You",
     route: "/profile",
-    job: "The player's card and finished games, then the ways to Settings, How to play and What's new.",
+    job: "The player's card and finished games, then the ways to Settings, the Guide and What's new.",
     primary: "None while signed in (its rows); signed out, the bar's You is Connect.",
     verdict: "keep",
     why: "Takes in another player's page: the same card and games.",
