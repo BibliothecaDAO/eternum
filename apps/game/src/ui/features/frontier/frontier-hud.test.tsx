@@ -542,6 +542,26 @@ it("closes a popover first and the page under it next, one Escape each", async (
   }
 });
 
+it("closes the open popover when the player goes from the map to the Realm", async () => {
+  viewport.set(1440);
+  const route = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  try {
+    await renderHud();
+    const popovers = () => document.querySelectorAll("[data-hud-popover]").length;
+    await act(async () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
+    expect(popovers()).toBe(1);
+    await act(async () => {
+      window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
+      window.dispatchEvent(new Event("urlChanged"));
+    });
+    expect(popovers()).toBe(0);
+  } finally {
+    window.history.replaceState(null, "", route);
+    window.dispatchEvent(new Event("urlChanged"));
+  }
+});
+
 const pressPlace = (word: string) =>
   act(async () =>
     [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')]

@@ -35,6 +35,7 @@ import { FrontierSurfaces } from "./frontier-surfaces";
 import { useArmyRevealYield } from "./frontier-reveal-yield";
 import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
 import { ArmyDock } from "./hud/army-dock";
+import { closeHudPopover } from "./hud/hud-popover";
 import { useChatKey } from "./hud/chat-key";
 import { DailyQuestChip } from "./hud/daily-quest-chip";
 import { FrontierDesktop, FrontierPlaces } from "./hud/frontier-desktop";
@@ -184,6 +185,7 @@ const FrontierHudBody = ({
     if (previousMapView.current === isMapView) return;
     previousMapView.current = isMapView;
     setSurface(null);
+    closeHudPopover();
   }, [isMapView, setSurface]);
   const chat = useGameChat(surface === "chat");
   const chatPane = useChatKey(() => setSurface("chat"), { enabled: !desktop });
