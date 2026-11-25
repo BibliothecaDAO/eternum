@@ -12,6 +12,7 @@ import {
   ASPECT_STEP_WORDS,
   CHAT,
   CLOSE,
+  OK,
   DEEP_WORDS,
   FIGHT_WORDS,
   INVITE_WORDS,
@@ -56,6 +57,7 @@ describe("the HUD's words the steps press and read", () => {
       feed: EVENTS_WORDS.feed,
       research: RESEARCH,
       close: CLOSE,
+      ok: OK,
       chat: CHAT,
       settings: SETTINGS,
       today: TODAY,
@@ -1160,10 +1162,10 @@ it("requires one quest command, its exact receipt, both balances credited by it 
 });
 
 it.each([
-  ["world", ["LaborGrant"], "The Cull: 2,500 of 2,500 troops. Ash Fall"],
-  ["again", ["BaneGrant"], "The Cull: 2,500 of 2,500 troops. Ash Fall"],
-  ["late", ["LaborGrant", "BaneGrant"], "The Cull: 2,500 of 2,500 troops. Ash Fall"],
-  ["team", ["LaborGrant"], "The Stand: 3 of 3 sites. Prowess's bane"],
+  ["world", ["LaborGrant"], "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops (2.5K/2.5K)"],
+  ["again", ["BaneGrant"], "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops (2.5K/2.5K)"],
+  ["late", ["LaborGrant", "BaneGrant"], "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops (2.5K/2.5K)"],
+  ["team", ["LaborGrant"], "Bane from Prowess · The Stand · Clear 3 guarded sites (3/3)"],
 ])(
   "requires exact %s bane receipts, each credited once whatever the balances held, identity and collected UI",
   (stage, models, text) => {

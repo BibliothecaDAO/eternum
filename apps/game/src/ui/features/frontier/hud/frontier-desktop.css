@@ -1,32 +1,49 @@
 .frontier-crown {
   position: fixed;
   top: theme(spacing.4);
-  left: 50%;
+  right: calc(theme(spacing.hud-frontier-rail) + theme(spacing.8));
+  left: calc(theme(spacing.hud-frontier-left) + theme(spacing.8));
   z-index: theme(zIndex.hud-rail);
-  display: grid;
-  width: 380px;
+  display: flex;
   height: 40px;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  grid-template-rows: 40px;
   align-items: center;
-  gap: theme(spacing.4);
-  transform: translateX(-50%);
+  justify-content: center;
+  gap: theme(spacing[2.5]);
+  container-type: inline-size;
 }
-.frontier-crown > :first-child {
-  justify-self: end;
+@container (max-width: 680px) {
+  .frontier-crown .frontier-quest-orb__objective {
+    display: none;
+  }
 }
-.frontier-crown > :nth-child(3) {
-  justify-self: start;
+@container (max-width: 560px) {
+  .frontier-crown .frontier-quest-orb__words {
+    display: none;
+  }
+}
+@container (max-width: 480px) {
+  .frontier-crown .frontier-place-switch__word,
+  .frontier-crown .frontier-place-pill__name {
+    display: none;
+  }
+  .frontier-crown .frontier-place-pill {
+    min-width: 0;
+  }
+}
+@container (max-width: 320px) {
+  .frontier-crown .frontier-day-pill__ring {
+    display: none;
+  }
 }
 .frontier-crown .frontier-place-pill {
-  width: 142px;
-  height: 40px;
-  justify-content: space-between;
-  border-radius: var(--hud-radius-control);
+  min-width: 132px;
+  gap: theme(spacing.2);
+  padding: 0 theme(spacing.3);
 }
 .frontier-crown .frontier-place-pill__name {
   flex: 1;
   font-size: var(--hud-text-label);
+  text-align: left;
 }
 .frontier-crown .frontier-quest-orb {
   height: 40px;
@@ -59,6 +76,68 @@
   text-transform: none;
   letter-spacing: 0;
 }
+.frontier-crown .frontier-quest-orb__words {
+  display: inline-flex;
+  order: 1;
+  align-items: baseline;
+  gap: theme(spacing.2);
+  white-space: nowrap;
+}
+.frontier-crown .frontier-quest-orb__name {
+  font-size: var(--hud-text-body);
+  font-weight: var(--hud-weight-title);
+}
+.frontier-crown .frontier-quest-orb__objective {
+  font-size: var(--hud-text-label);
+  color: var(--hud-muted);
+}
+.frontier-crown .frontier-quest-orb__count {
+  order: 2;
+}
+.frontier-crown .frontier-quest-orb__alert {
+  order: 3;
+}
+.frontier-crown .frontier-quest-orb[data-tone="bane"] {
+  border-color: color-mix(in srgb, var(--hud-bane) 80%, transparent);
+}
+.frontier-crown .frontier-quest-orb__words[data-stacked] {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  line-height: 1;
+}
+.frontier-crown .frontier-quest-orb__kicker {
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-badge);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hud-bane);
+}
+.frontier-crown .frontier-quest-orb[data-undrawn] .frontier-quest-orb__count {
+  display: none;
+}
+.frontier-crown .frontier-quest-orb[data-undrawn] .frontier-quest-orb__kicker {
+  color: var(--hud-muted);
+}
+.frontier-crown .frontier-quest-orb[data-tone="bane"] .frontier-quest-orb__name {
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.frontier-crown .frontier-quest-orb[data-tone="bane"] .frontier-quest-orb__count {
+  display: none;
+  order: 0;
+  border: 1px solid color-mix(in srgb, var(--hud-bane) 70%, transparent);
+  border-radius: var(--hud-radius-chip);
+  background: color-mix(in srgb, var(--hud-bane) 22%, var(--hud-well));
+  padding: 2px 6px;
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-badge);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(var(--hud-ink));
+}
 .frontier-crown .frontier-quest-orb__alert {
   position: static;
   width: 8px;
@@ -66,11 +145,8 @@
   font-size: 0;
   box-shadow: 0 0 6px var(--hud-good);
 }
-.frontier-crown .frontier-day-dial {
-  margin-top: 6px;
-}
 .frontier-place-popover[data-layout="desktop"] {
-  --popover-width: 142px;
+  --popover-width: 192px;
   padding: theme(spacing.1);
 }
 .frontier-place-popover[data-layout="desktop"] .frontier-place-row {
@@ -86,9 +162,6 @@
   font-size: var(--hud-text-label);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-.frontier-place-popover[data-layout="desktop"] .frontier-place-row__line {
-  display: none;
 }
 
 .frontier-notices {
@@ -107,10 +180,6 @@
   z-index: theme(zIndex.hud-popover);
   transform: translateZ(0);
   pointer-events: none;
-}
-.frontier-quest-popover[data-layout="desktop"] {
-  --popover-width: 328px;
-  margin-top: 10px;
 }
 
 .frontier-corner {

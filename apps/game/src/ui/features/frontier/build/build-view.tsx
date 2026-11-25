@@ -14,14 +14,26 @@ import {
   rankedTip,
 } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import { BUILD, BUILDING, BUILT, plotsUsed, type RankedWords } from "@/ui/design-system/kit/words";
+import {
+  BUILD,
+  BUILD_GROUPS,
+  BUILDING,
+  BUILT,
+  ONE_PER_REALM_MARK,
+  plotsUsed,
+  requiresRank,
+  type RankedWords,
+} from "@/ui/design-system/kit/words";
 
 import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { ReactNode } from "react";
 import { RefusedVerb } from "../refused-verb";
+import type { BuildGroup } from "./build-options";
 
 export type BuildTile = {
   key: string;
+  group: BuildGroup;
+  opensAt: number;
   icon: IconMeaning;
   name: string;
   does: RankedWords | string;
@@ -72,11 +84,20 @@ export const BuildView = ({
       onClose={onClose}
     >
       <div data-build-sheet className="build-sheet">
-        <div data-build-grid className="build-grid">
-          {orderedTiles(tiles).map(({ tile, index }) => (
-            <TileButton key={tile.key} tile={tile} chosen={index === chosen} onChoose={() => onChoose(index)} />
-          ))}
-        </div>
+        {groupedTiles(tiles).map(({ group, entries }) => (
+          <section key={group} data-build-group={group} aria-label={BUILD_GROUPS[group].word} className="build-group">
+            <header className="build-group__head">
+              <SemanticIcon name={GROUP_ICONS[group]} size={16} />
+              <span className="build-group__word">{BUILD_GROUPS[group].word}</span>
+              <span className="build-group__line">{BUILD_GROUPS[group].line}</span>
+            </header>
+            <div data-build-grid data-wide={entries.length % 3 !== 0 || undefined} className="build-grid">
+              {entries.map(({ tile, index }) => (
+                <TileButton key={tile.key} tile={tile} chosen={index === chosen} onChoose={() => onChoose(index)} />
+              ))}
+            </div>
+          </section>
+        ))}
         {chosenTile && (
           <ChosenFoot tile={chosenTile} prices={prices} refusal={refusal} sending={sending} onBuild={onBuild} />
         )}
@@ -87,10 +108,20 @@ export const BuildView = ({
 
 type IndexedTile = { tile: BuildTile; index: number };
 
-const orderedTiles = (tiles: readonly BuildTile[]): IndexedTile[] => {
+const GROUP_ICONS = { economy: "wheat", army: "barracks", unique: "crown" } as const satisfies Record<
+  BuildGroup,
+  IconMeaning
+>;
+const GROUP_ORDER = Object.keys(GROUP_ICONS) as BuildGroup[];
+
+const groupedTiles = (tiles: readonly BuildTile[]): { group: BuildGroup; entries: IndexedTile[] }[] => {
   const indexed = tiles.map((tile, index) => ({ tile, index }));
-  const levelOf = ({ tile }: IndexedTile) => (tile.standing.kind === "level" ? tile.standing.level : 0);
-  return indexed.toSorted((left, right) => levelOf(left) - levelOf(right));
+  return GROUP_ORDER.map((group) => ({
+    group,
+    entries: indexed
+      .filter(({ tile }) => tile.group === group)
+      .toSorted((left, right) => left.tile.opensAt - right.tile.opensAt),
+  })).filter(({ entries }) => entries.length > 0);
 };
 
 const ChosenFoot = ({
@@ -146,10 +177,15 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
       size="sm"
       title={tile.name}
       picture={<SemanticIcon name={tile.icon} size={40} />}
-      corner={<TileBadge standing={tile.standing} />}
+      corner={<TileBadge tile={tile} />}
       detail={
-        <span className="flex w-full flex-col items-center gap-0.5">
-          {tile.gives.value !== undefined && <Gives gives={tile.gives} />}
+        <span className="build-tile-detail">
+          {tile.standing.kind === "level" && (
+            <span data-build-needs className="build-tile-needs">
+              {requiresRank(rankName(tile.standing.level))}
+            </span>
+          )}
+          {tile.gives.value !== undefined && tile.standing.kind !== "level" && <Gives gives={tile.gives} />}
           {tile.standing.kind !== "built" && <TilePrice standing={tile.standing} />}
         </span>
       }
@@ -163,8 +199,13 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
 
 const asWords = (words: RankedWords | string): RankedWords => (typeof words === "string" ? [words] : words);
 
-const TileBadge = ({ standing }: { standing: BuildTile["standing"] }) => {
-  if (standing.kind === "price") return null;
+const TileBadge = ({ tile: { standing, group } }: { tile: BuildTile }) => {
+  if (standing.kind === "price")
+    return group === "unique" ? (
+      <span className="build-badge" data-standing="unique">
+        {ONE_PER_REALM_MARK}
+      </span>
+    ) : null;
   const line = standing.kind === "built" ? BUILT : rankName(standing.level);
   return (
     <span role="img" aria-label={line} data-tip={line} className="build-badge" data-standing={standing.kind}>

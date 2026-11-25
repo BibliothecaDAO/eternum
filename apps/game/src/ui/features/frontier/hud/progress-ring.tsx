@@ -22,7 +22,7 @@ export const ProgressRing = ({
   tone: Tone;
   badge?: ReactNode;
   className?: string;
-  children: ReactNode;
+  children?: ReactNode;
 }) => {
   const clamped = share === undefined ? undefined : Math.min(1, Math.max(0, share));
   return (
