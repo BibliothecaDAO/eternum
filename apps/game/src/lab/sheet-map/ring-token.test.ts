@@ -8,7 +8,7 @@ function proposedRings() {
   const scene = new Scene();
   const view = new MapSheetPresentation(
     scene,
-    { sampleSurface: () => ({ height: 0 }) } as unknown as ProceduralTerrain,
+    { sampleSurface: () => ({ height: 0 }), sampleHeight: () => 0 } as unknown as ProceduralTerrain,
     "ownership",
     document.createElement("div"),
   );

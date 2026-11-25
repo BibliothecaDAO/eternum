@@ -56,6 +56,7 @@ const STATION_SLACK = 0.6;
 const YOUNG_STATION_SHARE = 0.65;
 const LOOK_BACK_SECONDS = 3;
 const RETRY_SECONDS = 1;
+const STATION_SEARCH_SECONDS = 0.5;
 const NO_DANGER: Danger = { distance: Infinity, at: null };
 
 export function herdOf(creature: RoamingCreature): number {
@@ -120,6 +121,7 @@ export class BiomeCreaturePopulation {
       creature.age += dt;
       creature.sinceSetOff += dt;
       creature.blockedFor = Math.max(0, creature.blockedFor - dt);
+      creature.stationSearchIn = Math.max(0, creature.stationSearchIn - dt);
       creature.hunger = Math.max(0, creature.hunger - dt);
       if (creature.caughtBy === null) this.live(creature, dt, reserved, dangers);
       else comeToRest(creature, dt);
@@ -354,7 +356,8 @@ export class BiomeCreaturePopulation {
       return;
     }
     const noticed = fleeing || !leader.target || leader.sinceSetOff >= reactionSeconds(creature);
-    if (!noticed || creature.blockedFor > 0) return;
+    if (!noticed || creature.blockedFor > 0 || creature.stationSearchIn > 0) return;
+    creature.stationSearchIn = STATION_SEARCH_SECONDS;
     const reachable = this.reachableStation(creature, leader);
     if (!reachable) {
       creature.blockedFor = RETRY_SECONDS;
@@ -471,6 +474,7 @@ function createRoamingCreature(id: number, species: CreatureSpecies, cell: Cell)
     mood: "calm",
     gaze: null,
     blockedFor: 0,
+    stationSearchIn: 0,
     leader: null,
     station: { x: 0, z: 0 },
     young: false,

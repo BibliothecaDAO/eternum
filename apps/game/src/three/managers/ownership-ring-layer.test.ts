@@ -12,6 +12,7 @@ describe("OwnershipRingLayer", () => {
     const ground = (x: number, z: number) => 0.1 * x + 0.05 * z;
     const layer = new OwnershipRingLayer(scene, {
       sampleSurface: (x, z) => ({ biome: null, height: ground(x, z), normal: [0, 1, 0] }),
+      sampleHeight: (x, z) => ground(x, z),
     });
     const held = [
       { col: 3, row: 4 },
@@ -41,6 +42,7 @@ describe("OwnershipRingLayer", () => {
     const scene = new THREE.Scene();
     const layer = new OwnershipRingLayer(scene, {
       sampleSurface: () => ({ biome: null, height: 0, normal: [0, 1, 0] }),
+      sampleHeight: () => 0,
     });
 
     layer.show([{ col: 1, row: 1 }]);
@@ -59,6 +61,7 @@ describe("OwnershipRingLayer", () => {
     let height = 0;
     const layer = new OwnershipRingLayer(scene, {
       sampleSurface: () => ({ biome: null, height, normal: [0, 1, 0] }),
+      sampleHeight: () => height,
     });
     layer.show([{ col: 1, row: 1 }]);
 

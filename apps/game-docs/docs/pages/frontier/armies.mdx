@@ -63,7 +63,7 @@ costs {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a large army needs ma
 
 <Shot
   name="frontier/army"
-  caption="Select an army to open its tray showing troop count, stamina bar, Oath slots, and disband button. Right-click a highlighted hex on desktop or tap one on a phone to move or reveal."
+  caption="Select an army to open its tray showing troop count, stamina bar, Oath slots, and delete button. Right-click a highlighted hex on desktop or tap one on a phone to move or reveal."
 />
 
 ### Stamina stays with the slot
@@ -72,17 +72,18 @@ Stamina stays on the army slot rather than on the troops inside it. Deploy picks
 another before deploying.
 
 - A slot's first army of the day starts with a full bar ({FRONTIER.stamina.max} stamina, plus your Logistics bonus).
-- When an army dies, disbands, or merges into another, its slot keeps the stamina it had left and keeps recovering.
+- When an army dies, is deleted, or merges into another, its slot keeps the stamina it had left and keeps recovering.
 - The next army deployed into that slot starts with that remaining stamina.
 - When the day ends, every slot resets so tomorrow's first army starts full again.
 
-## Merging, reinforcing, and disbanding
+## Merging, reinforcing, and deleting
 
 Two adjacent armies of the same troop kind can merge, moving **troops only**. The receiving army keeps its own Oaths,
 relics, and Logistics rank and takes the lower of the two stamina values. Nothing copies from the giving army, even into
 empty slots; if the giving army reaches 0 troops, it is destroyed and its Oaths and relics are deleted with it.
 
 You can also reinforce an army beside your realm or beside any camp your realm cleared today (supply post) on the
-{FRONTIER.layers.personalOr} using troops and wheat from home. Disbanding an army deletes its troops after you confirm.
+{FRONTIER.layers.personalOr} using troops and wheat from home. Deleting an army removes its troops permanently after you
+confirm.
 
 Next: [Combat](/frontier/combat), [Oaths](/frontier/oaths), and [Relics](/frontier/relics).

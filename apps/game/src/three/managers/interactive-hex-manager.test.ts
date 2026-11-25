@@ -11,6 +11,7 @@ const GRASS = plotLookOn(BiomeType.Grassland);
 
 const slopedGround = (rise: number): TerrainSurface => ({
   sampleSurface: (x, z) => ({ biome: null, height: rise * (x + 2 * z), normal: [0, 1, 0] as const }),
+  sampleHeight: (x, z) => rise * (x + 2 * z),
 });
 const AT_ORIGIN = {
   positionForHex: () => new THREE.Vector3(),

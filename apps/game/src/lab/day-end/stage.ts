@@ -232,7 +232,7 @@ export class DayEndStage implements LabStage {
 
   private realmPoint(): Vector3 {
     const { x, z } = terrainHexToWorld(this.land.realm.col, this.land.realm.row);
-    return new Vector3(x, this.requireContext().terrain.sampleSurface(x, z).height, z);
+    return new Vector3(x, this.requireContext().terrain.sampleHeight(x, z), z);
   }
 
   private cut(pose: StudioPose): void {

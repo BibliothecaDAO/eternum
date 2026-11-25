@@ -131,14 +131,14 @@ it("names a LORDS withdrawal by its whole amount, and another player's by the pl
   const withdrawn = (view: Event) => buildStoryEventPresentation(view, undefined, djizus);
   expect(withdrawn(own("LordsWithdrawn", { account: "0x123", amount: 200 }))).toMatchObject({
     title: "LORDS withdrawn",
-    description: "200 LORDS to L2",
+    description: "200 LORDS to wallet",
   });
   expect(withdrawn(story("LordsWithdrawn", { account: "0x123", amount: 50 }))).toMatchObject({
     title: "djizus withdrew LORDS",
-    description: "50 LORDS to L2",
+    description: "50 LORDS to wallet",
   });
   expect(withdrawn(own("LordsWithdrawn", { account: "0x123", amount: 12_000 }))).toMatchObject({
-    description: "12K LORDS to L2",
+    description: "12K LORDS to wallet",
   });
 });
 
@@ -201,6 +201,30 @@ it("formats Frontier battle stories with Frontier troop names, no tier prefix an
   expect(presentation.description).not.toContain("T1");
   expect(presentation.description).not.toContain("Paladin");
   expect(presentation.description).not.toContain("d20");
+});
+
+it("tells a Frontier army raised or reinforced by its Frontier troop name, no tier", () => {
+  const frontierStore = {
+    get: (model: string) => {
+      if (model === "SliceRules") return { day_unit_seconds: 14_400 };
+      if (model === "GameRegistry")
+        return { start_main_at: 100, end_at: 1_000_000, scheduled_end_at: 1_000_000, seed: 1n };
+      if (model === "SettlementRules") return { spacing: 1024 };
+      return undefined;
+    },
+  } as unknown as Parameters<typeof buildStoryEventPresentation>[1];
+  const describe = (storyType: string, category: string) =>
+    buildStoryEventPresentation(
+      story(storyType, { structure_id: 5, explorer_id: 7, category, tier: "T1", amount: "4535000000000" }),
+      frontierStore,
+    ).description;
+  expect(describe("ExplorerCreateStory", "Paladin")).toBe("4,535 Scouts");
+  expect(describe("ExplorerAddStory", "Crossbowman")).toBe("+4,535 Crossbows");
+  expect(
+    buildStoryEventPresentation(
+      story("ExplorerCreateStory", { category: "Paladin", tier: "T1", amount: "4535000000000" }),
+    ).description,
+  ).toBe("4,535 Paladin T1");
 });
 
 /**
@@ -545,7 +569,7 @@ describe("every story the chain can tell", () => {
       buildStoryEventPresentation(story("BuildingPlacementStory", { coord, category: 37, change }, 7)).title;
     // The realm is not in this store: its player tells it.
     expect(placed("Created")).toMatch(/^Lord 0123 built an? .+$/);
-    expect(placed("Destroyed")).toMatch(/^Lord 0123's .+ demolished$/);
+    expect(placed("Destroyed")).toMatch(/^Lord 0123's .+ deleted$/);
     expect(placed("Paused")).toMatch(/^Lord 0123's .+ paused$/);
     expect(() => buildStoryEventPresentation(story("BuildingPlacementStory", { coord, category: 37 }, 7))).toThrow(
       "Incomplete building placement story",
@@ -656,7 +680,7 @@ describe("a story's subject", () => {
     );
     expect(title("GuardAddStory", { structure_id: 5, slot: 1, ...troops })).toBe("djizus reinforced the Castle Wall");
     expect(title("ExplorerAddStory", { explorer_id: 7, ...troops })).toBe("djizus reinforced an army");
-    expect(title("ExplorerDeleteStory", { explorer_id: 7 })).toBe("djizus disbanded an army");
+    expect(title("ExplorerDeleteStory", { explorer_id: 7 })).toBe("djizus deleted an army");
     expect(title("StructureLevelUpStory", { new_level: 1 })).toBe("djizus's realm became a City");
     expect(title("ResourceBurnStory", { resources: [] })).toBe("djizus spent resources");
     expect(title("RealmCreatedStory", { coord: { x: 1, y: 1 } })).toBe("djizus created a Realm");

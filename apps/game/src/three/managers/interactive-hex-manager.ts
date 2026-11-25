@@ -387,7 +387,7 @@ export class InteractiveHexManager {
   }
 
   private surfaceY(x: number, z: number): number {
-    return this.terrain.sampleSurface(x, z).height + INTERACTIVE_HEX_SURFACE_OFFSET;
+    return this.terrain.sampleHeight(x, z) + INTERACTIVE_HEX_SURFACE_OFFSET;
   }
 
   private resolveHexFromPoint(point: THREE.Vector3) {

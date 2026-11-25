@@ -31,7 +31,7 @@ it("contextualizes every Oath effect against the game's live rules", () => {
   expect(oathEffectDescription(oaths.ENLIGHTENMENT, SEASON_ONE_BASE)).toBe("Stamina recovery: +0.5/min → +0.67/min");
   expect(oathEffectDescription(oaths.FOX, SEASON_ONE_BASE)).toBe("Reveal cost: 20 → 16 stamina (Scouts 10 → 8)");
   expect(oathEffectDescription(oaths.SKILL, SEASON_ONE_BASE)).toBe(
-    "Attack damage when the army has less than 10 stamina left after the attack: 100% → 130%",
+    "Attack damage with under 10 stamina left after attacking: 100% → 130%",
   );
   expect(oathEffectDescription(oaths.FURY, SEASON_ONE_BASE)).toBe(
     "Won battle stamina refund: 0 → 15 stamina (50% of 30)",
@@ -116,7 +116,7 @@ it("builds scannable hero stat badges for every Oath from shared rule calculatio
   expect(oathStatBadge(oaths.SKILL, SEASON_ONE_BASE)).toEqual({
     hero: "+30%",
     unit: "Damage dealt",
-    sub: "Attack damage when the army has less than 10 stamina left after the attack",
+    sub: "Attack damage with under 10 stamina left after attacking",
     icon: "attack",
   });
   expect(oathStatBadge(oaths.FURY, SEASON_ONE_BASE)).toEqual({

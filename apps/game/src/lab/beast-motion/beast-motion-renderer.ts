@@ -404,6 +404,7 @@ export async function mountBeastMotionRenderer(input: MountBeastMotionInput): Pr
     envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
     isMobileDevice: isCoarsePointer(),
     pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+    postProcessing: true,
     search: window.location.search,
   });
   if (input.signal.aborted) {
@@ -596,7 +597,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
   }
 
   resetCamera(): void {
-    const groundY = this.environment.terrain.sampleSurface(0, 0).height;
+    const groundY = this.environment.terrain.sampleHeight(0, 0);
     const bounds = this.activeAsset.bounds;
     const centerY = groundY + Math.max(0.46, (bounds.min.y + bounds.max.y) * 0.5);
     if (this.state.mode === "families") {
@@ -775,7 +776,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
       this.emberPool.count = 0;
       const expected = signature;
       void this.familyStage
-        .loadFamily(family, (x, z) => this.environment.terrain.sampleSurface(x, z).height)
+        .loadFamily(family, (x, z) => this.environment.terrain.sampleHeight(x, z))
         .then(() => {
           if (this.disposed || this.stageSignature !== expected) return;
           this.familyLoaded = true;
@@ -789,7 +790,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
       this.uniforms.phaseSpread.value = 0;
       const placements = COMPARE_SLOTS.map((slot) => ({
         ...slot,
-        y: this.environment.terrain.sampleSurface(slot.x, slot.z).height,
+        y: this.environment.terrain.sampleHeight(slot.x, slot.z),
       }));
       this.addHexOutlines(placements);
 
@@ -803,7 +804,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
       const placements = offsets.map(({ x, z }) => ({
         x,
         z,
-        y: this.environment.terrain.sampleSurface(x, z).height,
+        y: this.environment.terrain.sampleHeight(x, z),
       }));
       if (this.state.count === 1) {
         this.addHexOutlines(placements);
@@ -1213,7 +1214,7 @@ class BeastMotionStage implements BeastMotionRendererHandle {
     }
     const pad = Math.min(62, width * 0.16);
     const projected = COMPARE_SLOTS.map((slot) => {
-      const groundY = this.environment.terrain.sampleSurface(slot.x, slot.z).height;
+      const groundY = this.environment.terrain.sampleHeight(slot.x, slot.z);
       COMPARE_ANCHOR_POS.set(slot.x, groundY + 1.32, slot.z).project(this.camera);
       const rawX = ((COMPARE_ANCHOR_POS.x + 1) / 2) * width;
       return {

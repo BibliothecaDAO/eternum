@@ -113,7 +113,7 @@ export class HoverHexManager {
       for (let index = 0; index < positions.count; index++) {
         const worldX = object.position.x + positions.getX(index);
         const worldZ = object.position.z - positions.getY(index);
-        positions.setZ(index, this.terrain.sampleSurface(worldX, worldZ).height);
+        positions.setZ(index, this.terrain.sampleHeight(worldX, worldZ));
       }
       positions.needsUpdate = true;
       object.geometry.computeBoundingSphere();

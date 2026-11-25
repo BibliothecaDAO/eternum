@@ -492,7 +492,7 @@ class ModelReviewScene implements ModelLabRenderer {
         const moving = this.settings.action !== "idle";
         const z = moving ? 2 - motion.progress * 4 : 0;
         slot.group.position.z = z;
-        slot.group.position.y = this.environment.terrain.sampleSurface(x, z).height + 0.02;
+        slot.group.position.y = this.environment.terrain.sampleHeight(x, z) + 0.02;
         interactions.push({
           entityId: slot.tier,
           isMoving: moving && !this.paused,
