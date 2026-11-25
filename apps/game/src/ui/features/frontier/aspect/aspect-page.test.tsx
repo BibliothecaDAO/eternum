@@ -5,7 +5,7 @@ import { NativeFactStore, raceFinishHeight, readRaceBoard } from "@bibliothecada
 import { configManager, getStructureName } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { raceStageOf } from "@/shell/season";
-import { aspectPage } from "./aspect-page";
+import { seasonBoard } from "./aspect-page";
 
 function fixture(finished = false) {
   const scenario = raceScenario(finished);
@@ -42,21 +42,38 @@ describe("the race board from native facts", () => {
       { home: 9n, glory: 3750n * precision, contribution: 3900n * precision, mine: false },
       { home: 7n, glory: 1250n * precision, contribution: 1300n * precision, mine: true },
     ]);
-    const page = aspectPage(board, (home) => getStructureName(home, store).name);
-    expect(page.race?.standings.map((row) => [row.aspectId, row.own])).toEqual([
-      [2, false],
-      [1, true],
-      [3, false],
-      [4, false],
+    const home = store.require("Structure", { game_id: 1, entity_id: 7 });
+    const page = seasonBoard(board, home, (realm) => getStructureName(realm, store).name, true);
+    expect(page.race.map((row) => [row.aspectId, row.own, row.pool])).toEqual([
+      [2, false, 64_000],
+      [1, true, 52_000],
+      [3, false, 28_000],
+      [4, false, 9_000],
     ]);
-    expect(page.own?.triumphs).toEqual([
+    expect(page.players).toBe(7);
+    expect(page.rosters.map(({ aspect, roster }) => [aspect, roster.members.map(({ entity_id }) => entity_id)])).toEqual([
+      [1, ["9", "7"]],
+      [2, ["11", "12"]],
+      [3, ["13", "14"]],
+      [4, ["15"]],
+    ]);
+    expect(page.standing).toMatchObject({
+      aspectId: 1,
+      aspectRank: 2,
+      glory: 1250,
+      gloryRank: 4,
+      shares: true,
+      pool: 52_000,
+      share: 13_000,
+      stage: 3,
+      altar: { charge: 300, threshold: 1500 },
+    });
+    expect(page.standing?.triumphs).toEqual([
       { stage: 1, day: 2 },
       { stage: 2, day: 2 },
       { stage: 3, day: null },
       { stage: 4, day: null },
     ]);
-    expect(page.own?.members.map(({ glory }) => glory)).toEqual([3750, 1250]);
-    expect(page.own?.bar).toEqual({ charge: 300, threshold: 1500 });
   });
 
   it("recovers the exact board and each Aspect's height after a complete snapshot reload", () => {
@@ -78,7 +95,7 @@ describe("the race board from native facts", () => {
       scheduled_end_at: game.scheduled_end_at,
     });
     expect(game.end_at).toBeLessThan(game.scheduled_end_at);
-    expect(aspectPage(board, () => "Realm").race?.result?.winner).toBe("Luminary");
+    expect(seasonBoard(board, null, () => "Realm", false).result?.winner).toBe("Luminary");
   });
 
   it("accepts a known zero receipt only for an existing member and keeps incomplete snapshots unknown", () => {
@@ -105,5 +122,5 @@ it("reads an expired race from its final snapshot without inventing a finisher",
   expect(board.result?.winner).toBeNull();
   expect(board.result?.ended_at).toBe(board.result?.scheduled_end_at);
   expect(board.standings.map((row) => row.height)).toEqual([6400, 5200, 2800, 900]);
-  expect(aspectPage(board, () => "Realm").race?.result).toEqual({ winner: null });
+  expect(seasonBoard(board, null, () => "Realm", false).result).toEqual({ winner: null });
 });

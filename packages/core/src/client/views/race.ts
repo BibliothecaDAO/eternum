@@ -18,20 +18,23 @@ export const RACE_MODELS = [
   "DeepRules",
 ] as const;
 
+export interface RaceMemberRow {
+  home: NativeRows["Structure"];
+  glory: bigint;
+  contribution: bigint;
+  mine: boolean;
+}
+
 export interface RaceBoard {
   rules: NativeRows["RaceRules"];
   result: NativeRows["RaceResult"] | null;
   standings: (NativeRows["AspectHyperstructure"] & { rank: number; stage: number; finished: boolean })[];
+  aspects: { aspect: number; members: RaceMemberRow[] }[];
   own: {
     aspect: number;
     triumphs: { stage: number; day: bigint | null }[];
     bar: { charge: number; threshold: number };
-    members: {
-      home: NativeRows["Structure"];
-      glory: bigint;
-      contribution: bigint;
-      mine: boolean;
-    }[];
+    members: RaceMemberRow[];
   } | null;
 }
 
@@ -52,28 +55,41 @@ export function readRaceBoard(
     rows.push(row);
   }
   const standings = rankRaceStandings(rows, rules.stage_height);
-  const own = readOwnAspect(store, gameId, home);
+  const rosters: RaceBoard["aspects"] = [];
+  for (const { id } of aspects) {
+    const members = readAspectMembers(store, gameId, id, home);
+    if (!members.known) return members;
+    rosters.push({ aspect: id, members: members.known.members });
+  }
+  const own = readOwnAspect(store, gameId, home, rosters);
   if (!own.known) return own;
   return {
     known: {
-      race: { rules, standings, result: store.get("RaceResult", { game_id: gameId }) ?? null, own: own.known.own },
+      race: {
+        rules,
+        standings,
+        result: store.get("RaceResult", { game_id: gameId }) ?? null,
+        aspects: rosters,
+        own: own.known.own,
+      },
     },
   };
 }
 
-function readOwnAspect(
+function readAspectMembers(
   store: NativeFactStore,
   gameId: number,
+  aspect: number,
   home: bigint | null,
-): NativeFactResult<{ own: RaceBoard["own"] }> {
-  if (home === null) return { known: { own: null } };
-  const membership = store.get("HomeAspect", { game_id: gameId, home });
-  if (!membership) return { unknown: "MISSING_HOME_ASPECT" };
-  const { aspect } = membership;
+): NativeFactResult<{ members: RaceMemberRow[] }> {
   const count = store.get("AspectMembers", { game_id: gameId, aspect });
+  if (!count) {
+    const absent = store.absenceKnown("AspectMembers", { game_id: gameId, aspect });
+    if (!absent.known) return absent;
+  }
   const memberships = [...store.inGame("HomeAspect", gameId)].filter((row) => row.aspect === aspect);
-  if (!count || memberships.length !== count.members) return { unknown: "INCOMPLETE_ASPECT_MEMBERS" };
-  const members: NonNullable<RaceBoard["own"]>["members"] = [];
+  if (memberships.length !== (count?.members ?? 0)) return { unknown: "INCOMPLETE_ASPECT_MEMBERS" };
+  const members: RaceMemberRow[] = [];
   for (const row of memberships) {
     const structure = store.get("Structure", { game_id: gameId, entity_id: row.home });
     if (!structure) return { unknown: "MISSING_ASPECT_MEMBER_HOME" };
@@ -89,6 +105,21 @@ function readOwnAspect(
   members.sort((a, b) =>
     compareAspectMembers({ glory: a.glory, home: a.home.entity_id }, { glory: b.glory, home: b.home.entity_id }),
   );
+  return { known: { members } };
+}
+
+function readOwnAspect(
+  store: NativeFactStore,
+  gameId: number,
+  home: bigint | null,
+  rosters: RaceBoard["aspects"],
+): NativeFactResult<{ own: RaceBoard["own"] }> {
+  if (home === null) return { known: { own: null } };
+  const membership = store.get("HomeAspect", { game_id: gameId, home });
+  if (!membership) return { unknown: "MISSING_HOME_ASPECT" };
+  const { aspect } = membership;
+  if (!store.get("AspectMembers", { game_id: gameId, aspect })) return { unknown: "INCOMPLETE_ASPECT_MEMBERS" };
+  const members = rosters.find((roster) => roster.aspect === aspect)?.members ?? [];
   const triumphs = Array.from({ length: nativeRaceConstants.STAGE_COUNT - 1 }, (_, index) => {
     const stage = index + 1;
     return { stage, day: store.get("TriumphDay", { game_id: gameId, aspect, stage })?.day ?? null };

@@ -360,6 +360,8 @@ import {
   TroopType,
   asRanked,
   type RankedWords,
+  ASPECT_REWARD,
+  formatOrdinal,
 } from "@bibliothecadao/types";
 
 /** A step on that scale, common (1) to legendary (5). */
@@ -619,7 +621,7 @@ export const SUPPLY_POST = {
   chip: "Post",
   open: "Post open",
   rule: "Clearing opens a Supply Post: refill adjacent armies until day end",
-  drawsFrom: "Draws from realm stock",
+  drawsFrom: "Draws from Realm stock",
   endsIn: (seconds: number | undefined) => `Ends in ${dayLength(seconds)}`,
   inRange: "Armies in range",
   beside: (count: number) => `${formatExact(count)} beside post`,
@@ -1049,35 +1051,35 @@ export const OPENING_WORDS = {
 } as const;
 /** The Aspect page (docs/plans/frontier-season-1.md, Aspects and the hyperstructure): the race, and the player's Aspect. */
 export const ASPECT_PAGE_WORDS = {
-  title: "Aspect Race",
   race: "The hyperstructures",
   goToDeep: `Go to ${DEEP}`,
   deepOpensAt: (rule: string) => `${DEEP} opens at ${rule}`,
-  gloryUnearned: `No Glory yet: it comes from holding ${DEEP} sites`,
   height: (height: number, finish: number) => `${formatExact(height)} of ${formatExact(finish)}`,
   stage: (stage: number, stages: number) => `Stage ${stage} of ${stages}`,
   finished: "Finished",
   won: (aspect: string) => `${aspect} finished 1st and won the season`,
   noFinisher: "The season ended. No Aspect finished its hyperstructure.",
-  triumphs: "Triumphs",
   triumph: { 1: "Clear Mist", 2: "Second Wind", 3: "Pale Moon", 4: "Spoils" },
-  triumphOn: (day: number) => `day ${formatExact(day)}`,
-  triumphAt: (stage: number) => `at stage ${stage}`,
-  baneBar: "Bane bar",
-  baneCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
   glory: "Glory",
-  noAspect: "Join an Aspect to see its members",
-  fights: `Fights in the ${DEEP}`,
-  noFights: `No fight in the ${DEEP} yet`,
-  fight: (winner: string, loser: string) => `${winner} beat ${loser}`,
-  fightLosses: (first: string, firstLost: number, second: string, secondLost: number) =>
-    `${first} lost ${formatExact(firstLost)}, ${second} lost ${formatExact(secondLost)} troops`,
-  standoff: (first: string, second: string) => `${first} and ${second} tied`,
-  mutual: (first: string, second: string) => `${first} and ${second} destroyed each other`,
-  readingFights: `Loading ${DEEP} battles…`,
-  fightsFailed: `Could not load ${DEEP} battles.`,
-  wiped: (aspect: string) => `${aspect} was defeated`,
-  reading: "Loading scores…",
+} as const;
+export const SEASON_BOARD_WORDS = {
+  title: `${COUNTDOWN_WORDS.title} Leaderboard`,
+  day: (day: number, lastDay: number) => `Day ${formatExact(day)} of ${formatExact(lastDay)}`,
+  poolRule: `${formatExact(ASPECT_REWARD.lordsPerHeight)} LORDS per height · +${formatShort(ASPECT_REWARD.finishBonus)} for 1st`,
+  pool: (lords: number) => `${formatShort(lords)} LORDS`,
+  yourGlory: (rank: number) => `Your Glory · ${formatOrdinal(rank)}`,
+  aspectPlace: (aspect: string, rank: number) => `${aspect} · ${formatOrdinal(rank)}`,
+  place: (rank: number) => formatOrdinal(rank),
+  qualifies: `${formatExact(ASPECT_REWARD.gloryToShare)}+ qualifies`,
+  aspectPool: (aspect: string) => `${aspect} pool`,
+  yourShare: (lords: number) => `Est. ~${formatShort(lords)} yours`,
+  triumphs: (stage: number, stages: number) => `Aspect Triumphs · ${ASPECT_PAGE_WORDS.stage(stage, stages)}`,
+  altar: `${DEEP} Altar charge`,
+  standing: "Standing",
+  footer: (rank: number, realm: string, glory: number) =>
+    `${formatOrdinal(rank)} · ${realm} · ${formatExact(glory)} Glory`,
+  footerPool: (pool: number, share: number) => `Pool ${formatShort(pool)} LORDS · ~${formatShort(share)} yours`,
+  deep: DEEP,
 } as const;
 export const RESEARCHING = "Researching…";
 export const BUILDING = "Building…";

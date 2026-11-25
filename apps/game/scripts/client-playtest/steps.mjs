@@ -4051,10 +4051,8 @@ const RACE_BOARD_STATE = `JSON.stringify((() => {
     const pictures = [...(node?.querySelectorAll('[role="img"][aria-label]') ?? [])].map((picture) => picture.getAttribute("aria-label"));
     return { text: [node?.textContent ?? "", ...pictures].join(" "), visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
   };
-  return { race: read('[data-aspect-race]'), members: read('[data-aspect-members]'),
+  return { race: read('[data-season-board] .season-board__aspects'), members: read('[data-season-board] .app-board-scroll'),
     invite: read('[aria-label^="Invite a friend"]'), banner: read('[data-daily-quest]'),
-    stageReady: Boolean(document.querySelector('[data-race-stage][data-ready]')),
-    stageError: Boolean(document.querySelector('[data-race-stage][data-error]')),
     scopes: window.__labChain?.scopes ?? [], ended: Boolean(document.querySelector('[data-race-ended]')) };
 })())`;
 
@@ -4069,17 +4067,6 @@ const OPENING_STATE = `JSON.stringify({
 
 /** Turns Show everything on in the page's saved settings and loads the lab game again, as a player's setting persists. */
 const SHOW_EVERYTHING = `JSON.stringify((() => { localStorage.setItem("eternum-world-appearance", JSON.stringify({ state: { showEverything: true, fogStyle: "clear", reducedMotion: false, haptics: true }, version: 0 })); return true; })())`;
-
-/** The Aspect page's feed: each fight's row, as a player reads it. */
-const ASPECT_FEED = `JSON.stringify((() => {
-  const feed = document.querySelector("[data-aspect-feed]");
-  const rect = feed?.getBoundingClientRect();
-  return {
-    visible: Boolean(rect && rect.width > 0 && rect.height > 0),
-    rows: [...(feed?.querySelectorAll(".ui-row") ?? [])].map((row) => row.textContent),
-    text: feed?.textContent ?? "",
-  };
-})())`;
 
 /** Every request this page made to a rank Herald serves a legacy game: a Season 1 game asks for none. */
 const RANK_REQUESTS = `JSON.stringify(performance.getEntriesByType("resource").map((entry) => entry.name).filter((name) => /\\/leaderboard|\\/days\\/\\d+\\/ranks/.test(name)))`;
@@ -4178,12 +4165,12 @@ function raceBoardSteps(result) {
         }
         const race = await readUntil(
           () => browser.read(RACE_BOARD_STATE),
-          (state) => state.race.visible && state.stageReady,
+          (state) => state.race.visible,
           PLAYABLE_WAIT_MS,
         );
         extraScreenshot("aspect-standings");
         browser.read(
-          `(() => { document.querySelector('[data-aspect-members]')?.scrollIntoView({ block: 'nearest' }); return true; })()`,
+          `(() => { document.querySelector('[data-season-board] .app-board-scroll')?.scrollIntoView({ block: 'nearest' }); return true; })()`,
         );
         const members = await readUntil(
           () => browser.read(RACE_BOARD_STATE),
@@ -4201,7 +4188,7 @@ function raceBoardSteps(result) {
         );
         extraScreenshot("aspect-invite");
         browser.read(
-          `(() => { const scroller = document.querySelector('[data-aspect-race-page]'); if (scroller) scroller.scrollTop = 0; return true; })()`,
+          `(() => { document.querySelector('[data-season-board]')?.scrollIntoView({ block: 'start' }); return true; })()`,
         );
         return { race, members, invite };
       },
@@ -4210,16 +4197,13 @@ function raceBoardSteps(result) {
         const members = played.members?.members;
         const scoped = played.race?.scopes?.at(-1)?.structures ?? [];
         return race?.visible &&
-          played.race?.stageReady &&
-          !played.race?.stageError &&
           members?.visible &&
           race.text.includes("Luminary") &&
           race.text.includes("Prowess") &&
           race.text.includes("Havoc") &&
           race.text.includes("Insight") &&
-          race.text.includes(result === "won" ? "10,000 of 10,000" : "6,400 of 10,000") &&
+          race.text.includes(result === "won" ? "10,000/10K" : "6,400/10K") &&
           (result !== "expired" || race.text.includes("No Aspect finished its hyperstructure")) &&
-          !race.text.includes("LORDS") &&
           played.invite?.invite.text.includes("Invite a friend to Prowess") &&
           !played.invite?.invite.text.includes("could not be made") &&
           members.text.includes("1,250") &&
@@ -4231,41 +4215,6 @@ function raceBoardSteps(result) {
           : failed("The scoped native race must show four heights, both members' Glory and the early winner", played);
       },
     },
-    ...(result === null
-      ? [
-          {
-            name: "aspect-feed-reads-real-fights",
-            settleMs: 0,
-            play: async ({ browser, extraScreenshot }) => {
-              browser.read(
-                `(() => { document.querySelector('[data-aspect-feed]')?.scrollIntoView({ block: 'nearest' }); return true; })()`,
-              );
-              const feed = await readUntil(
-                () => browser.read(ASPECT_FEED),
-                (state) => state.rows.length >= 4,
-                PLAYABLE_WAIT_MS,
-              );
-              extraScreenshot("aspect-feed");
-              return { feed };
-            },
-            verify: ({ played }) => {
-              const text = played.feed.rows.join(" | ");
-              return played.feed.visible &&
-                text.includes("Prowess beat Luminary") &&
-                text.includes("Luminary beat Prowess") &&
-                text.includes("Prowess and Luminary tied") &&
-                text.includes("Prowess and Luminary destroyed each other") &&
-                text.includes("Luminary was defeated") &&
-                played.feed.rows.length === 4
-                ? completed(played)
-                : failed(
-                    "The feed must name each Deep fight's winner by its troops, skip the beast, and find the Deep fights past 120 surface fights",
-                    played,
-                  );
-            },
-          },
-        ]
-      : []),
     {
       name: "no-site-rank-requests",
       settleMs: 0,
@@ -6017,9 +5966,6 @@ export const REHEARSAL_WORDS = {
   essence: (amount) => `${amount} Essence`,
   labor: (amount) => `${amount} labor`,
   bar: (perTick, charge, threshold) => `+${perTick} on the bane bar: ${charge} of ${threshold}`,
-  standingHeight: (height, finish) => `${height} of ${finish}`,
-  baneCharge: (charge, threshold) => `${charge} of ${threshold}`,
-  gloryChip: "Glory",
 };
 const INVITE_PREFIX = REHEARSAL_WORDS.inviteTo("");
 const JOIN_PREFIX = REHEARSAL_WORDS.join("");
@@ -6050,11 +5996,6 @@ const SLOT_PATTERNS = {
   share: wordPattern(REHEARSAL_WORDS.share, "n"),
   troops: /(?:^| · )([\d,]+)(?: · |$)/,
 };
-const TALLY_PATTERNS = {
-  height: new RegExp(`· ${wordPattern(REHEARSAL_WORDS.standingHeight, "n", "any").source}`),
-  glory: new RegExp(`^${REHEARSAL_WORDS.gloryChip} ([\\d,]+)$`),
-  bar: wordPattern(REHEARSAL_WORDS.baneCharge, "n", "any"),
-};
 
 export function readTickPay(chips) {
   const pay = {};
@@ -6075,11 +6016,8 @@ export function readHeldSlot(text) {
 }
 
 export function readAspectTally(read) {
-  return {
-    height: numberIn(read.height, TALLY_PATTERNS.height),
-    glory: numberIn(read.glory, TALLY_PATTERNS.glory),
-    bar: numberIn(read.bar, TALLY_PATTERNS.bar),
-  };
+  const figure = (value) => (value === null || value === undefined || value === "" ? null : Number(value));
+  return { height: figure(read.height), glory: figure(read.glory), bar: figure(read.bar) };
 }
 
 export function judgeTickPaid(before, after) {
@@ -6123,9 +6061,9 @@ const DEEP_SITE_CARD = `JSON.stringify((() => {
 })())`;
 
 const ASPECT_TALLY = `JSON.stringify({
-  height: document.querySelector("[data-aspect-race] [data-own]")?.textContent ?? null,
-  glory: document.querySelector('[data-aspect-members] [aria-selected="true"] [aria-label^="${REHEARSAL_WORDS.gloryChip} "]')?.getAttribute("aria-label") ?? null,
-  bar: document.querySelector("[data-aspect-bane]")?.textContent ?? null,
+  height: document.querySelector("[data-season-board] .season-aspect[data-own]")?.dataset.height ?? null,
+  glory: document.querySelector("[data-season-standing]")?.dataset.glory ?? null,
+  bar: document.querySelector("[data-season-standing] [data-charge]")?.dataset.charge ?? null,
 })`;
 
 const DEEP_SITE_KEYS = new Set(DEEP_SITE_NAMES.map(({ name }) => name));

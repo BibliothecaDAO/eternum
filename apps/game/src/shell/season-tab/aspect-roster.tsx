@@ -1,4 +1,4 @@
-import { compareAspectMembers, gloryAmount } from "@bibliothecadao/eternum/game-client";
+import { compareAspectMembers, gloryAmount, type RaceMemberRow } from "@bibliothecadao/eternum/game-client";
 import type { HeraldAspectRoster, HeraldAspectRosterMember } from "@bibliothecadao/eternum/game-sync";
 import { aspectName, aspects, formatAmount, type AspectId } from "@bibliothecadao/types";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -21,8 +21,21 @@ interface GloryRosterRow {
   member: HeraldAspectRosterMember;
 }
 
+type GloryRoster = Pick<HeraldAspectRoster, "total" | "members">;
+
+export const nativeAspectRoster = (members: readonly RaceMemberRow[]): GloryRoster => ({
+  total: members.length,
+  members: members.map((member, index) => ({
+    rank: index + 1,
+    entity_id: member.home.entity_id.toString(),
+    realm_id: Number(member.home.metadata.realm_id),
+    owner: `0x${member.home.owner.toString(16)}`,
+    glory: member.glory.toString(),
+  })),
+});
+
 export const mergeAspectRosters = (
-  rosters: readonly { aspect: AspectId; roster: HeraldAspectRoster }[],
+  rosters: readonly { aspect: AspectId; roster: GloryRoster }[],
 ): { total: number; rows: GloryRosterRow[] } => {
   const total = rosters.reduce((sum, { roster }) => sum + roster.total, 0);
   const rows = rosters
@@ -167,11 +180,11 @@ export const AspectRoster = ({
   );
 };
 
-const gloryBoardEntry = (
+export const gloryBoardEntry = (
   rank: number,
   member: HeraldAspectRosterMember,
   own: boolean,
-  onClick: () => void,
+  onClick?: () => void,
   aspect?: AspectId,
 ): AppBoardEntry => {
   const { order } = realmHomeOf(member.realm_id);
