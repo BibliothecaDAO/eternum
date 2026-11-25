@@ -802,14 +802,9 @@ export const FIGHT_WORDS = {
   armyLost: "Your army is lost",
   /** Under the loss, in the panel's place, before it closes: what to do next. */
   armyLostNext: "Your troops died in battle. Deploy a new army from your Realm.",
-  victory: "Victory likely",
   holds: "The guard survives",
   defeated: "Defeated",
 } as const;
-/**
- * What an attack costs a side, under its bar (a player: "# of troops lost, % lost/remaining"; owner, 3 November 2026:
- * "A probably good enough"): "−601 · 76% lost", a range where the dice decide it ("−994–1,100 · 20–22% lost").
- */
 export const FIGHT_RESULT = {
   victory: "Victory",
   cleared: (site: string) => `${site} cleared`,
