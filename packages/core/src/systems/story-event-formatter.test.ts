@@ -1,4 +1,11 @@
-import { FRONTIER_TROOP_NAMES, ResourcesIds, siteName, StructureType, troopName, TroopType } from "@bibliothecadao/types";
+import {
+  FRONTIER_TROOP_NAMES,
+  ResourcesIds,
+  siteName,
+  StructureType,
+  troopName,
+  TroopType,
+} from "@bibliothecadao/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";

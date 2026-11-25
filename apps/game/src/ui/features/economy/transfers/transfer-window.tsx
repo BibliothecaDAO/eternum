@@ -30,7 +30,14 @@ import {
   shipmentTravelSeconds,
   configManager,
 } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, ResourcesIds, formatCount, formatExact, formatHeldAgainst, resourceName } from "@bibliothecadao/types";
+import {
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  formatCount,
+  formatExact,
+  formatHeldAgainst,
+  resourceName,
+} from "@bibliothecadao/types";
 import { useState } from "react";
 import { resourcesInTierOrder } from "@/ui/shared/resource-tier-order";
 import { BalancesView } from "./balances-view";

@@ -815,7 +815,9 @@ export const FRONTIER = {
         beastIcon: beastMeaning(deepBeast.model),
         troops: n(beast.count),
         weapon: beast.bow ? "Bow" : "Blade",
-        bring: beast.bow ? FRONTIER_TROOP_NAMES[TroopType.Knight].many : FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many,
+        bring: beast.bow
+          ? FRONTIER_TROOP_NAMES[TroopType.Knight].many
+          : FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many,
         pays: deepSitePays[site.key],
       };
     }),
