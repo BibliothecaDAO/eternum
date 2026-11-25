@@ -42,12 +42,12 @@ export const DayEndScreen = ({ summary }: { summary: ReactNode | null }) => {
         style={{ opacity: dark, transitionDuration: `${DAY_END_TIMING.dawn}s` }}
       />
       {phase === "summary" && summary && (
-        <div className="absolute inset-0 flex items-center justify-center p-3 lg:p-6" style={CLEAR_OF_THE_HOME_BAR}>
+        <div className="absolute inset-0 flex items-center justify-center p-3 hud-desk:p-6" style={CLEAR_OF_THE_HOME_BAR}>
           <div className="day-end__card">{summary}</div>
         </div>
       )}
       {phase === "veil" && (
-        <div className="absolute right-4 top-4 lg:bottom-4 lg:top-auto">
+        <div className="absolute right-4 top-4 hud-desk:bottom-4 hud-desk:top-auto">
           <HudButton kind="secondary" onClick={skip}>
             {SKIP}
           </HudButton>

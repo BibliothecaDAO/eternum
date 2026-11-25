@@ -8,7 +8,10 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useNowSeconds: () => 350,
 }));
 const layout = { current: "phone" };
-vi.mock("@/shell/frame/layout", () => ({ useLayout: () => layout.current }));
+vi.mock("@/hooks/helpers/use-compact-hud", async (original) => ({
+  ...(await original<typeof import("@/hooks/helpers/use-compact-hud")>()),
+  useHudLayout: () => layout.current,
+}));
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { GameProvider } from "@/hooks/context/game-context";

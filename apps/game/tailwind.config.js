@@ -12,6 +12,7 @@ import {
   appVariables,
   aspectVariables,
   HUD_COLORS,
+  HUD_QUERIES,
   HUD_FINISH,
   HUD_LAYERS,
   HUD_LAYOUT,
@@ -352,6 +353,9 @@ export default {
     "text-[10px]",
   ],
   plugins: [
+    plugin(function ({ addVariant }) {
+      addVariant("hud-desk", `@media ${HUD_QUERIES.desktop}`);
+    }),
     // The token file's values as CSS variables, and its faces, for stylesheets and code that cannot take a class: the
     // HUD's palette and finish on :root, the shell's under data-surface="shell".
     plugin(function ({ addBase }) {

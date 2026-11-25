@@ -19,7 +19,7 @@
   padding-top: theme(spacing.3);
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1024px) and (orientation: landscape), (min-width: 1440px) {
   .aspect-race-page__board {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }

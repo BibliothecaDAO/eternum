@@ -24,7 +24,7 @@
   border-radius: var(--app-radius-control);
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1024px) and (orientation: landscape), (min-width: 1440px) {
   .race-stage {
     height: clamp(16rem, 30vh, 22rem);
     min-height: 16rem;
