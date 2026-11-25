@@ -402,6 +402,7 @@ export class HighlightHexManager {
       endpointCount: this.endpointLayer.copies.length,
       frontierCount: this.frontierLayer.copies.length,
       teachCount: this.teachLayer.copies.length,
+      exploreCount: this.drawnDescriptors.filter((descriptor) => descriptor.actionType === ActionType.Explore).length,
       plates: Object.entries(layers).flatMap(([name, layer]) =>
         layer.copies.map((copy, index) => ({
           layer: name,
@@ -432,7 +433,7 @@ export class HighlightHexManager {
             .multiplyScalar(1 - (u + v) / FACE_STEPS)
             .addScaledVector(b, u / FACE_STEPS)
             .addScaledVector(c, v / FACE_STEPS);
-          const above = point.y - this.terrain.sampleHeight(point.x, point.z);
+          const above = point.y - this.terrain.sampleSurface(point.x, point.z).height;
           lowest = Math.min(lowest, above);
           highest = Math.max(highest, above);
         }

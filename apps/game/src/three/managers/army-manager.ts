@@ -1075,6 +1075,17 @@ export class ArmyManager {
     }
   }
 
+  public getDebugState() {
+    const terrain = this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE;
+    return {
+      armies: [...this.visibleArmyIndices.keys()].flatMap((entityId) => {
+        const position = this.armyModel.getInstanceData(this.toNumericId(entityId))?.position;
+        if (!position) return [];
+        return [{ entityId, overGround: position.y - terrain.sampleSurface(position.x, position.z).height }];
+      }),
+    };
+  }
+
   private markVisibleArmyPresentationDirty(buffersDirty: boolean = true): void {
     this.visibleArmyPresentationDirty = true;
     this.visibleArmyBuffersDirty ||= buffersDirty;
