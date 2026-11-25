@@ -243,18 +243,39 @@ describe("ship-model pipeline", () => {
     await expect(shipTripoModel({ input, fit: bare, kind: "wonder", out: join(dir, "bare.glb") })).rejects.toThrow(
       "flag anchors",
     );
-    const flagged = join(dir, "flagged.json");
-    const anchor = { role: "banner", position: [0.1, 0.2, 0], size: [0.1, 0.2], facing: 0 };
-    writeFileSync(flagged, JSON.stringify({ ...JSON.parse(makeFitJson(1.5, [0, 0, 0], 90)), flags: [anchor] }));
+    const withFlags = (name, flags) => {
+      const path = join(dir, `${name}.json`);
+      writeFileSync(path, JSON.stringify({ ...JSON.parse(makeFitJson(1.5, [0, 0, 0], 90)), flags }));
+      return path;
+    };
     const out = join(dir, "flagged.glb");
-    await shipTripoModel({ input, fit: flagged, kind: "wonder", out });
+    await shipTripoModel({
+      input,
+      fit: withFlags("flagged", [{ top: [0.1, 0.2, 0], width: 0.1, facing: 0 }]),
+      kind: "wonder",
+      out,
+    });
     const meshNode = (await (await createReader()).read(out))
       .getRoot()
       .listNodes()
       .find((node) => node.getMesh());
-    expect(meshNode.getExtras().flagAnchors).toEqual([
-      { role: "banner", position: [0, 0.3, -0.15], size: [0.15, 0.3], facing: 90 },
-    ]);
+    expect(meshNode.getExtras().flagAnchors).toEqual([{ top: [0, 0.3, -0.15], width: 0.15, facing: 90 }]);
+    await expect(
+      shipTripoModel({
+        input,
+        fit: withFlags("narrow", [{ top: [0.1, 0.2, 0], width: 0.07, facing: 0 }]),
+        kind: "wonder",
+        out: join(dir, "narrow.glb"),
+      }),
+    ).rejects.toThrow("at least 0.11 wide");
+    await expect(
+      shipTripoModel({
+        input,
+        fit: withFlags("sized", [{ top: [0.1, 0.2, 0], width: 0.1, size: [0.1, 0.05], facing: 0 }]),
+        kind: "wonder",
+        out: join(dir, "sized.glb"),
+      }),
+    ).rejects.toThrow("flag anchor");
   });
 
   it("bakes hex fit, compresses with repo tools and is safe to run twice via CLI", async () => {

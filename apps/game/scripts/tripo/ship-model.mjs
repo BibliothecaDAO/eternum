@@ -120,19 +120,28 @@ export function readHexFit(fitPath) {
   return { scale, offset: [offset[0], offset[1], offset[2]], yaw, flags: readFlagAnchors(raw.flags, fitPath) };
 }
 
+const MIN_PLACED_BANNER_WIDTH = 0.11;
+
 function readFlagAnchors(flags, fitPath) {
   return flags === undefined ? undefined : requireFlagAnchors(flags, fitPath);
 }
 
-function placeFlagAnchors(fit) {
+function placeFlagAnchors(fit, fitPath) {
   const matrix = buildFitMatrix(fit);
   const round = (value) => Math.round(value * 10_000) / 10_000 || 0;
-  return fit.flags.map(({ role, position, size, facing }) => ({
-    role,
-    position: new Vector3(...position).applyMatrix4(matrix).toArray().map(round),
-    size: size.map((side) => round(side * fit.scale)),
-    facing: round(facing + fit.yaw),
-  }));
+  return fit.flags.map(({ top, width, facing }) => {
+    const placedWidth = round(width * fit.scale);
+    if (placedWidth < MIN_PLACED_BANNER_WIDTH) {
+      throw new Error(
+        `A banner hangs at least ${MIN_PLACED_BANNER_WIDTH} wide once fitted, as the narrowest scripted realm banner does; ${width} x ${fit.scale} is ${placedWidth} (${fitPath})`,
+      );
+    }
+    return {
+      top: new Vector3(...top).applyMatrix4(matrix).toArray().map(round),
+      width: placedWidth,
+      facing: round(facing + fit.yaw),
+    };
+  });
 }
 
 export async function shipTripoModel(options) {
@@ -168,7 +177,7 @@ export async function shipTripoModel(options) {
     assetKind: kind,
     fitSha256,
     sourceSha256,
-    ...(fit.flags === undefined ? {} : { flagAnchors: placeFlagAnchors(fit) }),
+    ...(fit.flags === undefined ? {} : { flagAnchors: placeFlagAnchors(fit, fitPath) }),
   });
   normalizeTripoMaterials(document, kind);
   const bounds = assertHexFootprint(document, kind, budget);
