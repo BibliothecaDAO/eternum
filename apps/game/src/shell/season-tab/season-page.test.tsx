@@ -487,11 +487,11 @@ it("merges Aspect rosters into one global Glory leaderboard sorted by compareAsp
   const merged = mergeAspectRosters([
     {
       aspect: 1 as const,
-      roster: { game_id: "1", aspect: 1, total: 10, offset: 0, limit: 10, members: aspectOneMembers },
+      roster: { total: 10, members: aspectOneMembers },
     },
     {
       aspect: 2 as const,
-      roster: { game_id: "1", aspect: 2, total: 8, offset: 0, limit: 10, members: aspectTwoMembers },
+      roster: { total: 8, members: aspectTwoMembers },
     },
   ]);
   expect(merged.total).toBe(18);

@@ -228,9 +228,7 @@ it("treats the desktop's Feed as any other panel: closed at start, opened from i
       shownStore.applyFacts([{ model: "RaceRules", key: "0xa500", value: wireFact(raceRules()) }] as never),
     );
     await press("Season");
-    expect(
-      host.querySelector(`[data-frontier-rail][data-wide="true"] [data-wide-page] ${SEASON_PAGE}`),
-    ).not.toBeNull();
+    expect(host.querySelector(`[data-frontier-rail][data-wide="true"] [data-wide-page] ${SEASON_PAGE}`)).not.toBeNull();
     expect(leftColumn().querySelector('[aria-label="Armies"]')).not.toBeNull();
     await press("Season");
     expect(panel()).toBeNull();
@@ -286,9 +284,7 @@ it("keeps a refused order in sight on a desktop, over the feed and over a panel 
     await act(async () =>
       shownStore.applyFacts([{ model: "RaceRules", key: "0xa500", value: wireFact(raceRules()) }] as never),
     );
-    expect(
-      host.querySelector(`[data-frontier-rail] [data-wide-page] ${SEASON_PAGE}`),
-    ).not.toBeNull();
+    expect(host.querySelector(`[data-frontier-rail] [data-wide-page] ${SEASON_PAGE}`)).not.toBeNull();
     expect(notices()?.textContent).toContain("Not enough stamina");
   } finally {
     useEventFeedStore.getState().dismiss();

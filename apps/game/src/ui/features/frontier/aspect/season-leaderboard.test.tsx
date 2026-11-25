@@ -37,7 +37,10 @@ const member = (home: number, glory: number): RaceMemberRow => ({
   mine: BigInt(home) === OWN,
 });
 
-const identityOf = (home: bigint): GloryIdentity => ({ owner: `0x${(0x100n + home).toString(16)}`, realm_id: Number(home) });
+const identityOf = (home: bigint): GloryIdentity => ({
+  owner: `0x${(0x100n + home).toString(16)}`,
+  realm_id: Number(home),
+});
 const lordOf = (home: bigint) => `Lord ${(0x100n + home).toString(16)}`;
 
 const herald = (members: readonly RaceMemberRow[]) => ({

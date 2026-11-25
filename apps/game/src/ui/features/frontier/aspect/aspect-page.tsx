@@ -80,7 +80,9 @@ function SeasonBoardPage({
   const named = new Map(served.flatMap(({ data }) => data?.members ?? []).map((member) => [member.entity_id, member]));
   const identityOf = (realm: bigint) => {
     const held = setup.store.get("Structure", { game_id: game.gameId, entity_id: realm });
-    return held ? { owner: `0x${held.owner.toString(16)}`, realm_id: Number(held.metadata.realm_id) } : (named.get(realm.toString()) ?? null);
+    return held
+      ? { owner: `0x${held.owner.toString(16)}`, realm_id: Number(held.metadata.realm_id) }
+      : (named.get(realm.toString()) ?? null);
   };
   const canEnterDeep = home !== null && realmLayers(setup.store, home).includes("deep");
   return (
