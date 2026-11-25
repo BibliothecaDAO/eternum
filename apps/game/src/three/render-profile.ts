@@ -1,4 +1,5 @@
-import { readGraphicsQuality, type GraphicsQuality } from "./graphics-preferences";
+import { IS_MOBILE } from "@/ui/config";
+import { readGraphicsPreferences, type GraphicsQuality } from "./graphics-preferences";
 
 export interface RenderVisualProfile {
   animationCullDistance: number;
@@ -14,25 +15,30 @@ interface RenderProfile {
   visuals: RenderVisualProfile;
 }
 
+type QualityProfile = { maxFps: number | null; visuals: Omit<RenderVisualProfile, "shadows"> };
+
 const ANIMATION = { animationCullDistance: 120, animationFps: 24 };
 
-export const RENDER_PROFILES: Readonly<Record<GraphicsQuality, RenderProfile>> = {
-  low: {
-    maxFps: 30,
-    visuals: { ...ANIMATION, pixelRatio: 1, postProcessing: false, shadowMapSize: 512, shadows: false },
-  },
-  balanced: {
-    maxFps: null,
-    visuals: { ...ANIMATION, pixelRatio: 1.25, postProcessing: true, shadowMapSize: 1024, shadows: true },
-  },
-  high: {
-    maxFps: null,
-    visuals: { ...ANIMATION, pixelRatio: 2, postProcessing: true, shadowMapSize: 2048, shadows: true },
-  },
+export const QUALITY_PROFILES: Readonly<Record<GraphicsQuality, QualityProfile>> = {
+  low: { maxFps: 30, visuals: { ...ANIMATION, pixelRatio: 1, postProcessing: false, shadowMapSize: 512 } },
+  balanced: { maxFps: null, visuals: { ...ANIMATION, pixelRatio: 1, postProcessing: true, shadowMapSize: 1024 } },
+  high: { maxFps: null, visuals: { ...ANIMATION, pixelRatio: 1.25, postProcessing: true, shadowMapSize: 1024 } },
 };
+
+export const DEFAULT_QUALITY: Readonly<Record<"phone" | "computer", GraphicsQuality>> = {
+  phone: "high",
+  computer: "high",
+};
+
+export function createRenderProfile(quality: GraphicsQuality, shadows: boolean): RenderProfile {
+  const { maxFps, visuals } = QUALITY_PROFILES[quality];
+  return { maxFps, visuals: { ...visuals, shadows } };
+}
 
 const browserStorage = typeof globalThis.localStorage === "undefined" ? null : globalThis.localStorage;
 
-export const loadedGraphicsQuality = readGraphicsQuality(browserStorage);
+export const deviceDefaultQuality = DEFAULT_QUALITY[IS_MOBILE ? "phone" : "computer"];
 
-export const renderProfile = RENDER_PROFILES[loadedGraphicsQuality];
+export const loadedGraphicsPreferences = readGraphicsPreferences(browserStorage, deviceDefaultQuality);
+
+export const renderProfile = createRenderProfile(loadedGraphicsPreferences.quality, loadedGraphicsPreferences.shadows);

@@ -1,36 +1,39 @@
 import { expect, it } from "vitest";
 
-import { readGraphicsQuality, writeGraphicsQuality } from "./graphics-preferences";
+import { readGraphicsPreferences, writeGraphicsPreferences } from "./graphics-preferences";
 
 const storageWith = (entries: Record<string, string>) => {
   const values = new Map(Object.entries(entries));
   return {
-    values,
     getItem: (key: string) => values.get(key) ?? null,
-    removeItem: (key: string) => void values.delete(key),
     setItem: (key: string, value: string) => void values.set(key, value),
   };
 };
 
-it("keeps the chosen quality across reloads, Balanced on a first visit", () => {
+it("keeps a chosen quality and shadows across reloads, and the device's default quality with shadows on a first visit", () => {
   const storage = storageWith({});
-  expect(readGraphicsQuality(storage)).toBe("balanced");
-  writeGraphicsQuality(storage, "low");
-  expect(readGraphicsQuality(storage)).toBe("low");
-  writeGraphicsQuality(storage, "high");
-  expect(readGraphicsQuality(storage)).toBe("high");
+  expect(readGraphicsPreferences(storage, "high")).toEqual({ quality: "high", shadows: true });
+  expect(readGraphicsPreferences(storage, "balanced")).toEqual({ quality: "balanced", shadows: true });
+  writeGraphicsPreferences(storage, { quality: "low", shadows: false });
+  expect(readGraphicsPreferences(storage, "high")).toEqual({ quality: "low", shadows: false });
 });
 
-it.each([
-  [{ quality: "high", shadows: true }, "balanced"],
-  [{ quality: "balanced", shadows: true }, "low"],
-  [{ quality: "high", shadows: false }, "low"],
-])("reads the retired Quality %j and Frame rate once as %s, then forgets them", (retired, quality) => {
-  const storage = storageWith({ "eternum-graphics": JSON.stringify(retired), RENDER_MODE: "capped" });
-  expect(readGraphicsQuality(storage)).toBe(quality);
-  expect([...storage.values]).toEqual([["eternum-quality", quality]]);
+it("reads a player's stored High as today's picture and the old Balanced as the new one", () => {
+  expect(
+    readGraphicsPreferences(storageWith({ "eternum-graphics": '{"quality":"high","shadows":true}' }), "low"),
+  ).toEqual({ quality: "high", shadows: true });
+  expect(
+    readGraphicsPreferences(storageWith({ "eternum-graphics": '{"quality":"balanced","shadows":false}' }), "high"),
+  ).toEqual({ quality: "balanced", shadows: false });
 });
 
-it("draws a page with no storage at Balanced", () => {
-  expect(readGraphicsQuality(null)).toBe("balanced");
+it("falls back to the device's default on an unknown or unreadable stored value", () => {
+  expect(readGraphicsPreferences(storageWith({ "eternum-graphics": '{"quality":"ultra"}' }), "high").quality).toBe(
+    "high",
+  );
+  expect(readGraphicsPreferences(storageWith({ "eternum-graphics": "{" }), "balanced")).toEqual({
+    quality: "balanced",
+    shadows: true,
+  });
+  expect(readGraphicsPreferences(null, "high")).toEqual({ quality: "high", shadows: true });
 });

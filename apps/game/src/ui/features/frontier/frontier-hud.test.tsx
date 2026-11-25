@@ -651,7 +651,11 @@ it("lays a phone's Settings on one page, with what is rarely touched one press a
       );
     expect(words(".ui-settings__volume-name")).toEqual(["Master", "Music", "Effects"]);
     expect(words(".ui-settings__choices .ui-setting__name")).toEqual(["Quality"]);
-    expect(words(".ui-settings > .ui-setting .ui-setting__name").slice(0, 2)).toEqual(["Mute", "Reduced motion"]);
+    expect(words(".ui-settings > .ui-setting .ui-setting__name").slice(0, 3)).toEqual([
+      "Mute",
+      "Shadows",
+      "Reduced motion",
+    ]);
     expect(words("button")).not.toContain("Leave game");
     await press("More");
     expect(words("section > h2")).toContain("Notifications");

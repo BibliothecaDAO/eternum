@@ -52,14 +52,14 @@ const remount = async () => {
 };
 
 it("draws on a desktop no Renderer row and no Haptics, as nothing there vibrates", () => {
-  expect(names()).toEqual(["Quality", "Reduced motion"]);
+  expect(names()).toEqual(["Quality", "Shadows", "Reduced motion"]);
   expect(host.querySelector(".ui-setting__about")).toBeNull();
 });
 
 it("offers Haptics on a phone that can vibrate, and saves its choice; an iPhone, with no vibration, gets no row", async () => {
   device({ touch: true, vibrate: true });
   await remount();
-  expect(names()).toEqual(["Quality", "Reduced motion", "Haptics"]);
+  expect(names()).toEqual(["Quality", "Shadows", "Reduced motion", "Haptics"]);
   const haptics = () => host.querySelector('[role="switch"][aria-label="Haptics"]')!.getAttribute("aria-checked");
   const before = haptics();
   await toggle("Haptics");
@@ -81,13 +81,18 @@ it("offers Low, Balanced and High, saves a choice at once without leaving the pa
     "High",
   ]);
   await choose("Quality", "Low");
-  expect(localStorage.getItem("eternum-quality")).toBe("low");
+  expect(JSON.parse(localStorage.getItem("eternum-graphics")!)).toEqual({ quality: "low", shadows: true });
   expect(window.location.href).toBe(page);
   expect(reloadRow()).toBe(true);
   await choose("Quality", "High");
-  expect(localStorage.getItem("eternum-quality")).toBe("high");
+  expect(reloadRow()).toBe(false);
+});
+
+it("saves Shadows at once beside Quality, says it applies after a reload, and stops saying so when undone", async () => {
+  await toggle("Shadows");
+  expect(JSON.parse(localStorage.getItem("eternum-graphics")!)).toEqual({ quality: "high", shadows: false });
   expect(reloadRow()).toBe(true);
-  await choose("Quality", "Balanced");
+  await toggle("Shadows");
   expect(reloadRow()).toBe(false);
 });
 

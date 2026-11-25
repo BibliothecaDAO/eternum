@@ -669,6 +669,7 @@ export const SETTINGS_WORDS = {
   mute: "Mute",
   quality: "Quality",
   qualities: { low: "Low", balanced: "Balanced", high: "High" } satisfies Record<GraphicsQuality, string>,
+  shadows: "Shadows",
   reducedMotion: "Reduced motion",
   haptics: "Haptics",
   appliesAfterReload: "Applies after a reload",
