@@ -75,6 +75,7 @@
 }
 .army-tray__foot {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: theme(spacing[2.5]);
 }
@@ -83,6 +84,7 @@
 }
 .army-tray__verbs {
   display: flex;
+  margin-left: auto;
   justify-content: flex-end;
   gap: theme(spacing[1.5]);
 }

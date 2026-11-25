@@ -4,6 +4,14 @@
     padding: 0 6px 74px;
   }
 }
+[data-hud-form="tablet"] .ui-modal:has(> .oath-pick) {
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: var(--hud-phone-top) theme(spacing.2) 0;
+}
+[data-hud-form="tablet"] .oath-pick {
+  width: theme(spacing.hud-tablet-rail);
+}
 .oath-pick {
   display: flex;
   width: 100%;

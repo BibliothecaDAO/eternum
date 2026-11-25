@@ -104,6 +104,8 @@ const startReading = (host: HTMLElement) => host.querySelector("[data-deploy-sta
 const foot = (host: HTMLElement) => host.querySelector(".ui-window__foot")?.textContent ?? "";
 /** The red line the wheat draws when it holds the count down: its words, its mark and its one press. */
 const wheatLine = (host: HTMLElement) => {
+  const quiet = host.querySelector('.deploy-size > .ui-line:has([data-icon="wheat"])');
+  if (quiet) return { line: quiet.textContent };
   const notice = host.querySelector('.ui-notice[data-tone="bad"]:has([data-icon="wheat"])');
   return notice
     ? {
@@ -390,13 +392,13 @@ describe("the Deploy sheet", () => {
     ] as never);
     const { host, root } = render(store, row);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    expect(wheatLine(host)).toEqual({ line: "Wheat for only 50 of 420 troops", press: "Get Wheat" });
+    expect(wheatLine(host)).toEqual({ line: "Wheat for only 50 of 420 troops" });
     expect([slider(host).max, count(host)]).toEqual(["54", "50"]);
     typeCount(host, 30);
     expect([wheatLine(host), foot(host)]).toEqual([null, "60Deploy 30"]);
     typeCount(host, 300);
     expect(count(host)).toBe("54");
-    expect(wheatLine(host)).toEqual({ line: "Wheat for only 54 of 420 troops", press: "Get Wheat" });
+    expect(wheatLine(host)).toEqual({ line: "Wheat for only 54 of 420 troops" });
     expect(foot(host)).toBe("108Deploy 54");
     expect(deployButton(host)?.disabled).toBe(false);
     typeCount(host, 49);
@@ -433,7 +435,7 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 
-  it("says at Max that the wheat caps the count, offers Get Wheat on the line, and keeps Max at the most as the farms fill", () => {
+  it("says at Max, in a quiet line under the slider, that the wheat caps the count, and keeps Max at the most as the farms fill", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     store.applyFacts([
@@ -462,7 +464,7 @@ describe("the Deploy sheet", () => {
     const { host, root, draw } = render(store, row, onClose);
     click(host.querySelector('button[aria-label="Army 2"]')!);
     expect([count(host), slider(host).max, foot(host)]).toEqual(["8", "9", "16Deploy 8"]);
-    expect(wheatLine(host)).toEqual({ line: "Wheat for only 8 of 420 troops", press: "Get Wheat" });
+    expect(wheatLine(host)).toEqual({ line: "Wheat for only 8 of 420 troops" });
 
     clock.tick = 13;
     draw();
@@ -476,13 +478,12 @@ describe("the Deploy sheet", () => {
 
     expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Build")).toBe(false);
     press(host, "Max");
-    act(() => host.querySelector<HTMLButtonElement>(".ui-notice__fix button")!.click());
-    expect([place.goTo, onClose.mock.calls.length]).toEqual([[false], 1]);
+    expect([count(host), wheatLine(host)]).toEqual(["10", { line: "Wheat for only 10 of 420 troops" }]);
     act(() => root.unmount());
     host.remove();
   });
 
-  it("with wheat short of one troop, is at its cap at 0: says what one needs against what is held, and Deploy stays off", () => {
+  it("with wheat short of one troop, is at its cap at 0: says what one needs against what is held, Deploy stays off, and Get Wheat goes to the realm", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     store.applyFacts([
@@ -492,10 +493,13 @@ describe("the Deploy sheet", () => {
         value: { game_id: 1, entity_id: 7, resource_type: 35, balance: String(BigInt(RESOURCE_PRECISION)) },
       },
     ] as never);
-    const { host, root } = render(store, row);
+    const onClose = vi.fn();
+    const { host, root } = render(store, row, onClose);
     click(host.querySelector('button[aria-label="Army 2"]')!);
     expect(wheatLine(host)).toEqual({ line: "Needs 2 Wheat, have 1", press: "Get Wheat" });
     expect(deployButton(host)?.disabled).toBe(true);
+    act(() => host.querySelector<HTMLButtonElement>(".ui-notice__fix button")!.click());
+    expect([place.goTo, onClose.mock.calls.length]).toEqual([[false], 1]);
     act(() => root.unmount());
     host.remove();
   });

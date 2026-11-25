@@ -598,13 +598,15 @@ what it holds and at most 45% of the screen, and short enough that the map keeps
 and the place bar (never under 12rem; past that it scrolls inside), under one row (its name and its way out; a drag down
 on it closes a sheet), its verb in its foot; while one is open, the stores' row folds away. Chat is such a sheet too.
 Any screen held sideways below the desktop's width (a phone, a Fold's inner screen, a tablet) takes the sideways HUD:
-the places in a rail at the left, the rest in one column at the right, a sheet in that column. The map's share per
-device: `playtest --steps lab-hud-devices --viewport <w>x<h>`, failing a state under 40%. Tapping a build plot keeps the
-realm camera still. The realm view zooms out until every plot of the castle’s reach fits the screen’s width, including
-an Empire on an upright phone. Chat's tabs are its rooms (Global; a game's own only where its mode keeps one, none for
-now) and **Messages**, the private conversations. One panel at a time, on both (`frontier/hud/one-panel.ts`): a page or
-sheet the HUD opens, the card of what the map selected, or the deploy order; the one opened last stands alone and puts
-the others away, so no panel opens over another. A detail opened from a page (a Research row's sheet, a realm on the
+the places in a rail at the left, the rest in one column at the right, a sheet in that column. An upright tablet keeps
+the phone's bands, its sheets, the Oath pick and the picked army in a rail at the right, the realm card and the lesson
+dock in the column left of it, the lesson dock at the foot. The map's share per device:
+`playtest --steps lab-hud-devices --viewport <w>x<h>`, failing a state under 40%. Tapping a build plot keeps the realm
+camera still. The realm view zooms out until every plot of the castle’s reach fits the screen’s width, including an
+Empire on an upright phone. Chat's tabs are its rooms (Global; a game's own only where its mode keeps one, none for now)
+and **Messages**, the private conversations. One panel at a time, on both (`frontier/hud/one-panel.ts`): a page or sheet
+the HUD opens, the card of what the map selected, or the deploy order; the one opened last stands alone and puts the
+others away, so no panel opens over another. A detail opened from a page (a Research row's sheet, a realm on the
 Season's board) stands in the page's place, and its cross returns to the page. Dev: HUD → In game
 (`/lab/hud?mode=frontier`) draws the HUD as the game mounts it and every Frontier state (`/lab/kit/hud/<state>`) on a
 desktop and a phone side by side.

@@ -36,10 +36,3 @@
 .reinforce-size {
   border-top: 1px solid var(--hud-divider);
 }
-.reinforce-until {
-  display: flex;
-  align-items: center;
-  gap: theme(spacing[1.5]);
-  color: var(--hud-muted);
-  font-size: var(--hud-text-label);
-}
