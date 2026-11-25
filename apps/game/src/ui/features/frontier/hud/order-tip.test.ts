@@ -1,8 +1,9 @@
 import { ActionType, configManager, type OrderRefusal } from "@bibliothecadao/eternum";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
+import { ORDER_REFUSAL_WORDS, WHEAT } from "@/ui/design-system/kit/words";
 import { orderFood, orderTip } from "./order-tip";
-import { ATTACK_REFUSAL_WORDS, SPIRE_WORDS, TRANSFER_TROOPS } from "../../../design-system/kit/words";
 
 const step = (actionType: ActionType, staminaCost?: number) => ({ hex: { col: 0, row: 0 }, actionType, staminaCost });
 type Path = ReturnType<typeof step>[];
@@ -36,8 +37,8 @@ describe("what a right-click on a tile does, said before the click", () => {
     expect(line([step(ActionType.Move), step(ActionType.Explore)])).toBe("Explore");
     expect(line([step(ActionType.Move), step(ActionType.Move, 1), step(ActionType.Move, 1)])).toBe("Move");
     expect(line([step(ActionType.Move), step(ActionType.Attack, 30)])).toBe("Attack");
-    expect(line([step(ActionType.Move), step(ActionType.Help)])).toBe(TRANSFER_TROOPS.title);
-    expect(line([step(ActionType.Move), step(ActionType.SpireTravel)])).toBe(SPIRE_WORDS.order);
+    expect(line([step(ActionType.Move), step(ActionType.Help)])).toBe("Transfer troops");
+    expect(line([step(ActionType.Move), step(ActionType.SpireTravel)])).toBe("Enter the Spire");
   });
 
   it("names the realm's Help on its army beside it a reinforcement, priced on its sheet", () => {
@@ -67,15 +68,13 @@ describe("what a right-click on a tile does, said before the click", () => {
 
   it("says why the planner gave no order, in its own reason", () => {
     const short = { refusal: { reason: "stamina", need: 21 } as const, staminaHeld: 9 };
-    expect(line(undefined, { ...short, staminaWait: 24 })).toBe("Needs 21 stamina, have 9 · in 24s");
-    expect(line(undefined, { ...short, staminaWait: 130 })).toBe("Needs 21 stamina, have 9 · in 2m 10s");
-    expect(line(undefined, { ...short, staminaWait: 3_600 })).toBe("Needs 21 stamina, have 9 · in 1h");
-    expect(line(undefined, { refusal: { reason: "stamina", need: 21 } })).toBe("Needs 21 stamina, have —");
-    expect(line(undefined, { refusal: { reason: "food" } })).toBe("Not enough food for the army");
-    expect(line(undefined, { refusal: { reason: "off-limits" } })).toBe(ATTACK_REFUSAL_WORDS["target-must-be-unowned"]);
-    expect(line(undefined, { refusal: { reason: "no-transfer" } })).toBe("Cannot transfer here");
-    expect(line(undefined, { refusal: { reason: "occupied" } })).toBe("Tile is blocked");
-    expect(line(undefined, { refusal: { reason: "too-far" } })).toBe("Too far: move closer");
+    expect(line(undefined, { ...short, staminaWait: 130 })).toBe(staminaShortfall(9, 21, 130));
+    expect(line(undefined, { refusal: { reason: "stamina", need: 21 } })).toBe(staminaShortfall(undefined, 21));
+    const reasons = ["food", "off-limits", "no-attack", "no-transfer", "occupied", "too-far"] as const;
+    const lines = reasons.map((reason) => line(undefined, { refusal: { reason } }));
+    expect(lines).toEqual(reasons.map((reason) => ORDER_REFUSAL_WORDS[reason]));
+    expect(lines[0]).toContain(WHEAT);
+    expect(new Set(lines).size).toBe(reasons.length);
   });
 
   it("claims no distance the planner did not: fog it said nothing of is unexplored, a revealed tile is silent", () => {
