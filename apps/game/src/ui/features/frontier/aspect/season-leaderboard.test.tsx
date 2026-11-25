@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 
 import {
   boardRows,
@@ -103,6 +103,7 @@ it("draws one table row for each board row, the player's own lit", () => {
             rosters={nativeRosters(SMALL)}
             own={own}
             standing={null}
+            names="ready"
             onClose={() => undefined}
           />
         </MemoryRouter>
@@ -113,5 +114,48 @@ it("draws one table row for each board row, the player's own lit", () => {
   const rows = boardRows(nativeRosters(SMALL), 0, own);
   expect(drawn).toHaveLength(rows.length);
   expect(drawn.map((row) => row.hasAttribute("data-own"))).toEqual(rows.map((row) => row.own));
+  act(() => root.unmount());
+});
+
+it("keeps every drawn row's native place while a rival's name is still unknown", () => {
+  const rivalsUnnamed = (home: bigint) => (home === 11n || home === 13n ? null : identityOf(home));
+  const rows = boardRows(nativeRosters(SMALL, rivalsUnnamed), 0, ownRow(SMALL, 4));
+  expect(rows.map(({ key, rank, own }) => [key, rank, own])).toEqual([
+    ["9", 1, false],
+    ["7", 4, true],
+    ["12", 5, false],
+  ]);
+});
+
+it("offers a retry when the names cannot be read, and never calls an Aspect with members empty", () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const retry = vi.fn();
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  act(() =>
+    root.render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <SeasonLeaderboard
+            players={5}
+            race={[]}
+            finishHeight={10_000}
+            stages={5}
+            result={null}
+            rosters={nativeRosters(SMALL, (home) => (home === 11n || home === 12n ? null : identityOf(home)))}
+            own={ownRow(SMALL, 4)}
+            standing={null}
+            names={{ retry }}
+            onClose={() => undefined}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    ),
+  );
+  act(() => host.querySelector<HTMLButtonElement>('[role="alert"] button')!.click());
+  expect(retry).toHaveBeenCalledTimes(1);
+  act(() => host.querySelectorAll<HTMLButtonElement>('[role="tab"]')[2]!.click());
+  expect(host.querySelector(".season-board__empty")).toBeNull();
+  expect(host.querySelector('[role="alert"]')).not.toBeNull();
   act(() => root.unmount());
 });

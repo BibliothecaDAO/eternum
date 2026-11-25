@@ -554,7 +554,6 @@ const answerHeraldRead = (
   return undefined;
 };
 
-/** An Aspect's members as Herald serves them (apps/herald/src/native/aspect-roster.ts): by Glory, one page. */
 const aspectRosterOf = (chain: NativeFactStore, aspect: number, page: URLSearchParams) => {
   const gameId = LAB_GAME.gameId;
   const members = [...chain.inGame("HomeAspect", gameId)]

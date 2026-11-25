@@ -47,6 +47,7 @@ export function AspectPageLab() {
       <SeasonLeaderboard
         {...boardOf(NAMES[index]!)}
         day={{ day: 6, lastDay: 50 }}
+        names="ready"
         goToDeep={{ go: () => undefined }}
         onClose={() => setParams({ case: "0" })}
       />

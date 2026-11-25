@@ -1,11 +1,19 @@
 import { compareAspectMembers, gloryAmount, type RaceMemberRow } from "@bibliothecadao/eternum/game-client";
-import type { HeraldAspectRoster, HeraldAspectRosterMember } from "@bibliothecadao/eternum/game-sync";
+import type { HeraldAspectRosterMember } from "@bibliothecadao/eternum/game-sync";
 import { formatAmount, type AspectId } from "@bibliothecadao/types";
 
 import { ROSTER_TOP } from "../herald";
 import { realmHomeOf } from "../season";
 
-export type GloryRoster = Pick<HeraldAspectRoster, "total" | "members">;
+type RosterMember = Omit<HeraldAspectRosterMember, "owner" | "realm_id"> & {
+  owner: string | null;
+  realm_id: number | null;
+};
+
+export interface GloryRoster {
+  total: number;
+  members: RosterMember[];
+}
 
 export interface GloryRow {
   key: string;
@@ -34,11 +42,19 @@ export const nativeAspectRoster = (
   identityOf: (home: bigint) => GloryIdentity | null,
 ): GloryRoster => ({
   total: members.length,
-  members: members.slice(0, ROSTER_TOP).flatMap((member, index) => {
-    const named = nativeMember(index + 1, member, identityOf);
-    return named ? [named] : [];
-  }),
+  members: members.slice(0, ROSTER_TOP).map((member, index) => ({
+    rank: index + 1,
+    entity_id: member.home.toString(),
+    glory: member.glory.toString(),
+    ...(identityOf(member.home) ?? { owner: null, realm_id: null }),
+  })),
 });
+
+const isNamed = (member: RosterMember): member is HeraldAspectRosterMember =>
+  member.owner !== null && member.realm_id !== null;
+
+export const unnamedMembers = (rosters: readonly { roster: GloryRoster }[]): number =>
+  rosters.reduce((sum, { roster }) => sum + roster.members.filter((member) => !isNamed(member)).length, 0);
 
 export const nativeMember = (
   rank: number,
@@ -49,9 +65,9 @@ export const nativeMember = (
   return identity && { rank, entity_id: member.home.toString(), ...identity, glory: member.glory.toString() };
 };
 
-export const mergeAspectRosters = (
-  rosters: readonly { aspect: AspectId; roster: GloryRoster }[],
-): { total: number; rows: { aspect: AspectId; rank: number; member: HeraldAspectRosterMember }[] } => ({
+export const mergeAspectRosters = <M extends RosterMember>(
+  rosters: readonly { aspect: AspectId; roster: { total: number; members: readonly M[] } }[],
+): { total: number; rows: { aspect: AspectId; rank: number; member: M }[] } => ({
   total: rosters.reduce((sum, { roster }) => sum + roster.total, 0),
   rows: rosters
     .flatMap(({ aspect, roster }) => roster.members.map((member) => ({ aspect, member })))
@@ -87,15 +103,18 @@ export const boardRows = (
   tab: AspectId | 0,
   own: OwnGloryRow | null,
 ): GloryRow[] => {
-  const mine = (entityId: string) => entityId === own?.member.entity_id;
-  const rows =
+  const ranked =
     tab === 0
-      ? mergeAspectRosters(rosters).rows.map(({ rank, member, aspect }) =>
-          gloryRowOf(rank, member, mine(member.entity_id), aspect),
-        )
-      : (rosters.find((entry) => entry.aspect === tab)?.roster.members ?? []).map((member) =>
-          gloryRowOf(member.rank, member, mine(member.entity_id), tab),
-        );
-  if (!own || rows.some((row) => row.own) || (tab !== 0 && tab !== own.aspect)) return rows;
+      ? mergeAspectRosters(rosters).rows
+      : (rosters.find((entry) => entry.aspect === tab)?.roster.members ?? []).map((member) => ({
+          aspect: tab,
+          rank: member.rank,
+          member,
+        }));
+  const rows = ranked.flatMap(({ aspect, rank, member }) =>
+    isNamed(member) ? [gloryRowOf(rank, member, member.entity_id === own?.member.entity_id, aspect)] : [],
+  );
+  if (!own || ranked.some(({ member }) => member.entity_id === own.member.entity_id)) return rows;
+  if (tab !== 0 && tab !== own.aspect) return rows;
   return [...rows, gloryRowOf(tab === 0 ? own.place : own.aspectPlace, own.member, true, own.aspect)];
 };

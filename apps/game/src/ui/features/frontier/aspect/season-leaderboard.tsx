@@ -3,7 +3,13 @@ import "./season-leaderboard.css";
 import { aspectName, aspects, formatCount, formatExact, formatShort, type AspectId } from "@bibliothecadao/types";
 import { useState, type CSSProperties, type ReactNode } from "react";
 
-import { boardRows, type GloryRoster, type GloryRow, type OwnGloryRow } from "@/shell/season-tab/glory-rows";
+import {
+  boardRows,
+  type GloryRoster,
+  type GloryRow,
+  type OwnGloryRow,
+  unnamedMembers,
+} from "@/shell/season-tab/glory-rows";
 import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
@@ -12,9 +18,11 @@ import { aspectMeaning } from "@/ui/design-system/icon-meaning";
 import {
   HudButton,
   HudChip,
+  HudEmpty,
   HudMeter,
   HudPage,
   HudPlaceMedal,
+  HudSkeleton,
   HudTableHead,
   HudTableRow,
   HudTabs,
@@ -26,7 +34,9 @@ import {
   PLAY_WORDS,
   RANK,
   SEASON_BOARD_WORDS as WORDS,
+  SEASON_ERROR,
   SEASON_WORDS,
+  TRY_AGAIN,
 } from "@/ui/design-system/kit/words";
 import { LordName } from "../board/realm-marks";
 import { RefusedVerb } from "../refused-verb";
@@ -56,6 +66,8 @@ export interface SeasonStanding {
   altar: { charge: number; threshold: number } | null;
 }
 
+type GloryNames = "ready" | "loading" | { retry: () => void };
+
 export interface SeasonLeaderboardProps {
   day?: { day: number; lastDay: number };
   players: number;
@@ -66,6 +78,7 @@ export interface SeasonLeaderboardProps {
   rosters: readonly { aspect: AspectId; roster: GloryRoster }[];
   own: OwnGloryRow | null;
   standing: SeasonStanding | null;
+  names: GloryNames;
   invite?: ReactNode;
   goToDeep?: { go: () => void } | { refused: Refusal };
   onClose: () => void;
@@ -134,7 +147,7 @@ export const SeasonLeaderboard = (props: SeasonLeaderboardProps) => {
                 </span>
               )}
             </div>
-            <GloryBoard rosters={props.rosters} tab={tab} own={props.own} />
+            <GloryBoard rosters={props.rosters} tab={tab} own={props.own} names={props.names} />
           </section>
           {standing && (
             <Standing standing={standing} invite={props.invite} goToDeep={props.goToDeep} stages={props.stages} />
@@ -202,14 +215,18 @@ const GloryBoard = ({
   rosters,
   tab,
   own,
+  names,
 }: {
   rosters: readonly { aspect: AspectId; roster: GloryRoster }[];
   tab: AspectId | 0;
   own: OwnGloryRow | null;
+  names: GloryNames;
 }) => {
-  const rows = boardRows(rosters, tab, own);
-  if (tab !== 0 && rows.length === 0)
+  const shown = tab === 0 ? rosters : rosters.filter((entry) => entry.aspect === tab);
+  if (tab !== 0 && shown.every(({ roster }) => roster.total === 0))
     return <span className="season-board__empty">{SEASON_WORDS.aspectRosterEmpty(aspectName(tab))}</span>;
+  const unnamed = unnamedMembers(shown);
+  const rows = boardRows(rosters, tab, own);
   return (
     <div className="season-board__rows" role="table" aria-label={SEASON_WORDS.gloryLeaderboard}>
       <HudTableHead cols={COLS} colsWide={COLS_WIDE}>
@@ -221,6 +238,20 @@ const GloryBoard = ({
       {rows.map((row) => (
         <GloryTableRow key={row.key} row={row} />
       ))}
+      {unnamed > 0 && names === "loading" && <HudSkeleton rows={Math.min(unnamed, 3)} />}
+      {unnamed > 0 && typeof names === "object" && (
+        <div role="alert">
+          <HudEmpty
+            icon="victory"
+            line={SEASON_ERROR}
+            action={
+              <HudButton kind="secondary" onClick={names.retry}>
+                {TRY_AGAIN}
+              </HudButton>
+            }
+          />
+        </div>
+      )}
     </div>
   );
 };

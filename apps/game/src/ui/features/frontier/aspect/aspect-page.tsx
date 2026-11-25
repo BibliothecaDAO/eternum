@@ -83,12 +83,23 @@ function SeasonBoardPage({
   return (
     <SeasonLeaderboard
       {...seasonBoard(board, home, (realm) => getStructureName(realm, setup.store).name, canEnterDeep, identityOf)}
+      names={namesOf(served)}
       day={day}
       invite={home && <AspectInvite realm={home} />}
       goToDeep={goToDeepOf(setup.store, board, home, canEnterDeep, isMapView, onClose)}
       onClose={onClose}
     />
   );
+}
+
+function namesOf(served: ReturnType<typeof useAllAspectRosters>): SeasonLeaderboardProps["names"] {
+  if (served.some((query) => query.isError))
+    return {
+      retry: () => {
+        for (const query of served) if (query.isError) void query.refetch();
+      },
+    };
+  return served.some((query) => query.isPending) ? "loading" : "ready";
 }
 
 function goToDeepOf(
@@ -121,7 +132,7 @@ export function seasonBoard(
   name: (realm: NativeRows["Structure"]) => string,
   deepOpen: boolean,
   identityOf: (home: bigint) => GloryIdentity | null,
-): Omit<SeasonLeaderboardProps, "onClose" | "day" | "invite" | "goToDeep"> {
+): Omit<SeasonLeaderboardProps, "onClose" | "day" | "invite" | "goToDeep" | "names"> {
   const pools = new Map(
     board.standings.map((row) => [row.aspect, aspectLordsWorth(row.height, board.result?.winner === row.aspect)]),
   );
