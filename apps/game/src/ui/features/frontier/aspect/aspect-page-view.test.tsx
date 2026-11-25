@@ -2,7 +2,6 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { deepSites } from "@bibliothecadao/types";
 import { ASPECT_PAGE_CASES } from "./aspect-page-fixtures";
 import { AspectPageView, type AspectPageProps } from "./aspect-page-view";
 
@@ -55,13 +54,16 @@ describe("the Aspect page", () => {
     expect(triumphs).toContain("Spoils · at stage 4");
   });
 
-  it("shows the bane bar against its 1,500 and the members by Glory with the site each guards", () => {
+  it("shows the bane bar against its 1,500 and the members by Glory, one line each with its exact Glory", () => {
     draw(ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"]);
     expect(part("data-aspect-bane")).toContain("300 of 1,500");
     const members = part("data-aspect-members");
     expect(members.indexOf("Aldor")).toBeLessThan(members.indexOf("Brek"));
-    for (const { name } of deepSites) expect(members).toContain(`Guards the ${name}`);
-    expect(members).toContain("1.2K");
+    expect(
+      [...document.body.querySelectorAll('[data-aspect-members] [role="img"][aria-label^="Glory "]')].map((glory) =>
+        glory.getAttribute("aria-label"),
+      ),
+    ).toEqual(["Glory 1,240", "Glory 980", "Glory 710", "Glory 655", "Glory 310", "Glory 95"]);
   });
 
   it("names the Aspect that finished first once the age is won, and finished rows say so", () => {

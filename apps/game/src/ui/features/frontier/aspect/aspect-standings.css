@@ -18,24 +18,19 @@
 .race-steps {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: theme(spacing.1);
+  gap: theme(spacing[1.5]);
 }
 .race-step {
-  border-radius: var(--hud-radius-chip);
-  background: var(--hud-surface-to);
-  padding: 2px 0;
-  color: rgb(var(--hud-muted));
-  font-size: var(--hud-text-badge);
-  line-height: var(--hud-leading-badge);
-  font-weight: var(--hud-weight-strong);
-  text-align: center;
-  font-variant-numeric: tabular-nums;
+  height: theme(spacing[1.5]);
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-ink) / 0.12);
 }
 .race-step[data-current] {
   box-shadow: inset 0 0 0 1px rgb(var(--hud-aspect));
-  color: rgb(var(--hud-ink));
 }
 .race-step[data-built] {
   background: rgb(var(--hud-aspect));
-  color: rgb(var(--hud-dark));
+}
+.race-row__name {
+  color: rgb(var(--hud-aspect));
 }

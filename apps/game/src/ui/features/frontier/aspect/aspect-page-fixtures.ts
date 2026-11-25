@@ -1,5 +1,5 @@
 import { raceStage } from "@bibliothecadao/eternum/game-client";
-import { aspects, deepSites, type AspectId } from "@bibliothecadao/types";
+import { aspects, type AspectId } from "@bibliothecadao/types";
 
 import type { AspectMember, AspectPageProps, AspectStanding, AspectTriumph, OwnAspect } from "./aspect-page-view";
 
@@ -33,26 +33,24 @@ const standings = (heights: Record<string, number>, own: string): AspectStanding
 const triumphs = (height: number, fallsOn: Record<(typeof TRIUMPH_STAGES)[number], number>): AspectTriumph[] =>
   TRIUMPH_STAGES.map((stage) => ({ stage, day: height >= stage * STAGE ? fallsOn[stage] : null }));
 
-const member = (id: string, realm: string, glory: number, guards: string | null, mine = false): AspectMember => ({
+const member = (id: string, realm: string, glory: number, mine = false): AspectMember => ({
   id,
   realm,
   mine,
   glory,
-  guards,
 });
-const [foundation, core, mine, altar] = deepSites.map(({ name }) => name);
 
 const luminary = (height: number, charge: number): OwnAspect => ({
   aspectId: 2,
   triumphs: triumphs(height, { 1: 12, 2: 19, 3: 26, 4: 33 }),
   bar: { charge, threshold: BANE_THRESHOLD },
   members: [
-    member("a", "Aldor", 1_240, foundation!),
-    member("b", "Brek", 980, altar!, true),
-    member("c", "Corva", 710, null),
-    member("d", "Dunmere", 655, mine!),
-    member("e", "Elsen", 310, core!),
-    member("f", "Farrow", 95, null),
+    member("a", "Aldor", 1_240),
+    member("b", "Brek", 980, true),
+    member("c", "Corva", 710),
+    member("d", "Dunmere", 655),
+    member("e", "Elsen", 310),
+    member("f", "Farrow", 95),
   ],
 });
 

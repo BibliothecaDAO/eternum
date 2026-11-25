@@ -32,11 +32,34 @@
   display: flex;
   min-width: 0;
   flex-direction: column;
+  border-top: 1px solid var(--hud-divider);
+  padding-top: theme(spacing.2);
+}
+.aspect-glory-board__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: theme(spacing.2);
+  padding-bottom: theme(spacing.1);
+  color: var(--hud-muted);
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-label);
+  text-transform: uppercase;
+}
+.aspect-glory-board__dot {
+  width: theme(spacing.2);
+  height: theme(spacing.2);
+  flex: none;
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-aspect));
+}
+.aspect-glory-board__glory {
+  display: inline-flex;
+  align-items: center;
   gap: theme(spacing.1);
-  border: 1px solid var(--hud-divider);
-  border-radius: var(--hud-radius-card);
-  background: var(--hud-well);
-  padding: theme(spacing.2) theme(spacing[2.5]);
+  color: rgb(var(--hud-gold));
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
 }
 
 .aspect-glory-board__rank {

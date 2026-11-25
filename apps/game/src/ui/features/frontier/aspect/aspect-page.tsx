@@ -30,7 +30,7 @@ export function useAspectBoard() {
   return readRaceBoard(setup.store, configManager.getActiveGameId(), home?.entity_id ?? null, now);
 }
 
-export function FrontierAspectPage({ onClose }: { onClose: () => void }) {
+export function FrontierAspectPage({ day, onClose }: { day?: number; onClose: () => void }) {
   const { setup } = useGame();
   const { isMapView } = useQuery();
   const reading = useAspectBoard();
@@ -39,7 +39,7 @@ export function FrontierAspectPage({ onClose }: { onClose: () => void }) {
   const fights = useAspectFights(board?.own?.members.map((member) => member.home.owner) ?? []);
   const now = useNowSeconds();
   useNativeRevision(["DeepRules", "RealmKnowledge", "SettlementRules"]);
-  if (!board) return <AspectPageView race={null} own={null} onClose={onClose} />;
+  if (!board) return <AspectPageView race={null} own={null} day={day} onClose={onClose} />;
   const gameId = configManager.getActiveGameId();
   const canEnterDeep = home !== null && realmLayers(setup.store, home).includes("deep");
   const settlementRules = setup.store.get("SettlementRules", { game_id: gameId });
@@ -58,6 +58,7 @@ export function FrontierAspectPage({ onClose }: { onClose: () => void }) {
       {...aspectPage(board, (home) => getStructureName(home, setup.store).name)}
       fights={<AspectFeedView reading={fights} now={now} />}
       invite={home && <AspectInvite realm={home} />}
+      day={day}
       onGoToDeep={onGoToDeep}
       onClose={onClose}
     />
@@ -94,7 +95,6 @@ export function aspectPage(
         realm: name(member.home),
         mine: member.mine,
         glory: gloryAmount(member.glory),
-        guards: member.guards.length ? member.guards.join(", ") : null,
       })),
     },
   };
