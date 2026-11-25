@@ -13,6 +13,7 @@ import {
 import { useGameFinished } from "@/ui/features/world/containers/top-header/game-clock";
 import { GameFinishedPill } from "@/ui/features/world/containers/top-header/game-finished-pill";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
+import type { CSSProperties } from "react";
 
 import { dayClock, dayElapsedShare, type DayClock } from "./day-clock";
 import { ProgressRing } from "./progress-ring";
@@ -42,7 +43,13 @@ export const FrontierDayClock = ({
   const finished = useGameFinished();
   if (finished) return <GameFinishedPill />;
   return (
-    <button type="button" aria-label={TODAY} onClick={onOpenToday} className="frontier-day-trigger pointer-events-auto">
+    <button
+      type="button"
+      aria-label={TODAY}
+      data-hud-part=""
+      onClick={onOpenToday}
+      className="frontier-day-trigger pointer-events-auto"
+    >
       {compact ? <DayRing clock={clock} /> : <DayPill clock={clock} />}
     </button>
   );
@@ -50,7 +57,6 @@ export const FrontierDayClock = ({
 
 export const DayRing = ({ clock }: { clock: DayClock }) => {
   const left = dayLeftCompact(clock.secondsLeft);
-  const tip = dayTip(clock);
   const label = left
     ? `${DAY} ${clock.day ?? "—"} · ${phraseText(dayLeft(clock.secondsLeft))}`
     : `${DAY} ${clock.day ?? "—"}`;
@@ -58,23 +64,14 @@ export const DayRing = ({ clock }: { clock: DayClock }) => {
     <span
       role="timer"
       aria-label={label}
-      data-tip={tip}
-      className={cn(
-        "frontier-day-medallion frontier-day-medallion--phone pointer-events-auto",
-        STORE_TONES[clock.tone].text,
-      )}
+      data-tip={dayTip(clock)}
+      data-tone={clock.tone}
+      className="frontier-day-disc pointer-events-auto"
+      style={{ "--day-gone": `${Math.round((dayElapsedShare(clock) ?? 0) * 100)}%` } as CSSProperties}
     >
-      <ProgressRing size="md" share={dayElapsedShare(clock)} tone={clock.tone} className="frontier-day-medallion__ring">
-        <span className="frontier-day-stack">
-          <span className="frontier-day-kicker">{DAY}</span>
-          <span className="frontier-day-label">{clock.day ?? "—"}</span>
-        </span>
-      </ProgressRing>
-      {left && (
-        <span className="frontier-day-left" aria-hidden="true">
-          {left}
-        </span>
-      )}
+      <span className="frontier-day-disc__kicker">{DAY}</span>
+      <span className="frontier-day-disc__day">{clock.day ?? "—"}</span>
+      {left && <span className="frontier-day-disc__left">{left}</span>}
     </span>
   );
 };

@@ -12,6 +12,10 @@
 .build-grid .ui-card[data-locked] .ui-card__foot {
   opacity: 0.55;
 }
+.build-grid .ui-card__title {
+  white-space: normal;
+  text-overflow: clip;
+}
 .build-grid .ui-card__corner .ui-chip {
   min-height: 0;
   padding: 1px 5px;
@@ -39,20 +43,6 @@
   color: rgb(var(--hud-good));
   font-size: var(--hud-text-label);
   line-height: var(--hud-leading-label);
-}
-.build-more {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
-  margin: 0;
-  border: 1px solid var(--hud-divider);
-  border-radius: var(--hud-radius-control);
-  background: rgb(var(--hud-dark));
-  padding: theme(spacing.1) theme(spacing.2);
-  color: rgb(var(--hud-muted));
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  text-align: center;
 }
 @media (max-width: 1023px) {
   .ui-sheet:has([data-build-sheet]) .ui-frame__body {

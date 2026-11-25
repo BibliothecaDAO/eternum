@@ -183,7 +183,6 @@
   gap: 3px;
 }
 .frontier-realm-card__name {
-  max-width: calc(100% - 96px);
   overflow: hidden;
   text-overflow: ellipsis;
   font-family: var(--hud-font-display);
@@ -212,9 +211,6 @@
   text-overflow: ellipsis;
 }
 .frontier-rank-up {
-  position: absolute;
-  top: 12px;
-  right: 12px;
   display: inline-flex;
   height: 24px;
   flex: none;
@@ -597,8 +593,4 @@ button.frontier-stock__face:hover {
   white-space: normal;
   text-overflow: clip;
   text-wrap: balance;
-}
-.frontier-realm-card__head[data-closable] .frontier-rank-up {
-  position: static;
-  margin-left: auto;
 }

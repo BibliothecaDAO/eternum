@@ -402,7 +402,7 @@ export const GUTTERS = {
 } as const;
 
 /** The desktop layout's first width: Tailwind's `lg`, and the JS layout's (shell/frame/layout.ts). */
-export const HUD_MAP_LEAST_SHARE = 40;
+export const HUD_MAP_LEAST_SHARE = 25;
 
 export const DESKTOP_MIN_PX = 1024;
 
@@ -617,13 +617,9 @@ export const HUD_LAYOUT = {
   keyboard: "var(--keyboard, 0px)",
   /** The phone's minimap tab. */
   "phone-minimap": "clamp(180px, 35dvh, 320px)",
-  /** The most of a phone's screen a page or a sheet takes, sized to what it holds (owner, 26 October 2026: layout A). */
-  /**
-   * A phone's sheet or page: 45% of the height at most, and short enough that the map keeps HUD_MAP_LEAST_SHARE of it
-   * between the strip (--hud-phone-top) and the place bar (--hud-phone-foot), which HudBands measures; never under 12rem,
-   * and scrolling inside past it.
-   */
-  "phone-panel": `min(45dvh, max(12rem, calc(100dvh - var(--hud-phone-top, 0px) - var(--hud-phone-foot, 0px) - ${HUD_MAP_LEAST_SHARE}dvh)))`,
+  "phone-tray": "22dvh",
+  "phone-sheet": `min(52dvh, calc(100dvh - var(--hud-phone-top, 0px) - var(--hud-phone-foot, 0px) - ${HUD_MAP_LEAST_SHARE}dvh))`,
+  "phone-browse": "72dvh",
   "tablet-rail": "248px",
   "chat-width": "800px",
   "chat-height": "600px",

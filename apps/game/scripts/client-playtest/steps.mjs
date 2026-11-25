@@ -112,6 +112,7 @@ export const HUD_WORDS = {
   close: "Close",
   chat: "Chat",
   settings: "Settings",
+  today: "Today",
 };
 
 const PHONE_PLACE_PRESSES = {
@@ -2331,18 +2332,16 @@ function seasonReadAndClosed({ played }) {
   return completed(played);
 }
 
-/** A Wheat ring or phone plate opens its store card; pressing it again closes the same card. */
-/**
- * The Wheat store's card opened from its ring (a desktop's realm panel) or its plate (a phone's strip), then closed by
- * the same press: both found by the store they stand for (`data-store`, `data-store-card`), not by words a label may
- * change.
- */
 async function openAndCloseWheatStore({ browser }) {
   const card = () => browser.read(`Boolean(document.querySelector('[data-store-card="wheat"]'))`);
-  browser.run(["click", '[data-store="wheat"]']);
+  browser.read(
+    `(() => { if (!document.querySelector('.frontier-realm-card')) document.querySelector('.frontier-bar button.frontier-stock-chips')?.click(); return true; })()`,
+  );
+  await sleep(1_000);
+  browser.run(["click", '.frontier-realm-card [data-store="wheat"]']);
   await sleep(1_500);
   const opened = card();
-  browser.run(["click", '[data-store="wheat"]']);
+  browser.run(["click", '.frontier-realm-card [data-store="wheat"]']);
   await sleep(1_000);
   return { opened, closed: card() };
 }
@@ -3149,6 +3148,37 @@ const DISCOVERED_SPIRE_STEPS = [
         ? completed(played)
         : failed("The new layer must show its own first-reveal Spire chance", played),
   },
+];
+
+const HUD_SHEETS = [
+  ["research", (browser) => browser.tapPlace(HUD_WORDS.research)],
+  ["season", (browser) => browser.tapPlace(HUD_WORDS.season)],
+  ["menu", (browser) => browser.tapPlace(HUD_WORDS.menu)],
+  ["today", (browser) => browser.click(HUD_WORDS.today)],
+  [
+    "quest",
+    (browser) => browser.read(`(() => { document.querySelector("[data-daily-quest-chip]")?.click(); return true; })()`),
+  ],
+];
+
+const HUD_SHEET_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  ...HUD_SHEETS.map(([name, open]) => ({
+    name: `sheet-${name}`,
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      browser.press("Escape");
+      await sleep(HOVER_SETTLE_MS);
+      const before = Object.keys(browser.hudLayout()?.parts ?? {});
+      open(browser);
+      await sleep(SHEET_WAIT_MS);
+      return { before, layout: browser.hudLayout(), shot: extraScreenshot(name) };
+    },
+    verify: ({ played }) =>
+      Object.keys(played.layout?.parts ?? {}).some((part) => !played.before.includes(part))
+        ? judgeHudLayout(played.layout)
+        : failed(`the ${name} sheet did not open`, played),
+  })),
 ];
 
 const HUD_DEVICE_STEPS = [
@@ -6959,7 +6989,7 @@ export const STEP_SETS = {
           const shot = extraScreenshot("realm");
           if (!onADesktop()) {
             browser.read(
-              `(() => { const chip = document.querySelector('.frontier-phone-emblem'); if (!chip) return false; chip.click(); return true; })()`,
+              `(() => { const chip = document.querySelector('.frontier-bar button.frontier-stock-chips'); if (!chip) return false; chip.click(); return true; })()`,
             );
           }
           const buildings = await readUntil(
@@ -6977,7 +7007,7 @@ export const STEP_SETS = {
           const hasRealmPanel = browser.read(`Boolean(document.querySelector('section[aria-label="Realm"]'))`);
           if (!onADesktop()) {
             browser.read(
-              `(() => { const chip = document.querySelector('.frontier-phone-emblem'); if (!chip) return false; chip.click(); return true; })()`,
+              `(() => { const chip = document.querySelector('.frontier-bar button.frontier-stock-chips'); if (!chip) return false; chip.click(); return true; })()`,
             );
             await readUntil(
               () => browser.read(`!document.querySelector('section[aria-label="Realm"]')`),
@@ -7195,6 +7225,7 @@ export const STEP_SETS = {
       },
     ],
   },
+  "lab-hud-sheets": { game: labSpireGame("panels"), steps: HUD_SHEET_STEPS },
   "lab-race-expired": { game: labSpireGame("race-expired"), steps: raceBoardSteps("expired") },
   "lab-race-finished": { game: labSpireGame("race-finished"), steps: raceBoardSteps("won") },
 

@@ -64,30 +64,6 @@ export const PhoneTabBar = (state: PlacesState) => {
   );
 };
 
-export const TabletPlaces = (state: PlacesState) => {
-  const { surface, onSurface } = state;
-  const places = usePlaces(state);
-  const toggle = (target: HudSurface) => onSurface(surface === target ? null : target);
-  return (
-    <nav aria-label="Places" className="frontier-tablet-places pointer-events-auto">
-      {places.map((place) => (
-        <PlaceTab
-          key={place.key}
-          {...placeTab(place)}
-          current={surface === place.key}
-          onPress={() => toggle(place.key)}
-        />
-      ))}
-      <PlaceTab
-        label={MENU}
-        icon="menu"
-        current={surface !== null && MENU_SURFACES.includes(surface)}
-        onPress={() => toggle("menu")}
-      />
-    </nav>
-  );
-};
-
 type PlaceTabProps = {
   label: string;
   ariaLabel?: string;
