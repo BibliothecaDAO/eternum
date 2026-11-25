@@ -2,7 +2,7 @@ import { questWeek, safeInteger, type NativeFactStore } from "@bibliothecadao/et
 import { questCatalog } from "@bibliothecadao/types";
 
 import { dayQuestFace } from "../day/day-quest-face";
-import type { DayQuestFace } from "../day/day-banner-view";
+import type { DayQuestFace } from "../day/quest-dock-view";
 
 /** One day of the quest week: its quest, whether it has passed, is today or is ahead, and whether its reward was taken. */
 export interface WeekDay {

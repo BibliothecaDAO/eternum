@@ -111,6 +111,7 @@ export const HUD_WORDS = {
   feed: "Feed",
   research: "Research",
   close: "Close",
+  ok: "OK",
   chat: "Chat",
   settings: "Settings",
   today: "Today",
@@ -1587,29 +1588,29 @@ const BANE_COLLECTIONS = {
     button: "Collect",
     receipts: ["LaborGrant"],
     quest: "The Cull",
-    count: "2,500 of 2,500 troops",
-    head: "Ash Fall",
+    count: "(2.5K/2.5K)",
+    head: "World Bane: Ash Fall",
   },
   again: {
     button: "Collect again",
     receipts: ["BaneGrant"],
     quest: "The Cull",
-    count: "2,500 of 2,500 troops",
-    head: "Ash Fall",
+    count: "(2.5K/2.5K)",
+    head: "World Bane: Ash Fall",
   },
   late: {
     button: "Collect",
     receipts: ["LaborGrant", "BaneGrant"],
     quest: "The Cull",
-    count: "2,500 of 2,500 troops",
-    head: "Ash Fall",
+    count: "(2.5K/2.5K)",
+    head: "World Bane: Ash Fall",
   },
   team: {
     button: "Collect",
     receipts: ["LaborGrant"],
     quest: "The Stand",
-    count: "3 of 3 sites",
-    head: "Prowess's bane",
+    count: "(3/3)",
+    head: "Bane from Prowess",
   },
 };
 
@@ -1697,7 +1698,7 @@ function staminaEffectSteps(wind) {
           reading.current >= minimum &&
           reading.current < minimum + 10 &&
           reading.maximum === T2_KNIGHT_STAMINA_MAX &&
-          reading.text.includes("Full in")
+          reading.refills
           ? completed(played)
           : failed("Army bar and refill time must reflect the recorded stamina effects", played);
       },
@@ -1712,7 +1713,8 @@ function readArmyStamina(browser) {
     const meter = line?.querySelector('[role="meter"][aria-label="stamina"]');
     const rect = line?.getBoundingClientRect();
     return { current: Number(meter?.getAttribute('aria-valuenow')), maximum: Number(meter?.getAttribute('aria-valuemax')),
-      text: line?.textContent, visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
+      refills: Boolean(sheet?.querySelector('.army-detail__full')),
+      visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
   })()`);
 }
 
@@ -3575,7 +3577,7 @@ async function cameraAtRest(browser) {
 }
 
 /** What the switch that opens the views says: the view shown. */
-const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('[data-place-pill]')?.dataset.place ?? document.querySelector('[data-surface-deep-switch] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
+const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('[data-place-switch]')?.dataset.place ?? document.querySelector('[data-surface-deep-switch] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
 
 /** The views a lab realm with Ethereal I and II lists, and the region's rows (Frontier's spacing). */
 const LAB_LAYERS = LAYER_NAMES.slice(1, 3);
@@ -4137,7 +4139,7 @@ function raceBoardSteps(result) {
                 const state = browser.read(OPENING_STATE);
                 if (state.lines.length === 0) break;
                 told.push(state.lines[0]);
-                browser.click(HUD_WORDS.close);
+                browser.click(HUD_WORDS.ok);
                 await sleep(400);
               }
               const back = await reloadOn("Deep", "map", scenario)(context);
@@ -4186,7 +4188,7 @@ function raceBoardSteps(result) {
       play: async ({ browser, extraScreenshot }) => {
         if (result === null) {
           browser.read(
-            `(() => { document.querySelector('[data-daily-quest] button[aria-label="${HUD_WORDS.close}"]')?.click(); return true; })()`,
+            `(() => { [...document.querySelectorAll('[data-daily-quest] button')].find((button) => button.textContent === ${JSON.stringify(HUD_WORDS.ok)})?.click(); return true; })()`,
           );
           await openPlace(browser, HUD_WORDS.season);
         }
@@ -6940,7 +6942,7 @@ export const STEP_SETS = {
             places: [...document.querySelectorAll('nav[aria-label="Places"] button')].map((button) => button.getAttribute('aria-label') || button.textContent?.trim()),
             questChip: Boolean(document.querySelector('[data-daily-quest-chip]')),
             depthSwitch: Boolean(document.querySelector('[data-surface-deep-switch]')),
-            realmWorld: [...document.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) => tab.getAttribute('aria-label') || tab.textContent?.trim()),
+            realmWorld: [...document.querySelectorAll('[aria-label="Map view"] :is([role="tab"], [aria-pressed])')].map((tab) => tab.getAttribute('aria-label') || tab.textContent?.trim()),
             armies: document.querySelectorAll('nav[aria-label="Armies"] button').length,
             desktopStores: [...document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]')].map((tile) => tile.dataset.store),
             realmCard: Boolean(document.querySelector('.frontier-realm-card')),

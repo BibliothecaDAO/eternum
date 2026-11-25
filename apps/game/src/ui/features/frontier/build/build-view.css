@@ -1,12 +1,86 @@
 .build-sheet {
   display: flex;
   flex-direction: column;
+  gap: 4px;
+}
+.build-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.build-group__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgb(var(--hud-gold));
+}
+.build-group__word {
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-label);
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.build-group__line {
+  margin-left: auto;
+  font-size: var(--hud-text-badge);
+  color: var(--hud-muted);
 }
 .build-grid {
-  --build-tile: clamp(64px, calc((theme(spacing.hud-phone-sheet) - 140px) / 3), 100px);
+  --build-tile: 72px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
+}
+.build-grid[data-wide] {
+  --build-tile: 46px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.build-grid[data-wide] .ui-card__corner {
+  top: auto;
+  bottom: 5px;
+}
+.build-grid[data-wide] .ui-card[data-size="sm"] .ui-card__choose {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 2px 8px;
+  text-align: left;
+}
+.build-grid[data-wide] .ui-card[data-size="sm"] .ui-card__title,
+.build-grid[data-wide] .ui-card[data-size="sm"] .ui-card__detail {
+  line-height: 12px;
+}
+.build-grid[data-wide] .ui-card[data-size="sm"] .ui-card__picture {
+  flex: none;
+}
+.build-grid[data-wide] .ui-card[data-size="sm"] .ui-card__foot {
+  min-width: 0;
+  align-items: flex-start;
+}
+.build-grid[data-wide] .build-tile-detail {
+  align-items: flex-start;
+}
+.build-grid[data-wide] .build-tile-price {
+  justify-content: flex-start;
+}
+.build-grid[data-wide] .build-tile-price img,
+.build-grid[data-wide] .build-tile-gives img {
+  width: 12px;
+  height: 12px;
+}
+.build-tile-detail {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.build-tile-needs {
+  font-size: var(--hud-text-badge);
+  font-weight: var(--hud-weight-body);
+  color: var(--hud-muted);
+  white-space: nowrap;
 }
 [data-build-sheet] .ui-card[data-size="sm"] {
   min-height: 0;
@@ -68,6 +142,14 @@
 .build-badge[data-standing="built"] {
   border-color: var(--hud-good);
 }
+.build-badge[data-standing="unique"] {
+  width: auto;
+  min-width: 18px;
+  padding: 0 4px;
+  font-size: var(--hud-text-badge);
+  font-weight: var(--hud-weight-strong);
+  color: rgb(var(--hud-ink));
+}
 .build-tile-gives {
   display: inline-flex;
   align-items: center;
@@ -124,5 +206,8 @@
   .build-grid {
     --build-tile: 100px;
     gap: 8px;
+  }
+  .build-grid[data-wide] {
+    --build-tile: 56px;
   }
 }

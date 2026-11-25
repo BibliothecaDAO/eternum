@@ -23,7 +23,7 @@ import { useOnePanel } from "./one-panel";
 import { MenuPage } from "./menu-page";
 import { OrderBar } from "./order-bar";
 import { PickedArmy } from "./picked-army";
-import { DayMedallion } from "./day-pill";
+import { DayPill } from "./day-pill";
 import { RealmCard } from "./realm-card";
 import { TopBarView } from "./phone-top-bar";
 import { PhoneTabBar } from "./frontier-nav";
@@ -117,7 +117,7 @@ describe("the status strip", () => {
       3_600,
     );
     const clock = { ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 };
-    const markup = renderToStaticMarkup(<DayMedallion clock={clock} />);
+    const markup = renderToStaticMarkup(<DayPill clock={clock} />);
     expect(markup).toContain(`aria-label="Day ${day.day}`);
     expect(text(markup)).toContain("24h");
     expect(markup).not.toMatch(/\b1d\b/);
@@ -134,23 +134,23 @@ describe("the status strip", () => {
       },
       3_600,
     );
-    const morning = renderToStaticMarkup(<DayMedallion clock={{ ...day, shareLeft: 0.75, tone: "calm" }} />);
+    const morning = renderToStaticMarkup(<DayPill clock={{ ...day, shareLeft: 0.75, tone: "calm" }} />);
     expect(text(morning)).not.toContain("Day ends");
     expect(text(morning)).not.toContain("Tomorrow lasts");
     expect(morning).toContain("text-hud-ink");
     expect(morning).not.toContain("text-hud-bad");
     expect(morning).toContain('data-fill-share="25"');
     const lastHour = renderToStaticMarkup(
-      <DayMedallion clock={{ ...day, secondsLeft: 600, shareLeft: 0.05, tone: "ember" }} />,
+      <DayPill clock={{ ...day, secondsLeft: 600, shareLeft: 0.05, tone: "ember" }} />,
     );
     expect(lastHour).toContain(`aria-label="Day ${day.day}`);
     expect(text(lastHour)).toContain("10m");
     expect(lastHour).toContain("text-hud-bad");
     expect(lastHour).toContain('data-fill-share="95"');
-    expect(lastHour).toContain("/images/hud/day-medallion-ember.webp");
+    expect(lastHour).toContain('data-tone="ember"');
   });
 
-  it("draws the phone's day on its bronze disc: the day, the hours left inside it, the ember disc in the last hour", () => {
+  it("draws the phone's day as a short pill: D and the day, the time left under it, the ember tone in the last hour", () => {
     const day = dayClock(
       {
         dayUnitSeconds: 4 * 3_600,
@@ -161,14 +161,13 @@ describe("the status strip", () => {
       },
       3_600,
     );
-    act(() =>
-      root.render(<DayMedallion clock={{ ...day, secondsLeft: 900, shareLeft: -0.2, tone: "ember" }} size={52} />),
-    );
+    act(() => root.render(<DayPill clock={{ ...day, secondsLeft: 900, shareLeft: -0.2, tone: "ember" }} compact />));
     const timer = host.querySelector('[role="timer"]')!;
-    expect(timer.getAttribute("data-size")).toBe("52");
-    expect(timer.querySelector("img")?.getAttribute("src")).toBe("/images/hud/day-disc-ember.webp");
-    expect(timer.querySelector(".frontier-day-dial__numeral")?.textContent).toBe(String(day.day));
-    expect(timer.querySelector(".frontier-day-dial__left")?.textContent).toBe("15m");
+    expect(timer.getAttribute("data-tone")).toBe("ember");
+    expect(timer.querySelector(".frontier-day-pill__day")?.textContent).toBe(`D${day.day}`);
+    expect(timer.querySelector(".frontier-day-pill__left")?.textContent).toBe("15m");
+    expect(timer.querySelector(".frontier-progress-ring")).toBeNull();
+    expect(timer.querySelector<HTMLElement>(".frontier-day-pill__share")?.style.width).toBe("100%");
     expect(timer.getAttribute("aria-label")).toContain(`Day ${day.day} · 15m left`);
     expect(timer.getAttribute("data-tip")).toContain("15m left");
   });
@@ -188,7 +187,7 @@ describe("the status strip", () => {
     act(() =>
       root.render(
         <TopBarView
-          clock={<DayMedallion clock={day} size={52} />}
+          clock={<DayPill clock={day} compact />}
           stocks={{
             realmName: "Duskbite",
             onOpenRealm,
@@ -199,14 +198,14 @@ describe("the status strip", () => {
               store("troops", 1_500, 3_000),
             ],
           }}
-          placeMenu={<button type="button">Places</button>}
+          placeSwitch={<button type="button">Places</button>}
           notice={<aside aria-label="Lesson" />}
           quest={<button type="button">Quest</button>}
         />,
       ),
     );
     const bar = host.querySelector(".frontier-bar")!;
-    expect([...bar.children].map((part) => part.textContent)).toEqual(["Places", "125K9K3K", "Day111h"]);
+    expect([...bar.children].map((part) => part.textContent)).toEqual(["Places", "125K9K3K", "D111h"]);
     const realm = bar.querySelector<HTMLButtonElement>('button[aria-label="Duskbite"]')!;
     expect([...realm.querySelectorAll(".frontier-stock-chip")].map((chip) => chip.getAttribute("data-store"))).toEqual([
       "essence",
@@ -730,7 +729,7 @@ it.each([81, 84, 85])("shows the last %ih day with its real countdown and no tom
   const clock = dayClock(calendar, endAt - 600);
   const day = hours === 81 ? 10 : 11;
   expect(clock).toMatchObject({ day, endsAt: endAt, secondsLeft: 600, tomorrowSeconds: undefined, tone: "ember" });
-  const markup = renderToStaticMarkup(<DayMedallion clock={clock} />);
+  const markup = renderToStaticMarkup(<DayPill clock={clock} />);
   expect(markup).toContain(`aria-label="Day ${day}`);
   expect(text(markup)).toContain("10m");
   expect(markup).not.toContain("Tomorrow");

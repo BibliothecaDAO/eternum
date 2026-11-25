@@ -132,11 +132,9 @@
   white-space: nowrap;
 }
 .oath-choice__unit {
-  overflow: hidden;
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: var(--hud-leading-label);
 }
 .oath-choice__unit::first-letter {
   text-transform: uppercase;

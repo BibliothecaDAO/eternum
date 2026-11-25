@@ -27,6 +27,15 @@ export const troopStaminaLimits = (rules: TroopStaminaRules, troopType: TroopTyp
   return { staminaInitial: Number(rules.stamina_initial), staminaMax: Number(maximum) + tier * 20 };
 };
 
+export const armyStaminaMax = (
+  rules: TroopStaminaRules,
+  category: TroopType,
+  progress: Pick<NativeRows["ArmyProgress"], "logistics" | "oaths">,
+): number => {
+  const base = troopStaminaLimits(rules, category, TroopTier.T1).staminaMax;
+  return base + logisticsStamina(base, progress.logistics) + oathStaminaBonus(progress.oaths);
+};
+
 /** Historical effect windows and boost expiry share one fractional stamina scale. */
 export function staminaAt(troops: Troops, timestamp: number, rules: TroopStaminaRules, tickSeconds: number) {
   const { staminaInitial, staminaMax } = troopStaminaLimits(rules, troops.category, troops.tier);
@@ -190,13 +199,12 @@ export function resolveExplorerTroops(
   if (!effects.known) return undefined;
   const regen = staminaRegenBoost(store, explorer, result.known.stamina.settled_at);
   if (!regen) return undefined;
-  const base = troopStaminaLimits(rules.troop_stamina_config, explorer.troops.category, TroopTier.T1).staminaMax;
   return {
     ...explorer.troops,
     boosts:
       regen.incr_stamina_regen_seconds_left > 0 ? { ...explorer.troops.boosts, ...regen } : explorer.troops.boosts,
     stamina: result.known.stamina,
-    staminaMax: base + logisticsStamina(base, progress.logistics) + oathStaminaBonus(progress.oaths),
+    staminaMax: armyStaminaMax(rules.troop_stamina_config, explorer.troops.category, progress),
     staminaEffects: effects.known,
   };
 }

@@ -1,7 +1,7 @@
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { nativeQuestConstants as quest } from "@bibliothecadao/eternum/game-client";
 import { questCatalog, type QuestId } from "@bibliothecadao/types";
-import type { DayQuestFace } from "./day-banner-view";
+import type { DayQuestFace } from "./quest-dock-view";
 
 const QUEST_ICONS = {
   [quest.HUNT]: "beast-cyclops",
