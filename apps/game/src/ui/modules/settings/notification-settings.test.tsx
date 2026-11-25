@@ -55,7 +55,7 @@ it("offers Try again on a failed read, recovers to the saved level on it, then s
   client.saveNotificationPreferences.mockResolvedValueOnce({ owner: "0x7", level: "all", revision: 4 });
   await act(async () => root.render(<NotificationSettings />));
 
-  expect(failures()).toEqual(["Could not load notifications.Try again"]);
+  expect(failures()).toEqual(["Notifications unavailable.Try again"]);
   expect(select().disabled).toBe(true);
 
   await act(async () => tryAgain()!.click());
@@ -77,7 +77,7 @@ it("offers Try again on a failed save, and reads the saved level back on it", as
   await act(async () => root.render(<NotificationSettings />));
 
   await choose("All");
-  expect(failures()).toEqual(["Could not load notifications.Try again"]);
+  expect(failures()).toEqual(["Notifications unavailable.Try again"]);
 
   await act(async () => tryAgain()!.click());
   expect(failures()).toEqual([]);
@@ -89,7 +89,7 @@ it("names a device failure without Try again: the levels still read and save", a
   device.failed = true;
   await act(async () => root.render(<NotificationSettings />));
 
-  expect(failures()).toEqual(["Could not load notifications."]);
+  expect(failures()).toEqual(["Notifications unavailable."]);
   expect(tryAgain()).toBeUndefined();
   expect(select().disabled).toBe(false);
 });

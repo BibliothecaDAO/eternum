@@ -50,7 +50,7 @@ const NAMED_REFUSALS: Record<string, string> = {
 const FALLBACK: Record<IdentityAction, string> = {
   social: "Sign-in failed. Try again.",
   handoff: "Code failed. Try again.",
-  "send-code": "Could not send code. Check your email and try again.",
+  "send-code": "Code not sent. Check your email address and try again.",
   code: "Sign-in failed. Try again.",
   link: "Could not link wallet. Try again.",
   unlink: "Could not unlink wallet. Try again.",

@@ -1318,7 +1318,7 @@ export const SHARED_LINK_WORDS = {
 /** A season's end, told one of two ways (story): the mist lifted, or it grew too strong. */
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
 
-export const SEASON_ERROR = "Could not load Season.";
+export const SEASON_ERROR = "Season unavailable.";
 /** A day's totals the player's history cannot give: the read keeps only the newest stories, or did not answer. */
 export const DAY_TOTALS_UNKNOWN = "This day's totals are unknown";
 

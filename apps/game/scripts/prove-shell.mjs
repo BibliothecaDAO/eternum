@@ -339,7 +339,7 @@ const FIND = (step, mark) => `(() => {
 })()`;
 
 /** The lines in which the page names a service that did not answer. */
-const FAILURE_LINES = `[...document.querySelectorAll("[data-layout]")].flatMap((root) => root.innerText.split("\\n")).filter((line) => line.includes("Could not load "))`;
+const FAILURE_LINES = `[...document.querySelectorAll("[data-layout]")].flatMap((root) => root.innerText.split("\\n")).filter((line) => line.includes("unavailable."))`;
 
 /**
  * A step whose control is not on the page: a row the live data may not hold is unavailable; any other control (a place,

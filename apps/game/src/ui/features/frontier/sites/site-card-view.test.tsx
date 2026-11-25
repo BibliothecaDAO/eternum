@@ -244,7 +244,7 @@ describe("a guarded site's card", () => {
     );
     const spoils = document.querySelector("[data-fight-reward]")!;
     expect(spoils.textContent).toBe("+120Storage full: extra lost");
-    expect(spoils.querySelector('[data-tip*="did not fit"]')).toBeNull();
+    expect(spoils.querySelector('[data-tip*="extra lost"]')).toBeNull();
     act(() =>
       buttons()
         .find((button) => button.textContent === "Realm")!

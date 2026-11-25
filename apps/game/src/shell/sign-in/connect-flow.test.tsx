@@ -316,7 +316,7 @@ describe("Connect", () => {
       await act(async () => ui.query<HTMLFormElement>("form")!.requestSubmit());
       await ui.type('input[autocomplete="one-time-code"]', "111111");
       await act(async () => {});
-      expect(ui.container.textContent).toContain("That code is not right.");
+      expect(ui.container.textContent).toContain("Wrong code.");
       expect(ui.query<HTMLInputElement>('input[autocomplete="one-time-code"]')!.value).toBe("");
     } finally {
       await ui.unmount();
@@ -570,7 +570,7 @@ describe("Connect with a provider", () => {
       expect(ui.container.textContent).toContain("Finished with X? Enter the code its page showed you.");
       await ui.type('input[autocomplete="one-time-code"]', "111111");
       await act(async () => {});
-      expect(ui.container.textContent).toContain("That code is not right.");
+      expect(ui.container.textContent).toContain("Wrong code.");
       expect(ui.query<HTMLInputElement>('input[autocomplete="one-time-code"]')!.value).toBe("");
 
       await ui.type('input[autocomplete="one-time-code"]', "482913");
@@ -620,7 +620,7 @@ describe("Connect with a provider", () => {
     try {
       await act(async () => {});
       expect(failed.window()?.getAttribute("aria-label")).toBe("Connect");
-      expect(failed.container.textContent).toContain("Sign-in was cancelled.");
+      expect(failed.container.textContent).toContain("Sign-in cancelled.");
       expect(pendingSocialStart()).toBeNull();
     } finally {
       await failed.unmount();
@@ -652,7 +652,7 @@ describe("Connect with a provider", () => {
     try {
       await act(async () => {});
       expect(ui.window()?.getAttribute("aria-label")).toBe("Connect");
-      expect(ui.container.textContent).toContain("Sign-in was cancelled.");
+      expect(ui.container.textContent).toContain("Sign-in cancelled.");
       expect(ui.where()).toBe("/season?tab=frontier");
     } finally {
       await ui.unmount();

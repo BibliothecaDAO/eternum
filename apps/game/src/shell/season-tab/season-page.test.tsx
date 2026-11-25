@@ -148,7 +148,7 @@ it("says Season did not answer in the glossary's words, with Try again", async (
   const { container, unmount } = await mount(390);
   try {
     const body = container.querySelector('[data-band="body"]')!;
-    expect(body.textContent).toContain("Could not load Season.");
+    expect(body.textContent).toContain("Season unavailable.");
     expect(body.textContent).not.toContain("502");
   } finally {
     await unmount();
@@ -641,7 +641,7 @@ it.each([1440, 390])(
       expect(container.querySelectorAll("[data-race-stage]")).toHaveLength(1);
       expect(container.querySelector("[data-race-stage]")?.getAttribute("data-race-surface")).toBe("shell");
       expect(container.querySelectorAll(".hyper-art__svg")).toHaveLength(0);
-      expect(container.textContent).not.toContain("Could not load Season.");
+      expect(container.textContent).not.toContain("Season unavailable.");
       const cards = [...container.querySelectorAll(".hyper-tile")];
       expect(cards).toHaveLength(4);
       expect(cards.map((card) => card.querySelector(".hyper-tile__count")?.textContent)).toEqual([
@@ -851,7 +851,7 @@ it("shows ServiceFailure with Try again on the Global Glory leaderboard when Her
   const { container, unmount } = await mount(1440);
   try {
     const section = () => container.querySelector("[data-global-roster]")!;
-    await vi.waitFor(() => expect(section().textContent).toContain("Could not load Season."));
+    await vi.waitFor(() => expect(section().textContent).toContain("Season unavailable."));
     const retry = [...section().querySelectorAll<HTMLButtonElement>("button")].find(
       (button) => button.textContent === "Try again",
     )!;

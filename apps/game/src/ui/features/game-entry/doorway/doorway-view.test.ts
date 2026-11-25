@@ -56,7 +56,7 @@ describe("the doorway", () => {
     // A service that did not answer ends the boot in its error state: the doorway shows Try again, never an endless
     // track.
     const failed = doorwayView({ source: "boot", phase: "error", audience: "player" });
-    expect(failed.blocker).toEqual({ kind: "retry", line: "Could not load the world." });
+    expect(failed.blocker).toEqual({ kind: "retry", line: "World unavailable." });
     expect(doorwayView({ source: "entry", phase: "error", audience: "player", signedIn: true }).blocker?.kind).toBe(
       "retry",
     );
@@ -97,7 +97,7 @@ describe("the doorway", () => {
       foundingFailed: true,
     });
     expect(track(view)).toBe("account:done realm:running map:waiting play:waiting");
-    expect(view.blocker).toEqual({ kind: "retry", line: "Could not load the world." });
+    expect(view.blocker).toEqual({ kind: "retry", line: "World unavailable." });
   });
 
   it("fills one bar across the track, the map's span following its model loads", () => {

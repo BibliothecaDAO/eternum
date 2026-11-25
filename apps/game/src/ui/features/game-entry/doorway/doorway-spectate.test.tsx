@@ -31,7 +31,7 @@ it("says the map could not be drawn and offers the realm beside Try again, in pl
   expect(withRealm).toContain("Could not load the map.");
   expect(withRealm).toContain("Try again");
   expect(withRealm).toContain("Open Realm");
-  expect(withRealm).not.toContain("Could not load the world.");
+  expect(withRealm).not.toContain("World unavailable.");
   // With no realm to open there is nothing to offer but the retry.
   expect(render(false)).not.toContain("Open Realm");
 });
@@ -50,7 +50,7 @@ it("leads a finalized game's boot to its Results, in place of the world not answ
       results="/results/0xa-5"
     />
   );
-  expect(text(renderToStaticMarkup(<MemoryRouter>{doorway(false)}</MemoryRouter>))).toContain("Could not load");
+  expect(text(renderToStaticMarkup(<MemoryRouter>{doorway(false)}</MemoryRouter>))).toContain("World unavailable.");
   await act(async () =>
     root.render(
       <MemoryRouter initialEntries={["/g/0xa/5/map"]}>
@@ -63,7 +63,7 @@ it("leads a finalized game's boot to its Results, in place of the world not answ
   );
   try {
     expect(container.textContent).toContain("This game has ended.");
-    expect(container.textContent).not.toContain("Could not load");
+    expect(container.textContent).not.toContain("World unavailable.");
     const results = [...container.querySelectorAll("button")].find((button) => button.textContent === "Results");
     await act(async () => results?.click());
     expect(container.querySelector('[data-testid="results"]')?.textContent).toBe("0xa-5");
@@ -90,9 +90,9 @@ it("tells a refused game's boot plainly and offers no retry, where any other fai
   const older = text(doorway("older-numbers"));
   expect(older).toContain("This game uses older balance rules and cannot open here.");
   expect(older).not.toContain("Try again");
-  expect(refused).not.toContain("Could not load");
+  expect(refused).not.toContain("World unavailable.");
   expect(refused).not.toContain("Try again");
   const failed = text(doorway(undefined));
-  expect(failed).toContain("Could not load the world.");
+  expect(failed).toContain("World unavailable.");
   expect(failed).toContain("Try again");
 });

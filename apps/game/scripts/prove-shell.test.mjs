@@ -110,7 +110,7 @@ const BODY = (inside) => `<div data-layout="desktop">${BAR}<main data-band="body
 
 describe("a press through the page", () => {
   it("fails a missing place and never clicks, however the page answers", async () => {
-    const { b, pointer } = pageSession(BODY("<p>Could not load ratings.</p>"));
+    const { b, pointer } = pageSession(BODY("<p>Ratings unavailable.</p>"));
     const pressed = await pressStep(b, { kind: "tab", word: "You" });
     expect(pressed).toMatchObject({ status: "failed", reason: "not on the page" });
     expect(pointer).toEqual([]);
@@ -166,23 +166,23 @@ describe("a flow whose end did not come", () => {
   });
 
   it("failed when the only failure on the page is another service's", () => {
-    expect(endVerdict({ end: "lobby" }, ["Could not load Blitz."])).toMatchObject({ status: "failed" });
-    expect(endVerdict({ end: "board", outage: "Could not load ratings." }, ["Could not load Season."])).toMatchObject({
+    expect(endVerdict({ end: "lobby" }, ["Blitz unavailable."])).toMatchObject({ status: "failed" });
+    expect(endVerdict({ end: "board", outage: "Ratings unavailable." }, ["Season unavailable."])).toMatchObject({
       status: "failed",
     });
   });
 
   it("unavailable when the service its end reads says it did not answer", () => {
-    expect(endVerdict({ end: "board", outage: "Could not load ratings." }, ["Could not load ratings."])).toEqual({
+    expect(endVerdict({ end: "board", outage: "Ratings unavailable." }, ["Ratings unavailable."])).toEqual({
       status: "unavailable",
-      reason: "Could not load ratings.",
+      reason: "Ratings unavailable.",
     });
   });
 
   it("makes the run incomplete either way, each kept apart", () => {
     const record = {
       ...flowRecord(),
-      presses: [{ status: "led" }, { status: "unavailable", reason: "Could not load ratings." }],
+      presses: [{ status: "led" }, { status: "unavailable", reason: "Ratings unavailable." }],
     };
     const failed = { ...flowRecord(), name: "rival", presses: [{ status: "failed", reason: "end not reached" }] };
     expect(problemsOf([record, failed], where).map((problem) => [problem.name, problem.problem])).toEqual([

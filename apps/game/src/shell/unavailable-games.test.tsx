@@ -55,10 +55,10 @@ it.each([
   const root = createRoot(container);
   await act(async () => root.render(<MemoryRouter>{card(season)}</MemoryRouter>));
   try {
-    expect(container.textContent).toContain("Could not load games.");
+    expect(container.textContent).toContain("Games unavailable.");
     expect(container.querySelector("button")).toBeNull();
     await act(async () => root.render(<MemoryRouter>{card({ ...season, error: undefined })}</MemoryRouter>));
-    expect(container.textContent).not.toContain("Could not load");
+    expect(container.textContent).not.toContain("unavailable.");
     expect(container.querySelector("button")?.textContent).toBe(verb);
   } finally {
     await act(async () => root.unmount());
