@@ -4019,7 +4019,7 @@ const siteState = ({ name, icon }) => `JSON.stringify((() => {
 const SITE_MODEL_BELOW_PLATE = 65;
 
 const namesItsBeast = (line, beast) =>
-  beast === null ? line === null : typeof line === "string" && line.startsWith(`Today's beast: ${beast},`);
+  beast === null ? line === null : typeof line === "string" && line.startsWith(`Guard: ${beast},`);
 
 const DEEP_JOIN_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
@@ -4427,7 +4427,7 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
       return { drain };
     },
     verify: ({ played }) =>
-      played.drain.all.some((line) => new RegExp(`${lossPerTick} troops lost a tick; \\d+ ticks left`).test(line))
+      played.drain.all.some((line) => new RegExp(`−${lossPerTick} troops per tick; \\d+ ticks left`).test(line))
         ? completed(played)
         : failed(
             "An army waiting in the Deep's field must show its troop loss each tick before it holds a site",
@@ -4560,7 +4560,7 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
       return { drain };
     },
     verify: ({ played }) =>
-      played.drain.panel.includes(`${lossPerTick} troops lost a tick`) && /ticks left/.test(played.drain.panel)
+      played.drain.panel.includes(`−${lossPerTick} troops per tick`) && /ticks left/.test(played.drain.panel)
         ? completed(played)
         : failed("A guard's panel must say its troop loss each tick and the ticks left", played),
   },
@@ -6021,14 +6021,14 @@ export const REHEARSAL_WORDS = {
     victory: "Victory likely",
   },
   take: "Take",
-  beast: (name, troops) => `Today's beast: ${name}, ${troops} troops`,
-  open: "No guard: the next army takes it",
+  beast: (name, troops) => `Guard: ${name}, ${troops} troops`,
+  open: "Unguarded: next army takes it",
   lasts: (ticks, time) => `${ticks} ticks left (${time})`,
   share: (percent) => `${percent}% of each tick`,
   glory: (amount) => `${amount} Glory`,
   height: (amount) => `+${amount} height to your Aspect's hyperstructure`,
   essence: (amount) => `${amount} Essence`,
-  labor: (amount) => `${amount} labor`,
+  labor: (amount) => `${amount} Labor`,
   bar: (perTick, charge, threshold) => `+${perTick} on the bane bar: ${charge} of ${threshold}`,
   standingHeight: (height, finish) => `${height} of ${finish}`,
   baneCharge: (charge, threshold) => `${charge} of ${threshold}`,

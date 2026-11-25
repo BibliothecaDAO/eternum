@@ -104,7 +104,7 @@ describe("the Deep site's live native binding", () => {
         ]),
       );
       hud.render();
-      expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain("600 labor");
+      expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain("600 Labor");
     } finally {
       hud.unmount();
     }

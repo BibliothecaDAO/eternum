@@ -829,12 +829,12 @@ export const ATTACK_REFUSAL_WORDS = {
 
 export const DEEP_WORDS = {
   title: DEEP,
-  orderFailed: `The ${DEEP} order could not be sent.`,
+  orderFailed: `Could not send ${DEEP} order.`,
   purpose: {
-    foundation: "One site every Aspect fights for: holding it raises your Aspect's hyperstructure",
+    foundation: "Holding raises your Aspect's hyperstructure and earns Glory",
     core: "Essence for you",
     mine: "Labor for you",
-    altar: "Against a rival",
+    altar: "Casts Team Bane",
   },
   /** A Deep site's plate on the map: nobody holds it, and what a tick held pays. */
   shared: "Every Aspect fights for it",
@@ -845,11 +845,11 @@ export const DEEP_WORDS = {
   glory: (amount: number) => `${formatExact(amount)} Glory`,
   height: (amount: number) => `+${formatExact(amount)} height to your Aspect's hyperstructure`,
   essence: (amount: number) => `${formatExact(amount)} Essence`,
-  labor: (amount: number) => `${formatExact(amount)} labor`,
+  labor: (amount: number) => `${formatExact(amount)} ${LABOR}`,
   bar: (perTick: number, charge: number, threshold: number) =>
     `+${formatExact(perTick)} on the bane bar: ${formatExact(charge)} of ${formatExact(threshold)}`,
-  beast: (name: string, troops: number) => `Today's beast: ${name}, ${formatExact(troops)} troops`,
-  open: "No guard: the next army takes it",
+  beast: (name: string, troops: number) => `Guard: ${name}, ${formatExact(troops)} troops`,
+  open: "Unguarded: next army takes it",
   heldByPrefix: "Held by",
   guardsCount: (filled: number, total: number) => `${formatExact(filled)} / ${formatExact(total)} Guards`,
   drainTick: (troops: number) => `−${formatExact(troops)} / tick`,
@@ -857,7 +857,7 @@ export const DEEP_WORDS = {
   freeSlot: "Free slot",
   facesNext: "fought next",
   /** What holding a site costs: the troops its army loses at each tick. */
-  drain: (troops: string) => `${troops} troops lost a tick`,
+  drain: (troops: string) => `−${troops} troops per tick`,
   drainShort: (troops: string, ticks: number, time: string) =>
     `−${troops}/tick · ${formatExact(ticks)} ticks (${time})`,
   /** How long a guard's troops last: its army ticks, and the time until the last of them. */
@@ -871,14 +871,14 @@ export const DEEP_WORDS = {
   pickArmy: `Select an army in the ${DEEP}`,
   guarding: "Already guarding",
   full: "All 4 slots are taken",
-  rival: "Another Aspect holds it",
+  rival: "Held by a rival Aspect",
   otherDay: "Only today's armies can fight here",
   opensAt: (realms: number) => `Opens at ${formatExact(realms)} Realms today`,
-  noTroops: "This army has no troops left",
+  noTroops: "Army has no troops left",
   readingStamina: "Loading stamina…",
   reading: "Loading site…",
   /** The map's order on a Deep site beside the army: its card then offers the site's own verb. */
-  order: "Open the site",
+  order: "Open site",
 } as const;
 /** The day's banner: today's quest, its count and reward, the bane or Triumph heading it, the Aspect's members. */
 export const DAY_BANNER_WORDS = {
@@ -891,9 +891,9 @@ export const DAY_BANNER_WORDS = {
   collectAgain: "Collect again",
   count: (progress: number, target: number, unit: string) =>
     `${formatExact(progress)} of ${formatExact(target)} ${unit}`,
-  beastBane: (percent: number) => `Guarded sites have ${formatExact(percent)}% strength while the bane lasts`,
-  staminaBane: (percent: number) => `Stamina returns at ${formatExact(percent)}% while the bane lasts`,
-  productionBane: (percent: number) => `Production runs at ${formatExact(percent)}% while the bane lasts`,
+  beastBane: (percent: number) => `Site guards have ${formatExact(percent)}% strength during the bane`,
+  staminaBane: (percent: number) => `Stamina regen is ${formatExact(percent)}% during the bane`,
+  productionBane: (percent: number) => `Realm production is ${formatExact(percent)}% during the bane`,
   fraction: (progress: number, target: number) => `${formatShort(progress)}/${formatShort(target)}`,
   objectiveLine: (objective: string, target: number) => {
     const space = objective.indexOf(" ");
@@ -905,9 +905,9 @@ export const DAY_BANNER_WORDS = {
   summary: (objective: string, progress: number, target: number, labor: number) =>
     `${objective} · ${formatExact(progress)} of ${formatExact(target)} · +${formatExact(labor)} ${LABOR}`,
   triumphRule: {
-    1: (percent: number) => `Sites are found at ${formatExact(percent)}% of the usual odds`,
-    2: (percent: number) => `Stamina returns at ${formatExact(percent)}%`,
-    3: (percent: number) => `Guarded sites have ${formatExact(percent)}% strength`,
+    1: (percent: number) => `Site discovery chance is ${formatExact(percent)}%`,
+    2: (percent: number) => `Stamina regen is ${formatExact(percent)}%`,
+    3: (percent: number) => `Site guards have ${formatExact(percent)}% strength`,
     4: (percent: number) => `Site rewards are ${formatExact(percent)}%`,
   },
 } as const;
@@ -1046,10 +1046,10 @@ export const OPENING_WORDS = {
 /** The Aspect page (docs/plans/frontier-season-1.md, Aspects and the hyperstructure): the race, and the player's Aspect. */
 export const ASPECT_PAGE_WORDS = {
   title: "Aspect Race",
-  race: "The hyperstructures",
+  race: "Hyperstructures",
   goToDeep: `Go to ${DEEP}`,
   deepOpensAt: (rule: string) => `${DEEP} opens at ${rule}`,
-  gloryUnearned: `No Glory yet: it comes from holding ${DEEP} sites`,
+  gloryUnearned: `No Glory yet — hold ${DEEP} Archives or Altars`,
   height: (height: number, finish: number) => `${formatExact(height)} of ${formatExact(finish)}`,
   stage: (stage: number, stages: number) => `Stage ${stage} of ${stages}`,
   finished: "Finished",
@@ -1063,8 +1063,8 @@ export const ASPECT_PAGE_WORDS = {
   baneCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
   glory: "Glory",
   noAspect: "Join an Aspect to see its members",
-  fights: `Fights in the ${DEEP}`,
-  noFights: `No fight in the ${DEEP} yet`,
+  fights: `${DEEP} battles`,
+  noFights: `No ${DEEP} battles yet`,
   fight: (winner: string, loser: string) => `${winner} beat ${loser}`,
   fightLosses: (first: string, firstLost: number, second: string, secondLost: number) =>
     `${first} lost ${formatExact(firstLost)}, ${second} lost ${formatExact(secondLost)} troops`,
@@ -1212,16 +1212,16 @@ export const RESULT_WORDS = {
 export const RECAP_WORDS = {
   ofRealms: (field: string) => `of ${field} realms`,
   prize: "Prize",
-  podium: "The podium",
-  cardNames: { place: "Your place", podium: "The podium", sites: "Your sites", haul: "Your haul" },
+  podium: "Podium",
+  cardNames: { place: "Your place", podium: "Podium", sites: "Your sites", haul: "Rewards" },
   overviewCardNames: {
-    podium: "The podium",
+    podium: "Podium",
     field: "The field",
     sites: "Sites cleared",
-    haul: "Season haul",
+    haul: "Rewards",
   },
   raceCardNames: {
-    towers: "The hyperstructures",
+    towers: "Hyperstructures",
     stages: "Stages reached",
     standing: "Your Realm",
     field: "The field",
@@ -1229,8 +1229,8 @@ export const RECAP_WORDS = {
   },
   realmsCount: (count: number) => formatCount(count, "Realm"),
   seasonDays: (days: number) => `${formatExact(days)} days`,
-  tookTheSeason: "took the season",
-  cards: "Your season's cards",
+  tookTheSeason: "won the season",
+  cards: "Your season cards",
   next: "Next card",
   previous: "Previous card",
   fileName: "my-season.png",
@@ -1681,14 +1681,14 @@ export const SEASON_WORDS = {
   views: "Season views",
   aspectRoster: (members: number) => `Your Aspect's top players · ${formatExact(members)} members`,
   aspectTopPlayers: (aspect: string, members: number) => `${aspect}'s top players · ${formatExact(members)} members`,
-  aspectRosterEmpty: (aspect: string) => `No realms in ${aspect} yet.`,
+  aspectRosterEmpty: (aspect: string) => `No Realms in ${aspect} yet.`,
   sitesCleared: "sites cleared",
   share: "Share",
   of: "of",
   vp: "points",
   lordsEarned: "LORDS earned",
-  boardEmpty: "No realm yet. Create one from Play.",
-  notOnBoard: "Not on Frontier's board yet",
+  boardEmpty: "No Realm yet. Create one on Play.",
+  notOnBoard: "Not on the board yet",
   pastSeasons: "Past seasons",
   playtest: "Playtest",
   allPlayers: "All",
