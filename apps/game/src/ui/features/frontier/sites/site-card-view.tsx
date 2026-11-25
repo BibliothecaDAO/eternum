@@ -34,8 +34,6 @@ import { AttackStamina, FightArena } from "./fight-side";
 import { CombatBadge } from "./combat-mark";
 import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
-import type { ArmyRelic } from "../relics/relic-catalog";
-import { RelicPay } from "../relics/relic-replacement";
 
 export type SiteVerb =
   | {
@@ -75,7 +73,7 @@ export const SiteCardView = ({
   guard: number | null | undefined;
   fight: SiteFight | undefined;
   pay: { icon: IconMeaning; amount: number; fits?: number } | null;
-  relic?: ArmyRelic;
+  relic?: ReactNode;
   holdsOath?: boolean;
   opensPost?: boolean;
   cache?: number;
@@ -98,7 +96,7 @@ export const SiteCardView = ({
         {cache !== undefined ? (
           <CachePay fragments={cache} />
         ) : relic ? (
-          <RelicPay relic={relic} />
+          relic
         ) : pay ? (
           <Pay pay={pay} />
         ) : null}

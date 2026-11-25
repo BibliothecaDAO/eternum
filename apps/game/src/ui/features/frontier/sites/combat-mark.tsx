@@ -2,7 +2,9 @@ import type { Troops } from "@bibliothecadao/types";
 import { Icon } from "@/ui/design-system/icon";
 
 const combatClass = (category: Troops["category"]) =>
-  category === "Crossbowman" ? ({ label: "Bow", icon: "crossbowman-t1" } as const) : ({ label: "Blade", icon: "attack" } as const);
+  category === "Crossbowman"
+    ? ({ label: "Bow", icon: "crossbowman-t1" } as const)
+    : ({ label: "Blade", icon: "attack" } as const);
 
 export const CombatMark = ({ category, size = 20 }: { category: Troops["category"]; size?: 14 | 16 | 20 }) => {
   const { label, icon } = combatClass(category);
@@ -18,8 +20,7 @@ export const CombatBadge = ({ category }: { category: Troops["category"] }) => {
   const { label, icon } = combatClass(category);
   return (
     <span
-      role="img"
-      aria-label={label}
+      aria-hidden="true"
       data-tip={label}
       data-combat-mark={label}
       className="absolute -bottom-1 -right-1 flex size-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark"
