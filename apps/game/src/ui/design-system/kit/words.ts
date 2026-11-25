@@ -2206,7 +2206,6 @@ export const RESEARCH_TREE = {
   oathOpen: RESEARCH_OPEN,
   oathLocked: "Locked",
   oathEarn: `Clear a site that holds an ${SITE_OATH.label}, or reveal a ${SHRINE}`,
-  oathResearch: "Research for new armies",
   conscriptionLine: "More troops from every troop building.",
   rationsLine: "Armies cost less wheat to deploy.",
   troopsAnHour: "Troops an hour",

@@ -1089,7 +1089,7 @@ function deleteOathArmyStep() {
       const before = browser.read(`JSON.stringify((() => {
         const answer = (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "ChooseOath").at(-1);
         const progress = answer?.answered.find(({model}) => model === "ArmyProgress");
-        return { progress, held: document.querySelector('[data-oath-slots]')?.textContent,
+        return { progress, held: [...document.querySelectorAll('[data-oath-slots] [data-filled]')].map((oath) => oath.getAttribute('aria-label')).join(),
           commands: window.__labChain?.sent.length };
       })())`);
       const armyId = Number(before.progress?.value?.explorer_id);
@@ -1120,7 +1120,7 @@ function deleteOathArmyStep() {
       await press(browser, "Cancel", true);
       const retained = browser.read(`(() =>
         !document.querySelector('[role="alertdialog"]') &&
-        document.querySelector('[data-oath-slots]')?.textContent === ${JSON.stringify(before.held)} &&
+        [...document.querySelectorAll('[data-oath-slots] [data-filled]')].map((oath) => oath.getAttribute('aria-label')).join() === ${JSON.stringify(before.held)} &&
         !!document.querySelector('.mp-at[data-key="army:${armyId}"]') &&
         window.__labChain?.sent.length === ${before.commands})()`);
       if (!retained) return { before, confirmation, retained };
