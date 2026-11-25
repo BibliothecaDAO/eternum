@@ -509,7 +509,7 @@ function quietDays(): number {
 function banesModule(banes: BaneRules, quietDays: number): string {
   assertBanesPlayable(banes, quietDays);
   return [
-    number("QUIET_DAYS", "u64", quietDays),
+    number("QUIET_DAY_COUNT", "u64", quietDays),
     number("CHANCE_STEP_PERCENT", "u16", banes.chance_step),
     number("QUORUM_PERCENT", "u16", banes.quorum_percent),
     number("BEAST_PERCENT", "u16", banes.beast_percent),

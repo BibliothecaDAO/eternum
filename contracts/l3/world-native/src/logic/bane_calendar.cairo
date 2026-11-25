@@ -32,7 +32,7 @@ fn prepare_at(game_id: u32, game: crate::game::GameRegistry, unit: u32, timestam
     let mut chance = state.banes.next_chance.read(game_id);
     while cursor <= timestamp && cursor < game.end_at {
         let day = crate::days::day_of(game, unit, cursor);
-        let kind = if day.index < crate::balance::banes::QUIET_DAYS || world_stopped(game_id, day.index) {
+        let kind = if day.index < crate::balance::banes::QUIET_DAY_COUNT || world_stopped(game_id, day.index) {
             0
         } else {
             draw(game_id, day.index, raw_root, chance)
