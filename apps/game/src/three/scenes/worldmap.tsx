@@ -4164,7 +4164,8 @@ export default class WorldmapScene extends WarpTravel {
 
   private hasSiteCardAt(hexCoords: HexPosition): boolean {
     const { col, row } = contractHexOf(hexCoords);
-    return getTileAt(this.game.store, activeMapLayer(), col, row)?.occupier_type === TileOccupier.DeepSite;
+    const occupier = getTileAt(this.game.store, activeMapLayer(), col, row)?.occupier_type;
+    return occupier === TileOccupier.DeepSite || occupier === TileOccupier.SupplyPost;
   }
 
   /** The selection ring stands on the selected hex the selection derives: the tile every panel and card names. */

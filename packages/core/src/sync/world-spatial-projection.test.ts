@@ -497,6 +497,43 @@ describe("WorldSpatialProjection", () => {
     expect(projection.getArmiesAtHex(at(102)).map(({ entityId }) => entityId)).toEqual([74]);
   });
 
+  it("draws a supply post from its tile's occupier, over the cleared camp's receipt, at start and as it is cleared", () => {
+    const { projection, writeTile, writeClearedSite } = createHarness();
+    writeTile("supply-post", { col: 102, row: 200, occupierId: 76, occupierType: TileOccupier.SupplyPost });
+    writeClearedSite(76, { col: 102, row: 200 });
+    writeTile("cleared-rift", { col: 104, row: 200, occupierId: 0, occupierType: 0 });
+    writeClearedSite(78, { col: 104, row: 200 });
+
+    projection.start();
+
+    const at = (col: number) => ({ alt: false, col, row: 200 });
+    const drawn = (col: number) =>
+      projection
+        .getStructuresAtHex(at(col))
+        .map(({ entityId, clearedSite, occupierType }) => ({ entityId, clearedSite, occupierType }));
+    expect(drawn(102)).toEqual([{ entityId: 76, clearedSite: true, occupierType: TileOccupier.SupplyPost }]);
+    expect(drawn(104)).toEqual([{ entityId: 78, clearedSite: true, occupierType: TileOccupier.Camp }]);
+    expect(projection.getStandingStructureAtHex(at(102))).toBeUndefined();
+
+    writeTile("camp", {
+      col: 106,
+      row: 200,
+      occupierId: 80,
+      occupierType: TileOccupier.Camp,
+      occupierIsStructure: true,
+    });
+    expect(drawn(106)).toEqual([{ entityId: 80, clearedSite: undefined, occupierType: TileOccupier.Camp }]);
+    writeClearedSite(80, { col: 106, row: 200 });
+    writeTile("camp", {
+      col: 106,
+      row: 200,
+      occupierId: 80,
+      occupierType: TileOccupier.SupplyPost,
+      occupierIsStructure: true,
+    });
+    expect(drawn(106)).toEqual([{ entityId: 80, clearedSite: true, occupierType: TileOccupier.SupplyPost }]);
+  });
+
   it("indexes live surface armies from ExplorerTroops only", () => {
     const { projection, writeArmy, writeTile } = createHarness();
     writeArmy("live-army", { explorerId: 7, col: 100, row: 200, category: "Paladin", tier: "T2" });

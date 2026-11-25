@@ -260,9 +260,20 @@ const resolveUnoccupiedStructureRenderable = (
 
 const resolveStructureRenderable = (tile: Tile | undefined): StructureSpatialRenderable | undefined => {
   if (!tile) return undefined;
+  const hexCoords = Object.freeze({ alt: tile.alt, col: tile.col, row: tile.row });
+  if (tile.occupier_type === TileOccupier.SupplyPost) {
+    return Object.freeze({
+      kind: "structure" as const,
+      spatialId: `entity:${tile.occupier_id}` as const,
+      entityId: tile.occupier_id,
+      reserved: false as const,
+      clearedSite: true as const,
+      hexCoords,
+      occupierType: TileOccupier.SupplyPost,
+    });
+  }
   if (!isTileOccupierStructure(tile.occupier_type)) return undefined;
 
-  const hexCoords = Object.freeze({ alt: tile.alt, col: tile.col, row: tile.row });
   if (tile.occupier_type === TileOccupier.ReservedHyperstructure) {
     return Object.freeze({
       kind: "structure" as const,
@@ -700,7 +711,7 @@ export class WorldSpatialProjection {
 
     for (const [, site] of this.store.entries("ExpeditionSite")) {
       const marker = projectedRow("cleared site", () => resolveClearedSiteRenderable(site));
-      if (marker) nextStructures.set(marker.spatialId, marker);
+      if (marker && !nextStructures.has(marker.spatialId)) nextStructures.set(marker.spatialId, marker);
     }
 
     this.nextTimeRefresh = this.nextTimedChangeAt();
@@ -749,12 +760,14 @@ export class WorldSpatialProjection {
 
   private applyStructureEntityUpdate(key: NativeKeys["Structure"]): void {
     const structure = this.store.get("Structure", key);
-    const retained =
-      resolveClearedSiteRenderable(this.store.get("ExpeditionSite", key)) ??
-      resolveUnoccupiedStructureRenderable(this.store, structure);
     const occupancy = this.store.entityOccupancy(key.game_id, key.entity_id);
     const occupied = occupancy ? resolveStructureRenderable(this.tileAt(occupancy)) : undefined;
-    this.structureIndex.update(`entity:${safeInteger(key.entity_id)}`, retained ?? occupied);
+    this.structureIndex.update(
+      `entity:${safeInteger(key.entity_id)}`,
+      resolveUnoccupiedStructureRenderable(this.store, structure) ??
+        occupied ??
+        resolveClearedSiteRenderable(this.store.get("ExpeditionSite", key)),
+    );
   }
 
   private applyExplorerTroopsUpdate([currentExplorerTroops, previousExplorerTroops]: [

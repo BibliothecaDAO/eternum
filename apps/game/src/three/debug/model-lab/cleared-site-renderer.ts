@@ -7,6 +7,7 @@ import {
   FRONTIER_BEASTS,
   FRONTIER_CAMP_MODEL_PATH,
   SUPPLY_POST_MODEL_PATH,
+  SUPPLY_POST_STANDARD,
   frontierSiteComposition,
   type FrontierBeast,
 } from "../../structures/frontier-beast";
@@ -48,7 +49,7 @@ function studySlots(kind: ClearedSiteStudy, beast: FrontierBeast): readonly (rea
     ],
     [
       { path: SUPPLY_POST_MODEL_PATH, scale: 1 },
-      { path: CLEARED_SITE_MODEL_PATH, ...composition.clearedStandard, aspect: 1 },
+      { path: CLEARED_SITE_MODEL_PATH, ...SUPPLY_POST_STANDARD, aspect: 1 },
     ],
   ];
 }

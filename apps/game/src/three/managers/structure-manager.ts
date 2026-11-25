@@ -13,6 +13,8 @@ import {
 } from "@bibliothecadao/eternum";
 import {
   SITE_LANDMARK_MODEL_INDEX,
+  SUPPLY_POST_MODEL_INDEX,
+  SUPPLY_POST_STANDARD,
   frontierBeastModelIndex,
   frontierSiteComposition,
   readStandingFrontierBeast,
@@ -64,7 +66,7 @@ import type {
   WorldSpatialBounds,
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
-import { BuildingType, ID, StructureType } from "@bibliothecadao/types";
+import { BuildingType, ID, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { STRUCTURE_GROUND_LIGHTS } from "../structures/structure-ground-lights";
 import { Box3, Euler, Object3D, Scene, Sphere, Vector3 } from "three";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
@@ -537,6 +539,41 @@ export class StructureManager {
     return structure;
   }
 
+  private buildSupplyPostInfo(renderable: EntityStructureRenderable): StructureInfo {
+    const gameId = configManager.getActiveGameId();
+    const site = this.store?.get("ExpeditionSite", { game_id: gameId, entity_id: renderable.entityId });
+    const home = site?.clear
+      ? this.store?.get("Structure", { game_id: gameId, entity_id: safeInteger(site.clear.home_id) })
+      : undefined;
+    return {
+      ...this.buildSiteInfo(renderable, StructureType.Camp, home?.owner ?? 0n),
+      realmOrder: home?.metadata.order,
+      supplyPost: true,
+    };
+  }
+
+  private buildSiteInfo(
+    renderable: EntityStructureRenderable,
+    structureType: StructureType,
+    ownerAddress: bigint,
+  ): StructureInfo {
+    return {
+      entityId: renderable.entityId,
+      structureName: siteDisplayName(renderable.entityId),
+      hexCoords: {
+        col: renderable.hexCoords.col - FELT_CENTER(),
+        row: renderable.hexCoords.row - FELT_CENTER(),
+      },
+      stage: 0,
+      level: 0,
+      isMine: ownerAddress !== 0n && isAddressEqualToAccount(ownerAddress),
+      isAlly: false,
+      owner: { address: ownerAddress, ownerName: "", guildName: "" },
+      structureType,
+      hasWonder: false,
+    };
+  }
+
   private invalidateStructureInfo(entityId: ID | null | undefined): void {
     const normalizedEntityId = normalizeEntityId(entityId);
     if (normalizedEntityId === undefined) return;
@@ -545,37 +582,12 @@ export class StructureManager {
   }
 
   private buildStructureInfo(renderable: EntityStructureRenderable): StructureInfo | undefined {
+    if (renderable.occupierType === TileOccupier.SupplyPost) return this.buildSupplyPostInfo(renderable);
     const renderInfo = getStructureInfoFromTileOccupier(renderable.occupierType);
     if (!renderInfo || renderInfo.reserved) return undefined;
 
     if (renderable.clearedSite) {
-      const composition = frontierSiteComposition(renderInfo.type);
-      const gameId = configManager.getActiveGameId();
-      const site =
-        composition.clearedModelIndex !== null
-          ? this.store?.get("ExpeditionSite", { game_id: gameId, entity_id: renderable.entityId })
-          : undefined;
-      const home = site?.clear
-        ? this.store?.get("Structure", { game_id: gameId, entity_id: safeInteger(site.clear.home_id) })
-        : undefined;
-      const ownerAddress = home?.owner ?? 0n;
-      return {
-        entityId: renderable.entityId,
-        structureName: siteDisplayName(renderable.entityId),
-        hexCoords: {
-          col: renderable.hexCoords.col - FELT_CENTER(),
-          row: renderable.hexCoords.row - FELT_CENTER(),
-        },
-        stage: 0,
-        level: 0,
-        isMine: ownerAddress !== 0n && isAddressEqualToAccount(ownerAddress),
-        isAlly: false,
-        owner: { address: ownerAddress, ownerName: "", guildName: "" },
-        structureType: renderInfo.type,
-        hasWonder: false,
-        realmOrder: home?.metadata.order,
-        clearedSite: true,
-      };
+      return { ...this.buildSiteInfo(renderable, renderInfo.type, 0n), clearedSite: true };
     }
 
     const structureComponent = this.store?.get("Structure", {
@@ -1260,7 +1272,7 @@ export class StructureManager {
    */
   private hasCosmeticSkin(structure: StructureInfo): boolean {
     // Frontier sites retain their landmark and guard composition.
-    if (structure.frontierBeast || structure.clearedSite) return false;
+    if (structure.frontierBeast || structure.clearedSite || structure.supplyPost) return false;
     if (!structure.cosmeticId || !structure.cosmeticAssetPaths?.length) {
       return false;
     }
@@ -1273,17 +1285,16 @@ export class StructureManager {
 
   /** The height of the model the structure is drawn with; nothing stands over its tile until that model is loaded. */
   private resolveStructureModelHeight(structure: StructureInfo): number {
-    if (structure.clearedSite) {
+    if (structure.supplyPost) {
       const baseHeight = this.getModelForStructure(structure)?.height ?? 0;
-      const composition = frontierSiteComposition(structure.structureType);
-      if (composition.clearedModelIndex === null) return baseHeight;
       const models = this.structureModels.get(structure.structureType);
       const standardHeight =
         (models?.get(this.clearedStandardModelIndex(structure.structureType))?.height ?? 0) *
-          composition.clearedStandard.scale +
-        composition.clearedStandard.y;
+          SUPPLY_POST_STANDARD.scale +
+        SUPPLY_POST_STANDARD.y;
       return Math.max(baseHeight, standardHeight);
     }
+    if (structure.clearedSite) return this.getModelForStructure(structure)?.height ?? 0;
     if (!structure.frontierBeast) return this.getModelForStructure(structure)?.height ?? 0;
     const models = this.structureModels.get(structure.structureType);
     const composition = frontierSiteComposition(structure.structureType);
@@ -1303,12 +1314,8 @@ export class StructureManager {
   }
 
   private getBaseStructureModelIndex(structure: StructureInfo): number {
-    if (structure.clearedSite) {
-      return (
-        frontierSiteComposition(structure.structureType).clearedModelIndex ??
-        this.clearedStandardModelIndex(structure.structureType)
-      );
-    }
+    if (structure.supplyPost) return SUPPLY_POST_MODEL_INDEX;
+    if (structure.clearedSite) return this.clearedStandardModelIndex(structure.structureType);
     if (structure.frontierBeast)
       return frontierSiteComposition(structure.structureType).baseScale === 0
         ? frontierBeastModelIndex(structure.frontierBeast.beast)
@@ -1331,10 +1338,7 @@ export class StructureManager {
 
   private getStructureModelIndices(structure: StructureInfo): number[] {
     const base = this.getBaseStructureModelIndex(structure);
-    if (structure.clearedSite) {
-      const standard = this.clearedStandardModelIndex(structure.structureType);
-      return base === standard ? [base] : [base, standard];
-    }
+    if (structure.supplyPost) return [base, this.clearedStandardModelIndex(structure.structureType)];
     if (structure.frontierBeast) return [...new Set([base, frontierBeastModelIndex(structure.frontierBeast.beast)])];
     return [base];
   }
@@ -1610,11 +1614,7 @@ export class StructureManager {
         });
       }
       if (binding.model instanceof SettlementModel) {
-        const isFriendlySupplyPost =
-          binding.model.kind === "village" &&
-          structure.clearedSite &&
-          structure.isMine &&
-          frontierSiteComposition(structure.structureType).clearedModelIndex !== null;
+        const isFriendlySupplyPost = binding.model.kind === "village" && structure.supplyPost && structure.isMine;
         const aspect =
           isFriendlySupplyPost && this.mode.id === "frontier" && structure.realmOrder
             ? orderAspect(structure.realmOrder)
@@ -1647,13 +1647,9 @@ export class StructureManager {
       return [];
     }
 
-    if (structure.clearedSite) {
-      const composition = frontierSiteComposition(structure.structureType);
-      if (composition.clearedModelIndex === null) {
-        return [this.bindStructureInstance(model, structure.entityId, dirtyModels)].filter(isBoundStructureInstance);
-      }
+    if (structure.supplyPost) {
       const standard = models.get(this.clearedStandardModelIndex(structure.structureType));
-      const { scale, x, y, z } = composition.clearedStandard;
+      const { scale, x, y, z } = SUPPLY_POST_STANDARD;
       return [
         this.bindStructureInstance(model, structure.entityId, dirtyModels),
         standard ? this.bindSitePart(standard, structure.entityId, dirtyModels, scale, z, y, x) : undefined,
@@ -1850,7 +1846,7 @@ export class StructureManager {
    * and there's already a flag on the tile").
    */
   private updateStructureCompactLabel(structure: StructureInfo, position: Vector3): void {
-    if (!this.contentLadder.labels || structure.clearedSite) {
+    if (!this.contentLadder.labels || structure.clearedSite || structure.supplyPost) {
       this.removeStructureCompactLabel(structure.entityId);
       return;
     }

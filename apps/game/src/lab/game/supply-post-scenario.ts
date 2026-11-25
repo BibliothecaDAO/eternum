@@ -1,6 +1,6 @@
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { siteReward } from "@bibliothecadao/eternum";
-import { BiomeType, getNeighborHexes, StructureType } from "@bibliothecadao/types";
+import { BiomeType, getNeighborHexes, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { reinforceScenario } from "./reinforce-scenario";
 import { revealedTile } from "./spire-scenario";
 import { wire, type LabScenario } from "./lab-chain";
@@ -34,6 +34,19 @@ export function supplyPostScenario(): LabScenario {
   store.applyFacts([
     { model: "TileOccupancy", key: positionKey, value: null },
     { model: "TileOccupancy", key: "0x1ac02", value: wire(position) },
+    {
+      model: "TileOccupancy",
+      key: "0x1ac03",
+      value: wire({
+        game_id: 1,
+        alt: false,
+        col: camp.col,
+        row: camp.row,
+        entity_id: BigInt(SUPPLY_POST),
+        category: TileOccupier.SupplyPost,
+        is_structure: true,
+      }),
+    },
     ...[position, ...getNeighborHexes(position.col, position.row)].map((hex, index) =>
       revealedTile(`0x1ad${index}`, hex, BiomeType.Grassland),
     ),

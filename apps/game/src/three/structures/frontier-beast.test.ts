@@ -22,7 +22,6 @@ import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset
 import { resolveStructureRotationY } from "./structure-orientation";
 import {
   FRONTIER_BEASTS,
-  SUPPLY_POST_MODEL_INDEX,
   beastBand,
   frontierBeast,
   frontierBeastModelIndex,
@@ -233,8 +232,6 @@ describe("Frontier guard identity", () => {
         baseZ: 0,
         beastZ: 0.22,
         beastY: 0,
-        clearedModelIndex: SUPPLY_POST_MODEL_INDEX,
-        clearedStandard: { scale: 1, x: -0.32, y: 0, z: 0.92 },
       });
       expect(readStandingFrontierBeast(facts(StructureType.Rift, depth), 1, 9)).toEqual({
         beast: beastModel(rift),
@@ -247,11 +244,7 @@ describe("Frontier guard identity", () => {
         baseZ: 0,
         beastZ: 0,
         beastY: 0.2,
-        clearedModelIndex: null,
-        clearedStandard: { scale: 1, x: 0, y: 0, z: 0 },
       });
-      expect(frontierSiteComposition(StructureType.Ruin).clearedModelIndex).toBeNull();
-      expect(frontierSiteComposition(StructureType.Beasts).clearedModelIndex).toBeNull();
     },
   );
   it.each(DEPTH_BOUNDS.slice(0, 3).map((bounds, depth) => ({ depth, bounds })))(

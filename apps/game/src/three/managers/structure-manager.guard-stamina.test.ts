@@ -16,6 +16,7 @@ import { CameraView } from "../scenes/camera-view";
 import {
   SITE_LANDMARK_MODEL_INDEX,
   SUPPLY_POST_MODEL_INDEX,
+  SUPPLY_POST_STANDARD,
   frontierBeastModelIndex,
   frontierSiteComposition,
 } from "../structures/frontier-beast";
@@ -125,7 +126,7 @@ describe("a structure's guard stamina on its map plate, as the chain's time runs
   });
 });
 
-it("presents a cleared standard from its receipt after the structure and guard are gone", () => {
+it("presents a cleared camp's supply post, its clearing player's, from its occupier after the structure and guard are gone", () => {
   const { store, site } = campBeside();
   store.applyFacts([
     {
@@ -135,13 +136,18 @@ it("presents a cleared standard from its receipt after the structure and guard a
     },
     { model: "Structure", key: "0x71", value: null },
     { model: "Guard", key: "0x73", value: null },
-  ]);
+    {
+      model: "TileOccupancy",
+      key: "0x7710",
+      value: { game_id: 1, ...SITE_TILE, entity_id: SITE, category: TileOccupier.SupplyPost, is_structure: true },
+    },
+  ] as never);
   const projection = new WorldSpatialProjection({ store });
   projection.start();
   expect(projection.getStructure(SITE)).toMatchObject({
     clearedSite: true,
     hexCoords: SITE_TILE,
-    occupierType: TileOccupier.Camp,
+    occupierType: TileOccupier.SupplyPost,
   });
   const manager = Object.assign(Object.create(StructureManager.prototype), {
     store,
@@ -265,11 +271,32 @@ describe("Frontier camp and supply post models", () => {
     expect(manager.dummy.scale.toArray()).toEqual([1, 1, 1]);
   });
 
-  it("turns a cleared camp into the supply post model with the clearing Aspect standard beside it, while other cleared sites keep only the standard", () => {
+  it("draws a supply post from its tile's occupier with the clearing Aspect's standard beside it, while a cleared site without one keeps only its standard", () => {
+    const { store } = campBeside();
+    store.applyFacts([
+      {
+        model: "ExpeditionSite",
+        key: "0x72",
+        value: {
+          ...store.require("ExpeditionSite", { game_id: 1, entity_id: SITE }),
+          clear: { explorer_id: 201n, home_id: 7n, reward: null },
+        },
+      },
+      { model: "Structure", key: "0x71", value: null },
+      { model: "Guard", key: "0x73", value: null },
+      {
+        model: "TileOccupancy",
+        key: "0x7710",
+        value: { game_id: 1, ...SITE_TILE, entity_id: SITE, category: TileOccupier.SupplyPost, is_structure: true },
+      },
+    ] as never);
+    const projection = new WorldSpatialProjection({ store });
+    projection.start();
+    const home = store.require("Structure", { game_id: 1, entity_id: REALM });
+
     const supplyPost = makeModel();
     const campStandard = makeModel(true);
     const riftStandard = makeModel(true);
-    const composition = frontierSiteComposition(StructureType.Camp);
     const campStandardIndex = mode.assets.structureModelPaths[StructureType.Camp].length - 1;
     const riftStandardIndex = mode.assets.structureModelPaths[StructureType.Rift].length - 1;
     const manager = bindManager(
@@ -284,45 +311,58 @@ describe("Frontier camp and supply post models", () => {
         [StructureType.Rift, new Map([[riftStandardIndex, riftStandard]])],
       ]),
     );
-    const clearedCamp = {
+    const builder = Object.assign(manager, { store }) as unknown as {
+      buildStructureInfo(renderable: unknown): Record<string, unknown>;
+    };
+
+    const [renderable] = projection.getStructuresAtHex(SITE_TILE);
+    const post = builder.buildStructureInfo(renderable);
+    expect(post).toMatchObject({
       entityId: SITE,
+      structureType: StructureType.Camp,
+      supplyPost: true,
+      realmOrder: home.metadata.order,
+      owner: { address: home.owner },
+    });
+    expect(post.clearedSite).toBeUndefined();
+    projection.dispose();
+
+    const friendlyPost = { ...post, isMine: true, realmOrder: 1 };
+    expect(manager.getStructureModelIndices(friendlyPost)).toEqual([SUPPLY_POST_MODEL_INDEX, campStandardIndex]);
+    manager.addVisibleStructureInstance(friendlyPost, new Set(), new Set());
+    expect(supplyPost.matrices).toHaveLength(1);
+    expect(campStandard.matrices).toHaveLength(1);
+    expect(placementOf(supplyPost.matrices[0])).toEqual({ x: 0, y: 0, z: 0, scale: 1 });
+    expect(placementOf(campStandard.matrices[0])).toEqual(SUPPLY_POST_STANDARD);
+    expect(campStandard.setAspectAt).toHaveBeenCalledWith(0, orderAspect(1));
+    expect(campStandard.setRelationshipAt).not.toHaveBeenCalled();
+
+    manager.addVisibleStructureInstance({ ...post, entityId: SITE + 2, isMine: false }, new Set(), new Set());
+    expect(campStandard.setRelationshipAt).toHaveBeenCalledWith(1, "enemy");
+
+    const clearedSite = {
+      entityId: SITE + 1,
       structureName: "Galecrag",
       hexCoords: { col: 0, row: 0 },
       stage: 0,
       level: 0,
-      isMine: true,
+      isMine: false,
       isAlly: false,
-      owner: { address: 0x111n, ownerName: "", guildName: "" },
-      structureType: StructureType.Camp,
+      owner: { address: 0n, ownerName: "", guildName: "" },
+      structureType: StructureType.Rift,
       hasWonder: false,
-      realmOrder: 1,
       clearedSite: true as const,
     };
-    expect(manager.getStructureModelIndices(clearedCamp)).toEqual([SUPPLY_POST_MODEL_INDEX, campStandardIndex]);
-    manager.addVisibleStructureInstance(clearedCamp, new Set(), new Set());
-    expect(supplyPost.matrices).toHaveLength(1);
-    expect(campStandard.matrices).toHaveLength(1);
-    expect(placementOf(supplyPost.matrices[0])).toEqual({ x: 0, y: 0, z: 0, scale: 1 });
-    expect(placementOf(campStandard.matrices[0])).toEqual(composition.clearedStandard);
-    expect(campStandard.setAspectAt).toHaveBeenCalledWith(0, orderAspect(1));
-    expect(campStandard.setRelationshipAt).not.toHaveBeenCalled();
-
-    const rivalClearedCamp = {
-      ...clearedCamp,
-      entityId: SITE + 2,
-      isMine: false,
-      owner: { address: 0x999n, ownerName: "", guildName: "" },
-    };
-    manager.addVisibleStructureInstance(rivalClearedCamp, new Set(), new Set());
-    expect(campStandard.setRelationshipAt).toHaveBeenCalledWith(1, "enemy");
-
-    const clearedRift = { ...clearedCamp, entityId: SITE + 1, structureType: StructureType.Rift };
-    expect(manager.getStructureModelIndices(clearedRift)).toEqual([riftStandardIndex]);
-    manager.addVisibleStructureInstance(clearedRift, new Set(), new Set());
-    expect(riftStandard.matrices).toHaveLength(1);
+    expect(manager.getStructureModelIndices(clearedSite)).toEqual([riftStandardIndex]);
+    manager.addVisibleStructureInstance(clearedSite, new Set(), new Set());
     expect(placementOf(riftStandard.matrices[0])).toEqual({ x: 0, y: 0, z: 0, scale: 1 });
     expect(riftStandard.setAspectAt).not.toHaveBeenCalled();
-    expect(riftStandard.setRelationshipAt).toHaveBeenCalledWith(0, "owned");
+    expect(riftStandard.setRelationshipAt).toHaveBeenCalledWith(0, "enemy");
+
+    const receiptOnlyCamp = { ...clearedSite, entityId: SITE + 3, structureType: StructureType.Camp };
+    expect(manager.getStructureModelIndices(receiptOnlyCamp)).toEqual([campStandardIndex]);
+    manager.addVisibleStructureInstance(receiptOnlyCamp, new Set(), new Set());
+    expect(supplyPost.matrices).toHaveLength(2);
   });
 });
 

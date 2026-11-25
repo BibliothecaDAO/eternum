@@ -16,6 +16,7 @@ export { beastBand, frontierBeast, type FrontierSpecies, type FrontierBeast } fr
 export const FALLEN_REALM_RUIN_PATH = modelPath("outposts/ruin.glb");
 export const FRONTIER_CAMP_MODEL_PATH = frontierPaintedPath("camp");
 export const SUPPLY_POST_MODEL_PATH = frontierPaintedPath("supply-yard");
+export const SUPPLY_POST_STANDARD = { scale: 1, x: -0.32, y: 0, z: 0.92 } as const;
 
 export const FRONTIER_BEASTS = {
   troll: { path: modelPath("frontier/beast-troll.glb") },
@@ -71,19 +72,13 @@ export interface FrontierSiteComposition {
   readonly baseZ: number;
   readonly beastZ: number;
   readonly beastY: number;
-  readonly clearedModelIndex: number | null;
-  readonly clearedStandard: { readonly scale: number; readonly x: number; readonly y: number; readonly z: number };
 }
-
-const DEFAULT_CLEARED_STANDARD = { scale: 1, x: 0, y: 0, z: 0 } as const;
 
 const DEFAULT_SITE_COMPOSITION: FrontierSiteComposition = {
   baseScale: 0,
   baseZ: 0,
   beastZ: 0,
   beastY: 0,
-  clearedModelIndex: null,
-  clearedStandard: DEFAULT_CLEARED_STANDARD,
 };
 
 const GUARDED_SITE_COMPOSITIONS = {
@@ -92,24 +87,18 @@ const GUARDED_SITE_COMPOSITIONS = {
     baseZ: 0,
     beastZ: 0.22,
     beastY: 0,
-    clearedModelIndex: SUPPLY_POST_MODEL_INDEX,
-    clearedStandard: { scale: 1, x: -0.32, y: 0, z: 0.92 },
   },
   Ruin: {
     baseScale: 1,
     baseZ: 0,
     beastZ: 0,
     beastY: 0,
-    clearedModelIndex: null,
-    clearedStandard: DEFAULT_CLEARED_STANDARD,
   },
   Rift: {
     baseScale: 1.09,
     baseZ: 0,
     beastZ: 0,
     beastY: 0.2,
-    clearedModelIndex: null,
-    clearedStandard: DEFAULT_CLEARED_STANDARD,
   },
   Beasts: DEFAULT_SITE_COMPOSITION,
 } as const satisfies Record<SiteKind, FrontierSiteComposition>;
