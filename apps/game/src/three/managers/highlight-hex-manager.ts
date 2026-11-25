@@ -425,7 +425,9 @@ export class HighlightHexManager {
     let lowest = Infinity;
     let highest = -Infinity;
     for (let corner = copyIndex * perCopy; corner < (copyIndex + 1) * perCopy; corner += 3) {
-      const [a, b, c] = [0, 1, 2].map((offset) => new Vector3().fromBufferAttribute(positions, index.getX(corner + offset)));
+      const [a, b, c] = [0, 1, 2].map((offset) =>
+        new Vector3().fromBufferAttribute(positions, index.getX(corner + offset)),
+      );
       for (let u = 0; u <= FACE_STEPS; u++)
         for (let v = 0; v <= FACE_STEPS - u; v++) {
           const point = a
