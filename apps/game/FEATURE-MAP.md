@@ -598,7 +598,9 @@ as what it holds and at most 45% of the screen, and short enough that the map ke
 and the place bar (never under 12rem; past that it scrolls inside), under one row (its name and its way out; a drag down
 on it closes a sheet), its verb in its foot; while one is open, the stores' row folds away. Chat alone fills the band.
 Any screen held sideways below the desktop's width (a phone, a Fold's inner screen, a tablet) takes the sideways HUD:
-the places in a rail at the left, the rest in one column at the right, a sheet in that column. The map's share per
+the places in a rail at the left, the rest in one column at the right, a sheet in that column. An upright tablet keeps
+the phone's bands, its sheets, the Oath pick and the picked army in a rail at the right, the realm card and the lesson
+dock in the column left of it, the lesson dock at the foot. The map's share per
 device: `playtest --steps lab-hud-devices --viewport <w>x<h>`, failing a state under 40%. Tapping a build plot keeps the
 realm camera still. The realm view zooms out until every plot of the castle’s reach fits the screen’s width, including
 an Empire on an upright phone. Chat's tabs are its rooms (Global; a game's own only where its mode keeps one, none for
