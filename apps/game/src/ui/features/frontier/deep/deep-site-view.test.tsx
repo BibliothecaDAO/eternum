@@ -54,7 +54,10 @@ describe("a Deep site's card", () => {
 
   it("offers Move with its cost when the army is away", () => {
     const onMove = vi.fn();
-    draw({ ...DEEP_SITE_CASES["Altar, open, army away"], order: { kind: "move", prices: [{ of: "stamina", amount: 30 }], onMove } });
+    draw({
+      ...DEEP_SITE_CASES["Altar, open, army away"],
+      order: { kind: "move", prices: [{ of: "stamina", amount: 30 }], onMove },
+    });
     expect(text()).toContain("No guard: the next army takes it");
     expect(text()).toContain("1,500");
     act(() => labels(["Move"])[0]!.click());

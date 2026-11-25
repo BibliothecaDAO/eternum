@@ -171,7 +171,8 @@ const CHOSEN_LOOK_IS_THE_KIT = [
 const PRICE_IS_HUD_PRICE = [
   {
     selector: "JSXOpeningElement[name.name='HudCost']",
-    message: "A surface shows a price with HudPrice (its painting and amount); HudCost's words are the map's order line.",
+    message:
+      "A surface shows a price with HudPrice (its painting and amount); HudCost's words are the map's order line.",
   },
 ];
 

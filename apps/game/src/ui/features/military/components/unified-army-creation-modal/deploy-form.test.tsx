@@ -74,6 +74,16 @@ describe("the deploy form on the sheet", () => {
     expect(foot(null)).toBe("200Deploy");
   });
 
+  it("names no price, never Free, while the raise's cost is unknown or nothing is chosen", () => {
+    const host = render(
+      <HudWindow title="Military" onClose={() => undefined}>
+        <DeployVerb form={form({ startLine: null, raisePrices: undefined })} />
+      </HudWindow>,
+    );
+    expect(host.querySelector(".ui-window__foot .ui-price")).toBeNull();
+    expect(host.querySelector(".ui-window__foot")!.textContent).toBe("Deploy");
+  });
+
   it("chooses a held stack by its column and tier", () => {
     const chosen = form();
     const host = render(<DeployTroops form={chosen} />);
@@ -103,7 +113,9 @@ describe("the deploy form on the sheet", () => {
     const verb = ready.querySelector<HTMLButtonElement>(".ui-window__foot .ui-button")!;
     expect(verb.disabled).toBe(false);
     expect(verb.textContent).toBe("Deploy");
-    expect(ready.querySelector('.ui-window__foot .ui-price [role="img"]')?.getAttribute("aria-label")).toBe("200 Wheat");
+    expect(ready.querySelector('.ui-window__foot .ui-price [role="img"]')?.getAttribute("aria-label")).toBe(
+      "200 Wheat",
+    );
     expect(ready.querySelector('[role="status"]')?.textContent).toBe("");
 
     const blocked = render(

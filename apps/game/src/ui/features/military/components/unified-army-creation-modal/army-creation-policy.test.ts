@@ -76,9 +76,11 @@ describe("army deployment blocked states", () => {
 
 describe("troop raise cost", () => {
   it("prices what deploying costs beyond the troops in whole units beside the Deploy verb, none where it costs nothing", () => {
-    expect(troopRaisePrices([{ resource: 35, amount: 20_000_000_000n, held: 0n }])).toEqual([{ resource: 35, amount: 20 }]);
-    expect(troopRaisePrices([{ resource: 35, amount: 0n, held: 0n }])).toEqual([]);
-    expect(troopRaisePrices(undefined)).toEqual([]);
+    expect(troopRaisePrices([{ resource: 35, amount: 20_000_000_000n, held: 0n }])).toEqual([
+      { resource: 35, amount: 20 },
+    ]);
+    expect(troopRaisePrices([{ resource: 35, amount: 0n, held: 0n }])).toBeUndefined();
+    expect(troopRaisePrices(undefined)).toBeUndefined();
   });
 });
 

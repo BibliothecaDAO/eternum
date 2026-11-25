@@ -54,7 +54,7 @@ export const DeployVerb = ({ form }: { form: ArmyCreationForm }) => (
   <HudWindowFoot
     note={
       <span className="flex flex-col items-start">
-        <HudPrice prices={form.raisePrices} />
+        {form.raisePrices && <HudPrice prices={form.raisePrices} />}
         {form.startLine && <span>{form.startLine}</span>}
         <span role="status">{form.isActionDisabled ? form.blockedReason : null}</span>
       </span>

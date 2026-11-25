@@ -1,11 +1,5 @@
 import { TROOP_RAISE_SHORT_REASON, type TroopRaiseCost } from "@bibliothecadao/eternum";
-import {
-  RESOURCE_PRECISION,
-  type ResourcesIds,
-  formatWait,
-  formatFigure,
-  resourceName,
-} from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, type ResourcesIds, formatWait, formatFigure, resourceName } from "@bibliothecadao/types";
 
 import type { ResourcePrice } from "@/ui/design-system/kit/hud-elements";
 import type { SelectedTroopCombo, TroopSelectionOption } from "./types";
@@ -68,11 +62,15 @@ export function resolveArmyCreationBlockedReason(status: ArmyCreationStatus): st
   return null;
 }
 
-/** What deploying the chosen troops costs beyond the troops, each resource and its amount, beside the Deploy verb. */
-export function troopRaisePrices(costs: TroopRaiseCost[] | undefined): ResourcePrice[] {
-  return (costs ?? [])
+/**
+ * What deploying the chosen troops costs beyond the troops, each resource and its amount, beside the Deploy verb;
+ * undefined while the cost is unknown or nothing is chosen, so the foot names no price it does not know.
+ */
+export function troopRaisePrices(costs: TroopRaiseCost[] | undefined): ResourcePrice[] | undefined {
+  const prices = (costs ?? [])
     .filter(({ amount }) => amount > 0n)
     .map(({ resource, amount }) => ({ resource, amount: Number(amount) / RESOURCE_PRECISION }));
+  return prices.length > 0 ? prices : undefined;
 }
 
 /**
