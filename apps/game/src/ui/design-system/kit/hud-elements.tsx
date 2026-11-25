@@ -35,7 +35,7 @@ import { PRICE_FACES, type Price } from "./price-faces";
 import { useMarkFrameOpen } from "./open-frames";
 import { revealOwnPlace } from "./own-place";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
-import { CLOSE, type RankedWords, rankedText, STAMINA, type Tier, type Rank, tierNumeral, TRY_AGAIN } from "./words";
+import { CLOSE, FREE, type RankedWords, rankedText, STAMINA, type Tier, type Rank, tierNumeral, TRY_AGAIN } from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -605,9 +605,13 @@ export const HudCost = ({ line }: { line: RankedWords | string }) =>
     </span>
   ) : null;
 
-/** What a sheet's verb pays, beside it in the foot: each price's painting and its amount, named in words when asked. */
+/**
+ * What a sheet's verb pays, the one way a foot shows it, beside the verb: each price's painting and its amount, named
+ * in words when asked; Free when it costs nothing. A line of words under a map order or in a tip is HudCost's.
+ */
 export const HudPrice = ({ prices }: { prices: readonly Price[] }) => (
   <span className="ui-price">
+    {prices.length === 0 && FREE}
     {prices.map(({ of, amount }) => (
       <span key={of} role="img" aria-label={`${formatExact(amount)} ${PRICE_FACES[of].word}`}>
         {PRICE_FACES[of].icon && <Icon name={PRICE_FACES[of].icon} size={20} />}

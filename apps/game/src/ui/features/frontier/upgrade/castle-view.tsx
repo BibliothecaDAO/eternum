@@ -2,8 +2,8 @@ import { formatAmount, REALM_LEVELS, ResourcesIds } from "@bibliothecadao/types"
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { Icon } from "@/ui/design-system/icon";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
-import { HudButton, HudCost, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
+import { type Price } from "@/ui/design-system/kit/price-faces";
+import { HudButton, HudPrice, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import { BUILDING_FIGURES, CASTLE, CASTLE_GIVES, LABOR, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
@@ -77,7 +77,7 @@ export const CastleView = ({
       (upgrade.refusal ? (
         <RefusedVerb word={UPGRADE} refusal={upgrade.refusal} />
       ) : (
-        <HudWindowFoot note={<HudCost line={costLine(upgrade.prices)} />}>
+        <HudWindowFoot note={<HudPrice prices={upgrade.prices} />}>
           <HudButton kind="primary" busy={upgrade.sending ? UPGRADING : undefined} onClick={upgrade.onUpgrade}>
             {UPGRADE}
           </HudButton>

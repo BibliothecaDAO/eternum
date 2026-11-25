@@ -3,8 +3,8 @@ import { type Troops, formatShort } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudButton, HudChip, HudCost, HudNotice, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
+import { HudButton, HudChip, HudNotice, HudPrice, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
+import { type Price } from "@/ui/design-system/kit/price-faces";
 import { type Reason, reasonLine } from "@/ui/design-system/kit/reasons";
 import {
   ON_ITS_WAY,
@@ -321,7 +321,7 @@ const FootNote = ({ verb, site }: { verb: SiteVerb; site: string }) => {
     case "blocked":
       return null;
     case "move":
-      return <HudCost line={costLine(verb.prices)} />;
+      return <HudPrice prices={verb.prices} />;
     default:
       return <HudNotice tone="warn" line={reasonLine(heldBack(verb, site))} />;
   }
