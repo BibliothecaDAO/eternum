@@ -165,6 +165,12 @@ export const besideOnOpenLand = (store: NativeFactStore, beside: { col: number; 
   return { col: open.col, row: open.row };
 };
 
+export const armyDay = (store: NativeFactStore, explorerId: number, like: number = SPIRE_ARMY): LabFact => ({
+  model: "ArmyDay",
+  key: store.wireKeyOf("ArmyDay", { game_id: 1, explorer_id: explorerId }) ?? `0xad${explorerId}`,
+  value: wire({ ...store.require("ArmyDay", { game_id: 1, explorer_id: BigInt(like) }), explorer_id: explorerId }),
+});
+
 export const armyProgress = (store: NativeFactStore, explorerId: number, logistics = 1): LabFact => ({
   model: "ArmyProgress",
   key: store.wireKeyOf("ArmyProgress", { game_id: 1, explorer_id: explorerId }) ?? `0xaf${explorerId}`,
