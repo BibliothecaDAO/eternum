@@ -11,6 +11,7 @@ import { scheduleFrameBudgetWork, type FrameBudgetWorkScheduler } from "../frame
 import {
   ProceduralTerrain,
   type TerrainPresentationDiagnostics,
+  type TerrainQuality,
   type TerrainUploadMetrics,
 } from "./procedural-terrain";
 import { worldOrigin } from "../world-origin";
@@ -335,6 +336,10 @@ export class WorldmapProceduralTerrain {
 
   refreshPropOccupancy(isOccupied: (col: number, row: number) => boolean): void {
     this.terrain.refreshPropOccupancy(isOccupied);
+  }
+
+  setQuality(quality: TerrainQuality): void {
+    this.terrain.setQuality(quality);
   }
 
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
