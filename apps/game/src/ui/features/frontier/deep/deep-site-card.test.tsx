@@ -14,6 +14,7 @@ import { configManager, type ResourceManager, setBlockTimestampSource } from "@b
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
 import { nativeOathConstants as oaths, nativeRuleConstants, readDeepSites } from "@bibliothecadao/eternum/game-client";
+import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { DeepSiteCard } from "./deep-site-card";
 import { resolveExplorerCombatTroops, resolveExplorerTroops, staminaAt } from "@bibliothecadao/eternum/troop-stamina";
 import { FrontierArmy } from "../army/frontier-army";
@@ -89,9 +90,6 @@ describe("the Deep site's live native binding", () => {
           expect(hud.host.querySelector("[data-deep-opening]")?.textContent).toContain(
             `${site.entered} / ${site.opensAt}`,
           );
-          expect(hud.host.querySelector("[data-deep-kinds]")?.textContent?.includes("Bane bar")).toBe(
-            site.kind === nativeRuleConstants.DEEP_ALTAR,
-          );
           continue;
         }
         expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain("/ 2m");
@@ -136,15 +134,30 @@ describe("the Deep site's live native binding", () => {
     }
   });
 
-  it("lists on a locked site only what its rules pay: no Bane bar where the game has no banes", () => {
+  it("lists on a locked site what its open rates pay, the Bane bar only where the game has banes", () => {
     const scenario = raceScenario();
     const hud = draw(undefined, scenario);
     try {
-      const locked = readDeepSites(hud.store, scenario.startsAt, 1).filter((site) => !site.open);
-      expect(locked.length).toBeGreaterThan(0);
-      for (const site of locked) {
+      const sites = readDeepSites(hud.store, scenario.startsAt, 1);
+      const kinds = (site: (typeof sites)[number]) => {
+        hud.render(<DeepSiteCard site={{ ...site, open: false }} onClose={() => {}} />);
+        return hud.host.querySelector("[data-deep-kinds]")?.textContent ?? "";
+      };
+      const altar = sites.find((site) => site.kind === nativeRuleConstants.DEEP_ALTAR)!;
+      expect(kinds(altar)).not.toContain(DEEP_WORDS.kinds.bar);
+      act(() =>
+        hud.store.applyFacts([
+          { model: "BaneRules", key: "0xfee1", value: baneScenario("world").store.require("BaneRules", { game_id: 1 }) },
+        ]),
+      );
+      expect(kinds(altar)).toContain(DEEP_WORDS.kinds.bar);
+      for (const site of sites) {
         hud.render(<DeepSiteCard site={site} onClose={() => {}} />);
-        expect(hud.host.querySelector("[data-deep-kinds]")?.textContent).not.toContain("Bane bar");
+        const paid = [...hud.host.querySelectorAll("[data-deep-pay] [data-rate]")]
+          .map((rate) => rate.getAttribute("data-rate"))
+          .filter((rate) => rate !== "drain");
+        const listed = kinds(site);
+        for (const rate of paid) expect(listed).toContain(DEEP_WORDS.kinds[rate as keyof typeof DEEP_WORDS.kinds]);
       }
     } finally {
       hud.unmount();
