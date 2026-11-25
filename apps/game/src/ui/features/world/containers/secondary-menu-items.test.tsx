@@ -13,7 +13,7 @@ it("draws Settings alone in the header's last slot without a separate guide butt
   document.body.append(host);
   const root = createRoot(host);
   act(() => root.render(<SecondaryMenuItems />));
-  expect(host.querySelector('a[aria-label="How to play"]')).toBeNull();
+  expect(host.querySelector('a[aria-label="Guide"]')).toBeNull();
   const settings = host.querySelector('button[aria-label="Settings"]');
   expect(settings).not.toBeNull();
   act(() => root.unmount());

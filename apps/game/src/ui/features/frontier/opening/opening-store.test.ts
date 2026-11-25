@@ -1,3 +1,4 @@
+import { readOpeningAdditions } from "@realms-world/identity";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const identity = vi.hoisted(() => ({
@@ -5,8 +6,20 @@ const identity = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/context/identity-session", () => ({ identityClient: { addOpeningProgress: identity.add } }));
 
-import { accountProgress } from "./opening-state";
-import { flush, loadOpening, reachMoments, seeLine, useOpeningStore } from "./opening-store";
+import { STANDING_PROMPTS } from "@/shell/standing-prompts";
+import { OPENING_MOMENTS } from "./opening";
+import { accountProgress, TUTORIAL_SKIPPED } from "./opening-state";
+import {
+  commitTutorialStep,
+  flush,
+  loadOpening,
+  openingCacheKey,
+  reachMoments,
+  seeLine,
+  skipTutorial,
+  useOpeningStore,
+} from "./opening-store";
+import { SITE_ALERT_OFFER } from "./use-site-alert-offer";
 
 /** A request the test answers when it chooses: the service's answer for it, or its failure. */
 const unanswered: Array<() => void> = [];
@@ -42,10 +55,14 @@ beforeEach(async () => {
   identity.add.mockReset();
   useOpeningStore.setState({
     owner: null,
+    loaded: false,
     status: "signed-out",
     reached: new Set(),
     seen: new Set(),
     unsent: { reached: new Set(), seen: new Set() },
+    showing: null,
+    confirmed: null,
+    onDevice: false,
   });
   await loadOpening(null);
 });
@@ -186,4 +203,109 @@ it("does not take a cache of this device's own additions for the account's progr
   await settle();
   reload();
   expect(accountProgress("a", useOpeningStore.getState()).ownsParts).toBe(true);
+});
+
+it("keeps a skip final: no reload, sign-in or later lesson brings the tutorial back", async () => {
+  const calls = deferred();
+  void loadOpening("a");
+  await settle();
+  calls[0]!.answer({ reached: [], seen: ["barracks"] });
+  await settle();
+  void skipTutorial();
+  await settle();
+  calls[1]!.answer({ reached: [], seen: ["barracks", TUTORIAL_SKIPPED] });
+  await settle();
+
+  useOpeningStore.setState({ owner: null, loaded: false, status: "signed-out", reached: new Set(), seen: new Set() });
+  void loadOpening("a");
+  await settle();
+  calls[2]!.answer({ reached: [], seen: ["barracks", TUTORIAL_SKIPPED] });
+  await settle();
+  void seeLine("deploy");
+  await settle();
+  expect(accountProgress("a", useOpeningStore.getState()).seen.has(TUTORIAL_SKIPPED)).toBe(true);
+});
+
+it("follows the account, not the device: a second device shows no lesson until the server answers, then holds what the first completed", async () => {
+  const calls = deferred();
+  void loadOpening("a");
+  await settle();
+  calls[0]!.answer({ reached: [], seen: [] });
+  await settle();
+  void seeLine("barracks");
+  await settle();
+  calls[1]!.answer({ reached: [], seen: ["barracks"] });
+  await settle();
+
+  localStorage.clear();
+  useOpeningStore.setState({ owner: null, loaded: false, status: "signed-out", reached: new Set(), seen: new Set() });
+  void loadOpening("a");
+  await settle();
+  expect(accountProgress("a", useOpeningStore.getState()).known).toBe(false);
+  calls[2]!.answer({ reached: [], seen: ["barracks", "deploy"] });
+  await settle();
+  const secondDevice = accountProgress("a", useOpeningStore.getState());
+  expect(secondDevice.known).toBe(true);
+  expect([...secondDevice.seen].sort()).toEqual(["barracks", "deploy"]);
+});
+
+it("never lets a device's stale cache take away a lesson the server holds", async () => {
+  localStorage.setItem(
+    openingCacheKey("a"),
+    JSON.stringify({ reached: [], seen: [], unsent: { reached: [], seen: [] }, complete: true }),
+  );
+  const calls = deferred();
+  void loadOpening("a");
+  await settle();
+  expect(accountProgress("a", useOpeningStore.getState()).known).toBe(false);
+  calls[0]!.answer({ reached: [], seen: ["explore"] });
+  await settle();
+  expect(accountProgress("a", useOpeningStore.getState()).seen.has("explore")).toBe(true);
+});
+
+it("keeps a signed-out player's completed and dismissed lessons on this device alone, across a reload", async () => {
+  await commitTutorialStep({ completed: ["explore"], showing: null, confirmed: "explore" });
+  await seeLine("barracks");
+  useOpeningStore.setState({ owner: null, loaded: false, status: "signed-out", reached: new Set(), seen: new Set() });
+  await loadOpening(null);
+  expect(identity.add).not.toHaveBeenCalled();
+  expect(accountProgress(null, useOpeningStore.getState())).toMatchObject({
+    known: true,
+    seen: new Set(["explore", "barracks"]),
+  });
+});
+
+it("sends only bodies the identity service's own validator takes, through every lesson, skip and a legacy key", async () => {
+  const held = { reached: new Set<string>(), seen: new Set<string>() };
+  const sent: unknown[] = [];
+  identity.add.mockImplementation(async (body) => {
+    const wire = JSON.parse(JSON.stringify(body));
+    sent.push(wire);
+    const additions = readOpeningAdditions(wire);
+    if (!additions) throw new Error("400 invalid_opening_progress");
+    additions.reached.forEach((moment) => held.reached.add(moment));
+    additions.seen.forEach((moment) => held.seen.add(moment));
+    return { reached: [...held.reached], seen: [...held.seen] };
+  });
+  localStorage.setItem(
+    openingCacheKey("a"),
+    JSON.stringify({ reached: [], seen: ["tutorial:skipped"], unsent: { reached: [], seen: ["tutorial:skipped"] } }),
+  );
+
+  await loadOpening("a");
+  await reachMoments(OPENING_MOMENTS);
+  for (const moment of OPENING_MOMENTS) await seeLine(moment);
+  await skipTutorial();
+  await commitTutorialStep({ completed: OPENING_MOMENTS, showing: null, confirmed: "barracks" });
+  for (const prompt of [SITE_ALERT_OFFER, ...STANDING_PROMPTS]) await seeLine(prompt);
+  await flush();
+
+  expect(sent.length).toBeGreaterThan(0);
+  expect(sent.filter((body) => readOpeningAdditions(body) === null)).toEqual([]);
+  expect(useOpeningStore.getState().status).toBe("ready");
+  expect(unsent()).toEqual({ reached: [], seen: [] });
+  expect([...held.reached].sort()).toEqual([...OPENING_MOMENTS].sort());
+  expect([...held.seen].sort()).toEqual(
+    [...OPENING_MOMENTS, TUTORIAL_SKIPPED, SITE_ALERT_OFFER, ...STANDING_PROMPTS].sort(),
+  );
 });

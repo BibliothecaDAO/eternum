@@ -3,23 +3,16 @@ layout: landing
 ---
 
 import { HomePage } from "vocs/components";
+import { RealmsHome } from "@/components/RealmsHome";
 
 <HomePage.Root>
   <div className="realms-homepage-background" aria-hidden="true">
     <img src="/images/covers/twilight-tundra.png" alt="" />
   </div>
 
-<img src="/images/logos/realms-lettered.webp" alt="Realms" width="240" />
-<HomePage.Description>
-  A strategy game, played onchain. Frontier is free: a new map every day, and nobody can attack you.
-</HomePage.Description>
-<HomePage.Buttons>
-  <HomePage.Button href="/frontier" variant="primary">
-    Frontier
-  </HomePage.Button>
-  <HomePage.Button href="https://play.realms.party" variant="outline">
-    Play
-  </HomePage.Button>
-</HomePage.Buttons>
+<img src="/images/logos/realms-lettered.webp" alt="Realms" width="220" />
+<HomePage.Description>Guides, rules, and live data for Realms games, accounts, and LORDS.</HomePage.Description>
+
+<RealmsHome />
 
 </HomePage.Root>

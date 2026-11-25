@@ -1,6 +1,7 @@
 import { BuildingType, ID, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { configManager } from "../managers/config-manager";
+import { buildingCopyCost, buildingCopyMultiplier } from "./building-cost-mode";
 import { getBuildingCount } from "./packed-data";
 
 export const getBuildingQuantity = (entityId: ID, buildingType: BuildingType, store: NativeFactStore) => {
@@ -41,11 +42,11 @@ export const getBuildingCosts = (
   const costs = configManager.getBuildingCosts(buildingCategory, useSimpleCost);
   if (!costs) return undefined;
 
-  const increase = configManager.getBuildingBaseCostPercentIncrease() / 10000;
+  const increaseBps = configManager.getBuildingBaseCostPercentIncrease();
   const standing = countedBuildingsStanding(realmEntityId, buildingCategory, store);
   return costs.map((cost) => ({
     resource: cost.resource,
-    amount: cost.amount + standing * standing * cost.amount * increase,
+    amount: buildingCopyCost(cost.amount, standing, increaseBps),
   }));
 };
 
@@ -59,9 +60,9 @@ export const buildingCostRise = (
   buildingCategory: BuildingType,
   store: NativeFactStore,
 ): { standing: number; times: number } => {
-  const increase = configManager.getBuildingBaseCostPercentIncrease() / 10000;
+  const increaseBps = configManager.getBuildingBaseCostPercentIncrease();
   const standing = countedBuildingsStanding(realmEntityId, buildingCategory, store);
-  return { standing, times: 1 + standing * standing * increase };
+  return { standing, times: buildingCopyMultiplier(standing, increaseBps) };
 };
 
 const countedBuildingsStanding = (realmEntityId: ID, buildingCategory: BuildingType, store: NativeFactStore) => {

@@ -37,6 +37,7 @@ export const FrontierResearch = ({
       fixFor={(need, node) => actions.fixFor(need, node, nodes)}
       onResearch={actions.research}
       onClose={onClose}
+      castleLevel={realm.base.level}
     />
   );
 };

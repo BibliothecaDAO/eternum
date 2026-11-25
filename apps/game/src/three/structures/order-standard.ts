@@ -19,10 +19,21 @@ import {
   TorusGeometry,
 } from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
-import { attribute, float, instanceIndex, select, texture as tslTexture, uv, varying, vec2, vec3 } from "three/tsl";
+import {
+  attribute,
+  float,
+  instanceIndex,
+  positionLocal,
+  select,
+  texture as tslTexture,
+  uv,
+  varying,
+  vec2,
+  vec3,
+} from "three/tsl";
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
 import { mapAnimationTime as time } from "../effects/endgame/state";
-import { createInstancedMeshWithSharedMatrices } from "../utils/create-instanced-mesh";
+import { createInstancedMesh, createInstancedMeshWithSharedMatrices } from "../utils/create-instanced-mesh";
 import { loadOrderArtwork } from "./settlement-appearance";
 
 type SignumOffset = { readonly x: number; readonly y: number; readonly z: number };
@@ -114,16 +125,17 @@ export class OrderStandard {
     const bodyGeometry = signumBodyGeometry(offset);
     bodyGeometry.setAttribute("signumAspect", this.aspectAttr);
     if (typeof placement === "number") {
-      this.body = new InstancedMesh(bodyGeometry, signumBodyMaterial(offset), slots);
+      this.body = createInstancedMesh(bodyGeometry, signumBodyMaterial(), slots);
       this.body.count = 0;
       this.placement = this.body;
     } else {
       this.placement = placement;
-      this.body = createInstancedMeshWithSharedMatrices(bodyGeometry, signumBodyMaterial(offset), placement);
+      this.body = createInstancedMeshWithSharedMatrices(bodyGeometry, signumBodyMaterial(), placement);
     }
     this.body.name = "Order signum stone";
     this.body.castShadow = false;
     this.body.receiveShadow = true;
+    this.body.frustumCulled = false;
     this.body.raycast = () => {};
 
     const clothGeometry = signumClothGeometry(offset);
@@ -132,6 +144,7 @@ export class OrderStandard {
     this.cloth.name = "Order signum cloth";
     this.cloth.castShadow = false;
     this.cloth.receiveShadow = true;
+    this.cloth.frustumCulled = false;
     this.cloth.raycast = () => {};
 
     this.sharedAtlas = acquireSignumAtlas();
@@ -145,6 +158,7 @@ export class OrderStandard {
     this.emblem.name = "Order signum emblem";
     this.emblem.castShadow = false;
     this.emblem.receiveShadow = false;
+    this.emblem.frustumCulled = false;
     this.emblem.raycast = () => {};
 
     this.group.add(this.body, this.cloth, this.emblem);
@@ -314,13 +328,12 @@ const ASPECT_FINIALS = {
   ],
 } as const satisfies Record<AspectId, (aspect: AspectId) => BufferGeometry[]>;
 
-function signumBodyMaterial(offset: SignumOffset): MeshStandardNodeMaterial {
+function signumBodyMaterial(): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ vertexColors: true, roughness: 0.56, metalness: 0.18 });
   const finial = attribute<"float">("finialAspect", "float");
   const active = attribute<"float">("signumAspect", "float");
   const keep = finial.lessThan(0.5).or(finial.sub(active).abs().lessThan(0.5));
-  const local = attribute<"vec3">("position", "vec3");
-  material.positionNode = select(keep, local, vec3(offset.x, PLAQUE_Y + offset.y, offset.z));
+  material.positionNode = select(keep, positionLocal, vec3(0, 0, 0));
   material.name = "order-signum-body";
   return material;
 }
@@ -371,8 +384,8 @@ function signumClothMaterial(): MeshStandardNodeMaterial {
   const drop = uv().y;
   const flutter = time.mul(2.4).add(phase).add(drop.mul(3.1)).sin().mul(0.026).mul(drop);
   const drift = time.mul(1.7).add(phase).cos().mul(0.012).mul(drop);
-  const local = attribute<"vec3">("position", "vec3");
-  material.positionNode = local.add(vec3(drift, 0, flutter));
+  const active = positionLocal.dot(positionLocal).greaterThan(1e-6);
+  material.positionNode = select(active, positionLocal.add(vec3(drift, 0, flutter)), positionLocal);
   material.colorNode = varying(attribute<"vec3">("signumClothColor", "vec3")).setInterpolation("flat");
   material.name = "order-signum-cloth";
   return material;

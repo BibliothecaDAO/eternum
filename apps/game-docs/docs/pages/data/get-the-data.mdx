@@ -1,0 +1,432 @@
+---
+title: Get the data
+description: Public Herald HTTP routes, Starknet RPC calls, field meanings, rate etiquette, and runnable recipes
+---
+
+import { CopyCode } from "@/components/CopyCode";
+import { GameIcon } from "@/components/GameIcon";
+import { PipeTable } from "@/components/PipeTable";
+import { PUBLIC_DATA } from "@/utils/public-data";
+
+# Get the data
+
+Every confirmed fact in Frontier is public onchain. You can read game state, Aspect standings, and story history
+straight from Herald over HTTP, or query the shard RPC without an API key or account.
+
+- Herald base URL is **{PUBLIC_DATA.heraldUrl}** (GET requests, `Access-Control-Allow-Origin: *`).
+- Shard Starknet JSON-RPC URL is **{PUBLIC_DATA.rpcUrl}** (POST requests, `Access-Control-Allow-Origin: *`).
+
+Both endpoints work from `curl`, Node.js, Python, and browser pages. If you use Python's `urllib`, send a standard
+`User-Agent` header so edge filters accept your request.
+
+## Copy-paste agent prompt
+
+Paste this prompt into any coding assistant to query live Realms game data without writing scripts by hand. Replace the
+final line with your own question.
+
+<CopyCode wrap>{PUBLIC_DATA.agentPrompt}</CopyCode>
+
+### Worked example: top Glory earners per Aspect this season
+
+Running the prompt's default question read-only against the live shard on 24 November 2026 (`confirmed_block: 82485`,
+Final Testnet `game_id: 1`, `testnet-1795521600`) returns each Aspect's current season standings (shortened to top 2 per
+Aspect):
+
+```json
+{
+  "game": "testnet-1795521600",
+  "game_id": 1,
+  "status": "Live",
+  "confirmed_block": 82485,
+  "aspects": {
+    "Titan": {
+      "height": 0,
+      "members": 8,
+      "top_glory": [
+        { "rank": 1, "realm_id": 2182, "glory": "0" },
+        { "rank": 2, "realm_id": 3280, "glory": "0" }
+      ]
+    },
+    "Luminary": {
+      "height": 0,
+      "members": 4,
+      "top_glory": [
+        { "rank": 1, "realm_id": 2077, "glory": "0" },
+        { "rank": 2, "realm_id": 382, "glory": "0" }
+      ]
+    },
+    "Shadow": {
+      "height": 0,
+      "members": 5,
+      "top_glory": [
+        { "rank": 1, "realm_id": 93, "glory": "0" },
+        { "rank": 2, "realm_id": 266, "glory": "0" }
+      ]
+    },
+    "Fury": {
+      "height": 0,
+      "members": 6,
+      "top_glory": [
+        { "rank": 1, "realm_id": 7181, "glory": "0" },
+        { "rank": 2, "realm_id": 4800, "glory": "0" }
+      ]
+    }
+  }
+}
+```
+
+## Aspect IDs
+
+Herald identifies the {PUBLIC_DATA.aspectsCount} Aspects by number across `/games`, `/snapshot`, and
+`/aspects/<id>/members`.
+
+| ID                          | Aspect                                                                            |
+| --------------------------- | --------------------------------------------------------------------------------- |
+| {PUBLIC_DATA.aspects[0].id} | <GameIcon name={PUBLIC_DATA.aspects[0].icon} /> **{PUBLIC_DATA.aspects[0].name}** |
+| {PUBLIC_DATA.aspects[1].id} | <GameIcon name={PUBLIC_DATA.aspects[1].icon} /> **{PUBLIC_DATA.aspects[1].name}** |
+| {PUBLIC_DATA.aspects[2].id} | <GameIcon name={PUBLIC_DATA.aspects[2].icon} /> **{PUBLIC_DATA.aspects[2].name}** |
+| {PUBLIC_DATA.aspects[3].id} | <GameIcon name={PUBLIC_DATA.aspects[3].icon} /> **{PUBLIC_DATA.aspects[3].name}** |
+
+## Public routes
+
+<PipeTable headers={["Route", "Parameters", "Returns"]}>{PUBLIC_DATA.routesTable}</PipeTable>
+
+All examples below were run against the live Frontier shard on 24 November 2026 during Final Testnet (`game_id: 1`,
+`testnet-1795521600`), with long responses shortened. Once Season 1 opens, pick the game whose `name` starts with
+`frontier-` from `/games`.
+
+### 1. Game directory (`GET /games`)
+
+Lists every game on the shard with its clock, player count, Aspect member counts, and hyperstructure heights. Pass an
+optional `?player=0x...` address to include that player's state.
+
+<CopyCode>{PUBLIC_DATA.snippets.gamesCurl}</CopyCode>
+
+<CopyCode>{PUBLIC_DATA.snippets.gamesJs}</CopyCode>
+
+Shortened live response:
+
+```json
+{
+  "confirmed_block": 50644,
+  "world_address": "0xaadbe833ac33670c8c2aa05ce406a07f44742582def994ae1e601ae84f4a3",
+  "games": [
+    {
+      "game_id": 1,
+      "name": "testnet-1795521600",
+      "mode": "frontier",
+      "status": "Live",
+      "day_index": 0,
+      "player_count": 1,
+      "settled_realms_count": 1,
+      "aspect_members": { "1": 0, "2": 1, "3": 0, "4": 0 },
+      "aspect_race": {
+        "finish_height": 10000,
+        "season_days": 50,
+        "heights": { "1": 0, "2": 0, "3": 0, "4": 0 }
+      },
+      "clock": {
+        "start_settling_at": 1795521600,
+        "start_main_at": 1795521600,
+        "end_at": 1796169600,
+        "scheduled_end_at": 1796169600
+      }
+    }
+  ]
+}
+```
+
+| Field                                   | Meaning                                                                             |
+| --------------------------------------- | ----------------------------------------------------------------------------------- |
+| `confirmed_block`                       | Latest confirmed Madara block folded by Herald.                                     |
+| `game_id`                               | Numeric ID used in `/games/<game_id>/...` routes.                                   |
+| `name`                                  | Game slug (`testnet-<timestamp>` for testnet, `frontier-<timestamp>` for Season 1). |
+| `status`                                | Game lifecycle state (`Registration`, `Live`, `Ended`).                             |
+| `player_count` / `settled_realms_count` | Enrolled players and created realms in the game.                                    |
+| `aspect_members`                        | Member count per Aspect ID.                                                         |
+| `aspect_race`                           | `finish_height`, `season_days`, and current `heights` per Aspect ID.                |
+| `clock`                                 | Unix timestamps in seconds for when realm creation opens, main start, and end.      |
+
+### 2. Shard manifest (`GET /manifest`)
+
+Returns the shard chain ID, the public Starknet RPC URL, release schema hashes, and the `games` contract address.
+
+<CopyCode>{PUBLIC_DATA.snippets.manifestCurl}</CopyCode>
+
+<CopyCode>{PUBLIC_DATA.snippets.manifestJs}</CopyCode>
+
+Shortened live response:
+
+```json
+{
+  "version": 1,
+  "chainId": "0x50524f44554354494f4e5f31386561636232303030656234313063",
+  "rpcUrl": "https://rpc.realms.party/rpc/v0_10_2",
+  "contracts": {
+    "games": "0xaadbe833ac33670c8c2aa05ce406a07f44742582def994ae1e601ae84f4a3"
+  }
+}
+```
+
+### 3. Herald health (`GET /health`)
+
+Reports whether Herald is up, its latest `confirmed_block`, and how many world models it decodes.
+
+<CopyCode>{PUBLIC_DATA.snippets.healthCurl}</CopyCode>
+
+<CopyCode>{PUBLIC_DATA.snippets.healthJs}</CopyCode>
+
+Live response:
+
+```json
+{
+  "confirmed_block": 49678,
+  "decoded_models": 88,
+  "service": "herald",
+  "success": true,
+  "undecodable_events": 0
+}
+```
+
+### 4. Current state snapshot (`GET /games/:id/snapshot?models=...`)
+
+Returns current confirmed rows for the models you name in `models` (comma-separated). Always pass `?models=...` so you
+only download the tables you need. You can also pass `&actor=0x...` or `&owner=0x...` to narrow rows to one player.
+
+Useful Season 1 model names are {PUBLIC_DATA.snapshotModelsList}. Numeric values inside snapshot rows are hex strings
+(`"0x..."`), which `BigInt(value)` parses cleanly.
+
+<CopyCode>{PUBLIC_DATA.snippets.snapshotCurl}</CopyCode>
+
+<CopyCode>{PUBLIC_DATA.snippets.snapshotJs}</CopyCode>
+
+Shortened live response:
+
+```json
+{
+  "game_id": "1",
+  "confirmed_block": 50645,
+  "models": [
+    {
+      "model": "AspectHyperstructure",
+      "rows": [
+        { "key": "0x1:0x1", "value": { "game_id": "0x1", "aspect": "0x1", "height": "0x0" } },
+        { "key": "0x1:0x2", "value": { "game_id": "0x1", "aspect": "0x2", "height": "0x0" } }
+      ]
+    },
+    {
+      "model": "DeepSite",
+      "rows": [
+        {
+          "key": "0x1:0x1",
+          "value": { "game_id": "0x1", "entity_id": "0x1", "kind": "0x3", "ring": "0x0", "day": "0x0" }
+        }
+      ]
+    },
+    { "model": "AspectActivity", "rows": [] }
+  ]
+}
+```
+
+### 5. Aspect Glory roster (`GET /games/:id/aspects/:aspect_id/members`)
+
+Season 1 ranks players by Glory inside each Aspect. {PUBLIC_DATA.leaderboardRule}
+
+Page size `limit` defaults to {PUBLIC_DATA.limits.rosterDefault} and accepts 1 to {PUBLIC_DATA.limits.rosterMax}. Use
+`offset` to walk the full roster. The response also includes an `X-Confirmed-Block` header.
+
+<CopyCode>{PUBLIC_DATA.snippets.membersCurl}</CopyCode>
+
+<CopyCode>{PUBLIC_DATA.snippets.membersJs}</CopyCode>
+
+Live response:
+
+```json
+{
+  "game_id": "1",
+  "aspect": 2,
+  "total": 1,
+  "limit": 50,
+  "offset": 0,
+  "members": [
+    {
+      "rank": 1,
+      "entity_id": "1424507508097025",
+      "realm_id": 2077,
+      "owner": "0x57b9e20b749d8fa23967c0621bccd56ad781984f6620b08a25cda35acb4340",
+      "glory": "0"
+    }
+  ]
+}
+```
+
+Each entry in `members` has `rank` (1-based integer), `entity_id` (realm entity ID string), `realm_id` (integer),
+`owner` (Starknet address hex string), and `glory` ({PUBLIC_DATA.gloryUnitNote}).
+
+### 6. Story history (`GET /games/:id/history`)
+
+Returns confirmed immutable events ordered newest first, with `complete_through_block` and `total`. Filter by
+`model=StoryEvent` with an optional `story` variant (`RealmCreatedStory`, `ExplorationReward`, `SitePayout`,
+`ExplorerCreateStory`, `StructureLevelUpStory`), or query `model=BattleEvent` for battles. You can also filter by
+`owner=0x...` or `entity_id=<decimal>`.
+
+Page size `limit` defaults to {PUBLIC_DATA.limits.historyDefault} and accepts 0 to {PUBLIC_DATA.limits.historyMax}.
+
+<CopyCode>{PUBLIC_DATA.snippets.historyCurl}</CopyCode>
+
+<CopyCode>{PUBLIC_DATA.snippets.historyJs}</CopyCode>
+
+Live response:
+
+```json
+{
+  "complete_through_block": 50645,
+  "items": [
+    {
+      "block_number": 50515,
+      "event_index": 29,
+      "game_id": "1",
+      "model": "StoryEvent",
+      "transaction_hash": "0x623f194105005d344a13079a76a67b524771b1e347329153439119d2dce3c88",
+      "transaction_index": 0,
+      "value": {
+        "owner": "0x57b9e20b749d8fa23967c0621bccd56ad781984f6620b08a25cda35acb4340",
+        "story": { "RealmCreatedStory": { "coord": { "x": "0xfffff7e2", "y": "0xffffffff", "alt": false } } },
+        "game_id": "0x1",
+        "entity_id": "0x50f9500000001",
+        "timestamp": "0x6b057cca"
+      }
+    }
+  ],
+  "limit": 100,
+  "offset": 0,
+  "total": 1
+}
+```
+
+Each item in `items` has `block_number`, `transaction_index`, `event_index`, `transaction_hash`, `game_id`, `model`, and
+`value` (where `value.timestamp` holds the Unix timestamp in seconds as a hex or decimal string).
+
+### 7. Single expedition site (`GET /games/:id/sites/:entity_id`)
+
+Looks up one expedition site by decimal `entity_id`. Returns `404 {"error":"unknown_site"}` when no site exists for that
+ID. When a site exists, it returns the `ExpeditionSite` row (`game_id`, `entity_id`, `category`, `initial_guard_count`,
+`alt`, `col`, `row`, and `clear`).
+
+<CopyCode>{PUBLIC_DATA.snippets.siteCurl}</CopyCode>
+
+<CopyCode>{PUBLIC_DATA.snippets.siteJs}</CopyCode>
+
+Live response (for an unused site ID):
+
+```json
+{
+  "error": "unknown_site"
+}
+```
+
+### 8. Chain RPC (`POST /rpc/v0_10_2`)
+
+Standard Starknet JSON-RPC endpoint for block numbers, block timestamps, and transaction hashes.
+
+<CopyCode>{PUBLIC_DATA.snippets.rpcCurl}</CopyCode>
+
+<CopyCode>{PUBLIC_DATA.snippets.rpcJs}</CopyCode>
+
+Shortened live responses:
+
+```json
+{ "jsonrpc": "2.0", "id": 1, "result": 49680 }
+```
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "block_number": 49680,
+    "block_hash": "0x64c7b6a0de6707479d4e20fafb524b90fb8f336fe3194122143a1c6d9fb745a",
+    "status": "ACCEPTED_ON_L2",
+    "timestamp": 1795520902,
+    "transactions": []
+  }
+}
+```
+
+Herald also exposes `GET /games/:id/stats` (game KPIs and daily transaction counts), `GET /games/updates` (a Server-Sent
+Events stream that emits `data: changed` when the game directory changes), `GET /games/:id/days/:day/ranks` (closed
+Frontier day ranks, `404` until a day closes), and `GET /games/:id/review/snapshot` (frozen snapshot after a game ends,
+`404` while live).
+
+## Rate etiquette
+
+- {PUBLIC_DATA.rateEtiquette[0]}
+- {PUBLIC_DATA.rateEtiquette[1]}
+- {PUBLIC_DATA.rateEtiquette[2]}
+- {PUBLIC_DATA.rateEtiquette[3]}
+- {PUBLIC_DATA.rateEtiquette[4]}
+
+## Three runnable recipes
+
+Copy any script below into a `.mjs` file and run it with Node 20+ (`node script.mjs`), or paste the body into a browser
+console. Every recipe was run against the live shard on 24 November 2026.
+
+### My Aspect's standing
+
+Finds the active Season 1 (or testnet) game, reads your Aspect's hyperstructure height and member count, and loads its
+top 10 Glory earners. Change `myAspect` to {PUBLIC_DATA.aspects[0].id} ({PUBLIC_DATA.aspects[0].name}),
+{PUBLIC_DATA.aspects[1].id} ({PUBLIC_DATA.aspects[1].name}), {PUBLIC_DATA.aspects[2].id}
+({PUBLIC_DATA.aspects[2].name}), or {PUBLIC_DATA.aspects[3].id} ({PUBLIC_DATA.aspects[3].name}).
+
+<CopyCode>{PUBLIC_DATA.snippets.recipeStanding}</CopyCode>
+
+Live output:
+
+```json
+{
+  "game": "testnet-1795521600",
+  "status": "Live",
+  "aspect": "Luminary",
+  "height": 0,
+  "finish_height": 10000,
+  "members": 1,
+  "top_members": [
+    {
+      "rank": 1,
+      "entity_id": "1424507508097025",
+      "realm_id": 2077,
+      "owner": "0x57b9e20b749d8fa23967c0621bccd56ad781984f6620b08a25cda35acb4340",
+      "glory": "0"
+    }
+  ]
+}
+```
+
+### Aspect rosters as CSV
+
+Pages all {PUBLIC_DATA.aspectsCount} Aspects at `limit=`{PUBLIC_DATA.limits.rosterMax} and prints a CSV you can redirect
+to a file (`node rosters.mjs > rosters.csv`) and open in a spreadsheet.
+
+<CopyCode>{PUBLIC_DATA.snippets.recipeCsv}</CopyCode>
+
+Live output:
+
+```text
+aspect,rank,owner,realm_id,glory
+Luminary,1,0x57b9e20b749d8fa23967c0621bccd56ad781984f6620b08a25cda35acb4340,2077,0
+```
+
+### Realms created per UTC day
+
+Pages `RealmCreatedStory` events at `limit=`{PUBLIC_DATA.limits.historyMax}, converts each `item.value.timestamp` to a
+UTC date (`YYYY-MM-DD`), and prints the daily counts.
+
+<CopyCode>{PUBLIC_DATA.snippets.recipeRealmsPerDay}</CopyCode>
+
+Live output:
+
+```json
+{
+  "2026-11-24": 1
+}
+```

@@ -20,6 +20,19 @@ const useDefaultWalletStore = create<{ owner: string | null; read: WalletRead; r
 const settle = (realmsId: string, read: WalletRead) =>
   useDefaultWalletStore.setState((state) => ({ owner: realmsId, read, revision: state.revision + 1 }));
 
+const RETRY_AFTER_MS = 30_000;
+let retryAfterFailure: ReturnType<typeof setTimeout> | undefined;
+
+const retryLater = () => {
+  if (retryAfterFailure !== undefined) return;
+  retryAfterFailure = setTimeout(() => {
+    retryAfterFailure = undefined;
+    const realmsId = useIdentitySessionStore.getState().session?.user.realmsId;
+    const { owner, read } = useDefaultWalletStore.getState();
+    if (realmsId && owner === realmsId && read.kind === "failed") void readFor(realmsId);
+  }, RETRY_AFTER_MS);
+};
+
 const readFor = async (realmsId: string) => {
   const started = useDefaultWalletStore.getState().revision;
   const current = () =>
@@ -30,7 +43,10 @@ const readFor = async (realmsId: string) => {
     if (current()) settle(realmsId, { kind: "read", wallet });
   } catch (error) {
     console.error("default_wallet_read_failed", error);
-    if (current()) settle(realmsId, { kind: "failed" });
+    if (current()) {
+      settle(realmsId, { kind: "failed" });
+      retryLater();
+    }
   }
 };
 

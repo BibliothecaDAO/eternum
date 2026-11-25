@@ -204,13 +204,6 @@ export const isArmyCurrent = (
   return isCurrentExpeditionArmy(rules, army.day, nowSeconds);
 };
 
-/** Personal sites remain in the map region belonging to their discovery day. */
-export const isCurrentExpeditionRegion = (
-  rules: ExpeditionRules,
-  coord: { y: number; alt: boolean },
-  nowSeconds: number,
-): boolean => !coord.alt && isCurrentExpeditionArmy(rules, Math.floor(expeditionBand(rules, coord) / 4), nowSeconds);
-
 /**
  * A structure's living field armies: troops left and, in a game with expeditions, allocated today. An army
  * from an earlier day is dead by rule: every command refuses it, and the contract destroys it before checking the army

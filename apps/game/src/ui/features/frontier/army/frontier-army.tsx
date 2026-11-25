@@ -1,10 +1,9 @@
-import { TroopOathSlots } from "./oath-slots";
+import { ArmyOathSockets } from "./oath-slots";
 import { ArmyRelicSlots } from "../relics/army-relic-slots";
 import { useState } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { useArmyRevealYield } from "../frontier-reveal-yield";
 import { useArmySpireStatus } from "../spire-card";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { ArmyDetail } from "./army-panel";
@@ -19,25 +18,24 @@ export const FrontierArmy = ({ realm, onClose }: { realm: NativeRows["Structure"
 };
 
 const ArmyPanel = ({ army, onClose }: { army: DockArmy; onClose: () => void }) => {
-  const revealYield = useArmyRevealYield(army);
   const spire = useArmySpireStatus(army.explorerId);
   const [deleting, setDeleting] = useState(false);
   const held = useFragmentsHeld();
   if (!army.stamina) return null;
+  const refill = sellsStamina(army, held) ? <ArmyRefill army={army} look="price" /> : undefined;
   return (
     <HudSheet
       label={army.label}
       beside={<ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />}
       onClose={onClose}
     >
-      <ArmyDetail
-        army={{ ...army, name: army.label, stamina: army.stamina, revealYield }}
-        refill={sellsStamina(army, held) ? <ArmyRefill army={army} look="price" /> : undefined}
-      />
-      <TroopOathSlots category={army.troopsFact.category} explorerId={army.explorerId} />
+      <ArmyDetail army={{ ...army, stamina: army.stamina }} />
       <ArmyRelicSlots explorerId={army.explorerId} />
       {deleting && <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />}
-      {spire && <HudWindowFoot>{spire}</HudWindowFoot>}
+      <HudWindowFoot note={<ArmyOathSockets explorerId={army.explorerId} />}>
+        {refill}
+        {spire}
+      </HudWindowFoot>
     </HudSheet>
   );
 };

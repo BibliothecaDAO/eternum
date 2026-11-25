@@ -1,4 +1,5 @@
 import { ECONOMY_STEPS } from "./economy-steps.mjs";
+import { balanceChange, troopChange } from "./lab-answers.mjs";
 import {
   DEEP_BEASTS,
   deepSites,
@@ -112,19 +113,21 @@ export const HUD_WORDS = {
   close: "Close",
   chat: "Chat",
   settings: "Settings",
-  relics: "Relics",
+  today: "Today",
 };
 
 const PHONE_PLACE_PRESSES = {
   [HUD_WORDS.research]: (browser) => browser.tapPlace(HUD_WORDS.research),
   [HUD_WORDS.feed]: (browser) => browser.tapPlace(HUD_WORDS.feed),
   [HUD_WORDS.chat]: (browser) => browser.tapPlace(HUD_WORDS.chat),
-  [HUD_WORDS.relics]: (browser) => browser.tapPlace(HUD_WORDS.relics),
   [HUD_WORDS.season]: (browser) => browser.tapPlace(HUD_WORDS.season),
 };
 
+const DESKTOP_CHAT_STRIP = '[aria-label="Chat strip"]';
+
 async function openPlace(browser, word) {
-  if (onADesktop()) browser.clickTab(word);
+  if (onADesktop() && word === HUD_WORDS.chat) browser.run(["click", DESKTOP_CHAT_STRIP]);
+  else if (onADesktop()) browser.clickTab(word);
   else await PHONE_PLACE_PRESSES[word](browser);
 }
 
@@ -740,8 +743,15 @@ const TOWN_DEPLOY_STEPS = [
   ),
 ];
 
-const DEPLOY_TROOPS_INPUT = '[data-kit-sheet] input[aria-label="Troops"]';
-const DEPLOY_TROOPS = `JSON.stringify(document.querySelector(${JSON.stringify(DEPLOY_TROOPS_INPUT)})?.value ?? null)`;
+const DEPLOY_SIZE = '[data-kit-sheet] .size-row input[type="range"]';
+const setDeployCount = (browser, count) =>
+  browser.read(`(() => {
+    const slider = document.querySelector(${JSON.stringify(DEPLOY_SIZE)});
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(slider, ${JSON.stringify(String(count))});
+    slider.dispatchEvent(new Event("input", { bubbles: true }));
+    return slider.value;
+  })()`);
+const DEPLOY_TROOPS = `JSON.stringify(document.querySelector('[data-kit-sheet] .size-row__count')?.textContent ?? null)`;
 
 const DEPLOY_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -758,12 +768,8 @@ async function deployFromTheDock({ browser }, amount, troopName, atMost = Infini
   );
   if (sheet !== "Deploy") return { sheet };
   if (troopName) browser.click(troopName);
-  if (amount !== undefined || Number.isFinite(atMost)) {
-    browser.click("Adjust size");
-    if (amount !== undefined) browser.run(["fill", DEPLOY_TROOPS_INPUT, String(amount)]);
-    if (Number(String(browser.read(DEPLOY_TROOPS)).replace(/,/g, "")) > atMost)
-      browser.run(["fill", DEPLOY_TROOPS_INPUT, String(atMost)]);
-  }
+  if (amount !== undefined) setDeployCount(browser, amount);
+  if (Number(String(browser.read(DEPLOY_TROOPS)).replace(/,/g, "")) > atMost) setDeployCount(browser, atMost);
   const deploy = await readUntil(() => browser.read(sheetButton("^Deploy$")), Boolean, SHEET_WAIT_MS);
   if (!deploy) return { sheet, deploy };
   browser.tap(deploy.offset);
@@ -774,26 +780,26 @@ async function deployFromTheDock({ browser }, amount, troopName, atMost = Infini
   return { sheet, before, locate };
 }
 
+const DEPLOYED = 400n * BigInt(RESOURCE_PRECISION);
+
 function scoutsDeployed(context) {
-  return troopDeployment(context, "Paladin", 32, 200_000_000_000n);
+  return troopDeployment(context, "Paladin", ResourcesIds.Paladin, 800n * BigInt(RESOURCE_PRECISION));
 }
 
 function crossbowsDeployed(context) {
-  return troopDeployment(context, "Crossbowman", 29, 280_000_000_000n);
+  return troopDeployment(context, "Crossbowman", ResourcesIds.Crossbowman, 720n * BigInt(RESOURCE_PRECISION));
 }
 
 function troopDeployment(context, category, resource, wheat) {
   const answer = (context.actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "CreateExplorer").at(-1);
   if (!answer) return undefined;
   const army = answer.answered.find(({ model }) => model === "ExplorerTroops")?.value;
-  const balances = answer.answered.filter(({ model }) => model === "ResourceBalance").map(({ value }) => value);
-  const balance = (resource) => balances.find(({ resource_type }) => Number(resource_type) === resource)?.balance;
   if (
     army?.troops.category !== category ||
-    BigInt(army.troops.count) !== 400_000_000_000n ||
-    BigInt(balance(resource) ?? -1) !== 200_000_000_000n ||
-    BigInt(balance(35) ?? -1) !== wheat ||
-    balance(26) !== undefined
+    BigInt(army.troops.count) !== DEPLOYED ||
+    balanceChange(answer, resource) !== -DEPLOYED ||
+    balanceChange(answer, ResourcesIds.Wheat) !== -wheat ||
+    balanceChange(answer, ResourcesIds.Knight) !== undefined
   )
     throw new Error("Deployment changed the wrong troops or price");
   return armyDeployed(context);
@@ -958,16 +964,14 @@ function offersItsKnightsOut(deploy) {
 }
 
 function holdsItsKnightsAtHome(played) {
-  const rows = played.founded?.[0]?.answered ?? [];
-  const balance = (resource) =>
-    rows.find(({ model, value }) => model === "ResourceBalance" && Number(value.resource_type) === resource)?.value
-      .balance;
+  const [founded] = played.founded ?? [];
+  const rows = founded?.answered ?? [];
   return (
     !rows.some(({ model }) => ["ExplorerTroops", "ArmySlot", "ArmyDay"].includes(model)) &&
     release.definition.settlement.realms.resources.every(
-      ({ resource_type, amount }) => BigInt(balance(resource_type) ?? -1) === BigInt(amount),
+      ({ resource_type, amount }) => balanceChange(founded, Number(resource_type)) === BigInt(amount),
     ) &&
-    BigInt(balance(38) ?? -1) === 0n
+    balanceChange(founded, ResourcesIds.Essence) === 0n
   );
 }
 
@@ -1087,7 +1091,7 @@ function deleteOathArmyStep() {
       const before = browser.read(`JSON.stringify((() => {
         const answer = (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "ChooseOath").at(-1);
         const progress = answer?.answered.find(({model}) => model === "ArmyProgress");
-        return { progress, held: document.querySelector('[data-oath-slots]')?.textContent,
+        return { progress, held: [...document.querySelectorAll('[data-oath-slots] [data-filled]')].map((oath) => oath.getAttribute('aria-label')).join(),
           commands: window.__labChain?.sent.length };
       })())`);
       const armyId = Number(before.progress?.value?.explorer_id);
@@ -1118,7 +1122,7 @@ function deleteOathArmyStep() {
       await press(browser, "Cancel", true);
       const retained = browser.read(`(() =>
         !document.querySelector('[role="alertdialog"]') &&
-        document.querySelector('[data-oath-slots]')?.textContent === ${JSON.stringify(before.held)} &&
+        [...document.querySelectorAll('[data-oath-slots] [data-filled]')].map((oath) => oath.getAttribute('aria-label')).join() === ${JSON.stringify(before.held)} &&
         !!document.querySelector('.mp-at[data-key="army:${armyId}"]') &&
         window.__labChain?.sent.length === ${before.commands})()`);
       if (!retained) return { before, confirmation, retained };
@@ -1242,7 +1246,7 @@ function oathPickSteps(full, layer = "Map") {
     {
       name: "open-oath-pick",
       play: async ({ browser }) => {
-        const pick = await readUntil(() => browser.read(elementAt("[data-oath-pick]")), Boolean, SHEET_WAIT_MS);
+        const pick = await openTheWaitingOath(browser);
         const before = browser.read("window.__labChain.sent.length");
         browser.press("Escape");
         const outside = browser.read('document.elementFromPoint(5, 5)?.classList.contains("ui-modal")');
@@ -1290,13 +1294,16 @@ function oathPickSteps(full, layer = "Map") {
         return row && Number(row.oaths) === ${expected} && Number(row.oath_pick) === 0 && !document.querySelector('[data-oath-pick]');
       })()`,
           );
+        browser.tap(card.offset);
+        const swear = browser.read(elementAt(`[data-oath-swear="${chosen}"]`));
+        if (!swear) return { chosen, missing: true };
         if (!full) {
           const expected = held | (1 << (chosen - 1));
           watchChoice(expected);
-          browser.tap(card.offset);
+          browser.tap(swear.offset);
           return { chosen, expected, watching: true };
         }
-        browser.tap(card.offset);
+        browser.tap(swear.offset);
         const replace = await readUntil(() => browser.read(elementAt("[data-replace-oath]")), Boolean, SHEET_WAIT_MS);
         if (!replace) return { chosen, missing: true };
         const replaced = browser.read("Number(document.querySelector('[data-replace-oath]')?.dataset.replaceOath)");
@@ -1353,13 +1360,14 @@ const OATH_SLOTS_STEPS = [
     ({ played, actionLatency }) => {
       const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "Research").at(-1);
       if (!answer) return undefined;
-      const balances = answer.answered.filter(({ model }) => model === "ResourceBalance").map(({ value }) => value);
-      const balance = (id) => BigInt(balances.find(({ resource_type }) => Number(resource_type) === id)?.balance ?? -1);
-      if (
-        balance(ResourcesIds.Essence) !== 15000n * BigInt(RESOURCE_PRECISION) ||
-        balance(ResourcesIds.Labor) !== 4000n * BigInt(RESOURCE_PRECISION)
-      )
-        return failed("Oath research charged the wrong price", { balances });
+      const paid = {
+        essence: balanceChange(answer, ResourcesIds.Essence),
+        labor: balanceChange(answer, ResourcesIds.Labor),
+      };
+      if (paid.essence !== -5000n * BigInt(RESOURCE_PRECISION) || paid.labor !== -1000n * BigInt(RESOURCE_PRECISION))
+        return failed("Oath research charged the wrong price", {
+          paid: { essence: String(paid.essence), labor: String(paid.labor) },
+        });
       return played.watching && { watch: "oath-researched" };
     },
   ),
@@ -1445,20 +1453,15 @@ const OATH_SLOTS_STEPS = [
       return browser.read(`(() => {
         const slots = document.querySelector('[data-oath-slots="3"]');
         const rect = slots?.getBoundingClientRect();
-        return { text: slots?.textContent, open: slots?.querySelectorAll('[aria-label$="· Open"]').length,
-          locked: slots?.querySelectorAll('[aria-label$="· Locked"]').length,
-          priced: slots?.querySelectorAll('[aria-label$="· Locked"] .ui-cost').length,
+        return { name: slots?.getAttribute('aria-label'), open: slots?.querySelectorAll('[data-open]').length,
+          locked: slots?.querySelectorAll('[data-locked]').length,
           visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
       })()`);
     },
     verify: ({ played }) =>
-      played.visible &&
-      played.open === 3 &&
-      played.locked === 2 &&
-      played.priced === 2 &&
-      played.text.includes("3 Oath slots")
+      played.visible && played.open === 3 && played.locked === 2 && played.name === "3 Oath slots"
         ? completed(played)
-        : failed("The army's three open and two priced locked slots were not visible", played),
+        : failed("The army's three open and two locked Oath sockets were not visible", played),
   },
 ];
 
@@ -1560,7 +1563,8 @@ const DAILY_QUEST_STEPS = [
         receipt?.amount === "1000000000000" &&
         receipt?.essence === "1500000000000" &&
         balances.length === 2 &&
-        balances.every(({ value }) => value.balance === "1500000000000")
+        balanceChange(sent, ResourcesIds.Labor) === BigInt(receipt.amount) &&
+        balanceChange(sent, ResourcesIds.Essence) === BigInt(receipt.essence)
         ? completed(played)
         : failed("Collect must send the exact home/day and display its confirmed reward receipt", played);
     },
@@ -1571,8 +1575,6 @@ const BANE_COLLECTIONS = {
   world: {
     button: "Collect",
     receipts: ["LaborGrant"],
-    labor: "1500000000000",
-    essence: "1500000000000",
     quest: "The Cull",
     count: "2,500 of 2,500 troops",
     head: "Ash Fall",
@@ -1580,8 +1582,6 @@ const BANE_COLLECTIONS = {
   again: {
     button: "Collect again",
     receipts: ["BaneGrant"],
-    labor: "2500000000000",
-    essence: "3000000000000",
     quest: "The Cull",
     count: "2,500 of 2,500 troops",
     head: "Ash Fall",
@@ -1589,8 +1589,6 @@ const BANE_COLLECTIONS = {
   late: {
     button: "Collect",
     receipts: ["LaborGrant", "BaneGrant"],
-    labor: "2500000000000",
-    essence: "3000000000000",
     quest: "The Cull",
     count: "2,500 of 2,500 troops",
     head: "Ash Fall",
@@ -1598,8 +1596,6 @@ const BANE_COLLECTIONS = {
   team: {
     button: "Collect",
     receipts: ["LaborGrant"],
-    labor: "1500000000000",
-    essence: "1500000000000",
     quest: "The Stand",
     count: "3 of 3 sites",
     head: "Prowess's bane",
@@ -1657,8 +1653,10 @@ const baneCollectionSteps = (expected) => [
             value.essence === "1500000000000",
         ) &&
         balances.length === 2 &&
-        balances.some(({ value }) => Number(value.resource_type) === 23 && value.balance === expected.labor) &&
-        balances.some(({ value }) => Number(value.resource_type) === 38 && value.balance === expected.essence);
+        balanceChange(sent, ResourcesIds.Labor) ===
+          receipts.reduce((sum, { value }) => sum + BigInt(value.amount), 0n) &&
+        balanceChange(sent, ResourcesIds.Essence) ===
+          receipts.reduce((sum, { value }) => sum + BigInt(value.essence), 0n);
       return exact
         ? completed(played)
         : failed("Bane collection must name the recorded quest and credit each exact receipt once", played);
@@ -1897,11 +1895,9 @@ async function buildOnAnOpenPlot({ browser }, building) {
     tapped.push({ offset, sheet });
     if (sheet === "Build") {
       const offers = browser.read(SHEET_BUTTONS);
-      if (building) {
-        const choice = browser.read(sheetButton(`^${building}`));
-        if (!choice) throw new Error(`No ${building} in the Build sheet`);
-        browser.tap(choice.offset);
-      }
+      const choice = browser.read(sheetButton(building ? `^${building}` : ".", "[data-build-grid]"));
+      if (!choice) throw new Error(`No ${building ?? "building"} in the Build sheet`);
+      browser.tap(choice.offset);
       browser.click("Build");
       return { tapped, offers, plot: offset, region: tileRegion(offset) };
     }
@@ -1974,21 +1970,26 @@ const PLACE_TABS = { Map: ["World", layerName(0)], Realm: ["Realm"] };
  * and in the realm alike: the place is then chosen from that list.
  */
 function pressPlace(browser, place) {
+  openThePlaceMenu(browser);
   const presses = [
     () => browser.click(place),
-    ...PLACE_TABS[place].flatMap((name) => [() => browser.click(name), () => browser.clickTab(name)]),
+    ...PLACE_TABS[place].flatMap((name) => [() => browser.clickTab(name), () => browser.click(name)]),
   ];
   for (const press of presses) {
     try {
       press();
-      if (browser.viewChoices().length > 0) browser.chooseView(PLACE_TABS[place].at(-1));
       return;
     } catch {
       // Not this button: the next way there.
     }
   }
-  browser.chooseView(PLACE_TABS[place].at(-1));
+  browser.clickTab(PLACE_TABS[place].at(-1));
 }
+
+const openThePlaceMenu = (browser) =>
+  browser.read(
+    `(() => { const pill = document.querySelector('[data-place-pill][aria-expanded="false"]'); pill?.click(); return Boolean(pill); })()`,
+  );
 
 /** Where the HUD's standing parts sit on the map at rest. */
 async function readTheHudLayout({ browser }) {
@@ -2151,19 +2152,14 @@ function recordedStill(onMap) {
   };
 }
 
-/**
- * The season's board as a player reads it: a desktop's Season place opens it in the rail and a second press closes it;
- * a phone opens it from the Menu and closes it with the board's ×, as a phone has no Escape key.
- */
-async function readTheSeason(input) {
-  if (!onADesktop()) return { desktop: false, ...(await readTheSeasonInTheMenu(input)) };
-  const { browser } = input;
+async function readTheSeason({ browser }) {
   await openPlace(browser, HUD_WORDS.season);
   await sleep(2_000);
   const opened = browser.observe();
-  await openPlace(browser, HUD_WORDS.season);
+  if (onADesktop()) await openPlace(browser, HUD_WORDS.season);
+  else browser.click(HUD_WORDS.close);
   await sleep(1_000);
-  return { desktop: true, opened, closed: browser.observe() };
+  return { desktop: onADesktop(), opened, closed: browser.observe() };
 }
 
 /** The route's hex as the address names it: normalized, the same place on every client. */
@@ -2330,38 +2326,21 @@ function visitMissed(visit) {
 function seasonReadAndClosed({ played }) {
   if (played.desktop && !played.opened.pressed.includes(HUD_WORDS.season))
     return failed("the Season place was not lit", played);
-  if (!played.desktop && !played.menu.includes(HUD_WORDS.menu))
-    return failed(`the ${HUD_WORDS.menu} did not open`, played);
   if (!played.opened.panels.includes(HUD_WORDS.season)) return failed("the Season's board was not drawn", played);
   if (played.closed.panels.includes(HUD_WORDS.season)) return failed("the Season's board did not close", played);
   return completed(played);
 }
 
-async function readTheSeasonInTheMenu({ browser }) {
-  browser.click(HUD_WORDS.menu);
-  await sleep(1_500);
-  // The Menu is a page of the place bar, drawn as a panel over the map.
-  const menu = browser.observe().panels;
-  browser.click(HUD_WORDS.season);
-  await sleep(2_000);
-  const opened = browser.observe();
-  browser.click(HUD_WORDS.close);
-  await sleep(1_000);
-  return { menu, opened, closed: browser.observe() };
-}
-
-/** A Wheat ring or phone plate opens its store card; pressing it again closes the same card. */
-/**
- * The Wheat store's card opened from its ring (a desktop's realm panel) or its plate (a phone's strip), then closed by
- * the same press: both found by the store they stand for (`data-store`, `data-store-card`), not by words a label may
- * change.
- */
 async function openAndCloseWheatStore({ browser }) {
   const card = () => browser.read(`Boolean(document.querySelector('[data-store-card="wheat"]'))`);
-  browser.run(["click", '[data-store="wheat"]']);
+  browser.read(
+    `(() => { if (!document.querySelector('.frontier-realm-card')) document.querySelector('.frontier-bar button.frontier-stock-chips')?.click(); return true; })()`,
+  );
+  await sleep(1_000);
+  browser.run(["click", '.frontier-realm-card [data-store="wheat"]']);
   await sleep(1_500);
   const opened = card();
-  browser.run(["click", '[data-store="wheat"]']);
+  browser.run(["click", '.frontier-realm-card [data-store="wheat"]']);
   await sleep(1_000);
   return { opened, closed: card() };
 }
@@ -2386,7 +2365,17 @@ async function focusTheReadiestArmy(browser, armies = browser.armies()) {
   return readiest.label;
 }
 
+const PICKED_IN_TRAY = `JSON.stringify(document.querySelector("[data-picked-army]")?.dataset.pickedArmy ?? null)`;
+
 async function pickArmy(browser, army) {
+  const inTray = browser.read(PICKED_IN_TRAY);
+  if (inTray === army) return;
+  if (inTray !== null) {
+    browser.read(
+      `(() => { document.querySelector('[data-picked-army] button[aria-label="${HUD_WORDS.close}"]')?.click(); return true; })()`,
+    );
+    await waitFor(browser, () => browser.read(PICKED_IN_TRAY) === null, SHEET_WAIT_MS);
+  }
   browser.click(army);
   await sleep(ARMY_FLIGHT_MS);
 }
@@ -3160,13 +3149,37 @@ const DISCOVERED_SPIRE_STEPS = [
   },
 ];
 
-/**
- * The map's share of the page on an odd device (owner, 4 November: "on some weird mobile devices with weird shapes the
- * map is like 15%"), on the lab's sites game: the map at rest, the army picked, its panel, a site's card beside it,
- * Chat and the Menu. Each step reads the share as a player sees it (MAP_SHARE_EXPRESSION) and which HUD part takes
- * the rest, and fails under MAP_LEAST_SHARE (Chat, which fills the band, excepted); a step that could not reach its
- * state is blocked, never read as the map's. Run it at each device's size with --viewport.
- */
+const HUD_SHEETS = [
+  ["research", (browser) => browser.tapPlace(HUD_WORDS.research)],
+  ["season", (browser) => browser.tapPlace(HUD_WORDS.season)],
+  ["menu", (browser) => browser.tapPlace(HUD_WORDS.menu)],
+  ["today", (browser) => browser.click(HUD_WORDS.today)],
+  [
+    "quest",
+    (browser) => browser.read(`(() => { document.querySelector("[data-daily-quest-chip]")?.click(); return true; })()`),
+  ],
+];
+
+const HUD_SHEET_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  ...HUD_SHEETS.map(([name, open]) => ({
+    name: `sheet-${name}`,
+    settleMs: 0,
+    play: async ({ browser, extraScreenshot }) => {
+      browser.press("Escape");
+      await sleep(HOVER_SETTLE_MS);
+      const before = Object.keys(browser.hudLayout()?.parts ?? {});
+      open(browser);
+      await sleep(SHEET_WAIT_MS);
+      return { before, layout: browser.hudLayout(), shot: extraScreenshot(name) };
+    },
+    verify: ({ played }) =>
+      Object.keys(played.layout?.parts ?? {}).some((part) => !played.before.includes(part))
+        ? judgeHudLayout(played.layout)
+        : failed(`the ${name} sheet did not open`, played),
+  })),
+];
+
 const HUD_DEVICE_STEPS = [
   { name: "map", play: readTheMapShare, settleMs: 3_000, verify: mapShareRead },
   {
@@ -3197,7 +3210,7 @@ const HUD_DEVICE_STEPS = [
       return readTheMapShare({ browser });
     },
     settleMs: 0,
-    verify: mapShareReadUnheld,
+    verify: mapShareRead,
   },
   {
     name: "menu",
@@ -3221,11 +3234,6 @@ function mapShareRead({ played }) {
   if (played.share.map < MAP_LEAST_SHARE)
     return failed(`the map shows ${played.share.map}% of the page, under ${MAP_LEAST_SHARE}%`, played);
   return completed(played);
-}
-
-/** Chat's share, read but not held to the least: Chat fills the band by the owner's call (3 November). */
-function mapShareReadUnheld({ played }) {
-  return played.share?.canvas ? completed(played) : blocked("the map's canvas is not on the page", played);
 }
 
 /** The picked army's panel: its sheet, opened by its own details button (a phone's picked army, a desktop's row). */
@@ -3529,15 +3537,9 @@ const LAB_LAYERS_STEPS = [
 function chooseLayer(word) {
   return async ({ browser }) => {
     const before = browser.read(MAP_CAMERA);
-    let choices = null;
-    if (word === LAYER_NAMES[0]) {
-      browser.clickTab(word);
-    } else {
-      browser.openViews();
-      await sleep(LIST_SETTLE_MS);
-      choices = browser.viewChoices();
-      browser.chooseView(word);
-    }
+    openThePlaceMenu(browser);
+    const choices = word === LAYER_NAMES[0] ? null : browser.viewChoices();
+    browser.clickTab(word);
     const moved = (camera) => camera !== null && hexesApart(camera, before) > FRAMED_WITHIN_HEXES;
     await readUntil(() => browser.read(MAP_CAMERA), moved, SPIRE_WAIT_MS);
     // The dive passes through the spire on its way: the camera counts once it has come to rest.
@@ -3559,7 +3561,7 @@ async function cameraAtRest(browser) {
 }
 
 /** What the switch that opens the views says: the view shown. */
-const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('[data-surface-deep-switch] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
+const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('[data-place-pill]')?.dataset.place ?? document.querySelector('[data-surface-deep-switch] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
 
 /** The views a lab realm with Ethereal I and II lists, and the region's rows (Frontier's spacing). */
 const LAB_LAYERS = LAYER_NAMES.slice(1, 3);
@@ -4046,9 +4048,10 @@ const RACE_BOARD_STATE = `JSON.stringify((() => {
   const read = (selector) => {
     const node = document.querySelector(selector);
     const rect = node?.getBoundingClientRect();
-    return { text: node?.textContent ?? "", visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
+    const pictures = [...(node?.querySelectorAll('[role="img"][aria-label]') ?? [])].map((picture) => picture.getAttribute("aria-label"));
+    return { text: [node?.textContent ?? "", ...pictures].join(" "), visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
   };
-  return { race: read('[data-aspect-race]'), members: read('[data-aspect-members]'), triumphs: read('[data-aspect-triumphs]'),
+  return { race: read('[data-aspect-race]'), members: read('[data-aspect-members]'),
     invite: read('[aria-label^="Invite a friend"]'), banner: read('[data-daily-quest]'),
     stageReady: Boolean(document.querySelector('[data-race-stage][data-ready]')),
     stageError: Boolean(document.querySelector('[data-race-stage][data-error]')),
@@ -4057,15 +4060,15 @@ const RACE_BOARD_STATE = `JSON.stringify((() => {
 
 /** What the opening interface shows: the line over the map, the places on the bar and the day banner's parts. */
 const OPENING_STATE = `JSON.stringify({
-  lines: [...document.querySelectorAll(".ui-notice")].map((node) => node.textContent),
+  moment: document.querySelector("[data-tutorial-dock]")?.getAttribute("data-tutorial-dock") ?? null,
+  lines: [...document.querySelectorAll("[data-tutorial-dock]")].map((node) => node.textContent),
   places: [...(document.querySelector('nav[aria-label="Places"]')?.querySelectorAll("button") ?? [])].map((node) => node.getAttribute("aria-label") ?? node.textContent),
   banner: document.querySelector("[data-daily-quest]")?.textContent ?? "",
-  bar: Boolean(document.querySelector("[data-day-bane-bar]")),
   stores: [...document.querySelectorAll("[data-store-kind], [data-kind]")].map((node) => node.getAttribute("data-store-kind") ?? node.getAttribute("data-kind")),
 })`;
 
 /** Turns Show everything on in the page's saved settings and loads the lab game again, as a player's setting persists. */
-const SHOW_EVERYTHING = `JSON.stringify((() => { localStorage.setItem("eternum-world-appearance", JSON.stringify({ state: { showEverything: true, fogStyle: "clear", reducedMotion: false, haptics: true, nextUpTips: true }, version: 0 })); return true; })())`;
+const SHOW_EVERYTHING = `JSON.stringify((() => { localStorage.setItem("eternum-world-appearance", JSON.stringify({ state: { showEverything: true, fogStyle: "clear", reducedMotion: false, haptics: true }, version: 0 })); return true; })())`;
 
 /** The Aspect page's feed: each fight's row, as a player reads it. */
 const ASPECT_FEED = `JSON.stringify((() => {
@@ -4100,12 +4103,13 @@ function raceBoardSteps(result) {
               return { state };
             },
             verify: ({ played }) =>
+              played.state.moment === "deep" &&
               played.state.lines.length > 0 &&
-              played.state.lines[0].includes("This is your Realm") &&
+              played.state.lines[0].includes("Hold sites to earn") &&
               !played.state.places.includes("Research")
                 ? completed(played)
                 : failed(
-                    "The first session must open on the launch line, with Research still waiting on Essence",
+                    "The Deep race session must open on the Deep contextual lesson, with Research still waiting on Essence",
                     played,
                   ),
           },
@@ -4118,8 +4122,8 @@ function raceBoardSteps(result) {
               for (let attempt = 0; attempt < 16; attempt += 1) {
                 const state = browser.read(OPENING_STATE);
                 if (state.lines.length === 0) break;
-                told.push(state.lines[0].replace(/Got it$/, ""));
-                browser.click("Got it");
+                told.push(state.lines[0]);
+                browser.click(HUD_WORDS.close);
                 await sleep(400);
               }
               const back = await reloadOn("Deep", "map", scenario)(context);
@@ -4157,9 +4161,9 @@ function raceBoardSteps(result) {
               return { back, state };
             },
             verify: ({ played }) =>
-              played.state.bar && played.state.banner.includes("300 of 1,500")
+              played.state.banner.length > 0
                 ? completed(played)
-                : failed("With Show everything the day banner must show the Aspect's bane bar", played),
+                : failed("With Show everything the day banner must show", played),
           },
         ]
       : []),
@@ -4167,13 +4171,9 @@ function raceBoardSteps(result) {
       name: "read-aspect-race",
       play: async ({ browser, extraScreenshot }) => {
         if (result === null) {
-          if (
-            browser.read(
-              `JSON.stringify(Boolean(document.querySelector('[data-daily-quest]') && document.querySelector('[data-daily-quest-chip]')))`,
-            )
-          ) {
-            browser.run(["click", "[data-daily-quest-chip]"]);
-          }
+          browser.read(
+            `(() => { document.querySelector('[data-daily-quest] button[aria-label="${HUD_WORDS.close}"]')?.click(); return true; })()`,
+          );
           await openPlace(browser, HUD_WORDS.season);
         }
         const race = await readUntil(
@@ -4222,8 +4222,8 @@ function raceBoardSteps(result) {
           !race.text.includes("LORDS") &&
           played.invite?.invite.text.includes("Invite a friend to Prowess") &&
           !played.invite?.invite.text.includes("could not be made") &&
-          members.text.includes("1.3K") &&
-          members.text.includes("3.8K") &&
+          members.text.includes("1,250") &&
+          members.text.includes("3,750") &&
           scoped.includes(7) &&
           scoped.includes(9) &&
           (result === null || played.race.ended)
@@ -4649,15 +4649,11 @@ function labMergeSteps(confirm) {
   ];
 }
 
-/** Realm 7, the lab's player realm, the troops its army holds before it is reinforced, and what Max then leaves. */
 const LAB_REALM = 7;
 const ARMY_BEFORE_REINFORCE = 1_498;
-const AT_THE_CHAIN = 1_000_000_000n;
-const REINFORCED = {
-  troops: String(1_902n * AT_THE_CHAIN),
-  26: String(16n * AT_THE_CHAIN),
-  35: String(192n * AT_THE_CHAIN),
-};
+const WHEAT_PER_TROOP = 2n;
+const LEAST_REINFORCED = 404n * BigInt(RESOURCE_PRECISION);
+const WHEAT_FOR_REVEALS = 192n * BigInt(RESOURCE_PRECISION);
 /** How far below its token a realm's tile may lie at the map's zoom: the realm's token stands lower than an army's. */
 const REALM_TILE_BELOW_TOKEN_PX = [70, 50, 90];
 const REINFORCE_STATE = `JSON.stringify({
@@ -4667,11 +4663,7 @@ const REINFORCE_STATE = `JSON.stringify({
   sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
   armyToken: document.querySelector('.mp-at[data-key="army:${PICKED_ARMY}"]')?.textContent ?? null,
   structure: window.__eternumMapSelection?.structure?.id ?? null,
-  // The chain's answer to the reinforcement: the army's troops and each balance the realm paid from, as they stand after.
-  answered: Object.fromEntries((window.__labChain?.sent ?? [])
-    .filter(({ command }) => command.kind === "ManageTroops")
-    .flatMap(({ answered }) => answered)
-    .map(({ model, value }) => model === "ExplorerTroops" ? ["troops", String(value.troops.count)] : [String(value?.resource_type), String(value?.balance)])),
+  reinforced: (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "ManageTroops").at(-1) ?? null,
 })`;
 const REALM_TOKEN = `JSON.stringify((() => {
   const slot = document.querySelector('.mp-at[data-key="structure:${LAB_REALM}"]');
@@ -4708,20 +4700,21 @@ const LAB_SUPPLY_POST_STEPS = [
         browser.tap([armyAt[0] + dx, armyAt[1] + dy]);
         const state = await readUntil(
           () => browser.read(REINFORCE_STATE),
-          (shown) => shown.sheet?.startsWith("Supply post"),
+          (shown) => SUPPLY_POST_SHEET.test(shown.sheet ?? ""),
           SHEET_WAIT_MS,
         );
-        if (state.sheet?.startsWith("Supply post")) {
+        if (SUPPLY_POST_SHEET.test(state.sheet ?? "")) {
           extraScreenshot("supply-post");
+          if (state.buttons.some(isReinforceVerb)) return { found: true, state };
           const button = state.buttons.find((text) => text.startsWith("Reinforce Army"));
           if (!button) return { found: false, state };
           browser.click(button);
           const sheet = await readUntil(
             () => browser.read(REINFORCE_STATE),
-            (shown) => shown.sheet?.startsWith("Reinforce"),
+            (shown) => shown.buttons.some(isReinforceVerb),
             SHEET_WAIT_MS,
           );
-          return { found: sheet.sheet?.startsWith("Reinforce"), state, sheet };
+          return { found: sheet.buttons.some(isReinforceVerb), state, sheet };
         }
         browser.press("Escape");
       }
@@ -4800,12 +4793,16 @@ function reinforceSheetOpen({ played }) {
 }
 
 /** Max, then Reinforce, then the chain's answer: the army's token reads more troops than before. */
+const isReinforceVerb = (name) => /^Reinforce \+/.test(name);
+const SUPPLY_POST_SHEET = /^Supply post/i;
+
 async function reinforceWithMax({ browser, extraScreenshot }) {
   browser.click("Max");
   await sleep(HOVER_SETTLE_MS);
   const chosen = browser.read(REINFORCE_STATE);
   extraScreenshot("max");
-  browser.click("Reinforce");
+  const verb = chosen.buttons.find(isReinforceVerb);
+  if (verb) browser.click(verb);
   const after = await readUntil(
     () => browser.read(REINFORCE_STATE),
     (shown) =>
@@ -4821,9 +4818,27 @@ function armyReinforced({ played }) {
   const troops = Number((after.armyToken ?? "").replace(/^T\d/, "").replaceAll(",", ""));
   if (!(troops > ARMY_BEFORE_REINFORCE))
     return failed(`the army's token reads ${after.armyToken} after the reinforcement`, played);
-  if (after.sheet?.startsWith("Reinforce")) return failed("the Reinforce sheet stays open after the answer", played);
-  if (JSON.stringify(after.answered) !== JSON.stringify(REINFORCED))
-    return failed(`the chain left ${JSON.stringify(after.answered)}, not ${JSON.stringify(REINFORCED)}`, played);
+  if (after.buttons.some(isReinforceVerb)) return failed("the Reinforce sheet stays open after the answer", played);
+  const moved = troopChange(after.reinforced);
+  const paid = {
+    knights: balanceChange(after.reinforced, ResourcesIds.Knight),
+    wheat: balanceChange(after.reinforced, ResourcesIds.Wheat),
+  };
+  const wheatLeft = BigInt(
+    after.reinforced?.answered.find(
+      ({ model, value }) => model === "ResourceBalance" && Number(value.resource_type) === ResourcesIds.Wheat,
+    )?.value.balance ?? -1,
+  );
+  if (
+    !(moved >= LEAST_REINFORCED) ||
+    paid.knights !== -moved ||
+    paid.wheat !== -WHEAT_PER_TROOP * moved ||
+    wheatLeft < WHEAT_FOR_REVEALS
+  )
+    return failed(
+      `the chain moved ${moved} troops for ${paid.knights} knights and ${paid.wheat} wheat, leaving ${wheatLeft} wheat`,
+      played,
+    );
   return completed({ chosen: played.chosen, sent: after.sent, troops, panel: after.sheet });
 }
 
@@ -6003,8 +6018,7 @@ export const REHEARSAL_WORDS = {
   forecasts: {
     lost: "Your army is lost",
     holds: "The guard survives",
-    earns: "This attack earns",
-    clears: "This attack clears it",
+    victory: "Victory likely",
   },
   take: "Take",
   beast: (name, troops) => `Today's beast: ${name}, ${troops} troops`,
@@ -6599,7 +6613,9 @@ async function buildABarracksOnce(context) {
 }
 
 const OATH_PICK = "[data-oath-pick]";
+const OATH_WAITING = "[data-oath-waiting]";
 const OATH_CARD = "[data-oath-id]";
+const OATH_SWEAR = "[data-oath-swear]";
 const OATH_REDRAW = "[data-reroll-oath]";
 const OATH_CARD_TEXTS = `JSON.stringify([...document.querySelectorAll(${JSON.stringify(OATH_CARD)})].map((card) => card.textContent.trim()))`;
 
@@ -6625,9 +6641,15 @@ async function fragmentSpendsAreOff({ browser, extraScreenshot }) {
   return { army, absent: controls, enabledForTheGame: enabled };
 }
 
+async function openTheWaitingOath(browser) {
+  const token = await readUntil(() => browser.read(elementAt(OATH_WAITING)), Boolean, SHEET_WAIT_MS);
+  if (token && !browser.read(elementAt(OATH_PICK))) browser.tap(token.offset);
+  return readUntil(() => browser.read(elementAt(OATH_PICK)), Boolean, SHEET_WAIT_MS);
+}
+
 async function chooseAnOfferedOath(context) {
   const { browser, extraScreenshot } = context;
-  const pick = await readUntil(() => browser.read(elementAt(OATH_PICK)), Boolean, SHEET_WAIT_MS);
+  const pick = await openTheWaitingOath(browser);
   if (!pick) return null;
   extraScreenshot("oath-pick");
   const cards = browser.read(OATH_CARD_TEXTS);
@@ -6636,6 +6658,7 @@ async function chooseAnOfferedOath(context) {
     return { redraw, refused: "the Oath pick offers a Redraw the game's rules turn off" };
   const before = browser.read(SENT_ACTIONS);
   browser.tap(browser.read(elementAt(OATH_CARD)).offset);
+  browser.tap(browser.read(elementAt(OATH_SWEAR)).offset);
   const receipt = await receiptOfTheNextAction(context, before);
   const closed = await readUntil(() => browser.read(elementAt(OATH_PICK)) === null, Boolean, ORDER_OUTCOME_WAIT_MS);
   return { cards, receipt, closed, redraw };
@@ -6680,7 +6703,7 @@ async function fightOnTheSurface(context) {
 
 const FIGHT_FORECAST = `JSON.stringify(${JSON.stringify(Object.values(REHEARSAL_WORDS.forecasts))}
   .find((word) => document.querySelector("[data-kit-sheet]")?.textContent.includes(word)) ?? null)`;
-const WINNING_FORECASTS = [REHEARSAL_WORDS.forecasts.earns, REHEARSAL_WORDS.forecasts.clears];
+const WINNING_FORECASTS = [REHEARSAL_WORDS.forecasts.victory];
 
 async function attackBesideAnArmy(context) {
   const { browser, extraScreenshot } = context;
@@ -6891,46 +6914,53 @@ export const STEP_SETS = {
           if (browser.read(`JSON.stringify(Boolean(document.querySelector('[aria-label="Close"]')))`))
             browser.click(HUD_WORDS.close);
           await sleep(1_500);
+          const shot = extraScreenshot("world");
+          const menuOpened = openThePlaceMenu(browser);
           const worldHud = browser.read(`(() => ({
             places: [...document.querySelectorAll('nav[aria-label="Places"] button')].map((button) => button.getAttribute('aria-label') || button.textContent?.trim()),
             questChip: Boolean(document.querySelector('[data-daily-quest-chip]')),
             depthSwitch: Boolean(document.querySelector('[data-surface-deep-switch]')),
-            realmWorld: [...document.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) => tab.textContent?.trim()),
+            realmWorld: [...document.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) => tab.getAttribute('aria-label') || tab.textContent?.trim()),
             armies: document.querySelectorAll('nav[aria-label="Armies"] button').length,
-            aspectChip: Boolean(document.querySelector('[data-aspect-standing-chip]')),
-            desktopStores: Boolean(document.querySelector('[aria-label="Stores"]')),
-            realmChip: Boolean(document.querySelector('.frontier-realm-chip')),
-            phonePill: Boolean(document.querySelector('.frontier-phone-pill')),
+            desktopStores: [...document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]')].map((tile) => tile.dataset.store),
+            realmCard: Boolean(document.querySelector('.frontier-realm-card')),
+            placePill: Boolean(document.querySelector('[data-place-pill]')),
           }))()`);
-          return { shot: extraScreenshot("world"), worldHud };
+          if (menuOpened) browser.press("Escape");
+          return { shot, worldHud };
         },
         verify: ({ seen, played }) => {
           const base = inScene("map", "Deep")({ seen, played });
           if (base.status !== "completed") return base;
           const h = played.worldHud;
           const ok = onADesktop()
-            ? h.realmChip &&
-              h.places.includes("Season") &&
+            ? h.realmCard &&
               h.places.includes("Research") &&
-              h.places.includes("Feed") &&
-              h.places.includes("Chat") &&
-              h.places.includes("Relics") &&
-              h.questChip &&
-              h.desktopStores &&
-              h.depthSwitch &&
-              h.realmWorld.includes("Realm") &&
-              h.realmWorld.includes("World") &&
-              h.armies > 0 &&
-              h.aspectChip
-            : h.phonePill &&
-              h.questChip &&
-              h.depthSwitch &&
-              h.realmWorld.includes("Realm") &&
-              h.realmWorld.includes("World") &&
-              h.armies > 0 &&
               h.places.includes("Season") &&
-              h.places.includes("Menu") &&
-              h.places.length === 2;
+              h.places.includes("Feed") &&
+              h.places.includes(HUD_WORDS.settings) &&
+              !h.places.includes(HUD_WORDS.chat) &&
+              !h.places.includes("Relics") &&
+              h.questChip &&
+              everyStock(h.desktopStores) &&
+              h.depthSwitch &&
+              h.realmWorld.includes("Realm") &&
+              h.realmWorld.includes("Surface") &&
+              h.realmWorld.includes("Veil") &&
+              h.realmWorld.includes("Hollow") &&
+              h.realmWorld.includes("Deep") &&
+              !h.realmWorld.includes("World") &&
+              h.armies > 0
+            : h.placePill &&
+              h.questChip &&
+              h.depthSwitch &&
+              h.realmWorld.includes("Realm") &&
+              h.realmWorld.includes("Surface") &&
+              h.realmWorld.includes("Veil") &&
+              h.realmWorld.includes("Hollow") &&
+              h.realmWorld.includes("Deep") &&
+              h.armies > 0 &&
+              h.places.join() === [HUD_WORDS.research, HUD_WORDS.season, HUD_WORDS.chat, HUD_WORDS.menu].join();
           return ok
             ? completed(played)
             : failed("World view must render the full approved HUD parts for this viewport", played);
@@ -6940,7 +6970,7 @@ export const STEP_SETS = {
         name: "world-selected-army",
         settleMs: 1_500,
         play: async ({ browser, extraScreenshot }) => {
-          browser.click("Army 1");
+          await pickArmy(browser, "Army 1");
           const selected = await readUntil(
             () =>
               browser.read(
@@ -6975,35 +7005,55 @@ export const STEP_SETS = {
         name: "realm-screen",
         settleMs: 2_000,
         play: async ({ browser, extraScreenshot }) => {
-          browser.clickTab("Realm");
-          const buildings = await readUntil(
-            () =>
-              browser.read(`document.querySelectorAll('section[aria-label="Realm"] [data-realm-buildings] li').length`),
-            (count) => count >= 4,
+          pressPlace(browser, "Realm");
+          await sleep(1_500);
+          const idleUnobstructed = onADesktop()
+            ? true
+            : browser.read(`!document.querySelector('section[aria-label="Realm"]')`);
+          const shot = extraScreenshot("realm");
+          if (!onADesktop()) {
+            browser.read(
+              `(() => { const chip = document.querySelector('.frontier-bar button.frontier-stock-chips'); if (!chip) return false; chip.click(); return true; })()`,
+            );
+          }
+          await readUntil(
+            () => browser.read(`Boolean(document.querySelector('section[aria-label="Realm"] [data-realm-castle]'))`),
+            Boolean,
             PLAYABLE_WAIT_MS,
           );
-          await sleep(1_500);
           const realmHud = browser.read(`(() => ({
-            tiles: document.querySelectorAll('section[aria-label="Realm"] .realm-tile').length,
+            stocks: [...document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]')].map((tile) => tile.dataset.store),
+            hasCastleHead: Boolean(document.querySelector('section[aria-label="Realm"] [data-realm-castle]')),
             hasDepthSwitch: Boolean(document.querySelector('[data-surface-deep-switch]')),
-            hasDeploy: Boolean(document.querySelector('section[aria-label="Realm"] .realm-foot button[data-kind="primary"]')),
+            hasDeploy: Boolean(document.querySelector('nav[aria-label="Armies"] button[aria-label="Deploy"]')),
           }))()`);
+          const hasRealmPanel = browser.read(`Boolean(document.querySelector('section[aria-label="Realm"]'))`);
+          if (!onADesktop()) {
+            browser.read(
+              `(() => { const chip = document.querySelector('.frontier-bar button.frontier-stock-chips'); if (!chip) return false; chip.click(); return true; })()`,
+            );
+            await readUntil(
+              () => browser.read(`!document.querySelector('section[aria-label="Realm"]')`),
+              Boolean,
+              SHEET_WAIT_MS,
+            );
+          }
           return {
-            buildings,
+            idleUnobstructed,
             realmHud,
-            hasRealmPanel: browser.read(`Boolean(document.querySelector('section[aria-label="Realm"]'))`),
-            shot: extraScreenshot("realm"),
+            hasRealmPanel,
+            shot,
           };
         },
         verify: ({ seen, played }) =>
           seen.scene === "hex" &&
+          played.idleUnobstructed &&
           played.hasRealmPanel &&
-          played.buildings >= 4 &&
-          played.realmHud.tiles >= 3 &&
           played.realmHud.hasDeploy &&
-          !played.realmHud.hasDepthSwitch
+          played.realmHud.hasCastleHead &&
+          everyStock(played.realmHud.stocks)
             ? completed(played)
-            : failed("Realm view must render with Castle, Workshop, Farm and Barracks standing and no depth switch", {
+            : failed("Realm view must render with the realm card's rank and every stock, and Deploy", {
                 seen,
                 played,
               }),
@@ -7035,28 +7085,34 @@ export const STEP_SETS = {
           await sleep(1_000);
           return {
             sheet,
-            inRealmSlot: onADesktop()
-              ? browser.read(`Boolean(document.querySelector('[data-realm-slot] [data-kit-sheet]'))`)
+            inRightRail: onADesktop()
+              ? browser.read(`Boolean(document.querySelector('[data-rail-panel] [data-kit-sheet]'))`)
               : true,
             realmPanelShown: browser.read(`Boolean(document.querySelector('section[aria-label="Realm"]'))`),
             shot: extraScreenshot("realm-build"),
           };
         },
         verify: ({ played }) =>
-          played.sheet === "Build" && played.inRealmSlot && !played.realmPanelShown
+          played.sheet === "Build" && played.inRightRail && played.realmPanelShown === onADesktop()
             ? completed(played)
-            : failed("Pressing an empty plot must replace the Realm panel with Build in place", played),
+            : failed(
+                "Pressing an empty plot must open Build in the right rail while Realm stays visible on desktop",
+                played,
+              ),
       },
       {
         name: "deploy-sheet",
         settleMs: 1_500,
         play: async ({ browser, extraScreenshot }) => {
           browser.press("Escape");
+          await readUntil(
+            () => browser.read(SHEET_NAME),
+            (name) => name === null,
+            SHEET_WAIT_MS,
+          );
           const hasDeploy = await readUntil(
             () =>
-              browser.read(
-                `Boolean(document.querySelector('section[aria-label="Realm"] .realm-foot button[data-kind="primary"]'))`,
-              ),
+              browser.read(`Boolean(document.querySelector('nav[aria-label="Armies"] button[aria-label="Deploy"]'))`),
             Boolean,
             SHEET_WAIT_MS,
           );
@@ -7069,9 +7125,9 @@ export const STEP_SETS = {
           await sleep(1_000);
           const deployHud = browser.read(`(() => ({
             troopCards: [...document.querySelectorAll('[data-kit-sheet] [aria-label="Troop type"] button')].map((b) => b.getAttribute("aria-label")),
-            hasAdjust: [...document.querySelectorAll('[data-kit-sheet] button')].some((b) => b.textContent?.trim() === "Adjust size"),
+            hasSize: Boolean(document.querySelector('[data-kit-sheet] .size-row input[type="range"]')),
             deployEnabled: Boolean(document.querySelector('[data-kit-sheet] .ui-window__foot button[data-kind="primary"]:not([disabled])')),
-            inRealmSlot: Boolean(document.querySelector('[data-realm-slot] [data-kit-sheet][aria-label="Deploy"]')),
+            inRightRail: Boolean(document.querySelector('[data-rail-panel] [data-kit-sheet][aria-label="Deploy"]')),
           }))()`);
           return {
             sheet,
@@ -7082,11 +7138,11 @@ export const STEP_SETS = {
         verify: ({ played }) =>
           played.sheet === "Deploy" &&
           played.deployHud.troopCards.length >= 3 &&
-          played.deployHud.hasAdjust &&
+          played.deployHud.hasSize &&
           played.deployHud.deployEnabled &&
-          (!onADesktop() || played.deployHud.inRealmSlot)
+          (!onADesktop() || played.deployHud.inRightRail)
             ? completed(played)
-            : failed("Deploy sheet must open at full stack with troop cards, Adjust size and enabled Deploy", played),
+            : failed("Deploy sheet must open at full stack with troop cards, its size row and enabled Deploy", played),
       },
     ],
   },
@@ -7104,7 +7160,7 @@ export const STEP_SETS = {
           const ready = await readUntil(
             () =>
               browser.read(`JSON.stringify({
-                open: Boolean(document.querySelector('${onADesktop() ? "[data-realm-slot] " : ""}section[aria-label="${HUD_WORDS.research}"]')),
+                open: Boolean(document.querySelector('${onADesktop() ? "[data-wide-page] " : ""}section[aria-label="${HUD_WORDS.research}"]')),
                 rows: document.querySelectorAll('section[aria-label="${HUD_WORDS.research}"] [data-node]').length,
               })`),
             (state) => state.open && state.rows > 0,
@@ -7125,7 +7181,7 @@ export const STEP_SETS = {
           const ready = await readUntil(
             () =>
               browser.read(`JSON.stringify({
-                open: Boolean(document.querySelector('${onADesktop() ? "[data-realm-slot] " : ""}section[aria-label="${HUD_WORDS.feed}"]')),
+                open: Boolean(document.querySelector('${onADesktop() ? "[data-right-page] " : ""}section[aria-label="${HUD_WORDS.feed}"]')),
                 rows: document.querySelectorAll('section[aria-label="${HUD_WORDS.feed}"] [data-feed-line]').length,
               })`),
             (state) => state.open && state.rows > 0,
@@ -7146,7 +7202,7 @@ export const STEP_SETS = {
           const ready = await readUntil(
             () =>
               browser.read(`JSON.stringify({
-                open: Boolean(document.querySelector('${onADesktop() ? "[data-realm-slot] " : ""}section[aria-label="${HUD_WORDS.chat}"]')),
+                open: Boolean(document.querySelector('${onADesktop() ? "[data-chat-pane] " : ""}section[aria-label="${HUD_WORDS.chat}"]')),
               })`),
             (state) => state.open,
             SHEET_WAIT_MS,
@@ -7161,15 +7217,16 @@ export const STEP_SETS = {
         settleMs: 0,
         play: async ({ browser, extraScreenshot }) => {
           const target = onADesktop() ? HUD_WORDS.settings : HUD_WORDS.menu;
-          if (onADesktop()) browser.click(HUD_WORDS.settings);
+          if (onADesktop()) browser.clickTab(HUD_WORDS.settings);
           else browser.tapPlace(HUD_WORDS.menu);
           const ready = await readUntil(
             () =>
               browser.read(`JSON.stringify({
                 open: Boolean(document.querySelector('[aria-label="${target}"]:not(button)')),
-                tiles: [...document.querySelectorAll('.menu-place-tile')].map((button) => button.getAttribute('aria-label')),
+                rows: [...document.querySelectorAll('section[aria-label="Menu"] .menu-tiles [aria-label]')].map((row) => row.getAttribute('aria-label')),
+                places: [...document.querySelectorAll('nav[aria-label="Places"] button')].map((button) => button.getAttribute('aria-label')),
               })`),
-            (state) => state.open && (onADesktop() || state.tiles.length === 4),
+            (state) => state.open && (onADesktop() || state.rows.length > 0),
             SHEET_WAIT_MS,
           );
           return { ...ready, target, shot: extraScreenshot("menu") };
@@ -7177,38 +7234,16 @@ export const STEP_SETS = {
         verify: ({ played }) =>
           played.open &&
           (onADesktop() ||
-            (played.tiles.includes(HUD_WORDS.research) &&
-              played.tiles.includes(HUD_WORDS.feed) &&
-              played.tiles.includes(HUD_WORDS.chat) &&
-              played.tiles.includes(HUD_WORDS.relics)))
+            (played.rows.includes(HUD_WORDS.feed) &&
+              played.rows.includes(HUD_WORDS.settings) &&
+              played.places.includes(HUD_WORDS.research) &&
+              played.places.includes(HUD_WORDS.chat)))
             ? completed(played)
             : failed("Menu or Settings must open from its control", played),
       },
-      {
-        name: "panel-relics",
-        settleMs: 0,
-        play: async ({ browser, extraScreenshot }) => {
-          if (onADesktop()) browser.clickTab(HUD_WORDS.relics);
-          else browser.click(HUD_WORDS.relics);
-          const ready = await readUntil(
-            () =>
-              browser.read(`JSON.stringify({
-                open: Boolean(document.querySelector('${onADesktop() ? "[data-realm-slot] " : ""}section[aria-label="${HUD_WORDS.relics}"]')),
-                ready: document.querySelectorAll('section[aria-label="${HUD_WORDS.relics}"] [data-army-relics] button[aria-label^="Switch on "]').length,
-                running: Boolean(document.querySelector('section[aria-label="${HUD_WORDS.relics}"] [data-relics-running]')),
-              })`),
-            (state) => state.open && state.ready === 3 && state.running,
-            SHEET_WAIT_MS,
-          );
-          return { ...ready, shot: extraScreenshot("relics") };
-        },
-        verify: ({ played }) =>
-          played.open && played.ready === 3 && played.running
-            ? completed(played)
-            : failed("Relics drawer must open showing the army's three carried relics and active effect", played),
-      },
     ],
   },
+  "lab-hud-sheets": { game: labSpireGame("panels"), steps: HUD_SHEET_STEPS },
   "lab-race-expired": { game: labSpireGame("race-expired"), steps: raceBoardSteps("expired") },
   "lab-race-finished": { game: labSpireGame("race-finished"), steps: raceBoardSteps("won") },
 
@@ -7453,6 +7488,8 @@ const DESKTOP_ORDERS = "a desktop orders from the map at once: the queued next o
 /** The run plays at a desktop's width (the HUD's left column and contextual orders). */
 const onADesktop = () => VIEWPORT.width >= DESKTOP_MIN_WIDTH;
 
+const everyStock = (tiles) => tiles.includes("fragments") && tiles.includes("lords") && tiles.length > 2;
+
 /**
  * Centres the army, finds tiles beside it that offer an order, taps and confirms the first (the first order) and, once
  * its send is held at the network, acts with the others: the tile after the first stays beside the army when it stands
@@ -7624,8 +7661,7 @@ const placeSelected = (kind, selection) =>
 function openTheFarPlace(kind) {
   return async ({ browser }) => {
     if (!browser.read(farPlaceReading(kind)).chip) {
-      if (onADesktop()) browser.clickTab(HUD_WORDS.chat);
-      else browser.tapPlace(HUD_WORDS.chat);
+      await openPlace(browser, HUD_WORDS.chat);
       await sleep(1_500);
     }
     const before = browser.read(farPlaceReading(kind));

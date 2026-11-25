@@ -16,7 +16,7 @@ const QUEST_ICONS = {
   [quest.CULL]: "skull",
 } satisfies Record<QuestId, IconMeaning>;
 
-export function dayQuestFace(id: QuestId): DayQuestFace & { objective: string } {
+export function dayQuestFace(id: QuestId): DayQuestFace {
   const quest = questCatalog.find((quest) => quest.id === id);
   if (!quest) throw new Error(`Missing quest ${id}`);
   return { icon: QUEST_ICONS[id], name: quest.name, unit: quest.unit, objective: quest.objective };

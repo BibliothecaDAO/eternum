@@ -210,6 +210,20 @@ button.ui-panel__name[data-action]:hover {
 .ui-button[data-tone="bad"]:disabled {
   opacity: 1;
 }
+.ui-button[data-kind="primary"][data-tone="bad"] {
+  height: auto;
+  min-height: var(--hud-control);
+  min-width: 0;
+  white-space: normal;
+  border-color: var(--hud-bad);
+  background: color-mix(in srgb, var(--hud-bad) 30%, rgb(var(--hud-dark)));
+  color: rgb(var(--hud-ink));
+  box-shadow: none;
+  font-family: inherit;
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-leading-strong);
+  letter-spacing: normal;
+}
 /* A button that opens an address (a guide) is a link with the button's look. */
 a.ui-button {
   text-decoration: none;
@@ -326,6 +340,21 @@ a.ui-button {
   font-weight: var(--hud-weight-label);
   font-variant-numeric: tabular-nums;
   text-align: center;
+}
+.ui-price {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing[2.5]);
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-leading-strong);
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+}
+.ui-price > span {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.1);
 }
 
 /* ── Tabs: a strip of choices; the chosen one in gold over a gold rule. ── */
@@ -564,45 +593,6 @@ button.ui-chip:disabled {
   color: white;
 }
 
-/* ── Rarity: a chest's rarity, common to legendary; its frame thickens and warms with it. ── */
-.ui-rarity {
-  --rarity: var(--hud-rarity-1);
-  display: inline-flex;
-  height: 26px;
-  flex: none;
-  align-items: center;
-  gap: theme(spacing[1.5]);
-  border: 1px solid var(--rarity);
-  border-radius: var(--hud-radius-control);
-  background: var(--hud-surface-to);
-  padding: 0 theme(spacing.2);
-  color: rgb(var(--hud-ink));
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  font-weight: var(--hud-weight-label);
-  white-space: nowrap;
-}
-.ui-rarity[data-tier="2"] {
-  --rarity: var(--hud-rarity-2);
-  border-width: 2px;
-}
-.ui-rarity[data-tier="3"] {
-  --rarity: var(--hud-rarity-3);
-  border-width: 3px;
-  border-style: double;
-}
-.ui-rarity[data-tier="4"] {
-  --rarity: var(--hud-rarity-4);
-  border-width: 4px;
-  border-style: double;
-}
-.ui-rarity[data-tier="5"] {
-  --rarity: var(--hud-rarity-5);
-  border-width: 5px;
-  border-style: double;
-  box-shadow: 0 0 10px var(--hud-rarity-5);
-}
-
 /* ── Tier: a gem in its rarity colour with the tier's numeral, Common I to Legendary V. ── */
 .ui-tier {
   --rarity: var(--hud-rarity-1);
@@ -649,12 +639,6 @@ button.ui-chip:disabled {
   inset: 2px;
   clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
   background: var(--hud-well);
-}
-.ui-tier-step {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing.1);
-  color: var(--hud-muted);
 }
 .ui-tier[data-tier="2"] {
   --rarity: var(--hud-rarity-2);
@@ -1048,7 +1032,7 @@ span.ui-row__choose {
   bottom: var(--hud-phone-foot, env(safe-area-inset-bottom));
   z-index: theme(zIndex.hud-sheet);
   display: flex;
-  max-height: theme(spacing.hud-phone-panel);
+  max-height: theme(spacing.hud-phone-sheet);
   flex-direction: column;
   /* Shown even while the panel it opened from steps aside for it. */
   visibility: visible;
@@ -1093,6 +1077,9 @@ span.ui-row__choose {
 /* A frame whose body sends all it holds to its foot (HudWindowFoot) keeps no empty band above it. */
 .ui-frame__body:empty {
   display: none;
+}
+.ui-frame__body[data-more-below] {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - theme(spacing.8)), transparent);
 }
 /* A screen held sideways: the sheet stands in the HUD's right column, under its strip (HudBands). */
 @media (max-width: 1023px) and (orientation: landscape) {
@@ -1336,6 +1323,16 @@ button.ui-relic:focus-visible {
   line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
+.ui-actions__note:empty {
+  display: none;
+}
+.ui-actions:has(> .ui-button[data-tone="bad"]) {
+  flex-wrap: wrap;
+}
+.ui-actions:has(> .ui-button[data-tone="bad"]) > .ui-actions__note {
+  order: -1;
+  flex-basis: 100%;
+}
 .ui-actions > :last-child:not(.ui-actions__note) {
   order: 2;
   margin-left: auto;
@@ -1351,6 +1348,10 @@ button.ui-relic:focus-visible {
   flex-basis: 100%;
 }
 
+:is([data-hud-form], [data-frontier-rail]) .ui-window__foot > :last-child:not(.ui-actions__note) {
+  flex: 1;
+}
+
 /* ── Window footer: the window's actions, under a rule. ── */
 .ui-window__foot:empty {
   display: none;
@@ -1358,6 +1359,11 @@ button.ui-relic:focus-visible {
 .ui-window__foot {
   border-top: 1px solid var(--hud-divider);
   padding: theme(spacing.3) theme(spacing.4);
+}
+@media (max-width: 1023px) {
+  .ui-sheet .ui-window__foot {
+    padding-inline: theme(spacing.3);
+  }
 }
 
 /* ── Troop amount: the count typed, +500 and Max beside it, then out of how many can, for a quick deploy. ── */
@@ -1876,6 +1882,13 @@ button.ui-relic:focus-visible {
     height: 16px;
   }
 }
+.ui-line {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+}
 .ui-notice__fix {
   margin-left: auto;
   align-self: center;
@@ -2017,6 +2030,8 @@ button.ui-relic:focus-visible {
 
 /* ── Loading: a spinner where an answer is awaited, rows standing in for a list, a line while the game comes in. ── */
 .ui-spinner {
+  display: inline-block;
+  vertical-align: middle;
   width: 18px;
   height: 18px;
   border: 2px solid rgb(var(--hud-accent) / 0.25);
@@ -2154,6 +2169,10 @@ button.ui-pill:focus-visible {
   background: var(--hud-chosen);
   outline: 2px solid rgb(var(--hud-accent));
   outline-offset: -2px;
+}
+.ui-pick[data-selected][data-tone="bad"] {
+  border-color: var(--hud-bad);
+  outline-color: var(--hud-bad);
 }
 
 /* ── Card: a painting to pick (a building to build), its name and words on the foot, its actions and badge over it. ── */
@@ -2425,16 +2444,11 @@ button.ui-card__choose:disabled {
 [data-frontier-rail] {
   width: theme(spacing.hud-frontier-rail);
 }
-@media (min-width: 1024px) {
-  [data-frontier-rail] {
-    width: 26.25rem;
-  }
-}
 [data-frontier-rail]:has([data-rail-panel] > *) [data-rail-home] {
   display: none;
 }
 [data-rail-panel] .ui-sheet,
-[data-realm-slot] .ui-sheet {
+[data-right-page] .ui-sheet {
   position: relative;
   inset: auto;
   z-index: auto;

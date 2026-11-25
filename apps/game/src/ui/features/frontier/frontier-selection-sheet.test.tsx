@@ -129,10 +129,41 @@ const clearedCamp = ({ occupied, reload }: { occupied: boolean; reload: boolean 
 };
 
 describe("Frontier's selection sheet", () => {
+  it.each([false, true])(
+    "opens the supply post's reinforcement for the player's army beside it, not the receipt the banner told (reload: %s)",
+    async (reload) => {
+      Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+      const store = clearedCamp({ occupied: false, reload });
+      tiles.current = [];
+      useAccountStore.setState({ account: { address: "0x111" } as never });
+      useUIStore.getState().setMapLayer(false);
+      useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE });
+      const host = document.createElement("div");
+      const root = createRoot(host);
+      try {
+        await act(async () =>
+          root.render(
+            <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
+              <FrontierSelectionSheet realm={null} onResearch={() => undefined} />
+            </GameProvider>,
+          ),
+        );
+        const sheet = host.querySelector("[data-kit-sheet]")!;
+        expect(sheet.getAttribute("aria-label")).toBe("Supply Post");
+        expect(sheet.querySelector(".ui-frame__head .ui-chip")?.textContent).toBe(siteName(SITE));
+        expect(sheet.textContent!.split(siteName(SITE)).length - 1).toBe(1);
+        expect(sheet.textContent).toContain("Open until the day ends");
+        expect(sheet.textContent).not.toContain("Cleared · Golem");
+      } finally {
+        act(() => root.unmount());
+        useUIStore.getState().selectOnMap(null);
+        useAccountStore.setState({ account: null });
+      }
+    },
+  );
+
   it.each([
-    { reload: false, occupied: false, foreign: false, renamed: false },
     { reload: false, occupied: true, foreign: false, renamed: false },
-    { reload: true, occupied: false, foreign: false, renamed: false },
     { reload: true, occupied: true, foreign: false, renamed: false },
     { reload: true, occupied: true, foreign: false, renamed: true },
     { reload: false, occupied: true, foreign: true, renamed: false },
@@ -175,7 +206,8 @@ describe("Frontier's selection sheet", () => {
           ),
         );
         const sheet = host.querySelector("[data-kit-sheet]")!;
-        expect(sheet.getAttribute("aria-label")).toBe(`Supply post · ${expectedName}`);
+        expect(sheet.getAttribute("aria-label")).toBe("Supply Post");
+        expect(sheet.querySelector(".ui-frame__head .ui-chip")?.textContent).toBe(expectedName);
         expect(sheet.textContent!.split(expectedName).length - 1).toBe(1);
         expect(host.textContent).toContain("Cleared · Golem");
         expect(host.textContent).toContain("550 Labor");
@@ -184,9 +216,7 @@ describe("Frontier's selection sheet", () => {
         await act(async () => close!.click());
         expect(host.querySelector("[data-kit-sheet]")).toBeNull();
         await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE }));
-        expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(
-          `Supply post · ${expectedName}`,
-        );
+        expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Supply Post");
         expect(host.querySelector("[data-kit-sheet]")!.textContent).toContain(expectedName);
         expect(host.querySelector("[data-site-rewards]")?.textContent).toBe("550 Labor");
       } finally {
@@ -234,9 +264,8 @@ describe("Frontier's selection sheet", () => {
       expect(host.querySelector("[data-kit-sheet]")).toBeNull();
       // The clear's row in the Feed selects the tile itself, as every match link does (openOnMap's "tile").
       await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE }));
-      expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(
-        `Supply post · ${siteName(SITE)}`,
-      );
+      expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Supply Post");
+      expect(host.querySelector("[data-kit-sheet] .ui-frame__head .ui-chip")?.textContent).toBe(siteName(SITE));
       expect(host.textContent).toContain("Cleared · Golem");
     } finally {
       act(() => root.unmount());

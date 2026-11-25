@@ -112,7 +112,7 @@ export const frontierPreset = {
     })),
   ],
   discovery: {
-    beastsBps: 600,
+    beastsBps: 900,
     campBps: 400,
     riftBps: 400,
     ruinBps: 300,

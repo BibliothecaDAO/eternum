@@ -1,3 +1,20 @@
+.hyper-stage {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.hyper-stage--compact {
+  gap: 0.625rem;
+}
+
+.hyper-stage__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: theme(spacing.2.5);
+}
+
 .hyper-tile {
   display: flex;
   min-width: 0;
@@ -53,159 +70,141 @@
   color: rgb(var(--app-aspect));
 }
 
-.hyper-art {
-  display: grid;
-  width: 100%;
-  height: 7.5rem;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--app-line) 75%, transparent);
-  border-radius: var(--app-radius-control);
-  background: radial-gradient(
-    ellipse 85% 65% at 50% 62%,
-    rgb(var(--app-aspect) / 0.16) 0%,
-    color-mix(in srgb, var(--app-ground) 92%, transparent) 78%
-  );
-  padding: 0.25rem;
-}
-
-.hyper-art--compact {
-  height: 5.5rem;
-}
-
-.hyper-art__svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  max-width: 11.5rem;
-}
-
-.hyper-svg__hex-top-a {
-  stop-color: #9c5a2d;
-}
-
-.hyper-svg__hex-top-b {
-  stop-color: #693418;
-}
-
-.hyper-svg__hex-left-a {
-  stop-color: #582913;
-}
-
-.hyper-svg__hex-left-b {
-  stop-color: #35170a;
-}
-
-.hyper-svg__hex-right-a {
-  stop-color: #421d0d;
-}
-
-.hyper-svg__hex-right-b {
-  stop-color: #261006;
-}
-
-.hyper-svg__stone-top-a {
-  stop-color: #8b7d6b;
-}
-
-.hyper-svg__stone-top-b {
-  stop-color: #5c5144;
-}
-
-.hyper-svg__shadow {
-  fill: rgb(0 0 0 / 0.45);
-}
-
-.hyper-svg__hex-front {
-  fill: #46200f;
-}
-
-.hyper-svg__hex-rim {
-  stroke: rgb(var(--app-gold) / 0.45);
-  stroke-width: 1.2;
-}
-
-.hyper-svg__hex-inner {
-  fill: none;
-  stroke: color-mix(in srgb, var(--app-ink) 16%, transparent);
-  stroke-width: 1;
-}
-
-.hyper-svg__stone-left {
-  fill: #443c32;
-}
-
-.hyper-svg__stone-front {
-  fill: #3a332b;
-}
-
-.hyper-svg__stone-right {
-  fill: #2d2720;
-}
-
-.hyper-svg__core-pad {
-  fill: rgb(var(--app-aspect) / 0.24);
-  stroke: rgb(var(--app-aspect) / 0.65);
-  stroke-width: 1.2;
-}
-
-.hyper-svg__tier-1 {
-  fill: #6b5e50;
-  stroke: color-mix(in srgb, var(--app-ink) 18%, transparent);
-  stroke-width: 1;
-}
-
-.hyper-svg__glow-1 {
-  fill: rgb(var(--app-aspect) / 0.2);
-}
-
-.hyper-svg__tier-2 {
-  fill: #776858;
-  stroke: rgb(var(--app-aspect) / 0.4);
-  stroke-width: 1;
-}
-
-.hyper-svg__glow-2 {
-  fill: rgb(var(--app-aspect) / 0.65);
-}
-
-.hyper-svg__tier-3 {
-  fill: #847463;
-  stroke: rgb(var(--app-aspect) / 0.55);
-  stroke-width: 1;
-}
-
-.hyper-svg__glow-3 {
-  fill: rgb(var(--app-aspect) / 0.85);
-}
-
-.hyper-svg__tier-4 {
-  fill: #948371;
-  stroke: rgb(var(--app-aspect) / 0.75);
-  stroke-width: 1;
-}
-
-.hyper-svg__glow-4 {
-  fill: rgb(var(--app-aspect) / 0.9);
-}
-
-.hyper-svg__spire {
-  fill: rgb(var(--app-aspect));
-}
-
-.hyper-svg__spire-halo {
-  fill: rgb(var(--app-aspect) / 0.45);
-}
-
-.hyper-svg__beam {
-  stroke: rgb(var(--app-aspect) / 0.4);
-  stroke-width: 2;
-  stroke-dasharray: 3 3;
-}
-
 .hyper-tile__pips {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.25rem;
+}
+
+.hyper-tile__pips--triumphs {
+  align-items: end;
+  padding-top: 0.1rem;
+}
+
+.hyper-tile__stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.28rem;
+}
+
+.hyper-tile__marker {
+  display: inline-flex;
+  align-self: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--app-line-strong) 80%, transparent);
+  border-radius: var(--app-radius-round);
+  background: color-mix(in srgb, var(--app-well) 90%, transparent);
+  color: var(--app-muted);
+  cursor: pointer;
+  opacity: 0.65;
+  transition:
+    opacity 140ms ease,
+    border-color 140ms ease,
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.hyper-tile--compact .hyper-tile__marker {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.hyper-tile__marker[data-reached] {
+  border-color: rgb(var(--app-aspect) / 0.78);
+  background: color-mix(in srgb, rgb(var(--app-aspect)) 20%, var(--app-surface));
+  color: rgb(var(--app-aspect));
+  opacity: 1;
+  box-shadow: 0 0 8px rgb(var(--app-aspect) / 0.4);
+}
+
+.hyper-tile__marker:is(:hover, :focus-visible),
+.hyper-tile__stage[data-open] .hyper-tile__marker {
+  border-color: rgb(var(--app-gold));
+  opacity: 1;
+  outline: none;
+  box-shadow: 0 0 0 1px rgb(var(--app-gold) / 0.4);
+}
+
+.hyper-tile__tip {
+  position: absolute;
+  bottom: calc(100% + 0.4rem);
+  left: 50%;
+  z-index: 30;
+  display: flex;
+  width: max-content;
+  max-width: 14rem;
+  flex-direction: column;
+  gap: 0.18rem;
+  border: 1px solid rgb(var(--app-gold) / 0.5);
+  border-radius: var(--app-radius-control);
+  background: var(--app-surface);
+  padding: 0.45rem 0.6rem;
+  box-shadow: var(--app-shadow-panel);
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease,
+    visibility 120ms ease;
+}
+
+.hyper-tile__tip[data-edge="start"] {
+  left: 0;
+  transform: translate(0, 4px);
+}
+
+.hyper-tile__tip[data-edge="end"] {
+  right: 0;
+  left: auto;
+  transform: translate(0, 4px);
+}
+
+.hyper-tile__stage:is(:hover, :focus-within, [data-open]) .hyper-tile__tip {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+.hyper-tile__stage:is(:hover, :focus-within, [data-open]) .hyper-tile__tip[data-edge="start"],
+.hyper-tile__stage:is(:hover, :focus-within, [data-open]) .hyper-tile__tip[data-edge="end"] {
+  transform: translate(0, 0);
+}
+
+.hyper-tile__tip-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.hyper-tile__tip-name {
+  font-family: var(--app-face-strong);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-strong);
+  color: var(--app-ink);
+  white-space: nowrap;
+}
+
+.hyper-tile__tip-height {
+  font-family: var(--app-face-label);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--app-gold));
+  white-space: nowrap;
+}
+
+.hyper-tile__tip-rule {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--app-muted);
 }
 
 .hyper-tile__pip {
@@ -229,8 +228,10 @@
 
 .hyper-tile__height {
   display: inline-flex;
+  min-width: 0;
   align-items: baseline;
-  gap: 0.25rem;
+  gap: 0.2rem;
+  white-space: nowrap;
 }
 
 .hyper-tile__count {
@@ -242,6 +243,7 @@
 .hyper-tile__goal {
   font-size: 0.72rem;
   color: var(--app-muted);
+  white-space: nowrap;
 }
 
 .hyper-tile__members {
@@ -250,4 +252,30 @@
   gap: 0.2rem;
   font-size: 0.72rem;
   color: var(--app-muted);
+}
+
+@media (max-width: 639px) {
+  .hyper-tile {
+    padding: 0.6rem 0.55rem;
+  }
+
+  .hyper-tile__foot {
+    flex-wrap: wrap;
+    gap: 0.15rem 0.35rem;
+  }
+
+  .hyper-tile__goal {
+    font-size: 0.66rem;
+  }
+
+  .hyper-tile__members {
+    font-size: 0.68rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hyper-stage__grid:not(.hyper-stage__grid--compact) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: theme(spacing.3);
+  }
 }

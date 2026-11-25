@@ -8,11 +8,39 @@
   background: var(--hud-well);
 }
 
+.race-stage--shell,
+.race-stage--shell-compact {
+  border-color: var(--app-line);
+  border-radius: var(--app-radius-panel);
+  background: var(--app-well);
+}
+
+.race-stage--shell {
+  height: 10.5rem;
+}
+
+.race-stage--shell-compact {
+  height: 9.5rem;
+  border-radius: var(--app-radius-control);
+}
+
 @media (min-width: 1024px) {
   .race-stage {
-    height: 44vh;
-    min-height: 22rem;
-    max-height: 34rem;
+    height: clamp(16rem, 30vh, 22rem);
+    min-height: 16rem;
+    max-height: 22rem;
+  }
+
+  .race-stage--shell {
+    height: clamp(18rem, 30vh, 22rem);
+    min-height: 18rem;
+    max-height: 22rem;
+  }
+
+  .race-stage--shell-compact {
+    height: 11.5rem;
+    min-height: 0;
+    max-height: none;
   }
 }
 
@@ -42,4 +70,12 @@
   border-radius: var(--hud-radius-round);
   background: var(--hud-surface-to);
   box-shadow: var(--hud-shadow-control);
+}
+
+.race-stage--shell .race-stage__plate,
+.race-stage--shell-compact .race-stage__plate {
+  border-color: var(--app-line-strong);
+  border-radius: var(--app-radius-round);
+  background: var(--app-surface-2);
+  box-shadow: var(--app-shadow-panel);
 }

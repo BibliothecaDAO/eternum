@@ -1,4 +1,4 @@
-import { HeaderStores } from "@/ui/features/frontier/hud/header-stores";
+import { RealmCard } from "@/ui/features/frontier/hud/realm-card";
 import { bankedCounterTarget } from "@/ui/motion/moments/banked-flight";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
 import type { SiteClear } from "@/ui/features/frontier/sites/site-outcome";
@@ -7,9 +7,9 @@ import { type ReactNode, useRef, useState } from "react";
 
 /** Site payouts as the world update listener reads them from SitePayout stories, in whole units. */
 const STORIES: Record<"camp" | "rift" | "ruin", SiteClear> = {
-  camp: { siteId: 1, kind: "Camp", reward: { resourceId: ResourcesIds.Labor, amount: 550 } },
-  rift: { siteId: 2, kind: "Rift", reward: { resourceId: ResourcesIds.Essence, amount: 3_300 } },
-  ruin: { siteId: 3, kind: "Ruin", reward: null },
+  camp: { siteId: 1, kind: "Camp", reward: { resourceId: ResourcesIds.Labor, amount: 550 }, troopsLost: 325 },
+  rift: { siteId: 2, kind: "Rift", reward: { resourceId: ResourcesIds.Essence, amount: 3_300 }, troopsLost: 610 },
+  ruin: { siteId: 3, kind: "Ruin", reward: null, troopsLost: 1_200 },
 };
 
 /**
@@ -41,8 +41,12 @@ export const SiteLab = () => {
     <div className="flex w-full flex-col items-center gap-4">
       {counters && (
         <div className="flex justify-center">
-          <HeaderStores
-            showPopoverCard={false}
+          <RealmCard
+            name="Duskbite"
+            kind="realm"
+            level={1}
+            fragments={null}
+            lords={null}
             stores={[
               labStore("essence", ResourcesIds.Essence, balances[ResourcesIds.Essence]),
               labStore("labor", ResourcesIds.Labor, balances[ResourcesIds.Labor]),

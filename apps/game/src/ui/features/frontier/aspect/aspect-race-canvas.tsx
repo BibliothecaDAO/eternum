@@ -3,10 +3,17 @@ import "./aspect-race-canvas.css";
 import { useEffect, useRef, useState } from "react";
 
 import type { AspectRaceRendererHandle } from "@/three/race/aspect-race-renderer";
-import type { TowerPlateAnchor } from "@/three/race/aspect-race-world";
+import type { RaceTowerEntry, TowerPlateAnchor } from "@/three/race/aspect-race-world";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { HudNotice } from "@/ui/design-system/kit/hud-elements";
-import type { AspectStanding } from "./aspect-page-view";
+
+type AspectRaceCanvasSurface = "hud" | "shell" | "shell-compact";
+
+const SURFACE_CLASS: Record<AspectRaceCanvasSurface, string> = {
+  hud: "race-stage",
+  shell: "race-stage race-stage--shell",
+  "shell-compact": "race-stage race-stage--shell-compact",
+};
 
 const canMountRenderer = (): boolean => {
   if (typeof window === "undefined" || typeof ResizeObserver === "undefined") return false;
@@ -21,36 +28,45 @@ const canMountRenderer = (): boolean => {
   }
 };
 
-const defaultAnchors = (standings: readonly AspectStanding[]): TowerPlateAnchor[] =>
+const defaultAnchors = (standings: readonly RaceTowerEntry[]): TowerPlateAnchor[] =>
   standings.map((standing, index) => ({
     aspectId: standing.aspectId,
     leftPercent: ((index + 0.5) / Math.max(1, standings.length)) * 100,
     topPercent: 86,
   }));
 
+const standingsSignature = (standings: readonly RaceTowerEntry[], finishHeight: number): string =>
+  `${finishHeight}|${standings.map((entry) => `${entry.aspectId}:${entry.height}:${entry.finished ? 1 : 0}`).join(",")}`;
+
 export function AspectRaceCanvas({
   standings,
   finishHeight,
+  surface = "hud",
 }: {
-  standings: readonly AspectStanding[];
+  standings: readonly RaceTowerEntry[];
   finishHeight: number;
+  surface?: AspectRaceCanvasSurface;
 }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<AspectRaceRendererHandle | null>(null);
   const latestRef = useRef({ standings, finishHeight });
   latestRef.current = { standings, finishHeight };
+  const signature = standingsSignature(standings, finishHeight);
+  const syncedSignatureRef = useRef(signature);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [anchors, setAnchors] = useState<readonly TowerPlateAnchor[]>(() => defaultAnchors(standings));
 
   useEffect(() => {
+    if (syncedSignatureRef.current === signature) return;
+    syncedSignatureRef.current = signature;
     if (handleRef.current) {
-      handleRef.current.setStandings(standings, finishHeight);
+      handleRef.current.setStandings(latestRef.current.standings, latestRef.current.finishHeight);
     } else {
-      setAnchors(defaultAnchors(standings));
+      setAnchors(defaultAnchors(latestRef.current.standings));
     }
-  }, [standings, finishHeight]);
+  }, [signature]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -105,6 +121,7 @@ export function AspectRaceCanvas({
           return;
         }
         handleRef.current = handle;
+        syncedSignatureRef.current = standingsSignature(latestRef.current.standings, latestRef.current.finishHeight);
         handle.setStandings(latestRef.current.standings, latestRef.current.finishHeight);
         syncPaused();
       })
@@ -119,13 +136,16 @@ export function AspectRaceCanvas({
     };
   }, []);
 
+  const markSize = surface === "shell-compact" ? 18 : 22;
+
   return (
     <div
       ref={hostRef}
       data-race-stage
+      data-race-surface={surface}
       data-ready={ready || undefined}
       data-error={error ? "true" : undefined}
-      className="race-stage"
+      className={SURFACE_CLASS[surface]}
     >
       <canvas ref={canvasRef} className="race-stage__canvas" />
       {error && (
@@ -140,7 +160,7 @@ export function AspectRaceCanvas({
             className="race-stage__plate"
             style={{ left: `${anchor.leftPercent}%`, top: `${anchor.topPercent}%` }}
           >
-            <AspectMark aspect={anchor.aspectId} size={22} decorative />
+            <AspectMark aspect={anchor.aspectId} size={markSize} decorative />
           </span>
         ))}
       </div>

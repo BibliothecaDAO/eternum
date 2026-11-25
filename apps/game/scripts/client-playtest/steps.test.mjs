@@ -1,4 +1,5 @@
 import { JSDOM } from "jsdom";
+import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it, vi } from "vitest";
 
@@ -19,12 +20,12 @@ import {
   MOVE,
   EVENTS_WORDS,
   MENU,
-  RELIC_WORDS,
   RESEARCH,
   SEASON,
   SETTINGS,
   SHARED_LINK_WORDS,
   SPIRE_WORDS,
+  TODAY,
 } from "../../src/ui/design-system/kit/words";
 import {
   CLOSEST_CAMERA_DISTANCE,
@@ -58,7 +59,7 @@ describe("the HUD's words the steps press and read", () => {
       close: CLOSE,
       chat: CHAT,
       settings: SETTINGS,
-      relics: RELIC_WORDS.title,
+      today: TODAY,
     });
   });
 });
@@ -308,7 +309,7 @@ describe("reading the season", () => {
     opened: seen(["Realm", "Season"], ["Season"]),
     closed: seen(["Realm", "Feed"], ["Feed"]),
   };
-  const phone = { desktop: false, menu: ["Menu"], opened: seen(["Season"]), closed: seen([]) };
+  const phone = { desktop: false, opened: seen(["Season"]), closed: seen([]) };
 
   it("completes on a desktop when the Season place lit and its board drew in the rail, then closed", () => {
     expect(verify({ seen: onTheMap, played: desktop }).status).toBe("completed");
@@ -323,9 +324,8 @@ describe("reading the season", () => {
     expect(verify({ seen: onTheMap, played: stayed }).reason).toBe("the Season's board did not close");
   });
 
-  it("reads a phone's season from its Menu: the board drew, then its × closed it", () => {
+  it("reads a phone's season from its tab: the board drew, then its × closed it", () => {
     expect(verify({ seen: onTheMap, played: phone }).status).toBe("completed");
-    expect(verify({ seen: onTheMap, played: { ...phone, menu: [] } }).reason).toBe("the Menu did not open");
     expect(verify({ seen: onTheMap, played: { ...phone, opened: seen([]) } }).reason).toBe(
       "the Season's board was not drawn",
     );
@@ -1026,11 +1026,13 @@ describe("lab-hud-devices", () => {
     expect(MAP_LEAST_SHARE).toBe(HUD_MAP_LEAST_SHARE);
   });
 
-  it("fails a state that leaves the map under its least share, and reads Chat's without holding it", () => {
+  it("fails a state that leaves the map under its least share, Chat's sheet as any other", () => {
     const menu = steps.find((step) => step.name === "menu").verify;
-    expect(menu(share(39.9)).status).toBe("failed");
-    expect(menu(share(40)).status).toBe("completed");
-    expect(steps.find((step) => step.name === "chat").verify(share(8.6)).status).toBe("completed");
+    expect(menu(share(24.9)).status).toBe("failed");
+    expect(menu(share(25)).status).toBe("completed");
+    const chat = steps.find((step) => step.name === "chat").verify;
+    expect(chat(share(8.6)).status).toBe("failed");
+    expect(chat(share(25)).status).toBe("completed");
     expect(menu({ played: { share: { canvas: false, map: 0 } } }).status).toBe("blocked");
   });
 });
@@ -1112,18 +1114,29 @@ it("requires the selected Aspect in both the founding command and its membership
     );
 });
 
-it("requires one quest command, its exact receipt, both credited balances and the collected UI", () => {
+it("requires one quest command, its exact receipt, both balances credited by it whatever they held, and the collected UI", () => {
   const verify = STEP_SETS["lab-daily-quest"].steps[1].verify;
   const sent = {
     command: { fields: { home: "7", day: "0" } },
     answered: [
       { model: "LaborGrant", value: { home: "7", day: "0", amount: "1000000000000", essence: "1500000000000" } },
-      { model: "ResourceBalance", value: { balance: "1500000000000" } },
-      { model: "ResourceBalance", value: { balance: "1500000000000" } },
+      { model: "ResourceBalance", value: { resource_type: 23, balance: "1500000000000" } },
+      { model: "ResourceBalance", value: { resource_type: 38, balance: "1500000000000" } },
     ],
+    before: [null, { balance: "500000000000" }, null],
   };
   const played = { ready: { collect: true }, collected: true, grants: [sent] };
   expect(verify({ played }).status).toBe("completed");
+  const produced = {
+    ...sent,
+    answered: [
+      sent.answered[0],
+      { model: "ResourceBalance", value: { resource_type: 23, balance: "1777000000000" } },
+      { model: "ResourceBalance", value: { resource_type: 38, balance: "1500000000000" } },
+    ],
+    before: [null, { balance: "777000000000" }, null],
+  };
+  expect(verify({ played: { ...played, grants: [produced] } }).status).toBe("completed");
   for (const failed of [
     { ...played, collected: false },
     { ...played, grants: [] },
@@ -1148,47 +1161,59 @@ it("requires one quest command, its exact receipt, both credited balances and th
 });
 
 it.each([
-  ["world", ["LaborGrant"], "1500000000000", "1500000000000", "The Cull: 2,500 of 2,500 troops. Ash Fall"],
-  ["again", ["BaneGrant"], "2500000000000", "3000000000000", "The Cull: 2,500 of 2,500 troops. Ash Fall"],
-  ["late", ["LaborGrant", "BaneGrant"], "2500000000000", "3000000000000", "The Cull: 2,500 of 2,500 troops. Ash Fall"],
-  ["team", ["LaborGrant"], "1500000000000", "1500000000000", "The Stand: 3 of 3 sites. Prowess's bane"],
-])("requires exact %s bane receipts, balances, identity and collected UI", (stage, models, labor, essence, text) => {
-  const verify = STEP_SETS[`lab-bane-${stage}`].steps[1].verify;
-  const sent = {
-    command: { fields: { home: "7", day: "1" } },
-    answered: [
-      ...models.map((model) => ({
-        model,
-        value: { home: "7", day: "1", amount: "1000000000000", essence: "1500000000000" },
-      })),
-      { model: "ResourceBalance", value: { resource_type: 23, balance: labor } },
-      { model: "ResourceBalance", value: { resource_type: 38, balance: essence } },
-    ],
-  };
-  const played = { ready: { collect: true, text }, collected: true, grants: [sent] };
-  expect(verify({ played }).status).toBe("completed");
-  const withAnswers = (answered) => ({ ...played, grants: [{ ...sent, answered }] });
-  for (const bad of [
-    { ...played, collected: false },
-    { ...played, ready: { collect: true, text: "A different quest" } },
-    { ...played, grants: [sent, sent] },
-    { ...played, grants: [{ ...sent, command: { fields: { home: "7", day: "0" } } }] },
-    withAnswers(sent.answered.slice(1)),
-    withAnswers([...sent.answered, sent.answered[0]]),
-    withAnswers(
-      sent.answered.map((fact) =>
-        fact.model === models[0] ? { ...fact, value: { ...fact.value, amount: "0" } } : fact,
+  ["world", ["LaborGrant"], "The Cull: 2,500 of 2,500 troops. Ash Fall"],
+  ["again", ["BaneGrant"], "The Cull: 2,500 of 2,500 troops. Ash Fall"],
+  ["late", ["LaborGrant", "BaneGrant"], "The Cull: 2,500 of 2,500 troops. Ash Fall"],
+  ["team", ["LaborGrant"], "The Stand: 3 of 3 sites. Prowess's bane"],
+])(
+  "requires exact %s bane receipts, each credited once whatever the balances held, identity and collected UI",
+  (stage, models, text) => {
+    const verify = STEP_SETS[`lab-bane-${stage}`].steps[1].verify;
+    const held = { labor: 731_000_000_000n, essence: 42_000_000_000n };
+    const credited = (each) => String(BigInt(models.length) * each);
+    const sent = {
+      command: { fields: { home: "7", day: "1" } },
+      answered: [
+        ...models.map((model) => ({
+          model,
+          value: { home: "7", day: "1", amount: "1000000000000", essence: "1500000000000" },
+        })),
+        {
+          model: "ResourceBalance",
+          value: { resource_type: 23, balance: String(held.labor + BigInt(credited(1_000_000_000_000n))) },
+        },
+        {
+          model: "ResourceBalance",
+          value: { resource_type: 38, balance: String(held.essence + BigInt(credited(1_500_000_000_000n))) },
+        },
+      ],
+      before: [...models.map(() => null), { balance: String(held.labor) }, { balance: String(held.essence) }],
+    };
+    const played = { ready: { collect: true, text }, collected: true, grants: [sent] };
+    expect(verify({ played }).status).toBe("completed");
+    const withAnswers = (answered) => ({ ...played, grants: [{ ...sent, answered }] });
+    for (const bad of [
+      { ...played, collected: false },
+      { ...played, ready: { collect: true, text: "A different quest" } },
+      { ...played, grants: [sent, sent] },
+      { ...played, grants: [{ ...sent, command: { fields: { home: "7", day: "0" } } }] },
+      withAnswers(sent.answered.slice(1)),
+      withAnswers([...sent.answered, sent.answered[0]]),
+      withAnswers(
+        sent.answered.map((fact) =>
+          fact.model === models[0] ? { ...fact, value: { ...fact.value, amount: "0" } } : fact,
+        ),
       ),
-    ),
-    withAnswers(
-      sent.answered.map((fact) =>
-        fact.model === "ResourceBalance" ? { ...fact, value: { ...fact.value, balance: "0" } } : fact,
+      withAnswers(
+        sent.answered.map((fact) =>
+          fact.model === "ResourceBalance" ? { ...fact, value: { ...fact.value, balance: "0" } } : fact,
+        ),
       ),
-    ),
-    withAnswers(sent.answered.filter((fact) => fact.model !== "ResourceBalance")),
-  ])
-    expect(verify({ played: bad }).status).toBe("failed");
-});
+      withAnswers(sent.answered.filter((fact) => fact.model !== "ResourceBalance")),
+    ])
+      expect(verify({ played: bad }).status).toBe("failed");
+  },
+);
 
 it("reports the failed Oath capacity assertion without trying to time a missing result", async () => {
   const step = STEP_SETS["lab-oath-slots"].steps.find(({ name }) => name === "deploy-with-oath-slots");
@@ -1251,9 +1276,11 @@ describe("the Season 1 rehearsal", () => {
     expect(REHEARSAL_WORDS.forecasts).toEqual({
       lost: FIGHT_WORDS.armyLost,
       holds: FIGHT_WORDS.holds,
-      earns: FIGHT_WORDS.earns,
-      clears: FIGHT_WORDS.clears,
+      victory: FIGHT_WORDS.victory,
     });
+    expect(readFileSync(new URL("../../AGENTS.md", import.meta.url), "utf8").replace(/\s+/g, " ")).toContain(
+      `forecasts a win ("${REHEARSAL_WORDS.forecasts.victory}")`,
+    );
     expect(REHEARSAL_WORDS.take).toBe(DEEP_WORDS.take);
     expect(REHEARSAL_WORDS.beast("Balrog", 900)).toBe(DEEP_WORDS.beast("Balrog", 900));
     expect(REHEARSAL_WORDS.open).toBe(DEEP_WORDS.open);
@@ -1379,5 +1406,49 @@ describe("the Season 1 rehearsal", () => {
     expect(judgeCatchUp(t0, { events: 34, l2Gas: 50_000_000 }, 4).failed).toBe(
       "the catch-up play settled nothing: another command settled the ticks first",
     );
+  });
+});
+
+describe("the realm world's deploy sheet (lab-realm-world)", () => {
+  const step = STEP_SETS["lab-realm-world"].steps.find(({ name }) => name === "deploy-sheet");
+  const page = () => {
+    const { document } = new JSDOM(
+      `<nav aria-label="Armies"><button aria-label="Deploy" data-kind="primary">Deploy</button></nav>`,
+    ).window;
+    const clicked = [];
+    const browser = {
+      press: () => {},
+      read: (expression) => {
+        const value = runInNewContext(expression, { document });
+        return typeof value === "string" ? JSON.parse(value) : value;
+      },
+      click: (name) => {
+        clicked.push(name);
+        if (name !== "Deploy" || !document.querySelector('nav[aria-label="Armies"] button[aria-label="Deploy"]'))
+          return;
+        document.body.insertAdjacentHTML(
+          "beforeend",
+          `<div data-rail-panel><section data-kit-sheet aria-label="Deploy">
+            <div aria-label="Troop type"><button aria-label="Knights"></button><button aria-label="Crossbowmen"></button><button aria-label="Scouts"></button></div>
+            <div class="size-row"><input type="range" /></div>
+            <div class="ui-window__foot"><button data-kind="primary">Deploy</button></div>
+          </section></div>`,
+        );
+      },
+    };
+    return { browser, clicked };
+  };
+
+  it("opens Deploy from the army dock's Deploy, which the realm card no longer carries", async () => {
+    const { browser, clicked } = page();
+    const played = await step.play({ browser, extraScreenshot: () => "deploy.png" });
+    expect(clicked).toEqual(["Deploy"]);
+    expect(played.deployHud).toEqual({
+      troopCards: ["Knights", "Crossbowmen", "Scouts"],
+      hasSize: true,
+      deployEnabled: true,
+      inRightRail: true,
+    });
+    expect(step.verify({ played }).status).toBe("completed");
   });
 });

@@ -8,8 +8,7 @@ import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { Icon } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudCost, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { costLine } from "@/ui/design-system/kit/price-faces";
+import { HudButton, HudChip, HudPrice, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { ARMY, dayLeft, MOVE, SPIRE_WORDS, STAMINA } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import {
@@ -95,9 +94,8 @@ export const useArmySpireStatus = (explorerId: number) => {
  */
 const SpireButton = ({ explorerId, spire }: { explorerId: number; spire: Spire }) => (
   <HudButton
-    kind="secondary"
-    size="sm"
-    icon={reachMark(1)}
+    kind="primary"
+    icon="spire"
     onClick={() =>
       useUIStore
         .getState()
@@ -186,11 +184,11 @@ const OwnSpire = ({ spire }: { spire: Spire }) => {
               <HudButton kind="primary" icon="move" onClick={() => requestOrderAt(approach.target)}>
                 {MOVE}
               </HudButton>
-              <HudCost
-                line={costLine([
+              <HudPrice
+                prices={[
                   { of: "stamina", amount: approach.stamina.cost },
                   { of: "wheat", amount: approach.wheat.cost },
-                ])}
+                ]}
               />
             </div>
           )}

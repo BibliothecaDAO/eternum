@@ -1,5 +1,4 @@
 import { homeIcon, homeKind } from "./home-icons";
-import type { FrontierSpecies } from "@/three/structures/frontier-beast";
 import {
   aspectName,
   BuildingType,
@@ -14,10 +13,15 @@ import {
   nativeGameModeOfFamily,
   readFrontierBeast,
   type ArchivedStoryVariant,
+  type FrontierSpecies,
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import type { NativeRows, NativeStoryVariant } from "../../../../../contracts/l3/world-native/schema/client.gen";
-import { iconDefinition, type IconMeaning, resourceMeaning } from "./icon-meaning";
+import {
+  nativeFactModels,
+  type NativeRows,
+  type NativeStoryVariant,
+} from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { iconDefinition, resourceMeaning, type IconMeaning } from "./icon-meaning";
 
 const archivedStoryMeanings = {
   FaithPointsClaimedStory: "shrine",
@@ -121,7 +125,6 @@ export function realmMarkerMeaning(level: number, hasWonder = false): IconMeanin
   return `map-${realmMeaning(level)}` as IconMeaning;
 }
 
-/** The buildings painted as themselves, named as buildings in every game; the rest wear what they make. */
 const BUILDING_PAINTINGS: Partial<Record<BuildingType, IconMeaning>> = {
   [BuildingType.ResourceWheat]: "farm",
   [BuildingType.ResourceLabor]: "workshop",
@@ -132,22 +135,33 @@ const BUILDING_PAINTINGS: Partial<Record<BuildingType, IconMeaning>> = {
   [BuildingType.ScoutsLodge]: "scout-lodge",
   [BuildingType.ConscriptionCamp]: "camp",
 };
-/** Frontier names its troop building Barracks (buildingName), and paints it so; elsewhere it is "Knight T1". */
+
 const FRONTIER_BUILDING_PAINTINGS: Partial<Record<BuildingType, IconMeaning>> = {
   [BuildingType.ResourceKnightT1]: "barracks",
   [BuildingType.ResourceCrossbowmanT1]: "war-hall",
 };
 
-/**
- * A building's painting, the one way every card, menu and list draws it: its own where it has one, else what it makes
- * (a Market its donkey, a Knight T2 building its troops). A building with neither is loud.
- */
 export function buildingMeaning(building: BuildingType, frontier = false): IconMeaning {
   const own = (frontier ? FRONTIER_BUILDING_PAINTINGS[building] : undefined) ?? BUILDING_PAINTINGS[building];
   if (own) return own;
   const made = getProducedResource(building);
   if (made === undefined) throw new Error(`Building ${building} has no painting`);
   return resourceMeaning(made);
+}
+
+export type RelicKind = NativeRows["ArmyRelicEffect"]["kind"];
+
+export const RELIC_KINDS = nativeFactModels.ArmyRelicEffect.fields.kind.enum as readonly RelicKind[];
+
+const RELIC_MEANINGS = {
+  Blade: "damage-relic-2",
+  Ward: "damage-reduction-relic-2",
+  Plunder: "exploration-reward-relic-2",
+  StaminaRegen: "stamina-relic-2",
+} satisfies Record<RelicKind, IconMeaning>;
+
+export function relicMeaning(kind: RelicKind): IconMeaning {
+  return RELIC_MEANINGS[kind];
 }
 
 /** Species identity selects the painting, independent of combat tier and remaining strength. */

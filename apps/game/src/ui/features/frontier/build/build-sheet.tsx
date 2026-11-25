@@ -77,15 +77,47 @@ export const useOpenPlot = (realm: NativeRows["Structure"] | null): HexPosition 
   if (isMapView || !ordersAllowed || !realm || !selected || selected.structureId !== safeInteger(realm.entity_id))
     return null;
   const plot = { col: selected.innerCol, row: selected.innerRow };
-  const distance = getHexDistance({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] }, plot);
-  if (distance === 0 || distance > buildableRadius(realm.base.level)) return null;
-  const building = setup.store.get("Building", {
+  return isOpenPlot(setup.store, realm, plot) ? plot : null;
+};
+
+const CASTLE_PLOT: HexPosition = { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] };
+
+type PlotStore = ReturnType<typeof useGame>["setup"]["store"];
+
+const isOpenPlot = (store: PlotStore, realm: NativeRows["Structure"], plot: HexPosition): boolean => {
+  const distance = getHexDistance(CASTLE_PLOT, plot);
+  if (distance === 0 || distance > buildableRadius(realm.base.level)) return false;
+  const building = store.get("Building", {
     game_id: realm.game_id,
     structure_id: realm.entity_id,
     inner_col: plot.col,
     inner_row: plot.row,
   });
-  return building && Number(building.category) !== BuildingType.None ? null : plot;
+  return !building || Number(building.category) === BuildingType.None;
+};
+
+const realmPlots = (realm: NativeRows["Structure"]): HexPosition[] => {
+  const radius = buildableRadius(realm.base.level);
+  const plots: HexPosition[] = [];
+  for (let row = CASTLE_PLOT.row - radius; row <= CASTLE_PLOT.row + radius; row += 1)
+    for (let col = CASTLE_PLOT.col - radius; col <= CASTLE_PLOT.col + radius; col += 1) {
+      const distance = getHexDistance(CASTLE_PLOT, { col, row });
+      if (distance > 0 && distance <= radius) plots.push({ col, row });
+    }
+  return plots;
+};
+
+const openPlots = (store: PlotStore, realm: NativeRows["Structure"]): HexPosition[] =>
+  realmPlots(realm).filter((plot) => isOpenPlot(store, realm, plot));
+
+const plotsHeld = (store: PlotStore, realm: NativeRows["Structure"]) => {
+  const total = realmPlots(realm).length;
+  return { used: total - openPlots(store, realm).length, total };
+};
+
+export const useRealmPlots = (realm: NativeRows["Structure"] | null) => {
+  const facts = useNativeFacts(BUILD_MODELS);
+  return realm ? plotsHeld(facts.store, realm) : undefined;
 };
 
 export const BuildSheet = ({
@@ -114,9 +146,10 @@ export const BuildSheet = ({
   const indexOf = (category: BuildingType | null) =>
     options?.findIndex((candidate) => candidate.category === category) ?? -1;
   const firstBuild = useUIStore((state) => state.firstBuild);
-  const chosen = Math.max(indexOf(picked ?? firstBuild), 0);
+  const sent = useInFlight("plot", plotKey(realmId, plot));
+  const chosen = indexOf(picked ?? sent?.type ?? firstBuild);
   const option = options?.[chosen];
-  const sending = useInFlight("plot", plotKey(realmId, plot)) !== undefined;
+  const sending = sent !== undefined;
   const mode = useGameModeConfig();
   const names = usePlayerNames();
   const realmInfo = useMemo(
@@ -127,13 +160,13 @@ export const BuildSheet = ({
   const stillShowing = useStillShowing(plot);
 
   // Until the realm's research is known, no building's tier or price is.
-  if (!options || !option) return null;
+  if (!options) return null;
 
   /**
    * The sheet closes as the building leaves, if it still shows this plot; its ghost stays on the plot until the
    * build's own outcome.
    */
-  const build = async () => {
+  const build = async (option: BuildOption) => {
     AudioManager.getInstance().play("ui.build_place");
     try {
       await sendBuilding({
@@ -150,7 +183,7 @@ export const BuildSheet = ({
 
   const held = (resource: number) =>
     knownAmount(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
-  const standing = (): Refusal | undefined => {
+  const standing = (option: BuildOption): Refusal | undefined => {
     if (option.standing === "built") return { reason: { kind: "failed", line: ONE_A_REALM } };
     if (option.standing !== "open")
       return { reason: { kind: "failed", line: `Requires ${rankName(option.standing.level)}` } };
@@ -188,11 +221,12 @@ export const BuildSheet = ({
     <BuildView
       tiles={options.map((candidate) => buildTile(candidate, holdings))}
       chosen={chosen}
+      plots={plotsHeld(facts.store, realm)}
       onChoose={(index) => setPicked(options[index]!.category)}
-      prices={optionPrices(option)}
-      refusal={standing()}
+      prices={option ? optionPrices(option) : []}
+      refusal={option && standing(option)}
       sending={sending}
-      onBuild={() => void build()}
+      onBuild={() => option && void build(option)}
       onClose={onClose}
     />
   );
@@ -219,9 +253,8 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
   key: String(option.category),
   icon: buildingIcon(option.category),
   name: buildingName(option.category),
-  tip: buildingLine(option),
+  does: buildingDoes(option),
   gives: givesOf(option),
-  gems: gemsOf(option),
   standing: standingOf(option, holdings),
 });
 
@@ -247,24 +280,18 @@ const standingOf = (option: BuildOption, { held, perHour }: Holdings): BuildTile
   };
 };
 
-const buildingLine = (option: BuildOption): RankedWords => {
-  const { effect } = option;
-  const does: RankedWords =
-    effect.kind === "produces"
-      ? [makes(FRONTIER_STORES[madeStore(effect.resource)].word, formatRate(effect.output.total))]
-      : effect.kind === "trains"
-        ? startsNewArmies(effect.attribute, option.tier)
-        : effect.kind === "research"
-          ? [effect.line]
-          : [storesMore(storageShare(effect.shareBps))];
-  return [`${buildingName(option.category)}: `, ...does];
-};
+const buildingDoes = ({ effect, tier }: BuildOption): RankedWords =>
+  effect.kind === "produces"
+    ? [makes(FRONTIER_STORES[madeStore(effect.resource)].word, formatRate(effect.output.total))]
+    : effect.kind === "trains"
+      ? startsNewArmies(effect.attribute, tier)
+      : effect.kind === "research"
+        ? [effect.line]
+        : [storesMore(storageShare(effect.shareBps))];
 
 /** Why a price is above its first: the copies standing raise it. None when no copy stands yet. */
 const riseLine = (option: BuildOption): string | undefined =>
   option.rise.times > 1 ? priceRaised(formatAmount(option.rise.standing)) : undefined;
-
-const gemsOf = ({ effect, tier }: BuildOption): BuildTile["gems"] => (effect.kind === "stores" ? [] : [{ tier }]);
 
 const storageShare = (bps: number) => formatPercent(bps / 10_000, { signed: true });
 

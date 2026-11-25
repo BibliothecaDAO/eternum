@@ -7,7 +7,6 @@ import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { dayOf } from "@bibliothecadao/eternum";
-import { TroopType } from "@bibliothecadao/types";
 
 import { OpeningProvider } from "../opening/opening-context";
 import { EARLY_REALM, MID_REALM } from "../research/progression-fixture";
@@ -22,12 +21,13 @@ import { useOnePanel } from "./one-panel";
 import { MenuPage } from "./menu-page";
 import { OrderBar } from "./order-bar";
 import { PickedArmy } from "./picked-army";
-import { DayPill } from "./day-pill";
-import { HeaderStores } from "./header-stores";
-import { PhoneWorldActions } from "./frontier-nav";
-import { HUD_PLACES, resolveMenuPlaces } from "./hud-places";
+import { DayMedallion } from "./day-pill";
+import { RealmCard } from "./realm-card";
+import { TopBarView } from "./phone-top-bar";
+import { PhoneTabBar } from "./frontier-nav";
+import { HUD_PLACES } from "./hud-places";
 import { OfflineBanner, OfflineNotice } from "./offline-notice";
-import { type StoreReading, storeLine } from "./status-strip";
+import { type StoreReading, storeLine, storeRateText } from "./status-strip";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
@@ -115,8 +115,9 @@ describe("the status strip", () => {
       3_600,
     );
     const clock = { ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 };
-    const markup = renderToStaticMarkup(<DayPill clock={clock} />);
-    expect(text(markup)).toContain(`Day ${day.day} · 24h`);
+    const markup = renderToStaticMarkup(<DayMedallion clock={clock} />);
+    expect(markup).toContain(`aria-label="Day ${day.day}`);
+    expect(text(markup)).toContain("24h");
     expect(markup).not.toMatch(/\b1d\b/);
   });
 
@@ -131,39 +132,158 @@ describe("the status strip", () => {
       },
       3_600,
     );
-    const morning = renderToStaticMarkup(<DayPill clock={{ ...day, shareLeft: 0.75, tone: "calm" }} />);
+    const morning = renderToStaticMarkup(<DayMedallion clock={{ ...day, shareLeft: 0.75, tone: "calm" }} />);
     expect(text(morning)).not.toContain("Day ends");
     expect(text(morning)).not.toContain("Tomorrow lasts");
     expect(morning).toContain("text-hud-ink");
     expect(morning).not.toContain("text-hud-bad");
+    expect(morning).toContain('data-fill-share="25"');
     const lastHour = renderToStaticMarkup(
-      <DayPill clock={{ ...day, secondsLeft: 600, shareLeft: 0.05, tone: "ember" }} />,
+      <DayMedallion clock={{ ...day, secondsLeft: 600, shareLeft: 0.05, tone: "ember" }} />,
     );
-    expect(text(lastHour)).toContain(`Day ${day.day} · 10m`);
+    expect(lastHour).toContain(`aria-label="Day ${day.day}`);
+    expect(text(lastHour)).toContain("10m");
     expect(lastHour).toContain("text-hud-bad");
+    expect(lastHour).toContain('data-fill-share="95"');
+    expect(lastHour).toContain("/images/hud/day-medallion-ember.webp");
   });
 
-  it("shows top-bar stores compactly with exact accessible labels and dashes the unknown", () => {
+  it("draws the phone's day on its bronze disc: the day, the hours left inside it, the ember disc in the last hour", () => {
+    const day = dayClock(
+      {
+        dayUnitSeconds: 4 * 3_600,
+        seed: 1n,
+        startMainAt: 0,
+        scheduledEndAt: 21 * 20 * 14_400,
+        endAt: 21 * 20 * 14_400,
+      },
+      3_600,
+    );
+    act(() =>
+      root.render(<DayMedallion clock={{ ...day, secondsLeft: 900, shareLeft: -0.2, tone: "ember" }} size={52} />),
+    );
+    const timer = host.querySelector('[role="timer"]')!;
+    expect(timer.getAttribute("data-size")).toBe("52");
+    expect(timer.querySelector("img")?.getAttribute("src")).toBe("/images/hud/day-disc-ember.webp");
+    expect(timer.querySelector(".frontier-day-dial__numeral")?.textContent).toBe(String(day.day));
+    expect(timer.querySelector(".frontier-day-dial__left")?.textContent).toBe("15m");
+    expect(timer.getAttribute("aria-label")).toContain(`Day ${day.day} · 15m left`);
+    expect(timer.getAttribute("data-tip")).toContain("15m left");
+  });
+
+  it("lays a phone's and a tablet's one bar: the place switch, Essence, Labor and Wheat opening the realm, the day; the lesson and the quest under it", () => {
+    const day = dayClock(
+      {
+        dayUnitSeconds: 4 * 3_600,
+        seed: 1n,
+        startMainAt: 0,
+        scheduledEndAt: 21 * 20 * 14_400,
+        endAt: 21 * 20 * 14_400,
+      },
+      3_600,
+    );
+    const onOpenRealm = vi.fn();
     act(() =>
       root.render(
-        <HeaderStores
-          showPopoverCard={false}
+        <TopBarView
+          clock={<DayMedallion clock={day} size={52} />}
+          stocks={{
+            realmName: "Duskbite",
+            onOpenRealm,
+            stores: [
+              store("essence", 125_000),
+              { ...store("labor", 9_000, 18_000), perHour: 180 },
+              store("wheat", 3_000, 6_000),
+              store("troops", 1_500, 3_000),
+            ],
+          }}
+          placeMenu={<button type="button">Places</button>}
+          notice={<aside aria-label="Lesson" />}
+          quest={<button type="button">Quest</button>}
+        />,
+      ),
+    );
+    const bar = host.querySelector(".frontier-bar")!;
+    expect([...bar.children].map((part) => part.textContent)).toEqual(["Places", "125K9K3K", "Day111h"]);
+    const realm = bar.querySelector<HTMLButtonElement>('button[aria-label="Duskbite"]')!;
+    expect([...realm.querySelectorAll(".frontier-stock-chip")].map((chip) => chip.getAttribute("data-store"))).toEqual([
+      "essence",
+      "labor",
+      "wheat",
+    ]);
+    act(() => realm.click());
+    expect(onOpenRealm).toHaveBeenCalledTimes(1);
+    expect(host.querySelector('.frontier-phone-float__lead > aside[aria-label="Lesson"]')).not.toBeNull();
+    expect(host.querySelector(".frontier-phone-float__quest")?.textContent).toBe("Quest");
+  });
+
+  it("puts the open realm card right under the bar, in the lesson's and the quest's place", () => {
+    act(() =>
+      root.render(
+        <TopBarView
+          clock={<span>Day</span>}
+          stocks={{ stores: [store("essence", 125_000)] }}
+          notice={<aside aria-label="Lesson" />}
+          quest={<button type="button">Quest</button>}
+          realmCard={<section aria-label="Duskbite" />}
+        />,
+      ),
+    );
+    const top = host.querySelector(".frontier-phone-top")!;
+    expect([...top.children].map((part) => part.className || part.getAttribute("aria-label"))).toEqual([
+      "frontier-bar pointer-events-auto",
+      "Duskbite",
+    ]);
+  });
+
+  it("shows the realm card's stores in order with rates, exact accessible labels and the Fragments tile", () => {
+    const onShop = vi.fn();
+    act(() =>
+      root.render(
+        <RealmCard
+          name="Duskbite"
+          kind="realm"
+          level={1}
+          fragments={250}
+          lords={null}
+          onShop={onShop}
           stores={[
             store("essence", 125_000),
             store("labor", 18_000, 18_000),
-            store("wheat", undefined, 6_000),
+            { ...store("wheat", undefined, 6_000), perHour: 300 },
             store("troops", 420, 1_500),
           ]}
         />,
       ),
     );
-    const plates = [...host.querySelectorAll('[role="img"]')];
-    expect(plates.map((plate) => plate.textContent)).toEqual(["18K", "—", "125K"]);
-    expect(plates.map((plate) => plate.getAttribute("aria-label"))).toEqual([
-      "Labor 18,000 of 18,000",
-      "Wheat — of 6,000",
-      "Essence 125,000",
+    const plates = [...host.querySelectorAll('[data-store] [role="img"]')];
+    expect(plates.map((plate) => plate.closest("[data-store]")!.getAttribute("data-store"))).toEqual([
+      "essence",
+      "labor",
+      "wheat",
+      "lords",
+      "troops",
     ]);
+    expect(plates.map((plate) => plate.getAttribute("aria-label"))).toEqual([
+      "Essence 125,000",
+      "Labor 18,000 of 18,000",
+      "Wheat — of 6,000 · +5/min",
+      "LORDS",
+      "Knights 420 of 1,500",
+    ]);
+    expect(host.querySelector('[data-store="wheat"] .frontier-realm-card__caption')?.textContent).toBe("+5/min");
+    expect(host.querySelector('[data-store="labor"] .frontier-realm-card__caption')?.textContent).toBe("Labor");
+    const fragments = host.querySelector<HTMLButtonElement>('[data-store="fragments"] button');
+    expect(fragments?.getAttribute("aria-label")).toBe("Fragments 250");
+    act(() => fragments!.click());
+    expect(onShop).toHaveBeenCalledTimes(1);
+  });
+
+  it("formats store rates through one helper", () => {
+    expect(storeRateText({ ...store("labor", 100, 1_000), perHour: 180 })).toBe("+3/min");
+    expect(storeRateText({ ...store("labor", 100, 1_000), perHour: 180 }, { compact: true })).toBe("+3");
+    expect(storeRateText({ ...store("labor", 1_000, 1_000), perHour: 180, fullIn: 0 })).toBeNull();
+    expect(storeRateText({ ...store("labor", 100, 1_000), perHour: 0 })).toBeNull();
   });
 });
 
@@ -180,41 +300,16 @@ describe("the army token", () => {
       />,
     );
   /** The bar's segments as drawn: each one's length (its flex-grow) and fill. */
-  const segments = (markup: string) =>
-    [...markup.matchAll(/flex-grow:([\d.]+);flex-basis:0[^>]*><i[^>]*width:([\d.]+)%/g)].map(([, size, fill]) => [
-      Number(size),
-      Number(fill),
-    ]);
+  const staminaFills = (markup: string) =>
+    [...markup.matchAll(/role="meter"[^>]*><i[^>]*width:([\d.]+)%/g)].map(([, fill]) => Number(fill));
 
-  it("wears no XP number, its stamina a segment per explore its maximum holds, and its troops", () => {
+  it("wears no XP number, its stamina one unbroken bar, and its troops", () => {
     const markup = token({ current: 60, max: 120 });
     // The owner, 13 November 2026: no XP number on the army; its way to the next point is a ring.
     expect(text(markup)).toBe("5,000");
     expect(markup).toContain('role="group"');
-    // 120 is six explores: three of them held.
-    expect(segments(markup)).toEqual([
-      [1, 100],
-      [1, 100],
-      [1, 100],
-      [1, 0],
-      [1, 0],
-      [1, 0],
-    ]);
-  });
-
-  it("adds a segment for each explore's worth of maximum its Logistics adds, a short one for a part", () => {
-    expect(segments(token({ current: 140, max: 140 }))).toHaveLength(7);
-    // 90 of 150: four explores held and half the fifth, then seven and a half explores long.
-    expect(segments(token({ current: 90, max: 150 }))).toEqual([
-      [1, 100],
-      [1, 100],
-      [1, 100],
-      [1, 100],
-      [1, 50],
-      [1, 0],
-      [1, 0],
-      [0.5, 0],
-    ]);
+    expect(staminaFills(markup)).toEqual([50]);
+    expect(staminaFills(token({ current: 90, max: 150 }))).toEqual([60]);
   });
 
   it("reads an army on a desktop's card: its title and its stamina exact", () => {
@@ -263,47 +358,60 @@ describe("the army token", () => {
 });
 
 describe("an open slot whose army is being deployed", () => {
-  it("says Deploying…, pulses and cannot be pressed until the deploy's outcome", () => {
+  it("says Deploying… on its Deploy and cannot be pressed until the deploy's outcome", () => {
     const onDeploy = vi.fn();
-    act(() => root.render(<OpenSlotCard label="Deploy" pulse={false} filling="Deploying…" onDeploy={onDeploy} />));
-    const slot = host.querySelector("button")!;
-    expect(slot.getAttribute("aria-label")).toBe("Deploying…");
-    expect(slot.getAttribute("aria-busy")).toBe("true");
-    expect(slot.textContent).toBe("…Deploying…");
-    act(() => slot.click());
+    act(() => root.render(<OpenSlotCard number={2} primary filling="Deploying…" onDeploy={onDeploy} />));
+    const deploy = host.querySelector("button")!;
+    expect(host.textContent).toContain("Slot 2 · Open");
+    expect(deploy.getAttribute("aria-label")).toBe("Deploy");
+    expect(deploy.getAttribute("aria-busy")).toBe("true");
+    expect(deploy.textContent).toBe("Deploying…");
+    act(() => deploy.click());
     expect(onDeploy).not.toHaveBeenCalled();
   });
 });
 
-describe("the phone world actions", () => {
-  it("shows Season and Menu buttons, dots Menu when something is new without numbers, and lights the open surface", () => {
+describe("the phone tab bar", () => {
+  it("lays Research, Season, Chat and Menu, each with its count, and lights the open page", () => {
     const onSurface = vi.fn();
-    act(() => root.render(<PhoneWorldActions surface={null} onSurface={onSurface} events={2} unread={3} />));
+    act(() =>
+      root.render(<PhoneTabBar surface={null} onSurface={onSurface} researchReady feedUnread={2} chatUnread={3} />),
+    );
     const buttons = [...host.querySelectorAll("button")];
-    expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual(["Season", "Menu"]);
-    expect(buttons.map((button) => button.getAttribute("aria-current"))).toEqual([null, null]);
-    expect(buttons[1].textContent).toBe("");
-    expect(buttons[1].querySelector("[data-dot]")).not.toBeNull();
-    act(() => buttons[0].click());
-    expect(onSurface).toHaveBeenCalledWith("season");
-    act(() => buttons[1].click());
-    expect(onSurface).toHaveBeenCalledWith("menu");
-    act(() => root.render(<PhoneWorldActions surface="menu" onSurface={onSurface} events={0} unread={0} />));
-    expect(host.querySelectorAll("button")[1]!.getAttribute("aria-current")).toBe("page");
-    expect(host.querySelectorAll("button")[1]!.querySelector("[data-dot]")).toBeNull();
-    const seasonPlace = HUD_PLACES.find((place) => place.key === "season")!;
-    expect(host.querySelectorAll("button")[0]!.getAttribute("aria-label")).toBe(seasonPlace.label);
+    expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual(["Research", "Season", "Chat", "Menu"]);
+    expect(buttons.map((button) => button.getAttribute("aria-current"))).toEqual([null, null, null, null]);
+    expect(buttons.map((button) => button.querySelector(".frontier-tab__badge")?.textContent ?? null)).toEqual([
+      "1",
+      null,
+      "3",
+      null,
+    ]);
+    expect(buttons[3]!.querySelector("[data-dot]")).not.toBeNull();
+    act(() => buttons[1]!.click());
+    expect(onSurface).toHaveBeenLastCalledWith("season");
     act(() =>
       root.render(
-        <OpeningProvider opened={new Set(["launch"])}>
-          <PhoneWorldActions surface={null} onSurface={onSurface} events={0} unread={0} />
+        <PhoneTabBar surface="today" onSurface={onSurface} researchReady={false} feedUnread={0} chatUnread={0} />,
+      ),
+    );
+    expect(barButtons()).toEqual(["Research", "Season", "Chat", "Menu"]);
+    expect(host.querySelector('button[aria-label="Menu"]')!.getAttribute("aria-current")).toBe("page");
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Menu"]')!.click());
+    expect(onSurface).toHaveBeenLastCalledWith("menu");
+  });
+
+  it("keeps Season on the tab bar from the first minute while Research waits on its moment", () => {
+    act(() =>
+      root.render(
+        <OpeningProvider opened={new Set()}>
+          <PhoneTabBar surface={null} onSurface={vi.fn()} researchReady={false} feedUnread={0} chatUnread={0} />
         </OpeningProvider>,
       ),
     );
-    expect([...host.querySelectorAll("button")].map((button) => button.getAttribute("aria-label"))).toEqual(["Menu"]);
+    expect(barButtons()).toEqual(["Season", "Chat", "Menu"]);
   });
 
-  it("names a Paladin army Scouts on the picked-army row from Frontier's troop table", () => {
+  it("names the picked army and counts its troops in a chip, no troop words beside them", () => {
     act(() =>
       root.render(
         <PickedArmy
@@ -313,7 +421,6 @@ describe("the phone world actions", () => {
             number: 1,
             art: "paladin-t1",
             troops: 400,
-            troopsFact: { category: TroopType.Paladin },
             stamina: { current: 100, max: 100, perExplore: 10 },
             secondsToFull: 0,
             ethereal: undefined,
@@ -323,32 +430,13 @@ describe("the phone world actions", () => {
         />,
       ),
     );
-    expect(host.textContent).toContain("Scouts · 400");
-    expect(host.textContent).not.toContain("Paladins");
+    expect(host.querySelector(".army-tray__name")?.textContent).toBe("Army 1");
+    expect(host.querySelector(".army-tray__troops")?.textContent).toBe("400");
+    expect(host.textContent).not.toMatch(/Scouts|Paladins/);
   });
 
-  it("reads the four non-Season Menu tiles from HUD_PLACES with Chat fourth and gates Relics on relic-slots", () => {
-    expect(HUD_PLACES.map((place) => place.key)).toEqual(["season", "research", "feed", "relics", "chat"]);
-    const allOpen = resolveMenuPlaces({
-      aspectsOpen: true,
-      researchOpen: true,
-      relicsOpen: true,
-      researchReady: true,
-      feedUnread: 2,
-      chatUnread: 1,
-      hasRealm: true,
-    });
-    expect(allOpen.map((place) => place.key)).toEqual(["research", "feed", "relics", "chat"]);
-    const noRelics = resolveMenuPlaces({
-      aspectsOpen: true,
-      researchOpen: true,
-      relicsOpen: false,
-      researchReady: false,
-      feedUnread: 0,
-      chatUnread: 0,
-      hasRealm: true,
-    });
-    expect(noRelics.map((place) => place.key)).toEqual(["research", "feed", "chat"]);
+  it("orders HUD_PLACES as the cornice does", () => {
+    expect(HUD_PLACES.map((place) => place.key)).toEqual(["research", "season", "feed", "chat"]);
   });
 
   it("dots Research only while a node can be researched now", () => {
@@ -359,45 +447,39 @@ describe("the phone world actions", () => {
 });
 
 describe("the Menu", () => {
-  it("opens Today, Season with the rank and Settings, leaves for the app on Exit, and closes on its ×, with no Resume", () => {
+  it("holds what the tab bar does not: the Feed with its unread count, Today, Shop, Settings and the Guide, then Exit", () => {
     const handlers = {
+      onFeed: vi.fn(),
+      onShop: vi.fn(),
       onToday: vi.fn(),
-      onSeason: vi.fn(),
       onSettings: vi.fn(),
       onExit: vi.fn(),
       onClose: vi.fn(),
     };
-    act(() => root.render(<MenuPage rank="#12" guide="https://docs.realms.party/frontier/" {...handlers} />));
+    act(() => root.render(<MenuPage events={2} guide="https://docs.realms.party/frontier/" {...handlers} />));
+    const words = [...document.querySelectorAll("section[aria-label='Menu'] nav .menu-tile")].map(
+      (tile) => tile.textContent,
+    );
+    expect(words).toEqual(["Feed2", "Today", "Shop", "Settings", "Guide", "Exit"]);
     const button = (word: string) =>
       [...document.querySelectorAll<HTMLButtonElement>("section[aria-label='Menu'] button")].find((candidate) =>
         candidate.textContent?.startsWith(word),
       )!;
-    // The rank sits beside the row's own button, in the row.
-    expect(button("Season").closest(".ui-row")?.textContent).toBe("Season#12");
     for (const [word, handler] of [
+      ["Feed", handlers.onFeed],
+      ["Shop", handlers.onShop],
       ["Today", handlers.onToday],
-      ["Season", handlers.onSeason],
       ["Settings", handlers.onSettings],
       ["Exit", handlers.onExit],
     ] as const) {
       act(() => button(word).click());
       expect(handler).toHaveBeenCalled();
     }
-    // Owner, 30 October 2026: "Ok to cut resume": the frame's × closes the Menu, and nothing else says the same.
     expect(button("Resume")).toBeUndefined();
     act(() =>
       document.querySelector<HTMLButtonElement>("section[aria-label='Menu'] button[aria-label='Close']")!.click(),
     );
     expect(handlers.onClose).toHaveBeenCalled();
-  });
-
-  it("has no Production: each store's card opens from its own plate", () => {
-    const ways = { onToday: vi.fn(), onSeason: vi.fn(), onSettings: vi.fn(), onExit: vi.fn(), onClose: vi.fn() };
-    act(() => root.render(<MenuPage rank="—" guide="https://docs.realms.party/frontier/" {...ways} />));
-    const words = [...document.querySelectorAll("section[aria-label='Menu'] nav .ui-row")].map(
-      (row) => row.textContent,
-    );
-    expect(words).toEqual(["Today", "Season—", "Settings", "How to playdocs.realms.party"]);
   });
 });
 
@@ -421,39 +503,19 @@ describe("the HUD's surfaces", () => {
 describe("the order bar", () => {
   const covered = { cost: 30, held: 90, wait: undefined };
 
-  it("reads the labor half of a reveal apart, in ember, when labor no longer fits", () => {
-    act(() =>
-      root.render(
-        <OrderBar
-          kind="explore"
-          tiles={1}
-          stamina={covered}
-          wheat={{ cost: 100, held: 4_410, wait: undefined }}
-          revealYield={500}
-          laborFits={0}
-          onCancel={() => {}}
-          onGo={() => {}}
-        />,
-      ),
-    );
-    expect(host.querySelector('[aria-label="Essence +500"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="Labor +0"]')?.getAttribute("data-tone")).toBe("bad");
-  });
-
   // Owner, 27 October 2026: "Yes double tapping to explore on mobile, the confirm bar can be compacted into one single
   // row". The second tap on the tile sends the order (worldmap-order-preview.test.tsx); the bar is its preview.
-  it("shows in one row what an order leaves and earns, with × to drop it", () => {
+  it("shows in one row what an order leaves, its verb to send it and × to drop it", () => {
     const onCancel = vi.fn();
+    const onGo = vi.fn();
     act(() =>
       root.render(
         <OrderBar
           kind="explore"
-          tiles={1}
           stamina={covered}
           wheat={{ cost: 100, held: 4_410, wait: undefined }}
-          revealYield={500}
           onCancel={onCancel}
-          onGo={() => {}}
+          onGo={onGo}
         />,
       ),
     );
@@ -463,11 +525,12 @@ describe("the order bar", () => {
     expect([...host.querySelectorAll('[role="img"]')].map((chip) => chip.getAttribute("aria-label"))).toEqual([
       "stamina 90 → 60",
       "Wheat −100",
-      "Essence, Labor +500",
     ]);
-    expect(host.textContent).toBe("90 → 60−100+500");
-    expect(barButtons()).toEqual(["Cancel"]);
-    act(() => host.querySelector("button")!.click());
+    expect(host.textContent).toBe("90 → 60−100Explore");
+    expect(barButtons()).toEqual(["Explore", "Cancel"]);
+    act(() => host.querySelector<HTMLButtonElement>('button[data-kind="primary"]')!.click());
+    expect(onGo).toHaveBeenCalledTimes(1);
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Cancel"]')!.click());
     expect(onCancel).toHaveBeenCalled();
   });
 
@@ -476,10 +539,8 @@ describe("the order bar", () => {
       root.render(
         <OrderBar
           kind="explore"
-          tiles={1}
           stamina={{ cost: 30, held: 13, wait: 111 }}
           wheat={{ cost: 100, held: 4_410, wait: undefined }}
-          revealYield={500}
           refill={<button type="button">Refill</button>}
           onCancel={() => {}}
           onGo={() => {}}
@@ -496,10 +557,8 @@ describe("the order bar", () => {
       root.render(
         <OrderBar
           kind="move"
-          tiles={1}
           stamina={covered}
           wheat={{ ...wheat, wait: undefined }}
-          revealYield={null}
           onCancel={() => {}}
           onGo={() => {}}
         />,
@@ -523,10 +582,8 @@ describe("the order bar", () => {
         root.render(
           <OrderBar
             kind="explore"
-            tiles={1}
             stamina={{ cost: 21, held: 120, wait: undefined }}
             wheat={{ ...wheat, wait: undefined }}
-            revealYield={500}
             onCancel={() => {}}
             onGo={onGo}
           />,
@@ -571,10 +628,8 @@ describe("the order bar", () => {
           <input aria-label="message" />
           <OrderBar
             kind="move"
-            tiles={2}
             stamina={covered}
             wheat={{ cost: 4, held: 4_410, wait: undefined }}
-            revealYield={null}
             onCancel={() => {}}
             onGo={onGo}
           />
@@ -595,10 +650,8 @@ describe("the order bar", () => {
       root.render(
         <OrderBar
           kind="move"
-          tiles={3}
           stamina={covered}
           wheat={{ cost: 300, held: 40, wait: 4 * 60 }}
-          revealYield={null}
           onCancel={() => {}}
           onGo={() => {}}
         />,
@@ -675,8 +728,9 @@ it.each([81, 84, 85])("shows the last %ih day with its real countdown and no tom
   const clock = dayClock(calendar, endAt - 600);
   const day = hours === 81 ? 10 : 11;
   expect(clock).toMatchObject({ day, endsAt: endAt, secondsLeft: 600, tomorrowSeconds: undefined, tone: "ember" });
-  const markup = renderToStaticMarkup(<DayPill clock={clock} />);
-  expect(text(markup)).toContain(`Day ${day} · 10m`);
+  const markup = renderToStaticMarkup(<DayMedallion clock={clock} />);
+  expect(markup).toContain(`aria-label="Day ${day}`);
+  expect(text(markup)).toContain("10m");
   expect(markup).not.toContain("Tomorrow");
   expect(seasonDay(calendar, endAt - 1)).toEqual({ day, lastDay: day });
   const start = (hours === 81 ? 68 : 80) * 3600;

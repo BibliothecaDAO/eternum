@@ -126,8 +126,8 @@ describe("a press through the page", () => {
   });
 
   it("reads a link that leaves the app without following it: the only step led with no click", async () => {
-    const { b, pointer } = pageSession(BODY('<a href="https://docs.realms.party/" target="_blank">How to play</a>'));
-    expect(await pressStep(b, { kind: "link", word: "How to play" })).toMatchObject({
+    const { b, pointer } = pageSession(BODY('<a href="https://docs.realms.party/" target="_blank">Guide</a>'));
+    expect(await pressStep(b, { kind: "link", word: "Guide" })).toMatchObject({
       status: "led",
       link: "https://docs.realms.party/",
       followed: false,

@@ -225,6 +225,7 @@ const SITE_MEANINGS: Partial<Record<number, MinimapMarker["name"]>> = {
   [TileOccupier.DormantSpire]: "spire",
   [TileOccupier.ReservedHyperstructure]: "hyperstructure",
   [TileOccupier.Chest]: "chest",
+  [TileOccupier.SupplyPost]: "camp",
 };
 
 /**

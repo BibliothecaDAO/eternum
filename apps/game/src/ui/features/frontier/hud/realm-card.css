@@ -1,0 +1,189 @@
+.frontier-realm-card {
+  display: flex;
+  min-height: 0;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+  border: 1.5px solid color-mix(in srgb, rgb(var(--hud-gold)) 45%, var(--hud-line));
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow:
+    var(--hud-shadow-panel),
+    inset 0 1px 0 color-mix(in srgb, rgb(var(--hud-gold)) 22%, transparent);
+  padding: 10px 10px 12px;
+  color: rgb(var(--hud-ink));
+}
+.frontier-realm-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.frontier-realm-card__identity {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.frontier-realm-card__identity:disabled {
+  cursor: default;
+}
+.frontier-realm-card__identity .frontier-aspect-medallion[data-size="lg"] {
+  margin-bottom: 0;
+}
+.frontier-realm-card__text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+.frontier-realm-card__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-display);
+  line-height: 1;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.frontier-realm-card__sub {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: 18px;
+  white-space: nowrap;
+}
+.frontier-realm-card__sub > span:first-child:not(:last-child)::after {
+  content: "·";
+  margin-left: 5px;
+}
+.frontier-realm-card__order {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+}
+.frontier-realm-card__stores {
+  display: flex;
+  flex-direction: column;
+}
+.frontier-realm-card__cells {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  border-top: 1px solid var(--hud-divider);
+  padding: 6px 0;
+}
+.frontier-realm-card__cells > li {
+  position: relative;
+  min-width: 0;
+}
+.frontier-realm-card__cells > li + li {
+  border-left: 1px solid var(--hud-divider);
+}
+.frontier-realm-card__cell {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: 0;
+  border-radius: var(--hud-radius-control);
+  background: none;
+  padding: 6px 2px;
+  color: inherit;
+  text-align: center;
+}
+button.frontier-realm-card__cell {
+  cursor: pointer;
+}
+button.frontier-realm-card__cell:hover {
+  background: var(--hud-hover);
+}
+.frontier-realm-card__figures {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.frontier-realm-card__value {
+  font-size: var(--hud-text-strong);
+  line-height: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.frontier-realm-card__caption {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--hud-muted);
+  font-size: var(--hud-text-badge);
+  line-height: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.frontier-realm-card__caption[data-tone="good"] {
+  color: var(--hud-good);
+}
+.frontier-realm-card__caption[data-tone="bad"] {
+  color: var(--hud-bad);
+}
+.frontier-realm-card__caption[data-tone="gold"] {
+  color: var(--hud-selected);
+}
+.frontier-realm-card__cells > li[data-row] .frontier-realm-card__cell {
+  flex-direction: row;
+  justify-content: center;
+  gap: 6px;
+}
+.frontier-realm-card__cells > li[data-row] .frontier-realm-card__figures {
+  align-items: flex-start;
+}
+.frontier-realm-card__next {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--hud-divider);
+  padding: 8px 2px 0;
+  font-size: var(--hud-text-label);
+  line-height: 18px;
+}
+.frontier-realm-card__next-line {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.frontier-realm-card__next-line b {
+  font-weight: 700;
+}
+.frontier-realm-card__locked {
+  display: inline-flex;
+  height: 28px;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  padding: 0 10px;
+  font-size: var(--hud-text-label);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

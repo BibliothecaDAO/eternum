@@ -1076,17 +1076,17 @@
     },
     "depth-1": {
       "art": "depth-1",
-      "label": "Ethereal reach I",
+      "label": "Veil",
       "family": "Statuses"
     },
     "depth-2": {
       "art": "depth-2",
-      "label": "Ethereal reach II",
+      "label": "Hollow",
       "family": "Statuses"
     },
     "depth-3": {
       "art": "depth-3",
-      "label": "Ethereal reach III",
+      "label": "Deep",
       "family": "Statuses"
     },
     "reward": {
@@ -1461,6 +1461,21 @@
       "label": "Dark fey",
       "family": "Beasts"
     },
+    "beast-balrog": {
+      "art": "beast-balrog",
+      "label": "Balrog",
+      "family": "Beasts"
+    },
+    "beast-colossus": {
+      "art": "beast-colossus",
+      "label": "Colossus",
+      "family": "Beasts"
+    },
+    "beast-warlock": {
+      "art": "beast-warlock",
+      "label": "Warlock",
+      "family": "Beasts"
+    },
     "wonder-realm-0": {
       "label": "Wonder · Settlement",
       "family": "Structures",
@@ -1544,6 +1559,66 @@
       "label": "Insight",
       "family": "Aspects",
       "aspectId": 4
+    },
+    "beast-banshee": {
+      "art": "beast-banshee",
+      "label": "Banshee",
+      "family": "Beasts"
+    },
+    "beast-golem": {
+      "art": "beast-golem",
+      "label": "Golem",
+      "family": "Beasts"
+    },
+    "beast-kappa": {
+      "art": "beast-kappa",
+      "label": "Kappa",
+      "family": "Beasts"
+    },
+    "beast-tarrasque": {
+      "art": "beast-tarrasque",
+      "label": "Tarrasque",
+      "family": "Beasts"
+    },
+    "beast-lich": {
+      "art": "beast-lich",
+      "label": "Lich",
+      "family": "Beasts"
+    },
+    "beast-ettin": {
+      "art": "beast-ettin",
+      "label": "Ettin",
+      "family": "Beasts"
+    },
+    "beast-kitsune": {
+      "art": "beast-kitsune",
+      "label": "Kitsune",
+      "family": "Beasts"
+    },
+    "beast-minotaur": {
+      "art": "beast-minotaur",
+      "label": "Minotaur",
+      "family": "Beasts"
+    },
+    "emissary-prowess": {
+      "art": "emissary-prowess",
+      "label": "Prowess Emissary",
+      "family": "Aspects"
+    },
+    "emissary-luminary": {
+      "art": "emissary-luminary",
+      "label": "Luminary Emissary",
+      "family": "Aspects"
+    },
+    "emissary-havoc": {
+      "art": "emissary-havoc",
+      "label": "Havoc Emissary",
+      "family": "Aspects"
+    },
+    "emissary-insight": {
+      "art": "emissary-insight",
+      "label": "Insight Emissary",
+      "family": "Aspects"
     }
   },
   "resources": {

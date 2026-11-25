@@ -8,7 +8,6 @@ import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import { costLine } from "@/ui/design-system/kit/price-faces";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -106,10 +105,10 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
         : approach
           ? {
               kind: "move",
-              cost: costLine([
+              prices: [
                 { of: "stamina", amount: approach.stamina.cost },
                 { of: "wheat", amount: approach.wheat.cost },
-              ]),
+              ],
               onMove: () => requestOrderAt(approach.target),
             }
           : "pickArmy"));

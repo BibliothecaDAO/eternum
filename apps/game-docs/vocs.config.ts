@@ -1,9 +1,24 @@
-import { defineConfig } from "vocs";
+import { defineConfig, type SidebarItem } from "vocs";
 import { docsAliases, publicDir } from "./paths";
 import llmTxtPlugin from "./vite-plugin-llm-txt.mjs";
 import BRAND from "./docs/brand.gen.json";
 import { linkPreviewUrl } from "../game/src/brand/link-preview";
 import { isDevEnvironment } from "../game/src/shell/frame/environment";
+import SIDEBAR from "./sidebar.json";
+
+interface SidebarSourceNode {
+  readonly text: string;
+  readonly link?: string;
+  readonly collapsed?: boolean;
+  readonly items?: readonly SidebarSourceNode[];
+}
+
+const toVocsSidebarItem = (node: SidebarSourceNode): SidebarItem => ({
+  text: node.text,
+  ...(node.collapsed ? { collapsed: node.collapsed } : {}),
+  ...(node.link ? { link: node.link } : {}),
+  ...(node.items ? { items: node.items.map(toVocsSidebarItem) } : {}),
+});
 
 /** The brand's colours and marks, written from the game's token file (apps/game/src/brand/surfaces.ts). */
 const color = BRAND.colors;
@@ -35,7 +50,7 @@ export default defineConfig({
     },
   },
 
-  description: "How to play Realms: Frontier, your account, and LORDS",
+  description: "Realms Docs — your account, onchain games starting with Frontier, and live game data",
   iconUrl: BRAND.marks.small,
   logoUrl: BRAND.marks.small,
   // The game's link preview, served by the environment's own app: the deployment sets the build constant the client's
@@ -82,39 +97,5 @@ export default defineConfig({
     },
   },
   title: "Realms Docs",
-  sidebar: [
-    {
-      text: "Your account",
-      items: [
-        { text: "Sign in", link: "/account/sign-in" },
-        { text: "Payout wallet", link: "/account/payout-wallet" },
-        { text: "LORDS", link: "/account/lords" },
-      ],
-    },
-    {
-      text: "Frontier",
-      items: [
-        { text: "Frontier", link: "/frontier" },
-        { text: "Your realm", link: "/frontier/realm" },
-        { text: "Armies", link: "/frontier/armies" },
-        { text: "The expedition", link: "/frontier/expedition" },
-        { text: "Historical chests", link: "/frontier/chests" },
-      ],
-    },
-    {
-      text: "More",
-      items: [
-        { text: "What's new", link: "/changelog" },
-        {
-          text: "Developers",
-          collapsed: true,
-          items: [
-            { text: "Getting started", link: "/development/getting-started" },
-            { text: "Client", link: "/development/client" },
-            { text: "Contracts", link: "/development/contracts" },
-          ],
-        },
-      ],
-    },
-  ],
+  sidebar: (SIDEBAR as readonly SidebarSourceNode[]).map(toVocsSidebarItem),
 });

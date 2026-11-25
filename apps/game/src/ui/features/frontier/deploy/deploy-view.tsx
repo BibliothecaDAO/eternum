@@ -1,17 +1,17 @@
 import "./deploy-view.css";
 
-import { useState, type ReactNode } from "react";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { type TroopType, formatAmount, formatExact, formatShort, formatWait } from "@bibliothecadao/types";
+import { OATH_SLOTS_MAX } from "@bibliothecadao/eternum";
+import { type TroopType, formatExact, formatShort, formatWait } from "@bibliothecadao/types";
 import {
   HudButton,
-  HudCost,
+  HudChip,
+  HudLine,
   HudNotice,
+  HudPrice,
   HudSheet,
-  HudTroopAmount,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
-import { costLine } from "@/ui/design-system/kit/price-faces";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
 import {
   ARMY,
@@ -23,23 +23,20 @@ import {
   NO_OPEN_TILE,
   NO_TROOPS_AT_HOME,
   noTroopsUntil,
+  RESEARCH_TREE,
+  STAMINA,
   TROOPS,
   wheatForOnly,
 } from "@/ui/design-system/kit/words";
 
-import { OpenSlot } from "../hud/army-token";
+import { SizeRow } from "../size-row";
 import type { SlotStart } from "./deploy-plan";
-import { slotStartLine } from "./slot-start";
 
 export interface DeployTroopChoiceView {
   category: TroopType;
   name: string;
   art: IconMeaning;
-  role: string;
   atHome: number;
-  displayCount: number;
-  displayWheat: number;
-  isCustom: boolean;
 }
 
 export const DeployView = ({
@@ -48,8 +45,6 @@ export const DeployView = ({
   art,
   troopsAtHome,
   count,
-  isFullStack,
-  allowedSlots,
   amount,
   onCount,
   start,
@@ -64,7 +59,7 @@ export const DeployView = ({
   onGoToRealm,
   onClose,
 }: {
-  oathSlots?: ReactNode;
+  oathSlots: number | undefined;
   troopSelection?: {
     choices: readonly DeployTroopChoiceView[];
     selected: TroopType | undefined;
@@ -73,9 +68,7 @@ export const DeployView = ({
   art: IconMeaning | undefined;
   troopsAtHome: number | undefined;
   count: number | undefined;
-  isFullStack: boolean;
-  allowedSlots?: number;
-  amount: { most: number; max: number; held: number };
+  amount: { most: number; max: number };
   onCount: (count: number) => void;
   start: SlotStart | undefined;
   slots: { open: SlotStart[] | undefined; onPick: (slot: number) => void };
@@ -89,95 +82,43 @@ export const DeployView = ({
   onGoToRealm: () => void;
   onClose: () => void;
 }) => {
-  const [adjusting, setAdjusting] = useState(false);
-  const totalSlots = allowedSlots ?? slots.open?.length ?? start?.number ?? 0;
-
+  const troopName =
+    troopSelection?.choices.find(({ category }) => category === troopSelection.selected)?.name ?? TROOPS;
   return (
-    <HudSheet label={DEPLOY} icon="military" onClose={onClose}>
-      {start?.start && totalSlots > 0 && (
-        <div className="deploy-sheet__sub">
-          <span>{DEPLOY_WORDS.slotOf(start.number, totalSlots)}</span>
-          <span aria-hidden="true">·</span>
-          <span className="deploy-sheet__stamina">
-            <Icon name="stamina" size={14} />
-            <span>{`${formatAmount(start.start.current)}/${formatAmount(start.start.max)}`}</span>
-          </span>
-        </div>
-      )}
+    <HudSheet label={DEPLOY} cue={start?.start && <StartChip stamina={start.start.current} />} onClose={onClose}>
       {troopSelection && troopSelection.choices.length > 0 && (
-        <div role="group" aria-label="Troop type" className="deploy-troops">
-          {troopSelection.choices.map((choice) => (
-            <button
-              key={choice.category}
-              type="button"
-              className="ui-pick deploy-troop-card"
-              aria-label={choice.name}
-              aria-pressed={troopSelection.selected === choice.category}
-              onClick={() => {
-                setAdjusting(false);
-                troopSelection.onPick(choice.category);
-              }}
-            >
-              <span className="deploy-troop-card__portrait">
-                <Icon name={choice.art} size={48} />
-              </span>
-              <span className="deploy-troop-card__body">
-                <span className="deploy-troop-card__name">{choice.name}</span>
-                <span className="deploy-troop-card__meta">
-                  <span>{choice.role}</span>
-                  <span aria-hidden="true">·</span>
-                  <span className="deploy-troop-card__count">
-                    <Icon name="attack" size={14} />
-                    <span>{formatExact(choice.displayCount)}</span>
-                  </span>
-                </span>
-              </span>
-              <span className="deploy-troop-card__cost">
-                <span className="deploy-troop-card__wheat">
-                  <span>{formatShort(choice.displayWheat)}</span>
-                  <Icon name="wheat" size={14} />
-                </span>
-                <span className="deploy-troop-card__stack">
-                  {choice.isCustom
-                    ? `${formatExact(choice.displayCount)} / ${formatExact(choice.atHome)}`
-                    : DEPLOY_WORDS.fullStack}
-                </span>
-              </span>
-            </button>
-          ))}
-        </div>
+        <TroopChoices
+          choices={troopSelection.choices}
+          selected={troopSelection.selected}
+          onPick={troopSelection.onPick}
+        />
       )}
       {amount.most > 0 && (
-        <>
-          <div className="deploy-size-bar">
-            <span className="deploy-size-bar__state">
-              {isFullStack ? DEPLOY_WORDS.fullStackReady : DEPLOY_WORDS.customSize(formatExact(count ?? 0))}
-            </span>
-            <button
-              type="button"
-              className="deploy-adjust-toggle"
-              aria-expanded={adjusting}
-              onClick={() => setAdjusting((open) => !open)}
-            >
-              {adjusting ? DEPLOY_WORDS.hideSize : DEPLOY_WORDS.adjustSize}
-            </button>
-          </div>
-          {adjusting && (
-            <HudTroopAmount
-              name={TROOPS}
-              art={art}
-              value={count ?? 0}
-              most={amount.most}
-              max={amount.max}
-              held={amount.held}
-              disabled={amount.most === 0}
-              onChange={onCount}
-            />
+        <div className="deploy-size">
+          <SizeRow
+            label={DEPLOY_WORDS.howMany(troopName)}
+            value={count ?? 0}
+            most={amount.most}
+            max={amount.max}
+            count
+            onChange={onCount}
+          />
+          {wheatLimit && wheatLimit.troops > 0 && (
+            <HudLine icon="wheat" line={wheatForOnly(formatExact(wheatLimit.troops), formatExact(wheatLimit.of))} />
           )}
-        </>
+        </div>
       )}
-      {slots.open && slots.open.length > 0 && (slots.open.length > 1 || !start) && (
-        <DeploySlots open={slots.open} picked={start?.slot} onPick={slots.onPick} />
+      {slots.open && slots.open.length > 0 && (
+        <div className="deploy-slots">
+          <span className="deploy-slots__label">{DEPLOY_WORDS.slot}</span>
+          <DeploySlots open={slots.open} picked={start?.slot} onPick={slots.onPick} />
+          {oathSlots !== undefined && (
+            <>
+              <span className="deploy-slots__label deploy-slots__label--end">{DEPLOY_WORDS.oaths}</span>
+              <OathCapacity slots={oathSlots} />
+            </>
+          )}
+        </div>
       )}
       {troopsAtHome === 0 ? (
         troopsWait === undefined ? (
@@ -193,43 +134,59 @@ export const DeployView = ({
       ) : (
         tile === "none" && <HudNotice tone="warn" line={NO_OPEN_TILE} />
       )}
-      {oathSlots}
-      {wheatLimit && (
-        <HudNotice
-          tone="bad"
-          icon="wheat"
-          line={
-            wheatLimit.troops === 0
-              ? shortfallLine({
-                  kind: "short",
-                  of: "wheat",
-                  held: wheatLimit.held,
-                  need: wheatLimit.perTroop,
-                  wait: wheatLimit.wait,
-                })
-              : wheatForOnly(formatExact(wheatLimit.troops), formatExact(wheatLimit.of))
-          }
-          fix={{ label: GET_WHEAT, onClick: onGoToRealm }}
-        />
-      )}
+      {wheatLimit?.troops === 0 && <WheatShort limit={wheatLimit} onGoToRealm={onGoToRealm} />}
       {canDeploy && wheatCost !== undefined && (
-        <HudWindowFoot note={adjusting ? <HudCost line={costLine([{ of: "wheat", amount: wheatCost }])} /> : undefined}>
-          <span className={adjusting ? undefined : "deploy-foot-btn"}>
-            <HudButton
-              kind="primary"
-              icon="military"
-              disabled={!count}
-              busy={sending ? DEPLOYING : undefined}
-              onClick={onDeploy}
-            >
-              {DEPLOY}
-            </HudButton>
-          </span>
+        <HudWindowFoot note={<HudPrice prices={[{ of: "wheat", amount: wheatCost }]} />}>
+          <HudButton
+            kind="primary"
+            icon={art}
+            aria-label={sending ? undefined : DEPLOY}
+            disabled={!count}
+            busy={sending ? DEPLOYING : undefined}
+            onClick={onDeploy}
+          >
+            {DEPLOY_WORDS.deployCount(count ?? 0)}
+          </HudButton>
         </HudWindowFoot>
       )}
     </HudSheet>
   );
 };
+
+const StartChip = ({ stamina }: { stamina: number }) => (
+  <span data-deploy-start>
+    <HudChip icons={["stamina"]} label={`${DEPLOY_WORDS.startsOn} ${STAMINA}`}>
+      {formatShort(stamina)}
+    </HudChip>
+  </span>
+);
+
+const TroopChoices = ({
+  choices,
+  selected,
+  onPick,
+}: {
+  choices: readonly DeployTroopChoiceView[];
+  selected: TroopType | undefined;
+  onPick: (category: TroopType) => void;
+}) => (
+  <div role="group" aria-label={DEPLOY_WORDS.troopType} className="deploy-troops">
+    {choices.map((choice) => (
+      <button
+        key={choice.category}
+        type="button"
+        className="ui-pick deploy-troop-card"
+        aria-label={choice.name}
+        aria-pressed={selected === choice.category}
+        onClick={() => onPick(choice.category)}
+      >
+        <Icon name={choice.art} size={46} />
+        <span className="deploy-troop-card__name">{choice.name}</span>
+        <span className="deploy-troop-card__home">{formatExact(choice.atHome)}</span>
+      </button>
+    ))}
+  </div>
+);
 
 const DeploySlots = ({
   open,
@@ -240,19 +197,48 @@ const DeploySlots = ({
   picked: number | undefined;
   onPick: (slot: number) => void;
 }) => (
-  <div role="group" aria-label="Army slots" className="flex gap-1.5">
-    {open.map((slot) => {
-      const line = slotStartLine(slot);
-      return (
-        <OpenSlot
-          key={slot.slot}
-          label={`${ARMY} ${slot.number}`}
-          pulse={false}
-          start={slot.start && line ? { bar: slot.start, words: `${line}.` } : undefined}
-          selected={slot.slot === picked}
-          onDeploy={() => onPick(slot.slot)}
-        />
-      );
-    })}
+  <div role="group" aria-label="Army slots" className="deploy-slots__pips">
+    {open.map((slot) => (
+      <button
+        key={slot.slot}
+        type="button"
+        className="ui-pick deploy-slot"
+        aria-label={`${ARMY} ${slot.number}`}
+        aria-pressed={slot.slot === picked}
+        onClick={() => onPick(slot.slot)}
+      >
+        {formatExact(slot.number)}
+      </button>
+    ))}
   </div>
+);
+
+const OathCapacity = ({ slots }: { slots: number }) => (
+  <span role="img" aria-label={RESEARCH_TREE.oathSlots(slots)} className="deploy-oaths">
+    {Array.from({ length: slots }, (_, index) => (
+      <i key={index} className="deploy-oath" data-open="">
+        +
+      </i>
+    ))}
+    {slots < OATH_SLOTS_MAX && (
+      <i className="deploy-oath" data-locked="">
+        <Icon name="lock" size={12} />
+      </i>
+    )}
+  </span>
+);
+
+const WheatShort = ({
+  limit,
+  onGoToRealm,
+}: {
+  limit: { troops: number; of: number; held: number; perTroop: number; wait: number | undefined };
+  onGoToRealm: () => void;
+}) => (
+  <HudNotice
+    tone="bad"
+    icon="wheat"
+    line={shortfallLine({ kind: "short", of: "wheat", held: limit.held, need: limit.perTroop, wait: limit.wait })}
+    fix={{ label: GET_WHEAT, onClick: onGoToRealm }}
+  />
 );

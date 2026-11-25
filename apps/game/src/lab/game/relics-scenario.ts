@@ -1,6 +1,7 @@
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
-import { RELIC_KINDS, relicSeconds, type ArmyRelic } from "@/ui/features/frontier/relics/relic-catalog";
+import { RELIC_KINDS } from "@/ui/design-system/domain-icon-meaning";
+import { relicSeconds, type ArmyRelic } from "@/ui/features/frontier/relics/relic-catalog";
 import { StructureType } from "@bibliothecadao/types";
 
 import { siteAt } from "./after-battle-scenario";

@@ -165,6 +165,17 @@ const CHOSEN_LOOK_IS_THE_KIT = [
   },
 ];
 
+// A price a surface shows is HudPrice: each price's painting and its amount. The Build sheet's foot read its price as
+// words through HudCost while Deploy's and the Castle's showed paintings: one fact, two forms in the same slot (audit,
+// 25 November). HudCost's words stay the map's order line under the pointer, outside the features.
+const PRICE_IS_HUD_PRICE = [
+  {
+    selector: "JSXOpeningElement[name.name='HudCost']",
+    message:
+      "A surface shows a price with HudPrice (its painting and amount); HudCost's words are the map's order line.",
+  },
+];
+
 // A function or an object written into text prints its source or "[object Object]": each resource chip's buttons read
 // "Transfer (id) => {…}" where a words function was written in place of the word it returns. Typed, so client only.
 const TEXT_VALUES = {
@@ -245,6 +256,7 @@ const eslint = new ESLint({
           ...CHOSEN_IS_THE_KIT_PICK,
           ...CHOSEN_STATE_IS_THE_KIT,
           ...CHOSEN_LOOK_IS_THE_KIT,
+          ...PRICE_IS_HUD_PRICE,
         ],
       },
     },

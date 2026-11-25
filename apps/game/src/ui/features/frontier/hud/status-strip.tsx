@@ -33,13 +33,20 @@ export const STORE_TONES: Record<Tone, { text: string; meter: "warn" | "bad" | u
  * A store in one line, as its plate says it when asked: "Wheat 1,771 of 6,000 · +5/min · Full in 14h". Each part
  * is there only when the game's facts give it; a full store says Full in place of a rate it no longer earns.
  */
-export const storeLine = ({ kind, amount, limit, perHour, fullIn }: StoreReading): string => {
+export const storeRateText = (store: StoreReading, { compact = false }: { compact?: boolean } = {}): string | null => {
+  if (store.perHour === undefined || store.perHour <= 0 || store.fullIn === 0) return null;
+  const rate = formatRate(store.perHour / 3600);
+  return compact ? rate.replace(/\/min$/, "") : rate;
+};
+
+export const storeLine = (store: StoreReading): string => {
+  const { kind, amount, limit, fullIn } = store;
   const held = `${FRONTIER_STORES[kind].word} ${formatExact(amount)}`;
   if (limit === undefined) return held;
   const against = `${held} ${OF} ${formatExact(limit)}`;
   if (fullIn === 0) return `${against} · ${FULL}`;
-  const rate = perHour !== undefined && perHour > 0 ? ` · ${formatRate(perHour / 3600)}` : "";
-  return `${against}${rate}${fullIn === undefined ? "" : ` · ${FULL_IN} ${formatDuration(fullIn, { days: false })}`}`;
+  const rate = storeRateText(store);
+  return `${against}${rate ? ` · ${rate}` : ""}${fullIn === undefined ? "" : ` · ${FULL_IN} ${formatDuration(fullIn, { days: false })}`}`;
 };
 
 /** A landing's "+N" shows this long, and never again when the counter remounts. */

@@ -101,11 +101,15 @@ fn site_payout_counts_all_initial_guard_troops_without_tier_weighting() {
         crate::logic::expeditions::clear_site(key, receipt);
         let cleared = crate::logic::expeditions::expedition_site(key).unwrap();
         assert_eq!(cleared.clear, Some(receipt));
-        assert!(crate::logic::map::occupancy(tile).is_none());
-        assert!(crate::logic::map::entity_coord(key).is_none());
-        crate::logic::map::MapState::occupy(tile, 100, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false);
-        crate::logic::map::MapState::vacate(tile, 100);
-        assert_eq!(crate::logic::expeditions::expedition_site(key), Some(cleared));
+        assert_eq!(
+            crate::logic::map::occupancy(tile),
+            Some(
+                crate::map::TileOccupancy {
+                    entity_id, category: crate::taxonomy::SUPPLY_POST_OCCUPIER, is_structure: true,
+                },
+            ),
+        );
+        assert_eq!(crate::logic::map::entity_coord(key), Some(coord));
         assert_eq!(cleared.initial_guard_count, site.initial_guard_count);
         assert_eq!(site_reward(RIFT_CATEGORY, cleared, 0, false).unwrap().amount, 3300 * RESOURCE_PRECISION);
     }
@@ -158,11 +162,24 @@ fn every_guarded_site_keeps_terrain_and_receipt_and_removes_structure_and_guards
                     );
                 }
                 assert_eq!((site.col, site.row, site.alt), (coord.x, coord.y, coord.alt));
-                assert!(crate::logic::map::occupancy(tile).is_none());
-                let army = unallocated + 5;
-                crate::logic::map::MapState::occupy(tile, army, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false);
-                assert_eq!(crate::logic::expeditions::expedition_site(key), Some(site));
-                crate::logic::map::MapState::vacate(tile, army);
+                if category == crate::taxonomy::CAMP_CATEGORY {
+                    assert_eq!(
+                        crate::logic::map::occupancy(tile),
+                        Some(
+                            crate::map::TileOccupancy {
+                                entity_id, category: crate::taxonomy::SUPPLY_POST_OCCUPIER, is_structure: true,
+                            },
+                        ),
+                    );
+                } else {
+                    assert!(crate::logic::map::occupancy(tile).is_none());
+                    let army = unallocated + 5;
+                    crate::logic::map::MapState::occupy(
+                        tile, army, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false,
+                    );
+                    assert_eq!(crate::logic::expeditions::expedition_site(key), Some(site));
+                    crate::logic::map::MapState::vacate(tile, army);
+                }
             }
         },
     );
@@ -173,8 +190,8 @@ fn every_guarded_site_keeps_terrain_and_receipt_and_removes_structure_and_guards
 fn a_site_cannot_clear_again_after_an_army_enters_its_tile() {
     let key = crate::resources::ResourceKey { game_id: 1, entity_id: 1 };
     let tile = crate::map::TileKey { game_id: 1, alt: false, col: 1, row: 1 };
-    crate::logic::map::MapState::occupy(tile, 1, crate::taxonomy::CAMP_OCCUPIER, true);
-    create_site_structure(key, crate::taxonomy::CAMP_CATEGORY);
+    crate::logic::map::MapState::occupy(tile, 1, crate::taxonomy::RIFT_OCCUPIER, true);
+    create_site_structure(key, crate::taxonomy::RIFT_CATEGORY);
     crate::logic::expeditions::create_site(
         key, array![Troops { count: RESOURCE_PRECISION, ..Default::default() }].span(),
     );

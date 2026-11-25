@@ -1,11 +1,12 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
+import { BANNED_WORDS, VOICE_RULES } from "@bibliothecadao/types";
+import { OPENING_WORDS } from "@/ui/design-system/kit/words";
+import { AspectEmissaryDock } from "../tutorial/aspect-emissary-dock";
 import { OpeningPartGate, OpeningProvider } from "./opening-context";
-import { OPENING, OPENING_MOMENTS, partShown, type OpeningMoment } from "./opening";
+import { OPENING, OPENING_MOMENTS, partShown, TUTORIAL_WORD_BUDGET, type OpeningMoment } from "./opening";
 import { OPENING_RULES } from "./opening-fixtures";
-import { OpeningLineView } from "./opening-line-view";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -20,21 +21,25 @@ afterEach(() => {
   host.remove();
 });
 
-const line = (moment: OpeningMoment, onGotIt = () => {}) => {
-  act(() => root.render(<OpeningLineView moment={moment} rules={OPENING_RULES} onGotIt={onGotIt} />));
+const renderMoment = (moment: OpeningMoment, onDismiss = () => {}, onSkipAll?: () => void) => {
+  act(() =>
+    root.render(
+      <AspectEmissaryDock moment={moment} rules={OPENING_RULES} onDismiss={onDismiss} onSkipAll={onSkipAll} />,
+    ),
+  );
   return host.textContent ?? "";
 };
 
 describe("the interface that opens as you play", () => {
-  it("shows no waiting part at launch, and a part once its moment is reached", () => {
-    const launch = new Set<OpeningMoment>(["launch"]);
-    expect(partShown(launch, "building-list")).toBe(false);
-    expect(partShown(launch, "relic-slots")).toBe(false);
-    expect(partShown(launch, "bane-row")).toBe(false);
-    const barracks = new Set<OpeningMoment>(["launch", "barracks"]);
+  it("shows no waiting part initially, and a part once its moment is reached", () => {
+    const empty = new Set<OpeningMoment>();
+    expect(partShown(empty, "building-list")).toBe(false);
+    expect(partShown(empty, "relic-slots")).toBe(false);
+    expect(partShown(empty, "bane-row")).toBe(false);
+    const barracks = new Set<OpeningMoment>(["barracks"]);
     expect(partShown(barracks, "building-list")).toBe(true);
     expect(partShown(barracks, "essence-store")).toBe(false);
-    expect(partShown(new Set<OpeningMoment>(["launch", "relic"]), "relic-slots")).toBe(true);
+    expect(partShown(new Set<OpeningMoment>(["relic"]), "relic-slots")).toBe(true);
   });
 
   it("keeps a part earned on an earlier day: only the moment counts, not what is held now", () => {
@@ -51,23 +56,49 @@ describe("the interface that opens as you play", () => {
     expect(new Set(parts).size).toBe(parts.length);
   });
 
-  it("says the design's line for each moment, naming the rules it reads", () => {
-    expect(line("launch")).toContain("This is your Realm. Build on the lit plot, then deploy an army into the mist.");
-    expect(line("barracks")).toContain("A Barracks raises 100 Knights an hour. Knights fill your armies.");
-    expect(line("guard")).toContain("A blade or a bow shows its kind. Send 150% of the guard's troops to win.");
-    expect(line("oath")).toContain(
-      "Take one and your army has it for today. A full army swaps one. You can also pass for +20 stamina.",
+  it("keeps every contextual line within the word budget and free of banned or numeric depth jargon", () => {
+    const ruleVariants = [OPENING_RULES, { ...OPENING_RULES, dayLeftSeconds: undefined }];
+    const completableMoments = OPENING_MOMENTS.filter(
+      (moment) => "completesWhen" in OPENING[moment] || "completesWhileShowing" in OPENING[moment],
     );
-    expect(line("shop")).toContain("Stamina refills +1/min. A Fragment refills 2 points now.");
-    expect(line("relic")).toContain("A relic works for 30 minutes per tier. An army carries 3.");
-    expect(line("city")).toContain("Scouts reveal for 10 stamina, not 20.");
-    expect(line("spire")).toContain("Guards are x2 on each layer down. A cleared camp refills your armies.");
-    expect(line("essence")).toContain("Essence buys research and lores.");
-    expect(line("well-lore")).toContain("Your armies can now find wells.");
-    expect(line("shrine-lore")).toContain("Your armies can now find shrines.");
-    expect(line("deep")).toContain("Every tick (120 seconds) here, each army loses 200 troops. Hold a site to earn.");
-    expect(line("bane")).toContain("A bane. Today's quest is the bane quest.");
-    expect(line("aspects")).toContain("Your Aspect races to build its hyperstructure.");
+    expect(Object.keys(OPENING_WORDS.completed).sort()).toEqual([...completableMoments].sort());
+    for (const moment of OPENING_MOMENTS) {
+      const texts = ruleVariants.flatMap((variant) => [
+        OPENING_WORDS.lines[moment](variant),
+        OPENING_WORDS.titles[moment](variant),
+      ]);
+      if (moment in OPENING_WORDS.completed) {
+        const { title, line } = OPENING_WORDS.completed[moment as keyof typeof OPENING_WORDS.completed];
+        texts.push(title, line);
+      }
+      for (const text of texts) {
+        const words = text.trim().split(/\s+/).filter(Boolean);
+        expect(words.length, `${moment}: "${text}"`).toBeLessThanOrEqual(TUTORIAL_WORD_BUDGET);
+        for (const entry of BANNED_WORDS) {
+          expect(text, `${moment} used banned phrase ${entry.banned}`).not.toMatch(entry.pattern);
+        }
+        for (const rule of VOICE_RULES) {
+          if (rule.forbidden) expect(text, `${moment} broke voice rule ${rule.rule}`).not.toMatch(rule.forbidden);
+        }
+      }
+    }
+  });
+
+  it("renders each moment with live rule figures and its desktop action", () => {
+    expect(renderMoment("barracks")).toContain("It raises +2/min Knights.");
+    expect(renderMoment("deploy")).toContain("2,000 Knights wait at home. Send an army onto the Surface.");
+    expect(renderMoment("explore")).toContain("Reveal a dark hex for 20 stamina.");
+    expect(renderMoment("oath")).toContain("Swear one Oath, or pass for +20 stamina.");
+    expect(renderMoment("shop")).toContain("Stamina returns +1/min. A Fragment refills 2 now or unlocks Ancient Seal.");
+    expect(renderMoment("relic")).toContain("Relics last 30 minutes per tier. Each army carries 3.");
+    expect(renderMoment("city")).toContain("Scouts reveal mist for 10 stamina instead of 20.");
+    expect(renderMoment("spire")).toContain("In the Veil, guards are 2x stronger and camps refill your armies.");
+    expect(renderMoment("deep")).toContain("Every 120 seconds here, armies lose 200 troops. Hold sites to earn.");
+    expect(renderMoment("day-end")).toContain("Today's map and armies go at day end.");
+    expect(renderMoment("bane")).toContain("A bane strikes today.");
+    expect(renderMoment("aspects")).toContain("Prowess races to finish its hyperstructure first.");
+    expect(renderMoment("daily-quest")).toContain("Today's quest is done.");
+    expect(renderMoment("essence")).toContain("Essence buys permanent upgrades and lores for your Realm.");
   });
 
   it("draws a gated part once its moment is reached, and every part outside the HUD's provider", () => {
@@ -87,18 +118,25 @@ describe("the interface that opens as you play", () => {
           ),
         ),
       );
-    draw(new Set(["launch"]));
+    draw(new Set(["barracks"]));
     expect(host.querySelector("[data-part]")).toBeNull();
-    draw(new Set(["launch", "essence"]));
+    draw(new Set(["barracks", "essence"]));
     expect(host.querySelector("[data-part]")).not.toBeNull();
     draw();
     expect(host.querySelector("[data-part]")).not.toBeNull();
   });
 
-  it("puts the line away with Got it", () => {
-    const onGotIt = vi.fn();
-    line("essence", onGotIt);
-    act(() => [...host.querySelectorAll("button")].find((each) => each.textContent === "Got it")!.click());
-    expect(onGotIt).toHaveBeenCalledTimes(1);
+  it("dismisses a line with Close and skips all with Skip tutorial", () => {
+    const onDismiss = vi.fn();
+    const onSkipAll = vi.fn();
+    renderMoment("essence", onDismiss, onSkipAll);
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    const pressSkip = () =>
+      act(() => [...host.querySelectorAll("button")].find((each) => each.textContent === "Skip tutorial")!.click());
+    pressSkip();
+    expect(onSkipAll).not.toHaveBeenCalled();
+    pressSkip();
+    expect(onSkipAll).toHaveBeenCalledTimes(1);
   });
 });

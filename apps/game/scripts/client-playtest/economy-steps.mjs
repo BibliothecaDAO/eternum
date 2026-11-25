@@ -1,4 +1,5 @@
 import { completed, failed } from "./evidence.mjs";
+import { balanceChange } from "./lab-answers.mjs";
 
 const PRODUCTION = '[role="dialog"][aria-label="Production"]';
 const TRANSFER = '[role="dialog"][aria-label="Transfer"]';
@@ -30,10 +31,9 @@ export const ECONOMY_STEPS = [
     verify: ({ played }) => {
       const payload = played.sent?.command.span.map(String);
       const production = fact(played.sent, "ResourceProduction");
-      const wheat = facts(played.sent, "ResourceBalance").find((row) => Number(row.resource_type) === 35);
       return payload?.slice(1).join(",") === "7,1,26,1,3" &&
         production?.output_amount_left === "30000000000" &&
-        wheat?.balance === "994000000000" &&
+        balanceChange(played.sent, 35) === -6_000_000_000n &&
         /30/.test(played.preview) &&
         /Wheat/.test(played.preview) &&
         /Start production/i.test(played.shown)
@@ -72,11 +72,10 @@ export const ECONOMY_STEPS = [
     verify: ({ played }) => {
       const payload = played.sent?.command.span.map(String);
       const arrival = fact(played.sent, "ResourceArrival");
-      const wheat = facts(played.sent, "ResourceBalance").find((row) => Number(row.resource_type) === 35);
       return payload?.slice(1).join(",") === "7,8,1,35,50000000000" &&
         String(arrival?.entity_id) === "8" &&
         arrival?.resources[0]?.amount === "50000000000" &&
-        wheat?.balance === "944000000000" &&
+        balanceChange(played.sent, 35) === -50_000_000_000n &&
         /50/.test(played.shown) &&
         /Wheat/.test(played.shown)
         ? completed({ from: 7, to: 8, wheat: 50, arrival })

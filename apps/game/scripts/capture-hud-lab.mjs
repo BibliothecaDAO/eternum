@@ -50,7 +50,7 @@ const READ_ARMY_LIST = `(() => {
   const bars = nav ? [...nav.querySelectorAll('[role="meter"][aria-label="stamina"]')] : [];
   const rows = nav ? [...nav.querySelectorAll(".ui-row__words")] : [];
   return {
-    entries: nav ? nav.children.length : 0,
+    entries: nav ? [...nav.children].filter((entry) => !["open", "locked"].includes(entry.dataset.slotState)).length : 0,
     bars: bars.map((bar) => {
       const box = bar.getBoundingClientRect();
       return { left: box.left, top: box.top, width: box.width };
@@ -196,7 +196,6 @@ export const SURFACES = [
   { name: "blitz-realm-castle", path: "/lab/kit/panels?tile=castle", mark: "tile" },
   { name: "blitz-realm-building", path: "/lab/kit/panels?tile=building", mark: "tile" },
   { name: "blitz-realm-production", path: "/lab/kit/panels?tile=production", mark: "tile" },
-  { name: "blitz-next-up-and-events", path: "/lab/kit/guidance", mark: "next-up" },
   { name: "frontier-hud", path: "/lab/kit/hud/idle", mark: "frontier" },
   {
     name: "frontier-armies",

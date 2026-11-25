@@ -8,9 +8,13 @@ import {
   readTypedNumber,
   typedNumberText,
   formatAmount,
+  formatCharge,
+  resourceName,
+  type ResourcesIds,
 } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import {
   type ButtonHTMLAttributes,
   createContext,
@@ -31,19 +35,11 @@ import {
 import { createPortal } from "react-dom";
 
 import { useModalLayer } from "./modal-layer";
+import { PRICE_FACES, type Price } from "./price-faces";
+import { useMarkFrameOpen } from "./open-frames";
 import { revealOwnPlace } from "./own-place";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
-import {
-  CLOSE,
-  type RankedWords,
-  rankedText,
-  STAMINA,
-  type Tier,
-  type Rank,
-  tierNumeral,
-  TIER_WORDS,
-  TRY_AGAIN,
-} from "./words";
+import { CLOSE, FREE, type RankedWords, rankedText, STAMINA, type Rank, tierNumeral, TRY_AGAIN } from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -613,6 +609,26 @@ export const HudCost = ({ line }: { line: RankedWords | string }) =>
     </span>
   ) : null;
 
+export type ResourcePrice = { resource: ResourcesIds; amount: number | undefined };
+
+export const HudPrice = ({ prices }: { prices: readonly (Price | ResourcePrice)[] }) => (
+  <span className="ui-price">
+    {prices.length === 0 && FREE}
+    {prices.map((price) => {
+      const face = priceFace(price);
+      return (
+        <span key={face.word} role="img" aria-label={`${formatCharge(price.amount)} ${face.word}`}>
+          {face.icon && <Icon name={face.icon} size={20} />}
+          {formatCharge(price.amount)}
+        </span>
+      );
+    })}
+  </span>
+);
+
+const priceFace = (price: Price | ResourcePrice): { word: string; icon?: IconMeaning } =>
+  "of" in price ? PRICE_FACES[price.of] : { word: resourceName(price.resource), icon: resourceMeaning(price.resource) };
+
 /**
  * The HUD's one panel, for a part of the screen (a bar, a strip, a card in a band): a header band naming it (its icon,
  * its title, a cue at its end) over a divider, then its body. A surface the HUD opens and closes wears the one frame
@@ -930,16 +946,6 @@ export const HudTierChip = ({ tier }: { tier: 1 | 2 | 3 }) => (
 );
 
 /**
- * A chest's rarity, common to legendary: its word on a plate whose frame thickens and warms with it. Not a tier of
- * something the player levels: a chest is found at its rarity and keeps it.
- */
-export const HudRarity = ({ tier }: { tier: Tier }) => (
-  <span className="ui-rarity" data-tier={tier}>
-    {TIER_WORDS[tier - 1]}
-  </span>
-);
-
-/**
  * The tier a player levels something to (a building type's row, an army's attribute, a skill point): a gem in the
  * tier's rarity colour with its numeral, Common I to Legendary V. `line` fits it inside a line of words (it keeps the
  * line's height), `lg` is a card's reward, read at a glance.
@@ -983,19 +989,6 @@ export const rankedTip = (words: RankedWords | string) =>
   typeof words === "string"
     ? { "data-tip": words }
     : { "data-tip": rankedText(words), "data-tip-ranks": JSON.stringify(words) };
-
-/** A tier's next step, from the gem it holds to the next one's. */
-export const HudTierStep = ({ from, to }: { from: Rank; to: Tier }) => (
-  <span
-    className="ui-tier-step"
-    role="img"
-    aria-label={`${from === 0 ? "Untrained" : tierNumeral(from)} → ${tierNumeral(to)}`}
-  >
-    <HudTier tier={from} />
-    <span aria-hidden>→</span>
-    <HudTier tier={to} />
-  </span>
-);
 
 /**
  * A number in a ring that drains (the day, as today runs out): the ring is the share left, from 1 to 0, and takes a
@@ -1356,6 +1349,7 @@ export const HudCard = ({
   selected = false,
   disabled = false,
   refusal,
+  tone,
   onClick,
   ...rest
 }: {
@@ -1369,6 +1363,7 @@ export const HudCard = ({
   selected?: boolean;
   disabled?: boolean;
   refusal?: string;
+  tone?: "bad";
   onClick?: () => void;
 } & Omit<HTMLAttributes<HTMLDivElement>, "title" | "onClick">) => {
   const refusalId = useId();
@@ -1396,6 +1391,7 @@ export const HudCard = ({
       data-size={size}
       data-selected={selected || undefined}
       data-disabled={disabled || undefined}
+      data-tone={tone}
     >
       {onClick ? (
         <button
@@ -1506,6 +1502,13 @@ export const HudNotice = ({
   </div>
 );
 
+export const HudLine = ({ icon, line }: { icon: IconMeaning; line: string }) => (
+  <p className="ui-line">
+    <Icon name={icon} size={16} />
+    {line}
+  </p>
+);
+
 /**
  * News across the top of the map: what kind it is (its painting and a word over the headline), the headline and a
  * line; its side in the news' tone (bad for a war report, warn for a timer). It is read, never pressed: it takes no
@@ -1591,6 +1594,7 @@ export const SheetDock = createContext<HTMLElement | null>(null);
 /** What a surface's frame holds: its name, the icon and cue its head may carry, its way out and its body. */
 type FrameParts = {
   label: string;
+  title?: string;
   icon?: IconMeaning;
   /** What the head says or offers beside the name (a lens, the player's rank), before the way out. */
   cue?: ReactNode;
@@ -1611,15 +1615,17 @@ type FrameParts = {
 const SurfaceFrame = forwardRef<
   HTMLElement,
   FrameParts & { bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children">
->(({ label, icon, cue, beside, onClose, bodyClassName, className, children, ...rest }, ref) => {
+>(({ label, title, icon, cue, beside, onClose, bodyClassName, className, children, ...rest }, ref) => {
   const [foot, setFoot] = useState<HTMLElement | null>(null);
+  const body = useMarksMoreBelow();
+  useMarkFrameOpen(label);
   useSheetCloses(onClose);
   const drag = useDragDownCloses(onClose);
   return (
     <section ref={ref} {...rest} aria-label={label} data-kit-frame className={cn("ui ui-panel ui-frame", className)}>
       <div className="ui-frame__head" {...drag.handlers}>
         <PanelHead
-          title={label}
+          title={title ?? label}
           icon={icon}
           beside={beside}
           cue={
@@ -1632,13 +1638,40 @@ const SurfaceFrame = forwardRef<
         />
       </div>
       <WindowFootContext.Provider value={foot}>
-        <div className={cn("ui-frame__body", bodyClassName)}>{children}</div>
+        <div ref={body} className={cn("ui-frame__body", bodyClassName)}>
+          {children}
+        </div>
       </WindowFootContext.Provider>
       <footer ref={setFoot} className="ui-window__foot ui-actions" />
     </section>
   );
 });
 SurfaceFrame.displayName = "SurfaceFrame";
+
+const useMarksMoreBelow = () => {
+  const [body, setBody] = useState<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!body) return;
+    const mark = () =>
+      body.toggleAttribute("data-more-below", body.scrollTop + body.clientHeight < body.scrollHeight - 1);
+    const resized = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(mark);
+    const watch = () => [body, ...body.children].forEach((element) => resized?.observe(element));
+    const changed = new MutationObserver(() => {
+      watch();
+      mark();
+    });
+    watch();
+    mark();
+    changed.observe(body, { childList: true, subtree: true });
+    body.addEventListener("scroll", mark, { passive: true });
+    return () => {
+      resized?.disconnect();
+      changed.disconnect();
+      body.removeEventListener("scroll", mark);
+    };
+  }, [body]);
+  return setBody;
+};
 
 /**
  * A sheet over the stage, in the one frame, closed by its cross wherever it opened from. On a phone it rises from
@@ -1648,15 +1681,19 @@ SurfaceFrame.displayName = "SurfaceFrame";
  */
 export const HudSheet = ({
   label,
+  title,
   icon,
   beside,
+  cue,
   onClose,
   children,
 }: {
   label: string;
+  title?: string;
   icon?: IconMeaning;
   /** A quiet control right after the sheet's name, out of the body's flow and away from the cross (an army's Delete). */
   beside?: ReactNode;
+  cue?: ReactNode;
   onClose: () => void;
   children: ReactNode;
 }) => {
@@ -1665,8 +1702,10 @@ export const HudSheet = ({
     <SurfaceFrame
       role="dialog"
       label={label}
+      title={title}
       icon={icon}
       beside={beside}
+      cue={cue}
       onClose={onClose}
       data-kit-sheet=""
       data-docked={dock ? "" : undefined}
@@ -1769,7 +1808,7 @@ export const HudModalLayer = ({ onClose, children }: { onClose?: () => void; chi
   );
 };
 
-export type MenuItem =
+type MenuItem =
   | { kind: "rule" }
   | {
       kind?: "item";
@@ -2160,13 +2199,6 @@ export const HudMeter = ({
 /** An army's or a guard's stamina as its bar draws it: held, its maximum, and what one explore costs. */
 export type StaminaBar = { current: number; max: number; perExplore: number };
 
-/**
- * Every stamina bar (an army's card, token, row and map plate, a slot's start, a guard): the meter cut into a segment
- * per explore its maximum holds, so a full bar counts the tiles it can explore and each explore's worth of maximum
- * Logistics adds is one more segment (the owner, 26 October: "split the bar in 20 stamina ? like on mobile ?"). A
- * maximum the explore cost does not divide ends in a shorter segment. It reads as the amount itself; an empty track
- * while unknown.
- */
 export const HudStamina = ({
   stamina,
   tone = "good",
@@ -2182,32 +2214,16 @@ export const HudStamina = ({
     aria-valuenow={stamina?.current}
     aria-valuemin={0}
     aria-valuemax={stamina?.max}
-    className="flex w-full gap-0.5"
+    className="ui-meter block w-full"
+    data-tone={tone}
+    data-filling={filling || undefined}
   >
-    {staminaSegments(stamina).map(({ size, fill }, index) => (
-      <span
-        key={index}
-        className="ui-meter"
-        data-tone={tone}
-        data-filling={filling || undefined}
-        style={{ flexGrow: size, flexBasis: 0 }}
-      >
-        <i style={{ width: `${fill * 100}%` }} />
-      </span>
-    ))}
+    <i style={{ width: `${staminaShare(stamina) * 100}%` }} />
   </span>
 );
 
-/** A stamina bar's segments: each one's length (1 is one explore) and fill, 0 to 1; one empty while unknown. */
-const staminaSegments = (stamina: StaminaBar | undefined): { size: number; fill: number }[] => {
-  if (!stamina || stamina.max <= 0 || stamina.perExplore <= 0) return [{ size: 1, fill: 0 }];
-  const { current, max, perExplore } = stamina;
-  return Array.from({ length: Math.ceil(max / perExplore) }, (_, index) => {
-    const start = index * perExplore;
-    const length = Math.min(perExplore, max - start);
-    return { size: length / perExplore, fill: Math.min(1, Math.max(0, (current - start) / length)) };
-  });
-};
+const staminaShare = (stamina: StaminaBar | undefined): number =>
+  !stamina || stamina.max <= 0 ? 0 : Math.min(1, Math.max(0, stamina.current / stamina.max));
 
 /** What a relic works on: its chip takes that kind's colour. */
 type RelicKind = "stamina" | "damage" | "damage-reduction" | "exploration" | "production";

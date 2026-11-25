@@ -1,5 +1,6 @@
+import { canonicalRealm } from "@bibliothecadao/eternum";
 import type { HeraldAspectRoster } from "@bibliothecadao/eternum/game-sync";
-import { aspects, catalogOrder, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { aspects, catalogOrder, RESOURCE_PRECISION, type AspectId } from "@bibliothecadao/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
@@ -153,29 +154,44 @@ const labField = (): number | null => {
  * The lab's own query client: the app's /api answered from the fixtures, the shard boards seeded by game (Frontier's
  * read from Herald's route instead when the lab holds a field).
  */
+const LAB_ASPECT_GLORY: Record<AspectId, readonly number[]> = {
+  1: [5_120, 3_980, 2_940, 1_820, 1_150],
+  2: [5_480, 4_210, 3_190, 2_140, 1_380],
+  3: [4_850, 3_640, 2_610, 1_890, 980],
+  4: [4_460, 3_280, 2_310, 1_540, 860],
+};
+
+const labRealmsForAspect = (aspectId: AspectId, count: number, excludeRealmId: number | null): number[] => {
+  const found: number[] = [];
+  for (let realmId = 1; realmId <= 8_000 && found.length < count; realmId += 1) {
+    if (realmId === excludeRealmId) continue;
+    const realm = canonicalRealm(realmId);
+    if (realm.order !== 0 && catalogOrder(realm.order).aspect === aspectId) found.push(realmId);
+  }
+  return found;
+};
+
 const labAspectRoster = (
-  aspectId: number,
+  aspectId: AspectId,
   total: number,
-  ownAspect: number | null,
+  ownAspect: AspectId | null,
   ownRealm: number | null,
 ): HeraldAspectRoster => {
-  const rivals = Object.keys(LAB_PROFILES);
-  const start = ((aspectId - 1) * 3) % Math.max(1, rivals.length);
+  const rivals = Object.entries(LAB_PROFILES)
+    .filter(([, profile]) => profile.name !== null)
+    .map(([address]) => address);
+  const gloryTiers = LAB_ASPECT_GLORY[aspectId];
+  const realmIds = labRealmsForAspect(aspectId, gloryTiers.length, ownRealm);
+  const start = ((aspectId - 1) * gloryTiers.length) % Math.max(1, rivals.length);
   const pick = (offset: number) => rivals[(start + offset) % rivals.length]!;
-  const entries =
-    aspectId === ownAspect && ownRealm !== null
-      ? [
-          { owner: pick(0), realmId: 100 + aspectId * 10, glory: 4_850 },
-          { owner: LAB_PLAYER, realmId: ownRealm, glory: 3_420 },
-          { owner: pick(1), realmId: 101 + aspectId * 10, glory: 2_610 },
-          { owner: pick(2), realmId: 102 + aspectId * 10, glory: 1_890 },
-        ]
-      : [
-          { owner: pick(0), realmId: 100 + aspectId * 10, glory: 5_120 - aspectId * 310 },
-          { owner: pick(1), realmId: 101 + aspectId * 10, glory: 3_740 - aspectId * 240 },
-          { owner: pick(2), realmId: 102 + aspectId * 10, glory: 2_380 - aspectId * 190 },
-          { owner: pick(3), realmId: 103 + aspectId * 10, glory: 1_450 - aspectId * 120 },
-        ];
+  const entries = gloryTiers.map((glory, index) => {
+    const isOwnSlot = aspectId === ownAspect && ownRealm !== null && index === 1;
+    return {
+      owner: isOwnSlot ? LAB_PLAYER : pick(index),
+      realmId: isOwnSlot ? ownRealm : realmIds[index]!,
+      glory,
+    };
+  });
   return {
     game_id: "1",
     aspect: aspectId,

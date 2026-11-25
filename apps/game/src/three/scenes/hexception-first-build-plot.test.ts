@@ -32,30 +32,44 @@ it("breaks a tie between equally near plots the same way every time: the lower r
 /** The realm's board with three open plots, its highlights recorded as the plots they light. */
 const board = () => {
   const lit: { col: number; row: number }[][] = [];
+  const taught: ({ col: number; row: number } | null)[] = [];
+  const bare = new Set<string>();
   const scene = Object.assign(Object.create(HexceptionScene.prototype), {
     highlights: [FAR, NEAR, MIDDLE],
     buildingPreview: null,
     newRingRadius: null,
     isEntered: false,
     proceduralTerrain: { present: () => {} },
-    interactiveHexManager: { renderAllHexes: () => {} },
+    interactiveHexManager: {
+      renderAllHexes: () => {},
+      setBandBare: ({ col, row }: { col: number; row: number }, isBare: boolean) =>
+        isBare ? bare.add(`${col},${row}`) : bare.delete(`${col},${row}`),
+    },
     reconcileAllBuildingInstances: () => {},
     highlightHexManager: {
       highlightHexes: (descriptors: { hex: { col: number; row: number } }[]) =>
         lit.push(descriptors.map(({ hex }) => hex)),
+      setTeachHex: (hex: { col: number; row: number } | null) => taught.push(hex),
     },
   });
-  return { scene, litNow: () => lit.at(-1) };
+  return {
+    scene,
+    litNow: () => lit.at(-1),
+    taughtNow: () => taught.at(-1),
+    isBare: ({ col, row }: { col: number; row: number }) => bare.has(`${col},${row}`),
+  };
 };
 
 it("lights the plot for the realm's first build once the realm is shown, and nothing once there is none", () => {
   const view = board();
   view.scene.presentGrid({}, StructureType.Realm);
   expect(view.litNow()).toEqual([]);
+  expect(view.taughtNow()).toBeNull();
 
   useUIStore.setState({ firstBuild: BuildingType.ResourceKnightT1 });
   view.scene.presentGrid({}, StructureType.Realm);
-  expect(view.litNow()).toEqual([NEAR]);
+  expect(view.litNow()).toEqual([]);
+  expect(view.taughtNow()).toEqual(NEAR);
 });
 
 it("moves the mark to the next nearest plot when its plot is built on, and lights every open plot for a ghost", () => {
@@ -63,10 +77,13 @@ it("moves the mark to the next nearest plot when its plot is built on, and light
   const view = board();
   view.scene.presentGrid({}, StructureType.Realm);
   view.scene.updateBuildingHighlight(NEAR, true);
-  expect(view.litNow()).toEqual([MIDDLE]);
+  expect(view.taughtNow()).toEqual(MIDDLE);
+  expect(view.isBare(NEAR)).toBe(true);
 
   // A building picked to place: every plot it may stand on, the mark among them.
   view.scene.buildingPreview = { getPreviewBuilding: () => ({ type: BuildingType.ResourceKnightT1 }) };
   view.scene.updateBuildingHighlight(NEAR, false);
+  expect(view.isBare(NEAR)).toBe(false);
+  expect(view.taughtNow()).toBeNull();
   expect(view.litNow()).toEqual([FAR, MIDDLE, NEAR]);
 });

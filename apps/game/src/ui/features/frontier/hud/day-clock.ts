@@ -28,13 +28,6 @@ export const nextDayOf = (calendar: SeasonCalendar, now: number): number | null 
 /** The dial and the clock line turn ember in today's last hour. */
 export const dayTone = (secondsLeft: number): Tone => (secondsLeft <= LAST_HOUR_SECONDS ? "ember" : "calm");
 
-/** The last ten minutes, when the day end's line turns from a warning to an alarm. */
-const FINAL_MINUTES_SECONDS = 600;
-
-/** The day end's line in the last hour: a warning, then red in its last ten minutes. */
-export const dayEndUrgency = (secondsLeft: number): "warn" | "bad" =>
-  secondsLeft <= FINAL_MINUTES_SECONDS ? "bad" : "warn";
-
 const OUTSIDE_THE_SEASON: DayClock = {
   day: undefined,
   endsAt: undefined,
@@ -48,6 +41,9 @@ const OUTSIDE_THE_SEASON: DayClock = {
  * Today on the season's calendar (core's dayOf, the contract's day bags): when it ends, the time left, the share of
  * today still to run, and how long tomorrow lasts. The shell draws it from the directory's calendar too.
  */
+export const dayElapsedShare = (clock: DayClock): number | undefined =>
+  clock.shareLeft === undefined ? undefined : Math.min(1, Math.max(0, 1 - clock.shareLeft));
+
 export const dayClock = (calendar: SeasonCalendar, now: number): DayClock => {
   const today = dayOf(calendar, now);
   if (!today) return OUTSIDE_THE_SEASON;

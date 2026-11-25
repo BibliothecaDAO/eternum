@@ -149,14 +149,11 @@ const sendWithPlace = async (words: string) => {
 };
 
 const openPhoneChat = async () => {
-  await act(async () =>
-    host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Menu"]')!.click(),
-  );
-  const chat = host.querySelector<HTMLButtonElement>('section[aria-label="Menu"] button[aria-label="Chat"]')!;
+  const chat = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Chat"]')!;
   await act(async () => chat.click());
 };
 
-it("shares the realm a phone player selected before opening Chat from Menu, its card put away", async () => {
+it("shares the realm a phone player selected before opening Chat from its tab, its card put away", async () => {
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
   try {
@@ -188,10 +185,10 @@ it("drops what Chat kept once the player picks again: a bare tile is nothing to 
   }
 });
 
-it("shares the realm a desktop player selected, chat opened from its place in the top bar", async () => {
+it("shares the realm a desktop player selected, chat opened from its strip at the bottom right", async () => {
   await renderHud(1440);
   await act(async () => useUIStore.getState().selectOnMap({ kind: "structure", entityId: REALM }));
-  const chat = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Chat"]')!;
+  const chat = host.querySelector<HTMLButtonElement>('.frontier-chat-dock button[aria-label="Chat strip"]')!;
   await act(async () => chat.click());
   await connect();
   expect(useUIStore.getState().mapSelection).toBeNull();

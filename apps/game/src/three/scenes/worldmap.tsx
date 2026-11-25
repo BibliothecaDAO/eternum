@@ -4164,7 +4164,8 @@ export default class WorldmapScene extends WarpTravel {
 
   private hasSiteCardAt(hexCoords: HexPosition): boolean {
     const { col, row } = contractHexOf(hexCoords);
-    return getTileAt(this.game.store, activeMapLayer(), col, row)?.occupier_type === TileOccupier.DeepSite;
+    const occupier = getTileAt(this.game.store, activeMapLayer(), col, row)?.occupier_type;
+    return occupier === TileOccupier.DeepSite || occupier === TileOccupier.SupplyPost;
   }
 
   /** The selection ring stands on the selected hex the selection derives: the tile every panel and card names. */
@@ -7909,12 +7910,14 @@ export default class WorldmapScene extends WarpTravel {
         managers: [
           {
             label: "army",
+            prewarm: () => this.armyManager.prewarmChunkAssets(chunkKey),
             recover: () =>
               this.armyManager.recoverChunkUpdateAfterStall(criticalManagerRecovery.resolveRecoveryInput()),
             run: () => this.armyManager.updateChunk(chunkKey, options),
           },
           {
             label: "structure",
+            prewarm: () => this.structureManager.prewarmChunkAssets(chunkKey),
             recover: () =>
               this.structureManager.recoverChunkUpdateAfterStall(criticalManagerRecovery.resolveRecoveryInput()),
             run: () => this.structureManager.updateChunk(chunkKey, options),

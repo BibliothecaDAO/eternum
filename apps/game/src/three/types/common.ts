@@ -32,6 +32,7 @@ export interface StructureInfo {
   /** A guarded Frontier site's kind (its ExpeditionSite stands): its plate reads kind and strength, never an id. */
   siteKind?: SiteKind;
   clearedSite?: true;
+  supplyPost?: true;
   /** The standing site's beast identity shared by its model and plate. */
   frontierBeast?: FrontierBeast;
   realmOrder?: number;

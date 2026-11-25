@@ -12,16 +12,24 @@ import {
   ordinaryHash,
   questBonusPercent,
   raceFinishHeight,
+  triumphPercentsOf,
   type PlayFrame,
 } from "@bibliothecadao/eternum/game-client";
 import {
   deriveGameSyncScope,
+  type HeraldAspectRace,
   type HeraldFrontierLeaderboardEntry,
   type HeraldHistoryEvent,
   rowInGameSyncScope,
   scopeInputKeys,
 } from "@bibliothecadao/eternum/game-sync";
-import { aspects, seasonGameName, type NativeWorldBindings, type WorldChatMessage } from "@bibliothecadao/types";
+import {
+  aspects,
+  seasonGameName,
+  type AspectId,
+  type NativeWorldBindings,
+  type WorldChatMessage,
+} from "@bibliothecadao/types";
 import type { AccountInterface, Call } from "starknet";
 
 import { LAB_CHAIN_ID } from "./lab-shard";
@@ -94,7 +102,7 @@ export interface LabScenario {
 
 interface LabChainRecord {
   /** Every command the game signed, in order, with the facts the lab answered it with. */
-  sent: { hash: string; command: LabCommand; answered: LabFact[] }[];
+  sent: { hash: string; command: LabCommand; answered: LabFact[]; before: (Record<string, unknown> | null)[] }[];
   rejected: {
     hash: string;
     command: LabCommand;
@@ -336,7 +344,7 @@ const answerDirectory = (
         ]),
       );
     },
-    get aspect_race() {
+    get aspect_race(): HeraldAspectRace | null {
       const race = chain.get("RaceRules", { game_id: LAB_GAME.gameId });
       if (!race) return null;
       return {
@@ -347,7 +355,8 @@ const answerDirectory = (
             id,
             chain.get("AspectHyperstructure", { game_id: LAB_GAME.gameId, aspect: id })?.height ?? 0,
           ]),
-        ),
+        ) as Record<AspectId, number>,
+        triumph_percents: triumphPercentsOf(race),
       };
     },
     get quest_bonus_percent() {
@@ -611,7 +620,7 @@ const labAccount = (
         console.error("[lab chain] rejected", command, "at", at, error);
         throw error;
       }
-      record.sent.push({ hash, command, answered });
+      record.sent.push({ hash, command, answered, before: heldBefore(chain, answered, events) });
       // The answer lands a moment later, as a block would; a lab answer that fails says so in the console.
       setTimeout(() => {
         try {
@@ -630,6 +639,16 @@ const labAccount = (
  * A fact under the key its row is held by on the chain, as Herald names every row by one key: a later answer that
  * finds the row in the chain's store (its entries) and changes or removes it then names the row the game holds.
  */
+const heldBefore = (chain: NativeFactStore, answered: LabFact[], events: ReadonlySet<string>) =>
+  answered.map((fact) => {
+    if (fact.value === null || events.has(fact.model)) return null;
+    const scratch = new NativeFactStore();
+    scratch.applyFacts([fact] as never);
+    const [[key]] = [...scratch.entries(fact.model as NativeModelName)];
+    const held = [...chain.entries(fact.model as NativeModelName)].find(([at]) => at === key)?.[1];
+    return held === undefined ? null : wire(held);
+  });
+
 export const keyedAsHeldOnChain = (fact: LabFact): LabFact => {
   if (fact.value === null) return fact;
   const held = new NativeFactStore();

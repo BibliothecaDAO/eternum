@@ -7,6 +7,7 @@ import {
   raceStageHeight,
   rankRaceStandings,
   spendsFragments,
+  type TriumphStage,
 } from "@bibliothecadao/eternum/game-client";
 import type { HeraldAspectRace } from "@bibliothecadao/eternum/game-sync";
 
@@ -14,6 +15,7 @@ import { isGameOver } from "@/runtime/world/directory";
 import {
   ASPECT_PAGE_WORDS,
   DAY,
+  DAY_BANNER_WORDS,
   HOME_STEP_WORDS,
   PLAY_WORDS,
   SEASON,
@@ -102,11 +104,11 @@ export const seasonDayLabel = (day: number | undefined, seasonDays: number | nul
   day === undefined ? null : seasonDays !== null ? dayOfSeason(String(day), String(seasonDays)) : `${DAY} ${day}`;
 
 const TRIUMPH_ENTRIES = Object.entries(ASPECT_PAGE_WORDS.triumph).map(([stage, name]) => ({
-  stage: Number(stage),
+  stage: Number(stage) as TriumphStage,
   name,
 }));
 
-export const RACE_TRIUMPHS: readonly { stage: number; name: string }[] = Array.from(
+export const RACE_TRIUMPHS: readonly { stage: TriumphStage; name: string }[] = Array.from(
   { length: RACE_STAGE_COUNT - 1 },
   (_, index) => {
     const stage = index + 1;
@@ -115,6 +117,21 @@ export const RACE_TRIUMPHS: readonly { stage: number; name: string }[] = Array.f
     return entry;
   },
 );
+
+export const stageTriumphsOf = (
+  race: HeraldAspectRace,
+): { stage: TriumphStage; name: string; height: number; rule: string | null }[] => {
+  const stageHeight = raceStageHeight(race.finish_height);
+  return RACE_TRIUMPHS.map(({ stage, name }) => {
+    const percent = race.triumph_percents?.[stage];
+    return {
+      stage,
+      name,
+      height: stage * stageHeight,
+      rule: percent === undefined ? null : DAY_BANNER_WORDS.triumphRule[stage](percent),
+    };
+  });
+};
 
 if (TRIUMPH_ENTRIES.length !== RACE_TRIUMPHS.length) {
   throw new Error(`Expected ${RACE_TRIUMPHS.length} Triumph names, found ${TRIUMPH_ENTRIES.length}`);
@@ -166,12 +183,17 @@ export const aspectRaceStandings = (
   return { finishHeight, stageHeight, standings, byAspect, winner };
 };
 
+export const realmHomeOf = (realmId: number) => {
+  const realm = canonicalRealm(realmId);
+  const order = realm.order !== 0 ? catalogOrder(realm.order) : null;
+  const aspect: AspectId | null = order?.aspect ?? null;
+  return { realm, order, aspect };
+};
+
 export const seasonPlayerHome = (season: Pick<DirectoryGame, "player_state"> | null | undefined) => {
   const realmId = seasonRealmId(season);
-  const realm = realmId !== null ? canonicalRealm(realmId) : null;
-  const order = realm && realm.order !== 0 ? catalogOrder(realm.order) : null;
-  const aspect: AspectId | null = order?.aspect ?? null;
-  return { realmId, realm, order, aspect };
+  if (realmId === null) return { realmId: null, realm: null, order: null, aspect: null };
+  return { realmId, ...realmHomeOf(realmId) };
 };
 
 export const seasonPlayerAspect = (season: Pick<DirectoryGame, "player_state"> | null | undefined): AspectId | null =>

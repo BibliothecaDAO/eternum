@@ -136,7 +136,7 @@ const topSheetLeft = () => {
  * takes its entry once that step lands, so every entry names a sheet on screen. A sheet closed any other way steps back
  * off its own entry, so the back button never has to be pressed twice.
  */
-const useSystemBackCloses = (close?: () => void) => {
+export const useSystemBackCloses = (close?: () => void) => {
   const id = useId();
   const closeRef = useLatest(close);
   useEffect(() => {

@@ -312,7 +312,7 @@ describe("native presets", () => {
       FRONTIER_PRESET_ID,
     );
     expect(preset.economy.discovery.unwrap()).toEqual({
-      beasts_bps: 600,
+      beasts_bps: 900,
       camp_bps: 400,
       rift_bps: 400,
       ruin_bps: 300,
@@ -364,7 +364,7 @@ describe("native presets", () => {
       [1520, 1680, 1720, 1880],
       [3040, 3360, 3440, 3760],
     ]);
-    expect(preset.economy.discovery.unwrap()).toMatchObject({ beasts_bps: 600 });
+    expect(preset.economy.discovery.unwrap()).toMatchObject({ beasts_bps: 900 });
   });
 
   test("Frontier armies merge but never recruit guards: troop management on, every guard slot closed", () => {

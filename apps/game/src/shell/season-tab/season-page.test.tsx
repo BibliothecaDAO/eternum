@@ -117,6 +117,7 @@ reads.settled = NO_HISTORY;
 vi.spyOn(console, "error").mockImplementation(() => undefined);
 
 import { setViewportWidth } from "../frame/test-viewport";
+import { mergeAspectRosters } from "./aspect-roster";
 import { SeasonPage } from "./season-page";
 
 /** Where a row led: the Results address it opened. */
@@ -465,19 +466,76 @@ it.each([390, 1440])(
   },
 );
 
-it("lists the top of the player's Aspect outside the game, by Glory, from Herald's roster, with the player's own row lit", async () => {
+it("merges Aspect rosters into one global Glory leaderboard sorted by compareAspectMembers and capped at top 10", () => {
+  const member = (rank: number, entityId: string, realmId: number, owner: string, glory: number) => ({
+    rank,
+    entity_id: entityId,
+    realm_id: realmId,
+    owner,
+    glory: String(BigInt(glory) * 1_000_000_000n),
+  });
+  const aspectOneMembers = Array.from({ length: 6 }, (_, index) =>
+    member(index + 1, String(10 + index), index + 1, "0x4c21", 250 - index * 20),
+  );
+  const aspectTwoMembers = [
+    member(1, "1003", 11, "0x6481", 400),
+    member(2, "9", 12, "0x510f", 250),
+    ...Array.from({ length: 5 }, (_, index) =>
+      member(index + 3, String(200 + index), 13 + index, "0x510f", 200 - index * 20),
+    ),
+  ];
+  const merged = mergeAspectRosters([
+    {
+      aspect: 1 as const,
+      roster: { game_id: "1", aspect: 1, total: 10, offset: 0, limit: 10, members: aspectOneMembers },
+    },
+    {
+      aspect: 2 as const,
+      roster: { game_id: "1", aspect: 2, total: 8, offset: 0, limit: 10, members: aspectTwoMembers },
+    },
+  ]);
+  expect(merged.total).toBe(18);
+  expect(merged.rows).toHaveLength(10);
+  expect(merged.rows.slice(0, 4).map((row) => [row.rank, row.aspect, row.member.entity_id, row.member.glory])).toEqual([
+    [1, 2, "1003", "400000000000"],
+    [2, 2, "9", "250000000000"],
+    [3, 1, "10", "250000000000"],
+    [4, 1, "11", "230000000000"],
+  ]);
+});
+
+it("combines all four Aspect rosters into the default Global Glory leaderboard with own realm highlighted and Stage Triumph rules shown", async () => {
   const { canonicalRealm } = await import("@bibliothecadao/eternum");
-  const { catalogOrder } = await import("@bibliothecadao/types");
-  const aspect = catalogOrder(canonicalRealm(1).order).aspect;
+  const { aspectName, catalogOrder } = await import("@bibliothecadao/types");
+  const ownRealm = canonicalRealm(1);
+  const ownAspect = catalogOrder(ownRealm.order).aspect!;
   shards.open.mockImplementation(async () => ({ url: "http://herald.test", chainId: "0x52" }) as never);
-  roster.asked = [];
+  const otherAspects = ([1, 2, 3, 4] as const).filter((id) => id !== ownAspect);
+  roster.byAspect = {
+    [ownAspect]: {
+      total: 12,
+      members: [
+        { rank: 1, owner: "0x510f", realm: 1, glory: 320 },
+        { rank: 2, owner: "0x4c21", realm: 7, glory: 260 },
+      ],
+    },
+    [otherAspects[0]!]: { total: 18, members: [{ rank: 1, owner: "0x6481", realm: 21, glory: 410 }] },
+    [otherAspects[1]!]: { total: 5, members: [] },
+    [otherAspects[2]!]: { total: 0, members: [] },
+  };
   reads.directory = {
     data: {
       games: [
         {
           ...FRONTIER,
-          aspect_members: { 1: 12, 2: 0, 3: 0, 4: 0 },
-          aspect_race: { finish_height: 7_500, season_days: 30, heights: { 1: 100, 2: 0, 3: 0, 4: 0 } },
+          player_count: 142,
+          aspect_members: { 1: 12, 2: 18, 3: 5, 4: 0 },
+          aspect_race: {
+            finish_height: 7_500,
+            season_days: 30,
+            heights: { 1: 6_400, 2: 4_100, 3: 100, 4: 0 },
+            triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
+          },
           player_state: {
             structures: [
               { entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" },
@@ -489,21 +547,61 @@ it("lists the top of the player's Aspect outside the game, by Glory, from Herald
     isError: false,
     isPending: false,
   };
+  reads.useRealBoard = true;
   const { container, unmount } = await mount(1440);
   try {
+    expect(container.querySelector("[data-season-race]")).not.toBeNull();
+    expect(container.querySelectorAll(".hyper-tile")).toHaveLength(4);
+    expect(container.querySelector('[data-aspect-id="1"] .hyper-tile__count')?.textContent).toBe("6,400");
+    expect(container.querySelector("[data-aspect-summary]")).toBeNull();
+    expect(container.textContent).toContain("Day 4 of 30");
+    expect(container.textContent).not.toContain("LORDS");
+    expect(container.querySelector(".season-triumphs__grid")).toBeNull();
+    const triumphTracks = [...container.querySelectorAll(".hyper-tile [data-stage-triumphs]")];
+    expect(triumphTracks).toHaveLength(4);
+    expect(triumphTracks.map((track) => track.querySelectorAll(".hyper-tile__marker[data-reached]").length)).toEqual([
+      4, 2, 0, 0,
+    ]);
+    const triumphs = triumphTracks[0]!;
+    expect(triumphs.textContent).toContain("Clear Mist");
+    expect(triumphs.textContent).toContain("1,500 height");
+    expect(triumphs.textContent).toContain("Sites are found at 150% of the usual odds");
+    expect(triumphs.textContent).toContain("Second Wind");
+    expect(triumphs.textContent).toContain("Pale Moon");
+    expect(triumphs.textContent).toContain("Spoils");
+    await vi.waitFor(() => expect(container.querySelector("[data-global-roster]")?.textContent).toContain("Canzi"));
+    expect(container.querySelector("[data-global-roster]")?.textContent).toContain("Top players · 35 members");
+    expect(roster.asked.filter((path) => path.includes("/leaderboard"))).toEqual([]);
+    expect(roster.asked).toEqual(
+      expect.arrayContaining([
+        "/games/1/aspects/1/members?offset=0&limit=10",
+        "/games/1/aspects/2/members?offset=0&limit=10",
+        "/games/1/aspects/3/members?offset=0&limit=10",
+        "/games/1/aspects/4/members?offset=0&limit=10",
+      ]),
+    );
+    const board = container.querySelector("[data-global-roster]")!;
+    await vi.waitFor(() => expect(board.textContent).toContain("Volcanic"));
+    const items = [...board.querySelectorAll("li.app-board__item")];
+    expect(items).toHaveLength(3);
+    expect(board.querySelectorAll(".season-board__realm")).toHaveLength(0);
+    expect(items.map((item) => item.hasAttribute("data-own"))).toEqual([false, true, false]);
+    expect(items[0]!.textContent).toContain("Canzi");
+    expect(items[0]!.textContent).toContain("410");
+    expect(items[1]!.textContent).toContain("You");
+    expect(items[1]!.textContent).toContain(catalogOrder(ownRealm.order).orderName);
+    expect(items[1]!.textContent).toContain("320");
+    expect(items[2]!.textContent).toContain("Volcanic");
+    expect(items[2]!.textContent).toContain("260");
+    const ownTab = [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
+      (tab) => tab.textContent === aspectName(ownAspect),
+    )!;
+    await act(async () => ownTab.click());
     await vi.waitFor(() =>
-      expect(container.querySelector("[data-aspect-roster]")?.textContent).toContain(
+      expect(container.querySelector(`[data-aspect-roster="${ownAspect}"]`)?.textContent).toContain(
         "Your Aspect's top players · 12 members",
       ),
     );
-    expect(roster.asked).toEqual([`/games/1/aspects/${aspect}/members?offset=0&limit=10`]);
-    const section = container.querySelector("[data-aspect-roster]")!;
-    await vi.waitFor(() => expect(section.textContent).toContain("Volcanic"));
-    const items = [...section.querySelectorAll("li.app-board__item")];
-    expect(items.map((item) => item.hasAttribute("data-own"))).toEqual([false, true]);
-    expect(items[0]!.textContent).toContain("Volcanic");
-    expect(items[0]!.textContent).toContain("120");
-    expect(items[1]!.textContent).toContain("40");
   } finally {
     shards.open.mockImplementation(async () => {
       throw new Error("unexpected shard read");
@@ -512,42 +610,72 @@ it("lists the top of the player's Aspect outside the game, by Glory, from Herald
   }
 });
 
-it("renders Season 1 Aspect race from directory without calling the Season 0 leaderboard", async () => {
-  reads.directory = {
-    data: {
-      games: [
-        {
-          ...FRONTIER,
-          player_count: 142,
-          aspect_members: { 1: 40, 2: 38, 3: 34, 4: 30 },
-          aspect_race: {
-            finish_height: 7_500,
-            season_days: 30,
-            heights: { 1: 6_400, 2: 4_100, 3: 0, 4: 0 },
+it.each([1440, 390])(
+  "renders Season 1 procedural race stage and 4 Aspect stat cards from directory without calling the Season 0 leaderboard at %ipx",
+  async (width) => {
+    shards.open.mockImplementation(async () => ({ url: "http://herald.test", chainId: "0x52" }) as never);
+    reads.directory = {
+      data: {
+        games: [
+          {
+            ...FRONTIER,
+            player_count: 142,
+            aspect_members: { 1: 40, 2: 38, 3: 34, 4: 30 },
+            aspect_race: {
+              finish_height: 7_500,
+              season_days: 30,
+              heights: { 1: 6_400, 2: 4_100, 3: 0, 4: 0 },
+              triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
+            },
           },
-        },
-      ],
-    },
-    isError: false,
-    isPending: false,
-  };
-  reads.useRealBoard = true;
-  const { container, unmount } = await mount(1440);
-  try {
-    expect(shards.open).not.toHaveBeenCalled();
-    expect(container.querySelector("[data-season-race]")).not.toBeNull();
-    expect(container.textContent).not.toContain("Season did not answer.");
-    expect(container.querySelectorAll(".hyper-tile")).toHaveLength(4);
-    expect(container.querySelector('[data-aspect-id="1"] .hyper-tile__count')?.textContent).toBe("6,400");
-    expect(container.textContent).toContain("Day 4 of 30");
-    expect(container.textContent).toContain("Clear Mist · 1,500 height");
-    expect(container.textContent).not.toContain("LORDS per height point");
-    expect(container.textContent).not.toContain("LORDS");
-  } finally {
-    await unmount();
-  }
-});
-
+        ],
+      },
+      isError: false,
+      isPending: false,
+    };
+    reads.useRealBoard = true;
+    const { container, unmount } = await mount(width);
+    try {
+      expect(roster.asked.filter((path) => path.includes("/leaderboard"))).toEqual([]);
+      expect(container.querySelector("[data-season-race]")).not.toBeNull();
+      expect(container.querySelectorAll("[data-race-stage]")).toHaveLength(1);
+      expect(container.querySelector("[data-race-stage]")?.getAttribute("data-race-surface")).toBe("shell");
+      expect(container.querySelectorAll(".hyper-art__svg")).toHaveLength(0);
+      expect(container.textContent).not.toContain("Season did not answer.");
+      const cards = [...container.querySelectorAll(".hyper-tile")];
+      expect(cards).toHaveLength(4);
+      expect(cards.map((card) => card.querySelector(".hyper-tile__count")?.textContent)).toEqual([
+        "6,400",
+        "4,100",
+        "0",
+        "0",
+      ]);
+      expect(cards.map((card) => card.querySelector(".hyper-tile__goal")?.textContent)).toEqual([
+        "of 7,500",
+        "of 7,500",
+        "of 7,500",
+        "of 7,500",
+      ]);
+      expect(cards.map((card) => card.querySelectorAll(".hyper-tile__pip[data-filled]").length)).toEqual([4, 2, 0, 0]);
+      expect(cards.map((card) => card.querySelector(".hyper-tile__members")?.textContent)).toEqual([
+        "40",
+        "38",
+        "34",
+        "30",
+      ]);
+      expect(container.textContent).toContain("Day 4 of 30");
+      expect(container.textContent).toContain("Clear Mist");
+      expect(container.textContent).toContain("1,500 height");
+      expect(container.textContent).not.toContain("LORDS per height point");
+      expect(container.textContent).not.toContain("LORDS");
+    } finally {
+      shards.open.mockImplementation(async () => {
+        throw new Error("unexpected shard read");
+      });
+      await unmount();
+    }
+  },
+);
 it.each([
   [390, true],
   [1440, true],
@@ -558,6 +686,7 @@ it.each([
   async (width, signedIn) => {
     shards.open.mockImplementation(async () => ({ url: "http://herald.test", chainId: "0x52" }) as never);
     roster.byAspect = {
+      1: { total: 12, members: [{ rank: 1, owner: "0x4c21", realm: 7, glory: 120 }] },
       2: {
         total: 18,
         members: [
@@ -565,6 +694,8 @@ it.each([
           { rank: 2, owner: "0x4c21", realm: 22, glory: 190 },
         ],
       },
+      3: { total: 5, members: [] },
+      4: { total: 0, members: [] },
     };
     reads.directory = {
       data: {
@@ -572,7 +703,12 @@ it.each([
           {
             ...FRONTIER,
             aspect_members: { 1: 12, 2: 18, 3: 5, 4: 0 },
-            aspect_race: { finish_height: 7_500, season_days: 30, heights: { 1: 100, 2: 200, 3: 50, 4: 0 } },
+            aspect_race: {
+              finish_height: 7_500,
+              season_days: 30,
+              heights: { 1: 100, 2: 200, 3: 50, 4: 0 },
+              triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
+            },
             player_state: signedIn
               ? {
                   structures: [
@@ -621,19 +757,29 @@ it.each([
   },
 );
 
-it("renders the player's own Aspect roster once when their own Aspect tab is selected and shows an honest empty line for an empty Aspect", async () => {
+it("shows honest empty lines for empty global and Aspect boards", async () => {
   const { canonicalRealm } = await import("@bibliothecadao/eternum");
   const { aspectName, catalogOrder } = await import("@bibliothecadao/types");
   const ownAspect = catalogOrder(canonicalRealm(1).order).aspect!;
   shards.open.mockImplementation(async () => ({ url: "http://herald.test", chainId: "0x52" }) as never);
-  roster.byAspect = { 4: { total: 0, members: [] } };
+  roster.byAspect = {
+    1: { total: 0, members: [] },
+    2: { total: 0, members: [] },
+    3: { total: 0, members: [] },
+    4: { total: 0, members: [] },
+  };
   reads.directory = {
     data: {
       games: [
         {
           ...FRONTIER,
           aspect_members: { 1: 12, 2: 8, 3: 5, 4: 0 },
-          aspect_race: { finish_height: 7_500, season_days: 30, heights: { 1: 100, 2: 80, 3: 50, 4: 0 } },
+          aspect_race: {
+            finish_height: 7_500,
+            season_days: 30,
+            heights: { 1: 100, 2: 80, 3: 50, 4: 0 },
+            triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
+          },
           player_state: {
             structures: [
               { entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" },
@@ -647,16 +793,20 @@ it("renders the player's own Aspect roster once when their own Aspect tab is sel
   };
   const { container, unmount } = await mount(1440);
   try {
-    await vi.waitFor(() => expect(container.querySelectorAll("[data-aspect-roster]")).toHaveLength(1));
+    await vi.waitFor(() =>
+      expect(container.querySelector("[data-global-roster]")?.textContent).toContain(
+        "No realm yet. Create one from Play.",
+      ),
+    );
     const ownTab = [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
       (tab) => tab.textContent === aspectName(ownAspect),
     )!;
     await act(async () => ownTab.click());
-    await vi.waitFor(() => {
-      const rosters = container.querySelectorAll("[data-aspect-roster]");
-      expect(rosters).toHaveLength(1);
-      expect(rosters[0]?.textContent).toContain("Your Aspect's top players · 12 members");
-    });
+    await vi.waitFor(() =>
+      expect(container.querySelector(`[data-aspect-roster="${ownAspect}"]`)?.textContent).toContain(
+        `No realms in ${aspectName(ownAspect)} yet.`,
+      ),
+    );
     const insightTab = [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
       (tab) => tab.textContent === "Insight",
     )!;
@@ -672,7 +822,7 @@ it("renders the player's own Aspect roster once when their own Aspect tab is sel
   }
 });
 
-it("shows ServiceFailure with Try again in Your standing when Herald's roster read fails, and recovers on retry", async () => {
+it("shows ServiceFailure with Try again on the Global Glory leaderboard when Herald's roster read fails, and recovers on retry", async () => {
   shards.open.mockImplementation(async () => ({ url: "http://herald.test", chainId: "0x52" }) as never);
   roster.fail = true;
   reads.directory = {
@@ -681,7 +831,12 @@ it("shows ServiceFailure with Try again in Your standing when Herald's roster re
         {
           ...FRONTIER,
           aspect_members: { 1: 12, 2: 0, 3: 0, 4: 0 },
-          aspect_race: { finish_height: 7_500, season_days: 30, heights: { 1: 100, 2: 0, 3: 0, 4: 0 } },
+          aspect_race: {
+            finish_height: 7_500,
+            season_days: 30,
+            heights: { 1: 100, 2: 0, 3: 0, 4: 0 },
+            triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
+          },
           player_state: {
             structures: [
               { entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" },
@@ -695,7 +850,7 @@ it("shows ServiceFailure with Try again in Your standing when Herald's roster re
   };
   const { container, unmount } = await mount(1440);
   try {
-    const section = () => container.querySelector("[data-aspect-roster]")!;
+    const section = () => container.querySelector("[data-global-roster]")!;
     await vi.waitFor(() => expect(section().textContent).toContain("Season did not answer."));
     const retry = [...section().querySelectorAll<HTMLButtonElement>("button")].find(
       (button) => button.textContent === "Try again",
@@ -703,7 +858,7 @@ it("shows ServiceFailure with Try again in Your standing when Herald's roster re
     expect(retry).toBeDefined();
     roster.fail = false;
     await act(async () => retry.click());
-    await vi.waitFor(() => expect(section().textContent).toContain("Your Aspect's top players · 12 members"));
+    await vi.waitFor(() => expect(section().textContent).toContain("Volcanic"));
   } finally {
     shards.open.mockImplementation(async () => {
       throw new Error("unexpected shard read");

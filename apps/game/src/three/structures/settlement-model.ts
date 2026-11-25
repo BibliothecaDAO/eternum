@@ -1,6 +1,14 @@
+import type { AspectId } from "@bibliothecadao/types";
 import { OrderStandard } from "./order-standard";
 import { RealmLivingAura } from "./realm-living-aura";
-import { BufferGeometry, InstancedBufferAttribute, Mesh, type CanvasTexture, type MeshStandardMaterial } from "three";
+import {
+  BufferGeometry,
+  InstancedBufferAttribute,
+  Mesh,
+  type CanvasTexture,
+  type InstancedMesh,
+  type MeshStandardMaterial,
+} from "three";
 import MeshStandardNodeMaterial from "three/src/materials/nodes/MeshStandardNodeMaterial.js";
 import { attribute, texture, uv, vec2, varying } from "three/tsl";
 import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
@@ -15,10 +23,12 @@ import {
   createRealmBannerAtlas,
   prepareRealmBannerAtlas,
   resolveRealmBannerRow,
+  resolveVillageAspectRow,
   REALM_ATLAS_COLUMNS,
   REALM_ATLAS_ROWS,
   REALM_BANNER_GROUP_SIZE,
   SETTLEMENT_RELATIONSHIP_ORDER,
+  VILLAGE_BANNER_ROWS,
   type SettlementRelationship,
 } from "./settlement-appearance";
 
@@ -63,10 +73,12 @@ export class SettlementModel extends InstancedModel {
     if (kind === "realm") {
       this.orderStandard = new OrderStandard(this.instancedMeshes[0]);
       this.group.add(this.orderStandard.group);
+      this.registerBoundMeshes(this.orderStandard.body, this.orderStandard.cloth, this.orderStandard.emblem);
     }
     if (wonder) {
       this.wonderAura = new RealmLivingAura(gltf.scene, this.instancedMeshes[0]);
       this.group.add(this.wonderAura.mesh);
+      this.registerBoundMeshes(this.wonderAura.mesh as InstancedMesh);
     }
   }
 
@@ -99,7 +111,7 @@ export class SettlementModel extends InstancedModel {
           .add(vec2(0.5 / tileWidth, 0.5 / tileHeight))
       : vec2(0.01, 0.99);
     const columns = this.kind === "village" ? 1 : REALM_ATLAS_COLUMNS;
-    const rows = this.kind === "village" ? SETTLEMENT_RELATIONSHIP_ORDER.length : REALM_ATLAS_ROWS;
+    const rows = this.kind === "village" ? VILLAGE_BANNER_ROWS : REALM_ATLAS_ROWS;
     material.colorNode = texture(
       this.bannerAtlas,
       vec2(clothUv.x.add(row.mod(columns)).div(columns), clothUv.y.add(row.div(columns).floor()).div(rows)),
@@ -134,12 +146,24 @@ export class SettlementModel extends InstancedModel {
     this.heraldry.needsUpdate = true;
   }
 
+  setAspectAt(index: number, aspect: AspectId): void {
+    if (this.kind !== "village") throw new Error("Only non-realm standards take an Aspect tint directly");
+    this.heraldry.setX(index, resolveVillageAspectRow(aspect));
+    this.heraldry.needsUpdate = true;
+  }
+
   setWonderEntityAt(index: number, entityId: string | number | bigint): void {
     this.wonderAura?.setEntityAt(index, entityId);
   }
 
   override setCount(count: number): void {
     super.setCount(count);
+    this.orderStandard?.syncCount();
+    this.wonderAura?.syncCount();
+  }
+
+  override setMatricesAndCount(matrices: InstancedBufferAttribute, count: number): void {
+    super.setMatricesAndCount(matrices, count);
     this.orderStandard?.syncCount();
     this.wonderAura?.syncCount();
   }

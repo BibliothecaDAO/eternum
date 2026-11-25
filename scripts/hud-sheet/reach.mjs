@@ -29,7 +29,6 @@ const AREAS = {
     "ui/features/frontier/deploy/deploy-view.tsx",
     "ui/features/frontier/deploy/deploy-sheet.tsx",
     "ui/features/frontier/amount-range.tsx",
-    "ui/features/frontier/day-ends.tsx",
     "ui/features/frontier/refused-verb.tsx",
     "ui/features/frontier/full-in.tsx",
   ],
@@ -43,7 +42,6 @@ const AREAS = {
   "A. Panels": [
     "ui/features/world/hud/desktop-hud.tsx",
     "ui/features/world/hud/guided-rail.tsx",
-    "ui/features/world/hud/next-up.tsx",
     "ui/features/world/hud/events-card.tsx",
     "ui/features/world/hud/idle-armies.tsx",
     "ui/features/world/hud/holdings.tsx",

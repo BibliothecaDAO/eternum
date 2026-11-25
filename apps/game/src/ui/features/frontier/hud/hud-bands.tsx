@@ -1,8 +1,9 @@
 import { type CSSProperties, type ReactNode, type RefObject, useLayoutEffect, useRef, useState } from "react";
 
 import { useKeyboardHeight } from "@/hooks/use-keyboard-inset";
-import { useSideways } from "@/shell/frame/layout";
+import { useSideways, useTablet } from "@/shell/frame/layout";
 import { HUD_COLUMN_MARK, HUD_FOOT_MARK, HUD_TOP_MARK } from "@/three/utils/labels/hud-clearance";
+import { SheetDock } from "@/ui/design-system/kit/hud-elements";
 
 /** The phone's safe area; the on-screen keyboard covers the home indicator, so while it is up the foot keeps none for it. */
 const SAFE_AREA: CSSProperties = {
@@ -34,10 +35,13 @@ const UprightBands = ({ strip, banner, page, notices, action, dock, nav, childre
   const foot = useEdge(bar, (rect) => window.innerHeight - rect.top + BAND_GAP);
   const topBand = useRef<HTMLDivElement>(null);
   const top = useEdge(topBand, (rect) => rect.bottom + BAND_GAP);
+  const [sheetBand, setSheetBand] = useState<HTMLDivElement | null>(null);
+  const tablet = useTablet();
   return (
     <div
+      data-hud-form={tablet ? "tablet" : "phone"}
       aria-label="Frontier HUD"
-      className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-opening-notice]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden [&:has([data-page-fills])_[data-map-band]]:hidden"
+      className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-page-fills])_:is([data-map-band],[data-map-cluster])]:hidden [html[data-keyboard]_&:has([data-page])_[data-map-band]]:hidden"
       style={{ ...SAFE_AREA, "--hud-phone-foot": `${foot}px`, "--hud-phone-top": `${top}px` } as CSSProperties}
     >
       <div ref={topBand} {...HUD_TOP_MARK} data-keyboard-hides className="flex flex-col gap-1.5">
@@ -45,10 +49,14 @@ const UprightBands = ({ strip, banner, page, notices, action, dock, nav, childre
         {banner}
       </div>
       <div data-map-band className="relative min-h-0 flex-1" />
-      <div {...HUD_FOOT_MARK} className="flex min-h-0 flex-col gap-1.5 [&:has([data-page-fills])]:flex-1">
+      <div
+        {...HUD_FOOT_MARK}
+        className="flex min-h-0 flex-col gap-1.5 [&:has([data-page-fills])]:flex-1 [html[data-keyboard]_&:has([data-page])]:flex-1"
+      >
         <div className="flex flex-col gap-1.5">{notices}</div>
+        <div ref={setSheetBand} data-sheet-band className="flex min-h-0 flex-col empty:hidden" />
         {page ? (
-          <PageBand className="max-h-hud-phone-panel [&:has([data-page-fills])]:max-h-none [&:has([data-page-fills])]:flex-1">
+          <PageBand className="mt-auto max-h-hud-phone-sheet [&:has([data-page-fills])]:max-h-hud-phone-browse [&:has([data-page-fills])]:flex-1 [html[data-keyboard]_&]:max-h-none [html[data-keyboard]_&]:flex-1">
             {page}
           </PageBand>
         ) : (
@@ -58,7 +66,7 @@ const UprightBands = ({ strip, banner, page, notices, action, dock, nav, childre
           <div data-keyboard-hides>{nav}</div>
         </div>
       </div>
-      {children}
+      <SheetDock.Provider value={sheetBand}>{children}</SheetDock.Provider>
     </div>
   );
 };
@@ -69,10 +77,10 @@ const SidewaysBands = ({ strip, banner, page, notices, action, dock, nav, childr
   return (
     <div
       aria-label="Frontier HUD"
-      className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-opening-notice]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden"
+      className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-page-fills])_[data-map-cluster]]:hidden"
       style={{ ...SAFE_AREA, "--hud-sheet-top": `${sheetTop}px` } as CSSProperties}
     >
-      <div {...HUD_COLUMN_MARK} className="flex">
+      <div {...HUD_COLUMN_MARK} data-side-rail className="flex">
         {nav}
       </div>
       <div className="relative min-w-0 flex-1" />

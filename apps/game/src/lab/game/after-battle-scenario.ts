@@ -149,31 +149,6 @@ const fight = (
   };
 };
 
-/**
- * The same army beside the same ruin with no fight yet, its stamina spent (/lab/game?scenario=low-stamina): 5 stamina,
- * short of an attack, and no cooldown on either side. The owner, 27 October 2026: "I right click a monster it should
- * show up the attack modal always even if I dont have enough stamina".
- */
-export const lowStaminaScenario = (): LabScenario => {
-  const spire = spireScenario();
-  const { store } = spire;
-  const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
-  const spent = {
-    ...army.troops,
-    stamina: { Inline: { amount: 5n, settled_at: spire.startsAt, remainder: 0 } },
-  };
-  store.applyFacts([
-    { model: "ExplorerTroops", key: "0x74", value: wire({ ...army, troops: spent }) },
-    ...siteAt(
-      store,
-      besideOnOpenLand(store, store.entityOccupancy(1, SPIRE_ARMY)!),
-      { ...army.troops, count: 999n * PRECISION },
-      StructureType.Ruin,
-    ),
-  ] as never);
-  return spire;
-};
-
 /** The guard's losses and the attacker's, in the lab's fight: the guard falls, the attacker loses a third of its count. */
 const ATTACKER_LOSS_DIVISOR = 3n;
 

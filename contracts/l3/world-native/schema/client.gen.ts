@@ -160,6 +160,7 @@ export enum NativeTileOccupier {
   ReservedHyperstructure = 39,
   DormantSpire = 45,
   DeepSite = 46,
+  SupplyPost = 47,
   Rift = 42,
   Ruin = 43,
   Beasts = 44,

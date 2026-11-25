@@ -890,7 +890,7 @@ const findLine = (found: string, foundBy: string, payload: Record<string, unknow
 };
 
 /** The viewer's side of a fight, when it fell: "Army lost: 1,000 Knights". Null when it stood, or is not theirs. */
-export const lostArmyLine = (payload: Record<string, unknown>, viewer: string | null): string | null => {
+const lostArmyLine = (payload: Record<string, unknown>, viewer: string | null): string | null => {
   const side = [payload.attacker, payload.defender].find(
     (entry): entry is Record<string, unknown> =>
       typeof entry === "object" && entry !== null && feltEquals((entry as Record<string, unknown>).player, viewer),

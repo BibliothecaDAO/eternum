@@ -5,68 +5,49 @@
   gap: theme(spacing.6);
 }
 
-.season-race__grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: theme(spacing.3);
+.season-board__tabs {
+  border-bottom: 1px solid var(--app-line);
+  padding: theme(spacing.3) theme(spacing.4);
 }
 
-.season-breakdown {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
+.season-board__subhead {
+  border-bottom: 1px solid color-mix(in srgb, var(--app-line) 70%, transparent);
+  padding: theme(spacing.2) theme(spacing.4);
 }
 
-.season-breakdown__row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  border: 1px solid rgb(var(--app-aspect) / 0.35);
-  border-radius: var(--app-radius-control);
-  background: var(--app-well);
-  padding: 0.75rem 0.875rem;
-}
-
-.season-breakdown__row[data-own] {
-  border-color: rgb(var(--app-gold));
-  background: color-mix(in srgb, rgb(var(--app-aspect)) 12%, var(--app-well));
-}
-
-.season-breakdown__lead {
+.season-board__identity {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.5rem;
 }
 
-.season-breakdown__name {
-  font-family: var(--app-face-title);
-  font-size: 1.05rem;
-  letter-spacing: 0.04em;
-  color: rgb(var(--app-aspect));
-}
-
-.season-breakdown__metrics {
-  display: flex;
-  flex-wrap: wrap;
+.season-board__order {
+  display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.25rem;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-chip);
+  background: color-mix(in srgb, var(--app-well) 85%, transparent);
+  padding: 0.1rem 0.45rem 0.1rem 0.25rem;
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-label);
+  line-height: 1.3;
+  color: var(--app-muted);
 }
 
-.season-triumphs {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  border-top: 1px solid var(--app-line);
-  padding-top: 0.875rem;
-}
+@media (max-width: 639px) {
+  .season-board__order {
+    border-color: transparent;
+    background: none;
+    padding: 0;
+  }
 
-.season-triumphs__list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+  .season-board__order-name {
+    display: none;
+  }
 }
 
 .season-stat {
@@ -102,10 +83,5 @@
 @media (min-width: 1024px) {
   .season-grid {
     grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
-  }
-
-  .season-race__grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: theme(spacing.4);
   }
 }

@@ -25,7 +25,7 @@ afterEach(() => {
   clock.now = 350;
 });
 
-function fixture(layout: "desktop" | "phone") {
+function fixture() {
   const scenario = questScenario();
   const store = chainOf(scenario);
   let finish!: (value: { transaction_hash: string }) => void;
@@ -45,7 +45,7 @@ function fixture(layout: "desktop" | "phone") {
           value={{ store, systemCalls: { claim_daily_quest: submit } } as unknown as GameClientSetup}
           account={{ address: scenario.player, account: { address: scenario.player } } as never}
         >
-          <DailyQuest realm={store.require("Structure", { game_id: 1, entity_id: 7 })} layout={layout} />
+          <DailyQuest realm={store.require("Structure", { game_id: 1, entity_id: 7 })} />
         </GameProvider>,
       ),
     );
@@ -54,9 +54,9 @@ function fixture(layout: "desktop" | "phone") {
 
 const collect = () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Collect");
 
-describe.each(["desktop", "phone"] as const)("daily quest on %s", (layout) => {
+describe("daily quest", () => {
   it("submits once, keeps Collect busy, and renders only the received grant as collected", async () => {
-    const game = fixture(layout);
+    const game = fixture();
     game.draw();
     expect(collect()?.disabled).toBe(false);
     await act(async () => {
@@ -82,7 +82,7 @@ describe.each(["desktop", "phone"] as const)("daily quest on %s", (layout) => {
   });
 
   it("offers no Collect until a complete snapshot establishes the missing receipt and bonus", () => {
-    const game = fixture(layout);
+    const game = fixture();
     game.store.setSnapshot({ gameId: 1, actor: game.scenario.player, complete: false, timestamp: 350 });
     game.draw();
     expect(host.textContent).toContain("Loading today's quest");
@@ -92,8 +92,8 @@ describe.each(["desktop", "phone"] as const)("daily quest on %s", (layout) => {
   });
 });
 
-function worldDay(layout: "desktop" | "phone") {
-  const fixtureGame = fixture(layout);
+function worldDay() {
+  const fixtureGame = fixture();
   const { store } = fixtureGame;
   const registry = store.require("GameRegistry", { game_id: 1 });
   const rules = store.require("SliceRules", { game_id: 1 });
@@ -154,18 +154,18 @@ function worldDay(layout: "desktop" | "phone") {
 }
 const collectAgain = () =>
   [...host.querySelectorAll("button")].find((button) => button.textContent === "Collect again");
-const reward = (name: string) => host.querySelector(`[data-reward="${name}"]`)?.textContent?.trim();
+const reward = (name: string) => host.querySelector(`[data-reward="${name}"]`)?.getAttribute("aria-label");
 
-describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) => {
+describe("bane collection", () => {
   it("collects the second world reward once after quorum and renders the actual clipped receipt", async () => {
-    const game = worldDay(layout);
+    const game = worldDay();
     game.store.applyFacts([game.grant("LaborGrant")]);
     game.draw();
     expect(collectAgain()).toBeUndefined();
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     act(game.win);
     expect(collectAgain()?.disabled).toBe(false);
-    expect(reward("Labor")).toBe("1,000");
+    expect(reward("Labor")).toBe("1,000 Labor");
     await act(async () => collectAgain()!.click());
     expect(game.submit).toHaveBeenCalledTimes(1);
     expect(game.submit).toHaveBeenCalledWith(expect.objectContaining({ home: 7, day: 1 }));
@@ -176,17 +176,17 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
     });
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(collectAgain()).toBeUndefined();
-    expect(reward("Labor")).toBe("1,250");
-    expect(reward("Essence")).toBe("2,000");
+    expect(reward("Labor")).toBe("1,250 Labor");
+    expect(reward("Essence")).toBe("2,000 Essence");
   });
 
   it("offers both rewards for a first collection after quorum and waits for both receipts", async () => {
-    const game = worldDay(layout);
+    const game = worldDay();
     game.win();
     game.draw();
     expect(collect()?.disabled).toBe(false);
-    expect(reward("Labor")).toBe("2,000");
-    expect(reward("Essence")).toBe("3,000");
+    expect(reward("Labor")).toBe("2,000 Labor");
+    expect(reward("Essence")).toBe("3,000 Essence");
     await act(async () => collect()!.click());
     expect(game.submit).toHaveBeenCalledTimes(1);
     expect(host.querySelector('[aria-label="Collected"]')).toBeNull();
@@ -196,11 +196,11 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
     });
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(collectAgain()).toBeUndefined();
-    expect(reward("Labor")).toBe("2,000");
+    expect(reward("Labor")).toBe("2,000 Labor");
   });
 
   it("does not invent an ordinary quest while the recorded day is missing", () => {
-    const game = worldDay(layout);
+    const game = worldDay();
     game.store.applyFacts([{ model: "WorldBane", key: "0xd003", value: null }]);
     game.draw();
     expect(host.textContent).toContain("Loading today's quest");
@@ -210,8 +210,8 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
     expect(collectAgain()).toBeUndefined();
   });
 
-  it("names the source of a team bane and grants no second reward when it ends", () => {
-    const game = worldDay(layout);
+  it("shows a team bane's quest alone, with no bane row, and grants no second reward when it ends", () => {
+    const game = worldDay();
     const source = aspects.find((aspect) => aspect.id !== 2)!;
     game.store.applyFacts([
       { model: "FirstTeamBane", key: "0xd006", value: { game_id: 1, issued_day: 0 } },
@@ -236,14 +236,15 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
     ]);
     game.win();
     game.draw();
-    expect(host.textContent).toContain(`${source.name}'s bane`);
     expect(host.textContent).toContain("The Stand");
+    expect(host.textContent).not.toContain(source.name);
+    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("Clear 3 guarded sites");
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(collectAgain()).toBeUndefined();
-    expect(reward("Labor")).toBe("1,000");
+    expect(reward("Labor")).toBe("1,000 Labor");
   });
   it("shows a received sub-unit reward as less than one, never zero", () => {
-    const game = worldDay(layout);
+    const game = worldDay();
     game.win();
     const bonus = game.grant("BaneGrant", 0, 0);
     game.store.applyFacts([
@@ -252,7 +253,7 @@ describe.each(["desktop", "phone"] as const)("bane collection on %s", (layout) =
     ]);
     game.draw();
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
-    expect(reward("Labor")).toBe("<1");
-    expect(reward("Essence")).toBe("<1");
+    expect(reward("Labor")).toBe("<1 Labor");
+    expect(reward("Essence")).toBe("<1 Essence");
   });
 });

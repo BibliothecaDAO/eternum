@@ -182,7 +182,6 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
                           head
                             ? {
                                 name: senderName,
-                                playerId: senderId,
                                 time: formatWorldMessageTime(message),
                                 onName:
                                   senderId === self

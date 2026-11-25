@@ -66,8 +66,18 @@ const PAGES = [
     matrix: true,
   },
   { file: "connect-start", url: "/lab/app/first-visit/connect/start?capture=1", shown: "[data-sign-in-stage]" },
-  { file: "play-active", url: "/lab/app/home?capture=1", shown: "[data-play-page]", matrix: true },
-  { file: "season-race", url: "/lab/app/home/season?capture=1", shown: "[data-season-race]", matrix: true },
+  {
+    file: "play-active",
+    url: "/lab/app/home?capture=1",
+    shown: "[data-play-page] [data-race-stage][data-ready]",
+    matrix: true,
+  },
+  {
+    file: "season-race",
+    url: "/lab/app/home/season?capture=1",
+    shown: "[data-season-race] [data-race-stage][data-ready]",
+    matrix: true,
+  },
   {
     file: "recap-season",
     url: "/lab/app/season-over/results/0x5245414c4d53-3?capture=1",
@@ -94,8 +104,29 @@ const PAGES = [
   { file: "state-spectator", url: "/lab/app/home/doorway/spectator?capture=1", shown: "[data-doorway-loading]" },
   { file: "day-share", url: "/lab/app/home/share/day?capture=1", shown: ".day-card" },
   { file: "settings-no-wallet", url: "/lab/app/home/profile?capture=1#wallet", shown: "[data-payout-wallet=none]" },
-  { file: "hud-build", url: "/lab/kit/hud/build", shown: "[data-build-sheet]" },
-  { file: "hud-research", url: "/lab/kit/hud/research", shown: 'section[aria-label="Research"]' },
+  { file: "hud-build", url: "/lab/kit/hud/build", shown: "[data-build-sheet]", matrix: true },
+  { file: "hud-menu", url: "/lab/kit/hud/menu", shown: 'section[aria-label="Menu"]', matrix: true },
+  {
+    file: "hud-quest",
+    url: "/lab/kit/hud/idle",
+    press: { after: "[data-daily-quest-chip]", selector: "[data-daily-quest-chip]" },
+    shown: "[data-daily-quest]",
+    matrix: true,
+  },
+  {
+    file: "hud-oath-pick",
+    url: "/lab/game?scenario=oath-pick&renderer=webgpu-force-webgl",
+    shown: "[data-oath-pick]",
+    matrix: true,
+  },
+  { file: "hud-research", url: "/lab/kit/hud/research", shown: 'section[aria-label="Research"]', matrix: true },
+  {
+    file: "hud-research-realm",
+    url: "/lab/game?scenario=realm-world&renderer=webgpu-force-webgl",
+    openResearch: true,
+    shown: 'section[aria-label="Research"] [data-node="row-6"]',
+    matrix: true,
+  },
   { file: "hud-day-done", url: "/lab/kit/hud/day-done", shown: ".day-done" },
   { file: "hud-offline", url: "/lab/kit/hud/offline", shown: "[data-offline-banner]" },
   {
@@ -153,7 +184,7 @@ for (const group of runGroups) {
       const browser = createBrowserSession(`season-one-${start}-${Date.now()}`, { profile, headed: false });
       let activeViewport = "";
       try {
-        for (const { device, width, height, file, url, shown, press } of batch) {
+        for (const { device, width, height, file, url, shown, press, openResearch } of batch) {
           const viewport = `${width}x${height}`;
           if (viewport !== activeViewport) {
             browser.run(["set", "viewport", width, height]);
@@ -161,9 +192,17 @@ for (const group of runGroups) {
           }
           browser.run(["open", `${baseUrl}${url}`]);
           try {
+            if (openResearch) {
+              browser.run(["wait", "--fn", `!!document.querySelector('nav[aria-label="Places"] button')`]);
+              browser.tapPlace("Research");
+            }
             if (press) {
               browser.run(["wait", "--fn", `!!document.querySelector('${press.after}')`]);
-              browser.run(["find", "role", "button", "click", "--name", press.button]);
+              browser.run(
+                press.selector
+                  ? ["click", press.selector]
+                  : ["find", "role", "button", "click", "--name", press.button],
+              );
             }
             browser.run(["wait", "--fn", `!!document.querySelector('${shown}')`]);
           } catch (error) {

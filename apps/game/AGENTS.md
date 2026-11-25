@@ -135,11 +135,11 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   not tested), at most seven parts in each region, and on a desktop the minimap.
 - **As a spectator** (default), from a fresh browser profile (cold cache): enter on the map (a Frontier session opens
   there, the realm one press away), the HUD's layout, map idle, pan (WASD), zoom out and in, the season (its board
-  drawn, then closed: from a desktop's Season place, in the rail; from a phone's Menu), the Feed's first story that is a
-  link (a phone's from its Log, put away again if the story leaves it open; the map on its place, that tile selected,
-  the page never loaded again), visits to the board's second and third realms in turn (each by Visit, its realm, then
-  the map on it, in the same page, that realm selected and the camera on it), the realm and back to the map, then a
-  minute of watching.
+  drawn, then closed: from a desktop's Season place, in the rail; from a phone's Season tab), the Feed's first story
+  that is a link (a phone's from its Log, put away again if the story leaves it open; the map on its place, that tile
+  selected, the page never loaded again), visits to the board's second and third realms in turn (each by Visit, its
+  realm, then the map on it, in the same page, that realm selected and the camera on it), the realm and back to the map,
+  then a minute of watching.
 - **As a player** (`--player <email>`), entering through the Frontier card's Resume or Play on the home page with the
   browser's own click, and past a new day's summary (Continue): enter on the map, select the army with the most stamina,
   open and close production, the next order's life (below), explore twice (tap a tile beside the army, then tap it
@@ -172,26 +172,26 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   host does below and builds a Barracks (the Build sheet's offers and their prices are recorded as `offers`); the host
   builds a Barracks, sends an army into the mist, attacks a site beside one of its armies (revealing up to six tiles to
   find one) and chooses the first card of an Oath pick the fight opens, its cards' texts recorded (one left standing by
-  an earlier run is answered first). A surface attack is pressed only on a card that forecasts a win ("This attack
-  earns" or "clears it"); when no site beside its armies forecasts a win (a loss, a guard that survives, or no forecast
-  read), the account deploys its troops at home once with Max and searches on. Then the host enters the Deep through its
-  Spire once the realm knows Spire lore, attacks an open site's beast and so holds it. The host then measures the Deep's
-  catch-up: three Moves of a surface army, the cheaper of the last two being a play with nothing to settle (T0); the
-  tick's pay read on the site's card and the Season board; four ticks passed on the slot's clock with no command; one
-  more Move (T1), which settles them, since the chain settles the Deep only at the next command. T1 must be applied (the
-  chain refuses a play over its event or gas limit) and emit its rows once each, not once per tick; Glory, height and
-  the bane bar must rise by whole ticks of the card's pay; Essence and labor are read from the card only. The friend
-  then enters the Deep, attacks a rival's guard and takes an empty site, which exist only when another Aspect holds a
-  site or a site's guards died. An account whose dock is empty (a new day ends every army) first deploys an army of at
-  most 500 of its troops at home, keeping the rest for that raise; Max keeps the wheat the army burns revealing its bar,
-  so a raised army explores on. With an army out, the host's page must offer no Refill and no shop, and an Oath pick no
-  Redraw, while the game's rules as the page holds them (`window.__eternumFragmentSpends()`) enable none of BuySeal,
-  BuyStamina and RerollOath: the mask the contract refuses them by ("command disabled"). Without Spire lore the Deep
-  steps are blocked with the Spire's own row. `--steps s1-testnet` plays the host alone in a testnet game entered from
-  its Play card: founding, an army sent, and the same Fragment spends check. An action passes only when its receipt from
-  the chain's node is confirmed, succeeded and not refused by the game (`scripts/client-playtest/chain-receipts.mjs`,
-  which also records each play's l2 gas and event count); what the game does not offer yet is blocked with what the page
-  said, and a rerun in the same game passes the foundings already made.
+  an earlier run is answered first). A surface attack is pressed only on a card that forecasts a win ("Victory likely");
+  when no site beside its armies forecasts a win (a loss, a guard that survives, or no forecast read), the account
+  deploys its troops at home once with Max and searches on. Then the host enters the Deep through its Spire once the
+  realm knows Spire lore, attacks an open site's beast and so holds it. The host then measures the Deep's catch-up:
+  three Moves of a surface army, the cheaper of the last two being a play with nothing to settle (T0); the tick's pay
+  read on the site's card and the Season board; four ticks passed on the slot's clock with no command; one more Move
+  (T1), which settles them, since the chain settles the Deep only at the next command. T1 must be applied (the chain
+  refuses a play over its event or gas limit) and emit its rows once each, not once per tick; Glory, height and the bane
+  bar must rise by whole ticks of the card's pay; Essence and labor are read from the card only. The friend then enters
+  the Deep, attacks a rival's guard and takes an empty site, which exist only when another Aspect holds a site or a
+  site's guards died. An account whose dock is empty (a new day ends every army) first deploys an army of at most 500 of
+  its troops at home, keeping the rest for that raise; Max keeps the wheat the army burns revealing its bar, so a raised
+  army explores on. With an army out, the host's page must offer no Refill and no shop, and an Oath pick no Redraw,
+  while the game's rules as the page holds them (`window.__eternumFragmentSpends()`) enable none of BuySeal, BuyStamina
+  and RerollOath: the mask the contract refuses them by ("command disabled"). Without Spire lore the Deep steps are
+  blocked with the Spire's own row. `--steps s1-testnet` plays the host alone in a testnet game entered from its Play
+  card: founding, an army sent, and the same Fragment spends check. An action passes only when its receipt from the
+  chain's node is confirmed, succeeded and not refused by the game (`scripts/client-playtest/chain-receipts.mjs`, which
+  also records each play's l2 gas and event count); what the game does not offer yet is blocked with what the page said,
+  and a rerun in the same game passes the foundings already made.
 - **Signing in.** Each player keeps a profile under `.context/playtest-profiles/<email>`; agent-browser is handed it on
   every command (it relaunches on a temporary profile for a command that omits it). Each run opens the home page first:
   a signed-in player's bar shows them and the run goes on at once; a signed-out one presses Connect and signs in as a
@@ -288,18 +288,19 @@ training must be confirmed once more), or with the owner's army after its fight 
 army's tile, found under its token, hovered with nothing selected must open that army's plate, and an emptied tile
 none), `--steps lab-reinforce` (`/lab/game?scenario=reinforce`, the army beside home: the realm selected from its tile,
 the army right-clicked for **Reinforce** (at a phone's width a finger taps the realm and holds the army, through
-DevTools' touch input), Max and Reinforce sent; the chain's RecruitExplorer answer must leave the army at 1,902, 16
-knights and 192 wheat at home: Max keeps the wheat its 5 reveals burn), `--steps lab-visit` (`/lab/game?scenario=visit`,
-the painted Kingdom's game with a neighbour's Kingdom on the Season board, built in another order: Visit from the board,
-Leave, and Visit and Leave again, each arrival failing on another realm drawn, a building laid out without its model
-attached, shown and loaded, or a HUD panel past the screen's edge; each board swept point by point, each hovered then
-tapped, a visit failing on a building's card that names another building than its hover or offers more than its close,
-an open plot's card, or any command signed, and home failing on such a card or on no open plot opening Build),
-`--steps lab-reenter` (`/lab/game?scenario=from-home`, the spire's game opened on the home page: entered by its card's
-Resume, left by Back and then by the HUD's way out (a phone's Menu, Exit; a desktop Back again, as its Leave game loads
-the page afresh), and entered by Resume each time: each leave failing short of the home page or with the game's label
-layer still mounted, each return on the map's labels or plates read on entry missing; play it at `--viewport 390x844`
-too), `--steps lab-hud-devices` (`/lab/game?scenario=sites`, the map's share of the page on a device: at rest, the army
+DevTools' touch input), Max and Reinforce sent; the chain's answer must move at least 404 troops, pay one knight and 2
+wheat for each, and leave at least 192 wheat at home: Max keeps the wheat its 5 reveals burn, and the realm's production
+only adds to what Max may move), `--steps lab-visit` (`/lab/game?scenario=visit`, the painted Kingdom's game with a
+neighbour's Kingdom on the Season board, built in another order: Visit from the board, Leave, and Visit and Leave again,
+each arrival failing on another realm drawn, a building laid out without its model attached, shown and loaded, or a HUD
+panel past the screen's edge; each board swept point by point, each hovered then tapped, a visit failing on a building's
+card that names another building than its hover or offers more than its close, an open plot's card, or any command
+signed, and home failing on such a card or on no open plot opening Build), `--steps lab-reenter`
+(`/lab/game?scenario=from-home`, the spire's game opened on the home page: entered by its card's Resume, left by Back
+and then by the HUD's way out (a phone's Menu, Exit; a desktop Back again, as its Leave game loads the page afresh), and
+entered by Resume each time: each leave failing short of the home page or with the game's label layer still mounted,
+each return on the map's labels or plates read on entry missing; play it at `--viewport 390x844` too),
+`--steps lab-hud-devices` (`/lab/game?scenario=sites`, the map's share of the page on a device: at rest, the army
 picked, its panel, a site's card, Chat and the Menu, each read by hit-testing a grid 8 px apart for where the map's
 canvas is the first thing a press reaches and which HUD part takes each other point, with the share above a phone's
 keyboard; run it at each device's size with `--viewport`), `--steps lab-ruin-fight` (`/lab/game?scenario=ruin-fight`,
@@ -597,9 +598,10 @@ The stamina effects paths are `/lab/game?scenario=stamina-mist` and `stamina-win
 its bar and Full in timer. `pnpm --dir apps/game playtest:landing lab-stamina-mist lab-stamina-wind` drives both
 recorded-effect fixtures at desktop and phone sizes. Native lifecycle tests prove Explore settlement and quorum timing.
 
-Supply posts: `/lab/game?scenario=supply-post`, select the cleared camp beside Army 1, choose Reinforce Army 1, then Max
-and Reinforce. `lab-supply-post` checks the signed camp ID and resulting army and home balances on desktop and phone,
-retaining the camp banner, reinforcement sheet and response evidence.
+Supply posts: `/lab/game?scenario=supply-post`, select the cleared camp beside Army 1: with one army beside it the sheet
+is that army's reinforcement, opening at Max (several armies are each offered first), then Reinforce. `lab-supply-post`
+checks the signed camp ID and resulting army and home balances on desktop and phone, retaining the camp banner,
+reinforcement sheet and response evidence.
 
 Scouts are raised in Deploy by selecting Scouts from the troop choices, then a count and an open army slot. The Scouts'
 Lodge opens at City and produces the separate Scout stock; it has no Scouting research. `--steps lab-scouts` uses
@@ -617,16 +619,18 @@ Deploy shows the current troop's capacity; an army's panel keeps its capacity fr
 and deploy an army with three slots on desktop and phone. These are lab proofs; native tests cover immutable army
 capacity.
 
-An earned Oath opens three cards at once, drawn at random from the Oaths the army does not hold, and blocks that army's
-commands until answered. Choose a card; with full slots, choose the held Oath it replaces, or Pass for the stamina shown
-on the button, capped at the army's maximum. The pick cannot be dismissed by Escape, Back or an outside press. One
-Redraw a pick swaps the card it is under for an Oath neither held nor shown, for the Fragments its button shows (none in
-the Deep); the playtest redraws the first card before it chooses. `lab-actions-oath-pick` and `lab-actions-oath-replace`
-play `/lab/game?scenario=oath-pick` and `oath-replace` on desktop and phone, recording the signed choice and resulting
-held Oath. Each path opens Delete, checks the Oath loss warning, cancels to retain the army, then confirms and checks
-the army and Oath record disappear. The freed slot retains its stamina. Native tests cover Shrine reveals, persistence,
-deletion and remustering with an empty Oath record; these browser proofs use recorded offers. `lab-oath-decline` and
-`lab-oath-pass-capped` check the pass reward, including overflow at the maximum.
+An earned Oath offers three cards, drawn at random from the Oaths the army does not hold, and blocks that army's
+commands until answered. It waits as a shrine on the army's token (the clear's Victory banner goes by itself first) and
+opens when the army is picked. Choose a card and Swear it with the gold button; with full slots, choose the held Oath it
+replaces, or Pass for the stamina shown on its row, capped at the army's maximum. The open pick cannot be dismissed by
+Escape, Back or an outside press. One Swap a pick replaces the card it is on with an Oath neither held nor shown, for
+the Fragments the head shows (none in the Deep); the swapped card reads New and the head Used. The playtest swaps the
+first card before it chooses. `lab-actions-oath-pick` and `lab-actions-oath-replace` play `/lab/game?scenario=oath-pick`
+and `oath-replace` on desktop and phone, recording the signed choice and resulting held Oath. Each path opens Delete,
+checks the Oath loss warning, cancels to retain the army, then confirms and checks the army and Oath record disappear.
+The freed slot retains its stamina. Native tests cover Shrine reveals, persistence, deletion and remustering with an
+empty Oath record; these browser proofs use recorded offers. `lab-oath-decline` and `lab-oath-pass-capped` check the
+pass reward, including overflow at the maximum.
 
 Vitriol changes the Deep's field and guard loss to its generated rule value. `/lab/game?scenario=oath-vitriol` and
 `lab-oath-vitriol` choose it through the Oath panel, read the reduced field drain, and join the Ethereal mine on desktop
@@ -650,5 +654,5 @@ troops. `tests/fixtures/oath-twins.txt` holds the contract and the client to the
 `tests/world/src/tests/oaths.cairo`) finds the companion through a real attack, and `attack-forecast.test.ts` finds the
 same one in the forecast.
 
-A stronger beast band at a personal depth holds an Oath: its site card shows "Holds an Oath" (the Shrine's painting)
-beside its pay, read from the same band rule the contract uses to open a pick on its clear.
+A stronger beast band at a personal depth holds an Oath: its site card shows "Oath" (the Shrine's painting) beside its
+pay, read from the same band rule the contract uses to open a pick on its clear.

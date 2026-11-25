@@ -1,32 +1,127 @@
-import { OPENING, OPENING_MOMENTS, type OpeningMoment, type StateMoment } from "./opening";
+import type { OpeningRules } from "@/ui/design-system/kit/words";
+import { OPENING, OPENING_MOMENTS, type OpeningContext, type OpeningMoment } from "./opening";
 
-/** What the Realm holds or has done, read from the game's state, that opens a moment on its own. */
-export type OpeningHeld = Record<StateMoment, boolean>;
+export const TUTORIAL_SKIPPED = "tutorial-skipped";
 
-const isStateMoment = (moment: OpeningMoment, held: OpeningHeld): moment is StateMoment => moment in held;
+export type TutorialDisplayStatus = "showing" | "completed";
 
-/** The moments the Realm's state has reached: the launch always, and each moment whose state is held. */
-export const reachedOnState = (held: OpeningHeld | null): OpeningMoment[] =>
-  OPENING_MOMENTS.filter(
-    (moment) => moment === "launch" || (held !== null && isStateMoment(moment, held) && held[moment]),
-  );
+export interface TutorialDisplay {
+  readonly moment: OpeningMoment;
+  readonly rules: OpeningRules;
+  readonly status: TutorialDisplayStatus;
+}
 
-/**
- * The moments the interface has opened to: those the account has reached before, in any session or on any device, and
- * those the state reaches now. A moment is never taken back, so a part earned on an earlier day stays.
- */
+export const EMPTY_OPENING_CONTEXT: OpeningContext = {
+  hasRealm: false,
+  hasBarracks: false,
+  troopsAtHome: 0,
+  fullArmy: 0,
+  deployedArmies: 0,
+  hasExplored: false,
+  hasOpenOathPick: false,
+  hasSwornOath: false,
+  hasEssence: false,
+  canResearch: false,
+  hasResearched: false,
+  questRunning: false,
+  questProgressed: false,
+  dailyQuestClaimable: false,
+  dailyQuestClaimed: false,
+  hasWellLore: false,
+  hasShrineLore: false,
+  isCity: false,
+  inEthereal: false,
+  inDeep: false,
+  hasActiveBane: false,
+  hasBrokenBane: false,
+  dayEndingSoon: false,
+  hyperstructureAdvanced: false,
+  hasAspectRace: false,
+  fragmentsSold: false,
+  outOfStamina: false,
+  hasRelic: false,
+  openedToday: false,
+  openedResearch: false,
+  openedSeason: false,
+  openedShop: false,
+  openedArmy: false,
+  isSeasonZeroVeteran: false,
+};
+
+export const reachedOnContext = (ctx: OpeningContext | null): OpeningMoment[] =>
+  ctx === null ? [] : OPENING_MOMENTS.filter((moment) => OPENING[moment].reachedWhen(ctx));
+
 export const openedMoments = (kept: ReadonlySet<string>, onState: readonly OpeningMoment[]): Set<OpeningMoment> =>
   new Set([...OPENING_MOMENTS.filter((moment) => kept.has(moment)), ...onState]);
 
-/** The line to show now: the first reached moment, in the table's order, whose line the account has not seen. */
-export const nextLine = (opened: ReadonlySet<OpeningMoment>, seen: ReadonlySet<string>): OpeningMoment | null =>
-  OPENING_MOMENTS.find((moment) => opened.has(moment) && !seen.has(moment) && moment in OPENING) ?? null;
+const isCompletedOnContext = (moment: OpeningMoment, ctx: OpeningContext, isShowing: boolean): boolean => {
+  const entry = OPENING[moment];
+  if ("completesWhen" in entry && entry.completesWhen(ctx)) return true;
+  return isShowing && "completesWhileShowing" in entry && entry.completesWhileShowing(ctx);
+};
 
-/**
- * The account's progress as this render may read it: only the current account's counts, and only a signed-out player or
- * an account whose service has answered is known. Another account's sets, or none yet, read as an empty account that is
- * not known, so no line is told again and no earlier account's parts carry over.
- */
+const completedOnContext = (
+  ctx: OpeningContext,
+  showing: OpeningMoment | null,
+  seen: ReadonlySet<string>,
+): OpeningMoment[] =>
+  OPENING_MOMENTS.filter((moment) => !seen.has(moment) && isCompletedOnContext(moment, ctx, moment === showing));
+
+const isReady = (moment: OpeningMoment, rules: OpeningRules): boolean => {
+  const entry = OPENING[moment];
+  return !("readyWhen" in entry) || entry.readyWhen(rules);
+};
+
+const skipsVeteran = (moment: OpeningMoment, ctx: OpeningContext): boolean => {
+  const entry = OPENING[moment];
+  return "skipForVeteran" in entry && entry.skipForVeteran && ctx.isSeasonZeroVeteran;
+};
+
+export const activeOpeningMoment = (
+  ctx: OpeningContext | null,
+  rules: OpeningRules | null,
+  seen: ReadonlySet<string>,
+): OpeningMoment | null => {
+  if (ctx === null || rules === null || seen.has(TUTORIAL_SKIPPED)) return null;
+  return (
+    OPENING_MOMENTS.find(
+      (moment) =>
+        !seen.has(moment) && !skipsVeteran(moment, ctx) && OPENING[moment].showsWhen(ctx) && isReady(moment, rules),
+    ) ?? null
+  );
+};
+
+export interface TutorialTransition {
+  readonly nextShowing: OpeningMoment | null;
+  readonly confirmedMoment: OpeningMoment | null;
+  readonly newlyCompleted: readonly OpeningMoment[];
+}
+
+export function stepTutorialMachine(input: {
+  showing: OpeningMoment | null;
+  confirmed: OpeningMoment | null;
+  ctx: OpeningContext | null;
+  rules: OpeningRules | null;
+  seen: ReadonlySet<string>;
+}): TutorialTransition {
+  const { showing, confirmed, ctx, rules, seen } = input;
+  if (ctx === null || rules === null || seen.has(TUTORIAL_SKIPPED)) {
+    return { nextShowing: null, confirmedMoment: null, newlyCompleted: [] };
+  }
+  const newlyCompleted = completedOnContext(ctx, showing, seen);
+  if (showing !== null && newlyCompleted.includes(showing)) {
+    return { nextShowing: null, confirmedMoment: showing, newlyCompleted };
+  }
+  if (confirmed !== null) {
+    return { nextShowing: null, confirmedMoment: confirmed, newlyCompleted };
+  }
+  if (showing !== null && !seen.has(showing) && OPENING[showing].showsWhen(ctx) && isReady(showing, rules)) {
+    return { nextShowing: showing, confirmedMoment: null, newlyCompleted };
+  }
+  const nextShowing = activeOpeningMoment(ctx, rules, new Set([...seen, ...newlyCompleted]));
+  return { nextShowing, confirmedMoment: null, newlyCompleted };
+}
+
 export function accountProgress(
   owner: string | null,
   store: {
@@ -37,21 +132,16 @@ export function accountProgress(
     onDevice: boolean;
   },
 ): { reached: ReadonlySet<string>; seen: ReadonlySet<string>; known: boolean; ownsParts: boolean } {
-  const mine = store.owner === owner;
+  const normalizedOwner = owner || null;
+  const mine = (store.owner || null) === normalizedOwner;
   return {
     reached: mine ? store.reached : new Set(),
     seen: mine ? store.seen : new Set(),
-    known: owner === null || (mine && store.status === "ready"),
-    // What the parts may rest on: the service's answer, or what this device kept of the account's own progress. Without
-    // either, the sets are empty only because nothing is read yet, and a part earned earlier must not be taken away.
-    ownsParts: owner === null || (mine && (store.status === "ready" || store.onDevice)),
+    known: normalizedOwner === null || (mine && store.status === "ready"),
+    ownsParts: normalizedOwner === null || (mine && (store.status === "ready" || store.onDevice)),
   };
 }
 
-/**
- * Whether the site alert's first-entry offer is due: the Deep entered, the account's progress known, and the offer not
- * yet answered. Neither Show everything nor an unanswered explanatory line moves it.
- */
 export const siteAlertOfferDue = (
   opened: ReadonlySet<OpeningMoment>,
   seen: ReadonlySet<string>,

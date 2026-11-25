@@ -402,14 +402,11 @@ export const GUTTERS = {
 } as const;
 
 /** The desktop layout's first width: Tailwind's `lg`, and the JS layout's (shell/frame/layout.ts). */
-/**
- * The least share of a phone's screen the map keeps while a sheet or a page is open, in percent (owner, 4 November:
- * "the map is like 15%" on odd shapes). The phone panel's cap follows it; the playtest's lab-hud-devices fails a shape
- * under it (hud-layout.mjs's MAP_LEAST_SHARE, held to this by a test). Chat, which fills the band, is the one exception.
- */
-export const HUD_MAP_LEAST_SHARE = 40;
+export const HUD_MAP_LEAST_SHARE = 25;
 
 export const DESKTOP_MIN_PX = 1024;
+
+export const TABLET_MIN_PX = 768;
 
 export const SCREENS = {
   /** Tailwind's own value, restated so `lg:` and the JS layout read one number. */
@@ -620,13 +617,10 @@ export const HUD_LAYOUT = {
   keyboard: "var(--keyboard, 0px)",
   /** The phone's minimap tab. */
   "phone-minimap": "clamp(180px, 35dvh, 320px)",
-  /** The most of a phone's screen a page or a sheet takes, sized to what it holds (owner, 26 October 2026: layout A). */
-  /**
-   * A phone's sheet or page: 45% of the height at most, and short enough that the map keeps HUD_MAP_LEAST_SHARE of it
-   * between the strip (--hud-phone-top) and the place bar (--hud-phone-foot), which HudBands measures; never under 12rem,
-   * and scrolling inside past it.
-   */
-  "phone-panel": `min(45dvh, max(12rem, calc(100dvh - var(--hud-phone-top, 0px) - var(--hud-phone-foot, 0px) - ${HUD_MAP_LEAST_SHARE}dvh)))`,
+  "phone-tray": "22dvh",
+  "phone-sheet": `min(52dvh, calc(100dvh - var(--hud-phone-top, 0px) - var(--hud-phone-foot, 0px) - ${HUD_MAP_LEAST_SHARE}dvh))`,
+  "phone-browse": "72dvh",
+  "tablet-rail": "380px",
   "chat-width": "800px",
   "chat-height": "600px",
   /**
@@ -644,14 +638,10 @@ export const HUD_LAYOUT = {
    * width and top, and the stage between the columns.
    */
   "frontier-page": "440px",
-  /**
-   * Frontier's desktop rail, the one home for everything (the owner, 22 October): one width for the feed at home and
-   * for any panel (a page, a sheet) that stands in it ("feed should have the same width as the other panels").
-   */
-  "frontier-rail": "480px",
+  "frontier-left": "304px",
+  "frontier-rail": "384px",
+  "frontier-minimap": "208px",
   "frontier-page-top": "76px",
-  /** The Frontier HUD's cards: an army token, a site card, and the Build sheet's building card (option B's band). */
-  "frontier-token": "72px",
   "frontier-card": "92px",
   "frontier-build-card": "136px",
 } as const;
@@ -669,6 +659,7 @@ export const HUD_LAYERS = {
   motion: "60",
   loading: "110",
   popover: "130",
+  notice: "135",
   menu: "140",
   tip: "250",
 } as const;

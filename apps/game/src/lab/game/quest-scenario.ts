@@ -4,12 +4,19 @@ import { nativeCommandBits } from "../../../../../contracts/l3/world-native/sche
 import { type LabScenario, wire } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
 
+const LAB_QUEST_BASE_COUNTS = [1, 1, 1, 1, 1, 2, 15];
+
+export const labQuestRulesFact = (key = "0xa70") => ({
+  model: "QuestRules" as const,
+  key,
+  value: { game_id: 1, base_counts: LAB_QUEST_BASE_COUNTS, labor: 1000, essence: 1500, bonus_percent: 150 },
+});
+
 /** A completed quest on the real HUD; the lab supplies the contract's collection result. */
 export function questScenario(): LabScenario {
   const scenario = spireScenario();
   const { store, startsAt } = scenario;
   const rules = store.require("SliceRules", { game_id: 1 });
-  const counts = [1, 1, 1, 1, 1, 2, 15];
   store.applyFacts([
     {
       model: "SliceRules",
@@ -18,11 +25,7 @@ export function questScenario(): LabScenario {
     },
     ...[...store.entries("SettledRealm")].map(([key]) => ({ model: "SettledRealm", key, value: null })),
     ...[...store.entries("Seal")].map(([key]) => ({ model: "Seal", key, value: null })),
-    {
-      model: "QuestRules",
-      key: "0xa70",
-      value: { game_id: 1, base_counts: counts, labor: 1000, essence: 1500, bonus_percent: 150 },
-    },
+    labQuestRulesFact("0xa70"),
     resource(store, ResourcesIds.Labor, 500n * BigInt(RESOURCE_PRECISION)),
     resource(store, ResourcesIds.Essence, 0n),
   ]);
@@ -35,7 +38,7 @@ export function questScenario(): LabScenario {
         game_id: 1,
         home: 7,
         day: today.day,
-        progress: counts[today.reading.known!.quest.id],
+        progress: LAB_QUEST_BASE_COUNTS[today.reading.known!.quest.id],
         completed_level: 1,
       },
     },

@@ -1,119 +1,85 @@
 import "./oath-slots.css";
 
 import { heldOaths } from "@bibliothecadao/eternum";
-import { Icon } from "@/ui/design-system/icon";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
-import { usePickEffectBase, type PickEffectBase } from "../pick-effect-text";
+import { usePickEffectBase } from "../pick-effect-text";
 import { oathEffectDescription, oathName } from "./oath-details";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
-import { HudCost } from "@/ui/design-system/kit/hud-elements";
-import { costLine } from "@/ui/design-system/kit/price-faces";
 import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
-import {
-  configManager,
-  OATH_SLOTS_MAX,
-  oathResearchRow,
-  oathSlotResearchTier,
-  troopOathSlots,
-} from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, type TroopType } from "@bibliothecadao/types";
+import { configManager, OATH_SLOTS_MAX, troopOathSlots } from "@bibliothecadao/eternum";
+import { type TroopType } from "@bibliothecadao/types";
+import { useState } from "react";
 
-export function OathSlotPips({
-  held,
+export const useHomeOathSlots = (category: TroopType | undefined, homeId: number): number | undefined => {
+  const { store } = useNativeFacts(["RealmKnowledge"]);
+  const learned = store.get("RealmKnowledge", { game_id: configManager.getActiveGameId(), structure_id: homeId });
+  return learned && category !== undefined ? troopOathSlots(learned.learned, category) : undefined;
+};
+
+export function ArmyOathSockets({ explorerId }: { explorerId: number }) {
+  const { store } = useNativeFacts(["ArmyProgress"]);
+  const pickBase = usePickEffectBase();
+  const progress = store.get("ArmyProgress", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
+  if (!progress) return null;
+  const oaths = heldOaths(progress.oaths).map((oath) => ({
+    icon: orderMeaning(oath),
+    name: oathName(oath),
+    effect: oathEffectDescription(oath, pickBase),
+  }));
+  return <OathSockets oaths={oaths} slots={progress.oath_slots} />;
+}
+
+export function OathSockets({
+  oaths,
   slots,
-  pickBase,
 }: {
-  held: readonly number[];
+  oaths: readonly { icon: IconMeaning; name: string; effect: string }[];
   slots: number;
-  pickBase: PickEffectBase;
 }) {
+  const [hint, setHint] = useState(false);
   return (
-    <div className="oath-pips" aria-label={`Slots ${held.length} of ${slots}`}>
-      <div className="oath-pips__row">
-        {Array.from({ length: slots }, (_, index) => {
-          const oath = held[index];
+    <div role="group" aria-label={RESEARCH_TREE.oathSlots(slots)} data-oath-slots={slots} className="oath-sockets">
+      {Array.from({ length: OATH_SLOTS_MAX }, (_, index) => {
+        const oath = oaths[index];
+        if (oath)
           return (
             <span
               key={index}
-              className="oath-pip"
-              data-filled={oath ? "" : undefined}
-              title={oath ? `${oathName(oath)} — ${oathEffectDescription(oath, pickBase)}` : RESEARCH_TREE.oathOpen}
+              role="img"
+              aria-label={oath.name}
+              data-tip={`${oath.name} — ${oath.effect}`}
+              className="oath-socket"
+              data-filled=""
             >
-              {oath && <Icon name={orderMeaning(oath)} size={20} />}
+              <Icon name={oath.icon} size={30} />
             </span>
           );
-        })}
-      </div>
-    </div>
-  );
-}
-
-export function TroopOathSlots({
-  category,
-  homeId,
-  explorerId,
-}: {
-  category: TroopType;
-  homeId?: number;
-  explorerId?: number;
-}) {
-  const { store } = useNativeFacts(["ArmyProgress", "RealmKnowledge", "ResearchPrice"]);
-  const pickBase = usePickEffectBase();
-  const game_id = configManager.getActiveGameId();
-  const learned = homeId === undefined ? undefined : store.get("RealmKnowledge", { game_id, structure_id: homeId });
-  const count =
-    explorerId === undefined
-      ? learned && troopOathSlots(learned.learned, category)
-      : store.get("ArmyProgress", { game_id, explorer_id: explorerId })?.oath_slots;
-  if (count === undefined) return null;
-  const progress =
-    explorerId === undefined ? undefined : store.get("ArmyProgress", { game_id, explorer_id: explorerId });
-  const held = heldOaths(progress?.oaths ?? 0);
-  return (
-    <div data-oath-slots={count} className="flex flex-col gap-1">
-      <span className="text-hud-label text-hud-ink">{RESEARCH_TREE.oathSlots(count)}</span>
-      <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${OATH_SLOTS_MAX}, minmax(0, 1fr))` }}>
-        {Array.from({ length: OATH_SLOTS_MAX }, (_, index) => {
-          const open = index < count;
-          const oath = held[index];
-          const price = open
-            ? undefined
-            : store.get("ResearchPrice", {
-                game_id,
-                row: oathResearchRow[category],
-                tier: oathSlotResearchTier(index),
-              });
+        if (index < slots)
           return (
-            <div
+            <button
               key={index}
-              data-filled={oath ? "" : undefined}
-              aria-label={`${RESEARCH_TREE.oathSlots(index + 1)} · ${open ? RESEARCH_TREE.oathOpen : RESEARCH_TREE.oathLocked}`}
-              className="oath-slot flex flex-col gap-1 rounded border border-hud-line p-1 text-hud-label text-hud-muted"
+              type="button"
+              aria-label={RESEARCH_TREE.oathEarn}
+              aria-expanded={hint}
+              className="oath-socket"
+              data-open=""
+              onClick={() => setHint((shown) => !shown)}
             >
-              {oath ? (
-                <>
-                  <Icon name={orderMeaning(oath)} />
-                  <span>{oathName(oath)}</span>
-                  <span>{oathEffectDescription(oath, pickBase)}</span>
-                </>
-              ) : open ? (
-                RESEARCH_TREE.oathOpen
-              ) : (
-                RESEARCH_TREE.oathLocked
-              )}
-              {price && (
-                <HudCost
-                  line={costLine([
-                    { of: "essence", amount: Number(price.essence) / RESOURCE_PRECISION },
-                    { of: "labor", amount: Number(price.labor) / RESOURCE_PRECISION },
-                  ])}
-                />
-              )}
-            </div>
+              +
+            </button>
           );
-        })}
-      </div>
-      {count < OATH_SLOTS_MAX && <span className="text-hud-label text-hud-muted">{RESEARCH_TREE.oathResearch}</span>}
+        return (
+          <span key={index} role="img" aria-label={RESEARCH_TREE.oathLocked} className="oath-socket" data-locked="">
+            <Icon name="lock" size={15} />
+          </span>
+        );
+      })}
+      {hint && (
+        <p role="status" className="oath-sockets__hint">
+          {RESEARCH_TREE.oathEarn}
+        </p>
+      )}
     </div>
   );
 }

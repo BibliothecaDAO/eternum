@@ -1,0 +1,88 @@
+---
+title: The Deep
+description:
+  The shared fourth layer, gates, rings, Deep sites and their beasts, guard slots, troop drain, Glory, and Bane altars
+---
+
+import { FRONTIER } from "@/utils/frontier";
+import { GameIcon } from "@/components/GameIcon";
+
+# The Deep
+
+The Deep is the shared fourth layer where all {FRONTIER.aspectsCount} Aspects meet. Every player in the season shares
+one {FRONTIER.deep.mapSize} by {FRONTIER.deep.mapSize} Deep map. There are no tiles to reveal in the Deep: every site is
+visible from the start of the day. Armies marching in the open cannot be attacked and do not block each other; player
+fights happen at the sites.
+
+## Entering the Deep
+
+1. Research **Spire lore** at your castle ([Realm and research](/frontier/realm#castle-lore)).
+2. Descend through your {FRONTIER.depths[0].name}, {FRONTIER.depths[1].name}, and {FRONTIER.depths[2].name} Spires (0
+   stamina each).
+3. Your army arrives at your Aspect's gate, {FRONTIER.deep.gateDistance} tiles from the center: {FRONTIER.deep.gates}.
+   If the gate tile is occupied, the army lands on the nearest free tile so gates cannot be blocked.
+4. Once inside, the army stays in the Deep for the rest of the day, and Fragment stamina refills and Oath rerolls do not
+   work inside the Deep.
+
+## Rings and realms in the Deep
+
+The Deep has {FRONTIER.deep.ringsCount} concentric rings around the center, with {FRONTIER.deep.sitesPerRing} sites on
+each ring ({FRONTIER.deep.sitesTotal} sites total): one of each of the {FRONTIER.deep.sitesCount} site kinds plus
+{FRONTIER.deep.randomSitesPerRing} random sites, so Ring 1 alone can hold 1 to {FRONTIER.deep.maxSameKindPerRing}
+Hyperstructure archives. Ring 1 is open from the start of each day. Outer rings open for the day once enough realms have
+sent an army into the Deep that day:
+
+| Ring                                 | Distance from center                  | Realms sent into the Deep today               |
+| ------------------------------------ | ------------------------------------- | --------------------------------------------- |
+| Ring {FRONTIER.deep.rings[0].number} | {FRONTIER.deep.rings[0].radius} tiles | {FRONTIER.deep.rings[0].realms} (always open) |
+| Ring {FRONTIER.deep.rings[1].number} | {FRONTIER.deep.rings[1].radius} tiles | {FRONTIER.deep.rings[1].realms}               |
+| Ring {FRONTIER.deep.rings[2].number} | {FRONTIER.deep.rings[2].radius} tiles | {FRONTIER.deep.rings[2].realms}               |
+| Ring {FRONTIER.deep.rings[3].number} | {FRONTIER.deep.rings[3].radius} tiles | {FRONTIER.deep.rings[3].realms}               |
+
+## The {FRONTIER.deep.sitesCount} site kinds and their beasts
+
+Every game day, fresh beasts guard every open Deep site. Deep beasts take no tick drain and do not respawn once cleared
+that day. The army that clears a Deep site's beast or last rival guard moves onto the site and becomes its guard; an
+unguarded site is open for the next army to walk into. Held sites pay out on every army tick
+({FRONTIER.stamina.tickMinutes} minutes):
+
+| Site                                                                 | Beast guard                                                                                                               | Mark                            | Bring                          | What holding it pays          |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------ | ----------------------------- |
+| <GameIcon name="hyperstructure" /> **{FRONTIER.deep.sites[0].name}** | <GameIcon name={FRONTIER.deep.sites[0].beastIcon} /> {FRONTIER.deep.sites[0].beastName} ({FRONTIER.deep.sites[0].troops}) | {FRONTIER.deep.sites[0].weapon} | {FRONTIER.deep.sites[0].bring} | {FRONTIER.deep.sites[0].pays} |
+| <GameIcon name="essence" /> **{FRONTIER.deep.sites[1].name}**        | <GameIcon name={FRONTIER.deep.sites[1].beastIcon} /> {FRONTIER.deep.sites[1].beastName} ({FRONTIER.deep.sites[1].troops}) | {FRONTIER.deep.sites[1].weapon} | {FRONTIER.deep.sites[1].bring} | {FRONTIER.deep.sites[1].pays} |
+| <GameIcon name="pickaxe" /> **{FRONTIER.deep.sites[2].name}**        | <GameIcon name={FRONTIER.deep.sites[2].beastIcon} /> {FRONTIER.deep.sites[2].beastName} ({FRONTIER.deep.sites[2].troops}) | {FRONTIER.deep.sites[2].weapon} | {FRONTIER.deep.sites[2].bring} | {FRONTIER.deep.sites[2].pays} |
+| <GameIcon name="flame" /> **{FRONTIER.deep.sites[3].name}**          | <GameIcon name={FRONTIER.deep.sites[3].beastIcon} /> {FRONTIER.deep.sites[3].beastName} ({FRONTIER.deep.sites[3].troops}) | {FRONTIER.deep.sites[3].weapon} | {FRONTIER.deep.sites[3].bring} | {FRONTIER.deep.sites[3].pays} |
+
+**Glory** is earned **only** by holding Hyperstructure archives and Bane altars. Essence cores and Ethereal mines pay
+your realm directly in Essence or labor and give no Glory. Every Deep site's tick payout — including an Essence core's
+{FRONTIER.deep.corePerTick} Essence and an Ethereal mine's {FRONTIER.deep.minePerTick} labor — is one pool for the whole
+site, split among its surviving guards by troop count.
+
+## Guard slots, troop drain, and PvP
+
+- **Guard slots:** any Deep site — including Essence cores and Ethereal mines — has {FRONTIER.deep.guardSlots} guard
+  slots for up to {FRONTIER.deep.guardSlots} different players of the same Aspect (1 army per player). Teammates join
+  once the beast is cleared by standing beside the site. Allies can never attack allies.
+- **Tick order (drain before pay):** every tick ({FRONTIER.stamina.tickMinutes} minutes), every army in the Deep gains
+  +{FRONTIER.stamina.perTick} stamina and loses {FRONTIER.deep.lossPerTick} troops (reduced to
+  {FRONTIER.oaths.vitriolLoss} per tick with the Vitriol Oath). When an army reaches 0 troops, it is destroyed. Held
+  sites then pay only the guards that survived the tick, split by their troop count.
+- **Strike or wait:** because rival guards lose {FRONTIER.deep.lossPerTick} troops every tick, waiting lets you attack a
+  weaker guard later while the holder earns ticks in the meantime.
+- **Attack order:** rival attackers fight one guard at a time, starting with the **last army that joined**. Guards keep
+  their losses, so allies attacking in turn can weaken a site together. The site opens when no guard remains, and the
+  army that clears the last rival guard becomes the site's guard.
+- **Guard Oaths and Knights:** armies guarding a Deep site keep their Oaths (visible on the site panel and counted in
+  fight previews). Knight armies guarding a site take {FRONTIER.attributes.knightGuardReduction} less damage.
+- **Shared building pay:** each open Hyperstructure archive pays {FRONTIER.deep.payAlone} per tick if 1 Archive is open,
+  {FRONTIER.deep.payPair} if 2 are open, or {FRONTIER.deep.payCrowd} if 3 or more are open — counting **open Archives**
+  across the Deep, not rings unlocked. That Glory goes **only to the guards holding that Archive** (split by troop
+  count), while the **whole Aspect** gains the same amount of hyperstructure height. If a rival Team Bane pauses your
+  Aspect's hyperstructure height, Archive guards still earn their full Glory each tick
+  ([Banes and Triumphs](/frontier/banes#rival-team-banes)). Open Bane altars pay the same {FRONTIER.deep.payAlone},
+  {FRONTIER.deep.payPair}, or {FRONTIER.deep.payCrowd} bane bar charge and Glory per tick based on how many altars are
+  open, with Glory split among the altar's guards.
+- **Bane altar trigger:** when your Aspect's bane bar reaches {FRONTIER.deep.altarThreshold}, it resets to 0 and sends a
+  Team Bane onto the rival Aspect with the tallest hyperstructure for the next game day, skipping any rival already
+  blocked or already targeted for tomorrow. No Team Bane is issued on the last day of the season
+  ([Banes and Triumphs](/frontier/banes#rival-team-banes)).

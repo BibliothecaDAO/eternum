@@ -6,6 +6,7 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
 // @vitest-environment jsdom
+import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -47,6 +48,7 @@ const draw = (picked: string | null, onResearch = vi.fn(), onPick = vi.fn(), onF
         fixFor={(need) => (need.kind === "store" ? { icon: "realm", word: "Upgrade the Castle", onFix } : undefined)}
         onResearch={onResearch}
         onClose={onClose}
+        castleLevel={MID_REALM.castleLevel}
       />,
     ),
   );
@@ -55,11 +57,15 @@ const button = (text: RegExp) => [...host.querySelectorAll("button")].find((each
 it("draws every node of the three branches in one panel, each with its state, and picks one in place", () => {
   const onPick = vi.fn();
   draw("row-0", vi.fn(), onPick);
-  expect([...host.querySelectorAll("[data-node]")].map((tile) => tile.getAttribute("data-state"))).toEqual(
-    nodes.map(({ state }) => state),
+  const renderedStates = Object.fromEntries(
+    [...host.querySelectorAll("[data-node]")].map((tile) => [
+      tile.getAttribute("data-node"),
+      tile.getAttribute("data-state"),
+    ]),
   );
+  expect(renderedStates).toEqual(Object.fromEntries(nodes.map(({ key, state }) => [key, state])));
   expect(host.querySelectorAll("[role='dialog']")).toHaveLength(0);
-  act(() => host.querySelector<HTMLButtonElement>("[data-node='row-5']")!.click());
+  act(() => host.querySelector<HTMLElement>("[data-node='row-5']")!.click());
   expect(onPick).toHaveBeenCalledWith("row-5");
 });
 
@@ -100,6 +106,7 @@ it("holds a locked node's verb, says why, and offers the step that opens it", ()
         fixFor={() => ({ icon: "realm", word: "Upgrade the Castle", onFix })}
         onResearch={vi.fn()}
         onClose={vi.fn()}
+        castleLevel={MID_REALM.castleLevel}
       />,
     ),
   );
@@ -131,6 +138,7 @@ it("states why each locked or short row is held back in plain words without repe
         fixFor={fixFor}
         onResearch={vi.fn()}
         onClose={vi.fn()}
+        castleLevel={EARLY_REALM.castleLevel}
       />,
     ),
   );
@@ -154,6 +162,7 @@ it("states why each locked or short row is held back in plain words without repe
         fixFor={fixFor}
         onResearch={vi.fn()}
         onClose={vi.fn()}
+        castleLevel={1}
       />,
     ),
   );
@@ -175,10 +184,14 @@ it("states why each locked or short row is held back in plain words without repe
         fixFor={fixFor}
         onResearch={vi.fn()}
         onClose={vi.fn()}
+        castleLevel={EARLY_REALM.castleLevel}
       />,
     ),
   );
-  expect(host.querySelector("[data-lab='node-choice'] [data-lock-reason]")!.textContent).toBe("Needs 2,500 Essence");
+  expect(host.querySelector("[data-lab='node-choice'] [data-lock-reason]")).toBeNull();
+  expect(host.querySelector("[data-lab='node-choice'] [aria-label='Needs 2,500 Essence']")?.className).toContain(
+    "text-hud-",
+  );
 });
 
 describe("the picked building's choice, at the panel's foot (the owner's pick C)", () => {
@@ -186,7 +199,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
 
   it("keeps what a finished node gives: the Shrine researched, a Farm at Legendary", () => {
     draw("shrine");
-    expect(choice()!.textContent).toContain("Armies find Shrines · Open");
+    expect(choice()!.textContent).toContain("Shrine lore · Open");
     const legendaryFarm = readResearchTree({
       ...MID_REALM,
       learned: { ...MID_REALM.learned, 0: { tier: 5 } },
@@ -201,10 +214,11 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
           fixFor={() => undefined}
           onResearch={vi.fn()}
           onClose={() => undefined}
+          castleLevel={MID_REALM.castleLevel}
         />,
       ),
     );
-    expect(choice()!.textContent).toContain("Farm wheat · 200%");
+    expect(choice()!.textContent).toContain("Farm · 200%");
   });
 
   it("stands after the whole tree, outside its scroll, with the price held against and Research", () => {
@@ -213,9 +227,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     // Not inside the tree's scroll: no tile the tree scrolls to can push it out of view.
     expect(tree.contains(choice())).toBe(false);
     expect(tree.compareDocumentPosition(choice()!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(choice()!.textContent).toContain("Farm");
-    expect(choice()!.querySelector(".ui-tier-step")?.getAttribute("aria-label")).toBe("I → II");
-    expect([...choice()!.querySelectorAll(".ui-tier")].map((gem) => gem.textContent)).toEqual(["I", "II"]);
+    expect(choice()!.querySelector("[data-choice-summary]")?.textContent).toBe("Farm · 120% → 140%");
     expect(host.querySelectorAll("button[aria-label='Upgrade Farm']")).toHaveLength(1);
     const price = nodes
       .find(({ key }) => key === "row-0")!
@@ -225,12 +237,10 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     );
   });
 
-  it("is put away with its X, leaving the tree, and opens again on the tile tapped", () => {
+  it("says to tap a node while none is picked, and opens on the tile tapped", () => {
     const onPick = vi.fn();
-    draw("row-0", vi.fn(), onPick);
-    act(() => choice()!.querySelector<HTMLButtonElement>("[aria-label='Close']")!.click());
-    expect(onPick).toHaveBeenCalledWith(null);
     draw(null, vi.fn(), onPick);
+    expect(host.querySelector(".research-bar-idle")?.textContent).toBe("Tap a node to see its price");
     expect(choice()).toBeNull();
     expect(host.querySelectorAll("[data-node]")).toHaveLength(nodes.length);
     act(() => host.querySelector<HTMLButtonElement>("[data-node='row-1']")!.click());
@@ -240,8 +250,10 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
 
 it("shows the Farm's output step without a production formula", () => {
   draw("row-0");
-  const lines = [...host.querySelectorAll("[data-lab='node-choice'] > span")].map((line) => line.textContent);
-  expect(lines).toEqual(["Farm wheat · 120% → 140%"]);
+  const lines = [...host.querySelectorAll("[data-lab='node-choice'] [data-choice-summary]")].map(
+    (line) => line.textContent,
+  );
+  expect(lines).toEqual(["Farm · 120% → 140%"]);
   expect(host.querySelector("[data-node='row-0'] [data-research-effect]")?.textContent).toBe("120% → 140%");
   expect(host.querySelector("[data-node='row-4'] [data-research-effect]")?.textContent).toBe(
     "2 wheat per troop → 1.8 wheat per troop (less)",
@@ -261,6 +273,7 @@ it("keeps the chosen Research action outside the tree scroll on every pick, incl
         fixFor={() => undefined}
         onResearch={vi.fn()}
         onClose={() => undefined}
+        castleLevel={MID_REALM.castleLevel}
       />
     );
   };
@@ -279,7 +292,7 @@ it("keeps the chosen Research action outside the tree scroll on every pick, incl
       expect(choice.textContent).toContain(item.name);
       expect(host.querySelector(".overflow-y-auto")!.contains(choice)).toBe(false);
       if (item.state === "ready") {
-        expect(host.querySelector(`[data-node='${row}'] button[aria-label^='Upgrade ']`)).not.toBeNull();
+        expect(choice.querySelector("button[aria-label^='Upgrade ']")).not.toBeNull();
       } else {
         expect(choice.querySelector("[data-research-footer]")).not.toBeNull();
       }
@@ -312,15 +325,13 @@ it.each([
         fixFor={() => undefined}
         onResearch={vi.fn()}
         onClose={vi.fn()}
+        castleLevel={MID_REALM.castleLevel}
       />,
     ),
   );
   const card = host.querySelector("[data-lab='node-choice']")!;
-  const effect = [...card.querySelectorAll(":scope > span")].find((line) =>
-    line.textContent?.startsWith("New armies start with Logistics"),
-  );
-  // Each rank is its gem, read by its name, never a numeral in the words.
-  expect(saidWithGems(effect!)).toBe(`New armies start with Logistics · ${label}`);
+  const effect = card.querySelector("[data-choice-summary]")!;
+  expect(saidWithGems(effect)).toBe(`Supply yard · ${label}`);
 });
 
 /** An element's words with each gem said by its name, as a screen reader reads the line. */
@@ -344,36 +355,202 @@ it("renders every generated research row", () => {
   expect(new Set(renderedRows).size).toBe(catalogRows.length);
 });
 
-it("offers an inline Upgrade button on affordable rows with primary gold on the first ready node", () => {
+it("keeps cards free of inline Upgrade buttons and routes upgrading through the single selected bottom bar", () => {
   const onResearch = vi.fn();
-  draw(null, onResearch);
-  const upgrades = [...host.querySelectorAll<HTMLButtonElement>("button[aria-label^='Upgrade ']")];
-  expect(upgrades.length).toBeGreaterThan(1);
-  expect(upgrades[0]!.dataset.kind).toBe("primary");
-  expect(upgrades[1]!.dataset.kind).toBe("secondary");
-  act(() => upgrades[0]!.click());
-  expect(onResearch).toHaveBeenCalledTimes(1);
-  expect(onResearch).toHaveBeenCalledWith(expect.objectContaining<Partial<TreeNode>>({ state: "ready" }));
+  const onPick = vi.fn();
+  draw(null, onResearch, onPick);
+  expect(host.querySelectorAll("[data-node] button")).toHaveLength(0);
+  expect(host.querySelectorAll("[role='tab']")).toHaveLength(0);
+  expect(host.querySelectorAll("button[aria-label^='Upgrade ']")).toHaveLength(0);
+  act(() => host.querySelector<HTMLButtonElement>("[data-node='row-6']")!.click());
+  expect(onPick).toHaveBeenCalledWith("row-6");
 
-  const mid = readResearchTree(MID_REALM);
+  const withBarracks = readResearchTree({
+    ...MID_REALM,
+    standing: { ...MID_REALM.standing, [research.ROW_KNIGHT_OATHS]: 1 },
+  });
   act(() =>
     root.render(
       <ResearchPanel
-        nodes={mid}
-        picked={null}
+        nodes={withBarracks}
+        picked="row-6"
+        onPick={onPick}
+        sending={new Set()}
+        fixFor={() => undefined}
+        onResearch={onResearch}
+        onClose={vi.fn()}
+        castleLevel={MID_REALM.castleLevel}
+      />,
+    ),
+  );
+  const cue = host.querySelector(".research-head__cue")!.textContent;
+  expect([cue.includes(RESEARCH_TREE.states.done), cue.includes("18.3K")]).toEqual([true, false]);
+  expect(host.querySelector("[data-era='1'][data-current-era]")).not.toBeNull();
+  const upgrades = [...host.querySelectorAll<HTMLButtonElement>("button[aria-label='Upgrade Barracks Oath slots']")];
+  expect(upgrades).toHaveLength(1);
+  expect(upgrades[0]!.closest("[data-research-footer]")).not.toBeNull();
+  expect(upgrades[0]!.dataset.kind).toBe("primary");
+  act(() => upgrades[0]!.click());
+  expect(onResearch).toHaveBeenCalledWith(expect.objectContaining<Partial<TreeNode>>({ key: "row-6", state: "ready" }));
+
+  const laborShort = readResearchTree({
+    ...MID_REALM,
+    essence: 50_000,
+    labor: 100,
+    standing: { ...MID_REALM.standing, [research.ROW_KNIGHT_OATHS]: 1 },
+  });
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={laborShort}
+        picked="row-6"
         onPick={vi.fn()}
         sending={new Set()}
         fixFor={() => undefined}
         onResearch={vi.fn()}
         onClose={vi.fn()}
+        castleLevel={MID_REALM.castleLevel}
       />,
     ),
   );
-  const armyTab = [...host.querySelectorAll<HTMLButtonElement>("[role='tab']")].find(
-    (tab) => tab.textContent === "Army",
-  )!;
-  act(() => armyTab.click());
-  const armyUpgrades = [...host.querySelectorAll<HTMLButtonElement>("button[aria-label^='Upgrade ']")];
-  expect(armyUpgrades.length).toBeGreaterThan(0);
-  expect(armyUpgrades[0]!.dataset.kind).toBe("primary");
+  expect(host.querySelector("[data-node='row-6'] [data-research-effect-short]")?.textContent).toBe("2 → 3 Oaths");
+  expect(host.querySelector("[data-lab='node-choice'] [aria-label='Needs 1,000 Labor']")?.className).toContain(
+    "text-hud-",
+  );
+});
+
+it("renders the 3-track Era tree with measured SVG prerequisite links on desktop and phone", () => {
+  const rectOf = (left: number, top: number, width: number, height: number): DOMRect =>
+    ({
+      left,
+      top,
+      width,
+      height,
+      right: left + width,
+      bottom: top + height,
+      x: left,
+      y: top,
+      toJSON: () => ({}),
+    }) as DOMRect;
+  const desktopRects: Record<string, DOMRect> = {
+    canvas: rectOf(0, 0, 800, 400),
+    well: rectOf(160, 260, 180, 80),
+    shrine: rectOf(380, 260, 180, 80),
+    spire: rectOf(600, 260, 180, 80),
+  };
+  const phoneRects: Record<string, DOMRect> = {
+    canvas: rectOf(0, 0, 360, 500),
+    well: rectOf(240, 40, 110, 120),
+    shrine: rectOf(240, 180, 110, 120),
+    spire: rectOf(240, 320, 110, 120),
+  };
+  let layout = desktopRects;
+  const originalRect = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function (this: Element) {
+    if (this.hasAttribute("data-research-tree")) return layout.canvas!;
+    const key = this.getAttribute("data-node");
+    if (key && layout[key]) return layout[key]!;
+    return rectOf(0, 0, 0, 0);
+  };
+  try {
+    const onResearch = vi.fn();
+    const onPick = vi.fn();
+    draw("spire", onResearch, onPick);
+    expect([...host.querySelectorAll("[data-era]")].map((el) => el.textContent)).toEqual([
+      "ISettlement",
+      "IICityCurrent",
+      "IIIKingdom",
+    ]);
+    expect([...host.querySelectorAll("[data-branch]")].map((el) => el.getAttribute("data-branch"))).toEqual([
+      "economy",
+      "army",
+      "castle",
+    ]);
+    const svg = host.querySelector("svg[data-research-links]");
+    expect(svg).not.toBeNull();
+    expect(svg!.getAttribute("viewBox")).toBe("0 0 800 400");
+    expect(
+      [...svg!.querySelectorAll("path[data-link]")].map((path) => [
+        path.getAttribute("data-link"),
+        path.getAttribute("data-link-state"),
+        path.getAttribute("d"),
+      ]),
+    ).toEqual([
+      ["well->shrine", "done", "M 340 300 C 360 300, 360 300, 380 300"],
+      ["shrine->spire", "ready", "M 560 300 C 580 300, 580 300, 600 300"],
+    ]);
+    expect(host.querySelector("[data-node='row-0'] [data-pips]")?.getAttribute("data-pips")).toBe("5");
+    expect(host.querySelector("[data-node='row-6'] [data-pips]")?.getAttribute("data-pips")).toBe("3");
+    expect(host.querySelector("[data-node='well'] [data-pips]")?.getAttribute("data-pips")).toBe("1");
+    expect(host.querySelectorAll("[data-node='row-0'] [data-pips] [data-filled]")).toHaveLength(1);
+    const spireButtons = host.querySelectorAll<HTMLButtonElement>("button[aria-label='Upgrade Spire lore']");
+    expect(spireButtons).toHaveLength(1);
+    expect(spireButtons[0]!.closest("[data-lab='node-choice']")).not.toBeNull();
+    expect(spireButtons[0]!.dataset.kind).toBe("primary");
+    act(() => spireButtons[0]!.click());
+    expect(onResearch).toHaveBeenCalledWith(expect.objectContaining<Partial<TreeNode>>({ key: "spire" }));
+
+    layout = phoneRects;
+    const early = readResearchTree(EARLY_REALM);
+    act(() =>
+      root.render(
+        <ResearchPanel
+          nodes={early}
+          picked={null}
+          onPick={vi.fn()}
+          sending={new Set()}
+          fixFor={() => undefined}
+          onResearch={vi.fn()}
+          onClose={vi.fn()}
+          castleLevel={EARLY_REALM.castleLevel}
+        />,
+      ),
+    );
+    const phoneSvg = host.querySelector("svg[data-research-links]")!;
+    expect(phoneSvg.getAttribute("viewBox")).toBe("0 0 360 500");
+    expect(
+      [...phoneSvg.querySelectorAll("path[data-link]")].map((path) => [
+        path.getAttribute("data-link"),
+        path.getAttribute("data-link-state"),
+        path.getAttribute("d"),
+      ]),
+    ).toEqual([
+      ["well->shrine", "locked", "M 295 160 C 295 170, 295 170, 295 180"],
+      ["shrine->spire", "locked", "M 295 300 C 295 310, 295 310, 295 320"],
+    ]);
+
+    layout = {
+      ...phoneRects,
+      shrine: rectOf(240, 180, 110, 90),
+      spire: rectOf(240, 290, 110, 120),
+    };
+    act(() =>
+      root.render(
+        <ResearchPanel
+          nodes={early}
+          picked="shrine"
+          onPick={vi.fn()}
+          sending={new Set()}
+          fixFor={() => undefined}
+          onResearch={vi.fn()}
+          onClose={vi.fn()}
+          castleLevel={EARLY_REALM.castleLevel}
+        />,
+      ),
+    );
+    expect(host.querySelector("path[data-link='shrine->spire']")?.getAttribute("d")).toBe(
+      "M 295 270 C 295 280, 295 280, 295 290",
+    );
+  } finally {
+    Element.prototype.getBoundingClientRect = originalRect;
+  }
+});
+
+it("renders concise phone short effects and legible locked titles", () => {
+  draw(null);
+  expect(host.querySelector("[data-node='row-6'] [data-research-effect-short]")?.textContent).toBe("2 → 3 Oaths");
+  expect(host.querySelector("[data-node='row-2'] [data-research-effect-short]")?.textContent).toBe("100 → 120/hr");
+  expect(host.querySelector("[data-node='row-4'] [data-research-effect-short]")?.textContent).toBe("2 → 1.8 wheat");
+  expect(host.querySelector("[data-node='well'] [data-research-effect-short]")?.textContent).toBe("+40% ⚡");
+  expect(host.querySelector("[data-node='row-6'] .research-node__title--locked")).not.toBeNull();
 });

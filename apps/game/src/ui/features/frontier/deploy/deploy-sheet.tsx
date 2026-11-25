@@ -13,22 +13,13 @@ import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-clien
 import { FRONTIER_TROOP_NAMES, TROOP_TYPES, TroopTier, type TroopType, type Direction } from "@bibliothecadao/types";
 import { useEffect, useRef, useState } from "react";
 
-import { DEPLOY_WORDS } from "@/ui/design-system/kit/words";
 import { useGoToFrontierPlace } from "../frontier-home";
 import { useRealmStores } from "../realm-stores";
 import { madeStoreOf } from "../stores";
 import { secondsUntilHeld } from "../hud/army-order";
 import { armyArt } from "../hud/dock-armies";
-import {
-  deployArmy,
-  deployDirection,
-  deployRange,
-  marchOn,
-  previewDeploy,
-  troopRange,
-  wheatStopsAt,
-} from "./deploy-plan";
-import { TroopOathSlots } from "../army/oath-slots";
+import { deployArmy, deployDirection, deployRange, marchOn, previewDeploy, wheatStopsAt } from "./deploy-plan";
+import { useHomeOathSlots } from "../army/oath-slots";
 import { DeployView, type DeployTroopChoiceView } from "./deploy-view";
 import { useDeployPlan } from "./use-deploy-plan";
 
@@ -60,7 +51,6 @@ export const DeploySheet = ({
   const march = start?.start && marchOn(start.start, 0);
   const range = plan ? deployRange(plan, march) : { troopsMax: 0, wheatMax: 0, max: 0 };
   const shown = count === "max" ? range.max : Math.min(count, range.wheatMax);
-  const isFullStack = count === "max" || (range.max > 0 && shown === range.max);
   const preview = plan ? previewDeploy(plan, march, shown) : null;
   const wheatStop = wheatStopsAt(range, shown);
   const pickSlot = (slot: number) =>
@@ -83,6 +73,7 @@ export const DeploySheet = ({
     return wait === undefined ? [] : [wait];
   });
   const nextTroopIn = troopWaits.length ? Math.min(...troopWaits) : undefined;
+  const oathSlots = useHomeOathSlots(plan?.troops?.type, realmId);
 
   /** The sheet closes as the army leaves; its slot on the dock carries the wait, and a refusal says why there. */
   const deploy = async () => {
@@ -108,28 +99,17 @@ export const DeploySheet = ({
 
   const troopChoices: DeployTroopChoiceView[] =
     plan?.choices.map((troops) => {
-      const choiceBar = start?.start ? { ...start.start, perExplore: troops.exploreStamina } : undefined;
-      const choiceRange = choiceBar
-        ? troopRange(Math.min(troops.atHome, troops.cap), troops.raise, marchOn(choiceBar, 0))
-        : { troopsMax: 0, wheatMax: 0, max: 0 };
-      const selected = plan.troops?.type === troops.type;
-      const custom = selected && !isFullStack;
-      const displayCount = custom ? (preview?.count ?? 0) : choiceRange.max;
       return {
         category: troops.type,
         name: FRONTIER_TROOP_NAMES[troops.type],
         art: armyArt({ category: troops.type, tier: troops.tier }),
-        role: DEPLOY_WORDS.troopRoles[troops.type](troops.exploreStamina),
         atHome: troops.atHome,
-        displayCount,
-        displayWheat: troops.raise.wheatFor(displayCount),
-        isCustom: custom,
       };
     }) ?? [];
 
   return (
     <DeployView
-      oathSlots={plan?.troops && <TroopOathSlots category={plan.troops.type} homeId={realmId} />}
+      oathSlots={oathSlots}
       troopSelection={{
         choices: troopChoices,
         selected: plan?.troops?.type,
@@ -141,13 +121,7 @@ export const DeploySheet = ({
       art={plan?.troops ? armyArt({ category: plan.troops.type, tier: plan.troops.tier }) : undefined}
       troopsAtHome={plan ? (plan.troops?.atHome ?? 0) : undefined}
       count={preview?.count}
-      isFullStack={isFullStack}
-      allowedSlots={plan?.allowedSlots}
-      amount={{
-        most: range.wheatMax,
-        max: range.max,
-        held: range.wheatMax < range.troopsMax ? range.wheatMax : (plan?.troops?.atHome ?? 0),
-      }}
+      amount={{ most: range.wheatMax, max: range.max }}
       onCount={(next) => setCount(range.max > 0 && next === range.max ? "max" : next)}
       start={start}
       slots={{ open: plan?.open, onPick: pickSlot }}

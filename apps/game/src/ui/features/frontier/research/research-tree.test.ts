@@ -6,9 +6,11 @@ import {
   canResearchNow,
   firstMissing,
   needLine,
+  readResearchLinks,
   readResearchTree,
   researchActionName,
   researchEffectLine,
+  researchEraForLevel,
   researchVerb,
   type RealmResearchFacts,
 } from "./research-tree";
@@ -158,4 +160,69 @@ it("uses one Upgrade verb across building and oath rows while naming Oath slots 
   expect(researchVerb(research.ROW_KNIGHT_OATHS)).toBe("Upgrade Oath slots");
   expect(researchActionName({ row: research.ROW_FARM, name: "Farm" })).toBe("Upgrade Farm");
   expect(researchActionName({ row: research.ROW_KNIGHT_OATHS, name: "Barracks" })).toBe("Upgrade Barracks Oath slots");
+});
+
+it("assigns every node its contract era and derives prerequisite link states from leadsTo", () => {
+  expect([researchEraForLevel(-1), researchEraForLevel(0), researchEraForLevel(1), researchEraForLevel(5)]).toEqual([
+    0, 0, 1, 2,
+  ]);
+  expect(node(MID_REALM, "row-0").era).toBe(0);
+  expect(node(MID_REALM, "row-6").era).toBe(0);
+  expect(node(MID_REALM, "row-2").era).toBe(1);
+  expect(node(MID_REALM, "row-4").era).toBe(2);
+  expect(node(MID_REALM, "row-5").era).toBe(2);
+  expect([node(MID_REALM, "well").era, node(MID_REALM, "shrine").era, node(MID_REALM, "spire").era]).toEqual([0, 1, 2]);
+  expect(readResearchLinks(readResearchTree(EARLY_REALM))).toEqual([
+    { key: "well->shrine", from: "well", to: "shrine", state: "locked" },
+    { key: "shrine->spire", from: "shrine", to: "spire", state: "locked" },
+  ]);
+  expect(readResearchLinks(readResearchTree(MID_REALM))).toEqual([
+    { key: "well->shrine", from: "well", to: "shrine", state: "done" },
+    { key: "shrine->spire", from: "shrine", to: "spire", state: "ready" },
+  ]);
+});
+
+it("gives every research node a concise shortEffect label from one source that fits phone cards without truncation", () => {
+  const early = Object.fromEntries(readResearchTree(EARLY_REALM).map((item) => [item.key, item.shortEffect]));
+  expect(early).toEqual({
+    "row-0": "100% → 120%",
+    "row-1": "100% → 120%",
+    "row-2": "100 → 120/hr",
+    "row-4": "2 → 1.8 wheat",
+    "row-5": "180 → 216 ⚡",
+    "row-6": "2 → 3 Oaths",
+    well: "+40% ⚡",
+    shrine: "Opens",
+    spire: "Opens",
+  });
+
+  const mid = Object.fromEntries(readResearchTree(MID_REALM).map((item) => [item.key, item.shortEffect]));
+  expect(mid).toMatchObject({
+    "row-0": "120% → 140%",
+    "row-6": "2 → 3 Oaths",
+    "row-7": "2 → 3 Oaths",
+    "row-11": "2 → 3 Oaths",
+    "row-5": "216 → 252 ⚡",
+    well: "+40% ⚡",
+    shrine: "Open",
+    spire: "Opens",
+  });
+
+  const maxed = readResearchTree({
+    ...MID_REALM,
+    learned: {
+      [research.ROW_FARM]: { tier: 5 },
+      [research.ROW_WORKSHOP]: { tier: 5 },
+      [research.ROW_CONSCRIPTION]: { tier: 5 },
+      [research.ROW_RATIONS]: { tier: 5 },
+      [research.ROW_SUPPLY_YARD]: { tier: 5 },
+      [research.ROW_KNIGHT_OATHS]: { tier: 3 },
+      [research.ROW_SCOUT_OATHS]: { tier: 3 },
+      [research.ROW_CROSSBOW_OATHS]: { tier: 3 },
+      [research.ROW_LORE]: { tier: 3 },
+    },
+  });
+  for (const item of [...readResearchTree(EARLY_REALM), ...readResearchTree(MID_REALM), ...maxed]) {
+    expect(item.shortEffect.length, `${item.key}: ${item.shortEffect}`).toBeLessThanOrEqual(15);
+  }
 });

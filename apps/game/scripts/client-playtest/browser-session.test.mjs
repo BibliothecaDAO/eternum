@@ -101,6 +101,29 @@ it("refuses a launch option on one command, which would relaunch the browser wit
   }
 });
 
+it.each([
+  ["Realm", "hex", "Realm"],
+  ["Veil", "map", "World"],
+])("observes the place a phone's pill names (%s) before the tab bar's lit scene", (place, scene, lit) => {
+  const dom = new JSDOM(
+    `<button data-place-pill data-place="${place}" aria-expanded="false">${place}</button><nav aria-label="Places"><button aria-current="page">${lit}</button></nav>`,
+    { url: `https://play.test/game/${scene}`, runScripts: "outside-only" },
+  );
+  dom.window.__rendererDiagnostics = { sceneName: scene };
+  spawnSync.mockImplementationOnce((_command, args) => {
+    const expression = args[args.indexOf("eval") + 1];
+    return { status: 0, stdout: JSON.stringify(dom.window.eval(expression)), stderr: "" };
+  });
+  try {
+    expect(createBrowserSession("pill-proof", { profile: "/tmp/pill-proof" }).observe()).toMatchObject({
+      scene,
+      place,
+    });
+  } finally {
+    dom.window.close();
+  }
+});
+
 it.each(["Deep", "Hollow"])(
   "observes the phone's visible %s layer rather than inferring Map from its switch",
   (layer) => {
@@ -127,3 +150,22 @@ it.each(["Deep", "Hollow"])(
     }
   },
 );
+
+it("reads unlocked inline depth tabs from viewChoices with exact catalog labels", () => {
+  const dom = new JSDOM(
+    `<div data-surface-deep-switch><button role="tab" aria-label="Realm" aria-selected="false">Realm</button><button role="tab" aria-label="Surface" aria-selected="false">Surface</button><button role="tab" data-depth="1" aria-label="Veil" aria-selected="true">Veil</button><button role="tab" data-depth="2" aria-label="Hollow" aria-selected="false">Hollow</button><button role="tab" data-depth="3" aria-label="Deep" aria-selected="false" disabled>Deep</button></div>`,
+    { url: "https://play.test/game/map", runScripts: "outside-only" },
+  );
+  spawnSync.mockImplementationOnce((_command, args) => {
+    const expression = args[args.indexOf("eval") + 1];
+    return { status: 0, stdout: JSON.stringify(dom.window.eval(expression)), stderr: "" };
+  });
+  try {
+    expect(createBrowserSession("choices-proof", { profile: "/tmp/choices-proof" }).viewChoices()).toEqual([
+      { word: "Veil", shown: true },
+      { word: "Hollow", shown: false },
+    ]);
+  } finally {
+    dom.window.close();
+  }
+});

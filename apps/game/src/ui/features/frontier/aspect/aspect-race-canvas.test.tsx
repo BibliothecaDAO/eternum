@@ -91,4 +91,43 @@ describe("AspectRaceCanvas lifecycle", () => {
     act(() => root.unmount());
     expect(mockHandle.dispose).toHaveBeenCalledTimes(1);
   });
+
+  it("supports shell and shell-compact variants, skips redundant standings updates, and keeps plates without WebGL", async () => {
+    const race = ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"].race;
+    await act(async () => {
+      root.render(<AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} surface="shell" />);
+    });
+    const shellStage = host.querySelector("[data-race-stage]")!;
+    expect(shellStage.getAttribute("data-race-surface")).toBe("shell");
+    expect(shellStage.classList.contains("race-stage--shell")).toBe(true);
+    const syncedCount = (mockHandle.setStandings as ReturnType<typeof vi.fn>).mock.calls.length;
+
+    await act(async () => {
+      root.render(
+        <AspectRaceCanvas
+          standings={race.standings.map((entry) => ({ ...entry }))}
+          finishHeight={race.finishHeight}
+          surface="shell-compact"
+        />,
+      );
+    });
+    expect(shellStage.getAttribute("data-race-surface")).toBe("shell-compact");
+    expect(shellStage.classList.contains("race-stage--shell-compact")).toBe(true);
+    expect(mockHandle.setStandings).toHaveBeenCalledTimes(syncedCount);
+
+    act(() => root.unmount());
+    mountAspectRaceRenderer.mockClear();
+    HTMLCanvasElement.prototype.getContext = vi.fn(
+      () => null,
+    ) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+    root = createRoot(host);
+    await act(async () => {
+      root.render(
+        <AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} surface="shell-compact" />,
+      );
+    });
+    expect(mountAspectRaceRenderer).not.toHaveBeenCalled();
+    expect(host.querySelector("[data-race-stage]")?.getAttribute("data-race-surface")).toBe("shell-compact");
+    expect(host.querySelectorAll(".race-stage__plate")).toHaveLength(4);
+  });
 });

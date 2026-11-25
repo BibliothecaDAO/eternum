@@ -1,7 +1,6 @@
 import type { SitePayoutSystemUpdate } from "@bibliothecadao/eternum";
 
-/** What the site-cleared moment shows: the site and the payout recorded by its receipt. */
-export type SiteClear = Pick<SitePayoutSystemUpdate, "siteId" | "kind" | "reward">;
+export type SiteClear = Pick<SitePayoutSystemUpdate, "siteId" | "kind" | "reward" | "troopsLost">;
 
 const MIN_SPRITES = 6;
 const MAX_SPRITES = 20;

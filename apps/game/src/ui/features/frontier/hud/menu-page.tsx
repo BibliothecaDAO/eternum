@@ -1,131 +1,59 @@
 import "./phone-hud.css";
 
-import { usePartShown } from "../opening/opening-context";
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudPage, HudRow } from "@/ui/design-system/kit/hud-elements";
-import { EXIT, MENU, SETTINGS, SHOP_WORDS, TODAY } from "@/ui/design-system/kit/words";
-import { HowToPlayRow } from "@/ui/modules/how-to-play";
-import { formatAmount } from "@bibliothecadao/types";
-import type { ReactNode } from "react";
+import { useTablet } from "@/shell/frame/layout";
 
-import { resolveHudPlaces, resolveMenuPlaces, type HudPlaceKey } from "./hud-places";
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { HudPage } from "@/ui/design-system/kit/hud-elements";
+import { EXIT, MENU, SETTINGS, SHOP_WORDS, TODAY, unreadFeedEvents } from "@/ui/design-system/kit/words";
+import { HowToPlayTile } from "@/ui/modules/how-to-play";
+import { formatAmount } from "@bibliothecadao/types";
+
+import { HUD_PLACES } from "./hud-places";
+
+const FEED = HUD_PLACES.find((place) => place.key === "feed")!;
 
 export const MenuPage = ({
-  rank,
-  onResearch,
   onFeed,
-  onChat,
-  onRelics,
   onShop,
   onToday,
-  onSeason,
   onSettings,
-  researchReady,
   events = 0,
-  chatUnread = 0,
-  fragments,
   guide,
   onExit,
   onClose,
 }: {
-  rank: string | null;
-  onResearch?: () => void;
-  onFeed?: () => void;
-  onChat?: () => void;
-  onRelics?: () => void;
+  onFeed: () => void;
   onShop?: () => void;
   onToday: () => void;
-  onSeason: () => void;
   onSettings: () => void;
-  researchReady?: boolean;
   events?: number;
-  chatUnread?: number;
-  fragments?: number | null;
   guide: string;
   onExit: () => void;
   onClose: () => void;
 }) => {
-  const aspectsOpen = usePartShown("aspects");
-  const researchOpen = usePartShown("research");
-  const relicsOpen = usePartShown("relic-slots");
-  const placesState = {
-    aspectsOpen,
-    researchOpen,
-    relicsOpen,
-    researchReady: onResearch ? Boolean(researchReady) : undefined,
-    feedUnread: events,
-    chatUnread,
-    hasRealm: Boolean(onRelics),
-  };
-  const seasonPlace = resolveHudPlaces(placesState).find((place) => place.key === "season");
-  const places = resolveMenuPlaces(placesState);
-  const handlers: Record<Exclude<HudPlaceKey, "season">, (() => void) | undefined> = {
-    research: onResearch,
-    feed: onFeed,
-    chat: onChat,
-    relics: onRelics,
-  };
-  const tiles = places.flatMap((place) => {
-    const onClick = place.key === "season" ? undefined : handlers[place.key];
-    return onClick ? [{ place, onClick }] : [];
-  });
+  const tablet = useTablet();
   return (
     <HudPage label={MENU} icon="menu" onClose={onClose}>
-      {tiles.length > 0 && (
-        <div className="menu-place-tiles">
-          {tiles.map(({ place, onClick }) => (
-            <button
-              key={place.key}
-              type="button"
-              className="ui-pick menu-place-tile"
-              aria-label={place.ariaLabel}
-              onClick={onClick}
-            >
-              <SemanticIcon name={place.icon} size={28} />
-              <span className="menu-place-tile__label">{place.label}</span>
-              {place.count !== undefined && (
-                <span
-                  className={place.countTone === "good" ? "menu-place-tile__dot" : "menu-place-tile__badge"}
-                  aria-label={place.countLabel}
-                >
-                  {place.countTone === "good" ? null : formatAmount(place.count)}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-      <nav className="flex flex-col">
-        {onShop && fragments !== null && fragments !== undefined && (
-          <MenuRow
-            icon="fragment"
-            label={SHOP_WORDS.title}
-            badge={<span className="text-hud-body tabular-nums">{formatAmount(fragments)}</span>}
-            onClick={onShop}
+      <nav className="menu-tiles">
+        {!tablet && (
+          <MenuTile
+            icon={FEED.icon}
+            label={FEED.label}
+            badge={events > 0 ? { count: formatAmount(events), label: unreadFeedEvents(events) } : undefined}
+            onClick={onFeed}
           />
         )}
-        <MenuRow icon="clock" label={TODAY} onClick={onToday} />
-        {seasonPlace && (
-          <MenuRow
-            icon={seasonPlace.icon}
-            label={seasonPlace.label}
-            badge={<span className="text-hud-body tabular-nums">{rank ?? "—"}</span>}
-            onClick={onSeason}
-          />
-        )}
-        <MenuRow icon="settings" label={SETTINGS} onClick={onSettings} />
-        <HowToPlayRow guide={guide} />
+        <MenuTile icon="calendar" label={TODAY} onClick={onToday} />
+        {onShop && <MenuTile icon="fragment" label={SHOP_WORDS.title} onClick={onShop} />}
+        <MenuTile icon="settings" label={SETTINGS} onClick={onSettings} />
+        <HowToPlayTile guide={guide} className="menu-tile" />
+        <MenuTile icon="exit" label={EXIT} onClick={onExit} />
       </nav>
-      <div className="grid">
-        <HudButton kind="secondary" icon="exit" onClick={onExit}>
-          {EXIT}
-        </HudButton>
-      </div>
     </HudPage>
   );
 };
 
-const MenuRow = ({
+const MenuTile = ({
   icon,
   label,
   badge,
@@ -133,8 +61,16 @@ const MenuRow = ({
 }: {
   icon: IconMeaning;
   label: string;
-  badge?: ReactNode;
+  badge?: { count: string; label: string };
   onClick: () => void;
 }) => (
-  <HudRow lead={<SemanticIcon name={icon} size={22} />} label={label} title={label} trail={badge} onClick={onClick} />
+  <button type="button" className="menu-tile" aria-label={label} onClick={onClick}>
+    <SemanticIcon name={icon} size={40} />
+    <span className="menu-tile__label">{label}</span>
+    {badge && (
+      <span className="menu-tile__badge" aria-label={badge.label}>
+        {badge.count}
+      </span>
+    )}
+  </button>
 );

@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { buildNativeDirectory } from "./native/read-models";
 import { createHeraldRequestHandler } from "./http";
+import { HERALD_PUBLIC_GET_ROUTES, matchHeraldGetRoute } from "./http-routes";
 import { shardManifest } from "./native/fixtures";
 import { gameRegistryRow } from "../../../packages/core/src/test-support/game-registry";
 import type { GameSnapshot } from "./types";
@@ -95,6 +96,7 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
       total: 1,
     }),
     reviewSnapshot: async () => snapshot,
+    gameTransactions: async () => ({ total: 0, days: [] }),
   },
   undecodableEventCount: () => 2,
   nodeHealth: () => null,
@@ -338,6 +340,7 @@ it("passes a battle-only history filter to the store before pagination", async (
       }),
       queryEvents,
       reviewSnapshot: async () => snapshot,
+      gameTransactions: async () => ({ total: 0, days: [] }),
     },
   });
   const response = await battleHandler(
@@ -588,6 +591,42 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
   expect(frontierHistory).toHaveBeenCalledTimes(4);
 });
 
+it("serves a listed game's stats for an hour: its players and realms as the directory counts them, and its transactions", async () => {
+  const realm = (entity: number, owner: string) => ({
+    key: `0x${entity}`,
+    value: { game_id: "7", entity_id: entity, owner, base: { category: 1, level: 1 }, metadata: {} },
+  });
+  const gameTransactions = vi
+    .fn()
+    .mockRejectedValueOnce(new Error("pool closed"))
+    .mockResolvedValue({ total: 3, days: [{ day: "2026-11-24", transactions: 3 }] });
+  const read = createHeraldRequestHandler({
+    ...httpState,
+    fold: {
+      ...httpState.fold,
+      modelRows: (model) =>
+        model === "Structure" ? [realm(1, "0xa"), realm(2, "0xb"), realm(3, "0xa")] : httpState.fold.modelRows(model),
+    },
+    history: { ...httpState.history!, gameTransactions },
+  });
+  const stats = () => read(new Request("http://herald/games/7/stats"));
+  expect((await stats()).status).toBe(503);
+  const response = await stats();
+  expect(response.headers.get("cache-control")).toBe("public, max-age=3600");
+  expect(response.headers.get("access-control-allow-origin")).toBe("*");
+  expect(await response.json()).toEqual({
+    game_id: "7",
+    players: 2,
+    realms: 3,
+    transactions: { total: 3, days: [{ day: "2026-11-24", transactions: 3 }] },
+  });
+  await stats();
+  expect(gameTransactions).toHaveBeenCalledTimes(2);
+  expect(gameTransactions).toHaveBeenCalledWith("7");
+  const unlisted = await read(new Request("http://herald/games/8/stats"));
+  expect([unlisted.status, await unlisted.json()]).toEqual([404, { error: "unknown_game" }]);
+});
+
 it("serves immutable per-day ranks, with explicit unavailable and unclosed responses", async () => {
   const ranks = {
     game_id: "1",
@@ -650,4 +689,21 @@ it("lets browsers read request timings only on a dev chain", async () => {
       expect([chain, request.url, response.headers.get("timing-allow-origin")]).toEqual([chain, request.url, allowed]);
     }
   }
+});
+
+it("matches every HERALD_PUBLIC_GET_ROUTES entry to its own route name without shadowing", async () => {
+  for (const { name, pattern } of HERALD_PUBLIC_GET_ROUTES) {
+    const sample =
+      typeof pattern === "string"
+        ? pattern
+        : pattern.source
+            .replace(/^\^|\$$/g, "")
+            .replaceAll("\\/", "/")
+            .replaceAll("([0-9]+)", "1");
+    expect(matchHeraldGetRoute(sample)?.name).toBe(name);
+  }
+  const served = createHeraldRequestHandler(httpState);
+  const missing = await served(new Request("http://herald/games/1/unknown"));
+  expect(missing.status).toBe(404);
+  expect(await missing.json()).toEqual({ error: "not_found" });
 });

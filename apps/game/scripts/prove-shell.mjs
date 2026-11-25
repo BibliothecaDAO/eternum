@@ -104,14 +104,14 @@ const flows = (layout, persona) => {
     return {
       ...shared,
       // Signed out, You is Connect, and You's rows are the footer's.
-      guide: { steps: [link("How to play")], end: END.docs },
+      guide: { steps: [link("Guide")], end: END.docs },
       market: { steps: [link("Market")], end: END.market },
       news: { steps: [link("What's new"), view("Blitz")], end: END.news },
       signin: { steps: [tab("Connect")], end: END.connect },
     };
   return {
     ...shared,
-    guide: { steps: [tab("You"), link("How to play")], end: END.docs },
+    guide: { steps: [tab("You"), link("Guide")], end: END.docs },
     market: { steps: [tab("You"), link("Market")], end: END.market },
     news: { steps: [tab("You"), press("What's new"), view("Blitz")], end: END.news },
     older: { steps: [tab("You"), finishedGame()], end: END.results },

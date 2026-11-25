@@ -26,6 +26,7 @@ import {
   createHexceptionTerrainRequest,
   getLocalHexDisk,
   getLocalTerrainRegions,
+  LOCAL_REGION_RADIUS,
   resolveLocalHexOnMap,
 } from "./hexception-terrain";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
@@ -240,7 +241,7 @@ export default class HexceptionScene extends HexagonScene {
     return LOCAL_HEX_SPACE;
   }
 
-  private hexceptionRadius = 4;
+  private readonly hexceptionRadius = LOCAL_REGION_RADIUS;
   private destroyed = false;
   /** Each building model the realm draws, loaded the first time a building or the build preview needs it. */
   private readonly models = new HexceptionModels(
@@ -582,6 +583,7 @@ export default class HexceptionScene extends HexagonScene {
     const radius = this.newRingRadius;
     this.newRingRadius = null;
     if (radius === null) return this.renderRestingHighlights();
+    this.highlightHexManager.setTeachHex(null);
     const center = { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] };
     this.highlightHexManager.highlightHexes(
       this.highlights.filter((hex) => getHexDistance(center, hex) === radius).map(plotHighlight),
@@ -595,7 +597,8 @@ export default class HexceptionScene extends HexagonScene {
   /** At rest the board lights one plot, for the realm's first build; else none. */
   private renderRestingHighlights(): void {
     const plot = useUIStore.getState().firstBuild === null ? null : firstBuildPlot(this.highlights);
-    this.highlightHexManager.highlightHexes(plot ? [plotHighlight(plot)] : []);
+    this.highlightHexManager.highlightHexes([]);
+    this.highlightHexManager.setTeachHex(plot);
   }
 
   private async loadBuildingModel(path: string): Promise<{ model: Group; animations: AnimationClip[] }> {
@@ -1299,6 +1302,8 @@ export default class HexceptionScene extends HexagonScene {
     } else if (!occupied && highlightIndex < 0) {
       this.highlights.push(position);
     }
+    this.interactiveHexManager.setBandBare(position, occupied);
+    this.interactiveHexManager.renderAllHexes();
 
     if (this.buildingPreview?.getPreviewBuilding()) {
       this.renderBuildingPlacementHighlights();
@@ -1310,6 +1315,7 @@ export default class HexceptionScene extends HexagonScene {
 
   private renderBuildingPlacementHighlights(): void {
     // A pinned ghost marks its one plot; a free one shows every plot it may stand on.
+    this.highlightHexManager.setTeachHex(null);
     const plots = this.pinnedPlot ? [this.pinnedPlot] : this.highlights;
     this.highlightHexManager.highlightHexes(plots.map(plotHighlight));
   }
@@ -1745,6 +1751,7 @@ export default class HexceptionScene extends HexagonScene {
         this.interactiveHexManager.addHex({ col: position.col, row: position.row });
 
         const building = existingBuildings.find((value) => value.col === position.col && value.row === position.row);
+        this.interactiveHexManager.setBandBare(position, Boolean(building));
 
         if (building) {
           this.buildings.push({ ...building, matrix: this.createBuildingMatrix(position) });

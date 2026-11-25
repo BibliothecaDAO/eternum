@@ -289,6 +289,8 @@ const createHarness = () => {
       }),
     writeTile,
     writeArmy,
+    writeArmyDay: (explorer: number, day: bigint) =>
+      write("ArmyDay", `day-${explorer}`, [13, explorer], { game_id: 13, explorer_id: explorer, day }, false),
     writeExpeditionRules,
     writeRealm,
     removeTile: (alias: string, options?: { skipUpdateStream: boolean }) =>
@@ -325,6 +327,36 @@ describe("WorldSpatialProjection", () => {
         expect.objectContaining({ entityId: 21, hexCoords: { alt: false, col: 328, row: 72 } }),
         expect.objectContaining({ entityId: 22, hexCoords: { alt: false, col: 344, row: 72 } }),
       ]);
+    } finally {
+      setBlockTimestampSource(null);
+      harness.projection.dispose();
+    }
+  });
+
+  it("drops surface expedition armies from an ended day on rollover refresh and rebuild", () => {
+    const harness = createHarness();
+    setBlockTimestampSource(() => 86_400 * 10 + 100);
+    try {
+      harness.writeExpeditionRules(14_400, 16, 86_400 * 10);
+      harness.writeArmy("day-zero", { explorerId: 51, col: 329, row: 8 });
+      harness.writeArmyDay(51, 0n);
+      harness.projection.start();
+      expect(harness.projection.getArmy(51)).toMatchObject({
+        entityId: 51,
+        hexCoords: { alt: false, col: 329, row: 8 },
+      });
+      setBlockTimestampSource(() => 86_400 * 11 + 100);
+      harness.projection.refreshTime();
+      expect(harness.projection.getArmy(51)).toBeUndefined();
+      expect(harness.projection.getArmies(false)).toEqual([]);
+      harness.projection.rebuild();
+      expect(harness.projection.getArmy(51)).toBeUndefined();
+      harness.writeArmy("day-one", { explorerId: 52, col: 329, row: 72 });
+      harness.writeArmyDay(52, 1n);
+      expect(harness.projection.getArmy(52)).toMatchObject({
+        entityId: 52,
+        hexCoords: { alt: false, col: 329, row: 72 },
+      });
     } finally {
       setBlockTimestampSource(null);
       harness.projection.dispose();
@@ -463,6 +495,43 @@ describe("WorldSpatialProjection", () => {
     ).toEqual([{ entityId: 76, clearedSite: true }]);
     expect(projection.getStandingStructureAtHex(at(102))).toBeUndefined();
     expect(projection.getArmiesAtHex(at(102)).map(({ entityId }) => entityId)).toEqual([74]);
+  });
+
+  it("draws a supply post from its tile's occupier, over the cleared camp's receipt, at start and as it is cleared", () => {
+    const { projection, writeTile, writeClearedSite } = createHarness();
+    writeTile("supply-post", { col: 102, row: 200, occupierId: 76, occupierType: TileOccupier.SupplyPost });
+    writeClearedSite(76, { col: 102, row: 200 });
+    writeTile("cleared-rift", { col: 104, row: 200, occupierId: 0, occupierType: 0 });
+    writeClearedSite(78, { col: 104, row: 200 });
+
+    projection.start();
+
+    const at = (col: number) => ({ alt: false, col, row: 200 });
+    const drawn = (col: number) =>
+      projection
+        .getStructuresAtHex(at(col))
+        .map(({ entityId, clearedSite, occupierType }) => ({ entityId, clearedSite, occupierType }));
+    expect(drawn(102)).toEqual([{ entityId: 76, clearedSite: true, occupierType: TileOccupier.SupplyPost }]);
+    expect(drawn(104)).toEqual([{ entityId: 78, clearedSite: true, occupierType: TileOccupier.Camp }]);
+    expect(projection.getStandingStructureAtHex(at(102))).toBeUndefined();
+
+    writeTile("camp", {
+      col: 106,
+      row: 200,
+      occupierId: 80,
+      occupierType: TileOccupier.Camp,
+      occupierIsStructure: true,
+    });
+    expect(drawn(106)).toEqual([{ entityId: 80, clearedSite: undefined, occupierType: TileOccupier.Camp }]);
+    writeClearedSite(80, { col: 106, row: 200 });
+    writeTile("camp", {
+      col: 106,
+      row: 200,
+      occupierId: 80,
+      occupierType: TileOccupier.SupplyPost,
+      occupierIsStructure: true,
+    });
+    expect(drawn(106)).toEqual([{ entityId: 80, clearedSite: true, occupierType: TileOccupier.SupplyPost }]);
   });
 
   it("indexes live surface armies from ExplorerTroops only", () => {

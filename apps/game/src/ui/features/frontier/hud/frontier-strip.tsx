@@ -7,14 +7,18 @@ import { useRealmStores } from "../realm-stores";
 import { FRONTIER_STORES, STORE_KINDS, type StoreKind } from "../stores";
 import type { StoreReading } from "./status-strip";
 
-export const useStoreReadings = (realm: NativeRows["Structure"] | null, rules: ExpeditionRules): StoreReading[] => {
+export const useStoreReadings = (
+  realm: NativeRows["Structure"] | null,
+  rules: ExpeditionRules,
+  kinds?: readonly StoreKind[],
+): StoreReading[] => {
   const stores = useRealmStores(realm, rules);
   const shown: Partial<Record<StoreKind, boolean>> = {
     essence: usePartShown("essence-store"),
     crossbows: realm !== null && realm.base.level >= nativeResearchConstants.RANGE_LEVEL,
     scouts: realm !== null && realm.base.level >= nativeResearchConstants.SCOUTS_LODGE_LEVEL,
   };
-  return STORE_KINDS.filter((kind) => shown[kind] ?? true).map((kind) => {
+  return (kinds ?? STORE_KINDS.filter((kind) => shown[kind] ?? true)).map((kind) => {
     const store = stores?.[kind];
     return {
       kind,

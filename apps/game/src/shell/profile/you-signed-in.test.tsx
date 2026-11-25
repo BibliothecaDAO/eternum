@@ -151,7 +151,12 @@ it("shows one invite control and one primary button on /profile#referrals when t
       status: "Live",
       clock_scale: 1,
       clock: { start_main_at: 100, end_at: 9_999_999_999 },
-      aspect_race: { finish_height: 10_000, season_days: 50, heights: { 1: 0, 2: 0, 3: 0, 4: 0 } },
+      aspect_race: {
+        finish_height: 10_000,
+        season_days: 50,
+        heights: { 1: 0, 2: 0, 3: 0, 4: 0 },
+        triumph_percents: { 1: 150, 2: 200, 3: 50, 4: 200 },
+      },
       player_state: { structures: [{ entity_id: 7, category: 1, realm_id: 1, level: 1 }] },
     },
   ];
@@ -235,6 +240,33 @@ it("offers Copy invite link on /profile#referrals for a pre-season player who ch
   await vi.waitFor(() => expect(page.querySelector("[data-invited-friends-empty]")).not.toBeNull());
   expect(page.querySelector("[data-invited-friends-empty]")?.textContent).toBe(INVITED_FRIENDS_WORDS.empty);
   expect(page.querySelectorAll("[data-friend-state]")).toHaveLength(0);
+});
+
+it("offers no invite and no failure on /profile#referrals when identity has no invite for the chosen Order's account", async () => {
+  vi.spyOn(identityClient, "shareTally").mockResolvedValue({
+    links: 0,
+    posted: 0,
+    visits: 0,
+    joined: 0,
+    activated: 0,
+    friendsPaid: 0,
+    fragmentsEarned: 0,
+  });
+  vi.spyOn(identityClient, "getOrderIntent").mockResolvedValue({ order: 1, members: { 1: 12 } });
+  let answer!: (invite: null) => void;
+  const createInvite = vi
+    .spyOn(identityClient, "createInvite")
+    .mockReturnValue(new Promise((resolve) => (answer = resolve)));
+  vi.spyOn(identityClient, "invitedFriends").mockResolvedValue({ friends: [] });
+  const page = await open("/profile#referrals", 390);
+  await vi.waitFor(() => expect(page.textContent).toContain(INVITE_WORDS.making));
+  await act(async () => answer(null));
+  await vi.waitFor(() => expect(page.textContent).not.toContain(INVITE_WORDS.making));
+  expect([...page.querySelectorAll("button")].map((button) => button.textContent)).not.toContain(
+    SEASON_INVITE_WORDS.copy,
+  );
+  expect(page.textContent).not.toContain(INVITE_WORDS.failed);
+  expect(createInvite).toHaveBeenCalledOnce();
 });
 
 it("shows the join-Aspect prompt on /profile#referrals only when the player has neither a Season Aspect nor a chosen Order", async () => {

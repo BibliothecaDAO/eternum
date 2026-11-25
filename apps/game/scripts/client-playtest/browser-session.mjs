@@ -133,23 +133,7 @@ export function createBrowserSession(session, { chromeArgs = [], executablePath,
       run(["batch", `mouse move ${menu.x} ${menu.y}`, "mouse down", "mouse up"]);
       run(["find", "role", "button", "click", "--name", word, "--exact"]);
     },
-    /** Opens the list of views (the map's layers) from the switch that names the one shown, with the mouse. */
-    openViews: () => {
-      const at = read(VIEW_SWITCH_EXPRESSION);
-      if (!at) throw new Error("No view switch opens a list of views");
-      run(["batch", `mouse move ${at.x} ${at.y}`, "mouse down", "mouse up"]);
-    },
-    /** The open list's choices, each by its word and whether it is the one shown. */
     viewChoices: () => read(VIEW_CHOICES_EXPRESSION),
-    /** Chooses a view: opens the list, then presses the choice by its word. */
-    chooseView: (word) => {
-      if (!read(VIEW_CHOICES_EXPRESSION).length) {
-        const at = read(VIEW_SWITCH_EXPRESSION);
-        if (!at) throw new Error("No view switch opens a list of views");
-        run(["batch", `mouse move ${at.x} ${at.y}`, "mouse down", "mouse up"]);
-      }
-      run(["find", "role", "menuitemradio", "click", "--name", word, "--exact"]);
-    },
     hover: (offset) => run(["mouse", "move", ...screenPoint(offset).map(String)]),
     rightClick: (offset) => run(["batch", ...rightClickCommands(offset)]),
     doubleClick: (offset) => {
@@ -192,20 +176,9 @@ const placeSlotExpression = (word) => `JSON.stringify((() => {
   return rect ? { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) } : null;
 })())`;
 
-/**
- * The centre of the switch that names the view shown and opens the list of views, once a realm has an Ethereal layer:
- * a phone's place-bar switch, a desktop's World tab.
- */
-const VIEW_SWITCH_EXPRESSION = `JSON.stringify((() => {
-  const rect = document
-    .querySelector('[data-surface-deep-switch] [aria-haspopup]')
-    ?.getBoundingClientRect();
-  return rect ? { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) } : null;
-})())`;
-
-const VIEW_CHOICES_EXPRESSION = `JSON.stringify([...document.querySelectorAll('[role="menu"] [role="menuitemradio"]')].map((item) => ({
-  word: item.textContent.trim(),
-  shown: item.getAttribute("aria-checked") === "true",
+const VIEW_CHOICES_EXPRESSION = `JSON.stringify([...document.querySelectorAll('[data-surface-deep-switch] [role="tab"][data-depth]:not(:disabled)')].map((tab) => ({
+  word: (tab.getAttribute("aria-label") ?? tab.textContent).trim(),
+  shown: tab.getAttribute("aria-selected") === "true",
 })))`;
 
 function tapCommands(offset) {
@@ -231,6 +204,7 @@ const OBSERVE_EXPRESSION = `JSON.stringify({
   rendered: window.__rendererDiagnostics?.sceneName ?? null,
   selection: window.__eternumMapSelection ?? null,
   place:
+    document.querySelector('[data-place-pill]')?.dataset.place ??
     document.querySelector('nav[aria-label="Places"] [aria-current="page"]')?.textContent.trim() ??
     document.querySelector('[data-surface-deep-switch] [role="tab"][aria-selected="true"]')?.textContent.trim() ??
     document.querySelector('[aria-label="Map view"] [role="tab"][aria-selected="true"]')?.textContent.trim() ??
@@ -249,10 +223,14 @@ const OBSERVE_EXPRESSION = `JSON.stringify({
 
 // The player's army buttons on the HUD, each with the stamina its meter shows. An open slot (Deploy, or one waiting for
 // an earlier slot) is drawn as a row like an army's, its meter the stamina its army would start on: it is no army.
-const ARMIES_EXPRESSION = `JSON.stringify([...document.querySelectorAll('nav[aria-label="Armies"] button[aria-pressed]')].filter((button) => !button.disabled && button.getAttribute("aria-label") !== "Deploy").map((button) => ({
-  label: button.getAttribute("aria-label"),
-  stamina: Number(button.querySelector('[role="meter"]')?.getAttribute("aria-valuenow") ?? NaN),
-})))`;
+const ARMIES_EXPRESSION = `JSON.stringify((() => {
+  const stamina = (element) => Number(element.querySelector('[role="meter"]')?.getAttribute("aria-valuenow") ?? NaN);
+  const docked = [...document.querySelectorAll('nav[aria-label="Armies"] button[aria-pressed]')]
+    .filter((button) => button.checkVisibility() && !button.disabled && button.getAttribute("aria-label") !== "Deploy")
+    .map((button) => ({ label: button.getAttribute("aria-label"), stamina: stamina(button) }));
+  const tray = document.querySelector("[data-picked-army]");
+  return tray && tray.checkVisibility() ? [...docked, { label: tray.dataset.pickedArmy, stamina: stamina(tray) }] : docked;
+})())`;
 
 // A button's text ends with its key hint; the leading words are its name.
 /** The order bar a phone's tap pinned: the order its row names, and whether a cost of it is short; null with none. */

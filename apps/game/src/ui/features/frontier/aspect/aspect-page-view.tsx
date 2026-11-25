@@ -1,12 +1,14 @@
 import "./aspect-page-view.css";
 
 import { OpeningPartGate } from "../opening/opening-context";
-import { AspectMark } from "@/ui/design-system/aspect-mark";
+import { RefusedVerb } from "../refused-verb";
+import type { Refusal } from "@/ui/design-system/kit/refusal";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudPage, HudRow, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import { ASPECT_PAGE_WORDS as WORDS } from "@/ui/design-system/kit/words";
-import { aspectName, formatShort, type AspectId } from "@bibliothecadao/types";
-import type { ReactNode } from "react";
+import { ASPECT_PAGE_WORDS as WORDS, DAY } from "@/ui/design-system/kit/words";
+import { aspectName, formatExact, formatShort, type AspectId } from "@bibliothecadao/types";
+import type { CSSProperties, ReactNode } from "react";
+import { aspectVariables } from "@/tokens";
 import { AspectRaceCanvas } from "./aspect-race-canvas";
 import { AspectStandings } from "./aspect-standings";
 
@@ -29,7 +31,6 @@ export interface AspectMember {
   realm: string;
   mine: boolean;
   glory: number;
-  guards: string | null;
 }
 
 export interface OwnAspect {
@@ -49,34 +50,43 @@ export interface AspectPageProps {
   own: OwnAspect | null;
   fights?: ReactNode;
   invite?: ReactNode;
-  onGoToDeep?: () => void;
+  day?: number;
+  goToDeep?: { go: () => void } | { refused: Refusal };
   onClose: () => void;
 }
 
-export const AspectPageView = ({ race, own, fights, invite, onGoToDeep, onClose }: AspectPageProps) => (
-  <HudPage label={WORDS.title} icon="victory" fills onClose={onClose} bodyClassName="gap-3">
+export const AspectPageView = ({ race, own, fights, invite, day, goToDeep, onClose }: AspectPageProps) => (
+  <HudPage
+    label={WORDS.title}
+    icon="victory"
+    fills
+    cue={day !== undefined && <HudChip icons={["calendar"]}>{`${DAY} ${formatShort(day)}`}</HudChip>}
+    onClose={onClose}
+    bodyClassName="gap-3"
+  >
     {race === null ? (
       <Muted>{WORDS.reading}</Muted>
     ) : (
       <div data-aspect-race-page className="aspect-race-page">
-        <Race race={race} />
+        <Race race={race} triumphs={own?.triumphs} />
+        {own && <GloryBoard own={own} />}
         <div className="aspect-race-page__board">
           {own ? <YourAspect own={own} invite={invite} /> : <Muted>{WORDS.noAspect}</Muted>}
           {own && fights && <div className="flex min-w-0 flex-col gap-2">{fights}</div>}
         </div>
-        {onGoToDeep && race.result === null && own !== null && (
-          <HudWindowFoot>
-            <HudButton kind="primary" icon="spire" onClick={onGoToDeep}>
-              {WORDS.goToDeep}
-            </HudButton>
-          </HudWindowFoot>
-        )}
+        {goToDeep && race.result === null && own !== null && <GoToDeep goToDeep={goToDeep} />}
       </div>
     )}
   </HudPage>
 );
 
-const Race = ({ race }: { race: NonNullable<AspectPageProps["race"]> }) => (
+const Race = ({
+  race,
+  triumphs,
+}: {
+  race: NonNullable<AspectPageProps["race"]>;
+  triumphs?: readonly AspectTriumph[];
+}) => (
   <section data-aspect-race className="aspect-race-page__hero">
     {race.result && (
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -84,26 +94,17 @@ const Race = ({ race }: { race: NonNullable<AspectPageProps["race"]> }) => (
       </div>
     )}
     <AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} />
-    <AspectStandings standings={race.standings} finishHeight={race.finishHeight} stages={race.stages} />
+    <AspectStandings
+      standings={race.standings}
+      finishHeight={race.finishHeight}
+      stages={race.stages}
+      ownTriumphs={triumphs}
+    />
   </section>
 );
 
 const YourAspect = ({ own, invite }: { own: OwnAspect; invite?: ReactNode }) => (
   <section data-aspect-own className="flex min-w-0 flex-col gap-2">
-    <Heading>
-      <span className="inline-flex items-center gap-2">
-        <AspectMark aspect={own.aspectId} size={24} decorative />
-        {WORDS.yours(aspectName(own.aspectId))}
-      </span>
-    </Heading>
-    <div data-aspect-triumphs className="flex flex-wrap items-center gap-1">
-      <Muted>{WORDS.triumphs}:</Muted>
-      {own.triumphs.map(({ stage, day }) => (
-        <HudChip key={stage} icons={["star"]} tone={day === null ? undefined : "good"}>
-          {WORDS.triumph[stage]} · {day === null ? WORDS.triumphAt(stage) : WORDS.triumphOn(day)}
-        </HudChip>
-      ))}
-    </div>
     {own.bar && (
       <OpeningPartGate part="bane-row">
         <div data-aspect-bane className="flex flex-col gap-0.5">
@@ -114,32 +115,55 @@ const YourAspect = ({ own, invite }: { own: OwnAspect; invite?: ReactNode }) => 
         </div>
       </OpeningPartGate>
     )}
-    <Heading>{WORDS.members}</Heading>
-    <div data-aspect-members className="flex flex-col gap-1">
-      {own.members.map((member) => (
-        <HudRow
-          key={member.id}
-          lead={<Icon name="realm" size={32} />}
-          title={member.realm}
-          selected={member.mine}
-          detail={member.guards ? WORDS.guards(member.guards) : undefined}
-          trail={
-            <OpeningPartGate part="glory">
-              <HudChip icons={["crown"]} label={WORDS.glory}>
-                {formatShort(member.glory)}
-              </HudChip>
-            </OpeningPartGate>
-          }
-        />
-      ))}
-    </div>
     {invite}
   </section>
 );
 
-const Heading = ({ children }: { children: ReactNode }) => (
-  <span className="text-hud-strong text-hud-ink">{children}</span>
+const GoToDeep = ({ goToDeep }: { goToDeep: NonNullable<AspectPageProps["goToDeep"]> }) =>
+  "go" in goToDeep ? (
+    <HudWindowFoot>
+      <HudButton kind="primary" icon="spire" onClick={goToDeep.go}>
+        {WORDS.goToDeep}
+      </HudButton>
+    </HudWindowFoot>
+  ) : (
+    <RefusedVerb word={WORDS.goToDeep} icon="spire" refusal={goToDeep.refused} />
+  );
+
+const GloryBoard = ({ own }: { own: OwnAspect }) => {
+  const unearned = own.members.every((member) => member.glory === 0);
+  return (
+    <section data-aspect-members className="aspect-glory-board" style={aspectVariables(own.aspectId) as CSSProperties}>
+      <span className="aspect-glory-board__head">
+        <span>{WORDS.glory}</span>
+        <span>{aspectName(own.aspectId)}</span>
+      </span>
+      {unearned && <Muted>{WORDS.gloryUnearned}</Muted>}
+      {own.members.map((member, index) => (
+        <HudRow
+          key={member.id}
+          lead={<b className="aspect-glory-board__rank">#{index + 1}</b>}
+          title={
+            <span className="flex min-w-0 items-center gap-2">
+              <i className="aspect-glory-board__dot" aria-hidden="true" />
+              <span className="truncate">{member.realm}</span>
+            </span>
+          }
+          selected={member.mine}
+          trail={<GloryAmount glory={member.glory} />}
+        />
+      ))}
+    </section>
+  );
+};
+
+const GloryAmount = ({ glory }: { glory: number }) => (
+  <span role="img" aria-label={`${WORDS.glory} ${formatExact(glory)}`} className="aspect-glory-board__glory">
+    <Icon name="crown" size={16} />
+    {formatExact(glory)}
+  </span>
 );
+
 const Muted = ({ children }: { children: ReactNode }) => (
   <span className="text-hud-label text-hud-muted">{children}</span>
 );

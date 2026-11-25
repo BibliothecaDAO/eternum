@@ -1,16 +1,7 @@
 import "./play-page.css";
 
 import type { HeraldAspectRace } from "@bibliothecadao/eternum/game-sync";
-import {
-  aspectName,
-  aspects,
-  FRIEND_FRAGMENTS,
-  FRIENDS_BONUS_FRAGMENTS,
-  FRIENDS_LIMIT,
-  questCatalog,
-  type AspectId,
-  type QuestId,
-} from "@bibliothecadao/types";
+import { aspectName, formatExact, questCatalog, type AspectId, type QuestId } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import { Icon } from "@/ui/design-system/icon";
@@ -30,12 +21,12 @@ import { dayQuestFace } from "@/ui/features/frontier/day/day-quest-face";
 import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, gameRefOf } from "../herald";
 import { Loading } from "../loading";
-import { aspectRaceStandings, directoryDay, seasonEnded, seasonPlayerAspect } from "../season";
+import { aspectRaceStandings, directoryDay, seasonEnded, seasonPlayerAspect, stageTriumphsOf } from "../season";
 import { hasSeasonRealm } from "../season-pick";
 import { resultsHref } from "../season-tab/results-link";
 import { useShareTally } from "../share/own-shares";
 import { useRequestSignIn } from "../sign-in/connect";
-import { HyperstructureTile } from "./hyperstructure-stage";
+import { HyperstructureRaceStage } from "./hyperstructure-stage";
 import type { PlayItem } from "./play-board";
 import { type PlayFacts, type SourceGap, usePlayFacts } from "./play-facts";
 import { LeadCard, RehearsalCard } from "./play-item";
@@ -162,6 +153,7 @@ const AspectRacePreview = ({
   ownAspect: AspectId | null;
 }) => {
   const { finishHeight, byAspect } = aspectRaceStandings(race, members);
+  const triumphs = stageTriumphsOf(race);
   return (
     <AppPanel
       title={ASPECT_PAGE_WORDS.race}
@@ -172,24 +164,13 @@ const AspectRacePreview = ({
         </AppLink>
       }
     >
-      <div className="flex flex-col gap-3">
-        <div className="play-aspects-grid">
-          {aspects.map(({ id }) => {
-            const row = byAspect[id];
-            return (
-              <HyperstructureTile
-                key={id}
-                aspect={id}
-                height={row.height}
-                finishHeight={finishHeight}
-                members={row.members}
-                own={ownAspect === id}
-                compact
-              />
-            );
-          })}
-        </div>
-      </div>
+      <HyperstructureRaceStage
+        byAspect={byAspect}
+        finishHeight={finishHeight}
+        ownAspect={ownAspect}
+        triumphs={triumphs}
+        compact
+      />
     </AppPanel>
   );
 };
@@ -246,6 +227,7 @@ const UnseenResultsPanel = ({ items }: { items: readonly PlayItem[] }) => (
 const PlayInviteStrip = () => {
   const invite = useSeasonInvite();
   const tally = useShareTally();
+  if (invite.link.none) return null;
   return (
     <AppPanel title={SEASON_INVITE_WORDS.title} icon="people">
       <div className="flex flex-col gap-3" data-play-invite>
@@ -256,7 +238,7 @@ const PlayInviteStrip = () => {
             )}
             {tally && tally.friendsPaid > 0 && (
               <p className="text-app-label text-app-gold">
-                {`${SHARED_DAYS_WORDS.friendsPaid}: ${SHARED_DAYS_WORDS.ofLimit(tally.friendsPaid)}`}
+                {`${SHARED_DAYS_WORDS.friendsPaid}: ${formatExact(tally.friendsPaid)}`}
               </p>
             )}
           </div>
@@ -274,9 +256,7 @@ const SignedOutInviteStrip = () => {
     <AppPanel title={SEASON_INVITE_WORDS.title} icon="people">
       <div className="play-invite" data-play-invite>
         <div className="play-invite__text">
-          <p className="text-app-label text-app-gold">
-            {PROFILE_WORDS.friendMilestone(FRIEND_FRAGMENTS, FRIENDS_BONUS_FRAGMENTS, FRIENDS_LIMIT)}
-          </p>
+          <p className="text-app-label text-app-gold">{PROFILE_WORDS.friendReward}</p>
           <p className="text-app-label text-app-muted">{PRESEASON_WORDS.inviteSignedOut}</p>
         </div>
         <AppButton kind="secondary" size="md" onClick={() => requestSignIn()}>

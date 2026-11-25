@@ -1,0 +1,63 @@
+---
+title: Aspects and rewards
+description: Aspects, their Orders, the hyperstructure race, Glory, and LORDS rewards
+---
+
+import { FRONTIER } from "@/utils/frontier";
+import { GameIcon } from "@/components/GameIcon";
+
+# Aspects and rewards
+
+Every realm in Frontier Season 1 belongs to one of {FRONTIER.aspectsCount} **Aspects**. Together, an Aspect's players
+race to raise their Aspect's **hyperstructure** in [the Deep](/frontier/deep) and share LORDS rewards at the end of the
+season.
+
+## The {FRONTIER.aspectsCount} Aspects and their {FRONTIER.oaths.count} Orders
+
+If you create your realm with a **Realm NFT** (a Realms collection NFT held in your linked payout wallet), your Aspect
+is fixed by that Realm NFT's Order. If you start with a free realm, you pick your Aspect and an Order inside it when you
+enter. No Aspect is ever closed, you cannot switch Aspects mid-season, and all {FRONTIER.oaths.count} Orders grant their
+[Oaths](/frontier/oaths) to every army regardless of Aspect.
+
+| Aspect                                                                      | Orders                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <GameIcon name={FRONTIER.aspects[0].icon} /> **{FRONTIER.aspects[0].name}** | <GameIcon name={FRONTIER.aspects[0].orders[0].icon} size={20} /> {FRONTIER.aspects[0].orders[0].name}, <GameIcon name={FRONTIER.aspects[0].orders[1].icon} size={20} /> {FRONTIER.aspects[0].orders[1].name}, <GameIcon name={FRONTIER.aspects[0].orders[2].icon} size={20} /> {FRONTIER.aspects[0].orders[2].name}, <GameIcon name={FRONTIER.aspects[0].orders[3].icon} size={20} /> {FRONTIER.aspects[0].orders[3].name} |
+| <GameIcon name={FRONTIER.aspects[1].icon} /> **{FRONTIER.aspects[1].name}** | <GameIcon name={FRONTIER.aspects[1].orders[0].icon} size={20} /> {FRONTIER.aspects[1].orders[0].name}, <GameIcon name={FRONTIER.aspects[1].orders[1].icon} size={20} /> {FRONTIER.aspects[1].orders[1].name}, <GameIcon name={FRONTIER.aspects[1].orders[2].icon} size={20} /> {FRONTIER.aspects[1].orders[2].name}, <GameIcon name={FRONTIER.aspects[1].orders[3].icon} size={20} /> {FRONTIER.aspects[1].orders[3].name} |
+| <GameIcon name={FRONTIER.aspects[2].icon} /> **{FRONTIER.aspects[2].name}** | <GameIcon name={FRONTIER.aspects[2].orders[0].icon} size={20} /> {FRONTIER.aspects[2].orders[0].name}, <GameIcon name={FRONTIER.aspects[2].orders[1].icon} size={20} /> {FRONTIER.aspects[2].orders[1].name}, <GameIcon name={FRONTIER.aspects[2].orders[2].icon} size={20} /> {FRONTIER.aspects[2].orders[2].name}, <GameIcon name={FRONTIER.aspects[2].orders[3].icon} size={20} /> {FRONTIER.aspects[2].orders[3].name} |
+| <GameIcon name={FRONTIER.aspects[3].icon} /> **{FRONTIER.aspects[3].name}** | <GameIcon name={FRONTIER.aspects[3].orders[0].icon} size={20} /> {FRONTIER.aspects[3].orders[0].name}, <GameIcon name={FRONTIER.aspects[3].orders[1].icon} size={20} /> {FRONTIER.aspects[3].orders[1].name}, <GameIcon name={FRONTIER.aspects[3].orders[2].icon} size={20} /> {FRONTIER.aspects[3].orders[2].name}, <GameIcon name={FRONTIER.aspects[3].orders[3].icon} size={20} /> {FRONTIER.aspects[3].orders[3].name} |
+
+## The hyperstructure race
+
+<GameIcon name="hyperstructure" /> Each Aspect builds its own hyperstructure by holding **Hyperstructure archives** in
+the Deep. Hyperstructures are tracked as a race counter rather than a tile on the map, so they cannot be attacked
+directly.
+
+- Each hyperstructure has {FRONTIER.race.stages} stages of {FRONTIER.race.stageHeight} height each, so
+  {FRONTIER.race.finishHeight} height wins the season immediately.
+- Reaching stages 1 through 4 activates a **Stage Triumph** for your whole Aspect on the next game day
+  ([Banes and Triumphs](/frontier/banes#stage-triumphs)).
+- The season lasts {FRONTIER.day.seasonDays} game days at most. If no Aspect finishes by day {FRONTIER.day.seasonDays},
+  nobody receives the finish bonus, and every Aspect still earns LORDS for the height it built.
+- While a rival Team Bane is active on your Aspect, your hyperstructure stops gaining height until your Aspect ends the
+  bane, though Archive guards still earn Glory ([Banes and Triumphs](/frontier/banes#rival-team-banes)).
+
+Open the **Season** tab (**Aspect Race**) in the game to follow all four hyperstructures, their stages, active Stage
+Triumphs, your Aspect's bane bar charge, your Aspect's members ranked by Glory, and recent fights in the Deep.
+
+## Glory and LORDS rewards
+
+<GameIcon name="lords" /> Season 1 pays up to {FRONTIER.race.maxSeasonLords} LORDS in total. Each Aspect's pool depends
+on its own hyperstructure height when the season ends:
+
+- Every Aspect earns {FRONTIER.race.lordsPerHeight} LORDS per height point reached, regardless of what other Aspects
+  built.
+- The first Aspect to reach {FRONTIER.race.finishHeight} height wins a +{FRONTIER.race.finishBonus} LORDS finish bonus
+  (up to {FRONTIER.race.maxFinishLords} LORDS for that Aspect).
+- LORDS for unbuilt height and any unearned finish bonus return to the treasury when the season closes.
+- Inside each Aspect, the pool splits by **Glory** share among members who earned at least {FRONTIER.race.gloryToShare}
+  Glory during the season, with no Realm NFT, ticket, Seal, or per-player cap required.
+- You earn Glory only by holding **Hyperstructure archives** and **Bane altars** in [the Deep](/frontier/deep). Archive
+  Glory goes only to the guards holding that Archive (split by troop count), while the whole Aspect gains the
+  hyperstructure height. Essence cores, Ethereal mines, and beaten troops give no Glory.
+
+Your linked [Payout wallet](/account/payout-wallet) receives your LORDS after the season ends.

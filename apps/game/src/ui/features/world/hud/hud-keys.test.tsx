@@ -26,7 +26,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getShortcutManager } from "@/utils/shortcuts/centralized-shortcut-manager";
 import { useHudKeys } from "./hud-keys";
 import { idleArmiesRefusal, idleArmyIds, nextIdleArmy } from "./idle-armies";
-import { useNextUpShows } from "./next-up-shows";
 
 /** The HUD's keys, with the idle armies as the hook reads them in the view given. */
 const Keys = ({ idle = [], onWorldMap = true }: { idle?: number[]; onWorldMap?: boolean }) => {
@@ -74,7 +73,6 @@ describe("the desktop HUD's keys", () => {
   afterEach(() => {
     act(() => root.unmount());
     host.remove();
-    useNextUpShows.setState({ showing: false, act: null });
   });
 
   it("opens Build, Production, Military and Transfer with B, P, M and T", () => {
@@ -99,29 +97,9 @@ describe("the desktop HUD's keys", () => {
     expect(actions.military).not.toHaveBeenCalled();
   });
 
-  it("takes Next up's step with Space, only while it can be taken", () => {
-    const step = vi.fn();
+  it("leaves letter shortcuts working when a HUD button has focus", () => {
     act(() => root.render(<Keys />));
-    press(" ");
-    useNextUpShows.setState({ act: step });
-    press(" ");
-    expect(step).toHaveBeenCalledTimes(1);
-  });
-
-  it("leaves Space to a focused HUD button or tab, to press it, and keeps the letters working there", () => {
-    const step = vi.fn();
-    useNextUpShows.setState({ act: step });
-    act(() => root.render(<Keys />));
-    const spaces = [host.querySelector("button")!, host.querySelector('[role="tab"]')!].map((control) => {
-      const space = new KeyboardEvent("keydown", { key: " ", bubbles: true, cancelable: true });
-      act(() => {
-        control.dispatchEvent(space);
-      });
-      return space.defaultPrevented;
-    });
     press("b", host.querySelector("button")!);
-    expect(spaces).toEqual([false, false]);
-    expect(step).not.toHaveBeenCalled();
     expect(actions.build).toHaveBeenCalledTimes(1);
   });
 

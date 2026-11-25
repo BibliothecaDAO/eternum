@@ -1,6 +1,7 @@
 import { useHudMode } from "@/hooks/use-hud-mode";
 import { HudPanel, HudTabs } from "@/ui/design-system/kit/hud-elements";
 
+import { ARMY } from "@/ui/design-system/kit/words";
 import { ArmyDetail } from "@/ui/features/frontier/army/army-panel";
 import { EARLY_ARMY, EARLY_REALM, MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progression-fixture";
 import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
@@ -19,7 +20,7 @@ export const ProgressionLab = () => {
   const part = params.get("part");
   const research = <LabResearch key={String(mid)} realm={realm} />;
   const armyPanel = () => (
-    <HudPanel title={army.name} icon="troops" collapsible={false} bodyClassName="px-3 pb-3">
+    <HudPanel title={`${ARMY} ${mid ? 2 : 1}`} icon="troops" collapsible={false} bodyClassName="px-3 pb-3">
       <ArmyDetail army={army} />
     </HudPanel>
   );
@@ -71,6 +72,7 @@ const LabResearch = ({ realm }: { realm: RealmResearchFacts }) => {
       fixFor={() => undefined}
       onResearch={noop}
       onClose={() => undefined}
+      castleLevel={realm.castleLevel}
     />
   );
 };

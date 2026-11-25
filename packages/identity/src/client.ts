@@ -141,12 +141,28 @@ const preparedWalletCallSchema = Schema.Struct({
   fee: Schema.NullOr(Schema.Struct({ estimated: Schema.String, max: Schema.String })),
 });
 export type PreparedWalletCall = typeof preparedWalletCallSchema.Type;
+export const OPENING_MOMENT_KEY_PATTERN = /^[a-z][a-z0-9-]{0,39}$/;
+const OPENING_MOMENTS_PER_POST = 64;
+export const OPENING_KINDS = ["reached", "seen"] as const;
+
 /** The moments an account's interface has opened to and the lines it has been told, as sets of the game's own names. */
 const openingProgressSchema = Schema.Struct({
   reached: Schema.Array(Schema.String),
   seen: Schema.Array(Schema.String),
 });
 export type OpeningProgress = typeof openingProgressSchema.Type;
+
+export const readOpeningAdditions = (value: unknown): Record<(typeof OPENING_KINDS)[number], string[]> | null => {
+  const body = (value ?? {}) as Record<string, unknown>;
+  const additions: Record<(typeof OPENING_KINDS)[number], string[]> = { reached: [], seen: [] };
+  for (const kind of OPENING_KINDS) {
+    const moments = body[kind] ?? [];
+    if (!Array.isArray(moments) || moments.length > OPENING_MOMENTS_PER_POST) return null;
+    if (!moments.every((moment) => typeof moment === "string" && OPENING_MOMENT_KEY_PATTERN.test(moment))) return null;
+    additions[kind] = moments;
+  }
+  return additions;
+};
 const orderIntentSchema = Schema.Struct({
   order: Schema.NullOr(Schema.Number),
   members: Schema.Record(Schema.String, Schema.Number),
@@ -280,12 +296,15 @@ const resolveApiUrl = (apiUrl: string): string =>
     ? apiUrl.replace(/\/$/, "")
     : resolveEndpoint(apiUrl, { name: "identity API URL", browserFacing: true });
 
+const READ_TIMEOUT_MS = 10_000;
+
 export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: IdentityClientOptions) => {
   const api = resolveApiUrl(apiUrl);
   const request = async (path: string, init?: RequestInit) => {
     try {
       return await fetch(`${api}${path}`, {
         ...init,
+        signal: init?.signal ?? (init?.method === "GET" ? AbortSignal.timeout(READ_TIMEOUT_MS) : undefined),
         credentials: "include",
         headers: { "content-type": "application/json", ...init?.headers },
       });
@@ -625,8 +644,10 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
   const shareTally = async (): Promise<ShareTally> =>
     readJson(await request("/shares", { method: "GET", cache: "no-store" }), decode(shareTallySchema));
 
-  const createInvite = async (): Promise<OwnInvite> =>
-    readJson(await request("/shares/invite", { method: "POST" }), decode(ownInviteSchema));
+  const createInvite = async (): Promise<OwnInvite | null> => {
+    const response = await request("/shares/invite", { method: "POST" });
+    return response.status === 409 ? null : await readJson(response, decode(ownInviteSchema));
+  };
 
   const invitedFriends = async (): Promise<InvitedFriends> =>
     readJson(await request("/shares/friends", { method: "GET", cache: "no-store" }), decode(invitedFriendsSchema));

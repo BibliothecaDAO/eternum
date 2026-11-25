@@ -4,15 +4,16 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { HudButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { REINFORCE } from "@/ui/design-system/kit/words";
+import { HudButton, HudChip, HudNotice, HudPortrait, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { REINFORCE, SUPPLY_POST, TROOPS } from "@/ui/design-system/kit/words";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { isSupplyPost, siteDisplayName } from "@bibliothecadao/eternum";
-import { useDockArmies } from "../hud/dock-armies";
-import { ReinforceSheet } from "../army/reinforce";
+import { formatExact, frontierTroopName } from "@bibliothecadao/types";
+import { type DockArmy, useDockArmies } from "../hud/dock-armies";
+import { ReinforceSheet, useReinforceRange } from "../army/reinforce";
 import { reinforcementSource } from "../army/reinforce-plan";
+import { TARGET_MARKS } from "./site-marks";
 
-/** The camp's existing receipt opens reinforcement from the clearing home's stores. */
 export function SupplyPostSheet({
   site,
   children,
@@ -41,22 +42,60 @@ export function SupplyPostSheet({
   const adjacent = usable
     ? armies.filter((army) => reinforcementSource(setup.store, realm, army.explorerId, now, supplyPost))
     : [];
-  const army = adjacent.find((entry) => entry.explorerId === chosen);
-  if (army && realm) return <ReinforceSheet realm={realm} army={army} supplyPost={supplyPost} onClose={onClose} />;
+  const army = adjacent.length === 1 ? adjacent[0] : adjacent.find((entry) => entry.explorerId === chosen);
+  const name = siteDisplayName(supplyPost);
+  if (army && realm)
+    return <ReinforceSheet realm={realm} army={army} post={{ id: supplyPost, name }} onClose={onClose} />;
   return (
-    <HudSheet label={`Supply post · ${siteDisplayName(supplyPost)}`} onClose={onClose}>
+    <HudSheet
+      label={SUPPLY_POST.title}
+      cue={<HudChip icons={[TARGET_MARKS.Camp.icon]}>{name}</HudChip>}
+      onClose={onClose}
+    >
       {children}
-      <HudNotice icon="flag" line="Reinforce your armies beside this camp until the day ends." />
-      {adjacent.map((entry) => (
-        <HudButton
-          key={entry.explorerId}
-          kind={adjacent.length === 1 ? "primary" : "secondary"}
-          icon="military"
-          onClick={() => setChosen(entry.explorerId)}
-        >
-          {REINFORCE.title(entry.label)}
-        </HudButton>
-      ))}
+      <HudNotice icon="hourglass" line={SUPPLY_POST.until} />
+      {realm &&
+        adjacent.map((entry) => (
+          <SupplyPostArmy
+            key={entry.explorerId}
+            realm={realm}
+            army={entry}
+            onChoose={() => setChosen(entry.explorerId)}
+          />
+        ))}
     </HudSheet>
   );
 }
+
+const SupplyPostArmy = ({
+  realm,
+  army,
+  onChoose,
+}: {
+  realm: NativeRows["Structure"];
+  army: DockArmy;
+  onChoose: () => void;
+}) => {
+  const { plan, range } = useReinforceRange(realm, army);
+  const amount = formatExact(range.max);
+  const troops = frontierTroopName(army.troopsFact.category) || TROOPS;
+  return (
+    <>
+      {plan && range.max > 0 && (
+        <div
+          data-supply-army
+          className="flex items-center gap-3 rounded-lg border border-hud-divider bg-hud-well px-3 py-2"
+        >
+          <HudPortrait icon={army.art} label={TROOPS} />
+          <span className="flex min-w-0 flex-col tabular-nums">
+            <b className="text-hud-label text-hud-ink">{`${army.label} · ${formatExact(plan.current)} → ${formatExact(plan.current + range.max)}`}</b>
+            <span className="text-hud-label text-hud-good">{REINFORCE.fromHome(amount, troops)}</span>
+          </span>
+        </div>
+      )}
+      <HudButton kind="secondary" icon="military" onClick={onChoose}>
+        {range.max > 0 ? REINFORCE.titleAmount(army.label, amount) : REINFORCE.title(army.label)}
+      </HudButton>
+    </>
+  );
+};

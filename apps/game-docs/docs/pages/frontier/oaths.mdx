@@ -1,0 +1,110 @@
+---
+title: Oaths
+description: Shrines, bands, Oath picks, Oath slots, rerolls, every Oath, and strong Oath pairs
+---
+
+import { FRONTIER } from "@/utils/frontier";
+import { GameIcon } from "@/components/GameIcon";
+
+# Oaths
+
+Oaths improve an individual army for the current game day. Every Oath has one fixed rule and no levels. Any army of any
+Aspect can be offered any of the {FRONTIER.oaths.count} Oaths. All Oaths reset when the day ends.
+
+## How you get an Oath pick
+
+There are two ways an army triggers an Oath pick on the {FRONTIER.layers.personalOr}:
+
+1. **<GameIcon name="shrine" /> Reveal a shrine.** Research **Shrine lore** at your castle to find shrines
+   ({FRONTIER.discovery.shrine} chance per reveal). Revealing a shrine opens a pick of {FRONTIER.oaths.drawCount} Oaths
+   immediately for that army.
+2. **<GameIcon name={FRONTIER.beastFamilies[1].icon} /> Clear a band.** Bands — {FRONTIER.oaths.bandSummary}
+   ({FRONTIER.discovery.band} chance per reveal) — award a pick of {FRONTIER.oaths.drawCount} Oaths to the army that
+   lands the last hit.
+
+## Rules of the pick
+
+- **Offered from what you do not hold:** each pick offers {FRONTIER.oaths.drawCount} distinct Oaths at random from the
+  {FRONTIER.oaths.count} Oaths that the army does not already hold. An army never holds two copies of the same Oath.
+- **One pick at a time:** while an Oath pick is open on an army, that army must choose an Oath, replace an existing one,
+  or pass before it can move, reveal, attack, or enter a Spire.
+- **Full slots:** when an army's Oath slots are full, picking a new Oath replaces an Oath you choose.
+- **Pass for stamina:** passing skips the offered Oaths and gives that army +{FRONTIER.oaths.passStamina} stamina
+  immediately (up to its bar maximum).
+- **Reroll:** {FRONTIER.oaths.rerollNote} The replacement Oath is always an Oath the army does not hold and that is not
+  already offered. See [Shop and referrals](/frontier/shop-and-referrals) for current Shop status.
+- **In the Deep and at day's end:** an army keeps its Oaths when it enters [the Deep](/frontier/deep); its Order icons
+  show on the site panel and count in rival fight previews. All Oaths clear when the army ends with the day.
+
+## Oath slots
+
+Every army starts with {FRONTIER.oaths.baseSlots} Oath slots. You can research {FRONTIER.oaths.extraSlots} extra slots
+separately for {FRONTIER.troops.knight} (at your {FRONTIER.names.barracks}), {FRONTIER.troops.crossbowman} (at your
+{FRONTIER.names.range}), and {FRONTIER.troops.scout} (at your {FRONTIER.names.scoutsLodge}), up to
+{FRONTIER.oaths.maxSlots} slots total. Unlocked slots stay for the whole season and apply to every new army of that
+troop kind.
+
+| Oath slot                              | Essence                                  | Labor                                  |
+| -------------------------------------- | ---------------------------------------- | -------------------------------------- |
+| First {FRONTIER.oaths.baseSlots} slots | Free                                     | Free                                   |
+| {FRONTIER.research.oathSlots[0].slot}  | {FRONTIER.research.oathSlots[0].essence} | {FRONTIER.research.oathSlots[0].labor} |
+| {FRONTIER.research.oathSlots[1].slot}  | {FRONTIER.research.oathSlots[1].essence} | {FRONTIER.research.oathSlots[1].labor} |
+| {FRONTIER.research.oathSlots[2].slot}  | {FRONTIER.research.oathSlots[2].essence} | {FRONTIER.research.oathSlots[2].labor} |
+
+## All {FRONTIER.oaths.count} Oaths
+
+Each Oath is named after one of the {FRONTIER.oaths.count} Orders and changes one rule for today:
+
+| Oath (Order)                                                                        | Aspect                           | Effect for today                 |
+| ----------------------------------------------------------------------------------- | -------------------------------- | -------------------------------- |
+| <GameIcon name={FRONTIER.oaths.rows[0].icon} /> **{FRONTIER.oaths.rows[0].name}**   | {FRONTIER.oaths.rows[0].aspect}  | {FRONTIER.oaths.rows[0].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[1].icon} /> **{FRONTIER.oaths.rows[1].name}**   | {FRONTIER.oaths.rows[1].aspect}  | {FRONTIER.oaths.rows[1].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[2].icon} /> **{FRONTIER.oaths.rows[2].name}**   | {FRONTIER.oaths.rows[2].aspect}  | {FRONTIER.oaths.rows[2].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[3].icon} /> **{FRONTIER.oaths.rows[3].name}**   | {FRONTIER.oaths.rows[3].aspect}  | {FRONTIER.oaths.rows[3].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[4].icon} /> **{FRONTIER.oaths.rows[4].name}**   | {FRONTIER.oaths.rows[4].aspect}  | {FRONTIER.oaths.rows[4].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[5].icon} /> **{FRONTIER.oaths.rows[5].name}**   | {FRONTIER.oaths.rows[5].aspect}  | {FRONTIER.oaths.rows[5].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[6].icon} /> **{FRONTIER.oaths.rows[6].name}**   | {FRONTIER.oaths.rows[6].aspect}  | {FRONTIER.oaths.rows[6].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[7].icon} /> **{FRONTIER.oaths.rows[7].name}**   | {FRONTIER.oaths.rows[7].aspect}  | {FRONTIER.oaths.rows[7].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[8].icon} /> **{FRONTIER.oaths.rows[8].name}**   | {FRONTIER.oaths.rows[8].aspect}  | {FRONTIER.oaths.rows[8].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[9].icon} /> **{FRONTIER.oaths.rows[9].name}**   | {FRONTIER.oaths.rows[9].aspect}  | {FRONTIER.oaths.rows[9].effect}  |
+| <GameIcon name={FRONTIER.oaths.rows[10].icon} /> **{FRONTIER.oaths.rows[10].name}** | {FRONTIER.oaths.rows[10].aspect} | {FRONTIER.oaths.rows[10].effect} |
+| <GameIcon name={FRONTIER.oaths.rows[11].icon} /> **{FRONTIER.oaths.rows[11].name}** | {FRONTIER.oaths.rows[11].aspect} | {FRONTIER.oaths.rows[11].effect} |
+| <GameIcon name={FRONTIER.oaths.rows[12].icon} /> **{FRONTIER.oaths.rows[12].name}** | {FRONTIER.oaths.rows[12].aspect} | {FRONTIER.oaths.rows[12].effect} |
+| <GameIcon name={FRONTIER.oaths.rows[13].icon} /> **{FRONTIER.oaths.rows[13].name}** | {FRONTIER.oaths.rows[13].aspect} | {FRONTIER.oaths.rows[13].effect} |
+| <GameIcon name={FRONTIER.oaths.rows[14].icon} /> **{FRONTIER.oaths.rows[14].name}** | {FRONTIER.oaths.rows[14].aspect} | {FRONTIER.oaths.rows[14].effect} |
+| <GameIcon name={FRONTIER.oaths.rows[15].icon} /> **{FRONTIER.oaths.rows[15].name}** | {FRONTIER.oaths.rows[15].aspect} | {FRONTIER.oaths.rows[15].effect} |
+
+The Detection Oath lowers the guaranteed-find limit from {FRONTIER.discovery.emptyRevealLimit} empty reveals to
+{FRONTIER.oaths.detectionLimit}.
+
+### How key Oaths work
+
+- **Fury:** refunds {FRONTIER.oaths.furyPercent} of the winning attack's cost only — {FRONTIER.oaths.furyRefundBase}
+  stamina on a normal attack, or {FRONTIER.oaths.furyRefundAnger} stamina with Anger. Earlier attacks on the same target
+  are not refunded ({FRONTIER.oaths.furyExampleAttacks} attacks on a camp cost {FRONTIER.oaths.furyExampleTotal} stamina
+  and refund {FRONTIER.oaths.furyRefundBase}, not {FRONTIER.oaths.furyExampleWrong}).
+- **Skill and Fury together:** Skill checks the army's stamina after paying the attack cost and before any Fury refund.
+  An army attacking from {FRONTIER.oaths.skillExampleStart} stamina drops to {FRONTIER.oaths.skillExampleAfter} (below
+  {FRONTIER.oaths.skillThreshold}), gains Skill's {FRONTIER.oaths.skillDamagePercent} damage, and if that attack clears
+  the target, Fury refunds {FRONTIER.oaths.furyRefundBase} stamina so the army ends on {FRONTIER.oaths.skillExampleEnd}.
+- **Twins:** does not stack across multiple adjacent armies. It checks the six tiles around the attacking army, picks
+  the single largest living army of the **same owner** from the same day (a teammate's army never counts), and adds
+  {FRONTIER.oaths.twinsPercent} of **that adjacent army's** damage against the target with no Oaths and no stamina cost
+  on the helper.
+- **Titans and Logistics:** Titans adds a flat {FRONTIER.oaths.titansBonus} to the stamina bar on top of Logistics (it
+  does not double the bar and is not capped at {FRONTIER.oaths.titansBaseMax}). Logistics scales only the base
+  {FRONTIER.stamina.max} bar ({FRONTIER.stamina.logisticsStepAmount} per rank), so an army with Titans holds
+  {FRONTIER.oaths.titansBaseMax} max stamina at Logistics 0 up to {FRONTIER.oaths.titansLogisticsMax} at Logistics V,
+  and gains {FRONTIER.oaths.titansBonus} stamina immediately up to the new maximum.
+
+## Strong Oath pairs
+
+No single set of Oaths is best at every job. Match your Oaths to what that army will do today: breaking a rival Deep
+site, holding a Deep slot, clearing camps on the {FRONTIER.layers.personalOr}, or exploring for Spires and ruins.
+
+| Job                           | No Oath                        | One Oath                        | Other Oath                       | Both together                      |
+| ----------------------------- | ------------------------------ | ------------------------------- | -------------------------------- | ---------------------------------- |
+| {FRONTIER.oaths.pairs[0].job} | {FRONTIER.oaths.pairs[0].none} | {FRONTIER.oaths.pairs[0].first} | {FRONTIER.oaths.pairs[0].second} | **{FRONTIER.oaths.pairs[0].both}** |
+| {FRONTIER.oaths.pairs[1].job} | {FRONTIER.oaths.pairs[1].none} | {FRONTIER.oaths.pairs[1].first} | {FRONTIER.oaths.pairs[1].second} | **{FRONTIER.oaths.pairs[1].both}** |
+| {FRONTIER.oaths.pairs[2].job} | {FRONTIER.oaths.pairs[2].none} | {FRONTIER.oaths.pairs[2].first} | {FRONTIER.oaths.pairs[2].second} | **{FRONTIER.oaths.pairs[2].both}** |
+| {FRONTIER.oaths.pairs[3].job} | {FRONTIER.oaths.pairs[3].none} | {FRONTIER.oaths.pairs[3].first} | {FRONTIER.oaths.pairs[3].second} | **{FRONTIER.oaths.pairs[3].both}** |

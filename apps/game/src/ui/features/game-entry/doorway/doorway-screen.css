@@ -146,33 +146,6 @@
   color: var(--gold2);
 }
 
-.doorway-tip {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  border: 1px solid var(--app-line);
-  border-radius: var(--app-radius-control);
-  background: color-mix(in srgb, var(--app-ground) 74%, transparent);
-  padding: 0.75rem 1rem;
-  backdrop-filter: blur(8px);
-  text-align: left;
-  color: var(--app-ink);
-}
-
-.doorway-tip__words {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 0.125rem;
-  font-size: 0.875rem;
-  line-height: 1.35;
-}
-
-.doorway-tip__detail {
-  font-size: 0.8125rem;
-  color: var(--app-muted);
-}
-
 .doorway-bar {
   position: relative;
   height: 0.5rem;
@@ -224,16 +197,12 @@
     display: contents;
   }
 
-  .doorway-tip {
+  .doorway-bar {
     order: 1;
   }
 
-  .doorway-bar {
-    order: 2;
-  }
-
   .doorway-progress__status {
-    order: 3;
+    order: 2;
   }
 }
 
@@ -245,13 +214,8 @@
   .doorway-progress__header {
     flex-direction: row;
     align-items: flex-end;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 1.5rem;
-  }
-
-  .doorway-tip {
-    max-width: 34rem;
-    padding: 0.625rem 0.875rem;
   }
 
   .doorway-progress__status {

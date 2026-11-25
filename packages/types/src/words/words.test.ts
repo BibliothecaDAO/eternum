@@ -30,6 +30,7 @@ import {
   buildingName,
   frontierTroopName,
   guardSlotName,
+  LAYER_NAMES,
   rankedText,
   rankName,
   resourceName,
@@ -319,6 +320,31 @@ describe("the voice rules", () => {
     ])
       expect(refused(words)).toEqual({ words, refused: true });
     for (const words of ["+66/min", "points +120/min", "FP rate", "then per minute", "a second press", "3/4 · 13m"])
+      expect(refused(words)).toEqual({ words, refused: false });
+  });
+
+  it("refuse numeric and old layer names, each form on its own", () => {
+    const { forbidden } = VOICE_RULES.find((each) => each.rule === "A layer by its name")!;
+    const refused = (words: string) => ({ words, refused: forbidden!.test(words) });
+    for (const words of [
+      "Depth 1",
+      "Depth 2",
+      "Depth 3",
+      "depth 0",
+      "depth 2",
+      "Layer 1",
+      "Layer 2",
+      "layer 3",
+      "Depth II",
+      "Layer III",
+      "Deep I",
+      "Deep I–III",
+      "Ethereal I",
+      "Ethereal II",
+      "Ethereal reach III",
+    ])
+      expect(refused(words)).toEqual({ words, refused: true });
+    for (const words of [...LAYER_NAMES, "Ethereal Layer", "Map depth", "deepest depth", "depth-1"])
       expect(refused(words)).toEqual({ words, refused: false });
   });
 

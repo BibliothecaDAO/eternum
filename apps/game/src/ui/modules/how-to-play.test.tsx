@@ -29,7 +29,7 @@ const GameHowToPlay = () => <HowToPlayRow guide={useHowToPlay()} />;
 it.each([
   ["frontier", "https://docs.realms.party/frontier/"],
   ["blitz", "https://docs.realms.party/"],
-])("links a %s game's How to play to its own guide, in a new tab", (id, guide) => {
+])("links a %s game's Guide to its own guide, in a new tab", (id, guide) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   mode.id = id;
   const host = document.createElement("div");
@@ -39,7 +39,7 @@ it.each([
   const link = host.querySelector("a")!;
   expect(link.href).toBe(guide);
   expect(link.target).toBe("_blank");
-  expect(link.textContent).toBe("How to playdocs.realms.party");
+  expect(link.textContent).toBe("Guidedocs.realms.party");
   act(() => root.unmount());
   host.remove();
 });

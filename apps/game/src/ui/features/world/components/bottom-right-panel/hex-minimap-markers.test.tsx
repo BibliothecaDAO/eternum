@@ -29,6 +29,7 @@ describe("a site the world places with no entity of its own", () => {
     [TileOccupier.DormantSpire, "spire"],
     [TileOccupier.ReservedHyperstructure, "hyperstructure"],
     [TileOccupier.Chest, "chest"],
+    [TileOccupier.SupplyPost, "camp"],
   ])("draws occupier %s as its %s", (type, meaning) => {
     expect(draw(Number(type))).toContain(`data-marker="${meaning}"`);
   });

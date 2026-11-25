@@ -1,12 +1,14 @@
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
+import { SPIRE_WORDS } from "@/ui/design-system/kit/words";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { openPlace } from "@/play/navigation/open-place";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import type { MenuItem } from "@/ui/design-system/kit/hud-elements";
+import type { IconMeaning } from "@/ui/design-system/icon";
 import {
   type EtherealLayer,
   type ExpeditionRules,
+  Position,
   expeditionDepth,
   hasSharedDeep,
   reachableDepth,
@@ -31,6 +33,13 @@ export type MapLayers = {
 };
 
 const LAYER_MODELS = ["RealmKnowledge", "Structure", "DeepRules", "HomeAspect"] as const;
+export const DEEP_LAYER_TIERS: readonly EtherealLayer[] = [1, 2, 3];
+const DEEP_TIER: EtherealLayer = 3;
+
+export const layerLockLine = (tier: EtherealLayer) => SPIRE_WORDS.lockedAt(tier);
+
+export const deepLockLine = (store: Parameters<typeof reachableDepth>[0], realm: NativeRows["Structure"]) =>
+  (reachableDepth(store, realm.game_id, realm.entity_id) ?? 0) < DEEP_TIER ? layerLockLine(DEEP_TIER) : null;
 
 export const realmLayers = (
   store: Parameters<typeof reachableDepth>[0],
@@ -55,27 +64,29 @@ export const useMapLayers = (
   const facts = useNativeFacts(LAYER_MODELS);
   const camera = useUIStore((state) => state.cameraTargetHex);
   const { isMapView } = useQuery();
-  if (!realm || !isMapView) return null;
+  if (!realm) return null;
   const site = realmSite(facts.store, realm);
-  const from = camera ?? site;
+  const from = isMapView ? (camera ?? site) : site;
   const sharedDeep = hasSharedDeep(facts.store, realm.game_id);
   return {
     layers: realmLayers(facts.store, realm),
-    shown: from
-      ? sharedDeep && isDeepTile(rules.spacing, { ...from, alt: false })
-        ? "deep"
-        : (expeditionDepth(rules, { y: from.row }) as MapLayer)
-      : 0,
+    shown:
+      isMapView && from
+        ? sharedDeep && isDeepTile(rules.spacing, { ...from, alt: false })
+          ? "deep"
+          : (expeditionDepth(rules, { y: from.row }) as MapLayer)
+        : 0,
     go: (layer) => {
       if (!from) return;
-      const fromDeep = sharedDeep && isDeepTile(rules.spacing, { ...from, alt: false });
+      const fromDeep = isMapView && sharedDeep && isDeepTile(rules.spacing, { ...from, alt: false });
       const origin = fromDeep ? site : from;
       if (!origin) return;
       const to =
         layer === "deep"
           ? deepViewFor(facts.store, realm.game_id, player?.entity_id ?? null, rules.spacing)
           : viewInLayer(rules, origin, layer);
-      requestLayerView(to);
+      if (isMapView) requestLayerView(to);
+      else openPlace("map", Position.fromContract({ x: to.col, y: to.row }));
     },
   };
 };
@@ -95,12 +106,12 @@ export const selectLayer = ({ shown, go }: MapLayers, layer: MapLayer, chosen: (
   chosen();
 };
 
-export const layerChoices = (mapLayers: MapLayers, chosen: () => void = () => {}): MenuItem[] =>
-  mapLayers.layers
-    .filter((layer) => layer !== 0)
-    .map((layer) => ({
-      label: layerWord(layer),
-      lead: <Icon name={layerMark(layer)} size={22} />,
-      checked: layer === mapLayers.shown,
-      onSelect: () => selectLayer(mapLayers, layer, chosen),
-    }));
+export const unlockedLayerForTier = (mapLayers: MapLayers | null, tier: EtherealLayer): MapLayer | null => {
+  if (!mapLayers) return null;
+  if (tier === 3) {
+    if (mapLayers.layers.includes("deep")) return "deep";
+    if (mapLayers.layers.includes(3)) return 3;
+    return null;
+  }
+  return mapLayers.layers.includes(tier) ? tier : null;
+};

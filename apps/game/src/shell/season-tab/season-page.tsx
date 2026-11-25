@@ -30,15 +30,7 @@ import { RowThumb } from "@/ui/design-system/kit/list-row";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
-import {
-  ASPECT_PAGE_WORDS,
-  ASPECT_STEP_WORDS,
-  DAY,
-  PLAY_WORDS,
-  PRIZE_UNHELD,
-  SEASON_WORDS,
-  WORDS,
-} from "@/ui/design-system/kit/words";
+import { ASPECT_PAGE_WORDS, DAY, PLAY_WORDS, PRIZE_UNHELD, SEASON_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { seasonWinner } from "@/ui/features/frontier/board/season-pool";
 import { findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 
@@ -58,11 +50,10 @@ import {
 } from "../herald";
 import { Loading } from "../loading";
 import { ageOf } from "../play/ages";
-import { HyperstructureTile } from "../play/hyperstructure-stage";
+import { HyperstructureRaceStage } from "../play/hyperstructure-stage";
 import { CopySeasonInvite, SeasonInviteAlerts, useSeasonInvite } from "../play/season-invite";
 import {
   RACE_STAGE_COUNT,
-  RACE_TRIUMPHS,
   type AspectRaceStanding,
   aspectRaceStandings,
   directoryDay,
@@ -74,10 +65,11 @@ import {
   seasonPlayerHome,
   seasonRealmId,
   seasonTitle,
+  stageTriumphsOf,
 } from "../season";
 import { chooseSeason } from "../season-pick";
 import { useNowSeconds } from "../use-now";
-import { AspectRoster } from "./aspect-roster";
+import { AspectRoster, GlobalGloryRoster } from "./aspect-roster";
 import { FrontierRows } from "./frontier-rows";
 import { resultsHref } from "./results-link";
 import { SeasonPodium } from "./season-podium";
@@ -98,7 +90,7 @@ export const SeasonPage = () => {
         ) : !season ? (
           <Loading />
         ) : isAspectSeason(season) ? (
-          <AspectSeasonView season={season} past={past} />
+          <AspectSeasonView season={season} past={past} rows={phone ? BOARD_ROWS.phone : BOARD_ROWS.desktop} />
         ) : (
           <div className="season-grid">
             <FrontierPanel season={season} rows={phone ? BOARD_ROWS.phone : BOARD_ROWS.desktop} />
@@ -110,17 +102,23 @@ export const SeasonPage = () => {
   );
 };
 
-const AspectSeasonView = ({ season, past }: { season: AspectSeasonGame; past: readonly DirectoryGame[] }) => {
+const AspectSeasonView = ({
+  season,
+  past,
+  rows,
+}: {
+  season: AspectSeasonGame;
+  past: readonly DirectoryGame[];
+  rows: number;
+}) => {
   const [selectedAspect, setSelectedAspect] = useState<AspectId | 0>(0);
   const now = useNowSeconds();
   const day = directoryDay(season, now);
-  const { finishHeight, stageHeight, standings, byAspect } = aspectRaceStandings(
-    season.aspect_race,
-    season.aspect_members ?? null,
-  );
+  const { finishHeight, byAspect } = aspectRaceStandings(season.aspect_race, season.aspect_members ?? null);
+  const triumphs = stageTriumphsOf(season.aspect_race);
   const dayText = seasonDayLabel(day.day, seasonDaysOf(season));
   const ownAspect = seasonPlayerAspect(season);
-  const shownAspects = selectedAspect === 0 ? standings : standings.filter(({ id }) => id === selectedAspect);
+  const ownRealmId = seasonRealmId(season);
   return (
     <div className="flex flex-col gap-6" data-season-race>
       <AppPanel
@@ -140,33 +138,22 @@ const AspectSeasonView = ({ season, past }: { season: AspectSeasonGame; past: re
           </span>
         }
       >
-        <div className="flex flex-col gap-4">
-          <div className="season-race__grid">
-            {aspects.map(({ id }) => {
-              const row = byAspect[id];
-              return (
-                <HyperstructureTile
-                  key={id}
-                  aspect={id}
-                  height={row.height}
-                  finishHeight={finishHeight}
-                  members={row.members}
-                  own={ownAspect === id}
-                />
-              );
-            })}
-          </div>
-        </div>
+        <HyperstructureRaceStage
+          byAspect={byAspect}
+          finishHeight={finishHeight}
+          ownAspect={ownAspect}
+          triumphs={triumphs}
+        />
       </AppPanel>
       <div className="season-grid">
-        <AppPanel title={SEASON_WORDS.aspectBreakdown} icon="leaderboard">
-          <div className="flex flex-col gap-4">
+        <AppPanel title={SEASON_WORDS.gloryLeaderboard} icon="leaderboard" flush>
+          <div className="season-board__tabs">
             <AppTabs
-              label={WORDS.season}
+              label={SEASON_WORDS.gloryLeaderboard}
               value={selectedAspect}
               onChange={(value) => setSelectedAspect(value)}
               tabs={[
-                { key: 0 as const, label: SEASON_WORDS.allAspects },
+                { key: 0 as const, label: SEASON_WORDS.allPlayers },
                 ...aspects.map(({ id, name }) => ({
                   key: id,
                   label: name,
@@ -175,57 +162,21 @@ const AspectSeasonView = ({ season, past }: { season: AspectSeasonGame; past: re
                 })),
               ]}
             />
-            <ul className="season-breakdown">
-              {shownAspects.map((row) => (
-                <li
-                  key={row.id}
-                  data-aspect-summary={row.id}
-                  data-own={ownAspect === row.id || undefined}
-                  style={aspectVariables(row.id) as CSSProperties}
-                  className="season-breakdown__row"
-                >
-                  <div className="season-breakdown__lead">
-                    <AspectMark aspect={row.id} size={34} decorative />
-                    <div className="flex min-w-0 flex-col">
-                      <span className="season-breakdown__name">{row.name}</span>
-                      <span className="text-app-label text-app-muted">
-                        {`${ASPECT_PAGE_WORDS.stage(row.stage, RACE_STAGE_COUNT)} · ${ASPECT_PAGE_WORDS.height(row.height, finishHeight)}`}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="season-breakdown__metrics">
-                    {row.members !== null && <AppChip icon="people">{ASPECT_STEP_WORDS.members(row.members)}</AppChip>}
-                  </div>
-                </li>
-              ))}
-            </ul>
-            {selectedAspect !== 0 && (
-              <AspectRoster
-                season={season}
-                aspect={selectedAspect}
-                ownRealmId={seasonRealmId(season)}
-                ownAspect={selectedAspect === ownAspect}
-              />
-            )}
-            <div className="season-triumphs">
-              <span className="text-app-label text-app-muted">{SEASON_WORDS.stageMilestones}</span>
-              <div className="season-triumphs__list">
-                {RACE_TRIUMPHS.map(({ stage, name }) => (
-                  <AppChip key={stage} icon="star">
-                    {`${name} · ${SEASON_WORDS.stageAtHeight(stage * stageHeight)}`}
-                  </AppChip>
-                ))}
-              </div>
-            </div>
           </div>
+          {selectedAspect === 0 ? (
+            <GlobalGloryRoster season={season} ownRealmId={ownRealmId} rows={rows} />
+          ) : (
+            <AspectRoster
+              season={season}
+              aspect={selectedAspect}
+              ownRealmId={ownRealmId}
+              ownAspect={selectedAspect === ownAspect}
+              rows={rows}
+            />
+          )}
         </AppPanel>
         <div className="flex min-w-0 flex-col gap-6">
-          <AspectPlayerStanding
-            season={season}
-            finishHeight={finishHeight}
-            byAspect={byAspect}
-            showRoster={selectedAspect !== ownAspect}
-          />
+          <AspectPlayerStanding season={season} finishHeight={finishHeight} byAspect={byAspect} />
           {past.length > 0 && <PastSeasons seasons={past} />}
         </div>
       </div>
@@ -237,12 +188,10 @@ const AspectPlayerStanding = ({
   season,
   finishHeight,
   byAspect,
-  showRoster = true,
 }: {
   season: AspectSeasonGame;
   finishHeight: number;
   byAspect: Record<AspectId, AspectRaceStanding>;
-  showRoster?: boolean;
 }) => {
   const { realm, order, aspect } = seasonPlayerHome(season);
   if (!realm || aspect === null) {
@@ -286,7 +235,6 @@ const AspectPlayerStanding = ({
             <span className="season-stat__label">{ASPECT_PAGE_WORDS.stage(ownStanding.stage, RACE_STAGE_COUNT)}</span>
           </div>
         </div>
-        {showRoster && <AspectRoster season={season} aspect={aspect} ownRealmId={seasonRealmId(season)} ownAspect />}
         <AspectStandingActions season={season} />
       </div>
     </AppPanel>

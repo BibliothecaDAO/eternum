@@ -35,8 +35,6 @@
   "apps/game/src/ui/features/world/containers/top-header/attention-pill.tsx": 1,
   "apps/game/src/ui/features/world/containers/top-header/map-view-controls.tsx": 2,
   "apps/game/src/ui/features/world/hud/build-order-panel.tsx": 1,
-  "apps/game/src/ui/features/world/hud/coach.ts": 2,
-  "apps/game/src/ui/features/world/hud/next-up.tsx": 3,
   "apps/game/src/ui/modules/entity-details/hooks/use-realm-level-up.ts": 4,
   "apps/game/src/ui/modules/identity/identity-failures.ts": 2,
   "apps/game/src/ui/shared/lib/x-share-messages.ts": 2,

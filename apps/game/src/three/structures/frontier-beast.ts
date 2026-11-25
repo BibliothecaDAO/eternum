@@ -1,4 +1,4 @@
-import { readFrontierBeast } from "@bibliothecadao/eternum";
+import { isGuardedSite, readFrontierBeast, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
   BEASTS,
@@ -9,10 +9,14 @@ import {
   type BeastModel,
 } from "@bibliothecadao/types";
 import type { FrontierSpecies, FrontierBeast } from "@bibliothecadao/eternum";
+import { frontierPaintedPath } from "./frontier-painted-buildings";
 import { modelPath } from "../utils/model-url";
 export { beastBand, frontierBeast, type FrontierSpecies, type FrontierBeast } from "@bibliothecadao/eternum";
 
 export const FALLEN_REALM_RUIN_PATH = modelPath("outposts/ruin.glb");
+export const FRONTIER_CAMP_MODEL_PATH = frontierPaintedPath("camp");
+export const SUPPLY_POST_MODEL_PATH = frontierPaintedPath("supply-yard");
+export const SUPPLY_POST_STANDARD = { scale: 1, x: -0.32, y: 0, z: 0.92 } as const;
 
 export const FRONTIER_BEASTS = {
   troll: { path: modelPath("frontier/beast-troll.glb") },
@@ -49,7 +53,8 @@ export const largestBeastScale = (species: BeastModel): number => {
 const BEAST_ORDER = Object.keys(FRONTIER_BEASTS) as FrontierSpecies[];
 export const FRONTIER_BEAST_PATHS = BEAST_ORDER.map((beast) => FRONTIER_BEASTS[beast].path);
 export const FALLEN_REALM_MODEL_PATHS = [FALLEN_REALM_RUIN_PATH, ...FRONTIER_BEAST_PATHS];
-export const FALLEN_REALM_RUIN_MODEL_INDEX = 0;
+export const SITE_LANDMARK_MODEL_INDEX = 0;
+export const SUPPLY_POST_MODEL_INDEX = 1 + FRONTIER_BEAST_PATHS.length;
 export const frontierBeastModelIndex = (beast: FrontierSpecies): number => 1 + BEAST_ORDER.indexOf(beast);
 
 /** Standing models disappear after a clear; history can still name the same encounter. */
@@ -62,10 +67,44 @@ export function readStandingFrontierBeast(
   return readFrontierBeast(store, gameId, entityId);
 }
 
+export interface FrontierSiteComposition {
+  readonly baseScale: number;
+  readonly baseZ: number;
+  readonly beastZ: number;
+  readonly beastY: number;
+}
+
+const DEFAULT_SITE_COMPOSITION: FrontierSiteComposition = {
+  baseScale: 0,
+  baseZ: 0,
+  beastZ: 0,
+  beastY: 0,
+};
+
+const GUARDED_SITE_COMPOSITIONS = {
+  Camp: {
+    baseScale: 1,
+    baseZ: 0,
+    beastZ: 0.22,
+    beastY: 0,
+  },
+  Ruin: {
+    baseScale: 1,
+    baseZ: 0,
+    beastZ: 0,
+    beastY: 0,
+  },
+  Rift: {
+    baseScale: 1.09,
+    baseZ: 0,
+    beastZ: 0,
+    beastY: 0.2,
+  },
+  Beasts: DEFAULT_SITE_COMPOSITION,
+} as const satisfies Record<SiteKind, FrontierSiteComposition>;
+
 /** Every landmark and guard shares its tile center. The fey clears the rift crown. */
-export function frontierSiteComposition(category: StructureType) {
-  if (category === StructureType.Ruin) return { baseScale: 1, baseZ: 0, beastZ: 0, beastY: 0 };
-  // The painted slab has a 0.795 apothem; the terrain hex has sqrt(3) / 2.
-  if (category === StructureType.Rift) return { baseScale: 1.09, baseZ: 0, beastZ: 0, beastY: 0.2 };
-  return { baseScale: 0, baseZ: 0, beastZ: 0, beastY: 0 };
+export function frontierSiteComposition(category: StructureType): FrontierSiteComposition {
+  if (!isGuardedSite(category)) return DEFAULT_SITE_COMPOSITION;
+  return GUARDED_SITE_COMPOSITIONS[siteKindOf(category)];
 }

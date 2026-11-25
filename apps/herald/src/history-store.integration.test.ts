@@ -320,3 +320,64 @@ it("commits day ranks with history, deduplicates replay and recovers them after 
     await admin.end();
   }
 });
+
+it("counts each confirmed transaction that left a timed story once, by UTC day, in its own game only", async () => {
+  const admin = new Pool({ connectionString: databaseUrl });
+  const namespace = `game_transactions_${randomUUID().replaceAll("-", "")}`;
+  await admin.query(`CREATE SCHEMA ${namespace}`);
+  const url = new URL(databaseUrl!);
+  url.searchParams.set("options", `-c search_path=${namespace}`);
+  const store = new HistoryStore(url.toString(), "madara", "0x123", createNativeHistoryCodec(nativeSchema));
+  try {
+    await store.initialize();
+    const { native, fold } = setup();
+    const layout = nativeSchema.games.events.find((e) => e.name === "StoryEvent")!;
+    const storyEvent = (gameId: number, timestamp: number) => {
+      const values = {
+        version: 2,
+        game_id: gameId,
+        owner: new CairoOption(CairoOptionVariant.Some, 10),
+        entity_id: new CairoOption(CairoOptionVariant.Some, 1),
+        tx_hash: 85,
+        story: new CairoCustomEnum({
+          SitePayout: {
+            xp: 85,
+            structure_id: 1,
+            explorer_id: 7,
+            site_id: 9,
+            category: 7,
+            reward: new CairoOption(CairoOptionVariant.None),
+          },
+        }),
+        timestamp,
+      };
+      const members = (kind: string) => layout.members.filter((m) => m.kind === kind);
+      return {
+        from_address: manifest.world.address,
+        keys: [...layout.prefix, ...encodeMembers(nativeSchema, members("key"), values)],
+        data: encodeMembers(nativeSchema, members("data"), values),
+      };
+    };
+    const firstDay = 1_762_560_000;
+    const transactions = [
+      [receipt([storyEvent(1, firstDay + 5), storyEvent(1, firstDay + 5)], "0xa1"), 10, 0],
+      [receipt([storyEvent(1, firstDay + 86_399)], "0xa2"), 10, 1],
+      [receipt([storyEvent(1, firstDay + 86_400)], "0xa3"), 11, 0],
+      [receipt([storyEvent(2, firstDay + 5)], "0xa4"), 11, 1],
+    ] as const;
+    for (const [transaction, block, index] of transactions)
+      await store.appendEvents(native.applyReceipt(fold, transaction, block, index).events, block);
+    expect(await store.gameTransactions("1")).toEqual({
+      total: 3,
+      days: [
+        { day: "2025-11-08", transactions: 2 },
+        { day: "2025-11-09", transactions: 1 },
+      ],
+    });
+    expect(await store.gameTransactions("3")).toEqual({ total: 0, days: [] });
+  } finally {
+    await store.close();
+    await admin.query(`DROP SCHEMA ${namespace} CASCADE`);
+    await admin.end();
+  }
+});

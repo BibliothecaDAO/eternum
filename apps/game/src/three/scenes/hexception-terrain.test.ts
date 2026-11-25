@@ -1,6 +1,18 @@
+import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
+import { BiomeType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { createLocalTerrainLabRequest } from "@/three/debug/local-terrain-lab";
-import { getLocalHexDisk, getLocalTerrainRegions, resolveLocalHexOnMap } from "./hexception-terrain";
+import { TerrainField } from "@/three/terrain/terrain-field";
+import { getTerrainPropPlacementLayer } from "@/three/terrain/terrain-prop-catalog";
+import { prepareTerrainPropInstances } from "@/three/terrain/terrain-props";
+import type { TerrainPageRequest } from "@/three/terrain/terrain-types";
+import {
+  createHexceptionTerrainRequest,
+  getLocalHexDisk,
+  getLocalTerrainRegions,
+  LOCAL_REGION_RADIUS,
+  resolveLocalHexOnMap,
+} from "./hexception-terrain";
 
 describe("shared local terrain", () => {
   it.each([1, 2, 3, 4, 5])("keeps radius %s buildable cells inside a complete terrain surround", (radius) => {
@@ -34,6 +46,34 @@ describe("local terrain coverage", () => {
     for (const { col, row } of getLocalHexDisk({ col: 10, row: 10 }, 16)) {
       expect(keys.has(`${col}:${row}`), `missing local cell ${col}:${row}`).toBe(true);
     }
+  });
+});
+
+describe("local plant density", () => {
+  const treesIn = (request: TerrainPageRequest) =>
+    prepareTerrainPropInstances(request, new TerrainField(request)).filter(
+      ({ archetype }) => getTerrainPropPlacementLayer(archetype) === "canopy",
+    ).length;
+
+  it("spreads a wooded map tile's trees across the local hexes that span its width", () => {
+    const cells = getLocalHexDisk({ col: 0, row: 0 }, 10).map(({ col, row }) => ({
+      biome: BiomeType.Taiga,
+      col,
+      explored: true,
+      occupied: false,
+      previewBiome: BiomeType.Taiga,
+      row,
+    }));
+    const local = createHexceptionTerrainRequest(cells, NEUTRAL_BIOME_CLIMATE, "local-taiga");
+    const asOnTheMap = { ...local, propDensityMultiplier: undefined };
+    const span = 2 * LOCAL_REGION_RADIUS + 1;
+
+    const localTrees = treesIn(local);
+    const mapTrees = treesIn(asOnTheMap);
+
+    expect(localTrees).toBeGreaterThan(0);
+    expect(localTrees * span).toBeGreaterThan(mapTrees * 0.6);
+    expect(localTrees * span).toBeLessThan(mapTrees * 1.4);
   });
 });
 

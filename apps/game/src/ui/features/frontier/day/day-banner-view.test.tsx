@@ -2,11 +2,12 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { orderMeaning } from "@/ui/design-system/icon-meaning";
-import { aspects, orders } from "@bibliothecadao/types";
+import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
+import { questCatalog } from "@bibliothecadao/types";
+import { nativeQuestConstants } from "@bibliothecadao/eternum/game-client";
 
 import { DAY_BANNER_CASES } from "./day-banner-fixtures";
-import { DayBannerView, type DayBannerProps, type DayLayout } from "./day-banner-view";
+import { DayBannerView, type DayBannerProps } from "./day-banner-view";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -21,22 +22,22 @@ afterEach(() => {
   host.remove();
 });
 
-const draw = (props: Omit<DayBannerProps, "layout">, layout: DayLayout = "desktop") =>
-  act(() => root.render(<DayBannerView {...props} layout={layout} />));
+const draw = (props: DayBannerProps) => act(() => root.render(<DayBannerView {...props} />));
 const text = () => host.textContent ?? "";
-const reward = (resource: "Labor" | "Essence") => host.querySelector(`[data-reward="${resource}"]`)?.textContent;
+const reward = (resource: "Labor" | "Essence") =>
+  host.querySelector(`[data-reward="${resource}"]`)?.getAttribute("aria-label");
 const button = (name: string) => [...host.querySelectorAll("button")].find((each) => each.textContent?.includes(name));
 
-describe("the day's banner", () => {
-  it("shows the quest's count, its reward and the claim waiting, with no Collect while it runs", () => {
+describe("the quest card", () => {
+  it("shows the quest's name, objective, count and rewards, with no Collect while it runs", () => {
     draw(DAY_BANNER_CASES["Quest running"]);
     expect(text()).toContain("Camp-breakers");
-    expect(text()).toContain("1 of 2 camps");
-    // a City's quest (the level that doubles a Settlement's count and reward), no labor bonus
-    expect(reward("Labor")).toBe("2,000");
-    expect(reward("Essence")).toBe("3,000");
+    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("Clear 2 camps");
+    expect(host.querySelector("[data-quest-count]")?.textContent).toBe("1/2");
+    expect(host.querySelector("[data-quest-count]")?.getAttribute("aria-label")).toBe("1 of 2 camps");
+    expect(reward("Labor")).toBe("2,000 Labor");
+    expect(reward("Essence")).toBe("3,000 Essence");
     expect(button("Collect")).toBeUndefined();
-    expect(button("1K")).toBeDefined();
   });
 
   it("collects once the quest is done, and shows a check once collected", () => {
@@ -44,53 +45,14 @@ describe("the day's banner", () => {
     draw({ ...DAY_BANNER_CASES["Quest done, Collect waits"], onCollect });
     act(() => button("Collect")!.click());
     expect(onCollect).toHaveBeenCalledTimes(1);
-    draw(DAY_BANNER_CASES["Quest collected, claim made"]);
+    draw(DAY_BANNER_CASES["Quest collected"]);
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(button("Collect")).toBeUndefined();
   });
 
-  it("offers Collect again once the Aspect ended a world bane", () => {
-    draw(DAY_BANNER_CASES["World bane ended, second reward"]);
+  it("offers Collect again when a second reward waits", () => {
+    draw(DAY_BANNER_CASES["Second reward waits"]);
     expect(button("Collect again")).toBeDefined();
-    expect(text()).toContain("Your Aspect ended the bane");
-    expect(text()).toContain("The Lights");
-    expect(text()).toContain("60 of 60 tiles");
-    // a Kingdom's Lights, no bonus: 4,000 labor and 6,000 Essence
-    expect(reward("Labor")).toBe("4,000");
-    expect(reward("Essence")).toBe("6,000");
-  });
-
-  it("heads the panel with the bane and how many members are at it", () => {
-    draw(DAY_BANNER_CASES["World bane day, members at it"]);
-    expect(text()).toContain("Blood Moon");
-    expect(text()).toContain("The Stand");
-    expect(text()).toContain("1 of 3 sites");
-    // a Settlement's Stand with the labor bonus: 150% of 1,000 labor, 1,500 Essence
-    expect(reward("Labor")).toBe("1,500");
-    expect(reward("Essence")).toBe("1,500");
-    expect(text()).toContain("4 of 6 members");
-  });
-
-  it("a rival's bane comes with the Cull, counted in troops, and exactly the sender Aspect's four crests", () => {
-    draw(DAY_BANNER_CASES["Rival bane and Triumph"]);
-    expect(text()).toContain("The Cull");
-    expect(text()).toContain("0 of 6,000 troops");
-    expect(reward("Labor")).toBe("2,000");
-    expect(reward("Essence")).toBe("3,000");
-    const orderIcons = new Set(orders.map(({ orderId }) => orderMeaning(orderId)));
-    const shown = [...host.querySelectorAll("[data-icon]")]
-      .map((each) => each.getAttribute("data-icon")!)
-      .filter((icon) => orderIcons.has(icon as never));
-    const prowess = aspects[0];
-    expect(shown.toSorted()).toEqual(
-      orders
-        .filter((order) => order.aspect === prowess.id)
-        .map(({ orderId }) => orderMeaning(orderId))
-        .toSorted(),
-    );
-    expect(shown).toHaveLength(4);
-    expect(text()).toContain("Your Aspect's hyperstructure does not grow while the bane lasts");
-    expect(text()).toContain("Clear Mist");
   });
 
   it("says it is reading, and offers nothing, while the facts are not settled", () => {
@@ -99,18 +61,9 @@ describe("the day's banner", () => {
     expect(button("Collect")).toBeUndefined();
   });
 
-  it("is lighter on a phone: the news is chips, and a press opens the bane's line", () => {
-    draw(DAY_BANNER_CASES["World bane day, members at it"], "phone");
-    expect(text()).not.toContain("Guarded sites have 150% strength while the bane lasts");
-    expect(text()).toContain("4 of 6");
-    act(() => button("Blood Moon")!.click());
-    expect(text()).toContain("Guarded sites have 150% strength while the bane lasts");
-  });
-
-  it("never offers LORDS", () => {
-    for (const props of Object.values(DAY_BANNER_CASES)) {
-      draw(props);
-      expect(text().toLowerCase()).not.toContain("lords");
-    }
+  it("writes a plain-word objective with its target for every quest in the catalog", () => {
+    const reveals = questCatalog.find((entry) => entry.id === nativeQuestConstants.REVEALS)!;
+    expect(DAY_BANNER_WORDS.objectiveLine(reveals.objective, 15)).toBe("Reveal 15 tiles");
+    for (const entry of questCatalog) expect(DAY_BANNER_WORDS.objectiveLine(entry.objective, 15)).toContain(" 15");
   });
 });

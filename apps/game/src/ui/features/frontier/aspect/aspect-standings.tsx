@@ -4,6 +4,7 @@ import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { HudMeter } from "@/ui/design-system/kit/hud-elements";
 import { ASPECT_PAGE_WORDS as WORDS } from "@/ui/design-system/kit/words";
 import { aspectName, formatExact, type AspectId } from "@bibliothecadao/types";
+import type { AspectTriumph } from "./aspect-page-view";
 
 interface AspectStandingItem {
   aspectId: AspectId;
@@ -13,6 +14,11 @@ interface AspectStandingItem {
   finished?: boolean;
 }
 
+const triumphsLine = (triumphs: readonly AspectTriumph[]): string =>
+  `${WORDS.triumphs}: ${triumphs
+    .map(({ stage, day }) => `${WORDS.triumph[stage]} ${day === null ? WORDS.triumphAt(stage) : WORDS.triumphOn(day)}`)
+    .join(", ")}`;
+
 const raceProgress = (height: number, finishHeight: number): number =>
   finishHeight > 0 ? Math.max(0, Math.min(1, height / finishHeight)) : 0;
 
@@ -20,14 +26,22 @@ export const AspectStandings = ({
   standings,
   finishHeight,
   stages,
+  ownTriumphs,
 }: {
   standings: readonly AspectStandingItem[];
   finishHeight: number;
   stages?: number;
+  ownTriumphs?: readonly AspectTriumph[];
 }) => (
   <div className={stages !== undefined ? "grid grid-cols-2 gap-2 sm:grid-cols-4 lg:gap-3" : "flex flex-col gap-2"}>
     {standings.map((standing) => (
-      <AspectStandingRow key={standing.aspectId} standing={standing} finishHeight={finishHeight} stages={stages} />
+      <AspectStandingRow
+        key={standing.aspectId}
+        standing={standing}
+        finishHeight={finishHeight}
+        stages={stages}
+        triumphs={standing.own ? ownTriumphs : undefined}
+      />
     ))}
   </div>
 );
@@ -36,10 +50,12 @@ const AspectStandingRow = ({
   standing,
   finishHeight,
   stages,
+  triumphs,
 }: {
   standing: AspectStandingItem;
   finishHeight: number;
   stages?: number;
+  triumphs?: readonly AspectTriumph[];
 }) => {
   const name = aspectName(standing.aspectId);
   const heightText = WORDS.height(standing.height, finishHeight);
@@ -57,26 +73,36 @@ const AspectStandingRow = ({
       className="race-row"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="flex min-w-0 items-center justify-between gap-2">
-          <span className="flex min-w-0 items-center gap-1.5">
+        <div className="race-row__head flex min-w-0 items-center justify-between gap-2">
+          <span className="race-row__label flex min-w-0 items-center gap-1.5">
             <AspectMark aspect={standing.aspectId} size={22} decorative />
-            <span
-              className={standing.own ? "truncate text-hud-strong text-hud-ink" : "truncate text-hud-body text-hud-ink"}
-            >
-              {name}
-            </span>
+            <span className="race-row__name truncate text-hud-body">{name}</span>
           </span>
           <span className="shrink-0 text-hud-strong tabular-nums text-hud-ink">{formatExact(standing.height)}</span>
         </div>
-        <HudMeter label={stageText ? heightText : name} share={raceProgress(standing.height, finishHeight)} />
-        {stageText && (
-          <div className="flex flex-wrap items-center justify-between gap-1">
-            <span className="min-w-0 text-hud-label text-hud-muted">
-              {stageText} · {heightText}
-            </span>
-          </div>
+        {stageText && stages !== undefined ? (
+          <StageSegments
+            stages={stages}
+            built={standing.finished ? stages : Math.max(0, (standing.stage ?? 1) - 1)}
+            label={[stageText, heightText, triumphs && triumphsLine(triumphs)].filter(Boolean).join(" · ")}
+          />
+        ) : (
+          <HudMeter label={name} share={raceProgress(standing.height, finishHeight)} />
         )}
       </div>
     </div>
   );
 };
+
+const StageSegments = ({ stages, built, label }: { stages: number; built: number; label: string }) => (
+  <span role="img" aria-label={label} className="race-steps">
+    {Array.from({ length: stages }, (_, index) => (
+      <span
+        key={index}
+        className="race-step"
+        data-built={index < built || undefined}
+        data-current={index === built || undefined}
+      />
+    ))}
+  </span>
+);

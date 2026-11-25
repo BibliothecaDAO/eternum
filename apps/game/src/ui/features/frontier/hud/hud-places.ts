@@ -1,15 +1,16 @@
 import type { IconMeaning } from "@/ui/design-system/icon";
+
+import { usePartShown } from "../opening/opening-context";
 import {
   CHAT,
   EVENTS_WORDS,
-  RELIC_WORDS,
   RESEARCH,
   SEASON,
   unreadChatMessages,
   unreadFeedEvents,
 } from "@/ui/design-system/kit/words";
 
-export type HudPlaceKey = "season" | "research" | "feed" | "chat" | "relics";
+type HudPlaceKey = "research" | "season" | "feed" | "chat";
 
 interface HudPlaceItem {
   key: HudPlaceKey;
@@ -22,40 +23,28 @@ interface HudPlaceItem {
 }
 
 interface HudPlacesState {
-  aspectsOpen: boolean;
-  researchOpen: boolean;
-  relicsOpen: boolean;
   researchReady?: boolean;
   feedUnread: number;
   chatUnread: number;
   chatOpen?: boolean;
-  relics?: number;
-  hasRealm?: boolean;
 }
 
 export const HUD_PLACES = [
-  { key: "season", label: SEASON, icon: "victory" },
   { key: "research", label: RESEARCH, icon: "research" },
+  { key: "season", label: SEASON, icon: "victory" },
   { key: "feed", label: EVENTS_WORDS.feed, icon: "chronicles" },
-  { key: "relics", label: RELIC_WORDS.title, icon: "relics" },
   { key: "chat", label: CHAT, icon: "chat" },
 ] as const satisfies readonly { key: HudPlaceKey; label: string; icon: IconMeaning }[];
 
-export const resolveHudPlaces = ({
-  aspectsOpen,
-  researchOpen,
-  relicsOpen,
-  researchReady,
-  feedUnread,
-  chatUnread,
-  chatOpen = false,
-  relics = 0,
-  hasRealm = true,
-}: HudPlacesState): HudPlaceItem[] =>
+export const useHudPlaces = (state: HudPlacesState): HudPlaceItem[] =>
+  resolveHudPlaces(state, usePartShown("research"));
+
+const resolveHudPlaces = (
+  { researchReady, feedUnread, chatUnread, chatOpen = false }: HudPlacesState,
+  researchOpen: boolean,
+): HudPlaceItem[] =>
   HUD_PLACES.flatMap((place): HudPlaceItem[] => {
     switch (place.key) {
-      case "season":
-        return aspectsOpen ? [{ ...place, ariaLabel: place.label }] : [];
       case "research":
         return researchReady !== undefined && researchOpen
           ? [
@@ -67,6 +56,8 @@ export const resolveHudPlaces = ({
               },
             ]
           : [];
+      case "season":
+        return [{ ...place, ariaLabel: place.label }];
       case "feed":
         return [
           {
@@ -76,16 +67,6 @@ export const resolveHudPlaces = ({
             countLabel: feedUnread > 0 ? unreadFeedEvents(feedUnread) : undefined,
           },
         ];
-      case "relics":
-        return hasRealm && relicsOpen
-          ? [
-              {
-                ...place,
-                ariaLabel: place.label,
-                count: relics > 0 ? relics : undefined,
-              },
-            ]
-          : [];
       case "chat":
         return [
           {
@@ -97,6 +78,3 @@ export const resolveHudPlaces = ({
         ];
     }
   });
-
-export const resolveMenuPlaces = (state: HudPlacesState): HudPlaceItem[] =>
-  resolveHudPlaces(state).filter((place) => place.key !== "season");

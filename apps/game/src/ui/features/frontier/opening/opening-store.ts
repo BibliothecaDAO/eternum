@@ -1,21 +1,18 @@
 import { identityClient } from "@/hooks/context/identity-session";
+import { OPENING_MOMENT_KEY_PATTERN } from "@realms-world/identity";
 import { create } from "zustand";
+import type { OpeningMoment } from "./opening";
+import { TUTORIAL_SKIPPED } from "./opening-state";
 
-/**
- * The signed-in account's opening progress, as its identity service keeps it: the moments the interface has opened to and
- * the lines it has been told. Every change is added here first and kept as unsent until the service has acknowledged
- * exactly that change; one request is in flight at a time, so a late answer can never clear what a later change added, and
- * a failed send stays unsent and is sent again. A device keeps the account's sets and its unsent changes, so a return
- * opens as the last session left it while the service is read.
- */
 type Sets = { reached: ReadonlySet<string>; seen: ReadonlySet<string> };
 
 interface OpeningStore extends Sets {
   owner: string | null;
-  /** "ready" once the service has answered for this owner; "error" after a failed read or send, until one succeeds. */
+  loaded: boolean;
   status: "signed-out" | "loading" | "ready" | "error";
   unsent: Sets;
-  /** This device kept the account's progress from an earlier session, so what it shows is the account's own. */
+  showing: OpeningMoment | null;
+  confirmed: OpeningMoment | null;
   onDevice: boolean;
 }
 
@@ -23,18 +20,39 @@ const none = (): Sets => ({ reached: new Set(), seen: new Set() });
 
 export const useOpeningStore = create<OpeningStore>(() => ({
   owner: null,
+  loaded: false,
   status: "signed-out",
   ...none(),
   unsent: none(),
+  showing: null,
+  confirmed: null,
   onDevice: false,
 }));
 
 export const openingCacheKey = (owner: string) => `eternum:opening:${owner}`;
 
-/** What this device kept for the account: its sets and its unsent changes; empty where there is none or it cannot be read. */
-const kept = (owner: string): { sets: Sets; unsent: Sets; onDevice: boolean } => {
+const storageOwnerOf = (owner: string | null) => owner || "guest";
+
+const LEGACY_TUTORIAL_SKIPPED = "tutorial:skipped";
+
+const normalizeKey = (key: string): string | null => {
+  const mapped = key === LEGACY_TUTORIAL_SKIPPED ? TUTORIAL_SKIPPED : key;
+  return OPENING_MOMENT_KEY_PATTERN.test(mapped) ? mapped : null;
+};
+
+const sanitizeKeys = (items: Iterable<string>): ReadonlySet<string> => {
+  const cleaned = new Set<string>();
+  for (const item of items) {
+    if (typeof item !== "string") continue;
+    const key = normalizeKey(item);
+    if (key !== null) cleaned.add(key);
+  }
+  return cleaned;
+};
+
+const kept = (owner: string | null): { sets: Sets; unsent: Sets; onDevice: boolean } => {
   try {
-    const stored = JSON.parse(localStorage.getItem(openingCacheKey(owner)) ?? "null") as {
+    const stored = JSON.parse(localStorage.getItem(openingCacheKey(storageOwnerOf(owner))) ?? "null") as {
       reached: string[];
       seen: string[];
       unsent: { reached: string[]; seen: string[] };
@@ -42,10 +60,9 @@ const kept = (owner: string): { sets: Sets; unsent: Sets; onDevice: boolean } =>
     } | null;
     if (!stored) return { sets: none(), unsent: none(), onDevice: false };
     return {
-      // Only a cache the service once answered for is the account's own: one made of this device's additions alone is not.
       onDevice: stored.complete === true,
-      sets: { reached: new Set(stored.reached), seen: new Set(stored.seen) },
-      unsent: { reached: new Set(stored.unsent.reached), seen: new Set(stored.unsent.seen) },
+      sets: { reached: sanitizeKeys(stored.reached ?? []), seen: sanitizeKeys(stored.seen ?? []) },
+      unsent: { reached: sanitizeKeys(stored.unsent?.reached ?? []), seen: sanitizeKeys(stored.unsent?.seen ?? []) },
     };
   } catch {
     return { sets: none(), unsent: none(), onDevice: false };
@@ -54,10 +71,9 @@ const kept = (owner: string): { sets: Sets; unsent: Sets; onDevice: boolean } =>
 
 const keep = (): void => {
   const { owner, reached, seen, unsent, status, onDevice } = useOpeningStore.getState();
-  if (!owner) return;
   try {
     localStorage.setItem(
-      openingCacheKey(owner),
+      openingCacheKey(storageOwnerOf(owner)),
       JSON.stringify({
         reached: [...reached],
         seen: [...seen],
@@ -65,9 +81,7 @@ const keep = (): void => {
         complete: status === "ready" || onDevice,
       }),
     );
-  } catch {
-    // A device that cannot keep it still plays: the account's service holds it.
-  }
+  } catch {}
 };
 
 const union = (left: ReadonlySet<string>, right: Iterable<string>): ReadonlySet<string> => new Set([...left, ...right]);
@@ -76,56 +90,109 @@ const without = (left: ReadonlySet<string>, right: Iterable<string>): ReadonlySe
   return new Set([...left].filter((moment) => !removed.has(moment)));
 };
 
-/** Starts on the account signed in: what this device kept shown at once, the service read, and anything unsent sent. */
-export const loadOpening = (owner: string | null): Promise<void> => {
-  if (useOpeningStore.getState().owner === owner) return Promise.resolve();
+export const loadOpening = (rawOwner: string | null): Promise<void> => {
+  const owner = rawOwner || null;
+  const current = useOpeningStore.getState();
+  if (current.owner === owner && current.loaded) return Promise.resolve();
+  const device = kept(owner);
   if (!owner) {
-    useOpeningStore.setState({ owner, status: "signed-out", ...none(), unsent: none(), onDevice: false });
+    useOpeningStore.setState({
+      owner,
+      loaded: true,
+      status: "signed-out",
+      ...device.sets,
+      unsent: none(),
+      showing: null,
+      confirmed: null,
+      onDevice: false,
+    });
     return Promise.resolve();
   }
-  const device = kept(owner);
   useOpeningStore.setState({
     owner,
+    loaded: true,
     status: "loading",
     ...device.sets,
     unsent: device.unsent,
+    showing: null,
+    confirmed: null,
     onDevice: device.onDevice,
   });
   return flush();
 };
 
-/** Records moments the interface has reached, once each. */
 export const reachMoments = (moments: readonly string[]): Promise<void> => record({ reached: moments, seen: [] });
 
-/** Records that the account has been told a moment's line. */
-export const seeLine = (moment: string): Promise<void> => record({ reached: [], seen: [moment] });
+export const seeLine = (moment: string): Promise<void> => {
+  const state = useOpeningStore.getState();
+  if (state.showing === moment || state.confirmed === moment) {
+    useOpeningStore.setState({
+      showing: state.showing === moment ? null : state.showing,
+      confirmed: state.confirmed === moment ? null : state.confirmed,
+    });
+  }
+  return record({ reached: [], seen: [moment] });
+};
+
+export const commitTutorialStep = (step: {
+  completed: readonly string[];
+  showing: OpeningMoment | null;
+  confirmed: OpeningMoment | null;
+}): Promise<void> => {
+  const state = useOpeningStore.getState();
+  const freshSeen = [...sanitizeKeys(step.completed)].filter((moment) => !state.seen.has(moment));
+  const viewChanged = state.showing !== step.showing || state.confirmed !== step.confirmed;
+  if (freshSeen.length === 0 && !viewChanged) return Promise.resolve();
+  useOpeningStore.setState({
+    seen: freshSeen.length > 0 ? union(state.seen, freshSeen) : state.seen,
+    unsent:
+      state.owner && freshSeen.length > 0
+        ? { reached: state.unsent.reached, seen: union(state.unsent.seen, freshSeen) }
+        : state.unsent,
+    showing: step.showing,
+    confirmed: step.confirmed,
+  });
+  if (freshSeen.length > 0) keep();
+  return state.owner && freshSeen.length > 0 ? flush() : Promise.resolve();
+};
+
+export const clearConfirmedTutorial = (): void => {
+  if (useOpeningStore.getState().confirmed !== null) useOpeningStore.setState({ confirmed: null });
+};
+
+export const skipTutorial = (): Promise<void> => {
+  useOpeningStore.setState({ showing: null, confirmed: null });
+  return record({ reached: [], seen: [TUTORIAL_SKIPPED] });
+};
 
 const record = (additions: { reached: readonly string[]; seen: readonly string[] }): Promise<void> => {
   const state = useOpeningStore.getState();
+  const cleanReached = [...sanitizeKeys(additions.reached)];
+  const cleanSeen = [...sanitizeKeys(additions.seen)];
   const fresh = {
-    reached: additions.reached.filter((moment) => !state.reached.has(moment)),
-    seen: additions.seen.filter((moment) => !state.seen.has(moment)),
+    reached: cleanReached.filter((moment) => !state.reached.has(moment)),
+    seen: cleanSeen.filter((moment) => !state.seen.has(moment)),
   };
   if (fresh.reached.length === 0 && fresh.seen.length === 0) return Promise.resolve();
   useOpeningStore.setState({
     reached: union(state.reached, fresh.reached),
     seen: union(state.seen, fresh.seen),
-    unsent: { reached: union(state.unsent.reached, fresh.reached), seen: union(state.unsent.seen, fresh.seen) },
+    unsent: state.owner
+      ? { reached: union(state.unsent.reached, fresh.reached), seen: union(state.unsent.seen, fresh.seen) }
+      : none(),
   });
   keep();
-  return state.owner ? flush() : Promise.resolve();
+  return state.owner && (fresh.reached.length > 0 || fresh.seen.length > 0) ? flush() : Promise.resolve();
 };
 
 let sending: Promise<void> | null = null;
 let again = false;
 
-/** Sends what is unsent, one request at a time, until nothing is: the first call also reads the account's sets. */
 export const flush = (): Promise<void> => {
   if (sending) {
     again = true;
     return sending;
   }
-  // Nothing to send to: no request is begun, so none is left standing for the account that signs in next.
   if (!useOpeningStore.getState().owner) return Promise.resolve();
   sending = (async () => {
     try {
@@ -135,7 +202,6 @@ export const flush = (): Promise<void> => {
         if (!owner) return;
         const sent = await sendOnce(owner);
         if (sent === "failed") return;
-        // The account changed while it was in flight: the new account's turn is next.
         if (sent === "stale") again = true;
       } while (again || hasUnsent());
     } finally {
@@ -150,10 +216,13 @@ const hasUnsent = (): boolean => {
   return unsent.reached.size > 0 || unsent.seen.size > 0;
 };
 
-/** One request carrying a snapshot of the unsent changes; only that snapshot is acknowledged by its answer. */
 const sendOnce = async (owner: string): Promise<"sent" | "failed" | "stale"> => {
   const store = useOpeningStore;
-  const snapshot = { reached: [...store.getState().unsent.reached], seen: [...store.getState().unsent.seen] };
+  const currentUnsent = store.getState().unsent;
+  const snapshot = {
+    reached: [...sanitizeKeys(currentUnsent.reached)],
+    seen: [...sanitizeKeys(currentUnsent.seen)],
+  };
   try {
     const held = await identityClient.addOpeningProgress(snapshot);
     const state = store.getState();

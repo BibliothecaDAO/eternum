@@ -1,7 +1,9 @@
 import type { OpeningRules } from "@/ui/design-system/kit/words";
 
 export const OPENING_RULES: OpeningRules = {
-  knightsAnHour: 100,
+  ownAspect: 1,
+  knightsPerSecond: 100 / 3_600,
+  troopsAtHome: 2_000,
   deepTickSeconds: 120,
   deepLossPerTick: 200,
   oathPassStamina: 20,
@@ -11,4 +13,5 @@ export const OPENING_RULES: OpeningRules = {
   relicMinutesPerTier: 30,
   scoutExploreStamina: 10,
   exploreStamina: 20,
+  dayLeftSeconds: 1_800,
 };

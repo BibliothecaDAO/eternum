@@ -45,13 +45,13 @@ const draw = async (client = new QueryClient({ defaultOptions: { queries: { retr
   );
   await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
 };
-const figures = () =>
-  [...host.querySelectorAll(".app-figure")].map((figure) => [
-    figure.querySelector(".app-figure__value")?.textContent,
-    figure.querySelector(".app-figure__label")?.textContent,
+const funnelSteps = () =>
+  [...host.querySelectorAll("[data-funnel-step]")].map((step) => [
+    step.querySelector(".referrals-funnel__value")?.textContent,
+    step.querySelector(".referrals-funnel__label")?.textContent,
   ]);
 
-it("counts each step a friend took through the player's shared days", async () => {
+it("counts each step a friend took through the player's shared days in one inline funnel", async () => {
   service.shareTally.mockResolvedValue({
     links: 6,
     posted: 5,
@@ -63,37 +63,42 @@ it("counts each step a friend took through the player's shared days", async () =
   });
   await draw();
   expect(host.querySelector("section")?.getAttribute("aria-label")).toBe("Your shared days");
-  expect(figures()).toEqual([
-    ["5", "Days posted"],
-    ["1.2K", "Opened by friends"],
-    ["31", "Friends who joined"],
-    ["12", "Reached 100 Glory"],
-    ["0/10", "Friends paid"],
+  expect(host.querySelectorAll(".app-figure")).toHaveLength(0);
+  expect(host.querySelector("[data-referrals-empty]")).toBeNull();
+  expect(funnelSteps()).toEqual([
+    ["6", "Shared"],
+    ["1.2K", "Opened"],
+    ["31", "Joined"],
+    ["12", "100 Glory"],
     ["0", "Fragments earned"],
   ]);
 });
 
-it("counts the friends an Aspect link brought who were paid, the Fragments they earned, and the rule that pays them", async () => {
+it("highlights earned Fragments in the funnel alongside the reward rule", async () => {
   service.shareTally.mockResolvedValue({
     links: 1,
     posted: 0,
     visits: 40,
-    joined: 9,
-    activated: 8,
-    friendsPaid: 8,
-    fragmentsEarned: 800,
+    joined: 16,
+    activated: 15,
+    friendsPaid: 14,
+    fragmentsEarned: 1_400,
   });
   await draw();
-  expect(figures().slice(-2)).toEqual([
-    ["8/10", "Friends paid"],
-    ["800", "Fragments earned"],
+  expect(funnelSteps()).toEqual([
+    ["1", "Shared"],
+    ["40", "Opened"],
+    ["16", "Joined"],
+    ["15", "100 Glory"],
+    ["1.4K", "Fragments earned"],
   ]);
-  expect(host.textContent).toContain(
-    "A friend who joins by your Aspect link and reaches 100 Glory pays you 100 Fragments. Your 10th adds 1,000.",
+  expect(host.querySelector('[data-funnel-step="fragmentsEarned"]')?.hasAttribute("data-gold")).toBe(true);
+  expect(host.querySelector("[data-referrals-reward]")?.textContent).toBe(
+    "+100 Fragments for each friend who reaches 100 Glory",
   );
 });
 
-it("stays visible with 0 shares and a 10-slot progress track, and hides only when identity fails", async () => {
+it("shows a plain-word empty state instead of zero tiles when nothing has been shared, and hides when identity fails", async () => {
   service.shareTally.mockResolvedValue({
     links: 0,
     posted: 0,
@@ -105,8 +110,10 @@ it("stays visible with 0 shares and a 10-slot progress track, and hides only whe
   });
   await draw();
   expect(host.querySelector("[data-referrals-panel]")).not.toBeNull();
-  expect(host.querySelectorAll(".referrals-slot")).toHaveLength(10);
-  expect(host.textContent).toContain("0 of 10 friends");
+  expect(host.querySelector("[data-referrals-reward]")).not.toBeNull();
+  expect(host.querySelector("[data-referrals-empty]")).not.toBeNull();
+  expect(host.querySelector("[data-referrals-funnel]")).toBeNull();
+  expect(host.querySelectorAll(".app-figure")).toHaveLength(0);
   service.shareTally.mockRejectedValue(new Error("identity unavailable"));
   await draw();
   expect(host.textContent).toBe("");
@@ -124,7 +131,7 @@ it("never shows the account before's counts to the next account on the same app,
     fragmentsEarned: 0,
   });
   await draw(client);
-  expect(figures()).toHaveLength(6);
+  expect(funnelSteps()).toHaveLength(5);
 
   // A signs out, then B signs in; B's read is slow, then refused.
   identity.session = null;

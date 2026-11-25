@@ -23,6 +23,14 @@ describe("identity client", () => {
       "another device",
     );
   });
+  it("gives every read a deadline, so a read that never answers fails and can be tried again", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async () => Response.json({ wallet: null }));
+    const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
+    await client.readDefaultWallet();
+    expect(fetch.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
+    await client.saveNotificationPreferences({ owner: "0x1", level: "all", revision: 1 }).catch(() => undefined);
+    expect(fetch.mock.calls[1]?.[1]?.signal).toBeUndefined();
+  });
   it("signs the server nonce and returns the resulting session", async () => {
     const session = {
       session: { id: "session-1", expiresAt: "2026-08-26T00:00:00.000Z", userId: "0x123" },
@@ -135,6 +143,24 @@ it("bounds a stalled push request with an abort signal", async () => {
   } finally {
     timeout.mockRestore();
   }
+});
+
+it("reads an invite identity cannot make for the account as none, and still throws any other refusal", async () => {
+  const invite = { code: "INVT2345", aspect: 2, chainId: "0x1", gameId: 1 };
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(Response.json({ error: "no_aspect" }, { status: 409 }))
+    .mockResolvedValueOnce(Response.json(invite))
+    .mockResolvedValueOnce(Response.json({ error: "aspect_unavailable" }, { status: 503 }));
+  const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
+
+  await expect(client.createInvite()).resolves.toBeNull();
+  await expect(client.createInvite()).resolves.toEqual(invite);
+  await expect(client.createInvite()).rejects.toMatchObject({ status: 503, code: "aspect_unavailable" });
+  expect(fetch).toHaveBeenCalledWith(
+    "https://realms.test/api/shares/invite",
+    expect.objectContaining({ method: "POST" }),
+  );
 });
 
 it("returns the service's code expiry to the device", async () => {

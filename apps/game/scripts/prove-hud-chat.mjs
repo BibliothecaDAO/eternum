@@ -50,8 +50,6 @@
  *   to 1440×900, and opened there, draws one chat and no pane, the bar's Chat the place lit; on a Blitz lobby, at both sizes, the lobby's chat on its page has Lobby first, then Global and Messages,
  *   the Lobby room read-only for a wallet not registered (no field, who writes there said) and Global written in, and
  *   on a desktop no bar Chat over it.
- * - the Frontier phone's Chat page (/lab/kit/hud/chat, 390×844): the page fills the band from the strip to the place
- *   bar, the map band gone behind it, its field above the bar.
  *
  * - a phone's on-screen keyboard (390×844, a 336 px keyboard staged by lib/stage-keyboard.js, in a session of its own):
  *   on the app's Chat page (/lab/app/home/chat), Frontier's chat page (/lab/kit/unified/frontier, its place bar's Chat)
@@ -390,7 +388,7 @@ const LAST = `(() => {
     ? {
         // The run's head names its sender: a button for another player (their card), plain words for the player.
         sender: last.querySelector("p")?.firstElementChild?.textContent ?? null,
-        words: [...last.querySelectorAll("p")].at(-1)?.textContent ?? null,
+        words: last.querySelector("[data-message-words]")?.textContent ?? null,
         mentions: [...last.querySelectorAll("[data-mention]")].map((m) => m.textContent),
       }
     : null;
@@ -521,7 +519,7 @@ const PLACES = `(() => {
     chips: [...(pane?.querySelectorAll("li[data-message-id] [data-place]") ?? [])].map(chip),
     share: share ? { enabled: !share.disabled } : null,
     picked: picked ? chip(picked) : null,
-    last: last ? { words: [...last.querySelectorAll("p")].at(-1)?.textContent ?? null, chip: lastChip ? chip(lastChip) : null } : null,
+    last: last ? { words: last.querySelector("[data-message-words]")?.textContent ?? null, chip: lastChip ? chip(lastChip) : null } : null,
   };
 })()`;
 
@@ -969,11 +967,10 @@ const FRONTIER_PAGE = `(() => {
   const page = hud?.querySelector("[data-page]");
   return {
     viewport: innerHeight,
-    top: rect(hud?.querySelector("[data-hud-top]")),
     page: rect(page),
-    chat: rect(hud?.querySelector("[data-page-fills]")),
     map: rect(hud?.querySelector("[data-map-band]")),
-    field: rect(hud?.querySelector('[data-page-fills] input[aria-label="Message"]')),
+    tabs: [...(page?.querySelectorAll('.ui-frame__head [role="tab"]') ?? [])].map((tab) => tab.textContent),
+    field: rect(page?.querySelector('input[aria-label^="Message"]')),
     bar: rect(page?.nextElementSibling),
   };
 })()`;
@@ -982,15 +979,11 @@ const frontierPageChecks = (m) => [
     check: "the page stands on the place bar",
     ok: m.page !== null && m.bar !== null && m.bar.top - m.page.bottom <= 8 && m.page.bottom <= m.bar.top,
   },
+  { check: "the map stays in view above it", ok: m.map !== null && m.map.height > 0 },
   {
-    check: "it reaches up to the strip: within 14 px of its foot",
-    ok: m.top !== null && m.page !== null && m.page.top >= m.top.bottom && m.page.top - m.top.bottom <= 14,
+    check: "its head holds the room tabs, Global then Messages",
+    ok: JSON.stringify(m.tabs.map((tab) => tab.replace(/\d+$/, ""))) === JSON.stringify(["Global", "Messages"]),
   },
-  {
-    check: "the chat fills the page",
-    ok: m.chat !== null && Math.abs(m.chat.top - m.page.top) <= 1 && Math.abs(m.chat.bottom - m.page.bottom) <= 1,
-  },
-  { check: "the map band is gone behind it", ok: m.map !== null && m.map.height === 0 },
   {
     check: "its field stands above the place bar",
     ok: m.field !== null && m.field.bottom <= m.bar.top && m.bar.bottom <= m.viewport + 1,
@@ -1323,7 +1316,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
           b,
           `${baseUrl}/lab/kit/hud/chat?capture=1`,
           ["390", "844"],
-          `document.querySelector("[data-page-fills]") !== null`,
+          `document.querySelector('[data-page] input[aria-label^="Message"]') !== null`,
         );
         if (frontier.ready) {
           frontier.measures = b.evaluate(FRONTIER_PAGE);

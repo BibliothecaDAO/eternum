@@ -38,13 +38,11 @@ export const LoadingStage = ({
   view,
   realm = null,
   game,
-  showTip = false,
   children,
 }: {
   view?: DoorwayView;
   realm?: DoorwayRealm | null;
   game?: DoorwayGame;
-  showTip?: boolean;
   children?: ReactNode;
 }) => {
   const layout = useLayout();
@@ -81,7 +79,7 @@ export const LoadingStage = ({
       </main>
       <footer data-band={view ? "foot" : undefined} className="doorway-stage__foot">
         {view ? (
-          <EntryProgress view={view} showTip={showTip} />
+          <EntryProgress view={view} />
         ) : sharedPercent > 0 ? (
           <div
             role="progressbar"

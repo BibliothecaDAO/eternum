@@ -86,7 +86,7 @@ describe("the castle", () => {
       ["Labor storage", "15K", "→", "50K"],
       ["Max army size", "9,000", "→", "25K"],
     ]);
-    expect(host.querySelector(".ui-cost")?.textContent).toBe("15K Labor");
+    expect(host.querySelector('.ui-window__foot .ui-price [role="img"]')?.getAttribute("aria-label")).toBe("15K Labor");
     expect(
       buttons()
         .find((button) => button.textContent === "Upgrade")!
@@ -118,11 +118,11 @@ describe("the castle", () => {
         />,
       ),
     );
-    const upgrade = buttons().find((button) => button.textContent === "Upgrade")!;
+    const upgrade = buttons().find((button) => button.getAttribute("aria-label") === "Upgrade")!;
     expect(upgrade.disabled).toBe(true);
     // The foot is the line and the verb: no price line repeating the need, no Explore (owner, 27 October).
     const foot = upgrade.closest(".ui-window__foot")!;
-    expect(foot.textContent).toBe("Needs 4,000 Labor, have 2,011 · in 19h 44mUpgrade");
+    expect(foot.textContent).toBe("Needs 4,000 Labor, have 2,011 · in 19h 44m");
     expect(foot.querySelectorAll("button")).toHaveLength(1);
     act(() => upgrade.click());
     expect(onUpgrade).not.toHaveBeenCalled();

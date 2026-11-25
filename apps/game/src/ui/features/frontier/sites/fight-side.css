@@ -1,96 +1,88 @@
 .fight-arena {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: stretch;
+  display: flex;
+  align-items: center;
   gap: theme(spacing.2);
 }
 .fight-vs {
+  color: rgb(var(--hud-gold));
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-display);
+  line-height: 1;
+}
+.fight-side {
   display: flex;
+  min-width: 0;
+  flex: 1;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: theme(spacing.1);
+  gap: 2px;
+  border: 1px solid;
+  border-radius: var(--hud-radius-panel);
+  background: var(--hud-well);
+  padding: theme(spacing.2) theme(spacing.1);
   text-align: center;
 }
-.fight-vs__word {
-  font-family: var(--hud-font-display);
-  color: rgb(var(--hud-gold));
+.fight-side--ours {
+  border-color: color-mix(in srgb, var(--hud-good) 50%, transparent);
+  color: var(--hud-good);
+}
+.fight-side--theirs {
+  border-color: color-mix(in srgb, var(--hud-bad) 50%, transparent);
+  color: var(--hud-bad);
+}
+.fight-side__portrait {
+  display: inline-flex;
+  width: 50px;
+  height: 50px;
+  flex: none;
+  overflow: hidden;
+  border: 2px solid currentColor;
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-surface-to);
+}
+.fight-side--gone .fight-side__portrait {
+  filter: grayscale(1) brightness(0.6);
+}
+.fight-side__nums {
+  max-width: 100%;
+  color: rgb(var(--hud-ink));
   font-size: var(--hud-text-title);
-  line-height: 1;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fight-side__arrow {
+  color: var(--hud-muted);
+}
+.fight-side__taken {
+  font-size: var(--hud-text-label);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fight-side__taken[data-tone="bad"] {
+  color: var(--hud-bad);
+}
+.fight-side__taken[data-tone="good"] {
+  color: var(--hud-good);
 }
 .fight-spoils {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: theme(spacing.2);
-  border: 1px solid var(--hud-line);
-  border-radius: var(--hud-radius-control);
-  background: var(--hud-well);
-  padding: theme(spacing.2) theme(spacing.3);
+  border-top: 1px solid var(--hud-divider);
+  padding: theme(spacing.2) 2px 0;
 }
-.fight-side--ours {
-  border-color: color-mix(in srgb, var(--hud-good) 45%, transparent);
-}
-.fight-side--theirs {
-  border-color: color-mix(in srgb, var(--hud-bad) 45%, transparent);
-}
-.fight-side__body {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  align-items: center;
-  gap: theme(spacing[1.5]);
-  padding: theme(spacing[2.5]) theme(spacing.2);
-  text-align: center;
-}
-.fight-side__portrait {
-  display: inline-flex;
-  width: 64px;
-  height: 64px;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border-radius: var(--hud-radius-control);
-}
-@media (min-width: 1024px) {
-  .fight-side__portrait {
-    width: 96px;
-    height: 96px;
-  }
-}
-.fight-side__name {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: var(--hud-font-display);
+.fight-spoils > [data-fight-outcome] {
+  margin-right: auto;
   font-size: var(--hud-text-strong);
-  line-height: var(--hud-leading-strong);
-}
-.fight-side__role {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: theme(spacing.1);
-  color: var(--hud-muted);
-  font-size: var(--hud-text-badge);
-  line-height: var(--hud-leading-badge);
-}
-.fight-side__nums {
-  display: flex;
-  min-width: 0;
-  align-items: baseline;
-  justify-content: center;
-  gap: theme(spacing.1);
 }
 .fight-attack-cost {
   display: inline-flex;
   align-items: center;
-  gap: theme(spacing[0.5]);
+  gap: 2px;
   margin-left: theme(spacing.1);
+  font-family: var(--hud-font);
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }

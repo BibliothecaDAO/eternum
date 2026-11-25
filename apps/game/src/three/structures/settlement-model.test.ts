@@ -1,4 +1,4 @@
-import { FRONTIER_BEAST_PATHS, FRONTIER_BEASTS } from "./frontier-beast";
+import { FRONTIER_BEAST_PATHS, FRONTIER_BEASTS, SUPPLY_POST_MODEL_PATH } from "./frontier-beast";
 import {
   BoxGeometry,
   Group,
@@ -21,8 +21,8 @@ import {
   CLEARED_SITE_MODEL_PATH,
   REALM_MODEL_PATHS,
 } from "../constants/scene-constants";
-import { resolveRealmBannerRow } from "./settlement-appearance";
-import { StructureType, RealmLevelNames, orders } from "@bibliothecadao/types";
+import { resolveRealmBannerRow, resolveVillageAspectRow } from "./settlement-appearance";
+import { StructureType, RealmLevelNames, aspects, orders } from "@bibliothecadao/types";
 
 vi.mock("../utils/contact-shadow", () => ({
   getContactShadowResources: () => ({ geometry: new PlaneGeometry(1, 1), material: new MeshBasicMaterial() }),
@@ -68,6 +68,7 @@ describe("gameplay villages", () => {
     expect(getStructureModelPaths()[StructureType.Camp]).toEqual([
       CAMP_MODEL_PATH,
       ...FRONTIER_BEAST_PATHS,
+      SUPPLY_POST_MODEL_PATH,
       CLEARED_SITE_MODEL_PATH,
     ]);
     expect(getStructureModelPaths()[StructureType.Beasts]).toEqual([
@@ -110,6 +111,19 @@ describe("gameplay villages", () => {
     expect(disposeFlag).toHaveBeenCalledOnce();
     expect(disposeTrim).toHaveBeenCalledOnce();
     expect(disposeSource).toHaveBeenCalledOnce();
+  });
+
+  it("tints cleared site standards with each clearing Aspect row independently", () => {
+    const { model } = fixture("village");
+    model.setCount(aspects.length);
+    for (const [index, aspect] of aspects.entries()) {
+      model.setAspectAt(index, aspect.id);
+    }
+    const [, flag] = model.instancedMeshes;
+    expect(Array.from(flag.geometry.getAttribute("settlementHeraldry").array.slice(0, aspects.length))).toEqual(
+      aspects.map((aspect) => resolveVillageAspectRow(aspect.id)),
+    );
+    model.dispose();
   });
 });
 

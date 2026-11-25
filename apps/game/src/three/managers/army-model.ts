@@ -57,6 +57,7 @@ import {
 import { installArmyModelDebugHooks } from "./army-model-debug-hooks";
 import { resolveRenderableBaseModel } from "./army-model-render-policy";
 import type { PipelineCompiler } from "../pipeline-compiler";
+import { warnIfModelLoadStalls } from "../utils/model-load-watch";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
@@ -224,7 +225,7 @@ export class ArmyModel {
 
     const assetPath = buildArmyModelAssetPath(modelType);
 
-    pending = new Promise<ModelData>((resolve, reject) => {
+    const loaded = new Promise<ModelData>((resolve, reject) => {
       gltfLoader.load(
         assetPath,
         async (gltf) => {
@@ -247,6 +248,7 @@ export class ArmyModel {
       this.pendingModelLoads.delete(modelType);
     });
 
+    pending = warnIfModelLoadStalls(loaded, assetPath);
     this.pendingModelLoads.set(modelType, pending);
     return pending;
   }

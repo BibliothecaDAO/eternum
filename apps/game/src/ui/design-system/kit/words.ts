@@ -318,8 +318,8 @@
  * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
  * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
  */
-import { APP_HOST } from "@/config/app-address";
-import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
+import { APP_HOST } from "../../../config/app-address";
+import type { ResolvedGameMode } from "../../../config/game-modes/resolved-mode";
 import {
   PRINTED_CODE_LENGTH,
   SHARED_MOMENT_WORDS,
@@ -331,6 +331,8 @@ import {
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { AttackRefusal } from "@bibliothecadao/eternum";
 import {
+  aspectName,
+  type AspectId,
   FRAGMENT,
   FRAGMENT_CENTS,
   FRAGMENTS,
@@ -341,11 +343,9 @@ import {
   formatFigure,
   formatGain,
   formatCount,
-  formatOrdinal,
+  formatShort,
   FRIEND_FRAGMENTS,
   FRIEND_GLORY,
-  FRIENDS_BONUS_FRAGMENTS,
-  FRIENDS_LIMIT,
   FRONTIER_TROOP_NAMES,
   formatClockTime,
   formatDuration,
@@ -362,8 +362,6 @@ import {
   type RankedWords,
 } from "@bibliothecadao/types";
 
-/** One scale for chests, building types and attributes. */
-export { TIER_WORDS } from "@bibliothecadao/types";
 /** A step on that scale, common (1) to legendary (5). */
 export type Tier = 1 | 2 | 3 | 4 | 5;
 export type Rank = 0 | Tier;
@@ -403,22 +401,6 @@ export const tomorrowLasts = (seconds: number | undefined): ClockPhrase => ({
 });
 export const phraseText = ({ words, reading, readingFirst }: ClockPhrase): string =>
   readingFirst ? `${reading} ${words}` : `${words} ${reading}`;
-
-/**
- * The day's end, before it comes (Devcon feedback, 4 November 2026: players did not know the day was ending or what it
- * takes): the last hour's line, which opens Today, and Today's block of what goes and what can still be done. What goes
- * is the contract's: each day is its own map, and an army lives only on its day's map (expeditions.cairo).
- */
-export const DAY_END = {
-  endsIn: (day: number | undefined, secondsLeft: number | undefined) =>
-    `${DAY} ${day ?? "—"} ends in ${dayLength(secondsLeft)}`,
-  open: "Open",
-  goes: "At day end, today's map and armies go",
-  site: (name: string) => `Clear today's ${name}`,
-  siteVerb: "Show",
-  explore: "Your army can explore",
-  exploreVerb: "Select",
-} as const;
 
 /** ClockChip's prefix words: a moment that begins something, or one that ends it. */
 export const CLOCK_WORDS = {
@@ -524,11 +506,8 @@ export const SEAL_CODE_WORDS = {
 /** The day-done card: "Day 12 done · Realm kept · Day 13 is open", and its one verb. */
 export const DAY_DONE = "complete";
 export const DAY_DONE_WORDS = {
-  bestMoment: (day: number) => `Best moment of ${DAY} ${formatExact(day)}`,
   beginDay: (day: number) => `Begin ${DAY} ${formatExact(day)}`,
 } as const;
-export const REALM_KEPT = "Realm kept";
-export const DAY_OPEN = "is open";
 export const CONTINUE = "Continue";
 /** Past the day end's rolling mist, to its summary. */
 export const SKIP = "Skip";
@@ -566,6 +545,15 @@ export const REALM = "Realm";
 export const WORLD = "World";
 /** The realm's way home from its card's header: the map centred on it. */
 export const SHOW_MY_REALM = "Show my realm";
+export const REALM_CARD_WORDS = {
+  nextRank: "Next rank",
+  armySlots: (count: number) => `+${formatCount(count, "army slot")}`,
+  needs: "Needs",
+  stores: "Stores",
+  lordsReading: "reading your wallet…",
+  lordsUnread: "your wallet could not be read",
+  noAnswer: "No answer",
+} as const;
 export const RESEARCH = "Research";
 export const CHAT = "Chat";
 export const MENU = "Menu";
@@ -574,6 +562,10 @@ export const unreadFeedEvents = (count: number) => `Unread feed events: ${count}
 
 /** The Menu's rows and its two buttons. */
 export const TODAY = "Today";
+export const TODAY_WORDS = {
+  ends: (endsAt: number | undefined) => `Ends ${formatClockTime(endsAt)}`,
+  yesterdaysRecap: "Yesterday's recap",
+} as const;
 export const PRODUCTION = "Production";
 /** A store at its limit. */
 export const FULL = "Full";
@@ -600,17 +592,36 @@ export const SEASON = "Season";
 export const RANK = "Rank";
 export const SITES = "Sites";
 export const SITES_CLEARED = "Sites cleared";
-export const SITE_OATH = { label: "Oath", holds: "Holds an Oath", rule: "Clearing it opens an Oath pick" } as const;
-/**
- * How the Season board ranks, said where players look (owner, 4 November 2026: "ppl have asked how to increase sites in the
- * leaderboard"): Herald ranks by sites cleared, then deepest depth (frontier-leaderboard.ts compareStandings), and every
- * guarded site an army clears counts one (creditSiteClear). The Sites column's tip, the board's line while the player is
- * off the podium, and a site card's "+1 site".
- */
+export const OATH_WAITING = "An Oath waits: pick the army to swear it";
+export const OATH_PICK = {
+  title: "Swear an Oath",
+  replaceTitle: "Choose an Oath to replace",
+  slotOf: (slot: number, slots: number, troops: string, troop: string) =>
+    `Slot ${formatExact(slot)} of ${formatExact(slots)} · ${troops} ${troop}`,
+  swear: (oath: string) => `Swear ${oath}`,
+  chosen: (oath: string) => `${oath}, chosen`,
+  replace: (oath: string) => `Replace ${oath}`,
+  another: "Choose another",
+  swap: "Swap",
+  swapFor: (oath: string, price: string) => `Swap ${oath} for ${price}`,
+  redrawPrice: "One reroll",
+  used: "Used",
+  fresh: "New",
+  pass: "Pass",
+  notChosen: "The Oath could not be chosen.",
+  notRedrawn: "The card could not be rerolled.",
+} as const;
+export const SITE_OATH = { label: "Oath", rule: "Clearing it opens an Oath pick" } as const;
+export const SUPPLY_POST = {
+  title: "Supply Post",
+  chip: "Post",
+  open: "Post open",
+  rule: "Clearing it opens a supply post: your armies refill beside it until the day ends",
+  until: "Open until the day ends",
+} as const;
 export const SEASON_CLIMB = {
   rule: "Ranked by sites cleared, then deepest depth",
   climb: "Clear sites with your armies to climb",
-  plusOne: "+1 site",
 } as const;
 export const LORDS_EARNED = "LORDS earned";
 export const SETTINGS = "Settings";
@@ -651,6 +662,20 @@ export const SETTINGS_WORDS = {
   app: "App",
   shortcuts: "Keyboard shortcuts",
   show: "Show",
+  master: "Master",
+  music: "Music",
+  effects: "Effects",
+  mute: "Mute",
+  quality: "Quality",
+  frameRate: "FPS",
+  shadows: "Shadows",
+  reducedMotion: "Reduced motion",
+  haptics: "Haptics",
+  appliesAfterReload: "Applies after a reload",
+  reload: "Reload",
+  more: "More",
+  leaveGame: "Leave game",
+  copy: "Copy",
 } as const;
 export const EXIT = "Exit";
 export const SIGN_IN = "Sign in";
@@ -662,7 +687,6 @@ export const CANCEL = "Cancel";
 /** A highlighted tile on its tooltip: ground not yet seen, and troops passed to another of the player's armies. */
 export const UNEXPLORED = "Unexplored";
 /** A reveal that paid under a unit, in the day log: what was done, with no amount (findGain). */
-export const EXPLORED = "Explored";
 export const TRANSFER = "Transfer";
 /** A good held whose weight the game has not given: its donkeys cannot be counted, so it cannot be sent. */
 export const WEIGHT_UNKNOWN = "Weight unknown: cannot be sent";
@@ -694,8 +718,6 @@ export const heldAgainstNeed = (held: number | undefined, need: number): string 
 };
 /** A training building already standing: a realm holds one of each. */
 export const ONE_A_REALM = "Built. A realm holds one.";
-/** The arrow beside a price that has risen (a screen reader's words). */
-export const PRICE_UP = "price raised";
 /** Why a price is above its first, on the arrow beside it, in one line and no sum: "Costs more with each one standing: 2". */
 export const priceRaised = (standing: string) => `Costs more with each one standing: ${standing}`;
 /** What a building does, in one line on its card's tooltip: "Wheat +5/min". */
@@ -729,12 +751,6 @@ export const ON_ITS_WAY = "Sending…";
 /** The order bar while an army's order is in flight and a tile is tapped for it: that tile is its next order. */
 export const NEXT_ORDER = "Next order";
 export const AFTER_THIS_ONE = "After this one";
-/** How an attack ended, the one word on its result: the guard gone, the army gone, or both still standing. */
-/** The day log's line for a fight: "Rift: Army lost, lost 154, guard 1,100 to 1,028". */
-export const fightLine = (site: string, verdict: string, lost: string, guardBefore: string, guardAfter: string) =>
-  `${site}: ${verdict}, lost ${lost}, guard ${guardAfter} left`;
-/** A clear's line with what the attack that won it cost: "Rift cleared, lost 68". */
-export const clearCostLine = (line: string, lost: string) => `${line}, lost ${lost}`;
 /** Why an attack cannot run, or what it costs, in one line under its button. */
 export const tooFarFrom = (site: string) => `Too far from the ${site}`;
 /**
@@ -745,16 +761,18 @@ export const FIGHT_WORDS = {
   armyLost: "Your army is lost",
   /** Under the loss, in the panel's place, before it closes: what to do next. */
   armyLostNext: "Your troops died in battle. Deploy a new army from your Realm.",
-  /** An attack that clears the site, over the reward it earns; a site that pays nothing is only cleared. */
-  earns: "This attack earns",
-  clears: "This attack clears it",
+  victory: "Victory likely",
   holds: "The guard survives",
-  hitsFirst: "Hits first",
+  defeated: "Defeated",
 } as const;
 /**
  * What an attack costs a side, under its bar (a player: "# of troops lost, % lost/remaining"; owner, 3 November 2026:
  * "A probably good enough"): "−601 · 76% lost", a range where the dice decide it ("−994–1,100 · 20–22% lost").
  */
+export const FIGHT_RESULT = {
+  victory: "Victory",
+  cleared: (site: string) => `${site} cleared`,
+} as const;
 export const fightLost = (lost: string, share: string) => `−${lost} · ${share}% lost`;
 export const NONE_LOST = "None lost";
 
@@ -773,6 +791,7 @@ export const LAYER = "Layer";
 export const SPIRE_WORDS = {
   nextReveal: (percent: number) => `Spire · next reveal ${percent}%`,
   title: SPIRE,
+  lockedAt: (tier: Tier) => `${SPIRE} ${tierNumeral(tier)}`,
   enter: "Enter",
   /** The order on the spire's tile; its card then picks the Ethereal layer to enter. */
   order: "Enter the Spire",
@@ -862,42 +881,39 @@ export const DEEP_WORDS = {
 /** The day's banner: today's quest, its count and reward, the bane or Triumph heading it, the Aspect's members. */
 export const DAY_BANNER_WORDS = {
   today: "Today",
+  quest: "Quest",
   reading: "Loading today's quest…",
   collect: "Collect",
   collecting: "Collecting…",
   collected: "Collected",
   collectAgain: "Collect again",
-  worldBane: "World bane",
-  baneEnded: "Your Aspect ended the bane",
-  baneEndedShort: "Ended",
-  baneFrom: (aspect: string) => `Bane from ${aspect}`,
-  rivalBane: (aspect: string) => `${aspect}'s bane`,
-  heightBlocked: "Your Aspect's hyperstructure does not grow while the bane lasts",
+  count: (progress: number, target: number, unit: string) =>
+    `${formatExact(progress)} of ${formatExact(target)} ${unit}`,
   beastBane: (percent: number) => `Guarded sites have ${formatExact(percent)}% strength while the bane lasts`,
   staminaBane: (percent: number) => `Stamina returns at ${formatExact(percent)}% while the bane lasts`,
   productionBane: (percent: number) => `Production runs at ${formatExact(percent)}% while the bane lasts`,
-  /** A quest's count in its own unit: "1 of 2 camps". */
-  count: (progress: number, target: number, unit: string) =>
-    `${formatExact(progress)} of ${formatExact(target)} ${unit}`,
+  fraction: (progress: number, target: number) => `${formatShort(progress)}/${formatShort(target)}`,
+  objectiveLine: (objective: string, target: number) => {
+    const space = objective.indexOf(" ");
+    return space === -1
+      ? `${objective} ${formatExact(target)}`
+      : `${objective.slice(0, space)} ${formatExact(target)} ${objective.slice(space + 1)}`;
+  },
+  rewardAmount: (amount: number, resource: ResourcesIds) => `${formatAmount(amount)} ${resourceName(resource)}`,
   summary: (objective: string, progress: number, target: number, labor: number) =>
     `${objective} · ${formatExact(progress)} of ${formatExact(target)} · +${formatExact(labor)} ${LABOR}`,
-  /** How many members of the Aspect finished the bane's quest: "4 of 6 members". */
-  members: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)} members`,
-  membersShort: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)}`,
-  triumph: "Triumph",
-  /** What the Aspect's active Triumph does, by its stage, at the percent the game's rules set. */
   triumphRule: {
     1: (percent: number) => `Sites are found at ${formatExact(percent)}% of the usual odds`,
     2: (percent: number) => `Stamina returns at ${formatExact(percent)}%`,
     3: (percent: number) => `Guarded sites have ${formatExact(percent)}% strength`,
     4: (percent: number) => `Site rewards are ${formatExact(percent)}%`,
   },
-  baneBar: "Your Aspect's bane bar",
-  barCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
 } as const;
 /** What a moment's one line needs from the game's rules; the caller reads them, the line only names them. */
 export interface OpeningRules {
-  knightsAnHour: number;
+  ownAspect: AspectId | undefined;
+  knightsPerSecond: number;
+  troopsAtHome: number;
   deepTickSeconds: number;
   deepLossPerTick?: number;
   oathPassStamina: number;
@@ -907,34 +923,107 @@ export interface OpeningRules {
   relicMinutesPerTier: number;
   scoutExploreStamina: number;
   exploreStamina: number;
+  dayLeftSeconds?: number;
 }
 
+const ownAspectLabel = (aspect: AspectId | undefined): string => (aspect !== undefined ? aspectName(aspect) : "");
+
 export const OPENING_WORDS = {
-  lines: {
-    launch: () => "This is your Realm. Build on the lit plot, then deploy an army into the mist.",
-    barracks: (rules: OpeningRules) =>
-      `A Barracks raises ${formatAmount(rules.knightsAnHour)} Knights an hour. Knights fill your armies.`,
-    guard: () => "A blade or a bow shows its kind. Send 150% of the guard's troops to win.",
-    oath: (rules: OpeningRules) =>
-      `Take one and your army has it for today. A full army swaps one. You can also pass for ${formatGain(rules.oathPassStamina)} ${STAMINA}.`,
-    shop: (rules: OpeningRules) =>
-      `Stamina refills ${formatRate(rules.staminaPerSecond)}. A ${FRAGMENT} refills ${formatAmount(rules.staminaPerFragment)} points now.`,
-    essence: () => "Essence buys research and lores.",
-    relic: (rules: OpeningRules) =>
-      `A relic works for ${formatAmount(rules.relicMinutesPerTier)} minutes per tier. An army carries ${ARMY_RELIC_SLOTS}.`,
-    "well-lore": () => "Your armies can now find wells.",
-    "shrine-lore": () => "Your armies can now find shrines.",
-    city: (rules: OpeningRules) =>
-      `Scouts reveal for ${formatAmount(rules.scoutExploreStamina)} stamina, not ${formatAmount(rules.exploreStamina)}.`,
-    spire: (rules: OpeningRules) =>
-      `Guards are x${formatAmount(rules.spireDepthFactor)} on each layer down. A cleared camp refills your armies.`,
-    deep: (rules: OpeningRules) =>
-      `Every tick (${formatAmount(rules.deepTickSeconds)} seconds) here, each army loses ${formatAmount(rules.deepLossPerTick)} troops. Hold a site to earn.`,
-    bane: () => "A bane. Today's quest is the bane quest. Your Aspect ends the bane when enough members finish it.",
-    aspects: () => "Your Aspect races to build its hyperstructure. Its page shows where every Aspect stands.",
+  titles: {
+    "season0-welcome": () => "Welcome Back",
+    oath: () => "Swear an Oath",
+    bane: () => "Break the Bane",
+    "day-end": (rules: OpeningRules) =>
+      rules.dayLeftSeconds !== undefined ? `Day ends in ${dayLength(rules.dayLeftSeconds)}` : "Day Ending",
+    deep: () => `The ${DEEP}`,
+    aspects: () => "Aspect Race",
+    spire: () => `Enter the ${layerName(1)}`,
+    quest: () => "Today's Quest",
+    "daily-quest": () => "Quest Ready",
+    essence: () => "Realm Research",
+    shop: () => "Stamina and Seal",
+    relic: () => "Army Relics",
+    "well-lore": () => "Well Lore",
+    "shrine-lore": () => "Shrine Lore",
+    city: () => "Scouts Unlocked",
+    barracks: () => "Build a Barracks",
+    deploy: () => "Deploy Your Army",
+    explore: () => "Explore the Mist",
   },
-  gotIt: "Got it",
-  /** The offer that comes with the first Deep line: the site alert, off until the player turns it on. */
+  lines: {
+    "season0-welcome": (rules: OpeningRules) =>
+      `Welcome back. Four Aspects race in the ${DEEP}, and ${ownAspectLabel(rules.ownAspect)} leads you.`,
+    oath: (rules: OpeningRules) =>
+      `Your Orders grant power today. Swear one Oath, or pass for ${formatGain(rules.oathPassStamina)} ${STAMINA}.`,
+    bane: () => "A bane strikes today. Your Aspect breaks it when enough members finish.",
+    "day-end": () => "Today's map and armies go at day end.",
+    deep: (rules: OpeningRules) =>
+      `Every ${formatExact(rules.deepTickSeconds)} seconds here, armies lose ${formatAmount(rules.deepLossPerTick)} troops. Hold sites to earn.`,
+    aspects: (rules: OpeningRules) =>
+      `${ownAspectLabel(rules.ownAspect)} races to finish its hyperstructure first. Standings update live.`,
+    spire: (rules: OpeningRules) =>
+      `In the ${layerName(1)}, guards are ${formatExact(rules.spireDepthFactor)}x stronger and camps refill your armies.`,
+    quest: () => "Each day brings one quest. Finish it for Labor and Essence.",
+    "daily-quest": () => "Today's quest is done. Collect its Labor and Essence reward.",
+    essence: () => "Essence buys permanent upgrades and lores for your Realm.",
+    shop: (rules: OpeningRules) =>
+      `Stamina returns ${formatRate(rules.staminaPerSecond)}. A ${FRAGMENT} refills ${formatAmount(rules.staminaPerFragment)} now or unlocks ${ANCIENT_SEAL}.`,
+    relic: (rules: OpeningRules) =>
+      `Relics last ${formatAmount(rules.relicMinutesPerTier)} minutes per tier. Each army carries ${ARMY_RELIC_SLOTS}.`,
+    "well-lore": () => "Well lore is learned. Your armies can now uncover wells.",
+    "shrine-lore": () => "Shrine lore is learned. Your armies can now uncover shrines.",
+    city: (rules: OpeningRules) =>
+      `Scouts reveal mist for ${formatAmount(rules.scoutExploreStamina)} stamina instead of ${formatAmount(rules.exploreStamina)}.`,
+    barracks: (rules: OpeningRules) => `It raises ${formatRate(rules.knightsPerSecond)} Knights.`,
+    deploy: (rules: OpeningRules) =>
+      `${formatExact(rules.troopsAtHome)} Knights wait at home. Send an army onto the ${layerName(0)}.`,
+    explore: (rules: OpeningRules) => `Reveal a dark hex for ${formatAmount(rules.exploreStamina)} stamina.`,
+  },
+  actions: {
+    "season0-welcome": "Open Season to check the race.",
+    oath: "Pick one Oath or pass.",
+    bane: "Open Today to see the bane quest.",
+    "day-end": "Your realm, research and Glory stay",
+    deep: `Hold a ${DEEP} site or withdraw in time.`,
+    aspects: "Open Season to check standings.",
+    spire: "Clear camps to refill stamina and troops.",
+    quest: `Press ${DAY_BANNER_WORDS.quest} at the top to see what it asks.`,
+    "daily-quest": "Press the quest chip to collect.",
+    essence: "Open Research to learn a node.",
+    shop: "Open Shop or wait for stamina.",
+    relic: "Open your army to inspect relic slots.",
+    "well-lore": "Explore mist hexes to find wells.",
+    "shrine-lore": "Explore mist hexes to find shrines.",
+    city: "Train scouts for cheaper mist reveals.",
+    barracks: "Tap the lit plot to build.",
+    deploy: "Press Deploy in the Realm panel.",
+    explore: "Pick an army, tap the mist",
+  },
+  completed: {
+    "season0-welcome": { title: "Standings opened", line: "Welcome back to Season 1." },
+    barracks: { title: "Barracks built", line: "Knights are training now." },
+    deploy: { title: "Army deployed", line: `It stands on the ${layerName(0)}.` },
+    explore: { title: "Mist revealed", line: "Sites and Essence await." },
+    oath: { title: "Oath settled", line: "Your army's choice is made." },
+    "daily-quest": { title: "Reward collected", line: "Labor and Essence added." },
+    quest: { title: "Quest started", line: "Finish it, then collect the reward." },
+    essence: { title: "Research opened", line: "Learn any node marked ready." },
+    "day-end": { title: "Day end noted", line: "Tap the Day medallion anytime for Today." },
+    bane: { title: "Bane checked", line: "Help your Aspect break it today." },
+    aspects: { title: "Standings opened", line: "Track your Aspect's race here." },
+    shop: { title: "Shop opened", line: "Refill stamina or unlock seals anytime." },
+    relic: { title: "Relics checked", line: "Equip relics on your armies here." },
+  },
+  inSheet: {
+    barracks: (rules: OpeningRules) => `Pick Barracks below · ${formatRate(rules.knightsPerSecond)} Knights`,
+    deploy: () => `Pick the Knights, then press ${DEPLOY}`,
+  },
+  tutorial: "Tutorial",
+  showLesson: "Show the lesson",
+  completedLabel: "Completed",
+  skipTutorial: "Skip tutorial",
+  skipFinal: "The tutorial will not show again.",
+  keepTutorial: "Keep it",
   alertOffer: `Alert me when a ${DEEP} site can be taken`,
   alertOn: "Turn on",
   alertRetry: "Try again",
@@ -950,7 +1039,6 @@ export const OPENING_WORDS = {
   /** The week's quests on the Today page: the day, and the quest each brings. */
   week: "This week's quests",
   weekDay: (day: number, quest: string) => `Day ${formatExact(day)}: ${quest}`,
-  interface: "Interface",
   showEverything: "Show everything",
 } as const;
 /** The Aspect page (docs/plans/frontier-season-1.md, Aspects and the hyperstructure): the race, and the player's Aspect. */
@@ -958,21 +1046,20 @@ export const ASPECT_PAGE_WORDS = {
   title: "Aspect Race",
   race: "The hyperstructures",
   goToDeep: `Go to ${DEEP}`,
+  deepOpensAt: (rule: string) => `${DEEP} opens at ${rule}`,
+  gloryUnearned: `No Glory yet: it comes from holding ${DEEP} sites`,
   height: (height: number, finish: number) => `${formatExact(height)} of ${formatExact(finish)}`,
   stage: (stage: number, stages: number) => `Stage ${stage} of ${stages}`,
   finished: "Finished",
   won: (aspect: string) => `${aspect} finished 1st and won the season`,
   noFinisher: "The season ended. No Aspect finished its hyperstructure.",
-  yours: (aspect: string) => `Your Aspect: ${aspect}`,
   triumphs: "Triumphs",
   triumph: { 1: "Clear Mist", 2: "Second Wind", 3: "Pale Moon", 4: "Spoils" },
   triumphOn: (day: number) => `day ${formatExact(day)}`,
   triumphAt: (stage: number) => `at stage ${stage}`,
   baneBar: "Bane bar",
   baneCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
-  members: "Members",
   glory: "Glory",
-  guards: (site: string) => `Guards the ${site}`,
   noAspect: "Join an Aspect to see its members",
   fights: `Fights in the ${DEEP}`,
   noFights: `No fight in the ${DEEP} yet`,
@@ -1037,19 +1124,18 @@ export const wheatForOnly = (troops: string, of: string) => `${WHEAT} for only $
 export const GET_WHEAT = `Get ${WHEAT}`;
 export const DEPLOYING = "Deploying…";
 export const DEPLOY_WORDS = {
-  slotOf: (slot: number, total: number) => `Slot ${formatExact(slot)} of ${formatExact(total)}`,
-  fullStack: "Full stack",
-  fullStackReady: "Full stack ready",
-  adjustSize: "Adjust size",
-  hideSize: "Hide size",
-  customSize: (count: string) => `Custom · ${count}`,
-  troopRoles: {
-    [TroopType.Knight]: () => "Blade · Hold sites",
-    [TroopType.Crossbowman]: () => "Bow · Strikes first",
-    [TroopType.Paladin]: (exploreStamina: number) => `Fast reveal · ${formatExact(exploreStamina)} stam`,
-  } satisfies Record<TroopType, (exploreStamina: number) => string>,
+  troopType: "Troop type",
+  slot: "Slot",
+  oaths: "Oaths",
+  startsOn: "Starts on",
+  howMany: (troop: string) => `${troop}: how many go`,
+  deployCount: (count: number) => `${DEPLOY} ${formatExact(count)}`,
 } as const;
+export const SIZE_ROW = { fewer: "One fewer", more: "One more", max: "Max" } as const;
 export const BUILD = "Build";
+export const BUILT = "Built";
+export const plotsUsed = (used: number, total: number) => `${used} / ${total} plots`;
+export const armiesHere = (count: number) => (count === 1 ? "1 army" : `${count} armies`);
 export const FREE = "Free";
 
 /** Default army names: "Army" and its place. */
@@ -1081,15 +1167,24 @@ export const TRANSFER_TROOPS = {
 /** Troops raised from the realm's stock into its army beside it (the realm selected, the army right-clicked). */
 export const REINFORCE = {
   verb: "Reinforce",
+  verbAmount: (amount: string) => `Reinforce +${amount}`,
   title: (army: string) => `Reinforce ${army}`,
+  titleAmount: (army: string, amount: string) => `Reinforce ${army} (+${amount})`,
+  fromHome: (amount: string, troops: string) => `+${amount} ${troops} from home`,
   sending: "Reinforcing…",
   failed: "The army could not be reinforced.",
 } as const;
 /** A realm's armies, as a list's name. */
 export const ARMIES = "Armies";
+export const ARMY_SLOT_WORDS = {
+  title: "All army slots",
+  count: (active: number, allowed: number) => `${active}/${allowed}`,
+  open: (slot: number) => `Slot ${slot} · Open`,
+  readyAtHome: (troops: string) => `${troops} ready at home`,
+  anyTroop: "Any troop type",
+  unlocksAt: (slot: number, rank: string) => `Slot ${slot} unlocks at ${rank}`,
+} as const;
 export const ARMY_MOVE_HINT = "Right-click a hex to move";
-/** The day-done card's count of the armies that ended with the day. */
-export const ARMIES_ENDED = "Armies ended with the day";
 /** The sources of a store's production, each with its combined rate. */
 export const MADE_BY = "Made by";
 export const STORE_MAKERS = {
@@ -1097,11 +1192,6 @@ export const STORE_MAKERS = {
   castle: (rate: string) => `${CASTLE} · ${rate}`,
 };
 
-/** The day log's lines for what the player did, in the names the build cards and the dock use. */
-export const revealLine = (gain: string, resource: string) => `${gain} ${resource}`;
-export const builtLine = (building: string) => `${building} built`;
-export const deployedLine = (army: string) => `${army} deployed`;
-export const disbandedLine = (army: string) => `${army} deleted`;
 /** A day's count of tiles explored, on its total. */
 export const REVEALS = "Reveals";
 /** How deep a realm went beyond the spire, I to III. */
@@ -1187,16 +1277,15 @@ export const DAY_SHARE_WORDS = {
 /** What the player's shared days brought, on their own page: each step a friend takes, counted. */
 export const SHARED_DAYS_WORDS = {
   title: "Your shared days",
-  steps: {
-    posted: "Days posted",
-    visits: "Opened by friends",
-    joined: "Friends who joined",
-    activated: `Reached ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory}`,
+  funnel: {
+    shared: "Shared",
+    visits: "Opened",
+    joined: "Joined",
+    activated: `${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory}`,
+    fragmentsEarned: `${FRAGMENTS} earned`,
   },
+  empty: `Share your invite link to bring friends into your Aspect. Each friend who reaches ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory} earns you ${formatCount(FRIEND_FRAGMENTS, FRAGMENT, FRAGMENTS)}.`,
   friendsPaid: "Friends paid",
-  fragmentsEarned: `${FRAGMENTS} earned`,
-  ofLimit: (paid: number) => `${formatExact(paid)}/${formatExact(FRIENDS_LIMIT)}`,
-  friendRule: `A friend who joins by your Aspect link and reaches ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory} pays you ${formatCount(FRIEND_FRAGMENTS, FRAGMENT, FRAGMENTS)}. Your ${formatOrdinal(FRIENDS_LIMIT)} adds ${formatExact(FRIENDS_BONUS_FRAGMENTS)}.`,
 } as const;
 
 export const INVITED_FRIENDS_WORDS = {
@@ -1206,7 +1295,7 @@ export const INVITED_FRIENDS_WORDS = {
   glory: DEEP_WORDS.glory,
   states: {
     joined: "Joined",
-    reached: SHARED_DAYS_WORDS.steps.activated,
+    reached: `Reached ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory}`,
     paid: `Paid you ${formatCount(FRIEND_FRAGMENTS, FRAGMENT, FRAGMENTS)}`,
   } satisfies Record<InvitedFriendState, string>,
 } as const;
@@ -1228,7 +1317,6 @@ export const SHARED_LINK_WORDS = {
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
 
 export const SEASON_ERROR = "Season did not answer.";
-export const TODAY_ERROR = "Today did not answer.";
 /** A day's totals the player's history cannot give: the read keeps only the newest stories, or did not answer. */
 export const DAY_TOTALS_UNKNOWN = "This day's totals are unknown";
 
@@ -1568,11 +1656,7 @@ export const DOORWAY_WORDS = {
   realm: "Preparing your realm",
   map: "Loading the map",
   play: "Entering the world",
-  stepOf: (step: number, of: number) => `Step ${step} of ${of}`,
   secondsLeft: (seconds: number) => `About ${seconds} s left`,
-  /** What the first minutes hold, said while a player's map loads. */
-  firstTitle: "First: build a Barracks",
-  firstDetail: "Then deploy your first army to explore",
   /** The bar, named for assistive technology. */
   entering: "Entering the game",
   enteringRealm: (name: string) => `Entering ${name}`,
@@ -1606,8 +1690,9 @@ export const SEASON_WORDS = {
   notOnBoard: "Not on Frontier's board yet",
   pastSeasons: "Past seasons",
   playtest: "Playtest",
-  allAspects: "All Aspects",
-  aspectBreakdown: "Aspect standings",
+  allPlayers: "All",
+  gloryLeaderboard: "Glory leaderboard",
+  globalTopPlayers: (members: number) => `Top players · ${formatExact(members)} members`,
   yourStanding: "Your standing",
   noRealmYet: "Create a Realm on Play to join an Aspect.",
   stageMilestones: "Stage Triumphs",
@@ -1625,10 +1710,8 @@ export const PROFILE_WORDS = {
   settingsShort: "Settings",
   tabsLabel: "Account sections",
   noAspectInvite: "Join an Aspect on Play to get your personal invite link.",
-  friendsProgress: (paid: number, limit: number) => `${formatExact(paid)} of ${formatExact(limit)} friends`,
-  friendMilestone: (perFriend: number, bonus: number, limit: number) =>
-    `+${formatExact(perFriend)} ${FRAGMENTS} per friend · +${formatExact(bonus)} bonus at ${formatExact(limit)}`,
-  howToPlay: "How to play",
+  friendReward: `+${formatExact(FRIEND_FRAGMENTS)} ${FRAGMENTS} for each friend who reaches ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory}`,
+  guide: "Guide",
   account: "Account",
   notifications: "Notifications",
   devices: "Devices",
@@ -2096,21 +2179,40 @@ function figureStep(from: RankedWords | string, to: RankedWords | string): Ranke
  * what each side and node gives, and each thing a node's next tier needs, in the order a player meets them.
  */
 const LESS_WORD = "less";
+const RESEARCH_STATES = {
+  ready: "Ready",
+  short: "Short",
+  done: "Researched",
+  locked: "Locked",
+} as const;
+
+const RESEARCH_OPEN = "Open";
 
 export const RESEARCH_TREE = {
   /** Said while the realm's knowledge, balances, prices or board rules have not all arrived. */
   onItsWay: "Loading research…",
+  branchColumn: "Branch",
   branches: { economy: "Economy", army: ARMY, castle: CASTLE },
-  states: { ready: "Can research", short: "Not enough", done: "Researched", locked: "Locked" },
+  branchSubtitles: {
+    economy: "Output & Caps",
+    army: "Oaths & Logistics",
+    castle: `The ${DEEP} Path`,
+  },
+  currentEra: "Current",
+  readyCount: (count: number) => `${RESEARCH_STATES.ready} (${formatExact(count)})`,
+  unlocked: "Unlocked",
+  tierBadge: (numeral: string) => `Tier ${numeral}`,
+  eraBadge: (numeral: string) => `Era ${numeral}`,
+  promptPick: "Tap a node to see its price",
+  states: RESEARCH_STATES,
   outputs: {
     fields: ["Fields", "Farm wheat"],
     tools: ["Tools", "Workshop labor"],
   },
   oaths: "Oath slots",
   oathSlots: (count: number) => `${count} Oath ${count === 1 ? "slot" : "slots"}`,
-  oathOpen: "Open",
   oathLocked: "Locked",
-  oathResearch: "Research for new armies",
+  oathEarn: `Clear a site that holds an ${SITE_OATH.label}, or reveal a ${SHRINE}`,
   conscriptionLine: "More troops from every troop building.",
   rationsLine: "Armies cost less wheat to deploy.",
   troopsAnHour: "Troops an hour",
@@ -2127,12 +2229,22 @@ export const RESEARCH_TREE = {
     rations: (value: string) => `${value} wheat per troop`,
     troops: (value: string) => `${value} troops an hour`,
   },
+  shortEffects: {
+    oaths: (now: number, next?: number) =>
+      next !== undefined ? `${figureStep(String(now), String(next))} Oaths` : `${now} Oaths`,
+    troops: (now: string, next?: string) => (next !== undefined ? `${figureStep(now, next)}/hr` : `${now}/hr`),
+    rations: (now: string, next?: string) =>
+      next !== undefined ? `${figureStep(now, next)} ${WHEAT.toLowerCase()}` : `${now} ${WHEAT.toLowerCase()}`,
+    logistics: (now: string, next?: string) => (next !== undefined ? `${figureStep(now, next)} ⚡` : `${now} ⚡`),
+    well: (percent: string) => `+${percent}% ⚡`,
+    open: (done: boolean) => (done ? RESEARCH_OPEN : "Opens"),
+  },
   nouns: { essence: ESSENCE, labor: LABOR },
   armiesFind: (site: string) => `Armies find ${site}s`,
   each: (gain: string) => `${gain} each`,
   lore: loreOf,
   opensLayers: `Opens every layer under the ${layerName(0)}`,
-  opens: "Open",
+  opens: RESEARCH_OPEN,
   closed: "Closed",
   none: "None",
   build: (building: string) => `Build a ${building}`,
@@ -2145,7 +2257,6 @@ export const RESEARCH_TREE = {
   held: (noun: string, have: string, need: string) => `${noun} ${have} / ${need}`,
   upgrade: "Upgrade",
   levelUpCastle: "Upgrade the Castle",
-  complete: "Complete",
   less: `(${LESS_WORD})`,
   step: figureStep,
   price: (essence: string) => `${essence} ${ESSENCE}`,
@@ -2155,12 +2266,7 @@ export const RESEARCH_TREE = {
  * An army's per-tile resource reward.
  */
 export const ARMY_DETAIL = {
-  /**
-   * What each tile the army explores sends home, on its stamina row: Essence or Labor, one of the two each reveal, as
-   * the contract draws it (exploration_rewards.cairo's reveal_reward). The chip's name reads the label then the amount.
-   */
-  revealPays: (amount: string) => `+${amount} a tile`,
-  revealPaysLabel: `${ESSENCE} or ${LABOR},`,
+  troops: (count: number) => formatCount(count, "troop"),
 } as const;
 
 /** Deleting the picked army, for good. */
@@ -2218,10 +2324,11 @@ export const PICK_EFFECT_WORDS = {
   maxStaminaGain: (gain: string) => `${gain} max ${STAMINA}`,
   revealCost: "Reveal cost",
   scoutCostNote: (from: string, to: string) => `${FRONTIER_TROOP_NAMES[TroopType.Paladin]} ${from} → ${to}`,
-  lowStaminaAttackDamage: (threshold: string) => `Low-${STAMINA} (<${threshold}) attack damage`,
+  lowStaminaAttackDamage: (threshold: string) =>
+    `Attack damage when the army has less than ${threshold} ${STAMINA} left after the attack`,
   wonBattleRefund: `Won battle ${STAMINA} refund`,
   shareOf: (percent: string, base: string) => `${percent} of ${base}`,
-  nearbyAllyDamage: "Nearby ally bonus damage",
+  nearbyAllyDamage: "Adjacent own army's damage added",
   cleanWinRewards: (lossLimit: string) => `Clean-win (<${lossLimit} lost) rewards`,
 } as const;
 

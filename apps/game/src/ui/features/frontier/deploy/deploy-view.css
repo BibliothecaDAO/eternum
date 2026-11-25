@@ -1,123 +1,104 @@
-.deploy-sheet__sub {
-  display: flex;
-  align-items: center;
-  gap: theme(spacing[1.5]);
-  color: var(--hud-muted);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  font-variant-numeric: tabular-nums;
-}
-.deploy-sheet__stamina {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing.1);
-  color: rgb(var(--hud-ink));
-}
 .deploy-troops {
-  display: flex;
-  flex-direction: column;
-  gap: theme(spacing.2);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: theme(spacing.1);
 }
 .deploy-troop-card {
   display: flex;
-  width: 100%;
-  min-height: 76px;
+  min-width: 0;
+  height: 92px;
+  flex-direction: column;
   align-items: center;
-  gap: theme(spacing.3);
+  justify-content: center;
+  gap: 1px;
+  border: 1px solid var(--hud-line-strong);
   border-radius: var(--hud-radius-panel);
   background: var(--hud-well);
-  padding: theme(spacing.3);
-  text-align: left;
+  padding: theme(spacing.1) theme(spacing[0.5]);
+  text-align: center;
   cursor: pointer;
-}
-.deploy-troop-card__portrait {
-  width: 48px;
-  height: 48px;
-  flex: none;
-}
-.deploy-troop-card__body {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: theme(spacing[0.5]);
 }
 .deploy-troop-card__name {
+  max-width: 100%;
+  overflow: hidden;
   color: rgb(var(--hud-ink));
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-title);
-  line-height: var(--hud-leading-title);
+  font-size: var(--hud-text-body);
+  line-height: 1.15;
+  font-weight: var(--hud-weight-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.deploy-troop-card__meta {
-  display: inline-flex;
+.deploy-troop-card__home {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-variant-numeric: tabular-nums;
+}
+.deploy-size {
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-panel);
+  background: var(--hud-well);
+}
+.deploy-size > .ui-line {
+  padding: 0 theme(spacing.3) theme(spacing.2);
+}
+.deploy-slots {
+  display: flex;
   align-items: center;
   gap: theme(spacing[1.5]);
+}
+.deploy-slots__label {
   color: var(--hud-muted);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  font-variant-numeric: tabular-nums;
+  font-family: theme(fontFamily.ui);
+  font-size: var(--hud-text-badge);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
-.deploy-troop-card__count {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing.1);
-  color: rgb(var(--hud-ink));
-  font-weight: var(--hud-weight-strong);
+.deploy-slots__label--end {
+  margin-left: auto;
 }
-.deploy-troop-card__cost {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: theme(spacing[0.5]);
-  font-variant-numeric: tabular-nums;
-}
-.deploy-troop-card__wheat {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing.1);
-  color: rgb(var(--hud-gold));
-  font-size: var(--hud-text-strong);
-  line-height: var(--hud-leading-strong);
-  font-weight: var(--hud-weight-strong);
-}
-.deploy-troop-card__stack {
-  color: var(--hud-muted);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-}
-.deploy-size-bar {
+.deploy-slots__pips,
+.deploy-oaths {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: theme(spacing.2);
+  gap: theme(spacing[1.5]);
 }
-.deploy-size-bar__state {
-  color: var(--hud-muted);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  font-variant-numeric: tabular-nums;
-}
-.deploy-adjust-toggle {
-  border: 0;
+.deploy-slot {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px dashed rgb(var(--hud-gold) / 0.6);
+  border-radius: var(--hud-radius-round);
   background: transparent;
-  padding: theme(spacing.1) 0;
-  color: rgb(var(--hud-gold));
+  color: var(--hud-muted);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
-.deploy-adjust-toggle:hover {
-  color: rgb(var(--hud-ink));
+.deploy-slot[aria-pressed="true"] {
+  border-style: solid;
+  color: rgb(var(--hud-gold));
 }
-.deploy-foot-btn {
-  display: grid;
-  flex: 1;
+.deploy-oath {
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px dashed rgb(var(--hud-gold));
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-well);
+  color: rgb(var(--hud-gold));
+  font-size: var(--hud-text-body);
+  font-style: normal;
+  line-height: 1;
 }
-@media (max-width: 1023px) {
-  .deploy-troop-card {
-    min-height: 62px;
-    padding: theme(spacing.2) theme(spacing.3);
-  }
+.deploy-oath[data-locked] {
+  border-style: solid;
+  border-color: var(--hud-line-strong);
+  opacity: 0.6;
 }

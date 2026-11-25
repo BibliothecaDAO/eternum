@@ -1,41 +1,230 @@
+import type { AspectId } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
+import { BUILD, DEPLOY, OPENING_WORDS, type OpeningRules } from "@/ui/design-system/kit/words";
 
-/**
- * The interface that opens as you play (the frozen design, "The interface opens as you play"): each moment, the painting
- * its one line wears, and the parts of the HUD that wait on it. Every other part shows from launch. The moments that open
- * nothing yet (the spire's odds, a layer down, the City, the shop) join this table in the change
- * that brings their part.
- */
+export interface OpeningContext {
+  readonly hasRealm: boolean;
+  readonly hasBarracks: boolean;
+  readonly troopsAtHome: number;
+  readonly fullArmy: number;
+  readonly deployedArmies: number;
+  readonly hasExplored: boolean;
+  readonly hasOpenOathPick: boolean;
+  readonly hasSwornOath: boolean;
+  readonly hasEssence: boolean;
+  readonly canResearch: boolean;
+  readonly hasResearched: boolean;
+  readonly questRunning: boolean;
+  readonly questProgressed: boolean;
+  readonly dailyQuestClaimable: boolean;
+  readonly dailyQuestClaimed: boolean;
+  readonly hasWellLore: boolean;
+  readonly hasShrineLore: boolean;
+  readonly isCity: boolean;
+  readonly inEthereal: boolean;
+  readonly inDeep: boolean;
+  readonly hasActiveBane: boolean;
+  readonly hasBrokenBane: boolean;
+  readonly dayEndingSoon: boolean;
+  readonly hyperstructureAdvanced: boolean;
+  readonly hasAspectRace: boolean;
+  readonly fragmentsSold: boolean;
+  readonly outOfStamina: boolean;
+  readonly hasRelic: boolean;
+  readonly openedToday: boolean;
+  readonly openedResearch: boolean;
+  readonly openedSeason: boolean;
+  readonly openedShop: boolean;
+  readonly openedArmy: boolean;
+  readonly isSeasonZeroVeteran: boolean;
+}
+
+type OpeningTeacher = AspectId | "own";
+
+const canFieldAnArmy = (ctx: OpeningContext): boolean => ctx.troopsAtHome > 0 && ctx.troopsAtHome * 2 >= ctx.fullArmy;
+
+interface OpeningEntry {
+  readonly icon: IconMeaning;
+  readonly teacher: OpeningTeacher;
+  readonly parts: readonly string[];
+  readonly asks?: { readonly sheet: string; readonly line: (rules: OpeningRules) => string };
+  readonly skipForVeteran?: boolean;
+  readonly reachedWhen: (ctx: OpeningContext) => boolean;
+  readonly showsWhen: (ctx: OpeningContext) => boolean;
+  readonly completesWhen?: (ctx: OpeningContext) => boolean;
+  readonly completesWhileShowing?: (ctx: OpeningContext) => boolean;
+  readonly readyWhen?: (rules: OpeningRules) => boolean;
+}
+
 export const OPENING = {
-  launch: { icon: "realm", parts: [] },
-  barracks: { icon: "barracks", parts: ["building-list"] },
-  guard: { icon: "camp", parts: [] },
-  oath: { icon: "shrine", parts: [] },
-  essence: { icon: "essence", parts: ["essence-store", "research", "today"] },
-  shop: { icon: "fragment", parts: ["fragments-chip"] },
-  relic: { icon: "relics", parts: ["relic-slots"] },
-  "well-lore": { icon: "well", parts: [] },
-  "shrine-lore": { icon: "shrine", parts: [] },
-  city: { icon: "scout-lodge", parts: [] },
-  spire: { icon: "spire", parts: [] },
-  deep: { icon: "depth-3", parts: ["glory"] },
-  bane: { icon: "flame", parts: ["bane-row"] },
-  // The Aspect's page opens with whichever comes first: the Deep, a bane on the Aspect or its first stage built.
-  aspects: { icon: "hyperstructure", parts: ["aspects"] },
-} as const satisfies Record<string, { icon: IconMeaning; parts: readonly string[] }>;
+  "season0-welcome": {
+    icon: "hyperstructure",
+    teacher: "own",
+    parts: [],
+    reachedWhen: (ctx) => ctx.hasRealm && ctx.isSeasonZeroVeteran,
+    showsWhen: (ctx) => ctx.hasRealm && ctx.isSeasonZeroVeteran,
+    completesWhileShowing: (ctx) => ctx.openedSeason,
+    readyWhen: (rules) => rules.ownAspect !== undefined,
+  },
+  barracks: {
+    icon: "barracks",
+    teacher: 2,
+    parts: ["building-list"],
+    asks: { sheet: BUILD, line: OPENING_WORDS.inSheet.barracks },
+    skipForVeteran: true,
+    reachedWhen: (ctx) => ctx.hasBarracks,
+    showsWhen: (ctx) => ctx.hasRealm && !ctx.hasBarracks && !ctx.inDeep && !ctx.inEthereal,
+    completesWhen: (ctx) => ctx.hasBarracks,
+  },
+  deploy: {
+    icon: "knight-t1",
+    teacher: 1,
+    parts: [],
+    asks: { sheet: DEPLOY, line: OPENING_WORDS.inSheet.deploy },
+    skipForVeteran: true,
+    reachedWhen: (ctx) => ctx.deployedArmies > 0,
+    showsWhen: (ctx) => ctx.hasRealm && ctx.hasBarracks && canFieldAnArmy(ctx) && ctx.deployedArmies === 0,
+    completesWhen: (ctx) => ctx.deployedArmies > 0,
+  },
+  explore: {
+    icon: "explore",
+    teacher: 4,
+    parts: [],
+    skipForVeteran: true,
+    reachedWhen: (ctx) => ctx.hasExplored,
+    showsWhen: (ctx) => ctx.deployedArmies > 0 && !ctx.hasExplored,
+    completesWhen: (ctx) => ctx.hasExplored,
+  },
+  oath: {
+    icon: "shrine",
+    teacher: "own",
+    parts: [],
+    reachedWhen: (ctx) => ctx.hasOpenOathPick || ctx.hasSwornOath,
+    showsWhen: (ctx) => ctx.hasOpenOathPick,
+    completesWhen: (ctx) => ctx.hasSwornOath,
+    completesWhileShowing: (ctx) => !ctx.hasOpenOathPick,
+    readyWhen: (rules) => rules.ownAspect !== undefined,
+  },
+  "daily-quest": {
+    icon: "crown",
+    teacher: 1,
+    parts: [],
+    reachedWhen: (ctx) => ctx.dailyQuestClaimable || ctx.dailyQuestClaimed,
+    showsWhen: (ctx) => ctx.dailyQuestClaimable,
+    completesWhen: (ctx) => ctx.dailyQuestClaimed,
+  },
+  essence: {
+    icon: "essence",
+    teacher: 2,
+    parts: ["essence-store", "research", "today"],
+    reachedWhen: (ctx) => ctx.hasEssence,
+    showsWhen: (ctx) => ctx.canResearch && !ctx.hasResearched,
+    completesWhen: (ctx) => ctx.hasResearched,
+    completesWhileShowing: (ctx) => ctx.openedResearch,
+  },
+  "day-end": {
+    icon: "realm",
+    teacher: "own",
+    parts: [],
+    reachedWhen: (ctx) => ctx.hasRealm && ctx.dayEndingSoon,
+    showsWhen: (ctx) => ctx.hasRealm && ctx.dayEndingSoon,
+    completesWhileShowing: (ctx) => ctx.openedToday,
+    readyWhen: (rules) => rules.ownAspect !== undefined,
+  },
+  bane: {
+    icon: "flame",
+    teacher: 3,
+    parts: ["bane-row"],
+    reachedWhen: (ctx) => ctx.hasActiveBane || ctx.hasBrokenBane,
+    showsWhen: (ctx) => ctx.hasActiveBane && ctx.deployedArmies > 0,
+    completesWhileShowing: (ctx) => ctx.openedToday,
+  },
+  deep: {
+    icon: "depth-3",
+    teacher: "own",
+    parts: [],
+    reachedWhen: (ctx) => ctx.inDeep,
+    showsWhen: (ctx) => ctx.inDeep,
+    readyWhen: (rules) => rules.ownAspect !== undefined && rules.deepLossPerTick !== undefined,
+  },
+  quest: {
+    icon: "crown",
+    teacher: 1,
+    parts: [],
+    reachedWhen: (ctx) => ctx.questRunning,
+    showsWhen: (ctx) => ctx.hasExplored && ctx.questRunning && !ctx.questProgressed,
+    completesWhen: (ctx) => ctx.questProgressed || ctx.dailyQuestClaimable || ctx.dailyQuestClaimed,
+  },
+  aspects: {
+    icon: "hyperstructure",
+    teacher: "own",
+    parts: [],
+    reachedWhen: (ctx) =>
+      (ctx.hasExplored && ctx.hasAspectRace) || ctx.inDeep || ctx.hasActiveBane || ctx.hyperstructureAdvanced,
+    showsWhen: (ctx) => ctx.hasExplored && ctx.hasAspectRace,
+    completesWhileShowing: (ctx) => ctx.openedSeason,
+    readyWhen: (rules) => rules.ownAspect !== undefined,
+  },
+  spire: {
+    icon: "spire",
+    teacher: 4,
+    parts: [],
+    reachedWhen: (ctx) => ctx.inEthereal,
+    showsWhen: (ctx) => ctx.inEthereal,
+  },
+  shop: {
+    icon: "fragment",
+    teacher: 2,
+    parts: [],
+    reachedWhen: (ctx) => ctx.fragmentsSold && ctx.outOfStamina,
+    showsWhen: (ctx) => ctx.fragmentsSold && ctx.outOfStamina,
+    completesWhileShowing: (ctx) => ctx.openedShop,
+  },
+  relic: {
+    icon: "relics",
+    teacher: 4,
+    parts: ["relic-slots"],
+    reachedWhen: (ctx) => ctx.hasRelic,
+    showsWhen: (ctx) => ctx.hasRelic,
+    completesWhileShowing: (ctx) => ctx.openedArmy,
+  },
+  "well-lore": {
+    icon: "well",
+    teacher: 4,
+    parts: [],
+    reachedWhen: (ctx) => ctx.hasWellLore,
+    showsWhen: (ctx) => ctx.hasWellLore,
+  },
+  "shrine-lore": {
+    icon: "shrine",
+    teacher: 4,
+    parts: [],
+    reachedWhen: (ctx) => ctx.hasShrineLore,
+    showsWhen: (ctx) => ctx.hasShrineLore,
+  },
+  city: {
+    icon: "scout-lodge",
+    teacher: 2,
+    parts: [],
+    reachedWhen: (ctx) => ctx.isCity,
+    showsWhen: (ctx) => ctx.isCity,
+  },
+} as const satisfies Record<string, OpeningEntry>;
 
 export type OpeningMoment = keyof typeof OPENING;
-type EventMoment = Extract<OpeningMoment, "guard">;
-export type StateMoment = Exclude<OpeningMoment, "launch" | EventMoment>;
 export type OpeningPart = (typeof OPENING)[OpeningMoment]["parts"][number];
 
-/** The moments in the order a player meets them: the table's own. */
 export const OPENING_MOMENTS = Object.keys(OPENING) as OpeningMoment[];
 
-/** What the HUD shows: every part (outside the game's HUD, watching, or Show everything), or those of the moments reached. */
+export const TUTORIAL_WORD_BUDGET = 14;
+
+export const teacherAspectOf = (moment: OpeningMoment, ownAspect: AspectId | undefined): AspectId | null => {
+  const teacher = OPENING[moment].teacher;
+  return teacher === "own" ? (ownAspect ?? null) : teacher;
+};
+
 export type Opened = "all" | ReadonlySet<OpeningMoment>;
 
-/** Whether the HUD shows a part: the part waits on the one moment whose row lists it. */
 export const partShown = (opened: Opened, part: OpeningPart): boolean =>
   opened === "all" ||
   OPENING_MOMENTS.some((moment) => opened.has(moment) && OPENING[moment].parts.some((each) => each === part));

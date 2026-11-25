@@ -34,7 +34,6 @@ import {
   HudMinimapFrame,
   HudNotice,
   HudPanel,
-  HudRarity,
   HudTier,
   HudPill,
   HudPortrait,
@@ -1065,9 +1064,6 @@ const ChipsSection = () => (
         <HudTierChip tier={1} />
         <HudTierChip tier={2} />
         <HudTierChip tier={3} />
-        <HudRarity tier={1} />
-        <HudRarity tier={3} />
-        <HudRarity tier={5} />
         <HudTier tier={2} />
         <HudTier tier={4} />
       </div>

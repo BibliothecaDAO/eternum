@@ -1,151 +1,94 @@
 import "./phone-hud.css";
 
-import { homeIcon, homeKind } from "@/ui/design-system/home-icons";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudPill, HudTabs } from "@/ui/design-system/kit/hud-elements";
-import { REALM, WORLD } from "@/ui/design-system/kit/words";
+import { Icon } from "@/ui/design-system/icon";
+import { useLandedValue } from "@/ui/motion/landing-hold";
+import { TickNumber } from "@/ui/motion/tick-number";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { rankName } from "@bibliothecadao/types";
+import { formatShort } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
-import { DailyQuestChip } from "./daily-quest-chip";
+import { FRONTIER_STORES, type StoreKind } from "../stores";
 import { FrontierDayClock } from "./day-pill";
-import { BarStoreItem, pickStores, REALM_STORE_KINDS } from "./header-stores";
-import type { StoreReading } from "./status-strip";
+import { pickStores } from "./header-stores";
+import { LandingDelta, STORE_TONES, storeLine, type StoreReading } from "./status-strip";
 
-export const PhoneTopBar = ({
-  rules,
-  realm,
-  own,
-  stores,
-  isMapView,
-  depthSwitch,
-  spectatorChip,
-  storeCards,
-  onOpenRealm,
-  onSwitchView,
-  onOpenToday,
-}: {
-  rules: ExpeditionRules;
-  realm: NativeRows["Structure"] | null;
-  own: NativeRows["Structure"] | null;
+const BAR_STORE_KINDS: readonly StoreKind[] = ["essence", "labor", "wheat"];
+
+type Stocks = {
   stores: readonly StoreReading[];
-  isMapView: boolean;
-  depthSwitch?: ReactNode;
-  spectatorChip?: ReactNode;
-  storeCards?: {
-    kinds: readonly StoreReading["kind"][];
-    open: StoreReading["kind"] | null;
-    onToggle: (kind: StoreReading["kind"]) => void;
-    card: ReactNode;
-  };
+  realmName?: string | null;
+  realmOpen?: boolean;
   onOpenRealm?: () => void;
-  onSwitchView: (toRealm: boolean) => void;
-  onOpenToday: () => void;
-}) => {
-  const kind = realm ? homeKind(realm.metadata.has_wonder) : "realm";
-  const level = realm?.base.level ?? 0;
+};
 
-  return (
-    <PhoneTopBarView
-      realm={realm ? { icon: homeIcon(kind, level), label: rankName(level) } : undefined}
-      stores={stores}
-      clock={<FrontierDayClock rules={rules} onOpenToday={onOpenToday} />}
-      isMapView={isMapView}
-      depthSwitch={depthSwitch}
-      spectatorChip={spectatorChip}
-      quest={isMapView && own ? <DailyQuestChip realm={own} showTitle align="left" /> : undefined}
-      storeCard={storeCards?.open ? storeCards.card : undefined}
-      toggleableStores={storeCards?.kinds}
-      onToggleStore={storeCards?.onToggle}
-      onOpenRealm={onOpenRealm}
-      onSwitchView={onSwitchView}
-    />
+export const FrontierTopBar = ({
+  rules,
+  onOpenToday,
+  ...view
+}: Omit<TopBarViewProps, "clock"> & { rules: ExpeditionRules; onOpenToday: () => void }) => (
+  <TopBarView {...view} clock={<FrontierDayClock rules={rules} compact onOpenToday={onOpenToday} />} />
+);
+
+type TopBarViewProps = {
+  stocks: Stocks;
+  clock: ReactNode;
+  placeMenu?: ReactNode;
+  quest?: ReactNode;
+  notice?: ReactNode;
+  spectatorChip?: ReactNode;
+  realmCard?: ReactNode;
+};
+
+export const TopBarView = ({ stocks, clock, placeMenu, quest, notice, spectatorChip, realmCard }: TopBarViewProps) => (
+  <div className="frontier-phone-top">
+    <div className="frontier-bar pointer-events-auto">
+      {placeMenu}
+      <StockChips {...stocks} />
+      <div className="frontier-bar__day">{clock}</div>
+    </div>
+    {realmCard ?? (
+      <div data-map-cluster className="frontier-phone-float">
+        <div className="frontier-phone-float__lead">
+          {notice}
+          {spectatorChip}
+        </div>
+        {quest && <div className="frontier-phone-float__quest">{quest}</div>}
+      </div>
+    )}
+  </div>
+);
+
+const StockChips = ({ stores, realmName, realmOpen = false, onOpenRealm }: Stocks) => {
+  const chips = pickStores(stores, BAR_STORE_KINDS).map((store) => <StockChip key={store.kind} store={store} />);
+  return onOpenRealm && realmName ? (
+    <button
+      type="button"
+      aria-label={realmName}
+      aria-expanded={realmOpen}
+      className="frontier-stock-chips"
+      onClick={onOpenRealm}
+    >
+      {chips}
+    </button>
+  ) : (
+    <div role="group" aria-label="Stores" className="frontier-stock-chips">
+      {chips}
+    </div>
   );
 };
 
-export const PhoneTopBarView = ({
-  realm,
-  stores,
-  clock,
-  isMapView,
-  depthSwitch,
-  spectatorChip,
-  quest,
-  storeCard,
-  toggleableStores,
-  onToggleStore,
-  onOpenRealm,
-  onSwitchView,
-}: {
-  realm?: { icon: IconMeaning; label: string };
-  stores: readonly StoreReading[];
-  clock: ReactNode;
-  isMapView: boolean;
-  depthSwitch?: ReactNode;
-  spectatorChip?: ReactNode;
-  quest?: ReactNode;
-  storeCard?: ReactNode;
-  toggleableStores?: readonly StoreReading["kind"][];
-  onToggleStore?: (kind: StoreReading["kind"]) => void;
-  onOpenRealm?: () => void;
-  onSwitchView: (toRealm: boolean) => void;
-}) => {
-  const shownStores = pickStores(stores, REALM_STORE_KINDS);
-
+const StockChip = ({ store }: { store: StoreReading }) => {
+  const shown = useLandedValue(store.flyTarget, store.amount);
+  const line = storeLine(store);
   return (
-    <div className="frontier-phone-top">
-      <div className="frontier-phone-row">
-        <div className="frontier-phone-pill pointer-events-auto">
-          {realm && (
-            <>
-              <button type="button" className="frontier-phone-realm" aria-label={realm.label} onClick={onOpenRealm}>
-                <Icon name={realm.icon} size={18} />
-                <span>{realm.label}</span>
-              </button>
-              <span className="frontier-phone-divider" aria-hidden="true" />
-            </>
-          )}
-          {shownStores.map((store) => (
-            <BarStoreItem
-              key={store.kind}
-              store={store}
-              iconSize={15}
-              onToggle={
-                onToggleStore && toggleableStores?.includes(store.kind) ? () => onToggleStore(store.kind) : undefined
-              }
-            />
-          ))}
-        </div>
-        {clock}
-      </div>
-      <div className="frontier-phone-row">
-        <div className="flex min-w-0 items-center gap-1.5">
-          {isMapView && depthSwitch}
-          {spectatorChip}
-        </div>
-        <HudPill label="Map view" role="group" className="pointer-events-auto ml-auto px-1.5">
-          {[
-            <HudTabs
-              key="view"
-              size="sm"
-              value={isMapView ? "world" : "realm"}
-              onChange={(view) => onSwitchView(view === "realm")}
-              tabs={[
-                { key: "realm", label: REALM },
-                { key: "world", label: WORLD },
-              ]}
-            />,
-          ]}
-        </HudPill>
-      </div>
-      {quest && (
-        <div data-top-row className="frontier-phone-row">
-          {quest}
-        </div>
-      )}
-      {storeCard}
-    </div>
+    <span data-store={store.kind} role="img" aria-label={line} data-tip={line} className="frontier-stock-chip">
+      <LandingDelta target={store.flyTarget} />
+      <span data-fly-target={store.flyTarget} className="frontier-stock-chip__icon">
+        <Icon name={FRONTIER_STORES[store.kind].icon} size={20} />
+      </span>
+      <span className={`frontier-stock-chip__value ${STORE_TONES[store.tone].text}`}>
+        {shown === undefined ? "—" : <TickNumber value={shown} format={formatShort} />}
+      </span>
+    </span>
   );
 };

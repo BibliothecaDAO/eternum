@@ -1,18 +1,15 @@
 import "./phone-hud.css";
 
-import { AspectMark } from "@/ui/design-system/aspect-mark";
-import { Icon } from "@/ui/design-system/icon";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { MENU } from "@/ui/design-system/kit/words";
-import type { AspectId } from "@bibliothecadao/types";
 
-import { usePartShown } from "../opening/opening-context";
-import { resolveHudPlaces, resolveMenuPlaces } from "./hud-places";
+import { useHudPlaces } from "./hud-places";
 
 export type HudSurface =
+  | "realm"
   | "research"
   | "feed"
   | "chat"
-  | "relics"
   | "menu"
   | "today"
   | "settings"
@@ -21,74 +18,100 @@ export type HudSurface =
   | "army-lost"
   | "shop";
 
-export const PhoneWorldActions = ({
-  aspect,
-  surface,
-  onSurface,
-  researchReady = false,
-  events,
-  unread,
-}: {
-  aspect?: AspectId;
+type PlacesState = {
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
   researchReady?: boolean;
-  events: number;
-  unread: number;
-}) => {
-  const aspectsOpen = usePartShown("aspects");
-  const researchOpen = usePartShown("research");
-  const relicsOpen = usePartShown("relic-slots");
-  const placesState = {
-    aspectsOpen,
-    researchOpen,
-    relicsOpen,
-    researchReady,
-    feedUnread: events,
-    chatUnread: unread,
-  };
-  const season = resolveHudPlaces(placesState).find((place) => place.key === "season");
-  const menuPlaces = resolveMenuPlaces(placesState);
-  const newPlace =
-    menuPlaces.find((place) => place.key === "chat" && place.count && place.count > 0) ??
-    menuPlaces.find((place) => place.key === "feed" && place.count && place.count > 0) ??
-    menuPlaces.find((place) => place.count && place.count > 0);
-  const toggle = (target: "season" | "menu") => onSurface(surface === target ? null : target);
+  feedUnread: number;
+  chatUnread: number;
+};
 
+const MENU_SURFACES: readonly HudSurface[] = ["menu", "feed", "today", "settings", "shop"];
+
+const usePlaces = ({ surface, researchReady, feedUnread, chatUnread }: PlacesState) =>
+  useHudPlaces({
+    researchReady,
+    feedUnread,
+    chatUnread,
+    chatOpen: surface === "chat",
+  });
+
+export const PhoneTabBar = (state: PlacesState) => {
+  const { surface, onSurface } = state;
+  const places = usePlaces(state);
+  const feed = places.find((place) => place.key === "feed");
+  const tabs = places.filter((place) => place.key !== "feed");
+  const onMenu = surface !== null && MENU_SURFACES.includes(surface);
+  const toggle = (target: HudSurface) => onSurface(surface === target ? null : target);
   return (
-    <nav aria-label="Places" className="frontier-phone-actions pointer-events-auto">
-      {season && (
-        <button
-          type="button"
-          aria-label={season.ariaLabel}
-          aria-current={surface === "season" ? "page" : undefined}
-          className="frontier-phone-action"
-          onClick={() => toggle("season")}
-        >
-          <Icon name={season.icon} size={24} />
-          {aspect && (
-            <span className="frontier-phone-action__facet">
-              <AspectMark aspect={aspect} size={14} decorative />
-            </span>
-          )}
-        </button>
-      )}
-      <button
-        type="button"
-        aria-label={MENU}
-        aria-current={surface === "menu" ? "page" : undefined}
-        className="frontier-phone-action"
-        onClick={() => toggle("menu")}
-      >
-        <Icon name="menu" size={24} />
-        {newPlace && (
-          <span
-            className="frontier-phone-action__dot"
-            data-dot=""
-            aria-label={newPlace.countLabel ?? newPlace.ariaLabel}
-          />
-        )}
-      </button>
+    <nav aria-label="Places" className="frontier-tab-bar pointer-events-auto">
+      {tabs.map((place) => (
+        <PlaceTab
+          key={place.key}
+          {...placeTab(place)}
+          current={surface === place.key}
+          onPress={() => toggle(place.key)}
+        />
+      ))}
+      <PlaceTab
+        label={MENU}
+        icon="menu"
+        current={onMenu}
+        dot={feed?.count ? feed.countLabel : undefined}
+        onPress={() => toggle("menu")}
+      />
     </nav>
   );
 };
+
+type PlaceTabProps = {
+  label: string;
+  ariaLabel?: string;
+  icon: IconMeaning;
+  count?: number;
+  countTone?: "good";
+  countLabel?: string;
+  dot?: string;
+  current: boolean;
+  onPress: () => void;
+};
+
+const PlaceTab = ({
+  label,
+  ariaLabel = label,
+  icon,
+  count,
+  countTone,
+  countLabel,
+  dot,
+  current,
+  onPress,
+}: PlaceTabProps) => (
+  <button
+    type="button"
+    aria-label={ariaLabel}
+    aria-current={current ? "page" : undefined}
+    className="frontier-tab"
+    onClick={onPress}
+  >
+    <span className="frontier-tab__icon">
+      <Icon name={icon} size={26} loading="eager" decoding="sync" />
+      {count !== undefined && (
+        <span className="frontier-tab__badge" data-tone={countTone} aria-label={countLabel}>
+          {count}
+        </span>
+      )}
+      {dot && <span className="frontier-tab__dot" data-dot="" aria-label={dot} />}
+    </span>
+    <span className="frontier-tab__label">{label}</span>
+  </button>
+);
+
+const placeTab = (place: ReturnType<typeof usePlaces>[number]) => ({
+  label: place.label,
+  ariaLabel: place.ariaLabel,
+  icon: place.icon,
+  count: place.count,
+  countTone: place.countTone,
+  countLabel: place.countLabel,
+});

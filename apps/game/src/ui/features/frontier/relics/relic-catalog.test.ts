@@ -3,7 +3,8 @@ import { nativeRuleConstants as rule } from "@bibliothecadao/eternum/game-client
 
 import { RELIC_WORDS } from "@/ui/design-system/kit/words";
 
-import { RELIC_KINDS, relicEffect, relicId, relicName, relicSeconds } from "./relic-catalog";
+import { RELIC_KINDS } from "@/ui/design-system/domain-icon-meaning";
+import { relicEffect, relicId, relicName, relicSeconds } from "./relic-catalog";
 
 describe("the relic catalog", () => {
   it("names a relic by its tier and kind", () => {

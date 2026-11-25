@@ -4,9 +4,9 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { findBankedCounter, flyToBankedCounter } from "@/ui/motion/moments/banked-flight";
 import { playHaptic } from "@/ui/motion/motion-settings";
 import { formatGain, resourceName } from "@bibliothecadao/types";
+import { showClearBanner } from "./fight-banner";
 import { payoutSprites, type SiteClear } from "./site-outcome";
 
-/** The guard falls and any resource payout flies to its banked counter. */
 const GUARD_FALLS_MS = 300;
 
 export const playSiteClear = ({
@@ -23,6 +23,7 @@ export const playSiteClear = ({
   void AudioManager.getInstance().play("combat.victory");
   playHaptic(1);
   burst();
+  showClearBanner(clear);
   // The payout's counter holds from now, as its balance arrives with the story.
   if (clear.reward) payHome(clear.reward, at);
   setTimeout(() => {

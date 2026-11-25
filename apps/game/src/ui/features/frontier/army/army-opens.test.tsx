@@ -106,7 +106,7 @@ const pickInDock = () =>
 /** A phone's picked army in the action row: its token, which opens its card. */
 const details = () => host.querySelector<HTMLButtonElement>('button[aria-label="Army 1: details"]');
 const rowButton = (name: RegExp) =>
-  [...details()!.parentElement!.querySelectorAll<HTMLButtonElement>("button")].find((button) =>
+  [...details()!.closest(".army-tray")!.querySelectorAll<HTMLButtonElement>("button")].find((button) =>
     name.test(button.getAttribute("aria-label") ?? button.textContent ?? ""),
   )!;
 const staminaMeter = () =>
@@ -147,7 +147,7 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(staminaMeter().getAttribute("aria-valuenow")).toBe("90");
     expect(staminaMeter().getAttribute("aria-valuemax")).toBe("150");
     expect(host.querySelectorAll('button[aria-label="Army 1: details"]')).toHaveLength(1);
-    expect(details()!.textContent).toContain("5,000");
+    expect(details()!.textContent).toContain("5K");
   });
 
   it("opens the army's card from its token", async () => {
@@ -158,14 +158,15 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
   });
 
-  it("reads stamina on its Fragments refill, which a historical LORDS balance neither fills nor unlocks", async () => {
+  it("prices its Fragments refill, which a historical LORDS balance neither fills nor unlocks", async () => {
     const store = await renderHud();
     await act(async () => store.applyFacts(sellingFragments(store) as never));
     await select(ARMY);
     const refill = () => [rowButton(/^Refill /).getAttribute("aria-label"), rowButton(/^Refill /).disabled];
-    expect(refill()).toEqual(["Refill 90/150", true]);
+    const price = "Refill stamina · 30 Fragments · Needs 30 Fragments, have 0";
+    expect(refill()).toEqual([price, true]);
     await act(async () => store.applyFacts([realmLords(40)] as never));
-    expect(refill()).toEqual(["Refill 90/150", true]);
+    expect(refill()).toEqual([price, true]);
     expect(host.querySelector("[data-kit-sheet]")).toBeNull();
   });
 
@@ -353,50 +354,5 @@ describe.each([["desktop", true]])("the army's panel on a %s", (_, desktop) => {
     // The army is selected: for a player the dock's pick would reopen its panel.
     await pickInDock();
     expect(panel()).toBeNull();
-  });
-});
-
-const { takeArmySelectRequest } = await import("@/three/scenes/worldmap-army-select-request");
-
-// Review clarity-2, P2: Today's Select picks the readiest army as the dock does, so the army already selected is handed
-// back too: a desktop's panel in Today's place, a phone's action row with Today put away.
-describe.each([
-  ["desktop", true],
-  ["phone", false],
-])("Today's Select on a %s, for the army already selected", (_, desktop) => {
-  beforeEach(() => layout(desktop));
-
-  const todaySheet = () => host.querySelector('[aria-label="Today"][data-kit-sheet]');
-  const openToday = () => act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Today"]')!.click());
-  const pressSelect = () =>
-    act(async () =>
-      [...host.querySelectorAll<HTMLButtonElement>("[data-kit-sheet] button")]
-        .find((button) => button.textContent === "Select")!
-        .click(),
-    );
-  /** The map takes the request as focusAndSelectArmy does: the army's hex, then the army, in one continuation. */
-  const mapAnswers = (request: ReturnType<typeof takeArmySelectRequest>) =>
-    act(async () => {
-      useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 10, row: 10 } });
-      useUIStore.getState().selectOnMap({ kind: "army", entityId: request!.entityId, tile: "own" });
-    });
-
-  it("hands the army back and puts Today away", async () => {
-    await renderHud();
-    await select(ARMY);
-    if (desktop) await closePanel();
-    takeArmySelectRequest();
-    await openToday();
-    expect(todaySheet()).not.toBeNull();
-
-    await pressSelect();
-    const request = takeArmySelectRequest();
-    expect(request?.entityId).toBe(ARMY);
-    await mapAnswers(request);
-
-    expect(todaySheet()).toBeNull();
-    expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
-    if (desktop) expect(panel()).not.toBeNull();
-    else expect([panel(), details() !== null]).toEqual([null, true]);
   });
 });

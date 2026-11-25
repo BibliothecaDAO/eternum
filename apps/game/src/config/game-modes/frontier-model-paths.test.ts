@@ -40,13 +40,16 @@ it("gives every Frontier building its own distinct model without changing other 
       );
     }
   }
+  expect(frontier.structureModelPaths[StructureType.Camp]).toEqual([
+    frontierPaintedPath("camp"),
+    ...getStructureModelPaths()[StructureType.Camp].slice(1),
+  ]);
+  expect(frontier.structureModelPaths[StructureType.Camp].at(-2)).toBe(frontierPaintedPath("supply-yard"));
   expect(frontier.structureModelPaths[StructureType.Rift]).toEqual([
     frontierPaintedPath("essence-rift"),
     ...getStructureModelPaths()[StructureType.Rift].slice(1),
   ]);
-  for (const type of [StructureType.Camp, StructureType.Realm]) {
-    expect(frontier.structureModelPaths[type]).toEqual(getStructureModelPaths()[type]);
-  }
+  expect(frontier.structureModelPaths[StructureType.Realm]).toEqual(getStructureModelPaths()[StructureType.Realm]);
   for (const group of [BUILDINGS_GROUPS.REALMS, BUILDINGS_GROUPS.VILLAGE]) {
     expect(frontier.buildingModelPaths[group]).toEqual(buildingModelPaths()[group]);
   }
