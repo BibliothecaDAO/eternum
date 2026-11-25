@@ -180,6 +180,19 @@
   right: -8px;
   display: flex;
 }
+.mp-token__combat {
+  position: absolute;
+  bottom: -5px;
+  left: -7px;
+  display: flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--mp-side);
+  border-radius: var(--hud-radius-round);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+}
 .mp-token__strip {
   display: flex;
   height: 18px;
