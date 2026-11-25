@@ -3,7 +3,7 @@ import { act, type ReactElement } from "react";
 import { deepScenario } from "@/lab/game/deep-scenario";
 import { createRoot } from "react-dom/client";
 import type { ActionPath } from "@bibliothecadao/eternum";
-import { StructureType } from "@bibliothecadao/types";
+import { formatHeldAgainst, StructureType } from "@bibliothecadao/types";
 import { EXPLORE, MOVE, ORDER_REFUSAL_WORDS, TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
 import { PerspectiveCamera } from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -576,8 +576,10 @@ describe("an army selected on a desktop keeps its actions one click away (owner,
     const drawn = drawnSurface()!;
     expect(drawn.id).toBe("order-preview");
     // The stub's store holds no army row, so what the army holds reads as unknown.
-    const reason = drawn.host.querySelector<HTMLElement>("[role=alert]")!.dataset;
-    expect([reason.refusedOrder, reason.need, reason.held]).toEqual(["stamina", "20", undefined]);
+    const reason = drawn.host.querySelector<HTMLElement>("[role=alert]")!;
+    const shown = formatHeldAgainst(undefined, 20);
+    expect([reason.dataset.refusedOrder, reason.textContent]).toEqual(["stamina", `${shown.held} / ${shown.need}`]);
+    expect(reason.querySelector("img, svg")).not.toBeNull();
     expect(verbOf(drawn.host, "Explore").disabled).toBe(true);
     expect(drawn.host.textContent).not.toContain("A right-click sends it at once.");
     expect([sent, cleared]).toEqual([[], []]);
@@ -622,7 +624,7 @@ describe("an army selected on a desktop keeps its actions one click away (owner,
     return {
       verb: verb.textContent,
       disabled: verb.disabled,
-      reason: drawn.host.querySelector<HTMLElement>("[role=alert]")?.dataset.refusedOrder,
+      reason: drawn.host.querySelector<HTMLElement>("[role=alert]")?.textContent,
     };
   };
 
@@ -637,7 +639,7 @@ describe("an army selected on a desktop keeps its actions one click away (owner,
 
       scene.onHexagonRightClick(rightClick(), FAR);
 
-      expect(shownPreview()).toEqual({ verb: MOVE, disabled: true, reason: "too-far" });
+      expect(shownPreview()).toEqual({ verb: MOVE, disabled: true, reason: ORDER_REFUSAL_WORDS["too-far"] });
       expect([sent, selections, cleared, useUIStore.getState().entityActions.selectedEntityId]).toEqual([
         [],
         [],
@@ -652,7 +654,7 @@ describe("an army selected on a desktop keeps its actions one click away (owner,
 
       scene.onHexagonRightClick(rightClick(), FAR);
 
-      expect(shownPreview()).toEqual({ verb: EXPLORE, disabled: true, reason: "too-far" });
+      expect(shownPreview()).toEqual({ verb: EXPLORE, disabled: true, reason: ORDER_REFUSAL_WORDS["too-far"] });
       expect([sent, cleared]).toEqual([[], []]);
     });
 
@@ -887,7 +889,7 @@ describe("the click matrix: what is selected × what is clicked", () => {
         ...did,
         ...(drawn
           ? [
-              `${drawn.id}: ${drawn.host.querySelector<HTMLElement>("[data-refused-order]")?.dataset.refusedOrder} ${drawn.host.querySelector("button:not([aria-label])")?.textContent}`,
+              `${drawn.id}: ${drawn.host.querySelector("[data-refused-order]")?.textContent} ${drawn.host.querySelector("button:not([aria-label])")?.textContent}`,
             ]
           : []),
         ...map.sent.map(() => "its order runs"),
@@ -961,13 +963,13 @@ describe("the click matrix: what is selected × what is clicked", () => {
       nothing: { ...none, "your realm beside": "realm menu" },
       army: {
         "your army beside": "its order runs",
-        "your army far": `order-preview: too-far ${TRANSFER_TROOPS.title}`,
-        "your army on its spire": `order-preview: too-far ${TRANSFER_TROOPS.title}`,
-        "your army on a cleared site": `order-preview: too-far ${TRANSFER_TROOPS.title}`,
+        "your army far": `order-preview: ${ORDER_REFUSAL_WORDS["too-far"]} ${TRANSFER_TROOPS.title}`,
+        "your army on its spire": `order-preview: ${ORDER_REFUSAL_WORDS["too-far"]} ${TRANSFER_TROOPS.title}`,
+        "your army on a cleared site": `order-preview: ${ORDER_REFUSAL_WORDS["too-far"]} ${TRANSFER_TROOPS.title}`,
         "your realm beside": "its order runs",
         "enemy army": "its order runs",
         "bare ground in reach": "its order runs",
-        "bare ground far": `order-preview: too-far ${EXPLORE}`,
+        "bare ground far": `order-preview: ${ORDER_REFUSAL_WORDS["too-far"]} ${EXPLORE}`,
       },
       realm: { ...none, "your realm beside": "realm menu" },
     });
