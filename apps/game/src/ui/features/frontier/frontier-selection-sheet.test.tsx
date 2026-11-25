@@ -355,13 +355,15 @@ it("the map's actual transfer selection shows the survivor before the player con
     };
     expectMergePreview();
     expect(swap).not.toHaveBeenCalled();
-    const confirm = [...host.querySelectorAll("button")].find((button) => button.textContent === "Merge into Army 2")!;
+    const confirm = [...host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Merge into 500 Knights",
+    )!;
     await act(async () => confirm.click());
     expect(swap).not.toHaveBeenCalled();
     // Confirming the loss preserves the preview; only the final press sends the transfer.
     expectMergePreview();
     const final = [...host.querySelectorAll("button")].find(
-      (button) => button.textContent === "Confirm merge into Army 2",
+      (button) => button.textContent === "Confirm merge into 500 Knights",
     )!;
     await act(async () => final.click());
     expect(swap).toHaveBeenCalledWith(

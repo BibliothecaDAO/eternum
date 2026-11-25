@@ -147,7 +147,7 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(staminaMeter().getAttribute("aria-valuenow")).toBe("90");
     expect(staminaMeter().getAttribute("aria-valuemax")).toBe("150");
     expect(host.querySelectorAll('button[aria-label="5,000 Knights: details"]')).toHaveLength(1);
-    expect(details()!.textContent).toContain("5K");
+    expect(details()!.textContent).toContain("5,000 Knights");
   });
 
   it("opens the army's card from its token", async () => {

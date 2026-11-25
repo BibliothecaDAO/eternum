@@ -302,7 +302,7 @@ it("is no card for an army acting on a tile with none of the realm's armies on i
 it("starts the amount again from the armies' new troops when they change while it is open, and sends only what one holds", async () => {
   const store = twoArmies();
   const { swap } = render(store);
-  const [[picked], [tapped]] = sides() as [string, string][];
+  const [, [tapped]] = sides() as [string, string][];
   slide(599);
   expect(button(`Move 599 to ${tapped}`)).toBeDefined();
 
@@ -329,10 +329,10 @@ it("starts the amount again from the armies' new troops when they change while i
   expect(amount()).toBe("100");
   // Again a merge into the army tapped, over the new counts: never a count below none.
   expect(sides()).toEqual([
-    [picked, "0"],
-    [tapped, "200"],
+    ["100 Knights · Army 1", "0"],
+    ["100 Knights · Army 2", "200"],
   ]);
-  await act(async () => button(`Merge into ${tapped}`)!.click());
+  await act(async () => button("Merge into 100 Knights · Army 2")!.click());
   if (button(/^Confirm merge /)) await act(async () => button(/^Confirm merge /)!.click());
   expect(swap).toHaveBeenCalledOnce();
   expect(swap).toHaveBeenCalledWith(
@@ -346,7 +346,11 @@ it("tells two armies of the same troops apart by their slot", () => {
   const wire = (value: unknown) =>
     JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
   store.applyFacts([
-    { model: "ExplorerTroops", key: "0x74", value: wire({ ...now(201), troops: { ...now(201).troops, count: 300n * PRECISION } }) },
+    {
+      model: "ExplorerTroops",
+      key: "0x74",
+      value: wire({ ...now(201), troops: { ...now(201).troops, count: 300n * PRECISION } }),
+    },
   ] as never);
   render(store);
   expect(sides().map(([name]) => name)).toEqual(["300 Knights · Army 1", "300 Knights · Army 2"]);

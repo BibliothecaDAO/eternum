@@ -131,7 +131,9 @@ export const armyLabel = (store: NativeFactStore, explorerId: number, timestamp:
 const armyNames = (armies: readonly NativeRows["ExplorerTroops"][]): string[] => {
   const names = armies.map((army) => armyName(army.troops.category, troopCount(army.troops)));
   return names.map((name, index) =>
-    names.indexOf(name) === names.lastIndexOf(name) ? name : `${name} · ${ARMY} ${armyNumber(armies[index]) ?? index + 1}`,
+    names.indexOf(name) === names.lastIndexOf(name)
+      ? name
+      : `${name} · ${ARMY} ${armyNumber(armies[index]) ?? index + 1}`,
   );
 };
 
