@@ -21,6 +21,20 @@
     display: none;
   }
 }
+@container (max-width: 480px) {
+  .frontier-crown .frontier-place-switch__word,
+  .frontier-crown .frontier-place-pill__name {
+    display: none;
+  }
+  .frontier-crown .frontier-place-pill {
+    min-width: 0;
+  }
+}
+@container (max-width: 320px) {
+  .frontier-crown .frontier-day-pill__ring {
+    display: none;
+  }
+}
 .frontier-crown .frontier-place-pill {
   min-width: 132px;
   gap: theme(spacing.2);
