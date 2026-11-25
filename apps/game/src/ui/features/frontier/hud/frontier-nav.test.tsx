@@ -3,13 +3,12 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { SPIRE_WORDS } from "@/ui/design-system/kit/words";
 
 import { PhoneTabBar, type HudSurface } from "./frontier-nav";
 import { selectLayer } from "./map-layers";
 import { useOnePanel } from "./one-panel";
-import { useHudPopover } from "./hud-popover";
-import { PlaceMenu } from "./surface-deep-switch";
+import { toggleQuestDock, useQuestDockOpen } from "../day/quest-dock";
+import { PlaceSwitch } from "./surface-deep-switch";
 
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
 vi.mock("../frontier-home", () => ({ useGoToFrontierPlace: () => vi.fn() }));
@@ -42,7 +41,7 @@ function PhoneHud({ open }: { open: HudSurface }) {
   return (
     <>
       <output data-page>{surface ?? "map"}</output>
-      <PlaceMenu
+      <PlaceSwitch
         isMapView
         layers={layers}
         onGoRealm={() => openSurface(null)}
@@ -97,76 +96,19 @@ it("choosing the layer already shown puts the page away without moving the map",
   expect(page()).toBe("map");
 });
 
-it("names the place shown on its pill and lists every place, the locked ones with what opens them", () => {
-  act(() => root.render(<PhoneHud open="research" />));
-  const pill = document.querySelector<HTMLButtonElement>("[data-place-pill]")!;
-  expect([pill.dataset.place, pill.getAttribute("aria-expanded")]).toEqual(["Hollow", "false"]);
-  act(() => pill.click());
-  const rows = [...document.querySelectorAll<HTMLButtonElement>('[data-surface-deep-switch] [role="tab"]')];
-  expect(rows.map((row) => [row.getAttribute("aria-label"), row.getAttribute("aria-selected"), row.disabled])).toEqual([
-    ["Realm", "false", false],
-    ["Surface", "false", false],
-    ["Veil", "false", false],
-    ["Hollow", "true", false],
-    ["Deep", "false", true],
-  ]);
-  expect(rows[4]!.textContent).toBe("DeepSpire III");
-  act(() => pill.click());
-  expect(document.querySelector("[data-surface-deep-switch]")).toBeNull();
-});
-
-it("lists each place with what stands there, and a locked place with its lock and what opens it", () => {
-  const layers = { layers: [0, 1, 2] as const, shown: 1 as const, go };
-  act(() =>
-    root.render(
-      <PlaceMenu
-        isMapView
-        layers={layers}
-        onGoRealm={vi.fn()}
-        onGoSurface={vi.fn()}
-        lines={{ realm: "2 / 6 plots", surface: "1 army", 1: "1 army", 2: "0 armies", 3: "0 armies" }}
-      />,
-    ),
-  );
-  act(() => document.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
-  const rows = [...document.querySelectorAll<HTMLButtonElement>('[role="tab"]')].map((row) => [
-    row.getAttribute("aria-label"),
-    row.querySelector(".frontier-place-row__line")?.textContent ?? null,
-    row.dataset.locked === "true",
-  ]);
-  expect(rows).toEqual([
-    ["Realm", "2 / 6 plots", false],
-    ["Surface", "1 army", false],
-    ["Veil", "1 army", false],
-    ["Hollow", "0 armies", false],
-    ["Deep", SPIRE_WORDS.lockedAt(3), true],
-  ]);
-});
-
-function SurfacePopover() {
-  const { triggerProps, popover } = useHudPopover({ surface: true });
-  return (
-    <>
-      <button type="button" {...triggerProps}>
-        Quest
-      </button>
-      {popover(<p data-quest-card>Today's quest</p>, { className: "", layout: "phone" })}
-    </>
-  );
-}
-
 function PhoneHudWithQuest() {
   const { surface, openSurface } = useOnePanel(null, true);
   return (
     <>
       <output data-page>{surface ?? "map"}</output>
-      <SurfacePopover />
+      <button onClick={toggleQuestDock}>Quest</button>
+      {useQuestDockOpen() && <p data-quest-card>Today's quest</p>}
       <button onClick={() => openSurface("today")}>Open page</button>
     </>
   );
 }
 
-it("puts the open page away when the quest's card opens on a phone, and closes the card when a page opens", () => {
+it("puts the open page away when the quest's dock opens on a phone, and closes the dock when a page opens", () => {
   const card = () => document.querySelector("[data-quest-card]");
   act(() => root.render(<PhoneHudWithQuest />));
   press("Open page");

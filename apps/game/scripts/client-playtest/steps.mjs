@@ -111,9 +111,11 @@ export const HUD_WORDS = {
   feed: "Feed",
   research: "Research",
   close: "Close",
+  ok: "OK",
   chat: "Chat",
   settings: "Settings",
   today: "Today",
+  skipTutorial: "Skip tutorial",
 };
 
 const PHONE_PLACE_PRESSES = {
@@ -1587,29 +1589,29 @@ const BANE_COLLECTIONS = {
     button: "Collect",
     receipts: ["LaborGrant"],
     quest: "The Cull",
-    count: "2,500 of 2,500 troops",
-    head: "Ash Fall",
+    count: "(2.5K/2.5K)",
+    head: "World Bane: Ash Fall",
   },
   again: {
     button: "Collect again",
     receipts: ["BaneGrant"],
     quest: "The Cull",
-    count: "2,500 of 2,500 troops",
-    head: "Ash Fall",
+    count: "(2.5K/2.5K)",
+    head: "World Bane: Ash Fall",
   },
   late: {
     button: "Collect",
     receipts: ["LaborGrant", "BaneGrant"],
     quest: "The Cull",
-    count: "2,500 of 2,500 troops",
-    head: "Ash Fall",
+    count: "(2.5K/2.5K)",
+    head: "World Bane: Ash Fall",
   },
   team: {
     button: "Collect",
     receipts: ["LaborGrant"],
     quest: "The Stand",
-    count: "3 of 3 sites",
-    head: "Prowess's bane",
+    count: "(3/3)",
+    head: "Bane from Prowess",
   },
 };
 
@@ -1697,7 +1699,7 @@ function staminaEffectSteps(wind) {
           reading.current >= minimum &&
           reading.current < minimum + 10 &&
           reading.maximum === T2_KNIGHT_STAMINA_MAX &&
-          reading.text.includes("Full in")
+          reading.refills
           ? completed(played)
           : failed("Army bar and refill time must reflect the recorded stamina effects", played);
       },
@@ -1712,7 +1714,8 @@ function readArmyStamina(browser) {
     const meter = line?.querySelector('[role="meter"][aria-label="stamina"]');
     const rect = line?.getBoundingClientRect();
     return { current: Number(meter?.getAttribute('aria-valuenow')), maximum: Number(meter?.getAttribute('aria-valuemax')),
-      text: line?.textContent, visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
+      refills: Boolean(sheet?.querySelector('.army-detail__full')),
+      visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
   })()`);
 }
 
@@ -3575,7 +3578,7 @@ async function cameraAtRest(browser) {
 }
 
 /** What the switch that opens the views says: the view shown. */
-const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('[data-place-pill]')?.dataset.place ?? document.querySelector('[data-surface-deep-switch] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
+const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('[data-place-switch]')?.dataset.place ?? document.querySelector('[data-surface-deep-switch] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
 
 /** The views a lab realm with Ethereal I and II lists, and the region's rows (Frontier's spacing). */
 const LAB_LAYERS = LAYER_NAMES.slice(1, 3);
@@ -4081,8 +4084,14 @@ const OPENING_STATE = `JSON.stringify({
   stores: [...document.querySelectorAll("[data-store-kind], [data-kind]")].map((node) => node.getAttribute("data-store-kind") ?? node.getAttribute("data-kind")),
 })`;
 
-/** Turns Show everything on in the page's saved settings and loads the lab game again, as a player's setting persists. */
-const SHOW_EVERYTHING = `JSON.stringify((() => { localStorage.setItem("eternum-world-appearance", JSON.stringify({ state: { showEverything: true, fogStyle: "clear", reducedMotion: false, haptics: true }, version: 0 })); return true; })())`;
+const UNFOLD_TUTORIAL = `JSON.stringify((() => { const fold = document.querySelector('[data-tutorial-form="reminder"] .emissary-dock__fold-btn'); fold?.click(); return Boolean(fold); })())`;
+const PRESS_SKIP_TUTORIAL = `JSON.stringify((() => { const skip = [...document.querySelectorAll("[data-tutorial-dock] button")].find((button) => button.textContent.trim() === ${JSON.stringify(HUD_WORDS.skipTutorial)}); skip?.click(); return Boolean(skip); })())`;
+
+async function skipTheTutorial(browser) {
+  browser.read(UNFOLD_TUTORIAL);
+  await sleep(300);
+  for (let press = 0; press < 2 && browser.read(PRESS_SKIP_TUTORIAL); press++) await sleep(300);
+}
 
 /** The Aspect page's feed: each fight's row, as a player reads it. */
 const ASPECT_FEED = `JSON.stringify((() => {
@@ -4137,7 +4146,7 @@ function raceBoardSteps(result) {
                 const state = browser.read(OPENING_STATE);
                 if (state.lines.length === 0) break;
                 told.push(state.lines[0]);
-                browser.click(HUD_WORDS.close);
+                browser.click(HUD_WORDS.ok);
                 await sleep(400);
               }
               const back = await reloadOn("Deep", "map", scenario)(context);
@@ -4157,10 +4166,10 @@ function raceBoardSteps(result) {
                 : failed("Each line must be told once, and none again after the page loads again", played),
           },
           {
-            name: "show-everything-shows-the-banner",
+            name: "skipped-tutorial-shows-the-banner",
             settleMs: 0,
             play: async (context) => {
-              context.browser.read(SHOW_EVERYTHING);
+              await skipTheTutorial(context.browser);
               const back = await reloadOn("Deep", "map", scenario)(context);
               // The lab's reloaded page offers the wallet step first; a player puts it away to play on.
               if (context.browser.read(`JSON.stringify(Boolean(document.querySelector('[aria-label="Close"]')))`))
@@ -4177,7 +4186,7 @@ function raceBoardSteps(result) {
             verify: ({ played }) =>
               played.state.banner.length > 0
                 ? completed(played)
-                : failed("With Show everything the day banner must show", played),
+                : failed("With the tutorial skipped the day banner must show", played),
           },
         ]
       : []),
@@ -4186,7 +4195,7 @@ function raceBoardSteps(result) {
       play: async ({ browser, extraScreenshot }) => {
         if (result === null) {
           browser.read(
-            `(() => { document.querySelector('[data-daily-quest] button[aria-label="${HUD_WORDS.close}"]')?.click(); return true; })()`,
+            `(() => { [...document.querySelectorAll('[data-daily-quest] button')].find((button) => button.textContent === ${JSON.stringify(HUD_WORDS.ok)})?.click(); return true; })()`,
           );
           await openPlace(browser, HUD_WORDS.season);
         }
@@ -6928,7 +6937,7 @@ export const STEP_SETS = {
         name: "world-screen",
         settleMs: 3_000,
         play: async ({ browser, extraScreenshot }) => {
-          browser.read(SHOW_EVERYTHING);
+          await skipTheTutorial(browser);
           browser.run(["reload"]);
           await sleep(3_000);
           if (browser.read(`JSON.stringify(Boolean(document.querySelector('[aria-label="Close"]')))`))
@@ -6940,7 +6949,7 @@ export const STEP_SETS = {
             places: [...document.querySelectorAll('nav[aria-label="Places"] button')].map((button) => button.getAttribute('aria-label') || button.textContent?.trim()),
             questChip: Boolean(document.querySelector('[data-daily-quest-chip]')),
             depthSwitch: Boolean(document.querySelector('[data-surface-deep-switch]')),
-            realmWorld: [...document.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) => tab.getAttribute('aria-label') || tab.textContent?.trim()),
+            realmWorld: [...document.querySelectorAll('[aria-label="Map view"] :is([role="tab"], [aria-pressed])')].map((tab) => tab.getAttribute('aria-label') || tab.textContent?.trim()),
             armies: document.querySelectorAll('nav[aria-label="Armies"] button').length,
             desktopStores: [...document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]')].map((tile) => tile.dataset.store),
             realmCard: Boolean(document.querySelector('.frontier-realm-card')),
@@ -7177,7 +7186,7 @@ export const STEP_SETS = {
         name: "panel-research",
         settleMs: 3_000,
         play: async ({ browser, extraScreenshot }) => {
-          browser.read(SHOW_EVERYTHING);
+          await skipTheTutorial(browser);
           browser.run(["reload"]);
           await sleep(3_000);
           await openPlace(browser, HUD_WORDS.research);

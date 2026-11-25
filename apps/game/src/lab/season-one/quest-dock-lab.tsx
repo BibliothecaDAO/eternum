@@ -1,12 +1,11 @@
 import { useSearchParams } from "react-router-dom";
 
-import { DAY_BANNER_CASES } from "@/ui/features/frontier/day/day-banner-fixtures";
-import { DayBannerView } from "@/ui/features/frontier/day/day-banner-view";
+import { QUEST_DOCK_CASES } from "@/ui/features/frontier/day/quest-dock-fixtures";
+import { QuestDockView } from "@/ui/features/frontier/day/quest-dock-view";
 
-const NAMES = Object.keys(DAY_BANNER_CASES) as (keyof typeof DAY_BANNER_CASES)[];
+const NAMES = Object.keys(QUEST_DOCK_CASES) as (keyof typeof QUEST_DOCK_CASES)[];
 
-/** `/lab/season-one/day-banner?case=<n>`: the day's banner on its fixtures, in the window's own layout. */
-export function DayBannerLab() {
+export function QuestDockLab() {
   const [params, setParams] = useSearchParams();
   const index = Math.min(Number(params.get("case") ?? 0) || 0, NAMES.length - 1);
   return (
@@ -18,8 +17,8 @@ export function DayBannerLab() {
           </button>
         ))}
       </nav>
-      <div data-day-banner className="w-full max-w-sm">
-        <DayBannerView {...DAY_BANNER_CASES[NAMES[index]!]} />
+      <div data-quest-dock-lab className="w-full max-w-2xl">
+        <QuestDockView {...QUEST_DOCK_CASES[NAMES[index]!]} />
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BANNED_WORDS, VOICE_RULES } from "@bibliothecadao/types";
-import { OPENING_WORDS } from "@/ui/design-system/kit/words";
+import { OK, OPENING_WORDS } from "@/ui/design-system/kit/words";
 import { AspectEmissaryDock } from "../tutorial/aspect-emissary-dock";
 import { OpeningPartGate, OpeningProvider } from "./opening-context";
 import { OPENING, OPENING_MOMENTS, partShown, TUTORIAL_WORD_BUDGET, type OpeningMoment } from "./opening";
@@ -46,7 +46,7 @@ describe("the interface that opens as you play", () => {
     expect(partShown(new Set<OpeningMoment>(["essence"]), "essence-store")).toBe(true);
   });
 
-  it("shows every part with Show everything, outside the game's HUD or while watching", () => {
+  it("shows every part once all is open: the tutorial skipped, outside the game's HUD or while watching", () => {
     for (const moment of OPENING_MOMENTS)
       for (const part of OPENING[moment].parts) expect(partShown("all", part)).toBe(true);
   });
@@ -126,11 +126,11 @@ describe("the interface that opens as you play", () => {
     expect(host.querySelector("[data-part]")).not.toBeNull();
   });
 
-  it("dismisses a line with Close and skips all with Skip tutorial", () => {
+  it("dismisses a line with OK and skips all with Skip tutorial", () => {
     const onDismiss = vi.fn();
     const onSkipAll = vi.fn();
     renderMoment("essence", onDismiss, onSkipAll);
-    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+    act(() => [...host.querySelectorAll("button")].find((each) => each.textContent === OK)!.click());
     expect(onDismiss).toHaveBeenCalledTimes(1);
     const pressSkip = () =>
       act(() => [...host.querySelectorAll("button")].find((each) => each.textContent === "Skip tutorial")!.click());
