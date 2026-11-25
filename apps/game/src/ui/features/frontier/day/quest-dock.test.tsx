@@ -11,7 +11,7 @@ import { nativeBaneConstants, nativeQuestConstants } from "@bibliothecadao/etern
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { useBaneToday } from "./bane-face";
 import { QuestDock } from "./quest-dock";
-import { DAY_BANNER_WORDS } from "../../../design-system/kit/words";
+import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
 
 const BANE_DAY = frontierSeasonOnePreset.banes.quietDays;
 

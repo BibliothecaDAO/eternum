@@ -4,7 +4,6 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { INVITE_WORDS } from "../../../design-system/kit/words";
 
 // The invite on the lab's game, signed in as the lab's player; identity's link-making and the browser's clipboard and
 // new tab stand in.

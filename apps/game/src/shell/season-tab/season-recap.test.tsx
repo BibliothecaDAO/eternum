@@ -69,7 +69,7 @@ import { SITE_KINDS } from "@/ui/features/frontier/board/season-detail";
 import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
 import { setViewportWidth } from "../frame/test-viewport";
 import { ARCHIVED_SEASONS, archivedSeason } from "./archive/archive";
-import { RECAP_WORDS, SEASON_ENDINGS, SHARE_WORDS } from "../../ui/design-system/kit/words";
+import { RECAP_WORDS, SEASON_ENDINGS, SHARE_WORDS } from "@/ui/design-system/kit/words";
 
 const SEASON_ONE = { chainId: ARCHIVED_SEASONS[0]!.chainId, gameId: ARCHIVED_SEASONS[0]!.game_id };
 const BOARD = archivedSeason(SEASON_ONE)!.board;

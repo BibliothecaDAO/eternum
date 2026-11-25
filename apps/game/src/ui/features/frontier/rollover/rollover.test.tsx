@@ -9,7 +9,7 @@ import { RESTING, useDayEndStore, type DayEndPhase } from "@/hooks/store/use-day
 import { endedDay } from "../hud/day-clock";
 import { DayDoneCard } from "./day-done-card";
 import { DayEndScreen } from "./day-end-screen";
-import { DAY_SHARE_WORDS } from "../../../design-system/kit/words";
+import { DAY_SHARE_WORDS } from "@/ui/design-system/kit/words";
 
 describe("the day's end", () => {
   const rules = {

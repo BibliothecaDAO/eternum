@@ -172,7 +172,7 @@ vi.mock("./use-transfer-sides", () => ({
 
 import { iconDefinition, resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { openTransfer } from "./transfer-window";
-import { TRANSFER_REFUSED, WEIGHT_UNKNOWN } from "../../../design-system/kit/words";
+import { TRANSFER_REFUSED, WEIGHT_UNKNOWN } from "@/ui/design-system/kit/words";
 
 const DONKEYS = iconDefinition(resourceMeaning(ResourcesIds.Donkey)).label;
 

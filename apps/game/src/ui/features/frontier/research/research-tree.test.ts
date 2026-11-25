@@ -14,7 +14,7 @@ import {
   researchVerb,
   type RealmResearchFacts,
 } from "./research-tree";
-import { RESEARCH_TREE } from "../../../design-system/kit/words";
+import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 
 const node = (realm: RealmResearchFacts, key: string) => readResearchTree(realm).find((item) => item.key === key)!;
 const why = (realm: RealmResearchFacts, key: string) => {

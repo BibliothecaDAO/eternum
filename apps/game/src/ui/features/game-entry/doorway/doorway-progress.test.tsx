@@ -14,7 +14,7 @@ import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
 
 import { DoorwayScreen } from "./doorway-screen";
 import { doorwayView } from "./doorway-view";
-import { DOORWAY_WORDS } from "../../../design-system/kit/words";
+import { DOORWAY_WORDS } from "@/ui/design-system/kit/words";
 
 afterEach(() => {
   resetLoadingProgress();

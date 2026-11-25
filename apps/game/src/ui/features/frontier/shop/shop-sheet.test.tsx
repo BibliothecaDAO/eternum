@@ -17,8 +17,8 @@ import { sellingFragments } from "../value/fragments-fixture";
 import { GameProvider } from "@/hooks/context/game-context";
 import { transferArmies } from "../army/transfer-fixture";
 import { ShopSheet, ShopView, type ShopViewProps } from "./shop-sheet";
-import { SHOP_WORDS } from "../../../design-system/kit/words";
 import { ANCIENT_SEAL } from "@bibliothecadao/types";
+import { SHOP_WORDS } from "@/ui/design-system/kit/words";
 
 const PLAYER = "0x111";
 

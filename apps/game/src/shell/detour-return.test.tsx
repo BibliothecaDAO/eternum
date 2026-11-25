@@ -31,7 +31,7 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { ProfilePage, SettingsRedirect } from "./profile/profile-pages";
 import { linkWalletHref } from "./profile/settings-route";
 import { useConnectStore } from "./sign-in/connect";
-import { WALLET_WORDS } from "../ui/design-system/kit/words";
+import { WALLET_WORDS } from "@/ui/design-system/kit/words";
 
 const FROM = "/season";
 const unlinked = {

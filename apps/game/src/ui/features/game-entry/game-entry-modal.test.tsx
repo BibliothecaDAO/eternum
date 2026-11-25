@@ -93,7 +93,7 @@ import {
   HELD_REALMS_UNREADABLE,
   HOME_STEP_WORDS,
   REALM_SIDE_WORDS,
-} from "../../design-system/kit/words";
+} from "@/ui/design-system/kit/words";
 
 /** A signed-in Realms account whose linked wallet is `address` (null: none linked). */
 const signedIn = (realmsId: string, address: string | null): Session => ({

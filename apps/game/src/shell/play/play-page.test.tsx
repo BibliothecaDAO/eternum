@@ -115,7 +115,7 @@ import {
   SEASON_ERROR,
   SEASON_INVITE_WORDS,
   tomorrowLasts,
-} from "../../ui/design-system/kit/words";
+} from "@/ui/design-system/kit/words";
 
 const HOUR = 3_600;
 const DAY = 24 * HOUR;

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { type InstallPrompt, useInstallState } from "@/pwa/install-state";
 
 import { AppSettings } from "./app-settings";
-import { SETTINGS_WORDS } from "../../design-system/kit/words";
+import { SETTINGS_WORDS } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

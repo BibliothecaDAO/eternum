@@ -19,7 +19,6 @@ import { DeepSiteCard } from "./deep-site-card";
 import { resolveExplorerCombatTroops, resolveExplorerTroops, staminaAt } from "@bibliothecadao/eternum/troop-stamina";
 import { FrontierArmy } from "../army/frontier-army";
 import { useArmyStamina } from "../hud/army-order";
-import { DEEP_WORDS } from "../../../design-system/kit/words";
 
 const StaminaReading = () => <output>{useArmyStamina(201, 0)?.held ?? "unknown"}</output>;
 

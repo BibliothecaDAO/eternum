@@ -4,7 +4,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CHAT_WORDS } from "../../ui/design-system/kit/words";
+import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 
 // The app as it runs: its shell (which opens the one chat connection for a signed-in player), the lobby's chat, the real
 // store and transport. Only the network stands in: the sockets, the server's answers, and the identity.

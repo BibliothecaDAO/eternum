@@ -33,7 +33,7 @@ import { accountAnswers, deviceLastPlayedBeforeTheAnswer, leaveThePage } from ".
 import { ConnectFlow } from "./connect-flow";
 import { APP_WAIT_MS, discordAndroidIntent, discordAppUrl } from "./discord-app";
 import { forgetSocialStart, pendingSocialStart, rememberSocialStart } from "./social-pending";
-import { SIGN_IN_WORDS, WALLET_WORDS } from "../../ui/design-system/kit/words";
+import { SIGN_IN_WORDS, WALLET_WORDS } from "@/ui/design-system/kit/words";
 
 const NEXT = "/g/0x5245414c4d53/1/map?col=4&row=9&spectate=true";
 

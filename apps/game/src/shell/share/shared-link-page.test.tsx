@@ -23,7 +23,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import { setViewportWidth } from "../frame/test-viewport";
 import { SharedLinkPage } from "./shared-link-page";
-import { COUNTDOWN_WORDS, SHARED_LINK_WORDS } from "../../ui/design-system/kit/words";
+import { COUNTDOWN_WORDS, SHARED_LINK_WORDS } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

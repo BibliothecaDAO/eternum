@@ -9,7 +9,7 @@ import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { TARGET_MARKS, type AttackTargetKind } from "./site-marks";
 import { plateRows } from "@/three/map-plates/map-plate-rows";
 import { frontierSiteName, StructureType, ResourcesIds } from "@bibliothecadao/types";
-import { FIGHT_WORDS, tooFarFrom } from "../../../design-system/kit/words";
+import { FIGHT_WORDS, tooFarFrom } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

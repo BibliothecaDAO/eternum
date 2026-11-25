@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, it } from "vitest";
 import { useShortcutStore } from "@/hooks/store/use-shortcut-store";
 
 import { KeyboardShortcuts, KeyboardShortcutsSetting } from "./keyboard-shortcuts";
-import { SETTINGS_WORDS } from "../../design-system/kit/words";
+import { SETTINGS_WORDS } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

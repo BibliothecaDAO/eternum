@@ -21,7 +21,7 @@ vi.mock("@/pwa/install-state", () => ({ useInstall: () => ({ install: account.in
 
 import { accountAnswers, leaveThePage } from "@/shell/standing-prompts-fixture";
 import { AlertsPopup } from "./alerts-popup";
-import { ADD_TO_HOME_SCREEN, ALERTS_POPUP } from "../../design-system/kit/words";
+import { ADD_TO_HOME_SCREEN, ALERTS_POPUP } from "@/ui/design-system/kit/words";
 
 let service = accountAnswers();
 

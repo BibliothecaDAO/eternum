@@ -24,7 +24,7 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
 vi.mock("@/ui/debug/boot-debug-panel", () => ({ BootDebugPanel: () => null }));
 
 import { PlayRouteDoorway } from "./play-route-doorway";
-import { DOORWAY_WORDS } from "../../../design-system/kit/words";
+import { DOORWAY_WORDS } from "@/ui/design-system/kit/words";
 
 afterEach(() => {
   state.entry = null;

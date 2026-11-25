@@ -8,7 +8,7 @@ vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => (
 
 import { DoorwayScreen } from "./doorway-screen";
 import { doorwayView, type GameRefusal } from "./doorway-view";
-import { DOORWAY_WORDS } from "../../../design-system/kit/words";
+import { DOORWAY_WORDS } from "@/ui/design-system/kit/words";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 

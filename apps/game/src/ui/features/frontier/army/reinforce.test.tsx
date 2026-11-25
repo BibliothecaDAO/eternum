@@ -33,7 +33,7 @@ import {
 import { StructureType } from "@bibliothecadao/types";
 import { ReinforceSheet, useSelectedReinforcement } from "./reinforce";
 import { transferArmies } from "./transfer-fixture";
-import { REINFORCE, wheatForOnly } from "../../../design-system/kit/words";
+import { REINFORCE, wheatForOnly } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

@@ -46,7 +46,7 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
 
 import { setViewportWidth } from "../frame/test-viewport";
 import { ResultsPage } from "./results-page";
-import { SEASON_ENDINGS } from "../../ui/design-system/kit/words";
+import { SEASON_ENDINGS } from "@/ui/design-system/kit/words";
 
 const PLAYTEST = "/results/0x50524f44554354494f4e5f31386530376435323330633539393933-1";
 

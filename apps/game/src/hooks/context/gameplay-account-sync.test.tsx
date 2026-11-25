@@ -49,7 +49,7 @@ import { isExplicitSpectateSession, resolveSpectateIntent } from "@/utils/specta
 import { GameplayAccountSync } from "./gameplay-account-sync";
 import { DoorwayScreen } from "@/ui/features/game-entry/doorway/doorway-screen";
 import { doorwayView } from "@/ui/features/game-entry/doorway/doorway-view";
-import { DOORWAY_WORDS } from "../../ui/design-system/kit/words";
+import { DOORWAY_WORDS } from "@/ui/design-system/kit/words";
 
 beforeEach(async () => {
   const account = await import("../../../../../packages/core/src/account/realms-account");

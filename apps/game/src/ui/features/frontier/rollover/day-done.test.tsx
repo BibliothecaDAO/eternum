@@ -10,7 +10,7 @@ import { dayOf, Position } from "@bibliothecadao/eternum";
 import { endedDay } from "../hud/day-clock";
 
 import { RECORDED_DAY } from "./recorded-day-history";
-import { DAY_SHARE_WORDS, DAY_TOTALS_UNKNOWN, SITES_CLEARED } from "../../../design-system/kit/words";
+import { DAY_SHARE_WORDS, DAY_TOTALS_UNKNOWN, SITES_CLEARED } from "@/ui/design-system/kit/words";
 
 /** Herald's history, answered as prod's answers it: a player's read keeps the events naming them, newest first. */
 const herald = vi.hoisted(() => ({

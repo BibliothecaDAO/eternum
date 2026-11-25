@@ -36,7 +36,7 @@ import {
   PROFILE_WORDS,
   REWARD_WORDS,
   SEASON_INVITE_WORDS,
-} from "../../ui/design-system/kit/words";
+} from "@/ui/design-system/kit/words";
 
 let currentLocation = { pathname: "", search: "", hash: "" };
 const TrackLocation = () => {

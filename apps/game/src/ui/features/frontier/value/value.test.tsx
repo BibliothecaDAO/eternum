@@ -11,7 +11,7 @@ import {
   PAYOUTS_PAUSED,
   WITHDRAWALS_CLOSED,
   paidWhenResumed,
-} from "../../../design-system/kit/words";
+} from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

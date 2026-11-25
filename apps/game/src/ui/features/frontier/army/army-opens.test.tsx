@@ -7,7 +7,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { loadOpening, skipTutorial } from "../opening/opening-store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sellingFragments } from "../value/fragments-fixture";
-import { TRANSFER_TROOPS } from "../../../design-system/kit/words";
+import { TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
 
 // The real Frontier HUD on the lab's game with an army out (the lab's frontier-army view); only the network and the
 // identity stand in.

@@ -9,7 +9,7 @@ vi.mock("@/hooks/context/starknet-provider", async () => ({
 import { installWallet } from "@/ui/modules/identity/test-wallet";
 import { WalletPicker, WalletSign } from "./wallet-actions";
 import { rememberOpened } from "@/ui/modules/identity/wallet-holder";
-import { VALUE_WORDS, WALLET_WORDS } from "../../ui/design-system/kit/words";
+import { VALUE_WORDS, WALLET_WORDS } from "@/ui/design-system/kit/words";
 
 const LINKED = "0x04a1000000000000000000000000000000000000000000000000000000003e9f";
 const OTHER = "0x0777000000000000000000000000000000000000000000000000000000000001";

@@ -32,7 +32,7 @@ import { identityClient, useIdentitySessionStore } from "@/hooks/context/identit
 import { IdentityRequestError } from "@realms-world/identity";
 
 import { PayoutWalletPanel } from "./payout-wallet-panel";
-import { WALLET_WORDS } from "../../ui/design-system/kit/words";
+import { WALLET_WORDS } from "@/ui/design-system/kit/words";
 
 const mounted: (() => Promise<void>)[] = [];
 

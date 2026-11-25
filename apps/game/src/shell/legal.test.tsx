@@ -3,7 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { expect, it } from "vitest";
 
 import { AccountDeletionPage, PrivacyPage, TermsPage } from "./legal";
-import { ACCOUNT_DELETION_WORDS } from "../ui/design-system/kit/words";
+import { ACCOUNT_DELETION_WORDS } from "@/ui/design-system/kit/words";
 
 /** The document's own text, without the frame around it (the footer links realms.world, the DAO's site). */
 const textOf = (page: React.ReactElement) => {

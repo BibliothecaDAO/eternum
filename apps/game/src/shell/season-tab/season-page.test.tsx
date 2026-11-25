@@ -119,13 +119,7 @@ vi.spyOn(console, "error").mockImplementation(() => undefined);
 import { setViewportWidth } from "../frame/test-viewport";
 import { mergeAspectRosters } from "./aspect-roster";
 import { SeasonPage } from "./season-page";
-import {
-  DAY_BANNER_WORDS,
-  POOL_NOT_PUBLISHED,
-  SEASON_ERROR,
-  SEASON_WORDS,
-  WORDS,
-} from "../../ui/design-system/kit/words";
+import { DAY_BANNER_WORDS, POOL_NOT_PUBLISHED, SEASON_ERROR, SEASON_WORDS, WORDS } from "@/ui/design-system/kit/words";
 
 /** Where a row led: the Results address it opened. */
 const Opened = () => <p data-opened>{useLocation().pathname}</p>;

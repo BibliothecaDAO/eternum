@@ -10,7 +10,7 @@ import { questCatalog } from "@bibliothecadao/types";
 import { dayBounds, seasonDay } from "../hud/day-clock";
 import { dayQuestFace } from "../day/day-quest-face";
 import { TodaySheet } from "./today-sheet";
-import { SITES_CLEARED, TODAY_WORDS } from "../../../design-system/kit/words";
+import { SITES_CLEARED, TODAY_WORDS } from "@/ui/design-system/kit/words";
 
 const DAY = 16 * 3_600;
 const HOUR = 3_600;

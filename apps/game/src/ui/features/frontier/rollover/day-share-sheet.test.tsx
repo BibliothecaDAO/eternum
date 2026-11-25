@@ -5,7 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import type { SharedDay } from "@/shell/share/day-card";
-import { SHARE_WORDS } from "../../../design-system/kit/words";
+import { SHARE_WORDS } from "@/ui/design-system/kit/words";
 
 /** The signed-in Realms account as the app holds it, and identity answering as the Worker does for that account. */
 const identity = vi.hoisted(() => {

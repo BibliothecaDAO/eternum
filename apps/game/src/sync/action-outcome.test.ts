@@ -4,7 +4,7 @@ const waitForAction = vi.fn();
 vi.mock("./active-game-client", () => ({ requireActiveGameClient: () => ({ waitForAction }) }));
 
 import { ActionNotAppliedError, untilApplied } from "./action-outcome";
-import { ATTACK_REFUSAL_WORDS } from "../ui/design-system/kit/words";
+import { ATTACK_REFUSAL_WORDS } from "@/ui/design-system/kit/words";
 
 afterEach(() => waitForAction.mockReset());
 

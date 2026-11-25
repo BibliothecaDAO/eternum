@@ -37,7 +37,7 @@ import { identityClient, useIdentitySessionStore } from "@/hooks/context/identit
 
 import { PayoutWalletPanel } from "./payout-wallet-panel";
 import { RealmsWalletRecovery } from "./realms-wallet-recovery";
-import { WALLET_WORDS } from "../../ui/design-system/kit/words";
+import { WALLET_WORDS } from "@/ui/design-system/kit/words";
 
 const WALLET = {
   address: "0x6c3d70a2d9197da8e24ee33ec8e26b00faccfaafe0fa9bd0003c0eb11397b4f",

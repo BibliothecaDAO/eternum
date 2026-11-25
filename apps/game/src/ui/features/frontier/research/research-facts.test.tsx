@@ -14,7 +14,7 @@ import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { realmBoard } from "../build/build-fixture";
 import { FrontierResearch } from "./frontier-research";
 import { useResearchTree } from "./research-facts";
-import { RESEARCH_TREE } from "../../../design-system/kit/words";
+import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

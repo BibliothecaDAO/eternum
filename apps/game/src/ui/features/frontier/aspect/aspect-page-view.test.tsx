@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { ASPECT_PAGE_CASES } from "./aspect-page-fixtures";
 import { AspectPageView, type AspectPageProps } from "./aspect-page-view";
-import { ASPECT_PAGE_WORDS } from "../../../design-system/kit/words";
+import { ASPECT_PAGE_WORDS } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

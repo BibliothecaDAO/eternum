@@ -7,7 +7,7 @@ import { GameProvider } from "@/hooks/context/game-context";
 import { oathName } from "./oath-details";
 import { ArmyOathSockets } from "./oath-slots";
 import { transferArmies } from "./transfer-fixture";
-import { RESEARCH_TREE } from "../../../design-system/kit/words";
+import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 
 it("draws every Oath socket of an army: its Oaths as icons, each open one explaining how to earn one, the rest locked", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

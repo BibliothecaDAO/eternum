@@ -22,7 +22,7 @@ import { useRealtimeChatStore } from "../model/store";
 import { GLOBAL_ROOM } from "../model/chat-rooms";
 import type { DirectMessage, WorldChatMessage, WorldChatZoneState } from "../model/types";
 import { RealtimeChatShell } from "./realtime-chat-shell";
-import { CHAT_WORDS } from "../../../../design-system/kit/words";
+import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 
 const GAME = "game:0x52:7";
 const THREAD = "thread-ada";

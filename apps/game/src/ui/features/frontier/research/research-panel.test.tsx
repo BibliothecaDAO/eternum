@@ -16,7 +16,7 @@ import { EARLY_REALM, MID_REALM } from "./progression-fixture";
 import { ResearchPanel } from "./research-panel";
 import { CastleResearch } from "../upgrade/castle-view";
 import { needLine, readResearchTree, type TreeNode } from "./research-tree";
-import { RESEARCH_TREE } from "../../../design-system/kit/words";
+import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

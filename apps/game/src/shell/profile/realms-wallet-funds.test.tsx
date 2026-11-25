@@ -61,7 +61,7 @@ vi.mock("@/ui/modules/identity/wallet-send", () => ({ prepareDefaultWalletSend: 
 const FEE = { estimated: 7_880_000_000_000_000_000n, max: 9_120_000_000_000_000_000n };
 
 import { RealmsWalletFunds } from "./realms-wallet-funds";
-import { WALLET_WORDS } from "../../ui/design-system/kit/words";
+import { WALLET_WORDS } from "@/ui/design-system/kit/words";
 
 const ADDRESS = "0x6c3d70a2d9197da8e24ee33ec8e26b00faccfaafe0fa9bd0003c0eb11397b4f";
 const EXCHANGE = "0x0213c67ed78bc280887234fe5ed5e77272465317978ae86c25a71531d9332a2d";

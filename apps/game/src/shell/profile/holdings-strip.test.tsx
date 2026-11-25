@@ -54,7 +54,7 @@ import {
   HELD_REALMS_UNREADABLE,
   HOME_STEP_WORDS,
   NO_HELD_REALMS,
-} from "../../ui/design-system/kit/words";
+} from "@/ui/design-system/kit/words";
 
 const HELD_REALMS = "/api/value/held-realms";
 const named = (realmId: number) => `${realmId} · ${canonicalRealm(realmId)!.name}`;

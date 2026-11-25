@@ -50,7 +50,7 @@ vi.mock("@/ui/features/social", () => ({
 }));
 
 import { HudChatWindow } from "./hud-chat-window";
-import { CHAT_WORDS } from "../../../design-system/kit/words";
+import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

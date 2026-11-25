@@ -3,7 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CastleView } from "../upgrade/castle-view";
-import { MAX_ARMY_SIZE } from "../../../design-system/kit/words";
+import { MAX_ARMY_SIZE } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

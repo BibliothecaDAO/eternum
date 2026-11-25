@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 import { AppLabView } from "./app-lab";
 import { LAB_CHAIN, LAB_SHARE_CODE } from "./app-lab-fixtures";
-import { APP_STATE_WORDS, DOORWAY_WORDS, FOOTER_WORDS, SIGN_IN_WORDS } from "../../ui/design-system/kit/words";
+import { APP_STATE_WORDS, DOORWAY_WORDS, FOOTER_WORDS, SIGN_IN_WORDS } from "@/ui/design-system/kit/words";
 
 const identity = vi.hoisted(() => {
   const originalSession = { user: { name: "Original player" } };

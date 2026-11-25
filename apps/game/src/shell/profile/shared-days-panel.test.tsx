@@ -16,7 +16,7 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
 }));
 
 import { SharedDaysPanel } from "./shared-days-panel";
-import { PROFILE_WORDS, SHARED_DAYS_WORDS } from "../../ui/design-system/kit/words";
+import { PROFILE_WORDS, SHARED_DAYS_WORDS } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

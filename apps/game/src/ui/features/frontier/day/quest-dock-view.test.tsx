@@ -7,7 +7,7 @@ import { nativeQuestConstants } from "@bibliothecadao/eternum/game-client";
 
 import { QUEST_DOCK_CASES } from "./quest-dock-fixtures";
 import { QuestDockView, type QuestDockProps } from "./quest-dock-view";
-import { DAY_BANNER_WORDS } from "../../../design-system/kit/words";
+import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

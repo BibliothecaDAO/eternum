@@ -17,7 +17,7 @@ import { installLabChain } from "./lab-chain";
 import { ruinFightScenario } from "./ruin-fight-scenario";
 import { LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
-import { WALLET_WORDS } from "../../ui/design-system/kit/words";
+import { WALLET_WORDS } from "@/ui/design-system/kit/words";
 
 it("keeps the playing ruin scenario clear of wallet onboarding and answers wallet reads locally", async () => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);

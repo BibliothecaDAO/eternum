@@ -9,7 +9,7 @@ import { SeasonList, type SeasonListRow } from "./season-list";
 import { seasonPodium } from "./season-pool";
 import { TARGET_MARKS } from "../sites/site-marks";
 import { LAYER_NAMES } from "@bibliothecadao/types";
-import { LORDS_EARNED, POOL_NOT_PUBLISHED, SEASON_CLIMB, SEASON_ERROR } from "../../../design-system/kit/words";
+import { LORDS_EARNED, POOL_NOT_PUBLISHED, SEASON_CLIMB, SEASON_ERROR } from "@/ui/design-system/kit/words";
 
 const namesALayerBelow = (host: HTMLElement) => LAYER_NAMES.slice(1).some((name) => host.textContent?.includes(name));
 

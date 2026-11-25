@@ -35,7 +35,7 @@ import { useArmyPanelOpens } from "../army/army-opens";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "../hud/one-panel";
 import { campBeside, otherArmyAt, placeSite, relicEffectFact, SITE, SITE_TILE } from "./site-fixture";
 import { TileCard } from "./tile-card";
-import { ATTACK_REFUSAL_WORDS, FIGHT_WORDS, tooFarFrom } from "../../../design-system/kit/words";
+import { ATTACK_REFUSAL_WORDS, FIGHT_WORDS, tooFarFrom } from "@/ui/design-system/kit/words";
 
 const APPLIED = { hash: "0x1", block: 9, status: "SUCCEEDED" };
 

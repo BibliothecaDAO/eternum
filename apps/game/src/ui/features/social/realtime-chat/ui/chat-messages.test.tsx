@@ -22,7 +22,7 @@ import { GLOBAL_ROOM } from "../model/chat-rooms";
 import { useRealtimeChatStore } from "../model/store";
 import type { DirectMessage, WorldChatMessage } from "../model/types";
 import { RealtimeChatShell } from "./realtime-chat-shell";
-import { CHAT_WORDS } from "../../../../design-system/kit/words";
+import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 
 const SELF = "0x7";
 const ALDRIC = "0xa1d";

@@ -16,7 +16,7 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
 });
 
 import { RealmAutomationPanel } from "./realm-automation-panel";
-import { NOTHING_TO_AUTOMATE } from "../../../design-system/kit/words";
+import { NOTHING_TO_AUTOMATE } from "@/ui/design-system/kit/words";
 
 const automationOf = (producedResources: ResourcesIds[]) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

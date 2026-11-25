@@ -11,7 +11,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { deepViewFor, type GameClientSetup, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { sellingFragments } from "./value/fragments-fixture";
 import type { HudSurface } from "./hud/frontier-nav";
-import { ATTACK_REFUSAL_WORDS, POOL_NOT_PUBLISHED, PROFILE_WORDS, SETTINGS_WORDS } from "../../design-system/kit/words";
+import { ATTACK_REFUSAL_WORDS, POOL_NOT_PUBLISHED, PROFILE_WORDS, SETTINGS_WORDS } from "@/ui/design-system/kit/words";
 
 // The real Frontier HUD on the lab's game. Only the network, the identity and the chat pane's own drawing stand in: the
 // HUD, its hooks and the stores are the real ones.

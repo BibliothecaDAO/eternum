@@ -90,7 +90,7 @@ import { EventLogPanel } from "./event-log-panel";
 import { QuickFeedRows, useEventsFeed } from "./quick-feed";
 import { EventsCard } from "../world/hud/events-card";
 import { HISTORY, LOG_BUTTON } from "../../../../scripts/prove-play-game.mjs";
-import { ATTACK_REFUSAL_WORDS, EVENTS_WORDS } from "../../design-system/kit/words";
+import { ATTACK_REFUSAL_WORDS, EVENTS_WORDS } from "@/ui/design-system/kit/words";
 
 const fight = (id: string, at: number, attacker = "0x5", defender = "0x6") => ({
   id,

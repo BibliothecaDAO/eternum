@@ -9,7 +9,7 @@ import { identityClient, useIdentitySessionStore } from "@/hooks/context/identit
 import { IdentityRequestError, type Session } from "@realms-world/identity";
 
 import { DeleteAccount } from "./account-deletion";
-import { ACCOUNT_DELETION_WORDS } from "../../ui/design-system/kit/words";
+import { ACCOUNT_DELETION_WORDS } from "@/ui/design-system/kit/words";
 
 const EMAIL = "leaving@mail.test";
 const SESSION = {

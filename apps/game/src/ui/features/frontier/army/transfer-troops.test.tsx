@@ -21,7 +21,6 @@ import { TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
 import { transferArmies, transferTrainedArmies } from "./transfer-fixture";
 import { toast } from "@/ui/features/event-feed/notify";
 import { TransferTroopsSheet, useSelectedTransfer } from "./transfer-troops";
-import { TRANSFER_TROOPS } from "../../../design-system/kit/words";
 
 const PRECISION = 1_000_000_000n;
 /** The fixture's army (explorer 201, 1,498 knights) stands at (41, 12); its realm's second army stands beside it. */

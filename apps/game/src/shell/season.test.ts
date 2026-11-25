@@ -7,7 +7,7 @@ import type { DirectoryGame } from "./herald";
 import { directoryDay, endedSeasons, isAccelerated, seasonTitle } from "./season";
 import { chooseSeason, hasSeasonRealm, isRehearsal, seasonRealm } from "./season-pick";
 import { ARCHIVED_SEASONS } from "./season-tab/archive/archive";
-import { PLAY_WORDS } from "../ui/design-system/kit/words";
+import { PLAY_WORDS } from "@/ui/design-system/kit/words";
 
 const season = (gameId: number, startMainAt: number, ownRealm: boolean): DirectoryGame => ({
   dev_mode_on: false,

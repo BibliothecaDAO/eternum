@@ -8,7 +8,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { MID_REALM } from "../research/progression-fixture";
 import { readResearchTree, type RealmResearchFacts } from "../research/research-tree";
 import { type CardMakes, BuildingCardView } from "./building-card";
-import { RESEARCH_TREE } from "../../../design-system/kit/words";
+import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

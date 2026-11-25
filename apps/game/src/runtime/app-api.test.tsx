@@ -17,7 +17,7 @@ import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 
 import { API_READ_TIMEOUT_MS, fetchApi, retryTransientRead } from "./app-api";
 import { appQueryClient } from "./query-client";
-import { SEASON_ERROR } from "../ui/design-system/kit/words";
+import { SEASON_ERROR } from "@/ui/design-system/kit/words";
 
 /** A service that takes the request and never answers; it gives up only when the caller aborts. */
 const hangingFetch = vi.fn(

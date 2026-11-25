@@ -7,7 +7,7 @@ import { expect, it, vi } from "vitest";
 vi.hoisted(() => vi.stubGlobal("fetch", () => new Promise<Response>(() => {})));
 
 import { FrontierRows } from "./frontier-rows";
-import { SEASON_WORDS } from "../../ui/design-system/kit/words";
+import { SEASON_WORDS } from "@/ui/design-system/kit/words";
 
 it("says what each of a board row's counts is, on hover and to a screen reader, never a bare number (qa-app-1 P3-7)", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { pageNavigation } from "@/utils/page-navigation";
 import { VideoSettings } from "./video-settings";
-import { SETTINGS_WORDS } from "../../design-system/kit/words";
+import { SETTINGS_WORDS } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

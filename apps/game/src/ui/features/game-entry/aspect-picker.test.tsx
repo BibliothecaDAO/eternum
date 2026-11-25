@@ -4,7 +4,7 @@ import { ordersOfAspect } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AspectPicker, aspectOffer, type AspectMembers } from "./aspect-picker";
-import { ASPECT_STEP_WORDS } from "../../design-system/kit/words";
+import { ASPECT_STEP_WORDS } from "@/ui/design-system/kit/words";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

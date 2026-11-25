@@ -35,7 +35,6 @@ vi.mock("@/ui/modules/entity-details/hooks/use-realm-level-up", () => ({
 
 import { BUILD_ORDER_WORDS } from "@/ui/design-system/kit/words";
 import { BuildOrderPanel } from "./build-order-panel";
-import { BUILD_ORDER_WORDS } from "../../../design-system/kit/words";
 
 const WOOD = {
   id: "1-build-wood",

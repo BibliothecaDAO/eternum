@@ -10,7 +10,7 @@ import { OPENING_MOMENTS, teacherAspectOf, type OpeningMoment } from "../opening
 import { OPENING_RULES } from "../opening/opening-fixtures";
 import { ASPECT_EMISSARY_PORTRAITS } from "./aspect-emissaries";
 import { AspectEmissaryDock } from "./aspect-emissary-dock";
-import { BUILD, MENU, OK, OPENING_WORDS, SETTINGS } from "../../../design-system/kit/words";
+import { BUILD, MENU, OK, OPENING_WORDS, SETTINGS } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

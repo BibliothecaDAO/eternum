@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { dayBounds } from "../hud/day-clock";
 import { RECORDED_DAY } from "../rollover/recorded-day-history";
-import { TODAY_WORDS } from "../../../design-system/kit/words";
+import { TODAY_WORDS } from "@/ui/design-system/kit/words";
 
 /**
  * Today's page of an earlier day, for a player who missed that day's end (owner, 10 Nov 2026: "I didnt get the recap
