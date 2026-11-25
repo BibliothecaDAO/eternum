@@ -1,15 +1,12 @@
 import "./today-sheet.css";
 
-import { formatAmount, formatShort } from "@bibliothecadao/types";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { formatAmount } from "@bibliothecadao/types";
+import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
-  ASPECT_PAGE_WORDS,
   DAY,
   dayLeft,
   dayOfSeason,
-  ESSENCE,
-  LABOR,
   OPENING_WORDS,
   phraseText,
   TODAY,
@@ -18,9 +15,8 @@ import {
 } from "@/ui/design-system/kit/words";
 
 import type { DayClock } from "../hud/day-clock";
+import { DayGains, type DayGainsReading } from "./day-gains";
 import type { WeekDay } from "./quest-week";
-
-type DayGains = { essence: number | undefined; labor: number | undefined; glory: number | undefined };
 
 export const TodaySheet = ({
   day,
@@ -35,7 +31,7 @@ export const TodaySheet = ({
   lastDay?: number;
   clock: DayClock;
   week?: readonly WeekDay[];
-  gains: DayGains;
+  gains: DayGainsReading;
   onRecap?: () => void;
   onClose: () => void;
 }) => (
@@ -59,11 +55,7 @@ export const TodaySheet = ({
         <b>{tomorrowLasts(clock.tomorrowSeconds).reading}</b>
       </p>
       {week && <TodayWeek week={week} />}
-      <div className="today-sheet__gains">
-        <Gain total="essence" icon="essence" value={signed(gains.essence)} name={ESSENCE} />
-        <Gain total="labor" icon="labor" value={signed(gains.labor)} name={LABOR} />
-        <Gain total="glory" icon="crown" value={formatShort(gains.glory)} name={ASPECT_PAGE_WORDS.glory} />
-      </div>
+      <DayGains gains={gains} />
       {onRecap && (
         <span>
           <HudButton kind="secondary" icon="arrow-right" onClick={onRecap}>
@@ -73,16 +65,6 @@ export const TodaySheet = ({
       )}
     </div>
   </HudSheet>
-);
-
-const signed = (value: number | undefined) => formatShort(value, { signed: true });
-
-const Gain = ({ total, icon, value, name }: { total: string; icon: IconMeaning; value: string; name: string }) => (
-  <span data-total={total} role="img" aria-label={`${name} ${value}`} className="today-sheet__gain">
-    <Icon name={icon} size={30} />
-    <b>{value}</b>
-    <span>{name}</span>
-  </span>
 );
 
 const TodayWeek = ({ week }: { week: readonly WeekDay[] }) => (

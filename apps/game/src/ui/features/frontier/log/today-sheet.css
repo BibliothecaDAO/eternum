@@ -51,31 +51,3 @@
 .today-sheet__quest:is([data-collected], [data-week-day="today"]) img {
   opacity: 1;
 }
-.today-sheet__gains {
-  display: flex;
-  border-block: 1px solid var(--hud-divider);
-  padding: 8px 0;
-}
-.today-sheet__gain {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-}
-.today-sheet__gain + .today-sheet__gain {
-  border-left: 1px solid var(--hud-divider);
-}
-.today-sheet__gain b {
-  color: rgb(var(--hud-ink));
-  font-size: var(--hud-text-title);
-  line-height: 22px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-.today-sheet__gain span {
-  color: var(--hud-muted);
-  font-size: var(--hud-text-badge);
-  line-height: 14px;
-}

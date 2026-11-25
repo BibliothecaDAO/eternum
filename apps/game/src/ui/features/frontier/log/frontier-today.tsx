@@ -1,20 +1,18 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
-import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import type { readExpeditionRules } from "@bibliothecadao/eternum";
-import { gloryAmount, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { dayBounds, dayClock, seasonDay } from "../hud/day-clock";
 
 import { useDayShare } from "../rollover/day-share-sheet";
 import { usePartShown } from "../opening/opening-context";
 import { readQuestWeek } from "./quest-week";
+import { useGloryHeld } from "./day-gains";
 import { usePlayerDay } from "./player-day";
 import { TodaySheet } from "./today-sheet";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
-
-const GLORY_MODELS = ["RaceMember"] as const;
 
 export const FrontierToday = ({
   rules,
@@ -57,11 +55,4 @@ export const FrontierToday = ({
       {recap.sheet}
     </>
   );
-};
-
-const useGloryHeld = (realm: NativeRows["Structure"] | null): number | undefined => {
-  const facts = useNativeFacts(GLORY_MODELS);
-  if (!realm) return undefined;
-  const member = facts.store.requireOrAbsent("RaceMember", { game_id: realm.game_id, entity_id: realm.entity_id });
-  return member.known ? gloryAmount(member.known.glory) : undefined;
 };
