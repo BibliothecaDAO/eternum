@@ -22,12 +22,10 @@ export const FrontierFeed = ({ onClose }: { onClose: () => void }) => {
     <HudPage
       label={EVENTS_WORDS.feed}
       icon="chronicles"
+      cue={<LensSwitch lens={lens} onLens={setLens} words={FEED_LENSES} />}
       onClose={onClose}
-      bodyClassName="gap-2.5 overflow-x-hidden scrollbar-thin"
+      bodyClassName="overflow-x-hidden scrollbar-thin"
     >
-      <div className="shrink-0 border-b border-hud-divider pb-2">
-        <LensSwitch lens={lens} onLens={setLens} words={FEED_LENSES} />
-      </div>
       <FeedStories lens={lens} />
     </HudPage>
   );
