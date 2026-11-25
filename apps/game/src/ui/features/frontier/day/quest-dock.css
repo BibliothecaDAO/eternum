@@ -15,16 +15,6 @@
 .emissary-dock[data-tone="bane"] .emissary-dock__title {
   color: var(--hud-bane);
 }
-.quest-dock__count {
-  font-size: var(--hud-text-label);
-  font-weight: var(--hud-weight-title);
-  font-variant-numeric: tabular-nums;
-  color: rgb(var(--hud-gold));
-  white-space: nowrap;
-}
-.quest-dock__count[data-done] {
-  color: var(--hud-good);
-}
 .quest-dock__bane {
   display: flex;
   flex-wrap: wrap;
