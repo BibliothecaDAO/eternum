@@ -4699,6 +4699,58 @@ const LAB_REINFORCE_STEPS = [
   { name: "reinforce", play: reinforceWithMax, settleMs: 1_000, verify: armyReinforced },
 ];
 
+const LAB_MAP_SITES_STEPS = [
+  { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
+  { name: "use-well", play: (context) => useTheSite(context, "WELL"), settleMs: 0, verify: wellUsed },
+  { name: "use-shrine", play: (context) => useTheSite(context, "SHRINE"), settleMs: 0, verify: shrineUsed },
+];
+
+const interactSiteAnswer = (before) => `JSON.stringify((() => {
+  const sent = (window.__labChain?.sent ?? []).slice(${before}).filter(({ command }) => command.kind === "InteractSite").at(-1);
+  return sent ? sent.answered.map(({ model, value }) => ({ model, gone: value === null, story: value?.story ?? null })) : null;
+})())`;
+
+async function useTheSite({ browser, extraScreenshot }, site) {
+  const name = wordAt(site);
+  for (const [dx, dy] of NEIGHBOUR_RING) {
+    await pickTheSpireArmy({ browser });
+    const armyAt = armyOnScreen(browser, PICKED_ARMY);
+    if (!armyAt) return { found: false };
+    browser.tap([armyAt[0] + dx, armyAt[1] + dy]);
+    const state = await readUntil(() => browser.read(REINFORCE_STATE), (shown) => shown.sheet === name, SHEET_WAIT_MS);
+    if (state.sheet !== name) {
+      browser.press("Escape");
+      continue;
+    }
+    extraScreenshot(`${site.toLowerCase()}-card`);
+    const before = browser.read(LAB_CHAIN_LENGTH) ?? 0;
+    browser.click(wordAt("USE"));
+    const answer = await readUntil(() => browser.read(interactSiteAnswer(before)), (shown) => shown !== null, MERGE_WAIT_MS);
+    await sleep(1500);
+    return { found: true, state, answer, pick: browser.read("Boolean(document.querySelector('[data-oath-pick]'))") };
+  }
+  return { found: false };
+}
+
+const siteGone = (answer) => answer?.some(({ model, gone }) => model === "TileOccupancy" && gone) ?? false;
+const usedFor = (answer, kind) => answer?.some(({ story }) => story?.SiteUsed?.benefit?.[kind] !== undefined) ?? false;
+
+function wellUsed({ played }) {
+  if (!played.found) return failed("No tile beside the army opens a Well's card", played);
+  const refilled = played.answer?.some(({ model, gone }) => (model === "ArmySlot" || model === "ExplorerTroops") && !gone);
+  return siteGone(played.answer) && refilled && usedFor(played.answer, "Well") && !played.pick
+    ? completed(played)
+    : failed("Using the Well must refill the army's stamina and leave the tile", played);
+}
+
+function shrineUsed({ played }) {
+  if (!played.found) return failed("No tile beside the army opens a Shrine's card", played);
+  return siteGone(played.answer) && usedFor(played.answer, "Shrine") && played.pick
+    ? completed(played)
+    : failed("Using the Shrine must open Swear an Oath and leave the tile", played);
+}
+
 const LAB_SUPPLY_POST_STEPS = [
   { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
@@ -6872,6 +6924,7 @@ export const STEP_SETS = {
   },
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps(null) },
   "lab-supply-post": { game: labSpireGame("supply-post"), steps: LAB_SUPPLY_POST_STEPS },
+  "lab-map-sites": { game: labSpireGame("map-sites"), steps: LAB_MAP_SITES_STEPS },
   "lab-reinforce": { game: labSpireGame("reinforce"), steps: LAB_REINFORCE_STEPS },
   "lab-actions": { game: labSpireGame("actions"), steps: ACTION_STEPS },
   "lab-actions-spire": { game: LAB_SPIRE, steps: SPIRE_ACTION_STEPS },

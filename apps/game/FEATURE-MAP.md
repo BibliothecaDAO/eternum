@@ -632,7 +632,11 @@ desktop and a phone side by side.
 army stamina. Armies expire with their day; no troops return home.
 
 Research ranks and historical story ranks use `HudTier`; `RankedWords` keeps the text and the displayed gem in
-agreement. Shrines and Wells are discovery outcomes, with no persistent map entity or Use action.
+agreement. A reveal can leave a Shrine or a Well standing on its tile (Season 0's map sites, release 24): select an army
+beside it and right-click it, or tap it for its card and **Use**; any player's adjacent army may use it, and it is gone
+once used. A Well refills the army's stamina by its share of the maximum (more with Reflection), capped; a Shrine opens
+**Swear an Oath** for that army. An army further off gets **Move** with its cost. Lab: `/lab/game?scenario=map-sites`;
+`pnpm --dir apps/game playtest --steps lab-map-sites` uses the Well, then the Shrine.
 
 With the local client running, open `/lab/terrain?evidence=/absolute/capture/directory` and run
 `scripts/outposts/prove-runtime.playwright.js` through the browser connection with the page as its argument (remove the

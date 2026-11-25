@@ -46,7 +46,7 @@ import { StoryFeedRow } from "./story-feed-row";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
-import { siteUsedLine } from "@bibliothecadao/types";
+import { SHRINE_USED_LINE, wellUsedLine } from "@bibliothecadao/types";
 
 const PLAYER = "0x1";
 const story = (id: string, kind: string, owner: string, payload: Record<string, unknown>, title: string) =>
@@ -152,9 +152,9 @@ it("draws each story in Events and the Log by its act, as Frontier's Feed does, 
 });
 
 it.each([
-  [{ Shrine: 200 }, siteUsedLine("Shrine", "200"), []],
+  [{ Shrine: 0 }, SHRINE_USED_LINE, []],
   [{ ShrinePoint: 3 }, "Shrine used, III +1", ["III"]],
-  [{ Well: 5 }, siteUsedLine("Well", "5"), []],
+  [{ Well: 5 }, wellUsedLine("5"), []],
 ])(
   "the Log renders site use and opens its historical tile after the army is gone (%j)",
   async (benefit, expected, gems) => {

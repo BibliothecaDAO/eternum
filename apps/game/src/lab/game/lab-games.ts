@@ -12,6 +12,7 @@ import { questScenario } from "./quest-scenario";
 import { aspectSettleInvitedScenario, aspectSettleScenario } from "./aspect-settle-scenario";
 import { deepScenario } from "./deep-scenario";
 import { expiredRaceScenario, raceScenario } from "./race-scenario";
+import { mapSitesScenario } from "./map-sites-scenario";
 import { actionsScenario } from "./actions-scenario";
 import { economyScenario } from "./economy-scenario";
 import { panelsScenario } from "./panels-scenario";
@@ -81,6 +82,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   reinforce: reinforceScenario,
   "empire-armies": empireArmiesScenario,
   "supply-post": supplyPostScenario,
+  "map-sites": mapSitesScenario,
   "after-battle": afterBattleScenario,
   "point-spent": pointSpentScenario,
   "ruin-fight": ruinFightScenario,

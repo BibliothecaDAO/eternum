@@ -635,7 +635,7 @@ the Fragments the head shows (none in the Deep); the swapped card reads New and 
 first card before it chooses. `lab-actions-oath-pick` and `lab-actions-oath-replace` play `/lab/game?scenario=oath-pick`
 and `oath-replace` on desktop and phone, recording the signed choice and resulting held Oath. Each path opens Delete,
 checks the Oath loss warning, cancels to retain the army, then confirms and checks the army and Oath record disappear.
-The freed slot retains its stamina. Native tests cover Shrine reveals, persistence, deletion and remustering with an
+The freed slot retains its stamina. Native tests cover Shrine uses, persistence, deletion and remustering with an
 empty Oath record; these browser proofs use recorded offers. `lab-oath-decline` and `lab-oath-pass-capped` check the
 pass reward, including overflow at the maximum.
 

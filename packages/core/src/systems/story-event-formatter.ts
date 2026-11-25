@@ -1,6 +1,7 @@
 import { type RankedWords, rankedText, skillPointGain } from "@bibliothecadao/types";
 import {
-  siteUsedLine,
+  SHRINE_USED_LINE,
+  wellUsedLine,
   buildingName,
   fightVerdict,
   formatCharge,
@@ -236,11 +237,10 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
       const army = describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName));
       return rankedStory(["Shrine used, ", ...skillPointGain(rank)], [army], "scroll");
     }
-    const kind = benefit?.Shrine !== undefined ? "Shrine" : benefit?.Well !== undefined ? "Well" : null;
-    const amount = kind && toNumber(benefit![kind]);
-    if (kind === null || amount === null) throw new Error("Incomplete site use story");
+    const well = benefit?.Well !== undefined ? toNumber(benefit.Well) : undefined;
+    if (benefit?.Shrine === undefined && (well === undefined || well === null)) throw new Error("Incomplete site use story");
     return {
-      title: siteUsedLine(kind, formatExact(amount)),
+      title: well === undefined || well === null ? SHRINE_USED_LINE : wellUsedLine(formatExact(well)),
       description: describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
       icon: "scroll",
     };
