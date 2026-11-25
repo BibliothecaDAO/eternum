@@ -34,14 +34,20 @@ test("every same-site link, image, video, srcset and CSS reference is read, rela
 });
 
 /** Runs the step on a built site holding one page with this body. */
-const run = (body, redirects = "") => {
+const run = (body, redirects = "", docsMediaFiles = []) => {
   const dist = mkdtempSync(join(tmpdir(), "docs-assets-"));
+  const docsMedia = mkdtempSync(join(tmpdir(), "docs-media-check-"));
   try {
     mkdirSync(join(dist, "page"));
     writeFileSync(join(dist, "page", "index.html"), `<html><body>${body}</body></html>`);
+    for (const rel of docsMediaFiles) {
+      const target = join(docsMedia, rel);
+      mkdirSync(join(target, ".."), { recursive: true });
+      writeFileSync(target, "x");
+    }
     const redirectsFile = join(dist, "..", `${dist.split("/").pop()}-redirects`);
     writeFileSync(redirectsFile, redirects);
-    const result = spawnSync(process.execPath, [script.pathname, dist, redirectsFile], { encoding: "utf8" });
+    const result = spawnSync(process.execPath, [script.pathname, dist, redirectsFile, docsMedia], { encoding: "utf8" });
     rmSync(redirectsFile);
     return {
       status: result.status,
@@ -51,6 +57,7 @@ const run = (body, redirects = "") => {
     };
   } finally {
     rmSync(dist, { recursive: true, force: true });
+    rmSync(docsMedia, { recursive: true, force: true });
   }
 };
 
@@ -85,4 +92,15 @@ test("a redirect to a page the site lacks, or from a page it still has, fails", 
   assert.equal(status, 1);
   assert.match(stderr, /^\/gone: no such page or file, named by _redirects \(from \/old-page\)$/m);
   assert.match(stderr, /^\/page: redirected in _redirects, but the site still has this page$/m);
+});
+
+test("an unreferenced file in docs-media fails the build, naming it", () => {
+  const ok = run('<img src="/docs-media/frontier/hud.webp">', "", ["frontier/hud.webp"]);
+  assert.equal(ok.status, 0);
+  const bad = run('<img src="/docs-media/frontier/hud.webp">', "", ["frontier/hud.webp", "frontier/stale.webp"]);
+  assert.equal(bad.status, 1);
+  assert.match(
+    bad.stderr,
+    /^\/docs-media\/frontier\/stale\.webp: unused docs-media file, referenced by no built page$/m,
+  );
 });

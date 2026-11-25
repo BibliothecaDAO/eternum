@@ -5,6 +5,7 @@ description: Frontier troop kinds, deploying, stamina, Logistics, Wells, merging
 
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
+import { Shot } from "@/components/Media";
 
 # Troops and stamina
 
@@ -32,6 +33,11 @@ from {FRONTIER.realm.deployCaps[0]} troops per deploy at {FRONTIER.realm.castleL
 wheat to deploy (reduced by {FRONTIER.realm.rationStep} per Rations rank; see
 [Realm and research](/frontier/realm#the-castle) for the full castle table).
 
+<Shot
+  name="frontier/deploy"
+  caption="Press Deploy on an open army slot, pick a troop kind and count, choose a slot if you want another, and press Deploy to place the army beside your realm."
+/>
+
 ## Stamina
 
 An army holds {FRONTIER.stamina.max} stamina and recovers {FRONTIER.stamina.perTick} every
@@ -54,6 +60,11 @@ costs {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a large army needs ma
   {FRONTIER.stamina.wellLogisticsReflection} at Logistics V). Stamina above the bar maximum is lost.
 - <GameIcon name="fragment" /> {FRONTIER.shop.staminaRule} See [Shop and referrals](/frontier/shop-and-referrals) for
   current Shop status.
+
+<Shot
+  name="frontier/army"
+  caption="Select an army to open its tray showing troop count, stamina bar, Oath slots, and disband button. Right-click a highlighted hex on desktop or tap one on a phone to move or reveal."
+/>
 
 ### Stamina stays with the slot
 
