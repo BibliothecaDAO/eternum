@@ -848,10 +848,7 @@ export const DEEP_WORDS = {
       `Rival · ${aspect} · ${formatExact(filled)}/${formatExact(total)}`,
   },
   perTick: (cadence: string) => `/ ${cadence}`,
-  gloryCell: "Glory · split by troops",
-  heightCell: "Aspect height",
-  resourceCell: (perMinute: string) => `${perMinute} · split by troops`,
-  barCell: "Bane bar",
+  splitCell: (what: string) => `${what} · split by troops`,
   poisonCell: `${DEEP} poison per guard`,
   poisonStrip: (troops: number, cadence: string) =>
     `${DEEP} poison · drains ${formatExact(troops)} troops every ${cadence}`,

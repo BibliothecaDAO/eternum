@@ -170,11 +170,11 @@ type Rate = { kind: "glory" | "height" | "essence" | "labor" | "bar" | "drain"; 
 const cadenceOf = (rates: DeepRates) => formatShortDuration(rates.tickSeconds);
 
 const resourceSub = (rates: DeepRates, amount: number) =>
-  DEEP_WORDS.resourceCell(formatRate(amount / rates.tickSeconds));
+  DEEP_WORDS.splitCell(formatRate(amount / rates.tickSeconds));
 
 const primaryRate = (rates: DeepRates): Rate | null =>
   rates.glory > 0
-    ? { kind: "glory", amount: rates.glory, sub: DEEP_WORDS.gloryCell }
+    ? { kind: "glory", amount: rates.glory, sub: DEEP_WORDS.splitCell(DEEP_WORDS.kinds.glory) }
     : rates.essence > 0
       ? { kind: "essence", amount: rates.essence, sub: resourceSub(rates, rates.essence) }
       : rates.labor > 0
@@ -183,9 +183,9 @@ const primaryRate = (rates: DeepRates): Rate | null =>
 
 const secondaryRate = (rates: DeepRates): Rate =>
   rates.height > 0
-    ? { kind: "height", amount: rates.height, sub: DEEP_WORDS.heightCell }
+    ? { kind: "height", amount: rates.height, sub: DEEP_WORDS.kinds.height }
     : rates.bar
-      ? { kind: "bar", amount: rates.bar.perTick, sub: DEEP_WORDS.barCell }
+      ? { kind: "bar", amount: rates.bar.perTick, sub: DEEP_WORDS.kinds.bar }
       : { kind: "drain", amount: rates.drain, sub: DEEP_WORDS.poisonCell };
 
 const RATE_ICONS = {
