@@ -54,7 +54,7 @@ export const BaneLine = ({ figure }: { figure: Figure }) => {
   const cut = useBaneCut(figure);
   if (!cut) return null;
   return (
-    <p className="bane-line" data-bane-line={figure}>
+    <p className="bane-line" data-bane-line={figure} data-tip={cut.line}>
       <Icon name={cut.icon} size={16} />
       <span className="truncate">{cut.line}</span>
     </p>

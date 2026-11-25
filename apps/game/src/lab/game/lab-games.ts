@@ -93,7 +93,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "bane-again": () => baneScenario("again"),
   "bane-late": () => baneScenario("late"),
   "bane-team": () => baneScenario("team"),
-  "bane-blood-moon": () => withWorldBane(ruinFightScenario(), nativeBaneConstants.BLOOD_MOON),
+  "bane-blood-moon": () => withWorldBane(siteEffectsScenario(), nativeBaneConstants.BLOOD_MOON),
   "bane-mist-tide": () => withWorldBane(staminaScenario(false), nativeBaneConstants.MIST_TIDE),
   upkeep: upkeepScenario,
   "stamina-mist": () => staminaScenario(false),
