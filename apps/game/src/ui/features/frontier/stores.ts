@@ -65,7 +65,6 @@ export const FRONTIER_STORES = {
 export type StoreKind = keyof typeof FRONTIER_STORES;
 export const STORE_KINDS = Object.keys(FRONTIER_STORES) as StoreKind[];
 
-
 /** A store a building makes. */
 export type MadeStore = {
   [K in StoreKind]: (typeof FRONTIER_STORES)[K] extends { made: object } ? K : never;

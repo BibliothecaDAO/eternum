@@ -72,11 +72,8 @@ export const storeMakerLines = (
   const name = buildingName(category);
   const standing = formatCount(count, name, name.endsWith("s") ? name : `${name}s`);
   const lines =
-    count > 0
-      ? [each === undefined ? standing : STORE_MAKERS.buildings(standing, formatRate(each * count))]
-      : [];
-  if (resource === ResourcesIds.Labor)
-    lines.push(STORE_MAKERS.castle(formatRate(castleLabor(store, realm, now))));
+    count > 0 ? [each === undefined ? standing : STORE_MAKERS.buildings(standing, formatRate(each * count))] : [];
+  if (resource === ResourcesIds.Labor) lines.push(STORE_MAKERS.castle(formatRate(castleLabor(store, realm, now))));
   return lines;
 };
 

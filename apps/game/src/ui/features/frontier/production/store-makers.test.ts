@@ -21,9 +21,7 @@ const ashFallToday = (store: ReturnType<typeof realm>["store"], now: number) => 
   store.applyFacts([
     { model: "HomeAspect", key: "0xa01", value: { game_id: 1, home: 7, aspect: 2 } },
     ...(day > 0
-      ? [
-          { model: "AspectActivity", key: "0xa02", value: { game_id: 1, aspect: 2, day: day - 1, active: 5 } },
-              ]
+      ? [{ model: "AspectActivity", key: "0xa02", value: { game_id: 1, aspect: 2, day: day - 1, active: 5 } }]
       : []),
     {
       model: "BaneRules",
@@ -82,10 +80,7 @@ it("gives the realm card, the building panel and Build one rate per store, cut a
 
 it("says on a store's card what makes its rate, the buildings and the castle, so the parts add up to it", () => {
   const { store, row, now } = realm();
-  expect(storeMakerLines(store, row, ResourcesIds.Labor, now)).toEqual([
-    "3 Workshops · +15/min",
-    "Castle · +1.7/min",
-  ]);
+  expect(storeMakerLines(store, row, ResourcesIds.Labor, now)).toEqual(["3 Workshops · +15/min", "Castle · +1.7/min"]);
   expect(storeMakerLines(store, row, ResourcesIds.Wheat, now)).toEqual(["3 Farms · +19/min"]);
   expect(storeMakerLines(store, row, ResourcesIds.Knight, now)).toEqual(["2 Barracks · +3.4/min"]);
   // 3 × 5.04 + 1.68 = 16.8 labor a minute: the rate the chain stores and the card's "+17/min".
@@ -111,10 +106,7 @@ it("says only what is known of a store's makers until the realm's research arriv
       value: { game_id: 1, structure_id: "7", learned: String(knowledge.learned) },
     },
   ] as never);
-  expect(storeMakerLines(store, row, ResourcesIds.Labor, now)).toEqual([
-    "3 Workshops · +15/min",
-    "Castle · +1.7/min",
-  ]);
+  expect(storeMakerLines(store, row, ResourcesIds.Labor, now)).toEqual(["3 Workshops · +15/min", "Castle · +1.7/min"]);
 });
 
 it("says what all of a type's buildings make together for its card, and nothing until the realm's research arrives", () => {
