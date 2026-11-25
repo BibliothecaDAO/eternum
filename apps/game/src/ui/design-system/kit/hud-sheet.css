@@ -211,6 +211,10 @@ button.ui-panel__name[data-action]:hover {
   opacity: 1;
 }
 .ui-button[data-kind="primary"][data-tone="bad"] {
+  height: auto;
+  min-height: var(--hud-control);
+  min-width: 0;
+  white-space: normal;
   border-color: var(--hud-bad);
   background: color-mix(in srgb, var(--hud-bad) 30%, rgb(var(--hud-dark)));
   color: rgb(var(--hud-ink));
@@ -1309,6 +1313,13 @@ button.ui-relic:focus-visible {
 }
 .ui-actions__note:empty {
   display: none;
+}
+.ui-actions:has(> .ui-button[data-tone="bad"]) {
+  flex-wrap: wrap;
+}
+.ui-actions:has(> .ui-button[data-tone="bad"]) > .ui-actions__note {
+  order: -1;
+  flex-basis: 100%;
 }
 .ui-actions > :last-child:not(.ui-actions__note) {
   order: 2;
