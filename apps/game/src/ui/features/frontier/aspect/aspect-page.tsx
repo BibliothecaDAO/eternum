@@ -4,7 +4,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { openPlace } from "@/play/navigation/open-place";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
-import { ASPECT_PAGE_WORDS } from "@/ui/design-system/kit/words";
+import { ASPECT_PAGE_WORDS, SPIRE_WORDS } from "@/ui/design-system/kit/words";
 import { configManager, getStructureName, Position } from "@bibliothecadao/eternum";
 import {
   deepViewFor,
@@ -43,22 +43,29 @@ export function FrontierAspectPage({ day, onClose }: { day?: number; onClose: ()
   const canEnterDeep = home !== null && realmLayers(setup.store, home).includes("deep");
   const settlementRules = setup.store.get("SettlementRules", { game_id: gameId });
   const gameOver = board.result !== null || configManager.isGameOver();
-  const onGoToDeep =
-    !gameOver && canEnterDeep && settlementRules
-      ? () => {
-          const target = deepViewFor(setup.store, gameId, home.entity_id, settlementRules.spacing);
-          if (isMapView) requestLayerView(target);
-          else openPlace("map", Position.fromContract({ x: target.col, y: target.row }));
-          onClose();
-        }
-      : undefined;
+  const goDeep = (realm: NonNullable<typeof home>, spacing: number) => {
+    const target = deepViewFor(setup.store, gameId, realm.entity_id, spacing);
+    if (isMapView) requestLayerView(target);
+    else openPlace("map", Position.fromContract({ x: target.col, y: target.row }));
+    onClose();
+  };
+  const goToDeep =
+    gameOver || home === null || !settlementRules
+      ? undefined
+      : canEnterDeep
+        ? { go: () => goDeep(home, settlementRules.spacing) }
+        : {
+            refused: {
+              reason: { kind: "failed" as const, line: ASPECT_PAGE_WORDS.deepOpensAt(SPIRE_WORDS.lockedAt(3)) },
+            },
+          };
   return (
     <AspectPageView
       {...aspectPage(board, (home) => getStructureName(home, setup.store).name)}
       fights={<AspectFeedView reading={fights} now={now} />}
       invite={home && <AspectInvite realm={home} />}
       day={day}
-      onGoToDeep={onGoToDeep}
+      goToDeep={goToDeep}
       onClose={onClose}
     />
   );

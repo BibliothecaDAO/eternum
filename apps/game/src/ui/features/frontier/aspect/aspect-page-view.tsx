@@ -1,6 +1,8 @@
 import "./aspect-page-view.css";
 
-import { OpeningPartGate, usePartShown } from "../opening/opening-context";
+import { OpeningPartGate } from "../opening/opening-context";
+import { RefusedVerb } from "../refused-verb";
+import type { Refusal } from "@/ui/design-system/kit/refusal";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudPage, HudRow, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
@@ -50,11 +52,11 @@ export interface AspectPageProps {
   fights?: ReactNode;
   invite?: ReactNode;
   day?: number;
-  onGoToDeep?: () => void;
+  goToDeep?: { go: () => void } | { refused: Refusal };
   onClose: () => void;
 }
 
-export const AspectPageView = ({ race, own, fights, invite, day, onGoToDeep, onClose }: AspectPageProps) => (
+export const AspectPageView = ({ race, own, fights, invite, day, goToDeep, onClose }: AspectPageProps) => (
   <HudPage
     label={WORDS.title}
     icon="victory"
@@ -73,13 +75,7 @@ export const AspectPageView = ({ race, own, fights, invite, day, onGoToDeep, onC
           {own ? <YourAspect own={own} invite={invite} /> : <Muted>{WORDS.noAspect}</Muted>}
           {own && fights && <div className="flex min-w-0 flex-col gap-2">{fights}</div>}
         </div>
-        {onGoToDeep && race.result === null && own !== null && (
-          <HudWindowFoot>
-            <HudButton kind="primary" icon="spire" onClick={onGoToDeep}>
-              {WORDS.goToDeep}
-            </HudButton>
-          </HudWindowFoot>
-        )}
+        {goToDeep && race.result === null && own !== null && <GoToDeep goToDeep={goToDeep} />}
       </div>
     )}
   </HudPage>
@@ -108,8 +104,13 @@ const YourAspect = ({ own, invite }: { own: OwnAspect; invite?: ReactNode }) => 
     <div data-aspect-triumphs className="flex flex-wrap items-center gap-1">
       <Muted>{WORDS.triumphs}:</Muted>
       {own.triumphs.map(({ stage, day }) => (
-        <HudChip key={stage} icons={["star"]} tone={day === null ? undefined : "good"}>
-          {WORDS.triumph[stage]} · {day === null ? WORDS.triumphAt(stage) : WORDS.triumphOn(day)}
+        <HudChip
+          key={stage}
+          icons={["star"]}
+          tone={day === null ? undefined : "good"}
+          tip={`${WORDS.triumph[stage]} · ${day === null ? WORDS.triumphAt(stage) : WORDS.triumphOn(day)}`}
+        >
+          {WORDS.triumph[stage]}
         </HudChip>
       ))}
     </div>
@@ -127,18 +128,30 @@ const YourAspect = ({ own, invite }: { own: OwnAspect; invite?: ReactNode }) => 
   </section>
 );
 
+const GoToDeep = ({ goToDeep }: { goToDeep: NonNullable<AspectPageProps["goToDeep"]> }) =>
+  "go" in goToDeep ? (
+    <HudWindowFoot>
+      <HudButton kind="primary" icon="spire" onClick={goToDeep.go}>
+        {WORDS.goToDeep}
+      </HudButton>
+    </HudWindowFoot>
+  ) : (
+    <RefusedVerb word={WORDS.goToDeep} icon="spire" refusal={goToDeep.refused} />
+  );
+
 const GloryBoard = ({ own }: { own: OwnAspect }) => {
-  const ranked = usePartShown("glory");
+  const unearned = own.members.every((member) => member.glory === 0);
   return (
     <section data-aspect-members className="aspect-glory-board" style={aspectVariables(own.aspectId) as CSSProperties}>
       <span className="aspect-glory-board__head">
-        <span>{ranked ? WORDS.glory : WORDS.members}</span>
+        <span>{WORDS.glory}</span>
         <span>{aspectName(own.aspectId)}</span>
       </span>
+      {unearned && <Muted>{WORDS.gloryUnearned}</Muted>}
       {own.members.map((member, index) => (
         <HudRow
           key={member.id}
-          lead={ranked ? <b className="aspect-glory-board__rank">#{index + 1}</b> : <Icon name="realm" size={32} />}
+          lead={<b className="aspect-glory-board__rank">#{index + 1}</b>}
           title={
             <span className="flex min-w-0 items-center gap-2">
               <i className="aspect-glory-board__dot" aria-hidden="true" />
@@ -146,7 +159,7 @@ const GloryBoard = ({ own }: { own: OwnAspect }) => {
             </span>
           }
           selected={member.mine}
-          trail={ranked && <GloryAmount glory={member.glory} />}
+          trail={<GloryAmount glory={member.glory} />}
         />
       ))}
     </section>

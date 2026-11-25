@@ -21,6 +21,8 @@ afterEach(() => {
 const draw = (props: Omit<AspectPageProps, "onClose">) =>
   act(() => root.render(<AspectPageView {...props} onClose={() => {}} />));
 const part = (name: string) => document.body.querySelector(`[${name}]`)?.textContent ?? "";
+const triumphTips = () =>
+  [...document.body.querySelectorAll("[data-aspect-triumphs] [data-tip]")].map((chip) => chip.getAttribute("data-tip"));
 
 describe("the Aspect page", () => {
   it("ranks the four hyperstructures by height, each stage built lit among the five, the player's own selected", () => {
@@ -46,10 +48,10 @@ describe("the Aspect page", () => {
 
   it("shows the Triumphs of built stages with the day after the build, and the rest with their stage", () => {
     draw(ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"]);
-    const triumphs = part("data-aspect-triumphs");
+    const triumphs = triumphTips();
     expect(triumphs).toContain("Clear Mist · day 12");
     expect(triumphs).toContain("Second Wind · day 19");
-    expect(triumphs).not.toContain("day 26");
+    expect(triumphs).not.toContain("Pale Moon · day 26");
     expect(triumphs).toContain("Pale Moon · at stage 3");
     expect(triumphs).toContain("Spoils · at stage 4");
   });
@@ -74,7 +76,7 @@ describe("the Aspect page", () => {
       "Finished · 10,000 of 10,000",
       5,
     ]);
-    const triumphs = part("data-aspect-triumphs");
+    const triumphs = triumphTips();
     expect(triumphs).toContain("Clear Mist · day 12");
     expect(triumphs).toContain("Second Wind · day 19");
     expect(triumphs).toContain("Pale Moon · day 26");
@@ -100,7 +102,7 @@ describe("the Aspect page", () => {
       ...ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"],
       own: { ...own, triumphs: [{ stage: 1, day: 12 }] },
     });
-    expect(part("data-aspect-triumphs")).toContain("Clear Mist · day 12");
+    expect(triumphTips()).toContain("Clear Mist · day 12");
   });
 
   it("asks a player with no Aspect to join one, and says it is reading while the race is not settled", () => {
@@ -111,14 +113,41 @@ describe("the Aspect page", () => {
     expect(document.body.textContent).toContain("Loading scores…");
   });
 
+  it("refuses Go to Deep with what opens the Deep while the realm cannot enter it", () => {
+    draw({
+      ...ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"],
+      goToDeep: { refused: { reason: { kind: "failed", line: "Deep opens at Spire III" } } },
+    });
+    const verb = document.body.querySelector<HTMLButtonElement>('.ui-window__foot button[data-tone="bad"]')!;
+    expect([verb.getAttribute("aria-label"), verb.textContent, verb.disabled]).toEqual([
+      "Go to Deep",
+      "Deep opens at Spire III",
+      true,
+    ]);
+  });
+
+  it("says in one line that no one holds Glory yet, over the members at 0", () => {
+    const own = ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"].own!;
+    draw({
+      ...ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"],
+      own: { ...own, members: own.members.map((member) => ({ ...member, glory: 0 })) },
+    });
+    expect(part("data-aspect-members")).toContain("No Glory yet: it comes from holding Deep sites");
+    expect(document.body.querySelectorAll('[data-aspect-members] [aria-label="Glory 0"]')).toHaveLength(
+      own.members.length,
+    );
+  });
+
   it("shows Go to Deep in the footer when reachable", () => {
     let deepClicked = 0;
     act(() =>
       root.render(
         <AspectPageView
           {...ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"]}
-          onGoToDeep={() => {
-            deepClicked += 1;
+          goToDeep={{
+            go: () => {
+              deepClicked += 1;
+            },
           }}
           onClose={() => {}}
         />,
@@ -139,8 +168,10 @@ describe("the Aspect page", () => {
         root.render(
           <AspectPageView
             {...endedOrNoAspect}
-            onGoToDeep={() => {
-              deepClicked += 1;
+            goToDeep={{
+              go: () => {
+                deepClicked += 1;
+              },
             }}
             onClose={() => {}}
           />,

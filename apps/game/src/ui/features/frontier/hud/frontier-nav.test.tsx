@@ -141,3 +141,15 @@ it("lists each place with what stands there, and a locked place with its lock an
     ["Deep", SPIRE_WORDS.lockedAt(3), true],
   ]);
 });
+
+it("puts the open page away when a HUD popover opens on a phone, and closes the popover when a page opens", () => {
+  act(() => root.render(<PhoneHud open="today" />));
+  press("Open page");
+  expect(page()).toBe("today");
+  act(() => document.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
+  expect(page()).toBe("map");
+  expect(document.querySelector('[role="tablist"][aria-label="Map view"]')).not.toBeNull();
+  press("Open page");
+  expect(page()).toBe("today");
+  expect(document.querySelector('[role="tablist"][aria-label="Map view"]')).toBeNull();
+});

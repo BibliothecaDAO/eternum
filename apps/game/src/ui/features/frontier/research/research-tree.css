@@ -962,7 +962,6 @@
     background: none;
   }
 
-  .research-node__title,
   .research-node__delta--phone {
     width: 100%;
     overflow: hidden;
@@ -971,10 +970,13 @@
   }
 
   .research-node__title {
+    width: 100%;
     font-family: inherit;
     font-size: var(--hud-text-label);
+    line-height: var(--hud-leading-label);
     letter-spacing: 0;
     text-transform: none;
+    overflow-wrap: anywhere;
   }
 
   .research-pips {

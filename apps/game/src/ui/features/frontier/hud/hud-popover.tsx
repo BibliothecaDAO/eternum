@@ -20,6 +20,9 @@ const POPOVER_GAP = 8;
 
 const useOpenPopover = create<{ open: string | null }>(() => ({ open: null }));
 
+export const usePopoverShown = () => useOpenPopover((state) => state.open !== null);
+export const closeHudPopover = () => useOpenPopover.setState({ open: null });
+
 export const popoverAnchor = (trigger: Pick<DOMRect, "left" | "bottom" | "width">): { x: number; top: number } => ({
   x: Math.round(trigger.left + trigger.width / 2),
   top: Math.round(trigger.bottom + POPOVER_GAP),
