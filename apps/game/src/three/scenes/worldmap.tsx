@@ -62,7 +62,7 @@ import { OwnershipRingLayer } from "@/three/managers/ownership-ring-layer";
 import { bindOwnershipRings } from "./worldmap-ownership-rings";
 import { bindMapSelection } from "./worldmap-map-selection";
 import { reportSelectedArmy } from "./worldmap-selected-army-report";
-import { ORDER_PREVIEW_SURFACE, OrderPreview } from "./worldmap-order-preview";
+import { ORDER_PREVIEW_SURFACE, OrderPreview, type RefusedOrder } from "./worldmap-order-preview";
 import { StructureManager } from "@/three/managers/structure-manager";
 import { FrameBudgetWorkQueue, type FrameBudgetWorkLane } from "@/three/frame-budget-work-queue";
 import { SceneManager } from "@/three/scene-manager";
@@ -313,7 +313,13 @@ import {
 } from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
 import { hudLayoutNow } from "@/hooks/helpers/use-compact-hud";
-import { type OrderTip, orderFood, orderTip, refusedOrderVerb } from "@/ui/features/frontier/hud/order-tip";
+import {
+  type OrderTip,
+  orderFood,
+  orderTip,
+  orderRefusalReason,
+  refusedOrderVerb,
+} from "@/ui/features/frontier/hud/order-tip";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
@@ -2984,8 +2990,13 @@ export default class WorldmapScene extends WarpTravel {
     this.previewedOrder = { army, hex: hexCoords, tip, refused: refusal.reason };
     this.openTargetActionSurface(contractHexOf(hexCoords), {
       id: ORDER_PREVIEW_SURFACE,
-      content: <OrderPreview tip={tip} refusal={reason} />,
+      content: <OrderPreview tip={tip} refused={this.refusedOrderAt(refusal)} />,
     });
+  }
+
+  private refusedOrderAt(refusal: OrderRefusal): RefusedOrder {
+    const short = refusal.reason === "stamina" ? this.selectedArmyShortOf(refusal.need) : undefined;
+    return { why: refusal.reason, reason: orderRefusalReason(refusal, short) };
   }
 
   /** The preview's verb sends the order the player read, and only while it still is the army's order at that tile. */
