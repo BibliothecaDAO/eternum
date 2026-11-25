@@ -87,6 +87,10 @@ paths = "apps/game/src/three/structures/beast-motion.ts apps/game/src/three/stru
 cmd = 'pnpm run build:packages && pnpm --dir apps/game exec node ./scripts/prove-beast-roster.mjs --out "$FLOW_TMP/proof"'
 paths = "apps/game/src/three/structures/beast-motion.ts apps/game/src/three/structures/frontier-model.ts apps/game/src/three/utils/instanced-motion.ts apps/game/src/lab/beast-motion/ apps/game/scripts/prove-beast-roster.mjs"
 
+[kind.prove-docs-layout]
+cmd = "pnpm run build:docs && pnpm --dir apps/game-docs test:layout"
+paths = "apps/game-docs/ apps/game/public/docs-media/ apps/game/src/tokens.ts"
+
 [gate]
 source = "contracts/l3/check-native-plan.sh"
 kinds = "gate-prelude gate-vrf gate-world gate-drift gate-events test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-blitz"
@@ -95,7 +99,7 @@ kinds = "gate-prelude gate-vrf gate-world gate-drift gate-events test-capture te
 cmd = 'pnpm run build:packages && pnpm --dir apps/game playtest:landing --out "$FLOW_TMP/playtest"'
 
 [land]
-kinds = "sizes gate-prelude gate-vrf gate-world gate-events gate-drift test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-blitz test-native-plan workflow-parity playtest-landing ci-static-knip ci-client-test-client ci-herald-history-and-stream ci-services-workers ci-portal-portal ci-native-service-class-sizes-realms_vrf_verifier ci-native-game-ledger ci-native-player-account ci-native-native-deployer ci-native-native-stamping ci-native-native-provider ci-runtime-offline-tests-runner ci-runtime-offline-tests-harness ci-runtime-offline-tests-sandbox-proxy ci-amm-test-ammv2 ci-collectibles-test-collectibles ci-mmr-test-mmr ci-season_pass-test-season-pass ci-contract_scripts-runtime-tests ci-docs-docs"
+kinds = "sizes gate-prelude gate-vrf gate-world gate-events gate-drift test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-blitz test-native-plan workflow-parity playtest-landing prove-docs-layout ci-static-knip ci-client-test-client ci-herald-history-and-stream ci-services-workers ci-portal-portal ci-native-service-class-sizes-realms_vrf_verifier ci-native-game-ledger ci-native-player-account ci-native-native-deployer ci-native-native-stamping ci-native-native-provider ci-runtime-offline-tests-runner ci-runtime-offline-tests-harness ci-runtime-offline-tests-sandbox-proxy ci-amm-test-ammv2 ci-collectibles-test-collectibles ci-mmr-test-mmr ci-season_pass-test-season-pass ci-contract_scripts-runtime-tests ci-docs-docs"
 forbid = 'co-authored-by|claude|anthropic|codex|openai|generated with|session|^(feat|fix|chore|refactor|style|docs|test|perf|build|ci)\([^)]*\)!?: '
 
 [kind.test-client-retirement]
