@@ -16,8 +16,8 @@ interface RenderProfile {
 }
 
 export const RENDER_MODE_OPTIONS: ReadonlyArray<{ label: string; mode: RenderMode }> = [
-  { label: "Uncapped", mode: "uncapped" },
-  { label: "60 FPS", mode: "capped" },
+  { label: "60", mode: "capped" },
+  { label: "Max", mode: "uncapped" },
 ];
 
 export const RENDER_MODE_STORAGE_KEY = "RENDER_MODE";
