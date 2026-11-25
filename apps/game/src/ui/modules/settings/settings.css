@@ -38,6 +38,10 @@
   gap: theme(spacing.2);
   padding-top: theme(spacing.1);
 }
+.ui-settings__foot > .ui-notice {
+  order: 1;
+  flex-basis: 100%;
+}
 .ui-settings__profile {
   display: flex;
   align-items: center;
