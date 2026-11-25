@@ -33,16 +33,6 @@ pub fn reveal(
             context,
         );
     }
-    if result == crate::discovery::Discovery::Shrine {
-        crate::oaths::IOathsDispatcherTrait::offer_oaths(
-            crate::oaths::IOathsLibraryDispatcher {
-                class_hash: crate::logic::release::class_of(key.game_id, crate::slots::RELICS),
-            },
-            crate::troops::ExplorerKey { game_id: key.game_id, explorer_id },
-            Coord { alt: key.alt, x: key.col, y: key.row },
-            seed,
-        );
-    }
     result
 }
 
