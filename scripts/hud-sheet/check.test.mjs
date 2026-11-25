@@ -15,6 +15,16 @@ test("a HUD file drawn only with the sheet passes", () =>
     [],
   ));
 
+test("a Frontier sheet that copies the kit's surface is refused, and the same copy elsewhere is left to its own sheet", () => {
+  const copy = `.card { border: 1px solid var(--hud-line); background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to)); }`;
+  const found = (path) => findViolations(copy, path, COLORS, STEPS);
+  assert.deepEqual(
+    found("apps/game/src/ui/features/frontier/hud/card.css").map(({ refused }) => refused),
+    [true],
+  );
+  assert.deepEqual(found("apps/game/src/three/map-plates/map-plates.css"), []);
+});
+
 test("a one-off size, colour, type size or weight fails, each where it is written", () =>
   assert.deepEqual(
     matches(`<div className="text-[11px] h-[38px] w-[var(--hud-control)] text-gold/70 bg-black/40 border-kit-line text-hud-muted/50 text-xs text-caption font-semibold" style={{ color: "#f3d08a" }} />
