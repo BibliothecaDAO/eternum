@@ -1,8 +1,10 @@
 import { pageNavigation } from "@/utils/page-navigation";
 import {
+  GRAPHICS_QUALITIES,
   readGraphicsPreferences,
   writeGraphicsPreferences,
   type GraphicsPreferences,
+  type GraphicsQuality,
 } from "@/three/graphics-preferences";
 import {
   createRenderProfile,
@@ -21,10 +23,8 @@ import { canPlayHaptics } from "@/ui/motion/motion-settings";
 import { OPENING_WORDS, SETTINGS_WORDS } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";
 
-const QUALITY_OPTIONS = [
-  { value: "balanced", label: "Mid" },
-  { value: "high", label: "High" },
-] as const;
+const QUALITY_WORDS: Record<GraphicsQuality, string> = { balanced: "Mid", high: "High" };
+const QUALITY_OPTIONS = GRAPHICS_QUALITIES.map((quality) => ({ value: quality, label: QUALITY_WORDS[quality] }));
 
 const useGraphicsSettings = () => {
   const [preferences, setPreferences] = useState(() => readGraphicsPreferences(localStorage));

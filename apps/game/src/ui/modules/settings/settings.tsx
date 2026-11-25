@@ -1,5 +1,5 @@
 import { pageNavigation } from "@/utils/page-navigation";
-import { EXIT, PROFILE_WORDS, SETTINGS, SETTINGS_WORDS } from "@/ui/design-system/kit/words";
+import { EXIT, PROFILE_WORDS, SETTINGS_WORDS } from "@/ui/design-system/kit/words";
 import { AudioCategory, useAudio } from "@/audio";
 import {
   identityClient,
@@ -35,7 +35,7 @@ type SettingsPage = "main" | "more" | "keys";
 export const SettingsPanel = () => {
   const [page, setPage] = useState<SettingsPage>("main");
   if (page === "keys") return <KeyboardShortcuts />;
-  if (page === "more") return <MoreSettings onBack={() => setPage("main")} onShowKeys={() => setPage("keys")} />;
+  if (page === "more") return <MoreSettings onShowKeys={() => setPage("keys")} />;
   return (
     <div className="flex flex-col gap-2.5 p-1">
       <ProfileHeader />
@@ -43,7 +43,7 @@ export const SettingsPanel = () => {
       <PlaySettings />
       <footer className="flex items-center justify-between gap-2">
         <HudButton kind="secondary" onClick={() => setPage("more")}>
-          {SETTINGS_WORDS.more} ›
+          {SETTINGS_WORDS.more}
         </HudButton>
         <SignOut />
       </footer>
@@ -51,15 +51,10 @@ export const SettingsPanel = () => {
   );
 };
 
-const MoreSettings = ({ onBack, onShowKeys }: { onBack: () => void; onShowKeys: () => void }) => {
+const MoreSettings = ({ onShowKeys }: { onShowKeys: () => void }) => {
   const guide = useHowToPlay();
   return (
     <div className="flex flex-col gap-3 p-1">
-      <span>
-        <HudButton kind="quiet" size="sm" onClick={onBack}>
-          ‹ {SETTINGS}
-        </HudButton>
-      </span>
       <AppSettings onShowKeys={onShowKeys} />
       <SettingsSection title={PROFILE_WORDS.notifications}>
         <NotificationSettings />
