@@ -181,14 +181,13 @@ export const TileCard = ({
         actor && {
           art: armyArt(actor.army.troops),
           troops: wholeTroops(actor.army),
-          category: actor.army.troops.category,
         }
       }
       guard={plan.guard === undefined ? undefined : (plan.guard?.count ?? null)}
       fight={plan.fight}
-      firstStrike={plan.firstStrike}
       pay={sitePay(plan)}
       holdsOath={plan.holdsOath}
+      opensPost={plan.opensPost}
       relic={(relics && "relic" in relics.state && relics.state.relic) || undefined}
       cache={relics?.state.kind === "cache" ? relics.state.fragments : undefined}
       replacement={

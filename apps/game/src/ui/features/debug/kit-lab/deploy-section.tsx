@@ -1,8 +1,7 @@
 import { type IconMeaning } from "@/ui/design-system/icon";
-import { costLine } from "@/ui/design-system/kit/price-faces";
 import {
   HudButton,
-  HudCost,
+  HudPrice,
   HudChip,
   HudDeploy,
   HudTabs,
@@ -95,7 +94,7 @@ const useDeploy = () => {
 
 /** The window's foot: what the deploy costs on the left, then the one verb, carrying its verb only. */
 const DeployFoot = ({ amount }: { amount: number }) => (
-  <HudWindowFoot note={<HudCost line={costLine([{ of: "wheat", amount: amount * WHEAT_A_TROOP }])} />}>
+  <HudWindowFoot note={<HudPrice prices={[{ of: "wheat", amount: amount * WHEAT_A_TROOP }]} />}>
     <HudButton kind="primary" icon="military" disabled={amount === 0}>
       Deploy
     </HudButton>

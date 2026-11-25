@@ -341,6 +341,21 @@ a.ui-button {
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
+.ui-price {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing[2.5]);
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-leading-strong);
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+}
+.ui-price > span {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.1);
+}
 
 /* ── Tabs: a strip of choices; the chosen one in gold over a gold rule. ── */
 /* A strip too wide for its place wraps to a second row: no tab ever leaves the panel it stands in. */
@@ -1341,6 +1356,12 @@ button.ui-relic:focus-visible {
 .ui-window__foot {
   border-top: 1px solid var(--hud-divider);
   padding: theme(spacing.3) theme(spacing.4);
+}
+/* A phone's and a tablet's sheet carries its verb wide: it takes the rest of the foot, its price and notes left of it. */
+@media (max-width: 1023px) {
+  .ui-sheet .ui-window__foot > :last-child {
+    flex: 1;
+  }
 }
 
 /* ── Troop amount: the count typed, +500 and Max beside it, then out of how many can, for a quick deploy. ── */

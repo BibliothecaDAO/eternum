@@ -7,7 +7,7 @@ import {
   HudButton,
   HudCard,
   HudChip,
-  HudCost,
+  HudPrice,
   HudRanked,
   HudSheet,
   HudWindowFoot,
@@ -110,7 +110,7 @@ const ChosenFoot = ({
     <span data-build-chosen className="build-chosen">
       <b className="build-chosen__name">{tile.name}</b>
       <ChosenLine tile={tile} prices={prices} />
-      {refusal?.fix?.prices && <HudCost line={costLine(refusal.fix.prices)} />}
+      {refusal?.fix?.prices && <HudPrice prices={refusal.fix.prices} />}
     </span>
   );
   if (refusal) return <RefusedVerb word={BUILD} icon="build" refusal={refusal} note={note} />;
@@ -127,11 +127,7 @@ const ChosenLine = ({ tile, prices }: { tile: BuildTile; prices: readonly Price[
   const raised = tile.standing.kind === "price" ? tile.standing.raised : undefined;
   return (
     <span className="build-chosen__line">
-      {tile.standing.kind !== "built" && (
-        <span data-build-cost={costLine(prices)}>
-          <PriceAmounts prices={prices} />
-        </span>
-      )}
+      {tile.standing.kind !== "built" && <HudPrice prices={prices} />}
       {raised && (
         <span role="img" aria-label={raised} data-price-raised={raised} data-tip={raised} className="text-hud-warn">
           ↑

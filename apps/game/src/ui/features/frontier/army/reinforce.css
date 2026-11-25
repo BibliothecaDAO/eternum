@@ -1,0 +1,45 @@
+.reinforce-army {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing[2.5]);
+  border-top: 1px solid var(--hud-divider);
+  padding: theme(spacing.2) 2px 0;
+}
+.reinforce-army > .ui-portrait {
+  width: 46px;
+  height: 46px;
+  border: 2px solid var(--hud-good);
+}
+.reinforce-army > .ui-portrait > img {
+  width: 100%;
+  height: 100%;
+}
+.reinforce-army__words {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-strong);
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+}
+.reinforce-army__troops {
+  white-space: nowrap;
+}
+.reinforce-army__arrow {
+  color: var(--hud-muted);
+}
+.reinforce-army__after {
+  color: var(--hud-good);
+}
+.reinforce-size {
+  border-top: 1px solid var(--hud-divider);
+}
+.reinforce-until {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+}

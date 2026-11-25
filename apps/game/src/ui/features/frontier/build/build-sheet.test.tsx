@@ -41,6 +41,12 @@ const atKingdom = (realm: ReturnType<typeof realmBoard>["realm"]) => ({
   base: { ...realm.base, level: nativeResearchConstants.SUPPLY_YARD_LEVEL },
 });
 
+const footPrice = (host: HTMLElement) => {
+  const price = host.querySelector(".ui-window__foot .ui-price");
+  const named = [...(price?.querySelectorAll('[role="img"]') ?? [])].map((part) => part.getAttribute("aria-label"));
+  return named.length > 0 ? named.join(" · ") : price?.textContent;
+};
+
 describe("the build sheet", () => {
   it("stands the chosen building on the plot as a ghost, builds it there and takes the ghost away", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -406,9 +412,7 @@ describe("the build sheet", () => {
       expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe(
         `Requires ${rankName(buildingOpensAtLevel(category))}`,
       );
-      expect(sheet.host.querySelector(".ui-window__foot [data-build-cost]")?.getAttribute("data-build-cost")).toBe(
-        costLine(expected),
-      );
+      expect(footPrice(sheet.host)).toBe(costLine(expected));
     }
     sheet.close();
   });
@@ -423,13 +427,13 @@ describe("the build sheet", () => {
     const sheet = open(store, realm);
     expect(sheet.card("Farm").querySelector("[data-build-price]")?.textContent).toBe(FREE);
     act(() => sheet.card("Farm").click());
-    expect(sheet.host.querySelector(".ui-window__foot [data-build-cost]")?.getAttribute("data-build-cost")).toBe(FREE);
+    expect(footPrice(sheet.host)).toBe(FREE);
 
     const rangeButton = sheet.card(buildingName(BuildingType.ResourceCrossbowmanT1, true));
     expect(rangeButton.querySelector("[data-build-price]")?.textContent).toBe(FREE);
     act(() => rangeButton.click());
     expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe("Requires City");
-    expect(sheet.host.querySelector(".ui-window__foot [data-build-cost]")?.getAttribute("data-build-cost")).toBe(FREE);
+    expect(footPrice(sheet.host)).toBe(FREE);
     sheet.close();
   });
 
@@ -451,11 +455,9 @@ describe("the build sheet", () => {
     act(() => sheet.card("Workshop").click());
     expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')).toBeNull();
     expect(sheet.button("Build")).toBeDefined();
+    expect(footPrice(sheet.host)).toBe("2,000 Labor");
     // Build and its price stand in the sheet's foot, outside the body that scrolls: the verb never scrolls away.
     expect(sheet.button("Build")!.closest(".ui-window__foot")).not.toBeNull();
-    expect(sheet.host.querySelector(".ui-window__foot [data-build-cost]")?.getAttribute("data-build-cost")).toBe(
-      "2,000 Labor",
-    );
     sheet.close();
   });
 

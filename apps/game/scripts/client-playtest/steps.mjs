@@ -742,8 +742,15 @@ const TOWN_DEPLOY_STEPS = [
   ),
 ];
 
-const DEPLOY_TROOPS_INPUT = '[data-kit-sheet] input[aria-label="Troops"]';
-const DEPLOY_TROOPS = `JSON.stringify(document.querySelector(${JSON.stringify(DEPLOY_TROOPS_INPUT)})?.value ?? null)`;
+const DEPLOY_SIZE = '[data-kit-sheet] .size-row input[type="range"]';
+const setDeployCount = (browser, count) =>
+  browser.read(`(() => {
+    const slider = document.querySelector(${JSON.stringify(DEPLOY_SIZE)});
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(slider, ${JSON.stringify(String(count))});
+    slider.dispatchEvent(new Event("input", { bubbles: true }));
+    return slider.value;
+  })()`);
+const DEPLOY_TROOPS = `JSON.stringify(document.querySelector('[data-kit-sheet] .size-row__count')?.textContent ?? null)`;
 
 const DEPLOY_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -760,12 +767,8 @@ async function deployFromTheDock({ browser }, amount, troopName, atMost = Infini
   );
   if (sheet !== "Deploy") return { sheet };
   if (troopName) browser.click(troopName);
-  if (amount !== undefined || Number.isFinite(atMost)) {
-    browser.click("Adjust size");
-    if (amount !== undefined) browser.run(["fill", DEPLOY_TROOPS_INPUT, String(amount)]);
-    if (Number(String(browser.read(DEPLOY_TROOPS)).replace(/,/g, "")) > atMost)
-      browser.run(["fill", DEPLOY_TROOPS_INPUT, String(atMost)]);
-  }
+  if (amount !== undefined) setDeployCount(browser, amount);
+  if (Number(String(browser.read(DEPLOY_TROOPS)).replace(/,/g, "")) > atMost) setDeployCount(browser, atMost);
   const deploy = await readUntil(() => browser.read(sheetButton("^Deploy$")), Boolean, SHEET_WAIT_MS);
   if (!deploy) return { sheet, deploy };
   browser.tap(deploy.offset);
@@ -1244,7 +1247,7 @@ function oathPickSteps(full, layer = "Map") {
     {
       name: "open-oath-pick",
       play: async ({ browser }) => {
-        const pick = await readUntil(() => browser.read(elementAt("[data-oath-pick]")), Boolean, SHEET_WAIT_MS);
+        const pick = await openTheWaitingOath(browser);
         const before = browser.read("window.__labChain.sent.length");
         browser.press("Escape");
         const outside = browser.read('document.elementFromPoint(5, 5)?.classList.contains("ui-modal")');
@@ -1292,13 +1295,16 @@ function oathPickSteps(full, layer = "Map") {
         return row && Number(row.oaths) === ${expected} && Number(row.oath_pick) === 0 && !document.querySelector('[data-oath-pick]');
       })()`,
           );
+        browser.tap(card.offset);
+        const swear = browser.read(elementAt(`[data-oath-swear="${chosen}"]`));
+        if (!swear) return { chosen, missing: true };
         if (!full) {
           const expected = held | (1 << (chosen - 1));
           watchChoice(expected);
-          browser.tap(card.offset);
+          browser.tap(swear.offset);
           return { chosen, expected, watching: true };
         }
-        browser.tap(card.offset);
+        browser.tap(swear.offset);
         const replace = await readUntil(() => browser.read(elementAt("[data-replace-oath]")), Boolean, SHEET_WAIT_MS);
         if (!replace) return { chosen, missing: true };
         const replaced = browser.read("Number(document.querySelector('[data-replace-oath]')?.dataset.replaceOath)");
@@ -4719,20 +4725,21 @@ const LAB_SUPPLY_POST_STEPS = [
         browser.tap([armyAt[0] + dx, armyAt[1] + dy]);
         const state = await readUntil(
           () => browser.read(REINFORCE_STATE),
-          (shown) => shown.sheet?.startsWith("Supply post"),
+          (shown) => SUPPLY_POST_SHEET.test(shown.sheet ?? ""),
           SHEET_WAIT_MS,
         );
-        if (state.sheet?.startsWith("Supply post")) {
+        if (SUPPLY_POST_SHEET.test(state.sheet ?? "")) {
           extraScreenshot("supply-post");
+          if (state.buttons.some(isReinforceVerb)) return { found: true, state };
           const button = state.buttons.find((text) => text.startsWith("Reinforce Army"));
           if (!button) return { found: false, state };
           browser.click(button);
           const sheet = await readUntil(
             () => browser.read(REINFORCE_STATE),
-            (shown) => shown.sheet?.startsWith("Reinforce"),
+            (shown) => shown.buttons.some(isReinforceVerb),
             SHEET_WAIT_MS,
           );
-          return { found: sheet.sheet?.startsWith("Reinforce"), state, sheet };
+          return { found: sheet.buttons.some(isReinforceVerb), state, sheet };
         }
         browser.press("Escape");
       }
@@ -4811,12 +4818,16 @@ function reinforceSheetOpen({ played }) {
 }
 
 /** Max, then Reinforce, then the chain's answer: the army's token reads more troops than before. */
+const isReinforceVerb = (name) => /^Reinforce \+/.test(name);
+const SUPPLY_POST_SHEET = /^Supply post/i;
+
 async function reinforceWithMax({ browser, extraScreenshot }) {
   browser.click("Max");
   await sleep(HOVER_SETTLE_MS);
   const chosen = browser.read(REINFORCE_STATE);
   extraScreenshot("max");
-  browser.click("Reinforce");
+  const verb = chosen.buttons.find(isReinforceVerb);
+  if (verb) browser.click(verb);
   const after = await readUntil(
     () => browser.read(REINFORCE_STATE),
     (shown) =>
@@ -4832,7 +4843,7 @@ function armyReinforced({ played }) {
   const troops = Number((after.armyToken ?? "").replace(/^T\d/, "").replaceAll(",", ""));
   if (!(troops > ARMY_BEFORE_REINFORCE))
     return failed(`the army's token reads ${after.armyToken} after the reinforcement`, played);
-  if (after.sheet?.startsWith("Reinforce")) return failed("the Reinforce sheet stays open after the answer", played);
+  if (after.buttons.some(isReinforceVerb)) return failed("the Reinforce sheet stays open after the answer", played);
   if (JSON.stringify(after.answered) !== JSON.stringify(REINFORCED))
     return failed(`the chain left ${JSON.stringify(after.answered)}, not ${JSON.stringify(REINFORCED)}`, played);
   return completed({ chosen: played.chosen, sent: after.sent, troops, panel: after.sheet });
@@ -6609,7 +6620,9 @@ async function buildABarracksOnce(context) {
 }
 
 const OATH_PICK = "[data-oath-pick]";
+const OATH_WAITING = "[data-oath-waiting]";
 const OATH_CARD = "[data-oath-id]";
+const OATH_SWEAR = "[data-oath-swear]";
 const OATH_REDRAW = "[data-reroll-oath]";
 const OATH_CARD_TEXTS = `JSON.stringify([...document.querySelectorAll(${JSON.stringify(OATH_CARD)})].map((card) => card.textContent.trim()))`;
 
@@ -6635,9 +6648,15 @@ async function fragmentSpendsAreOff({ browser, extraScreenshot }) {
   return { army, absent: controls, enabledForTheGame: enabled };
 }
 
+async function openTheWaitingOath(browser) {
+  const token = await readUntil(() => browser.read(elementAt(OATH_WAITING)), Boolean, SHEET_WAIT_MS);
+  if (token && !browser.read(elementAt(OATH_PICK))) browser.tap(token.offset);
+  return readUntil(() => browser.read(elementAt(OATH_PICK)), Boolean, SHEET_WAIT_MS);
+}
+
 async function chooseAnOfferedOath(context) {
   const { browser, extraScreenshot } = context;
-  const pick = await readUntil(() => browser.read(elementAt(OATH_PICK)), Boolean, SHEET_WAIT_MS);
+  const pick = await openTheWaitingOath(browser);
   if (!pick) return null;
   extraScreenshot("oath-pick");
   const cards = browser.read(OATH_CARD_TEXTS);
@@ -6646,6 +6665,7 @@ async function chooseAnOfferedOath(context) {
     return { redraw, refused: "the Oath pick offers a Redraw the game's rules turn off" };
   const before = browser.read(SENT_ACTIONS);
   browser.tap(browser.read(elementAt(OATH_CARD)).offset);
+  browser.tap(browser.read(elementAt(OATH_SWEAR)).offset);
   const receipt = await receiptOfTheNextAction(context, before);
   const closed = await readUntil(() => browser.read(elementAt(OATH_PICK)) === null, Boolean, ORDER_OUTCOME_WAIT_MS);
   return { cards, receipt, closed, redraw };
@@ -7112,7 +7132,7 @@ export const STEP_SETS = {
           await sleep(1_000);
           const deployHud = browser.read(`(() => ({
             troopCards: [...document.querySelectorAll('[data-kit-sheet] [aria-label="Troop type"] button')].map((b) => b.getAttribute("aria-label")),
-            hasAdjust: [...document.querySelectorAll('[data-kit-sheet] button')].some((b) => b.textContent?.trim() === "Adjust size"),
+            hasSize: Boolean(document.querySelector('[data-kit-sheet] .size-row input[type="range"]')),
             deployEnabled: Boolean(document.querySelector('[data-kit-sheet] .ui-window__foot button[data-kind="primary"]:not([disabled])')),
             inRightRail: Boolean(document.querySelector('[data-rail-panel] [data-kit-sheet][aria-label="Deploy"]')),
           }))()`);
@@ -7125,11 +7145,11 @@ export const STEP_SETS = {
         verify: ({ played }) =>
           played.sheet === "Deploy" &&
           played.deployHud.troopCards.length >= 3 &&
-          played.deployHud.hasAdjust &&
+          played.deployHud.hasSize &&
           played.deployHud.deployEnabled &&
           (!onADesktop() || played.deployHud.inRightRail)
             ? completed(played)
-            : failed("Deploy sheet must open at full stack with troop cards, Adjust size and enabled Deploy", played),
+            : failed("Deploy sheet must open at full stack with troop cards, its size row and enabled Deploy", played),
       },
     ],
   },

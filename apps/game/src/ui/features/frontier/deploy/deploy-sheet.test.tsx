@@ -78,9 +78,9 @@ const render = (store: unknown, row: unknown, onClose = () => {}) => {
   return { host, root, draw };
 };
 
-const countField = (host: HTMLElement) => host.querySelector<HTMLInputElement>(".ui-amount input")!;
+const slider = (host: HTMLElement) => host.querySelector<HTMLInputElement>(".size-row input[type=range]")!;
 const typeCount = (host: HTMLElement, value: number) => {
-  const field = countField(host);
+  const field = slider(host);
   act(() => {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, String(value));
     field.dispatchEvent(new Event("input", { bubbles: true }));
@@ -88,7 +88,7 @@ const typeCount = (host: HTMLElement, value: number) => {
 };
 const press = (host: HTMLElement, word: string) =>
   act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === word)!.click());
-const outOf = (host: HTMLElement) => host.querySelector(".ui-amount__of")?.textContent;
+const count = (host: HTMLElement) => host.querySelector(".size-row__count")?.textContent;
 
 /** The open slots the sheet offers, as the Armies card draws them: each one's name, and whether it is the one chosen. */
 const slotsOffered = (host: HTMLElement) =>
@@ -99,16 +99,7 @@ const slotsOffered = (host: HTMLElement) =>
 const slotButton = (host: HTMLElement, name: string) =>
   host.querySelector<HTMLButtonElement>(`[aria-label="Army slots"] button[aria-label="${name}"]`)!;
 
-/** The stamina the new army starts on, read off the chosen slot: the number beside its bar, and the bar's reading. */
-const startReading = (host: HTMLElement) => {
-  const chosen = host.querySelector('[aria-label="Army slots"] [aria-pressed="true"]');
-  const meter = chosen?.querySelector<HTMLElement>('[role="meter"][aria-label="stamina"]');
-  const sub = host.querySelector(".deploy-sheet__stamina")?.textContent ?? null;
-  return {
-    number: sub,
-    meter: meter ? [Number(meter.getAttribute("aria-valuenow")), Number(meter.getAttribute("aria-valuemax"))] : null,
-  };
-};
+const startReading = (host: HTMLElement) => host.querySelector("[data-deploy-start]")?.textContent ?? null;
 
 const foot = (host: HTMLElement) => host.querySelector(".ui-window__foot")?.textContent ?? "";
 /** The red line the wheat draws when it holds the count down: its words, its mark and its one press. */
@@ -175,17 +166,14 @@ describe("the Deploy sheet", () => {
         ["Army 2", "true"],
         ["Army 3", "false"],
       ]);
-      expect(host.querySelector(".deploy-sheet__sub")?.textContent).toContain("Slot 2 of 3");
-      expect(host.querySelector(".deploy-sheet__sub")?.textContent).toContain("7/150");
+      expect(startReading(host)).toBe("7");
       expect(deployButton(host)).toBeDefined();
-      expect(host.querySelectorAll('[role="meter"][aria-label="stamina"]')).toHaveLength(2);
       act(() => slotButton(host, "Army 3").click());
       expect(slotsOffered(host)).toEqual([
         ["Army 2", "false"],
         ["Army 3", "true"],
       ]);
-      expect(host.querySelector(".deploy-sheet__sub")?.textContent).toContain("Slot 3 of 3");
-      expect(host.querySelector(".deploy-sheet__sub")?.textContent).toContain("150/150");
+      expect(startReading(host)).toBe("150");
       await act(async () => deployButton(host)!.click());
       expect(createExplorerArmy).toHaveBeenCalledWith(expect.objectContaining({ slot: 2 }));
     } finally {
@@ -194,7 +182,7 @@ describe("the Deploy sheet", () => {
     }
   });
 
-  it("offers the open slots on a phone as the dock's tokens, the chosen one framed as a picked army", () => {
+  it("offers the open slots on a phone as numbered pips, the chosen one framed as a picked army", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     layout.current = "phone";
     const { store, row } = frontierDay();
@@ -204,8 +192,7 @@ describe("the Deploy sheet", () => {
         ["Army 2", "true"],
         ["Army 3", "false"],
       ]);
-      // A token, its stamina in segments and in words on its hover, as in the dock.
-      expect(slotButton(host, "Army 2").getAttribute("data-tip")).toBe("Army 2 starts full: 150/150 stamina.");
+      expect([slotButton(host, "Army 2").textContent, slotButton(host, "Army 3").textContent]).toEqual(["2", "3"]);
       // Both wear the kit's chosen look (ui-pick), which frames the one aria-pressed names, as on a picked army.
       expect(slotButton(host, "Army 2").classList.contains("ui-pick")).toBe(true);
       expect(slotButton(host, "Army 3").classList.contains("ui-pick")).toBe(true);
@@ -252,7 +239,7 @@ describe("the Deploy sheet", () => {
       openArmyDeployment({ structureId: 7, isExplorer: true, direction: Direction.WEST });
       const { host, root } = render(store, row);
       try {
-        expect(host.querySelector(".deploy-sheet__sub")?.textContent).toContain("Slot 3 of 3");
+        expect(slotsOffered(host)).toEqual([["Army 3", "true"]]);
         expect(deployButton(host)).toBeDefined();
         await act(async () => deployButton(host)!.click());
         expect(createExplorerArmy).toHaveBeenCalledWith(
@@ -314,7 +301,7 @@ describe("the Deploy sheet", () => {
     }
   });
 
-  it("opens at full stack, expands Adjust size for custom counts, and deploys the count typed", async () => {
+  it("opens at full stack, takes a count on its size row, and deploys the count set", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     const createExplorerArmy = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
@@ -331,21 +318,16 @@ describe("the Deploy sheet", () => {
     expect(host.querySelector(".ui-notice")).toBeNull();
     expect(deployButton(host)?.disabled).toBe(false);
     expect(host.querySelector(".deploy-troop-card")?.textContent).toContain("420");
-    press(host, "Adjust size");
-    expect(outOf(host)).toBe("of 420");
-    expect([countField(host).value, host.querySelector(".ui-notice")]).toEqual(["420", null]);
+    expect([slider(host).max, count(host), host.querySelector(".ui-notice")]).toEqual(["420", "420", null]);
     typeCount(host, 120);
-    expect(deployButton(host)?.textContent).toBe("Deploy 120 Knights");
-    expect(foot(host)).toBe("240 WheatDeploy 120 Knights");
+    expect(deployButton(host)?.textContent).toBe("Deploy 120");
+    expect(foot(host)).toBe("240Deploy 120");
+    expect(host.querySelector('.ui-price [role="img"]')?.getAttribute("aria-label")).toBe("240 Wheat");
     expect(host.textContent!.replace(foot(host), "")).not.toMatch(/wheat/i);
-    const slider = host.querySelector<HTMLInputElement>("input[type=range]");
-    expect([slider?.getAttribute("aria-label"), slider?.max, slider?.value]).toEqual([
-      "Troops: how many go",
-      "420",
-      "120",
-    ]);
+    const range = slider(host);
+    expect([range.getAttribute("aria-label"), range.max, range.value]).toEqual(["Knights: how many go", "420", "120"]);
     expect(host.textContent).not.toMatch(/Day ends/i);
-    expect(startReading(host)).toEqual({ number: "150/150", meter: [150, 150] });
+    expect(startReading(host)).toBe("150");
     expect(host.textContent).not.toMatch(/starts|its slot|Leaves|Steps out/);
     await act(async () => deployButton(host)!.click());
     expect(createExplorerArmy).toHaveBeenCalledWith(
@@ -409,26 +391,25 @@ describe("the Deploy sheet", () => {
     const { host, root } = render(store, row);
     click(host.querySelector('button[aria-label="Army 2"]')!);
     expect(wheatLine(host)).toEqual({ line: "Wheat for only 50 of 420 troops", press: "Get Wheat" });
-    press(host, "Adjust size");
-    expect([outOf(host), countField(host).value]).toEqual(["of 54", "50"]);
+    expect([slider(host).max, count(host)]).toEqual(["54", "50"]);
     typeCount(host, 30);
-    expect([wheatLine(host), foot(host)]).toEqual([null, "60 WheatDeploy 30 Knights"]);
+    expect([wheatLine(host), foot(host)]).toEqual([null, "60Deploy 30"]);
     typeCount(host, 300);
-    expect(countField(host).value).toBe("54");
+    expect(count(host)).toBe("54");
     expect(wheatLine(host)).toEqual({ line: "Wheat for only 54 of 420 troops", press: "Get Wheat" });
-    expect(foot(host)).toBe("108 WheatDeploy 54 Knights");
+    expect(foot(host)).toBe("108Deploy 54");
     expect(deployButton(host)?.disabled).toBe(false);
     typeCount(host, 49);
     expect(wheatLine(host)).toBeNull();
     press(host, "Max");
-    expect([countField(host).value, wheatLine(host)?.line]).toEqual(["50", "Wheat for only 50 of 420 troops"]);
+    expect([count(host), wheatLine(host)?.line]).toEqual(["50", "Wheat for only 50 of 420 troops"]);
     act(() => root.unmount());
     host.remove();
   });
 
   it.each([
-    ["nine Wheat deploys four troops", 9, "of 4", "8 WheatDeploy 4 Knights"],
-    ["four and a half Wheat deploys two", 4.5, "of 2", null],
+    ["nine Wheat deploys four troops", 9, "4", "8Deploy 4"],
+    ["four and a half Wheat deploys two", 4.5, "2", null],
   ])("prices Max on the whole batch at the recipe cost: %s", (_case, wheat, most, price) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
@@ -446,8 +427,7 @@ describe("the Deploy sheet", () => {
     ] as never);
     const { host, root } = render(store, row);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    press(host, "Adjust size");
-    expect(outOf(host)).toBe(most);
+    expect(slider(host).max).toBe(most);
     if (price) expect(foot(host)).toBe(price);
     act(() => root.unmount());
     host.remove();
@@ -481,19 +461,18 @@ describe("the Deploy sheet", () => {
     const onClose = vi.fn();
     const { host, root, draw } = render(store, row, onClose);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    press(host, "Adjust size");
-    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["8", "of 9", "16 WheatDeploy 8 Knights"]);
+    expect([count(host), slider(host).max, foot(host)]).toEqual(["8", "9", "16Deploy 8"]);
     expect(wheatLine(host)).toEqual({ line: "Wheat for only 8 of 420 troops", press: "Get Wheat" });
 
     clock.tick = 13;
     draw();
-    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["9", "of 10", "18 WheatDeploy 9 Knights"]);
+    expect([count(host), slider(host).max, foot(host)]).toEqual(["9", "10", "18Deploy 9"]);
     expect(wheatLine(host)?.line).toBe("Wheat for only 9 of 420 troops");
 
     typeCount(host, 5);
     clock.tick = 23;
     draw();
-    expect([countField(host).value, outOf(host), wheatLine(host)]).toEqual(["5", "of 11", null]);
+    expect([count(host), slider(host).max, wheatLine(host)]).toEqual(["5", "11", null]);
 
     expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Build")).toBe(false);
     press(host, "Max");
@@ -525,8 +504,7 @@ describe("the Deploy sheet", () => {
     {
       case: "a slot fresh today starts its army full",
       facts: [],
-      number: "150/150",
-      meter: [150, 150],
+      number: "150",
     },
     {
       case: "a slot whose army was released starts the new one on the bar it left",
@@ -545,8 +523,7 @@ describe("the Deploy sheet", () => {
           },
         },
       ],
-      number: "7/150",
-      meter: [7, 150],
+      number: "7",
     },
     {
       case: "a realm's trained Logistics (an uncommon Supply yard) raises the full bar of a fresh slot",
@@ -557,17 +534,16 @@ describe("the Deploy sheet", () => {
           value: { game_id: 1, structure_id: 7, learned: String(1n << 27n) },
         },
       ],
-      number: "180/180",
-      meter: [180, 180],
+      number: "180",
     },
-  ])("shows the stamina bar the new army starts on, its slot's: $case", ({ facts, number, meter }) => {
+  ])("names the stamina the new army starts on, its slot's: $case", ({ facts, number }) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     store.applyFacts(facts as never);
     const { host, root } = render(store, row);
     click(host.querySelector('button[aria-label="Army 2"]')!);
     // Slot 1 holds an army; the player chose Army 2.
-    expect(startReading(host)).toEqual({ number, meter });
+    expect(startReading(host)).toBe(number);
     act(() => root.unmount());
     host.remove();
   });

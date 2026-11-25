@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
+import { nativeFragmentConstants, nativeOathConstants as oaths } from "@bibliothecadao/eternum/game-client";
 import type { DockArmy } from "../hud/dock-armies";
 
 const state = vi.hoisted(() => ({
@@ -59,10 +59,17 @@ vi.mock("../pick-effect-text", async (importOriginal) => ({
   usePickEffectBase: () => state.pickBase,
 }));
 
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { FrontierOathPick } from "./oath-pick";
 
 let host: HTMLDivElement;
 let root: Root;
+
+const pickArmy = (explorerId: number | null) =>
+  act(() => useUIStore.setState((ui) => ({ entityActions: { ...ui.entityActions, selectedEntityId: explorerId } })));
+const draw = () => act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
+const cards = () => [...host.querySelectorAll<HTMLElement>(".oath-choice")];
+const swear = () => host.querySelector<HTMLButtonElement>("[data-oath-swear]")!;
 
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -74,59 +81,63 @@ beforeEach(() => {
   state.progress.oath_slots = 2;
   state.progress.oaths = 0;
   state.progress.oath_pick = oaths.POWER - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8);
+  pickArmy(army.explorerId);
 });
 
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
+  pickArmy(null);
 });
 
-it("renders three Aspect-accented altar pillars with hero stat badges, active slot pips, redraw dice and pass bar", () => {
-  act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
-
-  const cards = [...host.querySelectorAll<HTMLElement>("[data-oath-id]")];
-  expect(cards).toHaveLength(3);
-  expect(cards.every((card) => card.style.getPropertyValue("--hud-aspect").length > 0)).toBe(true);
-  expect(cards.map((card) => card.querySelector(".oath-card__title")?.textContent)).toEqual(["Power", "Fox", "Rage"]);
-  expect(cards.map((card) => card.querySelector(".oath-card__hero")?.textContent)).toEqual(["+20%", "20 → 16", "+25%"]);
-  expect(cards.map((card) => card.querySelector(".oath-card__unit")?.textContent)).toEqual([
+it("waits on its army until the army is picked, then offers three compact cards and swears the one chosen by name", async () => {
+  pickArmy(null);
+  draw();
+  expect(host.querySelector("[data-oath-pick]")).toBeNull();
+  pickArmy(army.explorerId);
+  expect(host.querySelector("[data-oath-pick]")).not.toBeNull();
+  expect(cards().every((card) => card.style.getPropertyValue("--hud-aspect").length > 0)).toBe(true);
+  expect(cards().map((card) => card.querySelector(".oath-choice__name")?.textContent)).toEqual([
+    "Power",
+    "Fox",
+    "Rage",
+  ]);
+  expect(cards().map((card) => card.querySelector(".oath-choice__effect")?.textContent)).toEqual([
+    "+20%",
+    "20 → 16",
+    "+25%",
+  ]);
+  expect(cards().map((card) => card.querySelector(".oath-choice__unit")?.textContent)).toEqual([
     "Damage dealt",
     "Reveal cost",
     "Site and guard rewards",
   ]);
-  expect(cards.map((card) => card.querySelector(".oath-card__sub")?.textContent)).toEqual([
-    "100% → 120%",
-    "Scouts 10 → 8",
-    "100% → 125%",
-  ]);
-  expect(cards.map((card) => card.querySelector(".oath-card__cta")?.textContent)).toEqual([
-    "Swear Power",
-    "Swear Fox",
-    "Swear Rage",
-  ]);
-  expect(host.querySelectorAll(".oath-card__redraw-dice")).toHaveLength(3);
-
-  const pips = [...host.querySelectorAll<HTMLElement>(".oath-pip")];
-  expect(pips).toHaveLength(2);
-  expect(pips[0]!.hasAttribute("data-active")).toBe(true);
-  expect(pips[0]!.textContent).toBe("1");
-  expect(pips[1]!.textContent).toBe("2");
+  expect(host.querySelectorAll("[data-reroll-oath]")).toHaveLength(3);
+  expect(host.querySelector(".oath-pick__head .ui-chip")?.textContent).toBe(
+    String(nativeFragmentConstants.OATH_REROLL_FRAGMENTS),
+  );
+  expect(host.querySelector(".oath-pick__title span")?.textContent).toBe("Slot 1 of 2 · 1,498 Knights");
+  expect(swear().textContent).toBe("Swear Power");
+  await act(async () => host.querySelector<HTMLButtonElement>(`[data-oath-id="${oaths.FOX}"]`)!.click());
+  expect(swear().textContent).toBe("Swear Fox");
+  expect(state.chooseOath).not.toHaveBeenCalled();
+  await act(async () => swear().click());
+  expect(state.chooseOath).toHaveBeenCalledWith({
+    signer: state.signer,
+    explorerId: army.explorerId,
+    expectedPick: state.progress.oath_pick,
+    oath: oaths.FOX,
+    replace: null,
+  });
 });
 
-it("enters Replace mode with Replace labels and dispatches choose_oath with the replaced Oath when slots are full", async () => {
+it("asks which held Oath the card replaces when every slot is held, and swears it in its place", async () => {
   state.progress.oath_slots = 1;
   state.progress.oaths = 1 << (oaths.GIANTS - 1);
-  act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
-
-  expect(host.querySelectorAll(".oath-pip[data-filled]")).toHaveLength(1);
-  expect(host.querySelectorAll(".oath-pip[data-active]")).toHaveLength(0);
-
-  await act(async () => host.querySelector<HTMLButtonElement>(`[data-oath-id="${oaths.POWER}"] button`)!.click());
+  draw();
+  await act(async () => swear().click());
   const replaceButton = host.querySelector<HTMLButtonElement>(`[data-replace-oath="${oaths.GIANTS}"]`)!;
-  expect(replaceButton).not.toBeNull();
   expect(replaceButton.getAttribute("aria-label")).toBe("Replace Giants");
-  expect(replaceButton.querySelector(".oath-card__cta")?.textContent).toBe("Replace Giants");
-
   await act(async () => replaceButton.click());
   expect(state.chooseOath).toHaveBeenCalledWith({
     signer: state.signer,
@@ -135,4 +146,28 @@ it("enters Replace mode with Replace labels and dispatches choose_oath with the 
     oath: oaths.POWER,
     replace: oaths.GIANTS,
   });
+});
+
+it("marks the swapped card New and its head Used once the pick's one reroll is spent, with no Swap left", async () => {
+  draw();
+  await act(async () => host.querySelector<HTMLButtonElement>('[data-reroll-oath="0"]')!.click());
+  expect(state.rerollOath).toHaveBeenCalledWith(expect.objectContaining({ index: 0 }));
+  state.progress.oath_pick = oaths.GIANTS - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8) + oaths.REROLLED;
+  draw();
+  expect(host.querySelector(".oath-pick__head .ui-chip")?.textContent).toBe("Used");
+  expect(host.querySelectorAll("[data-reroll-oath]")).toHaveLength(0);
+  expect(cards().map((card) => card.querySelector(".oath-choice__new")?.textContent ?? null)).toEqual([
+    "New",
+    null,
+    null,
+  ]);
+  expect(swear().textContent).toBe("Swear Giants");
+});
+
+it("passes for the stamina it gives, capped at the bar's maximum", async () => {
+  draw();
+  const pass = host.querySelector<HTMLButtonElement>("[data-oath-pass]")!;
+  expect(pass.dataset.oathPassResult).toBe(String(100 + oaths.PASS_STAMINA));
+  await act(async () => pass.click());
+  expect(state.chooseOath).toHaveBeenCalledWith(expect.objectContaining({ oath: null, replace: null }));
 });

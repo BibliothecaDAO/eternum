@@ -28,7 +28,6 @@ export type Cost = { cost: number; held: number | undefined; wait: number | unde
 export type ArmyOrder = {
   kind: "explore" | "move";
   target: { col: number; row: number };
-  tiles: number;
   stamina: Cost;
   wheat: Cost;
 };
@@ -58,7 +57,6 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
   const troops = resolveExplorerTroops(setup.store, army, tick);
   if (!troops) return null;
   const explore = actionType === ActionType.Explore;
-  const tiles = path.length - 1;
 
   const staminaCost = computeEffectiveStaminaCost(
     path.slice(1),
@@ -75,7 +73,6 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
   return {
     kind: explore ? "explore" : "move",
     target,
-    tiles,
     stamina: {
       cost: staminaCost,
       held: staminaHeld,

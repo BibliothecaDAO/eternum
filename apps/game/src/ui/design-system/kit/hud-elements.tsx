@@ -8,9 +8,13 @@ import {
   readTypedNumber,
   typedNumberText,
   formatAmount,
+  formatCharge,
+  resourceName,
+  type ResourcesIds,
 } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import {
   type ButtonHTMLAttributes,
   createContext,
@@ -31,10 +35,11 @@ import {
 import { createPortal } from "react-dom";
 
 import { useModalLayer } from "./modal-layer";
+import { PRICE_FACES, type Price } from "./price-faces";
 import { useMarkFrameOpen } from "./open-frames";
 import { revealOwnPlace } from "./own-place";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
-import { CLOSE, type RankedWords, rankedText, STAMINA, type Rank, tierNumeral, TRY_AGAIN } from "./words";
+import { CLOSE, FREE, type RankedWords, rankedText, STAMINA, type Rank, tierNumeral, TRY_AGAIN } from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -603,6 +608,26 @@ export const HudCost = ({ line }: { line: RankedWords | string }) =>
       <HudRanked words={line} />
     </span>
   ) : null;
+
+export type ResourcePrice = { resource: ResourcesIds; amount: number | undefined };
+
+export const HudPrice = ({ prices }: { prices: readonly (Price | ResourcePrice)[] }) => (
+  <span className="ui-price">
+    {prices.length === 0 && FREE}
+    {prices.map((price) => {
+      const face = priceFace(price);
+      return (
+        <span key={face.word} role="img" aria-label={`${formatCharge(price.amount)} ${face.word}`}>
+          {face.icon && <Icon name={face.icon} size={20} />}
+          {formatCharge(price.amount)}
+        </span>
+      );
+    })}
+  </span>
+);
+
+const priceFace = (price: Price | ResourcePrice): { word: string; icon?: IconMeaning } =>
+  "of" in price ? PRICE_FACES[price.of] : { word: resourceName(price.resource), icon: resourceMeaning(price.resource) };
 
 /**
  * The HUD's one panel, for a part of the screen (a bar, a strip, a card in a band): a header band naming it (its icon,
@@ -1624,6 +1649,7 @@ export const HudSheet = ({
   title,
   icon,
   beside,
+  cue,
   onClose,
   children,
 }: {
@@ -1632,6 +1658,7 @@ export const HudSheet = ({
   icon?: IconMeaning;
   /** A quiet control right after the sheet's name, out of the body's flow and away from the cross (an army's Delete). */
   beside?: ReactNode;
+  cue?: ReactNode;
   onClose: () => void;
   children: ReactNode;
 }) => {
@@ -1643,6 +1670,7 @@ export const HudSheet = ({
       title={title}
       icon={icon}
       beside={beside}
+      cue={cue}
       onClose={onClose}
       data-kit-sheet=""
       data-docked={dock ? "" : undefined}

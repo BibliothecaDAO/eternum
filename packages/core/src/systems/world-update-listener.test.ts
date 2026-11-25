@@ -364,6 +364,31 @@ describe("native scene updates", () => {
     expect(changed).toHaveBeenCalledTimes(2);
   });
 
+  it("reports a reveal's pay exactly, so a flourish rounds it as the Log does", () => {
+    const { store, listener } = fixture();
+    const reward = vi.fn();
+    listener.ExplorerReward.onExplorerRewardEventUpdate(reward);
+    store.applyEvent({
+      model: "StoryEvent",
+      key: "0x9",
+      value: {
+        game_id: "0x1",
+        timestamp: "0x65",
+        owner: "0xabc",
+        story: {
+          ExplorationReward: {
+            explorer_id: "0x7",
+            receiver: "0x8",
+            coord: { alt: false, x: "0x1", y: "0x1" },
+            resource_type: String(ResourcesIds.Essence),
+            amount: String(57_600_000_000n),
+          },
+        },
+      },
+    } as never);
+    expect(reward).toHaveBeenCalledWith(expect.objectContaining({ amount: 57.6 }));
+  });
+
   it("delivers native extraction stories without retaining event rows", () => {
     const { store, listener } = fixture();
     const reward = vi.fn();

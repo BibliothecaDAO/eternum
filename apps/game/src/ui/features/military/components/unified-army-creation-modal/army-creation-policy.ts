@@ -1,13 +1,7 @@
 import { TROOP_RAISE_SHORT_REASON, type TroopRaiseCost } from "@bibliothecadao/eternum";
-import {
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  formatWait,
-  formatCharge,
-  formatFigure,
-  resourceName,
-} from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, type ResourcesIds, formatWait, formatFigure, resourceName } from "@bibliothecadao/types";
 
+import type { ResourcePrice } from "@/ui/design-system/kit/hud-elements";
 import type { SelectedTroopCombo, TroopSelectionOption } from "./types";
 
 /** Whole troops that fit both the stockpile and the selected army's remaining cap. */
@@ -68,18 +62,11 @@ export function resolveArmyCreationBlockedReason(status: ArmyCreationStatus): st
   return null;
 }
 
-/**
- * What deploying the chosen troops costs beyond the troops, as one compact line beside the Deploy verb ("20 wheat"),
- * the way the map's order line writes a cost; empty while it costs nothing.
- */
-export function troopRaiseLine(costs: TroopRaiseCost[] | undefined) {
-  return (costs ?? [])
+export function troopRaisePrices(costs: TroopRaiseCost[] | undefined): ResourcePrice[] | undefined {
+  const prices = (costs ?? [])
     .filter(({ amount }) => amount > 0n)
-    .map(
-      ({ resource, amount }) =>
-        `${formatCharge(Number(amount) / RESOURCE_PRECISION)} ${ResourcesIds[resource].toLowerCase()}`,
-    )
-    .join(" · ");
+    .map(({ resource, amount }) => ({ resource, amount: Number(amount) / RESOURCE_PRECISION }));
+  return prices.length > 0 ? prices : undefined;
 }
 
 /**
