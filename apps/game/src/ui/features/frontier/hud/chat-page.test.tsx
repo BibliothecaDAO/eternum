@@ -4,8 +4,6 @@ import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-// The chat's own parts are tested with the chat; here they stand in as what the page places: the rooms' tabs, the
-// players online, and the history with its field.
 vi.mock("@/ui/features/social", () => ({
   RealtimeChatTabs: () => (
     <div role="tablist" aria-label="Rooms">
@@ -17,7 +15,6 @@ vi.mock("@/ui/features/social", () => ({
       </button>
     </div>
   ),
-  RealtimeChatOnline: () => <span data-online>2 online</span>,
   RealtimeChatBody: () => <input aria-label="Message Global" />,
   GameChatMap: ({ children }: { children: ReactNode }) => children,
 }));
@@ -51,13 +48,12 @@ const page = (signedIn: boolean, onClose = vi.fn(), onSignIn = vi.fn()) => {
   return { frame, head: frame.querySelector<HTMLElement>(".ui-frame__head")! };
 };
 
-it("shows the Chat header with who is online and places the room tabs cleanly above the history and field", () => {
+it("names the Chat in its head with the room tabs beside the name, the history and field below", () => {
   const onClose = vi.fn();
   const { frame, head } = page(true, onClose);
   expect(head.querySelector(".ui-panel__title")!.textContent).toBe("Chat");
   expect(head.querySelector(".ui-panel__icon")).not.toBeNull();
-  expect(head.querySelector(".ui-panel__cue")!.textContent).toBe("2 online");
-  expect([...frame.querySelectorAll('.ui-frame__body [role="tab"]')].map((tab) => tab.textContent)).toEqual([
+  expect([...head.querySelectorAll('.ui-panel__cue [role="tab"]')].map((tab) => tab.textContent)).toEqual([
     "Global",
     "Messages",
   ]);

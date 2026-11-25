@@ -21,7 +21,7 @@ const COLUMNS: readonly { title: string; links: readonly FooterLink[] }[] = [
     // What You's rows hold: signed out, You is Connect, so the footer is where a new visitor finds them.
     links: [
       { word: WORDS.whatsNew, to: WHATS_NEW_PATH },
-      { word: PROFILE_WORDS.howToPlay, to: HOW_TO_PLAY },
+      { word: PROFILE_WORDS.guide, to: HOW_TO_PLAY },
       { word: WORDS.market, to: MARKET },
       { word: "realms.world", to: REALMS_WORLD },
     ],

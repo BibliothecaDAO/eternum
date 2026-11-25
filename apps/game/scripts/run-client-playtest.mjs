@@ -764,7 +764,7 @@ const ACTION_LATENCY_EXPRESSION = `JSON.stringify({
   admissionToVisibleMs: globalThis.__admissionToVisibleMs ?? [],
   armyMovement: globalThis.__armyMovementLatencyTraceEntries ?? [],
   clientActions: globalThis.__clientActionLatencyMeasurements ?? [],
-  chainAnswers: (globalThis.__labChain?.sent ?? []).map(({ command, answered }) => ({ kind: command.kind, answered })),
+  chainAnswers: (globalThis.__labChain?.sent ?? []).map(({ command, answered, before }) => ({ kind: command.kind, answered, before })),
 })`;
 
 const GPU_RENDERER_EXPRESSION = `(() => {

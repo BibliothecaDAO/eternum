@@ -74,7 +74,7 @@ const DayLines = ({ stories }: { stories: readonly ProcessedStoryEvent[] }) => {
   return (
     <div data-day-lines className="day-done__lines">
       {lines.map((story) => (
-        <FeedLine key={story.event_id} story={story} own />
+        <FeedLine key={story.event_id} story={story} />
       ))}
     </div>
   );
