@@ -123,7 +123,7 @@ export const readArmySlots = (
   const most = Math.max(allowed, ...byRank);
   const number = allowed + 1;
   return {
-    count: ARMY_SLOT_WORDS.count(active, allowed, most),
+    count: ARMY_SLOT_WORDS.count(active, allowed),
     nextLocked: number <= most ? { number, rank: rankName(byRank.findIndex((armies) => armies >= number)) } : undefined,
   };
 };

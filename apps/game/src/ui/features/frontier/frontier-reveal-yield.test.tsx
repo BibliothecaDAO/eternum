@@ -36,24 +36,27 @@ vi.mock("@bibliothecadao/eternum", async (original) => {
 const { buildStoryEventPresentation } = await import("@bibliothecadao/eternum");
 const { ResourcesIds } = await import("@bibliothecadao/types");
 const { useArmyRevealYield } = await import("./frontier-reveal-yield");
-const { ArmyDetail } = await import("./army/army-panel");
-const { EARLY_ARMY } = await import("./research/progression-fixture");
+const { OrderBar } = await import("./hud/order-bar");
 
-const PanelOverTheReading = () => {
-  const army = {
-    ...EARLY_ARMY,
-    revealYield: useArmyRevealYield({ explorerId: 7, troopsFact: {} } as never),
-  };
-  return <ArmyDetail army={army} />;
-};
+const ExploreOverTheReading = () => (
+  <OrderBar
+    kind="explore"
+    tiles={1}
+    stamina={{ cost: 20, held: 120, wait: undefined }}
+    wheat={{ cost: 10, held: 1_000, wait: undefined }}
+    revealYield={useArmyRevealYield({ explorerId: 7, troopsFact: {} } as never)}
+    onCancel={() => {}}
+    onGo={() => {}}
+  />
+);
 
-it("writes a reveal's fractional reward the same in the army panel and in the Log", () => {
+it("writes a reveal's fractional reward the same on the explore order and in the Log", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
-  act(() => root.render(<PanelOverTheReading />));
-  const panel = /\+(\S+) a tile/.exec(host.textContent ?? "")?.[1];
+  act(() => root.render(<ExploreOverTheReading />));
+  const panel = host.querySelector('[aria-label^="Essence, Labor"]')?.textContent?.replace("+", "");
   act(() => root.unmount());
   host.remove();
 

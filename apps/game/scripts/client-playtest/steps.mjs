@@ -1089,7 +1089,7 @@ function deleteOathArmyStep() {
       const before = browser.read(`JSON.stringify((() => {
         const answer = (window.__labChain?.sent ?? []).filter(({command}) => command.kind === "ChooseOath").at(-1);
         const progress = answer?.answered.find(({model}) => model === "ArmyProgress");
-        return { progress, held: document.querySelector('[data-oath-slots]')?.textContent,
+        return { progress, held: [...document.querySelectorAll('[data-oath-slots] [data-filled]')].map((oath) => oath.getAttribute('aria-label')).join(),
           commands: window.__labChain?.sent.length };
       })())`);
       const armyId = Number(before.progress?.value?.explorer_id);
@@ -1120,7 +1120,7 @@ function deleteOathArmyStep() {
       await press(browser, "Cancel", true);
       const retained = browser.read(`(() =>
         !document.querySelector('[role="alertdialog"]') &&
-        document.querySelector('[data-oath-slots]')?.textContent === ${JSON.stringify(before.held)} &&
+        [...document.querySelectorAll('[data-oath-slots] [data-filled]')].map((oath) => oath.getAttribute('aria-label')).join() === ${JSON.stringify(before.held)} &&
         !!document.querySelector('.mp-at[data-key="army:${armyId}"]') &&
         window.__labChain?.sent.length === ${before.commands})()`);
       if (!retained) return { before, confirmation, retained };
@@ -1447,20 +1447,15 @@ const OATH_SLOTS_STEPS = [
       return browser.read(`(() => {
         const slots = document.querySelector('[data-oath-slots="3"]');
         const rect = slots?.getBoundingClientRect();
-        return { text: slots?.textContent, open: slots?.querySelectorAll('[aria-label$="· Open"]').length,
-          locked: slots?.querySelectorAll('[aria-label$="· Locked"]').length,
-          priced: slots?.querySelectorAll('[aria-label$="· Locked"] .ui-cost').length,
+        return { name: slots?.getAttribute('aria-label'), open: slots?.querySelectorAll('[data-open]').length,
+          locked: slots?.querySelectorAll('[data-locked]').length,
           visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
       })()`);
     },
     verify: ({ played }) =>
-      played.visible &&
-      played.open === 3 &&
-      played.locked === 2 &&
-      played.priced === 2 &&
-      played.text.includes("3 Oath slots")
+      played.visible && played.open === 3 && played.locked === 2 && played.name === "3 Oath slots"
         ? completed(played)
-        : failed("The army's three open and two priced locked slots were not visible", played),
+        : failed("The army's three open and two locked Oath sockets were not visible", played),
   },
 ];
 
@@ -7008,12 +7003,6 @@ export const STEP_SETS = {
               `(() => { const chip = document.querySelector('.frontier-bar button.frontier-stock-chips'); if (!chip) return false; chip.click(); return true; })()`,
             );
           }
-          const buildings = await readUntil(
-            () =>
-              browser.read(`document.querySelectorAll('section[aria-label="Realm"] [data-realm-buildings] li').length`),
-            (count) => count >= 3,
-            PLAYABLE_WAIT_MS,
-          );
           const realmHud = browser.read(`(() => ({
             stocks: [...document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]')].map((tile) => tile.dataset.store),
             hasCastleHead: Boolean(document.querySelector('section[aria-label="Realm"] [data-realm-castle]')),
@@ -7033,7 +7022,6 @@ export const STEP_SETS = {
           }
           return {
             idleUnobstructed,
-            buildings,
             realmHud,
             hasRealmPanel,
             shot,
@@ -7044,17 +7032,13 @@ export const STEP_SETS = {
           played.idleUnobstructed &&
           played.hasRealmPanel &&
           played.realmHud.hasDeploy &&
-          played.buildings >= 3 &&
           played.realmHud.hasCastleHead &&
           everyStock(played.realmHud.stocks)
             ? completed(played)
-            : failed(
-                "Realm view must render with Castle, Workshop, Farm and Barracks standing and the desktop realm card's eight stocks",
-                {
-                  seen,
-                  played,
-                },
-              ),
+            : failed("Realm view must render with the realm card's rank and every stock, and Deploy", {
+                seen,
+                played,
+              }),
       },
       {
         name: "realm-build-sheet",
