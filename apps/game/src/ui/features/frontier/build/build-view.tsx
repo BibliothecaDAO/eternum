@@ -89,7 +89,7 @@ export const BuildView = ({
             <header className="build-group__head">
               <SemanticIcon name={GROUP_ICONS[group]} size={16} />
               <span className="build-group__word">{BUILD_GROUPS[group].word}</span>
-              <span className="build-group__line">{BUILD_GROUPS[group].line}</span>
+              {BUILD_GROUPS[group].line && <span className="build-group__line">{BUILD_GROUPS[group].line}</span>}
             </header>
             <div data-build-grid data-wide={entries.length % 3 !== 0 || undefined} className="build-grid">
               {entries.map(({ tile, index }) => (

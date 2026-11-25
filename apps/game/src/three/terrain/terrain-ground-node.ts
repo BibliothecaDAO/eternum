@@ -310,8 +310,6 @@ export function groundSurface(input: GroundSurfaceInput) {
     const grey = vec3(dot(albedo, LUMA));
     albedo.assign(mix(grey, albedo, mix(1.12, 0.95, highland)).mul(mix(LOWLAND, HIGHLAND, highland)));
 
-    const strata = input.world.y.mul(38).add(grain.mul(5)).sin().mul(0.25).add(0.55);
-    albedo.assign(mix(base.mul(vec3(0.5, 0.42, 0.36)).mul(strata), albedo, input.top));
     const wet = smoothstep(
       TERRAIN_WATER_LEVEL + 0.05,
       TERRAIN_WATER_LEVEL,

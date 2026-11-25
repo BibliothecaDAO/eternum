@@ -60,11 +60,7 @@ export function applyHexRingLook(
   materials.outline.opacity = Math.min(1, 0.88 + intensity * 0.12 + pulse * 0.03);
 }
 
-/**
- * One copy of a flat ring shape on every centre, in world space, each vertex set on the ground under it: any number of
- * rings is one geometry and one draw.
- */
-export function drapeOnGround(
+export function layOnGround(
   shape: THREE.BufferGeometry,
   copies: readonly GroundCopy[],
   terrain: TerrainSurface,
@@ -111,10 +107,14 @@ export function layCopyOnGround(
   const source = shape.getAttribute("position");
   const target = geometry.getAttribute("position");
   const scale = copy.scale ?? 1;
+  const y = terrain.sampleHeight(copy.x, copy.z) + lift;
   for (let vertex = 0; vertex < source.count; vertex++) {
-    const x = copy.x + source.getX(vertex) * scale;
-    const z = copy.z - source.getY(vertex) * scale;
-    target.setXYZ(copyIndex * source.count + vertex, x, terrain.sampleHeight(x, z) + lift, z);
+    target.setXYZ(
+      copyIndex * source.count + vertex,
+      copy.x + source.getX(vertex) * scale,
+      y,
+      copy.z - source.getY(vertex) * scale,
+    );
   }
   target.needsUpdate = true;
 }
@@ -146,15 +146,9 @@ function createOutlineGeometry(radius: number): THREE.BufferGeometry {
   return new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
 }
 
-/** Six samples along each straight hex edge, so a draped ring follows curved shores and relief. */
 function hexagonPoints(radius: number): THREE.Vector2[] {
-  const points: THREE.Vector2[] = [];
-  for (let edge = 0; edge < 6; edge++) {
-    const angle = (Math.PI / 3) * edge - Math.PI / 2;
-    const nextAngle = angle + Math.PI / 3;
-    const start = new THREE.Vector2(radius * Math.cos(angle), radius * Math.sin(angle));
-    const end = new THREE.Vector2(radius * Math.cos(nextAngle), radius * Math.sin(nextAngle));
-    for (let step = 0; step < 6; step++) points.push(start.clone().lerp(end, step / 6));
-  }
-  return points;
+  return Array.from({ length: 6 }, (_, corner) => {
+    const angle = (Math.PI / 3) * corner - Math.PI / 2;
+    return new THREE.Vector2(radius * Math.cos(angle), radius * Math.sin(angle));
+  });
 }

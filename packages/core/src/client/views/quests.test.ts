@@ -5,7 +5,8 @@ import { describe, expect, it } from "vitest";
 import release from "../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { RESOURCE_PRECISION, worldBanes } from "@bibliothecadao/types";
 import { nativeBaneConstants, nativeQuestConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
-import { dayOf } from "../../utils/days";
+import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
+import { dayAtIndex } from "../../utils/days";
 import { NativeFactStore } from "../native-fact-store";
 import { readDailyQuest } from "./quests";
 
@@ -13,6 +14,8 @@ const BONUS_SOURCES = {
   seals: { model: "Seal", key: "1:0x111", value: { game_id: 1, account: "0x111", granted_at: 100 } },
   holds_realm: { model: "SettledRealm", key: "1:123", value: { game_id: 1, realm_id: 123, home: 7 } },
 } satisfies Record<string, Parameters<NativeFactStore["applyFacts"]>[0][number]>;
+
+const BANE_DAY = frontierSeasonOnePreset.banes.quietDays;
 
 function chainBonusSources(): string[] {
   const source = readFileSync(
@@ -201,16 +204,16 @@ describe("daily quest facts", () => {
 function worldQuestFixture() {
   const { store } = fixture();
   const calendar = { seed: 5n, startMainAt: 100, scheduledEndAt: 10_000, endAt: 10_000, dayUnitSeconds: 100 };
-  const startsAt = dayOf(calendar, 100)!.end;
+  const startsAt = dayAtIndex(calendar, BANE_DAY).start;
   store.applyFacts([
     { model: "HomeAspect", key: "0xd000", value: { game_id: 1, home: 7, aspect: 1 } },
-    { model: "AspectActivity", key: "0xd001", value: { game_id: 1, aspect: 1, day: 0, active: 5 } },
+    { model: "AspectActivity", key: "0xd001", value: { game_id: 1, aspect: 1, day: BANE_DAY - 1, active: 5 } },
     {
       model: "BaneRules",
       key: "0xd002",
       value: {
         game_id: 1,
-        chance_step: 20,
+        chance_step: frontierSeasonOnePreset.banes.chanceStep,
         quorum_percent: 40,
         beast_percent: 150,
         stamina_percent: 50,
@@ -218,7 +221,7 @@ function worldQuestFixture() {
         quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10_000, 15_000],
       },
     },
-    { model: "WorldBane", key: "0xd003", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
+    { model: "WorldBane", key: "0xd003", value: { game_id: 1, day: BANE_DAY, kind: nativeBaneConstants.ASH_FALL } },
   ]);
   store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: startsAt + 10 });
   const read = () => readDailyQuest(store, 1, 7, startsAt + 10);
@@ -230,7 +233,7 @@ function worldQuestFixture() {
         value: {
           game_id: 1,
           home: 7,
-          day: 1,
+          day: BANE_DAY,
           progress: amount,
           completed_level: level,
         },
@@ -244,7 +247,7 @@ function worldQuestFixture() {
         value: {
           game_id: 1,
           aspect: 1,
-          day: 1,
+          day: BANE_DAY,
           completed: 2,
           ended_at: startsAt + 5,
         },
@@ -258,7 +261,7 @@ function worldQuestFixture() {
         value: {
           game_id: 1,
           home: 7,
-          day: 1,
+          day: BANE_DAY,
           account: "0x111",
           amount: BigInt(labor) * BigInt(RESOURCE_PRECISION),
           essence: BigInt(essence) * BigInt(RESOURCE_PRECISION),
@@ -327,7 +330,7 @@ describe("recorded bane quest rewards", () => {
     store.applyFacts([{ model: "WorldBane", key: "0xd003", value: null }]);
     expect(read()?.reading).toEqual({ unknown: "UNROLLED_WORLD_DAY" });
     store.applyFacts([
-      { model: "WorldBane", key: "0xd003", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
+      { model: "WorldBane", key: "0xd003", value: { game_id: 1, day: BANE_DAY, kind: nativeBaneConstants.ASH_FALL } },
     ]);
     finish();
     win();
@@ -343,7 +346,7 @@ describe("recorded bane quest rewards", () => {
       {
         model: "TeamBane",
         key: "0xd008",
-        value: { game_id: 1, aspect: 1, day: 1, source: 2, issued_day: 0, quest: nativeQuestConstants.STAND },
+        value: { game_id: 1, aspect: 1, day: BANE_DAY, source: 2, issued_day: 0, quest: nativeQuestConstants.STAND },
       },
     ]);
     finish(1, 3);
@@ -370,7 +373,7 @@ describe("recorded bane quest rewards", () => {
         value: {
           game_id: 1,
           home: 7,
-          day: 1,
+          day: BANE_DAY,
           account: "0x111",
           amount: 500_000_000n,
           essence: 250_000_000n,
@@ -385,9 +388,10 @@ describe("recorded bane quest rewards", () => {
 });
 
 const calendar = { seed: 5n, startMainAt: 100, scheduledEndAt: 10_000, endAt: 10_000, dayUnitSeconds: 100 };
-const firstDay = dayOf(calendar, 100)!;
-const secondDay = dayOf(calendar, firstDay.end)!;
-const thirdDay = dayOf(calendar, secondDay.end)!;
+const firstDay = dayAtIndex(calendar, 0);
+const lastQuietDay = dayAtIndex(calendar, BANE_DAY - 1);
+const baneDay = dayAtIndex(calendar, BANE_DAY);
+const nextDay = dayAtIndex(calendar, BANE_DAY + 1);
 
 function baneFixture() {
   const { store } = fixture();
@@ -397,7 +401,7 @@ function baneFixture() {
       key: "1",
       value: {
         game_id: 1,
-        chance_step: 20,
+        chance_step: frontierSeasonOnePreset.banes.chanceStep,
         quorum_percent: 25,
         beast_percent: 150,
         stamina_percent: 50,
@@ -406,16 +410,16 @@ function baneFixture() {
       },
     },
     { model: "HomeAspect", key: "1:7", value: { game_id: 1, home: 7, aspect: 1 } },
-    { model: "AspectActivity", key: "1:1:0", value: { game_id: 1, aspect: 1, day: 0, active: 5 } },
-    { model: "WorldBane", key: "1:0", value: { game_id: 1, day: 0, kind: 0 } },
-    { model: "WorldBane", key: "1:1", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
+    { model: "AspectActivity", key: "1:1:0", value: { game_id: 1, aspect: 1, day: BANE_DAY - 1, active: 5 } },
+    { model: "WorldBane", key: "1:0", value: { game_id: 1, day: BANE_DAY - 1, kind: 0 } },
+    { model: "WorldBane", key: "1:1", value: { game_id: 1, day: BANE_DAY, kind: nativeBaneConstants.ASH_FALL } },
   ]);
   return store;
 }
 
 it("reads the recorded bane and ceiling quorum, keeping its quest after the effect ends", () => {
   const store = baneFixture();
-  expect(readBaneDay(store, 1, 7, secondDay)).toEqual({
+  expect(readBaneDay(store, 1, 7, baneDay)).toEqual({
     known: {
       bane: {
         type: "world",
@@ -435,24 +439,24 @@ it("reads the recorded bane and ceiling quorum, keeping its quest after the effe
       value: {
         game_id: 1,
         aspect: 1,
-        day: 1,
+        day: BANE_DAY,
         completed: 2,
-        ended_at: secondDay.start + 60,
+        ended_at: baneDay.start + 60,
       },
     },
   ]);
-  expect(readBaneDay(store, 1, 7, secondDay).known?.bane).toMatchObject({
+  expect(readBaneDay(store, 1, 7, baneDay).known?.bane).toMatchObject({
     quest: nativeQuestConstants.CULL,
     required: 2,
     completed: 2,
-    endedAt: secondDay.start + 60,
+    endedAt: baneDay.start + 60,
   });
-  expect(readBaneEffects(store, 1, 7, secondDay.start - 10, secondDay.start + 120)).toEqual({
+  expect(readBaneEffects(store, 1, 7, baneDay.start - 10, baneDay.start + 120)).toEqual({
     known: {
       productionPercent: 50,
       staminaPercent: 50,
       beastPercent: 150,
-      windows: [{ kinds: [nativeBaneConstants.ASH_FALL], start: secondDay.start, end: secondDay.start + 60 }],
+      windows: [{ kinds: [nativeBaneConstants.ASH_FALL], start: baneDay.start, end: baneDay.start + 60 }],
     },
   });
 });
@@ -460,33 +464,33 @@ it("reads the recorded bane and ceiling quorum, keeping its quest after the effe
 it("leaves the quest of a day no command has rolled yet unknown while its effects span the whole day", () => {
   const store = baneFixture();
   store.applyFacts([{ model: "WorldBane", key: "1:1", value: null }]);
-  expect(readBaneDay(store, 1, 7, secondDay)).toEqual({ unknown: "UNROLLED_WORLD_DAY" });
-  const effects = readBaneEffects(store, 1, 7, secondDay.start + 10, thirdDay.start + 1);
+  expect(readBaneDay(store, 1, 7, baneDay)).toEqual({ unknown: "UNROLLED_WORLD_DAY" });
+  const effects = readBaneEffects(store, 1, 7, baneDay.start + 10, nextDay.start + 1);
   const anyBane = worldBanes.map(({ id }) => id);
   expect(effects.known?.windows).toEqual([
-    { kinds: anyBane, start: secondDay.start + 10, end: secondDay.end },
-    { kinds: anyBane, start: thirdDay.start, end: thirdDay.start + 1 },
+    { kinds: anyBane, start: baneDay.start + 10, end: baneDay.end },
+    { kinds: anyBane, start: nextDay.start, end: nextDay.start + 1 },
   ]);
-  store.setSnapshot({ gameId: 1, actor: "0x111", complete: false, timestamp: secondDay.start });
-  expect(readBaneDay(store, 1, 7, secondDay).unknown).toContain("INCOMPLETE_SNAPSHOT");
-  expect(readBaneEffects(store, 1, 7, secondDay.start, secondDay.start + 1).unknown).toContain("INCOMPLETE_SNAPSHOT");
+  store.setSnapshot({ gameId: 1, actor: "0x111", complete: false, timestamp: baneDay.start });
+  expect(readBaneDay(store, 1, 7, baneDay).unknown).toContain("INCOMPLETE_SNAPSHOT");
+  expect(readBaneEffects(store, 1, 7, baneDay.start, baneDay.start + 1).unknown).toContain("INCOMPLETE_SNAPSHOT");
 });
 
 it("reads the day after a world bane as ordinary before its roll, as the chain's chance is then zero", () => {
   const store = baneFixture();
-  expect(readBaneDay(store, 1, 7, thirdDay)).toEqual({ known: { bane: null } });
-  expect(readBaneEffects(store, 1, 7, thirdDay.start, thirdDay.start + 1).known?.windows).toEqual([]);
+  expect(readBaneDay(store, 1, 7, nextDay)).toEqual({ known: { bane: null } });
+  expect(readBaneEffects(store, 1, 7, nextDay.start, nextDay.start + 1).known?.windows).toEqual([]);
 });
 
 it("ends a zero-quorum effect at day start while retaining the bane quest", () => {
   const store = baneFixture();
   store.applyFacts([{ model: "AspectActivity", key: "1:1:0", value: null }]);
-  expect(readBaneDay(store, 1, 7, secondDay).known?.bane).toMatchObject({
+  expect(readBaneDay(store, 1, 7, baneDay).known?.bane).toMatchObject({
     quest: nativeQuestConstants.CULL,
     required: 0,
-    endedAt: secondDay.start,
+    endedAt: baneDay.start,
   });
-  expect(readBaneEffects(store, 1, 7, secondDay.start, secondDay.end)).toEqual({
+  expect(readBaneEffects(store, 1, 7, baneDay.start, baneDay.end)).toEqual({
     known: {
       productionPercent: 50,
       staminaPercent: 50,
@@ -499,26 +503,26 @@ it("ends a zero-quorum effect at day start while retaining the bane quest", () =
 it("keeps today's world bane when the first team bane is issued, then reads tomorrow's team quest", () => {
   const store = baneFixture();
   store.applyFacts([
-    { model: "FirstTeamBane", key: "1", value: { game_id: 1, issued_day: 1 } },
+    { model: "FirstTeamBane", key: "1", value: { game_id: 1, issued_day: BANE_DAY } },
     {
       model: "TeamBane",
       key: "1:1:2",
       value: {
         game_id: 1,
         aspect: 1,
-        day: 2,
+        day: BANE_DAY + 1,
         source: 2,
-        issued_day: 1,
+        issued_day: BANE_DAY,
         quest: nativeQuestConstants.STAND,
       },
     },
-    { model: "AspectActivity", key: "1:1:1", value: { game_id: 1, aspect: 1, day: 1, active: 5 } },
+    { model: "AspectActivity", key: "1:1:1", value: { game_id: 1, aspect: 1, day: BANE_DAY, active: 5 } },
   ]);
-  expect(readBaneDay(store, 1, 7, secondDay).known?.bane).toMatchObject({
+  expect(readBaneDay(store, 1, 7, baneDay).known?.bane).toMatchObject({
     type: "world",
     quest: nativeQuestConstants.CULL,
   });
-  expect(readBaneDay(store, 1, 7, thirdDay).known?.bane).toEqual({
+  expect(readBaneDay(store, 1, 7, nextDay).known?.bane).toEqual({
     type: "team",
     source: 2,
     quest: nativeQuestConstants.STAND,
@@ -527,7 +531,7 @@ it("keeps today's world bane when the first team bane is issued, then reads tomo
     completed: 0,
     endedAt: 0,
   });
-  expect(readBaneEffects(store, 1, 7, thirdDay.start, thirdDay.end)).toEqual({
+  expect(readBaneEffects(store, 1, 7, nextDay.start, nextDay.end)).toEqual({
     known: { productionPercent: 50, staminaPercent: 50, beastPercent: 150, windows: [] },
   });
 });
@@ -544,4 +548,22 @@ it("waits for optional-rule absence before showing ordinary quests or production
     known: { windows: [], productionPercent: 100, staminaPercent: 100, beastPercent: 100 },
   });
   expect(read()?.reading.known?.quest.id).toBe(nativeQuestConstants.REVEALS);
+});
+
+it("keeps a world bane a quiet day recorded before the quiet days began, as the chain reads its stored roll", () => {
+  const store = baneFixture();
+  store.applyFacts([
+    { model: "WorldBane", key: "1:0", value: { game_id: 1, day: BANE_DAY - 1, kind: nativeBaneConstants.ASH_FALL } },
+  ]);
+  expect(readBaneDay(store, 1, 7, lastQuietDay).known?.bane).toMatchObject({
+    type: "world",
+    kind: nativeBaneConstants.ASH_FALL,
+  });
+});
+
+it("reads the first days as calm before any roll, as the chain rolls no world bane on them", () => {
+  const store = baneFixture();
+  store.applyFacts([{ model: "WorldBane", key: "1:0", value: null }]);
+  expect(readBaneDay(store, 1, 7, lastQuietDay)).toEqual({ known: { bane: null } });
+  expect(readBaneEffects(store, 1, 7, 100, baneDay.start).known?.windows).toEqual([]);
 });

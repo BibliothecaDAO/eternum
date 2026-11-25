@@ -73,10 +73,6 @@ export class DeepArenaManager {
     this.place();
   }
 
-  public refreshTerrainPlacement(): void {
-    this.place();
-  }
-
   public destroy(): void {
     this.destroyed = true;
     this.unsubscribeStore();

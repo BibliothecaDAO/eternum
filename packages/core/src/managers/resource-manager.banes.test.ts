@@ -3,15 +3,19 @@ import { expect, it } from "vitest";
 import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import { nativeBaneConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { NativeFactStore } from "../client/native-fact-store";
-import { dayOf } from "../utils/days";
+import { frontierSeasonOnePreset } from "../../../../config/source/frontier/season-one";
+import { dayAtIndex } from "../utils/days";
 import { ResourceManager } from "./resource-manager";
+
+const FIRST_ROLL_DAY = frontierSeasonOnePreset.banes.quietDays;
+const TODAY = FIRST_ROLL_DAY + 1;
 
 function baneProduction() {
   const store = new NativeFactStore();
-  const start = dayOf(
+  const start = dayAtIndex(
     { seed: 5n, startMainAt: 100, scheduledEndAt: 10_000, endAt: 10_000, dayUnitSeconds: 100 },
-    100,
-  )!.end;
+    TODAY,
+  ).start;
   const now = start + 11;
   store.applyFacts([
     {
@@ -49,7 +53,7 @@ function baneProduction() {
       key: "0xd004",
       value: {
         game_id: 1,
-        chance_step: 20,
+        chance_step: frontierSeasonOnePreset.banes.chanceStep,
         quorum_percent: 40,
         beast_percent: 150,
         stamina_percent: 50,
@@ -57,9 +61,9 @@ function baneProduction() {
         quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10_000, 15_000],
       },
     },
-    { model: "WorldBane", key: "0xd005", value: { game_id: 1, day: 0, kind: 0 } },
-    { model: "WorldBane", key: "0xd006", value: { game_id: 1, day: 1, kind: nativeBaneConstants.ASH_FALL } },
-    { model: "AspectActivity", key: "0xd007", value: { game_id: 1, aspect: 1, day: 0, active: 5 } },
+    { model: "WorldBane", key: "0xd005", value: { game_id: 1, day: FIRST_ROLL_DAY, kind: 0 } },
+    { model: "WorldBane", key: "0xd006", value: { game_id: 1, day: TODAY, kind: nativeBaneConstants.ASH_FALL } },
+    { model: "AspectActivity", key: "0xd007", value: { game_id: 1, aspect: 1, day: FIRST_ROLL_DAY, active: 5 } },
     {
       model: "ResourceWeight",
       key: "0xd008",
@@ -88,7 +92,7 @@ function baneProduction() {
       {
         model: "BaneProgress",
         key: "0xd00b",
-        value: { game_id: 1, aspect: 1, day: 1, completed: 2, ended_at: start + 5 },
+        value: { game_id: 1, aspect: 1, day: TODAY, completed: 2, ended_at: start + 5 },
       },
     ]);
   return { store, manager, start, now, endBane };
@@ -116,7 +120,7 @@ it("shows no more than Ash Fall allows through a day no command has rolled yet, 
   store.applyFacts([{ model: "WorldBane", key: "0xd006", value: null }]);
   expect(manager.balanceWithProduction(now, 3)).toMatchObject({ balance: 108, amountProduced: 108n });
   expect(manager.productionData(3, now)).toMatchObject({ productionPerSecond: 3.5 / 1e9, isProducing: true });
-  store.applyFacts([{ model: "WorldBane", key: "0xd006", value: { game_id: 1, day: 1, kind: 0 } }]);
+  store.applyFacts([{ model: "WorldBane", key: "0xd006", value: { game_id: 1, day: TODAY, kind: 0 } }]);
   expect(manager.balanceWithProduction(now, 3)).toMatchObject({ balance: 147, amountProduced: 147n });
   expect(manager.productionData(3, now)).toMatchObject({ productionPerSecond: 7 / 1e9, isProducing: true });
   store.applyFacts([{ model: "WorldBane", key: "0xd006", value: null }]);
@@ -128,7 +132,11 @@ it("shows no more than Ash Fall allows through a day no command has rolled yet, 
 it("produces at the full rate before the roll on the day after a world bane, whose chance is then zero", () => {
   const { store, manager, now } = baneProduction();
   store.applyFacts([
-    { model: "WorldBane", key: "0xd005", value: { game_id: 1, day: 0, kind: nativeBaneConstants.ASH_FALL } },
+    {
+      model: "WorldBane",
+      key: "0xd005",
+      value: { game_id: 1, day: FIRST_ROLL_DAY, kind: nativeBaneConstants.ASH_FALL },
+    },
     { model: "WorldBane", key: "0xd006", value: null },
   ]);
   expect(manager.balanceWithProduction(now, 3)).toMatchObject({ balance: 147, amountProduced: 147n });
