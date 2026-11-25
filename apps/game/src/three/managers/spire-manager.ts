@@ -29,7 +29,7 @@ export class SpireManager {
   private readonly dummy = new Object3D();
   private readonly subscriptions: Array<() => void>;
   /** Each placed spire, the height it stands at on the terrain, and its name label (none for a dormant spire). */
-  private placements: Array<{ hex: SpireHex; y: number; label: CSS2DObject | null }> = [];
+  private placements: Array<{ hex: SpireHex; label: CSS2DObject | null }> = [];
   private model: SpireModel | null = null;
   private loading: Promise<void> | null = null;
   private capacity = 0;
@@ -159,26 +159,6 @@ export class SpireManager {
     this.model?.updateAnimations(delta, { camera });
   }
 
-  /** Terrain pages can arrive after the asset; move existing instances and labels onto the new surface. */
-  public refreshTerrainPlacement(): void {
-    if (!this.model || this.destroyed) return;
-    let changed = false;
-    this.placements.forEach((placement, index) => {
-      const position = this.getSpirePosition(placement.hex);
-      if (placement.y === position.y) return;
-      this.dummy.position.copy(position);
-      this.dummy.updateMatrix();
-      this.model!.placeSpire(index, this.dummy.matrix, placement.hex.dormant);
-      placement.y = position.y;
-      if (placement.label) placement.label.position.y = position.y + this.model!.labelHeight;
-      changed = true;
-    });
-    if (changed) {
-      this.model.needsUpdate();
-      this.markLabelsDirty();
-    }
-  }
-
   public destroy(): void {
     this.destroyed = true;
     this.subscriptions.forEach((unsubscribe) => unsubscribe());
@@ -214,7 +194,7 @@ export class SpireManager {
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
     this.model!.placeSpire(index, this.dummy.matrix, hex.dormant);
-    this.placements.push({ hex, y: position.y, label: hex.dormant ? null : this.addLabel(position) });
+    this.placements.push({ hex, label: hex.dormant ? null : this.addLabel(position) });
     if (!hex.dormant) this.groundLights?.set(spireLightKey(index), position.x, position.z, SPIRE_GROUND_LIGHT);
   }
 
