@@ -30,6 +30,12 @@ it("hangs the game's own cloth at each anchor, one tagged mesh per role, where t
   expect(new Vector3().fromBufferAttribute(banner.geometry.getAttribute("normal"), 4).x).toBeCloseTo(1);
 });
 
+it("refuses an anchor of a role the game has no cloth for, rather than leaving a bare post", () => {
+  expect(() => withFlagCloth(realm([{ role: "pennant", position: [0, 0.5, 0], size: [0.2, 0.4], facing: 0 }]))).toThrow(
+    "flag anchor",
+  );
+});
+
 it("adds nothing to a model that declares no anchors, and never twice to a shared model", () => {
   expect(cloth(withFlagCloth(realm([])))).toEqual([]);
   expect(cloth(withFlagCloth(realm()))).toEqual([]);

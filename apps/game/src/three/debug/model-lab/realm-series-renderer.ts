@@ -117,7 +117,7 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
 
 type SeriesSlot = { asset: (typeof REALM_ASSETS)[number]; before: boolean };
 
-export function realmSeries(settings: RealmSeriesSettings): SeriesSlot[] {
+function realmSeries(settings: RealmSeriesSettings): SeriesSlot[] {
   const shipped = (level: number, wonder = settings.wonder) =>
     REALM_ASSETS[realmModelIndex(level, wonder, settings.seed)];
   if (settings.base)

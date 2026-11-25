@@ -13,6 +13,7 @@ import { Matrix3, Matrix4, Vector3 } from "three";
 
 import { BEAST_BUDGET } from "../frontier-beasts/beast-budget.mjs";
 import { resolveTripoPbr } from "../../src/three/materials/tripo-pbr-rules.mjs";
+import { requireFlagAnchors } from "../../src/three/structures/flag-anchors.mjs";
 
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const PUBLIC_MODELS_ROOT = resolve(APP_ROOT, "public/models");
@@ -119,27 +120,8 @@ export function readHexFit(fitPath) {
   return { scale, offset: [offset[0], offset[1], offset[2]], yaw, flags: readFlagAnchors(raw.flags, fitPath) };
 }
 
-const FLAG_ROLES = new Set(["banner", "trim"]);
-const isFiniteList = (value, length) =>
-  Array.isArray(value) && value.length === length && value.every((entry) => Number.isFinite(entry));
-
 function readFlagAnchors(flags, fitPath) {
-  if (flags === undefined) return undefined;
-  if (!Array.isArray(flags)) throw new Error(`Hex fit flags must be a list of anchors in ${fitPath}`);
-  for (const anchor of flags) {
-    if (
-      !FLAG_ROLES.has(anchor?.role) ||
-      !isFiniteList(anchor.position, 3) ||
-      !isFiniteList(anchor.size, 2) ||
-      anchor.size.some((side) => side <= 0) ||
-      !Number.isFinite(anchor.facing)
-    ) {
-      throw new Error(
-        `Hex fit flag anchor needs role banner|trim, position [x,y,z], size [w,h] and facing in ${fitPath}`,
-      );
-    }
-  }
-  return flags;
+  return flags === undefined ? undefined : requireFlagAnchors(flags, fitPath);
 }
 
 function placeFlagAnchors(fit) {

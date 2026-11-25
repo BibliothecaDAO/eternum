@@ -1,23 +1,13 @@
 import { BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshStandardMaterial, type Object3D } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
-
-type FlagRole = "banner" | "trim";
-
-interface FlagAnchor {
-  role: FlagRole;
-  position: readonly [number, number, number];
-  size: readonly [number, number];
-  facing: number;
-}
-
-const ROLES: readonly FlagRole[] = ["banner", "trim"];
+import { FLAG_ROLES, type FlagAnchor, type FlagRole, requireFlagAnchors } from "./flag-anchors.mjs";
 
 export function withFlagCloth(gltf: GLTF): GLTF {
   const scene = gltf.scene;
   if (scene.userData.flagClothAttached) return gltf;
   scene.userData.flagClothAttached = true;
   const anchors = readFlagAnchors(scene);
-  for (const role of ROLES) {
+  for (const role of FLAG_ROLES) {
     const placed = anchors.filter((anchor) => anchor.role === role);
     if (placed.length > 0) scene.add(clothFor(role, placed));
   }
@@ -27,8 +17,8 @@ export function withFlagCloth(gltf: GLTF): GLTF {
 function readFlagAnchors(scene: Object3D): FlagAnchor[] {
   const anchors: FlagAnchor[] = [];
   scene.traverse((node) => {
-    const listed = node.userData.flagAnchors;
-    if (Array.isArray(listed)) anchors.push(...(listed as FlagAnchor[]));
+    if (node.userData.flagAnchors !== undefined)
+      anchors.push(...requireFlagAnchors(node.userData.flagAnchors, `${node.name || "a realm model"}'s flag anchors`));
   });
   return anchors;
 }
