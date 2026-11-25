@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
-const DESIGN = { width: 1_440, height: 960 } as const;
+const DESIGN = { width: 1_440, height: 1_050 } as const;
+const READING_FLOOR = 0.8;
 
 const SCALE_AT_WIDTH: readonly (readonly [width: number, scale: number])[] = [
   [1_024, 0.71],
@@ -20,7 +21,7 @@ const widthScale = (width: number): number => {
 };
 
 export const hudScaleFor = (width: number, height: number): number =>
-  Math.min(widthScale(width), height / DESIGN.height);
+  Math.min(widthScale(width), Math.max(READING_FLOOR, height / DESIGN.height));
 
 export const useHudScale = (): number => {
   const [size, setSize] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }));

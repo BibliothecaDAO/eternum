@@ -133,9 +133,10 @@
   gap: theme(spacing.4);
 }
 .frontier-minimap {
-  width: theme(spacing.hud-frontier-minimap);
-  height: theme(spacing.hud-frontier-minimap);
-  flex: none;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  flex: 0 1000 auto;
   margin-top: auto;
   pointer-events: auto;
 }
