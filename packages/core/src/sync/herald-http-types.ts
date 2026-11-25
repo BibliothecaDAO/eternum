@@ -39,6 +39,8 @@ export interface HeraldPlayerStructure {
   coord_x: number | null;
   coord_y: number | null;
   resources_packed: string;
+  aspect: AspectId | null;
+  has_wonder: boolean;
 }
 
 export interface HeraldPlayerQuest {

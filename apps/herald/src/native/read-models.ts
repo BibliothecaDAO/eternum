@@ -14,7 +14,14 @@ import {
   sellsFragments,
   triumphPercentsOf,
 } from "@bibliothecadao/eternum/game-client";
-import { aspects, isSeasonGame, RESOURCE_PRECISION, type AspectId, StructureType } from "@bibliothecadao/types";
+import {
+  aspects,
+  catalogAspectId,
+  isSeasonGame,
+  RESOURCE_PRECISION,
+  type AspectId,
+  StructureType,
+} from "@bibliothecadao/types";
 import { isCheckGame, resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
 
@@ -92,6 +99,7 @@ interface DirectoryRows {
   releases: FoldRow[];
   fragments: FoldRow[];
   seals: FoldRow[];
+  homeAspects: FoldRow[];
 }
 
 const FIRST_SEASON = 1;
@@ -152,6 +160,7 @@ function directoryRows(input: DirectoryInput): DirectoryRows {
     releases: rows("GameRelease"),
     fragments: rows("Fragments"),
     seals: rows("Seal"),
+    homeAspects: rows("HomeAspect"),
   };
 }
 
@@ -427,7 +436,14 @@ function playerStructure(
     coord_x: position?.col ?? null,
     coord_y: position?.row ?? null,
     resources_packed: integer(row.resources_packed).toString(),
+    aspect: homeAspectOf(facts, game.game_id, row.entity_id),
+    has_wonder: Boolean(record(row.metadata).has_wonder),
   };
+}
+
+function homeAspectOf(facts: DirectoryRows, gameId: unknown, home: unknown): AspectId | null {
+  const row = gameRows(facts.homeAspects, gameId).find((each) => integer(each.home) === integer(home));
+  return row ? catalogAspectId(number(row.aspect)) : null;
 }
 
 function structurePosition(
