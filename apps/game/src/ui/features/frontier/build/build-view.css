@@ -3,7 +3,7 @@
   flex-direction: column;
 }
 .build-grid {
-  --build-tile: clamp(64px, calc((theme(spacing.hud-phone-panel) - 140px) / 3), 100px);
+  --build-tile: clamp(64px, calc((theme(spacing.hud-phone-sheet) - 140px) / 3), 100px);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
