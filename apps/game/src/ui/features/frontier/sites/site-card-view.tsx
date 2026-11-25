@@ -27,6 +27,7 @@ import {
 import type { OrderInFlight } from "@/hooks/store/use-actions-in-flight";
 import type { ReactNode } from "react";
 
+import { BaneFigure, BaneLine } from "../day/bane-mark";
 import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
 import { GuardToken } from "../hud/army-token";
@@ -88,6 +89,7 @@ export const SiteCardView = ({
   const title = name ? siteTitle(name, word, beast?.name) : word;
   const armyless = army === null;
   const guardIcon = beast ? beastMeaning(beast.beast) : "troops";
+  const siteGuard = site !== "Army";
   const facing = facingOf(army, guard, fight);
   const lost = facing !== undefined && isArmyLost(facing);
   const reward =
@@ -112,12 +114,14 @@ export const SiteCardView = ({
       {armyless ? (
         <header className="flex items-center gap-3">
           {typeof guard === "number" ? (
-            <GuardToken
-              label={beast?.name ?? TROOPS}
-              art={guardIcon}
-              troops={guard}
-              mark={beast && <CombatBadge category={beast.combatClass} />}
-            />
+            <BaneFigure figure="guards" pill altered={siteGuard}>
+              <GuardToken
+                label={beast?.name ?? TROOPS}
+                art={guardIcon}
+                troops={guard}
+                mark={beast && <CombatBadge category={beast.combatClass} />}
+              />
+            </BaneFigure>
           ) : (
             <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
           )}
@@ -128,7 +132,14 @@ export const SiteCardView = ({
         </header>
       ) : (
         <>
-          <FightPanel army={army} guard={guard} facing={facing} beast={beast} guardIcon={guardIcon} />
+          <FightPanel
+            army={army}
+            guard={guard}
+            facing={facing}
+            beast={beast}
+            guardIcon={guardIcon}
+            siteGuard={siteGuard}
+          />
           {(facing || reward) && (
             <div className="fight-spoils">
               {facing && <Outcome facing={facing} />}
@@ -137,6 +148,7 @@ export const SiteCardView = ({
           )}
         </>
       )}
+      {siteGuard && typeof guard === "number" && <BaneLine figure="guards" />}
       {receipt}
       {replacement}
       <Verb
@@ -198,12 +210,14 @@ const FightPanel = ({
   facing,
   beast,
   guardIcon,
+  siteGuard,
 }: {
   army: { art: IconMeaning; troops: number } | null;
   guard: number | null | undefined;
   facing: Facing | undefined;
   beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: Troops["category"] }) | undefined;
   guardIcon: IconMeaning;
+  siteGuard: boolean;
 }) => (
   <FightArena
     ours={
@@ -228,6 +242,7 @@ const FightPanel = ({
             ),
             before: guard,
             kept: facing?.fight.guardLeft,
+            bane: siteGuard ? "guards" : undefined,
           }
         : undefined
     }

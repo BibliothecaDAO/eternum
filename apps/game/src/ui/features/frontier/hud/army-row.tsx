@@ -17,6 +17,7 @@ import type { ReactNode } from "react";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import type { DeepArmyLife } from "@bibliothecadao/eternum/game-client";
 
+import { BaneFigure } from "../day/bane-mark";
 import { DeepDrain, EtherealMark, OathWaitingBadge } from "./army-token";
 
 export const ArmyCard = ({
@@ -139,7 +140,9 @@ const SlotNumber = ({ number }: { number: number | undefined }) => (
 
 const StaminaFigure = ({ current, max }: { current: number | undefined; max: number | undefined }) => (
   <span className="frontier-slot__figure tabular-nums">
-    {staminaReading(current, max)}
-    <Icon name="stamina" size={14} alt={STAMINA} />
+    <BaneFigure figure="stamina" altered={current !== undefined && max !== undefined && current < max}>
+      {staminaReading(current, max)}
+      <Icon name="stamina" size={14} alt={STAMINA} />
+    </BaneFigure>
   </span>
 );

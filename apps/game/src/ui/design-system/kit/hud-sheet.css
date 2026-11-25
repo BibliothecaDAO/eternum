@@ -331,6 +331,13 @@ a.ui-button {
   line-height: var(--hud-leading-body);
   font-weight: var(--hud-weight-body);
 }
+.ui-tip__line[data-tone="bane"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--hud-bane);
+  font-weight: var(--hud-weight-strong);
+}
 /* What a verb costs, exactly as charged, one compact line: under its order in a tip, centred under its button, at the
    left of a window's foot. */
 .ui-cost {

@@ -5,6 +5,7 @@ import { Icon } from "@/ui/design-system/icon";
 import { CLOSE, PICKED_ARMY, staminaLabel, staminaReading, TROOPS } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
+import { BaneFigure } from "../day/bane-mark";
 import { DeepDrain, EtherealMark } from "./army-token";
 import type { DockArmy } from "./dock-armies";
 
@@ -53,7 +54,9 @@ export const PickedArmy = ({
                 <HudStamina stamina={army.stamina} />
               </span>
               <b aria-label={staminaLabel(army.stamina.current, army.stamina.max)}>
-                {staminaReading(army.stamina.current, army.stamina.max)}
+                <BaneFigure figure="stamina" altered={army.stamina.current < army.stamina.max}>
+                  {staminaReading(army.stamina.current, army.stamina.max)}
+                </BaneFigure>
               </b>
             </span>
           )}
