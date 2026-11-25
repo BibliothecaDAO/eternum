@@ -64,7 +64,9 @@ export const PickedArmy = ({
               <span className="army-tray__bar">
                 <HudStamina stamina={army.stamina} />
               </span>
-              <b aria-label={`${STAMINA} ${formatAmount(army.stamina.current)}`}>{formatAmount(army.stamina.current)}</b>
+              <b aria-label={`${STAMINA} ${formatAmount(army.stamina.current)}`}>
+                {formatAmount(army.stamina.current)}
+              </b>
             </span>
           )}
           {army.drain && <DeepDrain drain={army.drain} words compact />}

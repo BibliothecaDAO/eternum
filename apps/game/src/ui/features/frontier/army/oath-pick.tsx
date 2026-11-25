@@ -220,7 +220,14 @@ function ArmyOathPick({
         <HudPortrait icon={army.art} label={army.label} />
         <span className="oath-pick__title">
           <b>{replacing ? OATH_PICK.replaceTitle : OATH_PICK.title}</b>
-          <span>{OATH_PICK.slotOf(Math.min(held.length + 1, progress.oath_slots), progress.oath_slots, formatAmount(army.troops), troopLabel)}</span>
+          <span>
+            {OATH_PICK.slotOf(
+              Math.min(held.length + 1, progress.oath_slots),
+              progress.oath_slots,
+              formatAmount(army.troops),
+              troopLabel,
+            )}
+          </span>
         </span>
         {fragments !== null &&
           (redrawn ? (

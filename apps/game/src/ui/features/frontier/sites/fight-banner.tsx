@@ -68,6 +68,9 @@ const ClearBanner = ({ clear }: { clear: SiteClear }) => {
 const useClearOpenedPost = (siteId: SiteClear["siteId"]) => {
   const { setup } = useGame();
   const now = useCurrentDefaultTick();
-  const site = setup.store.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: BigInt(siteId) });
+  const site = setup.store.get("ExpeditionSite", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: BigInt(siteId),
+  });
   return Boolean(site?.clear && isSupplyPost(setup.store, site, site.clear.home_id, now));
 };

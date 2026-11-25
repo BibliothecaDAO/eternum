@@ -109,7 +109,12 @@ export const readSiteCard = (
 
 /** The supply post rule asked of the site as this army's clear would leave it. */
 const clearOpensPost = (store: NativeFactStore, site: NativeRows["ExpeditionSite"], { army, timestamp }: SiteAttack) =>
-  isSupplyPost(store, { ...site, clear: { explorer_id: army.explorer_id, home_id: army.owner, reward: null } }, army.owner, timestamp);
+  isSupplyPost(
+    store,
+    { ...site, clear: { explorer_id: army.explorer_id, home_id: army.owner, reward: null } },
+    army.owner,
+    timestamp,
+  );
 
 const attackStaminaOf = (store: NativeFactStore, attack: SiteAttack | null): number => {
   const base = configManager.getCombatRules().stamina.stamina_attack_req;

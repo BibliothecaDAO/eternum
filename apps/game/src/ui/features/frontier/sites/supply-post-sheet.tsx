@@ -49,16 +49,13 @@ export function SupplyPostSheet({
   const army = adjacent.length === 1 ? adjacent[0] : adjacent.find((entry) => entry.explorerId === chosen);
   const name = siteDisplayName(supplyPost);
   if (army && realm)
-    return (
-      <ReinforceSheet
-        realm={realm}
-        army={army}
-        post={{ id: supplyPost, name }}
-        onClose={onClose}
-      />
-    );
+    return <ReinforceSheet realm={realm} army={army} post={{ id: supplyPost, name }} onClose={onClose} />;
   return (
-    <HudSheet label={SUPPLY_POST.title} cue={<HudChip icons={[TARGET_MARKS.Camp.icon]}>{name}</HudChip>} onClose={onClose}>
+    <HudSheet
+      label={SUPPLY_POST.title}
+      cue={<HudChip icons={[TARGET_MARKS.Camp.icon]}>{name}</HudChip>}
+      onClose={onClose}
+    >
       {children}
       <HudNotice icon="hourglass" line={SUPPLY_POST.until} />
       {realm &&

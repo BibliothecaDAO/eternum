@@ -3,14 +3,7 @@ import "./deploy-view.css";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { OATH_SLOTS_MAX } from "@bibliothecadao/eternum";
 import { type TroopType, formatExact, formatShort, formatWait } from "@bibliothecadao/types";
-import {
-  HudButton,
-  HudChip,
-  HudNotice,
-  HudPrice,
-  HudSheet,
-  HudWindowFoot,
-} from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudNotice, HudPrice, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
 import {
   ARMY,

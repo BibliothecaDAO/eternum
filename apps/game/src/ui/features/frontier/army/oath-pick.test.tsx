@@ -66,9 +66,7 @@ let host: HTMLDivElement;
 let root: Root;
 
 const pickArmy = (explorerId: number | null) =>
-  act(() =>
-    useUIStore.setState((ui) => ({ entityActions: { ...ui.entityActions, selectedEntityId: explorerId } })),
-  );
+  act(() => useUIStore.setState((ui) => ({ entityActions: { ...ui.entityActions, selectedEntityId: explorerId } })));
 const draw = () => act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
 const cards = () => [...host.querySelectorAll<HTMLElement>(".oath-choice")];
 const swear = () => host.querySelector<HTMLButtonElement>("[data-oath-swear]")!;
@@ -99,7 +97,11 @@ it("waits on its army until the army is picked, then offers three compact cards 
   pickArmy(army.explorerId);
   expect(host.querySelector("[data-oath-pick]")).not.toBeNull();
   expect(cards().every((card) => card.style.getPropertyValue("--hud-aspect").length > 0)).toBe(true);
-  expect(cards().map((card) => card.querySelector(".oath-choice__name")?.textContent)).toEqual(["Power", "Fox", "Rage"]);
+  expect(cards().map((card) => card.querySelector(".oath-choice__name")?.textContent)).toEqual([
+    "Power",
+    "Fox",
+    "Rage",
+  ]);
   expect(cards().map((card) => card.querySelector(".oath-choice__effect")?.textContent)).toEqual([
     "+20%",
     "20 → 16",
