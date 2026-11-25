@@ -106,7 +106,16 @@ import { setViewportWidth } from "../frame/test-viewport";
 import { PlayPage } from "./play-page";
 
 import { useConnectStore } from "../sign-in/connect";
-import { COUNTDOWN_WORDS, PLAY_WORDS, PRESEASON_WORDS, PROFILE_WORDS, SEAL_CODE_WORDS, SEASON_ERROR, SEASON_INVITE_WORDS, tomorrowLasts } from "../../ui/design-system/kit/words";
+import {
+  COUNTDOWN_WORDS,
+  PLAY_WORDS,
+  PRESEASON_WORDS,
+  PROFILE_WORDS,
+  SEAL_CODE_WORDS,
+  SEASON_ERROR,
+  SEASON_INVITE_WORDS,
+  tomorrowLasts,
+} from "../../ui/design-system/kit/words";
 
 const HOUR = 3_600;
 const DAY = 24 * HOUR;
@@ -527,9 +536,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     const countdown = page.container.querySelector("[data-season-countdown]")!;
     expect(countdown.textContent).toContain("Final testnet live");
     expect(countdown.textContent).not.toContain("testnet-1795479180");
-    expect(countdown.textContent).toContain(
-      COUNTDOWN_WORDS.rehearsalLine(PLAY_WORDS.finalTestnet),
-    );
+    expect(countdown.textContent).toContain(COUNTDOWN_WORDS.rehearsalLine(PLAY_WORDS.finalTestnet));
     expect(countdown.textContent).toContain(COUNTDOWN_WORDS.free);
     expect(countdown.textContent).not.toContain(COUNTDOWN_WORDS.create);
     const primaries = countdown.querySelectorAll('button[data-kind="primary"]');
@@ -590,12 +597,8 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     expect(countdown.querySelectorAll('[role="timer"]')).toHaveLength(1);
     expect(countdown.querySelector('button[data-kind="primary"]')?.textContent).toBe("Play Final testnet");
     expect(countdown.querySelectorAll('button[data-kind="primary"]')).toHaveLength(1);
-    expect(countdown.textContent).toContain(
-      PRESEASON_WORDS.optionalLine,
-    );
-    expect(countdown.textContent).toContain(
-      PRESEASON_WORDS.invitePickPrompt,
-    );
+    expect(countdown.textContent).toContain(PRESEASON_WORDS.optionalLine);
+    expect(countdown.textContent).toContain(PRESEASON_WORDS.invitePickPrompt);
     expect(countdown.querySelector('[data-aspect="Prowess"]')?.textContent).toContain("39");
     expect(countdown.querySelector("[data-aspect-shared]")).toBeNull();
     expect(countdown.textContent).not.toContain("100,000 LORDS");

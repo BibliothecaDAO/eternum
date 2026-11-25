@@ -94,9 +94,7 @@ it("highlights earned Fragments in the funnel alongside the reward rule", async 
     ["1.4K", "Fragments earned"],
   ]);
   expect(host.querySelector('[data-funnel-step="fragmentsEarned"]')?.hasAttribute("data-gold")).toBe(true);
-  expect(host.querySelector("[data-referrals-reward]")?.textContent).toBe(
-    PROFILE_WORDS.friendReward,
-  );
+  expect(host.querySelector("[data-referrals-reward]")?.textContent).toBe(PROFILE_WORDS.friendReward);
 });
 
 it("shows a plain-word empty state instead of zero tiles when nothing has been shared, and hides when identity fails", async () => {

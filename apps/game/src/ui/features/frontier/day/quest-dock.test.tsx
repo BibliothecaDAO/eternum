@@ -207,9 +207,7 @@ describe("bane collection", () => {
     const game = worldDay();
     game.store.applyFacts([{ model: "WorldBane", key: "0xd003", value: null }]);
     game.draw();
-    expect(host.querySelector("[data-quest-undrawn]")?.textContent).toBe(
-      DAY_BANNER_WORDS.undrawnLine,
-    );
+    expect(host.querySelector("[data-quest-undrawn]")?.textContent).toBe(DAY_BANNER_WORDS.undrawnLine);
     expect(host.textContent).not.toContain("Loading today's quest");
     expect(host.textContent).not.toContain("The Cull");
     expect(host.querySelector("[data-reward]")).toBeNull();

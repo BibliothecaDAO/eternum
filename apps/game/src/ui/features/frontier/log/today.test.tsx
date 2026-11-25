@@ -128,7 +128,9 @@ describe("Today", () => {
     ]);
     expect(days.filter((day) => day.hasAttribute("data-collected"))).toHaveLength(3);
     act(() =>
-      [...host.querySelectorAll("button")].find((button) => button.textContent === TODAY_WORDS.yesterdaysRecap)!.click(),
+      [...host.querySelectorAll("button")]
+        .find((button) => button.textContent === TODAY_WORDS.yesterdaysRecap)!
+        .click(),
     );
     expect(onRecap).toHaveBeenCalledOnce();
     unmount();

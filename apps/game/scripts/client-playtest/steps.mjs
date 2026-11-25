@@ -968,7 +968,9 @@ async function offeredDeploy(browser) {
 }
 
 function offersItsKnightsOut(deploy) {
-  return deploy?.sheet === "Deploy" && deploy.offered && !String(deploy.notice ?? "").startsWith(wordAt("NO_TROOPS_AT_HOME"));
+  return (
+    deploy?.sheet === "Deploy" && deploy.offered && !String(deploy.notice ?? "").startsWith(wordAt("NO_TROOPS_AT_HOME"))
+  );
 }
 
 function holdsItsKnightsAtHome(played) {

@@ -240,7 +240,9 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(useUIStore.getState().entityActions.selectedEntityId).toBe(Number(realm.entity_id));
     expect(openPage()).toBeNull();
     expect(details()).toBeNull();
-    expect([...host.querySelectorAll("button")].some((button) => button.textContent === TRANSFER_TROOPS.title)).toBe(false);
+    expect([...host.querySelectorAll("button")].some((button) => button.textContent === TRANSFER_TROOPS.title)).toBe(
+      false,
+    );
   });
 
   it("keeps a page open on a desktop, where it stands beside the map", async () => {

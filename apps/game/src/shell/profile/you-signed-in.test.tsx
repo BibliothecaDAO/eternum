@@ -30,7 +30,13 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { setViewportWidth } from "../frame/test-viewport";
 import { SEASON_SPENDS_FRAGMENTS } from "../season";
 import { ProfilePage, SettingsRedirect } from "./profile-pages";
-import { INVITED_FRIENDS_WORDS, INVITE_WORDS, PROFILE_WORDS, REWARD_WORDS, SEASON_INVITE_WORDS } from "../../ui/design-system/kit/words";
+import {
+  INVITED_FRIENDS_WORDS,
+  INVITE_WORDS,
+  PROFILE_WORDS,
+  REWARD_WORDS,
+  SEASON_INVITE_WORDS,
+} from "../../ui/design-system/kit/words";
 
 let currentLocation = { pathname: "", search: "", hash: "" };
 const TrackLocation = () => {

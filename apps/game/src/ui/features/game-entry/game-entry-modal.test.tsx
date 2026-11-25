@@ -86,7 +86,14 @@ import { identityClient, useIdentitySessionStore } from "@/hooks/context/identit
 import { setViewportWidth } from "@/shell/frame/test-viewport";
 import { GameEntryModal } from "./game-entry-modal";
 import type { Session } from "@realms-world/identity";
-import { ASPECT_STEP_WORDS, COUNTDOWN_WORDS, DOORWAY_WORDS, HELD_REALMS_UNREADABLE, HOME_STEP_WORDS, REALM_SIDE_WORDS } from "../../design-system/kit/words";
+import {
+  ASPECT_STEP_WORDS,
+  COUNTDOWN_WORDS,
+  DOORWAY_WORDS,
+  HELD_REALMS_UNREADABLE,
+  HOME_STEP_WORDS,
+  REALM_SIDE_WORDS,
+} from "../../design-system/kit/words";
 
 /** A signed-in Realms account whose linked wallet is `address` (null: none linked). */
 const signedIn = (realmsId: string, address: string | null): Session => ({
@@ -703,7 +710,9 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
           { label: "Join Insight", invite: null },
         ]),
       );
-      expect(entry.host.querySelector(".aspect-picker__invited")?.textContent).toBe(ASPECT_STEP_WORDS.invitedTo("Linden", "Luminary"));
+      expect(entry.host.querySelector(".aspect-picker__invited")?.textContent).toBe(
+        ASPECT_STEP_WORDS.invitedTo("Linden", "Luminary"),
+      );
       await join(entry.host, "Luminary");
       await vi.waitFor(() => expect(settlement.calls).toEqual([firstOrderOf(2)]));
       expect(joined).toHaveBeenCalledTimes(1);
@@ -773,7 +782,9 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
           REALM_SIDE_WORDS.invited("Linden", "Luminary", "Havoc"),
         );
         expect(warning(entry.host)?.textContent).toContain(name(538));
-        expect(warning(entry.host)?.textContent).toContain(`${REALM_SIDE_WORDS.keeps} ${REALM_SIDE_WORDS.apart("Linden")}`);
+        expect(warning(entry.host)?.textContent).toContain(
+          `${REALM_SIDE_WORDS.keeps} ${REALM_SIDE_WORDS.apart("Linden")}`,
+        );
         expect(warning(entry.host)?.textContent).toContain(REALM_SIDE_WORDS.loses);
         await entry.press(REALM_SIDE_WORDS.playRealm);
         expect(warning(entry.host)).toBeNull();
@@ -792,9 +803,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       const entry = await openEntry();
       try {
         await vi.waitFor(() => expect(warning(entry.host)).not.toBeNull());
-        expect(warning(entry.host)?.querySelector("h2")?.textContent).toBe(
-          REALM_SIDE_WORDS.kept("Prowess", "Havoc"),
-        );
+        expect(warning(entry.host)?.querySelector("h2")?.textContent).toBe(REALM_SIDE_WORDS.kept("Prowess", "Havoc"));
         await entry.press(REALM_SIDE_WORDS.joinFree("Prowess"));
         expect(warning(entry.host)).toBeNull();
         expect(entry.host.querySelector(".home-picker__featured")).toBeNull();
@@ -819,9 +828,7 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
       const entry = await openEntry();
       try {
         await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
-        await vi.waitFor(() =>
-          expect(entry.host.textContent).toContain(ASPECT_STEP_WORDS.keptUnread),
-        );
+        await vi.waitFor(() => expect(entry.host.textContent).toContain(ASPECT_STEP_WORDS.keptUnread));
         expect(entry.found().disabled).toBe(true);
         read.mockResolvedValue({ order: 13, members: {} });
         await entry.press("Try again");

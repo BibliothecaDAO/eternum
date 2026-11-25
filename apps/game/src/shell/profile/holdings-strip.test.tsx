@@ -49,7 +49,12 @@ vi.mock("../herald", async (importOriginal) => ({
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { setViewportWidth } from "../frame/test-viewport";
 import { ProfilePage } from "./profile-pages";
-import { FRAGMENTS_PAGE_WORDS, HELD_REALMS_UNREADABLE, HOME_STEP_WORDS, NO_HELD_REALMS } from "../../ui/design-system/kit/words";
+import {
+  FRAGMENTS_PAGE_WORDS,
+  HELD_REALMS_UNREADABLE,
+  HOME_STEP_WORDS,
+  NO_HELD_REALMS,
+} from "../../ui/design-system/kit/words";
 
 const HELD_REALMS = "/api/value/held-realms";
 const named = (realmId: number) => `${realmId} · ${canonicalRealm(realmId)!.name}`;
@@ -139,7 +144,9 @@ it("shows one Try again notice when Realms fail to load, and reloads into the sh
   await vi.waitFor(() =>
     expect(you.container.querySelector(".profile-realm-tile__name")?.textContent).toBe(named(4786)),
   );
-  expect(you.container.querySelector(".profile-realm-tile__bonus")?.textContent).toContain(HOME_STEP_WORDS.questBonus(50));
+  expect(you.container.querySelector(".profile-realm-tile__bonus")?.textContent).toContain(
+    HOME_STEP_WORDS.questBonus(50),
+  );
 });
 
 it("says a linked wallet holding no Realm holds none", async () => {

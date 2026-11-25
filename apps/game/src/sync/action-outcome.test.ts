@@ -33,7 +33,9 @@ describe("a sent command's own outcome", () => {
       status: "REJECTED",
       revertReason: "Not enough stamina",
     });
-    await expect(untilApplied(sent)).rejects.toThrow(new ActionNotAppliedError(ATTACK_REFUSAL_WORDS["insufficient-stamina"]));
+    await expect(untilApplied(sent)).rejects.toThrow(
+      new ActionNotAppliedError(ATTACK_REFUSAL_WORDS["insufficient-stamina"]),
+    );
     waitForAction.mockResolvedValueOnce({ hash: "0xabc", block: 7, status: "REVERTED" });
     await expect(untilApplied(sent)).rejects.toBeInstanceOf(ActionNotAppliedError);
   });

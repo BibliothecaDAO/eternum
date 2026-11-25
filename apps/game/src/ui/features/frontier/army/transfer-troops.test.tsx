@@ -489,9 +489,7 @@ it("asks before dissolving an army with a whole upgrade more progression, then s
   await act(async () => button("Merge into 500 Knights")!.click());
   expect(swap).not.toHaveBeenCalled();
   expect(close).not.toHaveBeenCalled();
-  expect(host.querySelector(".ui-notice")?.textContent).toContain(
-    TRANSFER_TROOPS.losesProgress("600 Knights"),
-  );
+  expect(host.querySelector(".ui-notice")?.textContent).toContain(TRANSFER_TROOPS.losesProgress("600 Knights"));
   await act(async () => button(TRANSFER_TROOPS.confirmMerge("500 Knights"))!.click());
   expect(swap).toHaveBeenCalledOnce();
   expect(swap).toHaveBeenCalledWith(

@@ -103,7 +103,8 @@ const noCopiedPhrase = {
     return {
       CallExpression(node) {
         const { callee } = node;
-        const isAny = callee.type === "MemberExpression" && callee.object.name === "expect" && callee.property.name === "any";
+        const isAny =
+          callee.type === "MemberExpression" && callee.object.name === "expect" && callee.property.name === "any";
         if (isAny && node.arguments[0]?.type === "Identifier" && node.arguments[0].name === "String")
           context.report({ node, messageId: STAND_IN });
       },

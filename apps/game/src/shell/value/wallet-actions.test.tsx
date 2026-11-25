@@ -242,9 +242,7 @@ it("signs nothing whose fee rose past the one shown: a stale send is priced agai
     // The player comes back two minutes later: the prepared send is stale, and the network fee went up meanwhile.
     vi.spyOn(Date, "now").mockReturnValue(now + 120_000);
     await press(container, WALLET_WORDS.confirmPasskey);
-    await settled(() =>
-      expect(container.textContent).toContain(WALLET_WORDS.feeRose),
-    );
+    await settled(() => expect(container.textContent).toContain(WALLET_WORDS.feeRose));
     expect(container.textContent).toContain("at most 10.00");
     expect(sendFromDefault).not.toHaveBeenCalled();
     // Confirmed again, the fee now shown: it sends the execution priced at that fee.

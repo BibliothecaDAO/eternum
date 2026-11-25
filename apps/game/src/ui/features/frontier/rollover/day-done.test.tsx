@@ -644,7 +644,9 @@ describe("a device arriving in a new day", () => {
       const card = host.querySelector(DAY_1)!;
       expect([...card.querySelectorAll("[data-total]")].map((cell) => cell.textContent)).toEqual(PROD_DAY_1);
 
-      const share = [...card.querySelectorAll("button")].find((button) => button.textContent === DAY_SHARE_WORDS.share)!;
+      const share = [...card.querySelectorAll("button")].find(
+        (button) => button.textContent === DAY_SHARE_WORDS.share,
+      )!;
       await act(async () => share.click());
       const sheet = document.body.querySelector("section[aria-label='Share your day']")!;
       expect(sheet.querySelector(".day-share__frame .day-card__day")?.textContent).toBe("Day 1");

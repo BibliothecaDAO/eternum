@@ -85,10 +85,24 @@ describe("the interface that opens as you play", () => {
   });
 
   it("renders each moment with live rule figures and its desktop action", () => {
-    const moments = ["barracks", "deploy", "explore", "oath", "shop", "relic", "city", "spire", "deep", "day-end", "bane", "aspects", "daily-quest", "essence"] as const;
+    const moments = [
+      "barracks",
+      "deploy",
+      "explore",
+      "oath",
+      "shop",
+      "relic",
+      "city",
+      "spire",
+      "deep",
+      "day-end",
+      "bane",
+      "aspects",
+      "daily-quest",
+      "essence",
+    ] as const;
     for (const moment of moments) expect(renderMoment(moment)).toContain(OPENING_WORDS.lines[moment](OPENING_RULES));
   });
-
 
   it("draws a gated part once its moment is reached, and every part outside the HUD's provider", () => {
     const draw = (opened?: Set<OpeningMoment>) =>
@@ -122,7 +136,9 @@ describe("the interface that opens as you play", () => {
     act(() => [...host.querySelectorAll("button")].find((each) => each.textContent === OK)!.click());
     expect(onDismiss).toHaveBeenCalledTimes(1);
     const pressSkip = () =>
-      act(() => [...host.querySelectorAll("button")].find((each) => each.textContent === OPENING_WORDS.skipTutorial)!.click());
+      act(() =>
+        [...host.querySelectorAll("button")].find((each) => each.textContent === OPENING_WORDS.skipTutorial)!.click(),
+      );
     pressSkip();
     expect(onSkipAll).not.toHaveBeenCalled();
     pressSkip();

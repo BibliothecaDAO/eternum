@@ -302,9 +302,7 @@ it.each([1440, 390])(
     expect(page.querySelector("[data-shop-page]")).not.toBeNull();
     expect(page.querySelector("[data-shop-closed]")).not.toBeNull();
     expect(page.textContent).toContain("Fragments shop closed");
-    expect(page.textContent).toContain(
-      FRAGMENTS_PAGE_WORDS.closedLine,
-    );
+    expect(page.textContent).toContain(FRAGMENTS_PAGE_WORDS.closedLine);
     expect(page.querySelector("[data-fragment-packs]")).toBeNull();
     expect(page.querySelector("[data-fragment-custom]")).toBeNull();
     expect(page.querySelector("[data-shop-spend]")).toBeNull();

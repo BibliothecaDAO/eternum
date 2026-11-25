@@ -74,7 +74,11 @@ describe("AspectEmissaryDock", () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
 
     const pressSkip = () =>
-      act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === OPENING_WORDS.skipTutorial)!.click());
+      act(() =>
+        [...host.querySelectorAll("button")]
+          .find((button) => button.textContent === OPENING_WORDS.skipTutorial)!
+          .click(),
+      );
     pressSkip();
     expect(onSkipAll).not.toHaveBeenCalled();
     expect(dock?.textContent).toContain(OPENING_WORDS.skipFinal);
@@ -151,7 +155,11 @@ describe("AspectEmissaryDock", () => {
     );
     expect(host.querySelector(".emissary-dock__action")?.textContent).toContain(OPENING_WORDS.actions.explore);
     const pressSkip = () =>
-      act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === OPENING_WORDS.skipTutorial)!.click());
+      act(() =>
+        [...host.querySelectorAll("button")]
+          .find((button) => button.textContent === OPENING_WORDS.skipTutorial)!
+          .click(),
+      );
     pressSkip();
     expect(dock?.textContent).toContain(OPENING_WORDS.skipFinal);
     pressSkip();

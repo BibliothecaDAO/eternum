@@ -5,7 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type WithdrawStep, WithdrawSheet } from "./withdraw-sheet";
 import { SeasonPayoutRow } from "./season-payout";
 import { withdrawalRefusal, withdrawalsCloseAt, withdrawStepOf } from "./withdrawal";
-import { AUTOMATIC_LORDS_PAYOUT, LINK_WALLET_FOR_LORDS, PAYOUTS_PAUSED, WITHDRAWALS_CLOSED, paidWhenResumed } from "../../../design-system/kit/words";
+import {
+  AUTOMATIC_LORDS_PAYOUT,
+  LINK_WALLET_FOR_LORDS,
+  PAYOUTS_PAUSED,
+  WITHDRAWALS_CLOSED,
+  paidWhenResumed,
+} from "../../../design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;

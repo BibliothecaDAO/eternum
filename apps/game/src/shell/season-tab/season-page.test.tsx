@@ -119,7 +119,13 @@ vi.spyOn(console, "error").mockImplementation(() => undefined);
 import { setViewportWidth } from "../frame/test-viewport";
 import { mergeAspectRosters } from "./aspect-roster";
 import { SeasonPage } from "./season-page";
-import { DAY_BANNER_WORDS, POOL_NOT_PUBLISHED, SEASON_ERROR, SEASON_WORDS, WORDS } from "../../ui/design-system/kit/words";
+import {
+  DAY_BANNER_WORDS,
+  POOL_NOT_PUBLISHED,
+  SEASON_ERROR,
+  SEASON_WORDS,
+  WORDS,
+} from "../../ui/design-system/kit/words";
 
 /** Where a row led: the Results address it opened. */
 const Opened = () => <p data-opened>{useLocation().pathname}</p>;
@@ -795,9 +801,7 @@ it("shows honest empty lines for empty global and Aspect boards", async () => {
   const { container, unmount } = await mount(1440);
   try {
     await vi.waitFor(() =>
-      expect(container.querySelector("[data-global-roster]")?.textContent).toContain(
-        SEASON_WORDS.boardEmpty,
-      ),
+      expect(container.querySelector("[data-global-roster]")?.textContent).toContain(SEASON_WORDS.boardEmpty),
     );
     const ownTab = [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
       (tab) => tab.textContent === aspectName(ownAspect),
@@ -813,7 +817,9 @@ it("shows honest empty lines for empty global and Aspect boards", async () => {
     )!;
     await act(async () => insightTab.click());
     await vi.waitFor(() =>
-      expect(container.querySelector('[data-aspect-roster="4"]')?.textContent).toContain(SEASON_WORDS.aspectRosterEmpty("Insight")),
+      expect(container.querySelector('[data-aspect-roster="4"]')?.textContent).toContain(
+        SEASON_WORDS.aspectRosterEmpty("Insight"),
+      ),
     );
   } finally {
     shards.open.mockImplementation(async () => {
