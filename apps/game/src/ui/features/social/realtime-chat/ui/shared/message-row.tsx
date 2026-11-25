@@ -1,7 +1,7 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
-import { type PointerEvent, type ReactNode, useRef, useState } from "react";
+import { type PointerEvent, type ReactNode, useEffect, useRef, useState } from "react";
 
 /** A finger dragged this far right on a message answers it, as a phone's chats do. */
 const SWIPE_PX = 56;
@@ -31,6 +31,10 @@ export const MessageRow = ({
 }) => {
   const [actions, setActions] = useState(false);
   const press = useRef<{ x: number; y: number; touch: boolean } | null>(null);
+  const reply = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (actions) reply.current?.scrollIntoView?.({ block: "nearest" });
+  }, [actions]);
   const onPointerDown = (event: PointerEvent) => {
     press.current = { x: event.clientX, y: event.clientY, touch: event.pointerType === "touch" };
   };
@@ -82,7 +86,7 @@ export const MessageRow = ({
         </p>
       </div>
       {onReply && (
-        <div className={cn("justify-end pt-1 group-focus-within:flex", actions ? "flex" : "hidden")}>
+        <div ref={reply} className={cn("justify-end pt-1 group-focus-within:flex", actions ? "flex" : "hidden")}>
           <HudButton kind="secondary" size="sm" onClick={onReply}>
             {CHAT_WORDS.reply}
           </HudButton>
