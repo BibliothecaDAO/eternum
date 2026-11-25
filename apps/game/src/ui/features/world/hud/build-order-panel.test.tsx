@@ -33,6 +33,7 @@ vi.mock("@/ui/modules/entity-details/hooks/use-realm-level-up", () => ({
   }),
 }));
 
+import { BUILD_ORDER_WORDS } from "@/ui/design-system/kit/words";
 import { BuildOrderPanel } from "./build-order-panel";
 
 const WOOD = {
@@ -80,11 +81,11 @@ const rows = () =>
 
 it("shows each realm's next step under the default order and each verb takes it", async () => {
   await draw();
-  expect(host.querySelector("section")?.getAttribute("aria-label")).toBe("Build plan");
+  expect(host.querySelector("section")?.getAttribute("aria-label")).toBe(BUILD_ORDER_WORDS.title);
   expect(host.querySelector(".ui-select")).toBeNull();
   expect(rows()).toEqual([
-    ["Egonal", "Wood: 1 of 2 built.", "Build"],
-    ["Stolsli", "It can level up to Kingdom now.", "Level up"],
+    ["Egonal", "Wood: 1 of 2 built.", BUILD_ORDER_WORDS.build],
+    ["Stolsli", BUILD_ORDER_WORDS.readyToUpgrade("Kingdom"), BUILD_ORDER_WORDS.levelUp],
   ]);
   const [build, levelUp] = [...host.querySelectorAll<HTMLButtonElement>(".ui-row button")];
   await act(async () => build.click());
@@ -97,7 +98,7 @@ it("says when no realm has a step it can take now", async () => {
   game.steps = [];
   await draw();
   expect(rows()).toEqual([]);
-  expect(host.textContent).toContain("Nothing to build now");
+  expect(host.textContent).toContain(BUILD_ORDER_WORDS.nothingNow);
 });
 
 it("draws nothing where there is no build order to follow: outside a Blitz, or for a viewer who gives no orders", async () => {

@@ -17,6 +17,7 @@ import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { UnifiedArmyCreationBody } from "./unified-army-creation-modal";
+import { NEW_ARMY, startsOn } from "@/ui/design-system/kit/words";
 
 afterEach(() => setBlockTimestampSource(null));
 
@@ -71,7 +72,7 @@ it("says in the Military window's foot the stamina a field army starts on, from 
     ),
   );
   // The fixture's knights start at 150 under a 150 maximum: full.
-  expect(host.querySelector(".ui-window__foot")?.textContent).toContain("The new army starts full: 150/150 stamina");
+  expect(host.querySelector(".ui-window__foot")?.textContent).toContain(startsOn(NEW_ARMY, "150/150", true));
   act(() => root.unmount());
   host.remove();
 });

@@ -7,6 +7,7 @@ import { memo, useCallback } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { HudIconButton, HudPanel, HudPortrait } from "@/ui/design-system/kit/hud-elements";
+import { VILLAGE_INFO_TITLE } from "@/ui/design-system/kit/words";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
@@ -141,7 +142,7 @@ export const StructureBannerEntityDetail = memo(
         )}
 
         {shouldRenderVillageTimers && (
-          <HudPanel kind="section" title="Village Intel">
+          <HudPanel kind="section" title={VILLAGE_INFO_TITLE}>
             <div className="grid grid-cols-3 gap-1">
               <VillageTimerChip label="Militia" value={militiaUnlockLabel} title="Militia unlock timer" />
             </div>

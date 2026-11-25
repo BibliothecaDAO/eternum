@@ -22,6 +22,7 @@ import { useRealtimeChatStore } from "../model/store";
 import { GLOBAL_ROOM } from "../model/chat-rooms";
 import type { DirectMessage, WorldChatMessage, WorldChatZoneState } from "../model/types";
 import { RealtimeChatShell } from "./realtime-chat-shell";
+import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 
 const GAME = "game:0x52:7";
 const THREAD = "thread-ada";
@@ -154,7 +155,7 @@ it("keeps a reader on the latest there as a message arrives", () => {
   const { top, latest } = scrollOf(messageList());
   expect(top).toBe(latest);
   expect(lastMessageText()).toContain("Message 20");
-  expect(button("New messages")).toBeUndefined();
+  expect(button(CHAT_WORDS.newMessages)).toBeUndefined();
 });
 
 it("leaves a reader scrolled up where they read, offers the jump, and the jump shows the latest", () => {
@@ -163,10 +164,10 @@ it("leaves a reader scrolled up where they read, offers the jump, and the jump s
   act(() => scrollTo(messageList(), 120));
   arrive(20);
   expect(scrollOf(messageList()).top).toBe(120);
-  act(() => button("New messages")?.click());
+  act(() => button(CHAT_WORDS.newMessages)?.click());
   const { top, latest } = scrollOf(messageList());
   expect(top).toBe(latest);
-  expect(button("New messages")).toBeUndefined();
+  expect(button(CHAT_WORDS.newMessages)).toBeUndefined();
 });
 
 it("takes the jump away once the reader scrolls back down to the latest", () => {
@@ -174,9 +175,9 @@ it("takes the jump away once the reader scrolls back down to the latest", () => 
   openChat();
   act(() => scrollTo(messageList(), 0));
   arrive(20);
-  expect(button("New messages")).toBeDefined();
+  expect(button(CHAT_WORDS.newMessages)).toBeDefined();
   act(() => scrollTo(messageList(), scrollOf(messageList()).latest));
-  expect(button("New messages")).toBeUndefined();
+  expect(button(CHAT_WORDS.newMessages)).toBeUndefined();
 });
 
 it("follows an arrival in a room already holding its most recent 200, whose count does not change", () => {

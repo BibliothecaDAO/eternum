@@ -33,6 +33,7 @@ import {
 import { StructureType } from "@bibliothecadao/types";
 import { ReinforceSheet, useSelectedReinforcement } from "./reinforce";
 import { transferArmies } from "./transfer-fixture";
+import { REINFORCE, wheatForOnly } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -195,7 +196,7 @@ it("stops Max where the wheat runs out, and says so in one line", async () => {
   render(fixture);
   await press("Max");
   expect(troops()).toBe("600 → 650");
-  expect(host.textContent).toContain("Wheat for only 50 of 420 troops");
+  expect(host.textContent).toContain(wheatForOnly("50", "420"));
 });
 
 it("stops Max where the wheat left still feeds the whole army revealing its bar", async () => {
@@ -219,7 +220,7 @@ it("stops Max where the wheat left still feeds the whole army revealing its bar"
   await press("Max");
   expect(troops()).toBe("600 → 619");
   expect(wheat()).toBe("38 Wheat");
-  expect(host.textContent).toContain("Wheat for only 19 of 420 troops");
+  expect(host.textContent).toContain(wheatForOnly("19", "420"));
 });
 
 it("still sends a count above Max that the wheat pays for, as the contract takes it", async () => {
@@ -324,7 +325,7 @@ it("reinforces through a cleared camp with its id and refuses it after the army 
   );
   expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Reinforce 600 Knights");
   expect(host.querySelector("[data-kit-sheet] .ui-frame__head .ui-chip")?.textContent).toBe(siteName(711));
-  expect(host.textContent).toContain("From Realm stock · 420 ready");
+  expect(host.textContent).toContain(REINFORCE.stockReady("420"));
   expect(host.textContent).toContain("Ends in");
   await press("Max");
   await press("Reinforce");

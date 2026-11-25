@@ -1164,10 +1164,18 @@ it("requires one quest command, its exact receipt, both balances credited by it 
 });
 
 it.each([
-  ["world", ["LaborGrant"], "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops (2.5K/2.5K)"],
-  ["again", ["BaneGrant"], "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops (2.5K/2.5K)"],
-  ["late", ["LaborGrant", "BaneGrant"], "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops (2.5K/2.5K)"],
-  ["team", ["LaborGrant"], "Bane from Prowess · The Stand · Clear 3 guarded sites (3/3)"],
+  [
+    "world",
+    ["LaborGrant"],
+    "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops · 2,500 of 2,500 guard troops",
+  ],
+  ["again", ["BaneGrant"], "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops · 2,500 of 2,500 guard troops"],
+  [
+    "late",
+    ["LaborGrant", "BaneGrant"],
+    "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops · 2,500 of 2,500 guard troops",
+  ],
+  ["team", ["LaborGrant"], "Bane from Prowess · The Stand · Clear 3 guarded sites · 3 of 3 guarded sites"],
 ])(
   "requires exact %s bane receipts, each credited once whatever the balances held, identity and collected UI",
   (stage, models, text) => {
@@ -1292,6 +1300,7 @@ describe("the Season 1 rehearsal", () => {
   it("presses and reads the app's own words", () => {
     expect(REHEARSAL_WORDS.startAdventure).toBe(SHARED_LINK_WORDS.play);
     expect(REHEARSAL_WORDS.copyLink).toBe(INVITE_WORDS.copy);
+    expect(REHEARSAL_WORDS.inviteFailed).toBe(INVITE_WORDS.failed);
     expect(REHEARSAL_WORDS.inviteTo("Might")).toBe(INVITE_WORDS.title("Might"));
     expect(REHEARSAL_WORDS.join("Guile")).toBe(ASPECT_STEP_WORDS.join("Guile"));
     expect(REHEARSAL_WORDS.invited).toBe(ASPECT_STEP_WORDS.invited);

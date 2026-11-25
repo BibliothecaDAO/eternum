@@ -597,8 +597,7 @@ uses the same linked-wallet holdings as founding.
 
 The discovered-Spire path is `/lab/game?scenario=discovered-spire`: select the realm's first army, open Spire, then
 Enter Ethereal II. `pnpm --dir apps/game playtest:landing lab-discovered-spire` drives that path at desktop and phone
-sizes, asserts that only the next layer is offered and checks the command, new occupancy and camera arrival. The army
-panel then shows the new layer’s next-reveal Spire chance, read from its home/day/layer counter.
+sizes, asserts that only the next layer is offered and checks the command, new occupancy and camera arrival.
 
 The stamina effects paths are `/lab/game?scenario=stamina-mist` and `stamina-wind`: select the realm's first army, open
 its panel, read its bar and Full in timer. `pnpm --dir apps/game playtest:landing lab-stamina-mist lab-stamina-wind`

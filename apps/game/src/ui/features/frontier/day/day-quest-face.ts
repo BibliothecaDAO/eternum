@@ -19,5 +19,5 @@ const QUEST_ICONS = {
 export function dayQuestFace(id: QuestId): DayQuestFace {
   const quest = questCatalog.find((quest) => quest.id === id);
   if (!quest) throw new Error(`Missing quest ${id}`);
-  return { icon: QUEST_ICONS[id], name: quest.name, unit: quest.unit, objective: quest.objective };
+  return { icon: QUEST_ICONS[id], name: quest.name, verb: quest.verb, unit: quest.unit };
 }

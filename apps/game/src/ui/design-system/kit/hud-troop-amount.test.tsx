@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/audio", () => ({ useUISound: () => () => {} }));
 
 import { HudNumberField, HudTransfer, HudTroopAmount } from "./hud-elements";
+import { DEPLOY_WORDS } from "./words";
 
 let host: HTMLDivElement;
 afterEach(() => host.remove());
@@ -51,7 +52,7 @@ describe("the troop amount", () => {
 
   it("sets the count where its slider is dragged, over the same range, and follows the count set by the buttons", () => {
     const amount = mount(1_500);
-    expect(amount.slider().getAttribute("aria-label")).toBe("Troops: how many go");
+    expect(amount.slider().getAttribute("aria-label")).toBe(DEPLOY_WORDS.howMany("Troops"));
     expect(amount.slider().max).toBe("1500");
 
     amount.drag(1_250);

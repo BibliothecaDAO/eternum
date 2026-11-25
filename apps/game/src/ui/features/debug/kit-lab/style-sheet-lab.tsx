@@ -1,4 +1,5 @@
-import { rankedText } from "@/ui/design-system/kit/words";
+import { failureLine } from "@/ui/design-system/kit/failure-lines";
+import { ARMY_MANAGEMENT, BUILD_ORDER_WORDS, rankedText } from "@/ui/design-system/kit/words";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useDocumentClass } from "@/hooks/use-document-class";
@@ -672,8 +673,8 @@ const ConfirmSection = () => (
     sheet={
       <div className="flex flex-wrap gap-4">
         <HudConfirm
-          question="Disband this army?"
-          verb="Disband"
+          question={ARMY_MANAGEMENT.confirmDelete}
+          verb={ARMY_MANAGEMENT.remove}
           tone="bad"
           onConfirm={() => undefined}
           onCancel={() => undefined}
@@ -1240,7 +1241,7 @@ const RowsSection = () => (
           onClick={() => undefined}
           controls={
             <HudButton kind="secondary" size="sm">
-              Level up
+              {BUILD_ORDER_WORDS.levelUp}
             </HudButton>
           }
         />
@@ -1348,7 +1349,7 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
           <HudNotice tone="good" line="Transfer sent · arrives in 4m" />
           <HudNotice tone="warn" line="Wheat storage full" />
           <HudNotice tone="bad" line={staminaShortfall(10, 30, 24)} />
-          <HudNotice tone="bad" line="Notifications did not answer." retry={() => undefined} />
+          <HudNotice tone="bad" line={failureLine("notifications")} retry={() => undefined} />
         </div>
         <div className="mt-4 flex flex-col gap-2">
           <HudBanner

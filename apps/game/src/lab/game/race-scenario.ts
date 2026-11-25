@@ -48,24 +48,23 @@ export function raceScenario(finished = false): LabScenario {
       }),
     }),
   );
-  let now = startsAt;
-  if (finished) {
-    const tick = store.require("SliceRules", { game_id: 1 }).tick_config.armies_tick_in_seconds;
-    const ended_at = (BigInt(startsAt) / tick + 1n) * tick;
-    now = Number(ended_at) + 1;
-    facts.push(
-      {
-        model: "GameRegistry",
-        key: store.wireKeyOf("GameRegistry", { game_id: 1 })!,
-        value: wire({ ...game, end_at: ended_at }),
-      },
-      {
-        model: "RaceResult",
-        key: "0xa550",
-        value: wire({ game_id: 1, winner: 2, ended_at, scheduled_end_at: game.scheduled_end_at }),
-      },
-    );
-  }
+  const slice = store.require("SliceRules", { game_id: 1 });
+  const end =
+    game.start_main_at + BigInt(seasonSeconds(Number(rules.season_days) / DAYS_PER_BAG, slice.day_unit_seconds));
+  const tick = slice.tick_config.armies_tick_in_seconds;
+  const ended_at = finished ? (BigInt(startsAt) / tick + 1n) * tick : end;
+  const now = finished ? Number(ended_at) + 1 : startsAt;
+  facts.push({
+    model: "GameRegistry",
+    key: store.wireKeyOf("GameRegistry", { game_id: 1 })!,
+    value: wire({ ...game, scheduled_end_at: end, end_at: ended_at }),
+  });
+  if (finished)
+    facts.push({
+      model: "RaceResult",
+      key: "0xa550",
+      value: wire({ game_id: 1, winner: 2, ended_at, scheduled_end_at: end }),
+    });
   facts.push(...rivalMembers(store.require("Structure", { game_id: 1, entity_id: homes[0]!.home })));
   store.applyFacts(facts);
   return {
@@ -95,9 +94,7 @@ export function expiredRaceScenario(): LabScenario {
   const scenario = raceScenario();
   const { store } = scenario;
   const game = store.require("GameRegistry", { game_id: 1 });
-  const rules = store.require("RaceRules", { game_id: 1 });
-  const unit = store.require("SliceRules", { game_id: 1 }).day_unit_seconds;
-  const end = game.start_main_at + BigInt(seasonSeconds(Number(rules.season_days) / DAYS_PER_BAG, unit));
+  const end = game.scheduled_end_at;
   store.applyFacts([
     {
       model: "GameRegistry",

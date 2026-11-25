@@ -9,6 +9,7 @@ import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { TARGET_MARKS, type AttackTargetKind } from "./site-marks";
 import { plateRows } from "@/three/map-plates/map-plate-rows";
 import { frontierSiteName, StructureType, ResourcesIds } from "@bibliothecadao/types";
+import { FIGHT_WORDS, tooFarFrom } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -49,7 +50,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe("Victory likely");
+    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe(FIGHT_WORDS.victory);
     expect(document.querySelector("[data-fight-reward]")?.textContent).toBe("+5KStorage full: extra lost");
   });
 
@@ -73,7 +74,7 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Troll']")!;
-    expect(card.querySelector("[data-fight-outcome]")?.textContent).toBe("Victory likely");
+    expect(card.querySelector("[data-fight-outcome]")?.textContent).toBe(FIGHT_WORDS.victory);
     expect(card.textContent?.match(/(?<!−)1,100/g)).toHaveLength(1);
     expect(card.querySelector(".fight-spoils .opacity-50")).toBeNull();
     const sides = [...card.querySelectorAll('.fight-arena [role="img"]')].map((side) =>
@@ -138,7 +139,7 @@ describe("a guarded site's card", () => {
     );
     const card = document.querySelector("section[aria-label='Ruin']")!;
     expect(card.querySelectorAll('[data-icon="beast-ammit"]')).toHaveLength(1);
-    expect(card.querySelector("[data-fight-outcome]")?.textContent).toContain("Your army is lost");
+    expect(card.querySelector("[data-fight-outcome]")?.textContent).toContain(FIGHT_WORDS.armyLost);
     expect(card.querySelector("[data-fight-reward]")).toBeNull();
     expect(card.querySelector('[data-icon="troops"]')).toBeNull();
     expect(card.textContent).toContain("2,300");
@@ -166,7 +167,7 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Blightglow Rift']")!;
-    expect(card.querySelector("[data-fight-outcome]")?.textContent).toContain("The guard survives");
+    expect(card.querySelector("[data-fight-outcome]")?.textContent).toContain(FIGHT_WORDS.holds);
     expect(card.querySelector(".fight-spoils .opacity-50")?.textContent).toBe("+4.2K");
     expect(card.textContent).toContain("794");
     expect(card.textContent).toContain("193");
@@ -202,7 +203,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe("Victory likely");
+    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe(FIGHT_WORDS.victory);
     expect(document.querySelector("[data-fight-reward]")).toBeNull();
     expect(document.body.textContent).not.toContain("site");
     act(() =>
@@ -219,7 +220,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe("Victory likely");
+    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe(FIGHT_WORDS.victory);
   });
 
   it("earns what fits, marked Full, when the store would overflow, with Realm to make room; never blocks the attack", () => {
@@ -443,7 +444,7 @@ describe("a guarded site's card for an army out of reach", () => {
       ),
     );
     expect(buttons().find((button) => button.textContent?.startsWith("Attack"))?.disabled).toBe(true);
-    expect(document.querySelector('[role="status"]')?.textContent).toBe("Too far from the Rift");
+    expect(document.querySelector('[role="status"]')?.textContent).toBe(tooFarFrom("Rift"));
   });
 
   it("offers Move toward the site, with the same line, while an order leads beside it", () => {
@@ -472,7 +473,7 @@ describe("a guarded site's card for an army out of reach", () => {
         .click(),
     );
     expect(onMove).toHaveBeenCalled();
-    expect(document.querySelector('[role="status"]')?.textContent).toBe("Too far from the Rift");
+    expect(document.querySelector('[role="status"]')?.textContent).toBe(tooFarFrom("Rift"));
   });
 });
 

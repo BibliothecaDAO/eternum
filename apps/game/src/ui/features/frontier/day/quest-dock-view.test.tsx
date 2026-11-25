@@ -3,8 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
-import { questCatalog } from "@bibliothecadao/types";
-import { nativeQuestConstants } from "@bibliothecadao/eternum/game-client";
+import { questCatalog, questLine } from "@bibliothecadao/types";
 
 import { QUEST_DOCK_CASES } from "./quest-dock-fixtures";
 import { QuestDockView, type QuestDockProps } from "./quest-dock-view";
@@ -32,9 +31,12 @@ describe("the quest dock", () => {
   it("has the quest's Aspect speak its name, objective, count and rewards, with no Collect while it runs", () => {
     draw(QUEST_DOCK_CASES["Quest running"]);
     expect(host.querySelector("aside")?.getAttribute("aria-label")).toBe("Prowess: Daily Quest: Camp-breakers");
-    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("Clear 2 camps");
-    expect(host.querySelector("[data-quest-count]")?.textContent).toBe("1/2");
-    expect(host.querySelector("[data-quest-count]")?.getAttribute("aria-label")).toBe("1 of 2 camps");
+    const { quest, reading } = QUEST_DOCK_CASES["Quest running"];
+    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe(questLine(quest, reading.target));
+    expect([...host.querySelectorAll('[role="meter"]')].map((meter) => meter.getAttribute("aria-label"))).toEqual([
+      DAY_BANNER_WORDS.count(reading.progress, reading.target, quest.unit),
+    ]);
+    expect(text()).not.toContain(DAY_BANNER_WORDS.fraction(reading.progress, reading.target));
     expect(reward("Labor")).toBe("2,000 Labor");
     expect(reward("Essence")).toBe("3,000 Essence");
     expect(button("Collect")).toBeUndefined();
@@ -52,12 +54,12 @@ describe("the quest dock", () => {
 
   it("offers Collect again when a second reward waits", () => {
     draw(QUEST_DOCK_CASES["Second reward waits"]);
-    expect(button("Collect again")).toBeDefined();
+    expect(button(DAY_BANNER_WORDS.collectAgain)).toBeDefined();
   });
 
   it("says it is reading, and offers nothing, while the facts are not settled", () => {
     draw(QUEST_DOCK_CASES["Facts not settled"]);
-    expect(text()).toContain("Loading today's quest…");
+    expect(text()).toContain(DAY_BANNER_WORDS.reading);
     expect(button("Collect")).toBeUndefined();
   });
 
@@ -69,10 +71,11 @@ describe("the quest dock", () => {
     const bane = host.querySelector("[data-bane-row]")!;
     expect(bane.querySelector('[role="img"]')?.getAttribute("aria-label")).toBe(DAY_BANNER_WORDS.productionBane(50));
     expect(bane.textContent).toBe("▾50% Production2× reward if brokenAspect progress: 4/12 · Ends in 5h");
+    const { quest, reading } = QUEST_DOCK_CASES["World bane"];
     expect(host.querySelector("[data-quest-objective]")?.textContent).toBe(
-      "The Cull · Defeat 6,000 guard troops (3K/6K)",
+      `${quest.name} · ${questLine(quest, reading.target)}`,
     );
-    expect(host.querySelector("[data-quest-count]")).toBeNull();
+    expect(text()).not.toContain(DAY_BANNER_WORDS.fraction(reading.progress, reading.target));
   });
 
   it("titles a phone's dock with the quest's name alone", () => {
@@ -80,9 +83,12 @@ describe("the quest dock", () => {
     expect(host.querySelector(".emissary-dock__title")?.textContent).toBe("Camp-breakers");
   });
 
-  it("writes a plain-word objective with its target for every quest in the catalog", () => {
-    const reveals = questCatalog.find((entry) => entry.id === nativeQuestConstants.REVEALS)!;
-    expect(DAY_BANNER_WORDS.objectiveLine(reveals.objective, 15)).toBe("Reveal 15 tiles");
-    for (const entry of questCatalog) expect(DAY_BANNER_WORDS.objectiveLine(entry.objective, 15)).toContain(" 15");
+  it("writes every quest's line with its target, one at a target of 1 and many above", () => {
+    for (const entry of questCatalog) {
+      expect(questLine(entry, 1)).toBe(`${entry.verb} 1 ${entry.unit.one}`);
+      expect(questLine(entry, 15)).toBe(`${entry.verb} 15 ${entry.unit.many}`);
+      expect(DAY_BANNER_WORDS.count(0, 1, entry.unit)).toBe(`0 of 1 ${entry.unit.one}`);
+      expect(DAY_BANNER_WORDS.count(3, 12, entry.unit)).toBe(`3 of 12 ${entry.unit.many}`);
+    }
   });
 });
