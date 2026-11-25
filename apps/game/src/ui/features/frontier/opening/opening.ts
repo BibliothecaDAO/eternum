@@ -142,7 +142,7 @@ export const OPENING = {
   deep: {
     icon: "depth-3",
     teacher: "own",
-    parts: ["glory"],
+    parts: [],
     reachedWhen: (ctx) => ctx.inDeep,
     showsWhen: (ctx) => ctx.inDeep,
     readyWhen: (rules) => rules.ownAspect !== undefined && rules.deepLossPerTick !== undefined,

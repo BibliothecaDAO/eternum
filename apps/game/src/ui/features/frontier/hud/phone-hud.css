@@ -47,7 +47,7 @@ button.frontier-stock-chips[aria-expanded="true"] {
   display: inline-flex;
   min-width: 0;
   align-items: center;
-  gap: 2px;
+  gap: theme(spacing.1);
   font-size: var(--hud-text-body);
   line-height: 1;
   font-weight: var(--hud-weight-strong);

@@ -1,8 +1,9 @@
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { armiesHere, plotsUsed, REALM, SPIRE_WORDS } from "@/ui/design-system/kit/words";
+import { armiesHere, plotsUsed, REALM } from "@/ui/design-system/kit/words";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import {
   DEEP_LAYER_TIERS,
+  layerLockLine,
   layerMark,
   layerWord,
   type MapLayer,
@@ -85,7 +86,7 @@ const placeEntries = ({
       depth: tier,
       selected: !locked && activeKey === tier,
       locked,
-      line: locked ? SPIRE_WORDS.lockedAt(tier) : undefined,
+      line: locked ? layerLockLine(tier) : undefined,
       disabled: locked,
       choose: () => {
         if (unlocked !== null) chooseDepth(unlocked);

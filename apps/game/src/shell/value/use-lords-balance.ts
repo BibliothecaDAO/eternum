@@ -15,11 +15,16 @@ export const useWalletFunds = (owner: string | null) => {
   return useQuery({
     queryKey: [...WALLET_FUNDS_QUERY_KEY, owner],
     queryFn: async (): Promise<WalletFunds> => {
-      const token = await ledger!.lordsToken();
-      const balance = await ledger!.balanceOf(token, owner!);
-      const paysFeeFromBalance = BigInt(token) === BigInt(WALLET_GAS_TOKEN);
-      const feeBalance = paysFeeFromBalance ? balance : await ledger!.balanceOf(WALLET_GAS_TOKEN, owner!);
-      return { token, balance, feeBalance };
+      try {
+        const token = await ledger!.lordsToken();
+        const balance = await ledger!.balanceOf(token, owner!);
+        const paysFeeFromBalance = BigInt(token) === BigInt(WALLET_GAS_TOKEN);
+        const feeBalance = paysFeeFromBalance ? balance : await ledger!.balanceOf(WALLET_GAS_TOKEN, owner!);
+        return { token, balance, feeBalance };
+      } catch (error) {
+        console.error("lords_balance_read_failed", error);
+        throw error;
+      }
     },
     enabled: owner !== null && ledger !== null,
     staleTime: 30_000,
@@ -28,7 +33,12 @@ export const useWalletFunds = (owner: string | null) => {
   });
 };
 
+export type LordsReading = number | "reading" | "failed";
+
 export const useLordsBalance = (owner: string | null) => {
   const funds = useWalletFunds(owner);
-  return { owner, lords: funds.data ? lordsOf(funds.data.balance) : null };
+  const lords = funds.data ? lordsOf(funds.data.balance) : null;
+  const unreadable = funds.isError || environmentLedger() === null;
+  const reading: LordsReading = lords ?? (unreadable ? "failed" : "reading");
+  return { owner, lords, reading };
 };

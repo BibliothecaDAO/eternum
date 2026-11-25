@@ -19,6 +19,8 @@ import { TickNumber } from "@/ui/motion/tick-number";
 import { aspectName, FRAGMENTS, formatShort, LORDS, rankName, type AspectId } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
+import type { LordsReading } from "@/shell/value/use-lords-balance";
+
 import { FRONTIER_STORES, isMadeStore, isTroopStore, type StoreKind } from "../stores";
 import { AspectMedallion } from "./realm-header-chip";
 import { LandingDelta, STORE_TONES, storeLine, storeRateText, type StoreReading } from "./status-strip";
@@ -56,7 +58,7 @@ export const RealmCard = ({
   orderId?: number;
   stores: readonly StoreReading[];
   fragments: number | null;
-  lords: number | null;
+  lords: LordsReading | null;
   storeCard?: ReactNode;
   onStore?: (kind: StoreKind) => void;
   onShop?: () => void;
@@ -115,9 +117,9 @@ export const RealmCard = ({
         <li data-store="lords">
           <Cell
             icon={<Icon name="lords" size={30} />}
-            value={lords === null ? "—" : formatShort(lords)}
+            value={typeof lords === "number" ? formatShort(lords) : "—"}
             caption={LORDS}
-            label={lords === null ? LORDS : `${LORDS} ${formatShort(lords)}`}
+            label={lordsLine(lords)}
           />
         </li>
       </ul>
@@ -254,3 +256,10 @@ const NextRank = ({ rankUp }: { rankUp: RealmRankUp }) => (
 
 const lockedLine = ({ name, refusal }: RealmRankUp) =>
   refusal ? `${UPGRADE} · ${name}: ${refusal}` : `${UPGRADE} · ${name}`;
+
+const lordsLine = (lords: LordsReading | null) =>
+  lords === null
+    ? LORDS
+    : typeof lords === "number"
+      ? `${LORDS} ${formatShort(lords)}`
+      : `${LORDS}: ${lords === "failed" ? REALM_CARD_WORDS.lordsUnread : REALM_CARD_WORDS.lordsReading}`;
