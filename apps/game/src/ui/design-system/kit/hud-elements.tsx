@@ -34,7 +34,7 @@ import { useModalLayer } from "./modal-layer";
 import { useMarkFrameOpen } from "./open-frames";
 import { revealOwnPlace } from "./own-place";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
-import { CLOSE, type RankedWords, rankedText, STAMINA, type Tier, type Rank, tierNumeral, TRY_AGAIN } from "./words";
+import { CLOSE, type RankedWords, rankedText, STAMINA, type Rank, tierNumeral, TRY_AGAIN } from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -964,19 +964,6 @@ export const rankedTip = (words: RankedWords | string) =>
   typeof words === "string"
     ? { "data-tip": words }
     : { "data-tip": rankedText(words), "data-tip-ranks": JSON.stringify(words) };
-
-/** A tier's next step, from the gem it holds to the next one's. */
-export const HudTierStep = ({ from, to }: { from: Rank; to: Tier }) => (
-  <span
-    className="ui-tier-step"
-    role="img"
-    aria-label={`${from === 0 ? "Untrained" : tierNumeral(from)} → ${tierNumeral(to)}`}
-  >
-    <HudTier tier={from} />
-    <span aria-hidden>→</span>
-    <HudTier tier={to} />
-  </span>
-);
 
 /**
  * A number in a ring that drains (the day, as today runs out): the ring is the share left, from 1 to 0, and takes a

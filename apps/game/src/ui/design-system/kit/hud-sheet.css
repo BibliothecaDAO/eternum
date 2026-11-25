@@ -611,12 +611,6 @@ button.ui-chip:disabled {
   clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
   background: var(--hud-well);
 }
-.ui-tier-step {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing.1);
-  color: var(--hud-muted);
-}
 .ui-tier[data-tier="2"] {
   --rarity: var(--hud-rarity-2);
 }
