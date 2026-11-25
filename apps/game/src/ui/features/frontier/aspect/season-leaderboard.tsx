@@ -252,7 +252,7 @@ const GloryTableRow = ({ row }: { row: GloryRow }) => (
     </span>
     {row.aspect !== undefined ? <AspectMark aspect={row.aspect} size={20} decorative /> : <span />}
     <span className="min-w-0">
-      <LordName account={row.owner} you={row.own} portrait />
+      <LordName account={row.owner} you={row.own} />
     </span>
     <span className="season-row__order">
       {row.order && (

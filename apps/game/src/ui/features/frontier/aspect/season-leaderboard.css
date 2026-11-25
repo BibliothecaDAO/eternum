@@ -292,7 +292,7 @@
 }
 .season-board__rows {
   min-height: 0;
-  max-height: calc(var(--hud-control) * 10);
+  max-height: calc(var(--hud-control) * 9.75);
   overflow-y: auto;
 }
 .season-row__order {
