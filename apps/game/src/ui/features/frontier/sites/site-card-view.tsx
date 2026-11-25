@@ -27,6 +27,7 @@ import {
 import type { OrderInFlight } from "@/hooks/store/use-actions-in-flight";
 import type { ReactNode } from "react";
 
+import { BaneFigure, BaneLine } from "../day/bane-mark";
 import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
 import { GuardToken } from "../hud/army-token";
@@ -112,12 +113,14 @@ export const SiteCardView = ({
       {armyless ? (
         <header className="flex items-center gap-3">
           {typeof guard === "number" ? (
-            <GuardToken
-              label={beast?.name ?? TROOPS}
-              art={guardIcon}
-              troops={guard}
-              mark={beast && <CombatBadge category={beast.combatClass} />}
-            />
+            <BaneFigure figure="guards" pill altered={beast !== undefined}>
+              <GuardToken
+                label={beast?.name ?? TROOPS}
+                art={guardIcon}
+                troops={guard}
+                mark={beast && <CombatBadge category={beast.combatClass} />}
+              />
+            </BaneFigure>
           ) : (
             <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
           )}
@@ -137,6 +140,7 @@ export const SiteCardView = ({
           )}
         </>
       )}
+      {beast && <BaneLine figure="guards" />}
       {receipt}
       {replacement}
       <Verb
@@ -228,6 +232,7 @@ const FightPanel = ({
             ),
             before: guard,
             kept: facing?.fight.guardLeft,
+            bane: beast && "guards",
           }
         : undefined
     }

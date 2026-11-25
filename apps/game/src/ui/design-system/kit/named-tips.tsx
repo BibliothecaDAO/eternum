@@ -1,4 +1,5 @@
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { useEffect } from "react";
 
 import { HudRanked } from "./hud-elements";
@@ -9,6 +10,7 @@ import { type RankedWords } from "./words";
  * button that already carries its name for a screen reader. A new chip is named by being a chip.
  */
 const NAMED = '[data-tip], [role="img"][aria-label], [role="meter"][aria-label], button[aria-label]';
+const BANE_CUT = "[data-tip-bane]";
 
 /** A press this long on a touch screen asks for the name; a shorter one is the tap it always was. */
 const HOLD_MS = 450;
@@ -19,13 +21,30 @@ const LINGER_MS = 1_600;
 /** Within this much of the screen's top a name has no room above its thing. */
 const TOP_EDGE_PX = 96;
 
-type Named = { anchor: HTMLElement; line: RankedWords | string };
+type BaneNote = { line: string; icon: IconMeaning };
+type Named = { anchor: HTMLElement; line: RankedWords | string | null; bane: BaneNote[] };
 
 /** A name on the tooltip, in the HUD sheet's tip line (the tooltip wraps it inside a phone's width), its ranks as gems. */
 export const TipLine = ({ line }: { line: RankedWords | string }) => (
   <span className="ui-tip__line">
     <HudRanked words={line} />
   </span>
+);
+
+const BaneTipLine = ({ note }: { note: BaneNote }) => (
+  <span className="ui-tip__line" data-tone="bane">
+    <Icon name={note.icon} size={16} />
+    {note.line}
+  </span>
+);
+
+const NamedTip = ({ line, bane }: Pick<Named, "line" | "bane">) => (
+  <>
+    {line !== null && <TipLine line={line} />}
+    {bane.map((note) => (
+      <BaneTipLine key={note.line} note={note} />
+    ))}
+  </>
 );
 
 /** A thing's own line: its ranked words where the kit's rankedTip wrote them, else its plain words. */
@@ -59,20 +78,32 @@ const meterLine = (meter: HTMLElement, name: string) => {
   return now === null || max === null ? name : `${name} ${now} / ${max}`;
 };
 
+const ownWords = (anchor: HTMLElement): RankedWords | string | null => {
+  const own = anchor.dataset.tip;
+  if (own !== undefined) return own === "" || (shows(anchor, own) && !cutOff(anchor)) ? null : ownLine(anchor, own);
+  const name = anchor.getAttribute("aria-label") ?? "";
+  if (name === "" || shows(anchor, name)) return null;
+  return anchor.getAttribute("role") === "meter" ? meterLine(anchor, name) : name;
+};
+
+const baneNotes = (anchor: HTMLElement): BaneNote[] => {
+  const cut = [...(anchor.matches(BANE_CUT) ? [anchor] : []), ...anchor.querySelectorAll<HTMLElement>(BANE_CUT)];
+  const notes = new Map(cut.map((figure) => [figure.dataset.tipBane!, figure.dataset.tipBaneIcon as IconMeaning]));
+  return [...notes].map(([line, icon]) => ({ line, icon }));
+};
+
 /**
  * The line an element under the pointer shows: its own `data-tip`, else its accessible name. Words the element
  * already shows whole (a button reading "Deploy", an event row's own sentence) are not said twice; words cut off at
  * its edge are. Something covering the whole screen names nothing.
  */
 const namedAt = (target: EventTarget | null): Named | null => {
-  const anchor = target instanceof Element ? target.closest<HTMLElement>(NAMED) : null;
+  const element = target instanceof Element ? target : null;
+  const anchor = element?.closest<HTMLElement>(NAMED) ?? element?.closest<HTMLElement>(BANE_CUT);
   if (!anchor || coversScreen(anchor)) return null;
-  const own = anchor.dataset.tip;
-  if (own !== undefined)
-    return own === "" || (shows(anchor, own) && !cutOff(anchor)) ? null : { anchor, line: ownLine(anchor, own) };
-  const name = anchor.getAttribute("aria-label") ?? "";
-  if (name === "" || shows(anchor, name)) return null;
-  return { anchor, line: anchor.getAttribute("role") === "meter" ? meterLine(anchor, name) : name };
+  const line = ownWords(anchor);
+  const bane = baneNotes(anchor);
+  return line === null && bane.length === 0 ? null : { anchor, line, bane };
 };
 
 /** A name sits above its thing, clear of the finger; under it when the thing is at the top of the screen. */
@@ -91,10 +122,10 @@ export const useNamedTips = (): void => {
     let linger: number | undefined;
     let heldThisPress = false;
 
-    const show = ({ anchor, line }: Named, held: boolean) => {
+    const show = ({ anchor, line, bane }: Named, held: boolean) => {
       window.clearTimeout(linger);
       shown = anchor;
-      setTooltip({ content: <TipLine line={line} />, anchorElement: anchor, position: sideFor(anchor), held });
+      setTooltip({ content: <NamedTip line={line} bane={bane} />, anchorElement: anchor, position: sideFor(anchor), held });
     };
     const hide = () => {
       window.clearTimeout(linger);
