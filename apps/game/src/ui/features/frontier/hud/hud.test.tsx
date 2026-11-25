@@ -746,31 +746,31 @@ describe("the offline banner", () => {
     useConnectionStore.getState().setGlobalStatus("connected");
   });
 
-  it("renders the reconnecting alert with its Retry action", () => {
+  it("offers no retry while the client retries by itself, and one that retries once it gave up", () => {
     const onRetry = vi.fn();
     act(() => root.render(<OfflineBanner onRetry={onRetry} />));
-    const banner = host.querySelector<HTMLElement>('[data-offline-banner][role="alert"]')!;
-    expect(banner).not.toBeNull();
-    expect(banner.textContent).toContain("Reconnecting…");
-    const retry = banner.querySelector<HTMLButtonElement>("button")!;
-    expect(retry.textContent).toBe("Retry");
-    act(() => retry.click());
+    const reconnecting = host.querySelector<HTMLElement>('[data-offline-banner][role="alert"]')!;
+    expect(reconnecting.dataset.state).toBe("reconnecting");
+    expect(reconnecting.querySelector("button")).toBeNull();
+    act(() => root.render(<OfflineBanner onRetry={onRetry} reconnecting={false} />));
+    const lost = host.querySelector<HTMLElement>('[data-offline-banner][role="alert"]')!;
+    expect(lost.dataset.state).toBe("lost");
+    act(() => lost.querySelector<HTMLButtonElement>("button")!.click());
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  it("matches the live stream state: hidden when connected, reconnecting on retry, and no reconnecting claim when failed", () => {
+  it("draws one notice that follows the stream: none while connected, reconnecting, then lost", () => {
+    const notices = () => [...host.querySelectorAll<HTMLElement>("[data-offline-banner]")].map((n) => n.dataset.state);
     useConnectionStore.getState().setGlobalStatus("connected");
     act(() => root.render(<OfflineNotice />));
-    expect(host.querySelector("[data-offline-banner]")).toBeNull();
+    expect(notices()).toEqual([]);
 
     useConnectionStore.getState().setGlobalStatus("reconnecting");
     act(() => root.render(<OfflineNotice />));
-    expect(host.querySelector("[data-offline-banner]")?.textContent).toContain("Reconnecting…");
+    expect(notices()).toEqual(["reconnecting"]);
 
     useConnectionStore.getState().setGlobalStatus("failed");
     act(() => root.render(<OfflineNotice />));
-    const failedText = host.querySelector("[data-offline-banner]")?.textContent ?? "";
-    expect(failedText).toContain("Retry");
-    expect(failedText).not.toContain("Reconnecting…");
+    expect(notices()).toEqual(["lost"]);
   });
 });
