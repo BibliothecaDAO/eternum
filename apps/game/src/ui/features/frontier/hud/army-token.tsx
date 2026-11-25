@@ -1,6 +1,12 @@
 import "./army-token.css";
 
-import { formatAmount, formatDuration, formatExact, layerName, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import {
+  formatAmount,
+  formatDuration,
+  formatShortDuration,
+  layerName,
+  RESOURCE_PRECISION,
+} from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
@@ -201,10 +207,6 @@ const SlotRing = ({ pulse, filling }: { pulse: boolean; filling?: string }) => (
   </span>
 );
 
-/**
- * What a Deep guard's site costs it: its troops fall each tick, so the chip says how many ticks it holds and its bar
- * how much of the day those troops last for. On a desktop's row, where there is room, in words.
- */
 export const DeepDrain = ({
   drain,
   words = false,
@@ -214,27 +216,26 @@ export const DeepDrain = ({
   words?: boolean;
   compact?: boolean;
 }) => {
-  const loss = formatExact(Number(drain.lossPerTick) / RESOURCE_PRECISION);
+  const loss = Number(drain.lossPerTick) / RESOURCE_PRECISION;
+  const cadence = formatShortDuration(drain.tickSeconds);
   const time = formatDuration(drain.secondsLeft);
-  const line = `${DEEP_WORDS.drain(loss)}; ${DEEP_WORDS.lasts(drain.ticksLeft, time)}`;
-  const shown = compact
-    ? DEEP_WORDS.drainShort(loss, drain.ticksLeft, time)
-    : words
-      ? line
-      : formatExact(drain.ticksLeft);
+  const line = DEEP_WORDS.poisonPanel(loss, cadence, drain.ticksLeft, time);
+  const shown = compact ? DEEP_WORDS.poisonCompact(loss, cadence, time) : words ? line : DEEP_WORDS.poisonToken(loss);
   return (
     <span
-      data-deep-drain
+      data-deep-drain={loss}
+      data-ticks-left={drain.ticksLeft}
+      data-poison
       role="img"
       aria-label={line}
       data-tip={words && !compact ? undefined : line}
-      className="flex min-w-0 shrink-0 flex-col gap-0.5 self-stretch text-hud-label leading-none text-hud-bad tabular-nums"
+      className="deep-poison flex min-w-0 shrink-0 flex-col gap-0.5 self-stretch text-hud-label leading-none text-hud-poison tabular-nums"
     >
       <span className="flex min-w-0 items-center gap-1">
-        <SemanticIcon name="flame" size={16} />
+        <SemanticIcon name="poison" size={16} />
         <span className={cn(compact && "truncate whitespace-nowrap")}>{shown}</span>
       </span>
-      <HudMeter label={line} tone="warn" share={drain.ticksInDay === 0 ? 0 : drain.ticksToEmpty / drain.ticksInDay} />
+      <HudMeter label={line} share={drain.ticksInDay === 0 ? 0 : drain.ticksToEmpty / drain.ticksInDay} />
     </span>
   );
 };

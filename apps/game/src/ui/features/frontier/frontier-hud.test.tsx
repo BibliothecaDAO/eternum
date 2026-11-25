@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
-import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
+import { loadOpening, skipTutorial } from "./opening/opening-store";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { deepViewFor, type GameClientSetup, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { sellingFragments } from "./value/fragments-fixture";
@@ -91,10 +91,11 @@ let host: HTMLDivElement;
 let root: Root;
 let shownStore: NativeFactStore;
 
-beforeEach(() => {
+beforeEach(async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   // These tests play the whole HUD; the opening interface has its own tests.
-  useWorldAppearanceStore.setState({ showEverything: true });
+  await loadOpening(null);
+  await skipTutorial();
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => new Response(JSON.stringify({ blocked: [], version: 0 }), { status: 200 })),
@@ -108,7 +109,7 @@ afterEach(async () => {
   act(() => root.unmount());
   host.remove();
   // A frame closed steps back off its history entry a moment later: that step lands here, not in the next test's route.
-  await new Promise((settled) => setTimeout(settled, 20));
+  await historySettles();
 });
 
 /** What the page shows of chat: whether the client is connected, and the unread count where the layout shows it. */
@@ -240,6 +241,7 @@ it("treats the desktop's Feed as any other panel: closed at start, opened from i
     await act(async () => panel()!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
     expect(panel()).toBeNull();
     await press("Feed");
+    await historySettles();
     window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
     await act(async () =>
       useUIStore.setState({
@@ -730,7 +732,19 @@ it("routes the phone Realm panel through the one-panel state so it replaces Toda
 });
 
 /** History moves a moment after it is asked to: a closed frame's step back, or the system back, lands by then. */
-const historySettles = () => act(async () => new Promise((settled) => setTimeout(settled, 50)));
+const historySettles = async () => {
+  await act(async () => new Promise((settled) => setTimeout(settled)));
+  await act(async () => vi.waitFor(() => expect(stepsBackInFlight).toBe(0)));
+};
+let stepsBackInFlight = 0;
+const browserBack = window.history.back.bind(window.history);
+window.history.back = () => {
+  stepsBackInFlight += 1;
+  browserBack();
+};
+window.addEventListener("popstate", () => {
+  stepsBackInFlight = Math.max(0, stepsBackInFlight - 1);
+});
 /** The system back, as a phone's back gesture sends it. */
 const systemBack = async () => {
   window.history.back();
@@ -1298,7 +1312,6 @@ it.each([
     const route = window.location.pathname + window.location.search;
     viewport.set(width);
     localStorage.clear();
-    useWorldAppearanceStore.setState({ showEverything: false });
     useOpeningStore.setState({
       owner: null,
       loaded: false,
@@ -1523,7 +1536,6 @@ it.each([
       expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
     } finally {
       useBlockTimestampStore.setState(previousTicks);
-      useWorldAppearanceStore.setState({ showEverything: true });
       localStorage.clear();
       window.history.replaceState(null, "", route);
       window.dispatchEvent(new Event("urlChanged"));
@@ -1547,7 +1559,6 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
   const route = window.location.pathname + window.location.search;
   viewport.set(390);
   localStorage.clear();
-  useWorldAppearanceStore.setState({ showEverything: false });
   const resetMemory = () =>
     useOpeningStore.setState({
       owner: null,
@@ -1660,7 +1671,6 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
     expect(host.querySelector('[data-tutorial-dock="day-end"]')).toBeNull();
   } finally {
     useBlockTimestampStore.setState(previousTicks);
-    useWorldAppearanceStore.setState({ showEverything: true });
     localStorage.clear();
     window.history.replaceState(null, "", route);
     window.dispatchEvent(new Event("urlChanged"));
@@ -1680,7 +1690,6 @@ it.each([1920, 390])(
     const route = window.location.pathname + window.location.search;
     viewport.set(width);
     localStorage.clear();
-    useWorldAppearanceStore.setState({ showEverything: false });
     const resetMemory = () =>
       useOpeningStore.setState({
         owner: null,
@@ -1756,7 +1765,6 @@ it.each([1920, 390])(
       expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
     } finally {
       useBlockTimestampStore.setState(previousTicks);
-      useWorldAppearanceStore.setState({ showEverything: true });
       localStorage.clear();
       window.history.replaceState(null, "", route);
       window.dispatchEvent(new Event("urlChanged"));

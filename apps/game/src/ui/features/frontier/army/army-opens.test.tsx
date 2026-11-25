@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
+import { loadOpening, skipTutorial } from "../opening/opening-store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sellingFragments } from "../value/fragments-fixture";
 import { TRANSFER_TROOPS } from "../../../design-system/kit/words";
@@ -37,10 +37,11 @@ const layout = (desktop: boolean) =>
     removeEventListener: () => {},
   }));
 
-beforeEach(() => {
+beforeEach(async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   // These tests play the whole HUD; the opening interface has its own tests.
-  useWorldAppearanceStore.setState({ showEverything: true });
+  await loadOpening(null);
+  await skipTutorial();
   layout(true);
   vi.stubGlobal(
     "fetch",

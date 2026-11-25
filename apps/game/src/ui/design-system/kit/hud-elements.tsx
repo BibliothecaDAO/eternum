@@ -1595,7 +1595,7 @@ export const SheetDock = createContext<HTMLElement | null>(null);
 /** What a surface's frame holds: its name, the icon and cue its head may carry, its way out and its body. */
 type FrameParts = {
   label: string;
-  title?: string;
+  title?: ReactNode;
   icon?: IconMeaning;
   /** What the head says or offers beside the name (a lens, the player's rank), before the way out. */
   cue?: ReactNode;
@@ -1615,7 +1615,7 @@ type FrameParts = {
  */
 const SurfaceFrame = forwardRef<
   HTMLElement,
-  FrameParts & { bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children">
+  FrameParts & { bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children" | "title">
 >(({ label, title, icon, cue, beside, onClose, bodyClassName, className, children, ...rest }, ref) => {
   const [foot, setFoot] = useState<HTMLElement | null>(null);
   const body = useMarksMoreBelow();
@@ -1690,7 +1690,7 @@ export const HudSheet = ({
   children,
 }: {
   label: string;
-  title?: string;
+  title?: ReactNode;
   icon?: IconMeaning;
   /** A quiet control right after the sheet's name, out of the body's flow and away from the cross (an army's Delete). */
   beside?: ReactNode;

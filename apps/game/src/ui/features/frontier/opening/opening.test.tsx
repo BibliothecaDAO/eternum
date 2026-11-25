@@ -46,7 +46,7 @@ describe("the interface that opens as you play", () => {
     expect(partShown(new Set<OpeningMoment>(["essence"]), "essence-store")).toBe(true);
   });
 
-  it("shows every part with Show everything, outside the game's HUD or while watching", () => {
+  it("shows every part once all is open: the tutorial skipped, outside the game's HUD or while watching", () => {
     for (const moment of OPENING_MOMENTS)
       for (const part of OPENING[moment].parts) expect(partShown("all", part)).toBe(true);
   });

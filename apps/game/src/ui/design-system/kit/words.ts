@@ -844,30 +844,40 @@ export const DEEP_WORDS = {
     mine: "Labor for you",
     altar: "Bane on a rival",
   },
+  tag: {
+    open: (ring: number) => `Open · Ring ${formatExact(ring)}`,
+    held: (aspect: string) => `Held · ${aspect}`,
+    locked: (ring: number) => `Locked · Ring ${formatExact(ring)}`,
+    rival: (aspect: string, filled: number, total: number) =>
+      `Rival · ${aspect} · ${formatExact(filled)}/${formatExact(total)}`,
+  },
+  perTick: (cadence: string) => `/ ${cadence}`,
+  splitCell: (what: string) => `${what} · split by troops`,
+  poisonCell: `${DEEP} poison per guard`,
+  poisonStrip: (troops: number, cadence: string) =>
+    `${DEEP} poison · drains ${formatExact(troops)} troops every ${cadence}`,
+  poisonPanel: (troops: number, cadence: string, ticks: number, time: string) =>
+    `${DEEP} poison · −${formatExact(troops)} every ${cadence} · ${formatExact(ticks)} ticks · ${time} left`,
+  poisonCompact: (troops: number, cadence: string, time: string) =>
+    `−${formatExact(troops)} / ${cadence} · ${time} left`,
+  poisonToken: (troops: number) => `−${formatExact(troops)}`,
+  poisoned: "Poisoned",
+  ratesWhenOpen: "Rates set when open",
+  kinds: { glory: "Glory", height: "Aspect height", essence: ESSENCE, labor: LABOR, bar: "Bane bar" },
+  troops: (troops: number) => `${formatExact(troops)} troops`,
+  slotsOpen: (free: number) => `${formatExact(free)} slots open`,
+  entered: (entered: number, realms: number) => `${formatExact(entered)} / ${formatExact(realms)}`,
   /** A Deep site's plate on the map: nobody holds it, and what a tick held pays. */
   shared: "Every Aspect fights for it",
   foundationPlate: (height: number) => `+${formatExact(height)} height a tick to the holder's hyperstructure`,
   altarPlate: "Fills the holder's bane bar",
-  tickPays: "Each tick held pays",
-  splitByTroops: "split by troops",
   glory: (amount: number) => `${formatExact(amount)} Glory`,
-  height: (amount: number) => `+${formatExact(amount)} height to your Aspect's hyperstructure`,
-  essence: (amount: number) => `${formatExact(amount)} Essence`,
-  labor: (amount: number) => `${formatExact(amount)} ${LABOR}`,
-  bar: (perTick: number, charge: number, threshold: number) =>
-    `+${formatExact(perTick)} on the bane bar: ${formatExact(charge)} of ${formatExact(threshold)}`,
-  beast: (name: string, troops: number) => `Guard: ${name}, ${formatExact(troops)} troops`,
+  bar: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
   open: "Unguarded: next army takes it",
-  heldByPrefix: "Held by",
   guardsCount: (filled: number, total: number) => `${formatExact(filled)} / ${formatExact(total)} Guards`,
   drainTick: (troops: number) => `−${formatExact(troops)} / tick`,
-  drainRange: (min: number, max: number) => `−${formatExact(min)}–${formatExact(max)} / tick`,
   freeSlot: "Free slot",
   facesNext: "fought next",
-  /** What holding a site costs: the troops its army loses at each tick. */
-  drain: (troops: string) => `−${troops} troops per tick`,
-  drainShort: (troops: string, ticks: number, time: string) =>
-    `−${troops}/tick · ${formatExact(ticks)} ticks (${time})`,
   /** How long a guard's troops last: its army ticks, and the time until the last of them. */
   lasts: (ticks: number, time: string) => `${formatExact(ticks)} ticks left (${time})`,
   /** What the army panel's chip of those ticks counts. */
@@ -875,7 +885,8 @@ export const DEEP_WORDS = {
   share: (percent: number) => `${percent}% of each tick`,
   attack: "Attack",
   take: "Take",
-  join: "Join",
+  join: "Join guard",
+  joinShort: "Join",
   pickArmy: `Select an army in the ${DEEP}`,
   guarding: "Already guarding",
   full: "All 4 slots are taken",
@@ -911,10 +922,10 @@ export const DAY_BANNER_WORDS = {
   bane: "Bane",
   worldBaneTitle: (name: string) => `World Bane: ${name}`,
   teamBaneTitle: (caster: string) => `Bane from ${caster}`,
-  beastChip: (percent: number) => `${formatExact(percent)}% Guards`,
-  staminaChip: (percent: number) => `${formatExact(percent)}% Stamina`,
+  beastChip: (percent: number) => `${formatExact(percent)}% Guard strength`,
+  staminaChip: (percent: number) => `${formatExact(percent)}% Stamina regen`,
   productionChip: (percent: number) => `${formatExact(percent)}% Production`,
-  heightChip: `No ${DEEP} height`,
+  heightChip: `${DEEP} height paused`,
   heightBane: `Your Aspect's hyperstructure gains no height in the ${DEEP} while the bane lasts`,
   baneFigures: {
     production: "production",
@@ -924,13 +935,12 @@ export const DAY_BANNER_WORDS = {
   },
   baneFigureLine: (name: string, figure: string, percent: number | undefined, end: string) =>
     percent === undefined
-      ? `${name}: no ${figure} until broken or ${end}`
+      ? `${name} bane: ${figure} paused until broken or ${end}`
       : `${name}: ${figure} ${formatExact(percent)}% until broken or ${end}`,
-  baneBreak: (completed: number, required: number) =>
-    `Break: ${formatExact(completed)}/${formatExact(required)} of your Aspect`,
-  baneClears: (left: string) => `Clears in ${left}`,
-  baneBroken: "Broken",
-  twiceIfBroken: "2× if broken",
+  baneProgress: (completed: number, required: number, left: string) =>
+    `Aspect progress: ${formatExact(completed)}/${formatExact(required)} · Ends in ${left}`,
+  baneBroken: "Bane broken",
+  twiceIfBroken: "2× reward if broken",
   objectiveLine: (objective: string, target: number) => {
     const space = objective.indexOf(" ");
     return space === -1
@@ -962,7 +972,7 @@ export interface OpeningRules {
   scoutExploreStamina: number;
   exploreStamina: number;
   dayLeftSeconds?: number;
-  bane?: { title: string; chip: string };
+  bane?: { name: string };
 }
 
 const ownAspectLabel = (aspect: AspectId | undefined): string => (aspect !== undefined ? aspectName(aspect) : "");
@@ -995,7 +1005,7 @@ export const OPENING_WORDS = {
     oath: (rules: OpeningRules) =>
       `Your Orders grant power today. Swear one Oath, or pass for ${formatGain(rules.oathPassStamina)} ${STAMINA}.`,
     bane: (rules: OpeningRules) =>
-      `${rules.bane ? `${rules.bane.title}. ${rules.bane.chip}.` : "A bane strikes today."} Your Aspect breaks it when enough members finish.`,
+      `${rules.bane ? rules.bane.name : "A bane"} is active. Finish today's quest with your Aspect to break it.`,
     "day-end": () => "Today's map and armies go at day end.",
     deep: (rules: OpeningRules) =>
       `Every ${formatExact(rules.deepTickSeconds)} seconds here, armies lose ${formatAmount(rules.deepLossPerTick)} troops. Hold sites to earn.`,
@@ -1022,7 +1032,7 @@ export const OPENING_WORDS = {
   actions: {
     "season0-welcome": "Open Season to check the race.",
     oath: "Pick one Oath or pass.",
-    bane: `Press the ${DAY_BANNER_WORDS.bane} pill at the top.`,
+    bane: `Open the ${DAY_BANNER_WORDS.bane} pill at the top.`,
     "day-end": "Your realm, research and Glory stay",
     deep: `Hold a ${DEEP} site or withdraw in time.`,
     aspects: "Open Season to check standings.",
@@ -1079,7 +1089,6 @@ export const OPENING_WORDS = {
   /** The week's quests on the Today page: the day, and the quest each brings. */
   week: "This week's quests",
   weekDay: (day: number, quest: string) => `Day ${formatExact(day)}: ${quest}`,
-  showEverything: "Show everything",
 } as const;
 /** The Aspect page (docs/plans/frontier-season-1.md, Aspects and the hyperstructure): the race, and the player's Aspect. */
 export const ASPECT_PAGE_WORDS = {
@@ -1174,11 +1183,11 @@ export const SIZE_ROW = { fewer: "One fewer", more: "One more", max: "Max" } as 
 export const BUILD = "Build";
 export const BUILT = "Built";
 export const BUILD_GROUPS = {
-  economy: { word: "Economy", line: "Repeatable" },
-  army: { word: "Army", line: "Repeatable" },
-  unique: { word: "One per realm", line: "Unique upgrades" },
+  economy: { word: "Economy", line: "Build many" },
+  army: { word: "Army", line: "Build many" },
+  unique: { word: "One per realm", line: undefined },
 } as const;
-export const requiresRank = (rank: string) => `Requires ${rank}`;
+export const requiresRank = (rank: string) => `Unlocks at ${rank}`;
 export const ONE_PER_REALM_MARK = "1×";
 export const plotsUsed = (used: number, total: number) => `${used} / ${total} plots`;
 export const armiesHere = (count: number) => (count === 1 ? "1 army" : `${count} armies`);
