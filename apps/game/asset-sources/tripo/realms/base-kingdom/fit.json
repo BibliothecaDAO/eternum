@@ -1,0 +1,15 @@
+{
+  "name": "base-kingdom",
+  "kind": "wonder",
+  "fit": "lab",
+  "transform": {
+    "yaw_deg_about_y": 0,
+    "scale": 1.67,
+    "offset_xyz": [0, 0, 0]
+  },
+  "flags": [
+    { "role": "banner", "position": [0.09, 0.887, -0.14], "size": [0.1, 0.06], "facing": 0 },
+    { "role": "banner", "position": [-0.13, 0.693, 0.22], "size": [0.08, 0.05], "facing": 0 },
+    { "role": "banner", "position": [0.35, 0.693, 0.16], "size": [0.08, 0.05], "facing": 0 }
+  ]
+}

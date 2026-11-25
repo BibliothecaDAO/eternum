@@ -54,6 +54,14 @@ export const BASE_REALM_CANDIDATES: readonly RealmAssetEntry[] = [
     source: "tripo/realms/base-city",
     path: modelPath("realms/base-city.glb"),
   },
+  {
+    id: "base-kingdom",
+    label: "Base Kingdom · blue-roofed keep",
+    level: 2,
+    wonder: false,
+    source: "tripo/realms/base-kingdom",
+    path: modelPath("realms/base-kingdom.glb"),
+  },
 ];
 export const REALM_ASSETS: readonly RealmAssetEntry[] = [...assets, ...ASPECT_WONDER_LIST];
 export const REALM_PATHS = REALM_ASSETS.map((asset) => asset.path);
