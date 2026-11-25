@@ -20,14 +20,8 @@ import { UNLIMITED_OUTPUT } from "./starting-home-facts";
 
 /** The rows changed here, under the keys their fixtures write them by (deploy, kit lab and site fixtures). */
 const FIXTURE_KEYS = {
-  realm: "0x7",
-  knowledge: "0xd",
-  buildings: "0xb7",
   army: "0x74",
-  board: "0xa",
-  rules: "0x100",
 } as const;
-const ruleKey = (resource: ResourcesIds) => `0x5${resource}`;
 
 /** Frontier's production rates a second and explore cost (config/source/frontier), not the HUD fixture's. */
 const WORKSHOP_RATE = 0.056;
@@ -74,6 +68,11 @@ export const withRealmEconomy = (store: NativeFactStore) => {
   store.applyFacts(realmProducing(store) as never);
 };
 
+const productionKey = (store: NativeFactStore, resource: ResourcesIds) => {
+  const row = store.get("ResourceProduction", { game_id: 1, entity_id: 7, resource_type: resource });
+  return row ? store.wireKeyOf("ResourceProduction", row)! : `1:7:${resource}`;
+};
+
 const realmProducing = (store: NativeFactStore): LabFact[] => {
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
   const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: 7 });
@@ -95,10 +94,14 @@ const realmProducing = (store: NativeFactStore): LabFact[] => {
   });
   return [
     // A City: its second ring opens beside what stands, the two Barracks on it.
-    { model: "Structure", key: FIXTURE_KEYS.realm, value: { ...wire(realm), base: { ...wire(realm.base), level: 1 } } },
+    {
+      model: "Structure",
+      key: store.wireKeyOf("Structure", realm)!,
+      value: { ...wire(realm), base: { ...wire(realm.base), level: 1 } },
+    },
     {
       model: "RealmKnowledge",
-      key: FIXTURE_KEYS.knowledge,
+      key: store.wireKeyOf("RealmKnowledge", knowledge)!,
       value: { ...wire(knowledge), learned: String(knowledge.learned | LEARNED) },
     },
     building("0x1ac00", BUILDINGS_CENTER[0], BUILDINGS_CENTER[1], BuildingType.ResourceLabor),
@@ -108,7 +111,7 @@ const realmProducing = (store: NativeFactStore): LabFact[] => {
     ),
     {
       model: "StructureBuildings",
-      key: FIXTURE_KEYS.buildings,
+      key: store.wireKeyOf("StructureBuildings", buildings)!,
       value: {
         ...wire(buildings),
         packed_counts_1: String(packed[0]),
@@ -126,10 +129,11 @@ const scaled = (perSecond: number) => String(BigInt(Math.round(perSecond * RESOU
 
 /** The game's rules with Frontier's explore cost, so a 120 bar is six explores. */
 const exploreCost = (store: NativeFactStore): LabFact => {
-  const rules = wire(store.require("SliceRules", { game_id: 1 })) as { troop_stamina_config: object };
+  const row = store.require("SliceRules", { game_id: 1 });
+  const rules = wire(row) as { troop_stamina_config: object };
   return {
     model: "SliceRules",
-    key: FIXTURE_KEYS.rules,
+    key: store.wireKeyOf("SliceRules", row)!,
     value: {
       ...rules,
       troop_stamina_config: { ...rules.troop_stamina_config, stamina_explore_stamina_cost: EXPLORE_STAMINA },
@@ -141,7 +145,7 @@ const frontierRates = (store: NativeFactStore): LabFact[] => [
   exploreCost(store),
   {
     model: "BoardRules",
-    key: FIXTURE_KEYS.board,
+    key: store.wireKeyOf("BoardRules", store.require("BoardRules", { game_id: 1 }))!,
     value: {
       ...wire(store.require("BoardRules", { game_id: 1 })),
       workshop_rate: scaled(WORKSHOP_RATE),
@@ -150,7 +154,7 @@ const frontierRates = (store: NativeFactStore): LabFact[] => [
   },
   ...Object.entries(REALM_RATES).map(([resource, rate]) => ({
     model: "ResourceRule",
-    key: ruleKey(Number(resource)),
+    key: store.wireKeyOf("ResourceRule", store.require("ResourceRule", { game_id: 1, resource_type: Number(resource) }))!,
     value: {
       ...wire(store.require("ResourceRule", { game_id: 1, resource_type: Number(resource) })),
       realm_rate: scaled(rate!),
@@ -168,7 +172,7 @@ const production = (store: NativeFactStore, resource: MadeResource, buildings: n
   const rate = boosted * BigInt(buildings) + (castle ? realmRate(ResourcesIds.Labor) : 0n);
   return {
     model: "ResourceProduction",
-    key: `1:7:${resource}`,
+    key: productionKey(store, resource),
     value: {
       remainder: 0,
 
