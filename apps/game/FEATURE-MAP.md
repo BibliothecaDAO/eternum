@@ -73,40 +73,40 @@ opening that season's Results), or the archived Playtest board (`src/shell/seaso
 (`/lab/app/no-season/season`); Shop (`/shop`) pairs Spend Fragments (Ancient Seal, seal code redemption, in-game
 Fragment uses) with Buy Fragments (packs, custom amount, linked wallet tokens); You (`/profile`, `/profile/settings`) is
 a single-page hub with an anchored identity rail switching Overview & Realms, Referrals & Invite (`/profile#referrals`:
-the invite link, the reward per friend and the friends the player brought, each with its state and Glory), Wallet &
-Devices, and Settings inline; Results (`/results/:id`, with **See the end map**) shows a Frontier season's 4-card
-chronicle recap (Season 1 Aspect race or archived Playtest overview); What's new (`/scroll`) shows a release's patch
-notes, a tab per section, and every release. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player
-sees them, on a fixture realm. `/lab/kit/unified/<view>` the in-game HUD every mode shares (a phone's width draws the
-compact HUD), as the game mounts it on the lab's game: `blitz` (the Build plan panel under Next up, read from the lab
-realm, which has nothing to build now), `blitz-start` (the same realm stocked to build, as the game begins: its news
-over the HUD, every control under it still taking its clicks), `blitz-attack` (the lab army's attack forecast on an
-enemy army beside it, opened as the map opens it), `frontier`, `frontier-army` (an army’s stamina, troops and relics),
-`blitz-spectator`, `blitz-finished`, `blitz-out` and `blitz-out-watching` (the lab player's last realm lost, a
-Hyperstructure still held, playing then watching);
-`pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's states at 1024,
-1280, 1440 and 1920 px (every part whole on the page, none over another, none with content past its edge, every control
-reachable, at most seven parts a region); `/lab/kit/hud/realm-claim` is the owner's Kingdom at 27/42 with 1,000 labor to
-claim, the realm card's widest row. `/lab/kit/guidance` the Events rows with their outcomes, beside the player's pill.
-`/lab/kit/build-order` the Build plan panel on the game's default build plan (each row the game's own rule on a realm's
-case: population short or not, an army short of full, a full army). `/lab/kit/progression` Frontier's Research tree and
-the army's panel (the owner's picks), the game's own panels on the Frontier preset's numbers, on the owner's realm or
-one some days in (`?realm=mid`); `?part=research|army` one alone at a phone's width. `/lab/kit/windows/settings` the
-header's Settings at its popover's width (a Quality or Shadows change is saved at once and shows **Applies after
-reload** with **Reload** under them, in game as here; a game loads the address's `rendererMode`, else the build's WebGPU
-with its own WebGL2 fallback; Haptics only on a phone that vibrates, the keys only where there is a keyboard);
-`pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it against a 1080 px screen and opens its
-keys with Show, with no Back among them; every window it draws must keep each tab strip inside its panel.
-`/lab/kit/windows/transfer-holdings` Transfer for a player holding five kinds (realms, villages, a camp, rifts, a
-Hyperstructure). `/lab/kit/windows/army-transfer` Blitz's Transfer Troops & Relics between an army out beside the lab
-realm and the realm (**Swap** for realm → army). `/lab/kit/windows/army-to-army` shows the receiving army’s relic load;
-`/lab/kit/windows/frontier-build` shows a raised building price. `/lab/kit/area-d` the rings, players, tribes, Military
-picker and window body and Combat as the game draws them, on the deploy fixture's realm; capture them with
-`pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`. `/lab/kit/words` the words sheet: every voice,
-number, time, noun and name rule of the words module (the rules in `packages/types/src/words`, shared with core's story
-text; the client's phrases in `src/ui/design-system/kit/words.ts`) on sample inputs. `pnpm words:check` fails on any
-number, time or name written outside it where a player reads it, and on any string that breaks a voice rule;
-`node scripts/words/check.mjs` counts them by kind.
+the invite link, or with no Aspect joined its place with **Join an Aspect** to Play, the reward per friend and the
+friends the player brought, each with its state and Glory), Wallet & Devices, and Settings inline; Results
+(`/results/:id`, with **See the end map**) shows a Frontier season's 4-card chronicle recap (Season 1 Aspect race or
+archived Playtest overview); What's new (`/scroll`) shows a release's patch notes, a tab per section, and every release.
+`/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a fixture realm.
+`/lab/kit/unified/<view>` the in-game HUD every mode shares (a phone's width draws the compact HUD), as the game mounts
+it on the lab's game: `blitz` (the Build plan panel under Next up, read from the lab realm, which has nothing to build
+now), `blitz-start` (the same realm stocked to build, as the game begins: its news over the HUD, every control under it
+still taking its clicks), `blitz-attack` (the lab army's attack forecast on an enemy army beside it, opened as the map
+opens it), `frontier`, `frontier-army` (an army’s stamina, troops and relics), `blitz-spectator`, `blitz-finished`,
+`blitz-out` and `blitz-out-watching` (the lab player's last realm lost, a Hyperstructure still held, playing then
+watching); `pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's
+states at 1024, 1280, 1440 and 1920 px (every part whole on the page, none over another, none with content past its
+edge, every control reachable, at most seven parts a region); `/lab/kit/hud/realm-claim` is the owner's Kingdom at 27/42
+with 1,000 labor to claim, the realm card's widest row. `/lab/kit/guidance` the Events rows with their outcomes, beside
+the player's pill. `/lab/kit/build-order` the Build plan panel on the game's default build plan (each row the game's own
+rule on a realm's case: population short or not, an army short of full, a full army). `/lab/kit/progression` Frontier's
+Research tree and the army's panel (the owner's picks), the game's own panels on the Frontier preset's numbers, on the
+owner's realm or one some days in (`?realm=mid`); `?part=research|army` one alone at a phone's width.
+`/lab/kit/windows/settings` the header's Settings at its popover's width (a Quality or Shadows change is saved at once
+and shows **Applies after reload** with **Reload** under them, in game as here; a game loads the address's
+`rendererMode`, else the build's WebGPU with its own WebGL2 fallback; Haptics only on a phone that vibrates, the keys
+only where there is a keyboard); `pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it against
+a 1080 px screen and opens its keys with Show, with no Back among them; every window it draws must keep each tab strip
+inside its panel. `/lab/kit/windows/transfer-holdings` Transfer for a player holding five kinds (realms, villages, a
+camp, rifts, a Hyperstructure). `/lab/kit/windows/army-transfer` Blitz's Transfer Troops & Relics between an army out
+beside the lab realm and the realm (**Swap** for realm → army). `/lab/kit/windows/army-to-army` shows the receiving
+army’s relic load; `/lab/kit/windows/frontier-build` shows a raised building price. `/lab/kit/area-d` the rings,
+players, tribes, Military picker and window body and Combat as the game draws them, on the deploy fixture's realm;
+capture them with `pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`. `/lab/kit/words` the words
+sheet: every voice, number, time, noun and name rule of the words module (the rules in `packages/types/src/words`,
+shared with core's story text; the client's phrases in `src/ui/design-system/kit/words.ts`) on sample inputs.
+`pnpm words:check` fails on any number, time or name written outside it where a player reads it, and on any string that
+breaks a voice rule; `node scripts/words/check.mjs` counts them by kind.
 
 `prove:app <base-url> <out-dir> boards` measures every board (`AppBoard`) row by row, Season's Frontier and Blitz, at
 1920 and 390 px: each column at one x down the board, each value ending on one line, no name run into its figures and a

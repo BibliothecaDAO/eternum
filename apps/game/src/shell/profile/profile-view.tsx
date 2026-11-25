@@ -212,8 +212,8 @@ export const PlayerCard = ({
                 (aspect !== null ? (
                   <InviteAction />
                 ) : (
-                  <AppButton kind="secondary" icon="share" to="/season" className="w-full">
-                    {INVITE_WORDS.copy}
+                  <AppButton kind="secondary" icon="play" to="/" className="w-full">
+                    {PROFILE_WORDS.joinAspect}
                   </AppButton>
                 ))}
             </div>
