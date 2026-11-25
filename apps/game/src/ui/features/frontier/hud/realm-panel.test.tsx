@@ -101,7 +101,7 @@ it("offers a desktop's four places in order, Settings named, each a panel its pr
   expect(places("settings")[3].getAttribute("aria-selected")).toBe("true");
 });
 
-it("renders the Aspect medallion tinted in the Aspect color and Order of Power below the Realm name on the realm card", () => {
+it("renders the Aspect medallion tinted in the Aspect color, and the rank and Order of Power beside the Realm name", () => {
   const onHome = vi.fn();
   act(() =>
     root.render(
@@ -125,14 +125,14 @@ it("renders the Aspect medallion tinted in the Aspect color and Order of Power b
   expect(identity.querySelector('[data-aspect-mark="1"]')).not.toBeNull();
   expect(identity.querySelector(".frontier-aspect-medallion")?.getAttribute("style")).toContain("--hud-aspect");
   expect(identity.querySelector('img[src*="portraits"]')).toBeNull();
-  expect(card.querySelector(".frontier-realm-card__order")?.textContent).toBe("Order of Power");
+  expect(card.querySelector(".frontier-realm-card__sub")?.textContent).toBe("CityOrder of Power");
   expect(card.querySelector('[data-order-id="12"] img')).not.toBeNull();
   act(() => identity.click());
   expect(onHome).toHaveBeenCalledTimes(1);
 });
 
-it("shows every stock on the desktop realm card, Fragments opening the shop and the next rank upgrading the castle", () => {
-  const onUpgradeCastle = vi.fn();
+it("shows every stock with its rate, Fragments opening the shop, and the next rank's Upgrade when the realm can pay", () => {
+  const onUpgrade = vi.fn();
   const onShop = vi.fn();
   act(() =>
     root.render(
@@ -140,14 +140,13 @@ it("shows every stock on the desktop realm card, Fragments opening the shop and 
         name="Duskbite"
         kind="realm"
         level={0}
-        rankUp={{ name: "City" }}
+        rankUp={{ name: "City", gives: "+1 army slot", sending: false, onUpgrade }}
         aspect={1}
         orderId={12}
         stores={STORE_KINDS.map((kind) => store(kind, 0, 6_000))}
         fragments={250}
         lords={320}
         onShop={onShop}
-        onUpgradeCastle={onUpgradeCastle}
       />,
     ),
   );
@@ -161,59 +160,64 @@ it("shows every stock on the desktop realm card, Fragments opening the shop and 
     ...STORE_KINDS.filter(isTroopStore),
   ]);
   expect(card.textContent).not.toContain("Pop");
+  expect(card.querySelector('[data-store="labor"]')?.textContent).toBe("0+10/min");
   expect(card.querySelector('[data-store="lords"]')?.textContent).toBe("320LORDS");
+  expect(card.querySelector('[data-store="fragments"]')?.textContent).toBe("250Shop");
   act(() => card.querySelector<HTMLButtonElement>('[aria-label="Fragments 250"]')!.click());
   expect(onShop).toHaveBeenCalledTimes(1);
-  const rankUp = card.querySelector<HTMLButtonElement>("[data-realm-castle]")!;
-  expect(rankUp.textContent).toBe("City");
-  act(() => rankUp.click());
-  expect(onUpgradeCastle).toHaveBeenCalledTimes(1);
+  expect(card.querySelector(".frontier-realm-card__next")?.textContent).toBe("Next rank City · +1 army slotUpgrade");
+  act(() => card.querySelector<HTMLButtonElement>("[data-realm-castle]")!.click());
+  expect(onUpgrade).toHaveBeenCalledTimes(1);
 
   act(() =>
-    root.render(
-      <RealmCard
-        name="Duskbite"
-        kind="realm"
-        level={3}
-        stores={STORES}
-        fragments={null}
-        lords={null}
-        onUpgradeCastle={onUpgradeCastle}
-      />,
-    ),
+    root.render(<RealmCard name="Duskbite" kind="realm" level={3} stores={STORES} fragments={null} lords={null} />),
   );
   expect(host.querySelector("[data-realm-castle]")).toBeNull();
   expect(host.querySelector('[data-store="fragments"] button')).toBeNull();
 });
 
-it("offers the next rank only when the realm can take it now, else shows it as a quiet label naming what is missing", () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const host = document.createElement("div");
-  document.body.append(host);
-  const root = createRoot(host);
-  const onUpgradeCastle = vi.fn();
+it("locks the next rank, with the price it needs, until the realm can pay it", () => {
   act(() =>
     root.render(
       <RealmCard
         name="Duskbite"
         kind="realm"
         level={2}
-        rankUp={{ name: "Empire", missing: "Needs 15,000 Labor, have 9,640" }}
+        rankUp={{
+          name: "Empire",
+          need: { of: "labor", amount: 12_000 },
+          refusal: "Needs 12,000 Labor, have 9,640",
+          sending: false,
+        }}
         stores={STORES}
         fragments={null}
         lords={null}
-        onUpgradeCastle={onUpgradeCastle}
       />,
     ),
   );
   const rankUp = host.querySelector<HTMLElement>("[data-realm-castle]")!;
-  expect([rankUp.tagName, rankUp.textContent, rankUp.getAttribute("aria-label")]).toEqual([
-    "SPAN",
-    "Empire",
-    "Empire: Needs 15,000 Labor, have 9,640",
-  ]);
+  expect(rankUp.tagName).toBe("SPAN");
+  expect(rankUp.textContent).toBe("Needs 12K");
+  expect(rankUp.getAttribute("aria-label")).toBe("Upgrade · Empire: Needs 12,000 Labor, have 9,640");
+});
+
+it("says Upgrading on the button while the rank-up is sent, and takes no second press", () => {
+  const onUpgrade = vi.fn();
+  act(() =>
+    root.render(
+      <RealmCard
+        name="Duskbite"
+        kind="realm"
+        level={0}
+        rankUp={{ name: "City", sending: true, onUpgrade }}
+        stores={STORES}
+        fragments={null}
+        lords={null}
+      />,
+    ),
+  );
+  const rankUp = host.querySelector<HTMLButtonElement>("[data-realm-castle]")!;
+  expect([rankUp.tagName, rankUp.textContent, rankUp.disabled]).toEqual(["BUTTON", "Upgrading…", true]);
   act(() => rankUp.click());
-  expect(onUpgradeCastle).not.toHaveBeenCalled();
-  act(() => root.unmount());
-  host.remove();
+  expect(onUpgrade).not.toHaveBeenCalled();
 });
