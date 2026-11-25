@@ -31,29 +31,72 @@ const withShares = (slots: DeepSlot[]): DeepSlot[] => {
 };
 
 const noop = () => {};
-const base = { onClose: noop, pickBase: { deepLossPerTick: LOSS_PER_TICK } };
-const pay = { glory: 6, height: 0, essence: 0, labor: 0, bar: null };
+const base = { onClose: noop, pickBase: { deepLossPerTick: LOSS_PER_TICK }, ring: 0, opening: null };
+const rates = {
+  tickSeconds: TICK_SECONDS,
+  glory: 6,
+  height: 0,
+  essence: 0,
+  labor: 0,
+  bar: null,
+  drain: LOSS_PER_TICK,
+};
 
-/** The card's states on fixtures of its props: what the lab draws and the test asserts. */
+/** The card's states on fixtures of its props: every Deep site kind and state, what the lab draws and the test asserts. */
 export const DEEP_SITE_CASES = {
-  "Foundation, today's beast, army in reach": {
+  "Hyperstructure archive, open, its beast, army in reach": {
     ...base,
     site: "foundation",
-    pay: { ...pay, height: 6 },
-    guard: { kind: "beast", category: "Knight", troops: 10_000 },
-    order: { kind: "act", verb: "attack", onAct: noop },
+    rates: { ...rates, height: 6 },
+    guard: { kind: "beast", category: "Knight", troops: 15_000 },
+    order: { kind: "act", verb: "attack", stamina: 30, onAct: noop },
   },
-  "Ethereal mine, army short of stamina": {
+  "Ethereal mine held by the player's Aspect, slots to join": {
     ...base,
     site: "mine",
-    pay: { ...pay, glory: 0, labor: 300 },
+    rates: { ...rates, glory: 0, labor: 300 },
+    guard: {
+      kind: "held",
+      aspectId: 2,
+      ally: true,
+      next: 103,
+      slots: withShares([slot(3, "Aldor", 6_000), slot(2, "Brek", 4_000, true)]),
+    },
+    order: { kind: "act", verb: "join", onAct: noop },
+  },
+  "Bane altar, locked until more Realms enter": {
+    ...base,
+    site: "altar",
+    ring: 1,
+    rates: null,
+    opening: { entered: 12, realms: 50 },
+    guard: { kind: "beast", category: "Crossbowman", troops: 15_000 },
+    order: { kind: "closed" },
+  },
+  "Essence core held by a rival Aspect": {
+    ...base,
+    site: "core",
+    rates: { ...rates, glory: 0, essence: 300 },
+    guard: {
+      kind: "held",
+      aspectId: 3,
+      ally: false,
+      next: 103,
+      slots: withShares([slot(3, "Havoc Guard", 6_200)]),
+    },
+    order: { kind: "act", verb: "attack", stamina: 30, onAct: noop },
+  },
+  "Ethereal mine, its beast, army short of stamina": {
+    ...base,
+    site: "mine",
+    rates: { ...rates, glory: 0, labor: 300 },
     guard: { kind: "beast", category: "Knight", troops: 10_000 },
     order: { kind: "short", verb: "attack", line: "Needs 30 stamina, holds 12" },
   },
-  "Altar, open, army away": {
+  "Bane altar, open, no guard, army away": {
     ...base,
     site: "altar",
-    pay: { ...pay, bar: { perTick: 6, charge: 300, threshold: 1_500 } },
+    rates: { ...rates, bar: { perTick: 6, charge: 300, threshold: 1_500 } },
     guard: { kind: "open" },
     order: {
       kind: "move",
@@ -63,31 +106,5 @@ export const DEEP_SITE_CASES = {
       ],
       onMove: noop,
     },
-  },
-  "Foundation held, two slots filled": {
-    ...base,
-    site: "foundation",
-    pay: { ...pay, height: 6 },
-    guard: {
-      kind: "held",
-      aspectId: 1,
-      ally: false,
-      next: 103,
-      slots: withShares([slot(3, "Aldor", 6_000), slot(1, "Brek", 2_000, true)]),
-    },
-    order: "rival",
-  },
-  "Ethereal mine held by the player's Aspect, a free slot to join": {
-    ...base,
-    site: "mine",
-    pay: { ...pay, glory: 0, labor: 300 },
-    guard: {
-      kind: "held",
-      aspectId: 1,
-      ally: true,
-      next: 102,
-      slots: withShares([slot(2, "Brek", 4_000, true)]),
-    },
-    order: { kind: "act", verb: "join", onAct: noop },
   },
 } as const satisfies Record<string, DeepSiteProps>;

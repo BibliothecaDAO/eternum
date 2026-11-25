@@ -79,21 +79,30 @@ describe("the Deep site's live native binding", () => {
     try {
       const rules = hud.store.require("DeepRules", { game_id: 1 });
       const perTick = (amount: bigint) => Number(amount / BigInt(RESOURCE_PRECISION));
-      expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain(`${perTick(rules.mine_per_tick)} labor`);
+      const rate = (kind: string) => hud.host.querySelector(`[data-rate='${kind}'] b`)?.textContent;
       const sites = readDeepSites(hud.store, scenario.startsAt, 1);
       const ladder = [rules.building_pay.alone, rules.building_pay.pair, rules.building_pay.crowd];
       for (const site of sites) {
         hud.render(<DeepSiteCard site={site} onClose={() => {}} />);
-        const pay = hud.host.querySelector("[data-deep-pay]")!.textContent;
+        if (!site.open) {
+          expect(hud.host.querySelector("[data-deep-pay]")).toBeNull();
+          expect(hud.host.querySelector("[data-deep-opening]")?.textContent).toContain(
+            `${site.entered} / ${site.opensAt}`,
+          );
+          continue;
+        }
+        expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain("/ 2m");
         const openOfKind = sites.filter((other) => other.kind === site.kind && other.open).length;
         const building = ladder[Math.min(openOfKind, ladder.length) - 1];
-        if (site.kind === nativeRuleConstants.DEEP_MINE) expect(pay).toContain(`${perTick(rules.mine_per_tick)} labor`);
+        if (site.kind === nativeRuleConstants.DEEP_MINE) expect(rate("labor")).toBe(`+${perTick(rules.mine_per_tick)}`);
         else if (site.kind === nativeRuleConstants.DEEP_CORE)
-          expect(pay).toContain(`${perTick(rules.core_per_tick)} Essence`);
-        else expect(pay).toContain(`${building} Glory`);
-        if (site.kind === nativeRuleConstants.DEEP_FOUNDATION) expect(pay).toContain(`+${building} height`);
-        if (site.kind === nativeRuleConstants.DEEP_ALTAR) expect(pay).toContain("300 of 1,500");
+          expect(rate("essence")).toBe(`+${perTick(rules.core_per_tick)}`);
+        else expect(rate("glory")).toBe(`+${building}`);
+        if (site.kind === nativeRuleConstants.DEEP_FOUNDATION) expect(rate("height")).toBe(`+${building}`);
+        if (site.kind === nativeRuleConstants.DEEP_ALTAR)
+          expect(hud.host.querySelector("[data-rate='bar']")?.getAttribute("data-tip")).toBe("300 of 1,500");
       }
+      hud.render(<DeepSiteCard site={sites.find((site) => site.kind === nativeRuleConstants.DEEP_MINE && site.open)!} onClose={() => {}} />);
       act(() =>
         hud.store.applyFacts([
           {
@@ -103,8 +112,8 @@ describe("the Deep site's live native binding", () => {
           },
         ]),
       );
-      hud.render();
-      expect(hud.host.querySelector("[data-deep-pay]")?.textContent).toContain("600 labor");
+      hud.render(<DeepSiteCard site={readDeepSites(hud.store, scenario.startsAt, 1).find((site) => site.kind === nativeRuleConstants.DEEP_MINE && site.open)!} onClose={() => {}} />);
+      expect(hud.host.querySelector("[data-rate='labor'] b")?.textContent).toBe("+600");
     } finally {
       hud.unmount();
     }

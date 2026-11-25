@@ -5,12 +5,11 @@ import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import { oathEffectDescription, oathName } from "../army/oath-details";
 import type { PickEffectBase } from "../pick-effect-format";
-import { Icon } from "@/ui/design-system/icon";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { type Price } from "@/ui/design-system/kit/price-faces";
 import {
   HudButton,
-  HudChip,
+  HudMeter,
   HudPrice,
   HudNotice,
   HudRow,
@@ -26,22 +25,26 @@ import {
   beastModel,
   deepSites,
   formatExact,
+  formatRate,
+  formatShortDuration,
 } from "@bibliothecadao/types";
 import { beastMeaning, troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/balance.gen";
 
 import { AttackStamina, FightArena } from "../sites/fight-side";
-import { CombatMark } from "../sites/combat-mark";
+import { CombatBadge, combatMarkOf } from "../sites/combat-mark";
 import type { DeepSiteFight } from "../sites/site-card-plan";
 
 import { DEEP_SITE_FACES } from "./deep-site-faces";
 
-export interface DeepTickPay {
+export interface DeepRates {
+  tickSeconds: number;
   glory: number;
   height: number;
   essence: number;
   labor: number;
   bar: { perTick: number; charge: number; threshold: number } | null;
+  drain: number;
 }
 
 export interface DeepSlot {
@@ -75,11 +78,13 @@ export type DeepOrder =
   | { kind: "act"; verb: "attack" | "take" | "join"; stamina?: number; busy?: string; onAct: () => void }
   | { kind: "short"; verb: "attack"; line: string }
   | { kind: "move"; prices: readonly Price[]; onMove: () => void }
-  | { kind: "closed"; realms: number };
+  | { kind: "closed" };
 
 export interface DeepSiteProps {
   site: (typeof deepSites)[number]["key"];
-  pay: DeepTickPay | null;
+  ring: number;
+  rates: DeepRates | null;
+  opening: { entered: number; realms: number } | null;
   guard: DeepGuard;
   fight?: DeepSiteFight;
   attackerName?: string;
@@ -95,45 +100,158 @@ const FIGHT_ORDER = Array.from(
 
 const siteName = (key: DeepSiteProps["site"]) => deepSites.find((each) => each.key === key)!.name;
 
-export const DeepSiteView = ({ site, pay, guard, fight, attackerName, pickBase, order, onClose }: DeepSiteProps) => {
-  const face = DEEP_SITE_FACES[site];
+export const DeepSiteView = ({
+  site,
+  ring,
+  rates,
+  opening,
+  guard,
+  fight,
+  attackerName,
+  pickBase,
+  order,
+  onClose,
+}: DeepSiteProps) => {
+  const name = siteName(site);
+  const secondary = rates && secondaryRate(rates);
   return (
-    <HudSheet label={siteName(site)} onClose={onClose}>
-      <div className="deep-head">
-        <span className="deep-head__mark">
-          <Icon name={face.icon} size={40} />
-        </span>
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          {guard.kind === "held" ? (
-            <div
-              className="deep-holder"
-              data-aspect-holder={guard.aspectId}
-              data-aspect-id={guard.aspectId}
-              data-side={guard.ally ? "ally" : "rival"}
-            >
-              <span className="text-hud-muted">{DEEP_WORDS.heldByPrefix}</span>
-              <AspectMark aspect={guard.aspectId} size={18} decorative />
-              <span className={cn("text-hud-strong", guard.ally ? "text-hud-ally" : "text-hud-bad")}>
-                {aspectName(guard.aspectId)}
-              </span>
-              <span className="text-hud-muted">·</span>
-              <span className="text-hud-label text-hud-muted">
-                {DEEP_WORDS.guardsCount(guard.slots.length, nativeRuleConstants.DEEP_GUARD_SLOTS)}
-              </span>
-            </div>
-          ) : (
-            <span className="text-hud-strong text-hud-ink">{face.purpose}</span>
-          )}
-        </div>
+    <HudSheet label={name} title={<DeepTitle site={site} name={name} tag={siteTag(ring, opening, guard)} />} onClose={onClose}>
+      <div data-deep-site={site} className="deep-site">
+        {rates ? <RateStrip rates={rates} /> : <LockedKinds site={site} />}
+        {fight && <FightPreview site={site} fight={fight} guard={guard} attackerName={attackerName} />}
+        <GuardStrip
+          site={site}
+          guard={guard}
+          pickBase={pickBase}
+          drain={rates && secondary?.kind !== "drain" ? rates : null}
+        />
+        {opening && <OpeningBar opening={opening} />}
       </div>
-      {fight && <FightPreview site={site} fight={fight} guard={guard} attackerName={attackerName} />}
-      <GuardStrip site={site} guard={guard} pickBase={pickBase} />
-      {pay && <TickPay pay={pay} />}
       <OrderFoot order={order} />
       {typeof order === "object" && order.kind === "short" && <HudNotice tone="warn" line={order.line} />}
     </HudSheet>
   );
 };
+
+type SiteTag = { state: "open" | "held" | "locked" | "rival"; line: string; aspectId?: AspectId };
+
+const siteTag = (ring: number, opening: DeepSiteProps["opening"], guard: DeepGuard): SiteTag => {
+  const shownRing = ring + 1;
+  if (opening) return { state: "locked", line: DEEP_WORDS.tag.locked(shownRing) };
+  if (guard.kind !== "held") return { state: "open", line: DEEP_WORDS.tag.open(shownRing) };
+  const aspect = aspectName(guard.aspectId);
+  return guard.ally
+    ? { state: "held", line: DEEP_WORDS.tag.held(aspect), aspectId: guard.aspectId }
+    : {
+        state: "rival",
+        line: DEEP_WORDS.tag.rival(aspect, guard.slots.length, nativeRuleConstants.DEEP_GUARD_SLOTS),
+        aspectId: guard.aspectId,
+      };
+};
+
+const DeepTitle = ({ site, name, tag }: { site: DeepSiteProps["site"]; name: string; tag: SiteTag }) => (
+  <span className="deep-title">
+    <span className="deep-title__emblem">
+      <Icon name={DEEP_SITE_FACES[site].icon} size={26} />
+    </span>
+    <span className="deep-title__words">
+      <span data-deep-tag={tag.state} data-aspect-id={tag.aspectId} className="deep-tag">
+        {tag.line}
+      </span>
+      <span className="deep-title__name">{name}</span>
+      <span className="deep-title__purpose">{DEEP_SITE_FACES[site].purpose}</span>
+    </span>
+  </span>
+);
+
+type Rate = { kind: "glory" | "height" | "essence" | "labor" | "bar" | "drain"; amount: number; sub: string };
+
+const cadenceOf = (rates: DeepRates) => formatShortDuration(rates.tickSeconds);
+
+const resourceSub = (rates: DeepRates, amount: number) => DEEP_WORDS.resourceCell(formatRate(amount / rates.tickSeconds));
+
+const primaryRate = (rates: DeepRates): Rate | null =>
+  rates.glory > 0
+    ? { kind: "glory", amount: rates.glory, sub: DEEP_WORDS.gloryCell }
+    : rates.essence > 0
+      ? { kind: "essence", amount: rates.essence, sub: resourceSub(rates, rates.essence) }
+      : rates.labor > 0
+        ? { kind: "labor", amount: rates.labor, sub: resourceSub(rates, rates.labor) }
+        : null;
+
+const secondaryRate = (rates: DeepRates): Rate =>
+  rates.height > 0
+    ? { kind: "height", amount: rates.height, sub: DEEP_WORDS.heightCell }
+    : rates.bar
+      ? { kind: "bar", amount: rates.bar.perTick, sub: DEEP_WORDS.barCell }
+      : { kind: "drain", amount: rates.drain, sub: DEEP_WORDS.drainCell };
+
+const RATE_ICONS = {
+  glory: "crown",
+  height: "hyperstructure",
+  essence: "essence",
+  labor: "labor",
+  bar: "flame",
+  drain: "attack",
+} as const satisfies Record<Rate["kind"], IconMeaning>;
+
+const RateStrip = ({ rates }: { rates: DeepRates }) => {
+  const cells = [primaryRate(rates), secondaryRate(rates)].flatMap((rate) => (rate ? [rate] : []));
+  return (
+    <div data-deep-pay className="deep-rates">
+      {cells.map((rate) => (
+        <span
+          key={rate.kind}
+          data-rate={rate.kind}
+          data-tip={rate.kind === "bar" && rates.bar ? DEEP_WORDS.bar(rates.bar.charge, rates.bar.threshold) : undefined}
+          className="deep-rate"
+        >
+          <span className="deep-rate__value">
+            <Icon name={RATE_ICONS[rate.kind]} size={18} />
+            <b data-tone={rate.kind === "drain" ? "bad" : undefined}>
+              {rate.kind === "drain" ? `−${formatExact(rate.amount)}` : `+${formatExact(rate.amount)}`}
+            </b>
+            <i>{DEEP_WORDS.perTick(cadenceOf(rates))}</i>
+          </span>
+          <span className="deep-rate__sub">{rate.sub}</span>
+        </span>
+      ))}
+    </div>
+  );
+};
+
+const SITE_KINDS = {
+  foundation: ["glory", "height"],
+  core: ["essence"],
+  mine: ["labor"],
+  altar: ["glory", "bar"],
+} as const satisfies Record<DeepSiteProps["site"], readonly (keyof typeof DEEP_WORDS.kinds)[]>;
+
+const LockedKinds = ({ site }: { site: DeepSiteProps["site"] }) => (
+  <div data-deep-kinds className="deep-kinds">
+    {SITE_KINDS[site].map((kind) => (
+      <span key={kind} className="deep-kinds__kind">
+        <Icon name={RATE_ICONS[kind]} size={16} />
+        {DEEP_WORDS.kinds[kind]}
+      </span>
+    ))}
+    <span className="deep-kinds__note">{DEEP_WORDS.ratesWhenOpen}</span>
+  </div>
+);
+
+const OpeningBar = ({ opening }: { opening: { entered: number; realms: number } }) => (
+  <div data-deep-opening className="deep-opening">
+    <span className="deep-opening__line">
+      <Icon name="lock" size={14} />
+      <span className="flex-1">{DEEP_WORDS.opensAt(opening.realms)}</span>
+      <b>{DEEP_WORDS.entered(opening.entered, opening.realms)}</b>
+    </span>
+    <HudMeter
+      share={opening.realms > 0 ? Math.min(1, opening.entered / opening.realms) : 1}
+      label={DEEP_WORDS.opensAt(opening.realms)}
+    />
+  </div>
+);
 
 const FightPreview = ({
   site,
@@ -170,22 +288,6 @@ const FightPreview = ({
   );
 };
 
-const TickPay = ({ pay }: { pay: DeepTickPay }) => (
-  <span
-    data-deep-pay
-    data-tip={`${DEEP_WORDS.tickPays} (${DEEP_WORDS.splitByTroops})`}
-    className="flex flex-wrap items-center gap-1.5 text-hud-label text-hud-muted"
-  >
-    {pay.glory > 0 && <HudChip icons={["crown"]}>{DEEP_WORDS.glory(pay.glory)}</HudChip>}
-    {pay.height > 0 && <HudChip icons={["hyperstructure"]}>{DEEP_WORDS.height(pay.height)}</HudChip>}
-    {pay.essence > 0 && <HudChip icons={["essence"]}>{DEEP_WORDS.essence(pay.essence)}</HudChip>}
-    {pay.labor > 0 && <HudChip icons={["labor"]}>{DEEP_WORDS.labor(pay.labor)}</HudChip>}
-    {pay.bar && (
-      <HudChip icons={["flame"]}>{DEEP_WORDS.bar(pay.bar.perTick, pay.bar.charge, pay.bar.threshold)}</HudChip>
-    )}
-  </span>
-);
-
 const slotTip = (slot: DeepSlot, next: boolean, pickBase: PickEffectBase): string => {
   const oaths = heldOaths(slot.oaths).map((id) => `${oathName(id)} (${oathEffectDescription(id, pickBase)})`);
   return [
@@ -206,24 +308,45 @@ const guardDrainLabel = (slots: readonly DeepSlot[]): string | null => {
   return min === max ? DEEP_WORDS.drainTick(min) : DEEP_WORDS.drainRange(min, max);
 };
 
+const BeastRow = ({
+  site,
+  guard,
+  drain,
+}: {
+  site: DeepSiteProps["site"];
+  guard: Extract<DeepGuard, { kind: "beast" }>;
+  drain: DeepRates | null;
+}) => (
+  <div data-deep-beast className="deep-beast">
+    <span className="deep-beast__portrait">
+      <Icon name={beastMeaning(beastModel(DEEP_BEASTS[site]))} size={48} className="size-full" />
+      <CombatBadge category={guard.category} />
+    </span>
+    <span className="deep-beast__words">
+      <span className="deep-beast__name">
+        {DEEP_BEASTS[site].name}
+        <span className="deep-beast__tag">{combatMarkOf(guard.category).label}</span>
+      </span>
+      <b className="deep-beast__troops">{DEEP_WORDS.troops(guard.troops)}</b>
+      {drain && (
+        <span className="deep-beast__drain">{DEEP_WORDS.drainWhileHeld(drain.drain, cadenceOf(drain))}</span>
+      )}
+    </span>
+  </div>
+);
+
 const GuardStrip = ({
   site,
   guard,
   pickBase,
+  drain,
 }: {
   site: DeepSiteProps["site"];
   guard: DeepGuard;
   pickBase: PickEffectBase;
+  drain: DeepRates | null;
 }) => {
-  if (guard.kind === "beast")
-    return (
-      <HudRow
-        lead={<Icon name={beastMeaning(beastModel(DEEP_BEASTS[site]))} size={36} />}
-        title={DEEP_WORDS.beast(DEEP_BEASTS[site].name, guard.troops)}
-        trail={<CombatMark category={guard.category} />}
-        state="beast"
-      />
-    );
+  if (guard.kind === "beast") return <BeastRow site={site} guard={guard} drain={drain} />;
   if (guard.kind === "open") return <HudRow lead={<Icon name="flag" size={32} />} title={DEEP_WORDS.open} />;
   const filled = FIGHT_ORDER.flatMap((slot) => {
     const held = guard.slots.find((each) => each.slot === slot);
@@ -232,7 +355,20 @@ const GuardStrip = ({
   const free = FIGHT_ORDER.filter((slot) => !guard.slots.some((each) => each.slot === slot));
   const frontGuard = filled.find((each) => each.armyId === guard.next) ?? filled[0];
   return (
-    <div data-deep-slots className="flex flex-col gap-2">
+    <div data-deep-slots className="deep-held">
+      <div
+        className="deep-holder"
+        data-aspect-holder={guard.aspectId}
+        data-aspect-id={guard.aspectId}
+        data-side={guard.ally ? "ally" : "rival"}
+      >
+        <AspectMark aspect={guard.aspectId} size={16} decorative />
+        <span className={guard.ally ? "text-hud-ally" : "text-hud-bad"}>{aspectName(guard.aspectId)}</span>
+        <span>
+          · {DEEP_WORDS.guardsCount(guard.slots.length, nativeRuleConstants.DEEP_GUARD_SLOTS)} ·{" "}
+          {DEEP_WORDS.slotsOpen(free.length)}
+        </span>
+      </div>
       <div className="deep-guards">
         <div className="deep-guards__row">
           {filled.map((held) => {
@@ -272,7 +408,7 @@ const GuardStrip = ({
             </span>
           ))}
         </div>
-        {guardDrainLabel(guard.slots) && (
+        {drain && guardDrainLabel(guard.slots) && (
           <span data-deep-drain className="deep-drain">
             <Icon name="attack" size={16} />
             <span className="tabular-nums text-hud-bad">{guardDrainLabel(guard.slots)}</span>
@@ -300,7 +436,7 @@ const GuardStrip = ({
 
 const OrderFoot = ({ order }: { order: DeepOrder | DeepBlock }) => {
   if (typeof order === "string") return <HudWindowFoot note={DEEP_WORDS[order]} />;
-  if (order.kind === "closed") return <HudWindowFoot note={DEEP_WORDS.opensAt(order.realms)} />;
+  if (order.kind === "closed") return null;
   const footPrices = order.kind === "move" ? order.prices : undefined;
   return (
     <HudWindowFoot note={footPrices ? <HudPrice prices={footPrices} /> : undefined}>
