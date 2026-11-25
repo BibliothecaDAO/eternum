@@ -209,6 +209,31 @@ it("projects a late campaign source without marking any NFT as taken", () => {
 });
 
 describe("native directory", () => {
+  it("names each held realm's Aspect and whether it holds a Wonder, as the facts record them", () => {
+    const { fold, native } = world();
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("Structure", ["1", "7"], {
+          ...structureValue,
+          owner: "0x111",
+          base: { ...structureValue.base, category: "1" },
+          metadata: { ...structureValue.metadata, has_wonder: true },
+        }),
+        structure("8", "1", "0x111"),
+        rowEvent("HomeAspect", ["1", "7"], { aspect: 3n }),
+      ]),
+      11,
+      0,
+    );
+    const input = { chain: "madara", confirmedBlock: 11, timestamp: 30, fold, playerAddress: "0x111" };
+    const held = buildNativeDirectory(input).games.find((game) => game.game_id === 1)!.player_state!.structures;
+    expect(held.map(({ entity_id, aspect, has_wonder }) => ({ entity_id, aspect, has_wonder }))).toEqual([
+      { entity_id: 7, aspect: 3, has_wonder: true },
+      { entity_id: 8, aspect: null, has_wonder: false },
+    ]);
+  });
+
   it("reads native entries, structures and the clock without mirrored configuration rows", () => {
     const { fold, native } = world();
     native.applyReceipt(

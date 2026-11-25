@@ -25,6 +25,7 @@ import {
 } from "@bibliothecadao/eternum/game-sync";
 import {
   aspects,
+  catalogAspectId,
   seasonGameName,
   type AspectId,
   type NativeWorldBindings,
@@ -265,6 +266,11 @@ export const chainOf = (scenario: LabScenario): NativeFactStore => {
  * The player's row of the lab shard's directory, as Herald derives it from the chain: registered, and settled once the
  * chain holds a structure of theirs, each listed.
  */
+const homeAspect = (chain: NativeFactStore, home: bigint) => {
+  const row = chain.get("HomeAspect", { game_id: LAB_GAME.gameId, home });
+  return row ? catalogAspectId(row.aspect) : null;
+};
+
 const playerState = (chain: NativeFactStore, player: string) => {
   const structures = [...chain.rows("Structure")]
     .filter((structure) => BigInt(structure.owner) === BigInt(player))
@@ -276,6 +282,8 @@ const playerState = (chain: NativeFactStore, player: string) => {
       coord_x: null,
       coord_y: null,
       resources_packed: String(structure.resources_packed),
+      aspect: homeAspect(chain, structure.entity_id),
+      has_wonder: structure.metadata.has_wonder,
     }));
   const entitlements = [...chain.rows("EntryEntitlement")];
   const own = entitlements.find((row) => BigInt(row.owner) === BigInt(player));

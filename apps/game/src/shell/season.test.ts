@@ -38,7 +38,19 @@ const season = (gameId: number, startMainAt: number, ownRealm: boolean): Directo
     fragments: null,
     ancient_seal: false,
     structures: ownRealm
-      ? [{ entity_id: 1, category: 1, level: 1, realm_id: 7, coord_x: 0, coord_y: 0, resources_packed: "0" }]
+      ? [
+          {
+            entity_id: 1,
+            category: 1,
+            level: 1,
+            realm_id: 7,
+            coord_x: 0,
+            coord_y: 0,
+            resources_packed: "0",
+            aspect: null,
+            has_wonder: false,
+          },
+        ]
       : [],
   },
 });
@@ -61,7 +73,17 @@ describe("the season a screen shows", () => {
       player_state: {
         ...season(1, 100, false).player_state!,
         structures: [
-          { entity_id: 2, category: 5, level: 1, realm_id: 0, coord_x: 0, coord_y: 0, resources_packed: "0" },
+          {
+            entity_id: 2,
+            category: 5,
+            level: 1,
+            realm_id: 0,
+            coord_x: 0,
+            coord_y: 0,
+            resources_packed: "0",
+            aspect: null,
+            has_wonder: false,
+          },
         ],
       },
     };
