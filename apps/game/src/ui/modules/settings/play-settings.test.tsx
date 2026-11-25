@@ -4,6 +4,10 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 vi.mock("@/audio", () => ({ useAudio: () => ({ setMuted: vi.fn(), audioState: { muted: false } }) }));
 vi.mock("@/ui/layouts/hud-for", () => ({ hudFor: () => "frontier" }));
+vi.mock("@/config/game-modes", async (original) => ({
+  ...(await original<typeof import("@/config/game-modes")>()),
+  getGameModeId: () => "frontier",
+}));
 
 const { pageNavigation } = await import("@/utils/page-navigation");
 const { PlaySettings } = await import("./play-settings");
