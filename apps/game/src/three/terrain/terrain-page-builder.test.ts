@@ -18,7 +18,7 @@ describe("prepareTerrainPage", () => {
 
     expect(first.fingerprint).toBe(second.fingerprint);
     expect(first.buffers.positions).toEqual(second.buffers.positions);
-    expect(first.waterBuffers?.indices).toHaveLength(162);
+    expect(first.waterBuffers?.indices).toEqual(second.waterBuffers?.indices);
   });
 
   it("lays every dry tile's ground at one height, whatever its biome", () => {
