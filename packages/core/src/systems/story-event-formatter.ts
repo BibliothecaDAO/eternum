@@ -8,6 +8,7 @@ import {
   formatExact,
   formatGain,
   FRONTIER_TROOP_NAMES,
+  frontierTroopName,
   guardedSiteKind,
   GuardSlot,
   guardSlotName,
@@ -119,7 +120,7 @@ const archivedFormatters = {
     icon: "resource",
   }),
   FaithPointsClaimedStory: (_event, payload, components) => ({
-    title: "Faith points claimed",
+    title: "Faith points earned",
     description: joinPieces([
       describeStructureName(payload.wonder_id, components),
       `+${formatNumber(payload.new_points) ?? "—"} (${formatNumber(payload.total_points) ?? "—"} in all)`,
@@ -127,7 +128,7 @@ const archivedFormatters = {
     icon: "prize",
   }),
   FaithPledged: (_event, payload, components) => ({
-    title: "Faith pledged",
+    title: "Faith given",
     description: `${describeStructureName(payload.structure_id, components) ?? "—"} → ${describeStructureName(payload.wonder_id, components) ?? "—"}`,
     icon: "realm",
   }),
@@ -176,13 +177,13 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
             `${siteDisplayName(site.id)} found`,
             `${playerOf(event, components, resolvePlayerName)} found ${siteDisplayName(site.id)}`,
             payload,
-            isFrontierStore(components),
+            isFrontier(components),
           )
         : findLine(
             "Explored",
             `${playerOf(event, components, resolvePlayerName)} explored`,
             payload,
-            isFrontierStore(components),
+            isFrontier(components),
           ),
       description: joinPieces([
         site?.kind,
@@ -197,7 +198,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
       "Dormant spire found",
       `${playerOf(event, components, resolvePlayerName)} found a dormant spire`,
       payload,
-      isFrontierStore(components),
+      isFrontier(components),
     ),
     description: joinPieces([
       describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
@@ -226,7 +227,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     const reward =
       payload.reward === null
         ? "No resource reward"
-        : formatResourceList([payload.reward], isFrontierStore(components));
+        : formatResourceList([payload.reward], isFrontier(components));
     if (!reward) throw new Error("Incomplete site resource reward");
     const siteId = toNumber(payload.site_id);
     if (siteId === null) throw new Error("Site payout story names no site");
@@ -265,19 +266,19 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
       title: isViewer(event.ownerAddress, event.viewerAddress ?? null)
         ? "LORDS withdrawn"
         : `${playerOf(event, components, resolvePlayerName)} withdrew LORDS`,
-      description: `${formatCharge(amount)} LORDS to L2`,
+      description: `${formatCharge(amount)} LORDS to wallet`,
       icon: "prize",
     };
   },
   RealmCreatedStory: (event, payload, components, resolvePlayerName) => {
-    const coord = isFrontierStore(components) ? undefined : formatCoord(payload.coord);
+    const coord = isFrontier(components) ? undefined : formatCoord(payload.coord);
     const ownerLabel = nameOwner(event.ownerAddress, components, resolvePlayerName);
     const realm = describeStructureName(event.entityId, components);
     return {
       // Another player's realm, which this client never synced, is told by its settler.
       title: realm ? `${realm} created` : `${ownerLabel ?? "Someone"} created a Realm`,
       description: joinPieces([
-        realm && ownerLabel ? `Settled by ${ownerLabel}` : undefined,
+        realm && ownerLabel ? `Created by ${ownerLabel}` : undefined,
         coord ? `at ${coord}` : undefined,
       ]),
       icon: "realm",
@@ -299,7 +300,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
   },
   // Paid in the same transaction as the building it pays for: the same action, told by the same title.
   BuildingPaymentStory: (event, payload, components, resolvePlayerName) => {
-    const cost = formatResourceList(payload.cost, isFrontierStore(components));
+    const cost = formatResourceList(payload.cost, isFrontier(components));
     const building = formatBuildingCategory(payload.category, components) ?? "Building";
     const at = describeEntity(event.entityId, components);
     return {
@@ -313,8 +314,8 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
   ProductionStory: (event, payload, components, resolvePlayerName) => {
     const receivedId = toNumber(payload.received_resource_type);
     const amount = formatResourceAmount(payload.received_amount);
-    const cost = formatResourceList(payload.cost, isFrontierStore(components));
-    const made = receivedId !== null ? resourceName(receivedId, isFrontierStore(components)) : "Resource";
+    const cost = formatResourceList(payload.cost, isFrontier(components));
+    const made = receivedId !== null ? resourceName(receivedId, isFrontier(components)) : "Resource";
     const at = describeEntity(event.entityId, components);
     return {
       title: at
@@ -336,7 +337,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
   BattleEvent: (event, payload, store, resolvePlayerName) => {
     const attacker = payload.attacker as Record<string, unknown>;
     const defender = payload.defender as Record<string, unknown>;
-    const frontier = isFrontierStore(store);
+    const frontier = isFrontier(store);
     const attackerName = nameFightParticipant(attacker.player, payload.attacker_id, store, resolvePlayerName);
     const defenderName = nameFightParticipant(defender.player, payload.defender_id, store, resolvePlayerName);
     const outcome = frontier
@@ -376,7 +377,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
   RaidEvent: (_, payload, components) => ({
     title: `Raid on ${subjectOf(payload.structure_id, components)} ${payload.success ? "succeeded" : "repelled"}`,
     description: payload.success
-      ? formatResourceList(payload.requested_loot, isFrontierStore(components))
+      ? formatResourceList(payload.requested_loot, isFrontier(components))
       : "Nothing taken",
     icon: "battle",
   }),
@@ -391,7 +392,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
         : `Resources sent${destination ? ` to ${destination}` : ""}`,
       description: joinPieces([
         source && !minted ? `from ${source}` : undefined,
-        formatResourceList(payload.resources, isFrontierStore(components)),
+        formatResourceList(payload.resources, isFrontier(components)),
         formatLanding(event.timestamp, payload.travel_time),
       ]),
       icon: "resource",
@@ -401,12 +402,12 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     const at = describeEntity(event.entityId, components);
     return {
       title: at ? `Resources spent at ${at}` : `${playerOf(event, components, resolvePlayerName)} spent resources`,
-      description: formatResourceList(payload.resources, isFrontierStore(components)),
+      description: formatResourceList(payload.resources, isFrontier(components)),
       icon: "resource",
     };
   },
   ResourceReceiveArrivalStory: (event, payload, components, resolvePlayerName) => ({
-    title: `${formatResourceList(payload.resources, isFrontierStore(components)) ?? "Resources"} arrived at ${
+    title: `${formatResourceList(payload.resources, isFrontier(components)) ?? "Resources"} arrived at ${
       describeEntity(event.entityId, components) ?? `${playerOf(event, components, resolvePlayerName)}'s realm`
     }`,
     icon: "resource",
@@ -417,7 +418,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
       title: at
         ? `${at}'s ${formatSlotLabel(payload.slot) ?? "guard"} reinforced`
         : `${playerOf(event, components, resolvePlayerName)} reinforced the ${formatSlotLabel(payload.slot) ?? "guard"}`,
-      description: describeTroops(payload, "+", isFrontierStore(components)),
+      description: describeTroops(payload, "+", isFrontier(components)),
       icon: "troop",
     };
   },
@@ -425,8 +426,8 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     const at = describeEntity(payload.structure_id ?? event.entityId, components);
     return {
       title: at
-        ? `${at}'s ${formatSlotLabel(payload.slot) ?? "guard"} dismissed`
-        : `${playerOf(event, components, resolvePlayerName)} dismissed the ${formatSlotLabel(payload.slot) ?? "guard"}`,
+        ? `${at}'s ${formatSlotLabel(payload.slot) ?? "guard"} removed`
+        : `${playerOf(event, components, resolvePlayerName)} removed the ${formatSlotLabel(payload.slot) ?? "guard"}`,
       icon: "troop",
     };
   },
@@ -434,7 +435,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     const at = describeEntity(payload.structure_id ?? event.entityId, components);
     return {
       title: at ? `Army raised at ${at}` : `${playerOf(event, components, resolvePlayerName)} raised an army`,
-      description: describeTroops(payload, "", isFrontierStore(components)),
+      description: describeTroops(payload, "", isFrontier(components)),
       icon: "troop",
     };
   },
@@ -442,14 +443,14 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     const army = nameArmy(payload.explorer_id, components);
     return {
       title: army ? `${army} reinforced` : `${playerOf(event, components, resolvePlayerName)} reinforced an army`,
-      description: describeTroops(payload, "+", isFrontierStore(components)),
+      description: describeTroops(payload, "+", isFrontier(components)),
       icon: "troop",
     };
   },
   ExplorerDeleteStory: (event, payload, components, resolvePlayerName) => {
     const army = nameArmy(payload.explorer_id, components);
     return {
-      title: army ? `${army} disbanded` : `${playerOf(event, components, resolvePlayerName)} disbanded an army`,
+      title: army ? `${army} deleted` : `${playerOf(event, components, resolvePlayerName)} deleted an army`,
       icon: "troop",
     };
   },
@@ -516,7 +517,7 @@ function isOwner(address: unknown, owner: unknown): boolean {
   return player !== null && player !== 0n && player === toBigIntSafe(owner);
 }
 
-const isFrontierStore = (store: NativeFactStore | undefined): boolean =>
+const isFrontier = (store: NativeFactStore | undefined): boolean =>
   store !== undefined && readExpeditionRules(store, configManager.getActiveGameId()) !== null;
 
 /** A building's name as its game names it (buildingName): a Frontier story says "Barracks" where Blitz says "Knight T1". */
@@ -526,13 +527,13 @@ function formatBuildingCategory(value: unknown, store: NativeFactStore | undefin
     const label = formatEnum(value);
     return label ?? undefined;
   }
-  return buildingName(numeric, isFrontierStore(store));
+  return buildingName(numeric, isFrontier(store));
 }
 
 /** What each change a placement story carries (the contract's BuildingChange) reads as. */
-const BUILDING_STATUS: Record<string, "built" | "demolished" | "paused" | "resumed"> = {
+const BUILDING_STATUS: Record<string, "built" | "deleted" | "paused" | "resumed"> = {
   Created: "built",
-  Destroyed: "demolished",
+  Destroyed: "deleted",
   Paused: "paused",
   Resumed: "resumed",
 };
@@ -560,6 +561,8 @@ function describeTroops(payload: Record<string, unknown>, sign: "+" | "", fronti
 function describeTroopKind(troops: Record<string, unknown>, frontier: boolean): string | undefined {
   const category = formatEnum(troops.category);
   if (!category || !(category in FRONTIER_TROOP_NAMES)) return category ?? undefined;
+  const scaled = amountToBigInt(troops.amount);
+  if (frontier) return frontierTroopName(category, scaled === null ? undefined : scaledToUnits(scaled));
   return troopName(category as TroopType, formatEnum(troops.tier) ?? TroopTier.T1, frontier);
 }
 
@@ -658,7 +661,7 @@ function describeArmyName(explorerId: unknown, components?: NativeFactStore, hom
   const explorer = readExplorer(explorerId, components);
   const home = describeStructureName(explorer?.owner ?? homeStructureId, components);
   const tier = formatEnum(explorer?.troops?.tier);
-  if (isFrontierStore(components)) return home ?? null;
+  if (isFrontier(components)) return home ?? null;
   return home && tier ? `${home} ${tier}` : null;
 }
 
@@ -946,7 +949,7 @@ function nameFightParticipant(
   resolvePlayerName?: PlayerNameResolver,
 ): string | undefined {
   const siteId = toNumber(entityId);
-  if (toBigIntSafe(owner) === 0n && siteId !== null && isFrontierStore(store)) return siteDisplayName(siteId);
+  if (toBigIntSafe(owner) === 0n && siteId !== null && isFrontier(store)) return siteDisplayName(siteId);
   return nameOwner(owner, store, resolvePlayerName);
 }
 

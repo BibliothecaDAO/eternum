@@ -15,11 +15,7 @@ import {
   runRendererAnimationTick,
   type RendererFrameFailureCircuit,
 } from "./renderer-animation-runtime";
-import {
-  resolveRendererPixelRatioCap,
-  resolveRendererTargetPixelRatio,
-  resizeRendererDisplay,
-} from "./renderer-display-runtime";
+import { resolveRendererTargetPixelRatio, resizeRendererDisplay } from "./renderer-display-runtime";
 import { type RendererBackendFactory, type RendererSurfaceLike } from "./renderer-backend";
 import { initializeRendererBackendRuntime } from "./renderer-backend-runtime";
 import { rebootAfterDeviceLoss } from "./renderer-device-loss-recovery";
@@ -105,7 +101,6 @@ export default class GameRenderer {
       isMobileDevice: this.isMobileDevice,
       ownPage: (owns) => this.ownPage(owns),
       rendererOwner: this,
-      resolvePixelRatio: (pixelRatio) => this.resolvePixelRatio(pixelRatio),
       resolveRuntimeState: () => this.resolveRuntimeState(),
       windowObject: window,
       windowResizeListener: this.handleWindowResize,
@@ -154,6 +149,7 @@ export default class GameRenderer {
       isMobileDevice: this.isMobileDevice,
       onDeviceLost: (event) => this.handleRendererDeviceLost(event),
       pixelRatio: this.getTargetPixelRatio(),
+      postProcessing: renderProfile.visuals.postProcessing,
       search: window.location.search,
     });
     if (this.isDestroyed) {
@@ -296,12 +292,9 @@ export default class GameRenderer {
   }
   private getTargetPixelRatio() {
     return resolveRendererTargetPixelRatio({
-      devicePixelRatio: window.devicePixelRatio || 1,
+      devicePixelRatio: window.devicePixelRatio,
+      cap: renderProfile.visuals.pixelRatio,
     });
-  }
-
-  public resolvePixelRatio(pixelRatio: number): number {
-    return Math.min(pixelRatio, resolveRendererPixelRatioCap());
   }
 
   onWindowResize() {

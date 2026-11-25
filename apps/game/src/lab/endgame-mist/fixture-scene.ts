@@ -109,7 +109,7 @@ export class EndgameFixtureScene {
           tier: TroopTier.T1,
           entityId: i * 2 + j + 1,
           isNaval: false,
-          position: new Vector3(w.x, terrain.sampleSurface(w.x, w.z).height, w.z),
+          position: new Vector3(w.x, terrain.sampleHeight(w.x, w.z), w.z),
           rotation: new Euler(0, i, 0),
           primaryColor: i % 2 ? "#a33b39" : "#e1b955",
         };
@@ -143,7 +143,7 @@ export class EndgameFixtureScene {
     const matrix = new Matrix4();
     sites.forEach((p, i) => {
       const w = terrainHexToWorld(p.col, p.row);
-      matrix.makeRotationY(i * 0.6).setPosition(w.x, terrain.sampleSurface(w.x, w.z).height + 0.025, w.z);
+      matrix.makeRotationY(i * 0.6).setPosition(w.x, terrain.sampleHeight(w.x, w.z) + 0.025, w.z);
       realms.setMatrixAt(i, matrix);
       realms.setRelationshipAt(i, p === this.fixture.realm ? "owned" : "enemy");
       realms.setOrderAt(i, (i % 16) + 1);

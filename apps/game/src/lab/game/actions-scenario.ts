@@ -15,6 +15,7 @@ import {
   BUILDINGS_CENTER,
   getNeighborOffsets,
   RESOURCE_PRECISION,
+  ResourcesIds,
   TileOccupier,
   TROOP_TYPES,
   TROOP_TIERS,
@@ -33,6 +34,8 @@ import { realmScenario } from "./realm-scenario";
 import { armySpent, balancesPaid, revealedTile } from "./spire-scenario";
 
 type Hex = { col: number; row: number };
+
+const REVEAL_PAY = 91n * BigInt(RESOURCE_PRECISION);
 type Answer = (command: LabCommand, chain: NativeFactStore, now: number) => LabFact[];
 
 /**
@@ -95,9 +98,11 @@ const exploreTile: Answer = (command, chain, now) => {
   const explorerId = BigInt(command.fields.explorer_id);
   const from = chain.entityOccupancy(1, Number(explorerId))!;
   const to = walk(from, [Number(command.fields.direction)]);
+  const home = BigInt(chain.require("ExplorerTroops", { game_id: 1, explorer_id: explorerId }).owner);
   return [
     revealedTile(`0x1ae${to.col}${to.row}`, to, BiomeType.Grassland),
     ...occupancyMoved(chain, explorerId, to),
+    ...revealPaid(chain, explorerId, home, to, now),
     armySpent(
       chain,
       explorerId,
@@ -108,6 +113,37 @@ const exploreTile: Answer = (command, chain, now) => {
       ),
       now,
     ),
+  ];
+};
+
+const revealPaid = (chain: NativeFactStore, explorerId: bigint, home: bigint, to: Hex, now: number): LabFact[] => {
+  const [key, held] = [...chain.entries("ResourceBalance")].find(
+    ([, row]) => row.entity_id === home && row.resource_type === ResourcesIds.Labor,
+  )!;
+  const owner = chain.require("Structure", { game_id: 1, entity_id: home }).owner;
+  return [
+    { model: "ResourceBalance", key, value: wire({ ...held, balance: held.balance + REVEAL_PAY }) },
+    {
+      model: "StoryEvent",
+      key: `reveal-${to.col}-${to.row}`,
+      value: wire({
+        version: 1,
+        game_id: 1,
+        owner,
+        entity_id: home,
+        tx_hash: "0x0",
+        story: {
+          ExplorationReward: {
+            explorer_id: explorerId,
+            receiver: home,
+            coord: { alt: false, x: to.col, y: to.row },
+            resource_type: ResourcesIds.Labor,
+            amount: REVEAL_PAY,
+          },
+        },
+        timestamp: now,
+      }),
+    },
   ];
 };
 

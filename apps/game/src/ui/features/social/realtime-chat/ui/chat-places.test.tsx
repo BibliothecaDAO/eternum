@@ -252,7 +252,7 @@ afterEach(() => {
 });
 
 const chip = (id: string) => host.querySelector<HTMLElement>(`li[data-message-id="${id}"] [data-place]`)!;
-const placeButton = () => host.querySelector<HTMLButtonElement>('button[aria-label="Share the selected place"]')!;
+const placeButton = () => host.querySelector<HTMLButtonElement>('button[aria-label="Share selected place"]')!;
 const type = (text: string) =>
   act(() => {
     const field = host.querySelector<HTMLInputElement>('input[aria-label="Message"]')!;
@@ -414,7 +414,7 @@ describe("places in chat, in a Frontier game", () => {
   it("takes the place off with its cross", async () => {
     act(() => useUIStore.getState().selectOnMap({ kind: "structure", entityId: REALM }));
     act(() => placeButton().click());
-    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Take the place off"]')!.click());
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Remove place"]')!.click());
     type("no place");
     await send();
     expect(sendWorldMessage).toHaveBeenCalledWith(GLOBAL_CHAT_CHANNEL_ID, {

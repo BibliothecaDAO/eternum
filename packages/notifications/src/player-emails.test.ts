@@ -28,7 +28,7 @@ describe("the sign-in code email", () => {
       sender: "Realms",
       to: "lord@realms.test",
       subject: "552467 is your Realms sign-in code",
-      text: "Your Realms sign-in code is 552467. It expires in 10 minutes. If you did not ask for it, you can ignore this email.",
+      text: "Your Realms sign-in code is 552467. It expires in 10 minutes. If you did not request this code, you can ignore this email.",
     });
   });
 
@@ -95,9 +95,9 @@ describe("the wallet recovery email", () => {
       idempotencyKey: "notice-3",
     });
     expect(email).toMatchObject({
-      subject: "A recovery of your Realms wallet started",
+      subject: "Realms wallet recovery started",
       idempotencyKey: "notice-3",
-      text: `A new passkey takes over your Realms wallet ${WALLET} in 7 days. If you did not start it, open Realms, Settings, Payout wallet, and cancel it with your passkey.`,
+      text: `A new passkey will take over your Realms wallet ${WALLET} in 7 days. If you did not start this recovery, open Realms, go to You → Wallet & Devices → Payout wallet, and cancel it with your passkey.`,
     });
     expect(email.html).toContain(`>${WALLET}</td>`);
     expect(email.html).toContain('alt="Realms: Recovery started"');

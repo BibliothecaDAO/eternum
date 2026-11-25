@@ -126,7 +126,7 @@ export const PLAIN_WORDS: readonly PlainWord[] = [
   { concept: "Create a Realm or Tribe", word: "Create" },
   { concept: "Your base", word: "Realm" },
   { concept: "Join an Aspect or Tribe", word: "Join" },
-  { concept: "Use an invite or gift code", word: "Use code" },
+  { concept: "Use an invite or gift code", word: "Apply / Use code" },
   { concept: "Train troops at a building", word: "Train" },
   { concept: "Send an army onto the map", word: "Deploy" },
   { concept: "Move an army", word: "Move" },
@@ -153,7 +153,7 @@ export const PLAIN_WORDS: readonly PlainWord[] = [
   { concept: "Multipliers", word: "150% / 200%" },
   { concept: "Short of resources", word: "Not enough" },
   { concept: "Troops ready to deploy", word: "Available" },
-  { concept: "Loading or network failure", word: "Could not load / Failed" },
+  { concept: "Loading or network failure", word: "Could not load / Unavailable / Failed" },
   { concept: "In-progress state", word: "Loading / Sending / In progress" },
 ];
 
@@ -213,10 +213,10 @@ export const BANNED_WORDS: readonly BannedWord[] = [
   },
   {
     banned: "redeem",
-    use: "use code",
+    use: "apply / use code",
     pattern: /\bredeem(?:ed|ing)?\b/i,
     bad: "Redeem",
-    good: "Use code",
+    good: "Apply",
   },
   {
     banned: "disband",
@@ -283,10 +283,10 @@ export const BANNED_WORDS: readonly BannedWord[] = [
   },
   {
     banned: "did not answer",
-    use: "could not load",
+    use: "unavailable",
     pattern: /\bdid not answer\b/i,
     bad: "Season did not answer.",
-    good: "Could not load Season.",
+    good: "Season unavailable.",
   },
   {
     banned: "could not be read",

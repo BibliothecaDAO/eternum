@@ -18,7 +18,7 @@ import { DeepArenaManager } from "../managers/deep-arena-manager";
 import { activeMapLayer } from "@/three/map-layer";
 import type { ReactNode } from "react";
 import { isMapPreviewAction } from "./worldmap-action-preview-policy";
-import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
+import { projectHexEastEdgeToScreen, projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { playRevealYield } from "@/ui/motion/moments/reveal-yield";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
 import { canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
@@ -62,7 +62,7 @@ import { OwnershipRingLayer } from "@/three/managers/ownership-ring-layer";
 import { bindOwnershipRings } from "./worldmap-ownership-rings";
 import { bindMapSelection } from "./worldmap-map-selection";
 import { reportSelectedArmy } from "./worldmap-selected-army-report";
-import { ORDER_PREVIEW_SURFACE, OrderPreview } from "./worldmap-order-preview";
+import { ORDER_PREVIEW_SURFACE, OrderPreview, type RefusedOrder } from "./worldmap-order-preview";
 import { StructureManager } from "@/three/managers/structure-manager";
 import { FrameBudgetWorkQueue, type FrameBudgetWorkLane } from "@/three/frame-budget-work-queue";
 import { SceneManager } from "@/three/scene-manager";
@@ -156,10 +156,12 @@ import {
   getBlockTimestamp,
   findArmyReach,
   getTileAt,
+  isSupplyPost,
   type OrderRefusal,
   recordArmyMovementLatencyPhase,
   SelectableArmy,
   StaminaManager,
+  StructureActionManager,
 } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { inFlight } from "@/hooks/store/use-actions-in-flight";
@@ -309,7 +311,13 @@ import {
 } from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
 import { hudLayoutNow } from "@/hooks/helpers/use-compact-hud";
-import { type OrderTip, orderFood, orderTip, refusedOrderVerb } from "@/ui/features/frontier/hud/order-tip";
+import {
+  type OrderTip,
+  orderFood,
+  orderTip,
+  orderRefusalReason,
+  refusedOrderVerb,
+} from "@/ui/features/frontier/hud/order-tip";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
@@ -2248,11 +2256,6 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
-  /**
-   * A paid reveal shows its yield on the revealed tile (design §3.11 §4): the player's own flies home to its banked
-   * counter, anyone else's pops and rises with its amount. The event only starts the flourish; counters roll to the
-   * balance fact.
-   */
   private handleExplorerRewardEvent(update: ExplorerRewardSystemUpdate): void {
     if (this.isRewardDebugEnabled()) {
       console.debug("[ExplorerRewardEvent] update", update);
@@ -2265,7 +2268,7 @@ export default class WorldmapScene extends WarpTravel {
     playRevealYield({
       resourceId,
       amount,
-      from: projectHexToScreen({ col: tile.x, row: tile.y }, this.camera),
+      from: projectHexEastEdgeToScreen({ col: tile.x, row: tile.y }, this.camera),
       own: ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress),
     });
   }
@@ -2669,6 +2672,12 @@ export default class WorldmapScene extends WarpTravel {
       ? this.getHexagonEntity(hexCoords)
       : { army: undefined, structure: undefined };
     const army = standingArmy ?? (hexCoords ? this.getOwnArmyOrderedTo(hexCoords) : undefined);
+    const post = hexCoords && !army ? this.ownSupplyPostAt(hexCoords) : null;
+    if (hexCoords && post !== null) {
+      this.handleHexSelection(hexCoords, true);
+      this.onStructureSelection(post, hexCoords);
+      return;
+    }
     const clickPlan = resolveWorldmapHexClickPlan({
       hexCoords,
       accountAddress: viewer,
@@ -2966,8 +2975,13 @@ export default class WorldmapScene extends WarpTravel {
     this.previewedOrder = { army, hex: hexCoords, tip, refused: refusal.reason };
     this.openTargetActionSurface(contractHexOf(hexCoords), {
       id: ORDER_PREVIEW_SURFACE,
-      content: <OrderPreview tip={tip} refusal={reason} />,
+      content: <OrderPreview tip={tip} refused={this.refusedOrderAt(refusal)} />,
     });
+  }
+
+  private refusedOrderAt(refusal: OrderRefusal): RefusedOrder {
+    const short = refusal.reason === "stamina" ? this.selectedArmyShortOf(refusal.need) : undefined;
+    return { why: refusal.reason, reason: orderRefusalReason(refusal, short) };
   }
 
   /** The preview's verb sends the order the player read, and only while it still is the army's order at that tile. */
@@ -3590,7 +3604,7 @@ export default class WorldmapScene extends WarpTravel {
       this.openTargetCardForSelectedArmy(targetHex);
       return;
     }
-    if (this.isFrontierHud() && selected.structure && target.army) {
+    if (this.isFrontierHud() && (selected.structure || this.isOwnSupplyPost(selectedEntityId)) && target.army) {
       this.state.selectOnMap({ kind: "structure", entityId: selectedEntityId, tile: targetHex });
       this.state.updateEntityActionHoveredHex(null);
       return;
@@ -3624,7 +3638,8 @@ export default class WorldmapScene extends WarpTravel {
 
     if (!hexCoords) return;
 
-    this.showSelectedStructure(selectedEntityId, hexCoords);
+    const post = this.isOwnSupplyPost(selectedEntityId);
+    if (!post) this.showSelectedStructure(selectedEntityId, hexCoords);
 
     const structureData = this.game.store.get("Structure", {
       game_id: configManager.getActiveGameId(),
@@ -3633,7 +3648,7 @@ export default class WorldmapScene extends WarpTravel {
     const viewer = accountAddress();
 
     const canIssueStructureOrders =
-      canIssueOrders() && Boolean(structureData && isAddressEqualToAccount(structureData.owner));
+      canIssueOrders() && (post || Boolean(structureData && isAddressEqualToAccount(structureData.owner)));
     if (viewer === null || !canIssueStructureOrders) {
       this.updateEntityActionPaths(new Map());
       this.highlightHexManager.highlightHexes([]);
@@ -3641,8 +3656,9 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    const actionPaths =
-      this.deployShown?.order.structureId === Number(selectedEntityId) && structureData
+    const actionPaths = post
+      ? this.ordersBesideSupplyPost(contractHexOf(hexCoords), viewer)
+      : this.deployShown?.order.structureId === Number(selectedEntityId) && structureData
         ? this.deployTilesOf(structureData)
         : this.ordersBesideStructure(selectedEntityId, viewer);
     this.updateEntityActionPaths(actionPaths.getPaths());
@@ -3697,6 +3713,38 @@ export default class WorldmapScene extends WarpTravel {
       }
     }
     return actionPaths;
+  }
+
+  private ordersBesideSupplyPost(post: HexPosition, viewer: ContractAddress): ActionPaths {
+    return new StructureActionManager().findActionPaths(
+      post,
+      this.buildProjectedArmyActionIndex(),
+      this.buildProjectedExploredTileIndex(),
+      viewer,
+      () => true,
+      false,
+    );
+  }
+
+  private ownSupplyPostAt(hexCoords: HexPosition): ID | null {
+    const { col, row } = contractHexOf(hexCoords);
+    const tile = getTileAt(this.game.store, activeMapLayer(), col, row);
+    if (tile?.occupier_type !== TileOccupier.SupplyPost) return null;
+    return this.isOwnSupplyPost(tile.occupier_id) ? safeInteger(tile.occupier_id) : null;
+  }
+
+  private isOwnSupplyPost(entityId: ID | bigint): boolean {
+    const gameId = configManager.getActiveGameId();
+    const site = this.game.store.get("ExpeditionSite", { game_id: gameId, entity_id: entityId });
+    const realm = site?.clear
+      ? this.game.store.get("Structure", { game_id: gameId, entity_id: site.clear.home_id })
+      : undefined;
+    return (
+      site !== undefined &&
+      realm !== undefined &&
+      isAddressEqualToAccount(realm.owner) &&
+      isSupplyPost(this.game.store, site, realm.entity_id, getBlockTimestamp().currentDefaultTick)
+    );
   }
 
   /** The tiles a shown deploy order can step out on, read as its sheet reads them (spawnRing over the same tiles). */

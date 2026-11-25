@@ -7,6 +7,7 @@ import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { dayOf } from "@bibliothecadao/eternum";
+import { TroopType } from "@bibliothecadao/types";
 
 import { OpeningProvider } from "../opening/opening-context";
 import { EARLY_REALM, MID_REALM } from "../research/progression-fixture";
@@ -16,12 +17,13 @@ import { ArmyCard, OpenSlotCard } from "./army-row";
 import { ArmyToken, OpenSlot } from "./army-token";
 import { useChatKey } from "./chat-key";
 import { dayClock, dayBounds, endedDay, seasonDay } from "./day-clock";
+import { armyName } from "./dock-armies";
 import { HudBands } from "./hud-bands";
 import { useOnePanel } from "./one-panel";
 import { MenuPage } from "./menu-page";
 import { OrderBar } from "./order-bar";
 import { PickedArmy } from "./picked-army";
-import { DayMedallion } from "./day-pill";
+import { DayPill } from "./day-pill";
 import { RealmCard } from "./realm-card";
 import { TopBarView } from "./phone-top-bar";
 import { PhoneTabBar } from "./frontier-nav";
@@ -115,7 +117,7 @@ describe("the status strip", () => {
       3_600,
     );
     const clock = { ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 };
-    const markup = renderToStaticMarkup(<DayMedallion clock={clock} />);
+    const markup = renderToStaticMarkup(<DayPill clock={clock} />);
     expect(markup).toContain(`aria-label="Day ${day.day}`);
     expect(text(markup)).toContain("24h");
     expect(markup).not.toMatch(/\b1d\b/);
@@ -132,23 +134,23 @@ describe("the status strip", () => {
       },
       3_600,
     );
-    const morning = renderToStaticMarkup(<DayMedallion clock={{ ...day, shareLeft: 0.75, tone: "calm" }} />);
+    const morning = renderToStaticMarkup(<DayPill clock={{ ...day, shareLeft: 0.75, tone: "calm" }} />);
     expect(text(morning)).not.toContain("Day ends");
     expect(text(morning)).not.toContain("Tomorrow lasts");
     expect(morning).toContain("text-hud-ink");
     expect(morning).not.toContain("text-hud-bad");
     expect(morning).toContain('data-fill-share="25"');
     const lastHour = renderToStaticMarkup(
-      <DayMedallion clock={{ ...day, secondsLeft: 600, shareLeft: 0.05, tone: "ember" }} />,
+      <DayPill clock={{ ...day, secondsLeft: 600, shareLeft: 0.05, tone: "ember" }} />,
     );
     expect(lastHour).toContain(`aria-label="Day ${day.day}`);
     expect(text(lastHour)).toContain("10m");
     expect(lastHour).toContain("text-hud-bad");
     expect(lastHour).toContain('data-fill-share="95"');
-    expect(lastHour).toContain("/images/hud/day-medallion-ember.webp");
+    expect(lastHour).toContain('data-tone="ember"');
   });
 
-  it("draws the phone's day on its bronze disc: the day, the hours left inside it, the ember disc in the last hour", () => {
+  it("draws the phone's day as a short pill: D and the day, the time left under it, the ember tone in the last hour", () => {
     const day = dayClock(
       {
         dayUnitSeconds: 4 * 3_600,
@@ -159,14 +161,13 @@ describe("the status strip", () => {
       },
       3_600,
     );
-    act(() =>
-      root.render(<DayMedallion clock={{ ...day, secondsLeft: 900, shareLeft: -0.2, tone: "ember" }} size={52} />),
-    );
+    act(() => root.render(<DayPill clock={{ ...day, secondsLeft: 900, shareLeft: -0.2, tone: "ember" }} compact />));
     const timer = host.querySelector('[role="timer"]')!;
-    expect(timer.getAttribute("data-size")).toBe("52");
-    expect(timer.querySelector("img")?.getAttribute("src")).toBe("/images/hud/day-disc-ember.webp");
-    expect(timer.querySelector(".frontier-day-dial__numeral")?.textContent).toBe(String(day.day));
-    expect(timer.querySelector(".frontier-day-dial__left")?.textContent).toBe("15m");
+    expect(timer.getAttribute("data-tone")).toBe("ember");
+    expect(timer.querySelector(".frontier-day-pill__day")?.textContent).toBe(`D${day.day}`);
+    expect(timer.querySelector(".frontier-day-pill__left")?.textContent).toBe("15m");
+    expect(timer.querySelector(".frontier-progress-ring")).toBeNull();
+    expect(timer.querySelector<HTMLElement>(".frontier-day-pill__share")?.style.width).toBe("100%");
     expect(timer.getAttribute("aria-label")).toContain(`Day ${day.day} · 15m left`);
     expect(timer.getAttribute("data-tip")).toContain("15m left");
   });
@@ -186,7 +187,7 @@ describe("the status strip", () => {
     act(() =>
       root.render(
         <TopBarView
-          clock={<DayMedallion clock={day} size={52} />}
+          clock={<DayPill clock={day} compact />}
           stocks={{
             realmName: "Duskbite",
             onOpenRealm,
@@ -197,14 +198,14 @@ describe("the status strip", () => {
               store("troops", 1_500, 3_000),
             ],
           }}
-          placeMenu={<button type="button">Places</button>}
+          placeSwitch={<button type="button">Places</button>}
           notice={<aside aria-label="Lesson" />}
           quest={<button type="button">Quest</button>}
         />,
       ),
     );
     const bar = host.querySelector(".frontier-bar")!;
-    expect([...bar.children].map((part) => part.textContent)).toEqual(["Places", "125K9K3K", "Day111h"]);
+    expect([...bar.children].map((part) => part.textContent)).toEqual(["Places", "125K9K3K", "D111h"]);
     const realm = bar.querySelector<HTMLButtonElement>('button[aria-label="Duskbite"]')!;
     expect([...realm.querySelectorAll(".frontier-stock-chip")].map((chip) => chip.getAttribute("data-store"))).toEqual([
       "essence",
@@ -411,16 +412,17 @@ describe("the phone tab bar", () => {
     expect(barButtons()).toEqual(["Season", "Chat", "Menu"]);
   });
 
-  it("names the picked army and counts its troops in a chip, no troop words beside them", () => {
+  it("names an army by its troops, and the picked army by that name alone, with no chip for the count", () => {
+    expect(armyName(TroopType.Paladin, 6_938)).toBe("6,938 Scouts");
+    expect(armyName(TroopType.Crossbowman, 1)).toBe("1 Crossbows");
     act(() =>
       root.render(
         <PickedArmy
           army={{
             explorerId: 7,
-            label: "Army 1",
+            label: armyName(TroopType.Paladin, 400),
             number: 1,
             art: "paladin-t1",
-            troops: 400,
             stamina: { current: 100, max: 100, perExplore: 10 },
             secondsToFull: 0,
             ethereal: undefined,
@@ -430,9 +432,8 @@ describe("the phone tab bar", () => {
         />,
       ),
     );
-    expect(host.querySelector(".army-tray__name")?.textContent).toBe("Army 1");
-    expect(host.querySelector(".army-tray__troops")?.textContent).toBe("400");
-    expect(host.textContent).not.toMatch(/Scouts|Paladins/);
+    expect(host.querySelector(".army-tray__name")?.textContent).toBe("400 Scouts");
+    expect(host.querySelector(".ui-chip")).toBeNull();
   });
 
   it("orders HUD_PLACES as the cornice does", () => {
@@ -728,7 +729,7 @@ it.each([81, 84, 85])("shows the last %ih day with its real countdown and no tom
   const clock = dayClock(calendar, endAt - 600);
   const day = hours === 81 ? 10 : 11;
   expect(clock).toMatchObject({ day, endsAt: endAt, secondsLeft: 600, tomorrowSeconds: undefined, tone: "ember" });
-  const markup = renderToStaticMarkup(<DayMedallion clock={clock} />);
+  const markup = renderToStaticMarkup(<DayPill clock={clock} />);
   expect(markup).toContain(`aria-label="Day ${day}`);
   expect(text(markup)).toContain("10m");
   expect(markup).not.toContain("Tomorrow");
@@ -744,31 +745,31 @@ describe("the offline banner", () => {
     useConnectionStore.getState().setGlobalStatus("connected");
   });
 
-  it("renders the reconnecting alert with its Retry action", () => {
+  it("offers no retry while the client retries by itself, and one that retries once it gave up", () => {
     const onRetry = vi.fn();
     act(() => root.render(<OfflineBanner onRetry={onRetry} />));
-    const banner = host.querySelector<HTMLElement>('[data-offline-banner][role="alert"]')!;
-    expect(banner).not.toBeNull();
-    expect(banner.textContent).toContain("Reconnecting…");
-    const retry = banner.querySelector<HTMLButtonElement>("button")!;
-    expect(retry.textContent).toBe("Retry");
-    act(() => retry.click());
+    const reconnecting = host.querySelector<HTMLElement>('[data-offline-banner][role="alert"]')!;
+    expect(reconnecting.dataset.state).toBe("reconnecting");
+    expect(reconnecting.querySelector("button")).toBeNull();
+    act(() => root.render(<OfflineBanner onRetry={onRetry} reconnecting={false} />));
+    const lost = host.querySelector<HTMLElement>('[data-offline-banner][role="alert"]')!;
+    expect(lost.dataset.state).toBe("lost");
+    act(() => lost.querySelector<HTMLButtonElement>("button")!.click());
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  it("matches the live stream state: hidden when connected, reconnecting on retry, and no reconnecting claim when failed", () => {
+  it("draws one notice that follows the stream: none while connected, reconnecting, then lost", () => {
+    const notices = () => [...host.querySelectorAll<HTMLElement>("[data-offline-banner]")].map((n) => n.dataset.state);
     useConnectionStore.getState().setGlobalStatus("connected");
     act(() => root.render(<OfflineNotice />));
-    expect(host.querySelector("[data-offline-banner]")).toBeNull();
+    expect(notices()).toEqual([]);
 
     useConnectionStore.getState().setGlobalStatus("reconnecting");
     act(() => root.render(<OfflineNotice />));
-    expect(host.querySelector("[data-offline-banner]")?.textContent).toContain("Reconnecting…");
+    expect(notices()).toEqual(["reconnecting"]);
 
     useConnectionStore.getState().setGlobalStatus("failed");
     act(() => root.render(<OfflineNotice />));
-    const failedText = host.querySelector("[data-offline-banner]")?.textContent ?? "";
-    expect(failedText).toContain("Retry");
-    expect(failedText).not.toContain("Reconnecting…");
+    expect(notices()).toEqual(["lost"]);
   });
 });

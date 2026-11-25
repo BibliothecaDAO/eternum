@@ -113,9 +113,9 @@ const simulateBuildingCost = (
     const balance = balances.balance(cost.resource);
     const need = Math.ceil(cost.amount);
     // A balance this runner cannot see never covers a cost.
-    if (balance === undefined) return `${resourceName(cost.resource, false)}: need ${need}, have unknown (short)`;
+    if (balance === undefined) return `${resourceName(cost.resource)}: need ${need}, have unknown (short)`;
     const have = Math.floor(divideByPrecision(Number(balance)));
-    return `${resourceName(cost.resource, false)}: need ${need}, have ${have}${have >= need ? "" : " (short)"}`;
+    return `${resourceName(cost.resource)}: need ${need}, have ${have}${have >= need ? "" : " (short)"}`;
   });
   const affordable = lines.every((line) => !line.endsWith("(short)"));
   return [

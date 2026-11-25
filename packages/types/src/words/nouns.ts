@@ -81,20 +81,22 @@ export const TROOP_WORDS = {
 
 /** Frontier's troop names; its Scout uses the Paladin category. */
 export const FRONTIER_TROOP_NAMES = {
-  [TroopType.Knight]: TROOP_WORDS[TroopType.Knight].many,
-  [TroopType.Paladin]: "Scouts",
-  [TroopType.Crossbowman]: TROOP_WORDS[TroopType.Crossbowman].many,
-} satisfies Record<TroopType, string>;
+  [TroopType.Knight]: TROOP_WORDS[TroopType.Knight],
+  [TroopType.Paladin]: { one: "Scout", many: "Scouts" },
+  [TroopType.Crossbowman]: { one: "Crossbow", many: "Crossbows" },
+} as const satisfies Record<TroopType, { one: string; many: string }>;
 
-export const frontierTroopName = (troop: TroopType | string): string | undefined =>
-  (FRONTIER_TROOP_NAMES as Record<string, string>)[troop];
+export const frontierTroopName = (troop: TroopType | string, count?: number): string | undefined => {
+  const words = (FRONTIER_TROOP_NAMES as Record<string, { one: string; many: string }>)[troop];
+  return words && (count === 1 ? words.one : words.many);
+};
 
 /** Many of a troop type, by its type or its name in the game's tables: "Crossbowmen". Unknown is undefined. */
 export const troopPlural = (troop: TroopType | string): string | undefined =>
   (TROOP_WORDS as Record<string, { many: string }>)[troop]?.many;
 
 export const troopName = (troop: TroopType, tier: string, frontier: boolean): string =>
-  frontier ? FRONTIER_TROOP_NAMES[troop] : `${troop} ${tier}`;
+  frontier ? FRONTIER_TROOP_NAMES[troop].many : `${troop} ${tier}`;
 
 const TROOP_RESOURCE = new RegExp(`^(${TROOP_TYPES.join("|")})(T[23])?$`);
 

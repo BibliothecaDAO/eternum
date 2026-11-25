@@ -75,18 +75,22 @@ it.each(["phone", "desktop"])("shows every open slot and its start on %s, and op
     const startOf = (slot: HTMLButtonElement) => {
       const row = slot.closest<HTMLElement>(".frontier-slot") ?? slot;
       return mode === "desktop"
-        ? [row.dataset.tip, row.querySelector(".frontier-slot__detail")?.textContent]
+        ? [
+            row.dataset.tip,
+            row.querySelector(".frontier-slot__detail")?.textContent ??
+              row.querySelector('[role="meter"]')?.getAttribute("aria-valuenow"),
+          ]
         : [row.dataset.tip, row.textContent];
     };
     expect(slots.map(startOf)).toEqual(
       mode === "desktop"
         ? [
             ["Army 2 starts full: 150/150 stamina.", "420 Knights ready at home"],
-            ["Army 3 starts on 7/150 stamina.", "Any troop type · 7"],
+            ["Army 3 starts on 7/150 stamina.", "7"],
           ]
         : [
-            ["Army 2 starts full: 150/150 stamina.", "+Deploy"],
-            ["Army 3 starts on 7/150 stamina.", "+Deploy"],
+            ["Army 2 starts full: 150/150 stamina.", "+"],
+            ["Army 3 starts on 7/150 stamina.", "+"],
           ],
     );
     act(() => slots[1].click());
@@ -238,11 +242,11 @@ it.each(["phone", "desktop"] as const)(
       const slots = [...host.querySelectorAll<HTMLButtonElement>('button[aria-label="Deploy"]')];
       expect(slots).toHaveLength(row.base.troop_max_explorer_count);
       const expectedCount = formatAmount(startingKnights);
-      const expectedLabel = `${expectedCount} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`;
+      const expectedLabel = `${expectedCount} ${FRONTIER_TROOP_NAMES[TroopType.Knight].many}`;
       if (size === "desktop") {
         expect(slots[0].closest(".frontier-slot")?.textContent).toContain(`${expectedLabel} ready at home`);
       } else {
-        expect(slots.map((slot) => slot.textContent)).toEqual(slots.map(() => "+Deploy"));
+        expect(slots.map((slot) => slot.textContent)).toEqual(slots.map(() => "+"));
       }
       act(() => slots[0].click());
       expect(useUIStore.getState().pendingMilitaryAction).toMatchObject({ structureId: 7, slot: 0 });

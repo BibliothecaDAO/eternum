@@ -1,7 +1,7 @@
 import "./settings.css";
 
 import { pageNavigation } from "@/utils/page-navigation";
-import { OPENING_WORDS, PROFILE_WORDS, SETTINGS_WORDS } from "@/ui/design-system/kit/words";
+import { PROFILE_WORDS, SETTINGS_WORDS } from "@/ui/design-system/kit/words";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { AudioCategory, useAudio } from "@/audio";
 import {
@@ -11,7 +11,6 @@ import {
   useIdentitySessionStore,
 } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import {
@@ -29,8 +28,6 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
 
-import { getGameModeId } from "@/config/game-modes";
-import { hudFor } from "@/ui/layouts/hud-for";
 import { useEffect, useRef, useState } from "react";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { HowToPlayRow, useHowToPlay } from "../how-to-play";
@@ -53,7 +50,6 @@ export const SettingsPanel = () => {
       <VolumeSliders />
       <MuteSwitch />
       <VideoSettings />
-      <ShowEverythingSwitch />
       <footer className="ui-settings__foot">
         {!more && (
           <HudButton kind="secondary" size="sm" aria-expanded={false} onClick={() => setMore(true)}>
@@ -208,16 +204,6 @@ function AddressRow() {
       </HudSetting>
       {error && <HudNotice tone="bad" line={error} />}
     </>
-  );
-}
-
-function ShowEverythingSwitch() {
-  const { showEverything, setShowEverything } = useWorldAppearanceStore();
-  if (hudFor(getGameModeId(), true) !== "frontier") return null;
-  return (
-    <HudSetting name={OPENING_WORDS.showEverything}>
-      <HudSwitch on={showEverything} label={OPENING_WORDS.showEverything} onChange={setShowEverything} />
-    </HudSetting>
   );
 }
 

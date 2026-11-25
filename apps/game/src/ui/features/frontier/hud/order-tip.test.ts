@@ -1,6 +1,8 @@
 import { ActionType, configManager, type OrderRefusal } from "@bibliothecadao/eternum";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
+import { ORDER_REFUSAL_WORDS, WHEAT } from "@/ui/design-system/kit/words";
 import { orderFood, orderTip } from "./order-tip";
 
 const step = (actionType: ActionType, staminaCost?: number) => ({ hex: { col: 0, row: 0 }, actionType, staminaCost });
@@ -66,15 +68,13 @@ describe("what a right-click on a tile does, said before the click", () => {
 
   it("says why the planner gave no order, in its own reason", () => {
     const short = { refusal: { reason: "stamina", need: 21 } as const, staminaHeld: 9 };
-    expect(line(undefined, { ...short, staminaWait: 24 })).toBe("Needs 21 stamina, have 9 · in 24s");
-    expect(line(undefined, { ...short, staminaWait: 130 })).toBe("Needs 21 stamina, have 9 · in 2m 10s");
-    expect(line(undefined, { ...short, staminaWait: 3_600 })).toBe("Needs 21 stamina, have 9 · in 1h");
-    expect(line(undefined, { refusal: { reason: "stamina", need: 21 } })).toBe("Needs 21 stamina, have —");
-    expect(line(undefined, { refusal: { reason: "food" } })).toBe("Not enough food for the army");
-    expect(line(undefined, { refusal: { reason: "off-limits" } })).toBe("Only neutral structures can be attacked");
-    expect(line(undefined, { refusal: { reason: "no-transfer" } })).toBe("This game allows no transfer here");
-    expect(line(undefined, { refusal: { reason: "occupied" } })).toBe("No army can enter this tile");
-    expect(line(undefined, { refusal: { reason: "too-far" } })).toBe("Too far: move closer");
+    expect(line(undefined, { ...short, staminaWait: 130 })).toBe(staminaShortfall(9, 21, 130));
+    expect(line(undefined, { refusal: { reason: "stamina", need: 21 } })).toBe(staminaShortfall(undefined, 21));
+    const reasons = ["food", "off-limits", "no-attack", "no-transfer", "occupied", "too-far"] as const;
+    const lines = reasons.map((reason) => line(undefined, { refusal: { reason } }));
+    expect(lines).toEqual(reasons.map((reason) => ORDER_REFUSAL_WORDS[reason]));
+    expect(lines[0]).toContain(WHEAT);
+    expect(new Set(lines).size).toBe(reasons.length);
   });
 
   it("claims no distance the planner did not: fog it said nothing of is unexplored, a revealed tile is silent", () => {

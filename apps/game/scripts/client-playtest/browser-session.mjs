@@ -204,7 +204,7 @@ const OBSERVE_EXPRESSION = `JSON.stringify({
   rendered: window.__rendererDiagnostics?.sceneName ?? null,
   selection: window.__eternumMapSelection ?? null,
   place:
-    document.querySelector('[data-place-pill]')?.dataset.place ??
+    document.querySelector('[data-place-switch]')?.dataset.place ??
     document.querySelector('nav[aria-label="Places"] [aria-current="page"]')?.textContent.trim() ??
     document.querySelector('[data-surface-deep-switch] [role="tab"][aria-selected="true"]')?.textContent.trim() ??
     document.querySelector('[aria-label="Map view"] [role="tab"][aria-selected="true"]')?.textContent.trim() ??

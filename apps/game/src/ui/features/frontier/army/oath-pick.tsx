@@ -157,7 +157,7 @@ function ArmyOathPick({
   fragments: number | null;
 }) {
   const { setup, account } = useGame();
-  const pickBase = usePickEffectBase();
+  const baseFor = usePickEffectBase(army.explorerId);
   const allowed = useUIStore(canIssueOrders);
   const sending = useInFlight("army", army.explorerId) !== undefined;
   const [chosenAt, setChosenAt] = useState(0);
@@ -169,7 +169,7 @@ function ArmyOathPick({
   const chosen = cards[Math.min(chosenAt, cards.length - 1)];
   const redrawn = progress.oath_pick >= nativeOathConstants.REROLLED;
   const busy = !allowed || sending;
-  const troopLabel = FRONTIER_TROOP_NAMES[army.troopsFact.category as TroopType];
+  const troopLabel = FRONTIER_TROOP_NAMES[army.troopsFact.category as TroopType].many;
 
   const choose = (oath: number | null, replace: number | null = null) =>
     sendOnce("army", army.explorerId, { order: "use" }, () =>
@@ -237,7 +237,7 @@ function ArmyOathPick({
                   disabled={busy}
                   onClick={() => choose(chosen, id)}
                 >
-                  <OathFace id={id} pickBase={pickBase} />
+                  <OathFace id={id} pickBase={baseFor(id)} />
                 </button>
               </div>
             ))}
@@ -253,7 +253,7 @@ function ArmyOathPick({
                 <OathChoice
                   key={id}
                   id={id}
-                  pickBase={pickBase}
+                  pickBase={baseFor(id)}
                   chosen={id === chosen}
                   fresh={redrawn && swappedAt === index}
                   disabled={busy}

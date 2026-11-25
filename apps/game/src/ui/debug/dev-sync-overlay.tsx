@@ -14,7 +14,7 @@ const formatAge = (timestamp: number, now: number): string => {
  * dead" (it grows) from "the world is quiet" (only the data's age grows). FPS/memory live in the stats panel.
  */
 export const DevSyncOverlay = () => {
-  const status = useConnectionStore((state) => state.status);
+  const status = useConnectionStore((state) => state.globalStatus);
   const lastHeadAt = useConnectionStore((state) => state.lastHeadAt);
   const lastDataAt = useConnectionStore((state) => state.lastGlobalUpdate);
   const reconnects = useConnectionStore((state) => state.reconnects);
@@ -28,7 +28,7 @@ export const DevSyncOverlay = () => {
 
   if (!DEV_MODE_ENABLED) return null;
 
-  const statusColor = status === "connected" ? "#6fae7d" : status === "degraded" ? "#d9a83f" : "#e06a5c";
+  const statusColor = status === "connected" ? "#6fae7d" : status === "reconnecting" ? "#d9a83f" : "#e06a5c";
 
   return (
     <div

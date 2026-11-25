@@ -1084,6 +1084,17 @@ export class ArmyManager {
     }
   }
 
+  public getDebugState() {
+    const terrain = this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE;
+    return {
+      armies: [...this.visibleArmyIndices.keys()].flatMap((entityId) => {
+        const position = this.armyModel.getInstanceData(this.toNumericId(entityId))?.position;
+        if (!position) return [];
+        return [{ entityId, overGround: position.y - terrain.sampleSurface(position.x, position.z).height }];
+      }),
+    };
+  }
+
   private hasTerrainMovedUnderArmy(army: ArmyData): boolean {
     const numericId = this.toNumericId(army.entityId);
     if (this.armyModel.isEntityMoving(numericId)) return false;

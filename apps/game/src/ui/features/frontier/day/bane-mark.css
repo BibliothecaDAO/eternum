@@ -1,0 +1,31 @@
+.bane-figure {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  color: var(--hud-bane);
+}
+.bane-figure[data-pill] {
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--hud-bane) 60%, transparent);
+  border-radius: var(--hud-radius-chip);
+  background: color-mix(in srgb, var(--hud-bane) 14%, transparent);
+  padding: 0 6px;
+}
+.bane-figure__mark {
+  font-size: 0.75em;
+  line-height: 1;
+}
+.bane-line {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid color-mix(in srgb, var(--hud-bane) 45%, transparent);
+  border-radius: var(--hud-radius-control);
+  background: color-mix(in srgb, var(--hud-bane) 10%, var(--hud-well));
+  padding: 4px 8px;
+  color: var(--hud-bane);
+  font-size: var(--hud-text-label);
+  font-weight: var(--hud-weight-strong);
+  line-height: var(--hud-leading-label);
+}

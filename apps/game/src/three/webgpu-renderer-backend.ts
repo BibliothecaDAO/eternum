@@ -90,7 +90,10 @@ async function createDefaultWebGPURenderer(input: {
   throwIfAborted(input.signal);
   const forceWebGL = input.forceWebGL;
   const rendererCreateStartedAt = performance.now();
-  const renderer = new WebGPURenderer({ forceWebGL }) as unknown as WebGPURendererSurface & {
+  const renderer = new WebGPURenderer({
+    forceWebGL,
+    powerPreference: "high-performance",
+  }) as unknown as WebGPURendererSurface & {
     library: GameMapMaterialLibrary;
   };
   renderer.library = new GameMapMaterialLibrary();
@@ -215,6 +218,11 @@ function resolveWebGpuRendererDevice(renderer: WebGPURendererSurface): WebGPURen
 
   return rendererWithBackend.backend?.device;
 }
+
+const drawsPlain = (renderer: RendererSurfaceLike): SceneFinish => ({
+  render: (scene, camera) => renderer.render(scene, camera),
+  dispose: () => {},
+});
 
 function readMaxTextureSize(renderer: RendererSurfaceLike): number | undefined {
   const { backend } = renderer as RendererSurfaceLike & {
@@ -389,6 +397,7 @@ export function createWebGPURendererBackend(
     isMobileDevice: boolean;
     onDeviceLost?: (event: RendererDeviceLostEvent) => void;
     pixelRatio: number;
+    postProcessing: boolean;
     requestedMode: RendererBuildMode;
   },
   dependencies: Partial<WebGPURendererBackendDependencies> = defaultDependencies,
@@ -533,7 +542,7 @@ export function createWebGPURendererBackend(
         renderer = lane.renderer;
         maxTextureSize = readMaxTextureSize(lane.renderer);
         sizeRenderer(window.innerWidth, window.innerHeight);
-        finish = resolvedDependencies.createFinish(lane.renderer);
+        finish = options.postProcessing ? resolvedDependencies.createFinish(lane.renderer) : drawsPlain(lane.renderer);
 
         return createRendererInitDiagnostics({
           activeMode: lane.activeMode,

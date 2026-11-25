@@ -272,17 +272,19 @@ describe("nouns", () => {
     expect(resourceName(9_999, false)).toBe("—");
   });
 
-  it("names Frontier's troops by Frontier's names alone: never a Paladin, never a tier", () => {
-    expect(resourceName(ResourcesIds.Paladin, true)).toBe("Scouts");
-    expect(resourceName(ResourcesIds.Knight, true)).toBe("Knights");
-    expect(resourceName(ResourcesIds.Crossbowman, true)).toBe("Crossbowmen");
-    expect(resourceName(ResourcesIds.Wheat, true)).toBe("Wheat");
+  it("names Frontier's troops by Frontier's names alone, one or many: never a Paladin, never a tier", () => {
+    for (const troop of TROOP_TYPES) {
+      const words = FRONTIER_TROOP_NAMES[troop];
+      expect(troopName(troop, "T3", true)).toBe(words.many);
+      expect(frontierTroopName(troop, 1)).toBe(words.one);
+      expect(frontierTroopName(troop, 2)).toBe(words.many);
+      expect(frontierTroopName(troop)).toBe(words.many);
+    }
     const frontierNames = resources.map(({ id }) => resourceName(id, true));
     expect(frontierNames.filter((name) => /Paladin|\bT[123]\b|Tier/.test(name))).toEqual([]);
-    expect(TROOP_TYPES.map((troop) => troopName(troop, "T3", true))).toEqual(
-      TROOP_TYPES.map((troop) => FRONTIER_TROOP_NAMES[troop]),
-    );
-    expect(troopName(TroopType.Paladin, "T2", false)).toBe("Paladin T2");
+    expect(resourceName(ResourcesIds.Paladin, true)).toBe(FRONTIER_TROOP_NAMES[TroopType.Paladin].many);
+    expect(resourceName(ResourcesIds.Wheat, true)).toBe(resourceName(ResourcesIds.Wheat, false));
+    expect(troopName(TroopType.Paladin, "T2", false)).toBe(`${TroopType.Paladin} T2`);
   });
 
   it("names a rank, a structure, a guard wall and an age", () => {
@@ -538,7 +540,7 @@ describe("troops", () => {
     expect(Object.fromEntries(TROOP_TYPES.map((troop) => [troop, frontierTroopName(troop)]))).toEqual({
       [TroopType.Knight]: "Knights",
       [TroopType.Paladin]: "Scouts",
-      [TroopType.Crossbowman]: "Crossbowmen",
+      [TroopType.Crossbowman]: "Crossbows",
     });
     expect(frontierTroopName("Dragon")).toBeUndefined();
     expect(resourceName(ResourcesIds.CrossbowmanT2, false)).toBe("Crossbowman T2");

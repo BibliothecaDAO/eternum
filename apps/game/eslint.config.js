@@ -63,7 +63,7 @@ const OWNED_FORMATS = [
     message: "A player's name comes from PlayerName (the one name rule).",
   },
   {
-    selector: "Literal[value=/did not answer|unavailable right now/]",
+    selector: "Literal[value=/did not answer|unavailable right now|unavailable\\.$/]",
     message: "A failed read is worded by ServiceFailure, one line per service.",
   },
 ];

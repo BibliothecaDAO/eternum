@@ -1,23 +1,37 @@
 import { expect, it } from "vitest";
-import {
-  GRAPHICS_QUALITIES,
-  readGraphicsPreferences,
-  resolveGraphicsQuality,
-  writeGraphicsPreferences,
-} from "./graphics-preferences";
-it("persists quality and shadows independently across reload", () => {
-  const values = new Map<string, string>();
-  const storage = {
+
+import { readGraphicsPreferences, writeGraphicsPreferences } from "./graphics-preferences";
+
+const storageWith = (entries: Record<string, string>) => {
+  const values = new Map(Object.entries(entries));
+  return {
     getItem: (key: string) => values.get(key) ?? null,
-    setItem: (key: string, value: string) => values.set(key, value),
+    setItem: (key: string, value: string) => void values.set(key, value),
   };
+};
+
+it("draws a first visit at High with shadows, and keeps a chosen quality and shadows across reloads", () => {
+  const storage = storageWith({});
   expect(readGraphicsPreferences(storage)).toEqual({ quality: "high", shadows: true });
-  writeGraphicsPreferences(storage, { quality: "balanced", shadows: false });
-  expect(readGraphicsPreferences(storage)).toEqual({ quality: "balanced", shadows: false });
+  writeGraphicsPreferences(storage, { quality: "low", shadows: false });
+  expect(readGraphicsPreferences(storage)).toEqual({ quality: "low", shadows: false });
 });
 
-it("resolves every known quality and falls back to high for unknown values", () => {
-  for (const quality of GRAPHICS_QUALITIES) expect(resolveGraphicsQuality(quality)).toBe(quality);
-  expect(resolveGraphicsQuality("detail")).toBe("high");
-  expect(resolveGraphicsQuality(null)).toBe("high");
+it("keeps a player's stored choice under its name", () => {
+  expect(readGraphicsPreferences(storageWith({ "eternum-graphics": '{"quality":"high","shadows":true}' }))).toEqual({
+    quality: "high",
+    shadows: true,
+  });
+  expect(
+    readGraphicsPreferences(storageWith({ "eternum-graphics": '{"quality":"balanced","shadows":false}' })),
+  ).toEqual({
+    quality: "balanced",
+    shadows: false,
+  });
+});
+
+it("falls back to High on an unknown or unreadable stored value", () => {
+  expect(readGraphicsPreferences(storageWith({ "eternum-graphics": '{"quality":"ultra"}' })).quality).toBe("high");
+  expect(readGraphicsPreferences(storageWith({ "eternum-graphics": "{" }))).toEqual({ quality: "high", shadows: true });
+  expect(readGraphicsPreferences(null)).toEqual({ quality: "high", shadows: true });
 });

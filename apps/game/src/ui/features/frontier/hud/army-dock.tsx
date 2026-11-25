@@ -45,7 +45,7 @@ export const ArmyDock = ({
     plan?.troops && plan.troops.atHome > 0
       ? {
           count: formatAmount(plan.troops.atHome),
-          label: `${formatAmount(plan.troops.atHome)} ${frontierTroopName(plan.troops.type) ?? TROOPS}`,
+          label: `${formatAmount(plan.troops.atHome)} ${frontierTroopName(plan.troops.type, plan.troops.atHome) ?? TROOPS}`,
         }
       : undefined;
   const limits = useNativeFacts(SLOT_RULE_MODELS).store.get("SliceRules", {
@@ -183,16 +183,13 @@ const DockArmyRow = ({
   onOpenArmy?: (explorerId: number) => void;
 }) => {
   const { selected, stamina, oathWaiting, onPick } = useDockArmy(army, pickable, onOpenArmy);
-  const category = army.troopsFact?.category;
   return (
     <ArmyCard
       label={army.label}
-      title={(category && frontierTroopName(category)) ?? army.label}
       tier={troopRankOf(army.troopsFact?.tier)}
       drain={army.drain}
       number={army.number}
       art={army.art}
-      troops={army.troops}
       stamina={stamina}
       ethereal={army.ethereal}
       selected={selected}

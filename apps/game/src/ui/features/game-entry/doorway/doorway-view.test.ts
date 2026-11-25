@@ -56,7 +56,7 @@ describe("the doorway", () => {
     // A service that did not answer ends the boot in its error state: the doorway shows Try again, never an endless
     // track.
     const failed = doorwayView({ source: "boot", phase: "error", audience: "player" });
-    expect(failed.blocker).toEqual({ kind: "retry", line: "The world did not answer." });
+    expect(failed.blocker).toEqual({ kind: "retry", line: "World unavailable." });
     expect(doorwayView({ source: "entry", phase: "error", audience: "player", signedIn: true }).blocker?.kind).toBe(
       "retry",
     );
@@ -65,16 +65,16 @@ describe("the doorway", () => {
   it("says the map could not be drawn when it is the map that failed, and offers the realm when there is one", () => {
     const boot = { source: "boot", phase: "error", audience: "player" } as const;
     const withRealm = doorwayView({ ...boot, failedScene: "map", realmCanOpen: true });
-    expect(withRealm.blocker).toEqual({ kind: "retry", line: "The map could not be drawn.", openRealm: true });
+    expect(withRealm.blocker).toEqual({ kind: "retry", line: "Could not load the map.", openRealm: true });
     expect(withRealm.steps.find(({ state }) => state === "running")?.step).toBe("map");
     // No realm to open (a spectator, or a player whose realm is not known yet): the same true line, Try again only.
     expect(doorwayView({ ...boot, failedScene: "map" }).blocker).toEqual({
       kind: "retry",
-      line: "The map could not be drawn.",
+      line: "Could not load the map.",
     });
     // The realm view's own failure stands at the play step and offers no way round it.
     const realmFailed = doorwayView({ ...boot, failedScene: "hex", realmCanOpen: true });
-    expect(realmFailed.blocker).toEqual({ kind: "retry", line: "The realm could not be drawn." });
+    expect(realmFailed.blocker).toEqual({ kind: "retry", line: "Could not load the Realm." });
     expect(realmFailed.steps.find(({ state }) => state === "running")?.step).toBe("play");
   });
 
@@ -83,7 +83,7 @@ describe("the doorway", () => {
       source: "boot",
       phase: "reconnect_required",
       audience: "player",
-      accountError: "Signed in on 8 devices already.",
+      accountError: "Signed in on 8 devices (max).",
     });
     expect(view.blocker).toEqual({ kind: "devices" });
   });
@@ -97,7 +97,7 @@ describe("the doorway", () => {
       foundingFailed: true,
     });
     expect(track(view)).toBe("account:done realm:running map:waiting play:waiting");
-    expect(view.blocker).toEqual({ kind: "retry", line: "The world did not answer." });
+    expect(view.blocker).toEqual({ kind: "retry", line: "World unavailable." });
   });
 
   it("fills one bar across the track, the map's span following its model loads", () => {

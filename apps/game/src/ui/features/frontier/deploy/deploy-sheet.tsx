@@ -19,7 +19,6 @@ import { madeStoreOf } from "../stores";
 import { secondsUntilHeld } from "../hud/army-order";
 import { armyArt } from "../hud/dock-armies";
 import { deployArmy, deployDirection, deployRange, marchOn, previewDeploy, wheatStopsAt } from "./deploy-plan";
-import { useHomeOathSlots } from "../army/oath-slots";
 import { DeployView, type DeployTroopChoiceView } from "./deploy-view";
 import { useDeployPlan } from "./use-deploy-plan";
 
@@ -73,7 +72,6 @@ export const DeploySheet = ({
     return wait === undefined ? [] : [wait];
   });
   const nextTroopIn = troopWaits.length ? Math.min(...troopWaits) : undefined;
-  const oathSlots = useHomeOathSlots(plan?.troops?.type, realmId);
 
   /** The sheet closes as the army leaves; its slot on the dock carries the wait, and a refusal says why there. */
   const deploy = async () => {
@@ -101,7 +99,7 @@ export const DeploySheet = ({
     plan?.choices.map((troops) => {
       return {
         category: troops.type,
-        name: FRONTIER_TROOP_NAMES[troops.type],
+        name: FRONTIER_TROOP_NAMES[troops.type].many,
         art: armyArt({ category: troops.type, tier: troops.tier }),
         atHome: troops.atHome,
       };
@@ -109,7 +107,6 @@ export const DeploySheet = ({
 
   return (
     <DeployView
-      oathSlots={oathSlots}
       troopSelection={{
         choices: troopChoices,
         selected: plan?.troops?.type,

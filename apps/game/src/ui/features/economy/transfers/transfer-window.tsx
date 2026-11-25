@@ -18,7 +18,7 @@ import {
   HudWindow,
 } from "@/ui/design-system/kit/hud-elements";
 import { WEIGHT_UNKNOWN } from "@/ui/design-system/kit/words";
-import { iconDefinition, resourceMeaning } from "@/ui/design-system/icon-meaning";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { toast } from "@/ui/features/event-feed/notify";
 import { AllResourceArrivals as ResourceArrivals } from "./resource-arrivals";
@@ -30,7 +30,7 @@ import {
   shipmentTravelSeconds,
   configManager,
 } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, ResourcesIds, formatCount, formatExact, formatHeldAgainst } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, formatCount, formatExact, formatHeldAgainst, resourceName } from "@bibliothecadao/types";
 import { useState } from "react";
 import { resourcesInTierOrder } from "@/ui/shared/resource-tier-order";
 import { BalancesView } from "./balances-view";
@@ -76,7 +76,6 @@ export const openTransfer = (ends: TransferEnds) => {
   });
 };
 
-const resourceName = (resource: number) => iconDefinition(resourceMeaning(resource)).label;
 /** When goods land, in whole minutes rounded up: never sooner than the chain lands them. */
 const landsText = (seconds: number) =>
   seconds < 60 ? "lands in under a minute" : `lands in ${Math.ceil(seconds / 60)} min`;

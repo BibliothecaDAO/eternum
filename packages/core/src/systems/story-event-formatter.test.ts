@@ -1,4 +1,4 @@
-import { siteName, StructureType } from "@bibliothecadao/types";
+import { FRONTIER_TROOP_NAMES, ResourcesIds, siteName, StructureType, troopName, TroopType } from "@bibliothecadao/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -131,14 +131,14 @@ it("names a LORDS withdrawal by its whole amount, and another player's by the pl
   const withdrawn = (view: Event) => buildStoryEventPresentation(view, undefined, djizus);
   expect(withdrawn(own("LordsWithdrawn", { account: "0x123", amount: 200 }))).toMatchObject({
     title: "LORDS withdrawn",
-    description: "200 LORDS to L2",
+    description: "200 LORDS to wallet",
   });
   expect(withdrawn(story("LordsWithdrawn", { account: "0x123", amount: 50 }))).toMatchObject({
     title: "djizus withdrew LORDS",
-    description: "50 LORDS to L2",
+    description: "50 LORDS to wallet",
   });
   expect(withdrawn(own("LordsWithdrawn", { account: "0x123", amount: 12_000 }))).toMatchObject({
-    description: "12K LORDS to L2",
+    description: "12K LORDS to wallet",
   });
 });
 
@@ -203,7 +203,7 @@ it("formats Frontier battle stories with Frontier troop names, no tier prefix an
   expect(presentation.description).not.toContain("d20");
 });
 
-it("tells Frontier's raised, reinforced and produced troops by Frontier's names, with no tier", () => {
+it("tells a Frontier army raised or reinforced by its Frontier troop name, one or many by the count, no tier", () => {
   const frontierStore = {
     get: (model: string) => {
       if (model === "SliceRules") return { day_unit_seconds: 14_400 };
@@ -213,18 +213,27 @@ it("tells Frontier's raised, reinforced and produced troops by Frontier's names,
       return undefined;
     },
   } as unknown as Parameters<typeof buildStoryEventPresentation>[1];
-  const told = (storyType: string, payload: Record<string, unknown>) =>
-    buildStoryEventPresentation(story(storyType, payload), frontierStore);
-  const scouts = { category: "Paladin", tier: "T1", amount: "4535000000000" };
-  expect(told("ExplorerCreateStory", { structure_id: 5, explorer_id: 7, ...scouts }).description).toBe("4,535 Scouts");
-  expect(told("ExplorerAddStory", { explorer_id: 7, ...scouts }).description).toBe("+4,535 Scouts");
-  expect(told("ProductionStory", { received_resource_type: 32, received_amount: "1", cost: [] }).title).toMatch(
-    /^Scouts production started/,
-  );
+  const told = (storyType: string, category: string, amount: string) =>
+    buildStoryEventPresentation(
+      story(storyType, { structure_id: 5, explorer_id: 7, category, tier: "T1", amount }),
+      frontierStore,
+    ).description;
+  const scouts = FRONTIER_TROOP_NAMES[TroopType.Paladin];
+  const crossbows = FRONTIER_TROOP_NAMES[TroopType.Crossbowman];
+  expect(told("ExplorerCreateStory", "Paladin", "4535000000000")).toBe(`4,535 ${scouts.many}`);
+  expect(told("ExplorerCreateStory", "Paladin", "1000000000")).toBe(`1 ${scouts.one}`);
+  expect(told("ExplorerAddStory", "Crossbowman", "4535000000000")).toBe(`+4,535 ${crossbows.many}`);
   expect(
-    buildStoryEventPresentation(story("ExplorerCreateStory", { structure_id: 5, explorer_id: 7, ...scouts }))
-      .description,
-  ).toBe("4,535 Paladin T1");
+    buildStoryEventPresentation(
+      story("ProductionStory", { received_resource_type: ResourcesIds.Paladin, received_amount: "1", cost: [] }),
+      frontierStore,
+    ).title.startsWith(scouts.many),
+  ).toBe(true);
+  expect(
+    buildStoryEventPresentation(
+      story("ExplorerCreateStory", { category: "Paladin", tier: "T1", amount: "4535000000000" }),
+    ).description,
+  ).toBe(`4,535 ${troopName(TroopType.Paladin, "T1", false)}`);
 });
 
 /**
@@ -569,7 +578,7 @@ describe("every story the chain can tell", () => {
       buildStoryEventPresentation(story("BuildingPlacementStory", { coord, category: 37, change }, 7)).title;
     // The realm is not in this store: its player tells it.
     expect(placed("Created")).toMatch(/^Lord 0123 built an? .+$/);
-    expect(placed("Destroyed")).toMatch(/^Lord 0123's .+ demolished$/);
+    expect(placed("Destroyed")).toMatch(/^Lord 0123's .+ deleted$/);
     expect(placed("Paused")).toMatch(/^Lord 0123's .+ paused$/);
     expect(() => buildStoryEventPresentation(story("BuildingPlacementStory", { coord, category: 37 }, 7))).toThrow(
       "Incomplete building placement story",
@@ -680,7 +689,7 @@ describe("a story's subject", () => {
     );
     expect(title("GuardAddStory", { structure_id: 5, slot: 1, ...troops })).toBe("djizus reinforced the Castle Wall");
     expect(title("ExplorerAddStory", { explorer_id: 7, ...troops })).toBe("djizus reinforced an army");
-    expect(title("ExplorerDeleteStory", { explorer_id: 7 })).toBe("djizus disbanded an army");
+    expect(title("ExplorerDeleteStory", { explorer_id: 7 })).toBe("djizus deleted an army");
     expect(title("StructureLevelUpStory", { new_level: 1 })).toBe("djizus's realm became a City");
     expect(title("ResourceBurnStory", { resources: [] })).toBe("djizus spent resources");
     expect(title("RealmCreatedStory", { coord: { x: 1, y: 1 } })).toBe("djizus created a Realm");

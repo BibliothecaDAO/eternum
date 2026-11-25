@@ -1,73 +1,33 @@
-import { describe, expect, it, vi } from "vitest";
-import {
-  createRenderProfile,
-  readRenderMode,
-  RENDERER_PIXEL_RATIO_CAP,
-  RENDER_MODE_STORAGE_KEY,
-  writeRenderMode,
-} from "./render-profile";
+import { expect, it } from "vitest";
 
-describe("render profile", () => {
-  it("changes only the frame limit between modes", () => {
-    const uncapped = createRenderProfile("uncapped");
-    const capped = createRenderProfile("capped");
-    expect(uncapped.maxFps).toBeNull();
-    expect(capped.maxFps).toBe(60);
-    expect(capped.visuals).toEqual(uncapped.visuals);
-    expect(uncapped.visuals.pixelRatio).toBe(RENDERER_PIXEL_RATIO_CAP);
+import { GRAPHICS_QUALITIES } from "./graphics-preferences";
+import { createRenderProfile } from "./render-profile";
+
+it("draws High as today's picture, Balanced as the old Balanced (ratio 1, 512 shadows), and Low at 30 fps without the post chain", () => {
+  expect(createRenderProfile("high", true)).toMatchObject({
+    maxFps: null,
+    visuals: { pixelRatio: 1.25, postProcessing: true, shadowMapSize: 1024, shadows: true },
   });
-
-  it("migrates every retired tier to Uncapped and removes the old keys", () => {
-    const values = new Map<string, string>([[["GRAPHICS", "SETTING"].join("_"), "LOW"]]);
-    const storage = {
-      getItem: vi.fn((key: string) => values.get(key) ?? null),
-      removeItem: vi.fn((key: string) => values.delete(key)),
-      setItem: vi.fn((key: string, value: string) => values.set(key, value)),
-    };
-
-    expect(readRenderMode(storage)).toBe("uncapped");
-    expect(values.get(RENDER_MODE_STORAGE_KEY)).toBe("uncapped");
-    expect(values.has(["GRAPHICS", "SETTING"].join("_"))).toBe(false);
+  expect(createRenderProfile("balanced", true)).toMatchObject({
+    maxFps: null,
+    visuals: { pixelRatio: 1, postProcessing: true, shadowMapSize: 512, shadows: true },
   });
-
-  it.each(["uncapped", "capped"] as const)("retains an explicit %s choice", (mode) => {
-    const storage = { getItem: () => mode, removeItem: vi.fn(), setItem: vi.fn() };
-    expect(readRenderMode(storage)).toBe(mode);
-    expect(storage.setItem).not.toHaveBeenCalled();
-  });
-
-  it("migrates the former Quality mode to Uncapped", () => {
-    const storage = { getItem: () => "quality", removeItem: vi.fn(), setItem: vi.fn() };
-    expect(readRenderMode(storage)).toBe("uncapped");
-    expect(storage.setItem).toHaveBeenCalledWith(RENDER_MODE_STORAGE_KEY, "uncapped");
-    expect(readRenderMode(null)).toBe("uncapped");
-  });
-
-  it("persists an explicit mode choice", () => {
-    const setItem = vi.fn();
-    writeRenderMode({ setItem }, "capped");
-    expect(setItem).toHaveBeenCalledWith(RENDER_MODE_STORAGE_KEY, "capped");
-  });
-
-  it("migrates Battery to the 60 FPS limit and removes retired preferences", () => {
-    const removeItem = vi.fn();
-    const storage = {
-      getItem: vi.fn((key: string) => (key === RENDER_MODE_STORAGE_KEY ? "battery" : "HIGH")),
-      removeItem,
-      setItem: vi.fn(),
-    };
-
-    expect(readRenderMode(storage)).toBe("capped");
-    expect(removeItem).toHaveBeenCalledWith(["GRAPHICS", "SETTING"].join("_"));
-    expect(storage.setItem).toHaveBeenCalledWith(RENDER_MODE_STORAGE_KEY, "capped");
+  expect(createRenderProfile("low", true)).toMatchObject({
+    maxFps: 30,
+    visuals: { pixelRatio: 1, postProcessing: false, shadows: true },
   });
 });
 
-it("applies quality and shadow preferences to the actual renderer profile", () => {
-  const high = createRenderProfile("uncapped", { quality: "high", shadows: true });
-  const balanced = createRenderProfile("uncapped", { quality: "balanced", shadows: false });
-  expect(high.visuals.pixelRatio).toBe(RENDERER_PIXEL_RATIO_CAP);
-  expect(balanced.visuals.pixelRatio).toBe(1);
-  expect(balanced.visuals.shadowMapSize).toBe(512);
-  expect(balanced.visuals.shadows).toBe(false);
+it("leaves shadows to their own switch at every level", () => {
+  for (const quality of GRAPHICS_QUALITIES) {
+    expect(createRenderProfile(quality, false).visuals.shadows).toBe(false);
+    expect(createRenderProfile(quality, true).visuals.shadows).toBe(true);
+  }
+});
+
+it("asks no more of the device at a lower level", () => {
+  const [low, balanced, high] = GRAPHICS_QUALITIES.map((quality) => createRenderProfile(quality, true).visuals);
+  expect(low.pixelRatio).toBeLessThanOrEqual(balanced.pixelRatio);
+  expect(balanced.pixelRatio).toBeLessThanOrEqual(high.pixelRatio);
+  expect(low.shadowMapSize).toBeLessThanOrEqual(balanced.shadowMapSize);
 });

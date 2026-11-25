@@ -45,18 +45,30 @@ it.each([
 ] as const)("reads each army's exact stamina from %s, and the player picks the army with the most", async (_, Army) => {
   document.body.innerHTML = renderToStaticMarkup(
     <nav aria-label="Armies">
-      {STAMINAS.map((stamina, index) => (
-        <Army
-          key={index}
-          number={index + 1}
-          label={`Army ${index + 1}`}
-          art={undefined}
-          stamina={stamina}
-          troops={500}
-          selected={false}
-          onPick={() => {}}
-        />
-      ))}
+      {STAMINAS.map((stamina, index) =>
+        Army === ArmyToken ? (
+          <ArmyToken
+            key={index}
+            number={index + 1}
+            label={`Army ${index + 1}`}
+            art={undefined}
+            stamina={stamina}
+            troops={500}
+            selected={false}
+            onPick={() => {}}
+          />
+        ) : (
+          <ArmyCard
+            key={index}
+            number={index + 1}
+            label={`Army ${index + 1}`}
+            art={undefined}
+            stamina={stamina}
+            selected={false}
+            onPick={() => {}}
+          />
+        ),
+      )}
     </nav>,
   );
   expect(await selectArmy()).toEqual({
@@ -82,7 +94,6 @@ it("reads a phone's picked army from its tray while the dock under it is hidden,
           art: "knight-t1",
           stamina: STAMINAS[0],
           secondsToFull: undefined,
-          troops: 500,
           ethereal: undefined,
         }}
         refill={null}

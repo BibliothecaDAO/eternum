@@ -54,7 +54,7 @@ type OwnWords =
 
 const BUILDING_CHANGES: Record<string, string> = {
   Created: "built",
-  Destroyed: "demolished",
+  Destroyed: "deleted",
   Paused: "paused",
   Resumed: "resumed",
 };
