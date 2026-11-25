@@ -58,7 +58,11 @@ export const TodaySheet = ({
             {tomorrowLasts(clock.tomorrowSeconds).words} <b>{tomorrowLasts(clock.tomorrowSeconds).reading}</b>
           </span>
         </p>
-        <HudMeter share={dayElapsedShare(clock) ?? 0} tone={clock.tone} label={phraseText(dayLeft(clock.secondsLeft))} />
+        <HudMeter
+          share={dayElapsedShare(clock) ?? 0}
+          tone={clock.tone}
+          label={phraseText(dayLeft(clock.secondsLeft))}
+        />
       </div>
       {week && <TodayWeek week={week} />}
       <DayGains gains={gains} />
