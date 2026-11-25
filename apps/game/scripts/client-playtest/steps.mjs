@@ -4648,30 +4648,47 @@ const LAB_REINFORCE_STEPS = [
   { name: "reinforce", play: reinforceWithMax, settleMs: 1_000, verify: armyReinforced },
 ];
 
-const LAB_SUPPLY_POST_STEPS = [
-  { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
-  { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
-  { name: "open-supply-post", play: openTheSupplyPost, settleMs: 0, verify: supplyPostOpen },
-  { name: "open-reinforce", play: openTheReinforcement, settleMs: 0, verify: reinforceSheetOpen },
-  {
-    name: "reinforce-from-camp",
-    settleMs: 1000,
-    play: async (context) => {
-      const result = await reinforceWithMax(context);
-      const calldata = context.browser.read(
-        `JSON.stringify(window.__labChain?.sent.find(({command}) => command.kind === "ManageTroops")?.command.span)`,
-      );
-      return { ...result, calldata };
-    },
-    verify: ({ played }) => {
-      if (!played.calldata || BigInt(played.calldata.at(-2)) !== 0n || BigInt(played.calldata.at(-1)) !== 711n)
-        return failed("Reinforcement must name the cleared camp", played);
-      return armyReinforced({ played });
-    },
-  },
-];
+const LAB_SUPPLY_POST_STEPS = supplyPostSteps();
 
-async function openTheSupplyPost({ browser, extraScreenshot }) {
+function supplyPostSteps() {
+  const post = { offset: null };
+  return [
+    { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
+    { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
+    {
+      name: "open-supply-post",
+      play: (context) => openTheSupplyPost(context, post),
+      settleMs: 0,
+      verify: supplyPostOpen,
+    },
+    { name: "pick-army-again", play: pickTheSpireArmyFromTheDock, settleMs: 0, verify: spireArmyPicked },
+    {
+      name: "open-supply-post-with-army",
+      play: (context) => openTheSupplyPostWithTheArmyPicked(context, post),
+      settleMs: 0,
+      verify: supplyPostOpenFromTheArmy,
+    },
+    { name: "open-reinforce", play: openTheReinforcement, settleMs: 0, verify: reinforceSheetOpen },
+    {
+      name: "reinforce-from-camp",
+      settleMs: 1000,
+      play: async (context) => {
+        const result = await reinforceWithMax(context);
+        const calldata = context.browser.read(
+          `JSON.stringify(window.__labChain?.sent.find(({command}) => command.kind === "ManageTroops")?.command.span)`,
+        );
+        return { ...result, calldata };
+      },
+      verify: ({ played }) => {
+        if (!played.calldata || BigInt(played.calldata.at(-2)) !== 0n || BigInt(played.calldata.at(-1)) !== 711n)
+          return failed("Reinforcement must name the cleared camp", played);
+        return armyReinforced({ played });
+      },
+    },
+  ];
+}
+
+async function openTheSupplyPost({ browser, extraScreenshot }, post = { offset: null }) {
   const armyAt = armyOnScreen(browser, PICKED_ARMY);
   browser.press("Escape");
   if (!armyAt) return { found: false };
@@ -4684,11 +4701,40 @@ async function openTheSupplyPost({ browser, extraScreenshot }) {
     );
     if (SUPPLY_POST_SHEET.test(state.sheet ?? "")) {
       extraScreenshot("supply-post");
+      post.offset = [dx, dy];
       return { found: true, state };
     }
     browser.press("Escape");
   }
   return { found: false };
+}
+
+async function pickTheSpireArmyFromTheDock(context) {
+  context.browser.press("Escape");
+  await sleep(HOVER_SETTLE_MS);
+  return pickTheSpireArmy(context);
+}
+
+async function openTheSupplyPostWithTheArmyPicked({ browser, extraScreenshot }, post) {
+  const armyAt = armyOnScreen(browser, PICKED_ARMY);
+  const picked = browser.observe().selection?.army?.id ?? null;
+  if (!armyAt || !post.offset) return { found: false, picked, offset: post.offset };
+  browser.tap([armyAt[0] + post.offset[0], armyAt[1] + post.offset[1]]);
+  const state = await readUntil(
+    () => browser.read(REINFORCE_STATE),
+    (shown) => SUPPLY_POST_SHEET.test(shown.sheet ?? ""),
+    SHEET_WAIT_MS,
+  );
+  const found = SUPPLY_POST_SHEET.test(state.sheet ?? "");
+  if (found) extraScreenshot("supply-post-from-army");
+  return { found, picked, state };
+}
+
+function supplyPostOpenFromTheArmy({ played }) {
+  if (played.picked !== PICKED_ARMY)
+    return failed(`army ${PICKED_ARMY} must be picked before the post is clicked`, played);
+  if (!played.found) return failed("A click on the supply post with the army picked must open the post", played);
+  return supplyPostOpen({ played });
 }
 
 function supplyPostOpen({ played }) {

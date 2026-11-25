@@ -1257,9 +1257,21 @@ describe("the supply post's steps", () => {
       "enter-on-map",
       "pick-army",
       "open-supply-post",
+      "pick-army-again",
+      "open-supply-post-with-army",
       "open-reinforce",
       "reinforce-from-camp",
     ]);
+  });
+
+  it("passes a click on the post with the army picked only when the post opens and lists that army", () => {
+    const fromArmy = steps.find(({ name }) => name === "open-supply-post-with-army");
+    const listed = { sheet: "Supply Post", text: "Supply PostArmies in range1 beside postArmy 1 · Knights" };
+    expect(fromArmy.verify({ played: { found: true, picked: null, state: listed } }).status).toBe("failed");
+    expect(
+      fromArmy.verify({ played: { found: false, picked: 201, state: { sheet: "Army 1", text: "" } } }).status,
+    ).toBe("failed");
+    expect(fromArmy.verify({ played: { found: true, picked: 201, state: listed } }).status).toBe("completed");
   });
 });
 
