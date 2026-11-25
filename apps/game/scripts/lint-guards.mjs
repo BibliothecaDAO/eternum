@@ -3,7 +3,7 @@
 //   node scripts/lint-guards.mjs      fails, naming each hit (CI: pnpm --dir apps/game lint:guards)
 //   node scripts/lint-guards.mjs --write-catalog-baseline   records the catalog copies standing, once some are removed
 import { ESLint } from "eslint";
-import { readFileSync, writeFileSync } from "node:fs";
+import { globSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import reactHooks from "eslint-plugin-react-hooks";
@@ -335,11 +335,25 @@ const plainWordsHits = checkBaseline(
   "--write-plain-words-baseline",
 );
 
+const findDottedThemeKeys = () =>
+  globSync("apps/game/src/**/*.css", { cwd: REPO }).flatMap((file) =>
+    readFileSync(resolve(REPO, file), "utf8")
+      .split("\n")
+      .flatMap((text, index) =>
+        /theme\([\w-]+\.\d+\.\d/.test(text)
+          ? [
+              `${file}:${index + 1} theme() splits a key at its dot and reads a character of another value (spacing.2.5 gave "m"): write theme(spacing[2.5]).`,
+            ]
+          : [],
+      ),
+  );
+
 const hits = [
   ...errors.filter((error) => !isCatalogCopy(error) && !isPlainWords(error)).map(line),
   ...catalogHits,
   ...plainWordsHits,
   ...findUnownedKitSheetClasses(),
+  ...findDottedThemeKeys(),
 ];
 for (const hit of hits) console.log(hit);
 console.log(`lint guards: ${hits.length} hit(s)`);

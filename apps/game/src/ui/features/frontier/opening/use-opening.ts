@@ -3,7 +3,6 @@ import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identit
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { isSeasonZeroPlayer } from "@/shell/season-tab/archive/archive";
 import {
   type ExpeditionRules,
@@ -34,6 +33,8 @@ import { useEffect } from "react";
 
 import type { OpeningRules } from "@/ui/design-system/kit/words";
 import { FIRST_BUILD } from "../build/first-build";
+import { baneFace } from "../day/bane-face";
+import { useQuestDockOpen } from "../day/quest-dock";
 import { dayClock } from "../hud/day-clock";
 import { useDockArmies } from "../hud/dock-armies";
 import type { HudSurface } from "../hud/frontier-nav";
@@ -49,6 +50,7 @@ import {
   openedMoments,
   reachedOnContext,
   siteAlertOfferDue,
+  openedParts,
   stepTutorialMachine,
   type TutorialDisplay,
 } from "./opening-state";
@@ -95,7 +97,6 @@ export function useOpening(
   }, []);
 
   const races = useRacesAspects();
-  const showEverything = useWorldAppearanceStore((state) => state.showEverything);
   const storeState = useOpeningStore((state) => state);
   const progress = accountProgress(owner, storeState);
   const ctx = useOpeningContext(rules, realm, progress.reached, openedSurface);
@@ -107,7 +108,7 @@ export function useOpening(
 
   const opened = openedMoments(progress.reached, onState);
   const lineRules = useOpeningRules(rules, realm);
-  const canEvaluate = Boolean(realm) && !showEverything && progress.known && storeState.loaded;
+  const canEvaluate = Boolean(realm) && progress.known && storeState.loaded;
   const transition = canEvaluate
     ? stepTutorialMachine({
         showing: storeState.showing,
@@ -120,16 +121,13 @@ export function useOpening(
 
   const completedKey = transition.newlyCompleted.join();
   useEffect(() => {
-    if (!canEvaluate) {
-      if (showEverything) void commitTutorialStep({ completed: [], showing: null, confirmed: null });
-      return;
-    }
+    if (!canEvaluate) return;
     void commitTutorialStep({
       completed: completedKey.length > 0 ? completedKey.split(",") : [],
       showing: transition.nextShowing,
       confirmed: transition.confirmedMoment,
     });
-  }, [canEvaluate, showEverything, completedKey, transition.nextShowing, transition.confirmedMoment]);
+  }, [canEvaluate, completedKey, transition.nextShowing, transition.confirmedMoment]);
 
   const activeLine: TutorialDisplay | null =
     !canEvaluate || !lineRules
@@ -141,7 +139,8 @@ export function useOpening(
           : null;
 
   return {
-    opened: showEverything || !realm || races !== true || !progress.ownsParts ? "all" : opened,
+    opened:
+      !realm || races !== true || !progress.ownsParts ? "all" : openedParts(progress.reached, progress.seen, onState),
     line: activeLine,
     dismiss: () => {
       if (!activeLine) return;
@@ -173,6 +172,7 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
   const rawAspect = setup.store.get("HomeAspect", { game_id: realm.game_id, home: realm.entity_id })?.aspect;
   const ownAspect = rawAspect !== undefined ? catalogAspectId(rawAspect) : undefined;
   const clock = dayClock(rules, now);
+  const bane = readDailyQuest(setup.store, realm.game_id, safeInteger(realm.entity_id), now)?.reading.known?.bane;
   return {
     ownAspect,
     knightsPerSecond,
@@ -187,6 +187,7 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
     scoutExploreStamina: nativeRuleConstants.SCOUT_EXPLORE_STAMINA,
     exploreStamina: pickBase.revealStamina,
     dayLeftSeconds: clock.secondsLeft,
+    bane: bane ? baneFace(bane, setup.store, realm.game_id) : undefined,
   };
 }
 
@@ -205,6 +206,7 @@ function useOpeningContext(
   const stores = useRealmStores(realm, rules);
   const researchTree = useResearchTree(realm);
   const playerAddress = useAccountStore((state) => state.account?.address ?? null);
+  const questOpen = useQuestDockOpen();
 
   if (!realm) return null;
 
@@ -275,6 +277,7 @@ function useOpeningContext(
     outOfStamina,
     hasRelic,
     openedToday: openedSurface === "today",
+    openedQuest: questOpen,
     openedResearch: openedSurface === "research",
     openedSeason: openedSurface === "season",
     openedShop: openedSurface === "shop",

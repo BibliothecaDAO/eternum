@@ -33,7 +33,7 @@ import { fightIsSent, fightWasNotSent, useFightRefusal } from "./fight-refusal";
 import { useSelectedOwnArmy } from "./selected-army";
 import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan } from "./site-card-plan";
 import { SiteCardView, type SiteVerb } from "./site-card-view";
-import { readPickEffectBase } from "../pick-effect-text";
+import { usePickEffectBase } from "../pick-effect-text";
 import { useRuinRelicChoice } from "../relics/ruin-relic-choice";
 import { RelicPay, RelicReplacement } from "../relics/relic-replacement";
 
@@ -132,7 +132,7 @@ export const TileCard = ({
   const inFlight = useInFlight("army", armyId)?.order;
   const refused = useFightRefusal(armyId, targetId(selected));
   const relics = useRuinRelicChoice(selected.kind === "site" ? selected.site : null, armyId);
-  const pickBase = readPickEffectBase(setup.store, configManager.getActiveGameId());
+  const pickBase = usePickEffectBase(armyId)();
   const relic = relics && "relic" in relics.state ? relics.state.relic : undefined;
 
   const attackSite = async () => {

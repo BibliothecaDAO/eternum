@@ -713,9 +713,7 @@ describe("the season's countdown, while its first day is ahead and Play has no g
     await type("TAKEN234");
     await act(async () => submitBtn.click());
     await settle();
-    expect(card().querySelector(".app-field__line")?.textContent).toBe(
-      "That code is taken, expired or not one of ours.",
-    );
+    expect(card().querySelector(".app-field__line")?.textContent).toBe("Code is used, expired, or invalid.");
     await type("seal2345");
     expect(card().querySelector(".app-field__line")).toBeNull();
     await act(async () => submitBtn.click());

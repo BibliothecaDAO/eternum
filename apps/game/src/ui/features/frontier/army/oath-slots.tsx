@@ -7,26 +7,19 @@ import { usePickEffectBase } from "../pick-effect-text";
 import { oathEffectDescription, oathName, oathStatBadge } from "./oath-details";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
-import { configManager, OATH_SLOTS_MAX, troopOathSlots } from "@bibliothecadao/eternum";
-import { type TroopType } from "@bibliothecadao/types";
+import { configManager, OATH_SLOTS_MAX } from "@bibliothecadao/eternum";
 import { useState } from "react";
-
-export const useHomeOathSlots = (category: TroopType | undefined, homeId: number): number | undefined => {
-  const { store } = useNativeFacts(["RealmKnowledge"]);
-  const learned = store.get("RealmKnowledge", { game_id: configManager.getActiveGameId(), structure_id: homeId });
-  return learned && category !== undefined ? troopOathSlots(learned.learned, category) : undefined;
-};
 
 const useHeldOaths = (explorerId: number) => {
   const { store } = useNativeFacts(["ArmyProgress"]);
-  const pickBase = usePickEffectBase();
+  const baseFor = usePickEffectBase(explorerId);
   const progress = store.get("ArmyProgress", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
   if (!progress) return undefined;
   const oaths = heldOaths(progress.oaths).map((oath) => ({
     icon: orderMeaning(oath),
     name: oathName(oath),
-    effect: oathEffectDescription(oath, pickBase),
-    badge: oathStatBadge(oath, pickBase),
+    effect: oathEffectDescription(oath, baseFor(oath)),
+    badge: oathStatBadge(oath, baseFor(oath)),
   }));
   return { oaths, slots: progress.oath_slots };
 };

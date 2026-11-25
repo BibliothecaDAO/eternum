@@ -136,13 +136,13 @@ it("tells identity the channel the link was posted from, and nothing for one no 
 it("still leads into the game from a link that leads to no shared day, and asks identity nothing for a malformed one", async () => {
   service.openShare.mockRejectedValue(new IdentityRequestError(404, "share_unknown"));
   await open("/s/ABCD2345");
-  expect(host.textContent).toContain("This link leads to no shared day.");
+  expect(host.textContent).toContain("This link is not valid.");
   expect(play()).toBeDefined();
 
   service.openShare.mockClear();
   await open("/s/not-a-code");
   expect(service.openShare).not.toHaveBeenCalled();
-  expect(host.textContent).toContain("This link leads to no shared day.");
+  expect(host.textContent).toContain("This link is not valid.");
 });
 
 it("names Frontier once, as its crest, with the shared day as the page's one heading, on a phone and a desktop", async () => {

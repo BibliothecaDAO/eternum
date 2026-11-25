@@ -106,7 +106,7 @@ describe("a withdrawal's rules", () => {
   });
 
   it("refuses while the ledger cannot be read or its payouts are paused, the season's close first", () => {
-    expect(withdrawalRefusal({ ...open, ledgerReadable: false })).toContain("cannot be read");
+    expect(withdrawalRefusal({ ...open, ledgerReadable: false })).toContain("Could not load");
     expect(withdrawalRefusal({ ...open, paused: true })).toBe("Payouts paused");
     expect(withdrawalRefusal({ ...open, now: closesAt, paused: true })).toContain("closed");
     // Facts not read yet refuse nothing.

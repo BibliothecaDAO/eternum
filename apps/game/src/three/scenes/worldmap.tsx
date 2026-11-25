@@ -18,7 +18,7 @@ import { DeepArenaManager } from "../managers/deep-arena-manager";
 import { activeMapLayer } from "@/three/map-layer";
 import type { ReactNode } from "react";
 import { isMapPreviewAction } from "./worldmap-action-preview-policy";
-import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
+import { projectHexEastEdgeToScreen, projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { playRevealYield } from "@/ui/motion/moments/reveal-yield";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
 import { canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
@@ -62,7 +62,7 @@ import { OwnershipRingLayer } from "@/three/managers/ownership-ring-layer";
 import { bindOwnershipRings } from "./worldmap-ownership-rings";
 import { bindMapSelection } from "./worldmap-map-selection";
 import { reportSelectedArmy } from "./worldmap-selected-army-report";
-import { ORDER_PREVIEW_SURFACE, OrderPreview } from "./worldmap-order-preview";
+import { ORDER_PREVIEW_SURFACE, OrderPreview, type RefusedOrder } from "./worldmap-order-preview";
 import { StructureManager } from "@/three/managers/structure-manager";
 import { FrameBudgetWorkQueue, type FrameBudgetWorkLane } from "@/three/frame-budget-work-queue";
 import { SceneManager } from "@/three/scene-manager";
@@ -311,7 +311,13 @@ import {
 } from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
 import { hudLayoutNow } from "@/hooks/helpers/use-compact-hud";
-import { type OrderTip, orderFood, orderTip, refusedOrderVerb } from "@/ui/features/frontier/hud/order-tip";
+import {
+  type OrderTip,
+  orderFood,
+  orderTip,
+  orderRefusalReason,
+  refusedOrderVerb,
+} from "@/ui/features/frontier/hud/order-tip";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
@@ -2250,11 +2256,6 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
-  /**
-   * A paid reveal shows its yield on the revealed tile (design §3.11 §4): the player's own flies home to its banked
-   * counter, anyone else's pops and rises with its amount. The event only starts the flourish; counters roll to the
-   * balance fact.
-   */
   private handleExplorerRewardEvent(update: ExplorerRewardSystemUpdate): void {
     if (this.isRewardDebugEnabled()) {
       console.debug("[ExplorerRewardEvent] update", update);
@@ -2267,7 +2268,7 @@ export default class WorldmapScene extends WarpTravel {
     playRevealYield({
       resourceId,
       amount,
-      from: projectHexToScreen({ col: tile.x, row: tile.y }, this.camera),
+      from: projectHexEastEdgeToScreen({ col: tile.x, row: tile.y }, this.camera),
       own: ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress),
     });
   }
@@ -2974,8 +2975,13 @@ export default class WorldmapScene extends WarpTravel {
     this.previewedOrder = { army, hex: hexCoords, tip, refused: refusal.reason };
     this.openTargetActionSurface(contractHexOf(hexCoords), {
       id: ORDER_PREVIEW_SURFACE,
-      content: <OrderPreview tip={tip} refusal={reason} />,
+      content: <OrderPreview tip={tip} refused={this.refusedOrderAt(refusal)} />,
     });
+  }
+
+  private refusedOrderAt(refusal: OrderRefusal): RefusedOrder {
+    const short = refusal.reason === "stamina" ? this.selectedArmyShortOf(refusal.need) : undefined;
+    return { why: refusal.reason, reason: orderRefusalReason(refusal, short) };
   }
 
   /** The preview's verb sends the order the player read, and only while it still is the army's order at that tile. */

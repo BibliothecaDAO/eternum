@@ -115,7 +115,7 @@ const ArmyInRange = ({ realm, army, post }: { realm: NativeRows["Structure"]; ar
     <button type="button" data-supply-army className="supply-post__army" onClick={reinforce}>
       <HudPortrait icon={army.art} label={TROOPS} />
       <span className="supply-post__army-words">
-        <b>{`${army.label} · ${frontierTroopName(army.troopsFact.category) || TROOPS}`}</b>
+        <b>{frontierTroopName(army.troopsFact.category) || TROOPS}</b>
         {plan && (
           <span className="supply-post__army-troops">
             {formatExact(plan.current)} <span className="supply-post__arrow">→</span>{" "}

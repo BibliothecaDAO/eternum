@@ -183,16 +183,13 @@ const DockArmyRow = ({
   onOpenArmy?: (explorerId: number) => void;
 }) => {
   const { selected, stamina, oathWaiting, onPick } = useDockArmy(army, pickable, onOpenArmy);
-  const category = army.troopsFact?.category;
   return (
     <ArmyCard
       label={army.label}
-      title={(category && frontierTroopName(category)) ?? army.label}
       tier={troopRankOf(army.troopsFact?.tier)}
       drain={army.drain}
       number={army.number}
       art={army.art}
-      troops={army.troops}
       stamina={stamina}
       ethereal={army.ethereal}
       selected={selected}

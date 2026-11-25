@@ -11,12 +11,12 @@ import { SettingsSection } from "./settings-section";
  * section.
  */
 export const AppSettings = ({ onShowKeys }: { onShowKeys: () => void }) => {
-  const { installed, install } = useInstall();
+  const { offered, install } = useInstall();
   const keys = !isCoarsePointer();
-  if (installed && !keys) return null;
+  if (!offered && !keys) return null;
   return (
     <SettingsSection title={SETTINGS_WORDS.app}>
-      {!installed && (
+      {offered && (
         <HudSetting name={APP_STATE_WORDS.install}>
           <HudButton kind="secondary" size="sm" icon="download" onClick={() => install()}>
             {APP_STATE_WORDS.install}

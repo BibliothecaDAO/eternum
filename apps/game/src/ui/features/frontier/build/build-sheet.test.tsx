@@ -28,6 +28,7 @@ import {
 import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { FRONTIER_STORES, STORE_KINDS } from "../stores";
 import { buildingCounts, realmBoard } from "./build-fixture";
+import { buildGroupOf } from "./build-options";
 import { BuildingsInFlight, BuildSheet } from "./build-sheet";
 
 afterEach(() => {
@@ -348,21 +349,22 @@ describe("the build sheet", () => {
     later.close();
   });
 
-  it("lays every building in one grid, the open ones first, each locked one under the rank that opens it", () => {
+  it("groups every building as the catalog does, Economy, Army and One per realm, each locked one saying the rank it needs", () => {
     const { store, realm } = realmBoard();
     const sheet = open(store, realm);
-    const tiles = [...sheet.host.querySelectorAll("[data-build-grid] .ui-card")].map((tile) => [
-      tile.querySelector(".ui-card__title")?.textContent,
-      tile.querySelector(".ui-card__corner [aria-label]")?.getAttribute("aria-label") ?? null,
+    const groups = [...sheet.host.querySelectorAll<HTMLElement>("[data-build-group]")].map((section) => [
+      section.dataset.buildGroup,
+      [...section.querySelectorAll(".ui-card__title")].map((title) => title.textContent),
     ]);
-    expect(tiles.map(([name]) => name)).toHaveLength(FRONTIER_BUILDING_TYPES.length);
-    expect(tiles.slice(0, 3)).toEqual([
-      ["Farm", null],
-      ["Workshop", null],
-      ["Barracks", null],
-    ]);
-    expect(tiles).toContainEqual(["Range", "City"]);
-    expect(tiles).toContainEqual(["Supply yard", "Kingdom"]);
+    expect(groups.map(([group]) => group)).toEqual(["economy", "army", "unique"]);
+    expect(groups.flatMap(([, names]) => names)).toHaveLength(FRONTIER_BUILDING_TYPES.length);
+    for (const category of FRONTIER_BUILDING_TYPES)
+      expect(groups.find(([group]) => group === buildGroupOf(category))?.[1]).toContain(buildingName(category, true));
+    expect(groups[0]).toEqual(["economy", ["Farm", "Workshop"]]);
+    expect(groups[1]?.[1]).toEqual(expect.arrayContaining(["Barracks", "Range"]));
+    expect(groups[2]?.[1]).toContain("Supply yard");
+    expect(sheet.card("Range").querySelector("[data-build-needs]")?.textContent).toBe("Requires City");
+    expect(sheet.card("Supply yard").querySelector("[data-build-needs]")?.textContent).toBe("Requires Kingdom");
     act(() => sheet.card("Farm").click());
     expect(sheet.host.querySelector("[data-build-does]")?.textContent).toMatch(/^\+[\d,.]+\/(?:s|min)$/);
     expect(sheet.button("Build")).toBeDefined();

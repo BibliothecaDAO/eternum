@@ -2,10 +2,17 @@ import { APP_STATE_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { useEffect } from "react";
 
+import { AppIconButton } from "@/ui/design-system/kit/app-elements";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 
 import { isAppleMobile, isInstalledApp } from "./browser-capabilities";
-import { type InstallPrompt, useInstallState } from "./install-state";
+import { type InstallPrompt, useInstall, useInstallState } from "./install-state";
+
+export const InstallButton = () => {
+  const { offered, install } = useInstall();
+  if (!offered) return null;
+  return <AppIconButton icon="download" label={APP_STATE_WORDS.install} onClick={() => void install()} />;
+};
 
 /**
  * Listen at the app root so a later Install cannot miss Chrome's install event, and hold the install steps' sheet for
