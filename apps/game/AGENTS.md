@@ -290,17 +290,17 @@ none), `--steps lab-reinforce` (`/lab/game?scenario=reinforce`, the army beside 
 the army right-clicked for **Reinforce** (at a phone's width a finger taps the realm and holds the army, through
 DevTools' touch input), Max and Reinforce sent; the chain's answer must move at least 404 troops, pay one knight and 2
 wheat for each, and leave at least 192 wheat at home: Max keeps the wheat its 5 reveals burn, and the realm's production
-only adds to what Max may move), `--steps lab-visit` (`/lab/game?scenario=visit`,
-the painted Kingdom's game with a neighbour's Kingdom on the Season board, built in another order: Visit from the board,
-Leave, and Visit and Leave again, each arrival failing on another realm drawn, a building laid out without its model
-attached, shown and loaded, or a HUD panel past the screen's edge; each board swept point by point, each hovered then
-tapped, a visit failing on a building's card that names another building than its hover or offers more than its close,
-an open plot's card, or any command signed, and home failing on such a card or on no open plot opening Build),
-`--steps lab-reenter` (`/lab/game?scenario=from-home`, the spire's game opened on the home page: entered by its card's
-Resume, left by Back and then by the HUD's way out (a phone's Menu, Exit; a desktop Back again, as its Leave game loads
-the page afresh), and entered by Resume each time: each leave failing short of the home page or with the game's label
-layer still mounted, each return on the map's labels or plates read on entry missing; play it at `--viewport 390x844`
-too), `--steps lab-hud-devices` (`/lab/game?scenario=sites`, the map's share of the page on a device: at rest, the army
+only adds to what Max may move), `--steps lab-visit` (`/lab/game?scenario=visit`, the painted Kingdom's game with a
+neighbour's Kingdom on the Season board, built in another order: Visit from the board, Leave, and Visit and Leave again,
+each arrival failing on another realm drawn, a building laid out without its model attached, shown and loaded, or a HUD
+panel past the screen's edge; each board swept point by point, each hovered then tapped, a visit failing on a building's
+card that names another building than its hover or offers more than its close, an open plot's card, or any command
+signed, and home failing on such a card or on no open plot opening Build), `--steps lab-reenter`
+(`/lab/game?scenario=from-home`, the spire's game opened on the home page: entered by its card's Resume, left by Back
+and then by the HUD's way out (a phone's Menu, Exit; a desktop Back again, as its Leave game loads the page afresh), and
+entered by Resume each time: each leave failing short of the home page or with the game's label layer still mounted,
+each return on the map's labels or plates read on entry missing; play it at `--viewport 390x844` too),
+`--steps lab-hud-devices` (`/lab/game?scenario=sites`, the map's share of the page on a device: at rest, the army
 picked, its panel, a site's card, Chat and the Menu, each read by hit-testing a grid 8 px apart for where the map's
 canvas is the first thing a press reaches and which HUD part takes each other point, with the share above a phone's
 keyboard; run it at each device's size with `--viewport`), `--steps lab-ruin-fight` (`/lab/game?scenario=ruin-fight`,

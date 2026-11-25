@@ -4825,8 +4825,9 @@ function armyReinforced({ played }) {
     wheat: balanceChange(after.reinforced, ResourcesIds.Wheat),
   };
   const wheatLeft = BigInt(
-    after.reinforced?.answered.find(({ model, value }) => model === "ResourceBalance" && Number(value.resource_type) === ResourcesIds.Wheat)
-      ?.value.balance ?? -1,
+    after.reinforced?.answered.find(
+      ({ model, value }) => model === "ResourceBalance" && Number(value.resource_type) === ResourcesIds.Wheat,
+    )?.value.balance ?? -1,
   );
   if (
     !(moved >= LEAST_REINFORCED) ||
