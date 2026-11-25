@@ -1,11 +1,10 @@
 import { setWorldOrigin, worldOrigin } from "../world-origin";
 import { describe, expect, it } from "vitest";
 import {
-  BASALT_SUPPORT_HEIGHT,
   BASALT_SHELL_TRIANGLES,
   BASALT_SHELL_VERTICES,
+  BASALT_SUPPORT_HEIGHT,
   buildBasaltShell,
-  sampleBasaltSurface,
 } from "./terrain-basalt";
 import { terrainHexCorners } from "./terrain-coordinates";
 import { createEtherealTerrainMaterial } from "./terrain-ethereal-material";
@@ -28,14 +27,12 @@ describe("flat ethereal basalt", () => {
   it("uses one deterministic shell with one flat walkable plane", () => {
     const geometry = buildBasaltShell();
     expect(geometry).toEqual(buildBasaltShell());
-    const support = sampleBasaltSurface();
-    expect(support).toEqual({ height: 0.12, normal: [0, 1, 0] });
     let topArea = 0;
     for (let index = 0; index < geometry.indices.length; index += 3) {
       const indices = geometry.indices.slice(index, index + 3);
       if (geometry.normals[indices[0] * 3 + 1] === 0) continue;
       const [a, b, c] = indices.map((vertex) => geometry.positions.slice(vertex * 3, vertex * 3 + 3));
-      for (const point of [a, b, c]) expect(point[1]).toBe(support.height);
+      for (const point of [a, b, c]) expect(point[1]).toBe(BASALT_SUPPORT_HEIGHT);
       topArea += Math.abs((b[0] - a[0]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[0] - a[0])) / 2;
     }
     const corners = terrainHexCorners(0, 0);

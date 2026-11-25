@@ -197,6 +197,8 @@ import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "./worl
 import type { TerrainUploadMetrics } from "@/three/terrain/procedural-terrain";
 import type { TerrainRoadAnchor, TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
 import type { GroundLights } from "@/three/terrain/ground-lights";
+import { findNearestTerrainHex } from "@/three/terrain/terrain-coordinates";
+import { reclaimsLandFromWater } from "@/three/terrain/terrain-settlement-ground";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
 import { env } from "../../../env";
@@ -464,7 +466,12 @@ import {
   bindWorldmapTerrainEcologyRefresh,
   collectWorldmapTerrainEcologyAnchors,
 } from "./worldmap-terrain-ecology-refresh-runtime";
-import { takeShownTiles, WorldmapTerrainContent, type TerrainCellFacts } from "./worldmap-terrain-content";
+import {
+  groundHeightOf,
+  takeShownTiles,
+  WorldmapTerrainContent,
+  type TerrainCellFacts,
+} from "./worldmap-terrain-content";
 import { presentResult } from "@/three/presented-results";
 import {
   WORLDMAP_CAMERA_ZOOM,
@@ -1170,8 +1177,16 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   public override getTerrainSurface(): TerrainSurface {
-    return this.proceduralTerrain;
+    return this.groundSurface;
   }
+
+  private readonly groundSurface: TerrainSurface = {
+    sampleSurface: (x, z) => this.proceduralTerrain.sampleSurface(x, z),
+    sampleHeight: (x, z) => {
+      const hex = findNearestTerrainHex(x, z);
+      return groundHeightOf(this.readTerrainCell(hex.col, hex.row), Boolean(activeMapLayer()));
+    },
+  };
 
   public override getGroundLights(): GroundLights {
     return this.proceduralTerrain.groundLights;
@@ -4351,12 +4366,18 @@ export default class WorldmapScene extends WarpTravel {
     const hex = { alt: activeMapLayer(), col: col + center, row: row + center };
     const tile = this.worldSpatialProjection.getTileAtHex(hex);
     const spire = tile?.occupierType === TileOccupier.Spire;
+    const structures = this.worldSpatialProjection.getStructuresAtHex(hex);
     const deepZone = this.deepZoneOf(hex);
     return {
       projectedBiome: tile ? requireBiomeTypeFromId(tile.biome) : undefined,
       surfacePresentation: deepZone ? "deep" : etherealSurfaceAt(this.expeditionGrid(), hex, spire),
       deepZone,
-      occupied: spire || this.worldSpatialProjection.getStructuresAtHex(hex).length > 0,
+      occupied: spire || structures.length > 0,
+      reclaimsLand: structures.some((structure) => {
+        const category =
+          structure.entityId === null ? undefined : this.structureFactsOf(structure.entityId)?.base.category;
+        return category !== undefined && reclaimsLandFromWater(category);
+      }),
     };
   }
 
@@ -6263,22 +6284,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private handleTerrainPresentationEvent(event: TerrainPresentationEvent): void {
-    if (event.kind === "page_complete") this.regroundTerrainPlacements();
     this.recordTerrainPresentationEvent(event);
-  }
-
-  /**
-   * Managers place their content while terrain pages still stream, on the fallback surface. Everything that samples
-   * terrain height at placement re-grounds here, so a new terrain-placed manager joins this list.
-   */
-  private regroundTerrainPlacements(): void {
-    this.structureManager.refreshTerrainPlacement();
-    this.spireManager.refreshTerrainPlacement();
-    this.mapSiteManager.refreshTerrainPlacement();
-    this.deepArenaManager.refreshTerrainPlacement();
-    this.armyManager.refreshTerrainPlacement();
-    this.ownershipRings.refreshTerrainPlacement();
-    this.highlightHexManager.refreshTerrainPlacement();
   }
 
   private recordTerrainPresentationEvent(event: TerrainPresentationEvent): void {
@@ -6358,22 +6364,7 @@ export default class WorldmapScene extends WarpTravel {
   } {
     return collectWorldmapTerrainEcologyAnchors({
       cells,
-      getStructureFacts: (entityId) => {
-        const component = this.game.store.get("Structure", {
-          game_id: configManager.getActiveGameId(),
-          entity_id: entityId,
-        });
-        return component
-          ? {
-              base: {
-                category: component.base.category as StructureType,
-                level: component.base.level,
-              },
-              entity_id: component.entity_id,
-              owner: ContractAddress(component.owner),
-            }
-          : undefined;
-      },
+      getStructureFacts: (entityId) => this.structureFactsOf(entityId),
       normalizeStructureHex: (hex) => {
         const normalized = Position.fromContract({ x: hex.col, y: hex.row }).getNormalized();
         return { col: normalized.x, row: normalized.y };
@@ -6381,6 +6372,23 @@ export default class WorldmapScene extends WarpTravel {
       projection: this.worldSpatialProjection,
       toProjectionBounds: (bounds) => this.toContractBounds(bounds),
     });
+  }
+
+  private structureFactsOf(entityId: ID) {
+    const component = this.game.store.get("Structure", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: entityId,
+    });
+    return component
+      ? {
+          base: {
+            category: component.base.category as StructureType,
+            level: component.base.level,
+          },
+          entity_id: component.entity_id,
+          owner: ContractAddress(component.owner),
+        }
+      : undefined;
   }
 
   private scheduleTerrainEcologyRefresh(): void {

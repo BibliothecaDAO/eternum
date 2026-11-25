@@ -178,7 +178,6 @@ interface VisibleStructurePassSnapshot {
 interface StructureInstanceBinding {
   instanceIndex: number;
   model: StructureModel;
-  terrainHeight: number;
   worldX: number;
   worldZ: number;
 }
@@ -797,25 +796,6 @@ export class StructureManager {
 
   private resolveTerrainSurface(): TerrainSurface {
     return this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE;
-  }
-
-  /** Re-ground committed instances when streamed terrain replaces their initial fallback surface. */
-  public refreshTerrainPlacement(): void {
-    if (this.isDestroyed) return;
-    const terrain = this.resolveTerrainSurface();
-    for (const [entityId, bindings] of this.structureInstanceBindings) {
-      // Every page completion visits every bound structure: sample from the binding and read the store only on a change.
-      const height = terrain.sampleHeight(bindings[0].worldX, bindings[0].worldZ);
-      if (bindings.every((binding) => binding.terrainHeight === height)) continue;
-      const structure = this.resolveStructureInfoByEntityId(entityId);
-      if (!structure) continue;
-
-      this.syncVisibleStructurePresentation(structure, this.resolveVisibleStructureRotationY(structure));
-      for (const binding of bindings) {
-        binding.model.setMatrixAt(binding.instanceIndex, this.dummy.matrix);
-        binding.terrainHeight = height;
-      }
-    }
   }
 
   private updateShadowFlags(): void {
@@ -1748,8 +1728,7 @@ export class StructureManager {
     dirtyModels.add(model);
 
     const { x: worldX, z: worldZ } = this.dummy.position;
-    const terrainHeight = this.resolveTerrainSurface().sampleHeight(worldX, worldZ);
-    return { instanceIndex, model, terrainHeight, worldX, worldZ };
+    return { instanceIndex, model, worldX, worldZ };
   }
 
   // An overflow is a sizing bug, not a runtime condition: count it, warn once, and keep the pass alive.

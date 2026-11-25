@@ -4020,7 +4020,9 @@ const everyRingSiteDrawn = (drawn) =>
 /** One Deep site's plate, found by its name: where a press on its model lands (page px from the centre), whether its plate stands wholly in the frame, and the card open now. */
 const siteState = ({ name, icon }) => `JSON.stringify((() => {
   const sheet = document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
-  const beast = document.querySelector('[data-kit-sheet] [data-state="beast"]')?.textContent ?? null;
+  const guard = document.querySelector('[data-kit-sheet] [data-deep-guard="beast"]');
+  const found = guard?.querySelector("[data-deep-beast] .deep-beast__name, [data-fight-side='theirs']");
+  const beast = found ? found.getAttribute("aria-label") ?? found.textContent : null;
   const slot = document.querySelector('.mp-at:has([data-icon="${icon}"])');
   if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return { sheet, beast, token: null, inView: false };
   const box = slot.firstElementChild.getBoundingClientRect();
@@ -4036,7 +4038,7 @@ const siteState = ({ name, icon }) => `JSON.stringify((() => {
 const SITE_MODEL_BELOW_PLATE = 65;
 
 const namesItsBeast = (line, beast) =>
-  beast === null ? line === null : typeof line === "string" && line.startsWith(`Guard: ${beast},`);
+  beast === null ? line === null : typeof line === "string" && line.startsWith(beast);
 
 const DEEP_JOIN_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
@@ -4048,7 +4050,7 @@ const DEEP_JOIN_STATE = `JSON.stringify({
   pay: (() => {
     const node = document.querySelector('[data-deep-pay]');
     const rect = node?.getBoundingClientRect();
-    return { text: node?.textContent ?? "", visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
+    return { labor: Boolean(node?.querySelector('[data-rate="labor"]')), visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
   })(),
   joined: (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "InteractSite"),
   joinSite: (() => {
@@ -4302,10 +4304,11 @@ function raceBoardSteps(result) {
 }
 
 /** The drain chip of the open army panel, and every drain chip on the page (a dock token's, a row's). */
-const DEEP_DRAIN_STATE = `JSON.stringify({
-  panel: document.querySelector("[data-kit-sheet] [data-deep-drain]")?.getAttribute("aria-label") ?? "",
-  all: [...document.querySelectorAll("[data-deep-drain]")].map((node) => node.getAttribute("aria-label")),
-})`;
+const DEEP_DRAIN_STATE = `JSON.stringify((() => {
+  const read = (node) => ({ loss: Number(node.dataset.deepDrain), ticksLeft: Number(node.dataset.ticksLeft) });
+  const panel = document.querySelector("[data-kit-sheet] [data-deep-drain]");
+  return { panel: panel ? read(panel) : null, all: [...document.querySelectorAll("[data-deep-drain]")].map(read) };
+})())`;
 
 /** The side colour of a map label (`--mp-side`, map-plates.css): an ally's army is drawn in another colour than the player's own. */
 const ARMY_SIDES = `JSON.stringify(Object.fromEntries([...document.querySelectorAll('.mp-at[data-key^="army:"]')].map((slot) => [
@@ -4450,7 +4453,7 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
       return { drain };
     },
     verify: ({ played }) =>
-      played.drain.all.some((line) => new RegExp(`−${lossPerTick} troops per tick; \\d+ ticks left`).test(line))
+      played.drain.all.some((drain) => drain.loss === lossPerTick && drain.ticksLeft > 0)
         ? completed(played)
         : failed(
             "An army waiting in the Deep's field must show its troop loss each tick before it holds a site",
@@ -4472,7 +4475,7 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
       );
       extraScreenshot("mine-before-join");
       if (!opened.text.includes("Join")) return { before, after: opened };
-      browser.click("Join");
+      browser.click(REHEARSAL_WORDS.joinGuard);
       const confirmed = await readUntil(
         () => browser.read(DEEP_JOIN_STATE),
         (state) => state.joined.length === 1 && state.joinSite !== null,
@@ -4496,7 +4499,7 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
         guard?.value.slot === 1 &&
         leftField &&
         played.opened.pay.visible &&
-        /\d labor/i.test(played.opened.pay.text) &&
+        played.opened.pay.labor &&
         played.after.sheet === JOINED_SITE.name &&
         (played.after.slots.match(/Free slot/g) ?? []).length === 2
         ? completed(played)
@@ -4576,14 +4579,14 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
     play: async ({ browser, extraScreenshot }) => {
       const drain = await readUntil(
         () => browser.read(DEEP_DRAIN_STATE),
-        (state) => state.panel.length > 0,
+        (state) => state.panel !== null,
         SHEET_WAIT_MS,
       );
       extraScreenshot("guard-drain");
       return { drain };
     },
     verify: ({ played }) =>
-      played.drain.panel.includes(`−${lossPerTick} troops per tick`) && /ticks left/.test(played.drain.panel)
+      played.drain.panel?.loss === lossPerTick && played.drain.panel.ticksLeft > 0
         ? completed(played)
         : failed("A guard's panel must say its troop loss each tick and the ticks left", played),
   },
@@ -6050,15 +6053,9 @@ export const REHEARSAL_WORDS = {
     victory: "Victory likely",
   },
   take: "Take",
-  beast: (name, troops) => `Guard: ${name}, ${troops} troops`,
-  open: "Unguarded: next army takes it",
+  joinGuard: "Join guard",
   lasts: (ticks, time) => `${ticks} ticks left (${time})`,
   share: (percent) => `${percent}% of each tick`,
-  glory: (amount) => `${amount} Glory`,
-  height: (amount) => `+${amount} height to your Aspect's hyperstructure`,
-  essence: (amount) => `${amount} Essence`,
-  labor: (amount) => `${amount} Labor`,
-  bar: (perTick, charge, threshold) => `+${perTick} on the bane bar: ${charge} of ${threshold}`,
   standingHeight: (height, finish) => `${height} of ${finish}`,
   baneCharge: (charge, threshold) => `${charge} of ${threshold}`,
   gloryChip: "Glory",
@@ -6080,13 +6077,6 @@ const numberIn = (text, pattern) => {
   const match = pattern.exec(text ?? "");
   return match ? Number(match[1].replace(/,/g, "")) : null;
 };
-const PAY_PATTERNS = {
-  glory: wordPattern(REHEARSAL_WORDS.glory, "n"),
-  height: wordPattern(REHEARSAL_WORDS.height, "n"),
-  essence: wordPattern(REHEARSAL_WORDS.essence, "n"),
-  labor: wordPattern(REHEARSAL_WORDS.labor, "n"),
-  bar: wordPattern(REHEARSAL_WORDS.bar, "n", "any", "any"),
-};
 const SLOT_PATTERNS = {
   ticks: wordPattern(REHEARSAL_WORDS.lasts, "n", "any"),
   share: wordPattern(REHEARSAL_WORDS.share, "n"),
@@ -6098,11 +6088,11 @@ const TALLY_PATTERNS = {
   bar: wordPattern(REHEARSAL_WORDS.baneCharge, "n", "any"),
 };
 
-export function readTickPay(chips) {
+export function readTickPay(rates) {
   const pay = {};
-  for (const [part, pattern] of Object.entries(PAY_PATTERNS)) {
-    const chip = chips.find((text) => pattern.test(text));
-    if (chip) pay[part] = numberIn(chip, pattern);
+  for (const { rate, value } of rates) {
+    if (rate === "drain") continue;
+    pay[rate] = Number(value.replace(/[^\d]/g, ""));
   }
   return pay;
 }
@@ -6158,7 +6148,8 @@ const DEEP_SITE_CARD = `JSON.stringify((() => {
     name: sheet?.getAttribute("aria-label") ?? null,
     text: sheet?.textContent ?? "",
     holder: sheet?.querySelector("[data-aspect-holder]")?.dataset.side ?? null,
-    pay: [...(sheet?.querySelectorAll("[data-deep-pay] .ui-chip") ?? [])].map((chip) => chip.textContent.trim()),
+    guard: sheet?.querySelector("[data-deep-guard]")?.dataset.deepGuard ?? null,
+    pay: [...(sheet?.querySelectorAll("[data-deep-pay] [data-rate]") ?? [])].map((rate) => ({ rate: rate.dataset.rate, value: rate.querySelector("b")?.textContent ?? "" })),
     mine: sheet?.querySelector("[data-deep-slots] [data-deep-slot][data-mine]")?.getAttribute("aria-label") ?? null,
     buttons: [...(sheet?.querySelectorAll("button:not([disabled])") ?? [])].map((button) => button.getAttribute("aria-label") || button.textContent.trim()),
   };
@@ -6461,11 +6452,9 @@ async function enterTheDeep({ browser, extraScreenshot }, shared, slot) {
   return { depths: state.depths, army: state.army };
 }
 
-const BEAST_PREFIX = REHEARSAL_WORDS.beast("", "").split(":")[0];
-
 const BEAST_SITE = {
   verb: REHEARSAL_WORDS.attack,
-  matches: (card) => card.text.includes(BEAST_PREFIX),
+  matches: (card) => card.guard === "beast",
   missing: `no ${DEEP_LAYER} site in view holds today's beast`,
 };
 const RIVAL_SITE = {
@@ -6475,7 +6464,7 @@ const RIVAL_SITE = {
 };
 const EMPTY_SITE = {
   verb: REHEARSAL_WORDS.take,
-  matches: (card) => card.text.includes(REHEARSAL_WORDS.open),
+  matches: (card) => card.guard === "open",
   missing: `no ${DEEP_LAYER} site in view stands empty: each holds today's beast or a guard`,
 };
 
