@@ -4,7 +4,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { openPlace } from "@/play/navigation/open-place";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
-import { ASPECT_PAGE_WORDS, SPIRE_WORDS } from "@/ui/design-system/kit/words";
+import { ASPECT_PAGE_WORDS } from "@/ui/design-system/kit/words";
 import { configManager, getStructureName, Position } from "@bibliothecadao/eternum";
 import {
   deepViewFor,
@@ -16,7 +16,7 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import { aspects, catalogAspectId } from "@bibliothecadao/types";
 import { useFrontierRealm } from "../frontier-home";
-import { realmLayers } from "../hud/map-layers";
+import { deepLockLine, realmLayers } from "../hud/map-layers";
 import { AspectInvite } from "../invite/aspect-invite";
 import { AspectFeedView } from "./aspect-feed-view";
 import { useAspectFights } from "./use-aspect-fights";
@@ -49,16 +49,15 @@ export function FrontierAspectPage({ day, onClose }: { day?: number; onClose: ()
     else openPlace("map", Position.fromContract({ x: target.col, y: target.row }));
     onClose();
   };
+  const lock = home && deepLockLine(setup.store, home);
   const goToDeep =
     gameOver || home === null || !settlementRules
       ? undefined
       : canEnterDeep
         ? { go: () => goDeep(home, settlementRules.spacing) }
-        : {
-            refused: {
-              reason: { kind: "failed" as const, line: ASPECT_PAGE_WORDS.deepOpensAt(SPIRE_WORDS.lockedAt(3)) },
-            },
-          };
+        : lock
+          ? { refused: { reason: { kind: "failed" as const, line: ASPECT_PAGE_WORDS.deepOpensAt(lock) } } }
+          : undefined;
   return (
     <AspectPageView
       {...aspectPage(board, (home) => getStructureName(home, setup.store).name)}

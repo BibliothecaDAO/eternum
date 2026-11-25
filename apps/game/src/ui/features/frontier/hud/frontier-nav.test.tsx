@@ -8,6 +8,7 @@ import { SPIRE_WORDS } from "@/ui/design-system/kit/words";
 import { PhoneTabBar, type HudSurface } from "./frontier-nav";
 import { selectLayer } from "./map-layers";
 import { useOnePanel } from "./one-panel";
+import { useHudPopover } from "./hud-popover";
 import { PlaceMenu } from "./surface-deep-switch";
 
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
@@ -142,14 +143,37 @@ it("lists each place with what stands there, and a locked place with its lock an
   ]);
 });
 
-it("puts the open page away when a HUD popover opens on a phone, and closes the popover when a page opens", () => {
-  act(() => root.render(<PhoneHud open="today" />));
+/** A HUD popover that is a surface of its own, as the daily quest's card is. */
+function SurfacePopover() {
+  const { triggerProps, popover } = useHudPopover({ surface: true });
+  return (
+    <>
+      <button type="button" {...triggerProps}>
+        Quest
+      </button>
+      {popover(<p data-quest-card>Today's quest</p>, { className: "", layout: "phone" })}
+    </>
+  );
+}
+
+function PhoneHudWithQuest() {
+  const { surface, openSurface } = useOnePanel(null, true);
+  return (
+    <>
+      <output data-page>{surface ?? "map"}</output>
+      <SurfacePopover />
+      <button onClick={() => openSurface("today")}>Open page</button>
+    </>
+  );
+}
+
+it("puts the open page away when the quest's card opens on a phone, and closes the card when a page opens", () => {
+  const card = () => document.querySelector("[data-quest-card]");
+  act(() => root.render(<PhoneHudWithQuest />));
   press("Open page");
   expect(page()).toBe("today");
-  act(() => document.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
-  expect(page()).toBe("map");
-  expect(document.querySelector('[role="tablist"][aria-label="Map view"]')).not.toBeNull();
+  press("Quest");
+  expect([page(), card() !== null]).toEqual(["map", true]);
   press("Open page");
-  expect(page()).toBe("today");
-  expect(document.querySelector('[role="tablist"][aria-label="Map view"]')).toBeNull();
+  expect([page(), card() !== null]).toEqual(["today", false]);
 });

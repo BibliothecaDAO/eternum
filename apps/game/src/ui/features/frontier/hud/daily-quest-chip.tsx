@@ -22,7 +22,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
   const now = useNowSeconds();
   useNativeRevision(DAILY_QUEST_MODELS);
   const layout = useLayout();
-  const { triggerProps, popover, close } = useHudPopover();
+  const { triggerProps, popover, close } = useHudPopover({ surface: true });
   const tablet = useTablet();
   const today = readDailyQuest(setup.store, realm.game_id, safeInteger(realm.entity_id), now);
   if (!today) return null;

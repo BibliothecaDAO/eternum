@@ -1,4 +1,5 @@
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
+import { SPIRE_WORDS } from "@/ui/design-system/kit/words";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { openPlace } from "@/play/navigation/open-place";
@@ -33,6 +34,12 @@ export type MapLayers = {
 
 const LAYER_MODELS = ["RealmKnowledge", "Structure", "DeepRules", "HomeAspect"] as const;
 export const DEEP_LAYER_TIERS: readonly EtherealLayer[] = [1, 2, 3];
+const DEEP_TIER: EtherealLayer = 3;
+
+export const layerLockLine = (tier: EtherealLayer) => SPIRE_WORDS.lockedAt(tier);
+
+export const deepLockLine = (store: Parameters<typeof reachableDepth>[0], realm: NativeRows["Structure"]) =>
+  (reachableDepth(store, realm.game_id, realm.entity_id) ?? 0) < DEEP_TIER ? layerLockLine(DEEP_TIER) : null;
 
 export const realmLayers = (
   store: Parameters<typeof reachableDepth>[0],

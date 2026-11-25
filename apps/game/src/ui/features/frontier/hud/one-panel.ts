@@ -5,7 +5,7 @@ import { LeftView } from "@/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { HudSurface } from "./frontier-nav";
-import { closeHudPopover, usePopoverShown } from "./hud-popover";
+import { closeHudPopover, useSurfacePopoverShown } from "./hud-popover";
 
 /**
  * The one place that decides what Frontier has open (owner, 20 October 2026: "it opens panel over panel this is bad
@@ -67,7 +67,7 @@ export const useOnePanel = (
     }
     setSurface(next);
   }, []);
-  const popoverShown = usePopoverShown();
+  const popoverShown = useSurfacePopoverShown();
   useEffect(() => {
     if (yieldsToMap && popoverShown) setSurface(null);
   }, [yieldsToMap, popoverShown]);
