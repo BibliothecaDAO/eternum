@@ -4072,7 +4072,7 @@ const RACE_BOARD_STATE = `JSON.stringify((() => {
   };
   return { race: read('[data-season-board] .season-board__aspects'), members: read('[data-season-board] .season-board__rows'),
     invite: read('[aria-label^="Invite a friend"]'), banner: read('[data-daily-quest]'),
-    scopes: window.__labChain?.scopes ?? [], ended: Boolean(document.querySelector('[data-race-ended]')) };
+    scopes: window.__labChain?.scopes ?? [], ended: document.querySelector('[data-race-ended]')?.dataset.raceEnded ?? null };
 })())`;
 
 /** What the opening interface shows: the line over the map, the places on the bar and the day banner's parts. */
@@ -4228,7 +4228,7 @@ function raceBoardSteps(result) {
           race.text.includes("Havoc") &&
           race.text.includes("Insight") &&
           race.text.includes(result === "won" ? "10,000/10K" : "6,400/10K") &&
-          (result !== "expired" || race.text.includes("No Aspect finished its hyperstructure")) &&
+          (result !== "expired" || played.race.ended === "none") &&
           played.invite?.invite.text.includes("Invite a friend to Prowess") &&
           !played.invite?.invite.text.includes("could not be made") &&
           members.text.includes("1,250") &&

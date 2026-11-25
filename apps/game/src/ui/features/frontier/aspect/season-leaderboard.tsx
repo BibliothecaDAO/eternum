@@ -114,7 +114,7 @@ export const SeasonLeaderboard = (props: SeasonLeaderboardProps) => {
     >
       <div data-season-board className="season-board" data-standing={standingShown || undefined}>
         {props.result && (
-          <span className="season-board__result">
+          <span className="season-board__result" data-race-ended={props.result.winner === null ? "none" : "won"}>
             {props.result.winner === null ? ASPECT_PAGE_WORDS.noFinisher : ASPECT_PAGE_WORDS.won(props.result.winner)}
           </span>
         )}
