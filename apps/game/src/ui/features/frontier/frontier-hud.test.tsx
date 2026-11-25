@@ -541,6 +541,26 @@ it("closes a popover first and the page under it next, one Escape each", async (
   }
 });
 
+it("closes the open popover when the player goes from the map to the Realm", async () => {
+  viewport.set(1440);
+  const route = window.location.pathname + window.location.search;
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  try {
+    await renderHud();
+    const popovers = () => document.querySelectorAll("[data-hud-popover]").length;
+    await act(async () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
+    expect(popovers()).toBe(1);
+    await act(async () => {
+      window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
+      window.dispatchEvent(new Event("urlChanged"));
+    });
+    expect(popovers()).toBe(0);
+  } finally {
+    window.history.replaceState(null, "", route);
+    window.dispatchEvent(new Event("urlChanged"));
+  }
+});
+
 const pressPlace = (word: string) =>
   act(async () =>
     [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')]
@@ -1146,7 +1166,7 @@ it("orders the desktop places as Research, Feed, Season, Settings, lists the fiv
   }
 });
 
-it("opens Build in the desktop rail on an open plot as the player enters the Realm, and Escape puts it away", async () => {
+it("opens nothing in the desktop rail as the player enters the Realm: Build waits for a plot pressed", async () => {
   viewport.set(1440);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
@@ -1156,10 +1176,8 @@ it("opens Build in the desktop rail on an open plot as the player enters the Rea
     expect(buildSheet()).toBeNull();
     await act(async () => host.querySelector<HTMLButtonElement>(".frontier-realm-card__identity")!.click());
     expect(window.location.pathname).toMatch(/\/hex$/);
-    expect(buildSheet()).not.toBeNull();
-    expect(useUIStore.getState().selectedBuildingHex).toMatchObject({ structureId: 7 });
-    await act(async () => document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     expect(buildSheet()).toBeNull();
+    expect(useUIStore.getState().selectedBuildingHex).toBeNull();
   } finally {
     act(() => useUIStore.getState().setSelectedBuildingHex(null));
     window.history.replaceState(null, "", route);
@@ -1427,14 +1445,10 @@ it.each([
       );
       expect(initialDock).not.toBeNull();
       expect(initialDock?.dataset.tutorialLayout).toBe(layout);
-      if (layout === "phone") {
-        expect(initialDock?.dataset.tutorialForm).toBe("reminder");
-        expect(initialDock?.textContent).toContain(OPENING_WORDS.titles.explore());
-      } else {
-        expect(initialDock?.querySelector(".emissary-dock__action")?.textContent).toContain(
-          OPENING_WORDS.actions.explore,
-        );
-      }
+      expect(initialDock?.dataset.tutorialForm).toBe("card");
+      expect(initialDock?.querySelector(".emissary-dock__action")?.textContent).toContain(
+        OPENING_WORDS.actions.explore,
+      );
 
       await act(async () => {
         window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=2&row=2");
@@ -1620,12 +1634,8 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
     expect(dayEndDock?.textContent).toContain(
       OPENING_WORDS.titles["day-end"]({ ...OPENING_RULES, dayLeftSeconds: 60 }),
     );
-    await act(async () =>
-      dayEndDock!.querySelector<HTMLButtonElement>(`button[aria-label="${OPENING_WORDS.showLesson}"]`)!.click(),
-    );
-    expect(host.querySelector('[data-tutorial-dock="day-end"]')?.textContent).toContain(
-      OPENING_WORDS.lines["day-end"](),
-    );
+    expect(dayEndDock?.dataset.tutorialForm).toBe("card");
+    expect(dayEndDock?.textContent).toContain(OPENING_WORDS.lines["day-end"]());
 
     await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Today"]')!.click());
     await act(async () => new Promise((settled) => setTimeout(settled, 20)));

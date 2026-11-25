@@ -35,6 +35,7 @@ import { useSelectionCard } from "./frontier-selection-sheet";
 import { FrontierSurfaces } from "./frontier-surfaces";
 import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
 import { ArmyDock } from "./hud/army-dock";
+import { closeHudPopover } from "./hud/hud-popover";
 import { useChatKey } from "./hud/chat-key";
 import { DailyQuestChip } from "./hud/daily-quest-chip";
 import { FrontierDesktop, FrontierPlaces } from "./hud/frontier-desktop";
@@ -76,7 +77,6 @@ import { FrontierToday } from "./log/frontier-today";
 import { type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
 import { FrontierResearch } from "./research/frontier-research";
 
-import { useBuildOpensOnEntering } from "./build/build-button";
 import { BuildingsInFlight, useRealmPlots } from "./build/build-sheet";
 import { STORE_KINDS } from "./stores";
 import { type LordsReading, useLordsBalance } from "@/shell/value/use-lords-balance";
@@ -177,7 +177,6 @@ const FrontierHudBody = ({
   const pickArmy = usePickArmy();
   const seasonRank = useSeasonRank();
   const fragmentsHeld = useFragmentsHeld();
-  const ordersAllowed = useUIStore(canIssueOrders);
   const layers = useMapLayers(rules, shown, visit ? null : realm);
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
   const previousMapView = useRef(isMapView);
@@ -185,8 +184,8 @@ const FrontierHudBody = ({
     if (previousMapView.current === isMapView) return;
     previousMapView.current = isMapView;
     setSurface(null);
+    closeHudPopover();
   }, [isMapView, setSurface]);
-  useBuildOpensOnEntering(desktop && !isMapView && ordersAllowed && realm && !visit ? realm : null);
   const chat = useGameChat(surface === "chat");
   const chatPane = useChatKey(() => setSurface("chat"), { enabled: !desktop });
   const headerStores = useStoreReadings(shown, rules);

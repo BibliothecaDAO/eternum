@@ -569,15 +569,16 @@ hairline rows, then one line naming the next locked slot), and on the World view
 (`section[aria-label="Minimap"]`). The right rail (`[data-frontier-rail]`, 384 px) starts its panels at 72 px: **Feed**
 opens in `[data-right-page]`, **Research** and **Season** (when `RaceRules` stands) take the wide stage from the left
 column to the right edge (`[data-wide-page]`), and every action sheet (**Build**, **Castle**, building card, **Deploy**,
-**Army**, **Today**, **Shop**, **Settings**, map site cards) docks in `[data-rail-panel]`. **Chat** stands in its old
-dock at the bottom right (`.frontier-chat-dock`): a strip with the last message and the unread count
+**Army**, **Today**, **Shop**, **Settings**, map site cards) docks in `[data-rail-panel]`. **Chat** stands in its dock
+at the bottom right (`.frontier-chat-dock`, the rail's width): a strip with the last message and the unread count
 (`button[aria-label="Chat strip"]`) that opens a 340 px pane above it; Escape or a click on the map closes it. The
-**Feed** (`frontier/hud/frontier-feed.tsx`) is the world's history live, one line a story (who did what to what, how it
-went, what it paid at its end), your own in gold; each row's painting is its story's act (`storyMeaning`) and a site's
-guard as the map draws it, under **All** (first and the default), **Important**, or **Mine**. A point spent reads "spent
-a point on Battle IV" (`/lab/game?scenario=point-spent`, **Feed**). The Feed tells only what the game writes as a story:
-a research purchase has none, so it has no row until the contracts write one. Whole-screen proofs for the Season race
-and in-game panels (Research, Feed, Chat, Settings) run as `lab-race` (`/lab/game?scenario=race`) and `lab-panels`
+**Feed** (`frontier/hud/frontier-feed.tsx`) is the world's history live, one line a story (its act's icon, its time, who
+did what to what, how it went, what it paid at its end), your own in gold; each row's painting is its story's act
+(`storyMeaning`) and a site's guard as the map draws it, under **All** (first and the default), **Important**, or
+**Mine**, the lenses in the Feed's head. A point spent reads "spent a point on Battle IV"
+(`/lab/game?scenario=point-spent`, **Feed**). The Feed tells only what the game writes as a story: a research purchase
+has none, so it has no row until the contracts write one. Whole-screen proofs for the Season race and in-game panels
+(Research, Feed, Chat, Settings) run as `lab-race` (`/lab/game?scenario=race`) and `lab-panels`
 (`/lab/game?scenario=panels`). A desktop has no Menu: **Settings** in the toolbar holds Alerts, Leave game and How to
 play. Frontier has no Next up (owner, 4 November 2026: "Do cut next up indeed for frontier"), so Settings draws no Next
 up switch there. Leaving by a phone's Menu, Exit or by Back keeps the game booted: Back from the map goes to the page it

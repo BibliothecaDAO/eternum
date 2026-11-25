@@ -107,7 +107,7 @@ const realmPlots = (realm: NativeRows["Structure"]): HexPosition[] => {
   return plots;
 };
 
-export const openPlots = (store: PlotStore, realm: NativeRows["Structure"]): HexPosition[] =>
+const openPlots = (store: PlotStore, realm: NativeRows["Structure"]): HexPosition[] =>
   realmPlots(realm).filter((plot) => isOpenPlot(store, realm, plot));
 
 const plotsHeld = (store: PlotStore, realm: NativeRows["Structure"]) => {

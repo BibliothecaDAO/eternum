@@ -30,10 +30,10 @@ export const FeedLine = ({ story }: { story: ProcessedStoryEvent }) => {
   const line = useToldLine(story);
   return (
     <FeedRow story={story} line={line} className="ui-event ui-feed-line items-center py-2">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-hud-divider bg-hud-surface">
+      <span className="ui-feed-line__tile flex size-9 shrink-0 items-center justify-center rounded-md border border-hud-divider bg-hud-surface">
         <Icon name={storyMeaning(story.story)} size={24} className="ui-event__icon" />
       </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <span className="ui-feed-line__told flex min-w-0 flex-1 flex-col gap-0.5">
         {line.words}
         <span className="ui-event__time">{formatClockTime(story.timestampMs / 1000)}</span>
       </span>
