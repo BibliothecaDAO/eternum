@@ -1075,6 +1075,7 @@ export const SEASON_BOARD_WORDS = {
   yourShare: (lords: number) => `Est. ~${formatShort(lords)} yours`,
   triumphs: (stage: number, stages: number) => `Aspect Triumphs · ${ASPECT_PAGE_WORDS.stage(stage, stages)}`,
   altar: `${DEEP} Altar charge`,
+  altarCharge: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
   standing: "Standing",
   player: "Player",
   order: "Order",

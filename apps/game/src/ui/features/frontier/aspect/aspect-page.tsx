@@ -4,7 +4,8 @@ import { useQuery } from "@/hooks/helpers/use-query";
 import { openPlace } from "@/play/navigation/open-place";
 import { nativeAspectRoster } from "@/shell/season-tab/glory-rows";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
-import { ASPECT_PAGE_WORDS } from "@/ui/design-system/kit/words";
+import { HudPage, HudSkeleton } from "@/ui/design-system/kit/hud-elements";
+import { ASPECT_PAGE_WORDS, SEASON_BOARD_WORDS } from "@/ui/design-system/kit/words";
 import { configManager, getStructureName, Position } from "@bibliothecadao/eternum";
 import {
   compareAspectMembers,
@@ -45,18 +46,11 @@ export function FrontierAspectPage({ day, onClose }: { day?: { day: number; last
   useNativeRevision(["DeepRules", "RealmKnowledge", "SettlementRules"]);
   if (!board)
     return (
-      <SeasonLeaderboard
-        day={day}
-        players={0}
-        race={[]}
-        finishHeight={0}
-        stages={nativeRaceConstants.STAGE_COUNT}
-        result={null}
-        rosters={[]}
-        ownEntityId={null}
-        standing={null}
-        onClose={onClose}
-      />
+      <HudPage label={SEASON_BOARD_WORDS.title} icon="crown" onClose={onClose}>
+        <div data-season-reading={reading.unknown ?? "no race"}>
+          <HudSkeleton rows={6} />
+        </div>
+      </HudPage>
     );
   const gameId = configManager.getActiveGameId();
   const canEnterDeep = home !== null && realmLayers(setup.store, home).includes("deep");

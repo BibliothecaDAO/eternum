@@ -17,8 +17,9 @@ const boardOf = (name: keyof typeof CASES) => {
   const { store, player, startsAt } = CASES[name]();
   store.setSnapshot({ gameId: 1, actor: player, timestamp: startsAt, complete: true });
   const home = store.require("Structure", { game_id: 1, entity_id: 7 });
-  const board = readRaceBoard(store, 1, home.entity_id).known?.race;
-  if (!board) throw new Error(`The ${name} race scenario holds no race`);
+  const reading = readRaceBoard(store, 1, home.entity_id);
+  const board = reading.known?.race;
+  if (!board) throw new Error(`The ${name} race scenario holds no race: ${reading.unknown ?? "no race rules"}`);
   return seasonBoard(board, home, (realm) => getStructureName(realm, store).name, true);
 };
 

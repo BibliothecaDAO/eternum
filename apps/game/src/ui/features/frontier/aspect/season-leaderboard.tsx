@@ -324,7 +324,7 @@ const Standing = ({
       <span className="season-standing__altar" data-charge={standing.altar.charge}>
         <span className="season-standing__altar-line">
           <span>{WORDS.altar}</span>
-          <b>{`${formatExact(standing.altar.charge)} / ${formatExact(standing.altar.threshold)}`}</b>
+          <b>{WORDS.altarCharge(standing.altar.charge, standing.altar.threshold)}</b>
         </span>
         <HudMeter label={WORDS.altar} share={standing.altar.charge / standing.altar.threshold} />
       </span>

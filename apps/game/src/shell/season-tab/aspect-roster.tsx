@@ -75,8 +75,9 @@ export const GlobalGloryRoster = ({
         entries={merged.rows
           .slice(0, ROSTER_TOP)
           .map((entry) =>
-            gloryBoardEntry(gloryRowOf(entry.rank, entry.member, entry.member.realm_id === ownRealmId, entry.aspect), () =>
-              open(entry.member.owner),
+            gloryBoardEntry(
+              gloryRowOf(entry.rank, entry.member, entry.member.realm_id === ownRealmId, entry.aspect),
+              () => open(entry.member.owner),
             ),
           )}
       />
