@@ -42,7 +42,6 @@ interface SlopedGround {
 }
 
 interface CellFieldSample {
-  baseHeight: number;
   biome: BiomeType;
   centerX: number;
   centerZ: number;
@@ -401,26 +400,29 @@ export class TerrainField {
 
   private sampleShoreHeight(worldX: number, worldZ: number, candidates: readonly CellFieldSample[]): number {
     if (!candidates.some((candidate) => isTerrainWaterBiome(candidate.biome))) return TERRAIN_GROUND_HEIGHT;
-    let weight = 0;
-    let floor = 0;
-    let land = 0;
-    let reach = 0;
-    for (const candidate of candidates) {
-      const distance = (candidate.centerX - worldX) ** 2 + (candidate.centerZ - worldZ) ** 2;
-      const share = Math.exp(-distance / SHORE_BIAS_SPREAD);
-      weight += share;
-      floor += candidate.baseHeight * share;
-      const wide = Math.exp(-distance / SHORE_SIDE_SPREAD);
-      reach += wide;
-      if (!isTerrainWaterBiome(candidate.biome)) land += wide;
-    }
-    const landShare = land / reach;
-    const shoreness = 1 - Math.abs(landShare * 2 - 1);
-    const wobble = (this.noise.sample(worldX * 1.6, worldZ * 1.6, "terrain-shore-v1") - 0.5) * SHORE_WOBBLE * shoreness;
-    const free = floor / weight + wobble;
-    const held = holdToWaterSide(free, landShare < 0.5);
-    return free + (held - free) * smoothstep(0.72, 0.97, Math.max(landShare, 1 - landShare));
+    const owner = findNearestTerrainHex(worldX, worldZ);
+    const ownerWater = isTerrainWaterBiome(this.getCell(owner.col, owner.row)?.biome ?? null);
+    const center = terrainHexToWorld(owner.col, owner.row);
+    const across = terrainNeighborCoordinates(owner.col, owner.row)
+      .map((hex) => ({ hex, at: terrainHexToWorld(hex.col, hex.row) }))
+      .reduce((best, next) =>
+        (next.at.x - worldX) ** 2 + (next.at.z - worldZ) ** 2 < (best.at.x - worldX) ** 2 + (best.at.z - worldZ) ** 2
+          ? next
+          : best,
+      );
+    const acrossCell = this.getCell(across.hex.col, across.hex.row);
+    const acrossWater = acrossCell?.explored ? isTerrainWaterBiome(acrossCell.biome) : ownerWater;
+    if (acrossWater === ownerWater) return ownerWater ? TERRAIN_SEABED_HEIGHT : TERRAIN_GROUND_HEIGHT;
+    const towardX = across.at.x - center.x;
+    const towardZ = across.at.z - center.z;
+    const along = ((worldX - center.x) * towardX + (worldZ - center.z) * towardZ) / (towardX ** 2 + towardZ ** 2);
+    const intoLand = (0.5 - along) * (ownerWater ? -1 : 1);
+    const wander = (this.noise.sample(worldX * 1.6, worldZ * 1.6, "terrain-shore-v1") - 0.5) * SHORE_WANDER;
+    const rise = smoothstep(-SHORE_BAND, SHORE_BAND, intoLand + wander);
+    return TERRAIN_SEABED_HEIGHT + (TERRAIN_GROUND_HEIGHT - TERRAIN_SEABED_HEIGHT) * rise;
   }
+
+
 
   private sampleWeightedEnvironment(
     worldX: number,
@@ -626,7 +628,6 @@ export class TerrainField {
     const primary = terrainBiomePaint(biome, "primary");
     const secondary = terrainBiomePaint(biome, "secondary");
     const sample = {
-      baseHeight: isTerrainWaterBiome(biome) ? TERRAIN_SEABED_HEIGHT : TERRAIN_GROUND_HEIGHT,
       biome,
       centerX: center.x,
       centerZ: center.z,
@@ -758,18 +759,9 @@ function resolveTerrainCandidateCoordinates(col: number, row: number): Array<{ c
   });
 }
 
-const WATERLINE_MARGIN = 0.02;
-const WATER_DEPTH_AT_MIDDLE = 0.06;
 const TERRAIN_SEABED_HEIGHT = TERRAIN_WATER_LEVEL - TERRAIN_DEEP_WATER_DEPTH;
-const SHORE_BIAS_SPREAD = 0.6;
-const SHORE_WOBBLE = 0.07;
-const SHORE_SIDE_SPREAD = 2.5;
-
-function holdToWaterSide(height: number, water: boolean): number {
-  return water
-    ? Math.min(height, TERRAIN_WATER_LEVEL - WATER_DEPTH_AT_MIDDLE)
-    : Math.max(height, TERRAIN_WATER_LEVEL + WATERLINE_MARGIN);
-}
+const SHORE_BAND = 0.2;
+const SHORE_WANDER = 0.2;
 
 function oddRowShiftFrom(row: number, rowOffset: number): number {
   const parity = Math.abs(row % 2) === 1 ? -1 : 1;

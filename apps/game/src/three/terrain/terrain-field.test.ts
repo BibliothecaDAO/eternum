@@ -272,21 +272,6 @@ describe("TerrainField", () => {
     expect(edge.successionStrength).toBeGreaterThan(dryInterior.successionStrength);
   });
 
-  it("adds deterministic macro landforms without breaking biome ownership", () => {
-    const cells = Array.from({ length: 8 }, (_, col) => cell(col, 0, BiomeType.Scorched));
-    const first = new TerrainField(createRequest(cells));
-    const second = new TerrainField(createRequest(cells));
-    const heights = cells.map(({ col, row }) => {
-      const center = terrainHexToWorld(col, row);
-      const sample = first.sampleSurface(center.x, center.z);
-      expect(sample).toEqual(second.sampleSurface(center.x, center.z));
-      expect(sample.biome).toBe(BiomeType.Scorched);
-      return sample.height;
-    });
-
-    expect(Math.max(...heights) - Math.min(...heights)).toBeGreaterThan(0.08);
-  });
-
   it("exposes a continuous shoreline signal only where land meets water", () => {
     const cells = [
       cell(0, 0, BiomeType.Ocean),

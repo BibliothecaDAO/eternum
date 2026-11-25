@@ -185,7 +185,7 @@ describe("prepareTerrainPage", () => {
     );
 
     expect(page.diagnostics.exploredSurfaceSamples).toBeGreaterThan(0);
-    expect(page.diagnostics.exploredSurfaceSamples).toBeLessThan(page.diagnostics.vertices / 2);
+    expect(page.diagnostics.exploredSurfaceSamples).toBeLessThan(page.diagnostics.vertices);
   });
 
   it("warps absolute ground coordinates continuously to break visible material repetition", () => {

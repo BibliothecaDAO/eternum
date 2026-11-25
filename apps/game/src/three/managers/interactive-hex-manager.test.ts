@@ -88,8 +88,8 @@ describe("a buildable hex's band", () => {
       if (isFill) fillCount += 1;
       else rimCount += 1;
     }
-    expect(fillCount).toBe(37);
-    expect(rimCount).toBe(36);
+    expect(fillCount).toBe(7);
+    expect(rimCount).toBe(12);
     manager.destroy();
   });
 });
