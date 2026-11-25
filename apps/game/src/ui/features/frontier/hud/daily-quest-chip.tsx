@@ -85,9 +85,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
           reading && (
             <span className="frontier-quest-orb__words">
               <span className="frontier-quest-orb__name">{face.name}</span>
-              <span className="frontier-quest-orb__objective">
-                {DAY_BANNER_WORDS.objectiveLine(face, target)}
-              </span>
+              <span className="frontier-quest-orb__objective">{DAY_BANNER_WORDS.objectiveLine(face, target)}</span>
             </span>
           )
         )}

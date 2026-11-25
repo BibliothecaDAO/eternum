@@ -292,8 +292,7 @@ describe("bane collection", () => {
     const game = fixture();
     game.drawWith(<DailyQuestChip realm={game.realm()} />);
     const chip = host.querySelector("[data-daily-quest-chip]")!;
-    const reading = readDailyQuest(game.store, 1, safeInteger(game.realm().entity_id), clock.now)!
-      .reading.known!;
+    const reading = readDailyQuest(game.store, 1, safeInteger(game.realm().entity_id), clock.now)!.reading.known!;
     expect(chip.querySelector("[data-icon]")?.getAttribute("data-icon")).toBe(
       resolveAspectEmissary(questSpeaker(reading)).portrait,
     );
