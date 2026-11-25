@@ -45,7 +45,7 @@ it.each([
 ] as const)("reads each army's exact stamina from %s, and the player picks the army with the most", async (_, Army) => {
   document.body.innerHTML = renderToStaticMarkup(
     <nav aria-label="Armies">
-      {STAMINAS.map((stamina, index) => (
+      {STAMINAS.map((stamina, index) =>
         Army === ArmyToken ? (
           <ArmyToken
             key={index}
@@ -67,8 +67,8 @@ it.each([
             selected={false}
             onPick={() => {}}
           />
-        )
-      ))}
+        ),
+      )}
     </nav>,
   );
   expect(await selectArmy()).toEqual({
