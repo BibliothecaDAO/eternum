@@ -81,7 +81,6 @@ vi.mock("../sites/well-refill", () => ({ useWellRefill: (_id: number, ratio: num
 vi.mock("../hud/dock-armies", () => ({
   useDockArmies: () => [{ ...army, ethereal: game.ethereal, ...(game.staminaKnown ? {} : { stamina: undefined }) }],
 }));
-vi.mock("../frontier-reveal-yield", () => ({ useArmyRevealYield: () => 75 }));
 vi.mock("../value/fragments", () => ({ useFragmentsHeld: () => game.fragments }));
 // The army stands away from its spire: its panel has no Spire (spire-card.test.tsx plays the spire).
 vi.mock("../spire-card", () => ({ useArmySpireStatus: () => null }));

@@ -108,7 +108,7 @@ export class WorldUpdateListener {
             explorerOwnerAddress: owner === undefined || owner === null ? null : BigInt(String(owner)),
             resourceId: integer(payload.resource_type) as ResourcesIds,
             rawAmount: BigInt(String(payload.amount)),
-            amount: divideByPrecision(Number(payload.amount)),
+            amount: divideByPrecision(Number(payload.amount), false),
             coord: { x: integer(fields(payload.coord)?.x), y: integer(fields(payload.coord)?.y) },
             timestamp: integer(event.timestamp),
           });
@@ -138,7 +138,7 @@ export class WorldUpdateListener {
           const maxReward = battle.max_reward.map((value) => {
             const row = fields(value);
             if (!row) throw new Error("Malformed battle reward");
-            return { resourceType: integer(row.resource_type), amount: divideByPrecision(Number(row.amount)) };
+            return { resourceType: integer(row.resource_type), amount: divideByPrecision(Number(row.amount), false) };
           });
           callback({
             entityId: winnerId === attackerOwner ? attackerId : defenderId,
@@ -197,6 +197,6 @@ const siteReward = (value: unknown): SitePayoutSystemUpdate["reward"] => {
   if (!reward) throw new Error("Malformed site reward");
   return {
     resourceId: integer(reward.resource_type) as ResourcesIds,
-    amount: divideByPrecision(Number(reward.amount)),
+    amount: divideByPrecision(Number(reward.amount), false),
   };
 };
