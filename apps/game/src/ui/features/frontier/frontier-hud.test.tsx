@@ -25,14 +25,16 @@ vi.mock("@bibliothecadao/types", async (original) => ({
     setSeenRoom = vi.fn();
   },
 }));
+const identity = vi.hoisted(() => ({ status: "signed-in" as "signed-in" | "signed-out" }));
+const signIn = vi.hoisted(() => ({ request: (() => {}) as () => void }));
 vi.mock("@/hooks/context/identity-session", async (original) => ({
   ...(await original<typeof import("@/hooks/context/identity-session")>()),
   useIdentitySession: () => ({
-    status: "signed-in",
+    status: identity.status,
     session: { user: { id: "u1", realmsId: "", name: "uxplay", email: "uxplay@example.com", address: "0x7" } },
   }),
 }));
-vi.mock("@/shell/sign-in/connect", () => ({ useRequestSignIn: () => vi.fn() }));
+vi.mock("@/shell/sign-in/connect", () => ({ useRequestSignIn: () => () => signIn.request() }));
 // The realm the player visits, as the season board's Visit starts it; none until a test visits.
 const visiting = vi.hoisted(() => ({ visit: null as { player: string; structureId: number; opensOn: null } | null }));
 vi.mock("@/sync/active-game-client", async (original) => ({
@@ -1011,6 +1013,26 @@ it("opens chat on Global over the game when a mention's alert is pressed, the ga
   } finally {
     window.history.replaceState(null, "", route);
     Reflect.deleteProperty(navigator, "serviceWorker");
+  }
+});
+
+it("keeps chat shut for a signed-out player on a desktop: Enter opens nothing and the strip asks to sign in", async () => {
+  identity.status = "signed-out";
+  const requested = vi.fn();
+  signIn.request = requested;
+  viewport.set(1440);
+  try {
+    await renderHud();
+    await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" })));
+    expect([chatOpen(), host.querySelector("[data-chat-pane]")]).toEqual([false, null]);
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>('.frontier-chat-dock button[aria-label="Chat strip"]')!.click(),
+    );
+    expect(requested).toHaveBeenCalledOnce();
+    expect(host.querySelector("[data-chat-pane]")).toBeNull();
+  } finally {
+    identity.status = "signed-in";
+    signIn.request = () => {};
   }
 });
 

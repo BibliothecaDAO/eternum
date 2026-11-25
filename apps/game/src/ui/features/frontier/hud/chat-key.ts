@@ -8,15 +8,18 @@ import { type RefObject, useEffect, useLayoutEffect, useRef, useState } from "re
  * the field of the pane the returned ref is given to. Never while typing, and never an Enter a preview's verb took. A
  * pressed chat alert opens chat too (useChatRevealed).
  */
-export const useChatKey = (openChat: () => void): RefObject<HTMLElement> => {
+export const useChatKey = (openChat: () => void, { enabled = true } = {}): RefObject<HTMLElement> => {
   const pane = useRef<HTMLElement>(null);
   const [presses, setPresses] = useState(0);
   const open = useRef(openChat);
   useLayoutEffect(() => {
     open.current = openChat;
   });
-  useChatRevealed(() => open.current());
+  useChatRevealed(() => {
+    if (enabled) open.current();
+  });
   useEffect(() => {
+    if (!enabled) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== CHAT_SHORTCUT.key || event.repeat || event.defaultPrevented) return;
       if (isKeyForSurface(event)) return;
@@ -26,7 +29,7 @@ export const useChatKey = (openChat: () => void): RefObject<HTMLElement> => {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [enabled]);
   useEffect(() => {
     if (presses > 0) pane.current?.querySelector<HTMLElement>("input,textarea")?.focus();
   }, [presses]);

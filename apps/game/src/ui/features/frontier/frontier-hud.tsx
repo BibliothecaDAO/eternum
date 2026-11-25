@@ -192,7 +192,7 @@ const FrontierHudBody = ({
   }, [isMapView, setSurface]);
   useBuildOpensOnEntering(desktop && !isMapView && ordersAllowed && realm && !visit ? realm : null);
   const chat = useGameChat(surface === "chat");
-  const chatPane = useChatKey(() => setSurface("chat"));
+  const chatPane = useChatKey(() => setSurface("chat"), { enabled: !desktop });
   const headerStores = useStoreReadings(shown, rules);
   const headerFacts = useNativeFacts(REALM_HEADER_MODELS);
   const own = realm && !visit ? realm : null;
