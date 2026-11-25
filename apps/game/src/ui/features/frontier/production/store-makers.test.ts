@@ -8,7 +8,6 @@ const { dayEndScenario } = await import("@/lab/game/day-end-scenario");
 const { buildingsMake, storeMakerLines } = await import("./store-makers");
 const { readBuildOptions } = await import("../build/build-options");
 const { readRealmStore } = await import("../realm-stores");
-const { storeRateText } = await import("../hud/status-strip");
 const { formatRate } = await import("@bibliothecadao/types");
 
 const realm = () => {
@@ -53,7 +52,7 @@ const surfaces = (bane: boolean, kind: "wheat" | "troops", category: number) => 
   const standing = new ResourceManager(store, 7).current(kind === "wheat" ? ResourcesIds.Wheat : ResourcesIds.Knight)!
     .production!.building_count;
   return {
-    realmCard: storeRateText({ ...reading, kind, flyTarget: kind }),
+    realmCard: formatRate(reading.perHour === undefined ? undefined : reading.perHour / 3_600),
     buildingPanel: formatRate(buildingsMake(store, row, category, now)!.perSecond),
     buildTimesStanding: formatRate(((build.effect as { perHour: number }).perHour * standing) / 3_600),
   };

@@ -48,7 +48,7 @@ export const SheetHandle = ({ onClose, children }: { onClose: () => void; childr
       aria-label={CLOSE}
       {...drag.handlers}
       onClick={() => !drag.dragged.current && onClose()}
-      className="flex h-12 w-full shrink-0 touch-none items-center justify-center lg:hidden"
+      className="flex h-12 w-full shrink-0 touch-none items-center justify-center hud-desk:hidden"
     >
       {children}
     </button>

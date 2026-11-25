@@ -185,8 +185,8 @@ const OpenPanel = ({
         "pointer-events-auto fixed z-hud-popover touch-pan-y overflow-y-auto outline-none overscroll-contain",
         !holdsWindow && [
           "ui ui-popover w-80 rounded-xl p-4",
-          "max-lg:w-screen max-lg:rounded-b-none",
-          "max-lg:landscape:w-auto max-lg:landscape:rounded-b-xl max-lg:landscape:rounded-r-none",
+          "hud-compact:w-screen hud-compact:rounded-b-none",
+          "hud-compact:landscape:w-auto hud-compact:landscape:rounded-b-xl hud-compact:landscape:rounded-r-none",
           className,
         ],
       )}

@@ -52,11 +52,12 @@ export const reinforceScenario = (): LabScenario => {
 export const empireArmiesScenario = (): LabScenario => {
   const game = reinforceScenario();
   const realm = game.store.require("Structure", { game_id: 1, entity_id: 7 });
+  const slots = game.store.require("SliceRules", { game_id: 1 }).troop_limit_config.empire_armies;
   game.store.applyFacts([
     {
       model: "Structure",
       key: game.store.wireKeyOf("Structure", realm)!,
-      value: wire({ ...realm, base: { ...realm.base, level: RealmLevels.Empire } }),
+      value: wire({ ...realm, base: { ...realm.base, level: RealmLevels.Empire, troop_max_explorer_count: slots } }),
     },
   ] as never);
   return game;

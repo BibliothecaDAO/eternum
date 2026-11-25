@@ -27,8 +27,15 @@ it("lays every HUD stylesheet out by the HUD's own queries, never a width writte
   expect(handoverQueries.filter(({ query }) => !known.has(query))).toEqual([]);
 });
 
-it("switches the frontier HUD's classes by the HUD's desktop variant, not Tailwind's lg", () => {
-  const tsx = filesUnder(join(__dirname, "../../features/frontier"), ".tsx").filter((file) => !file.endsWith(".test.tsx"));
-  const lg = tsx.filter((file) => /["'`\s](max-)?lg:[\w[-]/.test(readFileSync(file, "utf8")));
+const APP_SOURCE = join(__dirname, "../../..");
+
+const readsTheHudLane = (file: string) => readFileSync(file, "utf8").includes("@/hooks/helpers/use-compact-hud");
+
+it("switches every class the HUD's layout draws by the HUD's variants, never by Tailwind's lg", () => {
+  const frontier = filesUnder(join(__dirname, "../../features/frontier"), ".tsx");
+  const laneReaders = filesUnder(APP_SOURCE, ".tsx").filter(readsTheHudLane);
+  const kitSheet = [join(__dirname, "sheet.tsx"), join(__dirname, "sheet-closes.tsx")];
+  const drawn = [...new Set([...frontier, ...laneReaders, ...kitSheet])].filter((file) => !file.endsWith(".test.tsx"));
+  const lg = drawn.filter((file) => /["'`\s](max-)?lg:[\w[-]/.test(readFileSync(file, "utf8")));
   expect(lg).toEqual([]);
 });
