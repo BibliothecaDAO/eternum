@@ -594,7 +594,7 @@ export const SEASON = "Season";
 export const RANK = "Rank";
 export const SITES = "Sites";
 export const SITES_CLEARED = "Sites cleared";
-export const OATH_WAITING = "Oath ready: select the army to pick";
+export const OATH_WAITING = "Oath ready: choose which army takes it";
 export const OATH_PICK = {
   title: "Swear an Oath",
   replaceTitle: "Pick an Oath to replace",
