@@ -146,7 +146,7 @@ it("shows the army's captured Oath capacity rather than later home research", ()
   game.learned = 3n << 30n;
   game.progress.oath_slots = 2;
   act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
-  const sockets = () => host.querySelector(".oath-sockets")!;
+  const sockets = () => host.querySelector("[data-oath-slots]")!;
   expect(sockets().getAttribute("aria-label")).toBe("2 Oath slots");
   expect(sockets().querySelectorAll("[data-open]")).toHaveLength(2);
   game.progress.oath_slots = 5;

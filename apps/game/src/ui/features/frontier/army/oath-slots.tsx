@@ -162,7 +162,7 @@ export function OathSockets({
 }) {
   const [hint, setHint] = useState(false);
   return (
-    <div role="group" aria-label={RESEARCH_TREE.oathSlots(slots)} className="oath-sockets">
+    <div role="group" aria-label={RESEARCH_TREE.oathSlots(slots)} data-oath-slots={slots} className="oath-sockets">
       {Array.from({ length: OATH_SLOTS_MAX }, (_, index) => {
         const oath = oaths[index];
         if (oath)

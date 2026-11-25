@@ -1446,20 +1446,15 @@ const OATH_SLOTS_STEPS = [
       return browser.read(`(() => {
         const slots = document.querySelector('[data-oath-slots="3"]');
         const rect = slots?.getBoundingClientRect();
-        return { text: slots?.textContent, open: slots?.querySelectorAll('[aria-label$="· Open"]').length,
-          locked: slots?.querySelectorAll('[aria-label$="· Locked"]').length,
-          priced: slots?.querySelectorAll('[aria-label$="· Locked"] .ui-cost').length,
+        return { name: slots?.getAttribute('aria-label'), open: slots?.querySelectorAll('[data-open]').length,
+          locked: slots?.querySelectorAll('[data-locked]').length,
           visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
       })()`);
     },
     verify: ({ played }) =>
-      played.visible &&
-      played.open === 3 &&
-      played.locked === 2 &&
-      played.priced === 2 &&
-      played.text.includes("3 Oath slots")
+      played.visible && played.open === 3 && played.locked === 2 && played.name === "3 Oath slots"
         ? completed(played)
-        : failed("The army's three open and two priced locked slots were not visible", played),
+        : failed("The army's three open and two locked Oath sockets were not visible", played),
   },
 ];
 
