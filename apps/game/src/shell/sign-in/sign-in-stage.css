@@ -87,32 +87,6 @@
   filter: drop-shadow(0 8px 24px rgb(0 0 0 / 0.65));
 }
 
-.signin-stage__lore {
-  margin: 0;
-  font-family: var(--app-face-title);
-  font-size: clamp(1.25rem, 2.5vw, 1.85rem);
-  line-height: 1.22;
-  color: var(--app-ink);
-  text-shadow: 0 2px 14px rgb(0 0 0 / 0.78);
-}
-
-.signin-stage__facets {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-}
-
-.signin-stage__facet {
-  display: grid;
-  place-items: center;
-  border: 1px solid rgb(var(--app-line-strong, var(--app-gold)) / 0.35);
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--app-ground) 76%, transparent);
-  padding: 0.25rem;
-  box-shadow: 0 6px 18px rgb(0 0 0 / 0.5);
-}
-
 .signin-stage__panel {
   position: relative;
   z-index: 2;
@@ -178,15 +152,6 @@
   background: var(--app-line);
 }
 
-.signin-foot-facets {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  border-top: 1px solid var(--app-line);
-  padding-top: 0.875rem;
-}
-
 @media (max-width: 1023px) {
   .signin-stage {
     flex-direction: column;
@@ -206,14 +171,6 @@
 
   .signin-stage__lockup {
     height: 5.5rem;
-  }
-
-  .signin-stage__lore {
-    font-size: 1.05rem;
-  }
-
-  .signin-stage__art .signin-stage__facets {
-    display: none;
   }
 
   .signin-stage__panel {
@@ -278,9 +235,5 @@
 
   .signin-providers__grid .app-button {
     font-size: var(--app-text-control);
-  }
-
-  .signin-foot-facets {
-    display: none;
   }
 }

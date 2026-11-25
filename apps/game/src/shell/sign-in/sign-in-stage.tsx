@@ -1,17 +1,14 @@
 import "./sign-in-stage.css";
 
-import { aspects } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
-import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
-import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
+import { REALMS_MARK } from "@/ui/design-system/icon-meaning";
 import { AppModalLayer } from "@/ui/design-system/kit/app-elements";
 import { paintingSources } from "@/ui/design-system/kit/paintings";
-import { CLOSE, LORE_LINE } from "@/ui/design-system/kit/words";
+import { CLOSE } from "@/ui/design-system/kit/words";
 
 import { useLayout } from "../frame/layout";
-import { ageOf } from "../play/ages";
 
 export const SignInStage = ({
   title,
@@ -50,15 +47,7 @@ export const SignInStage = ({
           />
           <div aria-hidden className="signin-stage__scrim" />
           <div className="signin-stage__brand">
-            <img src={AGE_LOCKUP.frontier} alt={ageOf("frontier").name} className="signin-stage__lockup" />
-            <p className="signin-stage__lore">{LORE_LINE}</p>
-            <div className="signin-stage__facets" aria-hidden="true">
-              {aspects.map(({ id }) => (
-                <span key={id} className="signin-stage__facet">
-                  <AspectMark aspect={id} size={46} decorative />
-                </span>
-              ))}
-            </div>
+            <img src={REALMS_MARK.lettered} alt="" className="signin-stage__lockup" />
           </div>
         </div>
         <div className="signin-stage__panel">
