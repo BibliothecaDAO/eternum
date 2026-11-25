@@ -501,12 +501,12 @@ const NodeActionBar = ({
   const price = node.state === "done" ? [] : node.needs.filter(isPrice);
   return (
     <div data-lab="node-choice" className="research-bar">
-      <div className="research-bar__copy">
-        <span data-choice-summary className="research-bar__name">
-          {node.name}
-          {" · "}
-          <HudRanked words={researchEffectLine(node)} />
-        </span>
+      <span data-choice-summary className="research-bar__name">
+        {node.name}
+        {" · "}
+        <HudRanked words={researchEffectLine(node)} />
+      </span>
+      <div data-research-footer className="research-bar__footer">
         <span className="research-bar__meta">
           {price.map((need) => (
             <span
@@ -529,8 +529,6 @@ const NodeActionBar = ({
             </span>
           )}
         </span>
-      </div>
-      <div data-research-footer className="research-bar__action">
         {node.state === "ready" ? (
           <HudButton
             kind="primary"
