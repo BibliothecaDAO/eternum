@@ -1614,7 +1614,7 @@ type FrameParts = {
  */
 const SurfaceFrame = forwardRef<
   HTMLElement,
-  FrameParts & { bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children">
+  FrameParts & { bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children" | "title">
 >(({ label, title, icon, cue, beside, onClose, bodyClassName, className, children, ...rest }, ref) => {
   const [foot, setFoot] = useState<HTMLElement | null>(null);
   const body = useMarksMoreBelow();
