@@ -7016,6 +7016,11 @@ export const STEP_SETS = {
               `(() => { const chip = document.querySelector('.frontier-bar button.frontier-stock-chips'); if (!chip) return false; chip.click(); return true; })()`,
             );
           }
+          await readUntil(
+            () => browser.read(`Boolean(document.querySelector('section[aria-label="Realm"] [data-realm-castle]'))`),
+            Boolean,
+            PLAYABLE_WAIT_MS,
+          );
           const realmHud = browser.read(`(() => ({
             stocks: [...document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]')].map((tile) => tile.dataset.store),
             hasCastleHead: Boolean(document.querySelector('section[aria-label="Realm"] [data-realm-castle]')),

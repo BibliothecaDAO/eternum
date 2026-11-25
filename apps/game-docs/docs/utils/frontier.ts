@@ -36,7 +36,7 @@ import {
 } from "../../../game/src/ui/design-system/domain-icon-meaning";
 import { ASPECT_PAGE_WORDS, RELIC_WORDS } from "../../../game/src/ui/design-system/kit/words";
 import { oathEffectDescription, oathName } from "../../../game/src/ui/features/frontier/army/oath-details";
-import { triumphHead, worldBaneHead } from "../../../game/src/ui/features/frontier/day/day-bane-face";
+import { triumphHead, worldBaneHead } from "./bane-faces";
 import { relicEffect } from "../../../game/src/ui/features/frontier/relics/relic-catalog";
 import {
   ASPECT_REWARD,

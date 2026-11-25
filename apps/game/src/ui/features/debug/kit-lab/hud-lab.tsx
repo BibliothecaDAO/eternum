@@ -13,7 +13,14 @@ import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { homeIcon } from "@/ui/design-system/home-icons";
 import { HudIconButton, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import { ARMY, ARMY_MANAGEMENT, EVENTS_WORDS, LINK_WALLET_FOR_LORDS, YOU } from "@/ui/design-system/kit/words";
+import {
+  ARMY,
+  ARMY_MANAGEMENT,
+  EVENTS_WORDS,
+  LINK_WALLET_FOR_LORDS,
+  REALM_CARD_WORDS,
+  YOU,
+} from "@/ui/design-system/kit/words";
 import { readArmySlots } from "@/ui/features/frontier/hud/army-dock";
 import { ArmyCard, ArmySlotsCard, LockedSlotLine, OpenSlotCard } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
@@ -61,7 +68,6 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { type SlotStart, wheatStopsAt } from "@/ui/features/frontier/deploy/deploy-plan";
 import { slotStart } from "@/ui/features/frontier/deploy/slot-start";
 import { TodaySheet } from "@/ui/features/frontier/log/today-sheet";
-import { ownerDayLog } from "./today-log-fixture";
 import { SeasonList, type SeasonListRow, type SeasonPodiumPlace } from "@/ui/features/frontier/board/season-list";
 import { seasonPodium } from "@/ui/features/frontier/board/season-pool";
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
@@ -71,7 +77,6 @@ import { SeasonPayoutRow } from "@/ui/features/frontier/value/season-payout";
 import { linkWalletLine } from "@/ui/features/frontier/value/link-wallet";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
 import { useLayout } from "@/shell/frame/layout";
-import { DayEndBlock } from "@/ui/features/frontier/day-end/day-end";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
@@ -356,10 +361,6 @@ const WHEAT_LINE: StoreLine = {
   noBuilding: false,
   makers: ["9 Farms · +25/min"],
 };
-
-/** Today's lines, each written by the day log itself from the owner's 22 October stories (today-log-fixture.ts). */
-let todayLog: ReturnType<typeof ownerDayLog> | undefined;
-const readTodayLog = () => (todayLog ??= ownerDayLog(NOW - 24 * 60));
 
 const SEASON_NAMES = [
   "Ysabeau",
@@ -664,7 +665,6 @@ const STATES = {
   today: { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today" },
   // Today in the day's last hour, opened from the day end's line.
   "today-last-hour": { clock: LAST_HOUR, stores: STORES, armies: ARMIES, lastHour: true, results: "today" },
-  "today-earlier": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-earlier" },
   "season-over": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over" },
   "season-over-strong": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over-strong" },
   "season-over-payout": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over", seasonLords: true },
@@ -738,7 +738,7 @@ const STATES = {
 type LabState = {
   merge?: boolean;
   refill?: number;
-  results?: "today" | "today-earlier" | "over" | "over-strong";
+  results?: "today" | "over" | "over-strong";
   /** The realm's LORDS waiting for automatic payout. */
   seasonLords?: boolean;
   /** The account has no linked wallet to receive its LORDS: the purse marked, Withdraw and the season's card say so. */
@@ -1226,7 +1226,11 @@ const LabRealmCard = ({ lab }: { lab: LabState }) => (
     name={LAB_REALM_NAME}
     kind="realm"
     level={1}
-    rankUp={{ name: rankName(2) }}
+    rankUp={
+      lab.visiting
+        ? undefined
+        : { name: rankName(2), gives: REALM_CARD_WORDS.armySlots(1), sending: false, onUpgrade: noop }
+    }
     aspect={LAB_ASPECT}
     orderId={LAB_ORDER_ID}
     stores={everyStore(lab.stores)}
@@ -1236,7 +1240,6 @@ const LabRealmCard = ({ lab }: { lab: LabState }) => (
     onStore={noop}
     onShop={noop}
     onHome={noop}
-    onUpgradeCastle={lab.visiting ? undefined : noop}
   />
 );
 
@@ -1303,13 +1306,7 @@ const labPlaces = (lab: LabState) => ({
 });
 
 const labSurface = (lab: LabState): HudSurface | null =>
-  lab.season
-    ? "season"
-    : lab.research
-      ? "research"
-      : lab.results === "today" || lab.results === "today-earlier"
-        ? "today"
-        : null;
+  lab.season ? "season" : lab.research ? "research" : lab.results === "today" ? "today" : null;
 
 /**
  * The armies on the lab, as ArmyDock draws them: a phone's row of tokens with an open slot for each army still to
@@ -1430,18 +1427,11 @@ const LabResults = ({
     />
   ) : (
     <TodaySheet
-      day={results === "today-earlier" ? 11 : 12}
+      day={12}
       lastDay={SEASON_LAST_DAY}
-      today={results !== "today-earlier"}
       clock={clock}
-      totals={{ reveals: 19, cleared: 2, essence: 4_150, labor: 550 }}
-      dayEnd={<DayEndBlock />}
-      lines={readTodayLog()}
-      history="whole"
-      onRetry={noop}
-      onShare={results === "today-earlier" ? noop : undefined}
-      onEarlier={noop}
-      onLater={results === "today-earlier" ? noop : undefined}
+      gains={{ essence: 4_150, labor: 550, glory: 1_180 }}
+      onRecap={noop}
       onClose={noop}
     />
   );

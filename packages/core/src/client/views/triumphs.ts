@@ -41,24 +41,3 @@ export function triumphPercentsOf(
     (Object.keys(TRIUMPH_PERCENT).map(Number) as TriumphStage[]).map((stage) => [stage, rules[TRIUMPH_PERCENT[stage]]]),
   ) as Record<TriumphStage, number>;
 }
-
-/** The Triumph in force for the home at `now`, with the percent its rule row sets; null on a day with none. */
-export function readActiveTriumph(
-  store: NativeFactStore,
-  gameId: number,
-  home: number | bigint,
-  now: number,
-  calendar: ExpeditionRules,
-): NativeFactResult<{ active: { stage: keyof typeof TRIUMPH_PERCENT; percent: number } | null }> {
-  const rules = readOptionalSeasonRow(store, "RaceRules", { game_id: gameId });
-  if (!rules.known) return rules;
-  if (!rules.known.row) return { known: { active: null } };
-  for (const stage of Object.keys(TRIUMPH_PERCENT).map(Number) as (keyof typeof TRIUMPH_PERCENT)[]) {
-    const triumph = readTriumphPeriod(store, gameId, home, stage, calendar);
-    if (!triumph.known) return triumph;
-    const { period } = triumph.known;
-    if (period && now >= period.start && now < period.end)
-      return { known: { active: { stage, percent: rules.known.row[TRIUMPH_PERCENT[stage]] } } };
-  }
-  return { known: { active: null } };
-}

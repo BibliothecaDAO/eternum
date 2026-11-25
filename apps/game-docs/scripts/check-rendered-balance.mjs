@@ -645,9 +645,7 @@ export const loadBalanceSources = async () => {
     const { relicEffect } = await server.ssrLoadModule(
       join(here, "../../game/src/ui/features/frontier/relics/relic-catalog.ts"),
     );
-    const { triumphHead, worldBaneHead } = await server.ssrLoadModule(
-      join(here, "../../game/src/ui/features/frontier/day/day-bane-face.ts"),
-    );
+    const { triumphHead, worldBaneHead } = await server.ssrLoadModule(join(here, "../docs/utils/bane-faces.ts"));
     const devRelease = JSON.parse(readFileSync(join(here, "../../../deploy/release/dev.json"), "utf8"));
     const productionRelease = JSON.parse(readFileSync(join(here, "../../../deploy/release/production.json"), "utf8"));
     const environments = JSON.parse(readFileSync(join(here, "../../../deploy/first/environments.json"), "utf8"));

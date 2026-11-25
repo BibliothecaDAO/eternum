@@ -34,3 +34,14 @@
 .race-row__name {
   color: rgb(var(--hud-aspect));
 }
+[data-hud-form] .race-row {
+  padding: theme(spacing.2);
+}
+[data-hud-form] .race-row [data-aspect-mark] {
+  width: theme(spacing.4);
+  height: theme(spacing.4);
+}
+[data-hud-form] .race-row__head,
+[data-hud-form] .race-row__label {
+  gap: theme(spacing.1);
+}

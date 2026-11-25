@@ -271,8 +271,8 @@ describe("the status strip", () => {
       "LORDS",
       "Knights 420 of 1,500",
     ]);
-    expect(host.querySelector('[data-store="wheat"] .frontier-stock__caption')?.textContent).toBe("+5");
-    expect(host.querySelector('[data-store="labor"] .frontier-stock__caption')?.textContent).toBe("Labor");
+    expect(host.querySelector('[data-store="wheat"] .frontier-realm-card__caption')?.textContent).toBe("+5/min");
+    expect(host.querySelector('[data-store="labor"] .frontier-realm-card__caption')?.textContent).toBe("Labor");
     const fragments = host.querySelector<HTMLButtonElement>('[data-store="fragments"] button');
     expect(fragments?.getAttribute("aria-label")).toBe("Fragments 250");
     act(() => fragments!.click());
