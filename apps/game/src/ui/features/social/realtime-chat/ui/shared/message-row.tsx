@@ -51,7 +51,7 @@ export const MessageRow = ({
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
       className={cn(
-        "group relative rounded px-1 py-0.5 text-hud-body leading-snug text-hud-ink transition-colors",
+        "group rounded px-1 py-0.5 text-hud-body leading-snug text-hud-ink transition-colors",
         mentionsMe && "bg-hud-chosen",
         lit && "bg-hud-hover",
       )}
@@ -82,11 +82,11 @@ export const MessageRow = ({
         </p>
       </div>
       {onReply && (
-        <span className={cn("absolute right-1 top-0 group-focus-within:flex", actions ? "flex" : "hidden")}>
+        <div className={cn("justify-end pt-1 group-focus-within:flex", actions ? "flex" : "hidden")}>
           <HudButton kind="secondary" size="sm" onClick={onReply}>
             {CHAT_WORDS.reply}
           </HudButton>
-        </span>
+        </div>
       )}
     </li>
   );
