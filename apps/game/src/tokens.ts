@@ -620,7 +620,7 @@ export const HUD_LAYOUT = {
   "phone-tray": "22dvh",
   "phone-sheet": `min(52dvh, calc(100dvh - var(--hud-phone-top, 0px) - var(--hud-phone-foot, 0px) - ${HUD_MAP_LEAST_SHARE}dvh))`,
   "phone-browse": "72dvh",
-  "tablet-rail": "320px",
+  "tablet-rail": "380px",
   "chat-width": "800px",
   "chat-height": "600px",
   /**
