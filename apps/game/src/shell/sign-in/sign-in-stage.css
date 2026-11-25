@@ -87,6 +87,15 @@
   filter: drop-shadow(0 8px 24px rgb(0 0 0 / 0.65));
 }
 
+.signin-stage__line {
+  margin: 0;
+  font-family: var(--app-face-title);
+  font-size: clamp(1.25rem, 2.5vw, 1.85rem);
+  line-height: 1.22;
+  color: var(--app-ink);
+  text-shadow: 0 2px 14px rgb(0 0 0 / 0.78);
+}
+
 .signin-stage__panel {
   position: relative;
   z-index: 2;
@@ -171,6 +180,10 @@
 
   .signin-stage__lockup {
     height: 5.5rem;
+  }
+
+  .signin-stage__line {
+    font-size: 1.05rem;
   }
 
   .signin-stage__panel {

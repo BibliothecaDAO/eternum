@@ -1,6 +1,6 @@
 import "./profile-view.css";
 
-import { LORE_LINE, PROFILE_WORDS, SIGN_IN_WORDS, WALLET_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { PROFILE_WORDS, SIGN_IN_WORDS, WALLET_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { useEffect, useState, type ReactNode } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 
@@ -220,7 +220,7 @@ const SignInCard = ({ line, verb }: { line: string | null; verb: string }) => {
     requestSignIn();
   };
   return (
-    <AppPanel title={LORE_LINE} painting="winter-fortress">
+    <AppPanel title={SIGN_IN_WORDS.oneAccount} painting="winter-fortress">
       <div className="flex flex-col gap-4">
         {line && <p className="text-app-strong text-app-ink">{line}</p>}
         <AppButton kind="primary" size="lg" icon="person" onClick={() => void signIn()}>

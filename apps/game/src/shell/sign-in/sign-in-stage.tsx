@@ -6,7 +6,7 @@ import { Icon } from "@/ui/design-system/icon";
 import { REALMS_MARK } from "@/ui/design-system/icon-meaning";
 import { AppModalLayer } from "@/ui/design-system/kit/app-elements";
 import { paintingSources } from "@/ui/design-system/kit/paintings";
-import { CLOSE } from "@/ui/design-system/kit/words";
+import { CLOSE, SIGN_IN_WORDS } from "@/ui/design-system/kit/words";
 
 import { useLayout } from "../frame/layout";
 
@@ -48,6 +48,7 @@ export const SignInStage = ({
           <div aria-hidden className="signin-stage__scrim" />
           <div className="signin-stage__brand">
             <img src={REALMS_MARK.lettered} alt="" className="signin-stage__lockup" />
+            <p className="signin-stage__line">{SIGN_IN_WORDS.oneAccount}</p>
           </div>
         </div>
         <div className="signin-stage__panel">

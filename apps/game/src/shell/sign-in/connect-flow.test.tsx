@@ -284,6 +284,7 @@ describe("Connect", () => {
       await act(async () => connect.click());
       expect(ui.window()?.getAttribute("aria-label")).toBe("Connect");
       expect(ui.window()?.querySelector(".signin-stage__lockup")?.getAttribute("src")).toBe(REALMS_MARK.lettered);
+      expect(ui.window()?.querySelector(".signin-stage__line")?.textContent).toBe(SIGN_IN_WORDS.oneAccount);
       expect(ui.where()).toBe("/season");
     } finally {
       await ui.unmount();
