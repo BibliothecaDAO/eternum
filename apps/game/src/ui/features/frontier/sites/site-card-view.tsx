@@ -93,13 +93,7 @@ export const SiteCardView = ({
   const reward =
     cache !== undefined || relic || pay || holdsOath || opensPost ? (
       <Reward dimmed={facing !== undefined && !clears(facing)}>
-        {cache !== undefined ? (
-          <CachePay fragments={cache} />
-        ) : relic ? (
-          relic
-        ) : pay ? (
-          <Pay pay={pay} />
-        ) : null}
+        {cache !== undefined ? <CachePay fragments={cache} /> : relic ? relic : pay ? <Pay pay={pay} /> : null}
         {holdsOath && (
           <HudChip icons={["shrine"]} tip={SITE_OATH.rule}>
             {SITE_OATH.label}

@@ -20,9 +20,7 @@ const smallScreenScale = (width: number): number => {
 };
 
 export const hudScaleFor = (width: number, height: number): number =>
-  width <= DESIGN.width
-    ? smallScreenScale(width)
-    : Math.max(1, Math.min(width / DESIGN.width, height / DESIGN.height));
+  width <= DESIGN.width ? smallScreenScale(width) : Math.max(1, Math.min(width / DESIGN.width, height / DESIGN.height));
 
 export const useHudScale = (): number => {
   const [size, setSize] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }));
