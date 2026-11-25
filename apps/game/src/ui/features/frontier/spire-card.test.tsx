@@ -171,24 +171,27 @@ describe("a realm's spire, from the player's path", () => {
     };
   };
 
-  it.each(["desktop", "phone"] as const)("shows no reveal odds on a %s, and Spire once the army stands at its found spire", (layout) => {
-    const { store } = discoveredSpireDay(0);
-    setBlockTimestampSource(() => NOW);
-    useBlockTimestampStore.setState({ currentBlockTimestamp: NOW, currentDefaultTick: NOW });
-    const key = { game_id: 1, structure_id: 7, epoch: 0, depth: 0 };
-    const found = store.require("ExpeditionSpire", key);
-    const wireKey = store.wireKeyOf("ExpeditionSpire", key)!;
-    store.applyFacts([{ model: "ExpeditionSpire", key: wireKey, value: { ...found, reveals: 3, location: null } }]);
-    const hud = renderLayoutHud(store, layout);
-    try {
-      act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
-      expect(hud.host.querySelector("[data-kit-sheet] *")).toBeNull();
-      act(() => store.applyFacts([{ model: "ExpeditionSpire", key: wireKey, value: found }]));
-      expect(hud.host.querySelector("button")?.textContent).toBe("Spire");
-    } finally {
-      hud.unmount();
-    }
-  });
+  it.each(["desktop", "phone"] as const)(
+    "shows no reveal odds on a %s, and Spire once the army stands at its found spire",
+    (layout) => {
+      const { store } = discoveredSpireDay(0);
+      setBlockTimestampSource(() => NOW);
+      useBlockTimestampStore.setState({ currentBlockTimestamp: NOW, currentDefaultTick: NOW });
+      const key = { game_id: 1, structure_id: 7, epoch: 0, depth: 0 };
+      const found = store.require("ExpeditionSpire", key);
+      const wireKey = store.wireKeyOf("ExpeditionSpire", key)!;
+      store.applyFacts([{ model: "ExpeditionSpire", key: wireKey, value: { ...found, reveals: 3, location: null } }]);
+      const hud = renderLayoutHud(store, layout);
+      try {
+        act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: "own" }));
+        expect(hud.host.querySelector("[data-kit-sheet] *")).toBeNull();
+        act(() => store.applyFacts([{ model: "ExpeditionSpire", key: wireKey, value: found }]));
+        expect(hud.host.querySelector("button")?.textContent).toBe("Spire");
+      } finally {
+        hud.unmount();
+      }
+    },
+  );
 
   /** The camp the army cleared, on the tile it stands on: the site's row with its receipt, as clear_site leaves it. */
   const clearedCampUnder = (store: ReturnType<typeof spireDay>["store"], tile: { col: number; row: number }) =>

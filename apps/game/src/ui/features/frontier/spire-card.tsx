@@ -69,7 +69,6 @@ export const useSelectedSpire = (): Spire | null => {
   );
 };
 
-/** The way into the army's found Spire while it stands beside it. */
 export const useArmySpireStatus = (explorerId: number) => {
   const { setup } = useGame();
   const { isMapView } = useQuery();
