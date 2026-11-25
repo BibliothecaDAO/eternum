@@ -82,8 +82,8 @@ it.each(["phone", "desktop"])("shows every open slot and its start on %s, and op
             ["Army 3 starts on 7/150 stamina.", "Any troop type · 7"],
           ]
         : [
-            ["Army 2 starts full: 150/150 stamina.", "+Deploy"],
-            ["Army 3 starts on 7/150 stamina.", "+Deploy"],
+            ["Army 2 starts full: 150/150 stamina.", "+"],
+            ["Army 3 starts on 7/150 stamina.", "+"],
           ],
     );
     act(() => slots[1].click());

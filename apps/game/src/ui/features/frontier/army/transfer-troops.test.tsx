@@ -156,17 +156,17 @@ const withOaths = (store: ReturnType<typeof transferArmies>, source: number, tar
 it("confirms the loss of stronger Logistics in a 500 into 1,500 merge", async () => {
   const { swap, close } = render(transferTrainedArmies());
   expect(sides()).toEqual([
-    ["Army 1", "0"],
-    ["Army 3", "2,000"],
+    ["500 Knights", "0"],
+    ["1,500 Knights", "2,000"],
   ]);
   expect(amount()).toBe("500");
   expect(host.textContent).toContain("5/252");
   expect(host.textContent).toContain("15/216→5");
-  expect(host.textContent).toContain("Army 1 loses its Logistics, Oath slots and held Oaths.");
+  expect(host.textContent).toContain("500 Knights loses its Logistics, Oath slots and held Oaths.");
   expect(host.querySelector("s")).toBeNull();
-  await act(async () => button("Merge into Army 3")!.click());
+  await act(async () => button("Merge into 1,500 Knights")!.click());
   expect(swap).not.toHaveBeenCalled();
-  await act(async () => button("Confirm merge into Army 3")!.click());
+  await act(async () => button("Confirm merge into 1,500 Knights")!.click());
   expect(swap).toHaveBeenCalledWith(
     expect.objectContaining({
       from_explorer_id: 201,
@@ -191,7 +191,7 @@ it.each([0, 499])("keeps both armies when the partial transfer sends %s troops",
 it("merges into the more trained army in one click when the map reverses the pair", async () => {
   const { swap } = render(transferTrainedArmies(), { picked: 202 });
   expect(host.textContent).not.toMatch(LOSS_NOTICE);
-  await act(async () => button("Merge into Army 1")!.click());
+  await act(async () => button("Merge into 500 Knights")!.click());
   expect(button(CONFIRM_MERGE)).toBeUndefined();
   expect(swap).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -345,15 +345,15 @@ it.each([2, 3, 4])(
   async (tappedLogistics) => {
     const { swap } = render(transferArmies(5, tappedLogistics));
     expect(sides()).toEqual([
-      ["Army 1", "0"],
-      ["Army 2", "1,100"],
+      ["600 Knights", "0"],
+      ["500 Knights", "1,100"],
     ]);
     // Army 2 holds 100 stamina; the merge leaves it Army 1's 7.
     expect(host.textContent).toContain(`100/${180 + [0, 36, 72, 108, 144, 180][tappedLogistics]!}→7`);
     expect(swap).not.toHaveBeenCalled();
-    await act(async () => button("Merge into Army 2")!.click());
-    expect(button("Confirm merge into Army 2")).toBeDefined();
-    await act(async () => button("Confirm merge into Army 2")!.click());
+    await act(async () => button("Merge into 500 Knights")!.click());
+    expect(button("Confirm merge into 500 Knights")).toBeDefined();
+    await act(async () => button("Confirm merge into 500 Knights")!.click());
     expect(swap).toHaveBeenCalledWith(
       expect.objectContaining({ from_explorer_id: 201, to_explorer_id: 202, count: 600 * Number(PRECISION) }),
     );
@@ -363,16 +363,16 @@ it.each([2, 3, 4])(
 it("confirms a full merge that loses only Oath slots, with equal Logistics, in two clicks", async () => {
   const { swap } = render(withOaths(transferArmies(1, 1), 3, 1));
   expect(host.textContent).toMatch(LOSS_NOTICE);
-  await act(async () => button("Merge into Army 2")!.click());
+  await act(async () => button("Merge into 500 Knights")!.click());
   expect(swap).not.toHaveBeenCalled();
-  await act(async () => button("Confirm merge into Army 2")!.click());
+  await act(async () => button("Confirm merge into 500 Knights")!.click());
   expect(swap).toHaveBeenCalledOnce();
 });
 
 it("merges in one click, with no notice, when the source holds no more Oath slots or Logistics", async () => {
   const { swap } = render(withOaths(transferArmies(1, 1), 1, 3));
   expect(host.textContent).not.toMatch(LOSS_NOTICE);
-  await act(async () => button("Merge into Army 2")!.click());
+  await act(async () => button("Merge into 500 Knights")!.click());
   expect(button(CONFIRM_MERGE)).toBeUndefined();
   expect(swap).toHaveBeenCalledOnce();
 });
@@ -385,10 +385,10 @@ it("keeps partial transfers free of a merge's losses", async () => {
   expect(button(CONFIRM_MERGE)).toBeUndefined();
   expect(host.textContent).not.toContain("→7");
   expect(sides()).toEqual([
-    ["Army 1", "550"],
-    ["Army 2", "550"],
+    ["600 Knights", "550"],
+    ["500 Knights", "550"],
   ]);
-  await act(async () => button("Move 50 to Army 2")!.click());
+  await act(async () => button("Move 50 to 500 Knights")!.click());
   expect(swap).toHaveBeenCalledWith(expect.objectContaining({ count: 50 * Number(PRECISION) }));
 });
 
@@ -398,7 +398,7 @@ it.each(["progress", "troops", "stamina", "position", "removed", "day"])(
     const store = transferArmies();
     const { swap, close } = render(store);
     const failed = vi.spyOn(toast, "failed").mockReturnValue("changed");
-    const send = button("Merge into Army 2")!;
+    const send = button("Merge into 500 Knights")!;
     const wire = (v: unknown) => JSON.parse(JSON.stringify(v, (_, x) => (typeof x === "bigint" ? x.toString() : x)));
     const changes = {
       progress: {
@@ -452,7 +452,7 @@ it.each(["progress", "troops", "stamina", "position", "removed", "day"])(
 it.each(["0x74", "0x92"])("removes the selected transfer if either army disappears (%s)", (key) => {
   const store = transferArmies();
   const { swap } = render(store);
-  expect(button("Merge into Army 2")).toBeDefined();
+  expect(button("Merge into 500 Knights")).toBeDefined();
   act(() => store.applyFacts([{ model: "ExplorerTroops", key, value: null }]));
   expect(host.querySelector('[role="dialog"]')).toBeNull();
   expect(swap).not.toHaveBeenCalled();
@@ -469,13 +469,13 @@ it("waits for both armies' progress instead of guessing the survivor", () => {
 
 it("asks before dissolving an army with a whole upgrade more progression, then sends the chosen direction", async () => {
   const { swap, close } = render(transferArmies(2, 0));
-  await act(async () => button("Merge into Army 2")!.click());
+  await act(async () => button("Merge into 500 Knights")!.click());
   expect(swap).not.toHaveBeenCalled();
   expect(close).not.toHaveBeenCalled();
   expect(host.querySelector(".ui-notice")?.textContent).toContain(
-    "Army 1 loses its Logistics, Oath slots and held Oaths.",
+    "600 Knights loses its Logistics, Oath slots and held Oaths.",
   );
-  await act(async () => button("Confirm merge into Army 2")!.click());
+  await act(async () => button("Confirm merge into 500 Knights")!.click());
   expect(swap).toHaveBeenCalledOnce();
   expect(swap).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -489,15 +489,15 @@ it("asks before dissolving an army with a whole upgrade more progression, then s
 
 it("clears confirmation when the amount changes, and lets the stronger army survive without it, picked the other way", async () => {
   const first = render(transferArmies(2, 0));
-  await act(async () => button("Merge into Army 2")!.click());
+  await act(async () => button("Merge into 500 Knights")!.click());
   slide(50);
   expect(button(/^Confirm merge /)).toBeUndefined();
   slide(600);
-  expect(button("Merge into Army 2")).toBeDefined();
+  expect(button("Merge into 500 Knights")).toBeDefined();
   expect(first.swap).not.toHaveBeenCalled();
   // Picked the other way on the map, Army 2 goes into Army 1, which keeps its Logistics training: one click sends.
   const { swap } = render(transferArmies(2, 0), { picked: 202 });
-  await act(async () => button("Merge into Army 1")!.click());
+  await act(async () => button("Merge into 600 Knights")!.click());
   expect(swap).toHaveBeenCalledOnce();
   expect(swap).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -511,7 +511,7 @@ it("clears confirmation when the amount changes, and lets the stronger army surv
 it("asks again after progress changes while a loss confirmation is open", async () => {
   const store = transferArmies(2, 0);
   const { swap } = render(store);
-  await act(async () => button("Merge into Army 2")!.click());
+  await act(async () => button("Merge into 500 Knights")!.click());
   const before = store.require("ArmyProgress", { game_id: 1, explorer_id: 201 });
   act(() =>
     store.applyFacts([
@@ -530,9 +530,9 @@ it("asks again after progress changes while a loss confirmation is open", async 
     ] as never),
   );
   expect(button(/^Confirm merge /)).toBeUndefined();
-  await act(async () => button("Merge into Army 2")!.click());
+  await act(async () => button("Merge into 500 Knights")!.click());
   expect(swap).not.toHaveBeenCalled();
-  await act(async () => button("Confirm merge into Army 2")!.click());
+  await act(async () => button("Confirm merge into 500 Knights")!.click());
   expect(swap).toHaveBeenCalledOnce();
 });
 
@@ -540,8 +540,8 @@ it("refuses facts arriving just before the final confirmation click", async () =
   const store = transferArmies(2, 0);
   const { swap, close } = render(store);
   const failed = vi.spyOn(toast, "failed").mockReturnValue("changed");
-  await act(async () => button("Merge into Army 2")!.click());
-  const confirm = button("Confirm merge into Army 2")!;
+  await act(async () => button("Merge into 500 Knights")!.click());
+  const confirm = button("Confirm merge into 500 Knights")!;
   await act(async () => {
     const progress = store.require("ArmyProgress", { game_id: 1, explorer_id: 202 });
     store.applyFacts([
@@ -583,8 +583,8 @@ it("labels the amount's two ends, none and all the picked army holds, each takin
   });
   expect(amount()).toBe("1");
   expect(sides()).toEqual([
-    ["Army 1", "599"],
-    ["Army 2", "501"],
+    ["600 Knights", "599"],
+    ["500 Knights", "501"],
   ]);
 
   act(() => least.click());
@@ -592,8 +592,8 @@ it("labels the amount's two ends, none and all the picked army holds, each takin
   expect(button("Pick how many to send")!.disabled).toBe(true);
   act(() => most.click());
   expect(amount()).toBe("600");
-  await act(async () => button("Merge into Army 2")!.click());
-  await act(async () => button("Confirm merge into Army 2")!.click());
+  await act(async () => button("Merge into 500 Knights")!.click());
+  await act(async () => button("Confirm merge into 500 Knights")!.click());
   expect(swap).toHaveBeenCalledWith(expect.objectContaining({ count: 600 * Number(PRECISION) }));
 });
 
@@ -614,9 +614,9 @@ it("confirms loss of held Oaths even with equal capacity", async () => {
   expect(button(CONFIRM_MERGE)).toBeUndefined();
   slide(600);
   expect(host.textContent).toMatch(LOSS_NOTICE);
-  await act(async () => button("Merge into Army 2")!.click());
+  await act(async () => button("Merge into 500 Knights")!.click());
   expect(swap).not.toHaveBeenCalled();
-  await act(async () => button("Confirm merge into Army 2")!.click());
+  await act(async () => button("Confirm merge into 500 Knights")!.click());
   expect(swap).toHaveBeenCalledOnce();
   expect(swap).toHaveBeenCalledWith(
     expect.objectContaining({ from_explorer_id: 201, to_explorer_id: 202, count: 600 * Number(PRECISION) }),

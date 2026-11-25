@@ -124,7 +124,7 @@ const wheat = () => host.querySelector('.ui-price [role="img"]')?.getAttribute("
 it("opens on the army beside the realm at the most it can take, and names the troops it adds on Reinforce", async () => {
   const fixture = armyBesideHome();
   const { add, close } = render(fixture);
-  expect(host.textContent).toContain("Reinforce Army 1");
+  expect(host.textContent).toContain("Reinforce 600 Knights");
   expect(troops()).toBe("600 → 1,020");
   expect(button("Reinforce")?.textContent).toBe("Reinforce +420");
   expect(wheat()).toBe("840 Wheat");
@@ -274,7 +274,7 @@ it("opens no card for the realm on its own, an army away from home, or a viewer"
   expect(host.textContent).toBe("");
 
   act(() => useUIStore.getState().selectOnMap({ kind: "structure", entityId: 7, tile: fixture.beside }));
-  expect(host.textContent).toContain("Reinforce Army 1");
+  expect(host.textContent).toContain("Reinforce 600 Knights");
   const away = { col: fixture.beside.col + 10, row: fixture.beside.row };
   act(() => fixture.moveTo(away));
   act(() => useUIStore.getState().selectOnMap({ kind: "structure", entityId: 7, tile: away }));
