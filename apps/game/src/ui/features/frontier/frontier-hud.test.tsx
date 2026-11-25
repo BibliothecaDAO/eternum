@@ -108,7 +108,7 @@ afterEach(async () => {
   act(() => root.unmount());
   host.remove();
   // A frame closed steps back off its history entry a moment later: that step lands here, not in the next test's route.
-  await new Promise((settled) => setTimeout(settled, 20));
+  await historySettles();
 });
 
 /** What the page shows of chat: whether the client is connected, and the unread count where the layout shows it. */
@@ -240,6 +240,7 @@ it("treats the desktop's Feed as any other panel: closed at start, opened from i
     await act(async () => panel()!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
     expect(panel()).toBeNull();
     await press("Feed");
+    await historySettles();
     window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
     await act(async () =>
       useUIStore.setState({
@@ -730,7 +731,19 @@ it("routes the phone Realm panel through the one-panel state so it replaces Toda
 });
 
 /** History moves a moment after it is asked to: a closed frame's step back, or the system back, lands by then. */
-const historySettles = () => act(async () => new Promise((settled) => setTimeout(settled, 50)));
+const historySettles = async () => {
+  await act(async () => new Promise((settled) => setTimeout(settled)));
+  await act(async () => vi.waitFor(() => expect(stepsBackInFlight).toBe(0)));
+};
+let stepsBackInFlight = 0;
+const browserBack = window.history.back.bind(window.history);
+window.history.back = () => {
+  stepsBackInFlight += 1;
+  browserBack();
+};
+window.addEventListener("popstate", () => {
+  stepsBackInFlight = Math.max(0, stepsBackInFlight - 1);
+});
 /** The system back, as a phone's back gesture sends it. */
 const systemBack = async () => {
   window.history.back();

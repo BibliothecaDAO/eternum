@@ -20,10 +20,15 @@ const RECLAIMS_LAND_FROM_WATER: Record<StructureType, boolean> = {
 };
 
 /** Presentation only: settlements reclaim sand from water without changing the game's biome rows. */
+export const reclaimsLandFromWater = (structureType: StructureType): boolean => RECLAIMS_LAND_FROM_WATER[structureType];
+
+export const landUnderSettlement = (biome: BiomeType | null): BiomeType | null =>
+  isTerrainWaterBiome(biome) ? BiomeType.Beach : biome;
+
 export function applySettlementIslands(request: TerrainPageRequest): TerrainPageRequest {
   const sites = new Set(
     request.settlementAnchors
-      .filter(({ structureType }) => RECLAIMS_LAND_FROM_WATER[structureType])
+      .filter(({ structureType }) => reclaimsLandFromWater(structureType))
       .map(({ col, row }) => hexCellKey(col, row)),
   );
   if (sites.size === 0) return request;
@@ -39,7 +44,7 @@ export function resolveSettlementLandCell(cell: TerrainCellInput): TerrainCellIn
   if (!isTerrainWaterBiome(cell.biome) && !isTerrainWaterBiome(cell.previewBiome)) return cell;
   return {
     ...cell,
-    biome: isTerrainWaterBiome(cell.biome) ? BiomeType.Beach : cell.biome,
-    previewBiome: isTerrainWaterBiome(cell.previewBiome) ? BiomeType.Beach : cell.previewBiome,
+    biome: landUnderSettlement(cell.biome),
+    previewBiome: landUnderSettlement(cell.previewBiome),
   };
 }
