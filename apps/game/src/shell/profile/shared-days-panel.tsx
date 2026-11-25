@@ -60,11 +60,7 @@ export const SharedDaysPanel = ({
   return (
     <AppPanel title={SHARED_DAYS_WORDS.title} label={SHARED_DAYS_WORDS.title} icon="share">
       <div className="flex flex-col gap-4" data-referrals-panel>
-        {aspect !== null ? (
-          <InviteStrip fallbackAspect={aspect} />
-        ) : !aspectPending ? (
-          <InviteWaitsForAspect />
-        ) : null}
+        {aspect !== null ? <InviteStrip fallbackAspect={aspect} /> : !aspectPending ? <InviteWaitsForAspect /> : null}
         <p className="text-app-strong text-app-gold" data-referrals-reward>
           {PROFILE_WORDS.friendReward}
         </p>
