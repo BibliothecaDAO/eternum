@@ -261,12 +261,16 @@
     margin: 0;
   }
   .season-board__main {
+    display: flex;
     flex: 1;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr);
+    flex-direction: column;
   }
   .season-board__glory {
     min-height: 0;
+    flex: 1;
+  }
+  .season-board[data-standing] .season-board__glory {
+    flex: none;
   }
   .season-board__rows .ui-table-head {
     display: none;
@@ -282,6 +286,12 @@
   }
   .season-board[data-standing] .season-standing {
     display: flex;
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+  }
+  .season-board[data-standing] .season-board__phone-foot {
+    display: none;
   }
   .season-board[data-standing] .season-board__rows {
     display: none;

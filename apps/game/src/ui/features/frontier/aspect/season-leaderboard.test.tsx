@@ -27,10 +27,15 @@ const member = (home: number, glory: number): RaceMemberRow => ({
   mine: BigInt(home) === OWN,
 });
 
-const identityOf = (home: bigint): GloryIdentity => ({ owner: `0x${(0x100n + home).toString(16)}`, realm_id: Number(home) });
+const identityOf = (home: bigint): GloryIdentity => ({
+  owner: `0x${(0x100n + home).toString(16)}`,
+  realm_id: Number(home),
+});
 
-const nativeRosters = (native: Record<AspectId, RaceMemberRow[]>, named = identityOf) =>
-  ASPECTS.map((aspect) => ({ aspect, roster: nativeAspectRoster(native[aspect], (home) => named(home)) }));
+const nativeRosters = (
+  native: Record<AspectId, RaceMemberRow[]>,
+  named: (home: bigint) => GloryIdentity | null = identityOf,
+) => ASPECTS.map((aspect) => ({ aspect, roster: nativeAspectRoster(native[aspect], named) }));
 
 const ownRow = (native: Record<AspectId, RaceMemberRow[]>, place: number): OwnGloryRow => {
   const aspectPlace = native[1].findIndex((row) => row.mine) + 1;

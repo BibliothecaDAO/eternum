@@ -141,7 +141,7 @@ export const AspectRoster = ({
   );
 };
 
-export const gloryBoardEntry = (row: GloryRow, onClick?: () => void): AppBoardEntry => ({
+const gloryBoardEntry = (row: GloryRow, onClick?: () => void): AppBoardEntry => ({
   key: row.key,
   own: row.own,
   onClick,

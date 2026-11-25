@@ -56,7 +56,6 @@ export interface SeasonStanding {
   altar: { charge: number; threshold: number } | null;
 }
 
-
 export interface SeasonLeaderboardProps {
   day?: { day: number; lastDay: number };
   players: number;
