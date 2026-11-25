@@ -42,7 +42,7 @@ const rates = {
   drain: LOSS_PER_TICK,
 };
 
-/** The card's states on fixtures of its props: every Deep site kind and state, what the lab draws and the test asserts. */
+/** The card's states on fixtures of its props: what the lab draws and the test asserts. */
 export const DEEP_SITE_CASES = {
   "Hyperstructure archive, open, its beast, army in reach": {
     ...base,
