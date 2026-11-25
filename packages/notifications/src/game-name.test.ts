@@ -57,9 +57,9 @@ it("never puts the registry's name, a season's number or another id in a game pu
     })!,
   ];
   expect(alerts.map(({ title, body }) => `${title} / ${body}`)).toEqual([
-    "Day 2 is open / Frontier: it ends at 20:00.",
+    "Day 2 is open / Frontier: day ends at 20:00.",
     "Your armies are rested / Frontier: their stamina is full.",
-    "Your Blitz is settled / Blitz: see where you finished.",
+    "Your Blitz ended / Blitz: see where you finished.",
   ]);
   for (const { title, body } of alerts) expect(`${title} ${body}`).not.toMatch(ID_LIKE);
   for (const { title, body } of alerts) expect(`${title} ${body}`).not.toMatch(/Season/);

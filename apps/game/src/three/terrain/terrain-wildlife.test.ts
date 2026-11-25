@@ -246,6 +246,21 @@ describe("biome creature herds", () => {
     expect(followers.filter((creature) => apart(creature) < 1.6).length).toBeGreaterThan(followers.length * 0.6);
   });
 
+  it("lets a follower look for its place beside the leader at most twice a second", () => {
+    const searches = new Map<number, number>();
+    const population = new BiomeCreaturePopulation((from) => {
+      const follower = from as RoamingCreature;
+      if (follower.leader !== null && follower.leader !== undefined)
+        searches.set(follower.id, (searches.get(follower.id) ?? 0) + 1);
+      return true;
+    });
+    population.sync(cells());
+    const seconds = 60;
+    for (let frame = 0; frame < seconds * 20; frame++) population.update(0.05);
+    expect(searches.size).toBeGreaterThan(0);
+    for (const checks of searches.values()) expect(checks / seconds).toBeLessThanOrEqual(2);
+  });
+
   it("follows its eldest when the leader is gone, still one herd to its region", () => {
     const population = new BiomeCreaturePopulation();
     population.sync(cells());
@@ -624,6 +639,25 @@ describe("terrain wildlife lifecycle", () => {
     expect(disposeGeometry).toHaveBeenCalledOnce();
     expect(wildlife.getStats().loaded).toBe(0);
     expect(wildlife.object3d.children).toHaveLength(0);
+  });
+
+  it("stands its animals on the ground the terrain shows now, after the terrain is presented again", async () => {
+    let groundHeight = 0;
+    const wildlife = new TerrainWildlife(
+      () => ({ biome: BiomeType.Grassland, height: groundHeight, normal: [0, 1, 0] }),
+      () => {},
+    );
+    const grassland = cells().map((cell) => ({ ...cell, biome: BiomeType.Grassland }));
+    wildlife.sync(grassland, []);
+    await wildlife.load();
+    wildlife.update(0.05);
+    const heights = () => wildlife.object3d.children.map((root) => root.position.y);
+    expect(heights().filter((height) => height === 0).length).toBeGreaterThan(0);
+    groundHeight = 0.05;
+    wildlife.sync(grassland, []);
+    wildlife.update(0.001);
+    expect(heights().filter((height) => height === 0)).toEqual([]);
+    wildlife.dispose();
   });
 
   it("shares templates, gives every animal its own joints, freezes hidden wildlife and clears released views", async () => {

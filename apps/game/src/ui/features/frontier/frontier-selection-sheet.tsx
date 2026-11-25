@@ -47,7 +47,10 @@ export const useSelectionCard = ({
   const card = (kind: string, sheet: ReactNode) => ({ key: `${kind}@${at}`, sheet });
   if (realm && transfer) return card("transfer", <TransferTroopsSheet realm={realm} pair={transfer} onClose={close} />);
   if (realm && reinforcing)
-    return card("reinforce", <ReinforceSheet realm={realm} army={reinforcing} onClose={close} />);
+    return card(
+      "reinforce",
+      <ReinforceSheet realm={realm} army={reinforcing.army} post={reinforcing.post} onClose={close} />,
+    );
   if (realm && openPlot) return card("plot", <BuildSheet realm={realm} plot={openPlot} onClose={close} />);
   if (deepSite) return card("deep-site", <DeepSiteCard site={deepSite} onClose={close} />);
   if (target)

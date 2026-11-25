@@ -140,7 +140,7 @@ export async function mountStaticLineup(
     const x = next.focus === "lineup" ? 0 : positions[next.focus].x;
     const z = next.focus === "lineup" ? 0 : positions[next.focus].z;
     const height = next.focus === "lineup" ? 0.8 : heights[next.focus];
-    controls.target.set(x, environment.terrain.sampleSurface(x, z).height + height / 2, z);
+    controls.target.set(x, environment.terrain.sampleHeight(x, z) + height / 2, z);
     const pitch =
       next.camera === "worldmap" ? resolveWorldmapCameraPitchRadians(next.distance) : LOCAL_CAMERA_ZOOM.pitchRadians;
     camera.fov = next.camera === "worldmap" ? resolveWorldmapCameraFieldOfViewDegrees() : CAMERA_CONFIG.fov;
@@ -159,7 +159,7 @@ export async function mountStaticLineup(
     signal.throwIfAborted();
     for (const [slot, asset] of lineup.entries()) {
       const { x, z } = asset.position ?? { x: (slot - (lineup.length - 1) / 2) * Math.sqrt(3) * 1.5, z: 0 };
-      positions.push(new Vector3(x, environment.terrain.sampleSurface(x, z).height, z));
+      positions.push(new Vector3(x, environment.terrain.sampleHeight(x, z), z));
       heights.push(0);
       for (const part of asset.parts) {
         let batch = batches.get(part.path);

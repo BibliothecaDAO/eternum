@@ -239,7 +239,7 @@ it("offers to read the account's wallet again when its read failed, rather than 
   const retry = vi.fn();
   defaultWallet.read = { wallet: undefined, failed: true, retry };
   const page = await mount();
-  expect(page.textContent).toContain("Your Realms wallet could not be read.");
+  expect(page.textContent).toContain("Could not load your Realms wallet.");
   await press(page, "Try again");
   expect(retry).toHaveBeenCalledOnce();
 });
@@ -285,7 +285,7 @@ it("shows a retryable failure on /shop when the season directory fails instead o
   directoryGames.refetch = refetch;
   vi.spyOn(identityClient, "getSealCode").mockResolvedValue({ held: false });
   const page = await mount("/shop");
-  expect(page.textContent).toContain("Season did not answer.");
+  expect(page.textContent).toContain("Season unavailable.");
   expect(page.textContent).not.toContain("No live Frontier season right now");
   await press(page, "Try again");
   expect(refetch).toHaveBeenCalledOnce();

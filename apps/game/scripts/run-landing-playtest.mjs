@@ -27,6 +27,7 @@ export const LANDING_SCENARIOS = [
   "lab-race",
   "lab-panels",
   "lab-hud-sheets",
+  "lab-high-ground",
 ];
 
 const VIEWPORTS = ["1920x1080", "390x844"];

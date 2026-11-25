@@ -53,8 +53,8 @@ it("says which ring opened and how many sites it adds, and opens that ring once 
     until: 10000,
   };
   const alert = buildRingOpenNotification(input)!;
-  expect(alert.title).toBe("Ring 2 has opened");
-  expect(alert.body).toBe("6 more sites can be taken today.");
+  expect(alert.title).toBe("Ring 2 is open");
+  expect(alert.body).toBe("6 new sites are open today.");
   expect(alert.target).toBe("/g/0xa/1/map?col=8&row=-8");
   expect(alert.kind).toBe("site-vulnerable");
   expect(buildRingOpenNotification({ ...input, now: 2000 })!.id).toBe(alert.id);

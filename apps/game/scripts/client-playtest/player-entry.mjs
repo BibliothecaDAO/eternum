@@ -57,7 +57,7 @@ async function signInState(browser, owner, email, awaited) {
 export const CONNECT_PLACE = '[data-action="connect"]';
 
 const SIGN_IN_STATE = `JSON.stringify(
-  [...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Claim name")
+  [...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Save name")
     ? "claim-name"
     : document.querySelector('[data-role="tab"][data-player]')
       ? "signed-in"

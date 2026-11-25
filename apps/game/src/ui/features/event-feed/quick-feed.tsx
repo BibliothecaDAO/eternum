@@ -1,11 +1,9 @@
-import { HudButton, HudChip, HudEventRow } from "@/ui/design-system/kit/hud-elements";
+import { HudChip } from "@/ui/design-system/kit/hud-elements";
 import { EVENTS_WORDS } from "@/ui/design-system/kit/words";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
 import { type ProcessedStoryEvent, useStoryReads } from "@/hooks/store/use-story-events-store";
-import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
 import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
 
@@ -114,7 +112,6 @@ export const FeedToasts = () => {
   );
   return (
     <>
-      <OfflineRow />
       {milestones.map((headline) => (
         <ToastRow
           key={headline.id}
@@ -169,29 +166,3 @@ const NOTICE_TONES: Record<NoticeKind, "good" | "bad" | "warn" | undefined> = {
   error: "bad",
   warning: "warn",
 };
-
-/** The red offline row, with the way to reconnect now. */
-function OfflineRow() {
-  const status = useConnectionStore((state) => state.status);
-  const reconnecting = useConnectionStore((state) => state.globalStatus === "reconnecting");
-  if (status !== "disconnected") return null;
-  return (
-    <HudEventRow
-      tone="bad"
-      icon="network-off"
-      trail={
-        <HudButton
-          kind="quiet"
-          size="sm"
-          icon="refresh"
-          busy={reconnecting ? "Retrying…" : undefined}
-          onClick={() => triggerConnectionForceReconnect()}
-        >
-          Retry
-        </HudButton>
-      }
-    >
-      Offline
-    </HudEventRow>
-  );
-}

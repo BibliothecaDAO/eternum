@@ -12,7 +12,6 @@ import {
   type Rank,
 } from "@/ui/design-system/kit/words";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import { formatAmount } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import type { EtherealLayer } from "@bibliothecadao/eternum";
@@ -22,11 +21,9 @@ import { DeepDrain, EtherealMark, OathWaitingBadge } from "./army-token";
 
 export const ArmyCard = ({
   label,
-  title,
   tier,
   number,
   art,
-  troops,
   drain,
   stamina,
   ethereal,
@@ -35,13 +32,11 @@ export const ArmyCard = ({
   onPick,
 }: {
   label: string;
-  title?: string;
   tier?: Rank;
   number: number | undefined;
   drain?: DeepArmyLife;
   ethereal?: EtherealLayer;
   art: IconMeaning | undefined;
-  troops?: number;
   stamina: StaminaBar | undefined;
   selected: boolean;
   oathWaiting?: boolean;
@@ -66,9 +61,7 @@ export const ArmyCard = ({
     <span className="frontier-slot__body">
       <span className="frontier-slot__line">
         <span className="frontier-slot__title">
-          <span className="truncate">
-            {troops === undefined ? (title ?? label) : `${title ?? label} · ${formatAmount(troops)}`}
-          </span>
+          <span className="truncate">{label}</span>
           {tier !== undefined && tier > 1 && <HudTier tier={tier} />}
         </span>
         <StaminaFigure current={stamina?.current} max={stamina?.max} />
@@ -103,12 +96,7 @@ export const OpenSlotCard = ({
           {ARMY_SLOT_WORDS.readyAtHome(stock.label)}
         </span>
       ) : (
-        start && (
-          <span className="frontier-slot__detail">
-            {`${ARMY_SLOT_WORDS.anyTroop} · ${formatAmount(start.bar.current)}`}
-            <Icon name="stamina" size={14} alt={STAMINA} />
-          </span>
-        )
+        start && <HudStamina stamina={start.bar} />
       )}
     </span>
     <HudButton

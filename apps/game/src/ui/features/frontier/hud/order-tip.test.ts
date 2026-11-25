@@ -72,8 +72,8 @@ describe("what a right-click on a tile does, said before the click", () => {
     expect(line(undefined, { refusal: { reason: "stamina", need: 21 } })).toBe("Needs 21 stamina, have —");
     expect(line(undefined, { refusal: { reason: "food" } })).toBe("Not enough food for the army");
     expect(line(undefined, { refusal: { reason: "off-limits" } })).toBe("Only neutral structures can be attacked");
-    expect(line(undefined, { refusal: { reason: "no-transfer" } })).toBe("This game allows no transfer here");
-    expect(line(undefined, { refusal: { reason: "occupied" } })).toBe("No army can enter this tile");
+    expect(line(undefined, { refusal: { reason: "no-transfer" } })).toBe("Cannot transfer here");
+    expect(line(undefined, { refusal: { reason: "occupied" } })).toBe("Tile is blocked");
     expect(line(undefined, { refusal: { reason: "too-far" } })).toBe("Too far: move closer");
   });
 

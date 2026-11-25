@@ -7,6 +7,7 @@ import { type IconMeaning } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
+import { InstallButton } from "@/pwa/pwa-install-control";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 
@@ -157,6 +158,13 @@ export const TabBar = () => {
   );
 };
 
+export const TopBarEnd = () => (
+  <span className="flex shrink-0 items-center gap-2 empty:hidden">
+    <InstallButton />
+    <LordsBalancePill />
+  </span>
+);
+
 export const DesktopBar = ({ notice }: { notice: ReactNode }) => {
   const active = useActiveTab();
   const player = useSignedInPlayer();
@@ -178,7 +186,7 @@ export const DesktopBar = ({ notice }: { notice: ReactNode }) => {
           ? { ...placeOf(tab), onSelect: pane.toggle, current: pane.open, count: unread }
           : placeOf(tab),
       )}
-      balance={<LordsBalancePill />}
+      end={<TopBarEnd />}
       player={{
         ...placeOf(YOU_TAB),
         ...(connect && { label: WORDS.connect, onSelect: connect, action: "connect" as const }),

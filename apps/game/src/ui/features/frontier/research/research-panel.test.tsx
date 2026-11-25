@@ -143,11 +143,11 @@ it("states why each locked or short row is held back in plain words without repe
     ),
   );
   const campRow = host.querySelector(`[data-node='row-${research.ROW_CONSCRIPTION}']`)!;
-  expect(campRow.querySelector("[data-lock-reason]")?.textContent).toBe("Needs the Realm at City");
+  expect(campRow.querySelector("[data-lock-reason]")?.textContent).toBe("Needs City");
   const campChoice = host.querySelector("[data-lab='node-choice']")!;
   const campReason = campChoice.querySelector("[data-lock-reason]")!.textContent;
   const campButton = campChoice.querySelector<HTMLButtonElement>("[data-research-footer] button")!.textContent;
-  expect(campReason).toBe("Needs the Realm at City");
+  expect(campReason).toBe("Needs City");
   expect(campButton).toBe("Upgrade the Castle");
   expect(campReason).not.toBe(campButton);
 

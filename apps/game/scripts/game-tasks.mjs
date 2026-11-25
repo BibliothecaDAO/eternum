@@ -118,8 +118,8 @@ const ORDER_REFUSAL = [
   "Needs \\d+ stamina",
   "Not enough food for the army",
   "Only neutral structures can be attacked",
-  "This game allows no transfer here",
-  "No army can enter this tile",
+  "Cannot transfer here",
+  "Tile is blocked",
   "Too far: move closer",
 ].join("|");
 
@@ -251,7 +251,7 @@ export const GAME_TASKS = {
     presses: [
       { name: "the next structure", key: "Shift+Tab" },
       { name: "Chat", text: "^Chat( strip)?$" },
-      { name: "the place button", within: 'section[aria-label="Chat"]', text: "^Share the selected place$" },
+      { name: "the place button", within: 'section[aria-label="Chat"]', text: "^Share selected place$" },
       {
         name: "words",
         fill: 'section[aria-label="Chat"] input[aria-label="Message"]',

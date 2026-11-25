@@ -130,7 +130,7 @@ it("shows one Try again notice when Realms fail to load, and reloads into the sh
     () => held(4786),
   );
   const you = await openYou(1440);
-  await vi.waitFor(() => expect(you.container.textContent).toContain("Your Realms cannot be read right now"));
+  await vi.waitFor(() => expect(you.container.textContent).toContain("Could not load your Realms right now"));
   expect([...you.container.querySelectorAll("button")].filter((node) => node.textContent === "Try again")).toHaveLength(
     1,
   );

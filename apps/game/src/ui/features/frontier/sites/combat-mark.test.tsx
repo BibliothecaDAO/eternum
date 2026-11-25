@@ -13,6 +13,11 @@ it("draws every native troop as a blade or bow", () => {
   }
 });
 
+it("draws Blade and Bow with their own paintings, never another meaning's", () => {
+  expect(renderToStaticMarkup(<CombatMark category={TroopType.Knight} />)).toContain('data-icon="combat-blade"');
+  expect(renderToStaticMarkup(<CombatMark category={TroopType.Crossbowman} />)).toContain('data-icon="combat-bow"');
+});
+
 it("marks Bow as hitting first only against Blade through the core rule", () => {
   expect(resolveFirstStrike("Crossbowman", "Knight")).toBe("attacker");
   expect(resolveFirstStrike("Knight", "Crossbowman")).toBe("defender");

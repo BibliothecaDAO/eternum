@@ -30,7 +30,6 @@ import { useArmyPanelOpens, usePickArmy } from "./army/army-opens";
 import { FrontierArmy } from "./army/frontier-army";
 import { FrontierOathPick } from "./army/oath-pick";
 import { FightBanner } from "./sites/fight-banner";
-import { RevealPill } from "./hud/reveal-pill";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { FrontierSurfaces } from "./frontier-surfaces";
 import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
@@ -61,7 +60,6 @@ import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { useFragmentsHeld } from "./value/fragments";
 import { ShopSheet, useReturnToShop } from "./shop/shop-sheet";
 import { homeIcon, homeKind } from "@/ui/design-system/home-icons";
-import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { PickedArmy } from "./hud/picked-army";
@@ -352,7 +350,6 @@ const FrontierHudBody = ({
       <BuildingsInFlight />
       <FrontierOathPick realm={realm} />
       <FightBanner />
-      <RevealPill />
     </>
   );
 
@@ -362,7 +359,6 @@ const FrontierHudBody = ({
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
       placeSwitch={placeMenu}
       chat={<HudChatWindow open={surface === "chat"} onOpenChange={(open) => setSurface(open ? "chat" : null)} />}
-      banner={<OfflineNotice />}
       realm={realmCard}
       armies={armyDock}
       page={page}
@@ -391,7 +387,6 @@ const FrontierHudBody = ({
   ) : (
     <HudBands
       strip={topBar}
-      banner={<OfflineNotice />}
       page={page}
       notices={notices}
       action={action}
