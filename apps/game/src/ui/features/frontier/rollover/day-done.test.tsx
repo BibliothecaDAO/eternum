@@ -128,7 +128,7 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
   const { RECORDED_DAY: recorded } = await import("./recorded-day-history");
   return {
     ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
-    buildStoryEventPresentation: () => ({}),
+    buildStoryEventPresentation: () => ({ title: "" }),
     configManager: { getActiveGameId: () => 1 },
     // Realm 7's name, as the card writes it.
     getStructureName: () => ({ name: "Temtinos", originalName: "Temtinos" }),
