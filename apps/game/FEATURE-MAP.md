@@ -34,22 +34,6 @@ day, so its place is not on today's map. Frontier's realms stand millions of hex
 8,192-hex reach; the map then draws the world again around the new place in the same page. The spectator playtest
 presses a Feed story and visits the board's second and third realms in turn (`open-feed-event`, `visit-realm`).
 
-## Cleared-site standard
-
-Open `/lab/models?family=cleared-sites` through **Art → Models → Cleared sites**. **Site** compares the shipped Troll or
-roaming beasts with the production standard. **View** uses the world camera at gameplay distance 20 or detail
-distance 8. Click a model or its selection button to open the reward panel; Close site dismisses it. The selected
-standard uses the production receipt component over native clear-result facts, with the Structure and guard removed. In
-the game a clear leaves the biome and a walkable tile; the standard and its reward receipt survive an army walking
-across it and a reload. The site never becomes a player holding.
-
-Proof: serve the client, open that URL with `&evidence=/absolute/new/capture/directory`, then run
-`scripts/frontier/prove-cleared-site.playwright.js` through the browser connection with the page as its argument. It
-selects both site kinds and clicks the flag at both camera distances, checks the resource-reward and empty-credit
-examples and model requests, saves four captures and closes each WebGL page. Strip the file's final semicolon when
-passing its function as browser code. Keep the returned result beside the captures. Reuse this proof when revising the
-marker.
-
 What a player can do and how they get there, so a report or a screenshot can be reproduced. Update it in the change that
 adds, moves or removes a feature. Local dev: `pnpm --dir apps/game dev --host 127.0.0.1 --port <port>`. The dev build's
 lab (`/lab`, `src/lab/README.md`) is six rooms, Kit, HUD, Game, Art, Data and Studio, with one Game and one Device
@@ -982,16 +966,13 @@ the phone); `pnpm --dir apps/game prove:day-end --port 4199 --out <fresh-dir>` p
 
 ## Cleared Frontier sites
 
-On the world map, win the adjacent fight at a guarded site. Its standard replaces the structure; select that tile to
-read the credited resource. A tap on your own army standing there selects the army and shows its panel; the clear's row
-in the Feed, with the resource reward recorded by the receipt, selects the tile itself and shows the receipt. The tile
-carries no token or plate: the standard on it says the site is cleared. The receipt (in another army's card too) and the
-clear's line in Events both name the site by its map name. The normal Move order enters the cleared tile. The receipt
-remains after a snapshot reload. Yesterday’s sites leave the current region with the new day.
-
-`/lab/models?family=cleared-sites&rendererMode=webgpu-force-webgl` compares the production standard with the standing
-camp and beasts, at gameplay and detail distance. Both use the game renderer; the selected standard uses the production
-receipt over native fixture facts.
+On the world map, win the adjacent fight at a guarded site. The structure leaves its tile, which shows its plain ground;
+select that tile to read the credited resource. A tap on your own army standing there selects the army and shows its
+panel; the clear's row in the Feed, with the resource reward recorded by the receipt, selects the tile itself and shows
+the receipt. The tile carries no model, token or plate; a camp that becomes a supply post shows the post. The receipt
+(in another army's card too) and the clear's line in Events both name the site by its map name. The normal Move order
+enters the cleared tile. The receipt remains after a snapshot reload. Yesterday’s sites leave the current region with
+the new day.
 
 ## Frontier beast guards
 
