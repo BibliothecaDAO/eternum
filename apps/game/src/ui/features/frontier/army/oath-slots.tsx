@@ -6,8 +6,7 @@ import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import { usePickEffectBase } from "../pick-effect-text";
 import { oathEffectDescription, oathName } from "./oath-details";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
-import { HudCost } from "@/ui/design-system/kit/hud-elements";
-import { costLine } from "@/ui/design-system/kit/price-faces";
+import { HudPrice } from "@/ui/design-system/kit/hud-elements";
 import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 import {
   configManager,
@@ -77,11 +76,11 @@ export function TroopOathSlots({ category, explorerId }: { category: TroopType; 
                 <>
                   <Icon name="lock" size={16} />
                   {price && (
-                    <HudCost
-                      line={costLine([
+                    <HudPrice
+                      prices={[
                         { of: "essence", amount: Number(price.essence) / RESOURCE_PRECISION },
                         { of: "labor", amount: Number(price.labor) / RESOURCE_PRECISION },
-                      ])}
+                      ]}
                     />
                   )}
                 </>

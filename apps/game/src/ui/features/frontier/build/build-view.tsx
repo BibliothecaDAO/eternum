@@ -7,7 +7,7 @@ import {
   HudButton,
   HudCard,
   HudChip,
-  HudCost,
+  HudPrice,
   HudNotice,
   HudRanked,
   HudSheet,
@@ -102,7 +102,7 @@ const ChosenFoot = ({
   const raised = standing.kind === "price" ? standing.raised : undefined;
   const cost = standing.kind !== "built" && !refusal?.fix?.prices && (
     <span className="inline-flex items-center gap-1">
-      <HudCost line={costLine(prices)} />
+      <HudPrice prices={prices} />
       {raised && (
         <span role="img" aria-label={raised} data-price-raised={raised} data-tip={raised} className="text-hud-warn">
           ↑
@@ -141,7 +141,7 @@ const ChosenFoot = ({
 const RefusalNote = ({ refusal }: { refusal: Refusal }) => (
   <span className="flex flex-col items-start gap-1">
     <HudNotice line={reasonLine(refusal.reason)} />
-    {refusal.fix?.prices && <HudCost line={costLine(refusal.fix.prices)} />}
+    {refusal.fix?.prices && <HudPrice prices={refusal.fix.prices} />}
   </span>
 );
 

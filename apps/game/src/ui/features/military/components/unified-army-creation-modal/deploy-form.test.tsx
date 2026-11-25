@@ -45,7 +45,7 @@ const form = (patch: Partial<Form> = {}): Form =>
     isActionDisabled: false,
     blockedReason: null,
     isLoading: false,
-    raiseLine: "200 wheat",
+    raisePrices: [{ resource: 35, amount: 200 }],
     handleCreate: vi.fn(),
     ...patch,
   }) as unknown as Form;
@@ -70,8 +70,8 @@ describe("the deploy form on the sheet", () => {
           <DeployVerb form={form({ startLine })} />
         </HudWindow>,
       ).querySelector(".ui-window__foot")!.textContent;
-    expect(foot("The new army starts on 30/120 stamina")).toBe("200 wheatThe new army starts on 30/120 staminaDeploy");
-    expect(foot(null)).toBe("200 wheatDeploy");
+    expect(foot("The new army starts on 30/120 stamina")).toBe("200The new army starts on 30/120 staminaDeploy");
+    expect(foot(null)).toBe("200Deploy");
   });
 
   it("chooses a held stack by its column and tier", () => {
@@ -103,7 +103,7 @@ describe("the deploy form on the sheet", () => {
     const verb = ready.querySelector<HTMLButtonElement>(".ui-window__foot .ui-button")!;
     expect(verb.disabled).toBe(false);
     expect(verb.textContent).toBe("Deploy");
-    expect(ready.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe("200 wheat");
+    expect(ready.querySelector('.ui-window__foot .ui-price [role="img"]')?.getAttribute("aria-label")).toBe("200 Wheat");
     expect(ready.querySelector('[role="status"]')?.textContent).toBe("");
 
     const blocked = render(

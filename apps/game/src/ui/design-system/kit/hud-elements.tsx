@@ -8,9 +8,13 @@ import {
   readTypedNumber,
   typedNumberText,
   formatAmount,
+  formatCharge,
+  resourceName,
+  type ResourcesIds,
 } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import {
   type ButtonHTMLAttributes,
   createContext,
@@ -35,7 +39,17 @@ import { PRICE_FACES, type Price } from "./price-faces";
 import { useMarkFrameOpen } from "./open-frames";
 import { revealOwnPlace } from "./own-place";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
-import { CLOSE, FREE, type RankedWords, rankedText, STAMINA, type Tier, type Rank, tierNumeral, TRY_AGAIN } from "./words";
+import {
+  CLOSE,
+  FREE,
+  type RankedWords,
+  rankedText,
+  STAMINA,
+  type Tier,
+  type Rank,
+  tierNumeral,
+  TRY_AGAIN,
+} from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -605,21 +619,32 @@ export const HudCost = ({ line }: { line: RankedWords | string }) =>
     </span>
   ) : null;
 
+/** A price in one of the game's resources, where the verb pays in any of them (Blitz's military window). */
+export type ResourcePrice = { resource: ResourcesIds; amount: number | undefined };
+
 /**
- * What a sheet's verb pays, the one way a foot shows it, beside the verb: each price's painting and its amount, named
- * in words when asked; Free when it costs nothing. A line of words under a map order or in a tip is HudCost's.
+ * What a verb pays, the one way a surface shows a price: each price's painting and its amount, named in words when
+ * asked; Free when it costs nothing. The map's order line under the pointer is HudCost's words.
  */
-export const HudPrice = ({ prices }: { prices: readonly Price[] }) => (
+export const HudPrice = ({ prices }: { prices: readonly (Price | ResourcePrice)[] }) => (
   <span className="ui-price">
     {prices.length === 0 && FREE}
-    {prices.map(({ of, amount }) => (
-      <span key={of} role="img" aria-label={`${formatExact(amount)} ${PRICE_FACES[of].word}`}>
-        {PRICE_FACES[of].icon && <Icon name={PRICE_FACES[of].icon} size={20} />}
-        {formatExact(amount)}
-      </span>
-    ))}
+    {prices.map((price) => {
+      const face = priceFace(price);
+      return (
+        <span key={face.word} role="img" aria-label={`${formatCharge(price.amount)} ${face.word}`}>
+          {face.icon && <Icon name={face.icon} size={20} />}
+          {formatCharge(price.amount)}
+        </span>
+      );
+    })}
   </span>
 );
+
+const priceFace = (price: Price | ResourcePrice): { word: string; icon?: IconMeaning } =>
+  "of" in price
+    ? PRICE_FACES[price.of]
+    : { word: resourceName(price.resource), icon: resourceMeaning(price.resource) };
 
 /**
  * The HUD's one panel, for a part of the screen (a bar, a strip, a card in a band): a header band naming it (its icon,

@@ -279,7 +279,7 @@ describe("a guarded site's card", () => {
     expect(foot.querySelector("button")?.textContent).toBe("Attack");
     expect(foot.querySelector("button")?.disabled).toBe(true);
     expect(document.querySelectorAll('[role="status"]')).toHaveLength(1);
-    expect(document.querySelector(".ui-cost")).toBeNull();
+    expect(document.querySelector(".ui-price")).toBeNull();
   });
 });
 
@@ -464,7 +464,7 @@ describe("a guarded site's card for an army out of reach", () => {
     expect(buttons().some((button) => button.textContent?.startsWith("Attack"))).toBe(false);
     // Move carries its verb only; what it costs is the line under it.
     expect(buttons().find((button) => button.textContent?.startsWith("Move"))!.textContent).toBe("Move");
-    expect(document.querySelector(".ui-cost")?.textContent).toBe("20 stamina");
+    expect(document.querySelector('.ui-price [role="img"]')?.getAttribute("aria-label")).toBe("20 stamina");
     act(() =>
       buttons()
         .find((button) => button.textContent?.startsWith("Move"))!

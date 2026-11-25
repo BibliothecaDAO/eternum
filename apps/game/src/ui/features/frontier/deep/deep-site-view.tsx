@@ -7,10 +7,11 @@ import { oathEffectDescription, oathName } from "../army/oath-details";
 import type { PickEffectBase } from "../pick-effect-format";
 import { Icon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { type Price } from "@/ui/design-system/kit/price-faces";
 import {
   HudButton,
   HudChip,
-  HudCost,
+  HudPrice,
   HudNotice,
   HudRow,
   HudSheet,
@@ -73,7 +74,7 @@ export type DeepBlock = "pickArmy" | "guarding" | "full" | "rival" | "otherDay" 
 export type DeepOrder =
   | { kind: "act"; verb: "attack" | "take" | "join"; stamina?: number; busy?: string; onAct: () => void }
   | { kind: "short"; verb: "attack"; line: string }
-  | { kind: "move"; cost: string; onMove: () => void }
+  | { kind: "move"; prices: readonly Price[]; onMove: () => void }
   | { kind: "closed"; realms: number };
 
 export interface DeepSiteProps {
@@ -300,9 +301,9 @@ const GuardStrip = ({
 const OrderFoot = ({ order }: { order: DeepOrder | DeepBlock }) => {
   if (typeof order === "string") return <HudWindowFoot note={DEEP_WORDS[order]} />;
   if (order.kind === "closed") return <HudWindowFoot note={DEEP_WORDS.opensAt(order.realms)} />;
-  const footCost = order.kind === "move" ? order.cost : undefined;
+  const footPrices = order.kind === "move" ? order.prices : undefined;
   return (
-    <HudWindowFoot note={footCost ? <HudCost line={footCost} /> : undefined}>
+    <HudWindowFoot note={footPrices ? <HudPrice prices={footPrices} /> : undefined}>
       {order.kind === "act" && (
         <HudButton
           kind="primary"

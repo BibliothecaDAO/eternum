@@ -1,5 +1,5 @@
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { HudButton, HudCost, HudDeploy, type HudTroopStack, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudDeploy, HudPrice, type HudTroopStack, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { type TroopTier, troopTierIndex, type TroopType } from "@bibliothecadao/types";
 
 import type { useArmyCreation } from "./use-army-creation";
@@ -54,7 +54,7 @@ export const DeployVerb = ({ form }: { form: ArmyCreationForm }) => (
   <HudWindowFoot
     note={
       <span className="flex flex-col items-start">
-        <HudCost line={form.raiseLine} />
+        <HudPrice prices={form.raisePrices} />
         {form.startLine && <span>{form.startLine}</span>}
         <span role="status">{form.isActionDisabled ? form.blockedReason : null}</span>
       </span>

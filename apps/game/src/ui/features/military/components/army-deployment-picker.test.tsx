@@ -109,7 +109,7 @@ describe("the shared deployment picker", () => {
     // Each knight takes two wheat: the cost is the line beside the one primary button in the window's foot, never on it.
     expect(button(/^Deploy/).closest(".ui-window__foot")).not.toBeNull();
     expect(button(/^Deploy/).textContent).toBe("Deploy");
-    expect(host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe("840 wheat");
+    expect(host.querySelector('.ui-window__foot .ui-price [role="img"]')?.getAttribute("aria-label")).toBe("840 Wheat");
     // This fixture's realm has no map position, so no spawn hex: Deploy is shut and says so, once.
     expect(button(/^Deploy/).disabled).toBe(true);
     expect([...host.querySelectorAll('[role="status"]')].map((line) => line.textContent)).toEqual([
