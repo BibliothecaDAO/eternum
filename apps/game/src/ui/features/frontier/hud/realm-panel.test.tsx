@@ -140,7 +140,7 @@ it("shows every stock with its rate, Fragments opening the shop, and the next ra
         name="Duskbite"
         kind="realm"
         level={0}
-        rankUp={{ name: "City", gives: "+1 army slot", sending: false, onUpgrade }}
+        rankUp={{ name: "City", sending: false, onUpgrade }}
         aspect={1}
         orderId={12}
         stores={STORE_KINDS.map((kind) => store(kind, 0, 6_000))}
@@ -165,15 +165,27 @@ it("shows every stock with its rate, Fragments opening the shop, and the next ra
   expect(card.querySelector('[data-store="fragments"]')?.textContent).toBe("250Shop");
   act(() => card.querySelector<HTMLButtonElement>('[aria-label="Fragments 250"]')!.click());
   expect(onShop).toHaveBeenCalledTimes(1);
-  expect(card.querySelector(".frontier-realm-card__next")?.textContent).toBe("Next rank City · +1 army slotUpgrade");
+  expect(card.querySelector(".frontier-realm-card__next")?.textContent).toBe("Next rank CityUpgrade");
   act(() => card.querySelector<HTMLButtonElement>("[data-realm-castle]")!.click());
   expect(onUpgrade).toHaveBeenCalledTimes(1);
 
   act(() =>
-    root.render(<RealmCard name="Duskbite" kind="realm" level={3} stores={STORES} fragments={null} lords={null} />),
+    root.render(
+      <RealmCard
+        name="Duskbite"
+        kind="realm"
+        level={3}
+        stores={STORES}
+        fragments={null}
+        lords={null}
+        onShop={onShop}
+      />,
+    ),
   );
   expect(host.querySelector("[data-realm-castle]")).toBeNull();
-  expect(host.querySelector('[data-store="fragments"] button')).toBeNull();
+  expect(host.querySelector('[data-store="fragments"]')?.textContent).toBe("—Shop");
+  act(() => host.querySelector<HTMLButtonElement>('[aria-label="Fragments"]')!.click());
+  expect(onShop).toHaveBeenCalledTimes(2);
 });
 
 it("locks the next rank, with the price it needs, until the realm can pay it", () => {

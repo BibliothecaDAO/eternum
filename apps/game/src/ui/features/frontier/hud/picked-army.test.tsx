@@ -36,7 +36,9 @@ it("opens the selected army's details and keeps its refill beside its troops", (
     ),
   );
   try {
-    expect(host.textContent).toContain("100");
+    expect(host.querySelector('[aria-label="Troops 100"]')?.querySelector(".ui-chip__icons")).toBeNull();
+    expect(host.querySelector(".army-tray__stamina b")?.textContent).toBe("60/150");
+    expect(host.querySelector(".army-tray__stamina b")?.getAttribute("aria-label")).toBe("Stamina 60/150");
     expect(host.textContent).toContain("Refill");
     act(() => host.querySelector<HTMLButtonElement>('button[aria-label*="Army 1"]')!.click());
     expect(onDetails).toHaveBeenCalledOnce();

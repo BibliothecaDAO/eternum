@@ -19,7 +19,7 @@ import { fragmentsHref } from "@/shell/shop/fragments-route";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { fragmentsToFill } from "../army/refill";
-import { useFragmentsHeld } from "../value/fragments";
+import { useFragmentsHeld, useFragmentsSold } from "../value/fragments";
 
 const SHOP_MODELS = ["Seal", "QuestRules", "SliceRules", "SettledRealm"] as const;
 const PASS_PRICE = nativeFragmentConstants.SEAL_FRAGMENTS;
@@ -42,10 +42,25 @@ export interface ShopViewProps {
 const SHOP_RETURN = "#shop";
 
 export const ShopSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
+  const sold = useFragmentsSold();
   const reading = useShopReading(realm);
   const getFragments = useGetFragments();
+  if (!sold) return <ShopClosedView code={<ShopCodeField />} onClose={onClose} />;
   return reading && <ShopView {...reading} code={<ShopCodeField />} onGetFragments={getFragments} onClose={onClose} />;
 };
+
+const ShopClosedView = ({ code, onClose }: { code: ReactNode; onClose: () => void }) => (
+  <HudSheet label={SHOP_WORDS.title} onClose={onClose}>
+    <section data-shop="closed" className="flex flex-col gap-2">
+      <HudRow
+        lead={<Icon name="fragment" size={32} />}
+        title={FRAGMENTS_PAGE_WORDS.closedTitle}
+        detail={FRAGMENTS_PAGE_WORDS.closedLine}
+      />
+      {code}
+    </section>
+  </HudSheet>
+);
 
 export const ShopView = ({
   fragments,

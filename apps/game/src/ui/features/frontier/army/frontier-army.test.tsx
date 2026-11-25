@@ -121,14 +121,12 @@ it("opens the army's panel from its row on a desktop, through its existing selec
   expect(game.select).not.toHaveBeenCalled();
 });
 
-it("keeps Delete as a trash right after the army's name, asking before it deletes, and offers no Reinforce", () => {
+it("keeps Delete as a trash at the foot's bottom right, asking before it deletes, and offers no Reinforce", () => {
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
   act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
-  const trash = host.querySelector<HTMLButtonElement>('.ui-frame__head button[aria-label="Delete"]');
-  // At the head's left, the name's next neighbour, not beside the cross (the owner, 4 November).
-  expect(trash?.previousElementSibling?.textContent).toBe("Army 1");
-  expect(trash?.closest(".ui-panel__cue")).toBeNull();
-  // The kit's one look for what destroys: the red danger button.
+  const trash = host.querySelector<HTMLButtonElement>('.ui-window__foot button[aria-label="Delete"]');
+  expect(trash?.nextElementSibling).toBeNull();
+  expect(host.querySelector('.ui-frame__head button[aria-label="Delete"]')).toBeNull();
   expect(trash?.dataset.kind).toBe("danger");
   expect(button(/Reinforce/)).toBeUndefined();
   expect(host.querySelector('[role="alertdialog"]')).toBeNull();
@@ -136,6 +134,22 @@ it("keeps Delete as a trash right after the army's name, asking before it delete
   expect(host.querySelector('.ui-frame__body [role="alertdialog"]')?.textContent).toContain(
     "troops, carried resources and held Oaths are lost",
   );
+});
+
+it("spells what each sworn Oath grants in the panel, no hover needed", async () => {
+  const { nativeOathConstants: oaths } = await import("@bibliothecadao/eternum/game-client");
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
+  game.progress.oath_slots = 2;
+  game.progress.oaths = (1 << (oaths.POWER - 1)) | (1 << (oaths.GIANTS - 1));
+  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
+  const rows = [...host.querySelectorAll("[data-oath-effects] li")].map((row) =>
+    [...row.children].map((part) => part.textContent),
+  );
+  expect(rows).toEqual([
+    ["Giants", `-${oaths.GIANTS_REDUCTION_PERCENT}%`, "Damage taken"],
+    ["Power", `+${oaths.POWER_DAMAGE_PERCENT}%`, "Damage dealt"],
+  ]);
+  game.progress.oaths = 0;
 });
 
 vi.mock("../relics/army-relic-slots", () => ({ ArmyRelicSlots: () => null }));

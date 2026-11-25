@@ -130,7 +130,20 @@ it("opens on the army beside the realm at the most it can take, and names the tr
   expect(wheat()).toBe("840 Wheat");
   await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="One fewer"]')!.click());
   expect(button("Reinforce")?.textContent).toBe("Reinforce +419");
+  const field = host.querySelector<HTMLInputElement>(".size-row .ui-field input")!;
+  const slider = host.querySelector<HTMLInputElement>("input[type=range]")!;
+  act(() => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, "300");
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  expect([field.value, slider.value, troops(), button("Reinforce")?.textContent]).toEqual([
+    "300",
+    "300",
+    "600 → 900",
+    "Reinforce +300",
+  ]);
   await press("Max");
+  expect([field.value, slider.value]).toEqual(["420", "420"]);
   await press("Reinforce");
   expect(add).toHaveBeenCalledOnce();
   expect(add.mock.calls[0][0]).toMatchObject({

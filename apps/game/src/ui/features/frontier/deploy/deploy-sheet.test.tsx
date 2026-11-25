@@ -79,16 +79,17 @@ const render = (store: unknown, row: unknown, onClose = () => {}) => {
 };
 
 const slider = (host: HTMLElement) => host.querySelector<HTMLInputElement>(".size-row input[type=range]")!;
-const typeCount = (host: HTMLElement, value: number) => {
-  const field = slider(host);
+const field = (host: HTMLElement) => host.querySelector<HTMLInputElement>(".size-row .ui-field input")!;
+const setInput = (input: HTMLInputElement, value: number) =>
   act(() => {
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, String(value));
-    field.dispatchEvent(new Event("input", { bubbles: true }));
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, String(value));
+    input.dispatchEvent(new Event("input", { bubbles: true }));
   });
-};
+const typeCount = (host: HTMLElement, value: number) => setInput(field(host), value);
+const dragCount = (host: HTMLElement, value: number) => setInput(slider(host), value);
 const press = (host: HTMLElement, word: string) =>
   act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === word)!.click());
-const count = (host: HTMLElement) => host.querySelector(".size-row__count")?.textContent;
+const count = (host: HTMLElement) => field(host).value;
 
 /** The open slots the sheet offers, as the Armies card draws them: each one's name, and whether it is the one chosen. */
 const slotsOffered = (host: HTMLElement) =>
@@ -328,6 +329,11 @@ describe("the Deploy sheet", () => {
     expect(host.textContent!.replace(foot(host), "")).not.toMatch(/wheat/i);
     const range = slider(host);
     expect([range.getAttribute("aria-label"), range.max, range.value]).toEqual(["Knights: how many go", "420", "120"]);
+    dragCount(host, 200);
+    expect([count(host), deployButton(host)?.textContent]).toEqual(["200", "Deploy 200"]);
+    typeCount(host, 900);
+    expect([count(host), slider(host).value, deployButton(host)?.textContent]).toEqual(["420", "420", "Deploy 420"]);
+    typeCount(host, 120);
     expect(host.textContent).not.toMatch(/Day ends/i);
     expect(startReading(host)).toBe("150");
     expect(host.textContent).not.toMatch(/starts|its slot|Leaves|Steps out/);

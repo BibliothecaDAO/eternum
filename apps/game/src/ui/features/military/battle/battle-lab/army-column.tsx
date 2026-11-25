@@ -1,3 +1,4 @@
+import { staminaReading } from "@/ui/design-system/kit/words";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudNumberField, HudPanel, HudSelect } from "@/ui/design-system/kit/hud-elements";
 import { StaminaManager } from "@bibliothecadao/eternum";
@@ -82,7 +83,7 @@ export const ArmyColumn = ({
         )}
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Stamina" hint={`${army.stamina}/${maxStamina}`}>
+          <Field label="Stamina" hint={staminaReading(army.stamina, maxStamina)}>
             <HudNumberField
               label="Stamina"
               value={army.stamina}

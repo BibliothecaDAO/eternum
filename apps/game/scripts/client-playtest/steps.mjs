@@ -743,15 +743,15 @@ const TOWN_DEPLOY_STEPS = [
   ),
 ];
 
-const DEPLOY_SIZE = '[data-kit-sheet] .size-row input[type="range"]';
+const DEPLOY_COUNT = "[data-kit-sheet] .size-row .ui-field input";
 const setDeployCount = (browser, count) =>
   browser.read(`(() => {
-    const slider = document.querySelector(${JSON.stringify(DEPLOY_SIZE)});
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(slider, ${JSON.stringify(String(count))});
-    slider.dispatchEvent(new Event("input", { bubbles: true }));
-    return slider.value;
+    const field = document.querySelector(${JSON.stringify(DEPLOY_COUNT)});
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(field, ${JSON.stringify(String(count))});
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+    return field.value;
   })()`);
-const DEPLOY_TROOPS = `JSON.stringify(document.querySelector('[data-kit-sheet] .size-row__count')?.textContent ?? null)`;
+const DEPLOY_TROOPS = `JSON.stringify(document.querySelector(${JSON.stringify(DEPLOY_COUNT)})?.value ?? null)`;
 
 const DEPLOY_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
