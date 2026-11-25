@@ -34,7 +34,11 @@ import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-stor
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
+import {
+  getCurrentPlayRouteBootToken,
+  onPlayRouteBootStarted,
+  usePlayRouteReadinessStore,
+} from "@/game-entry/play-route-readiness-store";
 import { actNowRefusal, canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveStoredLocalCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
