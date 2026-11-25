@@ -4124,7 +4124,7 @@ function raceBoardSteps(result) {
                 const state = browser.read(OPENING_STATE);
                 if (state.lines.length === 0) break;
                 told.push(state.lines[0]);
-                browser.click(HUD_WORDS.close);
+                browser.click(HUD_WORDS.ok);
                 await sleep(400);
               }
               const back = await reloadOn("Deep", "map", scenario)(context);
