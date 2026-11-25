@@ -22,3 +22,17 @@ export const CombatMark = ({ category, size = 20 }: { category: TroopType; size?
     </span>
   );
 };
+
+export const CombatBadge = ({ category }: { category: TroopType }) => {
+  const { label, icon } = combatMarkOf(category);
+  return (
+    <span
+      aria-hidden="true"
+      data-tip={label}
+      data-combat-mark={label}
+      className="absolute -bottom-1 -right-1 flex size-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark"
+    >
+      <Icon name={icon} size={14} />
+    </span>
+  );
+};

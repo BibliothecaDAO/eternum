@@ -1,3 +1,4 @@
+import { staminaLabel } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -123,7 +124,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
       {maxStamina > 0 && stamina && (
         <div
           className="flex min-w-0 flex-1 items-center gap-1.5"
-          title={`Stamina ${Number(stamina.amount)}/${maxStamina}`}
+          title={staminaLabel(Number(stamina.amount), maxStamina)}
         >
           <span className="shrink-0 text-hud-label text-hud-muted">Stamina</span>
           <span className="min-w-0 flex-1">

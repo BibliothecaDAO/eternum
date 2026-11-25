@@ -8,6 +8,7 @@ import {
   ARMY_SLOT_WORDS,
   DEPLOY,
   STAMINA,
+  staminaReading,
   TROOPS,
   type Rank,
 } from "@/ui/design-system/kit/words";
@@ -152,7 +153,7 @@ const SlotNumber = ({ number }: { number: number | undefined }) => (
 
 const StaminaFigure = ({ current, max }: { current: number | undefined; max: number | undefined }) => (
   <span className="frontier-slot__figure tabular-nums">
-    {`${formatAmount(current)}/${formatAmount(max)}`}
+    {staminaReading(current, max)}
     <Icon name="stamina" size={14} alt={STAMINA} />
   </span>
 );

@@ -537,6 +537,9 @@ export const WHEAT = resourceName(ResourcesIds.Wheat);
 /** The realm's troops, as a store and an army's figure are named. */
 export const TROOPS = "Troops";
 export const STAMINA = "stamina";
+export const staminaReading = (current: number | undefined, max: number | undefined) =>
+  `${formatExact(current)}/${formatExact(max)}`;
+export const staminaLabel = (current: number, max: number) => `${STAMINA_TITLE} ${staminaReading(current, max)}`;
 
 /** The HUD's tab for everything the player holds. */
 export const EMPIRE = "Empire";
@@ -547,7 +550,6 @@ export const WORLD = "World";
 export const SHOW_MY_REALM = "Show my realm";
 export const REALM_CARD_WORDS = {
   nextRank: "Next rank",
-  armySlots: (count: number) => `+${formatCount(count, "army slot")}`,
   needs: "Needs",
   stores: "Stores",
   lordsReading: "reading your wallet…",

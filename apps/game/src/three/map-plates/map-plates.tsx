@@ -1,3 +1,4 @@
+import { staminaLabel, staminaReading } from "@/ui/design-system/kit/words";
 import { formatExact } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
@@ -5,7 +6,7 @@ import { HudRanked, HudStamina, HudTierChip, type StaminaBar } from "@/ui/design
 
 import { type MapPlate, type PlateTroops } from "./map-plate-model";
 import { plateRows, type PlateSegment } from "./map-plate-rows";
-import { CombatBadge, combatOfStack } from "./map-plate-token";
+import { MapCombatBadge, combatOfStack } from "./map-plate-token";
 
 /**
  * A map plate (the owner's pick, map-labels rounds 2 to 5), opened in its token's place: the rows `plateRows` says, on
@@ -56,7 +57,7 @@ const Troops = ({ troops }: { troops: PlateTroops }) => (
         name={troops.beast ? beastMeaning(troops.beast) : (`${troops.type}-t${troops.tier}` as IconMeaning)}
         size={20}
       />
-      <CombatBadge mark={combatOfStack(troops)} />
+      <MapCombatBadge mark={combatOfStack(troops)} />
     </span>
     {!troops.beast && <HudTierChip tier={troops.tier} />}
     <span className="mp-count">{formatExact(troops.count)}</span>
@@ -64,7 +65,7 @@ const Troops = ({ troops }: { troops: PlateTroops }) => (
       <span
         className="mp-plate__stamina mp-troops__stamina"
         role="img"
-        aria-label={`Guard stamina ${formatExact(troops.stamina.current)}/${formatExact(troops.stamina.max)}`}
+        aria-label={`Guard ${staminaLabel(troops.stamina.current, troops.stamina.max)}`}
       >
         <HudStamina stamina={troops.stamina} />
       </span>
@@ -74,12 +75,10 @@ const Troops = ({ troops }: { troops: PlateTroops }) => (
 
 /** An army's stamina: its bar, then exactly how much of how much ("84/150"). */
 const Stamina = ({ stamina }: { stamina: StaminaBar }) => (
-  <span className="mp-stamina" aria-label={`Stamina ${formatExact(stamina.current)} of ${formatExact(stamina.max)}`}>
+  <span className="mp-stamina" aria-label={staminaLabel(stamina.current, stamina.max)}>
     <span className="mp-plate__meter">
       <HudStamina stamina={stamina} />
     </span>
-    <span className="mp-label">
-      {formatExact(stamina.current)}/{formatExact(stamina.max)}
-    </span>
+    <span className="mp-label">{staminaReading(stamina.current, stamina.max)}</span>
   </span>
 );

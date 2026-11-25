@@ -182,8 +182,8 @@
 }
 .mp-combat {
   position: absolute;
+  right: -7px;
   bottom: -5px;
-  left: -7px;
   display: flex;
   width: 18px;
   height: 18px;
@@ -198,8 +198,8 @@
   display: inline-flex;
 }
 .mp-troops__icon .mp-combat {
+  right: -4px;
   bottom: -4px;
-  left: -4px;
   width: 14px;
   height: 14px;
 }

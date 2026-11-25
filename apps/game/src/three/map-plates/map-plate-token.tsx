@@ -73,7 +73,7 @@ const COMBAT_SIZE = 14;
 
 export const combatOfStack = (troops: PlateTroops): CombatMarkLook => combatMarkOf(plateTroopCategory(troops.type));
 
-export const CombatBadge = ({ mark }: { mark: CombatMarkLook }) => (
+export const MapCombatBadge = ({ mark }: { mark: CombatMarkLook }) => (
   <span className="mp-combat" data-combat-mark={mark.label} aria-hidden>
     <Icon name={mark.icon} size={COMBAT_SIZE} />
   </span>
@@ -110,7 +110,7 @@ const TokenView = ({ reading }: { reading: TokenReading }) => (
           {reading.mark.letter}
         </span>
       )}
-      {reading.combat && <CombatBadge mark={reading.combat} />}
+      {reading.combat && <MapCombatBadge mark={reading.combat} />}
       {reading.crest !== null && (
         <span className="mp-token__crest" aria-hidden>
           <Icon name={orderMeaning(reading.crest)} size={CREST_SIZE} />

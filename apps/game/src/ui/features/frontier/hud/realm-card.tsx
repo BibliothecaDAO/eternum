@@ -27,7 +27,6 @@ import { LandingDelta, STORE_TONES, storeLine, storeRateText, type StoreReading 
 
 export interface RealmRankUp {
   name: string;
-  gives?: string;
   need?: Price;
   refusal?: string;
   sending: boolean;
@@ -111,7 +110,7 @@ export const RealmCard = ({
             caption={SHOP_WORDS.title}
             tone="gold"
             label={fragments === null ? FRAGMENTS : SHOP_WORDS.fragments(fragments)}
-            onPress={fragments === null ? undefined : onShop}
+            onPress={onShop}
           />
         </li>
         <li data-store="lords">
@@ -220,7 +219,6 @@ const NextRank = ({ rankUp }: { rankUp: RealmRankUp }) => (
   <footer className="frontier-realm-card__next">
     <span className="frontier-realm-card__next-line">
       {REALM_CARD_WORDS.nextRank} <b>{rankUp.name}</b>
-      {rankUp.gives && <span className="text-hud-muted"> · {rankUp.gives}</span>}
     </span>
     {rankUp.onUpgrade ? (
       <HudButton

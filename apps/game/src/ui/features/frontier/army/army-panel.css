@@ -52,7 +52,14 @@
   gap: theme(spacing.2);
 }
 .army-detail__figure {
+  white-space: nowrap;
   font-size: var(--hud-text-strong);
   font-weight: var(--hud-weight-strong);
   color: rgb(var(--hud-ink));
+}
+.army-foot__verbs {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: theme(spacing.2);
 }
