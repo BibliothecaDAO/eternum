@@ -30,7 +30,7 @@ import {
   ResourcesIds,
   TroopType,
 } from "@bibliothecadao/types";
-import { ARMY_SLOT_WORDS, startsOn } from "@/ui/design-system/kit/words";
+import { startsOn } from "@/ui/design-system/kit/words";
 
 const BELOW_SURFACE = LAYER_NAMES.slice(1)
   .map((name) => `[aria-label="${name}"]`)
@@ -75,25 +75,16 @@ it.each(["phone", "desktop"])("shows every open slot and its start on %s, and op
     const slots = [...host.querySelectorAll<HTMLButtonElement>('button[aria-label="Deploy"]')];
     const startOf = (slot: HTMLButtonElement) => {
       const row = slot.closest<HTMLElement>(".frontier-slot") ?? slot;
-      return mode === "desktop"
-        ? [
-            row.dataset.tip,
-            row.querySelector(".frontier-slot__detail")?.textContent ??
-              row.querySelector('[role="meter"]')?.getAttribute("aria-valuenow"),
-          ]
-        : [row.dataset.tip, row.textContent];
+      return [
+        row.dataset.tip,
+        row.querySelector('[role="meter"]')?.getAttribute("aria-valuenow"),
+        row.querySelector(".frontier-slot__detail"),
+      ];
     };
-    expect(slots.map(startOf)).toEqual(
-      mode === "desktop"
-        ? [
-            [`${startsOn("Army 2", "150/150", true)}.`, ARMY_SLOT_WORDS.readyAtHome("420 Knights")],
-            ["Army 3 starts on 7/150 stamina.", "7"],
-          ]
-        : [
-            [`${startsOn("Army 2", "150/150", true)}.`, "+"],
-            ["Army 3 starts on 7/150 stamina.", "+"],
-          ],
-    );
+    expect(slots.map(startOf)).toEqual([
+      [`${startsOn("Army 2", "150/150", true)}.`, "150", null],
+      ["Army 3 starts on 7/150 stamina.", "7", null],
+    ]);
     act(() => slots[1].click());
     expect(useUIStore.getState().pendingMilitaryAction).toMatchObject({ structureId: 7, slot: 2 });
   } finally {

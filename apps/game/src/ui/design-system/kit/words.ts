@@ -1227,7 +1227,6 @@ export const ARMY_SLOT_WORDS = {
   title: "All army slots",
   count: (active: number, allowed: number) => `${active}/${allowed}`,
   open: (slot: number) => `Slot ${slot} · Open`,
-  readyAtHome: (troops: string) => `${troops} ready at home`,
   unlocksAt: (slot: number, rank: string) => `Slot ${slot} unlocks at ${rank}`,
 } as const;
 /** The sources of a store's production, each with its combined rate. */
