@@ -829,6 +829,7 @@ export const ATTACK_REFUSAL_WORDS = {
 
 export const DEEP_WORDS = {
   title: DEEP,
+  gate: "Gate",
   orderFailed: `The ${DEEP} order could not be sent.`,
   purpose: {
     foundation: "One site every Aspect fights for: holding it raises your Aspect's hyperstructure",
