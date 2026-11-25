@@ -14,6 +14,7 @@ import {
   staminaRecoveryEffect,
 } from "./pick-effect-format";
 import { readPickEffectBase } from "./pick-effect-text";
+import { combatMarkOf } from "./sites/combat-mark";
 
 describe("shared pick-effect text builder", () => {
   it("formats contextual from-to and shared stat lines", () => {
@@ -32,7 +33,7 @@ describe("shared pick-effect text builder", () => {
   it("reads live SliceRules and DeepRules without silent defaults when absent", () => {
     const store = new NativeFactStore();
     expect(readPickEffectBase(store, 1)).toEqual({
-      category: TroopType.Knight,
+      combatIcon: combatMarkOf(TroopType.Knight).icon,
       tickSeconds: undefined,
       attackStamina: undefined,
       revealStamina: undefined,
@@ -68,7 +69,7 @@ describe("shared pick-effect text builder", () => {
       },
     ] as never);
     expect(readPickEffectBase(store, 1)).toEqual({
-      category: TroopType.Knight,
+      combatIcon: combatMarkOf(TroopType.Knight).icon,
       tickSeconds: 60,
       attackStamina: 40,
       revealStamina: 25,

@@ -23,7 +23,6 @@ import type { IconMeaning } from "../../../design-system/icon-meaning";
 import { PICK_EFFECT_WORDS as WORDS } from "../../../design-system/kit/words";
 
 import type { PickEffectBase } from "../pick-effect-format";
-import { combatMarkOf } from "../sites/combat-mark";
 
 interface OathStatBadge {
   hero: string;
@@ -34,8 +33,7 @@ interface OathStatBadge {
 const signedPercent = (percent: number) => formatPercent(percent / 100, { signed: true });
 const fromTo = (from: string, to: string) => `${from} → ${to}`;
 
-const attackIcon = (base: PickEffectBase): IconMeaning =>
-  base.category === undefined ? "attack" : combatMarkOf(base.category).icon;
+const attackIcon = (base: PickEffectBase): IconMeaning => base.combatIcon ?? "attack";
 
 const foxBadge = (base: PickEffectBase): OathStatBadge => ({
   hero:

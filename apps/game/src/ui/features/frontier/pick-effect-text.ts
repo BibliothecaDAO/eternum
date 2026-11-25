@@ -5,6 +5,7 @@ import { armyStaminaMax, exploreStaminaCost } from "@bibliothecadao/eternum/troo
 import { RESOURCE_PRECISION, TroopType } from "@bibliothecadao/types";
 
 import type { PickEffectBase } from "./pick-effect-format";
+import { combatMarkOf } from "./sites/combat-mark";
 
 const PICK_EFFECT_MODELS = ["SliceRules", "DeepRules", "ExplorerTroops", "ArmyProgress"] as const;
 
@@ -21,7 +22,7 @@ export function readPickEffectBase(
   const deep = store.get("DeepRules", { game_id: gameId });
   const tickSeconds = slice ? Math.max(1, Number(slice.tick_config.armies_tick_in_seconds)) : undefined;
   return {
-    category: army.category,
+    combatIcon: combatMarkOf(army.category).icon,
     attackStamina: slice && oathAttackStamina(army.oaths, slice.troop_stamina_config.stamina_attack_req),
     revealStamina: slice && exploreStaminaCost(slice, army.category, army.oaths),
     maxStamina: slice && armyStaminaMax(slice.troop_stamina_config, army.category, army),
