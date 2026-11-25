@@ -1652,7 +1652,8 @@ const useMarksMoreBelow = () => {
   const [body, setBody] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!body) return;
-    const mark = () => body.toggleAttribute("data-more-below", body.scrollTop + body.clientHeight < body.scrollHeight - 1);
+    const mark = () =>
+      body.toggleAttribute("data-more-below", body.scrollTop + body.clientHeight < body.scrollHeight - 1);
     const resized = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(mark);
     const watch = () => [body, ...body.children].forEach((element) => resized?.observe(element));
     const changed = new MutationObserver(() => {
