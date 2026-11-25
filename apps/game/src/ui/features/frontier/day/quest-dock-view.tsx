@@ -5,16 +5,14 @@ import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudButton, HudLoading, HudMeter } from "@/ui/design-system/kit/hud-elements";
 import { DAY_BANNER_WORDS as WORDS } from "@/ui/design-system/kit/words";
-import { type AspectId, formatAmount, ResourcesIds } from "@bibliothecadao/types";
+import { type AspectId, formatAmount, type QuestLine, ResourcesIds } from "@bibliothecadao/types";
 
 import { EmissaryCard, EmissaryOk } from "../tutorial/aspect-emissary-dock";
 import type { BaneFace } from "./bane-face";
 
-export interface DayQuestFace {
+export interface DayQuestFace extends QuestLine {
   icon: IconMeaning;
   name: string;
-  unit: string;
-  objective: string;
 }
 
 export interface DayQuestReading {
@@ -114,7 +112,7 @@ const BaneLine = ({ bane }: { bane: BaneStanding }) => (
 );
 
 const QuestLine = ({ quest, reading, named }: { quest: DayQuestFace; reading: DayQuestReading; named: boolean }) => {
-  const objective = WORDS.objectiveLine(quest.objective, reading.target);
+  const objective = WORDS.objectiveLine(quest, reading.target);
   return (
     <span data-quest-objective className="quest-dock__objective">
       {named ? (

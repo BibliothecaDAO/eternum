@@ -193,7 +193,7 @@ const TodayQuestPanel = ({ game, now }: { game: DirectoryGame; now: number }) =>
         <div className="play-today__body">
           <span className="play-today__name">{face.name}</span>
           <span className="play-today__summary">
-            {DAY_BANNER_WORDS.summary(face.objective, quest.progress, quest.target, quest.labor)}
+            {DAY_BANNER_WORDS.summary(DAY_BANNER_WORDS.objective(face), quest.progress, quest.target, quest.labor)}
           </span>
           <div className="play-today__track" aria-hidden="true">
             <div className="play-today__fill" style={{ width: `${share}%` }} />

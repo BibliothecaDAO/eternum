@@ -360,6 +360,8 @@ import {
   TroopType,
   asRanked,
   type RankedWords,
+  type QuestLine,
+  type QuestUnit,
 } from "@bibliothecadao/types";
 
 /** A step on that scale, common (1) to legendary (5). */
@@ -893,8 +895,8 @@ export const DAY_BANNER_WORDS = {
   collecting: "Collecting…",
   collected: "Collected",
   collectAgain: "Collect again",
-  count: (progress: number, target: number, unit: string) =>
-    `${formatExact(progress)} of ${formatExact(target)} ${unit}`,
+  count: (progress: number, target: number, unit: QuestUnit) =>
+    `${formatExact(progress)} of ${formatExact(target)} ${target === 1 ? unit.one : unit.many}`,
   beastBane: (percent: number) => `Guarded sites have ${formatExact(percent)}% strength while the bane lasts`,
   staminaBane: (percent: number) => `Stamina returns at ${formatExact(percent)}% while the bane lasts`,
   productionBane: (percent: number) => `Production runs at ${formatExact(percent)}% while the bane lasts`,
@@ -927,12 +929,9 @@ export const DAY_BANNER_WORDS = {
   baneClears: (left: string) => `Clears in ${left}`,
   baneBroken: "Broken",
   twiceIfBroken: "2× if broken",
-  objectiveLine: (objective: string, target: number) => {
-    const space = objective.indexOf(" ");
-    return space === -1
-      ? `${objective} ${formatExact(target)}`
-      : `${objective.slice(0, space)} ${formatExact(target)} ${objective.slice(space + 1)}`;
-  },
+  objectiveLine: (quest: QuestLine, target: number) =>
+    `${quest.verb} ${formatExact(target)} ${target === 1 ? quest.unit.one : quest.unit.many}`,
+  objective: (quest: QuestLine) => `${quest.verb} ${quest.unit.many}`,
   rewardAmount: (amount: number, resource: ResourcesIds) => `${formatAmount(amount)} ${resourceName(resource)}`,
   summary: (objective: string, progress: number, target: number, labor: number) =>
     `${objective} · ${formatExact(progress)} of ${formatExact(target)} · +${formatExact(labor)} ${LABOR}`,
