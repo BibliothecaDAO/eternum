@@ -47,7 +47,7 @@ describe("a Deep site's card", () => {
     expect(beast.querySelector(".deep-beast__portrait [data-combat-mark='Blade']")).not.toBeNull();
     expect(beast.textContent).toContain("15,000 troops");
     expect(document.querySelector("[data-deep-poison]")?.textContent).toBe(
-      "Holding drains −200 troops / 2m (Deep poison)",
+      "Deep poison · drains 200 troops every 2m",
     );
     expect(text()).not.toContain("Today's beast");
     const [attack] = labels(["Attack"]);
@@ -127,7 +127,7 @@ describe("a Deep site's card", () => {
     expect(tips[0]).toContain("60% of each tick");
     expect(tips[1]).toContain("40% of each tick");
     expect(document.querySelector("[data-deep-poison]")?.textContent).toBe(
-      "Holding drains −200 troops / 2m (Deep poison)",
+      "Deep poison · drains 200 troops every 2m",
     );
   });
 

@@ -854,9 +854,9 @@ export const DEEP_WORDS = {
   barCell: "Bane bar",
   poisonCell: `${DEEP} poison per guard`,
   poisonStrip: (troops: number, cadence: string) =>
-    `Holding drains −${formatExact(troops)} troops / ${cadence} (${DEEP} poison)`,
+    `${DEEP} poison · drains ${formatExact(troops)} troops every ${cadence}`,
   poisonPanel: (troops: number, cadence: string, ticks: number, time: string) =>
-    `${DEEP} poison: −${formatExact(troops)} every ${cadence} · ${formatExact(ticks)} ticks (${time})`,
+    `${DEEP} poison · −${formatExact(troops)} every ${cadence} · ${formatExact(ticks)} ticks · ${time} left`,
   poisonCompact: (troops: number, cadence: string, time: string) =>
     `−${formatExact(troops)} / ${cadence} · ${time} left`,
   poisonToken: (troops: number) => `−${formatExact(troops)}`,

@@ -1646,7 +1646,7 @@
       "family": "Banes"
     },
     "poison": {
-      "art": "skull",
+      "art": "poison",
       "label": "Deep poison",
       "family": "Statuses"
     }

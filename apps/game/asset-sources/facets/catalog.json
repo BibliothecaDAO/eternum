@@ -3574,6 +3574,15 @@
         "kind": "painted",
         "sha256": "dca72d4ab1c61b88c665c635444a5096ca6b07089b9835186e9c4fe1adfa6804"
       }
+    },
+    {
+      "id": "poison",
+      "label": "Deep poison",
+      "family": "Statuses",
+      "source": {
+        "kind": "ivory-relief",
+        "sha256": "7380031ea4eeda26db3ebbab54feb8e50255b164244981135db9f780cacc53b1"
+      }
     }
   ]
 }
