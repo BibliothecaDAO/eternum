@@ -64,6 +64,11 @@
 .build-grid[data-wide] .build-tile-price {
   justify-content: flex-start;
 }
+.build-grid[data-wide] .build-tile-price img,
+.build-grid[data-wide] .build-tile-gives img {
+  width: 12px;
+  height: 12px;
+}
 .build-tile-detail {
   display: flex;
   width: 100%;
