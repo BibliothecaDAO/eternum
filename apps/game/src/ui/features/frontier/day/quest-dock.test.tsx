@@ -307,13 +307,10 @@ describe("bane collection", () => {
     );
     expect(badges()).toEqual(["check"]);
 
+    const [key, progress] = [...game.store.entries("QuestProgress")].find(([, row]) => row.day === today().day)!;
     act(() =>
       game.store.applyFacts([
-        {
-          model: "QuestProgress",
-          key: "0xa71",
-          value: { game_id: 1, home: 7, day: today().day, progress: 0, completed_level: 0 },
-        },
+        { model: "QuestProgress", key, value: { ...progress, progress: 0, completed_level: 0 } },
       ] as never),
     );
     const running = today().reading.known!;
