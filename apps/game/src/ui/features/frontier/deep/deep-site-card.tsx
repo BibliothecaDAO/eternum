@@ -159,7 +159,8 @@ function siteRates(
   }
   return {
     tickSeconds: Number(store.require("SliceRules", { game_id }).tick_config.armies_tick_in_seconds),
-    drain: Number(selected ? deepArmyLife(store, selected.army, now).lossPerTick : deep.loss_per_tick) / RESOURCE_PRECISION,
+    drain:
+      Number(selected ? deepArmyLife(store, selected.army, now).lossPerTick : deep.loss_per_tick) / RESOURCE_PRECISION,
     glory: paysResources || !race ? 0 : site.buildingPay,
     height: race && site.kind === nativeRuleConstants.DEEP_FOUNDATION ? site.buildingPay : 0,
     essence: site.kind === nativeRuleConstants.DEEP_CORE ? Number(deep.core_per_tick) / RESOURCE_PRECISION : 0,
