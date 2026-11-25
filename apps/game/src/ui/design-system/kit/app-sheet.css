@@ -58,16 +58,16 @@
   color: var(--app-ink);
 }
 .app-button[data-kind="danger"] {
-  border-color: color-mix(in srgb, var(--app-bad) 80%, transparent);
-  background: color-mix(in srgb, var(--app-bad) 28%, var(--app-surface-2));
+  border-color: var(--app-bad);
+  background: color-mix(in srgb, var(--app-bad) 44%, var(--app-surface-2));
   color: var(--app-ink);
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.35);
 }
 .app-button[data-kind="danger"]:is(:hover, [data-state="hover"]):not(:disabled) {
-  border-color: var(--app-bad);
-  background: color-mix(in srgb, var(--app-bad) 42%, var(--app-surface-2));
+  background: color-mix(in srgb, var(--app-bad) 58%, var(--app-surface-2));
 }
 .app-button[data-kind="danger"]:is(:active, [data-state="pressed"]):not(:disabled) {
-  background: color-mix(in srgb, var(--app-bad) 18%, var(--app-surface-2));
+  background: color-mix(in srgb, var(--app-bad) 32%, var(--app-surface-2));
 }
 .app-button[data-tone="bad"] {
   color: var(--app-bad);

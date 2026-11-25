@@ -41,11 +41,9 @@ const DeletionSheet = ({ email }: { email: string }) => {
       {confirming ? (
         <DeletionCode email={email} />
       ) : (
-        <span>
-          <AppButton kind="danger" icon="mail" onClick={() => setConfirming(true)}>
-            {ACCOUNT_DELETION_WORDS.sendCode}
-          </AppButton>
-        </span>
+        <AppButton kind="danger" icon="mail" className="w-full" onClick={() => setConfirming(true)}>
+          {ACCOUNT_DELETION_WORDS.sendCode}
+        </AppButton>
       )}
     </div>
   );
