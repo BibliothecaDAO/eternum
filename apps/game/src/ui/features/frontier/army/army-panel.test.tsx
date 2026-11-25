@@ -30,7 +30,7 @@ it("reads the troops, when the stamina is full again and the stamina over one un
   expect([...meter.querySelectorAll<HTMLElement>("i")].map((fill) => fill.style.width)).toEqual([
     `${(18 / 140) * 100}%`,
   ]);
-  expect(meter.closest("[data-stamina-line]")!.textContent).toBe("18 / 140");
+  expect(meter.closest("[data-stamina-line]")!.textContent).toBe("18/140");
 
   act(() =>
     root.render(

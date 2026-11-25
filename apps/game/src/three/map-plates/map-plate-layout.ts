@@ -1,3 +1,4 @@
+import { staminaReading } from "@/ui/design-system/kit/words";
 import { formatExact } from "@bibliothecadao/types";
 import { FONTS as FACES, HUD_TYPE } from "@/tokens";
 
@@ -579,7 +580,7 @@ const segmentWidth = (segment: PlateSegment): number => {
         2 * 4
       );
     case "stamina":
-      return STAMINA_BAR + READING_GAP + measure(`${formatExact(segment.current)}/${formatExact(segment.max)}`, "body");
+      return STAMINA_BAR + READING_GAP + measure(staminaReading(segment.current, segment.max), "body");
     case "next":
       return measure("›", "count") + 4;
     case "divider":

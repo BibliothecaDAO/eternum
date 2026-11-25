@@ -1,5 +1,4 @@
-import { ARMY, startsOn } from "@/ui/design-system/kit/words";
-import { formatAmount } from "@bibliothecadao/types";
+import { ARMY, staminaReading, startsOn } from "@/ui/design-system/kit/words";
 
 import type { SlotStart } from "./deploy-plan";
 
@@ -9,7 +8,7 @@ import type { SlotStart } from "./deploy-plan";
  */
 const slotStartLine = (slot: SlotStart): string | undefined =>
   slot.start &&
-  `${startsOn(`${ARMY} ${slot.number}`, `${formatAmount(slot.start.current)}/${formatAmount(slot.start.max)}`, !slot.inherited)}.`;
+  `${startsOn(`${ARMY} ${slot.number}`, staminaReading(slot.start.current, slot.start.max), !slot.inherited)}.`;
 
 export const slotStart = (slot: SlotStart) => {
   const words = slotStartLine(slot);

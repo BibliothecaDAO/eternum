@@ -2,15 +2,7 @@ import "./frontier-desktop.css";
 
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudPortrait, HudStamina, HudTier } from "@/ui/design-system/kit/hud-elements";
-import {
-  ARMIES,
-  ARMY_MOVE_HINT,
-  ARMY_SLOT_WORDS,
-  DEPLOY,
-  STAMINA,
-  TROOPS,
-  type Rank,
-} from "@/ui/design-system/kit/words";
+import { ARMIES, ARMY_MOVE_HINT, ARMY_SLOT_WORDS, DEPLOY, STAMINA, staminaReading, TROOPS, type Rank } from "@/ui/design-system/kit/words";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { formatAmount } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
@@ -152,7 +144,7 @@ const SlotNumber = ({ number }: { number: number | undefined }) => (
 
 const StaminaFigure = ({ current, max }: { current: number | undefined; max: number | undefined }) => (
   <span className="frontier-slot__figure tabular-nums">
-    {`${formatAmount(current)}/${formatAmount(max)}`}
+    {staminaReading(current, max)}
     <Icon name="stamina" size={14} alt={STAMINA} />
   </span>
 );

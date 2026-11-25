@@ -1,3 +1,4 @@
+import { staminaLabel, staminaReading } from "@/ui/design-system/kit/words";
 import { formatExact } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
@@ -60,7 +61,7 @@ const Troops = ({ troops }: { troops: PlateTroops }) => (
       <span
         className="mp-plate__stamina mp-troops__stamina"
         role="img"
-        aria-label={`Guard stamina ${formatExact(troops.stamina.current)}/${formatExact(troops.stamina.max)}`}
+        aria-label={`Guard ${staminaLabel(troops.stamina.current, troops.stamina.max)}`}
       >
         <HudStamina stamina={troops.stamina} />
       </span>
@@ -70,12 +71,10 @@ const Troops = ({ troops }: { troops: PlateTroops }) => (
 
 /** An army's stamina: its bar, then exactly how much of how much ("84/150"). */
 const Stamina = ({ stamina }: { stamina: StaminaBar }) => (
-  <span className="mp-stamina" aria-label={`Stamina ${formatExact(stamina.current)} of ${formatExact(stamina.max)}`}>
+  <span className="mp-stamina" aria-label={staminaLabel(stamina.current, stamina.max)}>
     <span className="mp-plate__meter">
       <HudStamina stamina={stamina} />
     </span>
-    <span className="mp-label">
-      {formatExact(stamina.current)}/{formatExact(stamina.max)}
-    </span>
+    <span className="mp-label">{staminaReading(stamina.current, stamina.max)}</span>
   </span>
 );

@@ -2,7 +2,7 @@ import "./army-panel.css";
 
 import { Icon } from "@/ui/design-system/icon";
 import { HudPortrait, HudStamina } from "@/ui/design-system/kit/hud-elements";
-import { ARMY_DETAIL, FULL_IN, STAMINA, TROOPS } from "@/ui/design-system/kit/words";
+import { ARMY_DETAIL, FULL_IN, STAMINA, staminaReading, TROOPS } from "@/ui/design-system/kit/words";
 import { formatAmount, formatDuration } from "@bibliothecadao/types";
 
 import { DeepDrain, EtherealMark } from "../hud/army-token";
@@ -28,7 +28,7 @@ export const ArmyDetail = ({ army }: { army: ArmyView }) => (
           <Icon name="stamina" size={14} alt={STAMINA} />
           <HudStamina stamina={army.stamina} />
           <span className="army-detail__figure tabular-nums">
-            {ARMY_DETAIL.stamina(army.stamina.current, army.stamina.max)}
+            {staminaReading(army.stamina.current, army.stamina.max)}
           </span>
         </span>
       </span>

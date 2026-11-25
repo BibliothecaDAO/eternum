@@ -1,4 +1,4 @@
-import { formatFoodBlock, formatTravelBlockedSummary, getArmyFoodRequirementLabel } from "@/ui/design-system/kit/words";
+import { formatFoodBlock, formatTravelBlockedSummary, getArmyFoodRequirementLabel, staminaReading } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { armyOaths, configManager } from "@bibliothecadao/eternum";
@@ -246,7 +246,7 @@ const InlineStaminaBar = ({
           filling={recharging}
         />
       </span>
-      <span className="whitespace-nowrap tabular-nums">{`${displayedCurrent}/${maxStamina}`}</span>
+      <span className="whitespace-nowrap tabular-nums">{staminaReading(displayedCurrent, maxStamina)}</span>
       {rightAccessory ? <div className="flex shrink-0 items-center">{rightAccessory}</div> : null}
     </div>
   );

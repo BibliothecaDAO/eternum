@@ -537,6 +537,8 @@ export const WHEAT = resourceName(ResourcesIds.Wheat);
 /** The realm's troops, as a store and an army's figure are named. */
 export const TROOPS = "Troops";
 export const STAMINA = "stamina";
+export const staminaReading = (current: number | undefined, max: number | undefined) => `${formatExact(current)}/${formatExact(max)}`;
+export const staminaLabel = (current: number, max: number) => `${STAMINA_TITLE} ${staminaReading(current, max)}`;
 
 /** The HUD's tab for everything the player holds. */
 export const EMPIRE = "Empire";
@@ -2267,7 +2269,6 @@ export const RESEARCH_TREE = {
  */
 export const ARMY_DETAIL = {
   troops: (count: number) => formatCount(count, "troop"),
-  stamina: (current: number, max: number) => `${formatExact(current)} / ${formatExact(max)}`,
 } as const;
 
 /** Deleting the picked army, for good. */
