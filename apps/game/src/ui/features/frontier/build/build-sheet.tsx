@@ -1,5 +1,4 @@
-import { rankName   formatRate,
-} from "@bibliothecadao/types";
+import { rankName } from "@bibliothecadao/types";
 import { usePlayerNames } from "@/hooks/use-player-profile";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -38,6 +37,7 @@ import {
   BuildingType,
   formatAmount,
   formatPercent,
+  formatRate,
   getHexDistance,
   type HexPosition,
 } from "@bibliothecadao/types";
