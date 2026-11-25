@@ -1128,7 +1128,6 @@ export const DEPLOYING = "Deploying…";
 export const DEPLOY_WORDS = {
   troopType: "Troop type",
   slot: "Slot",
-  oaths: "Oaths",
   startsOn: "Starts on",
   howMany: (troop: string) => `${troop}: how many go`,
   deployCount: (count: number) => `${DEPLOY} ${formatExact(count)}`,

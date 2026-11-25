@@ -1009,7 +1009,6 @@ const LabDeploySheet = ({
       }}
       art={troopsAtHome === 0 ? undefined : ("knight-t1" as const)}
       troopsAtHome={troopsAtHome}
-      oathSlots={2}
       count={count}
       amount={{ most, max: most }}
       onCount={setCount}

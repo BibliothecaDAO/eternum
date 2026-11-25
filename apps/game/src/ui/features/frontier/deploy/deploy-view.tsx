@@ -1,7 +1,6 @@
 import "./deploy-view.css";
 
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { OATH_SLOTS_MAX } from "@bibliothecadao/eternum";
 import { type TroopType, formatExact, formatShort, formatWait } from "@bibliothecadao/types";
 import {
   HudButton,
@@ -23,7 +22,6 @@ import {
   NO_OPEN_TILE,
   NO_TROOPS_AT_HOME,
   noTroopsUntil,
-  RESEARCH_TREE,
   STAMINA,
   TROOPS,
   wheatForOnly,
@@ -41,7 +39,6 @@ export interface DeployTroopChoiceView {
 
 export const DeployView = ({
   troopSelection,
-  oathSlots,
   art,
   troopsAtHome,
   count,
@@ -59,7 +56,6 @@ export const DeployView = ({
   onGoToRealm,
   onClose,
 }: {
-  oathSlots: number | undefined;
   troopSelection?: {
     choices: readonly DeployTroopChoiceView[];
     selected: TroopType | undefined;
@@ -111,12 +107,6 @@ export const DeployView = ({
         <div className="deploy-slots">
           <span className="deploy-slots__label">{DEPLOY_WORDS.slot}</span>
           <DeploySlots open={slots.open} picked={start?.slot} onPick={slots.onPick} />
-          {oathSlots !== undefined && (
-            <>
-              <span className="deploy-slots__label deploy-slots__label--end">{DEPLOY_WORDS.oaths}</span>
-              <OathCapacity slots={oathSlots} />
-            </>
-          )}
         </div>
       )}
       {troopsAtHome === 0 ? (
@@ -210,21 +200,6 @@ const DeploySlots = ({
       </button>
     ))}
   </div>
-);
-
-const OathCapacity = ({ slots }: { slots: number }) => (
-  <span role="img" aria-label={RESEARCH_TREE.oathSlots(slots)} className="deploy-oaths">
-    {Array.from({ length: slots }, (_, index) => (
-      <i key={index} className="deploy-oath" data-open="">
-        +
-      </i>
-    ))}
-    {slots < OATH_SLOTS_MAX && (
-      <i className="deploy-oath" data-locked="">
-        <Icon name="lock" size={12} />
-      </i>
-    )}
-  </span>
 );
 
 const WheatShort = ({
