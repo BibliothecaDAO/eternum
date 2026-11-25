@@ -10,8 +10,6 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 
-// One reveal paying 57.6 Essence at contract precision, as the night's QA saw it: the army panel and the Log must write
-// it alike. The contract's payout and the army's place stand in; the reading, the panel and the Log line are the real ones.
 const PAYOUT = 57_600_000_000n;
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: {} } }) }));
 vi.mock("./frontier-home", () => ({ useExpeditionRules: () => null }));
@@ -35,29 +33,19 @@ vi.mock("@bibliothecadao/eternum", async (original) => {
 
 const { buildStoryEventPresentation } = await import("@bibliothecadao/eternum");
 const { ResourcesIds } = await import("@bibliothecadao/types");
-const { useArmyRevealYield } = await import("./frontier-reveal-yield");
-const { OrderBar } = await import("./hud/order-bar");
+const { addRevealGain, clearRevealGains } = await import("@/ui/motion/moments/reveal-gains");
+const { RevealPill } = await import("./hud/reveal-pill");
 
-const ExploreOverTheReading = () => (
-  <OrderBar
-    kind="explore"
-    tiles={1}
-    stamina={{ cost: 20, held: 120, wait: undefined }}
-    wheat={{ cost: 10, held: 1_000, wait: undefined }}
-    revealYield={useArmyRevealYield({ explorerId: 7, troopsFact: {} } as never)}
-    onCancel={() => {}}
-    onGo={() => {}}
-  />
-);
-
-it("writes a reveal's fractional reward the same on the explore order and in the Log", () => {
+it("writes a reveal's fractional reward the same on the reveal's pill and in the Log", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
-  act(() => root.render(<ExploreOverTheReading />));
-  const panel = host.querySelector('[aria-label^="Essence, Labor"]')?.textContent?.replace("+", "");
+  act(() => addRevealGain(ResourcesIds.Essence, Number(PAYOUT) / 1_000_000_000, 1_000));
+  act(() => root.render(<RevealPill />));
+  const pill = host.querySelector("[data-reveal-pill]")?.textContent?.replace("+", "");
   act(() => root.unmount());
+  act(() => clearRevealGains());
   host.remove();
 
   const log = buildStoryEventPresentation({
@@ -69,7 +57,7 @@ it("writes a reveal's fractional reward the same on the explore order and in the
   } as never).title;
 
   expect(log).toBe("Explored: +58 Essence");
-  expect(panel).toBe("58");
+  expect(pill).toBe("58");
 });
 
 // Today's own line and the day's totals read the same reward (they rewrite the story themselves), and so do a cleared
