@@ -105,9 +105,6 @@ import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { openProduction } from "@/ui/features/settlement/production/open-production";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { requireActiveGameClient } from "@/sync/active-game-client";
-import { afterWorldInteractive } from "@/game-entry/world-interactive";
-import { whenIdle } from "@/utils/when-idle";
-import { formatReadableErrorForConsole } from "@/utils/error-message";
 import { sendBuilding } from "@/ui/features/settlement/construction/send-building";
 import { playerStructuresView, readFactView, watchFactView } from "@/sync/fact-views";
 import {
@@ -367,7 +364,6 @@ export default class HexceptionScene extends HexagonScene {
     this.state = useUIStore.getState();
 
     this.registerRealmShortcuts();
-    afterWorldInteractive(() => whenIdle(() => this.loadHomeRealmModels()));
 
     if (this.GUIFolder) {
       this.GUIFolder.add(this, "structureStage", 0, 3).onFinishChange((value: RealmLevels) => {
@@ -1134,14 +1130,12 @@ export default class HexceptionScene extends HexagonScene {
     return { structure, position: { col: site.x, row: site.y } };
   }
 
-  private readRouteStructure(position?: HexPosition): NativeRows["Structure"] | undefined {
+  private readRouteStructure(position: HexPosition): NativeRows["Structure"] | undefined {
     const gameId = configManager.getActiveGameId();
-    const standing =
-      position &&
-      requireActiveGameSyncRuntime()
-        .requireWorldSpatialProjection()
-        .getStructuresAtHex({ alt: DEFAULT_COORD_ALT, col: position.col, row: position.row })
-        .find((entry) => entry.entityId !== null && !entry.clearedSite);
+    const standing = requireActiveGameSyncRuntime()
+      .requireWorldSpatialProjection()
+      .getStructuresAtHex({ alt: DEFAULT_COORD_ALT, col: position.col, row: position.row })
+      .find((entry) => entry.entityId !== null && !entry.clearedSite);
     return pickLocalRealm({
       atRoute: standing?.entityId
         ? this.game.store.get("Structure", { game_id: gameId, entity_id: standing.entityId })
@@ -1597,21 +1591,7 @@ export default class HexceptionScene extends HexagonScene {
 
   public override prepareWhileFlying(): void {
     const position = resolvePlayRouteTarget(window.location).hexRealmPosition;
-    this.loadRealmModels(position == null ? undefined : this.readRouteStructure(position));
-  }
-
-  private loadHomeRealmModels(): void {
-    if (this.destroyed) return;
-    try {
-      this.loadRealmModels(this.readRouteStructure());
-    } catch (error) {
-      console.warn(
-        `[Hexception] the home realm's models could not load ahead: ${formatReadableErrorForConsole(error)}`,
-      );
-    }
-  }
-
-  private loadRealmModels(structure: NativeRows["Structure"] | undefined): void {
+    const structure = position == null ? undefined : this.readRouteStructure(position);
     if (!structure) return;
     const realmId = safeInteger(structure.entity_id);
     const tiles = requireActiveGameClient().views.buildingTiles(realmId);
