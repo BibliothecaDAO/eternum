@@ -29,7 +29,8 @@ export const homeCampBesideArmy = (store: NativeFactStore): LabFact[] => {
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: SPIRE_ARMY });
   const tile = besideOnOpenLand(store, store.entityOccupancy(1, SPIRE_ARMY)!);
   const entityId = (7n << 32n) + BigInt(SITE);
-  return siteAt(store, tile, { ...army.troops, count: 1_000_000_000_000n }, StructureType.Camp).map(
+  const guard = { ...army.troops, count: 1_000_000_000_000n, stamina: { Inline: { amount: 0n, settled_at: 0, remainder: 0 } } };
+  return siteAt(store, tile, guard, StructureType.Camp).map(
     (fact): LabFact => {
       const value = fact.value as Record<string, unknown>;
       return {

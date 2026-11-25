@@ -87,7 +87,8 @@ const ownWords = (anchor: HTMLElement): RankedWords | string | null => {
 };
 
 const baneNotes = (anchor: HTMLElement): BaneNote[] => {
-  const cut = [...(anchor.matches(BANE_CUT) ? [anchor] : []), ...anchor.querySelectorAll<HTMLElement>(BANE_CUT)];
+  const around = anchor.closest<HTMLElement>(BANE_CUT);
+  const cut = [...(around ? [around] : []), ...anchor.querySelectorAll<HTMLElement>(BANE_CUT)];
   const notes = new Map(cut.map((figure) => [figure.dataset.tipBane!, figure.dataset.tipBaneIcon as IconMeaning]));
   return [...notes].map(([line, icon]) => ({ line, icon }));
 };

@@ -10,6 +10,7 @@ import { RealmCard } from "../hud/realm-card";
 import type { StoreReading } from "../hud/status-strip";
 import { StoreCard, type StoreLine } from "../production/store-card";
 import { FightArena } from "../sites/fight-side";
+import { SiteCardView } from "../sites/site-card-view";
 import type { BaneFigure } from "./bane-face";
 import { BaneDayProvider } from "./bane-mark";
 
@@ -174,5 +175,29 @@ describe("a bane day on the figures it cuts", () => {
       LINES.production.line,
     ]);
     expect(hover(host.querySelector('[data-store-card="wheat"] [data-bane-figure]')!)).toEqual([LINES.production.line]);
+  });
+
+  it("marks a site's guards on Blood Moon and names the bane on the guard's own tooltip, never an enemy army's", () => {
+    onBaneDay("guards");
+    const card = (site: "Camp" | "Army") => (
+      <SiteCardView
+        site={site}
+        beast={undefined}
+        army={null}
+        guard={180}
+        fight={undefined}
+        pay={null}
+        verb={null}
+        onClose={() => undefined}
+      />
+    );
+    draw(card("Camp"));
+    expect(marked("guards")).toEqual(["180▲"]);
+    expect(hover(host.querySelector('[data-bane-figure="guards"] [role="img"]')!)).toEqual([
+      "Troops 180",
+      LINES.guards.line,
+    ]);
+    act(() => root!.render(<BaneDayProvider realm={null}>{card("Army")}</BaneDayProvider>));
+    expect(host.querySelectorAll("[data-bane-figure], [data-bane-line]")).toHaveLength(0);
   });
 });
