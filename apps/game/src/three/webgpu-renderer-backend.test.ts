@@ -572,6 +572,37 @@ describe("createWebGPURendererBackend", () => {
     );
   });
 
+  it("never sizes the drawing buffer past the device's texture limit, at any window or pixel ratio", async () => {
+    const renderer = Object.assign(createRendererSurface(), {
+      backend: { isWebGPUBackend: true, device: { limits: { maxTextureDimension2D: 8192 } } },
+      init: vi.fn(async () => {}),
+    });
+    const backend = createWebGPURendererBackend(
+      { isMobileDevice: false, pixelRatio: 1, requestedMode: "webgpu-auto" },
+      {
+        createFinish: drawsThrough,
+        createRenderer: vi.fn(async () => ({ activeMode: "webgpu" as const, renderer })),
+        now: vi.fn(() => 0),
+      },
+    );
+    await backend.initialize();
+    const drawingBuffer = () => {
+      const ratio = renderer.setPixelRatio.mock.lastCall![0] as number;
+      const [width, height] = renderer.setSize.mock.lastCall! as [number, number];
+      return [Math.floor(width * ratio), Math.floor(height * ratio)];
+    };
+
+    backend.applyRenderVisuals({ pixelRatio: 2, shadows: true, width: 3840, height: 2160 });
+    expect(drawingBuffer()).toEqual([7680, 4320]);
+    backend.applyRenderVisuals({ pixelRatio: 3, shadows: true, width: 3840, height: 2160 });
+    expect(Math.max(...drawingBuffer())).toBeLessThanOrEqual(8192);
+    backend.applyRenderVisuals({ pixelRatio: 1, shadows: true, width: 1440, height: 900 });
+    backend.resize(9146, 5081);
+    expect(Math.max(...drawingBuffer())).toBeLessThanOrEqual(8192);
+    backend.resize(1440, 900);
+    expect(drawingBuffer()).toEqual([1440, 900]);
+  });
+
   it("owns quality, resize, frame rendering, and disposal once initialized", async () => {
     const renderer = createRendererSurface();
     const clearPolicies: boolean[] = [];
@@ -618,8 +649,8 @@ describe("createWebGPURendererBackend", () => {
 
     expect(renderer.setPixelRatio).toHaveBeenCalledWith(1.5);
     expect(renderer.shadowMap.enabled).toBe(true);
-    expect(renderer.setSize).toHaveBeenNthCalledWith(2, 640, 360);
-    expect(renderer.setSize).toHaveBeenNthCalledWith(3, 800, 450);
+    expect(renderer.setSize).toHaveBeenNthCalledWith(3, 640, 360);
+    expect(renderer.setSize).toHaveBeenNthCalledWith(4, 800, 450);
     expect(renderer.info.reset).toHaveBeenCalledTimes(1);
     expect(renderer.clear).not.toHaveBeenCalled();
     expect(clearPolicies).toEqual([true, false]);
