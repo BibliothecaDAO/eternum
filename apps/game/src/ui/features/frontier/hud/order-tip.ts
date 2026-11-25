@@ -1,6 +1,6 @@
 import { asRanked, formatCharge, type RankedWords } from "@bibliothecadao/types";
 import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
-import { staminaShortfall } from "@/ui/design-system/kit/reasons";
+import { type Reason, reasonLine } from "@/ui/design-system/kit/reasons";
 import {
   ATTACK,
   ATTACK_REFUSAL_WORDS,
@@ -21,7 +21,6 @@ import {
   type OrderRefusal,
 } from "@bibliothecadao/eternum";
 import type { Troops } from "@bibliothecadao/types";
-import type { Cost } from "./army-order";
 
 type TileOrder = {
   path: ActionPath[] | undefined;
@@ -113,8 +112,7 @@ export const refusedOrderVerb = ({
  * revealed one it said nothing of has nothing to say.
  */
 const refusalLine = ({ refusal, staminaWait, staminaHeld, explored }: TileOrder): string | null => {
-  if (refusal?.reason === "stamina") return staminaShortfall(staminaHeld, refusal.need, staminaWait);
-  if (refusal) return orderRefusalWords[refusal.reason];
+  if (refusal) return reasonLine(orderRefusalReason(refusal, { held: staminaHeld, wait: staminaWait }));
   return explored ? null : UNEXPLORED;
 };
 
@@ -127,12 +125,13 @@ const orderRefusalWords: Record<Exclude<OrderRefusal["reason"], "stamina">, stri
   "too-far": "Too far · move closer",
 };
 
-export const refusedOrderLine = (reason: Exclude<OrderRefusal["reason"], "stamina">) => ({
-  reason,
-  line: orderRefusalWords[reason],
-});
-
-export type RefusedOrder = { of: "stamina"; cost: Cost } | ReturnType<typeof refusedOrderLine>;
+export const orderRefusalReason = (
+  refusal: OrderRefusal,
+  short?: { held: number | undefined; wait: number | undefined },
+): Reason =>
+  refusal.reason === "stamina"
+    ? { kind: "short", of: "stamina", held: short?.held, need: refusal.need, wait: short?.wait }
+    : { kind: "failed", line: orderRefusalWords[refusal.reason] };
 
 /** The wheat and fish an order burns from its army's realm. */
 type OrderFood = { wheat: number; fish: number };

@@ -1,15 +1,18 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudCost, HudIconButton, HudRanked } from "@/ui/design-system/kit/hud-elements";
-import { inTime, rankedText } from "@/ui/design-system/kit/words";
-import type { OrderTip, RefusedOrder } from "@/ui/features/frontier/hud/order-tip";
-import { formatHeldAgainst, formatWait } from "@bibliothecadao/types";
+import { type Reason, shortfallFace } from "@/ui/design-system/kit/reasons";
+import { rankedText } from "@/ui/design-system/kit/words";
+import type { OrderTip } from "@/ui/features/frontier/hud/order-tip";
+import type { OrderRefusal } from "@bibliothecadao/eternum";
 
 /**
  * The surface a tap opens on a tile the selected army can explore or move to where the HUD carries no verb (a Blitz
  * phone), or a desktop's right-click on one it could but not now.
  */
 export const ORDER_PREVIEW_SURFACE = "order-preview";
+
+export type RefusedOrder = { why: OrderRefusal["reason"]; reason: Reason };
 
 /**
  * A move or explore at its tile, as the attack's preview is: the order, what it costs, and its verb, which sends it. An
@@ -52,34 +55,33 @@ export const OrderPreview = ({
   );
 };
 
-const RefusedLine = ({ refused }: { refused: RefusedOrder }) => {
-  if ("line" in refused)
+const RefusedLine = ({ refused: { why, reason } }: { refused: RefusedOrder }) => {
+  if (reason.kind === "failed")
     return (
       <span
         className="flex min-w-0 items-center gap-1.5 whitespace-nowrap font-semibold"
-        data-refused-order={refused.reason}
+        data-refused-order={why}
         role="alert"
       >
         <span aria-hidden className="size-2 flex-none rounded-full bg-[color:var(--hud-bad)]" />
-        {refused.line}
+        {reason.line}
       </span>
     );
-  const { cost, held, wait } = refused.cost;
-  const pair = formatHeldAgainst(held, cost);
+  const face = shortfallFace(reason);
   return (
     <span
       className="flex min-w-0 items-center gap-1.5 whitespace-nowrap font-semibold"
-      data-refused-order={refused.of}
-      data-held={held}
-      data-need={cost}
-      data-wait={wait}
+      data-refused-order={why}
+      data-held={reason.held}
+      data-need={reason.need}
+      data-wait={reason.wait}
       role="alert"
     >
-      <Icon name={refused.of} size={16} />
+      {face.icon && <Icon name={face.icon} size={16} />}
       <span>
-        <span className="text-[color:var(--hud-bad)]">{pair.held}</span>/{pair.need}
+        <span className="text-[color:var(--hud-bad)]">{face.held}</span> / {face.need}
       </span>
-      {wait !== undefined && <span className="font-normal">· {inTime(formatWait(wait))}</span>}
+      {face.wait && <span className="font-normal">· {face.wait}</span>}
     </span>
   );
 };

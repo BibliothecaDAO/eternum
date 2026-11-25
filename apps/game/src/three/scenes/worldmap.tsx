@@ -62,7 +62,7 @@ import { OwnershipRingLayer } from "@/three/managers/ownership-ring-layer";
 import { bindOwnershipRings } from "./worldmap-ownership-rings";
 import { bindMapSelection } from "./worldmap-map-selection";
 import { reportSelectedArmy } from "./worldmap-selected-army-report";
-import { ORDER_PREVIEW_SURFACE, OrderPreview } from "./worldmap-order-preview";
+import { ORDER_PREVIEW_SURFACE, OrderPreview, type RefusedOrder } from "./worldmap-order-preview";
 import { StructureManager } from "@/three/managers/structure-manager";
 import { FrameBudgetWorkQueue, type FrameBudgetWorkLane } from "@/three/frame-budget-work-queue";
 import { SceneManager } from "@/three/scene-manager";
@@ -313,8 +313,7 @@ import {
   type OrderTip,
   orderFood,
   orderTip,
-  type RefusedOrder,
-  refusedOrderLine,
+  orderRefusalReason,
   refusedOrderVerb,
 } from "@/ui/features/frontier/hud/order-tip";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
@@ -2978,11 +2977,8 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private refusedOrderAt(refusal: OrderRefusal): RefusedOrder {
-    if (refusal.reason === "stamina") {
-      const short = this.selectedArmyShortOf(refusal.need);
-      return { of: "stamina", cost: { cost: refusal.need, held: short?.held, wait: short?.wait } };
-    }
-    return refusedOrderLine(refusal.reason);
+    const short = refusal.reason === "stamina" ? this.selectedArmyShortOf(refusal.need) : undefined;
+    return { why: refusal.reason, reason: orderRefusalReason(refusal, short) };
   }
 
   /** The preview's verb sends the order the player read, and only while it still is the army's order at that tile. */

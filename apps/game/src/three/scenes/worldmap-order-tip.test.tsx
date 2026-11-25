@@ -1,7 +1,7 @@
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useNamedTips } from "@/ui/design-system/kit/named-tips";
-import { orderTip, refusedOrderLine } from "@/ui/features/frontier/hud/order-tip";
-import { staminaShortfall } from "@/ui/design-system/kit/reasons";
+import { orderRefusalReason, orderTip } from "@/ui/features/frontier/hud/order-tip";
+import { reasonLine, staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { type ActionPath, ActionType, type OrderRefusal } from "@bibliothecadao/eternum";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -71,7 +71,7 @@ describe("the line under a still pointer", () => {
 
     tile.refusal = { reason: "food" };
     pointer.refresh();
-    expect(shownLine()).toBe(refusedOrderLine("food").line);
+    expect(shownLine()).toBe(reasonLine(orderRefusalReason({ reason: "food" })));
   });
 
   it("names the order once the rules give one, and goes when they take it away with nothing to say", () => {
