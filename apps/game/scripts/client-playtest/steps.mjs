@@ -5470,7 +5470,7 @@ const RECORDED_DAY_2 = {
 /** Day 2 past the history read: each total a dash, and the card says why. */
 const DAY_2_OUT_OF_REACH = {
   totals: ["—Reveals", "—Sites cleared", "—Labor", "—Essence"],
-  notice: "This day's totals are unknown",
+  notice: "Day totals unavailable",
 };
 /** Realm 7's site on day 3 of the lab's calendar: its region's column, four regions a day down (contract hexes). */
 const LAB_DAY_3_SITE = { col: 650, row: 850 };

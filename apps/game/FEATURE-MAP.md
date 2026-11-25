@@ -108,7 +108,7 @@ claim, the realm card's widest row. `/lab/kit/guidance` the Events rows with the
 case: population short or not, an army short of full, a full army). `/lab/kit/progression` Frontier's Research tree and
 the army's panel (the owner's picks), the game's own panels on the Frontier preset's numbers, on the owner's realm or
 one some days in (`?realm=mid`); `?part=research|army` one alone at a phone's width. `/lab/kit/windows/settings` the
-header's Settings at its popover's width (a Quality or Shadows change is saved at once and shows **Applies after a
+header's Settings at its popover's width (a Quality or Shadows change is saved at once and shows **Applies after
 reload** with **Reload** under them, in game as here; a game loads the address's `rendererMode`, else the build's WebGPU
 with its own WebGL2 fallback; Haptics only on a phone that vibrates, the keys only where there is a keyboard);
 `pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it against a 1080 px screen and opens its
@@ -308,7 +308,7 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
     view over that same deck, so the image holds all four cards). It puts the image on the clipboard and reads "Image
     copied". Where the clipboard takes no PNG (`ClipboardItem` not supporting `image/png`), the step is **1 Save
     image**: it saves `my-season.png`, reads "Image saved", and the line says to add the image to the post. An image
-    that cannot be made says "The image could not be made.", and the step stays.
+    that cannot be made says "Could not create image.", and the step stays.
   - **2 Post on X** opens X's post (`x.com/intent/tweet`, `src/utils/x-post.ts`) in a new tab with the season's line
     ("Playtest · #3 of 45 realms") and its Results address; the player pastes the image there.
   - **Lab:**
@@ -359,9 +359,9 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   try again tomorrow.
 - **Notifications** (Settings, You or in game): Off, Important or All, and **This device**; under the levels, one line
   says what the chosen one brings. Important sends one push as each Frontier game day opens ("Day 2 is open / Frontier:
-  claim 1,000 Labor before 20:00."), "Your armies are rested" each time the armies the player left spent are all full
-  again (the next only after they play again), a Blitz's end, fights between players outside Frontier, and messages; All
-  adds deliveries. Each kind, its level and how long it lives come from one table
+  day ends at 20:00."), "Your armies are rested" each time the armies the player left spent are all full again (the next
+  only after they play again), a Blitz's end, fights between players outside Frontier, and messages; All adds
+  deliveries. Each kind, its level and how long it lives come from one table
   (`packages/notifications/src/notification-kinds.ts`). The phone's own night setting decides when one sounds; the game
   keeps no quiet hours and no daily cap: a newer push of a kind in a game replaces the one shown. Each names its game by
   its mode as the app labels it ("Frontier", "Blitz"), never a season's number or an id
@@ -1034,7 +1034,7 @@ buys up to the account's Fragments. Kit lab: `army-refill`, `army-refill-ready`,
 
 **Shop**: the Fragments chip (the phone's Menu; the Fragments tile on the desktop's realm card) opens it once the "shop"
 moment is reached (an army runs out of stamina). The Ancient Seal row: what it gives (the daily quest's bonus from
-`QuestRules`; an account whose Realm already pays it reads **Your Realm gives this bonus already**), **Get the Ancient
+`QuestRules`; an account whose Realm already pays it reads **Your Realm already gives this bonus**), **Get the Ancient
 Seal** for 1,000 Fragments, or while short how many more and their price in dollars, and the code field (the waiting
 screen's redeem, granted at once in a running game); once the account's Seal row exists it says the Ancient Seal is
 held. Then the Fragments row (a cent each) with **Get Fragments**, and the stamina refill rate. Kit lab: `shop`,
