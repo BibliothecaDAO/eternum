@@ -1,6 +1,6 @@
 import "./profile-view.css";
 
-import { LORE_LINE, PROFILE_WORDS, SIGN_IN_WORDS, WALLET_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { COSMETICS_WORDS, PROFILE_WORDS, SIGN_IN_WORDS, WALLET_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { useEffect, useState, type ReactNode } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 
@@ -18,6 +18,8 @@ import { AppButton, AppPanel, AppSetting, AppSwitch, AppTabs } from "@/ui/design
 import { forgetDeviceKey } from "@bibliothecadao/eternum";
 
 import { setAppMusic, useAppMusic } from "../app-music";
+import { CosmeticsWorkspace, RealmCosmeticsShortcut } from "../cosmetics/cosmetics-page";
+import { COSMETICS_HASH, COSMETICS_PATH } from "../cosmetics/cosmetics-route";
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { useRealmsPlayer } from "../herald";
@@ -34,10 +36,11 @@ import { PlayerCard, ProfileView, RealmsShowcase, RecentGames, useOwnSeasonStand
 import { DELETE_ACCOUNT_HASH, DEVICES_HASH } from "./settings-route";
 import { SharedDaysPanel } from "./shared-days-panel";
 
-type HubTab = "overview" | "referrals" | "wallet" | "settings";
+type HubTab = "overview" | "cosmetics" | "referrals" | "wallet" | "settings";
 
-const HUB_TABS: readonly { key: HubTab; label: string; short: string; icon: IconMeaning }[] = [
+const HUB_TABS: readonly { key: HubTab; label: string; short: string; icon: IconMeaning; phone?: true }[] = [
   { key: "overview", label: PROFILE_WORDS.overviewTab, short: PROFILE_WORDS.overviewShort, icon: "realm" },
+  { key: "cosmetics", label: COSMETICS_WORDS.title, short: COSMETICS_WORDS.title, icon: "crown", phone: true },
   { key: "referrals", label: PROFILE_WORDS.referralsTab, short: PROFILE_WORDS.referralsShort, icon: "people" },
   { key: "wallet", label: PROFILE_WORDS.walletTab, short: PROFILE_WORDS.walletShort, icon: "backpack" },
   { key: "settings", label: PROFILE_WORDS.settings, short: PROFILE_WORDS.settingsShort, icon: "person" },
@@ -45,6 +48,7 @@ const HUB_TABS: readonly { key: HubTab; label: string; short: string; icon: Icon
 
 const TAB_HASH: Record<HubTab, string> = {
   overview: "#realms",
+  cosmetics: COSMETICS_HASH,
   referrals: "#referrals",
   wallet: "#wallet",
   settings: "#settings",
@@ -63,6 +67,7 @@ export const ProfilePage = () => {
   const { hash, search } = useLocation();
   const desktop = useLayout() === "desktop";
   const tab = hubTabFromLocation(hash, search);
+  if (desktop && tab === "cosmetics") return <Navigate to={COSMETICS_PATH} replace />;
   return (
     <PageFrame title={desktop ? WORDS.you : undefined}>
       <SignedInOnly fallback={(card) => <SignedOut card={card} />}>
@@ -107,9 +112,11 @@ const AccountHub = ({ account, tab }: { account: string; tab: HubTab }) => {
       {tab === "overview" && (
         <>
           <RealmsShowcase onLinkWallet={() => openTab("wallet")} />
+          {!desktop && <RealmCosmeticsShortcut onOpen={() => openTab("cosmetics")} />}
           <RecentGames account={account} own />
         </>
       )}
+      {tab === "cosmetics" && <CosmeticsWorkspace />}
       {tab === "referrals" && <SharedDaysPanel aspect={standing.aspect} aspectPending={standing.aspectPending} />}
       {tab === "wallet" && (
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
@@ -162,7 +169,7 @@ const AccountHub = ({ account, tab }: { account: string; tab: HubTab }) => {
       <aside className="you-rail">
         <PlayerCard account={account} own standing={standing} hideInvite={tab === "referrals"} />
         <nav className="you-rail__nav" role="tablist" aria-label={PROFILE_WORDS.tabsLabel}>
-          {HUB_TABS.map(({ key, label, icon }) => (
+          {HUB_TABS.filter((each) => !each.phone).map(({ key, label, icon }) => (
             <button
               key={key}
               type="button"
@@ -220,7 +227,7 @@ const SignInCard = ({ line, verb }: { line: string | null; verb: string }) => {
     requestSignIn();
   };
   return (
-    <AppPanel title={LORE_LINE} painting="winter-fortress">
+    <AppPanel title={SIGN_IN_WORDS.oneAccount} painting="winter-fortress">
       <div className="flex flex-col gap-4">
         {line && <p className="text-app-strong text-app-ink">{line}</p>}
         <AppButton kind="primary" size="lg" icon="person" onClick={() => void signIn()}>

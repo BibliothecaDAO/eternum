@@ -61,6 +61,9 @@ const { LabGame } = await import("@/ui/features/debug/kit-lab/lab-game");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { overrideSpectateIntent } = await import("@/utils/spectator-session");
 const { FrontierAspectPage } = await import("./aspect/aspect-page");
+const { ASPECT_PAGE_WORDS, SEASON_BOARD_WORDS } = await import("@/ui/design-system/kit/words");
+const { setActiveGame } = await import("@/runtime/world");
+const SEASON_PAGE = `section[aria-label="${SEASON_BOARD_WORDS.title}"]`;
 const { FrontierHud } = await import("./frontier-hud");
 const { BuildingType, BUILDINGS_CENTER } = await import("@bibliothecadao/types");
 const { buildingName } = await import("./build/building-names");
@@ -227,9 +230,7 @@ it("treats the desktop's Feed as any other panel: closed at start, opened from i
       shownStore.applyFacts([{ model: "RaceRules", key: "0xa500", value: wireFact(raceRules()) }] as never),
     );
     await press("Season");
-    expect(
-      host.querySelector('[data-frontier-rail][data-wide="true"] [data-wide-page] section[aria-label="Aspect Race"]'),
-    ).not.toBeNull();
+    expect(host.querySelector(`[data-frontier-rail][data-wide="true"] [data-wide-page] ${SEASON_PAGE}`)).not.toBeNull();
     expect(leftColumn().querySelector('[aria-label="Armies"]')).not.toBeNull();
     await press("Season");
     expect(panel()).toBeNull();
@@ -286,9 +287,7 @@ it("keeps a refused order in sight on a desktop, over the feed and over a panel 
     await act(async () =>
       shownStore.applyFacts([{ model: "RaceRules", key: "0xa500", value: wireFact(raceRules()) }] as never),
     );
-    expect(
-      host.querySelector('[data-frontier-rail] [data-wide-page] section[aria-label="Aspect Race"]'),
-    ).not.toBeNull();
+    expect(host.querySelector(`[data-frontier-rail] [data-wide-page] ${SEASON_PAGE}`)).not.toBeNull();
     expect(notices()?.textContent).toContain(ATTACK_REFUSAL_WORDS["insufficient-stamina"]);
   } finally {
     useEventFeedStore.getState().dismiss();
@@ -1234,6 +1233,7 @@ it("moves to the World map at the Deep hex when Go to Deep is pressed from the R
     const scenario = raceScenario(finished);
     scenario.store.setSnapshot({ gameId: 1, actor: scenario.player, timestamp: scenario.startsAt, complete: true });
     configManager.setActiveGame(1);
+    setActiveGame({ chainId: "SHARD", gameId: 1, name: "SHARD" });
     configManager.setStore(scenario.store);
     setBlockTimestampSource(() => scenario.startsAt);
     useAccountStore.setState({ account: { address: scenario.player } as never });
@@ -1252,8 +1252,8 @@ it("moves to the World map at the Deep hex when Go to Deep is pressed from the R
     return scenario;
   };
   const goToDeep = () =>
-    [...host.querySelectorAll<HTMLButtonElement>('section[aria-label="Aspect Race"] button')].find((button) =>
-      button.textContent?.includes("Go to Deep"),
+    [...host.querySelectorAll<HTMLButtonElement>(`${SEASON_PAGE} button`)].find((button) =>
+      button.textContent?.includes(ASPECT_PAGE_WORDS.goToDeep),
     );
   try {
     window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
@@ -1275,7 +1275,7 @@ it("moves to the World map at the Deep hex when Go to Deep is pressed from the R
     expect(onClose).toHaveBeenCalledTimes(2);
 
     await drawRace(true, onClose);
-    expect(host.querySelector('section[aria-label="Aspect Race"]')).not.toBeNull();
+    expect(host.querySelector("[data-season-board]")).not.toBeNull();
     expect(goToDeep()).toBeUndefined();
   } finally {
     setBlockTimestampSource(null);

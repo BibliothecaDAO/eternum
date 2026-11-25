@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { REALMS_X_URL } from "@realms-world/chain";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -50,13 +51,15 @@ const open = async (width: number) => {
   const root = createRoot(container);
   await act(async () =>
     root.render(
-      <MemoryRouter initialEntries={["/scroll"]}>
-        <Routes>
-          <Route path="/scroll" element={<WhatsNewPage />} />
-          <Route path="*" element={null} />
-        </Routes>
-        <Where />
-      </MemoryRouter>,
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={["/scroll"]}>
+          <Routes>
+            <Route path="/scroll" element={<WhatsNewPage />} />
+            <Route path="*" element={null} />
+          </Routes>
+          <Where />
+        </MemoryRouter>
+      </QueryClientProvider>,
     ),
   );
   unmount = async () => {
@@ -72,17 +75,15 @@ const panel = (page: HTMLElement, title: string) =>
   )!;
 
 describe.each([390, 1440])("What's new at %i px", (width) => {
-  it("is read from the footer: no Back, the bar holds the five places with none lit; signed out, You is Connect", async () => {
+  it("is read from the footer: no Back, the bar holds its places with none lit; signed out, You is Connect", async () => {
     const page = await open(width);
     expect(page.querySelector('[data-role="back"]')).toBeNull();
     const places = [...page.querySelectorAll<HTMLElement>('[data-role="tab"]')];
-    expect(places.map((place) => place.getAttribute("aria-label") ?? place.textContent)).toEqual([
-      "Play",
-      "Season",
-      "Shop",
-      "Chat",
-      "Connect",
-    ]);
+    expect(places.map((place) => place.getAttribute("aria-label") ?? place.textContent)).toEqual(
+      width >= 1024
+        ? ["Play", "Season", "Cosmetics", "Shop", "Connect"]
+        : ["Play", "Season", "Shop", "Chat", "Connect"],
+    );
     const current = places.filter((place) => place.getAttribute("aria-current") === "page");
     expect(current).toEqual([]);
     // Connect, by what it does, for a script to find it whatever its word or place (the playtest runner's sign-in).
