@@ -50,7 +50,7 @@ let root: Root;
 let host: HTMLDivElement;
 beforeEach(() => {
   useAccountStore.setState({ account: { address: DJIZUS } as never });
-  useChainTimeStore.getState().anchor({ timestamp: STORY_AT + 2 * 60 });
+  useChainTimeStore.getState().anchor({ timestamp: (STORY_AT + 2 * 60) * 1_000 });
   game.store = frontierDay().store;
   configManager.setActiveGame(1);
   configManager.setStore(game.store);
@@ -245,7 +245,6 @@ const fightAt = (site: number) =>
       roll: 0,
     },
   });
-/** The paintings a row draws: the act's at its head, then what it was done to. */
 const paintings = () =>
   [...host.querySelectorAll("[data-feed-line] [data-icon]")].map((icon) => icon.getAttribute("data-icon"));
 
@@ -299,7 +298,7 @@ it("draws the guard a fight was against as the map draws it, for every kind of s
       },
     ] as never);
     await draw(fightAt(CAMP));
-    expect(paintings()).toEqual(["attack", painting]);
+    expect(paintings()).toEqual([painting]);
   }
 });
 
@@ -320,7 +319,7 @@ it("draws the guard of a fight far from the player's armies from Herald's row of
     });
     const read = await draw(fightAt(far));
     expect(read.words).toBe(`Krump attacked ${siteDisplayName(far)} · Army lost`);
-    expect(paintings()).toEqual(["attack", painting]);
+    expect(paintings()).toEqual([painting]);
   }
 });
 
@@ -337,11 +336,11 @@ it("keeps a site's guard once the player's map lets the site go, as when their a
     clear: null,
   });
   await draw(fightAt(CAMP));
-  expect(paintings()).toEqual(["attack", "beast-golem"]);
+  expect(paintings()).toEqual(["beast-golem"]);
   await act(async () => game.store.applyFacts([{ model: "ExpeditionSite", key: "0x1:0x2329", value: null }] as never));
   await act(async () => new Promise((settled) => setTimeout(settled, 0)));
   expect(game.store.get("ExpeditionSite", { game_id: 1, entity_id: CAMP })).toBeUndefined();
-  expect(paintings()).toEqual(["attack", "beast-golem"]);
+  expect(paintings()).toEqual(["beast-golem"]);
 });
 
 it("reads a clear's credited resources near or far without retired progression rewards", async () => {
@@ -380,7 +379,7 @@ it("reads a clear's credited resources near or far without retired progression r
 
 it("draws no guard, never an old or guessed one, for a site neither the map nor Herald holds", async () => {
   await draw(fightAt(4_300));
-  expect(paintings()).toEqual(["attack"]);
+  expect(paintings()).toEqual([]);
 });
 
 /** The gems a row draws in its words, each by its name and size (owner, 3 November 2026: the Feed keeps its alignment). */

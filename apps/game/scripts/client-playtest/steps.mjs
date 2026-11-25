@@ -3151,13 +3151,6 @@ const DISCOVERED_SPIRE_STEPS = [
   },
 ];
 
-/**
- * The map's share of the page on an odd device (owner, 4 November: "on some weird mobile devices with weird shapes the
- * map is like 15%"), on the lab's sites game: the map at rest, the army picked, its panel, a site's card beside it,
- * Chat and the Menu. Each step reads the share as a player sees it (MAP_SHARE_EXPRESSION) and which HUD part takes
- * the rest, and fails under MAP_LEAST_SHARE (Chat, which fills the band, excepted); a step that could not reach its
- * state is blocked, never read as the map's. Run it at each device's size with --viewport.
- */
 const HUD_DEVICE_STEPS = [
   { name: "map", play: readTheMapShare, settleMs: 3_000, verify: mapShareRead },
   {
@@ -3188,7 +3181,7 @@ const HUD_DEVICE_STEPS = [
       return readTheMapShare({ browser });
     },
     settleMs: 0,
-    verify: mapShareReadUnheld,
+    verify: mapShareRead,
   },
   {
     name: "menu",
@@ -3212,11 +3205,6 @@ function mapShareRead({ played }) {
   if (played.share.map < MAP_LEAST_SHARE)
     return failed(`the map shows ${played.share.map}% of the page, under ${MAP_LEAST_SHARE}%`, played);
   return completed(played);
-}
-
-/** Chat's share, read but not held to the least: Chat fills the band by the owner's call (3 November). */
-function mapShareReadUnheld({ played }) {
-  return played.share?.canvas ? completed(played) : blocked("the map's canvas is not on the page", played);
 }
 
 /** The picked army's panel: its sheet, opened by its own details button (a phone's picked army, a desktop's row). */

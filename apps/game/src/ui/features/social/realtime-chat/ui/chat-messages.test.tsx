@@ -140,7 +140,7 @@ afterEach(() => {
 const row = (id: string) => host.querySelector<HTMLElement>(`li[data-message-id="${id}"]`)!;
 /** The run head's name over a message, if it starts a run. */
 const runName = (id: string) => row(id).querySelector("p button")?.textContent ?? null;
-const words = (id: string) => [...row(id).querySelectorAll("p")].at(-1)?.textContent;
+const words = (id: string) => row(id).querySelector("[data-message-words]")?.textContent;
 const buttonIn = (element: Element, text: string) =>
   [...element.querySelectorAll("button")].find((button) => button.textContent === text);
 const field = () => host.querySelector<HTMLInputElement>('input[aria-label="Message"]')!;

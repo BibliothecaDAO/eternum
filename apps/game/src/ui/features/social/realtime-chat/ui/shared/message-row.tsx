@@ -77,7 +77,7 @@ export const MessageRow = ({
             ) : (
               <span className="mr-1.5 text-hud-strong text-hud-accent">{run.name}</span>
             ))}
-          {children}
+          <span data-message-words>{children}</span>
           {run && <span className="ml-1.5 text-hud-label text-hud-cue">{run.time}</span>}
         </p>
       </div>

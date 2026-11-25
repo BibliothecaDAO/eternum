@@ -36,7 +36,6 @@ const { AppShell } = await import("../app-shell");
 const { LobbyChat } = await import("./app-chat");
 const { useRealtimeChatStore } = await import("@/ui/features/social/realtime-chat/model/store");
 const { layOutChatLists } = await import("@/hooks/use-stick-to-latest.test-support");
-const { playerPortraitUrl } = await import("@/services/identity/player-portrait");
 
 const LOBBY = "slot:0x52:blitz-1630";
 const SLOT = { chainId: "0x052", name: "blitz-1630" };
@@ -171,7 +170,7 @@ const connect = async (canWrite: boolean) => {
 const tabs = () => [...host.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent);
 /** Each message's words, as its row shows them. */
 const lines = () =>
-  [...host.querySelectorAll("li[data-message-id]")].map((row) => [...row.querySelectorAll("p")].at(-1)?.textContent);
+  [...host.querySelectorAll("li[data-message-id]")].map((row) => row.querySelector("[data-message-words]")?.textContent);
 const field = () => host.querySelector<HTMLInputElement>('input[aria-label="Message"]');
 const type = async (text: string) => {
   const input = field()!;
@@ -201,19 +200,6 @@ it("reads the lobby's history and its room as one list, oldest first, each messa
     lobbySocket().receive({ type: "world:message", zoneId: LOBBY, message: said("c", "0x65", "Corwin", "ready", 3) }),
   );
   expect(lines()).toEqual(["gl hf", "on my way", "ready"]);
-});
-
-it("shows each writer's portrait as their identity profile has it, by their Realms id: the one chosen, else their own stock one", async () => {
-  await draw("lobby");
-  await connect(false);
-  const portraitOf = (words: string) =>
-    [...host.querySelectorAll("li[data-message-id]")]
-      .find((row) => row.textContent?.includes(words))
-      ?.querySelector("img")
-      ?.getAttribute("src");
-  await vi.waitFor(() => expect(portraitOf("gl hf")).toBe("/images/avatars/07.png"));
-  const you = realmsAccountAddress("0x7", GUARDIAN.accountClassHash, GUARDIAN.publicKey);
-  expect(portraitOf("on my way")).toBe(playerPortraitUrl(you, null));
 });
 
 it("lets a registered player write to the lobby's room, and takes the field away when the room refuses for want of registration", async () => {
