@@ -112,7 +112,7 @@ const resolveBuildSuggestion = (
 
 const resolveUpgradeSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null =>
   input.canAffordUpgrade
-    ? createBaseSuggestion(input, "upgrade", "Level up realm", PRIORITY.upgrade, "It can level up now.")
+    ? createBaseSuggestion(input, "upgrade", "Upgrade realm", PRIORITY.upgrade, "Ready to upgrade now.")
     : null;
 
 /**
@@ -179,7 +179,7 @@ const createDeploySuggestion = (
       "deploy-army",
       "Deploy an army",
       PRIORITY.deploy,
-      `${buildingName(building, false)}: ${formatExact(onHand)} on hand, a full army of ${formatExact(full)}.`,
+      `${buildingName(building, false)}: ${formatExact(onHand)} available, full army ${formatExact(full)}.`,
     ),
     buildingTypeHint: building,
     resourceHint: resource,

@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { DEPLOY_WORDS } from "@/ui/design-system/kit/words";
 
 // The home ring as the map knows it: explored and empty (one tile maybe taken), or not yet synced.
 const ring = { explored: true, taken: -1 };
@@ -328,7 +329,11 @@ describe("the Deploy sheet", () => {
     expect(host.querySelector('.ui-price [role="img"]')?.getAttribute("aria-label")).toBe("240 Wheat");
     expect(host.textContent!.replace(foot(host), "")).not.toMatch(/wheat/i);
     const range = slider(host);
-    expect([range.getAttribute("aria-label"), range.max, range.value]).toEqual(["Knights: how many go", "420", "120"]);
+    expect([range.getAttribute("aria-label"), range.max, range.value]).toEqual([
+      DEPLOY_WORDS.howMany("Knights"),
+      "420",
+      "120",
+    ]);
     dragCount(host, 200);
     expect([count(host), deployButton(host)?.textContent]).toEqual(["200", "Deploy 200"]);
     typeCount(host, 900);

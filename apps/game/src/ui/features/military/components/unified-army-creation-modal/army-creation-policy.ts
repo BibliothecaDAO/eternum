@@ -85,7 +85,7 @@ function describeEmptyTroop(supply: TroopSupply): string {
   if (supply.perHour !== undefined && supply.perHour > 0 && supply.secondsToFullArmy !== null) {
     return `No ${supply.name} yet: full army in ${formatWait(Math.ceil(supply.secondsToFullArmy))}`;
   }
-  return `No ${supply.name} on hand.`;
+  return `No ${supply.name} available.`;
 }
 
 /**

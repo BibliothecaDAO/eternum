@@ -20,7 +20,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
-import { ATTACK_REFUSAL_WORDS } from "@/ui/design-system/kit/words";
+import { ATTACK_REFUSAL_WORDS, QUICK_ATTACK_WORDS } from "@/ui/design-system/kit/words";
 import { CombatModal } from "./combat-modal";
 import { troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
@@ -282,7 +282,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       </div>
 
       {isLoading ? (
-        <div className="py-6 text-center text-hud-body text-hud-muted">Loading enemy intel...</div>
+        <div className="py-6 text-center text-hud-body text-hud-muted">{QUICK_ATTACK_WORDS.loadingInfo}</div>
       ) : !targetData ? (
         <div className="py-6 text-center text-hud-body text-hud-muted">No target detected.</div>
       ) : (
@@ -310,7 +310,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
               {fightCost && <p className="text-hud-label text-hud-cue">{fightCost}</p>}
             </>
           ) : (
-            forecast?.outcome === "claims" && <HudNotice tone="good" line="No defenders: claim it" />
+            forecast?.outcome === "claims" && <HudNotice tone="good" line={QUICK_ATTACK_WORDS.takeUnopposed} />
           )}
 
           {defenderSlots.length >= 1 && (
@@ -343,8 +343,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       {canGarrison && (
         <div className="modal-no-drag mt-1.5 flex items-center justify-between rounded-md border border-hud-line bg-hud-well px-3 py-2">
           <label className="flex items-center gap-2 text-hud-body">
-            <HudCheck checked={garrisonEnabled} label="Garrison survivors" onChange={setGarrisonEnabled} />
-            Garrison survivors
+            <HudCheck
+              checked={garrisonEnabled}
+              label={QUICK_ATTACK_WORDS.guardSurvivors}
+              onChange={setGarrisonEnabled}
+            />
+            {QUICK_ATTACK_WORDS.guardSurvivors}
           </label>
           <span className="tabular-nums text-hud-strong">{formatTroopValue(garrisonTroopCount)}</span>
         </div>
@@ -367,7 +371,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           aria-busy={isSubmitting}
           onClick={handlePrimaryAction}
         >
-          {willCaptureStructure ? "Claim" : "Attack"}
+          {willCaptureStructure ? QUICK_ATTACK_WORDS.take : QUICK_ATTACK_WORDS.attack}
         </HudButton>
       </HudActions>
     </div>

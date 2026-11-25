@@ -17,6 +17,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { getDirectionBetweenAdjacentHexes, getNeighborHexes, TileOccupier } from "@bibliothecadao/types";
 
+import { TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
 import { transferArmies, transferTrainedArmies } from "./transfer-fixture";
 import { toast } from "@/ui/features/event-feed/notify";
 import { TransferTroopsSheet, useSelectedTransfer } from "./transfer-troops";
@@ -443,8 +444,8 @@ it.each(["progress", "troops", "stamina", "position", "removed", "day"])(
     expect(swap).not.toHaveBeenCalled();
     expect(close).not.toHaveBeenCalled();
     expect(failed).toHaveBeenCalledWith(
-      expect.objectContaining({ message: "Armies changed. Review merge." }),
-      "The troops could not be moved.",
+      expect.objectContaining({ message: TRANSFER_TROOPS.stale }),
+      TRANSFER_TROOPS.failed,
     );
   },
 );
@@ -563,8 +564,8 @@ it("refuses facts arriving just before the final confirmation click", async () =
   expect(swap).not.toHaveBeenCalled();
   expect(close).not.toHaveBeenCalled();
   expect(failed).toHaveBeenCalledWith(
-    expect.objectContaining({ message: "Armies changed. Review merge." }),
-    "The troops could not be moved.",
+    expect.objectContaining({ message: TRANSFER_TROOPS.stale }),
+    TRANSFER_TROOPS.failed,
   );
 });
 

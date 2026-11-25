@@ -34,6 +34,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
+import { DEPLOY_WORDS } from "./words";
 import { useModalLayer } from "./modal-layer";
 import { PRICE_FACES, type Price } from "./price-faces";
 import { useMarkFrameOpen } from "./open-frames";
@@ -395,7 +396,7 @@ export const HudTroopAmount = ({
           {held > most && " that fit"}
         </span>
       </div>
-      <HudSlider label={`${name}: how many go`} value={value} max={most} disabled={disabled} onChange={onChange} />
+      <HudSlider label={DEPLOY_WORDS.howMany(name)} value={value} max={most} disabled={disabled} onChange={onChange} />
     </div>
   );
 };

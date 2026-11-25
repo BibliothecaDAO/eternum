@@ -8,6 +8,7 @@ import { resolveMovementStamina } from "@/lib/army-stamina/movement-affordabilit
 import { BlockTimestampPoller } from "@/ui/shared/components/block-timestamp-poller";
 import { takeArmySelectRequest } from "@/three/scenes/worldmap-army-select-request";
 import { LeftView } from "@/types";
+import { ARMY_MANAGEMENT } from "@/ui/design-system/kit/words";
 import { ExistingArmiesPanel } from "./existing-armies-panel";
 
 const fixture = vi.hoisted(() => {
@@ -130,7 +131,9 @@ describe("disbanding an army", () => {
 
   it("acts at once in Blitz, where no verb asks twice", async () => {
     const { host, root } = mount("blitz");
-    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Disband army"]')!.click());
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>(`button[aria-label="${ARMY_MANAGEMENT.deleteArmy}"]`)!.click(),
+    );
     expect(deleteExplorerArmy).toHaveBeenCalledWith({ structureId: 7, explorerId: 9 });
     expect(host.querySelector('[role="alertdialog"]')).toBeNull();
     act(() => root.unmount());
@@ -139,11 +142,15 @@ describe("disbanding an army", () => {
 
   it("asks first in Frontier, where a disbanded army is lost for good", async () => {
     const { host, root } = mount("frontier");
-    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Disband army"]')!.click());
+    await act(async () =>
+      host.querySelector<HTMLButtonElement>(`button[aria-label="${ARMY_MANAGEMENT.deleteArmy}"]`)!.click(),
+    );
     expect(deleteExplorerArmy).not.toHaveBeenCalled();
     const dialog = host.querySelector('[role="alertdialog"]')!;
-    expect(dialog.getAttribute("aria-label")).toBe("Disband this army?");
-    const verb = [...dialog.querySelectorAll("button")].find((button) => button.textContent === "Disband")!;
+    expect(dialog.getAttribute("aria-label")).toBe(ARMY_MANAGEMENT.confirmDelete);
+    const verb = [...dialog.querySelectorAll("button")].find(
+      (button) => button.textContent === ARMY_MANAGEMENT.remove,
+    )!;
     await act(async () => verb.click());
     expect(deleteExplorerArmy).toHaveBeenCalledWith({ structureId: 7, explorerId: 9 });
     act(() => root.unmount());
