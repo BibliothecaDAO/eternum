@@ -22,7 +22,6 @@ const { useRealtimeChatStore } = await import("@/ui/features/social/realtime-cha
 const { GLOBAL_CHAT_CHANNEL_ID } = await import("@bibliothecadao/types");
 const { layOutChatLists } = await import("@/hooks/use-stick-to-latest.test-support");
 const { useAppChatPlace } = await import("./app-chat-place");
-const { CHAT_WORDS } = await import("@/ui/design-system/kit/words");
 
 class SilentSocket {
   readyState = 0;
