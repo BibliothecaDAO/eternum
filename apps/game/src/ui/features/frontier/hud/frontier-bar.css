@@ -296,13 +296,13 @@
   width: 40px;
   height: 40px;
   border: 1px solid var(--hud-line-strong);
-  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  background: var(--hud-surface-to);
 }
 .frontier-progress-ring--lg {
   width: 44px;
   height: 44px;
   border: 1px solid var(--hud-line-strong);
-  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  background: var(--hud-surface-to);
 }
 .frontier-progress-ring__svg {
   position: absolute;

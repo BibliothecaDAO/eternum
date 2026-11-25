@@ -15,16 +15,15 @@ test("a HUD file drawn only with the sheet passes", () =>
     [],
   ));
 
-test("a gold rim fails wherever a border or outline is written in it, and the kit's rim passes", () =>
-  assert.equal(
-    matches(`.a { border: 1.5px solid rgb(var(--hud-gold) / 0.8); }
-.b { border-color: color-mix(in srgb, rgb(var(--hud-gold)) 45%, var(--hud-line)); }
-.c { outline: 2px solid rgb(var(--hud-gold)); }
-.d { border-left-color: rgb(var(--hud-gold)); }
-.e { border: 1px solid var(--hud-line); border-color: var(--hud-line-top) var(--hud-line) var(--hud-line-bottom); }
-.f { color: rgb(var(--hud-gold)); background: rgb(var(--hud-gold) / 0.1); }`).length,
-    4,
-  ));
+test("a Frontier sheet that copies the kit's surface is refused, and the same copy elsewhere is left to its own sheet", () => {
+  const copy = `.card { border: 1px solid var(--hud-line); background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to)); }`;
+  const found = (path) => findViolations(copy, path, COLORS, STEPS);
+  assert.deepEqual(
+    found("apps/game/src/ui/features/frontier/hud/card.css").map(({ refused }) => refused),
+    [true],
+  );
+  assert.deepEqual(found("apps/game/src/three/map-plates/map-plates.css"), []);
+});
 
 test("a one-off size, colour, type size or weight fails, each where it is written", () =>
   assert.deepEqual(

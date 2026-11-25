@@ -49,10 +49,7 @@
   height: 40px;
   flex-direction: row;
   gap: theme(spacing.2);
-  border: 1.5px solid rgb(var(--hud-gold) / 0.8);
   border-radius: var(--hud-radius-control);
-  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
-  box-shadow: var(--hud-shadow-panel);
   padding: 0 theme(spacing.3) 0 4px;
 }
 .frontier-crown .frontier-quest-orb .frontier-progress-ring--lg {

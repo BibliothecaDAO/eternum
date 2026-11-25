@@ -111,8 +111,10 @@ export const rules = (colors, steps) => [
   },
   { rule: "literal font size: use --hud-text-<role>", pattern: /font-size:\s*[\d.]+(?:px|rem)/g },
   {
-    rule: "a gold rim: a surface takes the kit's rim (ui-popover, ui-pill, ui-row); gold is the primary button's",
-    pattern: /(?<![\w-])(?:border(?:-[a-z]+)*|outline(?:-color)?)\s*:[^;]*--hud-gold/g,
+    rule: "a copied kit surface: a Frontier surface takes the kit's class (ui-popover, ui-pill, ui-row) for its rim and ground",
+    pattern: /linear-gradient\(180deg,\s*var\(--hud-surface-from\),\s*var\(--hud-surface-to\)\)/g,
+    refused: true,
+    within: `${APP}/ui/features/frontier/`,
   },
   // The browser draws a native select in its own colours, whatever the HUD's CSS says: the sheet's HudSelect replaces
   // it. No count allows one.
@@ -127,9 +129,11 @@ export const findViolations = (source, path, colors, steps) =>
   source
     .split("\n")
     .flatMap((text, index) =>
-      rules(colors, steps).flatMap(({ rule, pattern, refused = false }) =>
-        [...text.matchAll(pattern)].map(([match]) => ({ path, line: index + 1, rule, match, refused })),
-      ),
+      rules(colors, steps)
+        .filter(({ within }) => within === undefined || path.startsWith(within))
+        .flatMap(({ rule, pattern, refused = false }) =>
+          [...text.matchAll(pattern)].map(([match]) => ({ path, line: index + 1, rule, match, refused })),
+        ),
     );
 
 /** Each file's count against its line: over it fails, under it fails until the line is lowered. */
