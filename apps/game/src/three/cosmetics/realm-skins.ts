@@ -35,12 +35,15 @@ export const REALM_SKIN_DEFAULT_ORDER = [
   "base",
 ] as const satisfies readonly RealmSkinFamily[];
 
-const everyRank = <T>(value: T): Ranked<T> => ({
-  [RealmLevels.Settlement]: value,
-  [RealmLevels.City]: value,
-  [RealmLevels.Kingdom]: value,
-  [RealmLevels.Empire]: value,
-});
+export const REALM_RANKS = Object.values(RealmLevels).filter((rank): rank is RealmLevels => typeof rank === "number");
+
+const everyRank = <T>(value: T): Ranked<T> =>
+  ({
+    [RealmLevels.Settlement]: value,
+    [RealmLevels.City]: value,
+    [RealmLevels.Kingdom]: value,
+    [RealmLevels.Empire]: value,
+  }) satisfies Record<RealmLevels, T>;
 
 const slugOf = (aspect: AspectId) => aspectName(aspect).toLowerCase();
 
@@ -53,7 +56,7 @@ export const BASE_REALM_SKIN: RealmSkin = {
     [RealmLevels.City]: "city",
     [RealmLevels.Kingdom]: "kingdom",
     [RealmLevels.Empire]: "empire",
-  },
+  } satisfies Record<RealmLevels, string>,
   paintings: "realm",
 };
 

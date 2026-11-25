@@ -6,6 +6,7 @@ import { REALM_ASSETS } from "../structures/realm-design";
 import {
   BASE_REALM_SKIN,
   NO_MODEL_YET,
+  REALM_RANKS,
   REALM_SKIN_DEFAULT_ORDER,
   REALM_SKINS,
   realmSkinIcon,
@@ -13,7 +14,6 @@ import {
   type RealmSkinFacts,
 } from "./realm-skins";
 
-const RANKS = [RealmLevels.Settlement, RealmLevels.City, RealmLevels.Kingdom, RealmLevels.Empire];
 const NOTHING: RealmSkinFacts = { sealHeld: false, aspect: undefined, wonderAspect: undefined };
 const skin = (id: string) => REALM_SKINS.find((each) => each.id === id)!;
 
@@ -27,16 +27,16 @@ describe("the realm skin catalog", () => {
   it("points every rank at a model the game ships, or says plainly that it has none yet", () => {
     const shipped = new Set(REALM_ASSETS.map((asset) => asset.id));
     for (const each of REALM_SKINS)
-      for (const rank of RANKS) {
+      for (const rank of REALM_RANKS) {
         const model = each.models[rank];
         if (model !== NO_MODEL_YET) expect(shipped.has(model), `${each.id} at rank ${rank}`).toBe(true);
       }
-    expect(RANKS.every((rank) => skin("season-1-prowess").models[rank] === NO_MODEL_YET)).toBe(true);
-    expect(RANKS.every((rank) => skin("devcon").models[rank] === NO_MODEL_YET)).toBe(true);
+    expect(REALM_RANKS.every((rank) => skin("season-1-prowess").models[rank] === NO_MODEL_YET)).toBe(true);
+    expect(REALM_RANKS.every((rank) => skin("devcon").models[rank] === NO_MODEL_YET)).toBe(true);
   });
 
   it("gives every painted skin a painting at every rank, and none to a skin not painted yet", () => {
-    expect(RANKS.map((rank) => realmSkinIcon(BASE_REALM_SKIN, rank))).toEqual([
+    expect(REALM_RANKS.map((rank) => realmSkinIcon(BASE_REALM_SKIN, rank))).toEqual([
       "realm-0",
       "realm-1",
       "realm-2",
