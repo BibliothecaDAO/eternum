@@ -51,7 +51,7 @@ const labAt = (view: string) => (
 );
 const forecast = () => document.querySelector('[data-popover-panel="quick-attack"]');
 
-it("draws the game's own Build order panel in a Blitz player's rail without a redundant order choice when signed out", async () => {
+it("draws the game's own Build plan panel in a Blitz player's rail without a redundant order choice when signed out", async () => {
   await act(async () =>
     root.render(
       <MemoryRouter initialEntries={["/unified/blitz"]}>
@@ -63,7 +63,7 @@ it("draws the game's own Build order panel in a Blitz player's rail without a re
       </MemoryRouter>,
     ),
   );
-  const panel = host.querySelector('section[aria-label="Build order"]');
+  const panel = host.querySelector('section[aria-label="Build plan"]');
   expect(panel).not.toBeNull();
   expect(panel!.querySelector('button[aria-label="Order to follow"]')).toBeNull();
   expect(panel!.textContent).not.toContain("djizus");

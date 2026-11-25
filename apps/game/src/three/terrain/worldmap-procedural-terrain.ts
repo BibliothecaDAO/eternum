@@ -11,6 +11,7 @@ import { scheduleFrameBudgetWork, type FrameBudgetWorkScheduler } from "../frame
 import {
   ProceduralTerrain,
   type TerrainPresentationDiagnostics,
+  type TerrainQuality,
   type TerrainUploadMetrics,
 } from "./procedural-terrain";
 import { worldOrigin } from "../world-origin";
@@ -29,7 +30,6 @@ import type {
   TerrainSettlementAnchor,
   TerrainSurfaceSample,
 } from "./terrain-types";
-import type { GraphicsPreferences } from "../graphics-preferences";
 import type { TerrainPropLod } from "./terrain-prop-catalog";
 import { TERRAIN_PROP_POOL_PAGE_SLOTS } from "./terrain-prop-pools";
 import type { TerrainFogFieldStats } from "./terrain-fog-field";
@@ -314,10 +314,6 @@ export class WorldmapProceduralTerrain {
     this.terrain.setPropLod(lod);
   }
 
-  setQuality(quality: GraphicsPreferences["quality"]): void {
-    this.terrain.setQuality(quality);
-  }
-
   queueShroudReveal(col: number, row: number, source?: { col: number; row: number }): void {
     this.terrain.queueShroudReveal(col, row, source);
   }
@@ -342,8 +338,16 @@ export class WorldmapProceduralTerrain {
     this.terrain.refreshPropOccupancy(isOccupied);
   }
 
+  setQuality(quality: TerrainQuality): void {
+    this.terrain.setQuality(quality);
+  }
+
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
     return this.terrain.sampleSurface(worldX, worldZ);
+  }
+
+  sampleHeight(worldX: number, worldZ: number): number {
+    return this.terrain.sampleHeight(worldX, worldZ);
   }
 
   getUploadMetrics(): TerrainUploadMetrics {

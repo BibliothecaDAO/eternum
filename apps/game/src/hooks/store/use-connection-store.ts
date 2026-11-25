@@ -1,10 +1,8 @@
 import { create } from "zustand";
 
-type ConnectionStatus = "connected" | "degraded" | "disconnected";
 type StreamStatus = "connected" | "reconnecting" | "failed";
 
 interface ConnectionState {
-  status: ConnectionStatus;
   /** Herald's stream: greeted, being retried, or failed to apply what it sent. */
   globalStatus: StreamStatus;
   lastSpatialUpdate: number;
@@ -27,11 +25,7 @@ interface ConnectionState {
   recordSnapshotBlock: (block: number) => void;
 }
 
-const statusOf = (stream: StreamStatus): ConnectionStatus =>
-  stream === "failed" ? "disconnected" : stream === "connected" ? "connected" : "degraded";
-
 export const useConnectionStore = create<ConnectionState>((set) => ({
-  status: "connected",
   globalStatus: "connected",
   lastSpatialUpdate: Date.now(),
   lastGlobalUpdate: Date.now(),
@@ -44,7 +38,6 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
   setGlobalStatus: (globalStatus: StreamStatus) =>
     set((state) => ({
       globalStatus,
-      status: statusOf(globalStatus),
       ...(globalStatus === "reconnecting" ? { failedAttempts: state.failedAttempts + 1 } : {}),
       ...(globalStatus === "connected" && state.failedAttempts > 0
         ? { reconnects: state.reconnects + 1, failedAttempts: 0 }

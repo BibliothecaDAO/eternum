@@ -72,7 +72,7 @@ it("sends a step once while it is in flight, whichever surface presses it, and s
   await act(async () =>
     root.render(
       <>
-        <Surface name="Build order" />
+        <Surface name="Build plan" />
         <Surface name="Attention" />
       </>,
     ),
@@ -81,7 +81,7 @@ it("sends a step once while it is in flight, whichever surface presses it, and s
     act(async () => host.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!.click());
   const busy = () => [...host.querySelectorAll("button")].map((button) => button.getAttribute("aria-busy"));
 
-  await press("Build order");
+  await press("Build plan");
   await press("Attention");
   expect(send.build).toHaveBeenCalledTimes(1);
   expect(busy()).toEqual(["true", "true"]);

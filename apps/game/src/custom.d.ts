@@ -31,6 +31,7 @@ declare module "three/webgpu" {
 
   export interface WebGPURendererParameters extends RendererParameters {
     forceWebGL?: boolean;
+    powerPreference?: "low-power" | "high-performance";
   }
 
   export const PostProcessing: typeof PostProcessingClass;

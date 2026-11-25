@@ -128,7 +128,7 @@ export async function mountClearedSiteStudy(
     const { beast } = settings;
     for (const [slot, parts] of studySlots(settings.kind, beast).entries()) {
       const x = (slot === 0 ? -1 : 1) * Math.sqrt(3);
-      const ground = environment.terrain.sampleSurface(x, 0).height;
+      const ground = environment.terrain.sampleHeight(x, 0);
       const bounds = new Box3();
       for (const part of parts) {
         const gltf = await gltfLoader.loadAsync(part.path);
@@ -153,7 +153,7 @@ export async function mountClearedSiteStudy(
       // The instanced renderer leaves picking to its scene; review uses each delivered model's bounds.
       targets.push({ bounds, cleared: slot === 1 });
     }
-    controls.target.set(0, environment.terrain.sampleSurface(0, 0).height + 0.35, 0);
+    controls.target.set(0, environment.terrain.sampleHeight(0, 0) + 0.35, 0);
     const pitch = resolveWorldmapCameraPitchRadians(settings.distance);
     camera.position
       .copy(controls.target)

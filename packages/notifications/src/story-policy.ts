@@ -32,7 +32,7 @@ const STORY_RULES = {
   BlitzFinalized: {
     kind: "results",
     recipients: "owner",
-    copy: says("Your Blitz is settled", "see where you finished."),
+    copy: says("Your Blitz ended", "see where you finished."),
   },
   ResourceReceiveArrivalStory: {
     kind: "deliveries",

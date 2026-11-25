@@ -1132,6 +1132,14 @@
     "verdict": "beats shipped",
     "reason": "Owner-approved Season 1 Insight octopus emissary portrait published through the facets 64/128/256 webp pipeline."
   },
+  "faceted/combat-blade": {
+    "verdict": "beats shipped",
+    "reason": "Owner approved 2026-11-25: a plain sword reads as the melee class at badge size, where the borrowed Attack glyph meant an order."
+  },
+  "faceted/combat-bow": {
+    "verdict": "beats shipped",
+    "reason": "Owner approved 2026-11-25: a bow reads as the ranged class at badge size, where the borrowed crossbowman portrait was a second face on a face."
+  },
   "faceted/bane-world": {
     "verdict": "beats shipped",
     "reason": "Owner-picked Season 1 world bane: rolling mist with crimson eyes (candidate 1, 25 Nov), beside shipped in pass3/art/bane-world-mist-options.png."

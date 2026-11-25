@@ -98,7 +98,7 @@ describe("the interface that opens as you play", () => {
     expect(renderMoment("bane")).toContain("A bane is active. Finish today's quest with your Aspect to break it.");
     expect(renderMoment("aspects")).toContain("Prowess races to finish its hyperstructure first.");
     expect(renderMoment("daily-quest")).toContain("Today's quest is done.");
-    expect(renderMoment("essence")).toContain("Essence buys permanent upgrades and lores for your Realm.");
+    expect(renderMoment("essence")).toContain("Essence buys permanent upgrades and lore for your Realm.");
   });
 
   it("draws a gated part once its moment is reached, and every part outside the HUD's provider", () => {

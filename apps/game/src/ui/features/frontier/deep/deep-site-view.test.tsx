@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEEP_BEASTS } from "@bibliothecadao/types";
 
+import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { DEEP_SITE_CASES } from "./deep-site-fixtures";
 import { DeepSiteView, type DeepSiteProps } from "./deep-site-view";
 
@@ -33,7 +34,7 @@ describe("a Deep site's card", () => {
     draw({ ...props, order: { kind: "act", verb: "attack", stamina: 30, onAct } });
     expect(document.querySelector("[data-deep-tag]")?.textContent).toBe("Open · Ring 1");
     expect(document.querySelector(".deep-title__name")?.textContent).toBe("Hyperstructure archive");
-    expect(document.querySelector(".deep-title__purpose")?.textContent).toBe("Raises your Aspect's hyperstructure");
+    expect(document.querySelector(".deep-title__purpose")?.textContent).toBe(DEEP_WORDS.purpose.foundation);
     const rates = [...document.querySelectorAll("[data-rate]")].map((rate) => [
       rate.getAttribute("data-rate"),
       rate.textContent,
@@ -98,7 +99,7 @@ describe("a Deep site's card", () => {
       ...DEEP_SITE_CASES["Bane altar, open, no guard, army away"],
       order: { kind: "move", prices: [{ of: "stamina", amount: 30 }], onMove },
     });
-    expect(text()).toContain("No guard: the next army takes it");
+    expect(text()).toContain(DEEP_WORDS.open);
     expect(document.querySelector("[data-rate='bar']")?.getAttribute("data-tip")).toBe("300 of 1,500");
     act(() => labels(["Move"])[0]!.click());
     expect(onMove).toHaveBeenCalledTimes(1);
@@ -131,7 +132,6 @@ describe("a Deep site's card", () => {
     const fixture = DEEP_SITE_CASES["Essence core held by a rival Aspect"];
     draw({
       ...fixture,
-      attackerName: "Army 1",
       fight: {
         army: 1_000,
         defender: 6_200,

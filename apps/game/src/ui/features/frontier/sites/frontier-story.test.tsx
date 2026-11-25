@@ -143,7 +143,7 @@ it("does not print a Frontier realm's off-map founding coordinates", () => {
     store,
     names,
   );
-  expect(presentation.description).toBe("Settled by clientlane");
+  expect(presentation.description).toBe("Created by clientlane");
 });
 
 it("names an encounter outside the synced scope by its site's name, never a Vanguard or a beast guard", () => {

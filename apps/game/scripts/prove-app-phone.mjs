@@ -380,13 +380,13 @@ const nameWithKeyboard = async (b, phone, out, record) => {
   await sleep(600);
   const typing = b.evaluate(`(() => {
     const visible = (element) => { const box = element?.getBoundingClientRect(); return !!box && box.top >= ${SAFE_AREA.top} && box.bottom <= ${shown}; };
-    const claim = [...document.querySelectorAll("form button")].find((each) => each.innerText.trim() === "Claim name");
+    const claim = [...document.querySelectorAll("form button")].find((each) => each.innerText.trim() === "Save name");
     const bar = document.querySelector('[data-band="tabs"]');
     return { field: visible(document.querySelector("form input")), claim: visible(claim), barHidden: !bar || getComputedStyle(bar).display === "none" };
   })()`);
   record.checks.push(
     { check: "the on-screen keyboard is met", ok: keyboard === "open" },
-    { check: "the field and Claim name stand above the keyboard", ok: typing.field && typing.claim, typing },
+    { check: "the field and Save name stand above the keyboard", ok: typing.field && typing.claim, typing },
     { check: "the place bar steps aside while typing", ok: typing.barHidden },
   );
   shoot(b, out, "settings-name-keyboard");

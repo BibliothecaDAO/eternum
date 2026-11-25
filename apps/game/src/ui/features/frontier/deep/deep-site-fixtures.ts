@@ -91,7 +91,6 @@ export const DEEP_SITE_CASES = {
     site: "foundation",
     rates: { ...rates, height: 6 },
     guard: { kind: "beast", category: "Knight", troops: 15_000 },
-    attackerName: "Army 1",
     fight: {
       army: 12_400,
       defender: 15_000,
@@ -112,7 +111,6 @@ export const DEEP_SITE_CASES = {
       next: 103,
       slots: withShares([slot(3, "Havoc Guard", 6_200)]),
     },
-    attackerName: "Army 1",
     fight: {
       army: 12_400,
       defender: 6_200,

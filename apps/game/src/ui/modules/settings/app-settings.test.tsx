@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { useInstallState } from "@/pwa/install-state";
+import { type InstallPrompt, useInstallState } from "@/pwa/install-state";
 
 import { AppSettings } from "./app-settings";
 
@@ -20,13 +20,15 @@ afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
   vi.unstubAllGlobals();
-  useInstallState.setState({ installed: false });
+  useInstallState.setState({ installed: false, prompt: null });
 });
+
+const BROWSER_PROMPT = new Event("beforeinstallprompt") as InstallPrompt;
 
 /** The App section a player sees on this device, with the app installed or not: its name and its rows' names. */
 const appSection = async ({ touch, installed }: { touch: boolean; installed: boolean }) => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: touch && query === "(pointer: coarse)" }));
-  useInstallState.setState({ installed });
+  useInstallState.setState({ installed, prompt: BROWSER_PROMPT });
   await act(async () => root.render(<AppSettings onShowKeys={() => undefined} />));
   return [...host.querySelectorAll("h2, .ui-setting__name")].map((element) => element.textContent);
 };

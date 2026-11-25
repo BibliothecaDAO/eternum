@@ -114,7 +114,7 @@ export function layCopyOnGround(
   for (let vertex = 0; vertex < source.count; vertex++) {
     const x = copy.x + source.getX(vertex) * scale;
     const z = copy.z - source.getY(vertex) * scale;
-    target.setXYZ(copyIndex * source.count + vertex, x, terrain.sampleSurface(x, z).height + lift, z);
+    target.setXYZ(copyIndex * source.count + vertex, x, terrain.sampleHeight(x, z) + lift, z);
   }
   target.needsUpdate = true;
 }

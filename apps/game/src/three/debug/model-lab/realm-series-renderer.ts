@@ -85,7 +85,7 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
       await model.prepare();
       signal.throwIfAborted();
       const x = (slot - (levels.length - 1) / 2) * Math.sqrt(3) * 2;
-      model.setMatrixAt(0, new Matrix4().makeTranslation(x, environment.terrain.sampleSurface(x, 0).height, 0));
+      model.setMatrixAt(0, new Matrix4().makeTranslation(x, environment.terrain.sampleHeight(x, 0), 0));
       model.setCount(1);
       model.setOrderAt(0, settings.order);
       model.setRelationshipAt(0, settings.owned ? "owned" : "enemy");
@@ -93,11 +93,7 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
       scene.add(model.group);
       labels.push(before ? "Before" : comparing ? `After · ${asset.label}` : asset.label);
     }
-    controls.target.set(
-      0,
-      environment.terrain.sampleSurface(0, 0).height + (settings.distance <= 10 ? height / 2 : 0.5),
-      0,
-    );
+    controls.target.set(0, environment.terrain.sampleHeight(0, 0) + (settings.distance <= 10 ? height / 2 : 0.5), 0);
     const pitch = resolveWorldmapCameraPitchRadians(settings.distance);
     camera.position
       .copy(controls.target)

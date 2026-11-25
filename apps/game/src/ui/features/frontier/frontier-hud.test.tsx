@@ -653,7 +653,7 @@ it("lays a phone's Settings on one page, with what is rarely touched one press a
           .click(),
       );
     expect(words(".ui-settings__volume-name")).toEqual(["Master", "Music", "Effects"]);
-    expect(words(".ui-settings__choices .ui-setting__name")).toEqual(["Quality", "FPS"]);
+    expect(words(".ui-settings__choices .ui-setting__name")).toEqual(["Quality"]);
     expect(words(".ui-settings > .ui-setting .ui-setting__name").slice(0, 3)).toEqual([
       "Mute",
       "Shadows",
@@ -1464,7 +1464,7 @@ it.each([
       expect(armyButton).not.toBeNull();
       await act(async () => armyButton!.click());
       if (layout === "desktop") {
-        expect(host.querySelector('[data-rail-panel] section[aria-label="Army 1"]')).not.toBeNull();
+        expect(host.querySelector('[data-rail-panel] section[aria-label="100 Knights"]')).not.toBeNull();
       }
       expect(useOpeningStore.getState().showing).toBe("explore");
       expect(host.querySelector('[data-tutorial-dock="explore"][data-tutorial-status="showing"]')).not.toBeNull();

@@ -13,15 +13,15 @@ import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { homeIcon } from "@/ui/design-system/home-icons";
 import { HudIconButton, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import { ARMY, ARMY_MANAGEMENT, EVENTS_WORDS, LINK_WALLET_FOR_LORDS, YOU } from "@/ui/design-system/kit/words";
+import { ARMY_MANAGEMENT, EVENTS_WORDS, LINK_WALLET_FOR_LORDS, YOU } from "@/ui/design-system/kit/words";
 import { readArmySlots } from "@/ui/features/frontier/hud/army-dock";
+import { armyName } from "@/ui/features/frontier/hud/dock-armies";
 import { ArmyCard, ArmySlotsCard, LockedSlotLine, OpenSlotCard } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/frontier-desktop";
 import { PhoneTabBar, type HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
-import { OfflineBanner } from "@/ui/features/frontier/hud/offline-notice";
 import { TopBarView } from "@/ui/features/frontier/hud/phone-top-bar";
 import { RealmCard } from "@/ui/features/frontier/hud/realm-card";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
@@ -71,6 +71,8 @@ import { linkWalletLine } from "@/ui/features/frontier/value/link-wallet";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
 import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
+import { useConnectionStore } from "@/hooks/store/use-connection-store";
+import { NewsHeadlineBanner } from "@/ui/features/news-headlines/news-headline-banner";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
 import { fragmentsToFill, RefillButton, RefillConfirm, RefillPrice } from "@/ui/features/frontier/army/refill";
@@ -527,6 +529,7 @@ const STATES = {
   menu: { clock: CLOCK, stores: STORES, armies: ARMIES, menu: true },
   chat: { clock: CLOCK, stores: STORES, armies: ARMIES, chat: true },
   empty: { clock: CLOCK, stores: STORES, armies: [] },
+  "empire-dock": { clock: CLOCK, stores: STORES, armies: ARMIES, slots: 6 },
   explore: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, order: EXPLORE },
   move: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, order: MOVE },
   deploy: { clock: CLOCK, stores: STORES, armies: ARMIES, deploy: DEPLOY },
@@ -893,7 +896,6 @@ export const HudLab = () => {
             )
           ) : undefined
         }
-        banner={lab.offline ? <OfflineBanner onRetry={noop} /> : undefined}
         action={
           <>
             {lab.order && !desktop && (
@@ -1028,7 +1030,6 @@ const LabDeploySheet = ({
       }}
       art={troopsAtHome === 0 ? undefined : ("knight-t1" as const)}
       troopsAtHome={troopsAtHome}
-      oathSlots={2}
       count={count}
       amount={{ most, max: most }}
       onCount={setCount}
@@ -1066,14 +1067,13 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; fragments: number
   const base = {
     explorerId: index + 1,
     number: index + 1,
-    label: `${ARMY} ${index + 1}`,
     art: "knight-t1" as const,
     ethereal: lab.armies[index]?.ethereal,
   };
   if (lab.picked) {
     const army = {
       ...base,
-      troops: 1_342,
+      label: armyName(TroopType.Knight, 1_342),
       stamina: { current: 14, max: 140, perExplore: 20 },
       secondsToFull: 4 * HOUR + 11 * 60,
     };
@@ -1084,7 +1084,7 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; fragments: number
   return {
     army: {
       ...base,
-      troops: army.troops ?? 0,
+      label: armyName(TroopType.Knight, army.troops ?? 0),
       stamina: { current, max: 150, perExplore: LAB_EXPLORE },
       secondsToFull: (150 - current) * 60,
     },
@@ -1099,7 +1099,7 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
   if (army.confirm)
     return <RefillConfirm stamina={stamina} held={army.fragments} sending={false} onRefill={noop} onCancel={noop} />;
   return (
-    <HudSheet label={`${ARMY} 2`} onClose={noop}>
+    <HudSheet label={armyName(TroopType.Knight, base.troops)} onClose={noop}>
       <ArmyDetail army={view} />
       <HudWindowFoot>
         {army.fragments !== undefined && (
@@ -1251,42 +1251,53 @@ const LabBands = ({
   ...slots
 }: ComponentProps<typeof HudBands> & { desktop: boolean; lab: LabState }) => (
   <LabGame mode="frontier" facts={labQuestFacts}>
-    {() =>
-      desktop ? (
-        <FrontierDesktop
-          clock={<DayPill clock={lab.clock} />}
-          quest={<LabDailyQuest />}
-          placeSwitch={
-            <PlaceSwitch
-              isMapView={lab.realmView === undefined}
-              layers={LAB_MAP_LAYERS}
-              onGoRealm={noop}
-              onGoSurface={noop}
-            />
-          }
-          banner={slots.banner}
-          realm={<LabRealmCard lab={lab} />}
-          armies={slots.dock}
-          page={slots.page}
-          widePage={Boolean(lab.research)}
-          foot={
-            <>
-              {slots.notices}
-              {slots.action}
-            </>
-          }
-          places={
-            !lab.visiting && <FrontierPlaces surface={labSurface(lab)} onSurface={noop} research={!lab.offline} />
-          }
-        >
-          {slots.children}
-        </FrontierDesktop>
-      ) : (
-        <HudBands {...slots} />
-      )
-    }
+    {() => (
+      <>
+        {lab.offline && <LabConnectionLost />}
+        {desktop ? (
+          <FrontierDesktop
+            clock={<DayPill clock={lab.clock} />}
+            quest={<LabDailyQuest />}
+            placeSwitch={
+              <PlaceSwitch
+                isMapView={lab.realmView === undefined}
+                layers={LAB_MAP_LAYERS}
+                onGoRealm={noop}
+                onGoSurface={noop}
+              />
+            }
+            banner={slots.banner}
+            realm={<LabRealmCard lab={lab} />}
+            armies={slots.dock}
+            page={slots.page}
+            widePage={Boolean(lab.research)}
+            foot={
+              <>
+                {slots.notices}
+                {slots.action}
+              </>
+            }
+            places={
+              !lab.visiting && <FrontierPlaces surface={labSurface(lab)} onSurface={noop} research={!lab.offline} />
+            }
+          >
+            {slots.children}
+          </FrontierDesktop>
+        ) : (
+          <HudBands {...slots} />
+        )}
+      </>
+    )}
   </LabGame>
 );
+
+const LabConnectionLost = () => {
+  useEffect(() => {
+    useConnectionStore.getState().setGlobalStatus("failed");
+    return () => useConnectionStore.getState().setGlobalStatus("connected");
+  }, []);
+  return <NewsHeadlineBanner headline={null} />;
+};
 
 const everyStore = (stores: readonly StoreReading[]): StoreReading[] =>
   STORE_KINDS.map((kind) => stores.find((each) => each.kind === kind) ?? store(kind, 0));
@@ -1326,11 +1337,9 @@ const LabDock = ({ lab }: { lab: LabState }) => {
         {lab.armies.map((army, index) => (
           <ArmyCard
             key={index}
-            label={`Army ${index + 1}`}
-            title={FRONTIER_STORES.troops.word}
+            label={armyName(TroopType.Knight, army.troops ?? 0)}
             number={index + 1}
             art={armyArt(army)}
-            troops={army.troops}
             stamina={stamina(army)}
             ethereal={army.ethereal}
             selected={lab.selected === index}
