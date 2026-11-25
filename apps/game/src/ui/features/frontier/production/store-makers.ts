@@ -1,11 +1,11 @@
 import { STORE_MAKERS } from "@/ui/design-system/kit/words";
 import { buildingOutput } from "@/ui/shared/lib/building-output";
-import { buildingMakePicks, getBuildingQuantity, realmLearned } from "@bibliothecadao/eternum";
+import { buildingMakePicks, getBuildingQuantity, readProductionPercent, realmLearned } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, formatCount, formatRate, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, formatCount, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
 import { buildingName } from "../build/building-names";
-import { FRONTIER_STORES, madeStore, type MadeResource, storeBuilding, storeMadeBy } from "../stores";
+import { formatStoreRate, FRONTIER_STORES, madeStore, type MadeResource, storeBuilding, storeMadeBy } from "../stores";
 
 /**
  * The buildings of a type standing on a realm, from its facts (the packed counts Blitz's tables read too). The castle's
@@ -31,13 +31,26 @@ export const buildingsMake = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   category: BuildingType,
+  now: number,
 ): BuildingsMake | undefined => {
   const made = storeMadeBy(category);
   const resource = made === undefined ? undefined : FRONTIER_STORES[made].resource;
+  const each = resource === undefined ? undefined : buildingRate(store, realm, resource, now);
+  if (resource === undefined || each === undefined) return undefined;
+  return { resource, perSecond: each * standingBuildings(store, safeInteger(realm.entity_id), category) };
+};
+
+export const buildingRate = (
+  store: NativeFactStore,
+  realm: NativeRows["Structure"],
+  resource: MadeResource,
+  now: number,
+): number | undefined => {
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
-  if (resource === undefined || learned === undefined) return undefined;
-  const each = buildingOutput(store, realm, category, madePicks(resource, learned));
-  return { resource, perSecond: each.total * standingBuildings(store, safeInteger(realm.entity_id), category) };
+  const percent = readProductionPercent(store, realm.game_id, realm.entity_id, now);
+  if (learned === undefined || percent === undefined) return undefined;
+  const category = storeBuilding(madeStore(resource));
+  return (buildingOutput(store, realm, category, madePicks(resource, learned)).total * percent) / 100;
 };
 
 /**
@@ -50,32 +63,24 @@ export const storeMakerLines = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   resource: MadeResource,
+  now: number,
 ): string[] => {
-  const category = storeBuilding(madeStore(resource));
+  const kind = madeStore(resource);
+  const category = storeBuilding(kind);
   const count = standingBuildings(store, safeInteger(realm.entity_id), category);
-  const learned = realmLearned(store, realm.game_id, realm.entity_id);
+  const each = buildingRate(store, realm, resource, now);
   const name = buildingName(category);
   const standing = formatCount(count, name, name.endsWith("s") ? name : `${name}s`);
   const lines =
-    count > 0 ? [learned === undefined ? standing : makersLine(store, realm, resource, learned, standing, count)] : [];
-  if (resource === ResourcesIds.Labor) lines.push(STORE_MAKERS.castle(formatRate(castleLabor(store, realm))));
+    count > 0
+      ? [each === undefined ? standing : STORE_MAKERS.buildings(standing, formatStoreRate(kind, each * count))]
+      : [];
+  if (resource === ResourcesIds.Labor) lines.push(STORE_MAKERS.castle(formatStoreRate(kind, castleLabor(store, realm, now))));
   return lines;
 };
 
-/** The buildings standing with their combined production under the realm's research. */
-const makersLine = (
-  store: NativeFactStore,
-  realm: NativeRows["Structure"],
-  resource: MadeResource,
-  learned: bigint,
-  standing: string,
-  count: number,
-): string => {
-  const each = buildingOutput(store, realm, storeBuilding(madeStore(resource)), madePicks(resource, learned));
-  return STORE_MAKERS.buildings(standing, formatRate(each.total * count));
+export const castleLabor = (store: NativeFactStore, realm: NativeRows["Structure"], now: number): number | undefined => {
+  const percent = readProductionPercent(store, realm.game_id, realm.entity_id, now);
+  const rate = store.require("ResourceRule", { game_id: realm.game_id, resource_type: ResourcesIds.Labor }).realm_rate;
+  return percent === undefined ? undefined : (Number(rate) / RESOURCE_PRECISION) * (percent / 100);
 };
-
-/** The castle's own labor a second: Labor's realm rate, which research never raises. */
-const castleLabor = (store: NativeFactStore, realm: NativeRows["Structure"]): number =>
-  Number(store.require("ResourceRule", { game_id: realm.game_id, resource_type: ResourcesIds.Labor }).realm_rate) /
-  RESOURCE_PRECISION;

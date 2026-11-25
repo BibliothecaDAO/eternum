@@ -2,7 +2,7 @@ import type { OpeningRules } from "@/ui/design-system/kit/words";
 
 export const OPENING_RULES: OpeningRules = {
   ownAspect: 1,
-  knightsPerSecond: 100 / 3_600,
+  knightsRate: "+100/h",
   troopsAtHome: 2_000,
   deepTickSeconds: 120,
   deepLossPerTick: 200,

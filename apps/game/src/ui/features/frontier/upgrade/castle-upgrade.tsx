@@ -10,11 +10,13 @@ import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import { knownAmount } from "@/ui/utils/utils";
 import { buildablePlotCount, configManager, getBalance, ResourceManager } from "@bibliothecadao/eternum";
-import { BUILDINGS_CENTER, RESOURCE_PRECISION, ResourcesIds, TroopTier, formatRate } from "@bibliothecadao/types";
+import { BUILDINGS_CENTER, RESOURCE_PRECISION, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { CastleResearch, type CastleSide, type CastleUpgradeOrder, CastleView } from "./castle-view";
 import { useResearchTree } from "../research/research-facts";
+import { castleLabor } from "../production/store-makers";
+import { formatStoreRate } from "../stores";
 
 /** Whether the keep of `realm`, the realm the board draws, is tapped in the realm view: a player's or a viewer's. */
 export const useKeepSelected = (realm: NativeRows["Structure"] | null): boolean => {
@@ -52,7 +54,7 @@ export const CastleUpgrade = ({
   return (
     <CastleView
       now={castleSide(setup.store, realm.game_id, levelUp.currentLevel, realm.metadata.has_wonder)}
-      laborRate={castleLaborRate(setup.store, realm)}
+      laborRate={formatStoreRate("labor", castleLabor(setup.store, realm, tick))}
       research={
         ordersAllowed &&
         tree && (
@@ -115,18 +117,6 @@ const castleSide = (store: NativeFactStore, gameId: number, level: number, hasWo
     laborStore: wholeOrUnknown(ResourceManager.castleStoreLimit(store, gameId, level, ResourcesIds.Labor)),
     maxArmySize: configManager.getMaxArmySize(level, TroopTier.T1),
   };
-};
-
-/**
- * The labor the castle itself makes a minute: a realm is provisioned with its own labor producer at the labor rule's
- * realm rate (the contract's provision_realm_economy), apart from any Workshop on the board.
- */
-const castleLaborRate = (store: NativeFactStore, realm: NativeRows["Structure"]): string => {
-  const perSecond = store.require("ResourceRule", {
-    game_id: realm.game_id,
-    resource_type: ResourcesIds.Labor,
-  }).realm_rate;
-  return formatRate(Number(perSecond) / RESOURCE_PRECISION);
 };
 
 /** The castle is priced in labor (and Essence on presets that ask it); anything else is loud. */

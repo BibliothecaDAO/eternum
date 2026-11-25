@@ -1,4 +1,4 @@
-import { formatAmount, formatExact, formatDuration, formatRate } from "@bibliothecadao/types";
+import { formatAmount, formatExact, formatDuration } from "@bibliothecadao/types";
 import type { Tone } from "@/ui/design-system/kit/tone";
 import { FULL, FULL_IN, OF } from "@/ui/design-system/kit/words";
 import { useLandingDelta } from "@/ui/motion/landing-hold";
@@ -33,10 +33,9 @@ export const STORE_TONES: Record<Tone, { text: string; meter: "warn" | "bad" | u
  * A store in one line, as its plate says it when asked: "Wheat 1,771 of 6,000 · +5/min · Full in 14h". Each part
  * is there only when the game's facts give it; a full store says Full in place of a rate it no longer earns.
  */
-export const storeRateText = (store: StoreReading, { compact = false }: { compact?: boolean } = {}): string | null => {
+export const storeRateText = (store: StoreReading): string | null => {
   if (store.perHour === undefined || store.perHour <= 0 || store.fullIn === 0) return null;
-  const rate = formatRate(store.perHour / 3600);
-  return compact ? rate.replace(/\/min$/, "") : rate;
+  return formatStoreRate(store.kind, store.perHour / 3600);
 };
 
 export const storeLine = (store: StoreReading): string => {
