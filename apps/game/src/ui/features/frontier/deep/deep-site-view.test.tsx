@@ -127,7 +127,6 @@ describe("a Deep site's card", () => {
     const fixture = DEEP_SITE_CASES["Foundation held, two slots filled"];
     draw({
       ...fixture,
-      attackerName: "Army 1",
       fight: {
         army: 1_000,
         defender: 6_000,
@@ -140,7 +139,7 @@ describe("a Deep site's card", () => {
     const sides = [...document.querySelectorAll(".fight-side")];
     expect(sides).toHaveLength(2);
     expect(sides[0]!.querySelector('[data-icon="crossbowman-t1"]')).not.toBeNull();
-    expect(sides[0]!.getAttribute("aria-label")).toBe("Army 1 1,000 → 670, −330 · 33% lost");
+    expect(sides[0]!.getAttribute("aria-label")).toBe("Army 1,000 → 670, −330 · 33% lost");
     expect(sides[0]!.textContent).toBe("1,000 → 670−330");
     expect(sides[1]!.querySelector('[data-icon="knight-t1"]')).not.toBeNull();
     expect(sides[1]!.getAttribute("aria-label")).toContain("Aldor 6,000 → 5,246");

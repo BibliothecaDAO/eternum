@@ -1461,7 +1461,7 @@ it.each([
       expect(armyButton).not.toBeNull();
       await act(async () => armyButton!.click());
       if (layout === "desktop") {
-        expect(host.querySelector('[data-rail-panel] section[aria-label="Army 1"]')).not.toBeNull();
+        expect(host.querySelector('[data-rail-panel] section[aria-label="100 Knights"]')).not.toBeNull();
       }
       expect(useOpeningStore.getState().showing).toBe("explore");
       expect(host.querySelector('[data-tutorial-dock="explore"][data-tutorial-status="showing"]')).not.toBeNull();

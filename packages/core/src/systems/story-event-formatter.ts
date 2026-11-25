@@ -258,10 +258,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     };
   },
   RealmCreatedStory: (event, payload, components, resolvePlayerName) => {
-    const coord =
-      components && readExpeditionRules(components, configManager.getActiveGameId())
-        ? undefined
-        : formatCoord(payload.coord);
+    const coord = isFrontier(components) ? undefined : formatCoord(payload.coord);
     const ownerLabel = nameOwner(event.ownerAddress, components, resolvePlayerName);
     const realm = describeStructureName(event.entityId, components);
     return {
@@ -327,7 +324,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
   BattleEvent: (event, payload, store, resolvePlayerName) => {
     const attacker = payload.attacker as Record<string, unknown>;
     const defender = payload.defender as Record<string, unknown>;
-    const frontier = store && readExpeditionRules(store, configManager.getActiveGameId()) !== null;
+    const frontier = isFrontier(store);
     const attackerName = nameFightParticipant(attacker.player, payload.attacker_id, store, resolvePlayerName);
     const defenderName = nameFightParticipant(defender.player, payload.defender_id, store, resolvePlayerName);
     const outcome = frontier
@@ -406,7 +403,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
       title: at
         ? `${at}'s ${formatSlotLabel(payload.slot) ?? "guard"} reinforced`
         : `${playerOf(event, components, resolvePlayerName)} reinforced the ${formatSlotLabel(payload.slot) ?? "guard"}`,
-      description: describeTroops(payload, "+"),
+      description: describeTroops(payload, "+", components),
       icon: "troop",
     };
   },
@@ -423,7 +420,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     const at = describeEntity(payload.structure_id ?? event.entityId, components);
     return {
       title: at ? `Army raised at ${at}` : `${playerOf(event, components, resolvePlayerName)} raised an army`,
-      description: describeTroops(payload, ""),
+      description: describeTroops(payload, "", components),
       icon: "troop",
     };
   },
@@ -431,7 +428,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     const army = nameArmy(payload.explorer_id, components);
     return {
       title: army ? `${army} reinforced` : `${playerOf(event, components, resolvePlayerName)} reinforced an army`,
-      description: describeTroops(payload, "+"),
+      description: describeTroops(payload, "+", components),
       icon: "troop",
     };
   },
@@ -512,8 +509,7 @@ function formatBuildingCategory(value: unknown, store: NativeFactStore | undefin
     const label = formatEnum(value);
     return label ?? undefined;
   }
-  const frontier = store !== undefined && readExpeditionRules(store, configManager.getActiveGameId()) !== null;
-  return buildingName(numeric, frontier);
+  return buildingName(numeric, isFrontier(store));
 }
 
 /** What each change a placement story carries (the contract's BuildingChange) reads as. */
@@ -538,9 +534,11 @@ function describeLevel(level: number): string {
 }
 
 /** Troops a story moved, as a player reads them: "+500 Knight T1". */
-function describeTroops(payload: Record<string, unknown>, sign: "+" | ""): string | undefined {
+function describeTroops(payload: Record<string, unknown>, sign: "+" | "", store?: NativeFactStore): string | undefined {
   const amount = formatResourceAmount(payload.amount) ?? formatNumber(payload.amount ?? null) ?? undefined;
-  const troops = [formatEnum(payload.category), formatEnum(payload.tier)].filter(Boolean).join(" ");
+  const troops = isFrontier(store)
+    ? (formatFrontierTroop(payload.category) ?? "")
+    : [formatEnum(payload.category), formatEnum(payload.tier)].filter(Boolean).join(" ");
   return amount ? `${sign}${amount}${troops ? ` ${troops}` : ""}` : troops || undefined;
 }
 
@@ -687,6 +685,9 @@ function normalizeResourceEntries(value: unknown): Array<{ id: number; amount: u
     })
     .filter((value): value is { id: number; amount: unknown } => value !== null);
 }
+
+const isFrontier = (store?: NativeFactStore): boolean =>
+  store !== undefined && readExpeditionRules(store, configManager.getActiveGameId()) !== null;
 
 function formatFrontierTroop(type: unknown): string | undefined {
   const typeLabel = formatEnum(type);
@@ -939,13 +940,7 @@ function nameFightParticipant(
   resolvePlayerName?: PlayerNameResolver,
 ): string | undefined {
   const siteId = toNumber(entityId);
-  if (
-    toBigIntSafe(owner) === 0n &&
-    siteId !== null &&
-    store &&
-    readExpeditionRules(store, configManager.getActiveGameId())
-  )
-    return siteDisplayName(siteId);
+  if (toBigIntSafe(owner) === 0n && siteId !== null && isFrontier(store)) return siteDisplayName(siteId);
   return nameOwner(owner, store, resolvePlayerName);
 }
 

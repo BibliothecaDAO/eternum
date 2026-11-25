@@ -1132,7 +1132,6 @@ export const DEPLOYING = "Deploying…";
 export const DEPLOY_WORDS = {
   troopType: "Troop type",
   slot: "Slot",
-  oaths: "Oaths",
   startsOn: "Starts on",
   howMany: (troop: string) => `${troop}: how many go`,
   deployCount: (count: number) => `${DEPLOY} ${formatExact(count)}`,
@@ -1158,7 +1157,7 @@ export const TRANSFER_TROOPS = {
   waiting: "Loading army details…",
   stale: "Armies changed. Review merge.",
   merge: (army: string) => `Merge into ${army}`,
-  losesProgress: (army: string) => `${army} loses its Logistics, Oath slots and held Oaths.`,
+  losesProgress: (army: string) => `${army} will lose its Logistics, Oath slots, and Oaths.`,
   /** A second press confirms the loss of stronger Logistics training. */
   confirmMerge: (army: string) => `Confirm merge into ${army}`,
   amount: (from: string, to: string) => `Troops ${from} sends to ${to}`,
@@ -1961,8 +1960,6 @@ export const NEWS_WORDS = {
 /** The app's own states: install, update, offline, a page that does not exist. */
 export const APP_STATE_WORDS = {
   install: "Install",
-  /** The install notice's name for assistive technology: where the app will live (its icon and Install say it on screen). */
-  onHomeScreen: "Realms on your home screen",
   updateReady: "Update ready",
   update: "Update",
   updating: "Updating…",

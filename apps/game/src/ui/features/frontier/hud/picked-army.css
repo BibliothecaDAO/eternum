@@ -56,9 +56,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.army-tray__troops {
-  display: flex;
-}
 .army-tray__stamina {
   display: flex;
   align-items: center;
