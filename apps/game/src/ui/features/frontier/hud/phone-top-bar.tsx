@@ -35,6 +35,7 @@ type TopBarViewProps = {
   clock: ReactNode;
   placeSwitch?: ReactNode;
   quest?: ReactNode;
+  questCard?: ReactNode;
   notice?: ReactNode;
   spectatorChip?: ReactNode;
   realmCard?: ReactNode;
@@ -46,6 +47,7 @@ export const TopBarView = ({
   clock,
   placeSwitch,
   quest,
+  questCard,
   notice,
   spectatorChip,
   realmCard,
@@ -63,7 +65,12 @@ export const TopBarView = ({
           {notice}
           {spectatorChip}
         </div>
-        {quest && <div className="frontier-phone-float__quest">{quest}</div>}
+        {quest && (
+          <div className="frontier-phone-float__quest">
+            {questCard}
+            {quest}
+          </div>
+        )}
       </div>
     )}
   </div>
