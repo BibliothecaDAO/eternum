@@ -16,7 +16,7 @@ import {
 } from "@/ui/design-system/kit/words";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
-import { aspectName, FRAGMENTS, formatShort, LORDS, type AspectId } from "@bibliothecadao/types";
+import { aspectName, FRAGMENTS, formatShort, LORDS, rankName, type AspectId } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import { FRONTIER_STORES, isMadeStore, isTroopStore, type StoreKind } from "../stores";
@@ -36,7 +36,6 @@ export const RealmCard = ({
   name,
   kind,
   level,
-  rank,
   rankUp,
   aspect,
   orderId,
@@ -52,7 +51,6 @@ export const RealmCard = ({
   name: string;
   kind: HomeKind;
   level: number;
-  rank: string;
   rankUp?: RealmRankUp;
   aspect?: AspectId;
   orderId?: number;
@@ -88,7 +86,7 @@ export const RealmCard = ({
         <span className="frontier-realm-card__text">
           <span className="frontier-realm-card__name">{name}</span>
           <span className="frontier-realm-card__sub">
-            <span>{rank}</span>
+            <span>{rankName(level)}</span>
             <OrderLine orderId={orderId} size={16} className="frontier-realm-card__order" />
           </span>
         </span>

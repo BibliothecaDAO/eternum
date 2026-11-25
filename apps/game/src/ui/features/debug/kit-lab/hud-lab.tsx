@@ -1240,7 +1240,6 @@ const LabRealmCard = ({ lab }: { lab: LabState }) => (
     name={LAB_REALM_NAME}
     kind="realm"
     level={1}
-    rank={rankName(1)}
     rankUp={{
       name: rankName(2),
       gives: REALM_CARD_WORDS.armySlots(1),

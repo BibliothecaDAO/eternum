@@ -245,7 +245,6 @@ describe("the status strip", () => {
           name="Duskbite"
           kind="realm"
           level={1}
-          rank="City"
           fragments={250}
           lords={null}
           onShop={onShop}

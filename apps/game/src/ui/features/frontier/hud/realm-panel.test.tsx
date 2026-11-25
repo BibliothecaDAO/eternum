@@ -110,7 +110,6 @@ it("renders the Aspect medallion tinted in the Aspect color, and the rank and Or
           name="Duskbite"
           kind="realm"
           level={1}
-          rank="Kingdom"
           aspect={1}
           orderId={12}
           stores={STORES}
@@ -126,7 +125,7 @@ it("renders the Aspect medallion tinted in the Aspect color, and the rank and Or
   expect(identity.querySelector('[data-aspect-mark="1"]')).not.toBeNull();
   expect(identity.querySelector(".frontier-aspect-medallion")?.getAttribute("style")).toContain("--hud-aspect");
   expect(identity.querySelector('img[src*="portraits"]')).toBeNull();
-  expect(card.querySelector(".frontier-realm-card__sub")?.textContent).toBe("KingdomOrder of Power");
+  expect(card.querySelector(".frontier-realm-card__sub")?.textContent).toBe("CityOrder of Power");
   expect(card.querySelector('[data-order-id="12"] img')).not.toBeNull();
   act(() => identity.click());
   expect(onHome).toHaveBeenCalledTimes(1);
@@ -141,7 +140,6 @@ it("shows every stock with its rate, Fragments opening the shop, and the next ra
         name="Duskbite"
         kind="realm"
         level={0}
-        rank="Settlement"
         rankUp={{ name: "City", gives: "+1 army slot", sending: false, onUpgrade }}
         aspect={1}
         orderId={12}
@@ -172,9 +170,7 @@ it("shows every stock with its rate, Fragments opening the shop, and the next ra
   expect(onUpgrade).toHaveBeenCalledTimes(1);
 
   act(() =>
-    root.render(
-      <RealmCard name="Duskbite" kind="realm" level={3} rank="Empire" stores={STORES} fragments={null} lords={null} />,
-    ),
+    root.render(<RealmCard name="Duskbite" kind="realm" level={3} stores={STORES} fragments={null} lords={null} />),
   );
   expect(host.querySelector("[data-realm-castle]")).toBeNull();
   expect(host.querySelector('[data-store="fragments"] button')).toBeNull();
@@ -187,7 +183,6 @@ it("locks the next rank, with the price it needs, until the realm can pay it", (
         name="Duskbite"
         kind="realm"
         level={2}
-        rank="Kingdom"
         rankUp={{
           name: "Empire",
           need: { of: "labor", amount: 12_000 },
@@ -214,7 +209,6 @@ it("says Upgrading on the button while the rank-up is sent, and takes no second 
         name="Duskbite"
         kind="realm"
         level={0}
-        rank="Settlement"
         rankUp={{ name: "City", sending: true, onUpgrade }}
         stores={STORES}
         fragments={null}

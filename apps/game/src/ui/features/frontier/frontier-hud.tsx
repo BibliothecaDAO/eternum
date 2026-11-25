@@ -569,7 +569,6 @@ const FrontierRealmCard = ({
       name={name}
       kind={kind}
       level={realm.base.level}
-      rank={rankName(realm.base.level)}
       rankUp={rankUp}
       aspect={aspect}
       orderId={realm.metadata.order}
