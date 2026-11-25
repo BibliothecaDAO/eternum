@@ -54,7 +54,7 @@ export const TopBarView = ({
   todayCard,
 }: TopBarViewProps) => (
   <div className="frontier-phone-top">
-    <div className="frontier-bar pointer-events-auto">
+    <div className="ui-popover frontier-bar pointer-events-auto">
       {placeSwitch}
       <StockChips {...stocks} />
       <div className="frontier-bar__day">{clock}</div>
