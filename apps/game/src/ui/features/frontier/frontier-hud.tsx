@@ -48,7 +48,7 @@ import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { PhoneTabBar, type HudSurface } from "./hud/frontier-nav";
 import { selectLayer, useMapLayers } from "./hud/map-layers";
 import { FrontierTopBar } from "./hud/phone-top-bar";
-import { PlaceMenu, placeLines } from "./hud/surface-deep-switch";
+import { PlaceSwitch, placeLines } from "./hud/surface-deep-switch";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { useFirstBuild, useMarkFirstBuild } from "./build/first-build";
@@ -77,7 +77,7 @@ import { FrontierToday } from "./log/frontier-today";
 import { type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
 import { FrontierResearch } from "./research/frontier-research";
 
-import { BuildingsInFlight, useRealmPlots } from "./build/build-sheet";
+import { BuildingsInFlight } from "./build/build-sheet";
 import { STORE_KINDS } from "./stores";
 import { type LordsReading, useLordsBalance } from "@/shell/value/use-lords-balance";
 import { usePayer } from "@/shell/value/use-payer";
@@ -192,7 +192,6 @@ const FrontierHudBody = ({
   const headerFacts = useNativeFacts(REALM_HEADER_MODELS);
   const own = realm && !visit ? realm : null;
   const ownArmies = useDockArmies(own);
-  const ownPlots = useRealmPlots(own);
   const modeConfig = useGameModeConfig();
   const goToPlace = useGoToFrontierPlace(shown);
   const feedUnread = useUnreadImportantCount(surface === "feed");
@@ -229,11 +228,11 @@ const FrontierHudBody = ({
     },
     onSwitch: close,
   };
-  const placeMenu = (
-    <PlaceMenu
+  const placeSwitch = (
+    <PlaceSwitch
       {...placeChoices}
       realm={shown ? { mark: homeIcon(homeKind(shown.metadata.has_wonder), shown.base.level) } : undefined}
-      lines={own ? placeLines(ownArmies, ownPlots) : undefined}
+      lines={own ? placeLines(ownArmies) : undefined}
     />
   );
   const page =
@@ -303,7 +302,7 @@ const FrontierHudBody = ({
         realmOpen: realmVisible,
         onOpenRealm: () => setSurface(surface === "realm" ? null : "realm"),
       }}
-      placeMenu={placeMenu}
+      placeSwitch={placeSwitch}
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
       notice={noticeAtFoot ? undefined : openingNotice}
       spectatorChip={spectating ? <IdentityChip compact /> : undefined}
@@ -360,7 +359,7 @@ const FrontierHudBody = ({
     <FrontierDesktop
       clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
-      placeSwitch={placeMenu}
+      placeSwitch={placeSwitch}
       chat={<HudChatWindow open={surface === "chat"} onOpenChange={(open) => setSurface(open ? "chat" : null)} />}
       banner={<OfflineNotice />}
       realm={realmCard}

@@ -372,6 +372,7 @@ export { type RankedWords, rankedText, skillPointGain } from "@bibliothecadao/ty
 
 export const LEFT = "left";
 export const DAY = "Day";
+export const dayShort = (day: number | string) => `D${day}`;
 /** A day of the season against its last: "Day 10 of 14". */
 export const dayOfSeason = (day: string, lastDay: string) => `${DAY} ${day} of ${lastDay}`;
 /** When the season ends, as a local day and clock time: "Season ends 31 Oct 21:40". */
@@ -542,6 +543,7 @@ export const STAMINA = "stamina";
 export const EMPIRE = "Empire";
 /** The places: the nav's words. */
 export const REALM = "Realm";
+export const MAP_VIEW = "Map view";
 export const WORLD = "World";
 /** The realm's way home from its card's header: the map centred on it. */
 export const SHOW_MY_REALM = "Show my realm";

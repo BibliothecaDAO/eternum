@@ -9,7 +9,7 @@ vi.mock("@/ui/features/event-feed/quick-feed", async (original) => ({
 }));
 
 import { dayClock } from "./day-clock";
-import { DayMedallion } from "./day-pill";
+import { DayPill } from "./day-pill";
 import { FrontierPlaces } from "./frontier-desktop";
 import { isTroopStore, STORE_KINDS } from "../stores";
 import { RealmCard } from "./realm-card";
@@ -52,11 +52,11 @@ it("says the day and the time left in the top bar, and when the day ends and how
     { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400, endAt: 21 * 20 * 14_400 },
     3_600,
   );
-  act(() => root.render(<DayMedallion clock={clock} />));
+  act(() => root.render(<DayPill clock={clock} />));
   const pill = host.querySelector('[role="timer"]')!;
   expect(pill.getAttribute("aria-label")).toContain(`Day ${clock.day}`);
-  expect(pill.querySelector(".frontier-day-dial__left")?.textContent).toBeTruthy();
-  expect(pill.querySelector("img")?.getAttribute("src")).toBe("/images/hud/day-medallion-calm.webp");
+  expect(pill.querySelector(".frontier-day-pill__day")?.textContent).toBe(`Day ${clock.day}`);
+  expect(pill.querySelector(".frontier-day-pill__left")?.textContent).toBeTruthy();
   expect(pill.getAttribute("data-tip")).toMatch(/^Day ends \d\d:\d\d · .+ left · Tomorrow lasts /);
 });
 
@@ -65,7 +65,7 @@ it("reads a 24-hour day in hours on the top bar and its hover, as Play does (liv
     { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400, endAt: 21 * 20 * 14_400 },
     3_600,
   );
-  act(() => root.render(<DayMedallion clock={{ ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 }} />));
+  act(() => root.render(<DayPill clock={{ ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 }} />));
   const pill = host.querySelector('[role="timer"]')!;
   expect(pill.getAttribute("aria-label")).toContain(`Day ${day.day}`);
   expect(pill.textContent).toContain("24h");

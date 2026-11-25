@@ -9,7 +9,7 @@ import { PhoneTabBar, type HudSurface } from "./frontier-nav";
 import { selectLayer } from "./map-layers";
 import { useOnePanel } from "./one-panel";
 import { useHudPopover } from "./hud-popover";
-import { PlaceMenu } from "./surface-deep-switch";
+import { PlaceSwitch } from "./surface-deep-switch";
 
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
 vi.mock("../frontier-home", () => ({ useGoToFrontierPlace: () => vi.fn() }));
@@ -42,7 +42,7 @@ function PhoneHud({ open }: { open: HudSurface }) {
   return (
     <>
       <output data-page>{surface ?? "map"}</output>
-      <PlaceMenu
+      <PlaceSwitch
         isMapView
         layers={layers}
         onGoRealm={() => openSurface(null)}
@@ -97,45 +97,71 @@ it("choosing the layer already shown puts the page away without moving the map",
   expect(page()).toBe("map");
 });
 
-it("names the place shown on its pill and lists every place, the locked ones with what opens them", () => {
+it("names the place shown on its switch and lists every layer, the locked ones with what opens them", () => {
   act(() => root.render(<PhoneHud open="research" />));
   const pill = document.querySelector<HTMLButtonElement>("[data-place-pill]")!;
-  expect([pill.dataset.place, pill.getAttribute("aria-expanded")]).toEqual(["Hollow", "false"]);
+  const placeShown = () => document.querySelector<HTMLElement>("[data-place-switch]")!.dataset.place;
+  expect([placeShown(), pill.getAttribute("aria-expanded")]).toEqual(["Hollow", "false"]);
   act(() => pill.click());
   const rows = [...document.querySelectorAll<HTMLButtonElement>('[data-surface-deep-switch] [role="tab"]')];
   expect(rows.map((row) => [row.getAttribute("aria-label"), row.getAttribute("aria-selected"), row.disabled])).toEqual([
-    ["Realm", "false", false],
     ["Surface", "false", false],
     ["Veil", "false", false],
     ["Hollow", "true", false],
     ["Deep", "false", true],
   ]);
-  expect(rows[4]!.textContent).toBe("DeepSpire III");
+  expect(rows[3]!.textContent).toBe("DeepSpire III");
   act(() => pill.click());
   expect(document.querySelector("[data-surface-deep-switch]")).toBeNull();
 });
 
-it("lists each place with what stands there, and a locked place with its lock and what opens it", () => {
+it("opens the realm with one press of Realm beside the layer menu, and lights Realm while it stands", () => {
+  const onGoRealm = vi.fn();
+  const layers = { layers: [0, 1] as const, shown: 0 as const, go };
+  const render = (isMapView: boolean) =>
+    act(() =>
+      root.render(<PlaceSwitch isMapView={isMapView} layers={layers} onGoRealm={onGoRealm} onGoSurface={vi.fn()} />),
+    );
+  render(true);
+  const realm = () => document.querySelector<HTMLButtonElement>('[data-place-switch] [role="tab"][aria-label="Realm"]')!;
+  expect(realm().getAttribute("aria-selected")).toBe("false");
+  act(() => realm().click());
+  expect(onGoRealm).toHaveBeenCalledTimes(1);
+  expect(document.querySelector("[data-surface-deep-switch]")).toBeNull();
+  render(false);
+  expect(realm().getAttribute("aria-selected")).toBe("true");
+  expect(document.querySelector<HTMLElement>("[data-place-switch]")!.dataset.place).toBe("Realm");
+  expect(document.querySelector("[data-place-pill]")!.textContent).toBe("Surface");
+  act(() => document.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
+  expect(
+    [...document.querySelectorAll('[data-surface-deep-switch] [role="tab"]')].map((row) =>
+      row.getAttribute("aria-selected"),
+    ),
+  ).toEqual(["false", "false", "false", "false"]);
+});
+
+it("lists each layer with what stands there, and a locked layer with its lock and what opens it", () => {
   const layers = { layers: [0, 1, 2] as const, shown: 1 as const, go };
   act(() =>
     root.render(
-      <PlaceMenu
+      <PlaceSwitch
         isMapView
         layers={layers}
         onGoRealm={vi.fn()}
         onGoSurface={vi.fn()}
-        lines={{ realm: "2 / 6 plots", surface: "1 army", 1: "1 army", 2: "0 armies", 3: "0 armies" }}
+        lines={{ surface: "1 army", 1: "1 army", 2: "0 armies", 3: "0 armies" }}
       />,
     ),
   );
   act(() => document.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
-  const rows = [...document.querySelectorAll<HTMLButtonElement>('[role="tab"]')].map((row) => [
-    row.getAttribute("aria-label"),
-    row.querySelector(".frontier-place-row__line")?.textContent ?? null,
-    row.dataset.locked === "true",
-  ]);
+  const rows = [...document.querySelectorAll<HTMLButtonElement>('[data-surface-deep-switch] [role="tab"]')].map(
+    (row) => [
+      row.getAttribute("aria-label"),
+      row.querySelector(".frontier-place-row__line")?.textContent ?? null,
+      row.dataset.locked === "true",
+    ],
+  );
   expect(rows).toEqual([
-    ["Realm", "2 / 6 plots", false],
     ["Surface", "1 army", false],
     ["Veil", "1 army", false],
     ["Hollow", "0 armies", false],

@@ -32,17 +32,17 @@ export const FrontierTopBar = ({
 type TopBarViewProps = {
   stocks: Stocks;
   clock: ReactNode;
-  placeMenu?: ReactNode;
+  placeSwitch?: ReactNode;
   quest?: ReactNode;
   notice?: ReactNode;
   spectatorChip?: ReactNode;
   realmCard?: ReactNode;
 };
 
-export const TopBarView = ({ stocks, clock, placeMenu, quest, notice, spectatorChip, realmCard }: TopBarViewProps) => (
+export const TopBarView = ({ stocks, clock, placeSwitch, quest, notice, spectatorChip, realmCard }: TopBarViewProps) => (
   <div className="frontier-phone-top">
     <div className="frontier-bar pointer-events-auto">
-      {placeMenu}
+      {placeSwitch}
       <StockChips {...stocks} />
       <div className="frontier-bar__day">{clock}</div>
     </div>

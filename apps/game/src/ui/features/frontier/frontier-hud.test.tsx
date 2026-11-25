@@ -1140,7 +1140,7 @@ it("keeps Chat reachable from its strip at the bottom right while visiting anoth
   }
 });
 
-it("orders the desktop places as Research, Feed, Season, Settings, lists the five places in the dropdown, and returns to Realm on the crest", async () => {
+it("orders the desktop places as Research, Feed, Season, Settings, sets Realm beside the four layers' menu, and returns to Realm on the crest", async () => {
   viewport.set(1440);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
@@ -1155,7 +1155,7 @@ it("orders the desktop places as Research, Feed, Season, Settings, lists the fiv
     const placeTabs = [...document.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) =>
       tab.getAttribute("aria-label"),
     );
-    expect(placeTabs).toEqual(["Realm", "Surface", "Veil", "Hollow", "Deep"]);
+    expect(placeTabs).toEqual(["Realm", "Map view, Surface", "Surface", "Veil", "Hollow", "Deep"]);
     await act(async () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
     const crest = host.querySelector<HTMLButtonElement>(".frontier-realm-card__identity")!;
     expect(crest.querySelector('img[src*="portraits"]')).toBeNull();

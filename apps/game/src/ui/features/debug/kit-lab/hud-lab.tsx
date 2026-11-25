@@ -60,7 +60,6 @@ import { BuildingCardView, type CardMakes } from "@/ui/features/frontier/buildin
 import { buildingIcon, buildingName } from "@/ui/features/frontier/build/building-names";
 import { nativeResearchConstants as research, nativeStructureConstants } from "@bibliothecadao/eternum/game-client";
 import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
-import { useRealmPlots } from "@/ui/features/frontier/build/build-sheet";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
 import { FRONTIER_STORES, STORE_KINDS } from "@/ui/features/frontier/stores";
 import { type StoreReading } from "@/ui/features/frontier/hud/status-strip";
@@ -84,10 +83,10 @@ import { fragmentsToFill, RefillButton, RefillConfirm, RefillPrice } from "@/ui/
 import { OathSockets } from "@/ui/features/frontier/army/oath-slots";
 import { ShopCodeField, ShopView } from "@/ui/features/frontier/shop/shop-sheet";
 import { labQuestRulesFact } from "@/lab/game/quest-scenario";
-import { DayMedallion } from "@/ui/features/frontier/hud/day-pill";
+import { DayPill } from "@/ui/features/frontier/hud/day-pill";
 import { DailyQuestChip } from "@/ui/features/frontier/hud/daily-quest-chip";
 import type { MapLayers } from "@/ui/features/frontier/hud/map-layers";
-import { PlaceMenu, placeLines } from "@/ui/features/frontier/hud/surface-deep-switch";
+import { PlaceSwitch, placeLines } from "@/ui/features/frontier/hud/surface-deep-switch";
 import { WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 
@@ -826,8 +825,8 @@ export const HudLab = () => {
         strip={
           <TopBarView
             stocks={{ stores: [...lab.stores], realmName: LAB_REALM_NAME, onOpenRealm: noop }}
-            clock={<DayMedallion clock={lab.clock} size={52} />}
-            placeMenu={<LabPlaceMenu lab={lab} />}
+            clock={<DayPill clock={lab.clock} compact />}
+            placeSwitch={<LabPlaceSwitch lab={lab} />}
             quest={<LabDailyQuest />}
             realmCard={lab.storeCard && <LabRealmCard lab={lab} />}
           />
@@ -1207,20 +1206,16 @@ const LabDailyQuest = () => {
 
 const labQuestFacts = () => [labQuestRulesFact()];
 
-const LabPlaceMenu = ({ lab }: { lab: LabState }) => {
-  const { setup } = useGame();
-  const plots = useRealmPlots(setup.store.get("Structure", { game_id: 1, entity_id: 7 }) ?? null);
-  return (
-    <PlaceMenu
-      isMapView={lab.realmView === undefined}
-      layers={LAB_MAP_LAYERS}
-      onGoRealm={noop}
-      onGoSurface={noop}
-      realm={{ mark: homeIcon("realm", 1) }}
-      lines={placeLines(lab.armies, plots)}
-    />
-  );
-};
+const LabPlaceSwitch = ({ lab }: { lab: LabState }) => (
+  <PlaceSwitch
+    isMapView={lab.realmView === undefined}
+    layers={LAB_MAP_LAYERS}
+    onGoRealm={noop}
+    onGoSurface={noop}
+    realm={{ mark: homeIcon("realm", 1) }}
+    lines={placeLines(lab.armies)}
+  />
+);
 
 const LabRealmCard = ({ lab }: { lab: LabState }) => (
   <RealmCard
@@ -1253,10 +1248,10 @@ const LabBands = ({
     {() =>
       desktop ? (
         <FrontierDesktop
-          clock={<DayMedallion clock={lab.clock} />}
+          clock={<DayPill clock={lab.clock} />}
           quest={<LabDailyQuest />}
           placeSwitch={
-            <PlaceMenu
+            <PlaceSwitch
               isMapView={lab.realmView === undefined}
               layers={LAB_MAP_LAYERS}
               onGoRealm={noop}

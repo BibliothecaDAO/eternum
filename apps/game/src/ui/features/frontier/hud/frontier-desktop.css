@@ -3,30 +3,21 @@
   top: theme(spacing.4);
   left: 50%;
   z-index: theme(zIndex.hud-rail);
-  display: grid;
-  width: 380px;
+  display: flex;
   height: 40px;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  grid-template-rows: 40px;
   align-items: center;
-  gap: theme(spacing.4);
+  gap: theme(spacing[2.5]);
   transform: translateX(-50%);
 }
-.frontier-crown > :first-child {
-  justify-self: end;
-}
-.frontier-crown > :nth-child(3) {
-  justify-self: start;
-}
 .frontier-crown .frontier-place-pill {
-  width: 142px;
-  height: 40px;
-  justify-content: space-between;
-  border-radius: var(--hud-radius-control);
+  min-width: 132px;
+  gap: theme(spacing.2);
+  padding: 0 theme(spacing.3);
 }
 .frontier-crown .frontier-place-pill__name {
   flex: 1;
   font-size: var(--hud-text-label);
+  text-align: left;
 }
 .frontier-crown .frontier-quest-orb {
   height: 40px;
@@ -66,11 +57,8 @@
   font-size: 0;
   box-shadow: 0 0 6px var(--hud-good);
 }
-.frontier-crown .frontier-day-dial {
-  margin-top: 6px;
-}
 .frontier-place-popover[data-layout="desktop"] {
-  --popover-width: 142px;
+  --popover-width: 192px;
   padding: theme(spacing.1);
 }
 .frontier-place-popover[data-layout="desktop"] .frontier-place-row {
@@ -86,9 +74,6 @@
   font-size: var(--hud-text-label);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-.frontier-place-popover[data-layout="desktop"] .frontier-place-row__line {
-  display: none;
 }
 
 .frontier-notices {
