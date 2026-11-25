@@ -2,7 +2,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { openPlace } from "@/play/navigation/open-place";
-import { nativeAspectRoster } from "@/shell/season-tab/aspect-roster";
+import { nativeAspectRoster } from "@/shell/season-tab/glory-rows";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
 import { ASPECT_PAGE_WORDS } from "@/ui/design-system/kit/words";
 import { configManager, getStructureName, Position } from "@bibliothecadao/eternum";

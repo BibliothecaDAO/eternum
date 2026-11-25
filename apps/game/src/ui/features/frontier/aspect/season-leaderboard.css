@@ -36,7 +36,7 @@
   flex-direction: column;
   gap: theme(spacing[1.5]);
   border: 1px solid var(--hud-line);
-  border-top: 2px solid rgb(var(--aspect-rgb, var(--hud-accent)));
+  border-top: 2px solid rgb(var(--hud-aspect, var(--hud-gold)));
   border-radius: var(--hud-radius-control);
   background: var(--hud-well);
   padding: theme(spacing.2) theme(spacing[2.5]);
@@ -86,10 +86,10 @@
   background: var(--hud-divider);
 }
 .season-aspect__stages i[data-done] {
-  background: rgb(var(--aspect-rgb, var(--hud-accent)));
+  background: rgb(var(--hud-aspect, var(--hud-gold)));
 }
 .season-aspect__stages i[data-now] {
-  background: rgb(var(--aspect-rgb, var(--hud-accent)) / 0.5);
+  background: rgb(var(--hud-aspect, var(--hud-gold)) / 0.5);
 }
 .season-aspect__pool,
 .season-aspect__members {
@@ -271,11 +271,11 @@
   .season-board[data-standing] .season-standing {
     display: flex;
   }
-  .season-board[data-standing] .season-board__glory .app-board-scroll {
+  .season-board[data-standing] .season-board__rows {
     display: none;
   }
-  .season-board .app-board-scroll {
-    --app-board-rows: 7 !important;
+  .season-board__rows {
+    max-height: calc(var(--hud-control) * 8);
   }
   .season-board__phone-foot {
     display: flex;
@@ -289,4 +289,30 @@
   .season-board__phone-foot b {
     color: rgb(var(--hud-ink));
   }
+}
+.season-board__rows {
+  min-height: 0;
+  max-height: calc(var(--hud-control) * 10);
+  overflow-y: auto;
+}
+.season-row__order {
+  display: none;
+}
+@media (min-width: 768px) {
+  .season-row__order {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: theme(spacing.1);
+    color: var(--hud-muted);
+    font-size: var(--hud-text-label);
+  }
+}
+.season-row__glory {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: theme(spacing.1);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--hud-weight-strong);
 }

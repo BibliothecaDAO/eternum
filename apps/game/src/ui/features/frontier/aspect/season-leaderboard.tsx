@@ -1,21 +1,34 @@
 import "./season-leaderboard.css";
 
-import type { HeraldAspectRoster } from "@bibliothecadao/eternum/game-sync";
 import { aspectName, aspects, formatCount, formatExact, formatShort, type AspectId } from "@bibliothecadao/types";
 import { useState, type CSSProperties, type ReactNode } from "react";
 
-import { gloryBoardEntry, mergeAspectRosters } from "@/shell/season-tab/aspect-roster";
+import { type GloryRoster, type GloryRow, gloryRowOf, mergeAspectRosters } from "@/shell/season-tab/glory-rows";
 import { aspectVariables } from "@/tokens";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { AppBoard, AppTabs } from "@/ui/design-system/kit/app-elements";
-import { HudButton, HudChip, HudMeter, HudPage } from "@/ui/design-system/kit/hud-elements";
+import { aspectMeaning } from "@/ui/design-system/icon-meaning";
+import {
+  HudButton,
+  HudChip,
+  HudMeter,
+  HudPage,
+  HudPlaceMedal,
+  HudTableHead,
+  HudTableRow,
+  HudTabs,
+} from "@/ui/design-system/kit/hud-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import { ASPECT_PAGE_WORDS, PLAY_WORDS, SEASON_BOARD_WORDS as WORDS, SEASON_WORDS } from "@/ui/design-system/kit/words";
+import {
+  ASPECT_PAGE_WORDS,
+  PLAY_WORDS,
+  RANK,
+  SEASON_BOARD_WORDS as WORDS,
+  SEASON_WORDS,
+} from "@/ui/design-system/kit/words";
+import { LordName } from "../board/realm-marks";
 import { RefusedVerb } from "../refused-verb";
-
-export type GloryRoster = Pick<HeraldAspectRoster, "total" | "members">;
 
 export interface SeasonAspect {
   aspectId: AspectId;
@@ -57,7 +70,8 @@ export interface SeasonLeaderboardProps {
   onClose: () => void;
 }
 
-const BOARD_ROWS = 9;
+const COLS = "2rem 1.25rem minmax(0, 1fr) 4rem";
+const COLS_WIDE = "2.25rem 1.5rem minmax(0, 1fr) minmax(0, 9rem) 4.5rem";
 const TRIUMPH_ICONS: Record<keyof typeof ASPECT_PAGE_WORDS.triumph, IconMeaning> = {
   1: "eye",
   2: "cloud-lightning",
@@ -93,18 +107,12 @@ export const SeasonLeaderboard = (props: SeasonLeaderboardProps) => {
         <div className="season-board__main">
           <section className="season-board__glory" aria-label={SEASON_WORDS.gloryLeaderboard}>
             <div className="season-board__tabs">
-              <AppTabs
-                label={SEASON_WORDS.gloryLeaderboard}
+              <HudTabs<AspectId | 0>
                 value={tab}
                 onChange={setTab}
                 tabs={[
-                  { key: 0 as const, label: SEASON_WORDS.allPlayers },
-                  ...aspects.map(({ id, name }) => ({
-                    key: id,
-                    label: name,
-                    lead: <AspectMark aspect={id} size={18} decorative />,
-                    aspectId: id,
-                  })),
+                  { key: 0, label: SEASON_WORDS.allPlayers },
+                  ...aspects.map(({ id, name }) => ({ key: id, label: name, icon: aspectMeaning(id) })),
                 ]}
               />
               {standing && (
@@ -193,27 +201,63 @@ const GloryBoard = ({
   tab: AspectId | 0;
   ownEntityId: string | null;
 }) => {
-  if (tab === 0)
-    return (
-      <AppBoard
-        rows={BOARD_ROWS}
-        entries={mergeAspectRosters(rosters).rows.map(({ rank, member, aspect }) =>
-          gloryBoardEntry(rank, member, member.entity_id === ownEntityId, undefined, aspect),
-        )}
-      />
-    );
-  const roster = rosters.find((entry) => entry.aspect === tab)?.roster;
-  if (!roster || roster.members.length === 0)
+  const rows = gloryRows(rosters, tab, ownEntityId);
+  if (tab !== 0 && rows.length === 0)
     return <span className="season-board__empty">{SEASON_WORDS.aspectRosterEmpty(aspectName(tab))}</span>;
   return (
-    <AppBoard
-      rows={BOARD_ROWS}
-      entries={roster.members.map((member) =>
-        gloryBoardEntry(member.rank, member, member.entity_id === ownEntityId, undefined, tab),
-      )}
-    />
+    <div className="season-board__rows" role="table" aria-label={SEASON_WORDS.gloryLeaderboard}>
+      <HudTableHead cols={COLS} colsWide={COLS_WIDE}>
+        <span className="text-center">{RANK}</span>
+        <span className="col-span-2">{WORDS.player}</span>
+        <span className="season-row__order">{WORDS.order}</span>
+        <span className="text-right">{ASPECT_PAGE_WORDS.glory}</span>
+      </HudTableHead>
+      {rows.map((row) => (
+        <GloryTableRow key={row.key} row={row} />
+      ))}
+    </div>
   );
 };
+
+const gloryRows = (
+  rosters: readonly { aspect: AspectId; roster: GloryRoster }[],
+  tab: AspectId | 0,
+  ownEntityId: string | null,
+): GloryRow[] => {
+  if (tab === 0)
+    return mergeAspectRosters(rosters).rows.map(({ rank, member, aspect }) =>
+      gloryRowOf(rank, member, member.entity_id === ownEntityId, aspect),
+    );
+  const roster = rosters.find((entry) => entry.aspect === tab)?.roster;
+  return (roster?.members ?? []).map((member) =>
+    gloryRowOf(member.rank, member, member.entity_id === ownEntityId, tab),
+  );
+};
+
+const GloryTableRow = ({ row }: { row: GloryRow }) => (
+  <HudTableRow cols={COLS} colsWide={COLS_WIDE} label={`${row.rank}`} own={row.own}>
+    <span className="flex justify-center">
+      <HudPlaceMedal place={row.rank} size={24} below={row.rank} />
+    </span>
+    {row.aspect !== undefined ? <AspectMark aspect={row.aspect} size={20} decorative /> : <span />}
+    <span className="min-w-0">
+      <LordName account={row.owner} you={row.own} portrait />
+    </span>
+    <span className="season-row__order">
+      {row.order && (
+        <>
+          <OrderEmblem order={row.order.orderId} size={15} />
+          <span className="truncate">{row.order.orderName}</span>
+        </>
+      )}
+    </span>
+    <span className="season-row__glory">
+      <Icon name="victory" size={16} />
+      {row.glory}
+      <span className="sr-only">{` ${ASPECT_PAGE_WORDS.glory}`}</span>
+    </span>
+  </HudTableRow>
+);
 
 const Standing = ({
   standing,

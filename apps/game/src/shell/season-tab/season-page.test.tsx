@@ -117,7 +117,7 @@ reads.settled = NO_HISTORY;
 vi.spyOn(console, "error").mockImplementation(() => undefined);
 
 import { setViewportWidth } from "../frame/test-viewport";
-import { mergeAspectRosters } from "./aspect-roster";
+import { mergeAspectRosters } from "./glory-rows";
 import { SeasonPage } from "./season-page";
 
 /** Where a row led: the Results address it opened. */
@@ -495,7 +495,7 @@ it("merges Aspect rosters into one global Glory leaderboard sorted by compareAsp
     },
   ]);
   expect(merged.total).toBe(18);
-  expect(merged.rows).toHaveLength(10);
+  expect(merged.rows).toHaveLength(18);
   expect(merged.rows.slice(0, 4).map((row) => [row.rank, row.aspect, row.member.entity_id, row.member.glory])).toEqual([
     [1, 2, "1003", "400000000000"],
     [2, 2, "9", "250000000000"],

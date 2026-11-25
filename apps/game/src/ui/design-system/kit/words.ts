@@ -1076,6 +1076,8 @@ export const SEASON_BOARD_WORDS = {
   triumphs: (stage: number, stages: number) => `Aspect Triumphs · ${ASPECT_PAGE_WORDS.stage(stage, stages)}`,
   altar: `${DEEP} Altar charge`,
   standing: "Standing",
+  player: "Player",
+  order: "Order",
   footer: (rank: number, realm: string, glory: number) =>
     `${formatOrdinal(rank)} · ${realm} · ${formatExact(glory)} Glory`,
   footerPool: (pool: number, share: number) => `Pool ${formatShort(pool)} LORDS · ~${formatShort(share)} yours`,
