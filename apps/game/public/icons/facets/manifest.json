@@ -1644,6 +1644,11 @@
       "art": "bane-altar-curse",
       "label": "Altar Curse",
       "family": "Banes"
+    },
+    "poison": {
+      "art": "skull",
+      "label": "Deep poison",
+      "family": "Statuses"
     }
   },
   "resources": {

@@ -46,7 +46,9 @@ describe("a Deep site's card", () => {
     expect(beast.querySelector(".deep-beast__name")?.textContent).toBe(`${DEEP_BEASTS.foundation.name}Blade`);
     expect(beast.querySelector(".deep-beast__portrait [data-combat-mark='Blade']")).not.toBeNull();
     expect(beast.textContent).toContain("15,000 troops");
-    expect(beast.textContent).toContain("Guard drain while held: −200 / 2m");
+    expect(document.querySelector("[data-deep-poison]")?.textContent).toBe(
+      "Holding drains −200 troops / 2m (Deep poison)",
+    );
     expect(text()).not.toContain("Today's beast");
     const [attack] = labels(["Attack"]);
     act(() => attack!.click());
@@ -58,12 +60,14 @@ describe("a Deep site's card", () => {
     expect(document.querySelector("[data-deep-tag]")?.textContent).toBe("Held · Luminary");
     expect([...document.querySelectorAll("[data-rate]")].map((rate) => rate.textContent)).toEqual([
       "+300/ 2m+150/min · split by troops",
-      "−200/ 2mGuard drain per slot",
+      "−200/ 2mDeep poison per guard",
     ]);
     expect(document.querySelector("[data-aspect-holder='2']")?.textContent).toBe(
-      "Luminary· 2 / 4 Guards · 2 slots open",
+      "Luminary· 2 / 4 Guards · 2 slots open ·Poisoned",
     );
-    expect(document.querySelector("[data-deep-drain]")).toBeNull();
+    expect(document.querySelector("[data-deep-poison]")).toBeNull();
+    expect(document.querySelector("[data-deep-poisoned]")?.textContent).toBe("Poisoned");
+    expect(document.querySelector("[data-rate='drain'] [data-icon='poison']")).not.toBeNull();
   });
 
   it("shows a locked site's yields without its pay, and how many Realms have entered of the ones it needs", () => {
@@ -73,7 +77,7 @@ describe("a Deep site's card", () => {
     expect(document.querySelector("[data-deep-kinds]")?.textContent).toBe("GloryBane barRates set when open");
     expect(document.querySelector("[data-deep-opening]")?.textContent).toBe("Opens at 50 Realms today12 / 50");
     expect(document.querySelector("[data-deep-beast] [data-combat-mark='Bow']")).not.toBeNull();
-    expect(document.querySelector("[data-deep-beast]")?.textContent).not.toContain("Guard drain");
+    expect(document.querySelector("[data-deep-poison]")).toBeNull();
     expect(labels(["Attack"])).toHaveLength(0);
   });
 
@@ -102,7 +106,7 @@ describe("a Deep site's card", () => {
     expect(onMove).toHaveBeenCalledTimes(1);
   });
 
-  it("draws a rival's guards in fight order with detail in tooltips, and their drain when the rates hold none", () => {
+  it("draws a rival's guards in fight order with detail in tooltips, and the poison strip when the rates hold no drain", () => {
     const fixture = DEEP_SITE_CASES["Essence core held by a rival Aspect"];
     draw({
       ...fixture,
@@ -122,7 +126,9 @@ describe("a Deep site's card", () => {
     expect(tips[0]).toContain("Aldor · fought next");
     expect(tips[0]).toContain("60% of each tick");
     expect(tips[1]).toContain("40% of each tick");
-    expect(document.querySelector("[data-deep-drain]")?.textContent).toBe("−200 / tick");
+    expect(document.querySelector("[data-deep-poison]")?.textContent).toBe(
+      "Holding drains −200 troops / 2m (Deep poison)",
+    );
   });
 
   it("renders facing portraits named by their sides, each before → after, and stamina cost on Attack", () => {
@@ -143,6 +149,25 @@ describe("a Deep site's card", () => {
     expect(sides[0]!.getAttribute("aria-label")).toBe("Army 1 1,000 → 670, −330 · 33% lost");
     expect(sides[1]!.getAttribute("aria-label")).toContain("Havoc Guard 6,200 → 5,446");
     expect(document.querySelector("[data-attack-stamina='30']")).not.toBeNull();
+    expect(sides[1]!.querySelector("[data-aspect-mark='3']")).not.toBeNull();
+  });
+
+  it("shows the beast's fight in place of its row, the Blade or Bow on the beast's portrait", () => {
+    const fixture = DEEP_SITE_CASES["Hyperstructure archive, open, its beast, army in reach"];
+    draw({
+      ...fixture,
+      fight: {
+        army: 12_400,
+        defender: 15_000,
+        attackerTroops: { category: "Knight", tier: "T1" },
+        defenderTroops: { category: "Knight", tier: "T1" },
+        result: { troopsLost: 4_580, guardLeft: 0 },
+      },
+    });
+    expect(document.querySelector("[data-deep-beast]")).toBeNull();
+    const theirs = document.querySelector("[data-fight-side='theirs']")!;
+    expect(theirs.querySelector("[data-combat-mark='Blade']")).not.toBeNull();
+    expect(theirs.textContent).toContain("Defeated");
   });
 });
 

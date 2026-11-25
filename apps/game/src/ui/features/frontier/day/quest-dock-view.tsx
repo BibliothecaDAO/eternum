@@ -25,8 +25,7 @@ export interface DayQuestReading {
 }
 
 export interface BaneStanding extends BaneFace {
-  breaking: string;
-  clears: string;
+  standing: string;
 }
 
 export interface QuestDockProps {
@@ -123,7 +122,7 @@ const BaneLine = ({ bane }: { bane: BaneStanding }) => (
     </span>
     {bane.doubles && <span className="quest-dock__twice">{WORDS.twiceIfBroken}</span>}
     <span className="quest-dock__break">
-      {bane.breaking} · {bane.clears}
+      {bane.standing}
     </span>
   </span>
 );

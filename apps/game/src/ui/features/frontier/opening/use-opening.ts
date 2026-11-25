@@ -190,7 +190,7 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
     scoutExploreStamina: nativeRuleConstants.SCOUT_EXPLORE_STAMINA,
     exploreStamina: pickBase.revealStamina,
     dayLeftSeconds: clock.secondsLeft,
-    bane: bane ? baneFace(bane, setup.store, realm.game_id) : undefined,
+    bane: bane ? { name: baneFace(bane, setup.store, realm.game_id).name } : undefined,
   };
 }
 

@@ -275,13 +275,52 @@ button.deep-guard-empty:hover {
   border-color: rgb(var(--hud-accent));
   color: rgb(var(--hud-ink));
 }
-.deep-drain {
-  display: inline-flex;
-  flex: none;
+.deep-rate__value b[data-tone="poison"] {
+  color: var(--hud-poison);
+}
+.deep-poison-strip {
+  display: flex;
   align-items: center;
-  gap: theme(spacing.1);
-  font-size: var(--hud-text-strong);
-  line-height: var(--hud-leading-strong);
+  gap: theme(spacing[1.5]);
+  margin: 0 theme(spacing[2.5]);
+  border: 1px solid color-mix(in srgb, var(--hud-poison) 45%, transparent);
+  border-radius: var(--hud-radius-control);
+  background: color-mix(in srgb, var(--hud-poison) 10%, var(--hud-well));
+  padding: theme(spacing[1.5]) theme(spacing[2.5]);
+  font-size: var(--hud-text-label);
   font-weight: var(--hud-weight-strong);
-  white-space: nowrap;
+  color: var(--hud-poison);
+}
+.deep-poisoned {
+  font-weight: var(--hud-weight-strong);
+  color: var(--hud-poison);
+}
+.deep-guard-portrait {
+  border-color: var(--hud-poison);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--hud-poison) 55%, transparent);
+}
+.deep-guard-portrait__poison {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hud-poison);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-surface-to);
+}
+.deep-fight__aspect {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-surface-to);
 }

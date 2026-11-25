@@ -118,13 +118,13 @@ export const DeepSiteView = ({
     <HudSheet label={name} title={<DeepTitle site={site} name={name} tag={siteTag(ring, opening, guard)} />} onClose={onClose}>
       <div data-deep-site={site} className="deep-site">
         {rates ? <RateStrip rates={rates} /> : <LockedKinds site={site} />}
-        {fight && <FightPreview site={site} fight={fight} guard={guard} attackerName={attackerName} />}
-        <GuardStrip
-          site={site}
-          guard={guard}
-          pickBase={pickBase}
-          drain={rates && secondary?.kind !== "drain" ? rates : null}
-        />
+        {fight ? (
+          <FightPreview site={site} fight={fight} guard={guard} attackerName={attackerName} />
+        ) : (
+          <GuardStrip site={site} guard={guard} pickBase={pickBase} />
+        )}
+        {fight && guard.kind === "held" && <GuardStrip site={site} guard={guard} pickBase={pickBase} />}
+        {rates && secondary?.kind !== "drain" && <PoisonStrip rates={rates} />}
         {opening && <OpeningBar opening={opening} />}
       </div>
       <OrderFoot order={order} />
@@ -184,7 +184,7 @@ const secondaryRate = (rates: DeepRates): Rate =>
     ? { kind: "height", amount: rates.height, sub: DEEP_WORDS.heightCell }
     : rates.bar
       ? { kind: "bar", amount: rates.bar.perTick, sub: DEEP_WORDS.barCell }
-      : { kind: "drain", amount: rates.drain, sub: DEEP_WORDS.drainCell };
+      : { kind: "drain", amount: rates.drain, sub: DEEP_WORDS.poisonCell };
 
 const RATE_ICONS = {
   glory: "crown",
@@ -192,7 +192,7 @@ const RATE_ICONS = {
   essence: "essence",
   labor: "labor",
   bar: "flame",
-  drain: "attack",
+  drain: "poison",
 } as const satisfies Record<Rate["kind"], IconMeaning>;
 
 const RateStrip = ({ rates }: { rates: DeepRates }) => {
@@ -208,7 +208,7 @@ const RateStrip = ({ rates }: { rates: DeepRates }) => {
         >
           <span className="deep-rate__value">
             <Icon name={RATE_ICONS[rate.kind]} size={18} />
-            <b data-tone={rate.kind === "drain" ? "bad" : undefined}>
+            <b data-tone={rate.kind === "drain" ? "poison" : undefined}>
               {rate.kind === "drain" ? `−${formatExact(rate.amount)}` : `+${formatExact(rate.amount)}`}
             </b>
             <i>{DEEP_WORDS.perTick(cadenceOf(rates))}</i>
@@ -237,6 +237,13 @@ const LockedKinds = ({ site }: { site: DeepSiteProps["site"] }) => (
     ))}
     <span className="deep-kinds__note">{DEEP_WORDS.ratesWhenOpen}</span>
   </div>
+);
+
+const PoisonStrip = ({ rates }: { rates: DeepRates }) => (
+  <span data-deep-poison className="deep-poison-strip">
+    <Icon name="poison" size={14} />
+    {DEEP_WORDS.poisonStrip(rates.drain, cadenceOf(rates))}
+  </span>
 );
 
 const OpeningBar = ({ opening }: { opening: { entered: number; realms: number } }) => (
@@ -270,6 +277,14 @@ const FightPreview = ({
   const defenderLabel = guard.kind === "beast" ? DEEP_BEASTS[site].name : (frontGuard?.realm ?? TROOPS);
   const defenderArt =
     guard.kind === "beast" ? beastMeaning(beastModel(DEEP_BEASTS[site])) : troopMeaning(fight.defenderTroops);
+  const defenderBadge =
+    guard.kind === "beast" ? (
+      <CombatBadge category={guard.category} />
+    ) : guard.kind === "held" ? (
+      <span className="deep-fight__aspect" aria-hidden="true">
+        <AspectMark aspect={guard.aspectId} size={14} decorative />
+      </span>
+    ) : null;
   return (
     <FightArena
       ours={{
@@ -280,7 +295,12 @@ const FightPreview = ({
       }}
       theirs={{
         label: defenderLabel,
-        mark: <Icon name={defenderArt} size={96} className="size-full" />,
+        mark: (
+          <span className="relative block size-full">
+            <Icon name={defenderArt} size={96} className="size-full" />
+            {defenderBadge}
+          </span>
+        ),
         before: fight.defender,
         kept: result?.guardLeft,
       }}
@@ -300,23 +320,7 @@ const slotTip = (slot: DeepSlot, next: boolean, pickBase: PickEffectBase): strin
   ].join(" · ");
 };
 
-const guardDrainLabel = (slots: readonly DeepSlot[]): string | null => {
-  if (slots.length === 0) return null;
-  const losses = slots.map((slot) => slot.lossPerTick);
-  const min = Math.min(...losses);
-  const max = Math.max(...losses);
-  return min === max ? DEEP_WORDS.drainTick(min) : DEEP_WORDS.drainRange(min, max);
-};
-
-const BeastRow = ({
-  site,
-  guard,
-  drain,
-}: {
-  site: DeepSiteProps["site"];
-  guard: Extract<DeepGuard, { kind: "beast" }>;
-  drain: DeepRates | null;
-}) => (
+const BeastRow = ({ site, guard }: { site: DeepSiteProps["site"]; guard: Extract<DeepGuard, { kind: "beast" }> }) => (
   <div data-deep-beast className="deep-beast">
     <span className="deep-beast__portrait">
       <Icon name={beastMeaning(beastModel(DEEP_BEASTS[site]))} size={48} className="size-full" />
@@ -328,9 +332,6 @@ const BeastRow = ({
         <span className="deep-beast__tag">{combatMarkOf(guard.category).label}</span>
       </span>
       <b className="deep-beast__troops">{DEEP_WORDS.troops(guard.troops)}</b>
-      {drain && (
-        <span className="deep-beast__drain">{DEEP_WORDS.drainWhileHeld(drain.drain, cadenceOf(drain))}</span>
-      )}
     </span>
   </div>
 );
@@ -339,14 +340,12 @@ const GuardStrip = ({
   site,
   guard,
   pickBase,
-  drain,
 }: {
   site: DeepSiteProps["site"];
   guard: DeepGuard;
   pickBase: PickEffectBase;
-  drain: DeepRates | null;
 }) => {
-  if (guard.kind === "beast") return <BeastRow site={site} guard={guard} drain={drain} />;
+  if (guard.kind === "beast") return <BeastRow site={site} guard={guard} />;
   if (guard.kind === "open") return <HudRow lead={<Icon name="flag" size={32} />} title={DEEP_WORDS.open} />;
   const filled = FIGHT_ORDER.flatMap((slot) => {
     const held = guard.slots.find((each) => each.slot === slot);
@@ -366,7 +365,10 @@ const GuardStrip = ({
         <span className={guard.ally ? "text-hud-ally" : "text-hud-bad"}>{aspectName(guard.aspectId)}</span>
         <span>
           · {DEEP_WORDS.guardsCount(guard.slots.length, nativeRuleConstants.DEEP_GUARD_SLOTS)} ·{" "}
-          {DEEP_WORDS.slotsOpen(free.length)}
+          {DEEP_WORDS.slotsOpen(free.length)} ·
+        </span>
+        <span data-deep-poisoned className="deep-poisoned">
+          {DEEP_WORDS.poisoned}
         </span>
       </div>
       <div className="deep-guards">
@@ -390,6 +392,9 @@ const GuardStrip = ({
                   size={44}
                   className="size-full"
                 />
+                <span className="deep-guard-portrait__poison" aria-hidden="true">
+                  <Icon name="poison" size={12} />
+                </span>
                 <span className="deep-guard-portrait__aspect" aria-hidden="true">
                   <AspectMark aspect={guard.aspectId} size={16} decorative />
                 </span>
@@ -408,12 +413,7 @@ const GuardStrip = ({
             </span>
           ))}
         </div>
-        {drain && guardDrainLabel(guard.slots) && (
-          <span data-deep-drain className="deep-drain">
-            <Icon name="attack" size={16} />
-            <span className="tabular-nums text-hud-bad">{guardDrainLabel(guard.slots)}</span>
-          </span>
-        )}
+
       </div>
       {frontGuard && (
         <div data-guard-oaths={frontGuard.oaths} className="flex flex-wrap items-center gap-1.5 empty:hidden">
