@@ -93,7 +93,14 @@ button.frontier-stock-chips[aria-expanded="true"] {
   gap: theme(spacing[1.5]);
 }
 .frontier-phone-float__quest {
+  display: flex;
+  align-items: flex-start;
+  gap: theme(spacing.2);
   margin-right: 2px;
+}
+.frontier-phone-float__quest > [data-daily-quest] {
+  min-width: 0;
+  flex: 1;
 }
 .frontier-phone-float:has([data-daily-quest]) {
   flex-wrap: wrap;
@@ -103,7 +110,7 @@ button.frontier-stock-chips[aria-expanded="true"] {
   flex-basis: 100%;
 }
 .frontier-phone-float:has([data-daily-quest]) .frontier-phone-float__quest {
-  margin-left: auto;
+  flex-basis: 100%;
 }
 .frontier-place-pill {
   height: 34px;
