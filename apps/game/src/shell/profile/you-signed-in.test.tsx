@@ -27,16 +27,17 @@ vi.mock("../herald", async (importOriginal) => ({
 }));
 
 import { identityClient } from "@/hooks/context/identity-session";
+import { setViewportWidth } from "../frame/test-viewport";
+import { SEASON_SPENDS_FRAGMENTS } from "../season";
+import { ProfilePage, SettingsRedirect } from "./profile-pages";
 import {
   COSMETICS_WORDS,
   INVITED_FRIENDS_WORDS,
   INVITE_WORDS,
   PROFILE_WORDS,
+  REWARD_WORDS,
   SEASON_INVITE_WORDS,
 } from "@/ui/design-system/kit/words";
-import { setViewportWidth } from "../frame/test-viewport";
-import { SEASON_SPENDS_FRAGMENTS } from "../season";
-import { ProfilePage, SettingsRedirect } from "./profile-pages";
 
 let currentLocation = { pathname: "", search: "", hash: "" };
 const TrackLocation = () => {
@@ -91,7 +92,7 @@ describe.each([1440, 390])("You, signed in, at %i px", (width) => {
     signedIn.games = [{ mode: "blitz", status: "Live" }];
     const active = await open("/profile", width);
     expect(active.textContent).not.toContain("Link a wallet to carry a rating");
-    expect(active.textContent).not.toContain("Blitz rating");
+    expect(active.textContent).not.toContain(REWARD_WORDS.rating);
   });
 
   it("swaps Overview, Referrals, Wallet and Settings inline on /profile and syncs the URL hash", async () => {
@@ -102,7 +103,7 @@ describe.each([1440, 390])("You, signed in, at %i px", (width) => {
     await act(async () => tabs.at(-1)!.click());
     expect(page.querySelector("[data-you-tab]")?.getAttribute("data-you-tab")).toBe("settings");
     expect(currentLocation).toMatchObject({ pathname: "/profile", hash: "#settings" });
-    expect(page.textContent).toContain("Notifications");
+    expect(page.textContent).toContain(PROFILE_WORDS.notifications);
     expect(page.textContent).toContain("Sign out");
   });
 });
@@ -126,9 +127,9 @@ it("sends a desktop's You Cosmetics to the Cosmetics place", async () => {
 it("keeps the desktop's games plate with no finished game, saying they will show there", async () => {
   const page = await open("/profile", 1440);
   const games = [...page.querySelectorAll("section, .plate")].find((element) =>
-    element.textContent?.startsWith("Recent games"),
+    element.textContent?.startsWith(PROFILE_WORDS.recentGames),
   );
-  expect(games?.textContent).toContain("Your finished games will show here.");
+  expect(games?.textContent).toContain(PROFILE_WORDS.noGamesOwn);
 });
 
 it("redirects /profile/settings to /profile#settings and keeps the phone lockup across tabs", async () => {

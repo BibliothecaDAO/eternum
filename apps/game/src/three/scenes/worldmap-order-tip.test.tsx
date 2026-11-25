@@ -2,7 +2,7 @@ import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useNamedTips } from "@/ui/design-system/kit/named-tips";
 import { orderTip } from "@/ui/features/frontier/hud/order-tip";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
-import { ORDER_REFUSAL_WORDS } from "@/ui/design-system/kit/words";
+import { ATTACK_REFUSAL_WORDS, ORDER_REFUSAL_WORDS } from "@/ui/design-system/kit/words";
 import { type ActionPath, ActionType, type OrderRefusal } from "@bibliothecadao/eternum";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -162,8 +162,8 @@ describe("the line under a still pointer", () => {
     expect(shownLine()).toBeNull();
 
     // This click's own order refused in turn says its own words.
-    pointer.sayRefusal({ col: 1, row: 0 }, "Not enough stamina");
-    expect([shownLine(), shownAt()]).toEqual(["Not enough stamina", { x: 400, y: 300 }]);
+    pointer.sayRefusal({ col: 1, row: 0 }, ATTACK_REFUSAL_WORDS["insufficient-stamina"]);
+    expect([shownLine(), shownAt()]).toEqual([ATTACK_REFUSAL_WORDS["insufficient-stamina"], { x: 400, y: 300 }]);
   });
 
   it("leaves another surface's tooltip in place of a refusal while the camera moves", () => {

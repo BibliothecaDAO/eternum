@@ -11,7 +11,7 @@ import {
   BUILDINGS_GROUPS,
   buildingModelPaths,
   CAMP_MODEL_PATH,
-  CLEARED_SITE_MODEL_PATH,
+  SUPPLY_POST_STANDARD_MODEL_PATH,
   getStructureModelPaths,
   REALM_MODEL_PATHS,
   RiftModelPath,
@@ -43,16 +43,13 @@ describe("orientation follows the models drawn", () => {
     }
   });
 
-  it.each([StructureType.Camp, StructureType.Rift, StructureType.Ruin, StructureType.Beasts])(
-    "faces the cleared standard identically after category %s, without a standing beast",
-    (category) => {
-      const clearedPath = catalog[category].at(-1)!;
-      expect(clearedPath).toBe(CLEARED_SITE_MODEL_PATH);
-      for (let direction = 0; direction < 6; direction++) {
-        expect(resolveStructureRotationY([clearedPath], (direction * Math.PI) / 3)).toBe(0);
-      }
-    },
-  );
+  it("faces the supply post's standard to the camera at every tile rotation", () => {
+    const standard = catalog[StructureType.Camp].at(-1)!;
+    expect(standard).toBe(SUPPLY_POST_STANDARD_MODEL_PATH);
+    for (let direction = 0; direction < 6; direction++) {
+      expect(resolveStructureRotationY([standard], (direction * Math.PI) / 3)).toBe(0);
+    }
+  });
 
   it.each(Object.entries(FRONTIER_BEASTS))(
     "faces %s toward the camera alone or with either landmark at every tile rotation",

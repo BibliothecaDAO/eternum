@@ -21,6 +21,7 @@ vi.mock("@/pwa/install-state", () => ({ useInstall: () => ({ install: account.in
 
 import { accountAnswers, leaveThePage } from "@/shell/standing-prompts-fixture";
 import { AlertsPopup } from "./alerts-popup";
+import { ADD_TO_HOME_SCREEN, ALERTS_POPUP } from "@/ui/design-system/kit/words";
 
 let service = accountAnswers();
 
@@ -112,7 +113,7 @@ it("stays closed on a device that cannot read what the account answered", async 
 
 it("turns this device on and lifts an Off level to Important in the tap, and closes", async () => {
   await open();
-  await press("Turn on alerts");
+  await press(ALERTS_POPUP.turnOn);
   expect(device.toggle).toHaveBeenCalledOnce();
   expect(account.save).toHaveBeenCalledWith("important");
   expect(read()).toBeNull();
@@ -129,7 +130,7 @@ it("tells an iPhone's browser to install first, and its button installs", async 
     ],
     buttons: ["Not now", "Add to Home Screen"],
   });
-  await press("Add to Home Screen");
+  await press(ADD_TO_HOME_SCREEN);
   expect(account.install).toHaveBeenCalledOnce();
   expect(device.toggle).not.toHaveBeenCalled();
 });
@@ -160,11 +161,11 @@ it("holds the keyboard: focus moves into it, Tab goes round its two buttons, the
     const dialog = document.body.querySelector("[role='dialog']")!;
     expect(dialog.contains(document.activeElement)).toBe(true);
     expect(hud.closest("[inert]")).not.toBeNull();
-    button("Turn on alerts")!.focus();
+    button(ALERTS_POPUP.turnOn)!.focus();
     await key("Tab");
     expect(document.activeElement).toBe(button("Not now"));
     await key("Tab", true);
-    expect(document.activeElement).toBe(button("Turn on alerts"));
+    expect(document.activeElement).toBe(button(ALERTS_POPUP.turnOn));
     await press("Not now");
     expect(read()).toBeNull();
     expect(hud.closest("[inert]")).toBeNull();

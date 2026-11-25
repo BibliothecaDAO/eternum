@@ -4,6 +4,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 
 // The app's own pages and frame, signed in or not; the chat's sockets never answer, and the store is the real one.
 const session = vi.hoisted(() => ({
@@ -123,7 +124,7 @@ describe("chat in the app, on a phone", () => {
   it("asks a player not signed in to sign in, and opens no chat", async () => {
     session.current = null;
     await open("/chat", 390);
-    expect(host.querySelector('[data-band="body"]')!.textContent).toContain("Sign in to chat");
+    expect(host.querySelector('[data-band="body"]')!.textContent).toContain(CHAT_WORDS.signInToChat);
     expect(useRealtimeChatStore.getState().client).toBeNull();
   });
 });

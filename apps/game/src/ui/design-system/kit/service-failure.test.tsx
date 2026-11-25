@@ -2,13 +2,14 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
+import { SEASON_ERROR } from "./words";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
 describe("the failure owner", () => {
   it.each([
     ["directory", "Games unavailable."],
-    ["season", "Season unavailable."],
+    ["season", SEASON_ERROR],
     ["results", "Results unavailable."],
   ] as const)("names %s in its one line, with Try again on it", (service, line) => {
     const markup = renderToStaticMarkup(
@@ -19,6 +20,6 @@ describe("the failure owner", () => {
   });
 
   it("offers no step when there is nothing to try again", () => {
-    expect(text(renderToStaticMarkup(<ServiceFailure service="season" error={null} />))).toBe("Season unavailable.");
+    expect(text(renderToStaticMarkup(<ServiceFailure service="season" error={null} />))).toBe(SEASON_ERROR);
   });
 });

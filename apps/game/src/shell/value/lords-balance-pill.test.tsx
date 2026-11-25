@@ -50,6 +50,7 @@ import { PageFrame } from "../frame/page-frame";
 import { setViewportWidth } from "../frame/test-viewport";
 import type { DirectoryGame } from "../herald";
 import { useRedeemSealCode } from "../play/seal-code";
+import { ANCIENT_SEAL } from "@bibliothecadao/types";
 
 const directoryGame = (fragments: number | null, ancient_seal: boolean): DirectoryGame =>
   ({
@@ -171,7 +172,7 @@ describe.each([
     expect(seal).not.toBeNull();
     expect(seal.getAttribute("aria-label")).toBe("Your Ancient Seal is held");
     expect(seal.getAttribute("title")).toBe("Your Ancient Seal is held");
-    expect(seal.textContent).toBe("Ancient Seal");
+    expect(seal.textContent).toBe(ANCIENT_SEAL);
   });
 
   it("shows LORDS, Fragments, and exactly one Ancient Seal when both a redeemed code and an on-chain seal are held", async () => {
