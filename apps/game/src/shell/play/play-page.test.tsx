@@ -8,7 +8,6 @@ import { aspects, ordersOfAspect, questCatalog, questObjective } from "@biblioth
 import { nativeQuestConstants } from "@bibliothecadao/eternum/game-client";
 import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
 
-
 import release from "../../../../../contracts/l3/world-native/schema/release-definition.json";
 
 import type { SeasonCalendar } from "../season-calendar";

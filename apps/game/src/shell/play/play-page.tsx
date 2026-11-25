@@ -1,7 +1,14 @@
 import "./play-page.css";
 
 import type { HeraldAspectRace } from "@bibliothecadao/eternum/game-sync";
-import { aspectName, formatExact, questCatalog, questObjective, type AspectId, type QuestId } from "@bibliothecadao/types";
+import {
+  aspectName,
+  formatExact,
+  questCatalog,
+  questObjective,
+  type AspectId,
+  type QuestId,
+} from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import { Icon } from "@/ui/design-system/icon";

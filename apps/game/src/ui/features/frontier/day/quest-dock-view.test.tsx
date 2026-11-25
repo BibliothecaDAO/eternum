@@ -32,9 +32,7 @@ describe("the quest dock", () => {
     draw(QUEST_DOCK_CASES["Quest running"]);
     expect(host.querySelector("aside")?.getAttribute("aria-label")).toBe("Prowess: Daily Quest: Camp-breakers");
     const { quest, reading } = QUEST_DOCK_CASES["Quest running"];
-    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe(
-      questLine(quest, reading.target),
-    );
+    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe(questLine(quest, reading.target));
     expect([...host.querySelectorAll('[role="meter"]')].map((meter) => meter.getAttribute("aria-label"))).toEqual([
       DAY_BANNER_WORDS.count(reading.progress, reading.target, quest.unit),
     ]);

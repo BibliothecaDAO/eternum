@@ -418,7 +418,7 @@ export const frontierPhrases = (
             .slice(offset, offset + config.realmMaxLevel)
             .map(n)
             .join(" / ");
-          return `${head.name} ${head.rule}. ${q.name}: ${q.objective} ${targets}`;
+          return `${head.name} ${head.rule}. ${q.name}: ${questObjective(q)} ${targets}`;
         }),
         ...Object.entries(aspectWords.triumph).map(([stageKey]) => {
           const stage = Number(stageKey);
