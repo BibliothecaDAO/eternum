@@ -1,5 +1,10 @@
 import { afterEach, expect, it } from "vitest";
-import { getGuardsByStructure, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import {
+  dayAtIndex,
+  getGuardsByStructure,
+  readExpeditionRules,
+  setBlockTimestampSource,
+} from "@bibliothecadao/eternum";
 import {
   nativeBaneConstants,
   nativeRaceConstants,
@@ -9,16 +14,23 @@ import {
 import { raceRules } from "@/lab/game/race-scenario";
 import { readPlateReward } from "@/three/map-plates/plate-reward";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { gameRegistryRow } from "../../../../../../../packages/core/src/test-support/game-registry";
+import { frontierSeasonOnePreset } from "../../../../../../../config/source/frontier/season-one";
 import { campBeside, relicEffectFact, SITE_TILE } from "./site-fixture";
 import { readSiteCard } from "./site-card-plan";
 import { readClearedSite } from "./site-receipt";
 
 const ENTITY = (7n << 32n) + 710n;
+const BANE_DAY = frontierSeasonOnePreset.banes.quietDays;
 afterEach(() => setBlockTimestampSource(null));
 
 function effectSite(blood: boolean, pale: boolean, spoils = false) {
   const fixture = campBeside("Camp", true, 100n, ENTITY);
   const { store } = fixture;
+  store.applyFacts([
+    { model: "GameRegistry", key: "0x3", value: gameRegistryRow({ end_at: "10000", scheduled_end_at: "10000" }) },
+  ] as never);
+  const at = dayAtIndex(readExpeditionRules(store, 1)!, BANE_DAY).start + 50;
   store.applyFacts([
     { model: "RaceRules", key: "0xa001", value: raceRules() },
     { model: "HomeAspect", key: "0xa002", value: { game_id: 1, home: 7n, aspect: 1 } },
@@ -27,7 +39,7 @@ function effectSite(blood: boolean, pale: boolean, spoils = false) {
       key: "0xa003",
       value: {
         game_id: 1,
-        chance_step: 20,
+        chance_step: frontierSeasonOnePreset.banes.chanceStep,
         quorum_percent: 25,
         beast_percent: 150,
         stamina_percent: 50,
@@ -38,15 +50,15 @@ function effectSite(blood: boolean, pale: boolean, spoils = false) {
     {
       model: "WorldBane",
       key: "0xa004",
-      value: { game_id: 1, day: 1n, kind: blood ? nativeBaneConstants.BLOOD_MOON : 0 },
+      value: { game_id: 1, day: BigInt(BANE_DAY), kind: blood ? nativeBaneConstants.BLOOD_MOON : 0 },
     },
-    { model: "AspectActivity", key: "0xa005", value: { game_id: 1, aspect: 1, day: 0n, active: 4 } },
+    { model: "AspectActivity", key: "0xa005", value: { game_id: 1, aspect: 1, day: BigInt(BANE_DAY - 1), active: 4 } },
     ...(pale
       ? [
           {
             model: "TriumphDay",
             key: "0xa006",
-            value: { game_id: 1, aspect: 1, stage: nativeRaceConstants.PALE_MOON_STAGE, day: 1n },
+            value: { game_id: 1, aspect: 1, stage: nativeRaceConstants.PALE_MOON_STAGE, day: BigInt(BANE_DAY) },
           },
         ]
       : []),
@@ -55,14 +67,15 @@ function effectSite(blood: boolean, pale: boolean, spoils = false) {
           {
             model: "TriumphDay",
             key: "0xa007",
-            value: { game_id: 1, aspect: 1, stage: nativeRaceConstants.SPOILS_STAGE, day: 1n },
+            value: { game_id: 1, aspect: 1, stage: nativeRaceConstants.SPOILS_STAGE, day: BigInt(BANE_DAY) },
           },
         ]
       : []),
   ] as never);
-  setBlockTimestampSource(() => 450);
+  setBlockTimestampSource(() => at);
   return {
     ...fixture,
+    at,
     site: store.require("ExpeditionSite", { game_id: 1, entity_id: ENTITY }),
     structure: store.require("Structure", { game_id: 1, entity_id: ENTITY }),
   };
@@ -96,14 +109,18 @@ it("resolves effects through the actual realm ID inside a home namespace", () =>
 });
 
 it("stops Blood Moon at the recorded quorum while preserving Pale Moon and base losses", () => {
-  const { store, site, structure } = effectSite(true, true);
+  const { store, site, structure, at } = effectSite(true, true);
   const guard = store.require("Guard", { game_id: 1, structure_id: ENTITY, slot: 0 });
   store.applyFacts([
     { model: "Guard", key: "0x73", value: { ...guard, troops: { ...guard.troops, count: 800_000_000_000n } } },
-    { model: "BaneProgress", key: "0xa008", value: { game_id: 1, aspect: 1, day: 1n, completed: 1, ended_at: 460n } },
+    {
+      model: "BaneProgress",
+      key: "0xa008",
+      value: { game_id: 1, aspect: 1, day: BigInt(BANE_DAY), completed: 1, ended_at: BigInt(at + 10) },
+    },
   ]);
   expect(readSiteCard(store, site, structure, null).guard?.count).toBe(600);
-  setBlockTimestampSource(() => 460);
+  setBlockTimestampSource(() => at + 10);
   expect(readSiteCard(store, site, structure, null).guard?.count).toBe(400);
 });
 
@@ -154,13 +171,13 @@ it("leaves the Deep unchanged and refuses unknown effect facts", () => {
 });
 
 it("composes Spoils with Plunder at the selected attack second", () => {
-  const { store, site, structure, attack } = effectSite(false, false, true);
-  const action = { ...attack({ col: 41, row: 12, alt: false }), timestamp: 450 };
-  store.applyFacts([relicEffectFact("Plunder", 1, 500)]);
+  const { store, site, structure, attack, at } = effectSite(false, false, true);
+  const action = { ...attack({ col: 41, row: 12, alt: false }), timestamp: at };
+  store.applyFacts([relicEffectFact("Plunder", 1, at + 50)]);
   expect(readSiteCard(store, site, structure, action)).toMatchObject({
     payout: { amount: 1980, fits: 1980 },
   });
-  expect(readSiteCard(store, site, structure, { ...action, timestamp: 500 })).toMatchObject({
+  expect(readSiteCard(store, site, structure, { ...action, timestamp: at + 50 })).toMatchObject({
     payout: { amount: 1650, fits: 1650 },
   });
 });
