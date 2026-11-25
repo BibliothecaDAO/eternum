@@ -42,9 +42,10 @@ sent an army into the Deep that day:
 ## The {FRONTIER.deep.sitesCount} site kinds and their beasts
 
 Every game day, fresh beasts guard every open Deep site. Deep beasts take no tick drain and do not respawn once cleared
-that day. The army that clears a Deep site's beast or last rival guard moves onto the site and becomes its guard; an
-unguarded site is open for the next army to walk into. Held sites pay out on every army tick
-({FRONTIER.stamina.tickMinutes} minutes):
+that day. Select any open site to see its beast portrait and blade or bow badge, its per-tick payout rates, and its
+green poison drain icon. Locked sites show only the reward kinds they pay until their ring opens. The army that clears a
+Deep site's beast or last rival guard moves onto the site and becomes its guard; an unguarded site is open for the next
+army to walk into. Held sites pay out on every army tick ({FRONTIER.stamina.tickMinutes} minutes):
 
 | Site                                                                 | Beast guard                                                                                                               | Mark                            | Bring                          | What holding it pays          |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------ | ----------------------------- |
@@ -65,8 +66,9 @@ site, split among its surviving guards by troop count.
   once the beast is cleared by standing beside the site. Allies can never attack allies.
 - **Tick order (drain before pay):** every tick ({FRONTIER.stamina.tickMinutes} minutes), every army in the Deep gains
   +{FRONTIER.stamina.perTick} stamina and loses {FRONTIER.deep.lossPerTick} troops (reduced to
-  {FRONTIER.oaths.vitriolLoss} per tick with the Vitriol Oath). When an army reaches 0 troops, it is destroyed. Held
-  sites then pay only the guards that survived the tick, split by their troop count.
+  {FRONTIER.oaths.vitriolLoss} per tick with the Vitriol Oath). Guarding armies show a green poison drain mark on their
+  token, list row, and panel. When an army reaches 0 troops, it is destroyed. Held sites then pay only the guards that
+  survived the tick, split by their troop count.
 - **Strike or wait:** because rival guards lose {FRONTIER.deep.lossPerTick} troops every tick, waiting lets you attack a
   weaker guard later while the holder earns ticks in the meantime.
 - **Attack order:** rival attackers fight one guard at a time, starting with the **last army that joined**. Guards keep

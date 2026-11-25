@@ -34,7 +34,7 @@ import {
   RELIC_KINDS,
   relicMeaning,
 } from "../../../game/src/ui/design-system/domain-icon-meaning";
-import { ASPECT_PAGE_WORDS, RELIC_WORDS } from "../../../game/src/ui/design-system/kit/words";
+import { ASPECT_PAGE_WORDS, BUILD_GROUPS, RELIC_WORDS } from "../../../game/src/ui/design-system/kit/words";
 import { oathEffectDescription, oathName } from "../../../game/src/ui/features/frontier/army/oath-details";
 import { triumphHead, worldBaneHead } from "./bane-faces";
 import { relicEffect } from "../../../game/src/ui/features/frontier/relics/relic-catalog";
@@ -678,6 +678,7 @@ export const FRONTIER = {
     scout: FRONTIER_TROOP_NAMES[TroopType.Paladin],
   },
   buildingsCount: n(FRONTIER_BUILDING_TYPES.length),
+  buildGroups: BUILD_GROUPS,
   buildings: frontierBuildings,
   buildingIcons: {
     farm: buildingMeaning(research.FARM, true),
