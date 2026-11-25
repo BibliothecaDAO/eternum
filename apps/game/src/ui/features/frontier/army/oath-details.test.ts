@@ -43,6 +43,15 @@ const cadence = formatDuration(RULES.tick_config.armies_tick_in_seconds);
 
 const percent = (value: number) => formatPercent(value / 100);
 const signed = (value: number) => formatPercent(value / 100, { signed: true });
+const inReadingOrder = (text: string, figures: readonly string[]) => {
+  let from = 0;
+  for (const figure of figures) {
+    const at = text.indexOf(figure, from);
+    if (at === -1) return false;
+    from = at + figure.length;
+  }
+  return true;
+};
 
 const CONDITIONS: Record<number, readonly string[]> = {
   [oaths.VITRIOL]: [cadence],
@@ -73,9 +82,13 @@ const FIGURES: Record<number, readonly string[]> = {
   [oaths.BRILLIANCE]: [signed(oaths.BRILLIANCE_PAY_PERCENT - 100)],
   [oaths.RAGE]: [signed(oaths.RAGE_PAY_PERCENT - 100)],
   [oaths.ANGER]: [String(attack), String(oaths.ANGER_ATTACK_STAMINA)],
-  [oaths.TITANS]: [String(knightMax), String(knightMax + oaths.TITANS_STAMINA)],
-  [oaths.ENLIGHTENMENT]: [signed((oaths.ENLIGHTENMENT_REGEN_BPS - 10_000) / 100), formatRate(perSecond)],
-  [oaths.FOX]: [String(reveal)],
+  [oaths.TITANS]: [formatGain(oaths.TITANS_STAMINA), String(knightMax), String(knightMax + oaths.TITANS_STAMINA)],
+  [oaths.ENLIGHTENMENT]: [
+    signed((oaths.ENLIGHTENMENT_REGEN_BPS - 10_000) / 100),
+    formatRate(perSecond),
+    formatRate((perSecond * oaths.ENLIGHTENMENT_REGEN_BPS) / 10_000),
+  ],
+  [oaths.FOX]: [String(reveal), String(Math.floor((reveal * (100 - oaths.FOX_REVEAL_DISCOUNT_PERCENT)) / 100))],
   [oaths.SKILL]: [signed(oaths.SKILL_DAMAGE_PERCENT)],
   [oaths.FURY]: [formatGain(Math.floor((attack * oaths.FURY_REFUND_PERCENT) / 100))],
   [oaths.TWINS]: [signed(oaths.TWINS_DAMAGE_PERCENT)],
@@ -100,7 +113,7 @@ describe("an Oath's card", () => {
     for (const oath of named) {
       const { hero, unit } = card(oath, TroopType.Knight);
       expect(FIGURES[oath], oathName(oath)).not.toBeUndefined();
-      for (const figure of FIGURES[oath]!) expect(`${hero} ${unit}`, oathName(oath)).toContain(figure);
+      expect(inReadingOrder(`${hero} ${unit}`, FIGURES[oath]!), oathName(oath)).toBe(true);
     }
     const texts = named.map((oath) => oathEffectDescription(oath, baseOf(TroopType.Knight)));
     expect(new Set(texts).size).toBe(named.length);
