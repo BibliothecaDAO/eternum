@@ -144,7 +144,7 @@ function readFlagAnchors(flags, fitPath) {
 
 function placeFlagAnchors(fit) {
   const matrix = buildFitMatrix(fit);
-  const round = (value) => Math.round(value * 10_000) / 10_000;
+  const round = (value) => Math.round(value * 10_000) / 10_000 || 0;
   return fit.flags.map(({ role, position, size, facing }) => ({
     role,
     position: new Vector3(...position).applyMatrix4(matrix).toArray().map(round),
