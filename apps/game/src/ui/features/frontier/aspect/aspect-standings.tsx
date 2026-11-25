@@ -57,9 +57,9 @@ const AspectStandingRow = ({
       className="race-row"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="flex min-w-0 items-center justify-between gap-2">
-          <span className="flex min-w-0 items-center gap-1.5">
-            <AspectMark aspect={standing.aspectId} size={22} decorative />
+        <div className="flex min-w-0 items-center justify-between gap-1.5">
+          <span className="flex min-w-0 items-center gap-1">
+            <AspectMark aspect={standing.aspectId} size={18} decorative />
             <span className="race-row__name truncate text-hud-body">{name}</span>
           </span>
           <span className="shrink-0 text-hud-strong tabular-nums text-hud-ink">{formatExact(standing.height)}</span>

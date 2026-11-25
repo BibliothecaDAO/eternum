@@ -6,7 +6,7 @@
   border-left: 3px solid rgb(var(--hud-aspect));
   border-radius: var(--hud-radius-control);
   background: var(--hud-well);
-  padding: theme(spacing.2) theme(spacing.3);
+  padding: theme(spacing.2);
 }
 .race-row[data-own] {
   border-color: rgb(var(--hud-aspect));
