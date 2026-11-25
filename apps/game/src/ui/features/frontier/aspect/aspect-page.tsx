@@ -36,13 +36,7 @@ export function useAspectBoard() {
   return readRaceBoard(setup.store, configManager.getActiveGameId(), home?.entity_id ?? null);
 }
 
-export function FrontierAspectPage({
-  day,
-  onClose,
-}: {
-  day?: { day: number; lastDay: number };
-  onClose: () => void;
-}) {
+export function FrontierAspectPage({ day, onClose }: { day?: { day: number; lastDay: number }; onClose: () => void }) {
   const { setup } = useGame();
   const { isMapView } = useQuery();
   const reading = useAspectBoard();

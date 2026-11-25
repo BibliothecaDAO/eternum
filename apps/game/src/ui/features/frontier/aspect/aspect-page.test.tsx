@@ -51,7 +51,9 @@ describe("the race board from native facts", () => {
       [4, false, 9_000],
     ]);
     expect(page.players).toBe(7);
-    expect(page.rosters.map(({ aspect, roster }) => [aspect, roster.members.map(({ entity_id }) => entity_id)])).toEqual([
+    expect(
+      page.rosters.map(({ aspect, roster }) => [aspect, roster.members.map(({ entity_id }) => entity_id)]),
+    ).toEqual([
       [1, ["9", "7"]],
       [2, ["11", "12"]],
       [3, ["13", "14"]],

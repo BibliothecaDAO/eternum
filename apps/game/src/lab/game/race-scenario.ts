@@ -136,7 +136,11 @@ function rivalMembers(model: NativeRows["Structure"]): GameSyncFact[] {
           ...model,
           entity_id: home,
           owner: `0x${(0x333n + BigInt(index)).toString(16)}`,
-          metadata: { ...model.metadata, realm_id: realm, order: ordersOfAspect(aspect as AspectId)[index % 4]!.orderId },
+          metadata: {
+            ...model.metadata,
+            realm_id: realm,
+            order: ordersOfAspect(aspect as AspectId)[index % 4]!.orderId,
+          },
         }),
       },
       { model: "HomeAspect", key: `0xa58${index}`, value: { game_id: 1, home: String(home), aspect } },
@@ -151,11 +155,13 @@ function rivalMembers(model: NativeRows["Structure"]): GameSyncFact[] {
         }),
       },
     ]),
-    ...[...counts].map(([aspect, members]): GameSyncFact => ({
-      model: "AspectMembers",
-      key: `0xa5a${aspect}`,
-      value: { game_id: 1, aspect, members },
-    })),
+    ...[...counts].map(
+      ([aspect, members]): GameSyncFact => ({
+        model: "AspectMembers",
+        key: `0xa5a${aspect}`,
+        value: { game_id: 1, aspect, members },
+      }),
+    ),
   ];
 }
 

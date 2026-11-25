@@ -1375,10 +1375,16 @@ describe("the Season 1 rehearsal", () => {
         `Ashfall · ${DEEP_WORDS.facesNext} · 2,800 · ${DEEP_WORDS.drainTick(70)} · ${DEEP_WORDS.lasts(14, "28m")} · ${DEEP_WORDS.share(100)}`,
       ),
     ).toEqual({ ticks: 14, share: 100, troops: 2800 });
-    expect(
-      readAspectTally({ height: "1240", glory: "42.5", bar: "30" }),
-    ).toEqual({ height: 1240, glory: 42.5, bar: 30 });
-    expect(readAspectTally({ height: null, glory: "", bar: undefined })).toEqual({ height: null, glory: null, bar: null });
+    expect(readAspectTally({ height: "1240", glory: "42.5", bar: "30" })).toEqual({
+      height: 1240,
+      glory: 42.5,
+      bar: 30,
+    });
+    expect(readAspectTally({ height: null, glory: "", bar: undefined })).toEqual({
+      height: null,
+      glory: null,
+      bar: null,
+    });
   });
 
   it("judges a tick paid only when the guard drained and each tally rose by whole ticks of the card's pay", () => {

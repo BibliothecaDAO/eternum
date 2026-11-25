@@ -162,7 +162,11 @@ const AspectStrip = ({
         </span>
         <span className="season-aspect__stages" aria-label={ASPECT_PAGE_WORDS.stage(aspect.stage, stages)}>
           {Array.from({ length: stages }, (_, index) => (
-            <i key={index} data-done={index < aspect.stage - 1 || undefined} data-now={index === aspect.stage - 1 || undefined} />
+            <i
+              key={index}
+              data-done={index < aspect.stage - 1 || undefined}
+              data-now={index === aspect.stage - 1 || undefined}
+            />
           ))}
         </span>
         <span className="season-aspect__foot">
@@ -288,7 +292,13 @@ const Standing = ({
   </aside>
 );
 
-const GoToDeep = ({ goToDeep, short = false }: { goToDeep: NonNullable<SeasonLeaderboardProps["goToDeep"]>; short?: boolean }) =>
+const GoToDeep = ({
+  goToDeep,
+  short = false,
+}: {
+  goToDeep: NonNullable<SeasonLeaderboardProps["goToDeep"]>;
+  short?: boolean;
+}) =>
   "go" in goToDeep ? (
     <HudButton kind="primary" icon="spire" onClick={goToDeep.go}>
       {short ? WORDS.deep : ASPECT_PAGE_WORDS.goToDeep}

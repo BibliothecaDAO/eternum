@@ -1138,16 +1138,15 @@ finisher. Canonical proof: `playtest --steps lab-race-expired`.
 - The interface opens as the player plays: a Season 1 HUD shows the day's quest and clock at launch, the stores of
   troops and Essence, the building list, an army's stamina, the research place, the bane's banner and bar and the Today
   week as each moment is reached (Barracks built, a guard found, Essence held, a bane on the Aspect). The Season page's
-  Glory board shows from the start. One line says each moment, once per
-  account. **Settings, Show everything** turns every part on. Reached moments and told lines are kept on the identity
-  account (`/api/opening`).
+  Glory board shows from the start. One line says each moment, once per account. **Settings, Show everything** turns
+  every part on. Reached moments and told lines are kept on the identity account (`/api/opening`).
 - The first Deep line carries the offer **Alert me when a Deep site can be taken**; Turn on raises the notification
   level to Important and turns this device on.
 - The day banner heads with the player's active Triumph and shows the Aspect's bane bar.
 - **Season**: each Aspect's place, height and worth in LORDS (shown only), every player's Glory on one board, and
-  **Invite a friend to your Aspect** (Post on X, Copy link). A friend who opens the link is offered that
-  Aspect first when founding. The invite (here, on Play, Season, You and before the season) shows only when identity
-  makes one: an account with no Aspect in the season game, or none picked before it, gets no invite and no error.
+  **Invite a friend to your Aspect** (Post on X, Copy link). A friend who opens the link is offered that Aspect first
+  when founding. The invite (here, on Play, Season, You and before the season) shows only when identity makes one: an
+  account with no Aspect in the season game, or none picked before it, gets no invite and no error.
 - An invite's landing (`/s/<code>`): **<name> invites you**, **Join <Aspect>** with its four Orders' crests and members,
   "Members of one Aspect never fight each other." and the Order the sharer kept; before the season **Starts in …** and,
   signed out, **Create your Realm**. Lab: `/lab/app/preseason-invited/s/MRGHT234`; proof: `build.sh prove-season-one`.
