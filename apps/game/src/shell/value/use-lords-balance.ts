@@ -38,6 +38,7 @@ export type LordsReading = number | "reading" | "failed";
 export const useLordsBalance = (owner: string | null) => {
   const funds = useWalletFunds(owner);
   const lords = funds.data ? lordsOf(funds.data.balance) : null;
-  const reading: LordsReading = lords ?? (funds.isError ? "failed" : "reading");
+  const unreadable = funds.isError || environmentLedger() === null;
+  const reading: LordsReading = lords ?? (unreadable ? "failed" : "reading");
   return { owner, lords, reading };
 };

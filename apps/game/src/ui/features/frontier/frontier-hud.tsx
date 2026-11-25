@@ -586,6 +586,7 @@ const useRankUp = (own: NativeRows["Structure"] | null): RealmRankUp | undefined
 };
 
 const useWalletLords = (): LordsReading => {
-  const { payer } = usePayer();
-  return useLordsBalance(payer ?? null).reading;
+  const { payer, failed } = usePayer();
+  const { reading } = useLordsBalance(payer ?? null);
+  return failed ? "failed" : reading;
 };

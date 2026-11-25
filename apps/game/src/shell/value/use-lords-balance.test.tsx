@@ -3,17 +3,20 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 
-const ledger = vi.hoisted(() => ({ fail: false }));
+const ledger = vi.hoisted(() => ({ fail: false, missing: false }));
 
 vi.mock("./ledger", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./ledger")>()),
-  environmentLedger: () => ({
-    lordsToken: async () => {
-      if (ledger.fail) throw new Error("RPC 429");
-      return "0x124";
-    },
-    balanceOf: async () => 1_000n * 10n ** 18n,
-  }),
+  environmentLedger: () =>
+    ledger.missing
+      ? null
+      : {
+          lordsToken: async () => {
+            if (ledger.fail) throw new Error("RPC 429");
+            return "0x124";
+          },
+          balanceOf: async () => 1_000n * 10n ** 18n,
+        },
 }));
 
 const { useLordsBalance } = await import("./use-lords-balance");
@@ -45,10 +48,11 @@ const read = async (owner: string | null) => {
 
 afterEach(() => {
   ledger.fail = false;
+  ledger.missing = false;
   vi.restoreAllMocks();
 });
 
-it("says the LORDS are being read while no payer is known, and their amount once the ledger answers", async () => {
+it("says the LORDS are being read while the payer is still being read, and their amount once the ledger answers", async () => {
   expect(await read(null)).toBe("reading");
   expect(await read("0x7")).toBe("1000");
 });
@@ -58,4 +62,9 @@ it("says the read failed, and logs it, when the ledger does not answer", async (
   const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
   expect(await read("0x7")).toBe("failed");
   expect(logged).toHaveBeenCalledWith("lords_balance_read_failed", expect.any(Error));
+});
+
+it("says the LORDS cannot be read in an environment with no ledger", async () => {
+  ledger.missing = true;
+  expect(await read("0x7")).toBe("failed");
 });
