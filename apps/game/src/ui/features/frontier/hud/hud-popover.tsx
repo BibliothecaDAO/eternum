@@ -23,8 +23,6 @@ const useOpenPopover = create<{ open: string | null; surface: boolean }>(() => (
 export const useSurfacePopoverShown = () => useOpenPopover((state) => state.open !== null && state.surface);
 export const closeHudPopover = () => useOpenPopover.setState({ open: null, surface: false });
 
-export const closeHudPopover = () => useOpenPopover.setState({ open: null });
-
 export const popoverAnchor = (trigger: Pick<DOMRect, "left" | "bottom" | "width">): { x: number; top: number } => ({
   x: Math.round(trigger.left + trigger.width / 2),
   top: Math.round(trigger.bottom + POPOVER_GAP),
