@@ -4072,7 +4072,7 @@ const RACE_BOARD_STATE = `JSON.stringify((() => {
   };
   return { race: read('[data-season-board] .season-board__aspects'), members: read('[data-season-board] .season-board__rows'),
     invite: read('[aria-label^="Invite a friend"]'), banner: read('[data-daily-quest]'),
-    scopes: window.__labChain?.scopes ?? [], ended: document.querySelector('[data-race-ended]')?.dataset.raceEnded ?? null };
+    scopes: window.__labChain?.scopes ?? [], ended: document.querySelector('[data-season-board] [data-race-ended]')?.dataset.raceEnded ?? null };
 })())`;
 
 /** What the opening interface shows: the line over the map, the places on the bar and the day banner's parts. */
