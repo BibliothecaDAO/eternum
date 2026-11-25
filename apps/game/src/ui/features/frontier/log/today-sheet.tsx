@@ -60,7 +60,7 @@ export const TodaySheet = ({
         </p>
         <HudMeter
           share={dayElapsedShare(clock) ?? 0}
-          tone={clock.tone}
+          tone={STORE_TONES[clock.tone].meter}
           label={phraseText(dayLeft(clock.secondsLeft))}
         />
       </div>

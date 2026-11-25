@@ -89,7 +89,7 @@ export function baneFace(day: BaneDay, store: NativeFactStore, gameId: number): 
 
 export const baneBroken = (day: BaneDay, now: number): boolean => day.endedAt !== 0 && day.endedAt <= now;
 
-export type BaneToday = BaneFace & { line: string };
+type BaneToday = BaneFace & { line: string };
 
 export const useBaneToday = (realm: NativeRows["Structure"] | null): BaneToday | null => {
   const { setup } = useGame();
