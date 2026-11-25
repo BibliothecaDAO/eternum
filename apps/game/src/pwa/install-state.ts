@@ -1,5 +1,7 @@
 import { create } from "zustand";
 
+import { isAppleMobile, isMacSafari } from "./browser-capabilities";
+
 export interface InstallPrompt extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
@@ -13,7 +15,9 @@ export const useInstallState = create<{ prompt: InstallPrompt | null; installed:
 
 /** Install: the browser's own prompt where it offers one (Chrome, Edge), else its steps as pictograms in a sheet. */
 export const useInstall = () => {
-  const installed = useInstallState((state) => state.installed);
+  const offered = useInstallState(
+    (state) => !state.installed && (state.prompt !== null || isAppleMobile() || isMacSafari()),
+  );
   const install = async () => {
     const { prompt } = useInstallState.getState();
     if (!prompt) return useInstallState.setState({ steps: true });
@@ -22,5 +26,5 @@ export const useInstall = () => {
     await prompt.prompt();
     await prompt.userChoice;
   };
-  return { installed, install };
+  return { offered, install };
 };

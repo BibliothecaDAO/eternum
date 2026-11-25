@@ -50,7 +50,7 @@ export const PlayPage = () => {
   const hasActiveRealm = leadFrontier !== null && leadFrontier.status === "Live" && hasSeasonRealm(leadFrontier);
   const playerAspect = facts.signedIn ? seasonPlayerAspect(leadFrontier) : null;
   return (
-    <PageFrame painting={firstVisit ? "dark-plains" : "brooding-plains"} stage={firstVisit} offersInstall>
+    <PageFrame painting={firstVisit ? "dark-plains" : "brooding-plains"} stage={firstVisit}>
       <div data-play-page className="play-grid">
         <section className="flex min-w-0 flex-col gap-3">
           <LeadOrState facts={facts} />

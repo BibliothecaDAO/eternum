@@ -6,6 +6,10 @@ export function isAppleMobile(): boolean {
   );
 }
 
+export function isMacSafari(): boolean {
+  return navigator.platform === "MacIntel" && /Version\/[\d.]+ Safari\//.test(navigator.userAgent);
+}
+
 /** Running as an installed app: a home-screen or desktop PWA, or either store app. Nothing offers to install it. */
 export function isInstalledApp(): boolean {
   return (
