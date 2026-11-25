@@ -110,6 +110,10 @@ export const rules = (colors, steps) => [
     pattern: /(?<![\w-])font-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)(?![\w-])/g,
   },
   { rule: "literal font size: use --hud-text-<role>", pattern: /font-size:\s*[\d.]+(?:px|rem)/g },
+  {
+    rule: "a gold rim: a surface takes the kit's rim (ui-popover, ui-pill, ui-row); gold is the primary button's",
+    pattern: /(?<![\w-])(?:border(?:-[a-z]+)*|outline(?:-color)?)\s*:[^;]*--hud-gold/g,
+  },
   // The browser draws a native select in its own colours, whatever the HUD's CSS says: the sheet's HudSelect replaces
   // it. No count allows one.
   { rule: "raw <select>: use HudSelect", pattern: /<select(?![\w-])/g, refused: true },

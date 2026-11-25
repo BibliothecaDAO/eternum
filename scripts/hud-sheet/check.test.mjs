@@ -15,6 +15,17 @@ test("a HUD file drawn only with the sheet passes", () =>
     [],
   ));
 
+test("a gold rim fails wherever a border or outline is written in it, and the kit's rim passes", () =>
+  assert.equal(
+    matches(`.a { border: 1.5px solid rgb(var(--hud-gold) / 0.8); }
+.b { border-color: color-mix(in srgb, rgb(var(--hud-gold)) 45%, var(--hud-line)); }
+.c { outline: 2px solid rgb(var(--hud-gold)); }
+.d { border-left-color: rgb(var(--hud-gold)); }
+.e { border: 1px solid var(--hud-line); border-color: var(--hud-line-top) var(--hud-line) var(--hud-line-bottom); }
+.f { color: rgb(var(--hud-gold)); background: rgb(var(--hud-gold) / 0.1); }`).length,
+    4,
+  ));
+
 test("a one-off size, colour, type size or weight fails, each where it is written", () =>
   assert.deepEqual(
     matches(`<div className="text-[11px] h-[38px] w-[var(--hud-control)] text-gold/70 bg-black/40 border-kit-line text-hud-muted/50 text-xs text-caption font-semibold" style={{ color: "#f3d08a" }} />
