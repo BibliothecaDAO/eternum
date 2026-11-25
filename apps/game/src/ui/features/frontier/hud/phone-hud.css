@@ -272,69 +272,8 @@ button.frontier-stock-chips[aria-expanded="true"] {
     padding: 0 theme(spacing.1);
   }
 }
-.frontier-army-tray {
-  display: flex;
-  flex-direction: column;
-  gap: theme(spacing[1.5]);
-}
-.frontier-army-tray__head {
-  display: flex;
-  align-items: flex-start;
-  gap: theme(spacing.2);
-}
-.frontier-army-tray__actions {
-  display: flex;
-  align-items: center;
-  gap: theme(spacing.2);
-}
-.frontier-army-tray__verbs {
-  display: flex;
-  flex: 1;
-  justify-content: flex-end;
-  gap: theme(spacing[1.5]);
-}
 [data-under-sheet]:has([data-army-action] > *) .frontier-phone-foot {
   display: none;
-}
-.frontier-picked-army__main {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  align-items: center;
-  gap: theme(spacing.3);
-  border: 0;
-  background: transparent;
-  padding: 0;
-  color: rgb(var(--hud-ink));
-  text-align: left;
-  cursor: pointer;
-}
-.frontier-picked-army__portrait {
-  position: relative;
-  width: 44px;
-  height: 44px;
-  flex: none;
-}
-.frontier-picked-army__portrait > .ui-portrait {
-  width: 44px;
-  height: 44px;
-}
-.frontier-picked-army__body {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: theme(spacing.1);
-}
-.frontier-picked-army__title {
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-title);
-  line-height: var(--hud-leading-title);
-  letter-spacing: 0.04em;
-  color: rgb(var(--hud-ink));
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .menu-tiles {
   display: grid;

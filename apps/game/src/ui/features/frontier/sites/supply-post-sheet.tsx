@@ -4,16 +4,16 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { HudButton, HudNotice, HudPortrait, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { REINFORCE, TROOPS } from "@/ui/design-system/kit/words";
+import { HudButton, HudChip, HudNotice, HudPortrait, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { REINFORCE, SUPPLY_POST, TROOPS } from "@/ui/design-system/kit/words";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { isSupplyPost, siteDisplayName } from "@bibliothecadao/eternum";
 import { formatExact, frontierTroopName } from "@bibliothecadao/types";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { ReinforceSheet, useReinforceRange } from "../army/reinforce";
 import { reinforcementSource } from "../army/reinforce-plan";
+import { TARGET_MARKS } from "./site-marks";
 
-/** The camp's existing receipt opens reinforcement from the clearing home's stores. */
 export function SupplyPostSheet({
   site,
   children,
@@ -42,19 +42,24 @@ export function SupplyPostSheet({
   const adjacent = usable
     ? armies.filter((army) => reinforcementSource(setup.store, realm, army.explorerId, now, supplyPost))
     : [];
-  const army = adjacent.find((entry) => entry.explorerId === chosen);
-  if (army && realm) return <ReinforceSheet realm={realm} army={army} supplyPost={supplyPost} onClose={onClose} />;
+  const army = adjacent.length === 1 ? adjacent[0] : adjacent.find((entry) => entry.explorerId === chosen);
+  const name = siteDisplayName(supplyPost);
+  if (army && realm)
+    return <ReinforceSheet realm={realm} army={army} post={{ id: supplyPost, name }} onClose={onClose} />;
   return (
-    <HudSheet label={`Supply post · ${siteDisplayName(supplyPost)}`} onClose={onClose}>
+    <HudSheet
+      label={SUPPLY_POST.title}
+      cue={<HudChip icons={[TARGET_MARKS.Camp.icon]}>{name}</HudChip>}
+      onClose={onClose}
+    >
       {children}
-      <HudNotice icon="flag" line="Reinforce your armies beside this camp until the day ends." />
+      <HudNotice icon="hourglass" line={SUPPLY_POST.until} />
       {realm &&
         adjacent.map((entry) => (
           <SupplyPostArmy
             key={entry.explorerId}
             realm={realm}
             army={entry}
-            primary={adjacent.length === 1}
             onChoose={() => setChosen(entry.explorerId)}
           />
         ))}
@@ -65,12 +70,10 @@ export function SupplyPostSheet({
 const SupplyPostArmy = ({
   realm,
   army,
-  primary,
   onChoose,
 }: {
   realm: NativeRows["Structure"];
   army: DockArmy;
-  primary: boolean;
   onChoose: () => void;
 }) => {
   const { plan, range } = useReinforceRange(realm, army);
@@ -90,7 +93,7 @@ const SupplyPostArmy = ({
           </span>
         </div>
       )}
-      <HudButton kind={primary ? "primary" : "secondary"} icon="military" onClick={onChoose}>
+      <HudButton kind="secondary" icon="military" onClick={onChoose}>
         {range.max > 0 ? REINFORCE.titleAmount(army.label, amount) : REINFORCE.title(army.label)}
       </HudButton>
     </>

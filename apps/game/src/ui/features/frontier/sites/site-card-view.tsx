@@ -1,11 +1,10 @@
 import type { FrontierBeast } from "@/three/structures/frontier-beast";
-import { type FirstStrikeSide } from "@bibliothecadao/eternum";
 import { type Troops, formatShort } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudButton, HudChip, HudCost, HudNotice, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
+import { HudButton, HudChip, HudNotice, HudPrice, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
+import { type Price } from "@/ui/design-system/kit/price-faces";
 import { type Reason, reasonLine } from "@/ui/design-system/kit/reasons";
 import {
   ON_ITS_WAY,
@@ -16,10 +15,9 @@ import {
   REALM,
   RELIC_WORDS,
   REST_DID_NOT_FIT,
-  SEASON_CLIMB,
   siteTitle,
   SITE_OATH,
-  SITES_CLEARED,
+  SUPPLY_POST,
   STORAGE,
   tooFarFrom,
   TROOPS,
@@ -59,10 +57,10 @@ export const SiteCardView = ({
   army,
   guard,
   fight,
-  firstStrike = null,
   pay,
   relic,
   holdsOath = false,
+  opensPost = false,
   cache,
   replacement,
   verb,
@@ -73,13 +71,13 @@ export const SiteCardView = ({
   site: AttackTargetKind;
   name?: string;
   beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: Troops["category"] }) | undefined;
-  army: { art: IconMeaning; troops: number; category?: Troops["category"] } | null;
+  army: { art: IconMeaning; troops: number } | null;
   guard: number | null | undefined;
   fight: SiteFight | undefined;
-  firstStrike?: FirstStrikeSide;
   pay: { icon: IconMeaning; amount: number; fits?: number } | null;
   relic?: ArmyRelic;
   holdsOath?: boolean;
+  opensPost?: boolean;
   cache?: number;
   replacement?: ReactNode;
   verb: SiteVerb | null;
@@ -94,9 +92,8 @@ export const SiteCardView = ({
   const guardIcon = beast ? beastMeaning(beast.beast) : "troops";
   const facing = facingOf(army, guard, fight);
   const lost = facing !== undefined && isArmyLost(facing);
-  const countsOnBoard = site !== "Army";
   const reward =
-    cache !== undefined || relic || pay || countsOnBoard ? (
+    cache !== undefined || relic || pay || holdsOath || opensPost ? (
       <Reward dimmed={facing !== undefined && !clears(facing)}>
         {cache !== undefined ? (
           <CachePay fragments={cache} />
@@ -106,20 +103,20 @@ export const SiteCardView = ({
           <Pay pay={pay} />
         ) : null}
         {holdsOath && (
-          <HudChip icons={["shrine"]} label={SITE_OATH.label} tip={SITE_OATH.rule}>
-            {SITE_OATH.holds}
+          <HudChip icons={["shrine"]} tip={SITE_OATH.rule}>
+            {SITE_OATH.label}
           </HudChip>
         )}
-        {countsOnBoard && (
-          <HudChip icons={["flag"]} label={SITES_CLEARED} tip={SEASON_CLIMB.rule}>
-            {SEASON_CLIMB.plusOne}
+        {opensPost && (
+          <HudChip icons={["flag"]} tip={SUPPLY_POST.rule}>
+            {SUPPLY_POST.chip}
           </HudChip>
         )}
       </Reward>
     ) : null;
   const what = beast?.name !== title ? beast?.name : undefined;
   return (
-    <HudSheet label={title} onClose={onClose}>
+    <HudSheet label={title} cue={<HudChip icons={[icon]}>{TARGET_MARKS[site].word}</HudChip>} onClose={onClose}>
       {armyless ? (
         <header className="flex items-center gap-3">
           {typeof guard === "number" ? (
@@ -135,14 +132,7 @@ export const SiteCardView = ({
         </header>
       ) : (
         <>
-          <FightPanel
-            army={army}
-            guard={guard}
-            facing={facing}
-            firstStrike={firstStrike}
-            beast={beast}
-            guardIcon={guardIcon}
-          />
+          <FightPanel army={army} guard={guard} facing={facing} beast={beast} guardIcon={guardIcon} />
           {(facing || reward) && (
             <div className="fight-spoils">
               {facing && <Outcome facing={facing} />}
@@ -210,14 +200,12 @@ const FightPanel = ({
   army,
   guard,
   facing,
-  firstStrike,
   beast,
   guardIcon,
 }: {
-  army: { art: IconMeaning; troops: number; category?: Troops["category"] } | null;
+  army: { art: IconMeaning; troops: number } | null;
   guard: number | null | undefined;
   facing: Facing | undefined;
-  firstStrike: FirstStrikeSide;
   beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: Troops["category"] }) | undefined;
   guardIcon: IconMeaning;
 }) => (
@@ -227,8 +215,6 @@ const FightPanel = ({
         ? {
             label: ARMY,
             mark: <SemanticIcon name={army.art} size={96} className="size-full" />,
-            category: army.category,
-            hitsFirst: firstStrike === "attacker",
             before: army.troops,
             kept: facing && armyLeft(facing),
           }
@@ -239,8 +225,6 @@ const FightPanel = ({
         ? {
             label: beast?.name ?? TROOPS,
             mark: <SemanticIcon name={guardIcon} size={96} className="size-full" />,
-            category: beast?.combatClass,
-            hitsFirst: firstStrike === "defender",
             before: guard,
             kept: facing?.fight.guardLeft,
           }
@@ -337,7 +321,7 @@ const FootNote = ({ verb, site }: { verb: SiteVerb; site: string }) => {
     case "blocked":
       return null;
     case "move":
-      return <HudCost line={costLine(verb.prices)} />;
+      return <HudPrice prices={verb.prices} />;
     default:
       return <HudNotice tone="warn" line={reasonLine(heldBack(verb, site))} />;
   }

@@ -28,7 +28,12 @@ import { payoutSprites, type SiteClear } from "./site-outcome";
 import { readClearedSite, SiteReceipt } from "./site-receipt";
 import { renderToStaticMarkup } from "react-dom/server";
 
-const CAMP: SiteClear = { siteId: 9, kind: "Camp", reward: { resourceId: ResourcesIds.Labor, amount: 550 } };
+const CAMP: SiteClear = {
+  siteId: 9,
+  kind: "Camp",
+  reward: { resourceId: ResourcesIds.Labor, amount: 550 },
+  troopsLost: 325,
+};
 
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -151,7 +156,7 @@ describe("the site-cleared moment", () => {
     const onRequest = (event: Event) => requested.push(event);
     window.addEventListener("rewardChestRequest", onRequest);
     try {
-      playSiteClear({ clear: { siteId: SITE, kind: "Ruin", reward: null }, at: { x: 1, y: 1 }, burst });
+      playSiteClear({ clear: { siteId: SITE, kind: "Ruin", reward: null, troopsLost: 0 }, at: { x: 1, y: 1 }, burst });
       vi.advanceTimersByTime(300);
       expect(burst).toHaveBeenCalledOnce();
       expect(plays).toEqual(["combat.victory", "site.clear"]);

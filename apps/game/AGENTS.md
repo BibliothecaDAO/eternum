@@ -597,9 +597,10 @@ The stamina effects paths are `/lab/game?scenario=stamina-mist` and `stamina-win
 its bar and Full in timer. `pnpm --dir apps/game playtest:landing lab-stamina-mist lab-stamina-wind` drives both
 recorded-effect fixtures at desktop and phone sizes. Native lifecycle tests prove Explore settlement and quorum timing.
 
-Supply posts: `/lab/game?scenario=supply-post`, select the cleared camp beside Army 1, choose Reinforce Army 1, then Max
-and Reinforce. `lab-supply-post` checks the signed camp ID and resulting army and home balances on desktop and phone,
-retaining the camp banner, reinforcement sheet and response evidence.
+Supply posts: `/lab/game?scenario=supply-post`, select the cleared camp beside Army 1: with one army beside it the sheet
+is that army's reinforcement, opening at Max (several armies are each offered first), then Reinforce. `lab-supply-post`
+checks the signed camp ID and resulting army and home balances on desktop and phone, retaining the camp banner,
+reinforcement sheet and response evidence.
 
 Scouts are raised in Deploy by selecting Scouts from the troop choices, then a count and an open army slot. The Scouts'
 Lodge opens at City and produces the separate Scout stock; it has no Scouting research. `--steps lab-scouts` uses
@@ -617,16 +618,18 @@ Deploy shows the current troop's capacity; an army's panel keeps its capacity fr
 and deploy an army with three slots on desktop and phone. These are lab proofs; native tests cover immutable army
 capacity.
 
-An earned Oath opens three cards at once, drawn at random from the Oaths the army does not hold, and blocks that army's
-commands until answered. Choose a card; with full slots, choose the held Oath it replaces, or Pass for the stamina shown
-on the button, capped at the army's maximum. The pick cannot be dismissed by Escape, Back or an outside press. One
-Redraw a pick swaps the card it is under for an Oath neither held nor shown, for the Fragments its button shows (none in
-the Deep); the playtest redraws the first card before it chooses. `lab-actions-oath-pick` and `lab-actions-oath-replace`
-play `/lab/game?scenario=oath-pick` and `oath-replace` on desktop and phone, recording the signed choice and resulting
-held Oath. Each path opens Delete, checks the Oath loss warning, cancels to retain the army, then confirms and checks
-the army and Oath record disappear. The freed slot retains its stamina. Native tests cover Shrine reveals, persistence,
-deletion and remustering with an empty Oath record; these browser proofs use recorded offers. `lab-oath-decline` and
-`lab-oath-pass-capped` check the pass reward, including overflow at the maximum.
+An earned Oath offers three cards, drawn at random from the Oaths the army does not hold, and blocks that army's
+commands until answered. It waits as a shrine on the army's token (the clear's Victory banner goes by itself first) and
+opens when the army is picked. Choose a card and Swear it with the gold button; with full slots, choose the held Oath it
+replaces, or Pass for the stamina shown on its row, capped at the army's maximum. The open pick cannot be dismissed by
+Escape, Back or an outside press. One Swap a pick replaces the card it is on with an Oath neither held nor shown, for
+the Fragments the head shows (none in the Deep); the swapped card reads New and the head Used. The playtest swaps the
+first card before it chooses. `lab-actions-oath-pick` and `lab-actions-oath-replace` play `/lab/game?scenario=oath-pick`
+and `oath-replace` on desktop and phone, recording the signed choice and resulting held Oath. Each path opens Delete,
+checks the Oath loss warning, cancels to retain the army, then confirms and checks the army and Oath record disappear.
+The freed slot retains its stamina. Native tests cover Shrine reveals, persistence, deletion and remustering with an
+empty Oath record; these browser proofs use recorded offers. `lab-oath-decline` and `lab-oath-pass-capped` check the
+pass reward, including overflow at the maximum.
 
 Vitriol changes the Deep's field and guard loss to its generated rule value. `/lab/game?scenario=oath-vitriol` and
 `lab-oath-vitriol` choose it through the Oath panel, read the reduced field drain, and join the Ethereal mine on desktop
@@ -650,5 +653,5 @@ troops. `tests/fixtures/oath-twins.txt` holds the contract and the client to the
 `tests/world/src/tests/oaths.cairo`) finds the companion through a real attack, and `attack-forecast.test.ts` finds the
 same one in the forecast.
 
-A stronger beast band at a personal depth holds an Oath: its site card shows "Holds an Oath" (the Shrine's painting)
-beside its pay, read from the same band rule the contract uses to open a pick on its clear.
+A stronger beast band at a personal depth holds an Oath: its site card shows "Oath" (the Shrine's painting) beside its
+pay, read from the same band rule the contract uses to open a pick on its clear.

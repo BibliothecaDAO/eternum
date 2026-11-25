@@ -1,6 +1,6 @@
 import "./oath-pick.css";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { configManager } from "@bibliothecadao/eternum";
 import { useDockArmies, type DockArmy } from "../hud/dock-armies";
@@ -12,14 +12,8 @@ import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { aspectVariables } from "@/tokens";
-import {
-  HudButton,
-  HudChip,
-  HudModalLayer,
-  HudPortrait,
-  HudWindow,
-  HudWindowFoot,
-} from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudModalLayer, HudPortrait } from "@/ui/design-system/kit/hud-elements";
+import { OATH_PICK } from "@/ui/design-system/kit/words";
 import { Icon } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -37,115 +31,121 @@ import { useFragmentsHeld } from "../value/fragments";
 import type { PickEffectBase } from "../pick-effect-format";
 import { usePickEffectBase } from "../pick-effect-text";
 import { oathEffectDescription, oathName, oathStatBadge } from "./oath-details";
-import { OathSlotPips } from "./oath-slots";
 
 const REDRAW_COST = nativeFragmentConstants.OATH_REROLL_FRAGMENTS;
 const REDRAW_PRICE = formatCount(REDRAW_COST, FRAGMENT, FRAGMENTS);
 
-export function FrontierOathPick({ realm }: { realm: NativeRows["Structure"] | null }) {
+const useWaitingPick = (explorerId: number) => {
   const { store } = useNativeFacts(["ArmyProgress"]);
+  const progress = store.get("ArmyProgress", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
+  return progress && progress.oath_pick !== 0 ? progress : undefined;
+};
+
+export const useOathWaiting = (explorerId: number) => useWaitingPick(explorerId) !== undefined;
+
+export function FrontierOathPick({ realm }: { realm: NativeRows["Structure"] | null }) {
   const allowed = useUIStore(canIssueOrders);
-  const armies = useDockArmies(realm);
+  const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
+  const army = useDockArmies(realm).find(({ explorerId }) => explorerId === selectedId);
   const fragments = useFragmentsHeld();
-  const waiting = allowed
-    ? armies.flatMap((army) => {
-        const progress = store.get("ArmyProgress", {
-          game_id: configManager.getActiveGameId(),
-          explorer_id: army.explorerId,
-        });
-        return progress && progress.oath_pick !== 0 ? [{ army, progress }] : [];
-      })[0]
-    : undefined;
-  const explorerId = waiting?.army.explorerId;
-  useEffect(() => {
-    if (explorerId === undefined) return;
-    useUIStore.getState().selectOnMap({ kind: "army", entityId: explorerId, tile: "own" });
-  }, [explorerId]);
-  if (!waiting) return null;
-  return (
-    <HudModalLayer>
-      <ArmyOathPick
-        key={`${explorerId}:${waiting.progress.oath_pick}`}
-        army={waiting.army}
-        progress={waiting.progress}
-        fragments={waiting.army.ethereal === DEEP_DEPTH ? null : fragments}
-      />
-    </HudModalLayer>
-  );
+  if (!allowed || !army) return null;
+  return <WaitingOathPick army={army} fragments={army.ethereal === DEEP_DEPTH ? null : fragments} />;
 }
 
-function OathChoiceCard({
+const WaitingOathPick = ({ army, fragments }: { army: DockArmy; fragments: number | null }) => {
+  const progress = useWaitingPick(army.explorerId);
+  if (!progress) return null;
+  return (
+    <HudModalLayer>
+      <ArmyOathPick key={army.explorerId} army={army} progress={progress} fragments={fragments} />
+    </HudModalLayer>
+  );
+};
+
+function OathChoice({
   id,
   pickBase,
+  chosen,
+  fresh,
   disabled,
-  onSelect,
-  replace,
-  redraw,
+  onChoose,
+  swap,
 }: {
   id: number;
   pickBase: PickEffectBase;
+  chosen: boolean;
+  fresh: boolean;
   disabled: boolean;
-  onSelect: () => void;
-  replace?: boolean;
-  redraw?: { index: number; disabled: boolean; onRedraw: () => void };
+  onChoose: () => void;
+  swap?: { index: number; disabled: boolean; onSwap: () => void };
 }) {
   const name = oathName(id);
-  const badge = oathStatBadge(id, pickBase);
-  const aspect = orderAspect(id);
-  const aspectStyle = aspect !== null ? (aspectVariables(aspect) as CSSProperties) : undefined;
   return (
-    <div className="oath-card" data-oath-id={replace ? undefined : id} style={aspectStyle}>
+    <div
+      className="ui-pick oath-choice"
+      data-selected={chosen || undefined}
+      data-fresh={fresh || undefined}
+      style={aspectOf(id)}
+    >
       <button
         type="button"
-        className="oath-card__choose"
+        className="oath-choice__pick"
+        data-oath-id={id}
+        aria-label={chosen ? OATH_PICK.chosen(name) : name}
         disabled={disabled}
-        onClick={onSelect}
-        data-replace-oath={replace ? id : undefined}
-        aria-label={replace ? `Replace ${name}` : undefined}
+        onClick={onChoose}
         title={oathEffectDescription(id, pickBase)}
       >
-        <span className="oath-card__medallion" aria-hidden="true">
-          <Icon name={orderMeaning(id)} size={54} className="oath-card__sigil" />
-        </span>
-        <span className="oath-card__foot">
-          <span className="oath-card__title">{name}</span>
-          <span className="oath-card__stat">
-            <span className="oath-card__hero-line">
-              <Icon name={badge.icon} size={18} className="oath-card__stat-icon" />
-              <span className="oath-card__hero">{badge.hero}</span>
-            </span>
-            <span className="oath-card__unit">{badge.unit}</span>
-          </span>
-          <span className="oath-card__sub">{badge.sub}</span>
-        </span>
-        <span className="oath-card__cta" aria-hidden="true">
-          {replace ? `Replace ${name}` : `Swear ${name}`}
-        </span>
+        <OathFace id={id} pickBase={pickBase} />
       </button>
-      {redraw && (
-        <div className="oath-card__below">
-          <HudButton
-            kind="secondary"
-            size="sm"
-            disabled={redraw.disabled}
-            onClick={redraw.onRedraw}
-            data-reroll-oath={redraw.index}
-            aria-label={`Redraw ${name} for ${REDRAW_PRICE}`}
+      {fresh ? (
+        <span className="oath-choice__new">
+          <HudChip tone="good">{OATH_PICK.fresh}</HudChip>
+        </span>
+      ) : (
+        swap && (
+          <button
+            type="button"
+            className="oath-choice__swap"
+            disabled={swap.disabled}
+            onClick={swap.onSwap}
+            data-reroll-oath={swap.index}
+            aria-label={OATH_PICK.swapFor(name, REDRAW_PRICE)}
           >
-            <span className="oath-card__redraw-label">
-              <Icon name="dice" size={14} className="oath-card__redraw-dice" />
-              <span className="oath-card__redraw-word">Redraw · </span>
-              <span className="oath-card__redraw-price">
-                <Icon name="fragment" size={14} />
-                <span className="tabular-nums">{REDRAW_COST}</span>
-              </span>
-            </span>
-          </HudButton>
-        </div>
+            <Icon name="refresh" size={18} />
+            <i>{OATH_PICK.swap}</i>
+          </button>
+        )
       )}
     </div>
   );
 }
+
+const OathFace = ({ id, pickBase }: { id: number; pickBase: PickEffectBase }) => {
+  const badge = oathStatBadge(id, pickBase);
+  return (
+    <>
+      <span className="oath-choice__ring" aria-hidden="true">
+        <Icon name={orderMeaning(id)} size={36} />
+      </span>
+      <span className="oath-choice__words">
+        <span className="oath-choice__line">
+          <b className="oath-choice__name">{oathName(id)}</b>
+          <span className="oath-choice__effect">
+            <Icon name={badge.icon} size={17} />
+            {badge.hero}
+          </span>
+        </span>
+        <span className="oath-choice__unit">{badge.unit}</span>
+      </span>
+    </>
+  );
+};
+
+const aspectOf = (id: number): CSSProperties | undefined => {
+  const aspect = orderAspect(id);
+  return aspect !== null ? (aspectVariables(aspect) as CSSProperties) : undefined;
+};
 
 function ArmyOathPick({
   army,
@@ -160,14 +160,16 @@ function ArmyOathPick({
   const pickBase = usePickEffectBase();
   const allowed = useUIStore(canIssueOrders);
   const sending = useInFlight("army", army.explorerId) !== undefined;
-  const [picked, setPicked] = useState<number | null>(null);
+  const [chosenAt, setChosenAt] = useState(0);
+  const [swappedAt, setSwappedAt] = useState<number | null>(null);
+  const [replacing, setReplacing] = useState(false);
   const held = heldOaths(progress.oaths);
   const full = held.length === progress.oath_slots;
-  const stamina = army.stamina;
-  const passResult = stamina && oathPassStamina(stamina.current, stamina.max);
+  const cards = oathCards(progress.oath_pick);
+  const chosen = cards[Math.min(chosenAt, cards.length - 1)];
+  const redrawn = progress.oath_pick >= nativeOathConstants.REROLLED;
+  const busy = !allowed || sending;
   const troopLabel = FRONTIER_TROOP_NAMES[army.troopsFact.category as TroopType];
-  const armyLine = `${army.label} · ${formatAmount(army.troops)} ${troopLabel}`;
-  const heading = picked === null ? "Swear an Oath" : "Choose an Oath to replace";
 
   const choose = (oath: number | null, replace: number | null = null) =>
     sendOnce("army", army.explorerId, { order: "use" }, () =>
@@ -178,107 +180,148 @@ function ArmyOathPick({
         oath,
         replace,
       }),
-    ).catch((error: unknown) => toast.failed(error, "The Oath could not be chosen."));
+    ).catch((error: unknown) => toast.failed(error, OATH_PICK.notChosen));
 
-  const reroll = (index: number) =>
-    sendOnce("army", army.explorerId, { order: "use" }, () =>
+  const reroll = (index: number) => {
+    setSwappedAt(index);
+    return sendOnce("army", army.explorerId, { order: "use" }, () =>
       setup.systemCalls.reroll_oath({
         signer: account.account as unknown as Account,
         explorerId: army.explorerId,
         expectedPick: progress.oath_pick,
         index,
       }),
-    ).catch((error: unknown) => toast.failed(error, "The card could not be redrawn."));
+    ).catch((error: unknown) => toast.failed(error, OATH_PICK.notRedrawn));
+  };
 
   return (
-    <HudWindow
-      title={heading}
-      className="oath-pick"
+    <section
+      role="dialog"
+      aria-label={replacing ? OATH_PICK.replaceTitle : OATH_PICK.title}
+      className="ui ui-panel oath-pick"
       data-oath-pick={progress.oath_pick}
       data-oath-held={progress.oaths}
     >
-      <div className="oath-pick__body">
-        <div className="oath-pick__head">
-          <span className="oath-pick__army">
-            <span className="oath-pick__portrait">
-              <HudPortrait icon={army.art} label={army.label} />
-            </span>
-            <span className="text-hud-label text-hud-muted">{armyLine}</span>
-          </span>
-          <div className="oath-pick__meta">
-            <OathSlotPips held={held} slots={progress.oath_slots} pickBase={pickBase} />
-            {fragments !== null && (
-              <HudChip icons={["fragment"]} label={formatCount(fragments, FRAGMENT, FRAGMENTS)}>
-                {formatShort(fragments)}
-              </HudChip>
+      <header className="oath-pick__head">
+        <HudPortrait icon={army.art} label={army.label} />
+        <span className="oath-pick__title">
+          <b>{replacing ? OATH_PICK.replaceTitle : OATH_PICK.title}</b>
+          <span>
+            {OATH_PICK.slotOf(
+              Math.min(held.length + 1, progress.oath_slots),
+              progress.oath_slots,
+              formatAmount(army.troops),
+              troopLabel,
             )}
-          </div>
-        </div>
-        {picked === null ? (
-          <div className="oath-pick__cards">
-            {oathCards(progress.oath_pick).map((id) => {
+          </span>
+        </span>
+        {fragments !== null &&
+          (redrawn ? (
+            <HudChip>{OATH_PICK.used}</HudChip>
+          ) : (
+            <HudChip icons={["refresh", "fragment"]} label={OATH_PICK.redrawPrice}>
+              {formatShort(REDRAW_COST)}
+            </HudChip>
+          ))}
+      </header>
+      <div className="oath-pick__body">
+        {replacing ? (
+          <>
+            {held.map((id) => (
+              <div key={id} className="oath-choice" style={aspectOf(id)}>
+                <button
+                  type="button"
+                  className="oath-choice__pick"
+                  data-replace-oath={id}
+                  aria-label={OATH_PICK.replace(oathName(id))}
+                  disabled={busy}
+                  onClick={() => choose(chosen, id)}
+                >
+                  <OathFace id={id} pickBase={pickBase} />
+                </button>
+              </div>
+            ))}
+            <HudButton kind="secondary" disabled={sending} onClick={() => setReplacing(false)}>
+              {OATH_PICK.another}
+            </HudButton>
+          </>
+        ) : (
+          <>
+            {cards.map((id, index) => {
               const rerollIndex = oathRerollIndex(progress.oath_pick, progress.oaths, id);
               return (
-                <OathChoiceCard
+                <OathChoice
                   key={id}
                   id={id}
                   pickBase={pickBase}
-                  disabled={!allowed || sending}
-                  onSelect={() => (full ? setPicked(id) : choose(id))}
-                  redraw={
+                  chosen={id === chosen}
+                  fresh={redrawn && swappedAt === index}
+                  disabled={busy}
+                  onChoose={() => setChosenAt(index)}
+                  swap={
                     rerollIndex !== null && fragments !== null
                       ? {
                           index: rerollIndex,
-                          disabled: !allowed || sending || fragments < REDRAW_COST,
-                          onRedraw: () => reroll(rerollIndex),
+                          disabled: busy || fragments < REDRAW_COST,
+                          onSwap: () => void reroll(rerollIndex),
                         }
                       : undefined
                   }
                 />
               );
             })}
-          </div>
-        ) : (
-          <div className="oath-pick__replace">
-            {held.map((id) => (
-              <OathChoiceCard
-                key={id}
-                id={id}
-                pickBase={pickBase}
-                replace
-                disabled={!allowed || sending}
-                onSelect={() => choose(picked, id)}
-              />
-            ))}
-            <HudButton kind="secondary" disabled={sending} onClick={() => setPicked(null)}>
-              Choose another
-            </HudButton>
-          </div>
+            <PassRow stamina={army.stamina} disabled={busy} onPass={() => void choose(null)} />
+          </>
         )}
       </div>
-      <HudWindowFoot>
-        <HudButton
-          kind="secondary"
-          icon="stamina"
-          className="oath-pick__pass"
-          disabled={!allowed || sending || !stamina}
-          onClick={() => choose(null)}
-          data-oath-pass=""
-          data-oath-pass-current={stamina?.current}
-          data-oath-pass-maximum={stamina?.max}
-          data-oath-pass-result={passResult}
-        >
-          <span className="oath-pick__pass-lead">
-            Pass: <span className="oath-pick__pass-gain">+{nativeOathConstants.PASS_STAMINA}</span> stamina
-          </span>
-          {stamina && (
-            <span className="oath-pick__pass-preview">
-              {stamina.current} → {passResult}
-              <span className="oath-pick__pass-max"> / {stamina.max}</span>
-            </span>
-          )}
-        </HudButton>
-      </HudWindowFoot>
-    </HudWindow>
+      {!replacing && chosen !== undefined && (
+        <footer className="oath-pick__foot">
+          <HudButton
+            kind="primary"
+            icon={orderMeaning(chosen)}
+            disabled={busy}
+            data-oath-swear={chosen}
+            onClick={() => (full ? setReplacing(true) : choose(chosen))}
+          >
+            {OATH_PICK.swear(oathName(chosen))}
+          </HudButton>
+        </footer>
+      )}
+    </section>
   );
 }
+
+const PassRow = ({
+  stamina,
+  disabled,
+  onPass,
+}: {
+  stamina: DockArmy["stamina"];
+  disabled: boolean;
+  onPass: () => void;
+}) => {
+  const result = stamina && oathPassStamina(stamina.current, stamina.max);
+  return (
+    <button
+      type="button"
+      className="oath-pick__pass"
+      disabled={disabled || !stamina}
+      onClick={onPass}
+      data-oath-pass=""
+      data-oath-pass-current={stamina?.current}
+      data-oath-pass-maximum={stamina?.max}
+      data-oath-pass-result={result}
+    >
+      <Icon name="stamina" size={17} />
+      {OATH_PICK.pass} · <b className="oath-pick__gain">+{nativeOathConstants.PASS_STAMINA}</b>
+      {stamina && (
+        <>
+          <Icon name="stamina" size={17} />
+          <span className="oath-pick__bar">
+            {formatAmount(stamina.current)} → {formatAmount(result)}
+          </span>
+        </>
+      )}
+    </button>
+  );
+};

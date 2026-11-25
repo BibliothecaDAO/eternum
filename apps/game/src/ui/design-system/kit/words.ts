@@ -587,17 +587,36 @@ export const SEASON = "Season";
 export const RANK = "Rank";
 export const SITES = "Sites";
 export const SITES_CLEARED = "Sites cleared";
-export const SITE_OATH = { label: "Oath", holds: "Holds an Oath", rule: "Clearing it opens an Oath pick" } as const;
-/**
- * How the Season board ranks, said where players look (owner, 4 November 2026: "ppl have asked how to increase sites in the
- * leaderboard"): Herald ranks by sites cleared, then deepest depth (frontier-leaderboard.ts compareStandings), and every
- * guarded site an army clears counts one (creditSiteClear). The Sites column's tip, the board's line while the player is
- * off the podium, and a site card's "+1 site".
- */
+export const OATH_WAITING = "An Oath waits: pick the army to swear it";
+export const OATH_PICK = {
+  title: "Swear an Oath",
+  replaceTitle: "Choose an Oath to replace",
+  slotOf: (slot: number, slots: number, troops: string, troop: string) =>
+    `Slot ${formatExact(slot)} of ${formatExact(slots)} · ${troops} ${troop}`,
+  swear: (oath: string) => `Swear ${oath}`,
+  chosen: (oath: string) => `${oath}, chosen`,
+  replace: (oath: string) => `Replace ${oath}`,
+  another: "Choose another",
+  swap: "Swap",
+  swapFor: (oath: string, price: string) => `Swap ${oath} for ${price}`,
+  redrawPrice: "One reroll",
+  used: "Used",
+  fresh: "New",
+  pass: "Pass",
+  notChosen: "The Oath could not be chosen.",
+  notRedrawn: "The card could not be rerolled.",
+} as const;
+export const SITE_OATH = { label: "Oath", rule: "Clearing it opens an Oath pick" } as const;
+export const SUPPLY_POST = {
+  title: "Supply Post",
+  chip: "Post",
+  open: "Post open",
+  rule: "Clearing it opens a supply post: your armies refill beside it until the day ends",
+  until: "Open until the day ends",
+} as const;
 export const SEASON_CLIMB = {
   rule: "Ranked by sites cleared, then deepest depth",
   climb: "Clear sites with your armies to climb",
-  plusOne: "+1 site",
 } as const;
 export const LORDS_EARNED = "LORDS earned";
 export const SETTINGS = "Settings";
@@ -746,12 +765,16 @@ export const FIGHT_WORDS = {
   armyLostNext: "Your troops died in battle. Deploy a new army from your Realm.",
   victory: "Victory likely",
   holds: "The guard survives",
-  hitsFirst: "Hits first",
+  defeated: "Defeated",
 } as const;
 /**
  * What an attack costs a side, under its bar (a player: "# of troops lost, % lost/remaining"; owner, 3 November 2026:
  * "A probably good enough"): "−601 · 76% lost", a range where the dice decide it ("−994–1,100 · 20–22% lost").
  */
+export const FIGHT_RESULT = {
+  victory: "Victory",
+  cleared: (site: string) => `${site} cleared`,
+} as const;
 export const fightLost = (lost: string, share: string) => `−${lost} · ${share}% lost`;
 export const NONE_LOST = "None lost";
 
@@ -1113,15 +1136,14 @@ export const wheatForOnly = (troops: string, of: string) => `${WHEAT} for only $
 export const GET_WHEAT = `Get ${WHEAT}`;
 export const DEPLOYING = "Deploying…";
 export const DEPLOY_WORDS = {
-  slotOf: (slot: number, total: number) => `Slot ${formatExact(slot)} of ${formatExact(total)}`,
-  adjustSize: "Adjust size",
-  hideSize: "Hide size",
-  ready: (troops: number) => `${formatExact(troops)} ready`,
-  troopCount: "Troop count",
-  countOf: (count: number, of: number, troop: string, max: boolean) =>
-    `${formatExact(count)} / ${formatExact(of)} ${troop}${max ? " (Max)" : ""}`,
-  deployCount: (count: number, troop: string) => `${DEPLOY} ${formatExact(count)} ${troop}`,
+  troopType: "Troop type",
+  slot: "Slot",
+  oaths: "Oaths",
+  startsOn: "Starts on",
+  howMany: (troop: string) => `${troop}: how many go`,
+  deployCount: (count: number) => `${DEPLOY} ${formatExact(count)}`,
 } as const;
+export const SIZE_ROW = { fewer: "One fewer", more: "One more", max: "Max" } as const;
 export const BUILD = "Build";
 export const buildNamed = (building: string) => `${BUILD} ${building}`;
 export const BUILT = "Built";
@@ -1135,8 +1157,6 @@ export const ARMY = "Army";
 /** A phone's picked army, in its action row (owner, 22 October 2026: mobile direction A): its token opens its card. */
 export const PICKED_ARMY = {
   details: (army: string) => `${army}: details`,
-  title: (army: string, troops: number | undefined, troop: string | undefined) =>
-    troops === undefined ? army : `${army} · ${formatAmount(troops)}${troop ? ` ${troop}` : ""}`,
 } as const;
 
 /** Troops between two of the realm's armies side by side (Frontier's Transfer troops, desktop and phone). */
@@ -1160,6 +1180,7 @@ export const TRANSFER_TROOPS = {
 /** Troops raised from the realm's stock into its army beside it (the realm selected, the army right-clicked). */
 export const REINFORCE = {
   verb: "Reinforce",
+  verbAmount: (amount: string) => `Reinforce +${amount}`,
   title: (army: string) => `Reinforce ${army}`,
   titleAmount: (army: string, amount: string) => `Reinforce ${army} (+${amount})`,
   fromHome: (amount: string, troops: string) => `+${amount} ${troops} from home`,
@@ -2209,7 +2230,6 @@ export const RESEARCH_TREE = {
   },
   oaths: "Oath slots",
   oathSlots: (count: number) => `${count} Oath ${count === 1 ? "slot" : "slots"}`,
-  oathOpen: RESEARCH_OPEN,
   oathLocked: "Locked",
   oathEarn: `Clear a site that holds an ${SITE_OATH.label}, or reveal a ${SHRINE}`,
   conscriptionLine: "More troops from every troop building.",

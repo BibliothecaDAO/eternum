@@ -86,7 +86,7 @@ describe("the castle", () => {
       ["Labor storage", "15K", "→", "50K"],
       ["Max army size", "9,000", "→", "25K"],
     ]);
-    expect(host.querySelector(".ui-cost")?.textContent).toBe("15K Labor");
+    expect(host.querySelector('.ui-window__foot .ui-price [role="img"]')?.getAttribute("aria-label")).toBe("15K Labor");
     expect(
       buttons()
         .find((button) => button.textContent === "Upgrade")!

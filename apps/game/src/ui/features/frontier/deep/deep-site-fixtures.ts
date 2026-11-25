@@ -55,7 +55,14 @@ export const DEEP_SITE_CASES = {
     site: "altar",
     pay: { ...pay, bar: { perTick: 6, charge: 300, threshold: 1_500 } },
     guard: { kind: "open" },
-    order: { kind: "move", cost: "30 stamina · 20 wheat", onMove: noop },
+    order: {
+      kind: "move",
+      prices: [
+        { of: "stamina", amount: 30 },
+        { of: "wheat", amount: 20 },
+      ],
+      onMove: noop,
+    },
   },
   "Foundation held, two slots filled": {
     ...base,
