@@ -29,7 +29,7 @@ import { smoothstep, uv } from "three/tsl";
 import { MeshBasicNodeMaterial } from "three/webgpu";
 import { createTripoModelMaterial, isTripoModelMaterial } from "../materials/tripo-model-material";
 import { DEEP_GATE_MODELS } from "../structures/deep-landmarks";
-import { DEEP_FLOOR } from "../terrain/deep-floor-material";
+import { DEEP_FLOOR, writeDeepFloorZones } from "../terrain/deep-floor-material";
 import { placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
 import { getWorldPositionForHex } from "../utils";
 import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "../utils/hex-lattice";
@@ -103,7 +103,7 @@ export class DeepArenaManager {
     if (!rules || !settlement) return;
     const center = this.worldAt(deepCenter(settlement.spacing));
     DEEP_FLOOR.center.value.set(center.x, center.z);
-    writeZoneBounds(deepZoneBounds(rules));
+    writeDeepFloorZones(deepZoneBounds(rules));
     const gates = deepGateTiles(rules.gate_distance, settlement.spacing);
     this.writeFloorEdges(deepCenter(settlement.spacing), center, gates);
     const own = viewerAspects(this.store, gameId, accountAddress() ?? null);
@@ -206,13 +206,6 @@ function squareBorder(middle: { col: number; row: number }, half: number): { col
   ]);
 }
 
-function writeZoneBounds(bounds: ReturnType<typeof deepZoneBounds>): void {
-  const [first, second, third, fourth, ...beyond] = bounds.ringRadii;
-  if (beyond.length) throw new Error(`The floor draws four ring radii, not ${bounds.ringRadii.length}`);
-  DEEP_FLOOR.plazaBelow.value = bounds.plazaBelow;
-  DEEP_FLOOR.ringRadii.value.set(first ?? -1, second ?? -1, third ?? -1, fourth ?? -1);
-  DEEP_FLOOR.rimBeyond.value = bounds.rimBeyond;
-}
 
 function gatewayVeil(): BufferGeometry {
   return new PlaneGeometry(VEIL_WIDTH, VEIL_HEIGHT).translate(0, VEIL_CENTER_Y, 0);

@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 import { resolveHyperstructureDesign } from "@/three/structures/hyperstructure-design";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import { prepareTerrainPage } from "@/three/terrain/terrain-page-builder";
-import { TERRAIN_PROP_PAGE_SLOT_CAPACITY } from "@/three/terrain/terrain-prop-catalog";
 import { setWorldOrigin, worldOrigin } from "@/three/world-origin";
 import {
   ASPECT_HYPERSTRUCTURE_SEEDS,
@@ -24,7 +23,7 @@ describe("the Aspect race 3D world layout", () => {
     expect(new Set(designs.map((design) => design.masonryTint.join(","))).size).toBe(aspects.length);
   });
 
-  it("places the four towers on hexes one apart inside varied explored world biomes", () => {
+  it("places the four towers on hexes one apart on the Deep's plaza, every cell the Deep's own floor", () => {
     const pages = createAspectRaceTerrainRequests();
     const cells = pages.flatMap((page) => page.cells);
     expect(RACE_TOWER_HEXES).toHaveLength(aspects.length);
@@ -39,23 +38,11 @@ describe("the Aspect race 3D world layout", () => {
       const inFront = cells.find((each) => each.col === hex.col && each.row === hex.row + 1);
       expect(inFront?.occupied).toBe(true);
     }
-    expect(new Set(cells.map((cell) => cell.biome)).size).toBeGreaterThanOrEqual(4);
-  });
-
-  it("keeps every terrain page strictly below prop pool slot capacities so props are never thinned", () => {
-    for (const page of createAspectRaceTerrainRequests()) {
-      const prepared = prepareTerrainPage(page);
-      expect(prepared.propInstances.length).toBeGreaterThan(0);
-      const counts = new Map<string, number>();
-      for (const instance of prepared.propInstances) {
-        counts.set(instance.archetype, (counts.get(instance.archetype) ?? 0) + 1);
-      }
-      for (const [archetype, count] of counts) {
-        expect(count, `${page.pageKey} ${archetype}`).toBeLessThan(
-          TERRAIN_PROP_PAGE_SLOT_CAPACITY[archetype as keyof typeof TERRAIN_PROP_PAGE_SLOT_CAPACITY],
-        );
-      }
+    expect(cells.every((cell) => cell.surfacePresentation === "deep" && cell.explored)).toBe(true);
+    for (const hex of RACE_TOWER_HEXES) {
+      expect(cells.find((each) => each.col === hex.col && each.row === hex.row)?.deepZone).toBe("plaza");
     }
+    expect([...new Set(cells.map((cell) => cell.deepZone))]).toEqual(expect.arrayContaining(["plaza", "ring", "field"]));
   });
 
   it("projects four ordered plate anchors centered below the four towers on desktop and phone", () => {

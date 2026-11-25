@@ -34,6 +34,14 @@ export const DEEP_FLOOR = {
   edgeFade: uniform(8),
 };
 
+export function writeDeepFloorZones(bounds: { plazaBelow: number; ringRadii: number[]; rimBeyond: number }): void {
+  const [first, second, third, fourth, ...beyond] = bounds.ringRadii;
+  if (beyond.length) throw new Error(`The floor draws four ring radii, not ${bounds.ringRadii.length}`);
+  DEEP_FLOOR.plazaBelow.value = bounds.plazaBelow;
+  DEEP_FLOOR.ringRadii.value.set(first ?? -1, second ?? -1, third ?? -1, fourth ?? -1);
+  DEEP_FLOOR.rimBeyond.value = bounds.rimBeyond;
+}
+
 const ringRadii = () => [
   DEEP_FLOOR.ringRadii.x,
   DEEP_FLOOR.ringRadii.y,

@@ -1,11 +1,14 @@
-import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
-import { BiomeType, type AspectId, type HexPosition } from "@bibliothecadao/types";
+import { Biome, NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
+import { deepCenter, deepZoneAt, deepZoneBounds } from "@bibliothecadao/eternum/game-client";
+import type { AspectId, HexPosition } from "@bibliothecadao/types";
 import { type PerspectiveCamera, Vector3 } from "three";
 
 import { latticeToWorld } from "@/three/utils/hex-lattice";
 import { worldOrigin } from "@/three/world-origin";
 import type { TerrainPageRequest } from "@/three/terrain/terrain-types";
 import { buildWorldmapTerrainPageRequests } from "@/three/terrain/worldmap-procedural-terrain";
+
+import release from "../../../../../contracts/l3/world-native/schema/release-definition.json";
 
 export interface RaceTowerEntry {
   aspectId: AspectId;
@@ -49,6 +52,20 @@ const CAMERA_PITCH_COS = Math.cos(CAMERA_PITCH_RAD);
 const MIN_VERTICAL_SPAN = 5.6;
 const TOWER_TARGET_Y = 1.35;
 const PLATE_Z_OFFSET = 1.05;
+const RACE_CLIMATE = { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 };
+const DEEP_RULES = release.definition.economy.deep.Some;
+const SPACING = release.definition.settlement.spacing;
+const RACE_CENTER = { col: (TOWER_MIN_COL + TOWER_MAX_COL) / 2, row: TOWER_ROW };
+
+const deepHexAt = (col: number, row: number) => {
+  const center = deepCenter(SPACING);
+  return { col: center.col + col - RACE_CENTER.col, row: center.row + row - RACE_CENTER.row };
+};
+
+export const raceDeepFloor = () => ({
+  center: latticeToWorld(RACE_CENTER.col, RACE_CENTER.row),
+  zones: deepZoneBounds(DEEP_RULES),
+});
 
 export function createAspectRaceTerrainRequests(origin: HexPosition = worldOrigin()): TerrainPageRequest[] {
   const towerCells = new Set(RACE_TOWER_HEXES.map(({ col, row }) => `${col}:${row}`));
@@ -57,8 +74,13 @@ export function createAspectRaceTerrainRequests(origin: HexPosition = worldOrigi
     const col = index % COLUMNS;
     const row = Math.floor(index / COLUMNS);
     const key = `${col}:${row}`;
+    const hex = deepHexAt(col, row);
+    const deepZone = deepZoneAt(SPACING, DEEP_RULES, hex);
+    if (!deepZone) throw new Error(`The race's cell ${key} has no zone of the arena`);
     return {
-      biomeKey: raceBiomeAt(col, row),
+      biomeKey: Biome.getBiome(hex.col, hex.row, RACE_CLIMATE),
+      surfacePresentation: "deep" as const,
+      deepZone,
       col: col + origin.col,
       occupied: towerCells.has(key) || sightlineCells.has(key),
       row: row + origin.row,
@@ -66,36 +88,13 @@ export function createAspectRaceTerrainRequests(origin: HexPosition = worldOrigi
   });
   return buildWorldmapTerrainPageRequests({
     cells,
-    climate: { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 },
+    climate: RACE_CLIMATE,
     mapCenter: 0,
     pageHeight: PAGE_ROWS,
     pageOrigin: { col: origin.col, row: origin.row },
     pageWidth: PAGE_COLUMNS,
     subdivisions: 3,
   });
-}
-
-function raceBiomeAt(col: number, row: number): BiomeType {
-  const inHeroCorridor = col >= TOWER_MIN_COL - 1 && col <= TOWER_MAX_COL + 1;
-  if (inHeroCorridor && row >= TOWER_ROW - 1 && row <= TOWER_ROW + 2) {
-    return BiomeType.Grassland;
-  }
-  const wave = Math.sin(col * 0.42 + row * 0.27) + Math.cos(col * 0.19 - row * 0.51);
-  if (row >= TOWER_ROW) {
-    if (col < TOWER_MIN_COL - 3 || col > TOWER_MAX_COL + 3) {
-      if (wave > 0.65) return BiomeType.TemperateDeciduousForest;
-      return wave < -0.55 ? BiomeType.Shrubland : BiomeType.Grassland;
-    }
-    return wave < -0.45 ? BiomeType.Shrubland : BiomeType.Grassland;
-  }
-  if (row <= 4) {
-    if (wave > 0.55) return BiomeType.Taiga;
-    if (wave > -0.15) return BiomeType.TemperateDeciduousForest;
-    return wave < -0.95 ? BiomeType.Shrubland : BiomeType.Grassland;
-  }
-  if (wave > 0.75) return BiomeType.TemperateDeciduousForest;
-  if (wave < -0.85) return BiomeType.Shrubland;
-  return BiomeType.Grassland;
 }
 
 export function frameAspectRaceCamera(camera: PerspectiveCamera): Vector3 {
