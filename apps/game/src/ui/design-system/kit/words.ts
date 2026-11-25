@@ -1171,9 +1171,9 @@ export const SIZE_ROW = { fewer: "One fewer", more: "One more", max: "Max" } as 
 export const BUILD = "Build";
 export const BUILT = "Built";
 export const BUILD_GROUPS = {
-  economy: { word: "Economy", line: "Repeatable" },
-  army: { word: "Army", line: "Repeatable" },
-  unique: { word: "One per realm", line: "Unique upgrades" },
+  economy: "Economy",
+  army: "Army",
+  unique: "One per realm",
 } as const;
 export const requiresRank = (rank: string) => `Requires ${rank}`;
 export const ONE_PER_REALM_MARK = "1×";
