@@ -520,8 +520,7 @@ export const HUD_DERIVED = {
   cue: "rgb(var(--hud-accent) / 0.6)",
   hover: "rgb(var(--hud-rim) / 0.1)",
   chosen: "rgb(var(--hud-accent-deep) / 0.55)",
-  "shadow-panel":
-    "0 0 0 1px rgb(0 0 0 / 0.62), 0 18px 40px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(var(--hud-rim) / 0.18)",
+  "shadow-panel": "0 0 0 1px rgb(0 0 0 / 0.62), 0 18px 40px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(var(--hud-rim) / 0.18)",
   "shadow-pill": "0 0 0 1px rgb(0 0 0 / 0.55), 0 8px 22px rgb(0 0 0 / 0.48), inset 0 1px 0 rgb(var(--hud-rim) / 0.2)",
   "shadow-control": "0 1px 2px rgb(0 0 0 / 0.4)",
   "shadow-press": "0 0 0 1px rgb(0 0 0 / 0.6), inset 0 2px 6px rgb(0 0 0 / 0.68)",
@@ -928,7 +927,7 @@ export const APP_SHEET = {
 export const HUD_APP_MODE = {
   accent: APP_SHEET.accent,
   rim: APP_SHEET.accent,
-  "accent-deep": APP_SHEET.accent,
+  "accent-deep": channels(tint("#000000", SHELL_COLORS.peach, 0.35)),
   "surface-from": APP_SHEET["surface-2"],
   "surface-to": APP_SHEET.surface,
   ink: channels(SHELL_COLORS.cream),

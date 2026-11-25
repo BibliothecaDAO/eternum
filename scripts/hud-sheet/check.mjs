@@ -126,15 +126,13 @@ export const rules = (colors, steps) => [
 
 /** Every refused value in one file's source, with its line; `refused` when no allowlist count can let it through. */
 export const findViolations = (source, path, colors, steps) =>
-  source
-    .split("\n")
-    .flatMap((text, index) =>
-      rules(colors, steps)
-        .filter(({ within }) => within === undefined || path.startsWith(within))
-        .flatMap(({ rule, pattern, refused = false }) =>
-          [...text.matchAll(pattern)].map(([match]) => ({ path, line: index + 1, rule, match, refused })),
-        ),
-    );
+  source.split("\n").flatMap((text, index) =>
+    rules(colors, steps)
+      .filter(({ within }) => within === undefined || path.startsWith(within))
+      .flatMap(({ rule, pattern, refused = false }) =>
+        [...text.matchAll(pattern)].map(([match]) => ({ path, line: index + 1, rule, match, refused })),
+      ),
+  );
 
 /** Each file's count against its line: over it fails, under it fails until the line is lowered. */
 export const ratchet = (counts, allowlist) => {

@@ -49,7 +49,8 @@ export function raceScenario(finished = false): LabScenario {
     }),
   );
   const slice = store.require("SliceRules", { game_id: 1 });
-  const end = game.start_main_at + BigInt(seasonSeconds(Number(rules.season_days) / DAYS_PER_BAG, slice.day_unit_seconds));
+  const end =
+    game.start_main_at + BigInt(seasonSeconds(Number(rules.season_days) / DAYS_PER_BAG, slice.day_unit_seconds));
   const tick = slice.tick_config.armies_tick_in_seconds;
   const ended_at = finished ? (BigInt(startsAt) / tick + 1n) * tick : end;
   const now = finished ? Number(ended_at) + 1 : startsAt;
