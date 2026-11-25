@@ -653,13 +653,21 @@ button.frontier-stock__face:hover {
 }
 [data-right-page] [data-feed-list] {
   --feed-row: 29px;
-  max-height: calc(var(--feed-row) * 16);
+  --feed-rows: 16;
+  max-height: calc(var(--feed-row) * var(--feed-rows));
   flex: none;
   overflow-y: auto;
   scroll-snap-type: y mandatory;
 }
+@media (pointer: coarse) {
+  [data-right-page] [data-feed-list] {
+    --feed-row: calc(var(--hud-control) + 1px);
+    --feed-rows: 12;
+  }
+}
 [data-right-page] [data-feed-list] [data-feed-line] {
   height: calc(var(--feed-row) - 1px);
+  min-height: calc(var(--feed-row) - 1px);
   scroll-snap-align: start;
 }
 

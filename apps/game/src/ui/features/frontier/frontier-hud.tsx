@@ -177,7 +177,6 @@ const FrontierHudBody = ({
   const pickArmy = usePickArmy();
   const seasonRank = useSeasonRank();
   const fragmentsHeld = useFragmentsHeld();
-  const ordersAllowed = useUIStore(canIssueOrders);
   const layers = useMapLayers(rules, shown, visit ? null : realm);
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
   const previousMapView = useRef(isMapView);
