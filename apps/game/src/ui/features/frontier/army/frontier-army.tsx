@@ -1,11 +1,9 @@
-import { TroopOathSlots } from "./oath-slots";
+import { ArmyOathSockets } from "./oath-slots";
 import { ArmyRelicSlots } from "../relics/army-relic-slots";
 import { useState } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { frontierTroopName } from "@bibliothecadao/types";
-import { useArmyRevealYield } from "../frontier-reveal-yield";
 import { useArmySpireStatus } from "../spire-card";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { ArmyDetail } from "./army-panel";
@@ -20,7 +18,6 @@ export const FrontierArmy = ({ realm, onClose }: { realm: NativeRows["Structure"
 };
 
 const ArmyPanel = ({ army, onClose }: { army: DockArmy; onClose: () => void }) => {
-  const revealYield = useArmyRevealYield(army);
   const spire = useArmySpireStatus(army.explorerId);
   const [deleting, setDeleting] = useState(false);
   const held = useFragmentsHeld();
@@ -32,19 +29,13 @@ const ArmyPanel = ({ army, onClose }: { army: DockArmy; onClose: () => void }) =
       beside={<ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />}
       onClose={onClose}
     >
-      <ArmyDetail
-        army={{
-          ...army,
-          name: army.label,
-          title: frontierTroopName(army.troopsFact.category) ?? army.label,
-          stamina: army.stamina,
-          revealYield,
-        }}
-      />
-      <TroopOathSlots category={army.troopsFact.category} explorerId={army.explorerId} />
+      <ArmyDetail army={{ ...army, stamina: army.stamina }} />
       <ArmyRelicSlots explorerId={army.explorerId} />
       {deleting && <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />}
-      {(spire || refill) && <HudWindowFoot note={spire}>{refill}</HudWindowFoot>}
+      <HudWindowFoot note={<ArmyOathSockets explorerId={army.explorerId} />}>
+        {refill}
+        {spire}
+      </HudWindowFoot>
     </HudSheet>
   );
 };

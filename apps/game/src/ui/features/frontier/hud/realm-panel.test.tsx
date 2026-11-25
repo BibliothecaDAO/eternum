@@ -160,10 +160,6 @@ it("shows every stock on the desktop realm card, Fragments opening the shop and 
         lords={320}
         onShop={onShop}
         onUpgradeCastle={onUpgradeCastle}
-        buildings={[
-          { key: "farm", icon: "farm", name: "Farm", tier: 2, rateIcon: "wheat", rate: "+20/min" },
-          { key: "barracks", icon: "barracks", name: "Barracks", tier: 5, rateIcon: "troops", rate: "+3/min" },
-        ]}
       />,
     ),
   );
@@ -178,8 +174,6 @@ it("shows every stock on the desktop realm card, Fragments opening the shop and 
   ]);
   expect(card.textContent).not.toContain("Pop");
   expect(card.querySelector('[data-store="lords"]')?.textContent).toBe("320LORDS");
-  expect(card.querySelectorAll("[data-realm-buildings] li")).toHaveLength(2);
-  expect([...card.querySelectorAll("[data-realm-buildings] button")]).toEqual([]);
   act(() => card.querySelector<HTMLButtonElement>('[aria-label="Fragments 250"]')!.click());
   expect(onShop).toHaveBeenCalledTimes(1);
   const rankUp = card.querySelector<HTMLButtonElement>("[data-realm-castle]")!;

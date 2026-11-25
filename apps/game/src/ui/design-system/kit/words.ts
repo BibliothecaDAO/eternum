@@ -1169,7 +1169,7 @@ export const REINFORCE = {
 export const ARMIES = "Armies";
 export const ARMY_SLOT_WORDS = {
   title: "All army slots",
-  count: (active: number, allowed: number, most: number) => `${active} / ${allowed} active (${most} max)`,
+  count: (active: number, allowed: number) => `${active}/${allowed}`,
   open: (slot: number) => `Slot ${slot} · Open`,
   readyAtHome: (troops: string) => `${troops} ready at home`,
   anyTroop: "Any troop type",
@@ -2269,13 +2269,6 @@ export const RESEARCH_TREE = {
  * An army's per-tile resource reward.
  */
 export const ARMY_DETAIL = {
-  /**
-   * What each tile the army explores sends home, on its stamina row: Essence or Labor, one of the two each reveal, as
-   * the contract draws it (exploration_rewards.cairo's reveal_reward). The chip's name reads the label then the amount.
-   */
-  revealPays: (amount: string) => `+${amount} a tile`,
-  revealPaysLabel: `${ESSENCE} or ${LABOR},`,
-  stamina: "Stamina",
   troops: (count: number) => formatCount(count, "troop"),
 } as const;
 

@@ -1,10 +1,10 @@
 import "./frontier-desktop.css";
 
 import { homeIcon, type HomeKind } from "@/ui/design-system/home-icons";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudChip, HudIconButton, HudRow, HudTier } from "@/ui/design-system/kit/hud-elements";
+import { Icon } from "@/ui/design-system/icon";
+import { HudIconButton } from "@/ui/design-system/kit/hud-elements";
 import { OrderLine } from "@/ui/design-system/kit/order-emblem";
-import { CLOSE, REALM, SHOP_WORDS, SHOW_MY_REALM, UPGRADE, type Rank } from "@/ui/design-system/kit/words";
+import { CLOSE, REALM, SHOP_WORDS, SHOW_MY_REALM, UPGRADE } from "@/ui/design-system/kit/words";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
 import { aspectName, FRAGMENTS, formatShort, LORDS, type AspectId } from "@bibliothecadao/types";
@@ -13,16 +13,6 @@ import type { ReactNode } from "react";
 import { FRONTIER_STORES, isMadeStore, isTroopStore, type StoreKind } from "../stores";
 import { AspectMedallion } from "./realm-header-chip";
 import { LandingDelta, STORE_TONES, storeLine, storeRateText, type StoreReading } from "./status-strip";
-
-export interface RealmBuildingItem {
-  key: string;
-  icon: IconMeaning;
-  name: string;
-  tier?: Rank;
-  rankLabel?: string;
-  rateIcon?: IconMeaning;
-  rate?: string;
-}
 
 export interface RealmRankUp {
   name: string;
@@ -39,7 +29,6 @@ export const RealmCard = ({
   stores,
   fragments,
   lords,
-  buildings,
   storeCard,
   onStore,
   onShop,
@@ -56,7 +45,6 @@ export const RealmCard = ({
   stores: readonly StoreReading[];
   fragments: number | null;
   lords: number | null;
-  buildings?: readonly RealmBuildingItem[];
   storeCard?: ReactNode;
   onStore?: (kind: StoreKind) => void;
   onShop?: () => void;
@@ -150,32 +138,6 @@ export const RealmCard = ({
       </ul>
     </div>
     {storeCard}
-    {buildings && buildings.length > 0 && (
-      <ul data-realm-buildings className="frontier-realm-card__buildings">
-        {buildings.map((building) => (
-          <li key={building.key}>
-            <HudRow
-              lead={<Icon name={building.icon} size={28} />}
-              title={
-                <span className="flex items-center gap-1.5">
-                  <span className="truncate">{building.name}</span>
-                  {building.tier !== undefined && <HudTier tier={building.tier} />}
-                  {building.rankLabel && <HudChip>{building.rankLabel}</HudChip>}
-                </span>
-              }
-              detail={
-                building.rate && (
-                  <span className="inline-flex items-center gap-1 tabular-nums text-hud-good">
-                    {building.rateIcon && <Icon name={building.rateIcon} size={14} />}
-                    {building.rate}
-                  </span>
-                )
-              }
-            />
-          </li>
-        ))}
-      </ul>
-    )}
   </section>
 );
 

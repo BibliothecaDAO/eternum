@@ -255,12 +255,12 @@ it.each(["phone", "desktop"] as const)(
 it("names the next slot past the realm's allowance with the rank that unlocks it, and none once every slot is open", () => {
   const limits = { settlement_armies: 3, city_armies: 4, kingdom_armies: 4, empire_armies: 6 } as never;
   expect(readArmySlots(limits, 1, 3)).toEqual({
-    count: "1 / 3 active (6 max)",
+    count: "1/3",
     nextLocked: { number: 4, rank: "City" },
   });
   expect(readArmySlots(limits, 2, 4)).toEqual({
-    count: "2 / 4 active (6 max)",
+    count: "2/4",
     nextLocked: { number: 5, rank: "Empire" },
   });
-  expect(readArmySlots(limits, 6, 6)).toEqual({ count: "6 / 6 active (6 max)", nextLocked: undefined });
+  expect(readArmySlots(limits, 6, 6)).toEqual({ count: "6/6", nextLocked: undefined });
 });

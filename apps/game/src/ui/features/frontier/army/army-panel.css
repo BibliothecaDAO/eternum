@@ -1,40 +1,28 @@
 .army-detail {
   display: flex;
   flex-direction: column;
-  gap: theme(spacing.3);
-  padding-top: theme(spacing.1);
+  gap: theme(spacing.2);
 }
 .army-detail__head {
   display: flex;
   align-items: center;
   gap: theme(spacing.3);
 }
-.army-detail__who {
+.army-detail__portrait {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+.army-detail__portrait > .ui-portrait {
+  width: 52px;
+  height: 52px;
+}
+.army-detail__body {
   display: flex;
   min-width: 0;
+  flex: 1;
   flex-direction: column;
-  gap: 2px;
-}
-.army-detail__title {
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-title);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: rgb(var(--hud-ink));
-}
-.army-detail__sub {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: theme(spacing.1);
-  font-size: var(--hud-text-label);
-  color: var(--hud-muted);
-  font-variant-numeric: tabular-nums;
-}
-.army-detail__stamina {
-  display: flex;
-  flex-direction: column;
-  gap: theme(spacing[1.5]);
+  gap: theme(spacing[2.5]);
 }
 .army-detail__row {
   display: flex;
@@ -42,16 +30,29 @@
   justify-content: space-between;
   gap: theme(spacing.2);
 }
-.army-detail__label {
-  font-size: var(--hud-text-label);
-  font-weight: var(--hud-weight-strong);
-  color: rgb(var(--hud-ink));
-}
-.army-detail__figure {
+.army-detail__troops {
   display: inline-flex;
   align-items: center;
   gap: theme(spacing.1);
-  font-size: var(--hud-text-label);
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-chip);
+  background: var(--hud-well);
+  padding: 2px theme(spacing.2);
+  font-size: var(--hud-text-strong);
   font-weight: var(--hud-weight-strong);
-  color: var(--hud-good);
+  color: rgb(var(--hud-ink));
+}
+.army-detail__full {
+  font-size: var(--hud-text-label);
+  color: var(--hud-muted);
+}
+.army-detail__stamina {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.2);
+}
+.army-detail__figure {
+  font-size: var(--hud-text-strong);
+  font-weight: var(--hud-weight-strong);
+  color: rgb(var(--hud-ink));
 }

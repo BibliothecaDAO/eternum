@@ -423,13 +423,52 @@ button.frontier-stock__face:hover {
   color: var(--hud-good);
   font-weight: var(--hud-weight-strong);
 }
-.frontier-realm-card__buildings {
-  display: flex;
-  min-height: 0;
-  flex-direction: column;
-  gap: 6px;
-  overflow-y: auto;
-  padding: 0 12px 12px;
+
+.frontier-corner--left .frontier-stocks {
+  gap: 0;
+  padding: 10px 10px 8px;
+}
+.frontier-corner--left .frontier-stocks__row {
+  gap: 2px;
+}
+.frontier-corner--left .frontier-stocks__row + .frontier-stocks__row {
+  margin-top: 8px;
+  border-top: 1px solid var(--hud-divider);
+  padding-top: 8px;
+}
+.frontier-corner--left .frontier-stock__face {
+  height: auto;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  padding: 2px 0;
+}
+.frontier-corner--left button.frontier-stock__face:hover {
+  background: var(--hud-hover);
+}
+.frontier-corner--left .frontier-stocks__row:first-child .frontier-stock__icon {
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid color-mix(in srgb, rgb(var(--hud-gold)) 55%, var(--hud-line));
+  border-radius: var(--hud-radius-round);
+  background: radial-gradient(circle at 50% 35%, var(--hud-surface-from), var(--hud-well) 80%);
+}
+.frontier-corner--left .frontier-stock[data-wide] .frontier-stock__face {
+  align-items: center;
+  padding: 2px 4px;
+}
+.frontier-corner--left .frontier-stock[data-wide] .frontier-stock__face > .frontier-stock__caption {
+  display: none;
+}
+.frontier-corner--left .frontier-stock[data-wide] .frontier-stock__icon {
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-well);
 }
 
 .frontier-slots {
@@ -461,36 +500,32 @@ button.frontier-stock__face:hover {
   min-height: 0;
   flex-direction: column;
   overflow-y: auto;
-  gap: 8px;
-  padding: 10px 10px 12px;
+  gap: 0;
+  padding: 0;
 }
 .frontier-slot {
   display: flex;
   width: 100%;
-  min-height: 46px;
+  min-height: 42px;
   align-items: center;
   gap: 8px;
-  border: 1px dashed var(--hud-line-strong);
-  border-radius: var(--hud-radius-control);
-  background: color-mix(in srgb, var(--hud-well) 60%, transparent);
-  padding: 6px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--hud-divider);
+  border-left: 3px solid transparent;
+  background: transparent;
+  padding: 6px 12px 6px 9px;
   color: rgb(var(--hud-ink));
   text-align: left;
 }
 .frontier-slot[data-slot-state="army"] {
-  border-style: solid;
-  border-color: var(--hud-line);
-  background: var(--hud-well);
   cursor: pointer;
 }
 .frontier-slot[data-slot-state="army"]:hover {
-  border-color: var(--hud-line-strong);
   background: var(--hud-hover);
 }
 .frontier-slot[data-slot-state="army"][aria-pressed="true"] {
-  border: 1.5px solid rgb(var(--hud-gold));
+  border-left-color: rgb(var(--hud-gold));
   background: var(--hud-chosen);
-  box-shadow: 0 0 12px color-mix(in srgb, rgb(var(--hud-gold)) 35%, transparent);
 }
 .frontier-slot[data-slot-state="army"]:disabled {
   cursor: default;
@@ -500,8 +535,7 @@ button.frontier-stock__face:hover {
   align-items: center;
   gap: theme(spacing[1.5]);
   margin: 0;
-  border-top: 1px solid var(--hud-divider);
-  padding-top: theme(spacing[1.5]);
+  padding: theme(spacing.2) 12px;
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
 }
@@ -705,4 +739,12 @@ button.frontier-stock__face:hover {
 .frontier-realm-card__head[data-closable] .frontier-rank-label {
   position: static;
   margin-left: auto;
+}
+[data-rail-panel] .oath-sockets {
+  gap: theme(spacing[1.5]);
+}
+[data-rail-panel] .oath-socket {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--hud-radius-round);
 }

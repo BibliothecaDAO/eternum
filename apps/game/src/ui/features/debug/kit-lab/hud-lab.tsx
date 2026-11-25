@@ -79,7 +79,6 @@ import { labQuestRulesFact } from "@/lab/game/quest-scenario";
 import { DayMedallion } from "@/ui/features/frontier/hud/day-pill";
 import { DailyQuestChip } from "@/ui/features/frontier/hud/daily-quest-chip";
 import type { MapLayers } from "@/ui/features/frontier/hud/map-layers";
-import type { RealmBuildingItem } from "@/ui/features/frontier/hud/realm-card";
 import { PlaceMenu } from "@/ui/features/frontier/hud/surface-deep-switch";
 import { WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
@@ -1122,7 +1121,7 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
     return <RefillConfirm stamina={stamina} held={army.fragments} sending={false} onRefill={noop} onCancel={noop} />;
   return (
     <HudSheet
-      label={base.name}
+      label={`${ARMY} 2`}
       beside={<HudIconButton icon="trash" label={ARMY_MANAGEMENT.remove} kind="danger" size="sm" onClick={noop} />}
       onClose={noop}
     >
@@ -1252,7 +1251,6 @@ const LabRealmCard = ({ lab }: { lab: LabState }) => (
     stores={everyStore(lab.stores)}
     fragments={LAB_FRAGMENTS}
     lords={lab.visiting ? null : (lab.purse?.lords ?? LAB_LORDS)}
-    buildings={lab.realmView === undefined ? undefined : LAB_REALM_BUILDINGS}
     storeCard={lab.storeCard && <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />}
     onStore={noop}
     onShop={noop}
@@ -1313,11 +1311,6 @@ const LAB_ASPECT: AspectId = 1;
 const LAB_ORDER_ID = 12;
 const LAB_MAP_LAYERS: MapLayers = { layers: [0, 1], shown: 0, go: noop };
 const LAB_LORDS = 320;
-const LAB_REALM_BUILDINGS: readonly RealmBuildingItem[] = [
-  { key: "farm", icon: "farm", name: "Farm", tier: 2, rateIcon: "wheat", rate: "+20/min" },
-  { key: "workshop", icon: "workshop", name: "Workshop", tier: 2, rateIcon: "labor", rate: "+12/min" },
-  { key: "barracks", icon: "barracks", name: "Barracks", tier: 5, rateIcon: "troops", rate: "+3/min" },
-];
 
 /** The place a lab state has open, as the desktop's round places light it. */
 const labPlaces = (lab: LabState) => ({
