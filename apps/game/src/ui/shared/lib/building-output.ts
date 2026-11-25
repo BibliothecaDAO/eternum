@@ -2,7 +2,7 @@ import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-c
 import { BuildingType, getProducedResource, RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 
 /** What one building of a producing type adds, in whole units a second: its base, and its total with its research. */
-export type BuildingOutput = { base: number; total: number };
+type BuildingOutput = { base: number; total: number };
 
 /**
  * What one building of a producing type adds to its structure's production: the one source of a building's output for

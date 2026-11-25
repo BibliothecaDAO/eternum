@@ -26,13 +26,14 @@ import type { TroopStack } from "@/ui/features/military/components/unified-army-
 import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import { MilitaryModal } from "./military-modal";
 import { GAME_FAMILIES } from "../../../../../../../config/source/common/native-preset-modes";
+import { HUD_QUERIES } from "@/tokens";
 
 /** The viewport's width class as the HUD reads it: compact (a phone) or the desktop, and a way to cross `lg`. */
 const viewport = (compact: boolean) => {
   const listeners = new Set<() => void>();
   const state = { compact };
   window.matchMedia = ((query: string) => ({
-    matches: query.includes("orientation") ? false : state.compact,
+    matches: query === HUD_QUERIES.sideways ? false : state.compact,
     addEventListener: (_: string, listener: () => void) => listeners.add(listener),
     removeEventListener: (_: string, listener: () => void) => listeners.delete(listener),
   })) as unknown as typeof window.matchMedia;

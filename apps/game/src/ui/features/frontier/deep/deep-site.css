@@ -24,7 +24,7 @@
   font-size: var(--hud-text-body);
   line-height: var(--hud-leading-body);
 }
-@media (max-width: 1023px) and (orientation: portrait) {
+@media (orientation: portrait) and (max-width: 1439px) {
   .ui-sheet:has([data-deep-slots]) {
     max-height: min(62dvh, calc(100dvh - 10rem));
   }

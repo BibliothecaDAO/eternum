@@ -1,9 +1,10 @@
-import { Color } from "three";
+import { BiomeType } from "@bibliothecadao/types";
+import { Color, SRGBColorSpace } from "three";
 import { describe, expect, it } from "vitest";
+import { requireBiomeColor } from "./biome-colors";
 import {
   HIGHLIGHT_LAYER_PALETTES,
-  REALM_PLOT_HOVER_PALETTE,
-  REALM_PLOT_PALETTE,
+  plotLookOn,
   resolveHighlightLayerPalette,
   resolveHoverVisualPalette,
 } from "./worldmap-interaction-palette";
@@ -37,21 +38,34 @@ describe("worldmap interaction palette", () => {
     );
   });
 
-  it("uses a green-dominant palette for Realm open plots, build highlights and plot hover", () => {
-    const build = resolveHighlightLayerPalette("build");
-    for (const hex of [
-      REALM_PLOT_PALETTE.fill,
-      REALM_PLOT_PALETTE.rim,
-      build.routeColor,
-      build.endpointColor,
-      REALM_PLOT_HOVER_PALETTE.baseColor,
-      REALM_PLOT_HOVER_PALETTE.rimColor,
+  it("draws a realm's open plots in its ground's own colour: lighter on dark ground, darker on light ground", () => {
+    const lightness = (rgb: readonly number[]) => {
+      const { r, g, b } = new Color(rgb[0], rgb[1], rgb[2]).getRGB({ r: 0, g: 0, b: 0 }, SRGBColorSpace);
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const groundOf = (biome: BiomeType) => {
+      const { r, g, b } = requireBiomeColor(biome);
+      return lightness([r, g, b]);
+    };
+    for (const biome of [
+      BiomeType.Grassland,
+      BiomeType.Taiga,
+      BiomeType.TemperateDesert,
+      BiomeType.TropicalRainForest,
     ]) {
-      const color = new Color(hex);
-      expect(color.g).toBeGreaterThan(color.r);
-      expect(color.g).toBeGreaterThan(color.b);
+      const look = plotLookOn(biome);
+      expect(lightness(look.rim)).toBeGreaterThan(lightness(look.fill));
+      expect(lightness(look.fill)).toBeGreaterThan(groundOf(biome));
     }
-    expect(REALM_PLOT_PALETTE.rimOpacity).toBeGreaterThan(REALM_PLOT_PALETTE.fillOpacity);
+    for (const biome of [BiomeType.Snow, BiomeType.Tundra]) {
+      const look = plotLookOn(biome);
+      expect(lightness(look.rim)).toBeLessThan(lightness(look.fill));
+      expect(lightness(look.fill)).toBeLessThan(groundOf(biome));
+    }
+    const grass = plotLookOn(BiomeType.Grassland);
+    expect(grass.rim[3]).toBeGreaterThan(grass.fill[3]);
+    expect(grass.hover.baseColor).toBe(grass.lit.routeColor);
+    expect(plotLookOn(BiomeType.Snow).lit.routeColor).not.toBe(grass.lit.routeColor);
   });
 
   it("gives the teach highlight a distinct luminous colour that collides with no existing map meaning", () => {

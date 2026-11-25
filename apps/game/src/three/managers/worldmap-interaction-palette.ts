@@ -1,4 +1,7 @@
 import type { ActionType } from "@bibliothecadao/eternum";
+import type { BiomeType } from "@bibliothecadao/types";
+import { Color, SRGBColorSpace } from "three";
+import { requireBiomeColor } from "./biome-colors";
 
 export type WorldmapHoverVisualMode = "fill" | "outline";
 
@@ -25,21 +28,36 @@ const TAKE_BESIDE: HighlightLayerPalette = {
   endpointColor: 0xffe49a,
 };
 
-export const REALM_PLOT_PALETTE = {
-  fill: 0x29b355,
-  fillOpacity: 0.34,
-  rim: 0x24994a,
-  rimOpacity: 0.78,
-  selectionRoute: 0x2ecc58,
-  selectionEndpoint: 0x6ef292,
-} as const;
+type Rgba = readonly [number, number, number, number];
 
-export const REALM_PLOT_HOVER_PALETTE: HoverVisualPalette = {
-  baseColor: REALM_PLOT_PALETTE.selectionRoute,
-  rimColor: REALM_PLOT_PALETTE.selectionEndpoint,
-  intensity: 0.55,
-  visualMode: "fill",
+export interface PlotLook {
+  fill: Rgba;
+  rim: Rgba;
+  lit: HighlightLayerPalette;
+  hover: HoverVisualPalette;
+}
+
+const shade = (ground: Color, toward: number, amount: number): Color => {
+  const { r, g, b } = ground.getRGB({ r: 0, g: 0, b: 0 }, SRGBColorSpace);
+  const mix = (channel: number) => channel + (toward - channel) * amount;
+  return new Color().setRGB(mix(r), mix(g), mix(b), SRGBColorSpace);
 };
+
+export function plotLookOn(biome: BiomeType): PlotLook {
+  const ground = requireBiomeColor(biome);
+  const { r, g, b } = ground.getRGB({ r: 0, g: 0, b: 0 }, SRGBColorSpace);
+  const light = 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.6;
+  const toward = light ? 0 : 1;
+  const fill = shade(ground, toward, 0.3);
+  const rim = shade(ground, toward, light ? 0.45 : 0.65);
+  const lit = shade(ground, toward, light ? 0.6 : 0.85);
+  return {
+    fill: [fill.r, fill.g, fill.b, 0.3],
+    rim: [rim.r, rim.g, rim.b, 1],
+    lit: { routeColor: rim.getHex(), endpointColor: lit.getHex() },
+    hover: { baseColor: rim.getHex(), rimColor: lit.getHex(), intensity: 0.55, visualMode: "fill" },
+  };
+}
 
 export const HIGHLIGHT_LAYER_PALETTES: Record<string, HighlightLayerPalette> = {
   move: {
@@ -59,10 +77,6 @@ export const HIGHLIGHT_LAYER_PALETTES: Record<string, HighlightLayerPalette> = {
   help: {
     routeColor: 0xe36cff,
     endpointColor: 0xf7bbff,
-  },
-  build: {
-    routeColor: REALM_PLOT_PALETTE.selectionRoute,
-    endpointColor: REALM_PLOT_PALETTE.selectionEndpoint,
   },
   use_site: TAKE_BESIDE,
   create_army: {

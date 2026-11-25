@@ -3,9 +3,9 @@ import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 
 const form = vi.hoisted(() => ({ tablet: false }));
-vi.mock("@/shell/frame/layout", async (original) => ({
-  ...(await original<typeof import("@/shell/frame/layout")>()),
-  useTablet: () => form.tablet,
+vi.mock("@/hooks/helpers/use-compact-hud", async (original) => ({
+  ...(await original<typeof import("@/hooks/helpers/use-compact-hud")>()),
+  useHudTablet: () => form.tablet,
 }));
 
 import { MenuPage } from "./menu-page";

@@ -2,7 +2,7 @@ import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useLayout } from "@/shell/frame/layout";
+import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -54,7 +54,7 @@ export const ArmyDock = ({
   const openCount = ordersAllowed
     ? (openSlots?.length ?? Math.max(0, realm.base.troop_max_explorer_count - armies.length))
     : 0;
-  const desktop = useLayout() === "desktop";
+  const desktop = useHudLayout() === "desktop";
   const free = ordersAllowed ? (openSlots ?? []).toSorted((left, right) => left.slot - right.slot) : [];
   const next = free[0];
   const slots = [

@@ -20,8 +20,7 @@ interface ResizeRendererDisplayInput {
 }
 
 export function resolveRendererTargetPixelRatio(input: { devicePixelRatio: number }): number {
-  const devicePixelRatio = Math.max(input.devicePixelRatio || 1, 1);
-  return Math.min(devicePixelRatio, resolveRendererPixelRatioCap());
+  return Math.min(input.devicePixelRatio || 1, resolveRendererPixelRatioCap());
 }
 
 export function resolveRendererPixelRatioCap(): number {

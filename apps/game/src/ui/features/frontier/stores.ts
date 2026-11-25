@@ -22,7 +22,11 @@ type Store = {
  * limit.
  */
 export const FRONTIER_STORES = {
-  essence: { resource: ResourcesIds.Essence, icon: resourceMeaning(ResourcesIds.Essence), word: ESSENCE },
+  essence: {
+    resource: ResourcesIds.Essence,
+    icon: resourceMeaning(ResourcesIds.Essence),
+    word: ESSENCE,
+  },
   labor: {
     resource: ResourcesIds.Labor,
     icon: resourceMeaning(ResourcesIds.Labor),
