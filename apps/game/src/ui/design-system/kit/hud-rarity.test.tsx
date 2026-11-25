@@ -2,7 +2,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it } from "vitest";
 
-import { HudTier, HudTierStep } from "./hud-elements";
+import { HudTier } from "./hud-elements";
 
 const drawn = (node: React.ReactElement) => {
   const host = document.createElement("div");
@@ -22,11 +22,4 @@ it("draws a tier as a gem in its rarity's colour, named by its numeral alone, I 
     expect(gem.getAttribute("aria-label")).toBe(numeral);
     expect(gem.dataset.tier).toBe(String(tier));
   }
-});
-
-it("steps from the gem held to the next", () => {
-  expect(drawn(<HudTierStep from={1} to={2} />).textContent).toBe("I→II");
-  const step = drawn(<HudTierStep from={3} to={4} />);
-  expect(step.textContent).toBe("III→IV");
-  expect(step.querySelector("[role='img']")?.getAttribute("aria-label")).toBe("III → IV");
 });

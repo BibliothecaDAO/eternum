@@ -62,21 +62,8 @@ it("writes a reveal's fractional pay the same on its pill as in the Log, from th
   expect(pill).toBe("+58");
 });
 
-it("writes the same 57.6 reveal on Today's line, and keeps its fraction until the day's total is written", async () => {
-  const { dayLogLine } = await import("../log/day-line");
+it("keeps a reveal's fraction until the day's total is written", async () => {
   const { totalToday } = await import("../log/today-totals");
-  const storyPayload = revealStory(PAYOUT);
-  const presentation = buildStoryEventPresentation({
-    storyType: "ExplorationReward",
-    storyPayload,
-    entityId: null,
-    ownerAddress: "0x1",
-    viewerAddress: null,
-  } as never);
-  const { frontierDay } = await import("../deploy/deploy-fixture");
-  const { store } = frontierDay();
-  expect(dayLogLine({ story: "ExplorationReward", storyPayload, presentation } as never, store)).toBe("+58 Essence");
-
   const fiveReveals = Array.from({ length: 5 }, () => ({
     story: "ExplorationReward",
     storyPayload: { resource_type: ResourcesIds.Essence, amount: String(PAYOUT) },

@@ -188,7 +188,10 @@ it("states why each locked or short row is held back in plain words without repe
       />,
     ),
   );
-  expect(host.querySelector("[data-lab='node-choice'] [data-lock-reason]")!.textContent).toBe("Needs 2,500 Essence");
+  expect(host.querySelector("[data-lab='node-choice'] [data-lock-reason]")).toBeNull();
+  expect(host.querySelector("[data-lab='node-choice'] [aria-label='Needs 2,500 Essence']")?.className).toContain(
+    "text-hud-",
+  );
 });
 
 describe("the picked building's choice, at the panel's foot (the owner's pick C)", () => {
@@ -196,7 +199,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
 
   it("keeps what a finished node gives: the Shrine researched, a Farm at Legendary", () => {
     draw("shrine");
-    expect(choice()!.textContent).toContain("Armies find Shrines · Open");
+    expect(choice()!.textContent).toContain("Shrine lore · Open");
     const legendaryFarm = readResearchTree({
       ...MID_REALM,
       learned: { ...MID_REALM.learned, 0: { tier: 5 } },
@@ -215,7 +218,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
         />,
       ),
     );
-    expect(choice()!.textContent).toContain("Farm wheat · 200%");
+    expect(choice()!.textContent).toContain("Farm · 200%");
   });
 
   it("stands after the whole tree, outside its scroll, with the price held against and Research", () => {
@@ -224,9 +227,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     // Not inside the tree's scroll: no tile the tree scrolls to can push it out of view.
     expect(tree.contains(choice())).toBe(false);
     expect(tree.compareDocumentPosition(choice()!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(choice()!.textContent).toContain("Farm");
-    expect(choice()!.querySelector(".ui-tier-step")?.getAttribute("aria-label")).toBe("I → II");
-    expect([...choice()!.querySelectorAll(".ui-tier")].map((gem) => gem.textContent)).toEqual(["I", "II"]);
+    expect(choice()!.querySelector("[data-choice-summary]")?.textContent).toBe("Farm · 120% → 140%");
     expect(host.querySelectorAll("button[aria-label='Upgrade Farm']")).toHaveLength(1);
     const price = nodes
       .find(({ key }) => key === "row-0")!
@@ -236,12 +237,10 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     );
   });
 
-  it("is put away with its X, leaving the tree, and opens again on the tile tapped", () => {
+  it("says to tap a node while none is picked, and opens on the tile tapped", () => {
     const onPick = vi.fn();
-    draw("row-0", vi.fn(), onPick);
-    act(() => choice()!.querySelector<HTMLButtonElement>("[aria-label='Close']")!.click());
-    expect(onPick).toHaveBeenCalledWith(null);
     draw(null, vi.fn(), onPick);
+    expect(host.querySelector(".research-bar-idle")?.textContent).toBe("Tap a node to see its price");
     expect(choice()).toBeNull();
     expect(host.querySelectorAll("[data-node]")).toHaveLength(nodes.length);
     act(() => host.querySelector<HTMLButtonElement>("[data-node='row-1']")!.click());
@@ -254,7 +253,7 @@ it("shows the Farm's output step without a production formula", () => {
   const lines = [...host.querySelectorAll("[data-lab='node-choice'] [data-choice-summary]")].map(
     (line) => line.textContent,
   );
-  expect(lines).toEqual(["Farm wheat · 120% → 140%"]);
+  expect(lines).toEqual(["Farm · 120% → 140%"]);
   expect(host.querySelector("[data-node='row-0'] [data-research-effect]")?.textContent).toBe("120% → 140%");
   expect(host.querySelector("[data-node='row-4'] [data-research-effect]")?.textContent).toBe(
     "2 wheat per troop → 1.8 wheat per troop (less)",
@@ -332,7 +331,7 @@ it.each([
   );
   const card = host.querySelector("[data-lab='node-choice']")!;
   const effect = card.querySelector("[data-choice-summary]")!;
-  expect(saidWithGems(effect)).toBe(`New armies start with Logistics · ${label}`);
+  expect(saidWithGems(effect)).toBe(`Supply yard · ${label}`);
 });
 
 /** An element's words with each gem said by its name, as a screen reader reads the line. */
@@ -415,7 +414,9 @@ it("keeps cards free of inline Upgrade buttons and routes upgrading through the 
     ),
   );
   expect(host.querySelector("[data-node='row-6'] [data-research-effect-short]")?.textContent).toBe("2 → 3 Oaths");
-  expect(host.querySelector("[data-lab='node-choice'] [data-lock-reason]")?.textContent).toBe("Needs 1,000 Labor");
+  expect(host.querySelector("[data-lab='node-choice'] [aria-label='Needs 1,000 Labor']")?.className).toContain(
+    "text-hud-",
+  );
 });
 
 it("renders the 3-track Era tree with measured SVG prerequisite links on desktop and phone", () => {

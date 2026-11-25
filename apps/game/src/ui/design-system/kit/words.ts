@@ -343,6 +343,7 @@ import {
   formatFigure,
   formatGain,
   formatCount,
+  formatShort,
   FRIEND_FRAGMENTS,
   FRIEND_GLORY,
   FRONTIER_TROOP_NAMES,
@@ -400,15 +401,6 @@ export const tomorrowLasts = (seconds: number | undefined): ClockPhrase => ({
 });
 export const phraseText = ({ words, reading, readingFirst }: ClockPhrase): string =>
   readingFirst ? `${reading} ${words}` : `${words} ${reading}`;
-
-/**
- * The day's end, before it comes (Devcon feedback, 4 November 2026: players did not know the day was ending or what it
- * takes): the last hour's line, which opens Today, and Today's block of what goes and what can still be done. What goes
- * is the contract's: each day is its own map, and an army lives only on its day's map (expeditions.cairo).
- */
-export const DAY_END = {
-  goes: "At day end, today's map and armies go",
-} as const;
 
 /** ClockChip's prefix words: a moment that begins something, or one that ends it. */
 export const CLOCK_WORDS = {
@@ -553,6 +545,12 @@ export const REALM = "Realm";
 export const WORLD = "World";
 /** The realm's way home from its card's header: the map centred on it. */
 export const SHOW_MY_REALM = "Show my realm";
+export const REALM_CARD_WORDS = {
+  nextRank: "Next rank",
+  armySlots: (count: number) => `+${formatCount(count, "army slot")}`,
+  needs: "Needs",
+  stores: "Stores",
+} as const;
 export const RESEARCH = "Research";
 export const CHAT = "Chat";
 export const MENU = "Menu";
@@ -561,6 +559,10 @@ export const unreadFeedEvents = (count: number) => `Unread feed events: ${count}
 
 /** The Menu's rows and its two buttons. */
 export const TODAY = "Today";
+export const TODAY_WORDS = {
+  ends: (endsAt: number | undefined) => `Ends ${formatClockTime(endsAt)}`,
+  yesterdaysRecap: "Yesterday's recap",
+} as const;
 export const PRODUCTION = "Production";
 /** A store at its limit. */
 export const FULL = "Full";
@@ -682,7 +684,6 @@ export const CANCEL = "Cancel";
 /** A highlighted tile on its tooltip: ground not yet seen, and troops passed to another of the player's armies. */
 export const UNEXPLORED = "Unexplored";
 /** A reveal that paid under a unit, in the day log: what was done, with no amount (findGain). */
-export const EXPLORED = "Explored";
 export const TRANSFER = "Transfer";
 /** A good held whose weight the game has not given: its donkeys cannot be counted, so it cannot be sent. */
 export const WEIGHT_UNKNOWN = "Weight unknown: cannot be sent";
@@ -747,12 +748,6 @@ export const ON_ITS_WAY = "Sending…";
 /** The order bar while an army's order is in flight and a tile is tapped for it: that tile is its next order. */
 export const NEXT_ORDER = "Next order";
 export const AFTER_THIS_ONE = "After this one";
-/** How an attack ended, the one word on its result: the guard gone, the army gone, or both still standing. */
-/** The day log's line for a fight: "Rift: Army lost, lost 154, guard 1,100 to 1,028". */
-export const fightLine = (site: string, verdict: string, lost: string, guardBefore: string, guardAfter: string) =>
-  `${site}: ${verdict}, lost ${lost}, guard ${guardAfter} left`;
-/** A clear's line with what the attack that won it cost: "Rift cleared, lost 68". */
-export const clearCostLine = (line: string, lost: string) => `${line}, lost ${lost}`;
 /** Why an attack cannot run, or what it costs, in one line under its button. */
 export const tooFarFrom = (site: string) => `Too far from the ${site}`;
 /**
@@ -884,36 +879,26 @@ export const DEEP_WORDS = {
 export const DAY_BANNER_WORDS = {
   today: "Today",
   quest: "Quest",
-  dailyQuest: (quest: string) => `Daily quest · ${quest}`,
   reading: "Loading today's quest…",
-  reward: "Reward",
   collect: "Collect",
   collecting: "Collecting…",
   collected: "Collected",
   collectAgain: "Collect again",
-  worldBane: "World bane",
-  baneEnded: "Your Aspect ended the bane",
-  baneEndedShort: "Ended",
-  baneFrom: (aspect: string) => `Bane from ${aspect}`,
-  rivalBane: (aspect: string) => `${aspect}'s bane`,
-  heightBlocked: "Your Aspect's hyperstructure does not grow while the bane lasts",
+  count: (progress: number, target: number, unit: string) =>
+    `${formatExact(progress)} of ${formatExact(target)} ${unit}`,
   beastBane: (percent: number) => `Guarded sites have ${formatExact(percent)}% strength while the bane lasts`,
   staminaBane: (percent: number) => `Stamina returns at ${formatExact(percent)}% while the bane lasts`,
   productionBane: (percent: number) => `Production runs at ${formatExact(percent)}% while the bane lasts`,
-  count: (progress: number, target: number, unit: string) =>
-    `${formatExact(progress)} of ${formatExact(target)} ${unit}`,
+  fraction: (progress: number, target: number) => `${formatShort(progress)}/${formatShort(target)}`,
   objectiveLine: (objective: string, target: number) => {
     const space = objective.indexOf(" ");
     return space === -1
-      ? `${objective} ${formatExact(target)} today`
-      : `${objective.slice(0, space)} ${formatExact(target)} ${objective.slice(space + 1)} today`;
+      ? `${objective} ${formatExact(target)}`
+      : `${objective.slice(0, space)} ${formatExact(target)} ${objective.slice(space + 1)}`;
   },
   rewardAmount: (amount: number, resource: ResourcesIds) => `${formatAmount(amount)} ${resourceName(resource)}`,
   summary: (objective: string, progress: number, target: number, labor: number) =>
     `${objective} · ${formatExact(progress)} of ${formatExact(target)} · +${formatExact(labor)} ${LABOR}`,
-  members: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)} members`,
-  membersShort: (completed: number, required: number) => `${formatExact(completed)} of ${formatExact(required)}`,
-  triumph: "Triumph",
   triumphRule: {
     1: (percent: number) => `Sites are found at ${formatExact(percent)}% of the usual odds`,
     2: (percent: number) => `Stamina returns at ${formatExact(percent)}%`,
@@ -1145,7 +1130,6 @@ export const DEPLOY_WORDS = {
 } as const;
 export const SIZE_ROW = { fewer: "One fewer", more: "One more", max: "Max" } as const;
 export const BUILD = "Build";
-export const buildNamed = (building: string) => `${BUILD} ${building}`;
 export const BUILT = "Built";
 export const plotsUsed = (used: number, total: number) => `${used} / ${total} plots`;
 export const armiesHere = (count: number) => (count === 1 ? "1 army" : `${count} armies`);
@@ -1205,11 +1189,6 @@ export const STORE_MAKERS = {
   castle: (rate: string) => `${CASTLE} · ${rate}`,
 };
 
-/** The day log's lines for what the player did, in the names the build cards and the dock use. */
-export const revealLine = (gain: string, resource: string) => `${gain} ${resource}`;
-export const builtLine = (building: string) => `${building} built`;
-export const deployedLine = (army: string) => `${army} deployed`;
-export const disbandedLine = (army: string) => `${army} deleted`;
 /** A day's count of tiles explored, on its total. */
 export const REVEALS = "Reveals";
 /** How deep a realm went beyond the spire, I to III. */
@@ -1335,7 +1314,6 @@ export const SHARED_LINK_WORDS = {
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
 
 export const SEASON_ERROR = "Season did not answer.";
-export const TODAY_ERROR = "Today did not answer.";
 /** A day's totals the player's history cannot give: the read keeps only the newest stories, or did not answer. */
 export const DAY_TOTALS_UNKNOWN = "This day's totals are unknown";
 
@@ -2222,7 +2200,7 @@ export const RESEARCH_TREE = {
   unlocked: "Unlocked",
   tierBadge: (numeral: string) => `Tier ${numeral}`,
   eraBadge: (numeral: string) => `Era ${numeral}`,
-  promptPick: "Select any node to inspect or upgrade",
+  promptPick: "Tap a node to see its price",
   states: RESEARCH_STATES,
   outputs: {
     fields: ["Fields", "Farm wheat"],
@@ -2277,7 +2255,6 @@ export const RESEARCH_TREE = {
   held: (noun: string, have: string, need: string) => `${noun} ${have} / ${need}`,
   upgrade: "Upgrade",
   levelUpCastle: "Upgrade the Castle",
-  complete: "Complete",
   less: `(${LESS_WORD})`,
   step: figureStep,
   price: (essence: string) => `${essence} ${ESSENCE}`,

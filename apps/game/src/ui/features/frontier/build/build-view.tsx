@@ -14,7 +14,7 @@ import {
   rankedTip,
 } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
-import { BUILD, BUILDING, BUILT, buildNamed, plotsUsed, type RankedWords } from "@/ui/design-system/kit/words";
+import { BUILD, BUILDING, BUILT, plotsUsed, type RankedWords } from "@/ui/design-system/kit/words";
 
 import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { ReactNode } from "react";
@@ -59,12 +59,21 @@ export const BuildView = ({
   onClose: () => void;
 }) => {
   const chosenTile = tiles[chosen];
-  const ordered = orderedTiles(tiles);
   return (
-    <HudSheet label={BUILD} beside={plots && <HudChip>{plotsUsed(plots.used, plots.total)}</HudChip>} onClose={onClose}>
+    <HudSheet
+      label={BUILD}
+      beside={
+        plots && (
+          <HudChip icons={["hexagon"]} tip={plotsUsed(plots.used, plots.total)}>
+            {`${plots.used} / ${plots.total}`}
+          </HudChip>
+        )
+      }
+      onClose={onClose}
+    >
       <div data-build-sheet className="build-sheet">
         <div data-build-grid className="build-grid">
-          {ordered.map(({ tile, index }) => (
+          {orderedTiles(tiles).map(({ tile, index }) => (
             <TileButton key={tile.key} tile={tile} chosen={index === chosen} onChoose={() => onChoose(index)} />
           ))}
         </div>
@@ -97,34 +106,37 @@ const ChosenFoot = ({
   sending: boolean;
   onBuild: () => void;
 }) => {
-  const standing = tile.standing;
-  const raised = standing.kind === "price" ? standing.raised : undefined;
-  const cost = standing.kind !== "built" && !refusal?.fix?.prices && (
-    <span className="inline-flex items-center gap-1">
-      <HudPrice prices={prices} />
+  const note = (
+    <span data-build-chosen className="build-chosen">
+      <b className="build-chosen__name">{tile.name}</b>
+      <ChosenLine tile={tile} prices={prices} />
+      {refusal?.fix?.prices && <HudPrice prices={refusal.fix.prices} />}
+    </span>
+  );
+  if (refusal) return <RefusedVerb word={BUILD} icon="build" refusal={refusal} note={note} />;
+  return (
+    <HudWindowFoot note={note}>
+      <HudButton kind="primary" icon="build" busy={sending ? BUILDING : undefined} onClick={onBuild}>
+        {BUILD}
+      </HudButton>
+    </HudWindowFoot>
+  );
+};
+
+const ChosenLine = ({ tile, prices }: { tile: BuildTile; prices: readonly Price[] }) => {
+  const raised = tile.standing.kind === "price" ? tile.standing.raised : undefined;
+  return (
+    <span className="build-chosen__line">
+      {tile.standing.kind !== "built" && <HudPrice prices={prices} />}
       {raised && (
         <span role="img" aria-label={raised} data-price-raised={raised} data-tip={raised} className="text-hud-warn">
           ↑
         </span>
       )}
-    </span>
-  );
-  const note = (
-    <span className="flex flex-col items-start gap-0.5">
-      {refusal?.fix?.prices && <HudPrice prices={refusal.fix.prices} />}
-      {cost}
       <span data-build-does className="build-does">
-        <HudRanked words={tile.does} />
+        {tile.gives.value !== undefined ? <Gives gives={tile.gives} /> : <HudRanked words={tile.does} />}
       </span>
     </span>
-  );
-  if (refusal) return <RefusedVerb word={buildNamed(tile.name)} icon="build" refusal={refusal} note={note} />;
-  return (
-    <HudWindowFoot note={note}>
-      <HudButton kind="primary" icon="build" busy={sending ? BUILDING : undefined} onClick={onBuild}>
-        {buildNamed(tile.name)}
-      </HudButton>
-    </HudWindowFoot>
   );
 };
 
@@ -134,7 +146,7 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
       size="sm"
       title={tile.name}
       picture={<SemanticIcon name={tile.icon} size={40} />}
-      corner={tileBadge(tile.standing)}
+      corner={<TileBadge standing={tile.standing} />}
       detail={
         <span className="flex w-full flex-col items-center gap-0.5">
           {tile.gives.value !== undefined && <Gives gives={tile.gives} />}
@@ -151,17 +163,20 @@ const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boole
 
 const asWords = (words: RankedWords | string): RankedWords => (typeof words === "string" ? [words] : words);
 
-const tileBadge = (standing: BuildTile["standing"]) =>
-  standing.kind === "built" ? (
-    <HudChip tone="good">{BUILT}</HudChip>
-  ) : standing.kind === "level" ? (
-    <HudChip>{rankName(standing.level)}</HudChip>
-  ) : undefined;
+const TileBadge = ({ standing }: { standing: BuildTile["standing"] }) => {
+  if (standing.kind === "price") return null;
+  const line = standing.kind === "built" ? BUILT : rankName(standing.level);
+  return (
+    <span role="img" aria-label={line} data-tip={line} className="build-badge" data-standing={standing.kind}>
+      <SemanticIcon name={standing.kind === "built" ? "check" : "lock"} size={12} />
+    </span>
+  );
+};
 
 const Gives = ({ gives }: { gives: BuildTile["gives"] }) => (
   <span className="build-tile-gives">
-    <SemanticIcon name={gives.icon} size={14} />
     {gives.value}
+    <SemanticIcon name={gives.icon} size={16} />
   </span>
 );
 
@@ -193,7 +208,7 @@ const PriceAmounts = ({ prices }: { prices: readonly PriceTag[] }) => {
           className={cn("inline-flex items-center gap-1", short ? "text-hud-bad" : "text-hud-ink")}
           aria-label={`${formatExact(amount)} ${PRICE_FACES[of].word}`}
         >
-          {PRICE_FACES[of].icon && <SemanticIcon name={PRICE_FACES[of].icon!} size={14} />}
+          {PRICE_FACES[of].icon && <SemanticIcon name={PRICE_FACES[of].icon!} size={15} />}
           {formatCharge(amount)}
         </span>
       ))}

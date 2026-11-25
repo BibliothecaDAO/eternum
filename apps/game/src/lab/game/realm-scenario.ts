@@ -9,6 +9,7 @@ import {
 
 import type { LabFact, LabScenario } from "./lab-chain";
 import { wire } from "./lab-chain";
+import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
 import { raceScenario } from "./race-scenario";
 import { seasonOneResearchPrices } from "./season-one-research";
 import { balancesPaid, spireScenario } from "./spire-scenario";
@@ -135,6 +136,31 @@ export const realmWorldScenario = (): LabScenario => {
     key: race.store.wireKeyOf("ProductionRecipe", { game_id: 1, resource_type: resourceType }) ?? fallbackKey,
     value: wire({ ...knightRecipe, resource_type: resourceType }),
   });
+  const board = race.store.require("BoardRules", { game_id: 1 });
+  const workshopRate = BigInt(Math.round(frontierSeasonOnePreset.board.workshopRate * RESOURCE_PRECISION));
+  const realmRate = (resourceType: ResourcesIds) =>
+    race.store.require("ResourceRule", { game_id: 1, resource_type: resourceType }).realm_rate;
+  const productionFact = (
+    resourceType: ResourcesIds,
+    rate: bigint,
+    buildingCount: number,
+    fallbackKey: string,
+  ): LabFact => ({
+    model: "ResourceProduction",
+    key:
+      race.store.wireKeyOf("ResourceProduction", { game_id: 1, entity_id: 7, resource_type: resourceType }) ??
+      fallbackKey,
+    value: wire({
+      remainder: 0,
+      game_id: 1,
+      entity_id: 7,
+      resource_type: resourceType,
+      building_count: buildingCount,
+      production_rate: rate,
+      output_amount_left: (1n << 128n) - 1n,
+      last_settled_at: race.startsAt,
+    }),
+  });
   race.store.applyFacts([
     ...plots.map(({ col, row }, index) => ({
       model: "Building",
@@ -153,6 +179,16 @@ export const realmWorldScenario = (): LabScenario => {
     ...seasonOneResearchPrices(race.store),
     troopRecipeFact(ResourcesIds.Crossbowman, "0x1ac95"),
     troopRecipeFact(ResourcesIds.Paladin, "0x1ac96"),
+    {
+      model: "BoardRules",
+      key: race.store.wireKeyOf("BoardRules", { game_id: 1 })!,
+      value: wire({ ...board, workshop_rate: workshopRate }),
+    },
+    productionFact(ResourcesIds.Labor, workshopRate * 2n + realmRate(ResourcesIds.Labor), 3, "0x1ac9a"),
+    productionFact(ResourcesIds.Wheat, realmRate(ResourcesIds.Wheat), 1, "0x1ac9b"),
+    productionFact(ResourcesIds.Knight, realmRate(ResourcesIds.Knight), 1, "0x1ac9c"),
+    productionFact(ResourcesIds.Crossbowman, realmRate(ResourcesIds.Crossbowman), 1, "0x1ac9d"),
+    productionFact(ResourcesIds.Paladin, realmRate(ResourcesIds.Paladin), 1, "0x1ac9e"),
     balanceFact(ResourcesIds.Labor, 3_400n, "0x1ac90"),
     balanceFact(ResourcesIds.Wheat, 1_900n, "0x1ac91"),
     balanceFact(ResourcesIds.Essence, 420n, "0x1ac92"),
