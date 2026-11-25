@@ -70,7 +70,7 @@ describe("the quest dock", () => {
     expect(bane.querySelector('[role="img"]')?.getAttribute("aria-label")).toBe(
       "Production runs at 50% while the bane lasts",
     );
-    expect(bane.textContent).toBe("50% Production2× if brokenBreak: 4/12 of your Aspect · Clears in 5h");
+    expect(bane.textContent).toBe("▾50% Production2× if brokenBreak: 4/12 of your Aspect · Clears in 5h");
     expect(host.querySelector("[data-quest-objective]")?.textContent).toBe(
       "The Cull · Defeat 6,000 guard troops (3K/6K)",
     );
