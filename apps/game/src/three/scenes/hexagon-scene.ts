@@ -1308,6 +1308,7 @@ export abstract class HexagonScene {
   protected abstract onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void;
 
   public abstract setup(context?: SceneSetupContext): void | Promise<void>;
+  public prepareWhileFlying(): void {}
   /** Resolves once the scene has something worth showing; a flight holds the outgoing frame until then. */
   public whenPresentable(): Promise<void> {
     return Promise.resolve();

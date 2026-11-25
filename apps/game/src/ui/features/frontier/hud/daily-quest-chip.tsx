@@ -5,11 +5,9 @@ import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { Icon } from "@/ui/design-system/icon";
 import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
-import { useTablet } from "@/shell/frame/layout";
+import { useHudLayout, useHudTablet } from "@/hooks/helpers/use-compact-hud";
 import { DAILY_QUEST_MODELS, readDailyQuest } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-
-import { useLayout } from "@/shell/frame/layout";
 
 import { DailyQuest } from "../day/daily-quest";
 import { dayQuestFace } from "../day/day-quest-face";
@@ -20,9 +18,9 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
   const { setup } = useGame();
   const now = useNowSeconds();
   useNativeRevision(DAILY_QUEST_MODELS);
-  const layout = useLayout();
+  const layout = useHudLayout();
   const { triggerProps, popover, close } = useHudPopover({ surface: true });
-  const tablet = useTablet();
+  const tablet = useHudTablet();
   const today = readDailyQuest(setup.store, realm.game_id, safeInteger(realm.entity_id), now);
   if (!today) return null;
   const reading = today.reading.known;

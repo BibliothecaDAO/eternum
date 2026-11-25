@@ -281,7 +281,7 @@ describe("the status strip", () => {
 
   it("formats store rates through one helper", () => {
     expect(storeRateText({ ...store("labor", 100, 1_000), perHour: 180 })).toBe("+3/min");
-    expect(storeRateText({ ...store("labor", 100, 1_000), perHour: 180 }, { compact: true })).toBe("+3");
+    expect(storeRateText({ ...store("troops", 100, 1_000), perHour: 100 })).toBe("+1.7/min");
     expect(storeRateText({ ...store("labor", 1_000, 1_000), perHour: 180, fullIn: 0 })).toBeNull();
     expect(storeRateText({ ...store("labor", 100, 1_000), perHour: 0 })).toBeNull();
   });

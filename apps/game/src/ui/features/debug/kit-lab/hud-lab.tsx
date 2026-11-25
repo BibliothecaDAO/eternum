@@ -69,7 +69,7 @@ import { ARCHIVED_SEASONS, archivedSeason } from "@/shell/season-tab/archive/arc
 import { SeasonPayoutRow } from "@/ui/features/frontier/value/season-payout";
 import { linkWalletLine } from "@/ui/features/frontier/value/link-wallet";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
-import { useLayout } from "@/shell/frame/layout";
+import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
@@ -787,7 +787,7 @@ const noop = () => undefined;
 export const HudLab = () => {
   const { state = "idle" } = useParams();
   const lab: LabState = STATES[state as keyof typeof STATES] ?? STATES.idle;
-  const desktop = useLayout() === "desktop";
+  const desktop = useHudLayout() === "desktop";
   // The game wears Frontier's age (world.tsx's useHudMode); the lab draws it the same.
   useHudMode("frontier");
   useLabNotice(lab.notice);
@@ -1305,7 +1305,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
     army.stamina === undefined ? undefined : { current: army.stamina, max: 150, perExplore: LAB_EXPLORE };
   const limits = useGame().setup.store.get("SliceRules", { game_id: 1 })?.troop_limit_config;
   const slotRule = limits && readArmySlots(limits, lab.armies.length, lab.slots ?? SLOTS);
-  if (useLayout() === "desktop")
+  if (useHudLayout() === "desktop")
     return (
       <ArmySlotsCard count={slotRule?.count}>
         {lab.armies.map((army, index) => (

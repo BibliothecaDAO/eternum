@@ -3,7 +3,7 @@ import { EVENTS_WORDS } from "@/ui/design-system/kit/words";
 import { type FeedLens } from "@/ui/features/event-feed/event-stories";
 import { FEED_LENSES, LensSwitch } from "@/ui/features/event-feed/events-filter-switch";
 import { FeedLine, FeedRuleLine } from "@/ui/features/event-feed/feed-line";
-import { useLayout } from "@/shell/frame/layout";
+import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { useFeedStories } from "@/ui/features/event-feed/quick-feed";
 import { useState } from "react";
@@ -47,4 +47,4 @@ const FeedStories = ({ lens }: { lens: FeedLens }) => {
 };
 
 export const FrontierFeedLine = ({ story }: { story: ProcessedStoryEvent }) =>
-  useLayout() === "desktop" ? <FeedLine story={story} /> : <FeedRuleLine story={story} />;
+  useHudLayout() === "desktop" ? <FeedLine story={story} /> : <FeedRuleLine story={story} />;

@@ -101,7 +101,8 @@ export const frontierSeasonOnePreset = {
   labor: null,
   dailyQuest: { baseCounts: [1, 1, 1, 1, 1, 2, 15], labor: 1000, essence: 1500, bonusPercent: 150 },
   banes: {
-    chanceStep: 20,
+    quietDays: 3,
+    chanceStep: 10,
     quorumPercent: 25,
     beastPercent: 150,
     staminaPercent: 50,

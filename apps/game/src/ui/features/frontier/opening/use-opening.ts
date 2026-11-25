@@ -33,14 +33,13 @@ import { catalogAspectId, getNeighborHexes, RealmLevels, ResourcesIds, TroopTier
 import { useEffect } from "react";
 
 import type { OpeningRules } from "@/ui/design-system/kit/words";
-import { buildingOutput } from "@/ui/shared/lib/building-output";
 import { FIRST_BUILD } from "../build/first-build";
 import { dayClock } from "../hud/day-clock";
 import { useDockArmies } from "../hud/dock-armies";
 import type { HudSurface } from "../hud/frontier-nav";
 import { useRacesAspects } from "../aspect/races-aspects";
 import { readPickEffectBase } from "../pick-effect-text";
-import { madePicks } from "../production/store-makers";
+import { buildingRate } from "../production/store-makers";
 import { useRealmStores } from "../realm-stores";
 import { useResearchTree } from "../research/research-facts";
 import { canResearchNow } from "../research/research-tree";
@@ -168,14 +167,8 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
     setup.store.get("ResourceRule", { game_id: realm.game_id, resource_type: ResourcesIds.Knight }) !== undefined;
   if (!slice || !hasOutputRules || pickBase.staminaPerSecond === undefined || pickBase.revealStamina === undefined)
     return null;
-  const home = safeInteger(realm.entity_id);
-  const learned = setup.store.get("RealmKnowledge", { game_id: realm.game_id, structure_id: home })?.learned ?? 0n;
-  const knightsPerSecond = buildingOutput(
-    setup.store,
-    realm,
-    FIRST_BUILD,
-    madePicks(ResourcesIds.Knight, learned),
-  ).total;
+  const knightsPerSecond = buildingRate(setup.store, realm, ResourcesIds.Knight, now);
+  if (knightsPerSecond === undefined) return null;
   const tickSeconds = Number(slice.tick_config.armies_tick_in_seconds);
   const rawAspect = setup.store.get("HomeAspect", { game_id: realm.game_id, home: realm.entity_id })?.aspect;
   const ownAspect = rawAspect !== undefined ? catalogAspectId(rawAspect) : undefined;

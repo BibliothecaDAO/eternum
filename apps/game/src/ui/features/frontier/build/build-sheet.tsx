@@ -280,9 +280,12 @@ const standingOf = (option: BuildOption, { held, perHour }: Holdings): BuildTile
   };
 };
 
+const buildRate = (effect: Extract<BuildOption["effect"], { kind: "produces" }>): string =>
+  formatRate(effect.perHour === undefined ? undefined : effect.perHour / 3_600);
+
 const buildingDoes = ({ effect, tier }: BuildOption): RankedWords =>
   effect.kind === "produces"
-    ? [makes(FRONTIER_STORES[madeStore(effect.resource)].word, formatRate(effect.output.total))]
+    ? [makes(FRONTIER_STORES[madeStore(effect.resource)].word, buildRate(effect))]
     : effect.kind === "trains"
       ? startsNewArmies(effect.attribute, tier)
       : effect.kind === "research"
@@ -297,7 +300,7 @@ const storageShare = (bps: number) => formatPercent(bps / 10_000, { signed: true
 
 const givesOf = ({ effect }: BuildOption): BuildTile["gives"] =>
   effect.kind === "produces"
-    ? { icon: FRONTIER_STORES[madeStore(effect.resource)].icon, value: formatRate(effect.output.total) }
+    ? { icon: FRONTIER_STORES[madeStore(effect.resource)].icon, value: buildRate(effect) }
     : effect.kind === "trains"
       ? { icon: "stamina" }
       : effect.kind === "research"

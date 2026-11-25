@@ -1,5 +1,5 @@
 use snforge_std::{interact_with_state, spy_events};
-use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
 use world_test_support::tests::Deployment;
 use world_test_support::tests::play_fixture::{FIXTURE_START, TestAction, play};
 use world_test_support::tests::resource_commands::execute_in_game;
@@ -33,6 +33,25 @@ pub fn root_for(game_id: u32, day: u64, chance: u16, kind: u8) -> u256 {
     panic!("no fixture root for world bane")
 }
 
+pub fn given_world_bane(d: Deployment, game_id: u32, day: u64, kind: u8) {
+    let start = world_test_support::tests::registrar::day_start(d, game_id, day);
+    let end = world_test_support::tests::registrar::day_start(d, game_id, day + 1);
+    interact_with_state(
+        d.games,
+        || {
+            let state = crate::state::write();
+            assert_eq!(state.banes.next_roll_at.read(game_id), start);
+            state.banes.world_days.write((game_id, day), Some(kind));
+            state.banes.next_roll_at.write(game_id, end);
+            state.banes.next_chance.write(game_id, 0);
+        },
+    );
+}
+
+fn next_chance(d: Deployment, game_id: u32) -> u16 {
+    interact_with_state(d.games, || crate::state::read().banes.next_chance.read(game_id))
+}
+
 #[test]
 fn exploration_settles_mist_tide_until_the_exact_lights_quorum_second() {
     let stamina = crate::balance::rules::TROOP_STAMINA_CONFIG;
@@ -44,14 +63,8 @@ fn exploration_settles_mist_tide_until_the_exact_lights_quorum_second() {
     let home = found(d, game_id, FIXTURE_START);
     train(d, home, FIXTURE_START);
     let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
-    assert!(
-        play(
-            d.games,
-            TestAction { game_id, actor: d.actor, command: rename(home) },
-            root_for(game_id, 1, 20, crate::banes::MIST_TIDE),
-            tomorrow,
-        ),
-    );
+    given_world_bane(d, game_id, 1, crate::banes::MIST_TIDE);
+    assert!(play(d.games, TestAction { game_id, actor: d.actor, command: rename(home) }, 1, tomorrow));
     assert!(execute_in_game(d, game_id, super::army_activity::muster(home.entity_id, 0, 0, 10), tomorrow));
     let lights = interact_with_state(d.games, || crate::logic::banes::target(crate::quests::LIGHTS, 1));
     interact_with_state(
@@ -167,19 +180,50 @@ pub fn complete(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) {
 }
 
 #[test]
+fn the_first_three_days_roll_no_world_bane_while_the_chance_builds_to_thirty() {
+    let (d, game_id) = super::aspects::setup_aspects(5);
+    let home = found(d, game_id, FIXTURE_START);
+    interact_with_state(d.games, || {
+        assert_eq!(crate::state::read().banes.world_days.read((game_id, 0)), Some(0));
+    });
+    assert_eq!(next_chance(d, game_id), 10);
+    for (day, chance) in array![(1_u64, 20_u16), (2, 30)] {
+        let bane = root_for(game_id, day, next_chance(d, game_id), crate::banes::BLOOD_MOON);
+        let start = world_test_support::tests::registrar::day_start(d, game_id, day);
+        assert!(play(d.games, TestAction { game_id, actor: d.actor, command: rename(home) }, bane, start));
+        interact_with_state(
+            d.games,
+            || {
+                assert_eq!(crate::state::read().banes.world_days.read((game_id, day)), Some(0));
+                assert_eq!(crate::logic::banes::kind(game_id, day), None);
+            },
+        );
+        assert_eq!(next_chance(d, game_id), chance);
+    }
+    let fourth = world_test_support::tests::registrar::day_start(d, game_id, 3);
+    assert!(
+        play(
+            d.games,
+            TestAction { game_id, actor: d.actor, command: rename(home) },
+            root_for(game_id, 3, 30, crate::banes::BLOOD_MOON),
+            fourth,
+        ),
+    );
+    interact_with_state(
+        d.games, || {
+            assert_eq!(crate::logic::banes::kind(game_id, 3), Some(crate::banes::BLOOD_MOON));
+        },
+    );
+    assert_eq!(next_chance(d, game_id), 0);
+}
+
+#[test]
 fn a_rejected_action_records_the_world_roll_and_a_different_root_cannot_replace_it() {
     let (d, game_id) = super::aspects::setup_aspects(5);
     let home = found(d, game_id, FIXTURE_START);
-    interact_with_state(
-        d.games,
-        || {
-            assert_eq!(crate::state::read().banes.world_days.read((game_id, 0)), Some(0));
-            assert_eq!(crate::state::read().banes.next_chance.read(game_id), 20);
-        },
-    );
-    let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
-    let ash = root_for(game_id, 1, 20, crate::banes::ASH_FALL);
-    let normal = root_for(game_id, 1, 20, 0);
+    let fourth = world_test_support::tests::registrar::day_start(d, game_id, 3);
+    let ash = root_for(game_id, 3, 30, crate::banes::ASH_FALL);
+    let normal = root_for(game_id, 3, 30, 0);
     assert!(
         !play(
             d.games,
@@ -189,31 +233,45 @@ fn a_rejected_action_records_the_world_roll_and_a_different_root_cannot_replace_
                 command: Command::SetEntityName(crate::names::SetEntityName { entity_id: 999999, name: 'refused' }),
             },
             ash,
-            tomorrow,
+            fourth,
         ),
     );
     interact_with_state(
         d.games,
         || {
-            assert_eq!(crate::state::read().banes.world_days.read((game_id, 1)), Some(crate::banes::ASH_FALL));
-            assert_eq!(crate::state::read().banes.next_chance.read(game_id), 0);
+            for day in 1_u64..3 {
+                assert_eq!(crate::state::read().banes.world_days.read((game_id, day)), Some(0));
+            }
+            assert_eq!(crate::state::read().banes.world_days.read((game_id, 3)), Some(crate::banes::ASH_FALL));
         },
     );
-    assert!(play(d.games, TestAction { game_id, actor: d.actor, command: rename(home) }, normal, tomorrow + 1));
+    assert_eq!(next_chance(d, game_id), 0);
+    assert!(play(d.games, TestAction { game_id, actor: d.actor, command: rename(home) }, normal, fourth + 1));
     interact_with_state(
         d.games,
         || {
-            assert_eq!(crate::logic::banes::kind(game_id, 1), Some(crate::banes::ASH_FALL));
-            assert_eq!(crate::logic::banes::quest_kind(home, 1), crate::quests::CULL);
+            assert_eq!(crate::logic::banes::kind(game_id, 3), Some(crate::banes::ASH_FALL));
+            assert_eq!(crate::logic::banes::quest_kind(home, 3), crate::quests::CULL);
         },
     );
-    let next = world_test_support::tests::registrar::day_start(d, game_id, 2);
-    assert!(play(d.games, TestAction { game_id, actor: d.actor, command: rename(home) }, ash, next));
+    let fifth = world_test_support::tests::registrar::day_start(d, game_id, 4);
+    assert!(play(d.games, TestAction { game_id, actor: d.actor, command: rename(home) }, ash, fifth));
+    interact_with_state(d.games, || {
+        assert_eq!(crate::state::read().banes.world_days.read((game_id, 4)), Some(0));
+    });
+    assert_eq!(next_chance(d, game_id), 10);
+    let sixth = world_test_support::tests::registrar::day_start(d, game_id, 5);
+    assert!(
+        play(
+            d.games,
+            TestAction { game_id, actor: d.actor, command: rename(home) },
+            root_for(game_id, 5, 10, crate::banes::MIST_TIDE),
+            sixth,
+        ),
+    );
     interact_with_state(
-        d.games,
-        || {
-            assert_eq!(crate::state::read().banes.world_days.read((game_id, 2)), Some(0));
-            assert_eq!(crate::state::read().banes.next_chance.read(game_id), 20);
+        d.games, || {
+            assert_eq!(crate::logic::banes::kind(game_id, 5), Some(crate::banes::MIST_TIDE));
         },
     );
 }
@@ -236,14 +294,8 @@ fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
     let first = *members.at(0);
     let home = *homes.at(0);
     let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
-    assert!(
-        play(
-            d.games,
-            TestAction { game_id, actor: first.actor, command: rename(home) },
-            root_for(game_id, 1, 20, crate::banes::ASH_FALL),
-            tomorrow,
-        ),
-    );
+    given_world_bane(d, game_id, 1, crate::banes::ASH_FALL);
+    assert!(play(d.games, TestAction { game_id, actor: first.actor, command: rename(home) }, 1, tomorrow));
     assert_eq!(
         interact_with_state(d.games, || crate::logic::banes::required(game_id, 1, 1)),
         crate::banes::required(5, crate::balance::banes::QUORUM_PERCENT),
@@ -350,14 +402,8 @@ fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still
         },
     );
     let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
-    assert!(
-        play(
-            d.games,
-            TestAction { game_id, actor: d.actor, command: rename(home) },
-            root_for(game_id, 1, 20, crate::banes::ASH_FALL),
-            tomorrow,
-        ),
-    );
+    given_world_bane(d, game_id, 1, crate::banes::ASH_FALL);
+    assert!(play(d.games, TestAction { game_id, actor: d.actor, command: rename(home) }, 1, tomorrow));
     complete(d, home, 1, tomorrow + 600);
     let now = tomorrow + 1000;
     build(d, home, crate::research::FARM, 2, now);
@@ -502,14 +548,8 @@ fn issuing_a_team_bane_keeps_todays_world_quest_and_stops_future_rolls() {
     let (d, game_id) = super::aspects::setup_aspects(5);
     let home = found(d, game_id, FIXTURE_START);
     let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
-    assert!(
-        play(
-            d.games,
-            TestAction { game_id, actor: d.actor, command: rename(home) },
-            root_for(game_id, 1, 20, crate::banes::ASH_FALL),
-            tomorrow,
-        ),
-    );
+    given_world_bane(d, game_id, 1, crate::banes::ASH_FALL);
+    assert!(play(d.games, TestAction { game_id, actor: d.actor, command: rename(home) }, 1, tomorrow));
     altar(d, game_id, 1, tomorrow + 120);
     altar(d, game_id, 1, tomorrow + 240);
     interact_with_state(
@@ -524,20 +564,20 @@ fn issuing_a_team_bane_keeps_todays_world_quest_and_stops_future_rolls() {
             );
         },
     );
-    let next = world_test_support::tests::registrar::day_start(d, game_id, 2);
+    let fourth = world_test_support::tests::registrar::day_start(d, game_id, 3);
     assert!(
         play(
             d.games,
             TestAction { game_id, actor: d.actor, command: rename(home) },
-            root_for(game_id, 2, 100, crate::banes::ASH_FALL),
-            next,
+            root_for(game_id, 3, 10, crate::banes::ASH_FALL),
+            fourth,
         ),
     );
     interact_with_state(
         d.games,
         || {
-            assert_eq!(crate::state::read().banes.world_days.read((game_id, 2)), Some(0));
-            assert_eq!(crate::logic::banes::kind(game_id, 2), None);
+            assert_eq!(crate::state::read().banes.world_days.read((game_id, 3)), Some(0));
+            assert_eq!(crate::logic::banes::kind(game_id, 3), None);
         },
     );
 }
@@ -555,14 +595,8 @@ fn mist_tide_counts_each_real_reveal_once_and_keeps_the_rolled_day() {
         ),
     );
     let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
-    assert!(
-        play(
-            d.games,
-            TestAction { game_id, actor: d.actor, command: rename(home) },
-            root_for(game_id, 1, 20, crate::banes::MIST_TIDE),
-            tomorrow,
-        ),
-    );
+    given_world_bane(d, game_id, 1, crate::banes::MIST_TIDE);
+    assert!(play(d.games, TestAction { game_id, actor: d.actor, command: rename(home) }, 1, tomorrow));
     assert!(execute_in_game(d, game_id, super::army_activity::muster(home.entity_id, 0, 0, 10), tomorrow));
     let explorer_id = super::army_activity::slot_army(
         d, crate::troops::ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 1, slot: 0 },

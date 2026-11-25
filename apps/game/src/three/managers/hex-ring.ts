@@ -64,35 +64,59 @@ export function applyHexRingLook(
  * One copy of a flat ring shape on every centre, in world space, each vertex set on the ground under it: any number of
  * rings is one geometry and one draw.
  */
-export function drapeHexRingCopies(
+export function drapeOnGround(
   shape: THREE.BufferGeometry,
-  centres: readonly { x: number; z: number }[],
+  copies: readonly GroundCopy[],
   terrain: TerrainSurface,
   lift: number,
 ): THREE.BufferGeometry {
   const source = shape.getAttribute("position");
-  const positions = new Float32Array(centres.length * source.count * 3);
-  centres.forEach((centre, copy) => {
-    for (let vertex = 0; vertex < source.count; vertex++) {
-      const x = centre.x + source.getX(vertex);
-      const z = centre.z - source.getY(vertex);
-      const offset = (copy * source.count + vertex) * 3;
-      positions[offset] = x;
-      positions[offset + 1] = terrain.sampleSurface(x, z).height + lift;
-      positions[offset + 2] = z;
-    }
-  });
-  const geometry = new THREE.BufferGeometry().setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  const geometry = new THREE.BufferGeometry().setAttribute(
+    "position",
+    new THREE.BufferAttribute(new Float32Array(copies.length * source.count * 3), 3),
+  );
+  copies.forEach((copy, index) => layCopyOnGround(geometry, index, shape, copy, terrain, lift));
+  const colors = shape.getAttribute("color");
+  if (colors) {
+    const replicated = new Float32Array(copies.length * colors.count * colors.itemSize);
+    for (let copy = 0; copy < copies.length; copy++) replicated.set(colors.array, copy * colors.array.length);
+    geometry.setAttribute("color", new THREE.BufferAttribute(replicated, colors.itemSize));
+  }
   const index = shape.getIndex();
   if (index) {
-    const indices = new Uint32Array(centres.length * index.count);
-    for (let copy = 0; copy < centres.length; copy++)
+    const indices = new Uint32Array(copies.length * index.count);
+    for (let copy = 0; copy < copies.length; copy++)
       for (let entry = 0; entry < index.count; entry++)
         indices[copy * index.count + entry] = index.getX(entry) + copy * source.count;
     geometry.setIndex(new THREE.BufferAttribute(indices, 1));
   }
   geometry.computeBoundingSphere();
   return geometry;
+}
+
+export interface GroundCopy {
+  x: number;
+  z: number;
+  scale?: number;
+}
+
+export function layCopyOnGround(
+  geometry: THREE.BufferGeometry,
+  copyIndex: number,
+  shape: THREE.BufferGeometry,
+  copy: GroundCopy,
+  terrain: TerrainSurface,
+  lift: number,
+): void {
+  const source = shape.getAttribute("position");
+  const target = geometry.getAttribute("position");
+  const scale = copy.scale ?? 1;
+  for (let vertex = 0; vertex < source.count; vertex++) {
+    const x = copy.x + source.getX(vertex) * scale;
+    const z = copy.z - source.getY(vertex) * scale;
+    target.setXYZ(copyIndex * source.count + vertex, x, terrain.sampleSurface(x, z).height + lift, z);
+  }
+  target.needsUpdate = true;
 }
 
 function createBandGeometry(outerRadius: number, innerRadius: number): THREE.BufferGeometry {

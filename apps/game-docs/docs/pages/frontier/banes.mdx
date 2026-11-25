@@ -15,10 +15,11 @@ days, a bane quest replaces your normal [daily quest](/frontier/quests). A bane 
 
 ## World Banes
 
-From day 2 onward, World Banes can start for all {FRONTIER.aspectsCount} Aspects at the start of a game day. The chance
-is 0% the day after a World Bane, and each day without a World Bane adds +{FRONTIER.banes.chanceStep} to the chance of
-one on the next day. Once any Aspect issues the season's first Team Bane, World Banes stop for the rest of the season.
-An Aspect never has a World Bane and a Team Bane on the same day.
+The first {FRONTIER.banes.quietDays} game days never have a World Bane. From day {FRONTIER.banes.firstDay} onward, World
+Banes can start for all {FRONTIER.aspectsCount} Aspects at the start of a game day. Each day without a World Bane, the
+first {FRONTIER.banes.quietDays} days included, adds +{FRONTIER.banes.chanceStep} to the chance of one on the next day.
+The chance is 0% the day after a World Bane. Once any Aspect issues the season's first Team Bane, World Banes stop for
+the rest of the season. An Aspect never has a World Bane and a Team Bane on the same day.
 
 | World Bane                                                                          | Effect while active              | Bane quest to end it                                                              | Target (Settlement / City / Kingdom / Empire) |
 | ----------------------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------- |

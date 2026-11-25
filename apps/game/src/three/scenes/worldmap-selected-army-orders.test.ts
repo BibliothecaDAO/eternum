@@ -46,27 +46,19 @@ const order = (col: number, row: number, actionType: string, kind: "route" | "fr
   pathDepth: 1,
 });
 
-const drawnHexes = (scene: THREE.Scene) => {
-  const routeLayer = scene.children.find(
-    (child): child is THREE.InstancedMesh => child instanceof THREE.InstancedMesh && child.renderOrder === 5,
-  )!;
-  const matrix = new THREE.Matrix4();
-  const position = new THREE.Vector3();
-  const scale = new THREE.Vector3();
-  return Array.from({ length: routeLayer.count }, (_, index) => {
-    routeLayer.getMatrixAt(index, matrix);
-    matrix.decompose(position, new THREE.Quaternion(), scale);
-    return `${position.x},${position.z}@${scale.x.toFixed(2)}`;
-  }).sort();
-};
+const drawnHexes = (highlights: HighlightHexManager) =>
+  highlights
+    .getDebugState()
+    .plates.filter((plate) => plate.layer === "route")
+    .map((plate) => `${plate.x},${plate.z}@${plate.scale.toFixed(2)}`)
+    .sort();
 
 let animationClock = gsap.ticker.time;
 const finishRollIn = () => gsap.updateRoot((animationClock += 10));
 
 describe("SelectedArmyOrders on a selected army", () => {
   it("adds the hexes a stamina refill pays for, in place, at the head that crosses the cost", () => {
-    const scene = new THREE.Scene();
-    const highlights = new HighlightHexManager(scene, FLAT_TERRAIN_SURFACE, gridSpace);
+    const highlights = new HighlightHexManager(new THREE.Scene(), FLAT_TERRAIN_SURFACE, gridSpace);
     const army = createRefillingArmy(22);
     const orders = new SelectedArmyOrders({
       reach: army.reach,
@@ -80,21 +72,20 @@ describe("SelectedArmyOrders on a selected army", () => {
 
     orders.offer(ARMY, PLAYER);
     finishRollIn();
-    expect(drawnHexes(scene)).toEqual(["1,0@0.92", "2,0@0.92"]);
+    expect(drawnHexes(highlights)).toEqual(["1,0@0.92", "2,0@0.92"]);
 
     for (let head = 0; head < 959; head++) confirmedHead();
-    expect(drawnHexes(scene)).toEqual(["1,0@0.92", "2,0@0.92"]);
+    expect(drawnHexes(highlights)).toEqual(["1,0@0.92", "2,0@0.92"]);
 
     confirmedHead();
-    expect(drawnHexes(scene)).toEqual(["0,-1@0.01", "0,1@0.01", "1,0@0.92", "2,0@0.92", "3,0@0.01"]);
+    expect(drawnHexes(highlights)).toEqual(["0,-1@0.01", "0,1@0.01", "1,0@0.92", "2,0@0.92", "3,0@0.01"]);
 
     finishRollIn();
-    expect(drawnHexes(scene)).toEqual(["0,-1@0.98", "0,1@0.98", "1,0@0.92", "2,0@0.92", "3,0@0.92"]);
+    expect(drawnHexes(highlights)).toEqual(["0,-1@0.98", "0,1@0.98", "1,0@0.92", "2,0@0.92", "3,0@0.92"]);
   });
 
   it("keeps its orders drawn while an action it sent lands, then changes only the hex the action changed, in place", () => {
-    const scene = new THREE.Scene();
-    const highlights = new HighlightHexManager(scene, FLAT_TERRAIN_SURFACE, gridSpace);
+    const highlights = new HighlightHexManager(new THREE.Scene(), FLAT_TERRAIN_SURFACE, gridSpace);
     const army = createArmyBesideAWell();
     let busy = false;
     const orders = new SelectedArmyOrders({
@@ -106,17 +97,17 @@ describe("SelectedArmyOrders on a selected army", () => {
 
     orders.offer(ARMY, PLAYER);
     finishRollIn();
-    expect(drawnHexes(scene)).toEqual(["0,1@0.98", "1,0@0.92", "2,0@0.92"]);
+    expect(drawnHexes(highlights)).toEqual(["0,1@0.98", "1,0@0.92", "2,0@0.92"]);
 
     busy = true;
     army.useTheWell();
     orders.followMapChange(ARMY, PLAYER);
     orders.followConfirmedHead(ARMY, PLAYER);
-    expect(drawnHexes(scene)).toEqual(["0,1@0.98", "1,0@0.92", "2,0@0.92"]);
+    expect(drawnHexes(highlights)).toEqual(["0,1@0.98", "1,0@0.92", "2,0@0.92"]);
 
     busy = false;
     orders.offer(ARMY, PLAYER);
-    expect(drawnHexes(scene)).toEqual(["0,1@0.92", "1,0@0.92", "2,0@0.92"]);
+    expect(drawnHexes(highlights)).toEqual(["0,1@0.92", "1,0@0.92", "2,0@0.92"]);
   });
 });
 

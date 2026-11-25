@@ -829,6 +829,7 @@ export const ATTACK_REFUSAL_WORDS = {
 
 export const DEEP_WORDS = {
   title: DEEP,
+  gate: "Gate",
   orderFailed: `Could not send ${DEEP} order.`,
   purpose: {
     foundation: "Holding raises your Aspect's hyperstructure and earns Glory",
@@ -1186,7 +1187,6 @@ export const ARMY_SLOT_WORDS = {
   anyTroop: "Any troop type",
   unlocksAt: (slot: number, rank: string) => `Slot ${slot} unlocks at ${rank}`,
 } as const;
-export const ARMY_MOVE_HINT = "Right-click a hex to move";
 /** The sources of a store's production, each with its combined rate. */
 export const MADE_BY = "Made by";
 export const STORE_MAKERS = {
