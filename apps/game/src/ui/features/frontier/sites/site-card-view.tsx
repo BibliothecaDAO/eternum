@@ -89,6 +89,7 @@ export const SiteCardView = ({
   const title = name ? siteTitle(name, word, beast?.name) : word;
   const armyless = army === null;
   const guardIcon = beast ? beastMeaning(beast.beast) : "troops";
+  const siteGuard = site !== "Army";
   const facing = facingOf(army, guard, fight);
   const lost = facing !== undefined && isArmyLost(facing);
   const reward =
@@ -113,7 +114,7 @@ export const SiteCardView = ({
       {armyless ? (
         <header className="flex items-center gap-3">
           {typeof guard === "number" ? (
-            <BaneFigure figure="guards" pill altered={beast !== undefined}>
+            <BaneFigure figure="guards" pill altered={siteGuard}>
               <GuardToken
                 label={beast?.name ?? TROOPS}
                 art={guardIcon}
@@ -131,7 +132,14 @@ export const SiteCardView = ({
         </header>
       ) : (
         <>
-          <FightPanel army={army} guard={guard} facing={facing} beast={beast} guardIcon={guardIcon} />
+          <FightPanel
+            army={army}
+            guard={guard}
+            facing={facing}
+            beast={beast}
+            guardIcon={guardIcon}
+            siteGuard={siteGuard}
+          />
           {(facing || reward) && (
             <div className="fight-spoils">
               {facing && <Outcome facing={facing} />}
@@ -140,7 +148,7 @@ export const SiteCardView = ({
           )}
         </>
       )}
-      {beast && <BaneLine figure="guards" />}
+      {siteGuard && typeof guard === "number" && <BaneLine figure="guards" />}
       {receipt}
       {replacement}
       <Verb
@@ -202,12 +210,14 @@ const FightPanel = ({
   facing,
   beast,
   guardIcon,
+  siteGuard,
 }: {
   army: { art: IconMeaning; troops: number } | null;
   guard: number | null | undefined;
   facing: Facing | undefined;
   beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: Troops["category"] }) | undefined;
   guardIcon: IconMeaning;
+  siteGuard: boolean;
 }) => (
   <FightArena
     ours={
@@ -232,7 +242,7 @@ const FightPanel = ({
             ),
             before: guard,
             kept: facing?.fight.guardLeft,
-            bane: beast && "guards",
+            bane: siteGuard ? "guards" : undefined,
           }
         : undefined
     }

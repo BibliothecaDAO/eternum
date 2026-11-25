@@ -84,8 +84,8 @@ const everyFigure = (
   <>
     <RealmCard name="Num" kind="realm" level={1} stores={[wheat]} fragments={0} lords={0} />
     <StoreCard line={wheatLine} onSpend={() => undefined} onBuild={() => undefined} />
-    <ArmyCard label="Knights" number={1} art="knight" stamina={{ current: 42, max: 180 }} selected={false} />
-    <ArmyDetail army={{ art: "knight", troops: 50, stamina: { current: 42, max: 180 }, secondsToFull: 24_000 }} />
+    <ArmyCard label="Knights" number={1} art="troops" stamina={{ current: 42, max: 180, perExplore: 20 }} selected={false} />
+    <ArmyDetail army={{ art: "troops", troops: 50, stamina: { current: 42, max: 180, perExplore: 20 }, secondsToFull: 24_000 }} />
     <FightArena
       ours={{ label: "Army", mark: null, before: 500, kept: 458 }}
       theirs={{ label: "Cyclops", mark: null, before: 180, kept: 0, bane: "guards" }}
@@ -128,7 +128,7 @@ describe("a bane day on the figures it cuts", () => {
 
   it("marks a full bar's figure nowhere, since the bane slows only what is still filling", () => {
     onBaneDay("stamina");
-    draw(<ArmyCard label="Knights" number={1} art="knight" stamina={{ current: 180, max: 180 }} selected={false} />);
+    draw(<ArmyCard label="Knights" number={1} art="troops" stamina={{ current: 180, max: 180, perExplore: 20 }} selected={false} />);
     expect(marked("stamina")).toEqual([]);
   });
 
