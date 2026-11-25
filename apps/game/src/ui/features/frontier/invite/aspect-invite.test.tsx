@@ -12,6 +12,7 @@ const { identityClient, useIdentitySessionStore } = await import("@/hooks/contex
 const { LAB_SESSION } = await import("@/shell/lab/app-lab-fixtures");
 const { LabGame } = await import("@/ui/features/debug/kit-lab/lab-game");
 const { getActiveGame } = await import("@/runtime/world");
+const { INVITE_WORDS } = await import("@/ui/design-system/kit/words");
 const { AspectInvite } = await import("./aspect-invite");
 
 let host: HTMLDivElement;
@@ -115,7 +116,7 @@ it("offers nothing and reports no failure when identity has no invite for the pl
   await vi.waitFor(() => expect(inviteRead(queries)).toBe("success"));
   expect(createInvite).toHaveBeenCalledOnce();
   expect(panel()).toBeNull();
-  expect(host.textContent).not.toContain("could not be made");
+  expect(host.textContent).not.toContain(INVITE_WORDS.failed);
 });
 
 it("asks identity again for an invite it had none for once the panel opens again", async () => {
@@ -139,6 +140,6 @@ it("says when identity refuses the invite, and asks again on Try again", async (
   createInvite.mockResolvedValue({ code: "INVT2346", aspect: 3, chainId: getActiveGame()!.chainId, gameId: 1 });
   await act(async () => button("Try again")!.click());
   await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
-  expect(host.textContent).not.toContain("could not be made");
+  expect(host.textContent).not.toContain(INVITE_WORDS.failed);
   expect(button("Post on X")).toBeDefined();
 });

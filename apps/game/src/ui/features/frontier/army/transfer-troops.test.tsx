@@ -17,6 +17,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { getDirectionBetweenAdjacentHexes, getNeighborHexes, TileOccupier } from "@bibliothecadao/types";
 
+import { TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
 import { transferArmies, transferTrainedArmies } from "./transfer-fixture";
 import { toast } from "@/ui/features/event-feed/notify";
 import { TransferTroopsSheet, useSelectedTransfer } from "./transfer-troops";

@@ -4240,7 +4240,7 @@ function raceBoardSteps(result) {
           (result !== "expired" || race.text.includes("No Aspect finished its hyperstructure")) &&
           !race.text.includes("LORDS") &&
           played.invite?.invite.text.includes("Invite a friend to Prowess") &&
-          !played.invite?.invite.text.includes("could not be made") &&
+          !played.invite?.invite.text.includes(REHEARSAL_WORDS.inviteFailed) &&
           members.text.includes("1,250") &&
           members.text.includes("3,750") &&
           scoped.includes(7) &&
@@ -6033,6 +6033,7 @@ const BUILD_BARRACKS_STEP = {
 export const REHEARSAL_WORDS = {
   startAdventure: "Start your adventure",
   copyLink: "Copy link",
+  inviteFailed: "Could not create invite link.",
   inviteTo: (aspect) => `Invite a friend to ${aspect}`,
   join: (aspect) => `Join ${aspect}`,
   invited: "Invited",

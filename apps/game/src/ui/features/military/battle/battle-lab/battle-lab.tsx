@@ -22,7 +22,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLatest } from "@/hooks/use-latest";
 
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
-import { ATTACK_REFUSAL_WORDS } from "@/ui/design-system/kit/words";
+import { ATTACK_REFUSAL_WORDS, QUICK_ATTACK_WORDS } from "@/ui/design-system/kit/words";
 import { attackerSide, defenderSide, type SideOutcome } from "../battle-outcome";
 import { wholeTroops } from "../fight-forecast";
 import { TargetType } from "../types";
@@ -173,7 +173,7 @@ export const BattleLab = ({
   const actionLabel = (() => {
     if (isEdited || nonDefaultParams) return "Reset to act";
     if (refusal) return ATTACK_REFUSAL_WORDS[refusal];
-    return forecast?.outcome === "claims" ? "Claim" : "Attack";
+    return forecast?.outcome === "claims" ? QUICK_ATTACK_WORDS.take : QUICK_ATTACK_WORDS.attack;
   })();
 
   const warning = (() => {
@@ -310,7 +310,7 @@ export const BattleLab = ({
             </div>
 
             {!state.hasDefender ? (
-              <HudNotice tone="good" line="No defenders: claim it" />
+              <HudNotice tone="good" line={QUICK_ATTACK_WORDS.takeUnopposed} />
             ) : (
               prediction && <OutcomeBanner outcome={prediction.outcome} />
             )}

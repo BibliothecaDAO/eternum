@@ -1291,6 +1291,7 @@ describe("the Season 1 rehearsal", () => {
   it("presses and reads the app's own words", () => {
     expect(REHEARSAL_WORDS.startAdventure).toBe(SHARED_LINK_WORDS.play);
     expect(REHEARSAL_WORDS.copyLink).toBe(INVITE_WORDS.copy);
+    expect(REHEARSAL_WORDS.inviteFailed).toBe(INVITE_WORDS.failed);
     expect(REHEARSAL_WORDS.inviteTo("Might")).toBe(INVITE_WORDS.title("Might"));
     expect(REHEARSAL_WORDS.join("Guile")).toBe(ASPECT_STEP_WORDS.join("Guile"));
     expect(REHEARSAL_WORDS.invited).toBe(ASPECT_STEP_WORDS.invited);

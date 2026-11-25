@@ -1,6 +1,6 @@
 import { etherealSurfaceAt } from "../terrain/ethereal-depths";
 import type { EtherealSurface } from "../terrain/ethereal-depths";
-import { rankedText } from "@/ui/design-system/kit/words";
+import { ORDER_BUSY, rankedText } from "@/ui/design-system/kit/words";
 import { veilIsNear, type endgameFrame } from "../effects/endgame/sequence";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
@@ -3139,7 +3139,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private onArmyMovement(actionPath: ActionPath[], selectedEntityId: ID) {
     if (actionPath.length > 0 && this.hasOrderInFlight(selectedEntityId)) {
-      toast.info("The last order is still on its way");
+      toast.info(ORDER_BUSY);
       this.state.updateEntityActionHoveredHex(null);
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
       return;

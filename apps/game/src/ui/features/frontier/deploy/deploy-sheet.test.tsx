@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { DEPLOY_WORDS } from "@/ui/design-system/kit/words";
 
 // The home ring as the map knows it: explored and empty (one tile maybe taken), or not yet synced.
 const ring = { explored: true, taken: -1 };
