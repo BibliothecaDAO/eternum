@@ -26,6 +26,7 @@ import { resolveHighlightViewTuning } from "./worldmap-highlight-view-policy";
 const FRONTIER_ACCENT_COLOR = new Color(0x84f1ff);
 const ENDPOINT_ACCENT_LIFT = new Color(0xffffff);
 const MAX_HIGHLIGHTS = 500;
+const FACE_STEPS = 4;
 
 interface PlateCopy {
   x: number;
@@ -317,10 +318,7 @@ export class HighlightHexManager {
         },
         startTime,
       );
-      if (entry.launchGlow && index === 0) {
-        const ground = this.terrain.sampleSurface(copy.x, copy.z).height + layer.lift;
-        this.triggerLaunchGlow(new Vector3(copy.x, ground, copy.z), copy.color, timeline, startTime);
-      }
+      if (entry.launchGlow && index === 0) this.triggerLaunchGlow(copy, layer.lift, timeline, startTime);
     });
   }
 
@@ -421,14 +419,24 @@ export class HighlightHexManager {
 
   private clearance(layer: HighlightRenderLayer, copyIndex: number): { lowest: number; highest: number } {
     const positions = layer.mesh.geometry.getAttribute("position");
-    const perCopy = this.plate.getAttribute("position").count;
+    const index = layer.mesh.geometry.getIndex();
+    const perCopy = this.plate.getIndex()?.count ?? 0;
+    if (!index) throw new Error("A lit plate has no faces to measure");
     let lowest = Infinity;
     let highest = -Infinity;
-    for (let vertex = copyIndex * perCopy; vertex < (copyIndex + 1) * perCopy; vertex++) {
-      const above =
-        positions.getY(vertex) - this.terrain.sampleSurface(positions.getX(vertex), positions.getZ(vertex)).height;
-      lowest = Math.min(lowest, above);
-      highest = Math.max(highest, above);
+    for (let corner = copyIndex * perCopy; corner < (copyIndex + 1) * perCopy; corner += 3) {
+      const [a, b, c] = [0, 1, 2].map((offset) => new Vector3().fromBufferAttribute(positions, index.getX(corner + offset)));
+      for (let u = 0; u <= FACE_STEPS; u++)
+        for (let v = 0; v <= FACE_STEPS - u; v++) {
+          const point = a
+            .clone()
+            .multiplyScalar(1 - (u + v) / FACE_STEPS)
+            .addScaledVector(b, u / FACE_STEPS)
+            .addScaledVector(c, v / FACE_STEPS);
+          const above = point.y - this.terrain.sampleSurface(point.x, point.z).height;
+          lowest = Math.min(lowest, above);
+          highest = Math.max(highest, above);
+        }
     }
     return { lowest, highest };
   }
@@ -444,20 +452,20 @@ export class HighlightHexManager {
     this.applyPulseToLayers(0);
   }
 
-  private triggerLaunchGlow(position: Vector3, color: Color, timeline: gsap.core.Timeline, startTime: number) {
+  private triggerLaunchGlow(from: PlateCopy, lift: number, timeline: gsap.core.Timeline, startTime: number) {
     const glowMaterial = new MeshBasicMaterial({
-      color: color.clone(),
+      color: from.color.clone(),
       transparent: true,
       opacity: 0,
       depthWrite: false,
       blending: AdditiveBlending,
       toneMapped: false,
+      side: DoubleSide,
     });
 
-    const glowMesh = new Mesh(this.hexGeometryPool.getGeometry("highlight"), glowMaterial);
-    glowMesh.position.copy(position);
-    glowMesh.rotation.x = -Math.PI / 2;
-    glowMesh.scale.setScalar(0.42);
+    const glow = { x: from.x, z: from.z, scale: 0.42 };
+    const glowMesh = new Mesh(drapeOnGround(this.plate, [glow], this.terrain, lift), glowMaterial);
+    glowMesh.frustumCulled = false;
     glowMesh.renderOrder = 8;
     glowMesh.raycast = () => {};
 
@@ -484,13 +492,12 @@ export class HighlightHexManager {
       startTime + 0.12,
     );
     timeline.to(
-      glowMesh.scale,
+      glow,
       {
-        x: 1.5,
-        y: 1.5,
-        z: 1.5,
+        scale: 1.5,
         duration: 0.3,
         ease: "power2.out",
+        onUpdate: () => layCopyOnGround(glowMesh.geometry, 0, this.plate, glow, this.terrain, lift),
       },
       startTime,
     );
@@ -507,6 +514,7 @@ export class HighlightHexManager {
       entry.mesh.parent.remove(entry.mesh);
     }
 
+    entry.mesh.geometry.dispose();
     entry.material.dispose();
   }
 
@@ -516,6 +524,7 @@ export class HighlightHexManager {
         entry.mesh.parent.remove(entry.mesh);
       }
 
+      entry.mesh.geometry.dispose();
       entry.material.dispose();
     });
 

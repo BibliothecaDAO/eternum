@@ -251,6 +251,13 @@ describe("HighlightHexManager laying a lit hex on the ground", () => {
     expect(drawnHexes(manager)).toEqual(["1,0@0.92", "2,0@0.98"]);
   });
 
+  it("reports ground that rises between a plate's points as burying it, so the playtest's check can fail", () => {
+    const ridge = (x: number, z: number) => (Math.abs(Math.hypot(x - 4, z) - 0.15) < 0.05 ? 0.2 : 0);
+    const { manager } = light(ridge, [step(4, 0, "Explore")]);
+
+    expect(Math.min(...manager.getDebugState().plates.map((plate) => plate.lowest))).toBeLessThan(0);
+  });
+
   it("reports how far over its ground each plate lies, for the playtest's high-ground check", () => {
     const mound = (x: number, z: number) => Math.max(0.08, 0.31 - 0.2 * Math.hypot(x - 4, z));
     const { manager } = light(mound, [step(4, 0, "Explore")]);
