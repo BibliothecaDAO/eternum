@@ -113,7 +113,8 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
     const beastToken = plateOf("2,800")!.querySelector<HTMLElement>(".mp-token")!;
     expect(beastToken.textContent).toBe("2,800");
     expect(beastToken.querySelector('[data-icon="beast-wyvern"]')).not.toBeNull();
-    expect(beastToken.getAttribute("aria-label")).toBe("Wyvern 2,800");
+    expect(beastToken.getAttribute("aria-label")).toBe("Blade, Wyvern 2,800");
+    expect(beastToken.querySelector('[data-combat-mark="Blade"]')).not.toBeNull();
     expect(plateOf("1,321")!.textContent).toContain("T1");
     structures.setHover(1);
     await frame();
