@@ -259,7 +259,8 @@ async function waitForPage(expression, isReady, what) {
   for (;;) {
     const seen = await browser.evaluate(afterNextFrame(expression));
     if (isReady(seen)) return seen;
-    if (Date.now() > deadline) throw new Error(`${what} not reached in ${READY_DEADLINE_MS} ms: ${JSON.stringify(seen)}`);
+    if (Date.now() > deadline)
+      throw new Error(`${what} not reached in ${READY_DEADLINE_MS} ms: ${JSON.stringify(seen)}`);
   }
 }
 
