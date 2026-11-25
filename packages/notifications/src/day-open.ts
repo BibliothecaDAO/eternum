@@ -32,7 +32,7 @@ export function buildDayOpen(
       kind: "day-open",
       id: `day-open:v1:0x${BigInt(push.chainId).toString(16)}:0x${BigInt(push.worldAddress).toString(16)}:${push.gameId}:${push.day}:${push.owner}`,
       owner: push.owner,
-      title: push.last ? "The last day is open" : `Day ${push.day + 1} is open`,
+      title: push.last ? "Last day is open" : `Day ${push.day + 1} is open`,
       body: `${pushGameName(push.game)}: ${dayLine(ends, push.last)}`,
       tag: kindTag("day-open", gamePath(push)),
       target: gamePath(push),
@@ -43,4 +43,4 @@ export function buildDayOpen(
   );
 }
 
-const dayLine = (ends: string, last: boolean): string => (last ? `the season ends at ${ends}.` : `it ends at ${ends}.`);
+const dayLine = (ends: string, last: boolean): string => (last ? `season ends at ${ends}.` : `day ends at ${ends}.`);
