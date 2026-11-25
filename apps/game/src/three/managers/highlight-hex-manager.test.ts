@@ -277,10 +277,9 @@ describe("HighlightHexManager lighting a plot for a building", () => {
     isEndpoint: true,
   });
 
-  it("draws it in the plot palette its scene set, and refuses to before one is set", () => {
+  it("draws it in the plot palette its scene set", () => {
     const scene = new THREE.Scene();
     const manager = new HighlightHexManager(scene, FLAT_TERRAIN_SURFACE, gridSpace);
-    expect(() => manager.highlightHexes([build(1)] as never)).toThrow("plot palette");
 
     manager.setLitPlotPalette({ routeColor: 0x336699, endpointColor: 0x88aacc });
     manager.highlightHexes([build(2)] as never);

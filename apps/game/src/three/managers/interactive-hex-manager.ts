@@ -6,7 +6,8 @@ import * as THREE from "three";
 import type { MeshBasicNodeMaterial } from "three/webgpu";
 import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { drapeOnGround } from "./hex-ring";
-import { type HoverVisualPalette, type PlotLook } from "./worldmap-interaction-palette";
+import { plotLookOn, type HoverVisualPalette, type PlotLook } from "./worldmap-interaction-palette";
+import { BiomeType } from "@bibliothecadao/types";
 import { HEX_SIZE } from "@/three/constants";
 import { createFilledHexagonOverlayGeometry } from "@/three/geometry/hexagon-geometry";
 
@@ -19,6 +20,9 @@ const RAY_PARALLEL_EPSILON = 1e-6;
 
 type InteractiveHexHoverVisualMode = HoverVisualMode;
 
+const plotBandShape = (look: PlotLook): THREE.BufferGeometry =>
+  createFilledHexagonOverlayGeometry(HEX_SIZE * 0.965, HEX_SIZE * 0.905, look);
+
 export class InteractiveHexManager {
   private scene: THREE.Scene;
   // Store all interactive hexes
@@ -27,7 +31,7 @@ export class InteractiveHexManager {
   // Store only currently visible hexes for the current chunk
   private visibleHexes: Set<string> = new Set();
   private readonly band: THREE.Mesh;
-  private bandShape: THREE.BufferGeometry | null = null;
+  private bandShape = plotBandShape(plotLookOn(BiomeType.Grassland));
   private hoverAura: Aura;
   private hoverHexManager: HoverHexManager;
   private readonly instanceMaterial: MeshBasicNodeMaterial;
@@ -136,8 +140,8 @@ export class InteractiveHexManager {
   }
 
   public applyPlotLook(look: PlotLook): void {
-    this.bandShape?.dispose();
-    this.bandShape = createFilledHexagonOverlayGeometry(HEX_SIZE * 0.965, HEX_SIZE * 0.905, look);
+    this.bandShape.dispose();
+    this.bandShape = plotBandShape(look);
     this.applyHoverPalette(look.hover);
   }
 
@@ -363,7 +367,6 @@ export class InteractiveHexManager {
       this.band.geometry = new THREE.BufferGeometry();
       return;
     }
-    if (!this.bandShape) throw new Error("Open plots are drawn before their scene applied a plot look");
     this.band.geometry = drapeOnGround(this.bandShape, open, this.terrain, INTERACTIVE_HEX_SURFACE_OFFSET);
   }
 
@@ -402,7 +405,7 @@ export class InteractiveHexManager {
   public destroy(): void {
     this.scene.remove(this.band);
     this.band.geometry.dispose();
-    this.bandShape?.dispose();
+    this.bandShape.dispose();
 
     // Clean up hover effects
     if (this.hoverAura.isInScene(this.scene)) {

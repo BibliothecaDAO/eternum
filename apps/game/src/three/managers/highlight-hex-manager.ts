@@ -18,9 +18,11 @@ import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { drapeOnGround, layCopyOnGround } from "./hex-ring";
 import {
   HIGHLIGHT_LAYER_PALETTES,
+  plotLookOn,
   resolveHighlightLayerPalette,
   type HighlightLayerPalette,
 } from "./worldmap-interaction-palette";
+import { BiomeType } from "@bibliothecadao/types";
 import { resolveHighlightViewTuning } from "./worldmap-highlight-view-policy";
 
 const FRONTIER_ACCENT_COLOR = new Color(0x84f1ff);
@@ -104,7 +106,7 @@ export class HighlightHexManager {
   private activeLaunchGlows: Array<{ mesh: Mesh; material: MeshBasicMaterial }> = [];
   private drawnDescriptors: ActionHighlightDescriptor[] = [];
   private teachHex: { col: number; row: number } | null = null;
-  private litPlotPalette: HighlightLayerPalette | null = null;
+  private litPlotPalette: HighlightLayerPalette = plotLookOn(BiomeType.Grassland).lit;
   private readonly rolloutConfig = {
     stepDelay: 0.018,
     entryDuration: 0.18,
@@ -336,9 +338,9 @@ export class HighlightHexManager {
   }
 
   private paletteOf(descriptor: ActionHighlightDescriptor): HighlightLayerPalette {
-    if (descriptor.actionType !== ActionType.Build) return resolveHighlightLayerPalette(descriptor.actionType);
-    if (!this.litPlotPalette) throw new Error("A plot is lit for a building before its scene set the plot palette");
-    return this.litPlotPalette;
+    return descriptor.actionType === ActionType.Build
+      ? this.litPlotPalette
+      : resolveHighlightLayerPalette(descriptor.actionType);
   }
 
   private resolveRouteColor(descriptor: ActionHighlightDescriptor): Color {

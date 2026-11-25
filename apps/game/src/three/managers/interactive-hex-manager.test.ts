@@ -66,12 +66,6 @@ describe("a buildable hex's band", () => {
     expect(manager.pick(raycaster)?.hexCoords).toEqual({ col: 0, row: 0 });
   });
 
-  it("refuses to draw open plots before its scene gave them a look", () => {
-    const manager = new InteractiveHexManager(new THREE.Scene(), slopedGround(0), AT_ORIGIN as never);
-    manager.addHex({ col: 0, row: 0 });
-    expect(() => manager.renderAllHexes()).toThrow("plot look");
-  });
-
   it("draws open plots in the look its scene gave them, the fill soft and the rim strong", () => {
     const { scene, manager } = drawnPlot(slopedGround(0));
     const mesh = scene.children.find((child): child is THREE.Mesh => child instanceof THREE.Mesh)!;
