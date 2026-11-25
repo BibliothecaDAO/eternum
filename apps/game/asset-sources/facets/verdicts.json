@@ -1131,5 +1131,13 @@
   "faceted/emissary-insight": {
     "verdict": "beats shipped",
     "reason": "Owner-approved Season 1 Insight octopus emissary portrait published through the facets 64/128/256 webp pipeline."
+  },
+  "faceted/combat-blade": {
+    "verdict": "beats shipped",
+    "reason": "Owner approved 2026-11-25: a plain sword reads as the melee class at badge size, where the borrowed Attack glyph meant an order."
+  },
+  "faceted/combat-bow": {
+    "verdict": "beats shipped",
+    "reason": "Owner approved 2026-11-25: a bow reads as the ranged class at badge size, where the borrowed crossbowman portrait was a second face on a face."
   }
 }

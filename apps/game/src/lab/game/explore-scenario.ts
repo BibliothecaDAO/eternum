@@ -3,7 +3,7 @@ import { SPIRE_ARMY, SPIRE_ARMY_TILE_KEY } from "@/ui/features/frontier/spire-fi
 
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { type LabScenario, wire } from "./lab-chain";
-import { spireScenario } from "./spire-scenario";
+import { type LabGround, spireScenario } from "./spire-scenario";
 
 /** The army's tile row at the edge, under a key no fixture row uses. */
 const EDGE_TILE_KEY = "0x1ac0";
@@ -13,8 +13,8 @@ const EDGE_TILE_KEY = "0x1ac0";
  * with fog beside it, so a tap or a right-click there explores (owner, 27 October 2026: "Yes double tapping to explore
  * on mobile").
  */
-export const exploreScenario = (): LabScenario => {
-  const spire = spireScenario();
+export const exploreScenario = (ground?: LabGround): LabScenario => {
+  const spire = spireScenario(ground);
   standTheArmyAtTheEdge(spire.store);
   return spire;
 };

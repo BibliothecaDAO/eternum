@@ -1,9 +1,8 @@
 import "./picked-army.css";
 
-import { HudChip, HudIconButton, HudPanel, HudPortrait, HudStamina } from "@/ui/design-system/kit/hud-elements";
+import { HudIconButton, HudPanel, HudPortrait, HudStamina } from "@/ui/design-system/kit/hud-elements";
 import { Icon } from "@/ui/design-system/icon";
 import { CLOSE, PICKED_ARMY, staminaLabel, staminaReading, TROOPS } from "@/ui/design-system/kit/words";
-import { formatShort } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import { DeepDrain, EtherealMark } from "./army-token";
@@ -11,7 +10,7 @@ import type { DockArmy } from "./dock-armies";
 
 export type PickedArmyView = Pick<
   DockArmy,
-  "explorerId" | "label" | "number" | "art" | "stamina" | "secondsToFull" | "troops" | "ethereal" | "drain"
+  "explorerId" | "label" | "number" | "art" | "stamina" | "secondsToFull" | "ethereal" | "drain"
 >;
 
 export const PickedArmy = ({
@@ -47,13 +46,6 @@ export const PickedArmy = ({
         </span>
         <span className="army-tray__body">
           <span className="army-tray__name">{army.label}</span>
-          {army.troops !== undefined && (
-            <span className="army-tray__troops">
-              <HudChip icons={army.art ? undefined : ["troops"]} label={TROOPS}>
-                {formatShort(army.troops)}
-              </HudChip>
-            </span>
-          )}
           {army.stamina && (
             <span className="army-tray__stamina">
               <Icon name="stamina" size={18} />

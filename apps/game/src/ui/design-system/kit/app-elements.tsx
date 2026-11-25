@@ -238,13 +238,13 @@ export const AppTopBar = ({
   mark,
   places,
   player,
-  balance,
+  end,
   notice,
 }: {
   mark: ReactNode;
   places: readonly AppBarPlace[];
   player: AppBarPlace | null;
-  balance?: ReactNode;
+  end?: ReactNode;
   notice?: ReactNode;
 }) => (
   <header data-band="bar" className="app-bar">
@@ -256,7 +256,7 @@ export const AppTopBar = ({
     </nav>
     <span className="app-bar__end">
       {notice ? <div data-band="notice">{notice}</div> : null}
-      {balance}
+      {end}
       {player && <AppBarLink place={player} />}
     </span>
   </header>

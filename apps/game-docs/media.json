@@ -269,7 +269,7 @@
         "ms": 60000
       },
       {
-        "click": "aside[aria-label=\"Realm\"] button[aria-label=\"Army 1\"]"
+        "click": "aside[aria-label=\"Realm\"] nav[aria-label=\"Armies\"] button[aria-pressed]"
       },
       {
         "wait": 2000

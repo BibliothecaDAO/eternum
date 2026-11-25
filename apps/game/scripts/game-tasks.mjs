@@ -117,7 +117,7 @@ const LEADERBOARD_DETAIL_FITS = `(() => {
 const ORDER_REFUSAL = [
   "Needs \\d+ stamina",
   "Not enough Wheat",
-  "Cannot attack owned site",
+  "Only neutral structures can be attacked",
   "Cannot transfer here",
   "Tile occupied",
   "Too far · move closer",
@@ -251,7 +251,7 @@ export const GAME_TASKS = {
     presses: [
       { name: "the next structure", key: "Shift+Tab" },
       { name: "Chat", text: "^Chat( strip)?$" },
-      { name: "the place button", within: 'section[aria-label="Chat"]', text: "^Share the selected place$" },
+      { name: "the place button", within: 'section[aria-label="Chat"]', text: "^Share selected place$" },
       {
         name: "words",
         fill: 'section[aria-label="Chat"] input[aria-label="Message"]',

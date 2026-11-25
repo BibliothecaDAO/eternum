@@ -17,7 +17,12 @@ vi.mock("@/three/debug/procedural-terrain-debug-renderer", () => ({
       context: {
         camera: new PerspectiveCamera(),
         controls: { target: new Vector3(), enabled: true },
-        terrain: { sampleSurface: () => ({ height: 0 }), present: vi.fn(), cancelShroudReveals: vi.fn() },
+        terrain: {
+          sampleSurface: () => ({ height: 0 }),
+          sampleHeight: () => 0,
+          present: vi.fn(),
+          cancelShroudReveals: vi.fn(),
+        },
       },
       pages: [{}],
     });

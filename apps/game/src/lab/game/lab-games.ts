@@ -35,7 +35,7 @@ import { shopScenario } from "./shop-scenario";
 import { ruinFarScenario, ruinFightScenario } from "./ruin-fight-scenario";
 import { seasonOpensScenario } from "./season-opens-scenario";
 import { settleScenario } from "./settle-scenario";
-import { highGroundScenario, discoveredSpireScenario, spireScenario } from "./spire-scenario";
+import { discoveredSpireScenario, HIGH_GROUND, spireScenario } from "./spire-scenario";
 import { upkeepScenario } from "./upkeep-scenario";
 import { visitScenario } from "./visit-scenario";
 
@@ -67,7 +67,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "oath-replace": () => oathPickScenario(true),
   "oath-pass-capped": oathPassCappedScenario,
   "battle-target": battleTargetScenario,
-  "high-ground": highGroundScenario,
+  "high-ground": () => exploreScenario(HIGH_GROUND),
   "day-end": dayEndScenario,
   realm: realmScenario,
   "realm-world": realmWorldScenario,
@@ -98,7 +98,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   settle: settleScenario,
   "aspect-settle": aspectSettleScenario,
   "aspect-settle-invited": aspectSettleInvitedScenario,
-  explore: exploreScenario,
+  explore: () => exploreScenario(),
   "painted-buildings": () => paintedBuildingsScenario(),
   visit: visitScenario,
   "far-place": farPlaceScenario,

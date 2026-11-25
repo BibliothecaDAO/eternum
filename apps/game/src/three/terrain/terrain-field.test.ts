@@ -22,6 +22,7 @@ describe("TerrainField", () => {
     const field = new TerrainField(createRequest([cell(0, 0, BiomeType.DeepOcean)]));
     expect(field.sampleVertex(0, 0).height).toBeLessThan(-0.055);
     expect(field.sampleSurface(0, 0)).toMatchObject({ height: -0.055, normal: [0, 1, 0] });
+    expect(field.sampleHeight(0, 0)).toBe(-0.055);
   });
 
   it("matches generated terrain geometry for placement across biomes, boundaries and structure pads", () => {
@@ -50,6 +51,7 @@ describe("TerrainField", () => {
           height: water ? TERRAIN_WATER_LEVEL : vertex.height,
           normal: water ? [0, 1, 0] : vertex.normal,
         });
+        expect(field.sampleHeight(x, z)).toBe(field.sampleSurface(x, z).height);
       }
     }
   });

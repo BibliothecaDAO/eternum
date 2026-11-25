@@ -24,6 +24,7 @@ interface WildlifeView {
   root: Group;
   animator: Animator;
   rigScale: number;
+  ground: (Point & { surface: TerrainSurfaceSample }) | null;
 }
 interface Point {
   x: number;
@@ -71,6 +72,7 @@ export class TerrainWildlife {
       this.obstacles.set(key, list);
     }
     this.population.restrictTo(cells);
+    for (const view of this.views.values()) view.ground = null;
     this.needsPopulation = true;
     this.removeReleasedViews();
     this.needsLoad = true;
@@ -192,6 +194,7 @@ export class TerrainWildlife {
         root,
         animator: createCreatureAnimator(rig, { seed: creature.id }),
         rigScale: rig.scale.x * root.scale.x,
+        ground: null,
       };
       this.views.set(creature.id, view);
       this.poseView(view, creature);
@@ -210,9 +213,15 @@ export class TerrainWildlife {
       }
   }
 
+  private groundUnder(view: WildlifeView, creature: RoamingCreature): TerrainSurfaceSample {
+    if (view.ground?.x !== creature.x || view.ground.z !== creature.z)
+      view.ground = { x: creature.x, z: creature.z, surface: this.sampleSurface(creature.x, creature.z) };
+    return view.ground.surface;
+  }
+
   private poseView(view: WildlifeView, creature: RoamingCreature): void {
     const traits = creatureTraits(creature.species);
-    const surface = this.sampleSurface(creature.x, creature.z);
+    const surface = this.groundUnder(view, creature);
     const height =
       traits.movement === "water"
         ? TERRAIN_WATER_LEVEL - 0.03

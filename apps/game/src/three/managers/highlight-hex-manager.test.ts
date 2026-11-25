@@ -185,6 +185,7 @@ describe("HighlightHexManager drawing a selection", () => {
 describe("HighlightHexManager laying a lit hex on the ground", () => {
   const groundOf = (heightAt: (x: number, z: number) => number) => ({
     sampleSurface: (x: number, z: number) => ({ biome: null, height: heightAt(x, z), normal: [0, 1, 0] as const }),
+    sampleHeight: (x: number, z: number) => heightAt(x, z),
   });
 
   const drawnVertices = (scene: THREE.Scene) =>
@@ -304,6 +305,7 @@ describe("HighlightHexManager teach highlight", () => {
     let groundHeight = 0.1;
     const terrain = {
       sampleSurface: () => ({ biome: null, height: groundHeight, normal: [0, 1, 0] as const }),
+      sampleHeight: () => groundHeight,
     };
     const scene = new THREE.Scene();
     const manager = new HighlightHexManager(scene, terrain, gridSpace);
