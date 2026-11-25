@@ -74,7 +74,6 @@ describe("the quest dock", () => {
       "The Cull · Defeat 6,000 guard troops (3K/6K)",
     );
     expect(host.querySelector("[data-quest-count]")).toBeNull();
-
   });
 
   it("titles a phone's dock with the quest's name alone", () => {
