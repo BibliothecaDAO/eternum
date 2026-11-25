@@ -49,6 +49,7 @@ export const MODEL_BUDGETS = Object.freeze({
     maxGroundY: 0.2,
   },
   wonder: {
+    flagAnchors: true,
     maxTriangles: 24_000,
     maxColorTexture: 1_024,
     maxTechnicalTexture: 512,
@@ -115,7 +116,41 @@ export function readHexFit(fitPath) {
   if (typeof yaw !== "number" || !Number.isFinite(yaw)) {
     throw new Error(`Hex fit transform.yaw_deg_about_y must be a finite number of degrees in ${fitPath}`);
   }
-  return { scale, offset: [offset[0], offset[1], offset[2]], yaw };
+  return { scale, offset: [offset[0], offset[1], offset[2]], yaw, flags: readFlagAnchors(raw.flags, fitPath) };
+}
+
+const FLAG_ROLES = new Set(["banner", "trim"]);
+const isFiniteList = (value, length) =>
+  Array.isArray(value) && value.length === length && value.every((entry) => Number.isFinite(entry));
+
+function readFlagAnchors(flags, fitPath) {
+  if (flags === undefined) return undefined;
+  if (!Array.isArray(flags)) throw new Error(`Hex fit flags must be a list of anchors in ${fitPath}`);
+  for (const anchor of flags) {
+    if (
+      !FLAG_ROLES.has(anchor?.role) ||
+      !isFiniteList(anchor.position, 3) ||
+      !isFiniteList(anchor.size, 2) ||
+      anchor.size.some((side) => side <= 0) ||
+      !Number.isFinite(anchor.facing)
+    ) {
+      throw new Error(
+        `Hex fit flag anchor needs role banner|trim, position [x,y,z], size [w,h] and facing in ${fitPath}`,
+      );
+    }
+  }
+  return flags;
+}
+
+function placeFlagAnchors(fit) {
+  const matrix = buildFitMatrix(fit);
+  const round = (value) => Math.round(value * 10_000) / 10_000;
+  return fit.flags.map(({ role, position, size, facing }) => ({
+    role,
+    position: new Vector3(...position).applyMatrix4(matrix).toArray().map(round),
+    size: size.map((side) => round(side * fit.scale)),
+    facing: round(facing + fit.yaw),
+  }));
 }
 
 export async function shipTripoModel(options) {
@@ -136,13 +171,23 @@ export async function shipTripoModel(options) {
   }
 
   const fit = readHexFit(fitPath);
+  if (budget.flagAnchors && fit.flags === undefined) {
+    throw new Error(
+      `A ${kind} model's fit.json must list its flag anchors, or flags: [] to say it has none (${fitPath})`,
+    );
+  }
   const sourceSha256 = sha256File(inputPath);
   const fitSha256 = sha256File(fitPath);
   const io = await createGltfIO();
   const document = await io.read(inputPath);
 
   const metrics = assertSourceBudget(document, kind, budget);
-  bakeHexFit(document, fit, { assetKind: kind, fitSha256, sourceSha256 });
+  bakeHexFit(document, fit, {
+    assetKind: kind,
+    fitSha256,
+    sourceSha256,
+    ...(fit.flags === undefined ? {} : { flagAnchors: placeFlagAnchors(fit) }),
+  });
   normalizeTripoMaterials(document, kind);
   const bounds = assertHexFootprint(document, kind, budget);
   stripGeometryCompressionExtensions(document);
@@ -643,6 +688,9 @@ export async function assertDeliveredAsset(io, deliveredPath, kind, budget = MOD
   const meshNodes = root.listNodes().filter((node) => node.getMesh());
   if (meshNodes.length === 0 || !meshNodes.every((node) => node.getExtras()?.assetKind === kind)) {
     throw new Error(`Delivered ${kind} model is missing assetKind="${kind}" on its mesh node`);
+  }
+  if (budget.flagAnchors && !meshNodes.every((node) => Array.isArray(node.getExtras()?.flagAnchors))) {
+    throw new Error(`Delivered ${kind} model declares no flag anchors (fit.json flags, [] for none)`);
   }
   const sourcePaths = resolveTripoSourcePaths(deliveredPath);
   if (sourcePaths) {

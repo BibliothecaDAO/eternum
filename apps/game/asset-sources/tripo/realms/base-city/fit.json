@@ -6,5 +6,25 @@
     "yaw_deg_about_y": 0,
     "scale": 1.26,
     "offset_xyz": [0, 0, 0]
-  }
+  },
+  "flags": [
+    {
+      "role": "banner",
+      "position": [-0.19, 0.4, 0.092],
+      "size": [0.15, 0.25],
+      "facing": -52
+    },
+    {
+      "role": "banner",
+      "position": [-0.435, 0.235, 0.175],
+      "size": [0.07, 0.13],
+      "facing": -52
+    },
+    {
+      "role": "banner",
+      "position": [-0.296, 0.234, 0.346],
+      "size": [0.07, 0.13],
+      "facing": -52
+    }
+  ]
 }
