@@ -153,9 +153,6 @@
 .frontier-chat-dock .ui-pill {
   width: 100%;
 }
-.frontier-chat-dock [data-chat-pane] {
-  height: 340px;
-}
 
 .frontier-cluster-card {
   display: flex;
