@@ -1152,6 +1152,13 @@ export const DEPLOY_WORDS = {
 export const SIZE_ROW = { fewer: "One fewer", more: "One more", max: "Max" } as const;
 export const BUILD = "Build";
 export const BUILT = "Built";
+export const BUILD_GROUPS = {
+  economy: { word: "Economy", line: "Repeatable" },
+  army: { word: "Army", line: "Repeatable" },
+  unique: { word: "One per realm", line: "Unique upgrades" },
+} as const;
+export const requiresRank = (rank: string) => `Requires ${rank}`;
+export const ONE_PER_REALM_MARK = "1×";
 export const plotsUsed = (used: number, total: number) => `${used} / ${total} plots`;
 export const armiesHere = (count: number) => (count === 1 ? "1 army" : `${count} armies`);
 export const FREE = "Free";

@@ -1,5 +1,5 @@
 import type { EtherealLayer } from "@bibliothecadao/eternum";
-import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
+import { buildingOpensAtLevel, buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 
@@ -52,6 +52,7 @@ import { DayShareSheet } from "@/ui/features/frontier/rollover/day-share-sheet";
 import { DayEndScreen } from "@/ui/features/frontier/rollover/day-end-screen";
 import { RESTING, useDayEndStore } from "@/hooks/store/use-day-end-store";
 import { BuildView } from "@/ui/features/frontier/build/build-view";
+import { buildGroupOf } from "@/ui/features/frontier/build/build-options";
 import { CastleResearch, CastleView } from "@/ui/features/frontier/upgrade/castle-view";
 import { ArmyDetail } from "@/ui/features/frontier/army/army-panel";
 import { MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progression-fixture";
@@ -276,12 +277,21 @@ const THIN_DAY_SHARE: SharedDay = {
 
 type LabTile = Parameters<typeof BuildView>[0]["tiles"][number];
 const tile = (
-  key: string,
+  category: BuildingType,
   icon: LabTile["icon"],
   name: string,
   gives: LabTile["gives"],
   standing: LabTile["standing"],
-): LabTile => ({ key, icon, name, does: "", gives, standing });
+): LabTile => ({
+  key: String(category),
+  group: buildGroupOf(category),
+  opensAt: buildingOpensAtLevel(category),
+  icon,
+  name,
+  does: "",
+  gives,
+  standing,
+});
 const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"], raised?: string) =>
   ({ kind: "price", prices: [{ of: "labor", amount: labor, short: short?.of === "labor" }], short, raised }) as const;
 
@@ -310,28 +320,38 @@ const LAB_BUILD_REFUSAL = {
   reason: { kind: "short", of: "essence", held: BUILD_SHORT_ESSENCE, need: SHORT_TILE_PRICES[0].amount },
 } as const;
 const BUILD_TILES: LabTile[] = [
-  tile("farm", "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, price(6_800)),
+  tile(BuildingType.Farm, "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, price(6_800)),
   tile(
-    "workshop",
+    BuildingType.Workshop,
     "workshop",
     "Workshop",
     { icon: "labor", value: "+0.83/min" },
 
     price(34_000, { of: "labor", wait: 16 * HOUR }, "Costs more with each one standing: 1"),
   ),
-  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+13/min" }, price(6_800)),
-  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard), { icon: "order-skill" }, trainingPrice),
+  tile(BuildingType.Barracks, "barracks", "Barracks", { icon: "troops", value: "+13/min" }, price(6_800)),
+  tile(
+    BuildingType.SupplyYard,
+    "supply-yard",
+    buildingName(BuildingType.SupplyYard),
+    { icon: "order-skill" },
+    trainingPrice,
+  ),
 ];
 const SHORT_TILES: LabTile[] = BUILD_TILES.map((card) =>
-  card.key === "farm" || card.key === "workshop" || card.key === "barracks"
-    ? card
-    : { ...card, standing: essenceShortPrice },
+  card.group === "unique" ? { ...card, standing: essenceShortPrice } : card,
 );
 const EARLY_TILES: LabTile[] = [
-  tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, price(800)),
-  tile("workshop", "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, price(2_000)),
-  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, price(800)),
-  tile("supply", "supply-yard", buildingName(BuildingType.SupplyYard), { icon: "order-skill" }, trainingPrice),
+  tile(BuildingType.Farm, "farm", "Farm", { icon: "wheat", value: "+5/min" }, price(800)),
+  tile(BuildingType.Workshop, "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, price(2_000)),
+  tile(BuildingType.Barracks, "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, price(800)),
+  tile(
+    BuildingType.SupplyYard,
+    "supply-yard",
+    buildingName(BuildingType.SupplyYard),
+    { icon: "order-skill" },
+    trainingPrice,
+  ),
 ];
 const CASTLE_SIDE = (level: number, wheatStore: number) => ({
   level,

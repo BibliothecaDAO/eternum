@@ -17,7 +17,7 @@ import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 import { type BuildingOutput, buildingOutput } from "@/ui/shared/lib/building-output";
 
 import { madePicks } from "../production/store-makers";
-import { madeStoreOf, type MadeResource } from "../stores";
+import { isTroopStore, madeStoreOf, storeMadeBy, type MadeResource } from "../stores";
 
 /** Each training building and the attribute it trains every new army in. */
 const TRAINS: Partial<Record<BuildingType, "Logistics">> = {
@@ -35,8 +35,21 @@ export type BuildEffect =
   | { kind: "stores"; shareBps: number }
   | { kind: "research"; line: string; icon: "troops" | "wheat" };
 
+/** Where a building stands in the Build sheet: what the catalog says it makes, or that a realm holds one. */
+export type BuildGroup = "economy" | "army" | "unique";
+
+export const buildGroupOf = (category: BuildingType): BuildGroup => {
+  if (isOnePerRealm(category)) return "unique";
+  const made = storeMadeBy(category);
+  if (made === undefined) throw new Error(`Building ${category} repeats but makes no store`);
+  return isTroopStore(made) ? "army" : "economy";
+};
+
 export interface BuildOption {
   category: BuildingType;
+  group: BuildGroup;
+  /** The realm rank it opens at. */
+  opensAt: number;
   /** Its type's tier, 1 (common) to 5 (legendary): tiers apply to every building of the type. */
   tier: 0 | 1 | 2 | 3 | 4 | 5;
   cost: { resource: number; amount: number }[];
@@ -69,6 +82,8 @@ export const readBuildOptions = (
     const row = researchRowOf(category);
     options.push({
       category,
+      group: buildGroupOf(category),
+      opensAt: buildingOpensAtLevel(category),
       tier: (row === undefined
         ? 1
         : Math.max(
