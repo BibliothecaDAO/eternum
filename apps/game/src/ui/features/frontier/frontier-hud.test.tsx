@@ -11,6 +11,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { deepViewFor, type GameClientSetup, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { sellingFragments } from "./value/fragments-fixture";
 import type { HudSurface } from "./hud/frontier-nav";
+import { ATTACK_REFUSAL_WORDS, POOL_NOT_PUBLISHED, PROFILE_WORDS, SETTINGS_WORDS } from "@/ui/design-system/kit/words";
 
 // The real Frontier HUD on the lab's game. Only the network, the identity and the chat pane's own drawing stand in: the
 // HUD, its hooks and the stores are the real ones.
@@ -272,23 +273,23 @@ it("keeps a refused order in sight on a desktop, over the feed and over a panel 
   await renderHud();
   const notices = () => host.querySelector('[aria-label="Notices"]');
   try {
-    await act(async () => toast.error("Not enough stamina"));
+    await act(async () => toast.error(ATTACK_REFUSAL_WORDS["insufficient-stamina"]));
     expect(notices()?.closest("[data-frontier-rail]")).toBeNull();
     const feed = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Feed"]')!;
     await act(async () => feed.click());
     expect(host.querySelector('[data-frontier-rail] [data-right-page] section[aria-label="Feed"]')).not.toBeNull();
-    expect(notices()?.textContent).toContain("Not enough stamina");
+    expect(notices()?.textContent).toContain(ATTACK_REFUSAL_WORDS["insufficient-stamina"]);
     const season = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Season"]')!;
     await act(async () => season.click());
     expect(host.querySelector('[data-frontier-rail] [data-right-page] section[aria-label="Season"]')).not.toBeNull();
-    expect(notices()?.textContent).toContain("Not enough stamina");
+    expect(notices()?.textContent).toContain(ATTACK_REFUSAL_WORDS["insufficient-stamina"]);
     await act(async () =>
       shownStore.applyFacts([{ model: "RaceRules", key: "0xa500", value: wireFact(raceRules()) }] as never),
     );
     expect(
       host.querySelector('[data-frontier-rail] [data-wide-page] section[aria-label="Aspect Race"]'),
     ).not.toBeNull();
-    expect(notices()?.textContent).toContain("Not enough stamina");
+    expect(notices()?.textContent).toContain(ATTACK_REFUSAL_WORDS["insufficient-stamina"]);
   } finally {
     useEventFeedStore.getState().dismiss();
   }
@@ -391,7 +392,7 @@ it.each([390, 1440])(
     viewport.set(width);
     const { tiles, words } = await openSeasonWith(null);
     expect(tiles).toEqual(["2—", "1—", "3—"]);
-    expect(words).toContain("Pool not published yet");
+    expect(words).toContain(POOL_NOT_PUBLISHED);
   },
 );
 
@@ -659,11 +660,11 @@ it("lays a phone's Settings on one page, with what is rarely touched one press a
     expect(words(".ui-settings > .ui-setting .ui-setting__name").slice(0, 3)).toEqual([
       "Mute",
       "Shadows",
-      "Reduced motion",
+      SETTINGS_WORDS.reducedMotion,
     ]);
     expect(words("button")).not.toContain("Leave game");
     await press("More");
-    expect(words("section > h2")).toContain("Notifications");
+    expect(words("section > h2")).toContain(PROFILE_WORDS.notifications);
     expect(words("button")).toContain("Leave game");
     expect(words("button")).not.toContain("More");
   } finally {

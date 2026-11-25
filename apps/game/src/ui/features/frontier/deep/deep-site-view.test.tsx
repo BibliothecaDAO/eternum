@@ -40,14 +40,14 @@ describe("a Deep site's card", () => {
       rate.textContent,
     ]);
     expect(rates).toEqual([
-      ["glory", "+6/ 2mGlory · split by troops"],
+      ["glory", DEEP_WORDS.splitCell("+6/ 2mGlory")],
       ["height", "+6/ 2mAspect height"],
     ]);
     const beast = document.querySelector("[data-deep-beast]")!;
     expect(beast.querySelector(".deep-beast__name")?.textContent).toBe(`${DEEP_BEASTS.foundation.name}Blade`);
     expect(beast.querySelector(".deep-beast__portrait [data-combat-mark='Blade']")).not.toBeNull();
     expect(beast.textContent).toContain("15,000 troops");
-    expect(document.querySelector("[data-deep-poison]")?.textContent).toBe("Deep poison · drains 200 troops every 2m");
+    expect(document.querySelector("[data-deep-poison]")?.textContent).toBe(DEEP_WORDS.poisonStrip(200, "2m"));
     expect(text()).not.toContain("Today's beast");
     const [attack] = labels(["Attack"]);
     act(() => attack!.click());
@@ -58,8 +58,8 @@ describe("a Deep site's card", () => {
     draw(DEEP_SITE_CASES["Ethereal mine held by the player's Aspect, slots to join"]);
     expect(document.querySelector("[data-deep-tag]")?.textContent).toBe("Held · Luminary");
     expect([...document.querySelectorAll("[data-rate]")].map((rate) => rate.textContent)).toEqual([
-      "+300/ 2m+150/min · split by troops",
-      "−200/ 2mDeep poison per guard",
+      DEEP_WORDS.splitCell("+300/ 2m+150/min"),
+      `−200/ 2m${DEEP_WORDS.poisonCell}`,
     ]);
     expect(document.querySelector("[data-aspect-holder='2']")?.textContent).toBe(
       "Luminary· 2 / 4 Guards · 2 slots open ·Poisoned",
@@ -71,7 +71,7 @@ describe("a Deep site's card", () => {
 
   it("shows a locked site's yields without its pay, and how many Realms have entered of the ones it needs", () => {
     draw(DEEP_SITE_CASES["Bane altar, locked until more Realms enter"]);
-    expect(document.querySelector("[data-deep-tag]")?.textContent).toBe("Locked · Ring 2");
+    expect(document.querySelector("[data-deep-tag]")?.textContent).toBe(DEEP_WORDS.tag.locked(2));
     expect(document.querySelector("[data-deep-pay]")).toBeNull();
     expect(document.querySelector("[data-deep-kinds]")?.textContent).toBe("GloryBane barRates set when open");
     expect(document.querySelector("[data-deep-opening]")?.textContent).toBe("Opens at 50 Realms today12 / 50");
@@ -123,9 +123,9 @@ describe("a Deep site's card", () => {
       .filter((slot) => slot.getAttribute("data-deep-slot") === "filled")
       .map((slot) => slot.getAttribute("data-tip") ?? "");
     expect(tips[0]).toContain("Aldor · fought next");
-    expect(tips[0]).toContain("60% of each tick");
-    expect(tips[1]).toContain("40% of each tick");
-    expect(document.querySelector("[data-deep-poison]")?.textContent).toBe("Deep poison · drains 200 troops every 2m");
+    expect(tips[0]).toContain(DEEP_WORDS.share(60));
+    expect(tips[1]).toContain(DEEP_WORDS.share(40));
+    expect(document.querySelector("[data-deep-poison]")?.textContent).toBe(DEEP_WORDS.poisonStrip(200, "2m"));
   });
 
   it("renders facing portraits named by their sides, each before → after, and stamina cost on Attack", () => {

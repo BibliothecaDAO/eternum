@@ -13,7 +13,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { homeIcon } from "@/ui/design-system/home-icons";
 import { HudIconButton, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import { ARMY_MANAGEMENT, EVENTS_WORDS, LINK_WALLET_FOR_LORDS, YOU } from "@/ui/design-system/kit/words";
+import { ARMY_MANAGEMENT, EVENTS_WORDS, LINK_WALLET_FOR_LORDS, priceRaised, YOU } from "@/ui/design-system/kit/words";
 import { readArmySlots } from "@/ui/features/frontier/hud/army-dock";
 import { armyName } from "@/ui/features/frontier/hud/dock-armies";
 import { ArmyCard, ArmySlotsCard, LockedSlotLine, OpenSlotCard } from "@/ui/features/frontier/hud/army-row";
@@ -322,7 +322,7 @@ const BUILD_TILES: LabTile[] = [
     "Workshop",
     { icon: "labor", value: "+0.83/min" },
 
-    price(34_000, { of: "labor", wait: 16 * HOUR }, "Costs more with each one standing: 1"),
+    price(34_000, { of: "labor", wait: 16 * HOUR }, priceRaised("1")),
   ),
   tile(BuildingType.ResourceKnightT1, "barracks", "Barracks", { icon: "troops", value: "+13/min" }, price(6_800)),
   tile(

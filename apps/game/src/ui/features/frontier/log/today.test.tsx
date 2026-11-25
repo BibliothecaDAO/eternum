@@ -10,6 +10,7 @@ import { questCatalog } from "@bibliothecadao/types";
 import { dayBounds, seasonDay } from "../hud/day-clock";
 import { dayQuestFace } from "../day/day-quest-face";
 import { TodaySheet } from "./today-sheet";
+import { SITES_CLEARED, TODAY_WORDS } from "@/ui/design-system/kit/words";
 
 const DAY = 16 * 3_600;
 const HOUR = 3_600;
@@ -97,7 +98,7 @@ describe("Today", () => {
       ["Glory 1.2K", "1.2KGlory"],
     ]);
     expect(host.textContent).not.toContain("Reveals");
-    expect(host.textContent).not.toContain("Sites cleared");
+    expect(host.textContent).not.toContain(SITES_CLEARED);
     unmount();
   });
 
@@ -127,12 +128,14 @@ describe("Today", () => {
     ]);
     expect(days.filter((day) => day.hasAttribute("data-collected"))).toHaveLength(3);
     act(() =>
-      [...host.querySelectorAll("button")].find((button) => button.textContent === "Yesterday's recap")!.click(),
+      [...host.querySelectorAll("button")]
+        .find((button) => button.textContent === TODAY_WORDS.yesterdaysRecap)!
+        .click(),
     );
     expect(onRecap).toHaveBeenCalledOnce();
     unmount();
     const first = render({});
-    expect(first.host.textContent).not.toContain("Yesterday's recap");
+    expect(first.host.textContent).not.toContain(TODAY_WORDS.yesterdaysRecap);
     first.unmount();
   });
 });

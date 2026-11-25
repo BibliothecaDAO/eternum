@@ -12,7 +12,7 @@ import { Portrait } from "./portrait";
 import { shortfallLine, staminaShortfall } from "./reasons";
 import { Sheet } from "./sheet";
 import { StoreBar } from "./store-bar";
-import { dayEnds, dayLeft, phraseText, tomorrowLasts } from "./words";
+import { dayEnds, dayLeft, needsOverLimit, phraseText, tomorrowLasts } from "./words";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
@@ -80,7 +80,7 @@ describe("a shortfall's line", () => {
 
   it("counts a store's own limit in the same line", () => {
     expect(shortfallLine({ kind: "short", of: "labor", counted: "limit", held: 18_000, need: 24_000 })).toBe(
-      "Needs 24K Labor, storage holds 18K",
+      needsOverLimit("24K", "Labor", "18K"),
     );
     expect(shortfallLine({ kind: "short", of: "essence", held: undefined, need: 48_000 })).toBe(
       "Needs 48K Essence, have —",

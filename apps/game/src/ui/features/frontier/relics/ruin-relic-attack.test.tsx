@@ -27,6 +27,7 @@ import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { campBeside, placeSite, SITE, SITE_TILE } from "../sites/site-fixture";
 import { TileCard } from "../sites/tile-card";
 import { ruinRelicState } from "./ruin-relic-choice";
+import { RELIC_WORDS } from "@/ui/design-system/kit/words";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -97,7 +98,7 @@ it("names a ruin's Ancient cache in place of its relic, and sends a full army's 
       { model: "RuinCache", key: "0xbc", value: { game_id: 1, entity_id: SITE, fragments: 12 } },
     ] as never),
   );
-  expect(host.querySelector("[data-ruin-cache]")?.textContent).toBe("Ancient cache: 12 Fragments");
+  expect(host.querySelector("[data-ruin-cache]")?.textContent).toBe(RELIC_WORDS.cache(12));
   expect(host.querySelector("[data-ruin-relic]")).toBeNull();
   expect(host.querySelector("[data-relic-replacement]")).toBeNull();
   await act(async () => button("Attack")!.click());
@@ -119,8 +120,8 @@ it("holds a full army's attack until the player picks the relic it replaces, the
   const { host, attack, button } = ruinCard(FULL);
   expect(host.querySelector("[data-relic-replacement]")).not.toBeNull();
   // The choice said once, above it; the held step says what is left to do.
-  expect(host.textContent?.split("Army holds 3 relics (max). Pick one to replace.")).toHaveLength(2);
-  expect(host.textContent).toContain("Pick a relic to replace first");
+  expect(host.textContent?.split(RELIC_WORDS.full)).toHaveLength(2);
+  expect(host.textContent).toContain(RELIC_WORDS.chooseFirst);
   // No Attack can leave before the choice: the card's step says why instead.
   expect(button("Attack")?.disabled ?? true).toBe(true);
   const replacePlunder = host.querySelector<HTMLButtonElement>(
@@ -146,7 +147,7 @@ it("asks again when the chosen slot's relic changes, and sends only the fresh ch
     ] as never),
   );
   expect(host.textContent).toContain("Legendary Ward");
-  expect(host.textContent).toContain("Pick a relic to replace first");
+  expect(host.textContent).toContain(RELIC_WORDS.chooseFirst);
   expect(host.querySelector('[data-relic-replacement] [aria-selected="true"]')).toBeNull();
   await act(async () => button("Attack")?.click());
   expect(attack).not.toHaveBeenCalled();
@@ -179,7 +180,7 @@ it("withholds the attack while the army's relics are not known, saying it reads 
   // A snapshot not yet complete: the effects the army has none of cannot be told apart from ones not yet delivered.
   act(() => store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 }));
   expect(host.querySelector("[data-relic-replacement]")).toBeNull();
-  expect(host.textContent).toContain("Loading relics…");
+  expect(host.textContent).toContain(RELIC_WORDS.reading);
   expect(button("Attack")?.disabled ?? true).toBe(true);
   await act(async () => button("Attack")?.click());
   expect(attack).not.toHaveBeenCalled();
@@ -219,19 +220,19 @@ it("withholds the attack while what the ruin pays is still arriving, then asks a
   act(() => store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 }));
   expect(host.querySelector("[data-ruin-relic]")).toBeNull();
   expect(host.querySelector("[data-relic-replacement]")).toBeNull();
-  expect(host.textContent).toContain("Loading ruin reward…");
+  expect(host.textContent).toContain(RELIC_WORDS.readingRuin);
   expect(button("Attack")?.disabled ?? true).toBe(true);
   await act(async () => button("Attack")?.click());
   expect(attack).not.toHaveBeenCalled();
   // The reward arrives while the snapshot is still partial: the army's relics are what is left to read.
   act(() => store.applyFacts([EPIC_BLADE] as never));
   expect(host.querySelector("[data-ruin-relic]")?.getAttribute("aria-label")).toBe("Reward: Epic Blade");
-  expect(host.textContent).toContain("Loading relics…");
+  expect(host.textContent).toContain(RELIC_WORDS.reading);
   expect(button("Attack")?.disabled ?? true).toBe(true);
   // The snapshot completes: the army is full, so it must choose before anything leaves.
   act(() => store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 }));
   expect(host.querySelector("[data-relic-replacement]")).not.toBeNull();
-  expect(host.textContent).toContain("Pick a relic to replace first");
+  expect(host.textContent).toContain(RELIC_WORDS.chooseFirst);
   expect(button("Attack")?.disabled ?? true).toBe(true);
   act(() => host.querySelector<HTMLButtonElement>('[aria-label="Replace Uncommon Plunder"]')!.click());
   await act(async () => button("Attack")!.click());
