@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { expect, it } from "vitest";
+import { frontierSeasonOnePreset } from "../../../../../../../config/source/frontier/season-one";
 
-const { dayOf, readExpeditionRules, ResourceManager } = await import("@bibliothecadao/eternum");
+const { dayAtIndex, dayOf, readExpeditionRules, ResourceManager } = await import("@bibliothecadao/eternum");
 const { nativeBaneConstants } = await import("@bibliothecadao/eternum/game-client");
 const { BuildingType, ResourcesIds } = await import("@bibliothecadao/types");
 const { dayEndScenario } = await import("@/lab/game/day-end-scenario");
@@ -15,8 +16,8 @@ const realm = () => {
   return { store, row: store.require("Structure", { game_id: 1, entity_id: 7 }), now: startsAt };
 };
 
-const nextDay = (store: ReturnType<typeof realm>["store"], now: number) =>
-  dayOf(readExpeditionRules(store, 1)!, now)!.end + 60;
+const firstBaneDay = (store: ReturnType<typeof realm>["store"]) =>
+  dayAtIndex(readExpeditionRules(store, 1)!, frontierSeasonOnePreset.banes.quietDays).start + 60;
 
 const ashFallToday = (store: ReturnType<typeof realm>["store"], now: number) => {
   const day = dayOf(readExpeditionRules(store, 1)!, now)!.index;
@@ -30,7 +31,7 @@ const ashFallToday = (store: ReturnType<typeof realm>["store"], now: number) => 
       key: "0xa03",
       value: {
         game_id: 1,
-        chance_step: 20,
+        chance_step: frontierSeasonOnePreset.banes.chanceStep,
         quorum_percent: 40,
         beast_percent: 150,
         stamina_percent: 50,
@@ -44,8 +45,8 @@ const ashFallToday = (store: ReturnType<typeof realm>["store"], now: number) => 
 };
 
 const surfaces = (bane: boolean, kind: "wheat" | "troops", category: number) => {
-  const { store, row, now: today } = realm();
-  const now = nextDay(store, today);
+  const { store, row } = realm();
+  const now = firstBaneDay(store);
   const troops = store.require("ResourceProduction", { game_id: 1, entity_id: 7, resource_type: ResourcesIds.Knight });
   store.applyFacts([
     {
