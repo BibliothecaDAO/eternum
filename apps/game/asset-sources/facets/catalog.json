@@ -3529,6 +3529,15 @@
         "kind": "painted",
         "sha256": "ebd355594a27c1c305ef1cf1721c76ade0ba4effdcf8d674b84ae799f45f287c"
       }
+    },
+    {
+      "id": "bane-world",
+      "label": "World Bane",
+      "family": "Banes",
+      "source": {
+        "kind": "painted",
+        "sha256": "8532d17f20ef6f14e30ebb9f76ecaf9e5369b83a13eb97f24c9d9aa3f1bb13ed"
+      }
     }
   ]
 }

@@ -1618,5 +1618,10 @@
     "art": "emissary-insight",
     "label": "Insight Emissary",
     "family": "Aspects"
+  },
+  "bane-world": {
+    "art": "bane-world",
+    "label": "World Bane",
+    "family": "Banes"
   }
 }

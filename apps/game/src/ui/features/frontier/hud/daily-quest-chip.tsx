@@ -4,7 +4,6 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { Icon } from "@/ui/design-system/icon";
-import { aspectMeaning } from "@/ui/design-system/icon-meaning";
 import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
 import { useLayout } from "@/shell/frame/layout";
 import { DAILY_QUEST_MODELS, readDailyQuest } from "@bibliothecadao/eternum";
@@ -12,7 +11,7 @@ import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-clien
 
 import { baneFace } from "../day/bane-face";
 import { dayQuestFace } from "../day/day-quest-face";
-import { questSpeaker, toggleQuestDock, useQuestDockOpen } from "../day/quest-dock";
+import { toggleQuestDock, useQuestDockOpen } from "../day/quest-dock";
 import { ProgressRing } from "./progress-ring";
 
 export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) => {
@@ -30,7 +29,8 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
   const ready = reading?.state === "done" || reading?.state === "again";
   const count = reading ? DAY_BANNER_WORDS.fraction(progress, target) : "—";
   const bane = reading?.bane ? baneFace(reading.bane, setup.store, realm.game_id) : null;
-  const icon = bane ? aspectMeaning(questSpeaker(reading)) : (face?.icon ?? "explore");
+  const icon = bane ? bane.icon : (face?.icon ?? "explore");
+  const share = reading?.bane ? breakShare(reading.bane) : target > 0 ? progress / target : 0;
   const tag = bane ? DAY_BANNER_WORDS.bane : ready && !desktop ? DAY_BANNER_WORDS.collect : count;
 
   return (
@@ -49,12 +49,13 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
         className="frontier-quest-orb"
         onClick={toggleQuestDock}
       >
-        <ProgressRing size="lg" share={target > 0 ? progress / target : 0} tone={bane ? "ember" : "calm"}>
+        <ProgressRing size="lg" share={share} tone={bane ? "ember" : "calm"}>
           <Icon name={icon} size={36} />
         </ProgressRing>
         <span className="frontier-quest-orb__count">{tag}</span>
         {bane ? (
-          <span className="frontier-quest-orb__words">
+          <span className="frontier-quest-orb__words" data-stacked="">
+            <span className="frontier-quest-orb__kicker">{DAY_BANNER_WORDS.bane}</span>
             <span className="frontier-quest-orb__name">{bane.name}</span>
           </span>
         ) : (
@@ -77,3 +78,6 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
     </div>
   );
 };
+
+const breakShare = ({ completed, required }: { completed: number; required: number }) =>
+  required > 0 ? completed / required : 1;

@@ -1,4 +1,4 @@
-import { act } from "react";
+import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GameProvider } from "@/hooks/context/game-context";
@@ -8,6 +8,7 @@ import { dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, aspects } from "@bibliothecadao/types";
 import { nativeBaneConstants, nativeQuestConstants } from "@bibliothecadao/eternum/game-client";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
+import { useBaneToday } from "./bane-face";
 import { QuestDock } from "./quest-dock";
 
 const clock = vi.hoisted(() => ({ now: 350 }));
@@ -38,22 +39,20 @@ function fixture() {
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
-  const draw = () =>
+  const drawWith = (node: ReactNode) =>
     act(() =>
       root!.render(
         <GameProvider
           value={{ store, systemCalls: { claim_daily_quest: submit } } as unknown as GameClientSetup}
           account={{ address: scenario.player, account: { address: scenario.player } } as never}
         >
-          <QuestDock
-            realm={store.require("Structure", { game_id: 1, entity_id: 7 })}
-            rules={readExpeditionRules(store, 1)!}
-            layout="desktop"
-          />
+          {node}
         </GameProvider>,
       ),
     );
-  return { store, draw, submit, finish: () => finish({ transaction_hash: "0x123" }), scenario };
+  const realm = () => store.require("Structure", { game_id: 1, entity_id: 7 });
+  const draw = () => drawWith(<QuestDock realm={realm()} rules={readExpeditionRules(store, 1)!} layout="desktop" />);
+  return { store, draw, drawWith, realm, submit, finish: () => finish({ transaction_hash: "0x123" }), scenario };
 }
 
 const collect = () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Collect");
@@ -247,6 +246,15 @@ describe("bane collection", () => {
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(collectAgain()).toBeUndefined();
     expect(reward("Labor")).toBe("1,000 Labor");
+  });
+
+  it("gives every figure a bane cuts one line: the bane, what it cuts, by how much and until when, and none once broken", () => {
+    const game = worldDay();
+    const BaneLine = () => <output>{useBaneToday(game.realm())?.line ?? "none"}</output>;
+    game.drawWith(<BaneLine />);
+    expect(host.textContent).toMatch(/^Ash Fall: production 50% until broken or \d\d:\d\d$/);
+    act(game.win);
+    expect(host.textContent).toBe("none");
   });
 
   it("says when a world bane clears while the Aspect has not broken it", () => {

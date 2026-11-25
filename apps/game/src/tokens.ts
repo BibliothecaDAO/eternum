@@ -465,6 +465,7 @@ export const HUD_SHEET = {
   /** How a thing stands: good (ready, gained), bad (refused, lost), warn (costly, waiting). */
   good: "#66ddab",
   bad: "#ff7b6b",
+  bane: "#ff7b6b",
   warn: "#f0b35a",
   /** Each kind of relic, what it works on: its chip's words, line and ground take this colour. */
   "relic-stamina": "#4ade80",
@@ -525,6 +526,7 @@ export const HUD_COLOR_CLASSES: Record<string, string> = Object.fromEntries([
     "neutral",
     "good",
     "bad",
+    "bane",
     "warn",
     "line",
     "line-strong",

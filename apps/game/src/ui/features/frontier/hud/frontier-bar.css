@@ -85,12 +85,12 @@
   display: none;
 }
 .frontier-quest-orb[data-tone="bane"] .frontier-progress-ring--lg {
-  border-color: var(--hud-bad);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--hud-bad) 55%, transparent);
+  border-color: var(--hud-bane);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--hud-bane) 55%, transparent);
 }
 .frontier-quest-orb[data-tone="bane"] .frontier-quest-orb__count {
-  border-color: var(--hud-bad);
-  color: var(--hud-bad);
+  border-color: var(--hud-bane);
+  color: var(--hud-bane);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }

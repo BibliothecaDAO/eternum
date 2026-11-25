@@ -528,6 +528,7 @@ export const OFFLINE_BANNER = {
 export const TRY_AGAIN = "Try again";
 export const LATER = "Later";
 export const CLOSE = "Close";
+export const OK = "OK";
 /** The safe choice on a confirm: the primary. */
 export const KEEP = "Keep";
 
@@ -902,8 +903,13 @@ export const DAY_BANNER_WORDS = {
   beastChip: (percent: number) => `${formatExact(percent)}% Guards`,
   staminaChip: (percent: number) => `${formatExact(percent)}% Stamina`,
   productionChip: (percent: number) => `${formatExact(percent)}% Production`,
-  heightChip: "No Deep height",
-  heightBane: "Your Aspect's hyperstructure gains no height in the Deep while the bane lasts",
+  heightChip: `No ${DEEP} height`,
+  heightBane: `Your Aspect's hyperstructure gains no height in the ${DEEP} while the bane lasts`,
+  baneFigures: { production: "production", stamina: "stamina regen", guards: "guard strength", height: `${DEEP} height` },
+  baneFigureLine: (name: string, figure: string, percent: number | undefined, end: string) =>
+    percent === undefined
+      ? `${name}: no ${figure} until broken or ${end}`
+      : `${name}: ${figure} ${formatExact(percent)}% until broken or ${end}`,
   baneBreak: (completed: number, required: number) =>
     `Break: ${formatExact(completed)}/${formatExact(required)} of your Aspect`,
   baneClears: (left: string) => `Clears in ${left}`,

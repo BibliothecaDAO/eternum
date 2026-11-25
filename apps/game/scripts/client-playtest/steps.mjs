@@ -4172,7 +4172,7 @@ function raceBoardSteps(result) {
       play: async ({ browser, extraScreenshot }) => {
         if (result === null) {
           browser.read(
-            `(() => { document.querySelector('[data-daily-quest] button[aria-label="${HUD_WORDS.close}"]')?.click(); return true; })()`,
+            `(() => { [...document.querySelectorAll('[data-daily-quest] button')].find((button) => button.textContent === "OK")?.click(); return true; })()`,
           );
           await openPlace(browser, HUD_WORDS.season);
         }

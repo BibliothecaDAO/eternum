@@ -7,7 +7,7 @@ import { HudButton, HudLoading, HudMeter } from "@/ui/design-system/kit/hud-elem
 import { DAY_BANNER_WORDS as WORDS } from "@/ui/design-system/kit/words";
 import { type AspectId, formatAmount, ResourcesIds } from "@bibliothecadao/types";
 
-import { EmissaryCard, EmissaryClose } from "../tutorial/aspect-emissary-dock";
+import { EmissaryCard, EmissaryOk } from "../tutorial/aspect-emissary-dock";
 import type { BaneFace } from "./bane-face";
 
 export interface DayQuestFace {
@@ -73,7 +73,7 @@ export const QuestDockView = ({
       controls={
         <>
           {count}
-          <EmissaryClose onClose={onClose} />
+          <EmissaryOk onClose={onClose} />
         </>
       }
     >

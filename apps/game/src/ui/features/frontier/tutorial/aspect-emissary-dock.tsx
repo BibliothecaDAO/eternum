@@ -7,7 +7,7 @@ import type { AspectId } from "@bibliothecadao/types";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { useOpenFrames } from "@/ui/design-system/kit/open-frames";
-import { CLOSE, OPENING_WORDS, type OpeningRules } from "@/ui/design-system/kit/words";
+import { OK, OPENING_WORDS, type OpeningRules } from "@/ui/design-system/kit/words";
 import { OPENING, teacherAspectOf, type OpeningMoment } from "../opening/opening";
 import type { TutorialDisplayStatus } from "../opening/opening-state";
 import { resolveAspectEmissary } from "./aspect-emissaries";
@@ -110,14 +110,14 @@ export function AspectEmissaryDock({
             !completed && (
               <>
                 {skip}
-                {!askingSkip && <EmissaryClose onClose={onDismiss} />}
+                {!askingSkip && <EmissaryOk onClose={onDismiss} />}
               </>
             )
           ) : (
             <>
               {done}
               {skip}
-              {!askingSkip && <EmissaryClose onClose={onDismiss} />}
+              {!askingSkip && <EmissaryOk onClose={onDismiss} />}
             </>
           )
         }
@@ -159,14 +159,7 @@ export function AspectEmissaryDock({
           >
             ▾
           </button>
-          <button
-            type="button"
-            className="emissary-dock__btn emissary-dock__fold-btn"
-            aria-label={CLOSE}
-            onClick={onDismiss}
-          >
-            ✕
-          </button>
+          <EmissaryOk onClose={onDismiss} />
         </>
       ) : (
         <>
@@ -187,9 +180,9 @@ export function AspectEmissaryDock({
   );
 }
 
-export const EmissaryClose = ({ onClose }: { onClose: () => void }) => (
-  <button type="button" className="emissary-dock__btn" aria-label={CLOSE} onClick={onClose}>
-    ✕
+export const EmissaryOk = ({ onClose }: { onClose: () => void }) => (
+  <button type="button" className="emissary-dock__btn emissary-dock__ok" onClick={onClose}>
+    {OK}
   </button>
 );
 
