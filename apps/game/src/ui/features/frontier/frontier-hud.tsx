@@ -17,7 +17,7 @@ import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { configManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BUILDINGS_CENTER, catalogAspectId, rankName } from "@bibliothecadao/types";
-import { useLayout } from "@/shell/frame/layout";
+import { useLayout, useTablet } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { type ComponentType, type ReactNode, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -152,6 +152,7 @@ const FrontierHudBody = ({
     },
   });
   const desktop = useLayout() === "desktop";
+  const noticeAtFoot = useTablet() || desktop;
   const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null, !desktop);
   useEffect(() => {
     onSurfaceChange(surface);
@@ -306,7 +307,7 @@ const FrontierHudBody = ({
       }}
       placeMenu={placeMenu}
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
-      notice={openingNotice}
+      notice={noticeAtFoot ? undefined : openingNotice}
       spectatorChip={spectating ? <IdentityChip compact /> : undefined}
       realmCard={realmVisible ? realmCard : undefined}
       onOpenToday={() => setSurface("today")}
@@ -314,7 +315,7 @@ const FrontierHudBody = ({
   );
   const notices = (
     <>
-      {desktop && openingNotice}
+      {noticeAtFoot && openingNotice}
       <SceneFailureNotice />
     </>
   );
