@@ -116,11 +116,12 @@ const LEADERBOARD_DETAIL_FITS = `(() => {
 // Each reason the planner gives a tile no order, as the map's line words it (order-tip.ts).
 const ORDER_REFUSAL = [
   "Needs \\d+ stamina",
-  "Not enough food for the army",
-  "Only neutral structures can be attacked",
-  "This game allows no transfer here",
-  "No army can enter this tile",
-  "Too far: move closer",
+  "\\d[\\d,.]*K?/\\d",
+  "Not enough Wheat",
+  "Cannot attack owned site",
+  "Cannot transfer here",
+  "Tile occupied",
+  "Too far · move closer",
 ].join("|");
 
 const REFUSED_BEFORE_PLAY = {

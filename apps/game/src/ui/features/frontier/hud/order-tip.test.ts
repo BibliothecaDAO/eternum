@@ -70,11 +70,11 @@ describe("what a right-click on a tile does, said before the click", () => {
     expect(line(undefined, { ...short, staminaWait: 130 })).toBe("Needs 21 stamina, have 9 · in 2m 10s");
     expect(line(undefined, { ...short, staminaWait: 3_600 })).toBe("Needs 21 stamina, have 9 · in 1h");
     expect(line(undefined, { refusal: { reason: "stamina", need: 21 } })).toBe("Needs 21 stamina, have —");
-    expect(line(undefined, { refusal: { reason: "food" } })).toBe("Not enough food for the army");
-    expect(line(undefined, { refusal: { reason: "off-limits" } })).toBe("Only neutral structures can be attacked");
-    expect(line(undefined, { refusal: { reason: "no-transfer" } })).toBe("This game allows no transfer here");
-    expect(line(undefined, { refusal: { reason: "occupied" } })).toBe("No army can enter this tile");
-    expect(line(undefined, { refusal: { reason: "too-far" } })).toBe("Too far: move closer");
+    expect(line(undefined, { refusal: { reason: "food" } })).toBe("Not enough Wheat");
+    expect(line(undefined, { refusal: { reason: "off-limits" } })).toBe("Cannot attack owned site");
+    expect(line(undefined, { refusal: { reason: "no-transfer" } })).toBe("Cannot transfer here");
+    expect(line(undefined, { refusal: { reason: "occupied" } })).toBe("Tile occupied");
+    expect(line(undefined, { refusal: { reason: "too-far" } })).toBe("Too far · move closer");
   });
 
   it("claims no distance the planner did not: fog it said nothing of is unexplored, a revealed tile is silent", () => {

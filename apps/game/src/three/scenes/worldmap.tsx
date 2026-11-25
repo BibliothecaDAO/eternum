@@ -309,7 +309,15 @@ import {
 } from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
 import { hudLayoutNow } from "@/hooks/helpers/use-compact-hud";
-import { type OrderTip, orderFood, orderTip, refusedOrderVerb } from "@/ui/features/frontier/hud/order-tip";
+import {
+  type OrderTip,
+  orderFood,
+  orderTip,
+  type RefusedOrder,
+  refusedOrderLine,
+  refusedOrderVerb,
+} from "@/ui/features/frontier/hud/order-tip";
+import { type Cost, realmWheatAgainst } from "@/ui/features/frontier/hud/army-order";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
@@ -2966,8 +2974,32 @@ export default class WorldmapScene extends WarpTravel {
     this.previewedOrder = { army, hex: hexCoords, tip, refused: refusal.reason };
     this.openTargetActionSurface(contractHexOf(hexCoords), {
       id: ORDER_PREVIEW_SURFACE,
-      content: <OrderPreview tip={tip} refusal={reason} />,
+      content: <OrderPreview tip={tip} refused={this.refusedOrderAt(hexCoords, refusal)} />,
     });
+  }
+
+  private refusedOrderAt(hexCoords: HexPosition, refusal: OrderRefusal): RefusedOrder {
+    if (refusal.reason === "stamina") {
+      const short = this.selectedArmyShortOf(refusal.need);
+      return { of: "stamina", cost: { cost: refusal.need, held: short?.held, wait: short?.wait } };
+    }
+    const wheat = refusal.reason === "food" ? this.selectedArmyWheatFor(hexCoords) : undefined;
+    return wheat ? { of: "wheat", cost: wheat } : refusedOrderLine(refusal.reason);
+  }
+
+  private selectedArmyWheatFor(hexCoords: HexPosition): Cost | undefined {
+    const army = this.selectedArmyRow();
+    const armyId = this.selectedArmyId();
+    const from = armyId === null ? undefined : this.worldSpatialProjection.getArmy(armyId)?.hexCoords;
+    if (!army || !from) return undefined;
+    const explored = this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true;
+    const step: ActionPath[] = [
+      { hex: { col: from.col, row: from.row }, actionType: ActionType.Move },
+      { hex: contractHexOf(hexCoords), actionType: explored ? ActionType.Move : ActionType.Explore },
+    ];
+    const need = orderFood(step, army.troops).wheat;
+    if (need <= 0) return undefined;
+    return realmWheatAgainst(this.game.store, safeInteger(army.owner), need, getBlockTimestamp().currentDefaultTick);
   }
 
   /** The preview's verb sends the order the player read, and only while it still is the army's order at that tile. */

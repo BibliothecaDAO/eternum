@@ -544,6 +544,22 @@ describe("an army selected on a desktop keeps its actions one click away (owner,
     expect(cleared).toEqual([]);
   });
 
+  it("a right-click on a tile whose wheat the realm lacks says so in one line when the cost is not known", () => {
+    screen(true);
+    const { scene, sent, cleared } = lowStaminaMap(false);
+    const fog = { col: 4, row: 6 };
+    (scene as unknown as { orderRefusals: Map<string, unknown> }).orderRefusals.set(ActionPaths.posKey(fog, true), {
+      reason: "food",
+    });
+
+    scene.onHexagonRightClick(rightClick(), fog);
+
+    const drawn = drawnSurface()!;
+    expect(drawn.host.querySelector("[role=alert]")?.textContent).toBe("Not enough Wheat");
+    expect(verbOf(drawn.host, "Explore").disabled).toBe(true);
+    expect([sent, cleared]).toEqual([[], []]);
+  });
+
   it("a right-click on a tile the army lacks the stamina to explore opens Explore there, disabled, with why", () => {
     screen(true);
     const { scene, sent, cleared } = lowStaminaMap(false);
@@ -558,7 +574,8 @@ describe("an army selected on a desktop keeps its actions one click away (owner,
     const drawn = drawnSurface()!;
     expect(drawn.id).toBe("order-preview");
     // The stub's store holds no army row, so what the army holds reads as unknown.
-    expect(drawn.host.querySelector("[role=alert]")?.textContent).toBe("Needs 20 stamina, have —");
+    expect(drawn.host.querySelector("[role=alert]")?.textContent).toBe("—/20");
+    expect(drawn.host.textContent).not.toContain("Needs");
     expect(verbOf(drawn.host, "Explore").disabled).toBe(true);
     expect(drawn.host.textContent).not.toContain("A right-click sends it at once.");
     expect([sent, cleared]).toEqual([[], []]);
@@ -618,7 +635,7 @@ describe("an army selected on a desktop keeps its actions one click away (owner,
 
       scene.onHexagonRightClick(rightClick(), FAR);
 
-      expect(shownPreview()).toEqual({ verb: "Move", disabled: true, reason: "Too far: move closer" });
+      expect(shownPreview()).toEqual({ verb: "Move", disabled: true, reason: "Too far · move closer" });
       expect([sent, selections, cleared, useUIStore.getState().entityActions.selectedEntityId]).toEqual([
         [],
         [],
@@ -633,7 +650,7 @@ describe("an army selected on a desktop keeps its actions one click away (owner,
 
       scene.onHexagonRightClick(rightClick(), FAR);
 
-      expect(shownPreview()).toEqual({ verb: "Explore", disabled: true, reason: "Too far: move closer" });
+      expect(shownPreview()).toEqual({ verb: "Explore", disabled: true, reason: "Too far · move closer" });
       expect([sent, cleared]).toEqual([[], []]);
     });
 
@@ -938,13 +955,13 @@ describe("the click matrix: what is selected × what is clicked", () => {
       nothing: { ...none, "your realm beside": "realm menu" },
       army: {
         "your army beside": "its order runs",
-        "your army far": "order-preview: Too far: move closerTransfer troops",
-        "your army on its spire": "order-preview: Too far: move closerTransfer troops",
-        "your army on a cleared site": "order-preview: Too far: move closerTransfer troops",
+        "your army far": "order-preview: Too far · move closerTransfer troops",
+        "your army on its spire": "order-preview: Too far · move closerTransfer troops",
+        "your army on a cleared site": "order-preview: Too far · move closerTransfer troops",
         "your realm beside": "its order runs",
         "enemy army": "its order runs",
         "bare ground in reach": "its order runs",
-        "bare ground far": "order-preview: Too far: move closerExplore",
+        "bare ground far": "order-preview: Too far · move closerExplore",
       },
       realm: { ...none, "your realm beside": "realm menu" },
     });

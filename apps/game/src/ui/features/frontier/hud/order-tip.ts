@@ -21,6 +21,7 @@ import {
   type OrderRefusal,
 } from "@bibliothecadao/eternum";
 import type { Troops } from "@bibliothecadao/types";
+import type { Cost } from "./army-order";
 
 type TileOrder = {
   path: ActionPath[] | undefined;
@@ -118,13 +119,19 @@ const refusalLine = ({ refusal, staminaWait, staminaHeld, explored }: TileOrder)
 };
 
 const orderRefusalWords: Record<Exclude<OrderRefusal["reason"], "stamina">, string> = {
-  food: "Not enough food for the army",
+  food: "Not enough Wheat",
   "off-limits": ATTACK_REFUSAL_WORDS["target-must-be-unowned"],
   "no-attack": ATTACK_REFUSAL_WORDS["no-attack"],
-  "no-transfer": "This game allows no transfer here",
-  occupied: "No army can enter this tile",
-  "too-far": "Too far: move closer",
+  "no-transfer": "Cannot transfer here",
+  occupied: "Tile occupied",
+  "too-far": "Too far · move closer",
 };
+
+export const refusedOrderLine = (reason: Exclude<OrderRefusal["reason"], "stamina">): RefusedOrder => ({
+  line: orderRefusalWords[reason],
+});
+
+export type RefusedOrder = { of: "stamina" | "wheat"; cost: Cost } | { line: string };
 
 /** The wheat and fish an order burns from its army's realm. */
 type OrderFood = { wheat: number; fish: number };

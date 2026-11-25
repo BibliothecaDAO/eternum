@@ -70,7 +70,7 @@ describe("the line under a still pointer", () => {
 
     tile.refusal = { reason: "food" };
     pointer.refresh();
-    expect(shownLine()).toBe("Not enough food for the army");
+    expect(shownLine()).toBe("Not enough Wheat");
   });
 
   it("names the order once the rules give one, and goes when they take it away with nothing to say", () => {
