@@ -20,7 +20,6 @@ export const FrontierDesktop = ({
   placeSwitch,
   clock,
   quest,
-  banner,
   realm,
   armies,
   page,
@@ -33,7 +32,6 @@ export const FrontierDesktop = ({
   placeSwitch: ReactNode;
   clock: ReactNode;
   quest?: ReactNode;
-  banner?: ReactNode;
   realm?: ReactNode;
   armies?: ReactNode;
   page?: ReactNode;
@@ -54,7 +52,6 @@ export const FrontierDesktop = ({
           {clock}
           {quest}
         </header>
-        {banner && <div className="frontier-banner pointer-events-none empty:hidden">{banner}</div>}
         <div
           aria-label="Notices"
           role="status"

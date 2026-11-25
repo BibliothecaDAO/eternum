@@ -61,7 +61,6 @@ import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { useFragmentsHeld } from "./value/fragments";
 import { ShopSheet, useReturnToShop } from "./shop/shop-sheet";
 import { homeIcon, homeKind } from "@/ui/design-system/home-icons";
-import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { PickedArmy } from "./hud/picked-army";
@@ -362,7 +361,6 @@ const FrontierHudBody = ({
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
       placeSwitch={placeMenu}
       chat={<HudChatWindow open={surface === "chat"} onOpenChange={(open) => setSurface(open ? "chat" : null)} />}
-      banner={<OfflineNotice />}
       realm={realmCard}
       armies={armyDock}
       page={page}
@@ -391,7 +389,6 @@ const FrontierHudBody = ({
   ) : (
     <HudBands
       strip={topBar}
-      banner={<OfflineNotice />}
       page={page}
       notices={notices}
       action={action}

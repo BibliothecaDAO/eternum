@@ -91,13 +91,6 @@
   display: none;
 }
 
-.frontier-banner {
-  position: fixed;
-  top: 66px;
-  left: 50%;
-  z-index: theme(zIndex.hud-notice);
-  transform: translateX(-50%);
-}
 .frontier-notices {
   position: fixed;
   top: 112px;

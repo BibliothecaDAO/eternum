@@ -21,7 +21,6 @@ import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/frontier-desktop";
 import { PhoneTabBar, type HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
-import { OfflineBanner } from "@/ui/features/frontier/hud/offline-notice";
 import { TopBarView } from "@/ui/features/frontier/hud/phone-top-bar";
 import { RealmCard } from "@/ui/features/frontier/hud/realm-card";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
@@ -874,7 +873,6 @@ export const HudLab = () => {
             )
           ) : undefined
         }
-        banner={lab.offline ? <OfflineBanner onRetry={noop} /> : undefined}
         action={
           <>
             {lab.order && !desktop && (
@@ -1249,7 +1247,6 @@ const LabBands = ({
               onGoSurface={noop}
             />
           }
-          banner={slots.banner}
           realm={<LabRealmCard lab={lab} />}
           armies={slots.dock}
           page={slots.page}
