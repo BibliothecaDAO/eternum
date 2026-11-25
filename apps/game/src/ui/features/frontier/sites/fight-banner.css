@@ -1,0 +1,50 @@
+.fight-banner {
+  position: fixed;
+  top: 140px;
+  left: 50%;
+  z-index: 45;
+  display: flex;
+  width: min(310px, calc(100vw - 80px));
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.1);
+  transform: translateX(-50%);
+  border: 1.5px solid color-mix(in srgb, var(--hud-good) 65%, transparent);
+  border-radius: 18px;
+  padding: 14px 10px 12px;
+  color: rgb(var(--hud-ink));
+  pointer-events: auto;
+  animation: fight-banner-rises 240ms var(--hud-ease);
+}
+.fight-banner__crown {
+  margin-top: -40px;
+  filter: drop-shadow(var(--hud-shadow-control));
+}
+.fight-banner__word {
+  color: var(--hud-good);
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-hero);
+  font-weight: 400;
+  line-height: 1;
+}
+.fight-banner__site {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+}
+.fight-banner__chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: theme(spacing[1.5]);
+}
+@keyframes fight-banner-rises {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fight-banner {
+    animation: none;
+  }
+}

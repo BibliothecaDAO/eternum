@@ -66,7 +66,7 @@ interface ExchangeContext {
 
 export type ExchangeRefusal = "no-troops" | "cooldown" | "insufficient-stamina";
 
-export type FirstStrikeSide = "attacker" | "defender" | null;
+type FirstStrikeSide = "attacker" | "defender" | null;
 
 export const resolveFirstStrike = (
   attacker: ExchangeTroops["category"],

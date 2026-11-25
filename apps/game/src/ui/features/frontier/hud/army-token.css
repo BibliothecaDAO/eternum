@@ -1,0 +1,22 @@
+.army-oath-badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  z-index: 1;
+  display: flex;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid rgb(var(--hud-gold));
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-surface-to);
+}
+[data-oath-waiting] {
+  position: relative;
+  border-color: rgb(var(--hud-gold));
+  box-shadow:
+    0 0 0 1.5px rgb(var(--hud-gold)),
+    0 0 14px rgb(var(--hud-gold) / 0.55);
+}

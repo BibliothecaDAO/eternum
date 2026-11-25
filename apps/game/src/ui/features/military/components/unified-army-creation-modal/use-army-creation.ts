@@ -44,7 +44,7 @@ import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
 import {
   describeTroopSource,
-  troopRaiseLine,
+  troopRaisePrices,
   resolveArmyCreationBlockedReason,
   resolveArmyTroopAvailability,
   resolveInitialTroop,
@@ -483,7 +483,7 @@ export const useArmyCreation = ({
     // With none on hand, where they come from: the empty state's next step.
     troopSourceLine:
       selectedAvailable < 1 ? describeTroopSource(troopSupply.name, readTroopRecipe(store, selectedTroopCombo)) : null,
-    raiseLine: troopRaiseLine(raiseCost),
+    raisePrices: troopRaisePrices(raiseCost),
     // A field army's starting stamina, before it is raised (live-qa-night-2 B-2); a guard has no line.
     startLine: armyType ? fieldArmyStartLine(selectedTroopCombo, currentBlockTimestamp) : null,
   };

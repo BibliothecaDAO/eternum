@@ -29,10 +29,10 @@ import { ArmyLostSheet } from "./army/army-lost";
 import { useArmyPanelOpens, usePickArmy } from "./army/army-opens";
 import { FrontierArmy } from "./army/frontier-army";
 import { FrontierOathPick } from "./army/oath-pick";
+import { FightBanner } from "./sites/fight-banner";
+import { RevealPill } from "./hud/reveal-pill";
 import { useSelectionCard } from "./frontier-selection-sheet";
-import { useRealmStores } from "./realm-stores";
 import { FrontierSurfaces } from "./frontier-surfaces";
-import { useArmyRevealYield } from "./frontier-reveal-yield";
 import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
 import { ArmyDock } from "./hud/army-dock";
 import { closeHudPopover } from "./hud/hud-popover";
@@ -321,7 +321,7 @@ const FrontierHudBody = ({
     <>
       {shown && !desktop && isMapView && (
         <div data-army-action className="contents">
-          <ArmyAction rules={rules} realm={shown} onOpenArmy={visit ? undefined : openArmy} />
+          <ArmyAction realm={shown} onOpenArmy={visit ? undefined : openArmy} />
         </div>
       )}
       <RealmVisitFoot home={realm} />
@@ -357,6 +357,8 @@ const FrontierHudBody = ({
       {realm && <DayDone rules={rules} realm={realm} visiting={Boolean(visit)} />}
       <BuildingsInFlight />
       <FrontierOathPick realm={realm} />
+      <FightBanner />
+      <RevealPill />
     </>
   );
 
@@ -420,11 +422,9 @@ const REALM_HEADER_MODELS = ["RaceRules"] as const;
  * nothing. A desktop has none: its orders go from the map, and the army's state is its panel's.
  */
 const ArmyAction = ({
-  rules,
   realm,
   onOpenArmy,
 }: {
-  rules: ExpeditionRules;
   realm: NativeRows["Structure"];
   /** Opens an army's panel (useArmyPanelOpens), on its level-up choices when `choosing`; none on a visit. */
   onOpenArmy?: (explorerId: number) => void;
@@ -436,7 +436,7 @@ const ArmyAction = ({
   const ordersAllowed = useUIStore(canIssueOrders);
   const selected = armies.find((army) => army.explorerId === selectedId);
   const acting = selected && ordersAllowed && onOpenArmy ? selected : undefined;
-  if (order && selected) return <PendingOrder rules={rules} realm={realm} order={order} army={selected} />;
+  if (order && selected) return <PendingOrder order={order} army={selected} />;
   if (selected && nextOrder?.entityId === selected.explorerId)
     return <NextOrderBar onCancel={() => dropNextOrder("cancelled", selected.explorerId)} />;
   if (acting && onOpenArmy) return <ActingArmy army={acting} onOpenArmy={onOpenArmy} />;
@@ -471,29 +471,13 @@ const DockFor = ({
   return <ArmyDock realm={realm} armies={armies} onOpenArmy={onOpenArmy} />;
 };
 
-const PendingOrder = ({
-  rules,
-  realm,
-  order,
-  army,
-}: {
-  rules: ExpeditionRules;
-  realm: NativeRows["Structure"];
-  order: ArmyOrder;
-  army: DockArmy;
-}) => {
-  const labor = useRealmStores(realm, rules)?.labor;
+const PendingOrder = ({ order, army }: { order: ArmyOrder; army: DockArmy }) => {
   const held = useFragmentsHeld();
   return (
     <OrderBar
       kind={order.kind}
-      tiles={order.tiles}
       stamina={order.stamina}
       wheat={order.wheat}
-      revealYield={useArmyRevealYield(army)}
-      laborFits={
-        labor?.limit === undefined || labor.amount === undefined ? undefined : Math.max(0, labor.limit - labor.amount)
-      }
       refill={sellsStamina(army, held) ? <ArmyRefill army={army} look="button" /> : undefined}
       onCancel={() => useUIStore.getState().updateEntityActionHoveredHex(null)}
       onGo={() => requestOrderAt(order.target)}

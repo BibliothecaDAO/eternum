@@ -106,7 +106,7 @@ const pickInDock = () =>
 /** A phone's picked army in the action row: its token, which opens its card. */
 const details = () => host.querySelector<HTMLButtonElement>('button[aria-label="Army 1: details"]');
 const rowButton = (name: RegExp) =>
-  [...details()!.closest(".frontier-army-tray")!.querySelectorAll<HTMLButtonElement>("button")].find((button) =>
+  [...details()!.closest(".army-tray")!.querySelectorAll<HTMLButtonElement>("button")].find((button) =>
     name.test(button.getAttribute("aria-label") ?? button.textContent ?? ""),
   )!;
 const staminaMeter = () =>
@@ -147,7 +147,7 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(staminaMeter().getAttribute("aria-valuenow")).toBe("90");
     expect(staminaMeter().getAttribute("aria-valuemax")).toBe("150");
     expect(host.querySelectorAll('button[aria-label="Army 1: details"]')).toHaveLength(1);
-    expect(details()!.textContent).toContain("5,000");
+    expect(details()!.textContent).toContain("5K");
   });
 
   it("opens the army's card from its token", async () => {

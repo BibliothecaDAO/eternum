@@ -2,8 +2,8 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudCost, HudRanked, HudSheet, HudTier, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
+import { HudButton, HudPrice, HudRanked, HudSheet, HudTier, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
+import { type Price } from "@/ui/design-system/kit/price-faces";
 import type { Fix, Refusal } from "@/ui/design-system/kit/refusal";
 import { BUILDING_FIGURES, RESEARCHING, type Rank, type RankedWords } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -213,7 +213,7 @@ const ResearchFoot = ({
   if (missing) return <RefusedVerb word={verb} refusal={refusalOf(missing, fix(missing))} />;
   const prices: Price[] = node.needs.filter(isPrice).map((need) => ({ of: need.kind, amount: need.need }));
   return (
-    <HudWindowFoot note={<HudCost line={costLine(prices)} />}>
+    <HudWindowFoot note={<HudPrice prices={prices} />}>
       <HudButton kind="primary" busy={sending ? RESEARCHING : undefined} onClick={onResearch}>
         <HudRanked words={verb} />
       </HudButton>

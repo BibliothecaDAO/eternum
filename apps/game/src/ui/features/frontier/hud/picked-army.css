@@ -1,0 +1,92 @@
+.army-tray {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing[2.5]);
+}
+.army-tray__head {
+  display: flex;
+  align-items: flex-start;
+  gap: theme(spacing.2);
+}
+.army-tray__main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: theme(spacing.3);
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: rgb(var(--hud-ink));
+  text-align: left;
+  cursor: pointer;
+}
+.army-tray__portrait {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  flex: none;
+}
+.army-tray__portrait > .ui-portrait {
+  width: 58px;
+  height: 58px;
+  border: 2px solid rgb(var(--hud-gold) / 0.7);
+}
+.army-tray__portrait > .ui-portrait > img {
+  width: 100%;
+  height: 100%;
+}
+.army-tray__portrait > .ui-portrait + [role="img"] {
+  width: 24px;
+  height: 24px;
+}
+.army-tray__body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+}
+.army-tray__name {
+  overflow: hidden;
+  color: rgb(var(--hud-ink));
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-display);
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.army-tray__troops {
+  display: flex;
+}
+.army-tray__stamina {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+  font-size: var(--hud-text-strong);
+  font-variant-numeric: tabular-nums;
+}
+.army-tray__bar {
+  min-width: 0;
+  flex: 1;
+}
+.army-tray__bar .ui-meter {
+  height: 9px;
+}
+.army-tray__foot {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing[2.5]);
+}
+.army-tray__foot .oath-sockets {
+  flex: 1;
+}
+.army-tray__verbs {
+  display: flex;
+  justify-content: flex-end;
+  gap: theme(spacing[1.5]);
+}
+.army-tray__verbs p {
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-label);
+}

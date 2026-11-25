@@ -166,20 +166,17 @@ const LAB_EXPLORE = 30;
 /** Army 1 (5,000 troops, 90 stamina) explores a new tile, or moves three tiles over known ground. */
 const EXPLORE: LabOrder = {
   kind: "explore",
-  tiles: 1,
   stamina: { cost: 30, held: 90, wait: undefined },
   wheat: { cost: 100, held: 4_410, wait: undefined },
 };
 const MOVE: LabOrder = {
   kind: "move",
-  tiles: 3,
   stamina: { cost: 30, held: 90, wait: undefined },
   wheat: { cost: 300, held: 4_410, wait: undefined },
 };
 
 type LabOrder = {
   kind: "explore" | "move";
-  tiles: number;
   stamina: { cost: number; held: number | undefined; wait: number | undefined };
   wheat: { cost: number; held: number | undefined; wait: number | undefined };
 };
@@ -892,7 +889,6 @@ export const HudLab = () => {
             {lab.order && !desktop && (
               <OrderBar
                 {...lab.order}
-                revealYield={500}
                 refill={lab.refill === undefined ? undefined : <RefillButton held={lab.refill} onRefill={noop} />}
                 onCancel={noop}
                 onGo={noop}
@@ -1022,10 +1018,9 @@ const LabDeploySheet = ({
       }}
       art={troopsAtHome === 0 ? undefined : ("knight-t1" as const)}
       troopsAtHome={troopsAtHome}
+      oathSlots={2}
       count={count}
-      isFullStack={count === most}
-      allowedSlots={3}
-      amount={{ most, max: most, held: most < troopsAtHome ? most : troopsAtHome }}
+      amount={{ most, max: most }}
       onCount={setCount}
       start={start}
       slots={{ open, onPick: setSlot }}

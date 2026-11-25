@@ -1,9 +1,11 @@
+import "./army-token.css";
+
 import { formatAmount, formatDuration, formatExact, layerName, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { HudMeter, HudStamina, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import { DEEP_WORDS, TROOPS } from "@/ui/design-system/kit/words";
+import { DEEP_WORDS, OATH_WAITING, TROOPS } from "@/ui/design-system/kit/words";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import type { DeepArmyLife } from "@bibliothecadao/eternum/game-client";
 
@@ -64,6 +66,12 @@ export const EtherealMark = ({ layer, at = "corner" }: { layer: EtherealLayer | 
     </span>
   );
 
+export const OathWaitingBadge = () => (
+  <span role="img" aria-label={OATH_WAITING} data-tip={OATH_WAITING} className="army-oath-badge">
+    <SemanticIcon name="shrine" size={22} />
+  </span>
+);
+
 export const ArmyToken = ({
   label,
   number,
@@ -73,6 +81,7 @@ export const ArmyToken = ({
   drain,
   ethereal,
   selected,
+  oathWaiting = false,
   flyTarget,
   onPick,
 }: {
@@ -87,6 +96,7 @@ export const ArmyToken = ({
   stamina: StaminaBar | undefined;
   troops: number | undefined;
   selected: boolean;
+  oathWaiting?: boolean;
   /** Where a gain flies into the portrait. */
   flyTarget?: string;
   /** Absent on a visit: the token is shown, never picked. */
@@ -94,6 +104,7 @@ export const ArmyToken = ({
 }) => {
   const body = (
     <>
+      {oathWaiting && <OathWaitingBadge />}
       <span data-fly-target={flyTarget} className="relative size-10 shrink-0">
         <Portrait art={art} />
         {number !== undefined && (
@@ -119,6 +130,7 @@ export const ArmyToken = ({
       type="button"
       aria-label={label}
       aria-pressed={selected}
+      data-oath-waiting={oathWaiting || undefined}
       onClick={onPick}
       className={cn("ui-pick", TOKEN_LOOK)}
     >
@@ -229,15 +241,6 @@ export const DeepDrain = ({
  * A desktop row's stamina: the bar in segments, and its exact count beside it ("58/120") in a column wide enough for
  * "150/150", so a full bar and an emptier one end their bars at the same place.
  */
-export const StaminaReading = ({ stamina }: { stamina: StaminaBar | undefined }) => (
-  <span className="flex flex-1 items-center gap-2">
-    <span className="min-w-8 flex-1">
-      <HudStamina stamina={stamina} />
-    </span>
-    <span className="min-w-14 text-right">{`${formatAmount(stamina?.current)}/${formatAmount(stamina?.max)}`}</span>
-  </span>
-);
-
 /** A token's stamina: the kit's bar, inset from the token's edge. */
 const TokenStamina = ({ stamina }: { stamina: StaminaBar | undefined }) => (
   <span className="w-full px-1.5">
