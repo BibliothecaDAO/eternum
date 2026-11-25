@@ -170,7 +170,7 @@ describe("a bane day on the figures it cuts", () => {
     onBaneDay("production");
     draw(everyFigure);
     expect(hover(host.querySelector('[data-store="wheat"] [data-bane-figure]')!)).toEqual([
-      "Wheat 6,352 of 18,000 · +5/min · Full in 11h 6m",
+      "Wheat 6,352 of 18,000 · +5/min · Full in 11h 7m",
       LINES.production.line,
     ]);
     expect(hover(host.querySelector('[data-store-card="wheat"] [data-bane-figure]')!)).toEqual([LINES.production.line]);

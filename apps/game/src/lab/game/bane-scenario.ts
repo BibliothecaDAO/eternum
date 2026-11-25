@@ -137,36 +137,21 @@ export function baneEconomyScenario(): LabScenario {
 export function withWorldBane(scenario: LabScenario, kind: number): LabScenario {
   const { store, startsAt } = scenario;
   const { index: day } = dayOf(readExpeditionRules(store, 1)!, startsAt)!;
-  const keyOf = (model: "HomeAspect" | "BaneRules" | "WorldBane", row: object | undefined, fresh: string) =>
-    row ? store.wireKeyOf(model, row as never)! : fresh;
-  const membership = store.get("HomeAspect", { game_id: 1, home: 7 });
-  const aspect = membership?.aspect ?? 2;
+  const aspect = store.get("HomeAspect", { game_id: 1, home: 7 })?.aspect ?? 2;
+  const row = (model: string, keys: object, fresh: string, value: object) => {
+    const held = store.get(model as never, keys as never);
+    return { model, key: held ? store.wireKeyOf(model as never, held)! : fresh, value: { ...keys, ...value } };
+  };
   store.applyFacts([
     ...(store.get("QuestRules", { game_id: 1 }) ? [] : [labQuestRulesFact("0xb30")]),
     ...(store.get("QuestProgress", { game_id: 1, home: 7, day })
       ? []
-      : [
-          {
-            model: "QuestProgress",
-            key: "0xb31",
-            value: { game_id: 1, home: 7, day, progress: 0, completed_level: 0 },
-          },
-        ]),
-    { model: "HomeAspect", key: keyOf("HomeAspect", membership, "0xb32"), value: { game_id: 1, home: 7, aspect } },
-    ...(day > 0
-      ? [{ model: "AspectActivity", key: "0xb33", value: { game_id: 1, aspect, day: day - 1, active: 5 } }]
-      : []),
-    {
-      model: "BaneRules",
-      key: keyOf("BaneRules", store.get("BaneRules", { game_id: 1 }), "0xb34"),
-      value: BANE_RULES,
-    },
-    {
-      model: "WorldBane",
-      key: keyOf("WorldBane", store.get("WorldBane", { game_id: 1, day }), "0xb35"),
-      value: { game_id: 1, day, kind },
-    },
-    { model: "BaneProgress", key: "0xb36", value: { game_id: 1, aspect, day, completed: 0, ended_at: 0 } },
+      : [row("QuestProgress", { game_id: 1, home: 7, day }, "0xb31", { progress: 0, completed_level: 0 })]),
+    row("HomeAspect", { game_id: 1, home: 7 }, "0xb32", { aspect }),
+    ...(day > 0 ? [row("AspectActivity", { game_id: 1, aspect, day: day - 1 }, "0xb33", { active: 5 })] : []),
+    row("BaneRules", { game_id: 1 }, "0xb34", BANE_RULES),
+    row("WorldBane", { game_id: 1, day }, "0xb35", { kind }),
+    row("BaneProgress", { game_id: 1, aspect, day }, "0xb36", { completed: 0, ended_at: 0 }),
   ] as never);
   return scenario;
 }
