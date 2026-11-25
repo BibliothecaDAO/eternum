@@ -6,7 +6,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { Icon } from "@/ui/design-system/icon";
 import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
 import { useLayout } from "@/shell/frame/layout";
-import { DAILY_QUEST_MODELS, readDailyQuest } from "@bibliothecadao/eternum";
+import { DAILY_QUEST_MODELS, readDailyQuest, UNROLLED_WORLD_DAY } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { baneFace } from "../day/bane-face";
@@ -29,9 +29,16 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
   const ready = reading?.state === "done" || reading?.state === "again";
   const count = reading ? DAY_BANNER_WORDS.fraction(progress, target) : "—";
   const bane = reading?.bane ? baneFace(reading.bane, setup.store, realm.game_id) : null;
-  const icon = bane ? bane.icon : (face?.icon ?? "explore");
+  const undrawn = today.reading.unknown === UNROLLED_WORLD_DAY;
+  const icon = bane ? bane.icon : undrawn ? "hourglass" : (face?.icon ?? "explore");
   const share = reading?.bane ? breakShare(reading.bane) : target > 0 ? progress / target : 0;
-  const tag = bane ? DAY_BANNER_WORDS.bane : ready && !desktop ? DAY_BANNER_WORDS.collect : count;
+  const tag = bane
+    ? DAY_BANNER_WORDS.bane
+    : undrawn
+      ? DAY_BANNER_WORDS.undrawnTag
+      : ready && !desktop
+        ? DAY_BANNER_WORDS.collect
+        : count;
 
   return (
     <div className="frontier-quest-wrap pointer-events-auto">
@@ -43,8 +50,15 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
         data-hud-part=""
         data-ready={ready || undefined}
         data-tone={bane ? "bane" : undefined}
+        data-undrawn={undrawn || undefined}
         aria-label={
-          bane ? `${DAY_BANNER_WORDS.bane}: ${bane.name}` : face ? `${face.name} ${count}` : DAY_BANNER_WORDS.today
+          bane
+            ? `${DAY_BANNER_WORDS.bane}: ${bane.name}`
+            : face
+              ? `${face.name} ${count}`
+              : undrawn
+                ? `${DAY_BANNER_WORDS.undrawnTitle}: ${DAY_BANNER_WORDS.undrawnPill}`
+                : DAY_BANNER_WORDS.today
         }
         className="frontier-quest-orb"
         onClick={toggleQuestDock}
@@ -57,6 +71,11 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
           <span className="frontier-quest-orb__words" data-stacked="">
             <span className="frontier-quest-orb__kicker">{DAY_BANNER_WORDS.bane}</span>
             <span className="frontier-quest-orb__name">{bane.name}</span>
+          </span>
+        ) : undrawn ? (
+          <span className="frontier-quest-orb__words" data-stacked="">
+            <span className="frontier-quest-orb__kicker">{DAY_BANNER_WORDS.quest}</span>
+            <span className="frontier-quest-orb__name">{DAY_BANNER_WORDS.undrawnPill}</span>
           </span>
         ) : (
           face &&

@@ -113,6 +113,12 @@
   text-transform: uppercase;
   color: var(--hud-bane);
 }
+.frontier-crown .frontier-quest-orb[data-undrawn] .frontier-quest-orb__count {
+  display: none;
+}
+.frontier-crown .frontier-quest-orb[data-undrawn] .frontier-quest-orb__kicker {
+  color: var(--hud-muted);
+}
 .frontier-crown .frontier-quest-orb[data-tone="bane"] .frontier-quest-orb__name {
   font-family: var(--hud-font-display);
   font-size: var(--hud-text-label);

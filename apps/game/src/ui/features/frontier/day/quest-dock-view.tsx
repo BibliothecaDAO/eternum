@@ -35,6 +35,7 @@ export interface QuestDockProps {
   quest: DayQuestFace | null;
   reading: DayQuestReading | null;
   bane: BaneStanding | null;
+  undrawn?: boolean;
   collecting: boolean;
   onCollect: () => void;
   onClose: () => void;
@@ -46,11 +47,12 @@ export const QuestDockView = ({
   quest,
   reading,
   bane,
+  undrawn = false,
   collecting,
   onCollect,
   onClose,
 }: QuestDockProps) => {
-  const title = bane ? bane.title : quest ? questTitle(quest, layout) : WORDS.quest;
+  const title = bane ? bane.title : quest ? questTitle(quest, layout) : undrawn ? WORDS.undrawnTitle : WORDS.quest;
   const count = reading && !bane && (
     <span
       data-quest-count
@@ -98,6 +100,10 @@ export const QuestDockView = ({
             />
           </span>
         </>
+      ) : undrawn ? (
+        <span data-quest-undrawn className="quest-dock__objective">
+          {WORDS.undrawnLine}
+        </span>
       ) : (
         <HudLoading line={WORDS.reading} />
       )}

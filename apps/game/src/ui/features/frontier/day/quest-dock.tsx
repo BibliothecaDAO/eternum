@@ -4,7 +4,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { dayLeftCompact, DAY_BANNER_WORDS as WORDS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
-import { DAILY_QUEST_MODELS, type ExpeditionRules, readDailyQuest } from "@bibliothecadao/eternum";
+import { DAILY_QUEST_MODELS, type ExpeditionRules, readDailyQuest, UNROLLED_WORLD_DAY } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { type AspectId, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { Account } from "starknet";
@@ -64,6 +64,7 @@ export const QuestDock = ({
       speaker={questSpeaker(reading)}
       quest={reading ? dayQuestFace(reading.quest.id) : null}
       reading={reading ? questReading(reading) : null}
+      undrawn={today.reading.unknown === UNROLLED_WORLD_DAY}
       bane={
         reading?.bane
           ? baneStanding(baneFace(reading.bane, setup.store, realm.game_id), reading.bane, rules, now)

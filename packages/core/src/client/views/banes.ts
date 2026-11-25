@@ -14,7 +14,7 @@ export const BANE_MODELS = [
 ] as const;
 
 const NO_WORLD_BANE = 0;
-const UNROLLED_WORLD_DAY = "UNROLLED_WORLD_DAY";
+export const UNROLLED_WORLD_DAY = "UNROLLED_WORLD_DAY";
 const ANY_WORLD_BANE: readonly number[] = worldBanes.map((bane) => bane.id);
 
 export type BaneWindow = { kinds: readonly number[]; start: number; end: number };
