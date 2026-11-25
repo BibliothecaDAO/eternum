@@ -38,7 +38,7 @@ const FeedStories = ({ lens }: { lens: FeedLens }) => {
   if (events.isError) return <HudNotice tone="bad" line={EVENTS_WORDS.failed} retry={events.retry} />;
   if (events.stories.length === 0) return <p className="text-hud-label text-hud-muted">{EVENTS_WORDS.nothingYet}</p>;
   return (
-    <div className="flex flex-col divide-y divide-hud-divider">
+    <div data-feed-list className="flex flex-col divide-y divide-hud-divider">
       {events.stories.map((event) => (
         <FeedLine key={event.id} story={event} own={involvesPlayer(event, address)} />
       ))}

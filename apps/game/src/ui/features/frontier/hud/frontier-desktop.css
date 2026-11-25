@@ -651,8 +651,16 @@ button.frontier-stock__face:hover {
   height: 13rem;
   min-height: 0;
 }
-.frontier-corner--right [data-wide-page] .aspect-race-page {
-  max-height: 25rem;
+[data-right-page] [data-feed-list] {
+  --feed-row: 29px;
+  max-height: calc(var(--feed-row) * 16);
+  flex: none;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+}
+[data-right-page] [data-feed-list] [data-feed-line] {
+  height: calc(var(--feed-row) - 1px);
+  scroll-snap-align: start;
 }
 
 [data-frontier-rail] [data-build-grid] .ui-card__title {
