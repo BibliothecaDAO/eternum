@@ -12,7 +12,7 @@ import { questScenario } from "./quest-scenario";
 import { aspectSettleInvitedScenario, aspectSettleScenario } from "./aspect-settle-scenario";
 import { deepScenario } from "./deep-scenario";
 import { expiredRaceScenario, raceScenario } from "./race-scenario";
-import { actionsScenario, findScenario } from "./actions-scenario";
+import { actionsScenario } from "./actions-scenario";
 import { economyScenario } from "./economy-scenario";
 import { panelsScenario } from "./panels-scenario";
 import { relicsScenario } from "./relics-scenario";
@@ -64,8 +64,6 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   town: townScenario,
   "oath-slots": oathSlotsScenario,
   "oath-vitriol": () => oathPickScenario(false, deepScenario(), oaths.VITRIOL),
-  "find-well": () => findScenario("well"),
-  "find-shrine": () => findScenario("shrine"),
   "oath-pick": () => oathPickScenario(),
   "oath-pick-knights": () => oathPickScenario(false, spireScenario(), oaths.SKILL, TroopType.Knight),
   "oath-pick-crossbows": () => oathPickScenario(false, spireScenario(), oaths.SKILL, TroopType.Crossbowman),

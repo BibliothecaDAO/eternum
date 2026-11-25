@@ -80,17 +80,7 @@ const RISE_PX = 48;
 const RISE_POP_SHARE = 0.2;
 const STILL_SHARE = 0.9;
 
-export const riseSprite = ({
-  at,
-  icon,
-  label,
-  scale = 1,
-}: {
-  at: Point;
-  icon: string;
-  label: string;
-  scale?: number;
-}): void => {
+export const riseSprite = ({ at, icon, label }: { at: Point; icon: string; label: string }): void => {
   const sprite = pool.find((candidate) => !busy.has(candidate));
   if (!sprite) return;
   busy.add(sprite);
@@ -103,7 +93,7 @@ export const riseSprite = ({
       x: [start.x, start.x, start.x],
       y: [start.y, start.y, still ? start.y : start.y - RISE_PX],
       opacity: still ? [1, 1, 0] : [0, 1, 0],
-      scale: still ? [scale, scale, scale] : [0.6 * scale, 1.15 * scale, scale],
+      scale: still ? [1, 1, 1] : [0.6, 1.15, 1],
     },
     {
       duration: RISE_MS / 1000,

@@ -20,7 +20,6 @@ import type { ReactNode } from "react";
 import { isMapPreviewAction } from "./worldmap-action-preview-policy";
 import { projectHexEastEdgeToScreen, projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { playRevealYield } from "@/ui/motion/moments/reveal-yield";
-import { watchRevealFinds } from "@/ui/motion/moments/reveal-find";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
 import { canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
@@ -8974,14 +8973,6 @@ export default class WorldmapScene extends WarpTravel {
       }),
     );
     this.storeSubscriptions.push(reportSelectedArmy(this.worldSpatialProjection));
-    this.storeSubscriptions.push(
-      watchRevealFinds({
-        store: this.game.store,
-        gameId: () => configManager.getActiveGameId(),
-        now: () => useChainTimeStore.getState().getNowSeconds(),
-        project: (hex) => projectHexToScreen(hex, this.camera),
-      }),
-    );
     this.storeSubscriptions.push(
       useUIStore.subscribe(
         (state) => state.selectedHex,
