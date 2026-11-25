@@ -5,7 +5,7 @@ import { useOwnInvite } from "@/shell/share/own-shares";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
-import { HudButton, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudNotice } from "@/ui/design-system/kit/hud-elements";
 import { INVITE_WORDS } from "@/ui/design-system/kit/words";
 import { openXPost } from "@/utils/x-post";
 import { type NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -48,9 +48,9 @@ const InviteLink = ({ link, aspect }: { link: ReturnType<typeof useOwnInvite>; a
       () => setCopied("failed"),
     );
   return (
-    <HudPanel label={INVITE_WORDS.title(name)} collapsible={false} bodyClassName="flex flex-col gap-2">
+    <section aria-label={INVITE_WORDS.title(name)} className="flex flex-col gap-2">
       <span className="flex items-center gap-2.5">
-        <AspectMark aspect={aspect} size={36} decorative />
+        <AspectMark aspect={aspect} size={28} decorative />
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="text-hud-strong text-hud-ink">{INVITE_WORDS.title(name)}</span>
           <span className="flex items-center gap-1.5">
@@ -62,7 +62,7 @@ const InviteLink = ({ link, aspect }: { link: ReturnType<typeof useOwnInvite>; a
       </span>
       <span className="flex gap-2">
         <HudButton
-          kind="primary"
+          kind="secondary"
           size="sm"
           icon="share"
           busy={waiting}
@@ -84,6 +84,6 @@ const InviteLink = ({ link, aspect }: { link: ReturnType<typeof useOwnInvite>; a
       </span>
       {link.failed && <HudNotice tone="bad" line={INVITE_WORDS.failed} retry={link.retry} />}
       {copied === "failed" && <HudNotice tone="bad" line={INVITE_WORDS.copyFailed} />}
-    </HudPanel>
+    </section>
   );
 };

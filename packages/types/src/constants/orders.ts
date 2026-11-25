@@ -1,4 +1,5 @@
 import type { AspectId, IOrder } from "../types";
+import { RESOURCE_PRECISION } from "./utils";
 
 export const orders: IOrder[] = [
   {
@@ -141,6 +142,12 @@ export const ASPECT_REWARD = { lordsPerHeight: 10, finishBonus: 100_000, gloryTo
 
 export const aspectLordsWorth = (height: number, finishedFirst: boolean): number =>
   height * ASPECT_REWARD.lordsPerHeight + (finishedFirst ? ASPECT_REWARD.finishBonus : 0);
+
+export const sharesAspectReward = (glory: bigint): boolean =>
+  glory >= BigInt(ASPECT_REWARD.gloryToShare) * BigInt(RESOURCE_PRECISION);
+
+export const aspectRewardShare = (amount: bigint, glory: bigint, sharingGlory: bigint): bigint =>
+  sharingGlory === 0n ? 0n : (amount * glory) / sharingGlory;
 
 export const ordersOfAspect = (aspect: AspectId): IOrder[] => orders.filter((order) => order.aspect === aspect);
 

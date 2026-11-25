@@ -1,0 +1,237 @@
+.cosmetics {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: theme(spacing.4);
+}
+
+.cosmetics__categories {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.2);
+}
+
+.cosmetics__soon {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.2);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-round);
+  padding: 0.2rem 0.3rem 0.2rem 0.75rem;
+  font-size: var(--app-text-label);
+  color: var(--app-muted);
+}
+
+.cosmetics__owned {
+  margin-left: auto;
+  font-size: var(--app-text-label);
+  color: var(--app-muted);
+}
+
+.cosmetics__workspace {
+  display: grid;
+  grid-template-columns: 27rem minmax(0, 1fr);
+  align-items: start;
+  gap: theme(spacing.5);
+}
+
+.cosmetics__preview {
+  position: sticky;
+  top: theme(spacing.4);
+}
+
+.cosmetics__preview .app-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.3);
+}
+
+.cosmetics__stage {
+  position: relative;
+  display: grid;
+  height: 15.75rem;
+  place-items: center;
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+}
+
+.cosmetics__stage > .app-chip {
+  position: absolute;
+  top: theme(spacing.2);
+  left: theme(spacing.2);
+}
+
+.cosmetics__soon-line {
+  position: absolute;
+  bottom: theme(spacing.2);
+  font-size: var(--app-text-label);
+  color: var(--app-muted);
+}
+
+.cosmetics__ranks {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: theme(spacing.2);
+}
+
+.cosmetics__rank {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.1);
+  padding: theme(spacing.2) theme(spacing.1);
+  font-size: var(--app-text-label);
+}
+
+.cosmetics__matching {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.3);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-control);
+  padding: theme(spacing.2) theme(spacing.3);
+}
+
+.cosmetics__matching > span {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  font-size: var(--app-text-label);
+  color: var(--app-muted);
+}
+
+.cosmetics__matching strong {
+  color: var(--app-ink);
+}
+
+.cosmetics__note {
+  font-size: var(--app-text-label);
+  color: var(--app-muted);
+}
+
+.cosmetics__families {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: theme(spacing.5);
+}
+
+.cosmetics__row {
+  display: grid;
+  gap: theme(spacing.5);
+}
+
+.cosmetics__row[data-families="3"] {
+  grid-template-columns: 2fr 1fr 1fr;
+}
+
+.cosmetics__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: theme(spacing.3);
+}
+
+.cosmetics__card {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: theme(spacing.2);
+  padding: theme(spacing.2);
+  text-align: left;
+}
+
+.cosmetics__art {
+  position: relative;
+  display: grid;
+  aspect-ratio: 4 / 3;
+  place-items: center;
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+}
+
+.cosmetics__card[data-standing="pass"] .cosmetics__art > :first-child,
+.cosmetics__card[data-standing="event"] .cosmetics__art > :first-child {
+  filter: grayscale(0.55) brightness(0.76);
+  opacity: 0.78;
+}
+
+.cosmetics__badge {
+  position: absolute;
+  top: theme(spacing.1);
+  right: theme(spacing.1);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  border: 1px solid var(--app-gold);
+  border-radius: var(--app-radius-round);
+  background: var(--app-ground);
+  padding: 0.1rem 0.5rem;
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  color: var(--app-gold);
+}
+
+.cosmetics__preview .cosmetics__badge {
+  position: static;
+}
+
+.cosmetics__badge[data-standing="pass"],
+.cosmetics__badge[data-standing="event"] {
+  border-color: var(--app-line-strong);
+  color: var(--app-muted);
+}
+
+.cosmetics__name {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.1);
+  font-family: var(--app-face-strong);
+  font-weight: var(--app-weight-strong);
+  color: var(--app-ink);
+}
+
+.cosmetics-shortcut {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.3);
+}
+
+.cosmetics-shortcut > span {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cosmetics-shortcut strong {
+  font-family: var(--app-face-strong);
+  color: var(--app-ink);
+}
+
+.cosmetics-shortcut span span {
+  font-size: var(--app-text-label);
+  color: var(--app-muted);
+}
+
+@media (max-width: 1023px) {
+  .cosmetics__workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cosmetics__preview {
+    position: static;
+  }
+
+  .cosmetics__stage {
+    height: 8rem;
+  }
+
+  .cosmetics__row[data-families="3"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cosmetics__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

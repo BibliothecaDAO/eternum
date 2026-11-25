@@ -209,25 +209,21 @@ export const useLeaderboard = (game: GameRef | DirectoryGame | null) => {
 
 export const ROSTER_TOP = 10;
 
-const aspectRosterQueryOptions = (game: DirectoryGame, aspect: AspectId) => {
-  const ref = gameRefOf(game);
-  return {
-    queryKey: ["shell", "aspect-roster", ref.chainId, ref.gameId, aspect] as const,
-    queryFn: async () =>
-      fetchHeraldAspectRoster(await requireOpenShard(ref.chainId), ref.gameId, aspect, {
-        offset: 0,
-        limit: ROSTER_TOP,
-      }),
-    refetchInterval: 30_000,
-  };
-};
+const aspectRosterQueryOptions = (ref: GameRef, aspect: AspectId) => ({
+  queryKey: ["shell", "aspect-roster", ref.chainId, ref.gameId, aspect] as const,
+  queryFn: async () =>
+    fetchHeraldAspectRoster(await requireOpenShard(ref.chainId), ref.gameId, aspect, {
+      offset: 0,
+      limit: ROSTER_TOP,
+    }),
+  refetchInterval: 30_000,
+});
 
-export const useAspectRoster = (game: DirectoryGame, aspect: AspectId) =>
-  useQuery(aspectRosterQueryOptions(game, aspect));
+export const useAspectRoster = (ref: GameRef, aspect: AspectId) => useQuery(aspectRosterQueryOptions(ref, aspect));
 
-export const useAllAspectRosters = (game: DirectoryGame) =>
+export const useAllAspectRosters = (ref: GameRef) =>
   useQueries({
-    queries: aspects.map(({ id }) => aspectRosterQueryOptions(game, id)),
+    queries: aspects.map(({ id }) => aspectRosterQueryOptions(ref, id)),
   });
 
 const soonest = (games: readonly DirectoryGame[]): DirectoryGame | undefined =>
