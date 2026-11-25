@@ -1,6 +1,6 @@
 import { BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshStandardMaterial, type Object3D } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
-import { FLAG_ROLES, type FlagAnchor, type FlagRole, requireFlagAnchors } from "./flag-anchors.mjs";
+import { FLAG_ROLES, type FlagAnchor, type FlagRole, requireFlagAnchors } from "./flag-anchors";
 
 export function withFlagCloth(gltf: GLTF): GLTF {
   const scene = gltf.scene;

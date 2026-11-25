@@ -13,7 +13,7 @@ import { Matrix3, Matrix4, Vector3 } from "three";
 
 import { BEAST_BUDGET } from "../frontier-beasts/beast-budget.mjs";
 import { resolveTripoPbr } from "../../src/three/materials/tripo-pbr-rules.mjs";
-import { requireFlagAnchors } from "../../src/three/structures/flag-anchors.mjs";
+import { requireFlagAnchors } from "../../src/three/structures/flag-anchors.ts";
 
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const PUBLIC_MODELS_ROOT = resolve(APP_ROOT, "public/models");
