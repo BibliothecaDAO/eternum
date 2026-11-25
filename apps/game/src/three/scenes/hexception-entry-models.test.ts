@@ -125,3 +125,31 @@ it("asks for the route realm's models while the camera flies to it, the same one
     "/models/realms/settlement.glb",
   ]);
 });
+
+it("lays the realm's ground out while the camera flies, and setup takes that page when it asks for the same one", () => {
+  const preparePageAsync = vi.fn((request: { pageKey: string }) => Promise.resolve({ pageKey: request.pageKey }));
+  const scene = Object.assign(Object.create(HexceptionScene.prototype), {
+    isInitialized: false,
+    gridIsStale: false,
+    hexceptionRadius: 4,
+    proceduralTerrain: { preparePageAsync },
+  });
+  scene.layOutRealm = () => ({ matrices: {}, buildings: [], highlights: [], plots: [], mapHexes: new Set() });
+  scene.terrainPageRequest = () => ({ pageKey: "hexception:3,4", cells: [] });
+  const binding = { tiles: {}, realmId: 7, center: { col: 3, row: 4 }, stage: 0 };
+
+  scene.preparePageAhead(binding);
+  expect(preparePageAsync).toHaveBeenCalledTimes(1);
+  scene.preparePage({ pageKey: "hexception:3,4", cells: [] });
+  expect(preparePageAsync).toHaveBeenCalledTimes(1);
+  scene.preparePage({ pageKey: "hexception:3,4", cells: [] });
+  expect(preparePageAsync).toHaveBeenCalledTimes(2);
+
+  scene.preparePageAhead(binding);
+  scene.preparePage({ pageKey: "hexception:3,4", cells: [{ col: 1 }] });
+  expect(preparePageAsync).toHaveBeenCalledTimes(4);
+
+  Object.assign(scene, { isInitialized: true, lastRealmKey: "3,4" });
+  scene.preparePageAhead(binding);
+  expect(preparePageAsync).toHaveBeenCalledTimes(4);
+});
