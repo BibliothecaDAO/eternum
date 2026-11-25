@@ -46,16 +46,28 @@ it.each([
   document.body.innerHTML = renderToStaticMarkup(
     <nav aria-label="Armies">
       {STAMINAS.map((stamina, index) => (
-        <Army
-          key={index}
-          number={index + 1}
-          label={`Army ${index + 1}`}
-          art={undefined}
-          stamina={stamina}
-          {...(Army === ArmyToken && { troops: 500 })}
-          selected={false}
-          onPick={() => {}}
-        />
+        Army === ArmyToken ? (
+          <ArmyToken
+            key={index}
+            number={index + 1}
+            label={`Army ${index + 1}`}
+            art={undefined}
+            stamina={stamina}
+            troops={500}
+            selected={false}
+            onPick={() => {}}
+          />
+        ) : (
+          <ArmyCard
+            key={index}
+            number={index + 1}
+            label={`Army ${index + 1}`}
+            art={undefined}
+            stamina={stamina}
+            selected={false}
+            onPick={() => {}}
+          />
+        )
       ))}
     </nav>,
   );
