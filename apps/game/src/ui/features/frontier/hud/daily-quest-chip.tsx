@@ -11,7 +11,8 @@ import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-clien
 
 import { baneFace, useBaneToday } from "../day/bane-face";
 import { dayQuestFace } from "../day/day-quest-face";
-import { toggleQuestDock, useQuestDockOpen } from "../day/quest-dock";
+import { questSpeaker, toggleQuestDock, useQuestDockOpen } from "../day/quest-dock";
+import { resolveAspectEmissary } from "../tutorial/aspect-emissaries";
 import { ProgressRing } from "./progress-ring";
 
 export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) => {
@@ -31,7 +32,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
   const count = reading ? DAY_BANNER_WORDS.fraction(progress, target) : "—";
   const bane = reading?.bane ? baneFace(reading.bane, setup.store, realm.game_id) : null;
   const undrawn = today.reading.unknown === UNROLLED_WORLD_DAY;
-  const icon = bane ? bane.icon : undrawn ? "hourglass" : (face?.icon ?? "explore");
+  const icon = bane ? bane.icon : undrawn ? "hourglass" : resolveAspectEmissary(questSpeaker(reading)).portrait;
   const share = reading?.bane ? breakShare(reading.bane) : target > 0 ? progress / target : 0;
   const tag = bane
     ? DAY_BANNER_WORDS.bane
@@ -39,7 +40,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
       ? DAY_BANNER_WORDS.undrawnTag
       : ready && !desktop
         ? DAY_BANNER_WORDS.collect
-        : count;
+        : null;
 
   return (
     <div className="frontier-quest-wrap pointer-events-auto">
@@ -68,7 +69,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
         <ProgressRing size="lg" share={share} tone={bane ? "ember" : "calm"}>
           <Icon name={icon} size={36} />
         </ProgressRing>
-        <span className="frontier-quest-orb__count">{tag}</span>
+        {tag && <span className="frontier-quest-orb__count">{tag}</span>}
         {bane ? (
           <span className="frontier-quest-orb__words" data-stacked="">
             <span className="frontier-quest-orb__kicker">{DAY_BANNER_WORDS.bane}</span>

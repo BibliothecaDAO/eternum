@@ -4,12 +4,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { GameProvider } from "@/hooks/context/game-context";
 import { chainOf } from "@/lab/game/lab-chain";
 import { questScenario } from "@/lab/game/quest-scenario";
-import { dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
+import { dayOf, readDailyQuest, readExpeditionRules } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, aspects } from "@bibliothecadao/types";
-import { nativeBaneConstants, nativeQuestConstants } from "@bibliothecadao/eternum/game-client";
+import { nativeBaneConstants, nativeQuestConstants, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { useBaneToday } from "./bane-face";
-import { QuestDock } from "./quest-dock";
+import { questSpeaker, QuestDock } from "./quest-dock";
+import { DailyQuestChip } from "../hud/daily-quest-chip";
+import { resolveAspectEmissary } from "../tutorial/aspect-emissaries";
+import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
 
 const clock = vi.hoisted(() => ({ now: 350 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => clock.now }));
@@ -283,5 +286,19 @@ describe("bane collection", () => {
     expect(host.querySelector('[aria-label="Collected"]')).not.toBeNull();
     expect(reward("Labor")).toBe("<1 Labor");
     expect(reward("Essence")).toBe("<1 Essence");
+  });
+
+  it("shows on the pill the Aspect that gives the quest, inside its ring, and no count", () => {
+    const game = fixture();
+    game.drawWith(<DailyQuestChip realm={game.realm()} />);
+    const chip = host.querySelector("[data-daily-quest-chip]")!;
+    const reading = readDailyQuest(game.store, 1, safeInteger(game.realm().entity_id), clock.now)!
+      .reading.known!;
+    expect(chip.querySelector("[data-icon]")?.getAttribute("data-icon")).toBe(
+      resolveAspectEmissary(questSpeaker(reading)).portrait,
+    );
+    expect(chip.textContent).not.toContain(
+      DAY_BANNER_WORDS.fraction(safeInteger(reading.progress), safeInteger(reading.target)),
+    );
   });
 });

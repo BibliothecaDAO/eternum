@@ -24,7 +24,7 @@ export const closeQuestDock = () => useQuestDockState.setState({ open: false });
 
 type QuestReading = NonNullable<NonNullable<ReturnType<typeof readDailyQuest>>["reading"]["known"]>;
 
-const questSpeaker = (reading: QuestReading | undefined): AspectId => {
+export const questSpeaker = (reading: QuestReading | undefined): AspectId => {
   const moment = reading?.bane ? "bane" : "quest";
   const speaker = teacherAspectOf(moment, undefined);
   if (speaker === null) throw new Error(`The ${moment} lesson names no Aspect of its own`);

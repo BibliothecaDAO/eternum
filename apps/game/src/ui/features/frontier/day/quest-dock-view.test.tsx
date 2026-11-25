@@ -32,9 +32,13 @@ describe("the quest dock", () => {
   it("has the quest's Aspect speak its name, objective, count and rewards, with no Collect while it runs", () => {
     draw(QUEST_DOCK_CASES["Quest running"]);
     expect(host.querySelector("aside")?.getAttribute("aria-label")).toBe("Prowess: Daily Quest: Camp-breakers");
-    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe("Clear 2 camps");
-    expect(host.querySelector("[data-quest-count]")?.textContent).toBe("1/2");
-    expect(host.querySelector("[data-quest-count]")?.getAttribute("aria-label")).toBe("1 of 2 camps");
+    const { quest, reading } = QUEST_DOCK_CASES["Quest running"];
+    expect(host.querySelector("[data-quest-objective]")?.textContent).toBe(
+      DAY_BANNER_WORDS.objectiveLine(quest.objective, reading.target),
+    );
+    expect(host.querySelectorAll(".ui-meter")).toHaveLength(1);
+    expect(text()).toContain(DAY_BANNER_WORDS.count(reading.progress, reading.target, quest.unit));
+    expect(text()).not.toContain(DAY_BANNER_WORDS.fraction(reading.progress, reading.target));
     expect(reward("Labor")).toBe("2,000 Labor");
     expect(reward("Essence")).toBe("3,000 Essence");
     expect(button("Collect")).toBeUndefined();
@@ -71,10 +75,11 @@ describe("the quest dock", () => {
       "Production runs at 50% while the bane lasts",
     );
     expect(bane.textContent).toBe("▾50% Production2× if brokenBreak: 4/12 of your Aspect · Clears in 5h");
+    const { quest, reading } = QUEST_DOCK_CASES["World bane"];
     expect(host.querySelector("[data-quest-objective]")?.textContent).toBe(
-      "The Cull · Defeat 6,000 guard troops (3K/6K)",
+      `${quest.name} · ${DAY_BANNER_WORDS.objectiveLine(quest.objective, reading.target)}`,
     );
-    expect(host.querySelector("[data-quest-count]")).toBeNull();
+    expect(text()).not.toContain(DAY_BANNER_WORDS.fraction(reading.progress, reading.target));
   });
 
   it("titles a phone's dock with the quest's name alone", () => {

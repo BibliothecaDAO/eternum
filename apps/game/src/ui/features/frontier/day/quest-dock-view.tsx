@@ -53,16 +53,6 @@ export const QuestDockView = ({
   onClose,
 }: QuestDockProps) => {
   const title = bane ? bane.title : quest ? questTitle(quest, layout) : undrawn ? WORDS.undrawnTitle : WORDS.quest;
-  const count = reading && !bane && (
-    <span
-      data-quest-count
-      className="quest-dock__count"
-      data-done={reading.state !== "running" || undefined}
-      aria-label={quest ? WORDS.count(reading.progress, reading.target, quest.unit) : undefined}
-    >
-      {WORDS.fraction(reading.progress, reading.target)}
-    </span>
-  );
   return (
     <EmissaryCard
       aspectId={speaker}
@@ -73,12 +63,7 @@ export const QuestDockView = ({
       picture={bane?.painting}
       className="quest-dock"
       attributes={{ "data-daily-quest": "", "data-quest-layout": layout }}
-      controls={
-        <>
-          {count}
-          <EmissaryOk onClose={onClose} />
-        </>
-      }
+      controls={<EmissaryOk onClose={onClose} />}
     >
       {bane && <BaneLine bane={bane} />}
       {quest && reading ? (
@@ -136,7 +121,7 @@ const QuestLine = ({ quest, reading, named }: { quest: DayQuestFace; reading: Da
         <>
           <Icon name={quest.icon} size={20} className="quest-dock__quest-icon" />
           <span>
-            <strong>{quest.name}</strong> · {objective} ({WORDS.fraction(reading.progress, reading.target)})
+            <strong>{quest.name}</strong> · {objective}
           </span>
         </>
       ) : (
