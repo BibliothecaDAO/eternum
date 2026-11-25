@@ -1,14 +1,14 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { reasonLine } from "@/ui/design-system/kit/reasons";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
+import { reasonLine } from "@/ui/design-system/kit/reasons";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
 import { useRealmVisit } from "@/sync/active-game-client";
 import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import { SETTINGS } from "@/ui/design-system/kit/words";
+import { REALM_CARD_WORDS, SETTINGS } from "@/ui/design-system/kit/words";
 import { HudChatWindow, useGameChat } from "@/ui/features/world/containers/hud-chat-window";
 import { IdentityChip } from "@/ui/features/world/containers/top-header/identity-chip";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
@@ -16,7 +16,7 @@ import { useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { configManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { BUILDINGS_CENTER, catalogAspectId, rankName } from "@bibliothecadao/types";
+import { catalogAspectId, rankName } from "@bibliothecadao/types";
 import { useLayout } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { type ComponentType, type ReactNode, useEffect, useRef, useState } from "react";
@@ -51,7 +51,6 @@ import { FrontierTopBar } from "./hud/phone-top-bar";
 import { PlaceMenu, placeLines } from "./hud/surface-deep-switch";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
-import { DayEndBlock } from "./day-end/day-end";
 import { useFirstBuild, useMarkFirstBuild } from "./build/first-build";
 import { useStoreReadings } from "./hud/frontier-strip";
 import type { RealmRankUp } from "./hud/realm-card";
@@ -339,13 +338,7 @@ const FrontierHudBody = ({
         <SettingsPanel />
       </HudSheet>
     ) : surface === "today" ? (
-      <FrontierToday
-        rules={rules}
-        realm={realm ?? visited}
-        dayEnd={own && <DayEndBlock />}
-        own={Boolean(own)}
-        onClose={close}
-      />
+      <FrontierToday rules={rules} realm={realm ?? visited} own={Boolean(own)} onClose={close} />
     ) : null;
   const armyDock = shown ? <DockFor realm={shown} onOpenArmy={desktop ? openArmy : pickArmy} /> : null;
   const sheets = (
@@ -515,15 +508,6 @@ const HudMenu = ({
 
 const REALM_PANEL_MODELS = ["HomeAspect"] as const;
 
-const useOpenCastle = (own: NativeRows["Structure"] | null) => () => {
-  if (!own) return;
-  useUIStore.getState().setSelectedBuildingHex({
-    structureId: safeInteger(own.entity_id),
-    innerCol: BUILDINGS_CENTER[0],
-    innerRow: BUILDINGS_CENTER[1],
-  });
-};
-
 const useRealmFace = (realm: NativeRows["Structure"]) => {
   const facts = useNativeFacts(REALM_PANEL_MODELS);
   const aspectId = facts.store.get("HomeAspect", { game_id: realm.game_id, home: realm.entity_id })?.aspect;
@@ -540,8 +524,8 @@ type StoreCards = {
 };
 
 const FrontierRealmCard = ({
-  rules,
   realm,
+  rules,
   own,
   isMapView,
   fragments,
@@ -561,7 +545,6 @@ const FrontierRealmCard = ({
   const { name, kind, aspect } = useRealmFace(realm);
   const stores = useStoreReadings(realm, rules, STORE_KINDS);
   const goToPlace = useGoToFrontierPlace(realm);
-  const openCastle = useOpenCastle(own);
   const lords = useWalletLords();
   const rankUp = useRankUp(own);
   return (
@@ -579,7 +562,6 @@ const FrontierRealmCard = ({
       onStore={storeCards?.onToggle}
       onShop={onShop}
       onHome={isMapView ? () => goToPlace(false) : undefined}
-      onUpgradeCastle={own ? openCastle : undefined}
       onClose={onClose}
     />
   );
@@ -591,7 +573,15 @@ const useRankUp = (own: NativeRows["Structure"] | null): RealmRankUp | undefined
   const levelUp = useRealmLevelUp(own ? safeInteger(own.entity_id) : null);
   if (!own || !levelUp || levelUp.mode === "max") return undefined;
   const refusal = castleUpgradeRefusal(setup.store, own, levelUp, tick);
-  return { name: rankName(levelUp.nextLevel), missing: refusal && reasonLine(refusal.reason) };
+  const slots = configManager.getArmySlots(levelUp.nextLevel) - configManager.getArmySlots(levelUp.currentLevel);
+  return {
+    name: rankName(levelUp.nextLevel),
+    gives: slots > 0 ? REALM_CARD_WORDS.armySlots(slots) : undefined,
+    need: refusal?.reason.kind === "short" ? { of: refusal.reason.of, amount: refusal.reason.need } : undefined,
+    refusal: refusal && reasonLine(refusal.reason),
+    sending: levelUp.loading,
+    onUpgrade: levelUp.ready || levelUp.loading ? levelUp.run : undefined,
+  };
 };
 
 const useWalletLords = (): number | null => {

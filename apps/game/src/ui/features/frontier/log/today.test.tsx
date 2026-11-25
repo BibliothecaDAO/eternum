@@ -4,10 +4,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import { dayOf } from "@bibliothecadao/eternum";
 
-import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
+import { questCatalog } from "@bibliothecadao/types";
 
 import { dayBounds, seasonDay } from "../hud/day-clock";
+import { dayQuestFace } from "../day/day-quest-face";
 import { TodaySheet } from "./today-sheet";
 
 const DAY = 16 * 3_600;
@@ -20,7 +21,14 @@ const CLOCK = {
   shareLeft: 0.45,
   tone: "calm" as const,
 };
-const totals = { reveals: 19, cleared: 2, essence: 4_150, labor: undefined };
+const gains = { essence: 4_150, labor: undefined, glory: 1_180 };
+const quest = (day: number) => dayQuestFace(questCatalog[day % questCatalog.length]!.id);
+const WEEK = [1, 2, 3, 4, 5, 6, 7].map((day) => ({
+  day,
+  quest: quest(day),
+  when: day < 5 ? ("past" as const) : day === 5 ? ("today" as const) : ("ahead" as const),
+  collected: day < 4,
+}));
 
 const render = (props: Partial<Parameters<typeof TodaySheet>[0]>) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -31,17 +39,7 @@ const render = (props: Partial<Parameters<typeof TodaySheet>[0]>) => {
     root.render(
       <>
         <Tooltip />
-        <TodaySheet
-          day={12}
-          today
-          clock={CLOCK}
-          totals={totals}
-          lines={[{ id: "a", at: 0, text: "Army 1 cleared a camp" }]}
-          history="whole"
-          onRetry={vi.fn()}
-          onClose={vi.fn()}
-          {...props}
-        />
+        <TodaySheet day={12} clock={CLOCK} gains={gains} onClose={vi.fn()} {...props} />
       </>,
     ),
   );
@@ -89,68 +87,52 @@ describe("Today", () => {
     unmount();
   });
 
-  it("shows the day's totals and log, an unknown total as a dash, and steps back but not past today", () => {
-    const onEarlier = vi.fn();
-    const { host, unmount } = render({ onEarlier });
-    expect(host.textContent).toContain("Day 12");
-    expect(host.textContent).toContain("+4.2K");
-    expect(
-      [...host.querySelectorAll('[role="img"][aria-label]')].map((cell) => cell.getAttribute("aria-label")),
-    ).toEqual(["Reveals 19", "Sites cleared 2", "Labor —", "Essence +4.2K"]);
-    expect([...host.querySelectorAll("[data-total]")].map((cell) => cell.textContent)).toEqual([
-      "19Reveals",
-      "2Sites cleared",
-      "—Labor",
-      "+4.2KEssence",
-    ]);
-    expect(host.textContent).toContain("—");
-    expect(host.textContent).toContain("Army 1 cleared a camp");
-    const later = host.querySelector<HTMLButtonElement>("button[aria-label='Day 13']")!;
-    expect(later.disabled).toBe(true);
-    act(() => host.querySelector<HTMLButtonElement>("button[aria-label='Day 11']")!.click());
-    expect(onEarlier).toHaveBeenCalled();
-    unmount();
-  });
-
-  it("says today's clock, the strip keeping only its dial, and no clock on an earlier day", () => {
-    const shown = render({});
-    const timer = shown.host.querySelector('[role="timer"]')!;
-    expect(timer.textContent).toContain("Day ends");
-    expect(timer.textContent).toContain("7h 14m");
-    expect(timer.textContent).toContain("Tomorrow lasts");
-    expect(timer.textContent).toContain("12h");
-    shown.unmount();
-    const earlier = render({ day: 11, today: false });
-    expect(earlier.host.querySelector('[role="timer"]')).toBeNull();
-    earlier.unmount();
-  });
-
-  it("puts no tooltip over a line that already reads whole", () => {
+  it("shows what the day earned, an unknown gain as a dash, and the Glory held", () => {
     const { host, unmount } = render({});
-    const line = [...host.querySelectorAll("li")].find((row) => row.textContent?.includes("Army 1 cleared a camp"))!;
-    act(() => {
-      const event = new MouseEvent("pointerover", { bubbles: true });
-      Object.defineProperty(event, "pointerType", { value: "mouse" });
-      line.querySelector(".ui-event__text")!.dispatchEvent(event);
-    });
-    expect(useTooltipStore.getState().tooltip).toBeNull();
+    expect(
+      [...host.querySelectorAll("[data-total]")].map((cell) => [cell.getAttribute("aria-label"), cell.textContent]),
+    ).toEqual([
+      ["Essence +4.2K", "+4.2KEssence"],
+      ["Labor —", "—Labor"],
+      ["Glory 1.2K", "1.2KGlory"],
+    ]);
+    expect(host.textContent).not.toContain("Reveals");
+    expect(host.textContent).not.toContain("Sites cleared");
     unmount();
   });
 
-  it("says the log did not answer, with Try again, in the log's place", () => {
-    const onRetry = vi.fn();
-    const { host, unmount } = render({ history: "failed", onRetry });
-    expect(host.textContent).toContain("Today did not answer.");
-    expect(host.textContent).not.toContain("Army 1 cleared a camp");
-    act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === "Try again")!.click());
-    expect(onRetry).toHaveBeenCalled();
+  it("says when today ends, the hours left in the day dial's tone, and how long tomorrow lasts", () => {
+    const { host, unmount } = render({});
+    expect(host.querySelector('[role="timer"]')?.textContent).toMatch(/^Ends \d\d:\d\d · Tomorrow lasts 12h$/);
+    expect(host.querySelector('[data-tip="7h 14m left"]')?.textContent).toBe("7h 14m");
+    expect(host.querySelector('[data-tip="7h 14m left"]')?.getAttribute("data-tone")).toBeNull();
     unmount();
+    const lastHour = render({ clock: { ...CLOCK, secondsLeft: 42 * 60, tone: "ember" } });
+    expect(lastHour.host.querySelector('[data-tip="42m left"]')?.getAttribute("data-tone")).toBe("bad");
+    lastHour.unmount();
   });
 
-  it("says when the player's history no longer reaches back to the day's start, and keeps the log it has", () => {
-    const { host, unmount } = render({ history: "short", totals: { ...totals, reveals: undefined } });
-    expect(host.querySelector('[role="status"]')?.textContent).toBe("This day's totals are unknown");
-    expect(host.textContent).toContain("Army 1 cleared a camp");
+  it("marks the week's collected quests and today's, and offers yesterday's recap only when there is one", () => {
+    const onRecap = vi.fn();
+    const { host, unmount } = render({ week: WEEK, onRecap });
+    const days = [...host.querySelectorAll("[data-week-day]")];
+    expect(days.map((day) => day.getAttribute("data-week-day"))).toEqual([
+      "past",
+      "past",
+      "past",
+      "past",
+      "today",
+      "ahead",
+      "ahead",
+    ]);
+    expect(days.filter((day) => day.hasAttribute("data-collected"))).toHaveLength(3);
+    act(() =>
+      [...host.querySelectorAll("button")].find((button) => button.textContent === "Yesterday's recap")!.click(),
+    );
+    expect(onRecap).toHaveBeenCalledOnce();
     unmount();
+    const first = render({});
+    expect(first.host.textContent).not.toContain("Yesterday's recap");
+    first.unmount();
   });
 });

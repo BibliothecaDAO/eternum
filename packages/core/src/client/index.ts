@@ -66,7 +66,7 @@ export {
   type DeepZone,
 } from "../utils/deep-geometry";
 export { questWeek } from "../utils/daily-quest";
-export { readActiveTriumph, TRIUMPH_MODELS, triumphPercentsOf, type TriumphStage } from "./views/triumphs";
+export { TRIUMPH_MODELS, triumphPercentsOf, type TriumphStage } from "./views/triumphs";
 
 export { SITE_EFFECT_MODELS, readSiteEffects, readSiteReward } from "./views/site-effects";
 export { GUARD_MODELS } from "../utils/army";

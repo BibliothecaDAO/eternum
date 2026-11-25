@@ -8,7 +8,6 @@ import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
 import { useTablet } from "@/shell/frame/layout";
 import { DAILY_QUEST_MODELS, readDailyQuest } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { formatShort } from "@bibliothecadao/types";
 
 import { useLayout } from "@/shell/frame/layout";
 
@@ -31,7 +30,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
   const progress = reading ? safeInteger(reading.progress) : 0;
   const target = reading ? safeInteger(reading.target) : 0;
   const ready = reading?.state === "done" || reading?.state === "again";
-  const count = reading ? `${formatShort(progress)}/${formatShort(target)}` : "—";
+  const count = reading ? DAY_BANNER_WORDS.fraction(progress, target) : "—";
   const icon = face?.icon ?? "explore";
 
   return (
@@ -56,7 +55,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
           </span>
         )}
       </button>
-      {popover(<DailyQuest realm={realm} layout={layout} onClose={close} />, {
+      {popover(<DailyQuest realm={realm} onClose={close} />, {
         className: "frontier-quest-popover",
         layout: tablet && layout === "phone" ? "tablet" : layout,
       })}
