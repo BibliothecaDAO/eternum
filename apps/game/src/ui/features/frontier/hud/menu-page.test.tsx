@@ -70,9 +70,7 @@ it("opens the Guide, the game's guide on the docs site, in a new tab with the gu
         />,
       ),
     );
-    const link = [...host.querySelectorAll<HTMLAnchorElement>("nav a")].find((a) =>
-      a.textContent?.includes("Guide"),
-    )!;
+    const link = [...host.querySelectorAll<HTMLAnchorElement>("nav a")].find((a) => a.textContent?.includes("Guide"))!;
     expect(link.href).toBe("https://docs.realms.party/frontier/");
     expect(link.target).toBe("_blank");
     expect(link.rel).toBe("noopener noreferrer");
