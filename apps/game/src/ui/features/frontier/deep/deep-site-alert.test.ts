@@ -51,13 +51,20 @@ function fixture(guardCounts = [siteGuardTroops(1)]) {
   const mine = [...store.inGame("GarrisonSlot", 1)][0]!;
   const site = { game_id: 1, entity_id: mine.structure_id };
   const held = store.require("Guard", { game_id: 1, structure_id: mine.structure_id, slot: mine.slot });
+  const rival = store.require("Structure", { game_id: 1, entity_id: mine.home });
   store.applyFacts([{ model: "GarrisonSlot", key: store.wireKeyOf("GarrisonSlot", mine)!, value: null }]);
   change("DeepSite", site, { aspect: 2 });
+  change("Structure", site, { owner: rival.owner });
   for (const [index, count] of guardCounts.entries()) {
     const slot = nativeRuleConstants.DEEP_GUARD_SLOTS - 1 - index;
     const troops = { ...held.troops, count: BigInt(count) * BigInt(RESOURCE_PRECISION) };
+    const home = index === 0 ? mine.home : BigInt(90 + index);
+    if (index > 0) {
+      write("Structure", { ...rival, entity_id: home, owner: rival.owner + BigInt(index) });
+      write("HomeAspect", { game_id: 1, home, aspect: 2 });
+    }
     write("Guard", { ...held, slot, troops });
-    write("GarrisonSlot", { ...mine, slot, home: 9n });
+    write("GarrisonSlot", { ...mine, slot, home });
   }
   store.setSnapshot({ gameId: 1, actor: player, complete: true, timestamp: startsAt });
   const owner = { gameId: 1, actor: player, owner: "0x123", home: String(army.owner) };
@@ -110,14 +117,11 @@ it("does not offer allied sites, beasts, a realm without lore, or an army alread
   ]);
   expect(entered.plan()).toEqual([]);
   const beasts = fixture();
-  const watch = beasts.plan()[0]!;
+  const guard = [...beasts.store.inGame("Guard", 1)].find((row) => row.slot === 0)!;
   ungarrison(beasts);
-  const guard = beasts.store.require("Guard", { game_id: 1, structure_id: BigInt(watch.siteId), slot: 0 });
-  beasts.change(
-    "Guard",
-    { game_id: 1, structure_id: BigInt(watch.siteId), slot: 0 },
-    { troops: { ...guard.troops, count: 1n } },
-  );
+  beasts.change("DeepSite", beasts.site, { aspect: 0 });
+  beasts.change("Structure", beasts.site, { owner: 0n });
+  beasts.write("Guard", { ...guard, structure_id: beasts.site.entity_id, troops: { ...guard.troops, count: 1n } });
   expect(beasts.plan()).toEqual([]);
 });
 
@@ -209,10 +213,12 @@ function secondRing(f: ReturnType<typeof fixture>, realms: number) {
   for (const site of [...f.store.inGame("DeepSite", 1)]) {
     const entity_id = site.entity_id + 100n;
     const at = f.store.entityOccupancy(1, site.entity_id)!;
+    const structure = f.store.require("Structure", { game_id: 1, entity_id: site.entity_id });
     f.write("DeepSite", { ...site, entity_id, ring: 1 });
     f.write("TileOccupancy", { ...at, entity_id, row: at.row + 3 });
-    const guard = f.store.require("Guard", { game_id: 1, structure_id: site.entity_id, slot: 0 });
-    f.write("Guard", { ...guard, structure_id: entity_id });
+    f.write("Structure", { ...structure, entity_id });
+    const guard = f.store.get("Guard", { game_id: 1, structure_id: site.entity_id, slot: 0 });
+    if (guard) f.write("Guard", { ...guard, structure_id: entity_id });
   }
 }
 
