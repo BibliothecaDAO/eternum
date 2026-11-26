@@ -1,21 +1,22 @@
 import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
+import { useAccountAddress } from "@/hooks/store/use-account-store";
+import type { SentCommand } from "@/sync/action-outcome";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
+import { usePlayerNames } from "@/hooks/use-player-profile";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import { AmountInput, HudButton, HudNotice, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import { DEEP_WORDS, TRANSFER_TROOPS, WITHDRAW } from "@/ui/design-system/kit/words";
+import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { toast } from "@/ui/features/event-feed/notify";
 import {
   armyOaths,
   configManager,
-  getStructureName,
   isViewerOwner,
   multiplyByPrecision,
   oathAttackStamina,
@@ -25,15 +26,13 @@ import {
   deepTroopsLife,
   homeAspect,
   isBesideDeepSite,
-  isDeepSiteRival,
-  readDeepSites,
+  readSyncedDeepSites,
   safeInteger,
   nativeRuleConstants,
+  viewerAspects,
   type DeepGarrison,
   type DeepSiteView as Site,
   type NativeFactStore,
-  type NativeRows,
-  viewerAspects,
 } from "@bibliothecadao/eternum/game-client";
 import {
   catalogAspectId,
@@ -41,6 +40,7 @@ import {
   formatDuration,
   getDirectionBetweenAdjacentHexes,
   RESOURCE_PRECISION,
+  type TroopTier,
 } from "@bibliothecadao/types";
 import { isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
 import { useApproachTile } from "../sites/approach";
@@ -51,10 +51,12 @@ import { readDeepSitePays } from "./deep-site-faces";
 import {
   DeepSiteView,
   type DeepBlock,
+  type DeepGarrisonSlot,
   type DeepGuard,
   type DeepOpening,
   type DeepOrder,
   type DeepRates,
+  type DeepSide,
 } from "./deep-site-view";
 
 const MODELS = [
@@ -68,6 +70,7 @@ const MODELS = [
   "AltarBar",
   "RaceRules",
   "BaneRules",
+  "RaceMember",
 ] as const;
 
 export function useSelectedDeepSite(): Site | null {
@@ -81,204 +84,173 @@ export function useSelectedDeepSite(): Site | null {
   if (!isMapView || !tile) return null;
   const game_id = configManager.getActiveGameId();
   if (!setup.store.get("DeepSite", { game_id, entity_id: tile.occupierId })) return null;
-  return readDeepSites(setup.store, now, game_id).find((site) => site.id === BigInt(tile.occupierId)) ?? null;
+  return readSyncedDeepSites(setup.store, now, game_id).find((site) => site.id === BigInt(tile.occupierId)) ?? null;
 }
 
 export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => void }) {
   const { setup, account } = useGame();
   const selected = useSelectedOwnArmy();
+  const address = useAccountAddress();
+  const names = usePlayerNames();
   const now = useCurrentDefaultTick();
   useNativeRevision(MODELS);
   const game_id = configManager.getActiveGameId();
+  const viewer: Viewer = { address, aspects: viewerAspects(setup.store, game_id, address) };
+  const guard = guardView(setup.store, game_id, site, viewer, names.text, now);
   const userId = selected ? safeInteger(selected.army.explorer_id) : null;
   const busy = useInFlight("army", userId)?.order;
   const tile = { col: site.position.x, row: site.position.y, alt: site.position.alt };
   const adjacent = selected !== null && isBesideDeepSite(selected.armyTile, site);
-  const block = selectionBlock(setup.store, game_id, site, selected);
-  const verb = site.beastTroops > 0n || site.garrisons.length > 0 ? "attack" : "take";
+  const guards = guard.kind === "taken" && (guard.side === "own" || guard.side === "ally");
   const need =
-    selected === null
+    guards || selected === null
       ? 0
       : oathAttackStamina(armyOaths(setup.store, selected.army), configManager.getCombatConfig().stamina_attack_req);
   const stamina = useArmyStamina(userId, need);
+  const block = selectionBlock(setup.store, game_id, site, selected);
   const approach = useOrderAt(useApproachTile(tile, site.open && !block && !adjacent));
-  const act = async () => {
+  const send = async (order: "attack" | "move", call: () => Promise<SentCommand>) => {
     if (userId === null || !account.account) return;
     try {
-      await sendOnce("army", userId, { order: "attack" }, () =>
-        setup.systemCalls.attack_explorer_vs_guard({
-          signer: account.account!,
-          explorer_id: userId,
-          structure_id: safeInteger(site.id),
-          relic_slot: undefined,
-        }),
-      );
+      await sendOnce("army", userId, { order }, call);
     } catch (error) {
       toast.failed(error, DEEP_WORDS.orderFailed);
     }
   };
-  const order: DeepOrder | DeepBlock = !site.open
-    ? { kind: "closed" }
-    : (block ??
-      (adjacent
-        ? stamina && isCovered(stamina)
-          ? {
-              kind: "act",
-              verb,
-              stamina: need > 0 ? need : undefined,
-              busy,
-              onAct: act,
-            }
-          : { kind: "short", verb: "attack", line: staminaShortfall(stamina?.held, need, stamina?.wait) }
-        : approach
-          ? {
-              kind: "move",
-              prices: [
-                { of: "stamina", amount: approach.stamina.cost },
-                { of: "wheat", amount: approach.wheat.cost },
-              ],
-              onMove: () => requestOrderAt(approach.target),
-            }
-          : "pickArmy"));
-  const catalog = deepSites.find((kind) => kind.id === site.kind)!;
-  const transfers =
-    site.open && adjacent && block === "guarding" && selected && account.account
-      ? deepTransfers(setup.store, site, selected.army)
-      : [];
-  const sendTransfer = async ({ kind, slot }: DeepTransfer, amount: number) => {
-    if (!selected || userId === null || !account.account) return;
-    const direction = getDirectionBetweenAdjacentHexes(
-      kind === "guard" ? selected.armyTile : tile,
-      kind === "guard" ? tile : selected.armyTile,
+  const attack = () =>
+    send("attack", () =>
+      setup.systemCalls.attack_explorer_vs_guard({
+        signer: account.account!,
+        explorer_id: userId!,
+        structure_id: safeInteger(site.id),
+        relic_slot: undefined,
+      }),
     );
-    if (direction === null) return;
-    const signer = account.account;
-    const structure = safeInteger(site.id);
-    const count = multiplyByPrecision(amount);
-    try {
-      await sendOnce("army", userId, { order: "use" }, () =>
-        kind === "guard"
-          ? setup.systemCalls.explorer_guard_swap({
-              signer,
-              from_explorer_id: userId,
-              to_structure_id: structure,
-              to_guard_slot: slot,
-              to_structure_direction: direction,
-              count,
-            })
-          : setup.systemCalls.guard_explorer_swap({
-              signer,
-              from_structure_id: structure,
-              from_guard_slot: slot,
-              to_explorer_id: userId,
-              to_explorer_direction: direction,
-              count,
-            }),
-      );
-    } catch (error) {
-      toast.failed(error, TRANSFER_TROOPS.failed);
-    }
+  const move: DeepOrder | undefined = approach
+    ? {
+        kind: "move",
+        prices: [
+          { of: "stamina", amount: approach.stamina.cost },
+          { of: "wheat", amount: approach.wheat.cost },
+        ],
+        onMove: () => requestOrderAt(approach.target),
+      }
+    : undefined;
+  const attackOrder = (): DeepOrder | DeepBlock =>
+    block ??
+    (adjacent
+      ? stamina && isCovered(stamina)
+        ? { kind: "attack", verb: defended(site) ? "attack" : "take", stamina: need || undefined, busy, onAct: attack }
+        : { kind: "short", line: staminaShortfall(stamina?.held, need, stamina?.wait) }
+      : (move ?? "pickArmy"));
+  const guardOrder = (): DeepOrder | DeepBlock => {
+    if (!mayGuard(site, viewer)) return "ownerOnly";
+    if (block === "otherDay" || block === "noTroops") return block;
+    if (!selected || !adjacent) return (selected && move) || "noAdjacent";
+    const plan = transferPlan(setup.store, game_id, site, selected);
+    if (!plan || (plan.guard <= 0 && plan.withdraw <= 0)) return "slotsFull";
+    const from = { col: selected.armyTile.col, row: selected.armyTile.row };
+    const at = { col: site.position.x, row: site.position.y };
+    return {
+      kind: "guard",
+      troops: { category: selected.army.troops.category, tier: selected.army.troops.tier },
+      armyTroops: Number(selected.army.troops.count) / RESOURCE_PRECISION,
+      busy,
+      guard:
+        plan.guard > 0
+          ? {
+              most: plan.guard,
+              onSend: (amount, targetSlot) =>
+                send("move", () =>
+                  setup.systemCalls.explorer_guard_swap({
+                    signer: account.account!,
+                    from_explorer_id: userId!,
+                    to_structure_id: safeInteger(site.id),
+                    to_structure_direction: getDirectionBetweenAdjacentHexes(from, at)!,
+                    to_guard_slot: plan.own ? plan.slot : (targetSlot ?? plan.slot),
+                    count: multiplyByPrecision(amount),
+                  }),
+                ),
+            }
+          : undefined,
+      withdraw:
+        plan.withdraw > 0
+          ? {
+              most: plan.withdraw,
+              onSend: (amount) =>
+                send("move", () =>
+                  setup.systemCalls.guard_explorer_swap({
+                    signer: account.account!,
+                    from_structure_id: safeInteger(site.id),
+                    from_guard_slot: plan.slot,
+                    to_explorer_id: userId!,
+                    to_explorer_direction: getDirectionBetweenAdjacentHexes(at, from)!,
+                    count: multiplyByPrecision(amount),
+                  }),
+                ),
+            }
+          : undefined,
+    };
   };
+  const order: DeepOrder | DeepBlock = !site.open ? { kind: "closed" } : guards ? guardOrder() : attackOrder();
+  const catalog = deepSites.find((kind) => kind.id === site.kind)!;
   return (
     <DeepSiteView
       site={catalog.key}
       ring={site.ring}
       rates={site.open ? siteRates(setup.store, game_id, site, selected) : null}
       opening={site.open ? null : siteOpening(setup.store, game_id, site)}
-      guard={guardView(setup.store, game_id, site, account.account ? BigInt(account.account.address) : null, now)}
+      guard={guard}
       fight={
-        verb === "attack" && selected && !block
+        !guards && selected && defended(site)
           ? readDeepSiteFight(setup.store, site, { army: selected.army, timestamp: now })
           : undefined
       }
       order={order}
-      transfers={
-        selected && transfers.length > 0 ? (
-          <HudWindowFoot>
-            <div className="flex flex-col gap-2">
-              {transfers.map((action) => (
-                <DeepTransferAction
-                  key={`${site.id}:${userId}:${action.kind}:${action.slot}`}
-                  action={action}
-                  armyTroops={selected.army.troops.count}
-                  busy={busy !== undefined}
-                  onSend={(amount) => sendTransfer(action, amount)}
-                />
-              ))}
-            </div>
-          </HudWindowFoot>
-        ) : undefined
-      }
       onClose={onClose}
     />
   );
 }
 
 type Selected = ReturnType<typeof useSelectedOwnArmy>;
+type Viewer = { address: bigint | null; aspects: Set<number> };
 
-type DeepTransfer = { kind: "guard" | "withdraw"; slot: number; max: number };
+const defended = (site: Site) => site.beastTroops > 0n || site.garrisons.length > 0;
 
-function deepTransfers(store: NativeFactStore, site: Site, army: NativeRows["ExplorerTroops"]): DeepTransfer[] {
-  const troops = army.troops;
-  const home = store.require("Structure", { game_id: site.gameId, entity_id: army.owner });
-  const unit = BigInt(RESOURCE_PRECISION);
-  const cap = BigInt(configManager.getMaxArmySize(home.base.level, troops.tier)) * unit;
-  const held = site.garrisons.find(
-    ({ home, troops: guard }) =>
-      home === army.owner && guard.category === troops.category && guard.tier === troops.tier,
-  );
-  const slot =
-    held?.slot ??
-    Array.from(
-      { length: nativeRuleConstants.DEEP_GUARD_SLOTS },
-      (_, index) => nativeRuleConstants.DEEP_GUARD_SLOTS - 1 - index,
-    ).find((slot) => !site.garrisons.some((guard) => guard.slot === slot));
-  if (slot === undefined) return [];
-  const guarded = held?.troops.count ?? 0n;
-  const guard = Math.min(Number(troops.count / unit), Math.max(0, Number((cap - guarded) / unit)));
-  const withdraw = Math.min(Number(guarded / unit), Math.max(0, Number((cap - troops.count) / unit)));
-  const actions: DeepTransfer[] = [];
-  if (guard > 0) actions.push({ kind: "guard", slot, max: guard });
-  if (withdraw > 0) actions.push({ kind: "withdraw", slot, max: withdraw });
-  return actions;
+function mayGuard(site: Site, viewer: Viewer): boolean {
+  return deepAlliesGarrison(site.kind) || isViewerOwner(site.holder, viewer.address);
 }
 
-function DeepTransferAction({
-  action,
-  armyTroops,
-  busy,
-  onSend,
-}: {
-  action: DeepTransfer;
-  armyTroops: bigint;
-  busy: boolean;
-  onSend: (amount: number) => Promise<void>;
-}) {
-  const [amount, setAmount] = useState(0);
-  const guarding = action.kind === "guard";
-  return (
-    <div>
-      <div className="flex items-center gap-2">
-        <AmountInput
-          label={guarding ? DEEP_WORDS.guardAmount : DEEP_WORDS.withdrawAmount}
-          value={amount}
-          max={action.max}
-          disabled={busy}
-          onChange={setAmount}
-        />
-        <HudButton
-          kind={guarding ? "primary" : "secondary"}
-          disabled={busy || amount <= 0 || amount > action.max}
-          onClick={() => onSend(amount)}
-        >
-          {guarding ? DEEP_WORDS.guard : WITHDRAW}
-        </HudButton>
-      </div>
-      {guarding && amount > 0 && BigInt(multiplyByPrecision(amount)) === armyTroops && (
-        <HudNotice tone="warn" line={DEEP_WORDS.guardAll} />
-      )}
-    </div>
+function slotCap(store: NativeFactStore, game_id: number, home: bigint, tier: TroopTier): number {
+  return configManager.getMaxArmySize(store.require("Structure", { game_id, entity_id: home }).base.level, tier);
+}
+
+function transferPlan(
+  store: NativeFactStore,
+  game_id: number,
+  site: Site,
+  selected: NonNullable<Selected>,
+): { slot: number; own: boolean; guard: number; withdraw: number } | undefined {
+  const { troops, owner: home } = selected.army;
+  const army = Number(troops.count) / RESOURCE_PRECISION;
+  const cap = slotCap(store, game_id, home, troops.tier);
+  const own = site.garrisons.find(
+    (each) => each.home === home && each.troops.category === troops.category && each.troops.tier === troops.tier,
   );
+  const taken = new Set(site.garrisons.map((each) => each.slot));
+  const free = Array.from(
+    { length: nativeRuleConstants.DEEP_GUARD_SLOTS },
+    (_, index) => nativeRuleConstants.DEEP_GUARD_SLOTS - 1 - index,
+  ).find((slot) => !taken.has(slot));
+  const slot = own?.slot ?? free;
+  if (slot === undefined) return undefined;
+  const held = own ? Number(own.troops.count) / RESOURCE_PRECISION : 0;
+  return {
+    slot,
+    own: own !== undefined,
+    guard: Math.min(army, Math.max(0, cap - held)),
+    withdraw: Math.min(held, Math.max(0, cap - army)),
+  };
 }
 
 function siteRates(store: NativeFactStore, game_id: number, site: Site, selected: Selected): DeepRates | null {
@@ -318,16 +290,17 @@ function selectionBlock(
   const key = { game_id, explorer_id: selected.army.explorer_id };
   if (store.require("ArmyDay", key).day !== BigInt(site.day)) return "otherDay";
   if (selected.army.troops.count === 0n) return "noTroops";
-  if (site.aspect !== 0 && !isDeepSiteRival(store, site, selected.army.owner, game_id))
-    return deepAlliesGarrison(site.kind) || ownsSite(store, game_id, site, selected) ? "guarding" : "ownerOnly";
   return undefined;
 }
 
-function ownsSite(store: NativeFactStore, game_id: number, site: Site, selected: NonNullable<Selected>): boolean {
-  return store.require("Structure", { game_id, entity_id: selected.army.owner }).owner === site.holder;
-}
-
-function guardView(store: NativeFactStore, game_id: number, site: Site, viewer: bigint | null, now: number): DeepGuard {
+function guardView(
+  store: NativeFactStore,
+  game_id: number,
+  site: Site,
+  viewer: Viewer,
+  nameOf: (address: bigint) => string,
+  now: number,
+): DeepGuard {
   if (site.beastTroops > 0n)
     return {
       kind: "beast",
@@ -338,32 +311,66 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, viewer: 
   const loss = store.require("DeepRules", { game_id }).loss_per_tick;
   const paid = ({ troops }: DeepGarrison) => (troops.count > loss ? troops.count - loss : 0n);
   const total = site.garrisons.reduce((sum, garrison) => sum + paid(garrison), 0n);
-  const aspectId = catalogAspectId(site.aspect);
-  const viewerSide = isViewerOwner(site.holder, viewer)
-    ? "own"
-    : viewerAspects(store, game_id, viewer).has(aspectId)
-      ? "ally"
-      : "rival";
-  return {
-    kind: "held",
-    aspectId,
-    side: viewerSide,
-    next: site.garrisons[0]?.slot,
-    slots: site.garrisons.map((garrison) => {
-      const { slot, home, troops } = garrison;
-      const realm = store.require("Structure", { game_id, entity_id: home });
-      const life = deepTroopsLife(store, game_id, troops.count, loss, now);
-      return {
-        slot,
-        category: troops.category,
-        tier: troops.tier,
-        realm: getStructureName(realm, store).name,
-        troops: Number(troops.count) / RESOURCE_PRECISION,
-        lossPerTick: Number(loss) / RESOURCE_PRECISION,
-        ticks: { left: life.ticksLeft, time: formatDuration(life.secondsLeft) },
-        share: total === 0n ? 0 : Number((paid(garrison) * 100n) / total),
-        mine: realm.owner === viewer,
-      };
-    }),
+  const slot = (garrison: DeepGarrison): DeepGarrisonSlot => {
+    const homeOwner = store.require("Structure", { game_id, entity_id: garrison.home }).owner;
+    const aspect = homeAspect(store, game_id, garrison.home);
+    return {
+      slot: garrison.slot,
+      owner: nameOf(homeOwner),
+      aspectId: catalogAspectId(aspect),
+      side: sideFor(homeOwner, aspect, viewer),
+      troops: { category: garrison.troops.category, tier: garrison.troops.tier },
+      count: Number(garrison.troops.count) / RESOURCE_PRECISION,
+      cap: slotCap(store, game_id, garrison.home, garrison.troops.tier),
+      share: total === 0n ? 0 : Number((paid(garrison) * 100n) / total),
+      timeLeft: formatDuration(deepTroopsLife(store, game_id, garrison.troops.count, loss, now).secondsLeft),
+    };
   };
+  const slots = site.garrisons.map(slot);
+  const owner = site.holder;
+  const mine = site.garrisons.find((_, index) => slots[index]!.side === "own");
+  const side = mine ? "own" : sideFor(owner, site.aspect, viewer);
+  const gloryHome =
+    mine?.home ??
+    (side === "own" || side === "ally" ? viewerHomeInAspect(store, game_id, viewer.address, site.aspect) : undefined);
+  return {
+    kind: "taken",
+    owner: nameOf(owner),
+    aspectId: catalogAspectId(site.aspect),
+    side,
+    slots,
+    mayAdd: mayGuard(site, viewer),
+    alliesMayGuard: deepAlliesGarrison(site.kind),
+    gloryWon: gloryHome === undefined ? undefined : confirmedGlory(store, game_id, gloryHome, mine !== undefined),
+  };
+}
+
+function sideFor(owner: bigint, aspect: number, viewer: Viewer): DeepSide {
+  if (isViewerOwner(owner, viewer.address)) return "own";
+  if (viewer.aspects.has(aspect)) return "ally";
+  return viewer.aspects.size > 0 ? "rival" : "held";
+}
+
+function viewerHomeInAspect(
+  store: NativeFactStore,
+  game_id: number,
+  address: bigint | null,
+  aspect: number,
+): bigint | undefined {
+  if (address === null) return undefined;
+  return [...store.structuresOwnedBy(game_id, address)].find(
+    (structure) => store.get("HomeAspect", { game_id, home: structure.entity_id })?.aspect === aspect,
+  )?.entity_id;
+}
+
+function confirmedGlory(
+  store: NativeFactStore,
+  game_id: number,
+  home: bigint,
+  includeZero: boolean,
+): number | undefined {
+  const member = store.requireOrAbsent("RaceMember", { game_id, entity_id: home });
+  if (!member.known) return undefined;
+  if (!includeZero && member.known.glory === 0n) return undefined;
+  return Number(member.known.glory) / RESOURCE_PRECISION;
 }

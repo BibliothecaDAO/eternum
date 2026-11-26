@@ -8,6 +8,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { realmBoard } from "@/ui/features/frontier/build/build-fixture";
 import { getGuardsByStructure } from "@bibliothecadao/eternum";
 import { GuardSlot } from "@bibliothecadao/types";
+import { SLOT_ADD } from "@/ui/design-system/kit/words";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { ARMY_DEPLOYMENT_SURFACE_ID } from "../utils/open-army-deployment";
 import { structureGuardSlots } from "../utils/defense-slot-utils";
@@ -77,9 +78,9 @@ const pickerSlot = () => {
 it("shows every slot the structure has, the empty ones beside the filled one, the first an attacker meets on the left", () => {
   const guards = mountGuards({ owner: true });
   expect(guards.slots()).toEqual([
-    { title: "Defense Slot 4 is empty", words: "Add", tag: "BUTTON" },
-    { title: "Defense Slot 3 is empty", words: "Add", tag: "BUTTON" },
-    { title: "Defense Slot 2 is empty", words: "Add", tag: "BUTTON" },
+    { title: "Defense Slot 4 is empty", words: SLOT_ADD, tag: "BUTTON" },
+    { title: "Defense Slot 3 is empty", words: SLOT_ADD, tag: "BUTTON" },
+    { title: "Defense Slot 2 is empty", words: SLOT_ADD, tag: "BUTTON" },
     { title: "Defense Slot 1", words: expect.stringContaining("1,000"), tag: "BUTTON" },
   ]);
 });

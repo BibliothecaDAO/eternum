@@ -4077,7 +4077,7 @@ const everyRingSiteDrawn = (drawn) =>
 const siteState = ({ key }) => `JSON.stringify((() => {
   const sheet = document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
   const guard = document.querySelector('[data-kit-sheet] [data-deep-guard="beast"]');
-  const found = guard?.querySelector("[data-deep-beast] .deep-beast__name, [data-fight-side='theirs']");
+  const found = guard?.querySelector("[data-deep-beast] .deep-tile__owner, [data-fight-side='theirs']");
   const beast = found ? found.getAttribute("aria-label") ?? found.textContent : null;
   const slot = ${sitePlateSlot(JSON.stringify(key))};
   if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return { sheet, beast, token: null, inView: false };
@@ -4337,10 +4337,11 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
   }
   const opened = await readUntil(
     () => browser.read(MERGE_STATE),
-    (state) => state.buttons.includes("Attack"),
+    (state) => state.buttons.some((label) => label.startsWith("Attack")),
     SHEET_WAIT_MS,
   );
-  if (!opened.buttons.includes("Attack")) return { before, opened };
+  const attackLabel = opened.buttons.find((label) => label.startsWith("Attack"));
+  if (!attackLabel) return { before, opened };
   const forecast = browser.read(
     `Array.from(document.querySelectorAll('[data-kit-sheet] [data-fight-side]'), node => node.getAttribute('aria-label'))`,
   );
@@ -4357,10 +4358,10 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
     const theirs = rows.find(({ model, value }) => model === "Guard" && Number(value.structure_id) === Number(answer.command.fields.defender_id));
     const count = (row) => (BigInt(row.value.troops.count) / ${RESOURCE_PRECISION}n).toLocaleString("en-US");
     return ours && theirs && document.querySelector('.mp-at[data-key="army:${armyId}"] .mp-count')?.textContent === count(ours)
-      && [...document.querySelectorAll('[data-deep-slots] [data-deep-slot="filled"]')].some((slot) => (slot.getAttribute('aria-label') ?? '').includes(count(theirs)));
+      && [...document.querySelectorAll('[data-deep-guards] [data-guard-slot] .deep-tile__count')].some((tile) => tile.textContent === count(theirs));
   })()`,
   );
-  browser.click("Attack");
+  browser.click(attackLabel);
   await readUntil(
     () =>
       browser.read(
@@ -6071,9 +6072,9 @@ const DEEP_SITE_CARD = `JSON.stringify((() => {
   return {
     name: sheet?.getAttribute("aria-label") ?? null,
     text: sheet?.textContent ?? "",
-    holder: sheet?.querySelector("[data-aspect-holder]")?.dataset.side ?? null,
+    holder: sheet?.querySelector("[data-deep-tag]")?.dataset.deepTag ?? null,
     guard: sheet?.querySelector("[data-deep-guard]")?.dataset.deepGuard ?? null,
-    occupiedSlots: sheet?.querySelectorAll('[data-deep-slot="filled"]').length ?? null,
+    occupiedSlots: sheet?.querySelectorAll("[data-deep-guards] [data-guard-slot]").length ?? null,
     buttons: [...(sheet?.querySelectorAll("button:not([disabled])") ?? [])].map((button) => button.getAttribute("aria-label") || button.textContent.trim()),
   };
 })())`;
@@ -6377,7 +6378,7 @@ async function actAtADeepSite({ browser, extraScreenshot }, shared, slot, want) 
 }
 
 async function actOnTheSite({ browser, extraScreenshot }, want) {
-  const sheetButton = (label) => browser.read(buttonIn("[data-kit-sheet]", `^${label}$`));
+  const sheetButton = (label) => browser.read(buttonIn("[data-kit-sheet]", `^${label}(?:\\s|$)`));
   const move = sheetButton(REHEARSAL_WORDS.move);
   if (move) browser.tap(move.offset);
   const verb = await readUntil(() => sheetButton(want.verb), Boolean, ORDER_OUTCOME_WAIT_MS);

@@ -37,7 +37,6 @@ export {
   IncompleteDeepSyncError,
   homeAspect,
   isBesideDeepSite,
-  isDeepSiteRival,
   readDeepSite,
   readDeepBeastTroops,
   readDeepRingOpening,

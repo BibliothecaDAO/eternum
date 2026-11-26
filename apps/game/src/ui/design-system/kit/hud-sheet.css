@@ -1147,6 +1147,17 @@ span.ui-row__choose {
 .ui-frame__head .ui-panel__title {
   font-family: var(--hud-font-display);
 }
+.ui-frame__head > .ui-panel__head {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+.ui-frame__head > .ui-panel__head > :not(.ui-panel__cue) {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.ui-frame__head > .ui-panel__head > .ui-panel__cue {
+  flex: none;
+}
 .ui-window__bar {
   display: flex;
   align-items: center;

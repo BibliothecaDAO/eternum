@@ -425,9 +425,10 @@ average over 12 (the machine is shared: such a run is not evidence). A blocked s
 warnings, the reload with its cost.
 
 The shared Deep is reached through the spire's Deep entry or the map layer menu. Select a field army, then a Deep site:
-its card offers Attack against a beast or a rival Aspect's garrison, or Take for an empty site. A site's garrison slots
-are fought highest first. `--steps lab-deep` opens the real map beside a Bane altar an ally garrisons, visits each site
-and frames the ring. The lab snapshot is `/lab/game?scenario=deep`; its current facts also drive the site binding's
+its card offers Attack against a beast or a rival Aspect's garrison, or Take for an empty site; to a player of the
+holder's Aspect beside it, Guard and Withdraw move troops between the army and a slot. A site's garrison slots are
+fought highest first. `--steps lab-deep` opens the real map beside a Bane altar an ally garrisons, visits each site and
+frames the ring. The lab snapshot is `/lab/game?scenario=deep`; its current facts also drive the site binding's
 component tests.
 
 The race board opens from Season, or by selecting a fixed Aspect hyperstructure in the Deep. It reads heights, Glory,

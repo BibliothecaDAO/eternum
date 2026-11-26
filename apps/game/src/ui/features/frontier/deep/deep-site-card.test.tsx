@@ -11,10 +11,18 @@ import { deepScenario, HELD_SITE } from "@/lab/game/deep-scenario";
 import { raceScenario } from "@/lab/game/race-scenario";
 import { baneScenario } from "@/lab/game/bane-scenario";
 import { configManager, type ResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { aspectName, catalogAspectId, deepSites, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import {
+  aspectName,
+  catalogAspectId,
+  deepSites,
+  formatDuration,
+  formatShortDuration,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+} from "@bibliothecadao/types";
 import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
 import { nativeOathConstants as oaths, nativeRuleConstants, readDeepSites } from "@bibliothecadao/eternum/game-client";
-import { DEEP_WORDS, WITHDRAW } from "@/ui/design-system/kit/words";
+import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { DeepSiteCard } from "./deep-site-card";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 
@@ -75,7 +83,28 @@ const draw = (now?: number, scenario = deepScenario()) => {
   render();
   const button = (name: string) =>
     [...host.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent?.startsWith(name));
-  return { scenario, store, host, attack, guard, withdraw, button, render, unmount: () => act(() => root.unmount()) };
+  const transfer = async (open: string, amount: number) => {
+    act(() => button(open)!.click());
+    const input = host.querySelector<HTMLInputElement>("[data-deep-transfer] input")!;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, String(amount));
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    const confirm = [...host.querySelectorAll<HTMLButtonElement>("[data-deep-transfer] button")].at(-1)!;
+    await act(async () => confirm.click());
+  };
+  return {
+    scenario,
+    store,
+    host,
+    attack,
+    guard,
+    withdraw,
+    button,
+    transfer,
+    render,
+    unmount: () => act(() => root.unmount()),
+  };
 };
 
 describe("the Deep site's live native binding", () => {
@@ -109,7 +138,7 @@ describe("the Deep site's live native binding", () => {
         else expect(rate("glory")).toBe(`+${building}`);
         if (site.kind === nativeRuleConstants.DEEP_FOUNDATION) expect(rate("height")).toBe(`+${building}`);
         if (site.kind === nativeRuleConstants.DEEP_ALTAR)
-          expect(hud.host.querySelector("[data-rate='bar']")?.getAttribute("data-tip")).toBe("300 of 1,500");
+          expect(hud.host.querySelector("[data-rate='bar']")?.textContent).toContain(DEEP_WORDS.bar(300, 1_500));
       }
       hud.render(
         <DeepSiteCard
@@ -176,19 +205,20 @@ describe("the Deep site's live native binding", () => {
     }
   });
 
-  it("offers no order on a site its own Aspect holds, and shows the garrison in its slots", () => {
+  it("shows an own held site's guards, clears to undefended 0/4 with Add guard, and stays own without a selected army", () => {
     const hud = draw();
     try {
       const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((candidate) => candidate.kind === HELD)!;
-      const held = DEEP_WORDS.tag.held(aspectName(catalogAspectId(site.aspect)));
-      expect(hud.host.querySelector("[data-deep-tag]")?.textContent).toBe(held);
-      expect(hud.button("Attack")).toBeUndefined();
+      const aspect = aspectName(catalogAspectId(site.aspect));
+      expect(hud.host.querySelector("[data-deep-tag]")?.textContent).toBe(
+        DEEP_WORDS.tag.own(aspect, 1, nativeRuleConstants.DEEP_GUARD_SLOTS),
+      );
+      expect(hud.button(DEEP_WORDS.attack)).toBeUndefined();
       expect(hud.host.querySelector("[data-fight-side]")).toBeNull();
-      expect(hud.host.querySelector("[data-aspect-holder]")?.getAttribute("data-side")).toBe("own");
-      expect(hud.button(DEEP_WORDS.guard)).toBeDefined();
-      expect(hud.button(WITHDRAW)).toBeUndefined();
-      expect(hud.host.querySelectorAll('[data-deep-slot="filled"]')).toHaveLength(1);
-      expect(hud.host.querySelectorAll("[data-deep-slot]")).toHaveLength(4);
+      expect(hud.button(DEEP_WORDS.guardShort)).toBeDefined();
+      expect(hud.button(DEEP_WORDS.withdraw)).toBeUndefined();
+      expect(hud.host.querySelectorAll("[data-guard-slot]")).toHaveLength(1);
+      expect(hud.host.querySelectorAll("[data-deep-guards] .deep-tile")).toHaveLength(4);
       act(() =>
         hud.store.applyFacts(
           site.garrisons.map(({ slot }) => ({
@@ -199,12 +229,18 @@ describe("the Deep site's live native binding", () => {
         ),
       );
       hud.render();
-      expect(hud.host.querySelector("[data-deep-tag]")?.textContent).toBe(held);
-      expect(hud.host.querySelectorAll('[data-deep-slot="filled"]')).toHaveLength(0);
-      expect(hud.host.querySelectorAll('[data-deep-slot="empty"]')).toHaveLength(nativeRuleConstants.DEEP_GUARD_SLOTS);
-      expect(hud.host.querySelector("[data-deep-poisoned]")).toBeNull();
+      expect(hud.host.querySelector("[data-deep-tag]")?.textContent).toBe(
+        DEEP_WORDS.tag.own(aspect, 0, nativeRuleConstants.DEEP_GUARD_SLOTS),
+      );
+      expect(hud.host.querySelectorAll("[data-guard-slot]")).toHaveLength(0);
+      expect(hud.host.querySelectorAll('[data-empty="add"]')).toHaveLength(nativeRuleConstants.DEEP_GUARD_SLOTS);
+      expect(hud.host.querySelector("[data-deep-undefended]")?.textContent).toBe(DEEP_WORDS.undefendedLine);
+      expect(hud.button(DEEP_WORDS.addGuard)).toBeDefined();
       act(() => useUIStore.getState().selectOnMap(null));
-      expect(hud.host.querySelector("[data-deep-tag]")?.textContent).toBe(held);
+      expect(hud.host.querySelector("[data-deep-tag]")?.textContent).toBe(
+        DEEP_WORDS.tag.own(aspect, 0, nativeRuleConstants.DEEP_GUARD_SLOTS),
+      );
+      expect(hud.host.querySelector(".ui-window__foot")?.textContent).toBe(DEEP_WORDS.noAdjacent);
     } finally {
       hud.unmount();
     }
@@ -213,15 +249,9 @@ describe("the Deep site's live native binding", () => {
   it("guards an empty slot and withdraws from its own matching slot through Transfer", async () => {
     const hud = draw();
     const site = () => readDeepSites(hud.store, hud.scenario.startsAt, 1).find((candidate) => candidate.kind === HELD)!;
-    const typeAmount = (label: string, amount: number) => {
-      const input = hud.host.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
-      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, String(amount));
-      act(() => input.dispatchEvent(new Event("input", { bubbles: true })));
-    };
     try {
       const slot = nativeRuleConstants.DEEP_GUARD_SLOTS - 1;
-      typeAmount(DEEP_WORDS.guardAmount, 100);
-      await act(async () => hud.button(DEEP_WORDS.guard)!.click());
+      await hud.transfer(DEEP_WORDS.guardShort, 100);
       expect(hud.guard).toHaveBeenCalledWith(
         expect.objectContaining({
           from_explorer_id: 201,
@@ -261,8 +291,7 @@ describe("the Deep site's live native binding", () => {
         ]),
       );
       hud.render();
-      typeAmount(DEEP_WORDS.withdrawAmount, 50);
-      await act(async () => hud.button(WITHDRAW)!.click());
+      await hud.transfer(DEEP_WORDS.withdraw, 50);
       expect(hud.withdraw).toHaveBeenCalledWith(
         expect.objectContaining({
           from_structure_id: Number(site().id),
@@ -281,14 +310,20 @@ describe("the Deep site's live native binding", () => {
     try {
       const held = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.kind === HELD)!;
       const row = hud.store.require("DeepSite", { game_id: 1, entity_id: held.id });
+      const structure = hud.store.require("Structure", { game_id: 1, entity_id: held.id });
       act(() =>
         hud.store.applyFacts([
           { model: "DeepSite", key: hud.store.wireKeyOf("DeepSite", row)!, value: { ...row, aspect: 2 } },
+          {
+            model: "Structure",
+            key: hud.store.wireKeyOf("Structure", structure)!,
+            value: { ...structure, owner: 0x333n },
+          },
         ]),
       );
       hud.render();
-      expect(hud.button("Attack")?.disabled).toBe(false);
-      await act(async () => hud.button("Attack")!.click());
+      expect(hud.button(DEEP_WORDS.attack)?.disabled).toBe(false);
+      await act(async () => hud.button(DEEP_WORDS.attack)!.click());
       const mine = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.kind === HELD)!;
       expect(hud.attack).toHaveBeenCalledTimes(1);
       expect(hud.attack).toHaveBeenCalledWith(
@@ -316,11 +351,9 @@ it("counts only actual army-tick boundaries before a day ending between ticks", 
       ]),
     );
     hud.render();
-    const tips = [...hud.host.querySelectorAll('[data-deep-slot="filled"]')].map(
-      (node) => node.getAttribute("data-tip") ?? "",
-    );
-    expect(tips.join(" ")).toContain("5 ticks left");
-    expect(tips.join(" ")).not.toContain("6 ticks left");
+    const tips = [...hud.host.querySelectorAll("[data-guard-slot]")].map((node) => node.getAttribute("data-tip") ?? "");
+    expect(tips.join(" ")).toContain(`${formatDuration(end - 361)} left`);
+    expect(tips.join(" ")).not.toContain(`${formatDuration(end + interval - 361)} left`);
   } finally {
     hud.unmount();
   }
@@ -329,14 +362,13 @@ it("counts only actual army-tick boundaries before a day ending between ticks", 
 it("shows the site's garrison drain even when the selected field army has Vitriol", () => {
   const hud = draw();
   try {
-    const mine = () =>
-      readDeepSites(hud.store, hud.scenario.startsAt, 1).find(
-        (site) => site.kind === nativeRuleConstants.DEEP_MINE && site.open,
-      )!;
-    const drain = () => hud.host.querySelector("[data-rate='drain'] b")?.textContent;
-    const base = hud.store.require("DeepRules", { game_id: 1 }).loss_per_tick / BigInt(RESOURCE_PRECISION);
-    hud.render(<DeepSiteCard site={mine()} onClose={() => {}} />);
-    expect(drain()).toBe(`−${base.toLocaleString("en-US")}`);
+    const held = () => readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.kind === HELD)!;
+    const drain = () => hud.host.querySelector("[data-guard-slot] .deep-tile__drain")?.textContent;
+    const interval = Number(hud.store.require("SliceRules", { game_id: 1 }).tick_config.armies_tick_in_seconds);
+    const base = Number(hud.store.require("DeepRules", { game_id: 1 }).loss_per_tick / BigInt(RESOURCE_PRECISION));
+    const expected = DEEP_WORDS.slotDrain(base, formatShortDuration(interval));
+    hud.render(<DeepSiteCard site={held()} onClose={() => {}} />);
+    expect(drain()).toBe(expected);
     const key = { game_id: 1, explorer_id: 201 };
     const progress = hud.store.require("ArmyProgress", key);
     act(() =>
@@ -348,8 +380,8 @@ it("shows the site's garrison drain even when the selected field army has Vitrio
         },
       ]),
     );
-    hud.render(<DeepSiteCard site={mine()} onClose={() => {}} />);
-    expect(drain()).toBe(`−${base.toLocaleString("en-US")}`);
+    hud.render(<DeepSiteCard site={held()} onClose={() => {}} />);
+    expect(drain()).toBe(expected);
   } finally {
     hud.unmount();
   }
@@ -402,8 +434,8 @@ it("previews the Deep garrison's opening and repeated exchange before sending ea
     ]) {
       expect(labels().some((label) => label?.includes(`→ ${ownLeft},`))).toBe(true);
       expect(labels().some((label) => label?.includes(`→ ${enemyLeft},`))).toBe(true);
-      expect(hud.button("Attack")?.disabled).toBe(false);
-      await act(async () => hud.button("Attack")!.click());
+      expect(hud.button(DEEP_WORDS.attack)?.disabled).toBe(false);
+      await act(async () => hud.button(DEEP_WORDS.attack)!.click());
       const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(({ kind }) => kind === HELD)!;
       const answer = hud.scenario.answer(
         {
@@ -459,11 +491,8 @@ it("shows each garrison's share of the next tick from the troops it keeps after 
   ] as never);
   const hud = draw(undefined, scenario);
   try {
-    const tips = [...hud.host.querySelectorAll('[data-deep-slot="filled"]')].map(
-      (node) => node.getAttribute("data-tip") ?? "",
-    );
-    expect(tips.join(" ")).toContain(DEEP_WORDS.share(75));
-    expect(tips.join(" ")).toContain(DEEP_WORDS.share(25));
+    const shares = [...hud.host.querySelectorAll("[data-guard-slot]")].map((node) => node.getAttribute("data-share"));
+    expect(shares.sort()).toEqual(["25", "75"]);
   } finally {
     hud.unmount();
   }

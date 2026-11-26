@@ -1158,14 +1158,17 @@ Deep in the map's layers, or looking through a spire into the Deep, opens the vi
 (the centre for a spectator; `deepViewFor`, core `deep-geometry.ts`). Its sites stand in four rings of six corner sites
 around the centre, each ring one Hyperstructure archive, one Essence core, one Ethereal mine and one Bane altar and two
 more kinds drawn each day. Ring 1 opens with the day, each later ring when the Realms entered today reach its count; a
-closed site's card says so and refuses Attack and Join; on the map it stands dormant, its building and no beast, pinned
+closed site's card says so and refuses Attack and Guard; on the map it stands dormant, its building and no beast, pinned
 with a lock in place of its kind, its plate reading "Opens at N Realms today" (`/lab/game?scenario=deep-closed`, checked
 by `pnpm --dir apps/game playtest:landing lab-deep-closed`). The map draws the archive as a hyperstructure's bare
 foundation, the core as a rift, the mine as a fragment mine and the altar as a Shrine (`DEEP_SITE_LOOKS`,
 `src/three/managers/map-site-manager.ts`). While an open site's beast guards it, that beast stands alone on the tile at
 its row's size and idle, the building hidden as a camp's is (`DEEP_BEASTS`: the archive's Colossus, the core's Warlock,
-the mine's Balrog, the altar's Basilisk on its own model); the building returns once armies hold the site. Each site's
-plate stays over its model.
+the mine's Balrog, the altar's Basilisk on its own model); the building returns once a player holds the site. Each
+site's plate stays over its model. Its card (select the site) shows who holds it, its yield and its four guard slots in
+fight order, each slot's detail on hover; a player of the holder's Aspect with an army beside it presses Guard (or an
+Add tile) and an amount to move troops into a slot, and Withdraw (or their own tile) to take them back: allies on a
+Hyperstructure archive or a Bane altar, only the owner on an Essence core or an Ethereal mine.
 
 Each Aspect’s tower height appears on **Season, Aspects**. The towers have no map entities.
 

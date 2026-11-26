@@ -779,6 +779,8 @@ export const startsNewArmies = (attribute: string, tier: number): RankedWords =>
 
 /** A map plate's words: a thing with no guard, the troops on their way to one. */
 export const UNDEFENDED = "Undefended";
+export const SLOT_ADD = "Add";
+export const SLOT_EMPTY = "Empty";
 /**
  * A site as its map hover and its card both name it: its own name, then its kind ("Brimdeep Rift"); the kind alone
  * where it has no name. A kind that is its guard (a camp's Troll) is said once, as the guard, so it is left out here.
@@ -886,65 +888,91 @@ export const ATTACK_REFUSAL_WORDS = {
   "insufficient-stamina": "Not enough stamina",
 } as const satisfies Record<AttackRefusal, string>;
 
+const slotFill = (filled: number, total: number) => `${formatExact(filled)}/${formatExact(total)}`;
+
 export const DEEP_WORDS = {
   title: DEEP,
   gate: "Gate",
   orderFailed: `Could not send ${DEEP} order.`,
   purpose: {
-    foundation: "Holding raises your Aspect's hyperstructure and earns Glory",
-    core: "Essence for you",
-    mine: "Labor for you",
-    altar: "Bane on a rival",
+    foundation: "Raises Aspect height & pays Glory by guards.",
+    core: "Pays Essence by guards.",
+    mine: "Pays Labor by guards.",
+    altar: "Charges Aspect Bane bar & pays Glory by guards.",
   },
   tag: {
     open: (ring: number) => `Open · Ring ${formatExact(ring)}`,
-    held: (aspect: string) => `Held · ${aspect}`,
     locked: (ring: number) => `Locked · Ring ${formatExact(ring)}`,
-    rival: (aspect: string, filled: number, total: number) =>
-      `Rival · ${aspect} · ${formatExact(filled)}/${formatExact(total)}`,
+    own: (aspect: string, filled: number, total: number) => `Own · ${aspect} · ${slotFill(filled, total)}`,
+    ally: (aspect: string, filled: number, total: number) => `Ally · ${aspect} · ${slotFill(filled, total)}`,
+    rival: (aspect: string, filled: number, total: number) => `Rival · ${aspect} · ${slotFill(filled, total)}`,
+    held: (aspect: string, filled: number, total: number) => `Held · ${aspect} · ${slotFill(filled, total)}`,
   },
+  heldBy: "Held by",
   perTick: (cadence: string) => `/ ${cadence}`,
-  splitCell: (what: string) => `${what} · split by troops`,
-  poisonCell: `${DEEP} poison per guard`,
-  poisonStrip: (troops: number, cadence: string) =>
-    `${DEEP} poison · drains ${formatExact(troops)} troops every ${cadence}`,
   poisonPanel: (troops: number, cadence: string, ticks: number, time: string) =>
     `${DEEP} poison · −${formatExact(troops)} every ${cadence} · ${formatExact(ticks)} ticks · ${time} left`,
   poisonCompact: (troops: number, cadence: string, time: string) =>
     `−${formatExact(troops)} / ${cadence} · ${time} left`,
   poisonToken: (troops: number) => `−${formatExact(troops)}`,
-  poisoned: "Poisoned",
   ratesWhenOpen: "Rates set when open",
   kinds: { glory: "Glory", height: "Aspect height", essence: ESSENCE, labor: LABOR, bar: "Bane bar" },
-  troops: (troops: number) => `${formatExact(troops)} troops`,
-  slotsOpen: (free: number) => `${formatExact(free)} slots open`,
   entered: (entered: number, realms: number) => `${formatExact(entered)} / ${formatExact(realms)}`,
   /** A Deep site's plate on the map: nobody holds it, and what a tick held pays. */
   shared: "Every Aspect fights for it",
-  foundationPlate: (height: number) => `+${formatExact(height)} height a tick to the holder's hyperstructure`,
-  altarPlate: "Fills the holder's bane bar",
+  foundationPlate: (height: number) => `+${formatExact(height)} height a tick when guarded`,
+  altarPlate: "Charges Aspect Bane bar when guarded",
   glory: (amount: number) => `${formatExact(amount)} Glory`,
   bar: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
-  open: "Unguarded: next army takes it",
-  guardsCount: (filled: number, total: number) => `${formatExact(filled)} / ${formatExact(total)} Guards`,
-  drainTick: (troops: number) => `−${formatExact(troops)} / tick`,
-  freeSlot: "Free slot",
-  facesNext: "fought next",
-  /** How long a guard's troops last: its army ticks, and the time until the last of them. */
-  lasts: (ticks: number, time: string) => `${formatExact(ticks)} ticks left (${time})`,
+  gloryTip: (rate: number, cadence: string, share: number) =>
+    `Your Glory from every site · +${formatExact(rate)} / ${cadence} from your guards here, ${share}% of its pay`,
+  gloryIdleTip: "Your Glory from every site · place a guard here to earn",
+  guardCount: (filled: number, total: number) => `Guards · ${formatExact(filled)} / ${formatExact(total)}`,
+  slotOrder: { cue: "Leftmost fought first", first: "1st", seize: "Clear all to seize" },
+  slotTip: (
+    owner: string,
+    troop: string,
+    count: number,
+    cap: number,
+    share: number,
+    drain: number,
+    cadence: string,
+    left: string,
+    interactive: boolean,
+    gloryRate?: number,
+  ) =>
+    [
+      `${owner} · ${troop} · ${formatExact(count)} / ${formatExact(cap)}`,
+      gloryRate && gloryRate > 0 ? `${share}% share (+${formatExact(gloryRate)} Glory/${cadence})` : `${share}% share`,
+      drain > 0 && cadence ? `−${formatExact(drain)}/${cadence} poison` : undefined,
+      `${left} left`,
+      interactive ? "Click to Guard or Withdraw" : undefined,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+  beastTip: (beast: string, mark: string) => `${beast} · ${mark}`,
+  slotDrain: (drain: number, cadence: string) => `−${formatExact(drain)}/${cadence}`,
+  openSlotTip: (aspect: string) => `Open slot · Owner & ${aspect} allies may guard (one slot per player & troop type)`,
+  openOwnerSlotTip: "Open slot · Owner may guard (one slot per troop type)",
+  guardAmount: (count: number) => `Guard ${formatExact(count)}`,
+  withdrawAmount: (count: number) => `Withdraw ${formatExact(count)}`,
+  guardAll: "Sending every troop removes this army and its Oaths.",
+  undefendedLine: "Place a guard to earn & defend.",
+  dayEndPoison: (drain: number, cadence: string) => `−${formatExact(drain)}/${cadence} poison per slot`,
+  dayEndLost: "lost at day's end",
+  addGuard: "Add guard",
+  guardWith: (troop: string | undefined) => (troop ? `Guard with ${troop}` : "Add guard"),
+  guardShort: "Guard",
+  withdraw: "Withdraw",
+  attackOf: (defender: string) => `Attack ${defender}`,
+  noAdjacent: "Move an army beside to guard.",
+  slotsFull: (total: number) => `All ${formatExact(total)} guard slots are full.`,
   /** What the army panel's chip of those ticks counts. */
   inTheDeep: `In the ${DEEP}`,
-  share: (percent: number) => `${percent}% of each tick`,
   attack: "Attack",
   take: "Take",
-  guard: "Guard",
-  guardAmount: "Troops to send",
-  withdrawAmount: "Troops to withdraw",
-  guardAll: "Sending every troop removes this army and its Oaths.",
+  ownerOnly: "Only the site's owner may guard here",
   pickArmy: `Select an army in the ${DEEP}`,
-  guarding: "Your Aspect holds this site",
-  ownerOnly: "Only the site's owner can guard here",
-  rival: "Held by a rival Aspect",
   otherDay: "Only today's armies can fight here",
   opensAt: (realms: number) => `Opens at ${formatExact(realms)} Realms today`,
   noTroops: "Army has no troops left",
