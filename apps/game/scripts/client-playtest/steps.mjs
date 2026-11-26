@@ -6449,7 +6449,6 @@ async function deployAnArmy(context, atMost) {
   return arrived ? { receipt } : { receipt, failed: "the deployed army did not reach the dock" };
 }
 
-
 const SITE_SEARCH_REVEALS = 6;
 
 async function buildABarracksOnce(context) {

@@ -177,18 +177,18 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   no site beside its armies forecasts a win (a loss, a guard that survives, or no forecast read), the account deploys
   its troops at home once with Max and searches on. Then the host enters the Deep through its Spire once the realm knows
   Spire lore, attacks an open site's beast, and checks that the site belongs to their Aspect with empty garrison slots.
-  The native lifecycle suite measures garrison catch-up and verifies the settled payouts. The friend then enters the Deep, attacks a
-  rival's guard and takes an empty site, which exist only when another Aspect holds a site or a site's guards died. An
-  account whose dock is empty (a new day ends every army) first deploys an army of at most 500 of its troops at home,
-  keeping the rest for that raise; Max keeps the wheat the army burns revealing its bar, so a raised army explores on.
-  With an army out, the host's page must offer no Refill and no shop, and an Oath pick no Redraw, while the game's rules
-  as the page holds them (`window.__eternumFragmentSpends()`) enable none of BuySeal, BuyStamina and RerollOath: the
-  mask the contract refuses them by ("command disabled"). Without Spire lore the Deep steps are blocked with the Spire's
-  own row. `--steps s1-testnet` plays the host alone in a testnet game entered from its Play card: founding, an army
-  sent, and the same Fragment spends check. An action passes only when its receipt from the chain's node is confirmed,
-  succeeded and not refused by the game (`scripts/client-playtest/chain-receipts.mjs`, which also records each play's l2
-  gas and event count); what the game does not offer yet is blocked with what the page said, and a rerun in the same
-  game passes the foundings already made.
+  The native lifecycle suite measures garrison catch-up and verifies the settled payouts. The friend then enters the
+  Deep, attacks a rival's guard and takes an empty site, which exist only when another Aspect holds a site or a site's
+  guards died. An account whose dock is empty (a new day ends every army) first deploys an army of at most 500 of its
+  troops at home, keeping the rest for that raise; Max keeps the wheat the army burns revealing its bar, so a raised
+  army explores on. With an army out, the host's page must offer no Refill and no shop, and an Oath pick no Redraw,
+  while the game's rules as the page holds them (`window.__eternumFragmentSpends()`) enable none of BuySeal, BuyStamina
+  and RerollOath: the mask the contract refuses them by ("command disabled"). Without Spire lore the Deep steps are
+  blocked with the Spire's own row. `--steps s1-testnet` plays the host alone in a testnet game entered from its Play
+  card: founding, an army sent, and the same Fragment spends check. An action passes only when its receipt from the
+  chain's node is confirmed, succeeded and not refused by the game (`scripts/client-playtest/chain-receipts.mjs`, which
+  also records each play's l2 gas and event count); what the game does not offer yet is blocked with what the page said,
+  and a rerun in the same game passes the foundings already made.
 - **Signing in.** Each player keeps a profile under `.context/playtest-profiles/<email>`; agent-browser is handed it on
   every command (it relaunches on a temporary profile for a command that omits it). Each run opens the home page first:
   a signed-in player's bar shows them and the run goes on at once; a signed-out one presses Connect and signs in as a
