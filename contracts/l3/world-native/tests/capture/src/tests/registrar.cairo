@@ -590,7 +590,7 @@ fn frontier_sites_persist_the_seeded_guard_and_initial_count() {
 
 
 #[test]
-fn frontier_discovery_reads_home_knowledge_and_leaves_each_found_shrine_or_well_standing() {
+fn frontier_discovery_reads_home_knowledge_without_placing_shrines_or_wells() {
     let d = setup();
     let (game_id, home, _) = expedition_home(d);
     let (key, _) = expedition_armies(d, home);
@@ -666,14 +666,7 @@ fn frontier_discovery_reads_home_knowledge_and_leaves_each_found_shrine_or_well_
         );
         assert_eq!(found, expected);
         stop_cheat_caller_address(d.games);
-        let site = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).unwrap();
-        let standing = if lore == crate::research::LORE_SHRINES {
-            crate::taxonomy::SHRINE_OCCUPIER
-        } else {
-            crate::taxonomy::WELL_OCCUPIER
-        };
-        assert_eq!(site.category, standing);
-        assert!(!site.is_structure);
+        assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
         snforge_std::interact_with_state(
             d.games, || crate::logic::research::write(home, crate::research::RealmKnowledge { learned: 0 }),
         );

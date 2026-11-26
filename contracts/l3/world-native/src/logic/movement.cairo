@@ -90,6 +90,9 @@ pub mod MovementLogic {
             if discovery == crate::discovery::Discovery::None {
                 explorer.coord = destination;
             }
+            if discovery == crate::discovery::Discovery::Well {
+                crate::logic::oaths::refill_at_well(key, ref explorer.troops, rules.troop_stamina_config);
+            }
             crate::logic::map::MapState::occupy(
                 tile_key(game_id, explorer.coord),
                 command.explorer_id,
