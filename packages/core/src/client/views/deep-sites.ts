@@ -155,7 +155,8 @@ function todaysBeast(store: NativeFactStore, today: DeepDay, site: NativeRows["D
   const key = { game_id: site.game_id, structure_id: site.entity_id, slot: 0 };
   if (site.aspect !== 0) return { current, guard: store.get("Guard", key), troops: 0n, category };
   const guard = store.get("Guard", key);
-  if (!guard && !store.absenceKnown("Guard", key).known) throw new IncompleteDeepSyncError("Deep beast is unknown");
+  if (!guard && !store.absenceKnown("Guard", key).known)
+    throw new IncompleteDeepSyncError(`${layerName(DEEP_DEPTH)} beast is unknown`);
   return { current, guard, troops: guard?.troops.count ?? 0n, category: guard?.troops.category ?? category };
 }
 
