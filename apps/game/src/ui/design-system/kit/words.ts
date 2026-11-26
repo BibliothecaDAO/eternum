@@ -575,6 +575,11 @@ export const COSMETICS_WORDS = {
   useDefaultOrder: "Use default order",
   connectToEquip: "Connect to equip",
   standing: { owned: "Owned", pass: "Pass", event: "Event", wonder: "Wonder" },
+  otherAspect: "Other Aspect",
+  notWearableOnRealm: "Not wearable on this Realm",
+  otherAspectNote: (skinAspect: string, realmAspect: string) =>
+    `Owned with Season 1 Pass · your Realm is ${realmAspect}, so only ${skinAspect} Realms can wear this.`,
+  noRealmAspectNote: (skinAspect: string) => `Owned with Season 1 Pass · create a ${skinAspect} Realm to wear this.`,
   unlockInPass: "Unlock in Season 1 Pass",
   eventExclusive: "Event exclusive",
   eventGone: "Event exclusive · no longer available",

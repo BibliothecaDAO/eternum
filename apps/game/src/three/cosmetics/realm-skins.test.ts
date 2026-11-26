@@ -11,6 +11,7 @@ import {
   realmSkinIcon,
   realmSkinIsDrawn,
   realmSkinStanding,
+  realmSkinWearableOnRealm,
   wornRealmSkin,
   type RealmSkinFacts,
 } from "./realm-skins";
@@ -55,10 +56,29 @@ describe("a realm skin's standing, from the facts alone", () => {
     expect(realmSkinStanding(skin("devcon-golden"), everything)).toBe("event");
   });
 
-  it("owns the Season 1 skin of the player's own Aspect only once the Seal is held", () => {
-    expect(realmSkinStanding(skin("season-1-luminary"), { ...NOTHING, aspect: 2 })).toBe("pass");
-    expect(realmSkinStanding(skin("season-1-luminary"), { ...NOTHING, sealHeld: true, aspect: 2 })).toBe("owned");
-    expect(realmSkinStanding(skin("season-1-havoc"), { ...NOTHING, sealHeld: true, aspect: 2 })).toBe("pass");
+  it("owns all four Season 1 Aspect skins once the Seal is held, regardless of realm Aspect", () => {
+    const seasonOne = REALM_SKINS.filter((each) => each.family === "season-1");
+    expect(seasonOne).toHaveLength(4);
+    for (const each of seasonOne) {
+      expect(realmSkinStanding(each, { ...NOTHING, aspect: 2 })).toBe("pass");
+      expect(realmSkinStanding(each, { ...NOTHING, sealHeld: true, aspect: 2 })).toBe("owned");
+      expect(realmSkinStanding(each, { ...NOTHING, sealHeld: true, aspect: null })).toBe("owned");
+    }
+  });
+
+  it("marks only the realm's own Aspect and unaligned skins as wearable on the realm", () => {
+    const luminaryRealm: RealmSkinFacts = { ...NOTHING, sealHeld: true, aspect: 2 };
+    expect(realmSkinWearableOnRealm(BASE_REALM_SKIN, luminaryRealm)).toBe(true);
+    expect(realmSkinWearableOnRealm(skin("season-1-luminary"), luminaryRealm)).toBe(true);
+    expect(realmSkinWearableOnRealm(skin("season-1-prowess"), luminaryRealm)).toBe(false);
+    expect(realmSkinWearableOnRealm(skin("season-1-havoc"), luminaryRealm)).toBe(false);
+    expect(realmSkinWearableOnRealm(skin("season-1-insight"), luminaryRealm)).toBe(false);
+
+    const noRealm: RealmSkinFacts = { ...NOTHING, sealHeld: true, aspect: null };
+    expect(realmSkinWearableOnRealm(BASE_REALM_SKIN, noRealm)).toBe(true);
+    for (const each of REALM_SKINS.filter((item) => item.family === "season-1")) {
+      expect(realmSkinWearableOnRealm(each, noRealm)).toBe(false);
+    }
   });
 
   it("owns the Wonder skin of the realm's own Aspect only while that realm holds a Wonder", () => {

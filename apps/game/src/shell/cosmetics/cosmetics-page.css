@@ -156,6 +156,21 @@
   opacity: 0.78;
 }
 
+.cosmetics__card[data-other-aspect="true"] .cosmetics__art > :first-child {
+  opacity: 0.72;
+}
+
+.cosmetics__card-note {
+  font-size: var(--app-text-label);
+  color: var(--app-muted);
+}
+
+.cosmetics__wearable {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.2);
+}
+
 .cosmetics__badge {
   position: absolute;
   top: theme(spacing.1);
@@ -180,6 +195,11 @@
 .cosmetics__badge[data-standing="event"] {
   border-color: var(--app-line-strong);
   color: var(--app-muted);
+}
+
+.cosmetics__badge[data-other-aspect="true"] {
+  border-color: color-mix(in srgb, var(--app-gold) 55%, var(--app-line-strong));
+  color: color-mix(in srgb, var(--app-gold) 78%, var(--app-muted));
 }
 
 .cosmetics__name {

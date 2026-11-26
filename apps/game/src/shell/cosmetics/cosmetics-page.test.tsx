@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { HeraldPlayerStructure } from "@bibliothecadao/eternum/game-sync";
 import { TransactionNoAnswerError } from "@bibliothecadao/eternum/game-client";
-import { seasonGameName, StructureType } from "@bibliothecadao/types";
+import { aspectName, seasonGameName, StructureType } from "@bibliothecadao/types";
 
 const directory = vi.hoisted(() => ({ games: [] as unknown[] | null, confirmedBlock: 10 }));
 vi.mock("../herald", async (original) => ({
@@ -229,17 +229,84 @@ describe("the Cosmetics page", () => {
     });
   });
 
-  it("owns the Season 1 skin of the player's Aspect once the Seal is held, and the Wonder skin of a Wonder realm", async () => {
+  it("owns all four Season 1 Aspect skins once the Seal is held, and only the Wonder skin of a Wonder realm", async () => {
     directory.games = [season([realm({ aspect: 3, has_wonder: true })], true)];
     const owned = Object.entries(standings(await open()))
       .filter(([, standing]) => standing === "owned")
       .map(([skin]) => skin);
-    expect(owned.sort()).toEqual(["base", "season-1-havoc", "wonder-havoc"]);
+    expect(owned.sort()).toEqual([
+      "base",
+      "season-1-havoc",
+      "season-1-insight",
+      "season-1-luminary",
+      "season-1-prowess",
+      "wonder-havoc",
+    ]);
   });
 
-  it("leaves a Season 1 skin locked to the pass while the Seal is not held", async () => {
+  it("shows 4 of 4 Season 1 skins owned with Pass and marks the other three Aspects as not wearable on this Realm", async () => {
+    player.signedIn = true;
+    directory.games = [season([realm({ entity_id: 7, aspect: 2 })], true)];
+    const container = await open();
+    expect(container.textContent).toContain(COSMETICS_WORDS.ownedOfPass(4, 4));
+    expect(container.querySelector(".cosmetics__owned")?.textContent).toBe(COSMETICS_WORDS.ownedCount(5));
+
+    const luminaryCard = container.querySelector<HTMLElement>('[data-skin="season-1-luminary"]')!;
+    expect(luminaryCard.dataset.standing).toBe("owned");
+    expect(luminaryCard.dataset.wearable).toBe("true");
+    expect(luminaryCard.dataset.otherAspect).toBeUndefined();
+
+    for (const other of [
+      { id: "season-1-prowess", aspect: 1 as const },
+      { id: "season-1-havoc", aspect: 3 as const },
+      { id: "season-1-insight", aspect: 4 as const },
+    ]) {
+      const card = container.querySelector<HTMLElement>(`[data-skin="${other.id}"]`)!;
+      expect(card.dataset.standing).toBe("owned");
+      expect(card.dataset.wearable).toBe("false");
+      expect(card.dataset.otherAspect).toBe("true");
+      expect(card.querySelectorAll(".cosmetics__badge")).toHaveLength(1);
+      expect(card.textContent).toContain(COSMETICS_WORDS.otherAspect);
+
+      await pick(container, other.id);
+      expect(buttonNamed(container, COSMETICS_WORDS.equip)).toBeUndefined();
+      expect(buttonNamed(container, COSMETICS_WORDS.notWearableOnRealm)?.disabled).toBe(true);
+      expect(container.querySelector("[data-not-wearable]")?.textContent).toContain(
+        COSMETICS_WORDS.otherAspectNote(aspectName(other.aspect), aspectName(2)),
+      );
+    }
+
+    await pick(container, "season-1-luminary");
+    expect(container.querySelector("[data-not-wearable]")).toBeNull();
+    expect(player.sent).toEqual([]);
+  });
+
+  it("owns all four Season 1 skins for a Pass holder without a realm Aspect yet and offers no Equip button", async () => {
+    player.signedIn = true;
+    directory.games = [season([], true)];
+    const container = await open();
+    expect(container.textContent).toContain(COSMETICS_WORDS.ownedOfPass(4, 4));
+    expect(container.querySelector(".cosmetics__owned")?.textContent).toBe(COSMETICS_WORDS.ownedCount(5));
+    for (const id of ["season-1-prowess", "season-1-luminary", "season-1-havoc", "season-1-insight"]) {
+      const card = container.querySelector<HTMLElement>(`[data-skin="${id}"]`)!;
+      expect(card.dataset.standing).toBe("owned");
+      expect(card.dataset.wearable).toBe("false");
+      expect(card.dataset.otherAspect).toBeUndefined();
+    }
+    await pick(container, "season-1-luminary");
+    expect(buttonNamed(container, COSMETICS_WORDS.equip)).toBeUndefined();
+    expect(container.querySelector("[data-not-wearable]")?.textContent).toBe(
+      COSMETICS_WORDS.noRealmAspectNote(aspectName(2)),
+    );
+  });
+
+  it("leaves all four Season 1 skins locked to the pass while the Seal is not held", async () => {
     directory.games = [season([realm({ aspect: 3 })], false)];
-    expect(standings(await open())["season-1-havoc"]).toBe("pass");
+    const container = await open();
+    expect(container.textContent).toContain(COSMETICS_WORDS.ownedOfPass(0, 4));
+    for (const id of ["season-1-prowess", "season-1-luminary", "season-1-havoc", "season-1-insight"]) {
+      expect(standings(container)[id]).toBe("pass");
+    }
   });
 
   it("opens on the player's first owned skin in the default order, seen at their rank", async () => {

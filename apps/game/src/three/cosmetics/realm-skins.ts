@@ -91,11 +91,16 @@ export const REALM_SKINS: readonly RealmSkin[] = [
   BASE_REALM_SKIN,
 ];
 
+export const realmSkinWearableOnRealm = (skin: RealmSkin, facts: RealmSkinFacts): boolean =>
+  skin.aspect === undefined || skin.aspect === facts.aspect;
+
 export const realmSkinStanding = (skin: RealmSkin, facts: RealmSkinFacts): RealmSkinStanding => {
   const code = REALM_SKIN_CODES[skin.family];
   if (code === null) return "event";
-  const ofTheRealm = skin.aspect === undefined || skin.aspect === facts.aspect;
-  if (ofTheRealm && holdsRealmSkin(facts, code)) return "owned";
+  if (skin.family === "season-1") {
+    return holdsRealmSkin({ ...facts, aspect: skin.aspect ?? facts.aspect }, code) ? "owned" : "pass";
+  }
+  if (realmSkinWearableOnRealm(skin, facts) && holdsRealmSkin(facts, code)) return "owned";
   return skin.family === "wonder" ? "wonder" : "pass";
 };
 
@@ -115,9 +120,8 @@ export const realmSkinsFor = (facts: RealmSkinFacts): readonly RealmSkin[] =>
 export const wornRealmSkin = (facts: RealmSkinFacts): RealmSkin => {
   const family = familyOfCode(wornRealmSkinFamily(facts, facts.equipped));
   return (
-    realmSkinsFor(facts).find(
-      (skin) => skin.family === family && (skin.aspect === undefined || skin.aspect === facts.aspect),
-    ) ?? BASE_REALM_SKIN
+    realmSkinsFor(facts).find((skin) => skin.family === family && realmSkinWearableOnRealm(skin, facts)) ??
+    BASE_REALM_SKIN
   );
 };
 
