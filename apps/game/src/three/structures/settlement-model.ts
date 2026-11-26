@@ -50,7 +50,7 @@ export class SettlementModel extends InstancedModel {
     gltf: GLTF,
     capacity: number,
     readonly kind: "village" | "realm" = "village",
-    wonder = false,
+    readonly wonder = false,
     sourceAssetOwnership: "cache" | "consumer" = "consumer",
   ) {
     super(

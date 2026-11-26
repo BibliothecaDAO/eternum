@@ -1637,7 +1637,7 @@ export default class HexceptionScene extends HexagonScene {
       stage: realm.stage,
       structureId: realm.realmId,
       mainStructureType: realm.mainStructureType,
-      wonder: !!realm.tiles.getWonder(realm.realmId),
+      wonder: realm.tiles.showsWonder(realm.realmId),
       aspect: this.mode.id === "frontier" && orderId ? orderAspect(orderId) : null,
       frontier: this.mode.id === "frontier",
     });
@@ -1938,11 +1938,18 @@ export default class HexceptionScene extends HexagonScene {
    */
   private answerFactChanges(changes: readonly NativeFactChange[]): void {
     const level = changes.map((change) => this.changedCastleLevel(change)).find((value) => value !== undefined);
+    const castleChanged = level !== undefined || changes.some((change) => this.changesShownRealmSkin(change));
     if (level !== undefined) {
       if (level > this.structureStage) this.newRingRadius = buildableRadius(level);
       this.removeCastleFromScene();
     }
-    if (level !== undefined || changes.some((change) => this.changesShownGround(change))) this.redrawStaleGrid();
+    if (castleChanged || changes.some((change) => this.changesShownGround(change))) this.redrawStaleGrid();
+  }
+
+  private changesShownRealmSkin(change: NativeFactChange): boolean {
+    if (change.model !== "RealmSkin" || change.previous?.family === change.current?.family) return false;
+    const row = change.current ?? change.previous;
+    return row?.game_id === configManager.getActiveGameId() && row.entity_id === BigInt(this.shownRealmId);
   }
 
   /** The shown structure's new level, when the change is one to its level. */

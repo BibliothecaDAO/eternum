@@ -159,4 +159,10 @@ export const nativeStructureConstants = {
     100000
   ]
 } as const;
+export const nativeRealmSkinConstants = {
+  "DEFAULT_REALM_SKIN": 0,
+  "BASE_REALM_SKIN": 1,
+  "SEASON_ONE_REALM_SKIN": 2,
+  "WONDER_REALM_SKIN": 3
+} as const;
 export const nativeBalanceIdentity = "9d0c6c388a03215231499fe96d1b71e8ddf08568c86c8c682e71803af2d17b6a";

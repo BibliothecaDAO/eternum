@@ -25,7 +25,7 @@ export type BuildingTiles = Pick<
   TileManager,
   | "getHexCoords"
   | "getRealmLevel"
-  | "getWonder"
+  | "showsWonder"
   | "existingBuildings"
   | "getBuilding"
   | "isHexOccupied"

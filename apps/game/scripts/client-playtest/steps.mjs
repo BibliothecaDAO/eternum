@@ -3662,6 +3662,86 @@ function labReenterSteps() {
   ];
 }
 
+function labCosmeticsSteps() {
+  return [
+    { name: "enter", ...resumeWithSkin("wonder", "wonder") },
+    {
+      name: "equip-base",
+      play: equipOnTheCosmeticsPage("base", "COSMETICS_WORDS.equip", '[data-skin="base"]'),
+      settleMs: 0,
+      verify: wornOnTheCosmeticsPage,
+    },
+    { name: "resume-wearing-base", ...resumeWithSkin("base", "realm") },
+    {
+      name: "use-default-order",
+      play: equipOnTheCosmeticsPage("base", "COSMETICS_WORDS.useDefaultOrder", '[data-skin^="wonder-"]'),
+      settleMs: 0,
+      verify: wornOnTheCosmeticsPage,
+    },
+    { name: "resume-wearing-the-wonder", ...resumeWithSkin("wonder", "wonder") },
+  ];
+}
+
+const SKIN_WAIT_MS = 30_000;
+const REALM_APPEARANCE = `JSON.stringify({
+  model: window.__eternumMapSelection?.drawnRealmSkin?.(${LAB_HOME_REALM}) ?? null,
+  mark: document.querySelector(".frontier-place-switch__realm [data-icon]")?.getAttribute("data-icon") ?? null,
+})`;
+const wornSkin = (cards) =>
+  `JSON.stringify(document.querySelector(${JSON.stringify(`${cards} [data-standing="equipped"]`)}) !== null)`;
+
+const resumeWithSkin = (family, icon) => {
+  const matches = (appearance) => appearance?.model === family && appearance.mark?.startsWith(`${icon}-`);
+  return {
+    play: async (context) => ({
+      ...(await resumeFromTheHomeCard(context)),
+      appearance: await readUntil(() => context.browser.read(REALM_APPEARANCE), matches, SKIN_WAIT_MS),
+    }),
+    settleMs: 0,
+    verify: ({ played }) =>
+      played.onMap && matches(played.appearance)
+        ? completed(played.appearance)
+        : failed(`the game did not draw the ${family} realm model and mark`, played),
+  };
+};
+
+const openTheCosmeticsPage = async (browser) => {
+  if (onADesktop()) {
+    browser.run(["find", "role", "link", "click", "--name", wordAt("COSMETICS_WORDS.title"), "--exact"]);
+    return;
+  }
+  browser.run(["find", "role", "link", "click", "--name", wordAt("WORDS.you"), "--exact"]);
+  const open = await readUntil(() => browser.read(buttonNamed(wordAt("COSMETICS_WORDS.open"))), Boolean, SHEET_WAIT_MS);
+  if (open) browser.click(wordAt("COSMETICS_WORDS.open"));
+};
+
+const equipOnTheCosmeticsPage =
+  (skin, wordPath, wornCards) =>
+  async ({ browser, owner }) => {
+    const word = wordAt(wordPath);
+    const left = await leaveByBack({ browser, owner });
+    await openTheCosmeticsPage(browser);
+    const card = await readUntil(
+      () => browser.read(`JSON.stringify(document.querySelector('[data-skin="${skin}"]') !== null)`),
+      Boolean,
+      SKIN_WAIT_MS,
+    );
+    if (!card) return { left, missing: `the Cosmetics page shows no ${skin} skin` };
+    browser.run(["click", `[data-skin="${skin}"]`]);
+    const offered = await readUntil(() => browser.read(buttonNamed(word)), Boolean, SHEET_WAIT_MS);
+    if (!offered) return { left, missing: `the ${skin} skin offers no ${word}` };
+    browser.click(word);
+    const worn = await readUntil(() => browser.read(wornSkin(wornCards)), Boolean, SKIN_WAIT_MS);
+    browser.run(["find", "role", "link", "click", "--name", wordAt("WORDS.play"), "--exact"]);
+    return { left, pressed: word, wornCards, worn };
+  };
+
+function wornOnTheCosmeticsPage({ played }) {
+  if (played.missing) return failed(played.missing, played);
+  if (!played.worn) return failed(`no ${played.wornCards} card shows equipped after ${played.pressed}`, played);
+  return completed({ pressed: played.pressed, worn: played.wornCards });
+}
+
 const LABELS_WAIT_MS = 15_000;
 const EXIT_WAIT_MS = 10_000;
 /**
@@ -5961,6 +6041,8 @@ export const UNMEASURED_COMMANDS = {
   MarkGameSettled:
     "sent by the value relay's operator once a season's game has ended (apps/value-relay), never by a player",
   SetEntityName: "no control in the game sends it: only the provider's set_entity_name, which nothing calls",
+  SetRealmSkin:
+    "sent from the app's Cosmetics page outside a match (shell/cosmetics/realm-skin-equip.ts); the lab-actions lists time presses on the lab game's map, and no list drives an app page yet",
 };
 
 /**
@@ -7374,6 +7456,7 @@ export const STEP_SETS = {
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
   "lab-visit": { game: labSpireGame("visit"), steps: LAB_VISIT_STEPS, devOverlays: true },
   "lab-reenter": { game: LAB_FROM_HOME, steps: labReenterSteps() },
+  "lab-cosmetics": { game: { ...labSpireGame("wonder-skin"), entersFromHome: true }, steps: labCosmeticsSteps() },
   "lab-ruin-fight": { game: labSpireGame("ruin-fight"), steps: LAB_RUIN_FIGHT_STEPS },
   "lab-ruin-far": { game: labSpireGame("ruin-far"), steps: LAB_RUIN_FAR_STEPS },
   "lab-hover-zoom": { game: labSpireGame("after-battle"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },

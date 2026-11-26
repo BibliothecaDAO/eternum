@@ -1,3 +1,4 @@
+use snforge_std::fs::{FileTrait, read_txt};
 pub use world_test_support::tests::troop_management::*;
 const NOW: u64 = super::play_fixture::FIXTURE_START + 20;
 
@@ -282,6 +283,74 @@ fn entity_names_follow_owned_armies_and_reject_missing_or_foreign_entities() {
     );
     assert_terminal_rejection(d, Command::SetEntityName(SetEntityName { entity_id: explorer, name: 'Stolen' }), NOW);
     assert_eq!(names.entity_name(key).name, 'Vanguard');
+}
+
+#[test]
+fn realm_skins_take_only_a_family_the_realm_holds() {
+    let (d, home, _, _) = setup();
+    let names = INamesDispatcher { contract_address: d.games };
+    let realm = home.entity_id;
+    let mut record = IStructureOperationsDispatcher { contract_address: d.games }.structure(home).unwrap();
+    let keys = array![3, realm.into()].span();
+    let no_seal: Option<u64> = None;
+    set_fixture(d.games, selector!("entry"), selector!("seals"), array![3, record.owner.into()].span(), no_seal);
+    set_fixture(d.games, selector!("settlements"), selector!("home_aspects"), keys, 0_u8);
+    assert!(execute(d, Command::SetRealmSkin(SetRealmSkin { entity_id: realm, family: BASE_REALM_SKIN }), NOW));
+    assert_eq!(names.realm_skin(home).family, BASE_REALM_SKIN);
+    assert_terminal_rejection(
+        d, Command::SetRealmSkin(SetRealmSkin { entity_id: realm, family: SEASON_ONE_REALM_SKIN }), NOW,
+    );
+    assert_terminal_rejection(d, Command::SetRealmSkin(SetRealmSkin { entity_id: realm, family: 4 }), NOW);
+    record.metadata.has_wonder = false;
+    set_realm_fixture(d, keys, record);
+    assert_terminal_rejection(
+        d, Command::SetRealmSkin(SetRealmSkin { entity_id: realm, family: WONDER_REALM_SKIN }), NOW,
+    );
+    record.metadata.has_wonder = true;
+    set_realm_fixture(d, keys, record);
+    assert!(execute(d, Command::SetRealmSkin(SetRealmSkin { entity_id: realm, family: WONDER_REALM_SKIN }), NOW));
+    assert_eq!(names.realm_skin(home).family, WONDER_REALM_SKIN);
+    set_fixture(d.games, selector!("entry"), selector!("seals"), array![3, record.owner.into()].span(), Some(NOW));
+    assert_terminal_rejection(
+        d, Command::SetRealmSkin(SetRealmSkin { entity_id: realm, family: SEASON_ONE_REALM_SKIN }), NOW,
+    );
+    set_fixture(d.games, selector!("settlements"), selector!("home_aspects"), keys, 2_u8);
+    assert!(execute(d, Command::SetRealmSkin(SetRealmSkin { entity_id: realm, family: SEASON_ONE_REALM_SKIN }), NOW));
+    assert_eq!(names.realm_skin(home).family, SEASON_ONE_REALM_SKIN);
+    assert!(execute(d, Command::SetRealmSkin(SetRealmSkin { entity_id: realm, family: DEFAULT_REALM_SKIN }), NOW));
+    assert_eq!(names.realm_skin(home).family, DEFAULT_REALM_SKIN);
+    record.owner = 0x123.try_into().unwrap();
+    set_realm_fixture(d, keys, record);
+    assert_terminal_rejection(
+        d, Command::SetRealmSkin(SetRealmSkin { entity_id: realm, family: BASE_REALM_SKIN }), NOW,
+    );
+    assert_eq!(names.realm_skin(home).family, DEFAULT_REALM_SKIN);
+}
+
+#[test]
+fn realm_skin_holds_match_the_client_vectors() {
+    let data = read_txt(@FileTrait::new("../fixtures/realm-skin-holds.txt"));
+    assert_eq!(data.len(), 200);
+    let mut fields = data.span();
+    while !fields.is_empty() {
+        let (seal, aspect, wonder, family, held): (u8, u8, u8, u8, u8) = Serde::deserialize(ref fields).unwrap();
+        assert_eq!(crate::names::holds_realm_skin(seal == 1, aspect, wonder == 1, family), held == 1);
+    }
+}
+
+fn set_realm_fixture(d: super::Deployment, keys: Span<felt252>, record: crate::structures::Structure) {
+    set_fixture(
+        d.games,
+        selector!("structures"),
+        selector!("structures"),
+        keys,
+        crate::structures::StructureRecord {
+            owner: record.owner,
+            base: record.base,
+            resources_packed: record.resources_packed,
+            metadata: record.metadata,
+        },
+    );
 }
 
 #[test]

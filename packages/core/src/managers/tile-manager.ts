@@ -1,5 +1,6 @@
 import { extractErrorMessage } from "@bibliothecadao/provider";
 import { buildableRadius } from "../utils/castle-reach";
+import { realmShowsWonder } from "../utils/realm-skin";
 import {
   type GameplayAccount,
   BUILDINGS_CENTER,
@@ -63,10 +64,8 @@ export class TileManager {
     return (structure?.base.level || RealmLevels.Settlement) as RealmLevels;
   };
 
-  getWonder = (realmEntityId: number) => {
-    const structure = this.store.require("Structure", { game_id: this.gameId, entity_id: realmEntityId });
-    return structure?.metadata.has_wonder || false;
-  };
+  showsWonder = (realmEntityId: number) =>
+    realmShowsWonder(this.store, this.store.require("Structure", { game_id: this.gameId, entity_id: realmEntityId }));
 
   existingBuildings = () => {
     const buildings = BUILDING_SLOT_COORDINATES.flatMap(({ col, row }) => {

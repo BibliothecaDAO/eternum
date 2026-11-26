@@ -40,6 +40,7 @@ import { settleScenario } from "./settle-scenario";
 import { discoveredSpireScenario, HIGH_GROUND, spireScenario } from "./spire-scenario";
 import { upkeepScenario } from "./upkeep-scenario";
 import { visitScenario } from "./visit-scenario";
+import { wonderSkinScenario } from "./wonder-skin-scenario";
 
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
 export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
@@ -60,6 +61,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "ethereal-depths": etherealDepthsScenario,
   /** The spire's game opened on the home page, entered by its card's Resume: a way back home there is the app's own. */
   "from-home": () => ({ ...spireScenario(), entersFromHome: true }),
+  "wonder-skin": wonderSkinScenario,
   actions: actionsScenario,
   scouts: scoutsScenario,
   town: townScenario,

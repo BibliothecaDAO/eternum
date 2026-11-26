@@ -68,19 +68,61 @@ const resolveBootstrapSelection = (context: ResolvedEntryContext): BootstrapSele
  * The game this page plays has one client, which holds the one Herald stream for it. Settling and booting the scene
  * both attach to it, so entering a game opens one session and takes one snapshot; another game resets it.
  */
-let attachedGameClient: { key: string; client: Promise<GameClient> } | null = null;
+interface AttachmentRequest {
+  isCurrent: () => boolean;
+  signal: AbortSignal;
+}
+
+interface GameAttachment {
+  key: string;
+  client: Promise<GameClient>;
+  request?: AttachmentRequest;
+  stopWatching?: () => void;
+}
+
+let attachedGameClient: GameAttachment | null = null;
 let stopFollowingInitialStructure: (() => void) | null = null;
+
+const watchAttachment = (attachment: GameAttachment, request?: AttachmentRequest) => {
+  attachment.stopWatching?.();
+  attachment.stopWatching = undefined;
+  attachment.request = request;
+  if (!request) return;
+  const abort = () => {
+    if (attachedGameClient !== attachment) return;
+    attachedGameClient = null;
+    cancelActiveBootstrapSubscriptions();
+  };
+  request.signal.addEventListener("abort", abort, { once: true });
+  attachment.stopWatching = () => request.signal.removeEventListener("abort", abort);
+  if (request.signal.aborted) abort();
+};
 
 export const attachGameClient = (
   context: ResolvedEntryContext,
   onSetupCompleted?: (setup: SetupResult) => void,
+  request?: AttachmentRequest,
 ): Promise<GameClient> => {
   const key = resolveEntryContextCacheKey(context);
-  if (attachedGameClient?.key === key) return attachedGameClient.client;
+  if (attachedGameClient?.key === key) {
+    if (attachedGameClient.request) watchAttachment(attachedGameClient, request);
+    return attachedGameClient.client;
+  }
   if (attachedGameClient) resetBootstrap();
-  const client = applyGameSelection(context)
-    .then((profile) => createEntryGameClient({ profile, onSetupCompleted }))
+  const assertCurrent = () => {
+    if (attachedGameClient?.client !== client || attachedGameClient.request?.isCurrent() === false)
+      throw new SupersededGameSyncStartError();
+  };
+  const client: Promise<GameClient> = applyGameSelection(context, assertCurrent)
+    .then((profile) => createEntryGameClient({ profile, onSetupCompleted, assertCurrent }))
     .then((created) => {
+      try {
+        assertCurrent();
+      } catch (error) {
+        created.dispose();
+        throw error;
+      }
+      watchAttachment(attachment);
       installActiveGameClient(created);
       installHoldingGoodsReader();
       installFragmentSpendsReader();
@@ -90,9 +132,12 @@ export const attachGameClient = (
       stopFollowingInitialStructure = followInitialStructure(created.setup);
       return created;
     });
-  attachedGameClient = { key, client };
+  const attachment: GameAttachment = { key, client };
+  attachedGameClient = attachment;
+  watchAttachment(attachment, request);
   // A failed start leaves nothing attached, so the next attempt starts afresh.
   client.catch(() => {
+    attachment.stopWatching?.();
     if (attachedGameClient?.client === client) attachedGameClient = null;
   });
   return client;
@@ -125,6 +170,7 @@ const runBootstrap = async ({
  */
 const resetBootstrap = () => {
   verboseLog("[BOOTSTRAP] Resetting bootstrap state");
+  attachedGameClient?.stopWatching?.();
   attachedGameClient = null;
   cancelActiveBootstrapSubscriptions();
   bootstrapSession.reset();
@@ -221,28 +267,33 @@ const createBootstrapRendererHandoff = () => {
 interface EntryGameClientInput {
   profile: GameProfile;
   onSetupCompleted?: (setup: SetupResult) => void;
+  assertCurrent: () => void;
 }
 
 const createEntryGameClient = async (input: EntryGameClientInput): Promise<GameClient> => {
+  input.assertCurrent();
   const timing = { syncStartedAt: performance.now() };
   verboseLog("[STARTING GAME SETUP]");
   markGameEntryMilestone("setup-started");
   const reportProgress = createInitialSyncProgressReporter(useSyncStore.getState().setInitialSyncProgress);
   reportProgress(0);
   bindChainTime();
-  const client = await createBrowserGameClient({
-    shard: await requireOpenShard(input.profile.chainId),
-    gameId: input.profile.gameId,
-    authHandler: bootstrapAuthHandler,
-    observer: createGameSyncObserver({
-      reportProgress,
-      onSetupCompleted: (setup) => {
-        verboseLog("[GAME SETUP COMPLETED]");
-        input.onSetupCompleted?.(setup);
-        timing.syncStartedAt = performance.now();
-      },
-    }),
-  });
+  const client = await createBrowserGameClient(
+    {
+      shard: await requireOpenShard(input.profile.chainId),
+      gameId: input.profile.gameId,
+      authHandler: bootstrapAuthHandler,
+      observer: createGameSyncObserver({
+        reportProgress,
+        onSetupCompleted: (setup) => {
+          verboseLog("[GAME SETUP COMPLETED]");
+          input.onSetupCompleted?.(setup);
+          timing.syncStartedAt = performance.now();
+        },
+      }),
+    },
+    input.assertCurrent,
+  );
   markGameEntryMilestone("initial-sync-completed");
   recordGameEntryDuration("initial-sync", performance.now() - timing.syncStartedAt);
   verboseLog("[INITIAL SYNC COMPLETED]");

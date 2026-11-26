@@ -117,11 +117,19 @@ test("the listed shard has a player notification watcher, and an empty directory
   expect(watch.mock.calls).toEqual([[shard]]);
 });
 
-test("publishes the launch slot number and no ledger address payload", async () => {
+test("publishes the launch slot and the confirmed block of the shard facts", async () => {
   const deps = dependencies(async () => ({ chains: [{ chainId: "0x1", games: [{ gameId: 1, slotId: 12 }] }] }));
-  deps.fetchShard.mockImplementation(async (input) => herald("0x1", input, [games[0]!]));
+  deps.fetchShard.mockImplementation(async (input) =>
+    String(input).endsWith("/manifest")
+      ? herald("0x1", input)
+      : Response.json({ chain: "0x1", confirmed_block: 12, games: [games[0]] }),
+  );
   const response = await handleDirectory(new Request("https://app.test/api/directory"), deps);
-  const game = ((await response.json()) as { shard: { games: { slotId: number }[] } }).shard.games[0]!;
+  const { shard: listed } = (await response.json()) as {
+    shard: { confirmedBlock: number; games: { slotId: number }[] };
+  };
+  expect(listed.confirmedBlock).toBe(12);
+  const game = listed.games[0]!;
   expect(game.slotId).toBe(12);
   expect(game).not.toHaveProperty("entry");
 });

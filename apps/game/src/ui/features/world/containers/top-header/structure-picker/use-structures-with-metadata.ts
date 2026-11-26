@@ -8,7 +8,13 @@ import {
   resolveAvailableBuildingTiles,
 } from "@/ui/features/world/containers/structure-status";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
-import { configManager, getBuildingCount, getGuardsByStructure, liveHomeArmies } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  getBuildingCount,
+  getGuardsByStructure,
+  liveHomeArmies,
+  realmShowsWonder,
+} from "@bibliothecadao/eternum";
 import { BuildingType, RealmLevels, type Structure, StructureType, rankName } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import type { StructureWithMetadata } from "./chip";
@@ -40,7 +46,7 @@ export const useStructuresWithMetadata = ({
   nameUpdateVersion = 0,
 }: UseStructuresWithMetadataArgs): StructureWithMetadata[] => {
   const mode = useGameModeConfig();
-  const facts = useNativeFacts(["StructureBuildings", ...GUARD_MODELS, "ExplorerTroops"]);
+  const facts = useNativeFacts(["StructureBuildings", ...GUARD_MODELS, "ExplorerTroops", "RealmSkin"]);
   // A day's rollover ends yesterday's armies with no row changing, so the live-army count also follows the clock.
   const armiesClock = useCoarseCurrentDefaultTick(10);
   const { favorites } = useFavoriteStructures();
@@ -117,6 +123,7 @@ export const useStructuresWithMetadata = ({
         displayName: name,
         originalName,
         realmLevel: normalizedLevel,
+        showsWonder: realmShowsWonder(facts.store, structure.structure),
         realmLevelLabel,
         population,
         guardCount: getGuardsByStructure(structure.structure, facts.store)?.filter((guard) => guard.troops.count > 0n)

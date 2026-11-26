@@ -14,6 +14,7 @@ import {
   readFrontierBeast,
   type ArchivedStoryVariant,
   type FrontierSpecies,
+  realmShowsWonder,
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
@@ -101,7 +102,7 @@ export function readStructureMeaning(
   structure: NativeRows["Structure"],
 ): IconMeaning {
   const category = structure.base.category;
-  if (category === StructureType.Realm) return realmMeaning(structure.base.level, structure.metadata.has_wonder);
+  if (category === StructureType.Realm) return realmMeaning(structure.base.level, realmShowsWonder(store, structure));
   if (!isGuardedSite(category)) return structureMeaning(category);
   const mode = nativeGameModeOfFamily(store.require("GameRegistry", { game_id: structure.game_id }).family);
   const guard =

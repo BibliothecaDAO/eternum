@@ -112,6 +112,14 @@ const STAMINA_IS_SEGMENTED = [
   },
 ];
 
+const WONDER_LOOK_IS_THE_SKIN = [
+  {
+    selector: "MemberExpression[property.name='has_wonder'][object.property.name='metadata']",
+    message:
+      "A realm is drawn by realmShowsWonder (its owner may equip another skin) and its holdings and costs read holdsWonder: never metadata.has_wonder.",
+  },
+];
+
 // A chosen card, tile, token or option wears the kit's ring (`ui-pick` in hud-sheet.css), drawn inside its own box. A
 // ring or outline of its own spilled past its column: the Research panel's chosen Well stood wider than the Shrine and
 // Ethereal I above and below it (owner, 31 October). A focus ring keeps its state prefix (`focus-visible:ring-2`).
@@ -232,6 +240,7 @@ const eslint = new ESLint({
           ...HAND_WRITTEN_GAIN,
           ...SHORT_IN_CHIPS,
           ...STAMINA_IS_SEGMENTED,
+          ...WONDER_LOOK_IS_THE_SKIN,
         ],
       },
     },
@@ -258,6 +267,7 @@ const eslint = new ESLint({
           ...CHOSEN_STATE_IS_THE_KIT,
           ...CHOSEN_LOOK_IS_THE_KIT,
           ...PRICE_IS_HUD_PRICE,
+          ...WONDER_LOOK_IS_THE_SKIN,
         ],
       },
     },

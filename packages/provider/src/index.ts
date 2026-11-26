@@ -784,6 +784,14 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
+  public async set_realm_skin(props: SystemProps.SetRealmSkinProps) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "SetRealmSkin", value: { entity_id: props.entity_id, family: props.family } },
+      TransactionType.SET_REALM_SKIN,
+    );
+  }
+
   public async create_building(props: SystemProps.CreateBuildingProps): Promise<GetTransactionReceiptResponse> {
     return this.submitCommand(
       props.signer,

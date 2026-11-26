@@ -40,11 +40,15 @@ export const nativeCommandBits = {
   "SetEntityName": "36893488147419103232",
   "EnterDepth": "73786976294838206464",
   "Research": "147573952589676412928",
-  "InteractSite": "590295810358705651712"
+  "InteractSite": "590295810358705651712",
+  "SetRealmSkin": "604462909807314587353088"
 } as const;
 export const nativeBlitzCommandBits = {
   "SeatBlitzRoster": "151115727451828646838272",
   "RaiseHyperstructure": "302231454903657293676544"
+} as const;
+export const nativeFrontierOnlyCommandBits = {
+  "SetRealmSkin": "604462909807314587353088"
 } as const;
 export const nativeGamesWrites = [
   "authority_call",
@@ -104,5 +108,6 @@ export interface NativeCommandPayloads {
   EnterDepth: { readonly explorer_id: BigNumberish; readonly depth: BigNumberish };
   Research: { readonly structure_id: BigNumberish; readonly row: BigNumberish };
   InteractSite: { readonly explorer_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
+  SetRealmSkin: { readonly entity_id: BigNumberish; readonly family: BigNumberish };
 }
 export type NativeCommand = { [K in keyof NativeCommandPayloads]: { kind: K; value: NativeCommandPayloads[K] } }[keyof NativeCommandPayloads];

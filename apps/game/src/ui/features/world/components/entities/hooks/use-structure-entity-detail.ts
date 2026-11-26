@@ -43,6 +43,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     "Guild",
     ...GUARD_MODELS,
     "Structure",
+    "RealmSkin",
     "GameRegistry",
     "ExpeditionSite",
     "SliceRules",

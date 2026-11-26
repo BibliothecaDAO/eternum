@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
-import { buildFrontierLeaderboard } from "./frontier-leaderboard";
+import { REALM_SKIN_FAMILIES } from "@bibliothecadao/eternum";
+import { prepareFrontierLeaderboard } from "./frontier-leaderboard";
 import type { FoldRow } from "../types";
 
 function facts(depths = [2]) {
@@ -43,12 +44,12 @@ describe("Frontier season standings", () => {
   it("carries the season's top prizes: the pool, the places paid at most, the count posted and who each award paid", () => {
     const { read, rows } = facts();
     // No pool published: no prize, whether or not its row exists.
-    expect(buildFrontierLeaderboard(read, "1", []).prize).toBeNull();
+    expect(prepareFrontierLeaderboard(read, "1")([]).prize).toBeNull();
     rows.ChestRules = [{ key: "rules", value: { game_id: "1", top_n: 3 } }];
     rows.FrontierPrize = [{ key: "prize", value: { game_id: "1", pool: "0", issued: "0", count: null } }];
-    expect(buildFrontierLeaderboard(read, "1", []).prize).toBeNull();
+    expect(prepareFrontierLeaderboard(read, "1")([]).prize).toBeNull();
     rows.FrontierPrize = [{ key: "prize", value: { game_id: "1", pool: "300", issued: "0", count: null } }];
-    expect(buildFrontierLeaderboard(read, "1", []).prize).toEqual({ pool: "300", top_n: 3, count: null, awards: [] });
+    expect(prepareFrontierLeaderboard(read, "1")([]).prize).toEqual({ pool: "300", top_n: 3, count: null, awards: [] });
     // The winners posted: two players, so two places, each named by its award receipt once paid; a realm's own
     // withdrawal and another game's award are not this season's prizes.
     rows.FrontierPrize = [{ key: "prize", value: { game_id: "1", pool: "0x12c", issued: "0", count: "0x2" } }];
@@ -61,25 +62,25 @@ describe("Frontier season standings", () => {
       receipt("1", "0x77", "40", 0),
       receipt("2", "0x99", "200", 1),
     ];
-    expect(buildFrontierLeaderboard(read, "1", []).prize).toEqual({
+    expect(prepareFrontierLeaderboard(read, "1")([]).prize).toEqual({
       pool: "300",
       top_n: 3,
       count: 2,
       awards: [{ rank: 2, address: "0x51", lords: "100" }],
     });
     rows.LordsWithdrawal.push(receipt("1", "0x00ab", "0xc8", 1));
-    expect(buildFrontierLeaderboard(read, "1", []).prize?.awards).toEqual([
+    expect(prepareFrontierLeaderboard(read, "1")([]).prize?.awards).toEqual([
       { rank: 1, address: "0xab", lords: "200" },
       { rank: 2, address: "0x51", lords: "100" },
     ]);
     // Another game's prize is not this one's.
     rows.FrontierPrize = [{ key: "other", value: { game_id: "2", pool: "300", issued: "0", count: null } }];
-    expect(buildFrontierLeaderboard(read, "1", []).prize).toBeNull();
+    expect(prepareFrontierLeaderboard(read, "1")([]).prize).toBeNull();
   });
 
   it("counts a ruin's clear as its chest and its stored LORDS in whole units", () => {
     const { read } = facts();
-    const [entry] = buildFrontierLeaderboard(read, "1", [clear("Ruin", 0), clear("Ruin", 1)]).entries;
+    const [entry] = prepareFrontierLeaderboard(read, "1")([clear("Ruin", 0), clear("Ruin", 1)]).entries;
     expect(entry.chests_earned).toBe(2);
     expect(entry.rewards.lords).toBe("400");
   });
@@ -95,7 +96,7 @@ describe("Frontier season standings", () => {
       clear("Beasts", 6),
       story("ExplorationReward", { resource_type: 38, amount: "6000000000000" }, 5),
     ];
-    const board = buildFrontierLeaderboard(read, "1", history);
+    const board = prepareFrontierLeaderboard(read, "1")(history);
     expect(board.entries[0]).toMatchObject({
       structure_id: "1",
       deepest_depth: 2,
@@ -105,13 +106,13 @@ describe("Frontier season standings", () => {
       chests_earned: 1,
       rewards: { lords: "200", labor: "1500000000000", essence: "9000000000000" },
     });
-    expect(buildFrontierLeaderboard(read, "1", [...history, ...history].reverse())).toEqual(board);
+    expect(prepareFrontierLeaderboard(read, "1")([...history, ...history].reverse())).toEqual(board);
   });
 
   it("ranks count, current depth, then the receipt that reached the count, with stable address ties", () => {
     const { read } = facts([1, 2, 2, 0, 0]);
     const history = [clear("Camp", 1, 10), clear("Camp", 2, 10), clear("Camp", 0, 12), clear("Camp", 3, 11)];
-    expect(buildFrontierLeaderboard(read, "1", history).entries.map((e) => e.address)).toEqual([
+    expect(prepareFrontierLeaderboard(read, "1")(history).entries.map((e) => e.address)).toEqual([
       "0xa",
       "0xc",
       "0xb",
@@ -122,21 +123,21 @@ describe("Frontier season standings", () => {
 
   it("refuses unknown site categories, unknown stories, missing games and orphan rewards", () => {
     const { read, rows } = facts();
-    expect(() => buildFrontierLeaderboard(read, "1", [story("SitePayout", { category: 4, reward: null }, 0)])).toThrow(
-      "not a guarded site",
-    );
-    expect(() => buildFrontierLeaderboard(read, "1", [story("ChestReward", { quality: 0 }, 0)])).toThrow(
+    expect(() =>
+      prepareFrontierLeaderboard(read, "1")([story("SitePayout", { category: 4, reward: null }, 0)]),
+    ).toThrow("not a guarded site");
+    expect(() => prepareFrontierLeaderboard(read, "1")([story("ChestReward", { quality: 0 }, 0)])).toThrow(
       "Unexpected Frontier leaderboard story",
     );
-    expect(() => buildFrontierLeaderboard(read, "1", [clear("Camp", 0, 999)])).toThrow("settled realm");
+    expect(() => prepareFrontierLeaderboard(read, "1")([clear("Camp", 0, 999)])).toThrow("settled realm");
     delete rows.GameRegistry;
-    expect(() => buildFrontierLeaderboard(read, "1", [])).toThrow("GameRegistry");
+    expect(() => prepareFrontierLeaderboard(read, "1")([])).toThrow("GameRegistry");
   });
 
   it("shares equal standings without using address or snapshot order as a competitive rank", () => {
     const { read, rows } = facts([0, 0, 0, 0]);
     const history = [clear("Camp", 0, 10)];
-    const board = buildFrontierLeaderboard(read, "1", history);
+    const board = prepareFrontierLeaderboard(read, "1")(history);
     expect(board.entries.map(({ address, rank }) => ({ address, rank }))).toEqual([
       { address: "0xa", rank: 1 },
       { address: "0xb", rank: 2 },
@@ -144,8 +145,8 @@ describe("Frontier season standings", () => {
       { address: "0xd", rank: 2 },
     ]);
     rows.Structure.reverse();
-    expect(buildFrontierLeaderboard(read, "1", history)).toEqual(board);
-    expect(buildFrontierLeaderboard(read, "1", []).entries.map(({ rank }) => rank)).toEqual([1, 1, 1, 1]);
+    expect(prepareFrontierLeaderboard(read, "1")(history)).toEqual(board);
+    expect(prepareFrontierLeaderboard(read, "1")([]).entries.map(({ rank }) => rank)).toEqual([1, 1, 1, 1]);
   });
 });
 
@@ -153,7 +154,10 @@ it("keeps Wonder identity for every settled home in the complete board, without 
   const { read, rows } = facts([0, 0]);
   (rows.Structure![1]!.value.metadata as Record<string, unknown>).has_wonder = true;
   expect(
-    buildFrontierLeaderboard(read, "1", []).entries.map(({ structure_id, has_wonder, level }) => ({
+    prepareFrontierLeaderboard(
+      read,
+      "1",
+    )([]).entries.map(({ structure_id, has_wonder, level }) => ({
       structure_id,
       has_wonder,
       level,
@@ -163,14 +167,27 @@ it("keeps Wonder identity for every settled home in the complete board, without 
     { structure_id: "2", has_wonder: true, level: 1 },
   ]);
   delete (rows.Structure![1]!.value.metadata as Record<string, unknown>).has_wonder;
-  expect(() => buildFrontierLeaderboard(read, "1", [])).toThrow("missing its Wonder identity");
+  expect(() => prepareFrontierLeaderboard(read, "1")([])).toThrow("missing its Wonder identity");
+});
+
+it("publishes equipped families alongside the original Wonder ownership", () => {
+  const { read, rows } = facts([0, 0]);
+  (rows.Structure![1]!.value.metadata as Record<string, unknown>).has_wonder = true;
+  const { BASE_REALM_SKIN, DEFAULT_REALM_SKIN } = REALM_SKIN_FAMILIES;
+  rows.RealmSkin = [{ key: "skin", value: { game_id: 1, entity_id: 2n, family: BASE_REALM_SKIN } }];
+  expect(
+    prepareFrontierLeaderboard(read, "1")([]).entries.map(({ has_wonder, realm_skin }) => [has_wonder, realm_skin]),
+  ).toEqual([
+    [false, DEFAULT_REALM_SKIN],
+    [true, BASE_REALM_SKIN],
+  ]);
 });
 
 describe("a Season 1 game", () => {
   it("ranks no player by the sites it cleared, though a legacy game does", () => {
     const { rows, read } = facts([1, 2]);
-    expect(buildFrontierLeaderboard(read, "1", []).entries).toHaveLength(2);
+    expect(prepareFrontierLeaderboard(read, "1")([]).entries).toHaveLength(2);
     rows.RaceRules = [{ key: "0", value: { game_id: "1", stage_height: 2000 } }];
-    expect(() => buildFrontierLeaderboard(read, "1", [])).toThrow("Season 1 ranks Aspects by height");
+    expect(() => prepareFrontierLeaderboard(read, "1")([])).toThrow("Season 1 ranks Aspects by height");
   });
 });

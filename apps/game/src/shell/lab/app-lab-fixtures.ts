@@ -51,6 +51,7 @@ const REALM = {
   resources_packed: "0",
   aspect: null,
   has_wonder: false,
+  realm_skin: 0,
 };
 
 const game = (over: Partial<DirectoryGame>): DirectoryGame => ({

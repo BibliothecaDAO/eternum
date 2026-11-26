@@ -3,7 +3,7 @@ import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 import { type ResourceRequirement } from "@/ui/design-system/molecules/requirement-chips";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { adjustWonderLordsCost } from "@/ui/utils/utils";
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, holdsWonder } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { type BuildingType, formatExact, formatFigure, resourceName, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
@@ -39,7 +39,7 @@ export const BuildingHover = ({
   const recipe =
     resource === undefined
       ? null
-      : recipeLine(resource, useSimpleCost, Boolean(structure?.metadata.has_wonder), frontier);
+      : recipeLine(resource, useSimpleCost, structure !== undefined && holdsWonder(structure), frontier);
   return (
     <div className="flex min-w-44 max-w-64 flex-col gap-1 text-left text-hud-label text-hud-ink">
       <div className="flex items-baseline justify-between gap-3">

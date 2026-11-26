@@ -98,6 +98,9 @@ kinds = "gate-prelude gate-vrf gate-world gate-drift gate-events test-capture te
 [kind.playtest-landing]
 cmd = 'pnpm run build:packages && pnpm --dir apps/game playtest:landing --out "$FLOW_TMP/playtest"'
 
+[kind.playtest-cosmetics]
+cmd = 'pnpm run build:packages && pnpm --dir apps/game playtest:landing lab-cosmetics --port 4203 --width 1 --out "$FLOW_TMP/playtest"'
+
 [kind.playtest-perf]
 cmd = 'pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4196.lock" && flock 8 && perf() { pnpm --dir apps/game playtest --port 4196 --steps lab-realm-load --renderer-modes webgpu-auto --out "$FLOW_TMP/playtest/$1" "${@:2}"; } && perf desktop --iterations 5 && perf phone --iterations 3 --viewport 390x844 --network 20,60 --cpu-throttle 4 && perf laptop --iterations 1 --viewport 1440x900 && perf profiled --iterations 1 --profile-steps boot,first-realm && perf owner-laptop --iterations 1 --viewport 1829x1016 --device-scale 1.4 && perf zoomed-out --iterations 1 --viewport 9146x5081 --device-scale 0.3125'
 

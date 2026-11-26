@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { REALM_SKIN_FAMILIES } from "@bibliothecadao/eternum";
 import { readNodeHealth } from "./node-health";
 import { describe, expect, it, vi } from "vitest";
 
@@ -530,6 +531,7 @@ it("caches each leaderboard once per confirmed head and drops all previous-head 
 it("serves Frontier history at one confirmed head, caches successes only and keeps captured realm facts", async () => {
   let head = 12;
   let depth = 1;
+  let family: number = REALM_SKIN_FAMILIES.BASE_REALM_SKIN;
   let release!: (value: Awaited<ReturnType<NonNullable<typeof httpState.history>["frontierHistory"]>>) => void;
   const frontierHistory = vi.fn(
     () =>
@@ -539,6 +541,7 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
   );
   const modelRows = (model: string) => {
     if (model === "SliceRules") return [{ key: "7", value: { game_id: "7", day_unit_seconds: 14400 } }];
+    if (model === "RealmSkin") return [{ key: "1", value: { game_id: "7", entity_id: "1", family } }];
     if (model === "Structure")
       return [
         {
@@ -548,7 +551,7 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
             entity_id: "1",
             owner: "10",
             base: { category: 1, level: 2 },
-            metadata: { has_wonder: false, deepest_depth: depth, order: 5 },
+            metadata: { has_wonder: true, deepest_depth: depth, order: 5 },
           },
         },
       ];
@@ -566,20 +569,21 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
   const pending = read(new Request(url));
   await vi.waitFor(() => expect(frontierHistory).toHaveBeenCalledWith("7", 12));
   depth = 2;
+  family = REALM_SKIN_FAMILIES.DEFAULT_REALM_SKIN;
   head = 13;
   release([]);
   const completed = await pending;
   expect(completed.headers.get("X-Confirmed-Block")).toBe("12");
   expect(await completed.json()).toMatchObject({
     mode: "frontier",
-    entries: [{ deepest_depth: 1, level: 2 }],
+    entries: [{ deepest_depth: 1, level: 2, has_wonder: true, realm_skin: REALM_SKIN_FAMILIES.BASE_REALM_SKIN }],
   });
   const next = read(new Request(url));
   await vi.waitFor(() => expect(frontierHistory).toHaveBeenCalledWith("7", 13));
   release([]);
   expect(await (await next).json()).toMatchObject({
     mode: "frontier",
-    entries: [{ deepest_depth: 2 }],
+    entries: [{ deepest_depth: 2, has_wonder: true, realm_skin: REALM_SKIN_FAMILIES.DEFAULT_REALM_SKIN }],
   });
   await read(new Request(url));
   expect(frontierHistory).toHaveBeenCalledTimes(2);

@@ -14,7 +14,7 @@ import { IdentityChip } from "@/ui/features/world/containers/top-header/identity
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, realmShowsWonder } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { catalogAspectId, rankName } from "@bibliothecadao/types";
 import { useHudLayout, useHudTablet } from "@/hooks/helpers/use-compact-hud";
@@ -235,7 +235,9 @@ const FrontierHudBody = ({
   const placeSwitch = (
     <PlaceSwitch
       {...placeChoices}
-      realm={shown ? { mark: homeIcon(homeKind(shown.metadata.has_wonder), shown.base.level) } : undefined}
+      realm={
+        shown ? { mark: homeIcon(homeKind(realmShowsWonder(headerFacts.store, shown)), shown.base.level) } : undefined
+      }
       lines={own ? placeLines(ownArmies) : undefined}
     />
   );
@@ -420,7 +422,7 @@ const FrontierHudBody = ({
   return <BaneDayProvider realm={shown}>{layout}</BaneDayProvider>;
 };
 
-const REALM_HEADER_MODELS = ["RaceRules"] as const;
+const REALM_HEADER_MODELS = ["RaceRules", "RealmSkin"] as const;
 
 /**
  * A phone's action row, the one row over the place bar that says what the pick lets the player do now (owner, 22 October
@@ -520,14 +522,14 @@ const HudMenu = ({
   );
 };
 
-const REALM_PANEL_MODELS = ["HomeAspect"] as const;
+const REALM_PANEL_MODELS = ["HomeAspect", "RealmSkin"] as const;
 
 const useRealmFace = (realm: NativeRows["Structure"]) => {
   const facts = useNativeFacts(REALM_PANEL_MODELS);
   const aspectId = facts.store.get("HomeAspect", { game_id: realm.game_id, home: realm.entity_id })?.aspect;
   return {
     name: useGameModeConfig().structure.getName(realm).name,
-    kind: homeKind(realm.metadata.has_wonder),
+    kind: homeKind(realmShowsWonder(facts.store, realm)),
     aspect: aspectId !== undefined ? catalogAspectId(aspectId) : undefined,
   };
 };

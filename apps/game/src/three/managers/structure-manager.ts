@@ -1,4 +1,5 @@
 import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
+import { publishMapSelection } from "@/observability/map-selection";
 import { FrontierModel, frontierModelKind, type BeastLayer } from "../structures/frontier-model";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
@@ -372,6 +373,7 @@ export class StructureManager {
       });
 
     this.plates = plates;
+    publishMapSelection({ drawnRealmSkin: (entityId) => this.drawnRealmSkin(entityId) });
 
     // Arrival countdowns and battle cooldowns tick on the plates once a second.
     this.startTimedLabelUpdates();
@@ -845,6 +847,7 @@ export class StructureManager {
       return;
     }
     this.isDestroyed = true;
+    publishMapSelection({ drawnRealmSkin: null });
     this.unsubscribeProjection();
     this.storeUnsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
 
@@ -900,6 +903,19 @@ export class StructureManager {
   getTotalStructures() {
     return this.worldSpatialProjection.getStructures(activeMapLayer()).filter((structure) => !structure.reserved)
       .length;
+  }
+
+  private drawnRealmSkin(entityId: ID): "base" | "wonder" | null {
+    for (const { model, instanceIndex } of this.structureInstanceBindings.get(entityId) ?? []) {
+      if (
+        model instanceof SettlementModel &&
+        model.kind === "realm" &&
+        model.group.visible &&
+        instanceIndex < (this.structureModelDrawCounts.get(model) ?? 0)
+      )
+        return model.wonder ? "wonder" : "base";
+    }
+    return null;
   }
 
   public prewarmChunkAssets(chunkKey: string): Promise<void> {

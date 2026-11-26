@@ -12,7 +12,7 @@ export function validateWireIds(registry, previous) {
         entry.id !== id ||
         typeof entry.name !== "string" ||
         typeof entry.retired !== "boolean" ||
-        ![undefined, "blitz"].includes(entry.family)
+        ![undefined, "blitz", "frontier"].includes(entry.family)
       )
         throw new Error(`Invalid ${kind} wire allocation at ${id}`);
       if (names.has(entry.name)) throw new Error(`Reused ${kind} wire name ${entry.name}`);
@@ -32,7 +32,9 @@ export function validateWireIds(registry, previous) {
 }
 
 export function familyWireIds(kind, family) {
-  return wireIds[kind].filter((entry) => family === "blitz" || entry.family === undefined);
+  return wireIds[kind].filter(
+    ({ family: allocatedFamily }) => allocatedFamily === undefined || allocatedFamily === family,
+  );
 }
 
 export function assignWireIds(kind, variants, family = "frontier") {

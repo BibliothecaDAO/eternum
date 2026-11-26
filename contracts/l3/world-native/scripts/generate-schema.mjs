@@ -461,11 +461,12 @@ const command = types.get("world_native::commands::Command");
 const commandBits = Object.fromEntries(
   command.variants.map(({ name, wireId }) => [name, (1n << BigInt(wireId)).toString()]),
 );
-const blitzCommandBits = Object.fromEntries(
-  wireIds.commands
-    .filter(({ retired, family }) => !retired && family === "blitz")
-    .map(({ name, id }) => [name, (1n << BigInt(id)).toString()]),
-);
+const exclusiveCommandBits = (family) =>
+  Object.fromEntries(
+    wireIds.commands
+      .filter(({ retired, family: allocatedFamily }) => !retired && allocatedFamily === family)
+      .map(({ name, id }) => [name, (1n << BigInt(id)).toString()]),
+  );
 const gamesWrites = schema.games.entrypoints
   .filter((entry) => entry.state_mutability === "external")
   .map((entry) => entry.name);
@@ -475,7 +476,8 @@ await writeText(
     "// Generated from command routes and production payload ABIs. Run the native schema generator to update.",
     'import type { BigNumberish } from "starknet";',
     `export const nativeCommandBits = ${JSON.stringify(commandBits, null, 2)} as const;`,
-    `export const nativeBlitzCommandBits = ${JSON.stringify(blitzCommandBits, null, 2)} as const;`,
+    `export const nativeBlitzCommandBits = ${JSON.stringify(exclusiveCommandBits("blitz"), null, 2)} as const;`,
+    `export const nativeFrontierOnlyCommandBits = ${JSON.stringify(exclusiveCommandBits("frontier"), null, 2)} as const;`,
     `export const nativeGamesWrites = ${JSON.stringify(gamesWrites, null, 2)} as const;`,
     "export interface NativeCommandPayloads {",
     ...command.variants.map(({ name, type }) => `  ${name}: ${commandType(type)};`),

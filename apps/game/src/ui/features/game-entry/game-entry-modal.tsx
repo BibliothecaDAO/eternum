@@ -29,7 +29,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import { useGameEntry } from "@/hooks/use-game-entry";
 
-import { submitSettlement } from "@/services/settlement";
+import { submitGameCommand } from "@/services/game-command";
 import { fetchSettlementSnapshot, type SettlementSnapshot } from "@/runtime/world/herald-pre-session-reader";
 import { isGameOver } from "@/runtime/world/directory";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
@@ -537,7 +537,7 @@ export const GameEntryModal = ({
         if (isFrontierMode && initialSnapshot?.heldRealmId == null)
           await registerHomeSource(game, heldRealmNumber === "" ? null : Number(heldRealmNumber));
         setSettleStage("settling");
-        await submitSettlement(navigationEntryContext, (client) =>
+        await submitGameCommand(navigationEntryContext, (client) =>
           client.setup.systemCalls.settle_season({
             signer,
             selectedRealm: isEternumDevMode ? Number(devRealmNumber) : undefined,

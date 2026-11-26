@@ -9,7 +9,13 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import { knownAmount } from "@/ui/utils/utils";
-import { buildablePlotCount, configManager, getBalance, ResourceManager } from "@bibliothecadao/eternum";
+import {
+  buildablePlotCount,
+  configManager,
+  getBalance,
+  realmShowsWonder,
+  ResourceManager,
+} from "@bibliothecadao/eternum";
 import { BUILDINGS_CENTER, RESOURCE_PRECISION, ResourcesIds, TroopTier, formatRate } from "@bibliothecadao/types";
 
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
@@ -52,7 +58,7 @@ export const CastleUpgrade = ({
   if (!levelUp) return null;
   return (
     <CastleView
-      now={castleSide(setup.store, realm.game_id, levelUp.currentLevel, realm.metadata.has_wonder)}
+      now={castleSide(setup.store, realm.game_id, levelUp.currentLevel, realmShowsWonder(setup.store, realm))}
       laborRate={formatRate(castleLabor(setup.store, realm, tick))}
       research={
         ordersAllowed &&
@@ -74,7 +80,7 @@ const upgradeOrder = (
   tick: number,
 ): CastleUpgradeOrder => {
   return {
-    next: castleSide(store, realm.game_id, levelUp.nextLevel, realm.metadata.has_wonder),
+    next: castleSide(store, realm.game_id, levelUp.nextLevel, realmShowsWonder(store, realm)),
     prices: levelUp.requirements.map(({ resource, amount }) => ({ of: castlePriceKind(resource), amount })),
     refusal: castleUpgradeRefusal(store, realm, levelUp, tick),
     sending: levelUp.loading,

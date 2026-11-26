@@ -49,6 +49,7 @@ const season = (gameId: number, startMainAt: number, ownRealm: boolean): Directo
             resources_packed: "0",
             aspect: null,
             has_wonder: false,
+            realm_skin: 0,
           },
         ]
       : [],
@@ -83,6 +84,7 @@ describe("the season a screen shows", () => {
             resources_packed: "0",
             aspect: null,
             has_wonder: false,
+            realm_skin: 0,
           },
         ],
       },

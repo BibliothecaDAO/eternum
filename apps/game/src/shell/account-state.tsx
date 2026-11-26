@@ -1,21 +1,37 @@
 import { useState } from "react";
 
-import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
+import { DEVICE_LIMIT_REACHED, isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
 import { signOutIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { forgetDeviceKey } from "@bibliothecadao/eternum";
+import { DOORWAY_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
 
+import { DEVICES_PATH } from "./profile/settings-route";
 import { useRequestSignIn } from "./sign-in/connect";
 
 const buttonClass =
   "rounded-thumb border border-kit-gold/40 px-3 py-2 font-body text-sm text-kit-gold hover:bg-kit-gold/10 disabled:opacity-50";
 
 /** A device removed from the account signs in again, as a new device with a fresh key. */
-export const AccountStatePrompt = () => {
+export const AccountStatePrompt = ({ onRetry }: { onRetry?: () => void }) => {
   const state = useAccountStore((store) => store.provisioningError);
   const requestSignIn = useRequestSignIn();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  if (state === DEVICE_LIMIT_REACHED)
+    return (
+      <div className="flex flex-col gap-1.5 rounded-thumb border border-kit-gold/40 p-3 text-sm text-kit-gold/80">
+        <span>{DOORWAY_WORDS.deviceLimit}</span>
+        <a href={DEVICES_PATH} target="_blank" rel="noopener noreferrer" className={buttonClass}>
+          {DOORWAY_WORDS.removeDevice}
+        </a>
+        {onRetry && (
+          <button type="button" onClick={onRetry} className={buttonClass}>
+            {TRY_AGAIN}
+          </button>
+        )}
+      </div>
+    );
   if (!isAccountStatePrompt(state)) return null;
 
   const run = async (action: () => Promise<void>) => {
