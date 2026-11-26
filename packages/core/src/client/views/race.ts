@@ -91,7 +91,7 @@ function readAspectMembers(
   if (memberships.length !== (count?.members ?? 0)) return { unknown: "INCOMPLETE_ASPECT_MEMBERS" };
   const members: RaceMemberRow[] = [];
   for (const row of memberships) {
-    const member = store.requireOrAbsent("RaceMember", { game_id: gameId, entity_id: row.home });
+    const member = memberGlory(store, gameId, row.home);
     if (!member.known) return member;
     members.push({
       home: row.home,
@@ -102,6 +102,17 @@ function readAspectMembers(
   }
   members.sort(compareAspectMembers);
   return { known: { members } };
+}
+
+function memberGlory(
+  store: NativeFactStore,
+  gameId: number,
+  home: bigint,
+): NativeFactResult<{ glory: bigint; contribution: bigint }> {
+  const row = store.get("RaceMember", { game_id: gameId, entity_id: home });
+  if (row) return { known: row };
+  const absent = store.absenceKnown("RaceMember", { game_id: gameId, entity_id: home });
+  return absent.known ? { known: { glory: 0n, contribution: 0n } } : { unknown: absent.unknown };
 }
 
 function readOwnAspect(
