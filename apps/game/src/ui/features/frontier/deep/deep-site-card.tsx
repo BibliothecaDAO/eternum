@@ -220,7 +220,11 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, viewer: 
   const total = site.garrisons.reduce((sum, garrison) => sum + paid(garrison), 0n);
   const aspectId = catalogAspectId(site.aspect);
   const owner = store.get("Structure", { game_id, entity_id: site.id })?.owner;
-  const viewerSide = isViewerOwner(owner, viewer) ? "own" : viewerAspects(store, game_id, viewer).has(aspectId) ? "ally" : "rival";
+  const viewerSide = isViewerOwner(owner, viewer)
+    ? "own"
+    : viewerAspects(store, game_id, viewer).has(aspectId)
+      ? "ally"
+      : "rival";
   return {
     kind: "held",
     aspectId,

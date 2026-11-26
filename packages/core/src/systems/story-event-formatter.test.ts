@@ -651,7 +651,10 @@ describe("a capture", () => {
     const { store, setHeldRealm } = buildStore();
     setHeldRealm(5, 1, 1);
     const row = store.require("Structure", { game_id: 1, entity_id: 5n });
-    const site = { ...row, base: { ...row.base, category: StructureType.DeepSite, level: 0, troop_max_explorer_count: 0 } };
+    const site = {
+      ...row,
+      base: { ...row.base, category: StructureType.DeepSite, level: 0, troop_max_explorer_count: 0 },
+    };
     store.applyFacts([{ model: "Structure", key: store.wireKeyOf("Structure", row)!, value: site }]);
     const event = story("StructureCapturedStory", { previous_owner: "0xa1", new_owner: "0xc1" }, 5);
     expect(buildStoryEventPresentation(event, store, names).title).toBe(
