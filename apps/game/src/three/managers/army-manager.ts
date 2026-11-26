@@ -300,7 +300,7 @@ export class ArmyManager {
     this.visibilityManager = visibilityManager;
     this.hexagonScene = hexagonScene;
     this.fxManager = new FXManager(scene, 1, { compilePipelines });
-    this.attachmentManager = new CosmeticAttachmentManager(scene);
+    this.attachmentManager = new CosmeticAttachmentManager(scene, compilePipelines);
     this.store = gameContext?.store as NativeFactStore | undefined;
     this.unsubscribeArmyProjection = worldSpatialProjection.subscribeArmies((changes) => {
       this.handleArmyProjectionChanges(projectionChangesForLayer(changes, activeMapLayer()));
