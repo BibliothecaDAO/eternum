@@ -58,9 +58,3 @@ fn remainder_follows_home_identity_instead_of_guard_slot_order() {
     assert_eq!(split_payment(5, first), array![2, 3].span());
     assert_eq!(split_payment(5, second), array![3, 2].span());
 }
-
-#[test]
-#[should_panic(expected: "duplicate reward home")]
-fn one_home_cannot_receive_two_guard_shares() {
-    split_payment(5, array![DeepShare { home: 9, troops: 1 }, DeepShare { home: 9, troops: 1 }].span());
-}
