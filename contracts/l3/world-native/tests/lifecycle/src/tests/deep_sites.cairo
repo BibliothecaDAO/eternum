@@ -577,7 +577,8 @@ fn a_garrison_loses_the_rule_amount_each_tick_and_an_emptied_slot_is_released() 
     applied(d, game_id, touch, later);
     assert_eq!(garrisoned(d, held), troops(1000) - 3 * rules.loss_per_tick);
     assert_eq!(holder(d, held), home);
-    let drained = (FIXTURE_START / interval + 1) * interval + troops(1000) / rules.loss_per_tick * interval;
+    let ticks: u64 = (troops(1000) / rules.loss_per_tick).try_into().unwrap();
+    let drained = (FIXTURE_START / interval + ticks) * interval;
     applied(d, game_id, touch, drained);
     assert_eq!((holder(d, held), garrisoned(d, held)), (0, 0));
     assert_eq!(holding(d, target), 1);
