@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "9350c8c56b388922143ba0c028d0eaf68b1f358b7a8557713a5e2bebcba3eea9";
+export const nativeFactSchemaIdentity = "2843acae7b6c6854001c0e2e807f140259f1506d291c10a02c227987d8d0b48b";
 export const nativeIdentifiers = {
   "rule": {
     "ENTRY_ENTITLEMENT": 0,
