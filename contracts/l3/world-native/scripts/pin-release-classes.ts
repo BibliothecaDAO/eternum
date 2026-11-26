@@ -1,22 +1,41 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { hash } from "starknet";
+import { environments, shardInputs, type Environment } from "../../../../deploy/first/settings";
 import { NATIVE_RELEASES } from "../../../../deploy/release/native-release";
 
 export type ReleasePin = { release: number; logic: Record<string, string> };
+export type Registrations = readonly { environment: string; releases: readonly number[] | null }[];
 
 const REPIN = "bun contracts/l3/world-native/scripts/pin-release-classes.ts --write";
 
-export function repinnedRelease(built: ReleasePin, pinned: ReleasePin, write: boolean): ReleasePin {
+export function repinnedRelease(
+  built: ReleasePin,
+  pinned: ReleasePin,
+  write: boolean,
+  registrations: Registrations,
+): ReleasePin {
   const changed = Object.keys({ ...built.logic, ...pinned.logic }).filter(
     (name) => built.logic[name] !== pinned.logic[name],
   );
   if (built.release < pinned.release)
     throw new Error(`Release ${built.release} is older than the pinned release ${pinned.release}`);
-  if (built.release === pinned.release && changed.length > 0)
-    throw new Error(
-      `Frontier logic classes ${changed.join(", ")} differ from release ${pinned.release}'s pin, and a shard refuses other classes under one release id: open release ${pinned.release + 1} in deploy/release/native-release.ts, then repin (${REPIN}).`,
-    );
+  if (built.release === pinned.release && changed.length > 0) {
+    const differ = `Frontier logic classes ${changed.join(", ")} differ from release ${pinned.release}'s pin`;
+    const reopen = `open release ${pinned.release + 1} in deploy/release/native-release.ts, then repin (${REPIN})`;
+    if (!write) throw new Error(`${differ}, and a shard refuses other classes under one release id: ${reopen}.`);
+    const unread = registrations.find(({ releases }) => releases === null);
+    if (unread)
+      throw new Error(
+        `${differ}, and ${unread.environment}'s Herald manifest could not be read to tell whether its shard registered it: ${reopen}.`,
+      );
+    const registered = registrations.find(({ releases }) => releases!.includes(pinned.release));
+    if (registered)
+      throw new Error(
+        `${differ}, and ${registered.environment}'s shard registered release ${pinned.release}, so it refuses other classes under that id: ${reopen}.`,
+      );
+    return built;
+  }
   if (built.release !== pinned.release && !write)
     throw new Error(`Release ${built.release} is not pinned (the pin holds release ${pinned.release}): ${REPIN}`);
   return built;
@@ -56,10 +75,33 @@ function builtRelease(): ReleasePin {
   };
 }
 
+async function readRegistrations(): Promise<Registrations> {
+  return Promise.all(
+    (Object.keys(environments) as Environment[]).map(async (environment) => {
+      try {
+        const response = await fetch(`${shardInputs(environments[environment]).public_herald_url}/manifest`, {
+          redirect: "manual",
+        });
+        if (!response.ok) return { environment, releases: null };
+        const manifest = (await response.json()) as { releases?: Record<string, unknown> };
+        return { environment, releases: manifest.releases ? Object.keys(manifest.releases).map(Number) : null };
+      } catch {
+        return { environment, releases: null };
+      }
+    }),
+  );
+}
+
 if (import.meta.main) {
   const pin = new URL("../release-classes.json", import.meta.url);
   const write = process.argv.includes("--write");
-  const release = repinnedRelease(builtRelease(), JSON.parse(readFileSync(pin, "utf8")) as ReleasePin, write);
+  const registrations = write ? await readRegistrations() : [];
+  const release = repinnedRelease(
+    builtRelease(),
+    JSON.parse(readFileSync(pin, "utf8")) as ReleasePin,
+    write,
+    registrations,
+  );
   console.log(JSON.stringify(release));
   if (write) writeFileSync(pin, `${JSON.stringify(release, null, 2)}\n`);
 }
