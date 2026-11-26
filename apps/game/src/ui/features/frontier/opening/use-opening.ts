@@ -29,7 +29,14 @@ import {
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { catalogAspectId, getNeighborHexes, rankName, RealmLevels, ResourcesIds, TroopTier } from "@bibliothecadao/types";
+import {
+  catalogAspectId,
+  getNeighborHexes,
+  rankName,
+  RealmLevels,
+  ResourcesIds,
+  TroopTier,
+} from "@bibliothecadao/types";
 import { useEffect } from "react";
 
 import type { OpeningRules } from "@/ui/design-system/kit/words";
