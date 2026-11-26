@@ -11,8 +11,10 @@ it("marks every beast's class as a blade or bow, its tip telling strike order al
     keyof typeof COMBAT_MARK_WORDS
   >;
   for (const category of Object.values(TroopType)) {
-    const badge = new DOMParser().parseFromString(renderToStaticMarkup(<BeastMarkBadge category={category} />), "text/html")
-      .body.firstElementChild!;
+    const badge = new DOMParser().parseFromString(
+      renderToStaticMarkup(<BeastMarkBadge category={category} />),
+      "text/html",
+    ).body.firstElementChild!;
     expect(badge.getAttribute("data-combat-mark")).toBe(COMBAT_MARK_WORDS[expected[category]]);
     expect(badge.getAttribute("data-tip")).toBe(BEAST_MARK_TIPS[expected[category]]);
   }
