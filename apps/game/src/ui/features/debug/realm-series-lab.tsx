@@ -18,7 +18,6 @@ export function RealmSeriesLab() {
     distance: Number(params.get("distance") ?? 20),
     lineup: params.get("lineup") === "1",
     base: params.get("base") === "1",
-    grow: params.get("base") === "1" && params.get("grow") === "1",
     reference:
       params.get("wonder") === "1" || params.get("base") === "1" ? undefined : (params.get("reference") ?? undefined),
     comparison:
@@ -166,15 +165,6 @@ export function RealmSeriesLab() {
             onChange={(e) => change("base", e.target.checked ? "1" : "0")}
           />{" "}
           Base rank candidates
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={settings.grow}
-            disabled={!settings.base}
-            onChange={(e) => change("grow", e.target.checked ? "1" : "0")}
-          />{" "}
-          Ranks grow
         </label>
       </header>
       <p role="status" style={{ padding: "0 16px" }}>
