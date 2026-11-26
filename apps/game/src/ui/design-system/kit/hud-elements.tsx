@@ -891,7 +891,7 @@ export const HudChip = ({
   disabled = false,
   children,
 }: {
-  tone?: Tone;
+  tone?: Tone | "gold";
   /** The paintings of what it counts, one or two overlapping (stamina; a returning army's troops). */
   icons?: readonly IconMeaning[];
   /** What it counts, for assistive technology, which reads it with the chip's own words ("Stamina 120"). */
