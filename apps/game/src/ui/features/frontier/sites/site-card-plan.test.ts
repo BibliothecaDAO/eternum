@@ -371,7 +371,13 @@ it("keeps a Knight garrison protected and removes that protection from the beast
     {
       model: "Guard",
       key: "0x100",
-      value: { game_id: 1, structure_id: site.id, slot: 0, destroyed_tick: 0, troops: { ...army.troops, category: "Knight" } },
+      value: {
+        game_id: 1,
+        structure_id: site.id,
+        slot: 0,
+        destroyed_tick: 0,
+        troops: { ...army.troops, category: "Knight" },
+      },
     },
   ]);
   expect(readDeepSiteFight(store, held(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });

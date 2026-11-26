@@ -102,8 +102,13 @@ export const deepScenario = (closedRing = false): LabScenario => {
           ...home,
           entity_id: entityId,
           owner: held ? home.owner : 0n,
-          base: { ...home.base, category: StructureType.DeepSite, level: 0, troop_max_explorer_count: 0,
-            troop_max_guard_count: nativeRuleConstants.DEEP_GUARD_SLOTS },
+          base: {
+            ...home.base,
+            category: StructureType.DeepSite,
+            level: 0,
+            troop_max_explorer_count: 0,
+            troop_max_guard_count: nativeRuleConstants.DEEP_GUARD_SLOTS,
+          },
         }),
       },
       {
@@ -132,7 +137,8 @@ export const deepScenario = (closedRing = false): LabScenario => {
         },
       },
     );
-    if (!held) facts.push({
+    if (!held)
+      facts.push({
         model: "Guard",
         key: `0xdeec${place}`,
         value: wire({

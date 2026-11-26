@@ -61,7 +61,11 @@ export function deepBattleTargetScenario(): LabScenario {
     },
     { model: "HomeAspect", key: store.wireKeyOf("HomeAspect", aspect)!, value: wire({ ...aspect, aspect: 2 }) },
     { model: "DeepSite", key: store.wireKeyOf("DeepSite", held)!, value: wire({ ...held, aspect: 2 }) },
-    { model: "Structure", key: store.wireKeyOf("Structure", structure)!, value: wire({ ...structure, owner: holder.owner }) },
+    {
+      model: "Structure",
+      key: store.wireKeyOf("Structure", structure)!,
+      value: wire({ ...structure, owner: holder.owner }),
+    },
     {
       model: "SliceRules",
       key: store.wireKeyOf("SliceRules", rules)!,
