@@ -6,7 +6,6 @@ export type CosmeticCategory = "army-skin" | "structure-skin" | "attachment";
 
 export enum CosmeticTraitType {
   RealmAura = 2,
-  RealmSkin = 3,
   TroopAura = 4,
   TroopPrimary = 5,
   TroopSecondary = 6,

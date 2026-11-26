@@ -4,11 +4,19 @@
   "fit": "lab",
   "transform": {
     "yaw_deg_about_y": 0,
-    "scale": 1.58,
+    "scale": 1.65,
     "offset_xyz": [0, 0, 0]
   },
   "flags": [
-    { "role": "banner", "position": [0.04, 0.62, -0.45], "size": [0.075, 0.14], "facing": 0 },
-    { "role": "banner", "position": [0.375, 0.31, 0], "size": [0.07, 0.12], "facing": 0 }
+    {
+      "top": [-0.265, 0.33, 0.142],
+      "width": 0.07,
+      "facing": 0
+    },
+    {
+      "top": [0.315, 0.29, 0.109],
+      "width": 0.07,
+      "facing": 0
+    }
   ]
 }

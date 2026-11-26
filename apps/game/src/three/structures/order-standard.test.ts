@@ -25,7 +25,7 @@ import { context } from "three/tsl";
 import * as ThreeWebGPU from "three/webgpu";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { OrderStandard, resolveOrderSignumCell } from "./order-standard";
+import { ORDER_STANDARD_NAME, OrderStandard, resolveOrderSignumCell } from "./order-standard";
 import { SettlementModel } from "./settlement-model";
 
 vi.mock("../utils/contact-shadow", () => ({
@@ -134,10 +134,10 @@ describe("order stone signum", () => {
     };
     const realm = build("realm");
     const village = build("village");
-    expect(realm.group.getObjectByName("Order stone signum")).toBeDefined();
-    expect(village.group.getObjectByName("Order stone signum")).toBeUndefined();
+    expect(realm.group.getObjectByName(ORDER_STANDARD_NAME)).toBeDefined();
+    expect(village.group.getObjectByName(ORDER_STANDARD_NAME)).toBeUndefined();
     realm.setCount(2);
-    const signum = realm.group.getObjectByName("Order stone signum")!;
+    const signum = realm.group.getObjectByName(ORDER_STANDARD_NAME)!;
     expect((signum.getObjectByName("Order signum stone") as InstancedMesh).count).toBe(2);
     realm.dispose();
     village.dispose();
@@ -291,7 +291,7 @@ describe("order stone signum", () => {
     const scene = new Group();
     scene.add(new Mesh(new BoxGeometry(), new MeshStandardMaterial()));
     const realm = new SettlementModel({ scene, animations: [] } as unknown as GLTF, 3, "realm");
-    const signum = realm.group.getObjectByName("Order stone signum")!;
+    const signum = realm.group.getObjectByName(ORDER_STANDARD_NAME)!;
     const meshes = ["Order signum stone", "Order signum cloth", "Order signum emblem"].map(
       (name) => signum.getObjectByName(name) as InstancedMesh,
     );

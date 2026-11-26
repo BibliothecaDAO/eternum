@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { BiomeType } from "@bibliothecadao/types";
-import { BASALT_SUPPORT_HEIGHT } from "../terrain/terrain-basalt";
 import { TERRAIN_WATER_LEVEL } from "../terrain/terrain-water";
 import { groundHeightOf, takeShownTiles, WorldmapTerrainContent } from "./worldmap-terrain-content";
 
@@ -127,17 +126,15 @@ describe("the ground a tile's facts put under what stands on it", () => {
     surfacePresentation: more.surfacePresentation,
   });
 
-  it("is one height for fog and every dry biome, the water's surface on water, and the basalt plane on a spire's tile or an ethereal page", () => {
+  it("is one height for fog and every dry biome, the water's surface on water, and the ground on a spire's tile or an ethereal page, never water", () => {
     expect(groundHeightOf(facts(undefined), false)).toBe(0);
     expect(groundHeightOf(facts(BiomeType.Snow), false)).toBe(0);
     expect(groundHeightOf(facts(BiomeType.Grassland), false)).toBe(0);
     expect(groundHeightOf(facts(BiomeType.Ocean), false)).toBe(TERRAIN_WATER_LEVEL);
     expect(groundHeightOf(facts(BiomeType.DeepOcean), false)).toBe(TERRAIN_WATER_LEVEL);
     expect(groundHeightOf(facts(BiomeType.Ocean, { reclaimsLand: true }), false)).toBe(0);
-    expect(groundHeightOf(facts(BiomeType.Snow, { surfacePresentation: "ethereal" }), false)).toBe(
-      BASALT_SUPPORT_HEIGHT,
-    );
-    expect(groundHeightOf(facts(BiomeType.Snow), true)).toBe(BASALT_SUPPORT_HEIGHT);
+    expect(groundHeightOf(facts(BiomeType.Ocean, { surfacePresentation: "ethereal" }), false)).toBe(0);
+    expect(groundHeightOf(facts(BiomeType.Ocean), true)).toBe(0);
     expect(groundHeightOf(facts(undefined), true)).toBe(0);
   });
 });

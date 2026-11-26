@@ -284,6 +284,9 @@
   background: var(--app-well);
   padding: 0.875rem 1rem;
 }
+.referrals-invite[data-invite-locked] {
+  border: 1px dashed var(--app-line-strong);
+}
 
 .referrals-funnel {
   display: grid;

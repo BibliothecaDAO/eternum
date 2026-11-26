@@ -150,7 +150,7 @@ it("names a LORDS withdrawal by its whole amount, and another player's by the pl
   });
 });
 
-it("formats native battle sides and positive Ethereal rolls without a legacy row projection", () => {
+it("formats native battle sides without a legacy row projection, and no dice, as a battle rolls none", () => {
   const presentation = buildStoryEventPresentation(
     story("BattleEvent", {
       attacker_id: 20,
@@ -171,8 +171,7 @@ it("formats native battle sides and positive Ethereal rolls without a legacy row
   );
   expect(presentation.title).toBe("Lord 0123 vs Lord 0456 · Lord 0123 wins");
   expect(presentation.description).toContain("Outcome: Lord 0123 wins");
-  expect(presentation.description).toContain("Attacker d20: 20 (+20% damage)");
-  expect(presentation.description).toContain("Defender d20: 1 (+1% damage)");
+  expect(presentation.description).not.toContain("d20");
 });
 
 it("formats Frontier battle stories with Frontier troop names, no tier prefix and no d20 line", () => {

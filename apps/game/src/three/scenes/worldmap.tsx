@@ -312,6 +312,7 @@ import {
   readOrderRequest,
   stepBackOnEscape,
 } from "./worldmap-order-request";
+import { ownSelectionOn, type OwnSelection } from "./worldmap-own-selection";
 import { hudFor } from "@/ui/layouts/hud-for";
 import { hudLayoutNow } from "@/hooks/helpers/use-compact-hud";
 import {
@@ -2688,10 +2689,10 @@ export default class WorldmapScene extends WarpTravel {
       ? this.getHexagonEntity(hexCoords)
       : { army: undefined, structure: undefined };
     const army = standingArmy ?? (hexCoords ? this.getOwnArmyOrderedTo(hexCoords) : undefined);
-    const post = hexCoords && !army ? this.ownSupplyPostAt(hexCoords) : null;
-    if (hexCoords && post !== null) {
+    const own = hexCoords && !army ? this.ownSelectionAt(hexCoords) : null;
+    if (hexCoords && own?.kind === "supply-post") {
       this.handleHexSelection(hexCoords, true);
-      this.onStructureSelection(post, hexCoords);
+      this.onStructureSelection(own.id, hexCoords);
       return;
     }
     const clickPlan = resolveWorldmapHexClickPlan({
@@ -3129,8 +3130,14 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private holdsOwnSelectable(hexCoords: HexPosition): boolean {
-    const { army, structure } = this.getHexagonEntity(hexCoords);
-    return [army?.owner, structure?.owner].some((owner) => owner !== undefined && isAddressEqualToAccount(owner));
+    return this.ownSelectionAt(hexCoords) !== null;
+  }
+
+  private ownSelectionAt(hexCoords: HexPosition): OwnSelection | null {
+    return ownSelectionOn(
+      { ...this.getHexagonEntity(hexCoords), ownSupplyPost: this.ownSupplyPostAt(hexCoords) },
+      isAddressEqualToAccount,
+    );
   }
 
   /**

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { terrainHexToWorld } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
 import { prepareTerrainPage } from "./terrain-page-builder";
+import { TERRAIN_GROUND_HEIGHT } from "./terrain-surface";
 import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 
 const cell = (col: number, overrides: Partial<TerrainCellInput> = {}): TerrainCellInput => ({
@@ -61,9 +62,9 @@ describe("surface basalt margins", () => {
       b = samples(right);
     expect(a.size).toBeGreaterThan(0);
     expect(b).toEqual(a);
-    for (const height of a.values()) expect(height).toBeCloseTo(0.12, 6);
+    for (const height of a.values()) expect(height).toBeCloseTo(TERRAIN_GROUND_HEIGHT, 6);
     const field = new TerrainField(source([spire, cell(1)]));
-    expect(field.sampleSurface(0.9, 0).height).toBeCloseTo(0.12, 6);
+    expect(field.sampleSurface(0.9, 0).height).toBeCloseTo(TERRAIN_GROUND_HEIGHT, 6);
     const neighbor = terrainHexToWorld(1, 0);
     const ordinary = new TerrainField(source([cell(0), cell(1)]));
     expect(field.sampleSurface(neighbor.x, neighbor.z).height).toBeCloseTo(

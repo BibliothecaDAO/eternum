@@ -1,11 +1,7 @@
 import { setWorldOrigin, worldOrigin } from "../world-origin";
 import { describe, expect, it } from "vitest";
-import {
-  BASALT_SHELL_TRIANGLES,
-  BASALT_SHELL_VERTICES,
-  BASALT_SUPPORT_HEIGHT,
-  buildBasaltShell,
-} from "./terrain-basalt";
+import { BASALT_SHELL_TRIANGLES, BASALT_SHELL_VERTICES, buildBasaltShell } from "./terrain-basalt";
+import { TERRAIN_GROUND_HEIGHT } from "./terrain-surface";
 import { terrainHexCorners } from "./terrain-coordinates";
 import { createEtherealTerrainMaterial } from "./terrain-ethereal-material";
 
@@ -32,7 +28,7 @@ describe("flat ethereal basalt", () => {
       const indices = geometry.indices.slice(index, index + 3);
       if (geometry.normals[indices[0] * 3 + 1] === 0) continue;
       const [a, b, c] = indices.map((vertex) => geometry.positions.slice(vertex * 3, vertex * 3 + 3));
-      for (const point of [a, b, c]) expect(point[1]).toBe(BASALT_SUPPORT_HEIGHT);
+      for (const point of [a, b, c]) expect(point[1]).toBe(TERRAIN_GROUND_HEIGHT);
       topArea += Math.abs((b[0] - a[0]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[0] - a[0])) / 2;
     }
     const corners = terrainHexCorners(0, 0);
@@ -44,27 +40,12 @@ describe("flat ethereal basalt", () => {
     expect(topArea).toBeCloseTo(expectedArea, 10);
   });
 
-  it("closes all six outer edges with outward walls and consistent triangle winding", () => {
+  it("is only its walkable cap, flush with the mist around it, facing up", () => {
     const geometry = buildBasaltShell();
-    const wallNormals = new Set<string>();
-    for (let index = 0; index < geometry.indices.length; index += 3) {
-      const indices = geometry.indices.slice(index, index + 3);
-      const [a, b, c] = indices.map((vertex) => geometry.positions.slice(vertex * 3, vertex * 3 + 3));
-      const normal = geometry.normals.slice(indices[0] * 3, indices[0] * 3 + 3);
-      const cross = [
-        (b[1] - a[1]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[1] - a[1]),
-        (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]),
-        (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]),
-      ];
-      expect(cross.reduce((sum, value, axis) => sum + value * normal[axis], 0)).toBeGreaterThan(0);
-      if (normal[1] === 0) {
-        wallNormals.add(normal.join(":"));
-        expect(normal[0] * (a[0] + b[0] + c[0]) + normal[2] * (a[2] + b[2] + c[2])).toBeGreaterThan(0);
-        expect(Math.min(a[1], b[1], c[1])).toBe(0.075);
-        expect(Math.max(a[1], b[1], c[1])).toBe(BASALT_SUPPORT_HEIGHT);
-      }
-    }
-    expect(wallNormals.size).toBe(6);
+    expect(geometry.normals.every((value, index) => value === (index % 3 === 1 ? 1 : 0))).toBe(true);
+    expect(geometry.positions.filter((_, index) => index % 3 === 1).every((y) => y === TERRAIN_GROUND_HEIGHT)).toBe(
+      true,
+    );
   });
 
   it("keeps the shared render resource below two KiB with no per-slab geometry", () => {
@@ -73,7 +54,7 @@ describe("flat ethereal basalt", () => {
     expect(geometry.indices.length / 3).toBe(BASALT_SHELL_TRIANGLES);
     const bytes =
       (geometry.positions.length + geometry.normals.length + geometry.colors.length) * 4 + geometry.indices.length * 2;
-    expect(bytes).toBe(1176);
+    expect(bytes).toBe(240);
   });
 
   it("uses surface color only, without emission or geometry/normal displacement", () => {

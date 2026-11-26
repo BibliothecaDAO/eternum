@@ -352,9 +352,6 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
       `${label} forces: ${forces(value, entityId)} [ ${formatUnitAmount(value.before)} ]`,
       `${label} losses: ${formatResourceAmount(BigInt(String(value.before)) - BigInt(String(value.after)))}`,
       `${label} Troops Left: ${formatResourceAmount(value.after)}`,
-      !frontier && Number(value.roll) > 0
-        ? `${label} d20: ${Number(value.roll)} (+${Number(value.roll)}% damage)`
-        : undefined,
     ];
     const sides = `${attackerName ?? "Attacker"} vs ${defenderName ?? "Defender"}`;
     // The viewer's own loss leads: who won is then plain, and the army it cost is what they need to read.

@@ -1,7 +1,6 @@
 import "./build-view.css";
 
-import { formatCharge, formatExact, formatShortDuration, rankName } from "@bibliothecadao/types";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { formatShortDuration, rankName } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import {
   HudButton,
@@ -25,7 +24,7 @@ import {
   type RankedWords,
 } from "@/ui/design-system/kit/words";
 
-import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-faces";
+import { type Price } from "@/ui/design-system/kit/price-faces";
 import type { ReactNode } from "react";
 import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { RefusedVerb } from "../refused-verb";
@@ -98,7 +97,7 @@ export const BuildView = ({
                   <TileButton
                     key={tile.key}
                     tile={tile}
-                    priced={desktop}
+                    gainShown={desktop}
                     chosen={index === chosen}
                     onChoose={() => onChoose(index)}
                   />
@@ -182,12 +181,12 @@ const ChosenLine = ({ tile, prices }: { tile: BuildTile; prices: readonly Price[
 
 const TileButton = ({
   tile,
-  priced,
+  gainShown,
   chosen,
   onChoose,
 }: {
   tile: BuildTile;
-  priced: boolean;
+  gainShown: boolean;
   chosen: boolean;
   onChoose: () => void;
 }) => (
@@ -204,13 +203,15 @@ const TileButton = ({
               {requiresRank(rankName(tile.standing.level))}
             </span>
           )}
-          {tile.gives.value !== undefined && tile.standing.kind !== "level" && <Gives gives={tile.gives} />}
-          {priced && tile.standing.kind !== "built" && <TilePrice standing={tile.standing} />}
+          {gainShown && tile.gives.value !== undefined && tile.standing.kind !== "level" && (
+            <Gives gives={tile.gives} />
+          )}
+          {tile.standing.kind !== "built" && <TilePrice standing={tile.standing} />}
         </span>
       }
       selected={chosen}
       tone={chosen && tile.standing.kind === "price" && tile.standing.short ? "bad" : undefined}
-      data-locked={tile.standing.kind === "level" || undefined}
+      data-locked={isUnavailable(tile.standing) || undefined}
       onClick={onChoose}
     />
   </span>
@@ -240,38 +241,20 @@ const Gives = ({ gives }: { gives: BuildTile["gives"] }) => (
   </span>
 );
 
+const isUnavailable = (standing: BuildTile["standing"]): boolean =>
+  standing.kind === "level" || (standing.kind === "price" && standing.short !== undefined);
+
 const TilePrice = ({ standing }: { standing: Exclude<BuildTile["standing"], { kind: "built" }> }) => {
   const short = standing.kind === "price" ? standing.short : undefined;
   return (
     <span data-build-price className="build-tile-price">
-      <PriceAmounts prices={standing.prices} />
+      <HudPrice prices={standing.prices} />
       {short?.wait !== undefined && (
         <span className="flex items-center gap-0.5 text-hud-muted">
           <SemanticIcon name="hourglass" size={12} />
           {formatShortDuration(short.wait)}
         </span>
       )}
-    </span>
-  );
-};
-
-type PriceTag = Price & { short?: boolean };
-
-const PriceAmounts = ({ prices }: { prices: readonly PriceTag[] }) => {
-  if (prices.length === 0) return <span className="text-hud-ink">{costLine(prices)}</span>;
-  return (
-    <span className="inline-flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 tabular-nums">
-      {prices.map(({ of, amount, short }) => (
-        <span
-          key={of}
-          data-short={short || undefined}
-          className={cn("inline-flex items-center gap-1", short ? "text-hud-bad" : "text-hud-ink")}
-          aria-label={`${formatExact(amount)} ${PRICE_FACES[of].word}`}
-        >
-          {PRICE_FACES[of].icon && <SemanticIcon name={PRICE_FACES[of].icon!} size={15} />}
-          {formatCharge(amount)}
-        </span>
-      ))}
     </span>
   );
 };

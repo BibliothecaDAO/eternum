@@ -4,12 +4,24 @@
   "fit": "lab",
   "transform": {
     "yaw_deg_about_y": 0,
-    "scale": 1.72,
+    "scale": 1.66,
     "offset_xyz": [0, 0, 0]
   },
   "flags": [
-    { "role": "banner", "position": [0, 0.362, 0.2], "size": [0.16, 0.18], "facing": 0 },
-    { "role": "banner", "position": [-0.047, 0.192, 0.415], "size": [0.06, 0.11], "facing": 0 },
-    { "role": "banner", "position": [0.142, 0.19, 0.392], "size": [0.06, 0.11], "facing": 0 }
+    {
+      "top": [-0.005, 0.5, 0.169],
+      "width": 0.09,
+      "facing": 0
+    },
+    {
+      "top": [-0.105, 0.39, 0.177],
+      "width": 0.07,
+      "facing": 0
+    },
+    {
+      "top": [0.095, 0.39, 0.172],
+      "width": 0.07,
+      "facing": 0
+    }
   ]
 }

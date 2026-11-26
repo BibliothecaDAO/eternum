@@ -24,6 +24,8 @@ import { ResultsPage } from "./shell/season-tab/results-page";
 import { SeasonPage } from "./shell/season-tab/season-page";
 import { SharedLinkPage } from "./shell/share/shared-link-page";
 import { FragmentsPage } from "./shell/shop/fragments-page";
+import { CosmeticsPage } from "./shell/cosmetics/cosmetics-page";
+import { COSMETICS_PATH } from "./shell/cosmetics/cosmetics-route";
 import { FirstFrame } from "./shell/first-frame";
 import { ConnectFlow } from "./shell/sign-in/connect-flow";
 import { LAB_GAME_ROUTE } from "./lab/game/lab-shard";
@@ -72,6 +74,7 @@ export const appRoutes = (
       <Route path="results/:id" element={<ResultsPage />} />
       <Route path={PROFILE_PATH.slice(1)} element={<ProfilePage />} />
       <Route path={`${PROFILE_PATH.slice(1)}/settings`} element={<SettingsRedirect />} />
+      <Route path={COSMETICS_PATH.slice(1)} element={<CosmeticsPage />} />
       <Route path={FRAGMENTS_PATH.slice(1)} element={<FragmentsPage />} />
       <Route path="p/:address" element={<PlayerPage />} />
       <Route path="scroll" element={<WhatsNewPage />} />

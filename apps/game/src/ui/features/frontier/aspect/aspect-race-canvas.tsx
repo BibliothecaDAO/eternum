@@ -3,14 +3,13 @@ import "./aspect-race-canvas.css";
 import { useEffect, useRef, useState } from "react";
 
 import type { AspectRaceRendererHandle } from "@/three/race/aspect-race-renderer";
-import type { RaceTowerEntry, TowerPlateAnchor } from "@/three/race/aspect-race-world";
+import type { RaceDeep, RaceTowerEntry, TowerPlateAnchor } from "@/three/race/aspect-race-world";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 
-type AspectRaceCanvasSurface = "hud" | "shell" | "shell-compact";
+type AspectRaceCanvasSurface = "shell" | "shell-compact";
 
 const SURFACE_CLASS: Record<AspectRaceCanvasSurface, string> = {
-  hud: "race-stage",
   shell: "race-stage race-stage--shell",
   "shell-compact": "race-stage race-stage--shell-compact",
 };
@@ -41,17 +40,19 @@ const standingsSignature = (standings: readonly RaceTowerEntry[], finishHeight: 
 export function AspectRaceCanvas({
   standings,
   finishHeight,
-  surface = "hud",
+  deep,
+  surface,
 }: {
   standings: readonly RaceTowerEntry[];
   finishHeight: number;
-  surface?: AspectRaceCanvasSurface;
+  deep: RaceDeep;
+  surface: AspectRaceCanvasSurface;
 }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<AspectRaceRendererHandle | null>(null);
-  const latestRef = useRef({ standings, finishHeight });
-  latestRef.current = { standings, finishHeight };
+  const latestRef = useRef({ standings, finishHeight, deep });
+  latestRef.current = { standings, finishHeight, deep };
   const signature = standingsSignature(standings, finishHeight);
   const syncedSignatureRef = useRef(signature);
   const [ready, setReady] = useState(false);
@@ -102,6 +103,7 @@ export function AspectRaceCanvas({
           canvas,
           standings: latestRef.current.standings,
           finishHeight: latestRef.current.finishHeight,
+          deep: latestRef.current.deep,
           onAnchors: (next) => {
             if (!cancelled) setAnchors(next);
           },

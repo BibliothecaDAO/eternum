@@ -237,6 +237,7 @@ export function resolveSettlementRelationship(isMine: boolean): SettlementRelati
 }
 
 export const REALM_ATLAS_COLUMNS = 4;
+export const REALM_BANNER_TILE = { width: 128, height: 256 } as const;
 const REALM_NEUTRAL_ROW = orders.length;
 const REALM_GROUP_ROWS = Math.ceil((orders.length + 1) / REALM_ATLAS_COLUMNS);
 export const REALM_BANNER_GROUP_SIZE = REALM_GROUP_ROWS * REALM_ATLAS_COLUMNS;
@@ -260,14 +261,19 @@ export function resolveRealmBannerRow(
 
 export function createRealmBannerAtlas(): CanvasTexture {
   const canvas = document.createElement("canvas");
-  canvas.width = REALM_ATLAS_COLUMNS * 128;
-  canvas.height = REALM_ATLAS_ROWS * 256;
+  canvas.width = REALM_ATLAS_COLUMNS * REALM_BANNER_TILE.width;
+  canvas.height = REALM_ATLAS_ROWS * REALM_BANNER_TILE.height;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Realm banner atlas canvas is unavailable");
   // Missing order metadata leaves unmarked cloth in the current ownership color.
   for (const [group, relationship] of SETTLEMENT_RELATIONSHIP_ORDER.entries()) {
     context.fillStyle = SETTLEMENT_RELATIONSHIPS[relationship].color;
-    context.fillRect(0, group * REALM_GROUP_ROWS * 256, canvas.width, REALM_GROUP_ROWS * 256);
+    context.fillRect(
+      0,
+      group * REALM_GROUP_ROWS * REALM_BANNER_TILE.height,
+      canvas.width,
+      REALM_GROUP_ROWS * REALM_BANNER_TILE.height,
+    );
   }
   const atlas = new CanvasTexture(canvas);
   atlas.name = "Realm order banners";
@@ -299,10 +305,10 @@ export async function prepareRealmBannerAtlas(atlas: CanvasTexture): Promise<voi
       paintOrderBanner(stamp, SETTLEMENT_RELATIONSHIPS[relationship].color, images[index]);
       context.drawImage(
         stamp.image as HTMLCanvasElement,
-        (row % REALM_ATLAS_COLUMNS) * 128,
-        Math.floor(row / REALM_ATLAS_COLUMNS) * 256,
-        128,
-        256,
+        (row % REALM_ATLAS_COLUMNS) * REALM_BANNER_TILE.width,
+        Math.floor(row / REALM_ATLAS_COLUMNS) * REALM_BANNER_TILE.height,
+        REALM_BANNER_TILE.width,
+        REALM_BANNER_TILE.height,
       );
     }
   }
