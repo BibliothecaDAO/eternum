@@ -19,7 +19,7 @@ pub mod construction;
 pub mod deep;
 pub mod deep_armies;
 pub mod deep_banes;
-pub mod deep_guards;
+pub mod deep_garrisons;
 pub mod deep_sites;
 pub mod deep_ticks;
 pub mod deposits;

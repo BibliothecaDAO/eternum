@@ -49,6 +49,7 @@ pub struct DeepSite {
     pub kind: u8,
     pub ring: u8,
     pub day: u64,
+    pub aspect: u8,
 }
 
 pub fn building_pay(pay: DeepPay, open: u8) -> u32 {
@@ -142,21 +143,13 @@ fn outside_plaza(coord: Coord, middle: Coord) -> bool {
     crate::geometry::distance(coord, middle) > crate::rules::DEEP_PLAZA_RADIUS.into()
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct DeepGuard {
-    pub site_id: u64,
-    pub slot: u8,
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct GarrisonSlot {
+    pub home: u64,
 }
 
 #[starknet::interface]
 pub trait IDeepSites<T> {
-    fn join_deep_site(
-        ref self: T,
-        game_id: u32,
-        actor: starknet::ContractAddress,
-        command: crate::relics::InteractSite,
-        context: crate::commands::ActionContext,
-    );
     fn initialize_deep(ref self: T, game_id: u32);
     fn rollover_deep(ref self: T, game_id: u32, context: crate::commands::ActionContext) -> bool;
 }

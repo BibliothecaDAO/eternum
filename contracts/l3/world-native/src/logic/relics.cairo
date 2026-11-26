@@ -72,12 +72,6 @@ pub mod RelicState {
         ) {
             let execution = crate::commands::execution_context(game_id, context);
             self.assert_command(game_id, execution.timestamp, execution);
-            if crate::logic::deep::contains(game_id, command.coord) {
-                crate::deep::IDeepSitesDispatcherTrait::join_deep_site(
-                    crate::logic::deep_sites::dispatcher(game_id), game_id, actor, command, context,
-                );
-                return;
-            }
             super::use_frontier_site(actor, command, context, execution);
         }
     }
