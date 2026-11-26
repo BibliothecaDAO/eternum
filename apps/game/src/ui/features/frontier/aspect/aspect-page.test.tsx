@@ -159,6 +159,19 @@ describe("the race board from native facts", () => {
     expect(rival.members.map(({ home, glory, contribution }) => ({ home, glory, contribution }))).toEqual([
       { home: 15n, glory: 0n, contribution: 0n },
     ]);
+    expect(store.requireOrAbsent("RaceMember", { game_id: 1, entity_id: 15 }).known?.glory).toBe(0n);
+  });
+
+  it("keeps a member unknown whose realm the client's scope should hold but does not", () => {
+    const { store, read } = fixture();
+    store.applyFacts(
+      (["RaceMember", "Structure"] as const).map((model) => ({
+        model,
+        key: store.wireKeyOf(model, { game_id: 1, entity_id: 9 })!,
+        value: null,
+      })),
+    );
+    expect(read().unknown).toBe("UNKNOWN_PARENT: RaceMember requires Structure");
   });
 });
 
