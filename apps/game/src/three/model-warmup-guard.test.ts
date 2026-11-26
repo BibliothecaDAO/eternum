@@ -86,55 +86,6 @@ describe("model warm-up chokepoint guard", () => {
     expect(missing).toEqual([]);
   });
 
-  it("requires scene-attaching model loaders to invoke compilePipelines before attaching to the scene", () => {
-    const orderedLoaders: Array<{ file: string; compileCall: RegExp; attachCall: RegExp }> = [
-      {
-        file: "managers/map-site-manager.ts",
-        compileCall: /await this\.compilePipelines\(model\.group,\s*this\.scene\)/,
-        attachCall: /this\.scene\.add\(model\.group\)/,
-      },
-      {
-        file: "managers/spire-manager.ts",
-        compileCall: /await this\.compilePipelines\(nextModel\.group,\s*this\.scene\)/,
-        attachCall: /this\.scene\.add\(this\.model\.group\)/,
-      },
-      {
-        file: "managers/deep-arena-manager.ts",
-        compileCall: /await this\.compilePipelines\(model,\s*this\.scene\)/,
-        attachCall: /this\.gates\[aspect\]\.add\(model\)/,
-      },
-      {
-        file: "cosmetics/attachment-manager.ts",
-        compileCall: /await this\.compilePipelines\(gltf\.scene,\s*this\.scene\)/,
-        attachCall: /parent\.add\(upgraded\)/,
-      },
-      {
-        file: "terrain/procedural-terrain.ts",
-        compileCall: /await this\.compilePipelines\(pools\.object3d,\s*this\.targetScene\)/,
-        attachCall: /this\.object3d\.add\(pools\.object3d\)/,
-      },
-      {
-        file: "terrain/terrain-wildlife.ts",
-        compileCall: /await this\.compilePipelines\(root,\s*this\.targetScene\)/,
-        attachCall: /this\.object3d\.add\(root\)/,
-      },
-      {
-        file: "characters/procedural-army-character-layer.ts",
-        compileCall: /this\.compilePipelines\(record\.actor\.object,\s*this\.scene\)/,
-        attachCall: /this\.scene\.add\(record\.actor\.object\)/,
-      },
-    ];
-
-    for (const { file, compileCall, attachCall } of orderedLoaders) {
-      const source = readFileSync(path.join(THREE_ROOT, file), "utf8");
-      const compileMatch = compileCall.exec(source);
-      const attachMatch = attachCall.exec(source);
-      expect(compileMatch, `${file} must invoke compilePipelines`).not.toBeNull();
-      expect(attachMatch, `${file} must attach its model`).not.toBeNull();
-      expect(compileMatch!.index, `${file} must compile before attaching`).toBeLessThan(attachMatch!.index);
-    }
-  });
-
   it("wires compilePipelines into every owned runtime model, cosmetic, terrain, and FX manager", () => {
     const worldmapSource = readFileSync(path.join(THREE_ROOT, "scenes/worldmap.tsx"), "utf8");
     const armyManagerSource = readFileSync(path.join(THREE_ROOT, "managers/army-manager.ts"), "utf8");

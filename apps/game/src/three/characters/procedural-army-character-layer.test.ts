@@ -268,6 +268,29 @@ describe("visible asset request recovery", () => {
       proof.layer.dispose();
     }
   });
+
+  it("compiles a procedural army actor through compilePipelines before attaching it to the scene", async () => {
+    const proof = recoveryFixture();
+    proof.layer.dispose();
+    proof.loaded.add("knight");
+    let finishCompile!: () => void;
+    const compilePipelines = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishCompile = resolve;
+        }),
+    );
+    const layer = new ProceduralArmyCharacterLayer(proof.scene, compilePipelines);
+    try {
+      layer.sync([proof.mid]);
+      await vi.waitFor(() => expect(compilePipelines).toHaveBeenCalledOnce());
+      expect(proof.scene.getObjectByName("procedural-army-character:42")).toBeUndefined();
+      finishCompile();
+      await vi.waitFor(() => expect(proof.scene.getObjectByName("procedural-army-character:42")).toBeDefined());
+    } finally {
+      layer.dispose();
+    }
+  });
 });
 
 function recoveryFixture() {
