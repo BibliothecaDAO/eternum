@@ -37,8 +37,13 @@ import {
 import {
   ASPECT_PAGE_WORDS,
   BUILD_GROUPS,
+  CHAT_WORDS,
+  COSMETICS_WORDS,
+  DESKTOP_APP_PLACES,
+  DESKTOP_APP_PLACE_WORDS,
   RELIC_WORDS,
   SETTINGS_WORDS,
+  WORDS,
 } from "../../../game/src/ui/design-system/kit/words";
 import { oathEffectDescription, oathName } from "../../../game/src/ui/features/frontier/army/oath-details";
 import { triumphHead, worldBaneHead } from "./bane-faces";
@@ -107,6 +112,7 @@ const allLayersAnd = listAnd(
 );
 const buildGroupsList = listAnd(Object.values(BUILD_GROUPS));
 const settingsQualitiesOr = listOr(Object.values(SETTINGS_WORDS.qualities));
+const desktopAppPlacesAnd = listAnd(DESKTOP_APP_PLACES.map((place) => DESKTOP_APP_PLACE_WORDS[place]));
 const allPayTokens = listOr(Object.values(MAINNET_TOKENS).map((token) => token.symbol));
 const swapPayTokens = listOr(
   Object.entries(MAINNET_TOKENS)
@@ -664,6 +670,12 @@ export const FRONTIER = {
   },
   settings: {
     qualitiesOr: settingsQualitiesOr,
+  },
+  app: {
+    desktopPlacesAnd: desktopAppPlacesAnd,
+    chat: CHAT_WORDS.chat,
+    cosmetics: COSMETICS_WORDS.title,
+    you: WORDS.you,
   },
   depths: frontierPreset.depths.map((depth, index) => ({
     name: LAYER_NAMES[index],

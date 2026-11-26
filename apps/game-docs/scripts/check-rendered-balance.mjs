@@ -88,7 +88,12 @@ export const frontierPhrases = (
   nativeRace,
   {
     aspectWords,
+    appWords,
     buildGroups,
+    chatWords,
+    cosmeticsWords,
+    desktopAppPlaces,
+    desktopAppPlaceWords,
     relicWords,
     settingsWords,
     relicKinds,
@@ -154,6 +159,7 @@ export const frontierPhrases = (
   );
   const settingsQualitiesOr = listOr(Object.values(settingsWords.qualities));
   const buildGroupsList = listAnd(Object.values(buildGroups));
+  const desktopAppPlacesAnd = listAnd(desktopAppPlaces.map((place) => desktopAppPlaceWords[place]));
   const staminaRule = `Refills ${n(nativeFragments.STAMINA_PER_FRAGMENT)} stamina per Fragment on the ${personalLayersAnd}`;
   const oathSlotPrices = preset.research
     .filter((step) => step.row === nativeResearch.ROW_KNIGHT_OATHS)
@@ -207,6 +213,7 @@ export const frontierPhrases = (
         `all ${relicKinds.length} relic kinds`,
         `switch between ${allLayersAnd}`,
         `graphics quality (${settingsQualitiesOr})`,
+        `app top bar on desktop holds ${desktopAppPlacesAnd}, with ${chatWords.chat} docked at the bottom right. On a phone, ${cosmeticsWords.title} lives under ${appWords.you} → ${cosmeticsWords.title}.`,
       ],
     },
     {
@@ -617,8 +624,13 @@ export const loadBalanceSources = async () => {
     const {
       ASPECT_PAGE_WORDS: aspectWords,
       BUILD_GROUPS: buildGroups,
+      CHAT_WORDS: chatWords,
+      COSMETICS_WORDS: cosmeticsWords,
+      DESKTOP_APP_PLACES: desktopAppPlaces,
+      DESKTOP_APP_PLACE_WORDS: desktopAppPlaceWords,
       RELIC_WORDS: relicWords,
       SETTINGS_WORDS: settingsWords,
+      WORDS: appWords,
     } = await server.ssrLoadModule(join(here, "../../game/src/ui/design-system/kit/words.ts"));
     const { aspectMeaning, iconUrl } = await server.ssrLoadModule(
       join(here, "../../game/src/ui/design-system/icon-meaning.ts"),
@@ -697,7 +709,12 @@ export const loadBalanceSources = async () => {
       nativeResearch,
       nativeRules,
       aspectWords,
+      appWords,
       buildGroups,
+      chatWords,
+      cosmeticsWords,
+      desktopAppPlaces,
+      desktopAppPlaceWords,
       relicWords,
       settingsWords,
       relicKinds,
