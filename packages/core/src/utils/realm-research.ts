@@ -70,7 +70,6 @@ export const researchRowCategory: Readonly<Partial<Record<number, number>>> = {
   [research.ROW_CROSSBOW_OATHS]: research.RANGE,
 };
 
-/** The realm level a lore tier opens at, as research.cairo's lore_opens_at_level. */
 export function loreOpensAtLevel(tier: number): number {
   if (tier >= research.LORE_SPIRES) return research.SPIRE_LORE_LEVEL;
   return tier === research.LORE_SHRINES ? research.SHRINE_LORE_LEVEL : 0;
