@@ -14,6 +14,7 @@ import {
   CLOSE,
   OK,
   DEEP_WORDS,
+  FIGHT_RESULT,
   FIGHT_WORDS,
   INVITE_WORDS,
   EXPLORE,
@@ -1323,7 +1324,7 @@ describe("the Season 1 rehearsal", () => {
     expect(REHEARSAL_WORDS.forecasts).toEqual({
       lost: FIGHT_WORDS.armyLost,
       holds: FIGHT_WORDS.holds,
-      victory: FIGHT_WORDS.victory,
+      victory: FIGHT_RESULT.victory,
     });
     expect(readFileSync(new URL("../../AGENTS.md", import.meta.url), "utf8").replace(/\s+/g, " ")).toContain(
       `forecasts a win ("${REHEARSAL_WORDS.forecasts.victory}")`,

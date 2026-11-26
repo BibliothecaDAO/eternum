@@ -9,7 +9,7 @@ import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { TARGET_MARKS, type AttackTargetKind } from "./site-marks";
 import { plateRows } from "@/three/map-plates/map-plate-rows";
 import { frontierSiteName, StructureType, ResourcesIds } from "@bibliothecadao/types";
-import { FIGHT_WORDS, tooFarFrom } from "@/ui/design-system/kit/words";
+import { FIGHT_RESULT, FIGHT_WORDS, tooFarFrom } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -30,7 +30,7 @@ const army = { art: "knight-t1" as const, troops: 5_000 };
 const buttons = () => [...document.querySelectorAll<HTMLButtonElement>("section[role=dialog] button")];
 
 describe("a guarded site's card", () => {
-  it("renders the depth-I Beasts reward beside its Victory likely verdict", () => {
+  it("renders the depth-I Beasts reward beside its Victory verdict", () => {
     const { store, site, structure, attack } = campBeside("Beasts");
     placeSite(store);
     const plan = readSiteCard(store, site, structure, attack({ col: 41, row: 12, alt: false }));
@@ -50,7 +50,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe(FIGHT_WORDS.victory);
+    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe(FIGHT_RESULT.victory);
     expect(document.querySelector("[data-fight-reward]")?.textContent).toBe("+5KStorage full: extra lost");
   });
 
@@ -74,7 +74,7 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Troll']")!;
-    expect(card.querySelector("[data-fight-outcome]")?.textContent).toBe(FIGHT_WORDS.victory);
+    expect(card.querySelector("[data-fight-outcome]")?.textContent).toBe(FIGHT_RESULT.victory);
     expect(card.textContent?.match(/(?<!−)1,100/g)).toHaveLength(1);
     expect(card.querySelector(".fight-spoils .opacity-50")).toBeNull();
     const sides = [...card.querySelectorAll('.fight-arena [role="img"]')].map((side) =>
@@ -203,7 +203,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe(FIGHT_WORDS.victory);
+    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe(FIGHT_RESULT.victory);
     expect(document.querySelector("[data-fight-reward]")).toBeNull();
     expect(document.body.textContent).not.toContain("site");
     act(() =>
@@ -220,7 +220,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe(FIGHT_WORDS.victory);
+    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe(FIGHT_RESULT.victory);
   });
 
   it("earns what fits, marked Full, when the store would overflow, with Realm to make room; never blocks the attack", () => {

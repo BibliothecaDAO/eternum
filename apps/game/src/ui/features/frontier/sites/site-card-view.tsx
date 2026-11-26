@@ -21,6 +21,7 @@ import {
   STORAGE,
   tooFarFrom,
   TROOPS,
+  FIGHT_RESULT,
   FIGHT_WORDS,
 } from "@/ui/design-system/kit/words";
 
@@ -178,7 +179,7 @@ const clears = (facing: Facing) => !isArmyLost(facing) && facing.fight.guardLeft
 const outcomeWord = (facing: Facing): string => {
   if (isArmyLost(facing)) return FIGHT_WORDS.armyLost;
   if (!clears(facing)) return FIGHT_WORDS.holds;
-  return FIGHT_WORDS.victory;
+  return FIGHT_RESULT.victory;
 };
 
 const CachePay = ({ fragments }: { fragments: number }) => (
