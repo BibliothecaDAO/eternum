@@ -1,9 +1,17 @@
-import { configManager, getExplorerOwner, readDefaultTick, realmShowsWonder } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  dayOf,
+  getExplorerOwner,
+  readDefaultTick,
+  readExpeditionRules,
+  realmShowsWonder,
+} from "@bibliothecadao/eternum";
 import {
   isAspectAlly,
   readSyncedDeepSites,
   viewerAspects,
   type DeepSiteView,
+  type NativeFactStore,
 } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import type { FactView } from "@/sync/fact-views";
@@ -45,6 +53,7 @@ export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
     "GarrisonSlot",
     "TileOccupancy",
   ],
+  clock: (store) => deepClock(store),
   read: (store, viewer) => {
     const game = configManager.getActiveGameId();
     const account = viewer === null ? null : BigInt(viewer);
@@ -107,4 +116,16 @@ const deepSiteMarker = (
     undefended: held && site.garrisons.length === 0,
     scale: DEEP_SITE_SCALE,
   };
+};
+
+const deepClock = (store: NativeFactStore): string | undefined => {
+  const now = readDefaultTick();
+  if (now === undefined) return undefined;
+  const game = configManager.getActiveGameId();
+  const calendar = readExpeditionRules(store, game);
+  const day = calendar ? dayOf(calendar, now)?.index : undefined;
+  const rules = store.get("SliceRules", { game_id: game });
+  const interval = rules ? Number(rules.tick_config.armies_tick_in_seconds) : 0;
+  const tick = interval > 0 ? Math.floor(now / interval) : undefined;
+  return day === undefined && tick === undefined ? undefined : `${day ?? ""}:${tick ?? ""}`;
 };

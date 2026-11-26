@@ -1,4 +1,5 @@
 import { useAccountAddress } from "@/hooks/store/use-account-store";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { type FactView, readFactView } from "@/sync/fact-views";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
@@ -15,8 +16,9 @@ export const useFactView = <T>(view: FactView<T>): T => {
   const spectating = useUIStore((state) => state.isSpectating);
   const facts = useNativeFacts(view.models);
   const seats = useSyncExternalStore(subscribeSeats, readSeatsRevision, readSeatsRevision);
+  const clock = useChainTimeStore(() => (view.clock ? view.clock(facts.store) : undefined));
   return useMemo(
     () => readFactView(facts.store, view, viewer, { seats, spectating }),
-    [view, viewer, spectating, facts, seats],
+    [view, viewer, spectating, facts, seats, clock],
   );
 };

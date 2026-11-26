@@ -1,12 +1,25 @@
 // @vitest-environment jsdom
-import { configManager, dayOf, readExpeditionRules, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  dayOf,
+  readExpeditionRules,
+  setBlockTimestampSource,
+  setChainProvenTimestampSource,
+} from "@bibliothecadao/eternum";
 import { ContractAddress, deepSites, RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
+import { act, createElement } from "react";
+import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { GameProvider } from "@/hooks/context/game-context";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import { useFactView } from "@/hooks/use-fact-view";
+import { bindChainTime } from "@/sync/chain-time-binding";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
 import { setActiveGame } from "@/runtime/world";
 import { setOpenGameSeats } from "@/utils/entity-ownership";
 import { overrideSpectateIntent } from "@/utils/spectator-session";
-import { minimapMarkersView } from "./minimap-markers";
+import { minimapMarkersView, type MinimapMarker } from "./minimap-markers";
 import { deepScenario, HELD_SITE } from "@/lab/game/deep-scenario";
 import { wire } from "@/lab/game/lab-chain";
 import { DEEP_SITE_MEANINGS } from "@/ui/design-system/domain-icon-meaning";
@@ -16,6 +29,15 @@ import { GAME_FAMILIES } from "../../../../../../../../config/source/common/nati
 afterEach(() => {
   vi.restoreAllMocks();
   setBlockTimestampSource(null);
+  setChainProvenTimestampSource(null);
+  useAccountStore.setState({ account: null });
+  useChainTimeStore.setState({
+    lastHeartbeat: null,
+    executionFloorMs: null,
+    anchorTimestampMs: null,
+    anchorPerfMs: null,
+    nowMs: null,
+  });
   overrideSpectateIntent(false);
   setOpenGameSeats({ chainId: "", gameId: 0 }, []);
 });
@@ -193,5 +215,76 @@ describe("the Deep's sites on the minimap", () => {
     expect(markers.get(String(siteEntity("core")))).toMatchObject({ owner: "seat-0", undefended: true });
     expect(markers.get(String(siteEntity("altar")))).toMatchObject({ owner: "seat-1", undefended: false });
     expect(markers.get(String(siteEntity("foundation")))).toMatchObject({ owner: "nobody", undefended: false });
+  });
+
+  it("re-renders live useFactView markers on garrison drain and day rollover in a quiet game with no new facts", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const { store, startsAt } = deepMinimap();
+    const altarId = String(siteEntity("altar"));
+    const slice = store.require("SliceRules", { game_id: 1 });
+    const interval = Number(slice.tick_config.armies_tick_in_seconds);
+    const loss = store.require("DeepRules", { game_id: 1 }).loss_per_tick;
+    const guard = store.require("Guard", { game_id: 1, structure_id: siteEntity("altar"), slot: 1 });
+    const drainTicks = Number((guard.troops.count + loss - 1n) / loss) + 1;
+    const drainedAt = startsAt + drainTicks * interval;
+    const tomorrow = dayOf(readExpeditionRules(store, 1)!, startsAt)!.end;
+    expect(drainedAt).toBeLessThan(tomorrow);
+
+    bindChainTime();
+    useChainTimeStore.getState().anchor({ timestamp: startsAt * 1000 });
+    const viewerAccount = { address: VIEWER } as never;
+    useAccountStore.setState({ account: viewerAccount });
+
+    let latest: Map<string, MinimapMarker> | undefined;
+    const Probe = () => {
+      latest = useFactView(minimapMarkersView);
+      return null;
+    };
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    const revisionBefore = store.getRevision();
+    try {
+      await act(async () => {
+        root.render(
+          createElement(GameProvider, {
+            value: { store } as never,
+            account: viewerAccount,
+            children: createElement(Probe),
+          }),
+        );
+      });
+      expect(latest?.get(altarId)).toEqual({
+        name: DEEP_SITE_MEANINGS.altar,
+        owner: "ally",
+        undefended: false,
+        scale: 1.75,
+      });
+
+      await act(async () => {
+        useChainTimeStore.getState().setHeartbeat({ timestamp: drainedAt * 1000 });
+      });
+      expect(store.getRevision()).toBe(revisionBefore);
+      expect(latest?.get(altarId)).toEqual({
+        name: DEEP_SITE_MEANINGS.altar,
+        owner: "ally",
+        undefended: true,
+        scale: 1.75,
+      });
+
+      await act(async () => {
+        useChainTimeStore.getState().setHeartbeat({ timestamp: tomorrow * 1000 });
+      });
+      expect(store.getRevision()).toBe(revisionBefore);
+      expect(latest?.get(altarId)).toEqual({
+        name: DEEP_SITE_MEANINGS.altar,
+        owner: "nobody",
+        undefended: false,
+        scale: 1.75,
+      });
+    } finally {
+      await act(async () => root.unmount());
+      host.remove();
+    }
   });
 });
