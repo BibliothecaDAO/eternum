@@ -439,7 +439,7 @@ fn a_player_holds_a_second_slot_with_another_troop_type_but_never_mixes_types_in
     let key = deployed(d, game_id, 1, 1000);
     let home = army(d, key).owner;
     claim(d, key, target, 0);
-    applied(d, game_id, garrison(key, slot(target, 3), troops(100)), FIXTURE_START);
+    applied(d, game_id, garrison(key, slot(target, 3), troops(400)), FIXTURE_START);
     let knights = army(d, key);
     set_explorer_fixture(
         d.games,
@@ -450,14 +450,14 @@ fn a_player_holds_a_second_slot_with_another_troop_type_but_never_mixes_types_in
         },
     );
     refused(d, game_id, garrison(key, slot(target, 3), troops(100)), FIXTURE_START, "slot holds another troop type");
-    applied(d, game_id, garrison(key, slot(target, 2), troops(100)), FIXTURE_START);
+    applied(d, game_id, garrison(key, slot(target, 2), troops(400)), FIXTURE_START);
     assert_eq!((holder(d, slot(target, 3)), holder(d, slot(target, 2))), (home, home));
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
     let boundary = (FIXTURE_START / interval + 1) * interval;
     applied(d, game_id, Command::SetEntityName(crate::names::SetEntityName { entity_id: home, name: 'two' }), boundary);
     let rules = crate::logic::deep_sites::rules();
-    assert_eq!(garrisoned(d, slot(target, 3)), troops(100) - rules.loss_per_tick);
-    assert_eq!(garrisoned(d, slot(target, 2)), troops(100) - rules.loss_per_tick);
+    assert_eq!(garrisoned(d, slot(target, 3)), troops(400) - rules.loss_per_tick);
+    assert_eq!(garrisoned(d, slot(target, 2)), troops(400) - rules.loss_per_tick);
     let pay = interact_with_state(d.games, || super::deep_ticks::held_pay(game_id, crate::rules::DEEP_FOUNDATION, 1));
     let paid: u128 = Into::<u32, u128>::into(pay) * crate::rules::RESOURCE_PRECISION;
     assert_eq!(
