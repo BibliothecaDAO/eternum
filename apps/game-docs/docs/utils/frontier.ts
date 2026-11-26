@@ -14,6 +14,7 @@ import {
   nativeRuleConstants as rule,
 } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
+import { deepAlliesGarrison } from "@bibliothecadao/eternum/game-client";
 import { MAINNET_TOKENS } from "../../../../packages/chain/src/tokens";
 import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
 import { buildablePlotCount } from "../../../../packages/core/src/utils/castle-reach";
@@ -816,6 +817,8 @@ export const FRONTIER = {
     gateDistance: n(deepPreset.gateDistance),
     gates: aspects.map((aspect, index) => `${aspect.name} (${deepCompass[index]})`).join(", "),
     guardSlots: n(rule.DEEP_GUARD_SLOTS),
+    alliedSites: deepSites.filter(({ id }) => deepAlliesGarrison(id)).map(({ name }) => name).join(" and "),
+    ownerSites: deepSites.filter(({ id }) => !deepAlliesGarrison(id)).map(({ name }) => name).join(" and "),
     sitesPerRing: n(rule.DEEP_RING_SITES),
     randomSitesPerRing: n(rule.DEEP_RING_SITES - deepSites.length),
     maxSameKindPerRing: n(1 + (rule.DEEP_RING_SITES - deepSites.length)),

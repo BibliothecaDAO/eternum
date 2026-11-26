@@ -409,8 +409,10 @@ it("lets allies garrison a site by the native ally-garrison vectors for each kin
     .split(/\s+/)
     .map(Number);
   expect(fields.length).toBe(deepSites.length * 2);
-  while (fields.length) {
+  for (const { id } of deepSites) {
     const [kind, allies] = fields.splice(0, 2) as [number, number];
+    expect(kind).toBe(id);
+    expect([0, 1]).toContain(allies);
     expect(deepAlliesGarrison(kind)).toBe(allies === 1);
   }
 });

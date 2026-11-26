@@ -44,9 +44,9 @@ sent an army into the Deep that day:
 
 Every game day, fresh beasts guard every open Deep site. Deep beasts take no tick drain and do not respawn once cleared
 that day. Select any open site to see its beast portrait and blade or bow badge, its per-tick payout rates, and its
-green poison drain icon. Locked sites show only the reward kinds they pay until their ring opens. The army that clears a
-Deep site's beast or last rival guard moves onto the site and becomes its guard; an unguarded site is open for the next
-army to walk into. Held sites pay out on every army tick ({FRONTIER.stamina.tickMinutes} minutes):
+green poison drain icon. Locked sites show only the reward kinds they pay until their ring opens. Clearing the last
+defender claims the site for your player. Your army stays beside the site, and every guard slot starts empty. Sites
+with garrisoned troops pay out on every army tick ({FRONTIER.stamina.tickMinutes} minutes):
 
 | Site                                                                 | Beast guard                                                                                                               | Mark                            | Bring                          | What holding it pays          |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------ | ----------------------------- |
@@ -67,21 +67,25 @@ site, split among its surviving guards by troop count.
 
 ## Guard slots, troop drain, and PvP
 
-- **Guard slots:** any Deep site — including Essence cores and Ethereal mines — has {FRONTIER.deep.guardSlots} guard
-  slots for up to {FRONTIER.deep.guardSlots} different players of the same Aspect (1 army per player). Teammates join
-  once the beast is cleared by standing beside the site. Allies can never attack allies.
+- **Guard slots:** a claimed Deep site has {FRONTIER.deep.guardSlots} guard slots. Transfer troops from an adjacent
+  army to garrison it. The owner's Aspect can garrison {FRONTIER.deep.alliedSites}. Only the owner can garrison
+  {FRONTIER.deep.ownerSites}.
+- **Slot capacity:** each slot holds one player's troops of a single type and tier, up to that player's army cap.
+  A player can use multiple slots with different troop types or tiers. Only the player who supplied a slot can withdraw
+  its troops, into their own adjacent army.
 - **Tick order (drain before pay):** every tick ({FRONTIER.stamina.tickMinutes} minutes), every army in the Deep gains
   +{FRONTIER.stamina.perTick} stamina and loses {FRONTIER.deep.lossPerTick} troops (reduced to
-  {FRONTIER.oaths.vitriolLoss} per tick with the Vitriol Oath). Guarding armies show a green poison drain mark on their
-  token, list row, and panel. When an army reaches 0 troops, it is destroyed. Held sites then pay only the guards that
-  survived the tick, split by their troop count.
+  {FRONTIER.oaths.vitriolLoss} per tick with the Vitriol Oath). Garrison slots lose {FRONTIER.deep.lossPerTick} troops
+  per tick, and an empty slot is free to fill again. Held sites then pay the guards that survived the tick, split by
+  their troop count.
 - **Strike or wait:** because rival guards lose {FRONTIER.deep.lossPerTick} troops every tick, waiting lets you attack a
   weaker guard later while the holder earns ticks in the meantime.
-- **Attack order:** rival attackers fight one guard at a time, starting with the **last army that joined**. Guards keep
-  their losses, so allies attacking in turn can weaken a site together. The site opens when no guard remains, and the
-  army that clears the last rival guard becomes the site's guard.
-- **Guard Oaths and Knights:** armies guarding a Deep site keep their Oaths (visible on the site panel and counted in
-  fight previews). Knight armies guarding a site take {FRONTIER.attributes.knightGuardReduction} less damage.
+- **Attack order:** rival attackers fight one guard at a time, starting with the highest occupied slot. Guards keep
+  their losses, so allies attacking in turn can weaken a site together. The player who clears the last guard captures
+  the site. Allies can never attack allies.
+- **Guard protection:** garrisoned troops have no Oaths. Knights in a guard slot take
+  {FRONTIER.attributes.knightGuardReduction} less damage.
+- **Daily reset:** sites return to their beasts at the start of each game day. Any troops left in the garrison are lost.
 - **Shared building pay:** each open Hyperstructure archive pays {FRONTIER.deep.payAlone} per tick if 1 Archive is open,
   {FRONTIER.deep.payPair} if 2 are open, or {FRONTIER.deep.payCrowd} if 3 or more are open — counting **open Archives**
   across the Deep, not rings unlocked. That Glory goes **only to the guards holding that Archive** (split by troop

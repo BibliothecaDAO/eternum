@@ -19,6 +19,7 @@ fn allies_garrison_a_foundation_and_an_altar_but_only_the_owner_a_core_or_a_mine
     let mut kinds = 0;
     while !fields.is_empty() {
         let (kind, allies): (u8, bool) = Serde::deserialize(ref fields).unwrap();
+        assert_eq!(kind, kinds);
         assert_eq!(crate::rules::deep_allies_garrison(kind), allies);
         kinds += 1;
     }

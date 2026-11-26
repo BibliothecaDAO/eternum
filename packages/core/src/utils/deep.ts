@@ -9,7 +9,7 @@ import { BiomeTypeToId, BiomeType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 
 export const deepAlliesGarrison = (kind: number): boolean =>
-  kind !== nativeRuleConstants.DEEP_CORE && kind !== nativeRuleConstants.DEEP_MINE;
+  kind === nativeRuleConstants.DEEP_FOUNDATION || kind === nativeRuleConstants.DEEP_ALTAR;
 
 export function armiesBlockTile(
   store: Pick<NativeFactStore, "get">,

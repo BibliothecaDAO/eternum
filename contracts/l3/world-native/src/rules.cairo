@@ -518,7 +518,7 @@ pub const DEEP_CORE: u8 = 1;
 pub const DEEP_MINE: u8 = 2;
 pub const DEEP_ALTAR: u8 = 3;
 pub fn deep_allies_garrison(kind: u8) -> bool {
-    kind != DEEP_CORE && kind != DEEP_MINE
+    kind == DEEP_FOUNDATION || kind == DEEP_ALTAR
 }
 pub const DEEP_KIND_COUNT: u8 = 4;
 pub const DEEP_RING_LIMIT: u8 = 4;
