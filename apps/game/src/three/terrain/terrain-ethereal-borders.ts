@@ -1,8 +1,9 @@
 import { Color } from "three";
 import { findNearestTerrainHex, terrainHexCorners, terrainHexToWorld } from "./terrain-coordinates";
+import { TERRAIN_GROUND_HEIGHT } from "./terrain-surface";
 
 const ETHEREAL_BORDER_COLORS = ["#ff163c", "#ff6508", "#ffc42b", "#147aff", "#ff2ccd"] as const;
-const BORDER_HEIGHT = 0.138;
+const BORDER_HEIGHT = TERRAIN_GROUND_HEIGHT + 0.018;
 const BORDER_WIDTH = 0.028;
 
 /** Each hex owns its inward half of the border. Shared edges meet without overlapping glow or page ownership gaps. */

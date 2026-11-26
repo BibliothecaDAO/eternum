@@ -28,7 +28,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { HowToPlayRow, useHowToPlay } from "../how-to-play";
 import { AppSettings } from "./app-settings";
@@ -41,8 +41,8 @@ export const SETTINGS_POPOVER_ID = "settings";
 const effectsCategories = Object.values(AudioCategory).filter((category) => category !== AudioCategory.MUSIC);
 
 export const SettingsPanel = () => {
-  const [more, setMore] = useState(false);
   const [keys, setKeys] = useState(false);
+  const guide = useHowToPlay();
   if (keys) return <KeyboardShortcuts />;
   return (
     <div className="ui-settings">
@@ -50,38 +50,20 @@ export const SettingsPanel = () => {
       <VolumeSliders />
       <MuteSwitch />
       <VideoSettings />
+      <div className="ui-settings__sections">
+        <SettingsSection title={PROFILE_WORDS.notifications}>
+          <NotificationSettings />
+        </SettingsSection>
+        <AppSettings onShowKeys={() => setKeys(true)} />
+        <HowToPlayRow guide={guide} />
+        <AddressRow />
+      </div>
       <footer className="ui-settings__foot">
-        {!more && (
-          <HudButton kind="secondary" size="sm" aria-expanded={false} onClick={() => setMore(true)}>
-            {SETTINGS_WORDS.more}
-          </HudButton>
-        )}
-        <SignOut />
-      </footer>
-      {more && <MoreSettings onShowKeys={() => setKeys(true)} />}
-    </div>
-  );
-};
-
-const MoreSettings = ({ onShowKeys }: { onShowKeys: () => void }) => {
-  const guide = useHowToPlay();
-  const shown = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    shown.current?.scrollIntoView?.({ block: "start" });
-  }, []);
-  return (
-    <div ref={shown} className="ui-settings__more">
-      <SettingsSection title={PROFILE_WORDS.notifications}>
-        <NotificationSettings />
-      </SettingsSection>
-      <AppSettings onShowKeys={onShowKeys} />
-      <HowToPlayRow guide={guide} />
-      <AddressRow />
-      <div>
-        <HudButton kind="secondary" onClick={() => pageNavigation.open("/")}>
+        <HudButton kind="secondary" size="sm" onClick={() => pageNavigation.open("/")}>
           {SETTINGS_WORDS.leaveGame}
         </HudButton>
-      </div>
+        <SignOut />
+      </footer>
     </div>
   );
 };
