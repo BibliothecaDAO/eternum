@@ -5,18 +5,19 @@ import {
   Fn,
   If,
   abs,
-  cameraPosition,
   dot,
   float,
-  fract,
+  fwidth,
   int,
   ivec2,
   max,
   mix,
+  mx_fractal_noise_float_2d,
+  mx_noise_float,
+  mx_worley_noise_vec2,
   smoothstep,
   step,
   struct,
-  texture,
   textureLoad,
   uniformArray,
   vec2,
@@ -24,11 +25,10 @@ import {
 } from "three/tsl";
 
 import { BIOMES_BY_ID, BIOME_MAP_SIZE, LAYER_BIOME_OFFSET, groundNumber } from "./terrain-biome-map";
-import { cellHash } from "./terrain-cell-hash";
 import { TERRAIN_WATER_LEVEL } from "./terrain-water";
 import { TERRAIN_HEX_HORIZONTAL_SPACING, TERRAIN_HEX_VERTICAL_SPACING } from "./terrain-coordinates";
 import { nearestHexLocalPosition } from "./terrain-hex-node";
-import { terrainBiomePaint, type TerrainGround } from "./terrain-palette";
+import { terrainBiomeTones, type TerrainGround } from "./terrain-palette";
 
 const GroundSurface = struct({ albedo: "vec3", slope: "vec2", gloss: "float", glow: "vec3" });
 
@@ -44,35 +44,35 @@ export interface GroundSurfaceInput {
   time: Node<"float">;
 }
 
-const WIND = vec2(0.8, 0.6);
 const INNER_DISC = 0.3;
-const STRATA = vec2(0.35, 0.94);
-const SNOW_LIT = vec3(0.7, 0.88, 1);
-const SNOW_SHADE = vec3(0.5, 0.66, 0.95);
-const LOWLAND = vec3(0.86, 0.8, 0.72);
-const HIGHLAND = vec3(1.08, 1.1, 1.14);
 const LUMA = vec3(0.2126, 0.7152, 0.0722);
+const WIND = vec2(0.8, 0.6);
+const DUNE_ACROSS = vec2(0.55, 0.83);
+const SNOW = vec3(0.86, 0.92, 1);
+const LITTER = vec3(0.62, 0.3, 0.08);
+const DRY = vec3(1.18, 1.04, 0.7);
+const EMBER = vec3(2.8, 0.75, 0.12);
+const RELIEF_STEP = 0.012;
 const B = (biome: BiomeType) => float(BiomeTypeToId[biome]);
 const G = (ground: TerrainGround) => float(groundNumber(ground));
 
+const BIOME_TONES = BIOMES_BY_ID.map(terrainBiomeTones);
 const PAINT = uniformArray(
-  BIOMES_BY_ID.map((biome) => terrainBiomePaint(biome, "primary")),
+  BIOME_TONES.map((tones) => tones.body),
+  "color",
+);
+const SHADOW_PAINT = uniformArray(
+  BIOME_TONES.map((tones) => tones.shadow),
+  "color",
+);
+const LIGHT_PAINT = uniformArray(
+  BIOME_TONES.map((tones) => tones.light),
   "color",
 );
 
 export const hexReach = (fromMiddle: Node<"vec2">): Node<"float"> => {
   const local = abs(fromMiddle);
   return max(local.x, dot(local, vec2(0.5, Math.sqrt(3) / 2)));
-};
-
-const strewn = (at: Node<"vec2">, fine: number, share: Node<"float"> | number, size: Node<"float"> | number) => {
-  const cell = at.mul(fine).floor();
-  const middle = cell
-    .add(0.25)
-    .add(vec2(cellHash(cell, 1), cellHash(cell, 2)).mul(0.5))
-    .div(fine);
-  const inside = step(hexReach(at.sub(middle)).mul(fine), size).mul(step(cellHash(cell, 3), share));
-  return vec2(inside, cellHash(cell, 4).mul(inside));
 };
 
 export const biomeTexelAt = (biomeMap: Texture, point: Node<"vec2">) => {
@@ -87,251 +87,182 @@ export const biomeTexelAt = (biomeMap: Texture, point: Node<"vec2">) => {
   return textureLoad(biomeMap, ivec2(int(wrap(col)), int(wrap(row))));
 };
 
+/**
+ * The ground has a shape, and its colour follows the shape: hollows take the biome's shadow, tops its light, and the
+ * sun shades the slope between them. Four shapes cover every biome: tufts, dunes, broken plates and snow drifts.
+ */
 export function groundSurface(input: GroundSurfaceInput) {
-  const { at, biomeMap, detail, time } = input;
+  const { at, biomeMap, time } = input;
   return Fn(() => {
-    const near = texture(detail, at.mul(0.95)).toVar();
-    const middle = texture(detail, at.yx.mul(0.31).add(vec2(0.13, 0.57))).toVar();
-    const far = texture(detail, at.yx.mul(0.11).add(vec2(0.37, 0.11))).toVar();
-    const other = texture(detail, at.yx.mul(0.71).add(vec2(0.31, 0.77))).toVar();
-    const grain = near.g.mul(0.55).add(far.g.mul(0.45));
-    const bump = vec2(near.g.sub(other.g), middle.g.sub(far.g));
-    const wobble = far.g
-      .sub(0.5)
-      .mul(0.6)
-      .add(middle.g.sub(0.5).mul(0.3))
-      .add(other.g.sub(0.5).mul(0.14))
-      .add(near.g.sub(0.5).mul(0.06));
+    const drift = mx_fractal_noise_float_2d(at.mul(0.45), 3).toVar();
+    const wobble = mx_fractal_noise_float_2d(at.mul(1.6).add(4.1), 4).mul(0.45);
     const dry = smoothstep(TERRAIN_WATER_LEVEL - 0.004, TERRAIN_WATER_LEVEL + 0.012, input.world.y);
     const ground = chooseGround({ biomeMap, at, climate: input.climate.xy, wobble, dry });
     const biome = ground.get("biome") as Node<"float">;
     const kind = ground.get("kind") as Node<"float">;
-    const close = smoothstep(18, 8, cameraPosition.distance(input.world));
-    const painted = PAINT.element(int(biome)) as unknown as Node<"vec3">;
-    const base = kind.equal(G("water")).select(input.meshColour, painted.mul(input.meshTint)).toVar();
+    const brush: Brush = {
+      at,
+      time,
+      drift,
+      seen: smoothstep(0.16, 0.07, fwidth(at.x).add(fwidth(at.y))).toVar(),
+      tones: biomeTones(int(biome), input.meshTint),
+      albedo: vec3(0).toVar(),
+      slope: vec2(0).toVar(),
+      gloss: float(0).toVar(),
+      glow: vec3(0).toVar(),
+    };
+    const { albedo, slope, gloss, glow } = brush;
 
-    const sparkle = float(0).toVar();
-    If(close.greaterThan(0.001), () => {
-      const glint = strewn(at, 34, 0.1, 0.22);
-      sparkle.assign(glint.x.mul(close).mul(time.mul(2.6).add(glint.y.mul(40)).sin().mul(0.45).add(0.55)));
-    });
-
-    const albedo = base.mul(grain.mul(0.3).add(0.84)).mul(far.r.mul(0.16).add(0.9)).toVar();
-    const slope = vec2(0).toVar();
-    const gloss = float(0).toVar();
-    const glow = vec3(0).toVar();
-
-    If(biome.equal(B(BiomeType.Beach)), () => {
-      const phase = dot(at, WIND).mul(26).add(far.g.mul(8)).add(middle.g.mul(3));
-      albedo.assign(
-        base
-          .mul(vec3(1.08, 1.04, 0.95))
-          .mul(phase.sin().mul(0.06).add(0.94))
-          .mul(far.r.mul(0.1).add(0.94)),
-      );
-      slope.assign(WIND.mul(phase.cos()).mul(0.1));
-      gloss.assign(sparkle.mul(0.6));
+    If(kind.equal(G("water")), () => {
+      albedo.assign(input.meshColour);
     })
-      .ElseIf(biome.equal(B(BiomeType.SubtropicalDesert)), () => {
-        const across = vec2(0.55, 0.83);
-        const rise = dot(at, across).mul(2.3).add(far.g.mul(6)).add(middle.g.mul(1.5));
-        const phase = dot(at, WIND).mul(17).add(far.g.mul(10));
-        albedo.assign(
-          base
-            .mul(mix(vec3(0.84, 0.76, 0.7), vec3(1.14, 1.06, 0.9), rise.sin().mul(0.5).add(0.5)))
-            .mul(phase.sin().mul(0.07).add(0.93)),
-        );
-        slope.assign(across.mul(rise.cos()).mul(0.55).add(WIND.mul(phase.cos()).mul(0.14)));
-        gloss.assign(sparkle.mul(0.5));
-      })
-      .ElseIf(biome.equal(B(BiomeType.TemperateDesert)), () => {
-        albedo.assign(
-          base
-            .mul(vec3(0.96, 0.9, 0.84))
-            .mul(middle.g.mul(0.3).add(0.8))
-            .mul(near.g.mul(0.16).add(0.92)),
-        );
-        albedo.assign(mix(albedo, base.mul(vec3(0.66, 0.7, 0.52)), smoothstep(0.6, 0.78, far.g).mul(0.5)));
-        If(close.greaterThan(0.001), () => {
-          const gravel = strewn(at, 8, smoothstep(0.45, 0.7, other.g).mul(0.2), near.g.mul(0.16).add(0.12));
-          albedo.assign(
-            mix(albedo, vec3(0.5, 0.45, 0.4).mul(gravel.y.mul(0.6).add(0.7)), gravel.x.mul(close).mul(0.8)),
-          );
-        });
-        slope.assign(bump.mul(0.2));
-      })
-      .ElseIf(kind.equal(G("snow")).or(kind.equal(G("tundra"))), () => {
-        const isTundra = kind.equal(G("tundra"));
-        const combed = dot(at, WIND).mul(3).add(far.g.mul(6)).add(middle.g.mul(2));
-        const lee = smoothstep(0.2, 0.9, combed.cos().negate());
-        const drift = far.g.mul(0.7).add(middle.g.mul(0.3)).add(input.climate.x.sub(0.6).mul(2)).add(lee.mul(0.06));
-        const lies = isTundra.select(smoothstep(0.58, 0.68, drift), float(1));
-        const heather = smoothstep(0.55, 0.7, middle.r.mul(0.5).add(far.r.mul(0.5)));
-        const bare = mix(base.mul(vec3(0.9, 0.88, 0.84)), base.mul(vec3(0.82, 0.7, 0.78)), heather.mul(0.5)).mul(
-          near.g.mul(0.3).add(0.78),
-        );
-        const snow = mix(SNOW_LIT, SNOW_SHADE, lee.mul(0.6).add(smoothstep(0.45, 0.75, far.r).mul(0.15))).mul(
-          grain.mul(0.06).add(0.95),
-        );
-        albedo.assign(mix(bare, snow, lies));
-        const smoothSnow = isTundra.select(0, 1);
-        slope.assign(mix(bump.mul(0.3), mix(bump.mul(0.2), WIND.mul(combed.sin()).mul(0.22), smoothSnow), lies));
-        gloss.assign(lies.mul(sparkle).mul(0.9));
-      })
-      .ElseIf(kind.equal(G("rock")), () => {
-        const bands = input.climate.x.mul(70).add(dot(at, STRATA).mul(0.7)).add(far.g.mul(2.5)).add(middle.g.mul(0.6));
-        const layer = fract(bands);
-        const lip = smoothstep(0.8, 0.88, layer).mul(smoothstep(0.93, 0.89, layer));
-        const underside = smoothstep(0.9, 0.97, layer);
-        const tone = fract(bands.floor().mul(0.618)).mul(0.22).add(0.86).mul(layer.mul(0.14).add(0.9));
-        albedo.assign(
-          base.mul(tone).mul(near.g.mul(0.18).add(0.9)).mul(lip.mul(0.35).add(1)).mul(underside.mul(0.55).oneMinus()),
-        );
-        const scree = strewn(at, 9, smoothstep(0.5, 0.7, other.g).mul(0.35), near.g.mul(0.14).add(0.14));
-        albedo.assign(mix(albedo, base.mul(scree.y.mul(0.4).add(0.75)), scree.x.mul(0.7)));
-        albedo.assign(
-          mix(
-            albedo,
-            vec3(0.36, 0.42, 0.2).mul(near.g.mul(0.5).add(0.7)),
-            smoothstep(0.62, 0.76, far.g.mul(0.55).add(near.g.mul(0.45))).mul(0.35),
-          ),
-        );
-        slope.assign(STRATA.mul(lip.sub(underside).mul(0.8)).add(bump.mul(0.25)));
-      })
-      .ElseIf(kind.equal(G("ash")), () => {
-        const rim = (ground.get("frontier") as Node<"float">).max(smoothstep(0.62, 0.8, far.r));
-        const drift = smoothstep(0.55, 0.85, dot(at, WIND).mul(1.1).add(far.g.mul(5)).add(middle.g.mul(1.5)).sin());
-        const rift = smoothstep(0.07, 0.02, middle.r).mul(smoothstep(0.45, 0.6, far.r.mul(0.6).add(other.g.mul(0.4))));
-        const fine = smoothstep(0.03, 0.14, near.r).oneMinus().mul(close);
-        const core = base.mul(vec3(0.5, 0.48, 0.48)).mul(grain.mul(0.2).add(0.88));
-        const scorched = base.mul(vec3(1.3, 1.05, 0.82)).mul(grain.mul(0.25).add(0.82));
-        albedo.assign(mix(core, scorched, rim.mul(0.85)));
-        albedo.assign(mix(albedo, vec3(0.4, 0.4, 0.41).mul(near.g.mul(0.15).add(0.92)), drift.mul(0.5)));
-        albedo.mulAssign(rift.mul(0.6).oneMinus().mul(fine.mul(0.4).oneMinus()));
-        slope.assign(middle.ba.sub(0.5).mul(0.2).add(bump.mul(0.25)));
-        const ember = strewn(at, 6, rim.oneMinus().mul(0.08), 0.12);
-        const flicker = time.mul(1.7).add(ember.y.mul(30)).sin().mul(0.4).add(0.6);
-        glow.assign(vec3(2.6, 0.7, 0.12).mul(ember.x).mul(flicker));
-      })
-      .ElseIf(biome.equal(B(BiomeType.Grassland)), () => {
-        const tufts = near.g.mul(0.5).add(middle.g.mul(0.5));
-        const gust = smoothstep(0.55, 1, dot(at, WIND).mul(0.85).sub(time.mul(1.3)).add(far.g.mul(7)).sin());
-        albedo.assign(base.mul(tufts.mul(0.4).add(0.8)).mul(gust.mul(0.12).add(1)));
-        If(close.greaterThan(0.001), () => {
-          const bloom = strewn(at, 13, 0.22, 0.2);
-          const flower = mix(
-            mix(vec3(0.95, 0.92, 0.82), vec3(0.98, 0.78, 0.12), step(0.4, bloom.y)),
-            vec3(0.62, 0.36, 0.85),
-            step(0.75, bloom.y),
-          );
-          albedo.assign(mix(albedo, flower, bloom.x.mul(close).mul(smoothstep(0.42, 0.6, far.g))));
-        });
-        slope.assign(bump.mul(0.1));
-      })
-      .ElseIf(biome.equal(B(BiomeType.Shrubland)), () => {
-        const tufts = near.g.mul(0.5).add(middle.g.mul(0.5));
-        const gust = smoothstep(0.6, 1, dot(at, WIND).mul(0.85).sub(time.mul(1.3)).add(far.g.mul(7)).sin());
-        albedo.assign(
-          base
-            .mul(vec3(1.08, 1, 0.78))
-            .mul(tufts.mul(0.42).add(0.76))
-            .mul(gust.mul(0.08).add(1)),
-        );
-        albedo.assign(
-          mix(
-            albedo,
-            vec3(0.4, 0.29, 0.19).mul(near.g.mul(0.4).add(0.8)),
-            smoothstep(0.5, 0.66, middle.g.mul(0.6).add(far.g.mul(0.4))).mul(0.75),
-          ),
-        );
-        albedo.assign(mix(albedo, albedo.mul(vec3(1.25, 0.8, 1.3)), smoothstep(0.66, 0.82, far.r).mul(0.45)));
-        slope.assign(bump.mul(0.15));
-      })
-      .ElseIf(biome.equal(B(BiomeType.TropicalRainForest)), () => {
-        albedo.assign(base.mul(vec3(0.72, 0.98, 0.74)).mul(grain.mul(0.46).add(0.56)));
-        albedo.assign(mix(albedo, base.mul(vec3(0.95, 1.3, 0.6)), smoothstep(0.62, 0.72, near.g).mul(0.35)));
-        gloss.assign(smoothstep(0.6, 0.76, middle.g).mul(0.7));
-        albedo.mulAssign(gloss.mul(0.35).oneMinus());
-        slope.assign(bump.mul(0.2).mul(gloss.oneMinus()));
-      })
-      .ElseIf(biome.equal(B(BiomeType.TropicalSeasonalForest)), () => {
-        albedo.assign(
-          base.mul(grain.mul(0.4).add(0.7)).mul(mix(vec3(1), vec3(1.16, 1, 0.6), smoothstep(0.4, 0.7, far.g))),
-        );
-        albedo.assign(
-          mix(albedo, vec3(0.5, 0.21, 0.11).mul(near.g.mul(0.4).add(0.8)), smoothstep(0.58, 0.72, middle.g).mul(0.65)),
-        );
-        slope.assign(bump.mul(0.2));
-      })
-      .ElseIf(biome.equal(B(BiomeType.TemperateRainForest)), () => {
-        albedo.assign(base.mul(vec3(0.78, 0.98, 0.88)).mul(grain.mul(0.4).add(0.58)));
-        albedo.assign(mix(albedo, base.mul(vec3(0.9, 1.4, 0.66)), smoothstep(0.52, 0.7, middle.g).mul(0.55)));
-        gloss.assign(smoothstep(0.55, 0.85, far.g).mul(0.25));
-        slope.assign(bump.mul(0.25));
-      })
-      .ElseIf(biome.equal(B(BiomeType.TemperateDeciduousForest)), () => {
-        albedo.assign(base.mul(grain.mul(0.4).add(0.62)));
-        const fallen = strewn(at, 10, 0.3, near.g.mul(0.14).add(0.2));
-        const leaf = mix(vec3(0.7, 0.3, 0.07), vec3(0.84, 0.64, 0.14), fallen.y);
-        albedo.assign(
-          mix(
-            albedo,
-            leaf.mul(near.g.mul(0.4).add(0.8)),
-            max(fallen.x.mul(close), smoothstep(0.5, 0.75, far.g).mul(0.3)).mul(0.85),
-          ),
-        );
-        slope.assign(bump.mul(0.2));
-      })
-      .ElseIf(biome.equal(B(BiomeType.Taiga)), () => {
-        albedo.assign(base.mul(vec3(0.92, 0.86, 0.76)).mul(grain.mul(0.4).add(0.55)));
-        albedo.assign(
-          mix(albedo, vec3(0.3, 0.2, 0.12).mul(near.g.mul(0.4).add(0.8)), smoothstep(0.5, 0.7, middle.g).mul(0.45)),
-        );
-        const lies = smoothstep(0.5, 0.85, far.g.mul(0.7).add(middle.g.mul(0.3)));
-        albedo.assign(mix(albedo, vec3(0.8, 0.86, 0.95), lies.mul(0.5)));
-        slope.assign(bump.mul(0.2).mul(lies.oneMinus()));
-        gloss.assign(lies.mul(sparkle).mul(0.7));
-      })
-      .ElseIf(kind.equal(G("forest")), () => {
-        albedo.assign(
-          base.mul(grain.mul(0.4).add(0.62)).mul(mix(vec3(1), vec3(0.8, 0.95, 0.7), smoothstep(0.4, 0.7, middle.g))),
-        );
-        slope.assign(bump.mul(0.2));
-      });
+      .ElseIf(biome.equal(B(BiomeType.Beach)).or(biome.equal(B(BiomeType.SubtropicalDesert))), () =>
+        paintDunes(brush, biome.equal(B(BiomeType.Beach)).select(0.3, 1)),
+      )
+      .ElseIf(
+        kind
+          .equal(G("sand"))
+          .or(kind.equal(G("rock")))
+          .or(kind.equal(G("ash"))),
+        () => paintPlates(brush, kind.equal(G("ash")).select(1, 0)),
+      )
+      .ElseIf(kind.equal(G("snow")), () => paintSnow(brush))
+      .Else(() => paintTufts(brush, biome, kind));
 
-    If(close.greaterThan(0.001), () => {
-      strewPebbles({ kind, at, close, albedo });
-    });
     const contest = (ground.get("contest") as Node<"float">).mul(0.5);
-    albedo.assign(mix(albedo, (ground.get("other") as Node<"vec3">).mul(grain.mul(0.3).add(0.84)), contest));
-    gloss.mulAssign(contest.oneMinus());
+    albedo.assign(mix(albedo, ground.get("other") as Node<"vec3">, contest));
     glow.mulAssign(contest.oneMinus());
     const highland = smoothstep(0.25, 0.8, input.climate.z);
-    const grey = vec3(dot(albedo, LUMA));
-    albedo.assign(mix(grey, albedo, mix(1.12, 0.95, highland)).mul(mix(LOWLAND, HIGHLAND, highland)));
+    albedo.assign(mix(vec3(dot(albedo, LUMA)), albedo, mix(1.1, 0.95, highland)));
 
-    const wet = smoothstep(
-      TERRAIN_WATER_LEVEL + 0.05,
-      TERRAIN_WATER_LEVEL,
-      input.world.y.add(grain.sub(0.5).mul(0.02)),
-    );
+    const wet = smoothstep(TERRAIN_WATER_LEVEL + 0.05, TERRAIN_WATER_LEVEL, input.world.y);
     albedo.mulAssign(mix(1, 0.74, wet));
     return GroundSurface(albedo, slope.mul(input.top), gloss, glow.mul(input.top));
   })();
 }
 
-function strewPebbles(input: {
-  kind: Node<"float">;
+interface Tones {
+  shadow: Node<"vec3">;
+  body: Node<"vec3">;
+  light: Node<"vec3">;
+}
+
+interface Brush {
   at: Node<"vec2">;
-  close: Node<"float">;
+  time: Node<"float">;
+  /** Slow change across several tiles, from -1 to 1. */
+  drift: Node<"float">;
+  /** How much of the fine shape a pixel can still show: 0 from far away. */
+  seen: Node<"float">;
+  tones: Tones;
   albedo: Node<"vec3">;
-}): void {
-  const { kind, at, close, albedo } = input;
-  const share = kind.equal(G("sand")).select(0, kind.equal(G("rock")).select(0.08, 0.03));
-  const pebble = strewn(at, 9, share, 0.26);
-  const contact = strewn(at.sub(vec2(0.012, -0.016)), 9, share, 0.3);
-  albedo.mulAssign(mix(1, 0.72, contact.x.mul(pebble.x.oneMinus()).mul(close)));
-  albedo.assign(mix(albedo, albedo.mul(vec3(0.66, 0.6, 0.55)).mul(pebble.y.mul(0.3).add(0.8)), pebble.x.mul(close)));
+  slope: Node<"vec2">;
+  gloss: Node<"float">;
+  glow: Node<"vec3">;
+}
+
+interface Relief {
+  height: Node<"float">;
+  slope: Node<"vec2">;
+}
+
+function biomeTones(biome: Node<"int">, tint: Node<"vec3">): Tones {
+  return {
+    shadow: (SHADOW_PAINT.element(biome) as unknown as Node<"vec3">).mul(tint).toVar(),
+    body: (PAINT.element(biome) as unknown as Node<"vec3">).mul(tint).toVar(),
+    light: (LIGHT_PAINT.element(biome) as unknown as Node<"vec3">).mul(tint).toVar(),
+  };
+}
+
+const ramp = (tones: Tones, height: Node<"float">): Node<"vec3"> =>
+  mix(mix(tones.shadow, tones.body, smoothstep(0, 0.5, height)), tones.light, smoothstep(0.5, 1, height));
+
+/** A shape's height from 0 to 1 and the way it leans, read from the height a step away each way. */
+function relief(at: Node<"vec2">, heightAt: (point: Node<"vec2">) => Node<"float">): Relief {
+  const height = heightAt(at).toVar();
+  const east = heightAt(at.add(vec2(RELIEF_STEP, 0)));
+  const north = heightAt(at.add(vec2(0, RELIEF_STEP)));
+  return { height, slope: vec2(east.sub(height), north.sub(height)).div(RELIEF_STEP) };
+}
+
+const tufts = (point: Node<"vec2">): Node<"float"> =>
+  mx_noise_float(point.mul(3.2))
+    .abs()
+    .add(mx_noise_float(point.mul(7.4).add(3.7)).abs().mul(0.45))
+    .mul(1.5)
+    .oneMinus()
+    .clamp(0, 1);
+
+const dunes = (point: Node<"vec2">): Node<"float"> => {
+  const sway = mx_noise_float(point.mul(0.7)).mul(2.2);
+  const wave = dot(point, DUNE_ACROSS).mul(3.2).add(sway).sin().mul(0.5).add(0.5);
+  const ripple = dot(point, WIND).mul(34).add(sway.mul(5)).sin().mul(0.5).add(0.5);
+  return smoothstep(0, 1, wave).mul(0.86).add(ripple.mul(0.14));
+};
+
+const plates = (point: Node<"vec2">): Node<"float"> => {
+  const cell = mx_worley_noise_vec2(point.mul(2.2).add(mx_noise_float(point.mul(1.3)).mul(0.25)), 1);
+  const rough = mx_noise_float(point.mul(11)).mul(0.1);
+  return smoothstep(0, 0.14, cell.y.sub(cell.x)).mul(0.75).add(cell.x.oneMinus().mul(0.25)).add(rough).clamp(0, 1);
+};
+
+const drifts = (point: Node<"vec2">): Node<"float"> =>
+  mx_fractal_noise_float_2d(point.mul(0.9).add(dot(point, WIND).mul(0.6).sin().mul(0.2)), 3)
+    .mul(0.5)
+    .add(0.5);
+
+function paintTufts(brush: Brush, biome: Node<"float">, kind: Node<"float">): void {
+  const { at, drift, seen, tones, albedo } = brush;
+  const shape = relief(at, tufts);
+  const height = mix(0.6, shape.height, seen).mul(0.5).add(drift.mul(0.2)).add(0.22);
+  albedo.assign(ramp(tones, height));
+  const parched = biome.equal(B(BiomeType.Shrubland)).select(0.4, kind.equal(G("grass")).select(0.2, 0));
+  albedo.mulAssign(mix(vec3(1), DRY, smoothstep(0.05, 0.45, drift).mul(parched)));
+  const leafy = biome
+    .equal(B(BiomeType.TemperateDeciduousForest))
+    .or(biome.equal(B(BiomeType.TropicalSeasonalForest)))
+    .select(0.45, 0);
+  const fallen = smoothstep(0.3, 0.42, mx_noise_float(at.mul(7).add(9.3))).mul(seen);
+  albedo.assign(mix(albedo, LITTER.mul(shape.height.mul(0.6).add(0.7)), fallen.mul(leafy)));
+  const snowy = kind.equal(G("tundra")).select(0.85, biome.equal(B(BiomeType.Taiga)).select(0.6, 0));
+  const lies = smoothstep(
+    0.12,
+    0.4,
+    mx_fractal_noise_float_2d(at.mul(0.8).add(5.5), 3).add(shape.height.mul(0.25)),
+  ).mul(snowy);
+  albedo.assign(mix(albedo, SNOW.mul(shape.height.mul(0.12).add(0.9)), lies));
+  brush.slope.assign(shape.slope.mul(0.022).mul(seen).mul(lies.mul(0.7).oneMinus()));
+}
+
+function paintDunes(brush: Brush, strength: Node<"float">): void {
+  const { at, drift, seen, tones } = brush;
+  const shape = relief(at, dunes);
+  const height = mix(0.6, shape.height, strength.mul(seen.mul(0.5).add(0.5)));
+  brush.albedo.assign(ramp(tones, height.mul(0.8).add(drift.mul(0.12)).add(0.1)));
+  brush.slope.assign(shape.slope.mul(0.07).mul(strength));
+}
+
+function paintPlates(brush: Brush, molten: Node<"float">): void {
+  const { at, time, drift, seen, tones, albedo } = brush;
+  const shape = relief(at, plates);
+  const split = smoothstep(0.32, 0.08, shape.height).mul(seen);
+  albedo.assign(ramp(tones, mix(0.55, shape.height, seen).mul(0.75).add(drift.mul(0.15)).add(0.12)));
+  albedo.mulAssign(mix(1, 0.4, split));
+  brush.slope.assign(shape.slope.mul(0.035).mul(seen));
+  const breathe = time.mul(0.9).add(drift.mul(9)).sin().mul(0.3).add(0.7);
+  brush.glow.assign(
+    EMBER.mul(split)
+      .mul(smoothstep(-0.1, 0.3, drift))
+      .mul(breathe)
+      .mul(molten),
+  );
+}
+
+function paintSnow(brush: Brush): void {
+  const shape = relief(brush.at, drifts);
+  brush.albedo.assign(ramp(brush.tones, shape.height.mul(0.7).add(0.25)));
+  brush.slope.assign(shape.slope.mul(0.16));
+  brush.gloss.assign(0.25);
 }
 
 const Ground = struct({ biome: "float", kind: "float", other: "vec3", contest: "float", frontier: "float" });

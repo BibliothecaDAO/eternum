@@ -125,3 +125,36 @@ export function terrainBiomePaint(biome: BiomeType, tone: "primary" | "secondary
   const base = new Color(GROUND_BASES[TERRAIN_BIOME_GROUNDS[biome]]);
   return base.lerp(new Color(TERRAIN_BIOME_DESCRIPTORS[biome][tone]), BIOME_TINT_SHARE);
 }
+
+export interface TerrainBiomeTones {
+  shadow: Color;
+  body: Color;
+  light: Color;
+}
+
+/** The ground's paint for each biome: the colour of its hollows, of its body and of what the sun catches. */
+const TERRAIN_BIOME_GROUND_TONES = {
+  [BiomeType.Underground]: ["#262021", "#393131", "#4d4444"],
+  [BiomeType.None]: ["#232724", "#303530", "#3f4640"],
+  [BiomeType.DeepOcean]: ["#172c4b", "#214670", "#2f5c8c"],
+  [BiomeType.Ocean]: ["#206777", "#368995", "#4fa6b0"],
+  [BiomeType.Beach]: ["#c2ad7c", "#e4d5a6", "#f7edcc"],
+  [BiomeType.Scorched]: ["#17120f", "#342b27", "#55473f"],
+  [BiomeType.Bare]: ["#555c68", "#8a919c", "#bcc1c8"],
+  [BiomeType.Tundra]: ["#5f5a3c", "#8d8358", "#b5a878"],
+  [BiomeType.Snow]: ["#a9c4e2", "#e3edf7", "#ffffff"],
+  [BiomeType.TemperateDesert]: ["#7e4127", "#b76d44", "#dd9d6c"],
+  [BiomeType.Shrubland]: ["#56682a", "#84963f", "#aeb85c"],
+  [BiomeType.Taiga]: ["#1c3a34", "#346052", "#5a8a72"],
+  [BiomeType.Grassland]: ["#2f6a14", "#519a24", "#78b83a"],
+  [BiomeType.TemperateDeciduousForest]: ["#394a18", "#647a2a", "#93a244"],
+  [BiomeType.TemperateRainForest]: ["#174a38", "#2c7a62", "#52a688"],
+  [BiomeType.SubtropicalDesert]: ["#b47f38", "#e0b25e", "#f7d992"],
+  [BiomeType.TropicalSeasonalForest]: ["#4a5a1c", "#7e8c30", "#aeb450"],
+  [BiomeType.TropicalRainForest]: ["#0e4a26", "#1f7a3a", "#46aa58"],
+} satisfies Record<BiomeType, [shadow: string, body: string, light: string]>;
+
+export function terrainBiomeTones(biome: BiomeType): TerrainBiomeTones {
+  const [shadow, body, light] = TERRAIN_BIOME_GROUND_TONES[biome];
+  return { shadow: new Color(shadow), body: new Color(body), light: new Color(light) };
+}
