@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { HUD_COLORS } from "@/tokens";
+import type { PipelineCompiler } from "../pipeline-compiler";
 import type { RendererFxCapabilities } from "../renderer-fx-capabilities";
 
 // The HUD sheet's face (tokens.ts, the reading face), as the map's labels read it: an effect's words are the HUD's.
@@ -66,6 +67,11 @@ export interface WorldFxBackend {
   spawnIconFx(spec: IconFxSpec): WorldFxHandle;
   spawnTextFx(spec: TextFxSpec): WorldFxHandle;
   update(deltaTime: number): void;
+  warmIconTexture?(
+    texture: THREE.Texture,
+    compilePipelines: PipelineCompiler | undefined,
+    renderMode?: FXRenderMode,
+  ): Promise<void>;
 }
 
 export interface CreateWorldFxBackendOptions {
@@ -225,6 +231,38 @@ abstract class BaseIconWorldFxEffect implements ManagedWorldFxEffect, IconFxAnim
   protected abstract disposeVisuals(): void;
 }
 
+function createLegacySpriteIconMaterial(texture: THREE.Texture): THREE.SpriteMaterial {
+  return new THREE.SpriteMaterial({
+    depthTest: false,
+    depthWrite: false,
+    map: texture,
+    opacity: 0,
+    transparent: true,
+  });
+}
+
+function createBillboardIconMaterial(texture: THREE.Texture): THREE.MeshBasicMaterial {
+  return new THREE.MeshBasicMaterial({
+    depthTest: false,
+    depthWrite: false,
+    map: texture,
+    opacity: 0,
+    side: THREE.DoubleSide,
+    transparent: true,
+  });
+}
+
+function createGroundDecalMaterial(texture: THREE.Texture): THREE.MeshBasicMaterial {
+  return new THREE.MeshBasicMaterial({
+    depthWrite: false,
+    depthTest: true,
+    map: texture,
+    opacity: 0,
+    side: THREE.DoubleSide,
+    transparent: true,
+  });
+}
+
 class LegacySpriteWorldFxEffect extends BaseIconWorldFxEffect {
   private readonly material: THREE.SpriteMaterial;
   private readonly sprite: THREE.Sprite;
@@ -233,13 +271,7 @@ class LegacySpriteWorldFxEffect extends BaseIconWorldFxEffect {
   constructor(parent: THREE.Object3D, spec: IconFxSpec, labelEnabled: boolean) {
     super(parent, spec, labelEnabled);
 
-    this.material = new THREE.SpriteMaterial({
-      depthTest: false,
-      depthWrite: false,
-      map: spec.texture,
-      opacity: 0,
-      transparent: true,
-    });
+    this.material = createLegacySpriteIconMaterial(spec.texture);
 
     this.sprite = new THREE.Sprite(this.material);
     this.setScale(spec.size, spec.size, spec.size);
@@ -274,14 +306,7 @@ class WebGpuBillboardWorldFxEffect extends BaseIconWorldFxEffect {
   constructor(parent: THREE.Object3D, spec: IconFxSpec, labelEnabled: boolean) {
     super(parent, spec, labelEnabled);
 
-    this.material = new THREE.MeshBasicMaterial({
-      depthTest: false,
-      depthWrite: false,
-      map: spec.texture,
-      opacity: 0,
-      side: THREE.DoubleSide,
-      transparent: true,
-    });
+    this.material = createBillboardIconMaterial(spec.texture);
 
     this.pivot = new THREE.Group();
     this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), this.material);
@@ -328,14 +353,7 @@ class GroundDecalWorldFxEffect extends BaseIconWorldFxEffect {
   constructor(parent: THREE.Object3D, spec: IconFxSpec, labelEnabled: boolean) {
     super(parent, spec, labelEnabled);
 
-    this.material = new THREE.MeshBasicMaterial({
-      depthWrite: false,
-      depthTest: true,
-      map: spec.texture,
-      opacity: 0,
-      side: THREE.DoubleSide,
-      transparent: true,
-    });
+    this.material = createGroundDecalMaterial(spec.texture);
 
     this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), this.material);
     this.mesh.rotation.x = -Math.PI / 2;
@@ -566,6 +584,26 @@ class LegacySpriteWorldFxBackend extends BaseWorldFxBackend {
     }
     return this.registerEffect(new LegacySpriteWorldFxEffect(this.root, spec, this.capabilities.supportsDomLabelFx));
   }
+
+  public async warmIconTexture(
+    texture: THREE.Texture,
+    compilePipelines: PipelineCompiler | undefined,
+    renderMode?: FXRenderMode,
+  ): Promise<void> {
+    if (!compilePipelines) return;
+    if (renderMode === "ground") {
+      await warmMeshIconMaterial(this.scene, createGroundDecalMaterial(texture), compilePipelines);
+      return;
+    }
+    const material = createLegacySpriteIconMaterial(texture);
+    const sprite = new THREE.Sprite(material);
+    try {
+      await compilePipelines(sprite, this.scene);
+    } finally {
+      material.dispose();
+      sprite.geometry.dispose();
+    }
+  }
 }
 
 class WebGpuBillboardWorldFxBackend extends BaseWorldFxBackend {
@@ -581,6 +619,32 @@ class WebGpuBillboardWorldFxBackend extends BaseWorldFxBackend {
     }
 
     return this.registerEffect(new WebGpuBillboardWorldFxEffect(this.root, spec, this.capabilities.supportsDomLabelFx));
+  }
+
+  public async warmIconTexture(
+    texture: THREE.Texture,
+    compilePipelines: PipelineCompiler | undefined,
+    renderMode?: FXRenderMode,
+  ): Promise<void> {
+    if (!compilePipelines || !this.capabilities.supportsBillboardMeshFx) return;
+    const material = renderMode === "ground" ? createGroundDecalMaterial(texture) : createBillboardIconMaterial(texture);
+    await warmMeshIconMaterial(this.scene, material, compilePipelines);
+  }
+}
+
+async function warmMeshIconMaterial(
+  scene: THREE.Scene,
+  material: THREE.MeshBasicMaterial,
+  compilePipelines: PipelineCompiler,
+): Promise<void> {
+  const geometry = new THREE.PlaneGeometry(1, 1);
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.renderOrder = WORLD_FX_RENDER_ORDER;
+  try {
+    await compilePipelines(mesh, scene);
+  } finally {
+    material.dispose();
+    geometry.dispose();
   }
 }
 

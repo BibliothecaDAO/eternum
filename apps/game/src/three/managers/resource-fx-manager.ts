@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { createWorldFxBackend, type WorldFxBackend, type WorldFxHandle } from "../fx/world-fx-backends";
 import type { RendererFxCapabilities } from "../renderer-fx-capabilities";
 import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
-import { warmTexturePipeline, type PipelineCompiler } from "../pipeline-compiler";
+import type { PipelineCompiler } from "../pipeline-compiler";
 
 interface ResourceFXOptions {
   labelText?: string;
@@ -177,11 +177,12 @@ export class ResourceFXManager {
             this.resourceTextures.set(resourceId, loadedTexture);
             resolve(loadedTexture);
           };
-          if (!this.compilePipelines) {
+          if (!this.compilePipelines || !this.backend.warmIconTexture) {
             finish();
             return;
           }
-          void warmTexturePipeline(this.compilePipelines, this.scene, loadedTexture)
+          void this.backend
+            .warmIconTexture(loadedTexture, this.compilePipelines)
             .catch(() => undefined)
             .finally(finish);
         },

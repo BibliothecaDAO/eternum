@@ -4,8 +4,6 @@ import {
   Mesh,
   NoBlending,
   SkinnedMesh,
-  Sprite,
-  SpriteMaterial,
   type Camera,
   type Material,
   type Object3D,
@@ -166,21 +164,6 @@ function getShadowPassMaterial(): MeshBasicNodeMaterial {
     sharedShadowPassMaterial = material;
   }
   return sharedShadowPassMaterial;
-}
-
-export async function warmTexturePipeline(
-  compilePipelines: PipelineCompiler | undefined,
-  scene: Scene,
-  texture: Texture,
-): Promise<void> {
-  if (!compilePipelines) return;
-  const material = new SpriteMaterial({ map: texture, transparent: true });
-  const sprite = new Sprite(material);
-  try {
-    await compilePipelines(sprite, scene);
-  } finally {
-    material.dispose();
-  }
 }
 
 async function withFrustumCullingDisabled(object: Object3D, run: () => Promise<void>): Promise<void> {

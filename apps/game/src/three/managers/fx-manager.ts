@@ -8,7 +8,7 @@ import {
 } from "../fx/world-fx-backends";
 import type { RendererFxCapabilities } from "../renderer-fx-capabilities";
 import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
-import { warmTexturePipeline, type PipelineCompiler } from "../pipeline-compiler";
+import type { PipelineCompiler } from "../pipeline-compiler";
 
 type FXType = "skull" | "compass" | "troopDiff" | string;
 
@@ -273,7 +273,9 @@ export class FXManager {
     if (!this.textures.has(config.textureUrl)) {
       const texture = acquireFxTexture(config.textureUrl, (loaded) => {
         if (this.destroyed) return;
-        void warmTexturePipeline(this.compilePipelines, this.scene, loaded).catch(() => undefined);
+        void this.backend
+          .warmIconTexture?.(loaded, this.compilePipelines, config.renderMode)
+          ?.catch(() => undefined);
       });
       this.textures.set(config.textureUrl, texture);
     }
