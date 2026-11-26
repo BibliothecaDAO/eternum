@@ -18,11 +18,11 @@ import { deepAlliesGarrison } from "@bibliothecadao/eternum/game-client";
 import { MAINNET_TOKENS } from "../../../../packages/chain/src/tokens";
 import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
 import { buildablePlotCount } from "../../../../packages/core/src/utils/castle-reach";
+import { loreOpensAtLevel } from "../../../../packages/core/src/utils/realm-research";
 import {
   buildingCopyCost,
   buildingCopyMultiplier,
   isOnePerRealm,
-  loreOpensAtLevel,
   oathAttackStamina,
   oathDeepLossPerTick,
   oathFuryRefund,
@@ -159,7 +159,7 @@ const researchRow = (row: number) =>
   frontierPreset.research
     .filter((step) => step.row === row)
     .sort((a, b) => a.tier - b.tier)
-    .map((step) => ({ essence: n(step.essenceCost), labor: n(step.laborCost) }));
+    .map((step) => ({ tier: step.tier, essence: n(step.essenceCost), labor: n(step.laborCost) }));
 
 const finishHeight = raceRules.STAGE_COUNT * racePreset.stageHeight;
 type TriumphStage = keyof typeof ASPECT_PAGE_WORDS.triumph;
@@ -754,9 +754,7 @@ export const FRONTIER = {
           `Slot ${n(research.OATH_SLOTS_BASE + index + 1)}: ${essence} Essence, ${labor} labor`,
       )
       .join("; "),
-    lore: researchRow(research.ROW_LORE),
-    shrineLoreRank: rankName(loreOpensAtLevel(research.LORE_SHRINES)),
-    spireLoreRank: rankName(loreOpensAtLevel(research.LORE_SPIRES)),
+    lore: researchRow(research.ROW_LORE).map((step) => ({ ...step, opensAt: rankName(loreOpensAtLevel(step.tier)) })),
     outputStep: pct(frontierPreset.board.outputStepBps),
   },
   attributes: {

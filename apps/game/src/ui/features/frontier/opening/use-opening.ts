@@ -12,6 +12,7 @@ import {
   expeditionRealmSite,
   fragmentsSold,
   getBuildingQuantity,
+  loreOpensAtLevel,
   readDailyQuest,
   researchTier,
 } from "@bibliothecadao/eternum";
@@ -28,7 +29,7 @@ import {
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { catalogAspectId, getNeighborHexes, RealmLevels, ResourcesIds, TroopTier } from "@bibliothecadao/types";
+import { catalogAspectId, getNeighborHexes, rankName, RealmLevels, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 import { useEffect } from "react";
 
 import type { OpeningRules } from "@/ui/design-system/kit/words";
@@ -185,6 +186,7 @@ function useOpeningRules(rules: ExpeditionRules, realm: NativeRows["Structure"] 
     staminaPerFragment: nativeFragmentConstants.STAMINA_PER_FRAGMENT,
     relicMinutesPerTier: slice.relic_seconds_per_rank / 60,
     scoutExploreStamina: nativeRuleConstants.SCOUT_EXPLORE_STAMINA,
+    shrineLoreRank: rankName(loreOpensAtLevel(research.LORE_SHRINES)),
     exploreStamina: pickBase.revealStamina,
     dayLeftSeconds: clock.secondsLeft,
     bane: bane ? { name: baneFace(bane, setup.store, realm.game_id).name } : undefined,

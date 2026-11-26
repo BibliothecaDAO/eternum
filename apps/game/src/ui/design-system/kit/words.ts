@@ -1017,6 +1017,7 @@ export interface OpeningRules {
   staminaPerFragment: number;
   relicMinutesPerTier: number;
   scoutExploreStamina: number;
+  shrineLoreRank: string;
   exploreStamina: number;
   dayLeftSeconds?: number;
   bane?: { name: string };
@@ -1068,7 +1069,8 @@ export const OPENING_WORDS = {
     relic: (rules: OpeningRules) =>
       `Relics last ${formatAmount(rules.relicMinutesPerTier)} minutes per tier. Each army carries ${ARMY_RELIC_SLOTS}.`,
     "well-lore": () => "Well lore is learned. Uncovered wells appear on the map.",
-    "shrine-lore": () => "Shrine lore is learned. Uncovered shrines appear on the map.",
+    "shrine-lore": (rules: OpeningRules) =>
+      `Shrine lore is learned at ${rules.shrineLoreRank}. Uncovered shrines appear on the map.`,
     city: (rules: OpeningRules) =>
       `Scouts reveal mist for ${formatAmount(rules.scoutExploreStamina)} stamina instead of ${formatAmount(rules.exploreStamina)}.`,
     barracks: (rules: OpeningRules) => `It raises ${formatRate(rules.knightsPerSecond)} Knights.`,
