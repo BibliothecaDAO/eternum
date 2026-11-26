@@ -6347,12 +6347,12 @@ const BEAST_SITE = {
 };
 const RIVAL_SITE = {
   verb: REHEARSAL_WORDS.attack,
-  matches: (card) => card.holder === "rival",
+  matches: (card) => card.holder === "rival" && card.occupiedSlots > 0,
   missing: `no rival Aspect holds a ${DEEP_LAYER} site in view`,
 };
 const EMPTY_SITE = {
   verb: REHEARSAL_WORDS.take,
-  matches: (card) => card.guard === "open",
+  matches: (card) => card.guard === "open" || (card.holder === "rival" && card.occupiedSlots === 0),
   missing: `no ${DEEP_LAYER} site in view stands empty: each holds today's beast or a guard`,
 };
 
@@ -6396,7 +6396,7 @@ async function actOnTheSite({ browser, extraScreenshot }, want) {
   if (!verb)
     return { card, moved: Boolean(move), blocked: `the ${card.name} never offered ${want.verb}: ${card.text}` };
   browser.tap(verb.offset);
-  const claimed = (now) => now.name === card.name && now.holder === "ally" && now.occupiedSlots === 0;
+  const claimed = (now) => now.name === card.name && now.holder === "own" && now.occupiedSlots === 0;
   const after = await readUntil(() => browser.read(DEEP_SITE_CARD), claimed, ORDER_OUTCOME_WAIT_MS);
   extraScreenshot(`after-${want.verb.toLowerCase()}`);
   if (!claimed(after))

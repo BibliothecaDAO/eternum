@@ -68,7 +68,7 @@ export type DeepGuard =
   | {
       kind: "held";
       aspectId: AspectId;
-      ally: boolean;
+      side: "own" | "ally" | "rival";
       slots: readonly DeepSlot[];
       next: number | undefined;
     }
@@ -129,7 +129,7 @@ const siteTag = (ring: number, opening: DeepSiteProps["opening"], guard: DeepGua
   if (opening) return { state: "locked", line: DEEP_WORDS.tag.locked(shownRing) };
   if (guard.kind !== "held") return { state: "open", line: DEEP_WORDS.tag.open(shownRing) };
   const aspect = aspectName(guard.aspectId);
-  return guard.ally
+  return guard.side !== "rival"
     ? { state: "held", line: DEEP_WORDS.tag.held(aspect), aspectId: guard.aspectId }
     : {
         state: "rival",
@@ -328,10 +328,10 @@ const GuardStrip = ({ site, guard }: { site: DeepSiteProps["site"]; guard: DeepG
         className="deep-holder"
         data-aspect-holder={guard.aspectId}
         data-aspect-id={guard.aspectId}
-        data-side={guard.ally ? "ally" : "rival"}
+        data-side={guard.side}
       >
         <AspectMark aspect={guard.aspectId} size={16} decorative />
-        <span className={guard.ally ? "text-hud-ally" : "text-hud-bad"}>{aspectName(guard.aspectId)}</span>
+        <span className={guard.side === "rival" ? "text-hud-bad" : "text-hud-ally"}>{aspectName(guard.aspectId)}</span>
         <span>
           · {DEEP_WORDS.guardsCount(guard.slots.length, nativeRuleConstants.DEEP_GUARD_SLOTS)} ·{" "}
           {DEEP_WORDS.slotsOpen(free.length)}

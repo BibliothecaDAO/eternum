@@ -173,6 +173,8 @@ describe("the Deep site's live native binding", () => {
       expect(hud.host.querySelector("[data-deep-tag]")?.textContent).toBe(held);
       expect(hud.host.textContent).toContain(DEEP_WORDS.guarding);
       expect(hud.button("Attack")).toBeUndefined();
+      expect(hud.host.querySelector("[data-fight-side]")).toBeNull();
+      expect(hud.host.querySelector("[data-aspect-holder]")?.getAttribute("data-side")).toBe("own");
       expect(hud.host.querySelectorAll('[data-deep-slot="filled"]')).toHaveLength(1);
       expect(hud.host.querySelectorAll("[data-deep-slot]")).toHaveLength(4);
       act(() =>

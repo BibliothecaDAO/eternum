@@ -16,7 +16,8 @@ import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtur
 // The package index first, so the config singleton the utils read through it is evaluated before any story runs.
 // The package index first, so the config singleton the utils read through it is evaluated before any story runs.
 import { configManager } from "..";
-import { buildStoryEventPresentation, findGain } from "./story-event-formatter";
+import { buildStoryEventPresentation, CAPTURE_AFTERMATH, findGain } from "./story-event-formatter";
+import { getStructureName } from "../utils/entities";
 import type { NativeStoryVariant } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 // Structure names check the player's local renames first; core tests have no DOM.
@@ -627,7 +628,7 @@ describe("a capture", () => {
     return { ...presentation, realm: realm.replace(/ created$/, "") };
   };
 
-  const aftermath = "Its armies and deliveries went with it";
+  const aftermath = CAPTURE_AFTERMATH;
 
   it("names who took which structure from whom, and what went with it, in one line", () => {
     const { title, description, realm } = captured("0xa1", null);
@@ -644,6 +645,18 @@ describe("a capture", () => {
   it("has nothing that went with it when no player held it", () => {
     const { title, realm } = captured("0x0", "0xc1");
     expect(title).toBe(`clientlane took ${realm} from The Vanguard`);
+  });
+
+  it("reports a Deep site changing hands without transferring any assets", () => {
+    const { store, setHeldRealm } = buildStore();
+    setHeldRealm(5, 1, 1);
+    const row = store.require("Structure", { game_id: 1, entity_id: 5n });
+    const site = { ...row, base: { ...row.base, category: StructureType.DeepSite, level: 0, troop_max_explorer_count: 0 } };
+    store.applyFacts([{ model: "Structure", key: store.wireKeyOf("Structure", row)!, value: site }]);
+    const event = story("StructureCapturedStory", { previous_owner: "0xa1", new_owner: "0xc1" }, 5);
+    expect(buildStoryEventPresentation(event, store, names).title).toBe(
+      `clientlane took ${getStructureName(site, store).name} from uxplay`,
+    );
   });
 });
 

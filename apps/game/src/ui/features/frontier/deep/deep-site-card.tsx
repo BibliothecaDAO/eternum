@@ -11,7 +11,7 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { toast } from "@/ui/features/event-feed/notify";
-import { armyOaths, configManager, getStructureName, oathAttackStamina } from "@bibliothecadao/eternum";
+import { armyOaths, configManager, getStructureName, isViewerOwner, oathAttackStamina } from "@bibliothecadao/eternum";
 import {
   deepAlliesGarrison,
   deepTroopsLife,
@@ -132,7 +132,7 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
       opening={site.open ? null : siteOpening(setup.store, game_id, site)}
       guard={guardView(setup.store, game_id, site, account.account ? BigInt(account.account.address) : null, now)}
       fight={
-        verb === "attack" && selected
+        verb === "attack" && selected && !block
           ? readDeepSiteFight(setup.store, site, { army: selected.army, timestamp: now })
           : undefined
       }
@@ -219,10 +219,12 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, viewer: 
   const paid = ({ troops }: DeepGarrison) => (troops.count > loss ? troops.count - loss : 0n);
   const total = site.garrisons.reduce((sum, garrison) => sum + paid(garrison), 0n);
   const aspectId = catalogAspectId(site.aspect);
+  const owner = store.get("Structure", { game_id, entity_id: site.id })?.owner;
+  const viewerSide = isViewerOwner(owner, viewer) ? "own" : viewerAspects(store, game_id, viewer).has(aspectId) ? "ally" : "rival";
   return {
     kind: "held",
     aspectId,
-    ally: viewerAspects(store, game_id, viewer).has(aspectId),
+    side: viewerSide,
     next: site.garrisons[0]?.slot,
     slots: site.garrisons.map((garrison) => {
       const { slot, home, troops } = garrison;

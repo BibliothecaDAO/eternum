@@ -77,7 +77,7 @@ afterEach(() => host.remove());
 const eventsRows = (stories: ProcessedStoryEvent[]) => selectEventStories(stories, "important", PLAYER);
 
 describe("A capture in Events", () => {
-  it("tells the player who lost a structure who took it from them, and what went with it, under Mine", async () => {
+  it("tells the player who took their structure under Mine when its category is unavailable", async () => {
     const { buildStoryEventPresentation } = await import("@bibliothecadao/eternum");
     const payload = { previous_owner: PLAYER, new_owner: "0xc1", points: 0 };
     const presentation = buildStoryEventPresentation(
@@ -96,9 +96,8 @@ describe("A capture in Events", () => {
       presentation,
     } as ProcessedStoryEvent;
     const [event] = selectEventStories([taken], "important", PLAYER);
-    expect(renderToStaticMarkup(<FeedRowLine event={event} />)).toContain(
-      "clientlane took a structure from you. Its armies and deliveries went with it",
-    );
+    expect(event.presentation?.title).toBe("clientlane took a structure from you");
+    expect(renderToStaticMarkup(<FeedRowLine event={event} />)).toContain("clientlane took a structure from you");
   });
 });
 

@@ -56,7 +56,7 @@ export const DEEP_SITE_CASES = {
     guard: {
       kind: "held",
       aspectId: 2,
-      ally: true,
+      side: "own",
       next: 3,
       slots: withShares([slot(3, "Aldor", 6_000, true), { ...slot(2, "Aldor", 4_000, true), category: "Crossbowman" }]),
     },
@@ -78,7 +78,7 @@ export const DEEP_SITE_CASES = {
     guard: {
       kind: "held",
       aspectId: 3,
-      ally: false,
+      side: "rival",
       next: 3,
       slots: withShares([slot(3, "Havoc Guard", 6_200)]),
     },
@@ -105,7 +105,7 @@ export const DEEP_SITE_CASES = {
     guard: {
       kind: "held",
       aspectId: 3,
-      ally: false,
+      side: "rival",
       next: 3,
       slots: withShares([slot(3, "Havoc Guard", 6_200)]),
     },

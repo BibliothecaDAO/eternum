@@ -19,6 +19,7 @@ import {
   RealmLevels,
   resourceName,
   scaledToUnits,
+  StructureType,
   troopName,
   troopPlural,
   TroopTier,
@@ -208,19 +209,23 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     ]),
     icon: "prize",
   }),
-  StructureCapturedStory: (event, payload, components, resolvePlayerName) => ({
-    title: [
-      `${nameOwner(payload.new_owner, components, resolvePlayerName) ?? "Someone"} took ${subjectOf(event.entityId, components)} from ${
-        isViewer(payload.previous_owner, event.viewerAddress)
-          ? "you"
-          : (nameOwner(payload.previous_owner, components, resolvePlayerName) ?? "its holder")
-      }`,
-      toBigIntSafe(payload.previous_owner) ? CAPTURE_AFTERMATH : null,
-    ]
-      .filter(Boolean)
-      .join(". "),
-    icon: "battle",
-  }),
+  StructureCapturedStory: (event, payload, components, resolvePlayerName) => {
+    const category = readStructure(event.entityId, components)?.base.category;
+    const carriesAssets = category !== undefined && category !== StructureType.DeepSite;
+    return {
+      title: [
+        `${nameOwner(payload.new_owner, components, resolvePlayerName) ?? "Someone"} took ${subjectOf(event.entityId, components)} from ${
+          isViewer(payload.previous_owner, event.viewerAddress)
+            ? "you"
+            : (nameOwner(payload.previous_owner, components, resolvePlayerName) ?? "its holder")
+        }`,
+        carriesAssets && toBigIntSafe(payload.previous_owner) ? CAPTURE_AFTERMATH : null,
+      ]
+        .filter(Boolean)
+        .join(". "),
+      icon: "battle",
+    };
+  },
   BlitzFinalized: () => ({ title: "Blitz finalized", icon: "scroll" }),
   SitePayout: (event, payload, components, resolvePlayerName) => {
     const category = toNumber(payload.category);
