@@ -1,3 +1,4 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -201,7 +202,9 @@ const Chosen = ({ choice, form, entityId }: { choice: Choice; form: Form; entity
 );
 
 /** A row's cost, each resource painted with its amount, in red while the realm holds less. */
-const PaintedCost = ({ requirements }: { requirements: Choice["requirements"] }) => (
+const PaintedCost = ({ requirements }: { requirements: Choice["requirements"] }) => {
+  const frontier = useGameModeConfig().id === "frontier";
+  return (
   <span className="flex flex-wrap gap-x-2 gap-y-1 tabular-nums">
     {requirements === undefined && "—"}
     {requirements?.map((cost) => (
@@ -211,15 +214,16 @@ const PaintedCost = ({ requirements }: { requirements: Choice["requirements"] })
           "inline-flex items-center gap-0.5",
           cost.current === undefined || cost.current < cost.amount ? "text-hud-bad" : "text-hud-ink",
         )}
-        title={resourceName(cost.resource, false)}
+        title={resourceName(cost.resource, frontier)}
       >
         <SemanticIcon
           name={resourceMeaning(cost.resource)}
-          alt={resourceName(cost.resource, false)}
+          alt={resourceName(cost.resource, frontier)}
           className="h-4 w-4"
         />
         {formatCharge(cost.amount)}
       </span>
     ))}
   </span>
-);
+  );
+};

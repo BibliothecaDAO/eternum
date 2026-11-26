@@ -84,7 +84,13 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
         requirements: resolveBuildingRequirements(target.entityId, store, type, useSimpleCost, currentDefaultTick),
         gives:
           structure &&
-          describeBuildingGives(store, structure, type, configManager.getBuildingCategoryConfig(type).capacity_grant),
+          describeBuildingGives(
+            store,
+            structure,
+            type,
+            configManager.getBuildingCategoryConfig(type).capacity_grant,
+            mode.id === "frontier",
+          ),
         reason: state.reason,
         disabled: !state.canSubmit || pending,
       };

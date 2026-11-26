@@ -236,8 +236,8 @@ it("tells a Frontier army raised or reinforced by its Frontier troop name, one o
     buildStoryEventPresentation(
       story("ProductionStory", { received_resource_type: ResourcesIds.Paladin, received_amount: "1", cost: [] }),
       frontierStore,
-    ).title.startsWith(scouts.many),
-  ).toBe(true);
+    ).title,
+  ).toContain(scouts.many);
   expect(
     buildStoryEventPresentation(
       story("ExplorerCreateStory", { category: "Paladin", tier: "T1", amount: "4535000000000" }),

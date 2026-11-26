@@ -11,10 +11,11 @@ export const describeBuildingGives = (
   structure: Pick<NativeRows["Structure"], "game_id" | "base">,
   building: BuildingType,
   capacityGrant: number,
+  frontier: boolean,
 ): string | null => {
   const resource = getProducedResource(building);
   if (resource !== undefined) {
-    return `${resourceName(resource, false)} ${formatRate(buildingOutput(store, structure, building, null).total)}`;
+    return `${resourceName(resource, frontier)} ${formatRate(buildingOutput(store, structure, building, null).total)}`;
   }
   return capacityGrant > 0 ? `+${formatExact(capacityGrant)} population cap` : null;
 };

@@ -16,12 +16,12 @@ const village = { game_id: 1, base: { category: StructureType.Village } } as nev
 
 describe("what a building gives, on its Build card", () => {
   it("names a producer's output by the rate rule, from its structure's rate", () => {
-    expect(describeBuildingGives(store, realm, BuildingType.ResourceWheat, 0)).toBe("Wheat +360/min");
-    expect(describeBuildingGives(store, village, BuildingType.ResourceWheat, 0)).toBe("Wheat +180/min");
+    expect(describeBuildingGives(store, realm, BuildingType.ResourceWheat, 0, false)).toBe("Wheat +360/min");
+    expect(describeBuildingGives(store, village, BuildingType.ResourceWheat, 0, false)).toBe("Wheat +180/min");
   });
 
   it("names a hut's population cap, and nothing for a building that gives neither", () => {
-    expect(describeBuildingGives(store, realm, BuildingType.WorkersHut, 6)).toBe("+6 population cap");
-    expect(describeBuildingGives(store, realm, BuildingType.WorkersHut, 0)).toBeNull();
+    expect(describeBuildingGives(store, realm, BuildingType.WorkersHut, 6, false)).toBe("+6 population cap");
+    expect(describeBuildingGives(store, realm, BuildingType.WorkersHut, 0, false)).toBeNull();
   });
 });
