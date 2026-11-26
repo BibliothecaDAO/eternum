@@ -1,11 +1,7 @@
 import { DEEP_SITE_MEANINGS } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
-import {
-  nativeRuleConstants,
-  type DeepSiteView,
-  type NativeFactStore,
-} from "@bibliothecadao/eternum/game-client";
+import { nativeRuleConstants, type DeepSiteView, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { deepSites } from "@bibliothecadao/types";
 
 export type DeepPay = keyof typeof DEEP_WORDS.kinds;
