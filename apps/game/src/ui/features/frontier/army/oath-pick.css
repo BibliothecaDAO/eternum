@@ -212,11 +212,7 @@
 .oath-pick[data-spread] {
   width: min(824px, calc(100vw - 48px));
   max-width: none;
-  border: 1.5px solid var(--hud-line-strong);
   border-radius: 18px;
-  background:
-    radial-gradient(120% 60% at 50% 0%, rgb(var(--hud-gold) / 0.06), transparent 70%),
-    linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
 }
 .oath-pick[data-spread] .oath-pick__head {
   height: 64px;
@@ -227,12 +223,6 @@
 .oath-pick[data-spread] .oath-pick__head > .ui-portrait {
   width: 40px;
   height: 40px;
-}
-.oath-pick[data-spread] .oath-pick__title > b {
-  font-size: 24px;
-}
-.oath-pick[data-spread] .oath-pick__title > span {
-  font-size: 13px;
 }
 .oath-pick[data-spread] .oath-pick__body {
   display: grid;
@@ -274,7 +264,7 @@
     radial-gradient(120% 70% at 50% 0%, rgb(var(--hud-aspect, var(--hud-gold)) / 0.3), transparent 70%),
     var(--hud-surface-to);
   box-shadow:
-    0 14px 36px rgb(0 0 0 / 0.62),
+    var(--hud-shadow-panel),
     0 0 28px rgb(var(--hud-aspect, var(--hud-gold)) / 0.26);
 }
 .oath-pick[data-spread] .oath-choice[data-selected]::after {
@@ -317,7 +307,7 @@
 }
 .oath-pick[data-spread] .oath-choice__name {
   margin-top: 8px;
-  font-size: 24px;
+  font-size: var(--hud-text-display);
 }
 .oath-pick[data-spread] .oath-choice__well {
   display: flex;
@@ -339,12 +329,13 @@
 .oath-pick[data-spread] .oath-choice__effect {
   gap: 8px;
   color: rgb(var(--hud-ink));
-  font-size: clamp(26px, 2.3vw, 34px);
-  line-height: 1.1;
+  font-size: var(--hud-text-hero);
+  line-height: var(--hud-leading-hero);
   text-shadow: 0 0 14px rgb(var(--hud-aspect, var(--hud-gold)) / 0.45);
 }
 .oath-pick[data-spread] .oath-choice__effect[data-long] {
-  font-size: 26px;
+  font-size: var(--hud-text-display);
+  line-height: var(--hud-leading-display);
 }
 .oath-pick[data-spread] .oath-choice__effect > img {
   width: 28px;
@@ -352,9 +343,9 @@
 }
 .oath-pick[data-spread] .oath-choice__unit {
   color: rgb(var(--hud-ink) / 0.9);
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.38;
+  font-size: var(--hud-text-body);
+  font-weight: var(--hud-weight-body);
+  line-height: var(--hud-leading-body);
   white-space: normal;
 }
 .oath-pick[data-spread] .oath-choice__selected {
