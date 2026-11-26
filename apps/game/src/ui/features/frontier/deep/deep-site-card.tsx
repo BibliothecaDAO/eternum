@@ -338,8 +338,7 @@ function selectionBlock(
 }
 
 function ownsSite(store: NativeFactStore, game_id: number, site: Site, selected: NonNullable<Selected>): boolean {
-  const owner = store.require("Structure", { game_id, entity_id: site.id }).owner;
-  return store.require("Structure", { game_id, entity_id: selected.army.owner }).owner === owner;
+  return store.require("Structure", { game_id, entity_id: selected.army.owner }).owner === site.holder;
 }
 
 function guardView(store: NativeFactStore, game_id: number, site: Site, viewer: bigint | null, now: number): DeepGuard {
@@ -354,8 +353,7 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, viewer: 
   const paid = ({ troops }: DeepGarrison) => (troops.count > loss ? troops.count - loss : 0n);
   const total = site.garrisons.reduce((sum, garrison) => sum + paid(garrison), 0n);
   const aspectId = catalogAspectId(site.aspect);
-  const owner = store.get("Structure", { game_id, entity_id: site.id })?.owner;
-  const viewerSide = isViewerOwner(owner, viewer)
+  const viewerSide = isViewerOwner(site.holder, viewer)
     ? "own"
     : viewerAspects(store, game_id, viewer).has(aspectId)
       ? "ally"

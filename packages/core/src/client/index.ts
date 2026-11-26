@@ -43,6 +43,7 @@ export {
   readDeepRingOpening,
   readDeepSiteDefender,
   readDeepSites,
+  readSyncedDeepSites,
   type DeepGarrison,
   type DeepSiteView,
 } from "./views/deep-sites";

@@ -1,3 +1,4 @@
+import { DEEP_SITE_MEANINGS } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import type { deepSites } from "@bibliothecadao/types";
@@ -7,8 +8,8 @@ import type { deepSites } from "@bibliothecadao/types";
  * game adds has no card until it has its row.
  */
 export const DEEP_SITE_FACES = {
-  foundation: { icon: "hyperstructure", purpose: DEEP_WORDS.purpose.foundation },
-  core: { icon: "essence", purpose: DEEP_WORDS.purpose.core },
-  mine: { icon: "pickaxe", purpose: DEEP_WORDS.purpose.mine },
-  altar: { icon: "flame", purpose: DEEP_WORDS.purpose.altar },
+  foundation: { icon: DEEP_SITE_MEANINGS.foundation, purpose: DEEP_WORDS.purpose.foundation },
+  core: { icon: DEEP_SITE_MEANINGS.core, purpose: DEEP_WORDS.purpose.core },
+  mine: { icon: DEEP_SITE_MEANINGS.mine, purpose: DEEP_WORDS.purpose.mine },
+  altar: { icon: DEEP_SITE_MEANINGS.altar, purpose: DEEP_WORDS.purpose.altar },
 } as const satisfies Record<(typeof deepSites)[number]["key"], { icon: IconMeaning; purpose: string }>;

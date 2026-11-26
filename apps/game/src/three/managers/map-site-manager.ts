@@ -11,12 +11,11 @@ import {
   readExpeditionRules,
 } from "@bibliothecadao/eternum";
 import {
-  IncompleteDeepSyncError,
   deepGateTiles,
   nativeRuleConstants,
   readDeepBeastTroops,
   readDeepRingOpening,
-  readDeepSites,
+  readSyncedDeepSites,
   safeInteger,
   viewerAspects,
   type DeepSiteView,
@@ -429,15 +428,8 @@ export class MapSiteManager {
   }
 
   private readSitesById(): Map<number, DeepSiteView> {
-    const now = readDefaultTick();
-    if (now === undefined) return new Map();
-    try {
-      const sites = readDeepSites(this.store, now, configManager.getActiveGameId());
-      return new Map(sites.map((site) => [safeInteger(site.id), site]));
-    } catch (error) {
-      if (error instanceof IncompleteDeepSyncError) return new Map();
-      throw error;
-    }
+    const sites = readSyncedDeepSites(this.store, readDefaultTick(), configManager.getActiveGameId());
+    return new Map(sites.map((site) => [safeInteger(site.id), site]));
   }
 
   private guardsDeepSite(guard: { structure_id: bigint } | undefined): boolean {
@@ -445,11 +437,9 @@ export class MapSiteManager {
   }
 
   private holderColor(site: DeepSiteView | undefined): string | null {
-    if (!site?.aspect) return null;
+    if (!site || site.holder === 0n) return null;
     const gameId = configManager.getActiveGameId();
-    const structure = this.store.get("Structure", { game_id: gameId, entity_id: site.id });
-    if (!structure) return null;
-    const { owner } = structure;
+    const owner = site.holder;
     const watched = watchedSide(owner);
     if (watched) return watched.colour;
     const viewer = accountAddress() ?? null;

@@ -1,15 +1,20 @@
 // @vitest-environment jsdom
-import { setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { ContractAddress, RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
-import { afterEach, describe, expect, it } from "vitest";
+import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { ContractAddress, deepSites, RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
 import { setActiveGame } from "@/runtime/world";
 import { setOpenGameSeats } from "@/utils/entity-ownership";
 import { overrideSpectateIntent } from "@/utils/spectator-session";
 import { minimapMarkersView } from "./minimap-markers";
+import { deepScenario, HELD_SITE } from "@/lab/game/deep-scenario";
+import { wire } from "@/lab/game/lab-chain";
+import { DEEP_SITE_MEANINGS } from "@/ui/design-system/domain-icon-meaning";
+import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { GAME_FAMILIES } from "../../../../../../../../config/source/common/native-preset-modes";
 
 afterEach(() => {
+  vi.restoreAllMocks();
   setBlockTimestampSource(null);
   overrideSpectateIntent(false);
   setOpenGameSeats({ chainId: "", gameId: 0 }, []);
@@ -82,5 +87,111 @@ describe("the minimap to a watching viewer (side-colours-4)", () => {
       expect(markers.get("201")?.owner).toBe("seat-0");
       expect(markers.get(String(SITE))?.owner).toBe("nobody");
     }
+  });
+});
+
+const [VIEWER, ALLY, RIVAL] = ["0x111", "0x222", "0x333"];
+const [VIEWER_ASPECT, RIVAL_ASPECT] = [1, 2];
+type DeepKey = (typeof deepSites)[number]["key"];
+const siteOf = (key: DeepKey) => deepSites.find((site) => site.key === key)!;
+const siteEntity = (key: DeepKey) => BigInt(800 + siteOf(key).id);
+const HOLDERS: Record<DeepKey, string> = { foundation: "0x0", core: VIEWER, mine: RIVAL, altar: ALLY };
+
+const deepMinimap = (closedRing = false) => {
+  const scenario = deepScenario(closedRing);
+  const { store, startsAt } = scenario;
+  setBlockTimestampSource(() => startsAt);
+  vi.spyOn(configManager, "getTick").mockReturnValue(1);
+  const mine = siteEntity("mine");
+  const mineSite = store.require("DeepSite", { game_id: 1, entity_id: mine });
+  const coreSite = store.require("DeepSite", { game_id: 1, entity_id: siteEntity("core") });
+  const mineBeast = store.require("Guard", { game_id: 1, structure_id: mine, slot: 0 });
+  store.applyFacts([
+    ...deepSites.map((site) => {
+      const entity = siteEntity(site.key);
+      const existing = store.require("Structure", { game_id: 1, entity_id: entity });
+      return {
+        model: "Structure" as const,
+        key: store.wireKeyOf("Structure", existing)!,
+        value: wire({
+          ...existing,
+          owner: HOLDERS[site.key],
+        }),
+      };
+    }),
+    {
+      model: "DeepSite",
+      key: store.wireKeyOf("DeepSite", mineSite)!,
+      value: wire({ ...mineSite, aspect: RIVAL_ASPECT }),
+    },
+    {
+      model: "DeepSite",
+      key: store.wireKeyOf("DeepSite", coreSite)!,
+      value: wire({ ...coreSite, aspect: VIEWER_ASPECT }),
+    },
+    {
+      model: "Guard",
+      key: store.wireKeyOf("Guard", mineBeast)!,
+      value: wire({ ...mineBeast, troops: { ...mineBeast.troops, count: 0n } }),
+    },
+  ] as never);
+  return scenario;
+};
+
+describe("the Deep's sites on the minimap", () => {
+  it("paints every Deep site by its kind and rings it by who holds it today, unclaimed in neutral grey and held-undefended dashed", () => {
+    const { store } = deepMinimap();
+    const markers = minimapMarkersView.read(store, ContractAddress(VIEWER));
+    expect(HELD_SITE).toBe("altar");
+    expect(Object.fromEntries(deepSites.map((site) => [site.key, markers.get(String(siteEntity(site.key)))]))).toEqual({
+      foundation: { name: DEEP_SITE_MEANINGS.foundation, owner: "nobody", undefended: false, scale: 1.75 },
+      core: { name: DEEP_SITE_MEANINGS.core, owner: "own", undefended: true, scale: 1.75 },
+      mine: { name: DEEP_SITE_MEANINGS.mine, owner: "enemy", undefended: true, scale: 1.75 },
+      altar: { name: DEEP_SITE_MEANINGS.altar, owner: "ally", undefended: false, scale: 1.75 },
+    });
+  });
+
+  it("clears yesterday's holder on day roll rather than trusting raw Structure.owner", () => {
+    const { store, startsAt } = deepMinimap();
+    const daySeconds = store.require("SliceRules", { game_id: 1 }).day_unit_seconds;
+    setBlockTimestampSource(() => startsAt + daySeconds);
+    const markers = minimapMarkersView.read(store, ContractAddress(VIEWER));
+    for (const site of deepSites) {
+      expect(markers.get(String(siteEntity(site.key)))).toEqual({
+        name: DEEP_SITE_MEANINGS[site.key],
+        owner: "nobody",
+        undefended: false,
+        scale: 1.75,
+      });
+    }
+  });
+
+  it("marks an army of the viewer's Aspect as an ally, the viewer's own as own", () => {
+    const { store } = deepMinimap();
+    const markers = minimapMarkersView.read(store, ContractAddress(VIEWER));
+    expect(markers.get(String(SPIRE_ARMY))?.owner).toBe("own");
+    expect(markers.get("399")?.owner).toBe("ally");
+    expect(minimapMarkersView.read(store, ContractAddress(RIVAL)).get("399")?.owner).toBe("enemy");
+  });
+
+  it("draws a site whose ring is not open yet as a smaller lock, nobody's", () => {
+    const open = minimapMarkersView.read(deepMinimap().store, ContractAddress(VIEWER));
+    const markers = minimapMarkersView.read(deepMinimap(true).store, ContractAddress(VIEWER));
+    for (const site of deepSites) {
+      const locked = markers.get(String(siteEntity(site.key)))!;
+      expect(locked).toEqual({ name: "lock", owner: "nobody", scale: 1.45 });
+      expect(locked.scale!).toBeLessThan(open.get(String(siteEntity(site.key)))!.scale!);
+    }
+  });
+
+  it("rings a held site in its holder's seat to a watching viewer, nobody's in grey", () => {
+    const { store } = deepMinimap();
+    setActiveGame({ chainId: "SHARD", gameId: 1, name: "SHARD" });
+    setOpenGameSeats({ chainId: "SHARD", gameId: 1 }, [ContractAddress(VIEWER), ContractAddress(ALLY)]);
+    overrideSpectateIntent(true);
+    const markers = minimapMarkersView.read(store, null);
+    expect(markers.get(String(siteEntity("core")))).toMatchObject({ owner: "seat-0", undefended: true });
+    expect(markers.get(String(siteEntity("altar")))).toMatchObject({ owner: "seat-1", undefended: false });
+    expect(markers.get(String(siteEntity("foundation")))).toMatchObject({ owner: "nobody", undefended: false });
   });
 });

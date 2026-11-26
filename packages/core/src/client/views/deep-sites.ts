@@ -24,6 +24,7 @@ export interface DeepSiteView {
   beastTroops: bigint;
   beastCategory: NativeRows["Guard"]["troops"]["category"];
   guard: NativeRows["Guard"] | undefined;
+  holder: bigint;
   aspect: number;
   /** Defensive order: the highest live slot is faced next. */
   garrisons: DeepGarrison[];
@@ -51,6 +52,20 @@ export function readDeepSites(
   return rows
     .sort((left, right) => left.ring - right.ring || Number(left.entity_id - right.entity_id))
     .map((site) => deepSiteView(store, today, site, timestamp));
+}
+
+export function readSyncedDeepSites(
+  store: NativeFactStore,
+  now: number | undefined,
+  gameId = configManager.getActiveGameId(),
+): DeepSiteView[] {
+  if (now === undefined) return [];
+  try {
+    return readDeepSites(store, now, gameId);
+  } catch (error) {
+    if (error instanceof IncompleteDeepSyncError) return [];
+    throw error;
+  }
 }
 
 export function readDeepSite(
@@ -135,6 +150,10 @@ function deepSiteView(
     beastTroops: troops,
     beastCategory: category,
     guard,
+    holder:
+      current && site.aspect !== 0
+        ? (store.get("Structure", { game_id: gameId, entity_id: site.entity_id })?.owner ?? 0n)
+        : 0n,
     aspect: current ? site.aspect : 0,
     garrisons: current ? readGarrisons(store, today, site, timestamp) : [],
   };
