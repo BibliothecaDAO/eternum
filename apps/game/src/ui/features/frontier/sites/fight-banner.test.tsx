@@ -9,12 +9,14 @@ import { FIGHT_RESULT } from "@/ui/design-system/kit/words";
 import { FightBanner, showClearBanner } from "./fight-banner";
 import type { SiteClear } from "./site-outcome";
 
+const NOW = 1_000;
 let host: HTMLDivElement;
 let root: Root;
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
-  setBlockTimestampSource(() => 1_000);
+  setBlockTimestampSource(() => NOW);
+  vi.spyOn(configManager, "getTick").mockReturnValue(60);
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
