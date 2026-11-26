@@ -4070,7 +4070,7 @@ const DEEP_SITE_NAMES = deepSites.map(({ key, name }) => ({
   icon: DEEP_SITE_ICONS[key],
   beast: DEEP_BEASTS[key].name,
 }));
-const JOINED_SITE = DEEP_SITE_NAMES.find(({ key }) => key === "deep:altar");
+const HELD_SITE = DEEP_SITE_NAMES.find(({ key }) => key === "deep:altar");
 const everyRingSiteDrawn = (drawn) =>
   DEEP_SITE_NAMES.every((site) => drawn[site.key] > 0) &&
   DEEP_SITE_NAMES.reduce((total, site) => total + (drawn[site.key] ?? 0), 0) === rules.DEEP_RING_SITES;
@@ -4098,25 +4098,13 @@ const SITE_MODEL_BELOW_PLATE = 65;
 const namesItsBeast = (line, beast) =>
   beast === null ? line === null : typeof line === "string" && line.startsWith(beast);
 
-const DEEP_JOIN_STATE = `JSON.stringify({
+const DEEP_HELD_SITE_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
-  text: document.querySelector("[data-kit-sheet]")?.textContent ?? "",
-  slots: [
-    document.querySelector("[data-deep-slots]")?.textContent ?? "",
-    ...[...document.querySelectorAll("[data-deep-slots] [data-deep-slot]")].map((slot) => slot.getAttribute("aria-label") ?? ""),
-  ].join(" "),
-  pay: (() => {
-    const node = document.querySelector('[data-deep-pay]');
-    const rect = node?.getBoundingClientRect();
-    return { labor: Boolean(node?.querySelector('[data-rate="labor"]')), visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
-  })(),
-  joined: (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "InteractSite"),
-  joinSite: (() => {
+  site: (() => {
     const slot = [...document.querySelectorAll('.mp-at')].find((node) =>
-      node.querySelector('[data-icon="${JOINED_SITE.icon}"]') || node.querySelector('.mp-word')?.textContent === "${JOINED_SITE.name}");
+      node.querySelector('[data-icon="${HELD_SITE.icon}"]') || node.querySelector('.mp-word')?.textContent === "${HELD_SITE.name}");
     if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return null;
     const token = slot.firstElementChild.getBoundingClientRect();
-    // The plate floats over the site's model: the press goes to the model under it, not to the hex behind the plate.
     return [Math.round(token.left + token.width / 2 - innerWidth / 2), Math.round(token.bottom + ${SITE_MODEL_BELOW_PLATE} - innerHeight / 2)];
   })(),
 })`;
@@ -4310,12 +4298,12 @@ function raceBoardSteps(result) {
   ];
 }
 
-/** The drain chip of the open army panel, and every drain chip on the page (a dock token's, a row's). */
-const DEEP_DRAIN_STATE = `JSON.stringify((() => {
-  const read = (node) => ({ loss: Number(node.dataset.deepDrain), ticksLeft: Number(node.dataset.ticksLeft) });
-  const panel = document.querySelector("[data-kit-sheet] [data-deep-drain]");
-  return { panel: panel ? read(panel) : null, all: [...document.querySelectorAll("[data-deep-drain]")].map(read) };
-})())`;
+const DEEP_DRAIN_STATE = `JSON.stringify({
+  all: [...document.querySelectorAll("[data-deep-drain]")].map((node) => ({
+    loss: Number(node.dataset.deepDrain),
+    ticksLeft: Number(node.dataset.ticksLeft),
+  })),
+})`;
 
 /** The side colour of a map label (`--mp-side`, map-plates.css): an ally's army is drawn in another colour than the player's own. */
 const ARMY_SIDES = `JSON.stringify(Object.fromEntries([...document.querySelectorAll('.mp-at[data-key^="army:"]')].map((slot) => [
@@ -4340,11 +4328,11 @@ const DRAWN_SITES = `JSON.stringify({
 async function attackFromTheDeepCard({ browser, extraScreenshot }) {
   browser.hover(POINTER_PARKED);
   await sleep(HOVER_SETTLE_MS);
-  const before = browser.read(DEEP_JOIN_STATE);
-  if (!before.joinSite) return { before };
-  if (before.sheet !== JOINED_SITE.name) {
-    if (onADesktop()) browser.rightClick(before.joinSite);
-    else browser.tap(before.joinSite);
+  const before = browser.read(DEEP_HELD_SITE_STATE);
+  if (!before.site) return { before };
+  if (before.sheet !== HELD_SITE.name) {
+    if (onADesktop()) browser.rightClick(before.site);
+    else browser.tap(before.site);
   }
   const opened = await readUntil(
     () => browser.read(MERGE_STATE),
@@ -4380,11 +4368,11 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
     Boolean,
     MERGE_WAIT_MS,
   );
-  if (onADesktop()) browser.rightClick(before.joinSite);
-  else browser.tap(before.joinSite);
+  if (onADesktop()) browser.rightClick(before.site);
+  else browser.tap(before.site);
   await readUntil(
-    () => browser.read(DEEP_JOIN_STATE),
-    (state) => state.sheet === JOINED_SITE.name,
+    () => browser.read(DEEP_HELD_SITE_STATE),
+    (state) => state.sheet === HELD_SITE.name,
     SHEET_WAIT_MS,
   );
   return { forecast, watching: true };
@@ -4450,7 +4438,7 @@ const deepSitesSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION) =
       // With the field army still picked, each site is visited and pressed as a player does: the camera brought to it,
       // its plate and model in the frame, then a click (desktop) or tap (phone) on the model selects its hex and opens its card.
       const visits = [];
-      for (const site of [...DEEP_SITE_NAMES.filter((each) => each !== JOINED_SITE), JOINED_SITE]) {
+      for (const site of [...DEEP_SITE_NAMES.filter((each) => each !== HELD_SITE), HELD_SITE]) {
         const { name, key } = site;
         await panToHex(browser, browser.read(`window.__eternumMapSelection?.siteHexes?.["${key}"] ?? null`));
         // The camera's hex stands at the frame's middle, which a phone's open card covers: a player drags the site up
@@ -4470,7 +4458,7 @@ const deepSitesSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION) =
           inView: before.inView,
           sheet: opened.sheet,
           beast: opened.beast,
-          expectedBeast: site === JOINED_SITE ? null : site.beast,
+          expectedBeast: site === HELD_SITE ? null : site.beast,
         });
       }
       return { visits };
