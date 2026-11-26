@@ -25,6 +25,7 @@ import {
 } from "three/tsl";
 
 import { BIOMES_BY_ID, BIOME_MAP_SIZE, LAYER_BIOME_OFFSET, groundNumber } from "./terrain-biome-map";
+import { cellHash } from "./terrain-cell-hash";
 import { TERRAIN_WATER_LEVEL } from "./terrain-water";
 import { TERRAIN_HEX_HORIZONTAL_SPACING, TERRAIN_HEX_VERTICAL_SPACING } from "./terrain-coordinates";
 import { nearestHexLocalPosition } from "./terrain-hex-node";
@@ -97,7 +98,9 @@ export function groundSurface(input: GroundSurfaceInput) {
     const drift = mx_fractal_noise_float_2d(at.mul(0.45), 3).toVar();
     const wobble = mx_fractal_noise_float_2d(at.mul(1.6).add(4.1), 4).mul(0.45);
     const dry = smoothstep(TERRAIN_WATER_LEVEL - 0.004, TERRAIN_WATER_LEVEL + 0.012, input.world.y);
-    const ground = chooseGround({ biomeMap, at, climate: input.climate.xy, wobble, dry });
+    const facet = facetAt(at);
+    const groundAt = LOOK === "facet" ? facet.middle : at;
+    const ground = chooseGround({ biomeMap, at: groundAt, climate: input.climate.xy, wobble, dry });
     const biome = ground.get("biome") as Node<"float">;
     const kind = ground.get("kind") as Node<"float">;
     const brush: Brush = {
@@ -116,6 +119,18 @@ export function groundSurface(input: GroundSurfaceInput) {
     If(kind.equal(G("water")), () => {
       albedo.assign(input.meshColour);
     })
+      .ElseIf(float(LOOK === "flat" ? 1 : 0).greaterThan(0.5), () => paintFlat(brush))
+      .ElseIf(float(LOOK === "tile" ? 1 : 0).greaterThan(0.5), () => paintTile(brush))
+      .ElseIf(float(LOOK === "facet" ? 1 : 0).greaterThan(0.5), () =>
+        paintFacets(
+          brush,
+          facet,
+          kind
+            .equal(G("rock"))
+            .or(kind.equal(G("ash")))
+            .select(1.7, kind.equal(G("snow")).select(0.6, 1)),
+        ),
+      )
       .ElseIf(biome.equal(B(BiomeType.Beach)).or(biome.equal(B(BiomeType.SubtropicalDesert))), () =>
         paintDunes(brush, biome.equal(B(BiomeType.Beach)).select(0.3, 1)),
       )
@@ -139,6 +154,73 @@ export function groundSurface(input: GroundSurfaceInput) {
     albedo.mulAssign(mix(1, 0.74, wet));
     return GroundSurface(albedo, slope.mul(input.top), gloss, glow.mul(input.top));
   })();
+}
+
+// TEMPORARY, for choosing a look in the lab: ?ground=flat|tile|facet picks one, anything else the relief look.
+const LOOK = typeof window === "undefined" ? "" : (new URLSearchParams(window.location.search).get("ground") ?? "");
+
+function paintFlat(brush: Brush): void {
+  brush.albedo.assign(brush.tones.body);
+}
+
+/** Each tile lit like a game piece: its light in the middle, its shadow at the rim. */
+function paintTile(brush: Brush): void {
+  const { at, drift, tones } = brush;
+  const reach = hexReach(nearestHexLocalPosition(at)).div(TERRAIN_HEX_HORIZONTAL_SPACING / 2);
+  const lit = mix(tones.light, tones.body, smoothstep(0, 0.75, reach));
+  brush.albedo.assign(mix(lit, tones.shadow, smoothstep(0.7, 1, reach).mul(0.55)).mul(drift.mul(0.06).add(1)));
+}
+
+interface Facet {
+  /** The middle of the triangle a point lies in, in the ground's own coordinates. */
+  middle: Node<"vec2">;
+  /** The triangle's height from 0 to 1 and the way its one flat face leans. */
+  height: Node<"float">;
+  slope: Node<"vec2">;
+  name: Node<"float">;
+}
+
+const FACET_SIZE = 0.52;
+const SKEW = 0.57735;
+const STRETCH = 1.1547;
+
+const cornerHeight = (corner: Node<"vec2">): Node<"float"> =>
+  mx_noise_float(corner.mul(0.31)).mul(0.5).add(0.5).mul(0.7).add(cellHash(corner, 7).mul(0.3));
+
+/**
+ * Low-poly ground: an uneven net of triangles laid over a soft relief. A triangle takes one height from its three
+ * corners and one flat face from them, so neighbours shade together the way a modelled hill does.
+ */
+function facetAt(at: Node<"vec2">): Facet {
+  const bent = at
+    .add(vec2(mx_noise_float(at.mul(0.9)), mx_noise_float(at.mul(0.9).add(5.3))).mul(0.16))
+    .div(FACET_SIZE);
+  const skewed = vec2(bent.x.sub(bent.y.mul(SKEW)), bent.y.mul(STRETCH));
+  const cell = skewed.floor();
+  const within = skewed.sub(cell);
+  const upper = step(1, within.x.add(within.y));
+  const apex = cell.add(upper);
+  const east = cell.add(vec2(1, 0));
+  const north = cell.add(vec2(0, 1));
+  const apexHeight = cornerHeight(apex);
+  const eastHeight = cornerHeight(east);
+  const northHeight = cornerHeight(north);
+  const turn = upper.mul(-2).add(1);
+  const lean = vec2(eastHeight.sub(apexHeight), northHeight.sub(apexHeight)).mul(turn);
+  const toMiddle = apex.add(east).add(north).div(3).sub(skewed);
+  const aside = toMiddle.y.div(STRETCH);
+  return {
+    middle: at.add(vec2(toMiddle.x.add(aside.mul(SKEW)), aside).mul(FACET_SIZE)),
+    height: apexHeight.add(eastHeight).add(northHeight).div(3),
+    slope: vec2(lean.x, lean.y.mul(STRETCH).sub(lean.x.mul(SKEW))).div(FACET_SIZE),
+    name: mix(cellHash(cell, 1), cellHash(cell, 2), upper),
+  };
+}
+
+function paintFacets(brush: Brush, facet: Facet, rugged: Node<"float">): void {
+  const tone = facet.height.mul(0.55).add(facet.name.mul(0.14)).add(brush.drift.mul(0.1)).add(0.16);
+  brush.albedo.assign(ramp(brush.tones, tone));
+  brush.slope.assign(facet.slope.mul(0.55).mul(rugged));
 }
 
 interface Tones {
