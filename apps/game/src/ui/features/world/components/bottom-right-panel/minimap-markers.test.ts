@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { configManager, dayOf, readExpeditionRules, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { ContractAddress, deepSites, RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
@@ -153,8 +153,8 @@ describe("the Deep's sites on the minimap", () => {
 
   it("clears yesterday's holder on day roll rather than trusting raw Structure.owner", () => {
     const { store, startsAt } = deepMinimap();
-    const daySeconds = store.require("SliceRules", { game_id: 1 }).day_unit_seconds;
-    setBlockTimestampSource(() => startsAt + daySeconds);
+    const tomorrow = dayOf(readExpeditionRules(store, 1)!, startsAt)!.end;
+    setBlockTimestampSource(() => tomorrow);
     const markers = minimapMarkersView.read(store, ContractAddress(VIEWER));
     for (const site of deepSites) {
       expect(markers.get(String(siteEntity(site.key)))).toEqual({
