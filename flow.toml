@@ -7,6 +7,9 @@ cmd = "bash contracts/l3/check-native.sh build"
 [kind.build-blitz]
 cmd = "bash contracts/l3/check-native.sh build-blitz"
 
+[kind.check-native]
+cmd = "bash contracts/l3/check-native.sh"
+
 [kind.sizes]
 cmd = "bash contracts/l3/check-native.sh sizes"
 paths = "contracts/ .tool-versions"
