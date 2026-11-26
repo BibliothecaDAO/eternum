@@ -114,9 +114,9 @@ it("waits on its army until the army is picked, then offers three compact cards 
     PICK_EFFECT_WORDS.revealTileStamina,
     PICK_EFFECT_WORDS.siteRewards,
   ]);
-  expect(
-    [...host.querySelectorAll<HTMLButtonElement>("[data-reroll-oath]")].map((swap) => swap.textContent),
-  ).toEqual(Array(3).fill(`${OATH_PICK.swap} ·${formatShort(nativeFragmentConstants.OATH_REROLL_FRAGMENTS)}`));
+  expect([...host.querySelectorAll<HTMLButtonElement>("[data-reroll-oath]")].map((swap) => swap.textContent)).toEqual(
+    Array(3).fill(`${OATH_PICK.swap} ·${formatShort(nativeFragmentConstants.OATH_REROLL_FRAGMENTS)}`),
+  );
   expect(host.querySelector(".oath-pick__head .ui-chip")?.textContent).toBe(OATH_PICK.swapsPerPick);
   expect(host.querySelector(".oath-pick__title span")?.textContent).toBe("Slot 1 of 2 · 1,498 Knights");
   expect(swear().textContent).toBe("Swear Power");
