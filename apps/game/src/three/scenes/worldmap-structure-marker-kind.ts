@@ -15,6 +15,7 @@ const STRUCTURE_MARKER_KIND: Record<StructureType, StrategicStructureMarkerKind>
   [StructureType.Rift]: "mine",
   [StructureType.Ruin]: "realm",
   [StructureType.Beasts]: "village",
+  [StructureType.DeepSite]: "hyperstructure",
 };
 
 /** The plainest marker: what a structure of a category this client does not know is drawn as. */

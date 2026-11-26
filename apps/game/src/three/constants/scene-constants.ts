@@ -92,6 +92,7 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
   [StructureType.Rift]: BuildingType.ResourceEssence,
   [StructureType.Ruin]: BuildingType.ResourceLabor,
   [StructureType.Beasts]: BuildingType.ResourceLabor,
+  [StructureType.DeepSite]: BuildingType.ResourceLabor,
 };
 
 export const castleLevelToRealmCastle: Record<RealmLevels, RealmLevelNames> = {
@@ -186,6 +187,7 @@ export function getStructureModelPaths(): Record<StructureType, string[]> {
     [StructureType.Rift]: [RIFT_MODEL_PATH, ...FRONTIER_BEAST_PATHS],
     [StructureType.Ruin]: [...FALLEN_REALM_MODEL_PATHS],
     [StructureType.Beasts]: [FRONTIER_BEASTS.cyclops.path, ...FRONTIER_BEAST_PATHS],
+    [StructureType.DeepSite]: [],
   };
 }
 

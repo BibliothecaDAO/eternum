@@ -81,6 +81,7 @@ const structureMeanings = {
   [StructureType.Rift]: "rift",
   [StructureType.Ruin]: "ruin",
   [StructureType.Beasts]: "beasts",
+  [StructureType.DeepSite]: "deep-crystal",
 } satisfies Record<StructureType, IconMeaning>;
 export function structureMeaning(
   category: StructureType,

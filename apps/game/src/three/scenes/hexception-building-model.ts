@@ -57,6 +57,7 @@ const KEEP_NAMES: Record<StructureType, string> = {
   [StructureType.Rift]: "Rift",
   [StructureType.Ruin]: "Ruin",
   [StructureType.Beasts]: "Beasts",
+  [StructureType.DeepSite]: "Deep Site",
 };
 
 export function getBuildingDisplayName(

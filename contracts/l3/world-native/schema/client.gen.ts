@@ -135,6 +135,7 @@ export enum NativeStructureCategory {
   Rift = 9,
   Ruin = 10,
   Beasts = 11,
+  DeepSite = 12,
 }
 /** Tile occupiers named in src/taxonomy.cairo. */
 export enum NativeTileOccupier {

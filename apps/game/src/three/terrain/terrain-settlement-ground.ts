@@ -13,6 +13,7 @@ const RECLAIMS_LAND_FROM_WATER: Record<StructureType, boolean> = {
   [StructureType.Camp]: true,
   [StructureType.Ruin]: true,
   [StructureType.Beasts]: true,
+  [StructureType.DeepSite]: false,
   [StructureType.Hyperstructure]: false,
   [StructureType.Bank]: false,
   [StructureType.Mine]: false,
