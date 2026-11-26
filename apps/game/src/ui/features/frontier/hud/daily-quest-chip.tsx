@@ -30,6 +30,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
   const progress = reading ? safeInteger(reading.progress) : 0;
   const target = reading ? safeInteger(reading.target) : 0;
   const ready = reading?.state === "done" || reading?.state === "again";
+  const cleared = ready || reading?.state === "collected";
   const count = reading ? DAY_BANNER_WORDS.fraction(progress, target) : "—";
   const bane = reading?.bane ? baneFace(reading.bane, setup.store, realm.game_id) : null;
   const undrawn = today.reading.unknown === UNROLLED_WORLD_DAY;
@@ -39,8 +40,8 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
     ? DAY_BANNER_WORDS.bane
     : undrawn
       ? DAY_BANNER_WORDS.undrawnTag
-      : ready && !desktop
-        ? DAY_BANNER_WORDS.collect
+      : reading && !desktop && !cleared
+        ? count
         : null;
 
   return (
@@ -71,6 +72,11 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
           <Icon name={icon} size={36} />
         </ProgressRing>
         {tag && <span className="frontier-quest-orb__count">{tag}</span>}
+        {cleared && !bane && !desktop && (
+          <span className="frontier-quest-orb__count" data-cleared="">
+            <Icon name="check" size={12} />
+          </span>
+        )}
         {bane ? (
           <span className="frontier-quest-orb__words" data-stacked="">
             <span className="frontier-quest-orb__kicker">{DAY_BANNER_WORDS.bane}</span>

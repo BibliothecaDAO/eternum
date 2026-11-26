@@ -74,12 +74,11 @@
   border-color: rgb(var(--hud-gold));
   box-shadow: 0 0 14px rgb(var(--hud-gold) / 0.55);
 }
-.frontier-quest-orb[data-ready="true"] .frontier-quest-orb__count {
+.frontier-quest-orb__count[data-cleared] {
+  display: inline-flex;
   border-color: rgb(var(--hud-gold));
   background: rgb(var(--hud-gold));
   color: rgb(var(--hud-dark));
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 .frontier-quest-orb__words {
   display: none;
@@ -93,6 +92,12 @@
   color: var(--hud-bane);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+.frontier-quest-orb:focus-visible {
+  outline: none;
+}
+.frontier-quest-orb:focus-visible .frontier-progress-ring--lg {
+  box-shadow: var(--hud-focus);
 }
 .frontier-quest-orb__alert {
   position: absolute;
