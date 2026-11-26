@@ -144,25 +144,29 @@ async function pointer(page, [x, y], button = "left") {
   await page.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button, clickCount: 1 });
 }
 
-async function tapUntil(page, { offsets, waitFor, dismiss = "Escape", button = "left", around = "center" }) {
-  const origin = await evaluate(
-    page,
-    around === "army"
-      ? `(() => {
-          const slot = [...document.querySelectorAll('.mp-at[data-key^="army:"]')].find((el) => el.firstElementChild && getComputedStyle(el).display !== "none");
-          if (!slot) return [innerWidth / 2, innerHeight / 2];
-          const r = slot.firstElementChild.getBoundingClientRect();
-          return [r.left + r.width / 2, r.top + r.height / 2 + 100];
-        })()`
-      : "[innerWidth / 2, innerHeight / 2]",
-  );
+async function tapUntil(page, { offsets, waitFor, dismiss = "Escape", button = "left", around = "center", reselect }) {
   for (const [dx, dy] of offsets) {
+    const origin = await evaluate(
+      page,
+      around === "army"
+        ? `(() => {
+            const slot = [...document.querySelectorAll('.mp-at[data-key^="army:"]')].find((el) => el.firstElementChild && getComputedStyle(el).display !== "none");
+            if (!slot) return [innerWidth / 2, innerHeight / 2];
+            const r = slot.firstElementChild.getBoundingClientRect();
+            return [r.left + r.width / 2, r.top + r.height / 2 + 100];
+          })()`
+        : "[innerWidth / 2, innerHeight / 2]",
+    );
     await pointer(page, [origin[0] + dx, origin[1] + dy], button);
     await sleep(900);
     if (await evaluate(page, `Boolean(document.querySelector(${JSON.stringify(waitFor)}))`)) return;
     if (dismiss) {
       for (const type of ["keyDown", "keyUp"]) await page.send("Input.dispatchKeyEvent", { type, key: dismiss });
       await sleep(300);
+    }
+    if (reselect) {
+      await step(page, { click: reselect });
+      await sleep(500);
     }
   }
   throw new Error(`tapUntil did not open ${waitFor}`);

@@ -585,5 +585,190 @@
         "wait": 800
       }
     ]
+  },
+  {
+    "name": "frontier/well",
+    "frame": "game",
+    "setup": [
+      {
+        "open": "/lab/game?scenario=map-sites"
+      },
+      {
+        "waitFor": "[data-slot-state=\"army\"]",
+        "ms": 60000
+      },
+      {
+        "wait": 2500
+      },
+      {
+        "clickText": "Skip tutorial",
+        "optional": true
+      },
+      {
+        "wait": 400
+      },
+      {
+        "clickText": "Skip tutorial",
+        "optional": true
+      },
+      {
+        "wait": 400
+      },
+      {
+        "clickText": "Skip tutorial",
+        "optional": true
+      },
+      {
+        "wait": 400
+      },
+      {
+        "click": "[data-slot-state=\"army\"]"
+      },
+      {
+        "wait": 1500
+      },
+      {
+        "tapUntil": {
+          "around": "army",
+          "reselect": "[data-slot-state=\"army\"]",
+          "waitFor": "[data-kit-sheet][aria-label=\"Well\"]",
+          "offsets": [
+            [65, -95],
+            [137, 0],
+            [70, 100],
+            [-75, 100],
+            [-135, 0],
+            [-67, -95]
+          ]
+        }
+      },
+      {
+        "wait": 800
+      }
+    ]
+  },
+  {
+    "name": "frontier/shrine",
+    "frame": "game",
+    "setup": [
+      {
+        "open": "/lab/game?scenario=map-sites"
+      },
+      {
+        "waitFor": "[data-slot-state=\"army\"]",
+        "ms": 60000
+      },
+      {
+        "wait": 2000
+      },
+      {
+        "clickText": "Skip tutorial",
+        "optional": true
+      },
+      {
+        "wait": 300
+      },
+      {
+        "clickText": "Skip tutorial",
+        "optional": true
+      },
+      {
+        "wait": 400
+      },
+      {
+        "click": "[data-slot-state=\"army\"]"
+      },
+      {
+        "wait": 1500
+      },
+      {
+        "tapUntil": {
+          "around": "army",
+          "reselect": "[data-slot-state=\"army\"]",
+          "waitFor": "[data-kit-sheet][aria-label=\"Shrine\"]",
+          "offsets": [
+            [65, -95],
+            [137, 0],
+            [70, 100],
+            [-75, 100],
+            [-135, 0],
+            [-67, -95]
+          ]
+        }
+      },
+      {
+        "wait": 800
+      }
+    ]
+  },
+  {
+    "name": "frontier/use-site",
+    "frame": "game",
+    "setup": [
+      {
+        "open": "/lab/game?scenario=map-sites"
+      },
+      {
+        "waitFor": "[data-slot-state=\"army\"]",
+        "ms": 60000
+      },
+      {
+        "wait": 2000
+      },
+      {
+        "clickText": "Skip tutorial",
+        "optional": true
+      },
+      {
+        "wait": 300
+      },
+      {
+        "clickText": "Skip tutorial",
+        "optional": true
+      },
+      {
+        "wait": 400
+      },
+      {
+        "click": "[data-slot-state=\"army\"]"
+      },
+      {
+        "wait": 1500
+      },
+      {
+        "tapUntil": {
+          "around": "army",
+          "reselect": "[data-slot-state=\"army\"]",
+          "waitFor": "[data-kit-sheet][aria-label=\"Shrine\"]",
+          "offsets": [
+            [65, -95],
+            [137, 0],
+            [70, 100],
+            [-75, 100],
+            [-135, 0],
+            [-67, -95]
+          ]
+        }
+      },
+      {
+        "wait": 600
+      }
+    ],
+    "record": [
+      {
+        "wait": 1200
+      },
+      {
+        "clickText": "Use"
+      },
+      {
+        "waitFor": "[data-oath-pick]",
+        "ms": 10000
+      },
+      {
+        "wait": 2000
+      }
+    ],
+    "seconds": 4.5
   }
 ]
