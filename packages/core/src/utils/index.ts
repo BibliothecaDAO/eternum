@@ -37,6 +37,7 @@ export * from "./utils";
 
 export * from "./realm-research";
 export * from "./map-center";
+export { DEEP_PAYOUT_MODELS } from "./deep";
 
 export * from "./production-output";
 

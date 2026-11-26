@@ -95,7 +95,7 @@ export const castleUpgradeRefusal = (
   tick: number,
 ): Refusal | undefined => {
   const realmId = safeInteger(realm.entity_id);
-  const held = (resource: number) => knownAmount(getBalance(realmId, resource, tick, store).balance);
+  const held = (resource: number) => knownAmount(getBalance(realmId, resource, tick, store, realm.game_id).balance);
   const short = levelUp.requirements.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   if (short)
     return {
