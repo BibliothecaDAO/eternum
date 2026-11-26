@@ -200,6 +200,32 @@ fn the_release_deep_gates_and_sites_fit_the_map_apart_from_each_other() {
 }
 
 #[test]
+fn every_deep_site_is_an_unowned_structure_with_four_guard_slots_and_its_defender_in_the_first() {
+    let (d, game_id) = setup(97);
+    let sites = interact_with_state(d.games, || crate::logic::deep_sites::site_count());
+    for index in 0..sites {
+        let site = ResourceKey {
+            game_id, entity_id: interact_with_state(d.games, || crate::logic::deep_sites::site_id(game_id, index)),
+        };
+        let structure = interact_with_state(d.games, || crate::logic::structures::structure(site)).unwrap();
+        assert_eq!(structure.owner, 0.try_into().unwrap());
+        assert_eq!(structure.base.category, crate::taxonomy::DEEP_SITE_CATEGORY);
+        assert_eq!(structure.base.troop_max_guard_count, crate::rules::DEEP_GUARD_SLOTS);
+        let coord = interact_with_state(d.games, || crate::logic::map::entity_coord(site)).unwrap();
+        let tile = interact_with_state(
+            d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, coord)),
+        )
+            .unwrap();
+        assert!(
+            tile.is_structure
+                && tile.category == crate::taxonomy::DEEP_SITE_OCCUPIER
+                && tile.entity_id == site.entity_id,
+        );
+        assert!(beast(d, site) != 0);
+    }
+}
+
+#[test]
 fn distinct_homes_enter_one_deep_and_move_on_its_fixed_terrain() {
     let (d, game_id) = setup(81);
     let first = deployed(d, game_id, 1, 10);

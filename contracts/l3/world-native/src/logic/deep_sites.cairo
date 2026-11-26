@@ -133,12 +133,29 @@ fn initialize(game_id: u32) {
         let entity_id: u64 = crate::logic::game::allocate_setup_entity(game_id).into();
         state.deep.site_ids.write((game_id, index), entity_id);
         let coord = crate::deep::place(ring(band).radius, place, spacing);
+        crate::logic::structures::StructureState::create(ResourceKey { game_id, entity_id }, site_structure(start));
         crate::logic::map::MapState::occupy(
-            crate::geometry::tile_key(game_id, coord), entity_id, crate::taxonomy::DEEP_SITE_OCCUPIER, false,
+            crate::geometry::tile_key(game_id, coord), entity_id, crate::taxonomy::DEEP_SITE_OCCUPIER, true,
         );
         let kind = crate::deep::kind_at(crate::deep::ring_draw(seed, game_id, band, 0), place);
         let opening = DeepSite { kind, ring: band, day: 0 };
         reset_beast(ResourceKey { game_id, entity_id }, opening, start);
+    }
+}
+
+fn site_structure(start: u64) -> crate::structures::StructureRecord {
+    crate::structures::StructureRecord {
+        owner: 0.try_into().unwrap(),
+        base: crate::structures::StructureBase {
+            troop_max_guard_count: crate::rules::DEEP_GUARD_SLOTS,
+            troop_max_explorer_count: 0,
+            created_at: start.try_into().unwrap(),
+            category: crate::taxonomy::DEEP_SITE_CATEGORY,
+            level: 0,
+            starting_troops_granted: false,
+        },
+        resources_packed: 0,
+        metadata: Default::default(),
     }
 }
 

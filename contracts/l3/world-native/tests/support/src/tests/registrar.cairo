@@ -72,6 +72,10 @@ pub fn learn_spire_lore(d: super::Deployment, home: crate::resources::ResourceKe
         },
     );
     super::resource_commands::grant(d, home, crate::resources::ESSENCE, budget);
+    let kingdom = crate::research::LORE_SPIRES_LEVEL;
+    while super::building_commands::realm_level(d, home) < kingdom {
+        super::building_commands::level_up(d, home, timestamp);
+    }
     for _ in learned..crate::research::LORE_SPIRES {
         let buy = Command::Research(
             crate::research::Research { structure_id: home.entity_id, row: crate::research::ROW_LORE },

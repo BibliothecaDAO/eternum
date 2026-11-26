@@ -261,6 +261,28 @@ fn a_row_opens_with_its_first_building_and_sells_each_tier_once_in_order_at_its_
 }
 
 #[test]
+fn well_lore_opens_at_settlement_shrine_lore_at_city_and_spire_lore_at_kingdom() {
+    let (d, home) = building_world();
+    super::resource_commands::grant(d, home, crate::resources::ESSENCE, 10000000 * crate::rules::RESOURCE_PRECISION);
+    assert!(execute(d, research(home, crate::research::ROW_LORE), FIXTURE_START + 40));
+    assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_LORE), crate::research::LORE_WELLS);
+    for (level, tier) in array![
+        (crate::research::LORE_SHRINES_LEVEL, crate::research::LORE_SHRINES),
+        (crate::research::LORE_SPIRES_LEVEL, crate::research::LORE_SPIRES),
+    ] {
+        let mut refused = snforge_std::spy_events();
+        assert!(!execute(d, research(home, crate::research::ROW_LORE), FIXTURE_START + 40));
+        assert_eq!(super::play_fixture::rejection(ref refused, d.games).reason, "lore tier needs a higher realm level");
+        assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_LORE), tier - 1);
+        while realm_level(d, home) < level {
+            level_up(d, home, FIXTURE_START + 40);
+        }
+        assert!(execute(d, research(home, crate::research::ROW_LORE), FIXTURE_START + 40));
+        assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_LORE), tier);
+    }
+}
+
+#[test]
 fn a_make_pick_adds_a_fifth_of_the_base_to_every_building_of_the_type_standing_or_future() {
     let (d, home) = research_world();
     let wheat = 35_u8;

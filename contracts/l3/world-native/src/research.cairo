@@ -19,6 +19,8 @@ pub const ROW_LORE: u8 = 10;
 pub const LORE_WELLS: u8 = 1;
 pub const LORE_SHRINES: u8 = 2;
 pub const LORE_SPIRES: u8 = 3;
+pub const LORE_SHRINES_LEVEL: u8 = 1;
+pub const LORE_SPIRES_LEVEL: u8 = 2;
 
 
 // Building categories used by construction and research.
@@ -81,6 +83,16 @@ pub fn is_training(category: u8) -> bool {
 
 pub fn one_per_realm(category: u8) -> bool {
     is_training(category) || category == STOREROOM
+}
+
+pub fn lore_opens_at_level(tier: u8) -> u8 {
+    if tier >= LORE_SPIRES {
+        LORE_SPIRES_LEVEL
+    } else if tier == LORE_SHRINES {
+        LORE_SHRINES_LEVEL
+    } else {
+        0
+    }
 }
 
 pub fn opens_at_level(category: u8) -> u8 {
