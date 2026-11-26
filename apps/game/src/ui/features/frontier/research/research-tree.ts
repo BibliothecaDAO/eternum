@@ -1,4 +1,4 @@
-import { buildingOpensAtLevel, isOathResearch, logisticsStamina } from "@bibliothecadao/eternum";
+import { buildingOpensAtLevel, isOathResearch, logisticsStamina, loreOpensAtLevel } from "@bibliothecadao/eternum";
 import type { IconMeaning, IconMark } from "@/ui/design-system/icon";
 import { RESEARCH_TREE, SHRINE, SPIRE, STAMINA, type RankedWords, type Tier, WELL } from "@/ui/design-system/kit/words";
 import { nativeResearchConstants as research, nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
@@ -341,16 +341,22 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     ];
     return ladder.map((step, index) => {
       const previous = ladder[index - 1];
-      const before: Need[] = previous
-        ? [
-            {
-              kind: "tier",
-              met: learned(ROWS.lore).tier >= previous.tier,
-              node: RESEARCH_TREE.lore(previous.site),
-              icon: previous.icon,
-            },
-          ]
-        : [];
+      const opensAt = loreOpensAtLevel(step.tier);
+      const before: Need[] = [
+        ...(previous
+          ? [
+              {
+                kind: "tier" as const,
+                met: learned(ROWS.lore).tier >= previous.tier,
+                node: RESEARCH_TREE.lore(previous.site),
+                icon: previous.icon,
+              },
+            ]
+          : []),
+        ...(opensAt > 0
+          ? [{ kind: "level" as const, met: realm.castleLevel >= opensAt, level: rankName(opensAt) }]
+          : []),
+      ];
       return castleNode(
         step.key,
         ROWS.lore,

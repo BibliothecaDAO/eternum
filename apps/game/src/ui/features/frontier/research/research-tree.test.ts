@@ -15,6 +15,7 @@ import {
   type RealmResearchFacts,
 } from "./research-tree";
 import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
+import { rankName } from "@bibliothecadao/types";
 
 const node = (realm: RealmResearchFacts, key: string) => readResearchTree(realm).find((item) => item.key === key)!;
 const why = (realm: RealmResearchFacts, key: string) => {
@@ -44,6 +45,12 @@ describe("the castle's tree as the contract rules it", () => {
     expect(why(EARLY_REALM, "well")).toBe("Needs 2,500 Essence");
     expect(why(EARLY_REALM, "shrine")).toBe("Needs Well lore first");
     expect(why(EARLY_REALM, "spire")).toBe("Needs Shrine lore first");
+    const wellLearned = { ...EARLY_REALM, learned: { [research.ROW_LORE]: { tier: research.LORE_WELLS } } };
+    expect(why(wellLearned, "shrine")).toBe(RESEARCH_TREE.needsLevel(rankName(research.SHRINE_LORE_LEVEL)));
+    expect(firstMissing(node({ ...wellLearned, castleLevel: research.SHRINE_LORE_LEVEL }, "shrine"))?.kind).toBe(
+      "essence",
+    );
+    expect(why(MID_REALM, "spire")).toBe(RESEARCH_TREE.needsLevel(rankName(research.SPIRE_LORE_LEVEL)));
     expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(false);
   });
 
