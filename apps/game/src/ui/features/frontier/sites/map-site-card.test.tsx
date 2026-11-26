@@ -24,7 +24,16 @@ const wellCard = (current: number, gain: number) => {
   document.body.append(host);
   const root = createRoot(host);
   act(() =>
-    root.render(<MapSiteCardView kind="Well" gain={gain} army={army(current)} taker={undefined} action={null} onClose={() => {}} />),
+    root.render(
+      <MapSiteCardView
+        kind="Well"
+        gain={gain}
+        army={army(current)}
+        taker={undefined}
+        action={null}
+        onClose={() => {}}
+      />,
+    ),
   );
   const user = host.querySelector("[data-site-user]")!;
   const read = {
