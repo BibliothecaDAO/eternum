@@ -205,25 +205,25 @@ const Chosen = ({ choice, form, entityId }: { choice: Choice; form: Form; entity
 const PaintedCost = ({ requirements }: { requirements: Choice["requirements"] }) => {
   const frontier = useGameModeConfig().id === "frontier";
   return (
-  <span className="flex flex-wrap gap-x-2 gap-y-1 tabular-nums">
-    {requirements === undefined && "—"}
-    {requirements?.map((cost) => (
-      <span
-        key={cost.resource}
-        className={cn(
-          "inline-flex items-center gap-0.5",
-          cost.current === undefined || cost.current < cost.amount ? "text-hud-bad" : "text-hud-ink",
-        )}
-        title={resourceName(cost.resource, frontier)}
-      >
-        <SemanticIcon
-          name={resourceMeaning(cost.resource)}
-          alt={resourceName(cost.resource, frontier)}
-          className="h-4 w-4"
-        />
-        {formatCharge(cost.amount)}
-      </span>
-    ))}
-  </span>
+    <span className="flex flex-wrap gap-x-2 gap-y-1 tabular-nums">
+      {requirements === undefined && "—"}
+      {requirements?.map((cost) => (
+        <span
+          key={cost.resource}
+          className={cn(
+            "inline-flex items-center gap-0.5",
+            cost.current === undefined || cost.current < cost.amount ? "text-hud-bad" : "text-hud-ink",
+          )}
+          title={resourceName(cost.resource, frontier)}
+        >
+          <SemanticIcon
+            name={resourceMeaning(cost.resource)}
+            alt={resourceName(cost.resource, frontier)}
+            className="h-4 w-4"
+          />
+          {formatCharge(cost.amount)}
+        </span>
+      ))}
+    </span>
   );
 };
