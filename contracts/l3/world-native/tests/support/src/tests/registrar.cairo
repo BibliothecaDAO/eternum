@@ -210,34 +210,6 @@ pub fn explore_with_root(d: super::Deployment, game_id: u32, explorer_id: u64, r
         timestamp,
     )
 }
-pub fn found_site(d: super::Deployment, key: crate::troops::ExplorerKey) -> Option<(crate::troops::Coord, u8)> {
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            let coord = crate::geometry::neighbor(crate::logic::troops::explorer(key).unwrap().coord, 0);
-            let occupancy = crate::logic::map::occupancy(crate::geometry::tile_key(key.game_id, coord));
-            if crate::discovery::is_frontier_site(occupancy) {
-                Option::Some((coord, occupancy.unwrap().category))
-            } else {
-                Option::None
-            }
-        },
-    )
-}
-pub fn use_site(
-    d: super::Deployment, key: crate::troops::ExplorerKey, coord: crate::troops::Coord, root: u256, timestamp: u64,
-) -> bool {
-    super::play_fixture::play(
-        d.games,
-        super::play_fixture::TestAction {
-            game_id: key.game_id,
-            actor: d.actor,
-            command: Command::InteractSite(crate::relics::InteractSite { explorer_id: key.explorer_id, coord }),
-        },
-        root,
-        timestamp,
-    )
-}
 // Settles on day 1's first second and captures in its first minute, or with `late` in its last.
 pub fn assert_capture_at(
     depth: u8, count: u128, tier: crate::troops::TroopTier, reveal_amount: u128, late: bool, labor_room: Option<u128>,

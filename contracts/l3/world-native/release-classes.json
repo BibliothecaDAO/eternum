@@ -1,10 +1,10 @@
 {
-  "release": 24,
+  "release": 23,
   "logic": {
     "season": "0x236ea032e700ea8e5f495d18fdf0bfa490f1bd9d293bc2705a198c58cf64fca",
     "map": "0x419f7f1db3c2436ea3f533dad114db6defdf2f5722d76efe43d611d2e4622c8",
     "placement": "0x5149426cc88174e82f7dd04e78d7e4c3d31f1d1b919e849353496c9846f38b6",
-    "construction": "0x637907b65ba1d71e95dad539d24a41894fcd7b6015e9d03d7865ebfd78ac806",
+    "construction": "0x1fa70fdb87b965719e4c7acaea351f05915c268006a85eef886f3c52e0a24a5",
     "production": "0x208c94e6ad331c4aac157d5f32f2f6c4e263621edd4c5cd28af7b5fc9ee4c21",
     "structures": "0x68cbf6565a53b4224ecf8cc6d3c336a08a3dac4e38179aca7c000b2bf85cff3",
     "troops": "0x7da528ff3c1c1a40839cbfe167be7c1b1a0f0d84a3a16eaccd4a8813a9af34b",
@@ -16,6 +16,6 @@
     "combat": "0x673afe12fb2c66ad92d36a095ff4adc1a916cd9db0c301ad8c123ed8f598a19",
     "bridge": "0x20cef58a2df2ab88a57cee35ec51369c76dbf673671c100cd3aa040cc08f914",
     "relics": "0x5bd96e2ed2fcc494d616d1a64fc2ccdf784babee3fd8f3f907303641fa065f8",
-    "movement": "0x1cdc408a9a9978f4adfe9b9dbd25068b6896072c57ac93363a58406140f064"
+    "movement": "0x6eba43670f39f4b8fa59ca60ccbb67f8dd8a5aec3e607f1855d9cf0a63d5355"
   }
 }

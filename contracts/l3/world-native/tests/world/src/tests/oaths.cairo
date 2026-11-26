@@ -49,7 +49,7 @@ fn the_last_drawable_oath_comes_alone_and_none_left_opens_no_pick() {
 }
 
 #[test]
-fn a_used_shrine_offers_a_new_army_three_oaths_and_an_army_holding_fourteen_the_two_it_lacks() {
+fn a_revealed_shrine_offers_a_new_army_three_oaths_and_an_army_holding_fourteen_the_two_it_lacks() {
     let fourteen = 65535 ^ crate::oaths::bit(crate::oaths::SKILL) ^ crate::oaths::bit(crate::oaths::FOX);
     for (oaths, offered) in array![(0_u16, 3_u32), (fourteen, 2)] {
         let (d, _, key) = super::registrar::setup_frontier_relics();
@@ -94,7 +94,7 @@ fn cards(pick: u16) -> Span<u8> {
 }
 
 #[test]
-fn a_used_shrine_opens_a_persistent_pick_then_the_real_command_takes_replaces_and_declines() {
+fn shrine_reveal_opens_a_persistent_pick_then_the_real_command_takes_replaces_and_declines() {
     let (d, game_id, key) = super::registrar::setup_frontier_relics();
     snforge_std::interact_with_state(
         d.games,
@@ -281,7 +281,7 @@ fn packing_preserves_all_sixteen_held_bits_and_the_offer_with_its_rerolled_cards
 }
 
 #[test]
-fn a_found_well_stands_until_an_adjacent_army_uses_it_then_refills_forty_percent_eighty_with_reflection_once() {
+fn a_revealed_well_refills_forty_percent_of_the_bar_eighty_with_reflection_and_never_past_the_maximum() {
     assert_eq!(crate::oaths::well_stamina(0, 180), 72);
     assert_eq!(crate::oaths::well_stamina(crate::oaths::bit(crate::oaths::REFLECTION), 180), 144);
     assert_eq!(crate::oaths::well_stamina(crate::oaths::bit(crate::oaths::GIANTS), 333), 133);
@@ -339,44 +339,19 @@ fn a_found_well_stands_until_an_adjacent_army_uses_it_then_refills_forty_percent
         ) {
             panic!("well route rejected: {}", super::play_fixture::rejection(ref spy, d.games).reason);
         }
-        let (well, site) = world_test_support::tests::registrar::found_site(d, key).expect('no well stands');
-        assert_eq!(site, crate::taxonomy::WELL_OCCUPIER);
-        assert_eq!(army_stamina(d, key), left);
-        let army = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap().coord;
-        let elsewhere = crate::troops::Coord { x: army.x + crate::logic::settlement::spacing(), ..army };
-        for (coord, reason) in array![
-            (army, "explorer is not adjacent to site"), (elsewhere, "outside expedition region"),
-        ] {
-            let mut refused = snforge_std::spy_events();
-            assert!(!world_test_support::tests::registrar::use_site(d, key, coord, root, FIXTURE_START + 10));
-            assert_eq!(super::play_fixture::rejection(ref refused, d.games).reason, reason);
-        }
-        let mut used = snforge_std::spy_events();
-        if !world_test_support::tests::registrar::use_site(d, key, well, root, FIXTURE_START + 10) {
-            panic!("well use rejected: {}", super::play_fixture::rejection(ref used, d.games).reason);
-        }
+        let after = snforge_std::interact_with_state(
+            d.games,
+            || {
+                crate::logic::army_slot_storage::resolve(key, crate::logic::troops::explorer(key).unwrap(), None)
+                    .troops
+                    .stamina
+                    .inline()
+            },
+        );
         let expected = core::cmp::min(left + crate::oaths::well_stamina(oaths, maximum), maximum);
-        assert_eq!(army_stamina(d, key), expected);
-        assert_eq!(expected == maximum, reflection && left == 100);
-        assert!(world_test_support::tests::registrar::found_site(d, key).is_none());
-        let mut again = snforge_std::spy_events();
-        assert!(!world_test_support::tests::registrar::use_site(d, key, well, root, FIXTURE_START + 10));
-        assert_eq!(super::play_fixture::rejection(ref again, d.games).reason, "tile is not a shrine or well");
-        assert_eq!(army_stamina(d, key), expected);
+        assert_eq!(after.amount, expected);
+        assert_eq!(after.amount == maximum, reflection && left == 100);
     }
-}
-
-fn army_stamina(d: super::Deployment, key: crate::troops::ExplorerKey) -> u64 {
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            crate::logic::army_slot_storage::resolve(key, crate::logic::troops::explorer(key).unwrap(), None)
-                .troops
-                .stamina
-                .inline()
-                .amount
-        },
-    )
 }
 
 fn explore_to_shrine(d: super::Deployment, key: crate::troops::ExplorerKey, timestamp: u64) {
@@ -392,32 +367,11 @@ fn explore_to_shrine(d: super::Deployment, key: crate::troops::ExplorerKey, time
             let rejected = super::play_fixture::rejection(ref spy, d.games);
             panic!("shrine route rejected: {}", rejected.reason);
         }
-        assert_eq!(read_progress(d, key).oath_pick, 0);
-        if let Some((coord, site)) = world_test_support::tests::registrar::found_site(d, key) {
-            assert_eq!(site, crate::taxonomy::SHRINE_OCCUPIER);
-            let mut spy = snforge_std::spy_events();
-            if !world_test_support::tests::registrar::use_site(d, key, coord, root, timestamp) {
-                panic!("shrine use rejected: {}", super::play_fixture::rejection(ref spy, d.games).reason);
-            }
-            assert!(read_progress(d, key).oath_pick != 0);
-            assert!(world_test_support::tests::registrar::found_site(d, key).is_none());
+        if read_progress(d, key).oath_pick != 0 {
             return;
         }
     }
-    panic!("no shrine found");
-}
-
-#[test]
-fn a_well_grants_the_client_vectors_share_of_the_bar_with_and_without_reflection() {
-    let data = read_txt(@FileTrait::new("../fixtures/oath-well-stamina.txt"));
-    let mut fields = data.span();
-    let mut rows = 0_u32;
-    while !fields.is_empty() {
-        let (held, maximum, granted): (u16, u64, u64) = Serde::deserialize(ref fields).unwrap();
-        assert_eq!(crate::oaths::well_stamina(held, maximum), granted);
-        rows += 1;
-    }
-    assert_eq!(rows, 40);
+    panic!("no shrine pick");
 }
 
 #[test]

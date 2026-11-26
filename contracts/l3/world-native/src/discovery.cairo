@@ -67,18 +67,8 @@ pub fn frontier(
     Discovery::None
 }
 
-pub fn is_frontier_site(occupancy: Option<crate::map::TileOccupancy>) -> bool {
-    match occupancy {
-        Option::Some(site) => !site.is_structure
-            && (site.category == crate::taxonomy::SHRINE_OCCUPIER || site.category == crate::taxonomy::WELL_OCCUPIER),
-        Option::None => false,
-    }
-}
-
 pub fn tile_occupier(discovery: Discovery) -> Option<u8> {
     match discovery {
-        Discovery::Shrine => Some(crate::taxonomy::SHRINE_OCCUPIER),
-        Discovery::Well => Some(crate::taxonomy::WELL_OCCUPIER),
         Discovery::Spire => Some(crate::taxonomy::DORMANT_SPIRE_OCCUPIER),
         _ => None,
     }
