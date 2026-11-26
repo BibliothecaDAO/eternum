@@ -494,8 +494,9 @@ it("renders the 3-track Era tree with measured SVG prerequisite links on desktop
     expect(spireButtons).toHaveLength(1);
     expect(spireButtons[0]!.closest("[data-lab='node-choice']")).not.toBeNull();
     expect(spireButtons[0]!.dataset.kind).toBe("primary");
+    expect(spireButtons[0]!.disabled).toBe(true);
     act(() => spireButtons[0]!.click());
-    expect(onResearch).toHaveBeenCalledWith(expect.objectContaining<Partial<TreeNode>>({ key: "spire" }));
+    expect(onResearch).not.toHaveBeenCalled();
 
     layout = phoneRects;
     const early = readResearchTree(EARLY_REALM);

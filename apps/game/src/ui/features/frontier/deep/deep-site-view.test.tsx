@@ -2,7 +2,8 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { DEEP_BEASTS } from "@bibliothecadao/types";
+import { aspectName, DEEP_BEASTS } from "@bibliothecadao/types";
+import { nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
 
 import { ARMY, DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { DEEP_SITE_CASES } from "./deep-site-fixtures";
@@ -62,10 +63,10 @@ describe("a Deep site's card", () => {
       `−200/ 2m${DEEP_WORDS.poisonCell}`,
     ]);
     expect(document.querySelector("[data-aspect-holder='2']")?.textContent).toBe(
-      "Luminary· 2 / 4 Guards · 2 slots open ·Poisoned",
+      `${aspectName(2)}· ${DEEP_WORDS.guardsCount(2, nativeRuleConstants.DEEP_GUARD_SLOTS)} · ${DEEP_WORDS.slotsOpen(nativeRuleConstants.DEEP_GUARD_SLOTS - 2)} · ${DEEP_WORDS.poisoned}`,
     );
     expect(document.querySelector("[data-deep-poison]")).toBeNull();
-    expect(document.querySelector("[data-deep-poisoned]")?.textContent).toBe("Poisoned");
+    expect(document.querySelector("[data-deep-poisoned]")?.textContent).toBe(DEEP_WORDS.poisoned);
     expect(document.querySelector("[data-rate='drain'] [data-icon='poison']")).not.toBeNull();
   });
 
