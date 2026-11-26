@@ -785,7 +785,6 @@ export const SHRINE = "Shrine";
 export const WELL = "Well";
 export const USE = "Use";
 export const USING = "Using…";
-export const exploresBought = (count: number) => `+${count} ${count === 1 ? "explore" : "explores"}`;
 export const wellRefillShare = (percent: number): string => `${formatPercent(percent / 100)} max`;
 export const SITE_USE_WORDS = {
   verb: (site: string) => `${USE} ${site}`,
