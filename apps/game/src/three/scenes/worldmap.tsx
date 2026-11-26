@@ -1354,7 +1354,7 @@ export default class WorldmapScene extends WarpTravel {
       this.scene,
       this.worldSpatialProjection,
       this.game.store,
-      this.mapPlates.createScope("shrine"),
+      this.mapPlates.createScope("deep-site"),
       this.mapPlates.createScope("deep-gate"),
       this.getTerrainSurface(),
     );

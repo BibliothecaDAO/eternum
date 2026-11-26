@@ -235,6 +235,11 @@ export const DEEP_BEASTS = {
   altar: { name: "Basilisk", scale: 1.2, model: "basilisk", idle: breath(1.3, 0.014) },
 } as const satisfies Record<(typeof deepSites)[number]["key"], DeepBeastRow>;
 
+export const DEEP_CAPTURE_LINES = {
+  slew: (aspect: string, beast: string, site: string) => `(${aspect}) slew ${beast} and took ${site}`,
+  seized: (aspect: string, site: string, previousAspect: string) => `(${aspect}) seized ${site} from ${previousAspect}`,
+};
+
 const DEEPLESS_FOURTH_LAYER = 3;
 export const DEEPLESS_FOURTH_LAYER_BEASTS = {
   herd: { ...BEASTS.cyclops, layer: 3 },

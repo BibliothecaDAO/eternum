@@ -1,4 +1,4 @@
-import { aspectName, rankedText, type RankedWords } from "@bibliothecadao/types";
+import { aspectName, deepSites, rankedText, type RankedWords } from "@bibliothecadao/types";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { describe, expect, it } from "vitest";
 
@@ -125,6 +125,23 @@ describe("what a map plate says opened (three rows at most, never an id; at rest
     const shrine = { ...rift, owner: "", place: undefined, name: "Shrine", guards: null, reward: ranked };
     expect(read(shrine)).toEqual(["Shrine", "III +1"]);
     expect(plateRows(shrine).at(-1)).toEqual([{ kind: "ranked", words: [{ rank: 3 }, " +1"] }]);
+  });
+
+  it("says a site whose place is its kind once, its guard beside what it pays, with no beast name", () => {
+    const site = deepSites.find(({ key }) => key === "altar")!.name;
+    const deep = {
+      ...rift,
+      owner: "",
+      beast: undefined,
+      place: site,
+      name: site,
+      guards: [{ type: "crossbowman", tier: null, count: 5_000 }] as PlateTroops[],
+      reward: DEEP_WORDS.altarPlate,
+    };
+    expect(plateRows(deep)).toEqual([
+      [{ kind: "title", text: site }],
+      [{ kind: "troops", troops: deep.guards[0] }, { kind: "divider" }, { kind: "label", text: DEEP_WORDS.altarPlate }],
+    ]);
   });
 
   it("says Undefended in words where nothing guards it", () => {

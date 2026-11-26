@@ -12,7 +12,10 @@ const { load, models, mode, beasts, beastTroops, openings, clock, publish, viewe
   publish: vi.fn(),
   viewer: { address: 0x111n as bigint | undefined },
 }));
-vi.mock("@/hooks/store/use-account-store", () => ({ accountAddress: () => viewer.address }));
+vi.mock("@/hooks/store/use-account-store", () => ({
+  accountAddress: () => viewer.address,
+  useAccountStore: { getState: () => ({ account: viewer.address === undefined ? null : { address: viewer.address } }) },
+}));
 vi.mock("@/observability/map-selection", () => ({ publishMapSelection: publish }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
@@ -83,12 +86,14 @@ vi.mock("@/three/managers/instanced-model", () => ({
   },
 }));
 
-import { SEAT_COLOURS, SIDE_HEX } from "@/tokens";
+import { SEAT_COLOURS, SIDE_HEX, seatSide } from "@/tokens";
 import { setActiveGame } from "@/runtime/world";
 import { setOpenGameSeats } from "@/utils/entity-ownership";
 import { overrideSpectateIntent } from "@/utils/spectator-session";
 import {
+  aspectName,
   aspects,
+  beastModel,
   DEEP_BEASTS,
   deepSites,
   ordersOfAspect,
@@ -103,6 +108,9 @@ import { ORDER_STANDARD_NAME, resolveOrderSignumCell } from "../structures/order
 import { FRONTIER_BEASTS } from "../structures/frontier-beast";
 import { DEEP_SITE_MODELS } from "../structures/deep-landmarks";
 import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
+import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { ownerAndAspect } from "@/ui/design-system/kit/words";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 import { MapSiteManager } from "./map-site-manager";
 import { PLATE_CLEARANCE } from "./structure-visible-presentation";
 
@@ -207,7 +215,7 @@ describe("the Deep's sites on the map", () => {
     expect(altarPlate.position.y).toBeCloseTo(DEEP_BEASTS.altar.scale + PLATE_CLEARANCE);
     const published = publish.mock.lastCall![0];
     expect(published.drawnSites).toMatchObject({ "deep:altar": 1, "deep:core": 1 });
-    expect(published.siteHexes).toMatchObject({ "deep:altar": { col: altar, row: 0 } });
+    expect(published.siteHexes).toMatchObject({ "deep:altar": { col: altar, row: 0, entity: altar } });
     beastTroops.set(altar, 0n);
     for (const listener of listeners)
       listener([{ model: "Guard", key: "altar", current: { structure_id: BigInt(altar) } }]);
@@ -338,7 +346,7 @@ describe("the Deep's sites on the map", () => {
     manager.destroy();
   });
 
-  it("reads Deep site holders and guard standards from readDeepSites and re-places as guards drain over time", async () => {
+  it("colours and labels each claimed Deep site by its owner's side, its garrison in slot order or undefended once drained, its beast while unclaimed, and re-places guard standards as garrisons drain", async () => {
     mode.id = "frontier";
     models.length = 0;
     load.mockReset();
@@ -362,6 +370,8 @@ describe("the Deep's sites on the map", () => {
       (_, index) => deepSites[index % deepSites.length]!,
     );
     const tiles = ringKinds.map((_, index) => tile(10 + index, TileOccupier.DeepSite));
+    const altarSite = 10 + ringKinds.findIndex(({ key }) => key === "altar");
+    beastTroops.set(altarSite, 5_000n * precision);
     const projection = { getTiles: () => tiles, subscribeTiles: () => () => {} };
     const plates = { setLabel: vi.fn(), retainOnly: vi.fn(), dispose: vi.fn(), setHover: vi.fn(), clearHover: vi.fn() };
     const rows: Record<string, Record<string, unknown>[]> = {
@@ -400,14 +410,17 @@ describe("the Deep's sites on the map", () => {
         kind: kind.id,
         ring: 0,
         day: 0n,
-        aspect: [2, 3][index] ?? 0,
+        aspect: [2, 3, 2][index] ?? 0,
       })),
       Guard: [
         ...ringKinds.map((_, index) => ({
           game_id: gameId,
           structure_id: BigInt(10 + index),
           slot: 0,
-          troops: { count: [1_000n * precision, 500n * precision][index] ?? 0n },
+          troops:
+            10 + index === altarSite
+              ? { category: "Crossbowman", count: 5_000n * precision }
+              : { count: [1_000n * precision, 500n * precision][index] ?? 0n },
         })),
         { game_id: gameId, structure_id: 10n, slot: 1, troops: { count: 500n * precision } },
       ],
@@ -431,10 +444,11 @@ describe("the Deep's sites on the map", () => {
       ],
       Structure: [
         { game_id: gameId, entity_id: 9n, owner: 0x111n, metadata: { order: firstOrder!.orderId } },
-        { game_id: gameId, entity_id: 10n, owner: 0x111n },
-        { game_id: gameId, entity_id: 11n, owner: 0x333n },
         { game_id: gameId, entity_id: 19n, owner: 0x222n, metadata: { order: secondOrder!.orderId } },
         { game_id: gameId, entity_id: 29n, owner: 0x333n, metadata: { order: rivalOrder!.orderId } },
+        { game_id: gameId, entity_id: 10n, owner: 0x222n, metadata: { order: 0 } },
+        { game_id: gameId, entity_id: 11n, owner: 0x333n, metadata: { order: 0 } },
+        { game_id: gameId, entity_id: 12n, owner: 0x111n, metadata: { order: 0 } },
       ],
     };
     const matchKey = (row: Record<string, unknown>, key: Record<string, unknown>) =>
@@ -457,17 +471,65 @@ describe("the Deep's sites on the map", () => {
     const scene = new Scene();
     const manager = new MapSiteManager(scene, projection as never, store as never, plates as never, noGates() as never);
     await vi.waitFor(() => {
-      expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.own);
+      expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.ally);
       expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.enemy);
+      expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.own);
     });
+    const plateOf = (entityId: number) =>
+      plates.setLabel.mock.calls.findLast(([plate]) => plate.entityId === entityId)![0].plate;
+    const claimed = (entityId: number) => {
+      const plate = plateOf(entityId);
+      return [plate.relation, plate.named, plate.owner, plate.name, plate.crest, plate.guards];
+    };
+    const knights = (count: number) => ({ type: "knight", tier: null, count });
+    expect(claimed(10)).toEqual([
+      "ally",
+      true,
+      ownerAndAspect(getPlayerDisplayName(0x222n), aspectName(2)),
+      ringKinds[0]!.name,
+      secondOrder!.orderId,
+      [knights(1_000), knights(500)],
+    ]);
+    expect(claimed(11)).toEqual([
+      "enemy",
+      true,
+      ownerAndAspect(getPlayerDisplayName(0x333n), aspectName(3)),
+      ringKinds[1]!.name,
+      rivalOrder!.orderId,
+      [knights(500)],
+    ]);
+    expect(claimed(12)).toEqual([
+      "own",
+      true,
+      ownerAndAspect(getPlayerDisplayName(0x111n), aspectName(2)),
+      ringKinds[2]!.name,
+      firstOrder!.orderId,
+      [],
+    ]);
+    const altar = plateOf(altarSite);
+    const basilisk = beastModel(DEEP_BEASTS.altar);
+    expect([altar.relation, altar.named, altar.beast, altar.place, altar.icon, altar.reward, altar.guards]).toEqual([
+      "neutral",
+      false,
+      undefined,
+      ringKinds.find(({ key }) => key === "altar")!.name,
+      beastMeaning(basilisk),
+      DEEP_SITE_FACES.altar.pays(),
+      [{ type: "crossbowman", tier: null, count: 5_000, beast: basilisk }],
+    ]);
     heldSpy.mockClear();
     const watchedGame = { chainId: "WATCH_TEST", gameId, name: "WATCH_TEST" };
     setActiveGame(watchedGame);
     overrideSpectateIntent(true);
-    setOpenGameSeats(watchedGame, [0x333n, 0x111n]);
+    setOpenGameSeats(watchedGame, [0x333n, 0x222n]);
     try {
       expect(heldSpy).toHaveBeenCalledWith(0, SEAT_COLOURS[0]);
       expect(heldSpy).toHaveBeenCalledWith(0, SEAT_COLOURS[1]);
+      expect([plateOf(11).relation, plateOf(11).watched?.colour]).toEqual(["neutral", SEAT_COLOURS[0]]);
+      expect([plateOf(altarSite).relation, plateOf(altarSite).watched?.colour]).toEqual([
+        "neutral",
+        seatSide(null).colour,
+      ]);
     } finally {
       setOpenGameSeats(watchedGame, []);
       overrideSpectateIntent(false);
@@ -484,15 +546,16 @@ describe("the Deep's sites on the map", () => {
 
     heldSpy.mockClear();
     headAt(120);
-    expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.own);
+    expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.ally);
     expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.enemy);
     expect(emblem.count).toBe(1);
     expect(cell.getX(0)).toBe(resolveOrderSignumCell(firstOrder!.orderId));
 
     heldSpy.mockClear();
     headAt(180);
-    expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.own);
+    expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.ally);
     expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.enemy);
+    expect([plateOf(10).guards, plateOf(11).guards]).toEqual([[], []]);
     expect(emblem.count).toBe(0);
 
     manager.destroy();

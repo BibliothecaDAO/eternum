@@ -30,6 +30,15 @@ export function isAspectAlly(
   return aspect !== undefined && viewerAspects(store, game_id, viewer).has(aspect);
 }
 
+export function accountAspect(
+  store: Pick<NativeFactStore, "get" | "structuresOwnedBy">,
+  game_id: number,
+  account: bigint | null,
+): number | undefined {
+  const held = viewerAspects(store, game_id, account);
+  return held.size === 1 ? [...held][0] : undefined;
+}
+
 export function viewerAspects(
   store: Pick<NativeFactStore, "get" | "structuresOwnedBy">,
   game_id: number,

@@ -89,6 +89,31 @@ const IMPERATIVE_CONSUMERS = [
   "apps/game/src/services/identity/**",
 ];
 
+const WATCH_MODULE = resolve(SRC, "hooks/use-player-profile");
+
+const managerWatchesNames = {
+  meta: { type: "problem", schema: [] },
+  create: (context) => {
+    let reader = null;
+    let watches = false;
+    return {
+      ImportDeclaration(node) {
+        const from = resolveImport(context.filename, node.source.value);
+        const taken = node.specifiers.map(takenName);
+        if (from === READER_MODULE && taken.some((name) => IMPERATIVE.has(name))) reader = node;
+        if (from === WATCH_MODULE && taken.includes("watchPlayerNames")) watches = true;
+      },
+      "Program:exit"() {
+        if (reader && !watches)
+          context.report({
+            node: reader,
+            message: "A map manager that reads a name imperatively redraws it through watchPlayerNames when it lands.",
+          });
+      },
+    };
+  },
+};
+
 /** The boundary as a flat-config block, for lint-guards.mjs and the test alike: every client module but the consumers. */
 export const nameGuardConfigs = [
   {
@@ -96,5 +121,11 @@ export const nameGuardConfigs = [
     ignores: ["**/*.test.{ts,tsx}", ...IMPERATIVE_CONSUMERS],
     plugins: { names: { rules: { "no-imperative-names": noImperativeNames } } },
     rules: { "names/no-imperative-names": "error" },
+  },
+  {
+    files: ["apps/game/src/three/managers/**/*.{ts,tsx}"],
+    ignores: ["**/*.test.{ts,tsx}"],
+    plugins: { managers: { rules: { "watch-names": managerWatchesNames } } },
+    rules: { "managers/watch-names": "error" },
   },
 ];

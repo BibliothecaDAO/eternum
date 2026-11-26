@@ -126,7 +126,7 @@ const ownerOf = (owner: { address: bigint; ownerName: string }) =>
   owner.address === 0n ? NEUTRAL_OWNER_NAME : owner.ownerName.trim();
 
 /** A watched side as the plate draws it: the seat's colour, and its player's initial where the seat and a name are known. */
-const watchedOf = (side: SeatSide | null | undefined, owner: string): { watched?: PlateWatched } => {
+export const plateWatched = (side: SeatSide | null | undefined, owner: string): { watched?: PlateWatched } => {
   if (!side) return {};
   const letter = owner.trim().charAt(0).toUpperCase();
   return {
@@ -138,7 +138,7 @@ const watchedOf = (side: SeatSide | null | undefined, owner: string): { watched?
   };
 };
 
-const troopType = (category: string | null | undefined): PlateTroops["type"] => {
+export const plateTroopType = (category: string | null | undefined): PlateTroops["type"] => {
   switch (category) {
     case "Crossbowman":
       return "crossbowman";
@@ -202,7 +202,7 @@ export const buildStructurePlate = (
       ?.filter((guard) => guard.count > 0)
       .toSorted((a, b) => a.slot - b.slot)
       .map((guard) => ({
-        type: troopType(guard.category),
+        type: plateTroopType(guard.category),
         tier: tierOf(guard.tier, structure.frontier),
         count: guard.count,
         ...(structure.frontierBeast ? { beast: structure.frontierBeast.beast } : {}),
@@ -232,11 +232,11 @@ export const buildStructurePlate = (
           : structureMeaning(structure.structureType),
     guards,
     ...(inBattle(structure.battleTimerLeft) ? { inBattle: true } : {}),
-    ...watchedOf(structure.watched, ownerOf(structure.owner)),
+    ...plateWatched(structure.watched, ownerOf(structure.owner)),
     arrivals: (structure.incomingTroopArrivals ?? [])
       .map((arrival) => ({
         troops: {
-          type: troopType(arrival.troopType),
+          type: plateTroopType(arrival.troopType),
           tier: tierOf(arrival.troopTier, structure.frontier),
           count: arrival.count,
         },
@@ -268,7 +268,7 @@ export const buildArmyPlate = (
   relation: sideOf(army),
   owner: ownerOf(army.owner),
   homeName,
-  troops: { type: troopType(army.category), tier: tierOf(army.tier, army.frontier), count: army.troopCount },
+  troops: { type: plateTroopType(army.category), tier: tierOf(army.tier, army.frontier), count: army.troopCount },
   stamina:
     army.currentStamina === undefined || army.maxStamina <= 0
       ? undefined
@@ -278,7 +278,7 @@ export const buildArmyPlate = (
           perExplore,
         },
   ...(inBattle(army.battleTimerLeft) ? { inBattle: true } : {}),
-  ...watchedOf(army.watched, ownerOf(army.owner)),
+  ...plateWatched(army.watched, ownerOf(army.owner)),
 });
 
 /**

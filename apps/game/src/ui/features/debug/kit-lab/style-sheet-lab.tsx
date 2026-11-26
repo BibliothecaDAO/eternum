@@ -1,5 +1,6 @@
 import { failureLine } from "@/ui/design-system/kit/failure-lines";
-import { ARMY_MANAGEMENT, BUILD_ORDER_WORDS, rankedText } from "@/ui/design-system/kit/words";
+import { ARMY_MANAGEMENT, BUILD_ORDER_WORDS, DEEP_CAPTURE_WORDS, rankedText } from "@/ui/design-system/kit/words";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useDocumentClass } from "@/hooks/use-document-class";
@@ -76,13 +77,24 @@ import { GlyphsSection } from "./glyphs-section";
 import { MapContextSection } from "./map-context-section";
 import { DeviceContext, Element, type Device } from "./sheet-element";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { ResourcesIds, siteName } from "@bibliothecadao/types";
+import {
+  aspectName,
+  catalogAspectId,
+  DEEP_BEASTS,
+  DEEP_CAPTURE_LINES,
+  deepSites,
+  ResourcesIds,
+  siteName,
+} from "@bibliothecadao/types";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { lazy, Suspense, type ReactNode, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { eventStories, installFixtureGame, PLAYER } from "./fixture-game";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
+
+const LAB_DEEP_SITE = deepSites.find(({ key }) => key === "altar")!.name;
+const LAB_DEEP_ARCHIVE = deepSites.find(({ key }) => key === "foundation")!.name;
 
 const MapContextWorld = lazy(() =>
   import("@/lab/sheet-map/view").then((module) => ({ default: module.MapContextWorld })),
@@ -1361,6 +1373,21 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
             line="Moonhand took it from Kestrel."
           />
           <HudBanner tone="warn" icon="hourglass" eyebrow="Timer Warning" title="Five minutes left" />
+          <HudBanner
+            icon="flame"
+            eyebrow={DEEP_CAPTURE_WORDS.eyebrow(aspectName(2))}
+            title={DEEP_CAPTURE_WORDS.taken(LAB_DEEP_SITE)}
+            line={`Kael${DEEP_CAPTURE_WORDS.sentence(DEEP_CAPTURE_LINES.slew(aspectName(2), DEEP_BEASTS.altar.name, LAB_DEEP_SITE))}`}
+            ceremony={{ lastsMs: 8_000, pip: <AspectMark aspect={catalogAspectId(2)} size={18} decorative /> }}
+          />
+          <HudBanner
+            tone="bad"
+            icon="hyperstructure"
+            eyebrow={DEEP_CAPTURE_WORDS.siteLost}
+            title={DEEP_CAPTURE_WORDS.lost(LAB_DEEP_ARCHIVE)}
+            line={`Vex${DEEP_CAPTURE_WORDS.sentence(DEEP_CAPTURE_LINES.seized(aspectName(3), LAB_DEEP_ARCHIVE, aspectName(2)))}`}
+            ceremony={{ lastsMs: 8_000, pip: <AspectMark aspect={catalogAspectId(3)} size={18} decorative /> }}
+          />
         </div>
       </div>
     }

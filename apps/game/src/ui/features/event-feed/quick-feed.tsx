@@ -10,7 +10,7 @@ import { TickIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import { HeadlineLine } from "../news-headlines/headline-line";
-import type { HeadlineType } from "../news-headlines/headline-types";
+import type { ThemedHeadlineType } from "../news-headlines/headline-types";
 import { useEventFeedStore } from "./event-feed-store";
 import {
   type EventsFilter,
@@ -96,7 +96,7 @@ export const UnreadFeedBadge = ({ count }: { count: number }) =>
   ) : null;
 
 /** The game's capture headlines: a story tells each capture, so only the other milestones show as toasts. */
-const TOLD_BY_STORIES = new Set<HeadlineType>(["hyper-capture", "realm-fall"]);
+const TOLD_BY_STORIES = new Set<ThemedHeadlineType>(["hyper-capture", "realm-fall"]);
 
 /**
  * The client's own toasts, which no layout hides and no story tells: the red offline row, the notices still within

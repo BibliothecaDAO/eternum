@@ -783,6 +783,7 @@ export const UNDEFENDED = "Undefended";
  * A site as its map hover and its card both name it: its own name, then its kind ("Brimdeep Rift"); the kind alone
  * where it has no name. A kind that is its guard (a camp's Troll) is said once, as the guard, so it is left out here.
  */
+export const ownerAndAspect = (owner: string, aspect: string) => `${owner} · ${aspect}`;
 export const siteTitle = (place: string | undefined, kind: string, guard: string | undefined): string =>
   [place, kind === guard ? undefined : kind].filter(Boolean).join(" ");
 export const ARRIVING = "Arriving";
@@ -1209,6 +1210,14 @@ export const HEADLINE_EYEBROWS = {
   "five-min-warning": "Timer Warning",
   "t3-building": "Military Milestone",
 } as const;
+export const DEEP_CAPTURE_WORDS = {
+  eyebrow: (aspect: string) => `${DEEP} Capture · ${aspect}`,
+  siteLost: `${DEEP} Capture · Site Lost`,
+  taken: (site: string) => `${site} taken`,
+  seized: (site: string) => `${site} seized`,
+  lost: (site: string) => `${site} lost`,
+  sentence: (line: string) => ` ${line}.`,
+};
 /** A field army about to be raised, before it has a number (the Military window's Deploy). */
 export const NEW_ARMY = "The new army";
 

@@ -5,11 +5,11 @@ import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { HudEventRow, HudRanked } from "@/ui/design-system/kit/hud-elements";
 import { Position } from "@bibliothecadao/eternum";
 import { formatClockTime } from "@bibliothecadao/types";
-import type { HeadlineType } from "../news-headlines/headline-types";
+import type { ThemedHeadlineType } from "../news-headlines/headline-types";
 import { useStoryOpener } from "./story-feed-row";
 import type { ReactNode } from "react";
 
-const HEADLINE_ICONS: Record<HeadlineType, IconMeaning> = {
+const HEADLINE_ICONS: Record<ThemedHeadlineType, IconMeaning> = {
   "realm-fall": "realm",
   "hyper-capture": "hyperstructure",
   elimination: "skull",
@@ -19,7 +19,7 @@ const HEADLINE_ICONS: Record<HeadlineType, IconMeaning> = {
 };
 
 /** A clock milestone's painting. */
-export const headlineIcon = (type: HeadlineType): IconMeaning => HEADLINE_ICONS[type];
+export const headlineIcon = (type: ThemedHeadlineType): IconMeaning => HEADLINE_ICONS[type];
 
 /**
  * One story's row, in the strip or the Log: its kind's painting, the Log's own sentence for it (with what came of it),
