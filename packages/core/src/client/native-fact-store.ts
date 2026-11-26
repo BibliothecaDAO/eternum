@@ -171,7 +171,8 @@ export class NativeFactStore implements GameSyncStore {
 
   private scopePlacement(model: NativeModelName, row: Record<string, unknown>): NativeFactResult<"inside" | "outside"> {
     const snapshot = this.snapshot;
-    if (!snapshot?.complete || snapshot.gameId !== Number(row.game_id)) return { unknown: `INCOMPLETE_SNAPSHOT: ${model}` };
+    if (!snapshot?.complete || snapshot.gameId !== Number(row.game_id))
+      return { unknown: `INCOMPLETE_SNAPSHOT: ${model}` };
     if (snapshot.actor === undefined) return { unknown: `INCOMPLETE_ACTOR_SNAPSHOT: ${model}` };
     const result = isExpeditionScopedModel(model)
       ? this.subscriptionScope()
@@ -180,7 +181,11 @@ export class NativeFactStore implements GameSyncStore {
     return { known: rowInGameSyncScope(model, row, result.known) ? "inside" : "outside" };
   }
 
-  private isSharedRowBeyondParent(model: NativeModelName, parent: NativeModelName, parentKeys: Record<string, unknown>) {
+  private isSharedRowBeyondParent(
+    model: NativeModelName,
+    parent: NativeModelName,
+    parentKeys: Record<string, unknown>,
+  ) {
     return isSharedGameSyncModel(model) && this.scopePlacement(parent, parentKeys).known === "outside";
   }
 
