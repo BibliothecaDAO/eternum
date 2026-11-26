@@ -2344,6 +2344,10 @@ export const HudEmpty = ({ icon, line, action }: { icon: IconMeaning; line: stri
  * (never its look), and the rest are the strip's own attributes (a group's role, a title, whether what it opens is
  * open).
  */
+export const HudSegment = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement>>(
+  ({ className, ...rest }, ref) => <button ref={ref} type="button" {...rest} className={cn("ui-segment", className)} />,
+);
+
 export const HudPill = ({
   children,
   label,

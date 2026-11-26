@@ -2158,23 +2158,29 @@ button.ui-relic:focus-visible {
   padding: 0 theme(spacing.4);
 }
 /* A strip that is one button: it lights under the pointer and while what it opens is open. */
-button.ui-pill {
+.ui-segment {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+button:is(.ui-pill, .ui-popover, .ui-segment) {
   cursor: pointer;
   transition:
     border-color var(--hud-fast) var(--hud-ease),
     background-color var(--hud-fast) var(--hud-ease);
 }
-button.ui-pill:is(:active, [data-state="pressed"]) {
+:where(button:is(.ui-pill, .ui-popover, .ui-segment)):is(:active, [data-state="pressed"]) {
   box-shadow: var(--hud-shadow-press);
   transform: translateY(1px);
 }
-button.ui-pill:is(:hover, [data-state="hover"], [aria-expanded="true"]) {
+:where(button:is(.ui-pill, .ui-popover, .ui-segment)):is(:hover, [data-state="hover"], [aria-expanded="true"]) {
   border-color: var(--hud-line-strong);
   background:
     linear-gradient(var(--hud-hover), var(--hud-hover)),
     linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
 }
-button.ui-pill:focus-visible {
+button:is(.ui-pill, .ui-popover, .ui-segment):focus-visible {
   outline: none;
   box-shadow: var(--hud-focus);
 }

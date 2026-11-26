@@ -1,6 +1,7 @@
 import "./frontier-bar.css";
 
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { HudSegment } from "@/ui/design-system/kit/hud-elements";
 import { armiesHere, MAP_VIEW, REALM } from "@/ui/design-system/kit/words";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import {
@@ -124,18 +125,17 @@ export const PlaceSwitch = ({
         <Icon name={realm?.mark ?? "realm"} size={22} />
         <span className="frontier-place-switch__word">{REALM}</span>
       </button>
-      <button
-        type="button"
+      <HudSegment
         {...triggerProps}
         aria-haspopup="true"
         aria-label={`${MAP_VIEW}, ${shown.label}`}
         data-place-pill=""
-        className="ui-pill frontier-place-pill"
+        className="frontier-place-pill"
       >
         <Icon name={shown.mark} size={22} />
         <span className="frontier-place-pill__name">{shown.label}</span>
         <Icon name={open ? "chevron-up" : "chevron-down"} size={14} />
-      </button>
+      </HudSegment>
       {popover(
         <div role="tablist" aria-label={MAP_VIEW} data-surface-deep-switch className="frontier-place-menu__list">
           {entries.map((entry) => (

@@ -41,11 +41,13 @@
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  border: 0;
-  background: transparent;
   padding: 0;
   color: rgb(var(--hud-ink));
   cursor: pointer;
+}
+.frontier-quest-orb:not(.ui-popover) {
+  border: 0;
+  background: transparent;
 }
 .frontier-quest-orb .frontier-progress-ring--lg {
   width: 46px;
@@ -274,11 +276,7 @@
 }
 .frontier-place-switch .frontier-place-pill {
   height: auto;
-  border: 0;
   border-left: 1px solid var(--hud-divider);
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
 }
 .frontier-place-row__check {
   margin-left: auto;

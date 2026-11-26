@@ -417,9 +417,6 @@
   white-space: nowrap;
   cursor: pointer;
 }
-.frontier-place:hover {
-  border-color: var(--hud-line-strong);
-}
 .frontier-place--icon {
   width: 32px;
   flex: none;
