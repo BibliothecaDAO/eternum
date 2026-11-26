@@ -341,7 +341,7 @@ export class StructureManager {
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.fxManager = fxManager || new FXManager(scene, 1.5, { compilePipelines });
-    this.attachmentManager = new CosmeticAttachmentManager(scene);
+    this.attachmentManager = new CosmeticAttachmentManager(scene, compilePipelines);
     this.store = gameContext?.store as NativeFactStore | undefined;
     this.visibilityManager = visibilityManager;
     this.mode = getGameModeConfig();
