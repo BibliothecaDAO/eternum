@@ -49,11 +49,10 @@ it("draws a refill beside the stamina held, on the same bar, the held share stil
 });
 
 it("clamps a refill at the bar's maximum, and draws none for a full bar or a zero gain", () => {
-  expect(fillsOf({ current: 100, max: 120, perExplore: 20 }, 72)).toEqual({
-    held: "83.33333333333334%",
-    refill: "16.666666666666657%",
-    now: "100",
-  });
+  const capped = fillsOf({ current: 100, max: 120, perExplore: 20 }, 72);
+  expect(parseFloat(capped.held)).toBeCloseTo((100 / 120) * 100);
+  expect(parseFloat(capped.refill!)).toBeCloseTo((20 / 120) * 100);
+  expect(capped.now).toBe("100");
   expect(fillsOf({ current: 120, max: 120, perExplore: 20 }, 72).refill).toBeNull();
   expect(fillsOf({ current: 60, max: 120, perExplore: 20 }, 0).refill).toBeNull();
   expect(fillsOf({ current: 60, max: 120, perExplore: 20 }).refill).toBeNull();

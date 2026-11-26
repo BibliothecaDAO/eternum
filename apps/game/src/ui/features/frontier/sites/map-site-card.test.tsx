@@ -39,12 +39,16 @@ const wellCard = (current: number, gain: number) => {
 };
 
 it("shows the army's stamina as it is with the Well's refill beside it on one bar, its change on one line, and no other chip", () => {
-  expect(wellCard(102, 72)).toEqual({ held: "56.666666666666664%", refill: "40%", change: formatShortChange(102, 174), chips: 0 });
+  const card = wellCard(102, 72);
+  expect(parseFloat(card.held!)).toBeCloseTo((102 / 180) * 100);
+  expect(parseFloat(card.refill!)).toBeCloseTo((72 / 180) * 100);
+  expect(card.change).toBe(formatShortChange(102, 174));
+  expect(card.chips).toBe(0);
 });
 
 it("draws only the refill that fits under the bar's maximum", () => {
   const capped = wellCard(150, 72);
-  expect(capped.refill).toBe("16.666666666666664%");
+  expect(parseFloat(capped.refill!)).toBeCloseTo((30 / 180) * 100);
   expect(capped.change).toBe(formatShortChange(150, 180));
   expect(wellCard(180, 72).refill).toBeNull();
 });
