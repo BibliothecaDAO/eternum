@@ -78,6 +78,8 @@ describe("a walking army's plate", () => {
   it("shows the stamina its army has now, not what it had when the map last rendered", async () => {
     // An explore costs 20 stamina: a segment of the plate's bar.
     vi.spyOn(configManager, "getExploreStaminaCost").mockReturnValue(20);
+  vi.spyOn(configManager, "isFrontier").mockReturnValue(true);
+    vi.spyOn(configManager, "isFrontier").mockReturnValue(true);
     const { manager, drawn } = managerWithVisibleArmy(120);
 
     // The explore confirms: the army walks onto the tile it revealed.

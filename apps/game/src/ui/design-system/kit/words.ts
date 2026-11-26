@@ -987,8 +987,7 @@ export const DAY_BANNER_WORDS = {
     `Aspect progress: ${formatExact(completed)}/${formatExact(required)} · Ends in ${left}`,
   baneBroken: "Bane broken",
   twiceIfBroken: "2× reward if broken",
-  rewardAmount: (amount: number, resource: ResourcesIds) =>
-    `${formatAmount(amount)} ${resourceName(resource, false)}`,
+  rewardAmount: (amount: number, resource: ResourcesIds) => `${formatAmount(amount)} ${resourceName(resource, false)}`,
   summary: (objective: string, progress: number, target: number, labor: number) =>
     `${objective} · ${formatExact(progress)} of ${formatExact(target)} · +${formatExact(labor)} ${LABOR}`,
   triumphRule: {
