@@ -1,5 +1,6 @@
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import releaseFile from "../../../../contracts/l3/world-native/schema/release-definition.json";
+import releaseArchive from "./release-definitions.json";
 import type { DecodedRecord } from "../types";
 
 class NativeReleaseDefinitionUnknown extends Error {
@@ -31,7 +32,7 @@ export function readReleaseDefinitions(...files: unknown[]): ReleaseDefinitions 
   );
 }
 
-export const RELEASE_DEFINITIONS = readReleaseDefinitions(releaseFile);
+export const RELEASE_DEFINITIONS = readReleaseDefinitions(...releaseArchive, releaseFile);
 
 export function releaseDefinition(definitions: ReleaseDefinitions, release: number): DecodedRecord {
   const definition = definitions.get(release);
