@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { deleteIdentityAccount } from "@/hooks/context/identity-session";
-import { AppButton, AppNotice, AppPanel, AppSetting } from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppNotice } from "@/ui/design-system/kit/app-elements";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
 
 import { ShellWindow } from "../frame/shell-window";
@@ -17,10 +17,10 @@ import { DELETE_ACCOUNT_ID } from "./settings-route";
 export const DeleteAccount = ({ email }: { email: string }) => {
   const [open, setOpen] = useState(false);
   return (
-    <div id={DELETE_ACCOUNT_ID} className="scroll-mt-4">
-      <AppPanel flush>
-        <AppSetting icon="trash" name={ACCOUNT_DELETION_WORDS.title} onClick={() => setOpen(true)} />
-      </AppPanel>
+    <div id={DELETE_ACCOUNT_ID} className="scroll-mt-4 border-t border-app-line pt-5">
+      <AppButton kind="danger" icon="trash" className="w-full" onClick={() => setOpen(true)}>
+        {ACCOUNT_DELETION_WORDS.title}
+      </AppButton>
       {open && (
         <ShellWindow title={ACCOUNT_DELETION_WORDS.title} onClose={() => setOpen(false)}>
           <DeletionSheet email={email} />
@@ -41,11 +41,9 @@ const DeletionSheet = ({ email }: { email: string }) => {
       {confirming ? (
         <DeletionCode email={email} />
       ) : (
-        <span>
-          <AppButton kind="secondary" tone="bad" icon="mail" onClick={() => setConfirming(true)}>
-            {ACCOUNT_DELETION_WORDS.sendCode}
-          </AppButton>
-        </span>
+        <AppButton kind="danger" icon="mail" className="w-full" onClick={() => setConfirming(true)}>
+          {ACCOUNT_DELETION_WORDS.sendCode}
+        </AppButton>
       )}
     </div>
   );
