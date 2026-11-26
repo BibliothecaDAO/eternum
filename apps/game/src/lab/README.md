@@ -154,8 +154,9 @@ Gameplay and Far use distances 6, 20 and 45. The default is Gameplay; field of v
 camera profile, along +Z. Drag to orbit and scroll to zoom. The entity picker exposes both city and kingdom designs and
 all seven imperial crowns. The separate sculpt is a study, not a runtime option. **Base rank candidates** (`base=1`)
 shows each image-to-3D rank (`BASE_REALM_CANDIDATES`, lab only) beside the shipped model of its rank, Settlement to
-Empire, each as large as the hex allows; **Ranks grow** (`grow=1`) draws each candidate at its own height instead, so
-the ranks rise from Settlement to Empire. Age, Series, All ages and Revision do not apply to it.
+Empire, each building as large as the hex allows; **Ranks grow** (`grow=1`) draws each candidate at the owner's target
+height for its rank instead, past the hex where its footprint cannot reach that height inside it. Age, Series, All ages
+and Revision do not apply to it.
 
 `/lab/terrain-benchmark?realms=1` adds 48 production realm placements (24 normal, 24 wonder) to the existing terrain
 trace. The checkbox is also available in the benchmark UI. Its fingerprint ends in `:realms48`; compare identical
