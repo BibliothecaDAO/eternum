@@ -32,7 +32,7 @@ export { safeInteger } from "../utils/safe-integer";
 
 export { armyCombatRefusal, isAspectAlly, viewerAspects } from "../utils/army-opponents";
 export { spendsFragments } from "../utils/mode-rules";
-export { armyDrain, deepArmyLife, type DeepArmyLife } from "../utils/deep-army-life";
+export { armyDrain, deepArmyLife, deepTroopsLife, type DeepArmyLife } from "../utils/deep-army-life";
 export {
   IncompleteDeepSyncError,
   homeAspect,
@@ -43,6 +43,7 @@ export {
   readDeepRingOpening,
   readDeepSiteDefender,
   readDeepSites,
+  type DeepGarrison,
   type DeepSiteView,
 } from "./views/deep-sites";
 export {

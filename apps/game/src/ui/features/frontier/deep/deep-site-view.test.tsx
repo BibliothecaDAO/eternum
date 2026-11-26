@@ -55,7 +55,7 @@ describe("a Deep site's card", () => {
   });
 
   it("pays Labor per tick with its rate a minute and the guard drain beside it, held by the player's Aspect", () => {
-    draw(DEEP_SITE_CASES["Ethereal mine held by the player's Aspect, slots to join"]);
+    draw(DEEP_SITE_CASES["Ethereal mine held by the player's Aspect"]);
     expect(document.querySelector("[data-deep-tag]")?.textContent).toBe("Held · Luminary");
     expect([...document.querySelectorAll("[data-rate]")].map((rate) => rate.textContent)).toEqual([
       DEEP_WORDS.splitCell("+300/ 2m+150/min"),
@@ -168,6 +168,6 @@ describe("a Deep site's card", () => {
 });
 
 const withTwoGuards = () => {
-  const fixture = DEEP_SITE_CASES["Ethereal mine held by the player's Aspect, slots to join"];
+  const fixture = DEEP_SITE_CASES["Ethereal mine held by the player's Aspect"];
   return fixture.guard.slots;
 };

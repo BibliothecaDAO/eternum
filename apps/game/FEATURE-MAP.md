@@ -359,8 +359,8 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
 - **Deep site opportunities**: Settings → Notifications → Important (or All), then enable **This device**. A push opens
   a rival site on the map when the player's largest army outside the Deep can clear its remaining guards, at most once
   per site per game day. A foreground device stays quiet. `build.sh test-deep-alerts` exercises the confirmed watcher,
-  timed wake, retry cancellation and restart through the real notifier. The site card's payment and join path are at
-  `/lab/game?scenario=deep`; `pnpm --dir apps/game playtest:landing lab-deep-join` drives desktop and phone views.
+  timed wake, retry cancellation and restart through the real notifier. The site card's payment is at
+  `/lab/game?scenario=deep`; `pnpm --dir apps/game playtest:landing lab-deep` drives desktop and phone views.
 
 ### Play
 

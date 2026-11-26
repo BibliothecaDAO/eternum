@@ -24,7 +24,7 @@ export const deepScenario = (closedRing = false): LabScenario => {
   const tick = Math.floor(startsAt / tickSeconds);
   const slot = store.require("ArmySlot", { game_id: 1, structure_id: army.owner, epoch: 0n, slot: 0 });
   const at = store.entityOccupancy(1, SPIRE_ARMY)!;
-  const [allyHome, allyArmy, fieldAlly] = [9n, 301n, 399n];
+  const [allyHome, fieldAlly] = [9n, 399n];
   const local = {
     foundation: { x: 18, y: 25 },
     core: { x: 25, y: 18 },
@@ -51,24 +51,17 @@ export const deepScenario = (closedRing = false): LabScenario => {
     { model: "HomeAspect", key: "0xdee1", value: { game_id: 1, home: String(home.entity_id), aspect: 1 } },
     { model: "HomeAspect", key: "0xdee2", value: { game_id: 1, home: String(allyHome), aspect: 1 } },
     { model: "Structure", key: "0xdee3", value: wire({ ...home, entity_id: allyHome, owner: "0x222" }) },
-    { model: "ExplorerTroops", key: "0xdee4", value: wire({ ...army, explorer_id: allyArmy, owner: allyHome }) },
-    {
-      model: "ArmyCombat",
-      key: "0xded4",
-      value: wire({ game_id: 1, explorer_id: allyArmy, last_target: 0 }),
-    },
-    {
-      model: "ArmyProgress",
-      key: "0xded5",
-      value: wire({ ...store.require("ArmyProgress", { game_id: 1, explorer_id: SPIRE_ARMY }), explorer_id: allyArmy }),
-    },
-    { model: "ArmyDay", key: "0xdee5", value: { game_id: 1, explorer_id: String(allyArmy), day: "0" } },
-    { model: "DeepArmy", key: "0xdee6", value: { game_id: 1, explorer_id: String(allyArmy), last_tick: String(tick) } },
     { model: "DeepArmy", key: "0xdee7", value: { game_id: 1, explorer_id: SPIRE_ARMY, last_tick: String(tick) } },
+    { model: "DeepTick", key: "0xdee4", value: { game_id: 1, paid_tick: String(tick) } },
     {
-      model: "DeepGuard",
+      model: "GarrisonSlot",
       key: "0xdee8",
-      value: { game_id: 1, explorer_id: String(allyArmy), site_id: String(siteId("mine")), slot: 0 },
+      value: { game_id: 1, structure_id: String(siteId("mine")), slot: 1, home: String(allyHome) },
+    },
+    {
+      model: "Guard",
+      key: "0xdee5",
+      value: wire({ game_id: 1, structure_id: siteId("mine"), slot: 1, troops: army.troops, destroyed_tick: 0 }),
     },
     { model: "TileOccupancy", key: store.wireKeyOf("TileOccupancy", at)!, value: null },
     { model: "TileOccupancy", key: "0xdee9", value: wire({ ...at, col: center.col - 1, row: center.row }) },
@@ -102,7 +95,14 @@ export const deepScenario = (closedRing = false): LabScenario => {
       {
         model: "DeepSite",
         key: `0xdeea${place}`,
-        value: { game_id: 1, entity_id: String(entityId), kind: site.id, ring: 0, day: "0" },
+        value: {
+          game_id: 1,
+          entity_id: String(entityId),
+          kind: site.id,
+          ring: 0,
+          day: "0",
+          aspect: site.key === "mine" && place < deepSites.length ? 1 : 0,
+        },
       },
       {
         model: "TileOccupancy",
@@ -147,23 +147,7 @@ export const deepScenario = (closedRing = false): LabScenario => {
   return {
     ...scenario,
     opensOn: center,
-    answer: (command, chain) => {
-      if (command.kind !== "InteractSite") return [];
-      const [rawId, alt, x, y] = command.span.slice(1);
-      if (rawId === undefined || alt === undefined || x === undefined || y === undefined) return [];
-      if (BigInt(alt) !== 0n || BigInt(x) !== BigInt(center.col) || BigInt(y) !== BigInt(center.row)) return [];
-      const explorer_id = BigInt(rawId);
-      const location = chain.entityOccupancy(1, explorer_id);
-      if (!location || explorer_id !== BigInt(SPIRE_ARMY)) return [];
-      return [
-        { model: "TileOccupancy", key: chain.wireKeyOf("TileOccupancy", location)!, value: null },
-        {
-          model: "DeepGuard",
-          key: "0xdeed",
-          value: { game_id: 1, explorer_id: String(explorer_id), site_id: String(siteId("mine")), slot: 1 },
-        },
-      ];
-    },
+    answer: () => [],
   };
 };
 

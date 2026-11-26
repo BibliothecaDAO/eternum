@@ -1,11 +1,10 @@
-import { inlineTroops, resolveExplorerCombatTroops } from "../../managers/troop-stamina";
-import { armyOaths } from "../../utils/oaths";
-import { currentArmy } from "../../utils/deep";
+import { inlineTroops } from "../../managers/troop-stamina";
 import { deepSites, layerName } from "@bibliothecadao/types";
 import { type NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeRuleConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeFactStore } from "../native-fact-store";
 import { configManager } from "../../managers/config-manager";
+import { dayAtIndex } from "../../utils/days";
 import { DEEP_DEPTH, dayOf, readExpeditionRules } from "../../utils/expeditions";
 import { entityMapPosition } from "../../utils/tile";
 import { journeyDistance } from "../../utils/travel";
@@ -23,8 +22,15 @@ export interface DeepSiteView {
   day: number;
   beastTroops: bigint;
   guard: NativeRows["Guard"] | undefined;
+  aspect: number;
   /** Defensive order: the highest live slot is faced next. */
-  guards: { slot: number; army: NativeRows["ExplorerTroops"] }[];
+  garrisons: DeepGarrison[];
+}
+
+export interface DeepGarrison {
+  slot: number;
+  home: bigint;
+  troops: NativeRows["Guard"]["troops"];
 }
 
 export class IncompleteDeepSyncError extends Error {}
@@ -125,7 +131,8 @@ function deepSiteView(
     day: today.index,
     beastTroops: troops,
     guard,
-    guards: current ? readGuards(store, gameId, site.entity_id, timestamp) : [],
+    aspect: current ? site.aspect : 0,
+    garrisons: current ? readGarrisons(store, today, site, timestamp) : [],
   };
 }
 
@@ -142,7 +149,9 @@ function todaysBeast(store: NativeFactStore, today: DeepDay, site: NativeRows["D
     : undefined;
   const beast = today.rules.beasts[site.kind];
   if (!beast) throw new Error(`Site ${site.entity_id} is outside its preset rules`);
-  return { current, guard, troops: guard ? guard.troops.count : beast.count };
+  if (!guard) return { current, guard, troops: beast.count };
+  const garrisoned = store.get("GarrisonSlot", { game_id: site.game_id, structure_id: site.entity_id, slot: 0 });
+  return { current, guard, troops: garrisoned ? 0n : guard.troops.count };
 }
 
 type RingOpening = { known: { open: boolean; realms: number } } | { unknown: string };
@@ -185,42 +194,53 @@ export function homeAspect(store: NativeFactStore, gameId: number, home: bigint)
   return store.require("HomeAspect", { game_id: gameId, home }).aspect;
 }
 
-export function isDeepSiteRival(store: NativeFactStore, site: DeepSiteView, attackerHome: bigint): boolean {
-  const holder = site.guards[0]?.army;
-  return (
-    holder !== undefined &&
-    homeAspect(store, holder.game_id, holder.owner) !== homeAspect(store, holder.game_id, attackerHome)
-  );
+export function isDeepSiteRival(
+  store: NativeFactStore,
+  site: DeepSiteView,
+  attackerHome: bigint,
+  gameId = configManager.getActiveGameId(),
+): boolean {
+  return site.aspect !== 0 && site.aspect !== homeAspect(store, gameId, attackerHome);
 }
 
 export function isBesideDeepSite(tile: { col: number; row: number; alt: boolean }, site: DeepSiteView): boolean {
   return tile.alt === site.position.alt && journeyDistance({ x: tile.col, y: tile.row }, site.position) === 1;
 }
 
-export function readDeepSiteDefender(store: NativeFactStore, site: DeepSiteView, timestamp: number) {
-  const army = site.guards[0]?.army;
-  if (army) {
-    const troops = resolveExplorerCombatTroops(store, army, timestamp);
-    return troops && { troops, oaths: armyOaths(store, army), guarding: true };
-  }
-  if (!site.guard || site.beastTroops === 0n) return undefined;
+export function readDeepSiteDefender(store: NativeFactStore, site: DeepSiteView) {
+  if (!site.guard) return undefined;
   const rules = store.require("SliceRules", { game_id: site.guard.game_id });
+  const garrison = site.garrisons[0];
+  if (garrison) return { troops: inlineTroops(garrison.troops, rules), oaths: 0, guarding: true };
+  if (site.beastTroops === 0n) return undefined;
   return { troops: inlineTroops(site.guard.troops, rules), oaths: 0, guarding: false };
 }
 
-function readGuards(store: NativeFactStore, gameId: number, siteId: bigint, timestamp: number): DeepSiteView["guards"] {
-  const guards = [...store.inGame("DeepGuard", gameId)]
-    .filter((guard) => guard.site_id === siteId)
-    .sort((left, right) => right.slot - left.slot);
-  const slots = new Set<number>();
-  return guards
-    .map(({ slot, explorer_id }) => {
-      if (slot >= nativeRuleConstants.DEEP_GUARD_SLOTS || slots.has(slot)) throw new Error("Invalid Deep guard slots");
-      slots.add(slot);
-      return {
-        slot,
-        army: currentArmy(store, store.require("ExplorerTroops", { game_id: gameId, explorer_id }), timestamp),
-      };
+function readGarrisons(
+  store: NativeFactStore,
+  today: DeepDay,
+  site: NativeRows["DeepSite"],
+  timestamp: number,
+): DeepGarrison[] {
+  const gameId = site.game_id;
+  const slots = [...store.inGame("GarrisonSlot", gameId)].filter((row) => row.structure_id === site.entity_id);
+  if (!slots.length) return [];
+  const loss = garrisonLoss(store, today, gameId, timestamp);
+  return slots
+    .sort((left, right) => right.slot - left.slot)
+    .map(({ slot, home }) => {
+      if (slot >= nativeRuleConstants.DEEP_GUARD_SLOTS) throw new Error("Invalid Deep garrison slot");
+      const { troops } = store.require("Guard", { game_id: gameId, structure_id: site.entity_id, slot });
+      return { slot, home, troops: { ...troops, count: troops.count > loss ? troops.count - loss : 0n } };
     })
-    .filter(({ army }) => army.troops.count > 0n);
+    .filter(({ troops }) => troops.count > 0n);
+}
+
+function garrisonLoss(store: NativeFactStore, today: DeepDay, gameId: number, timestamp: number): bigint {
+  const paid = store.require("DeepTick", { game_id: gameId }).paid_tick;
+  const interval = Number(store.require("SliceRules", { game_id: gameId }).tick_config.armies_tick_in_seconds);
+  const calendar = readExpeditionRules(store, gameId);
+  if (!calendar || interval <= 0) throw new Error("Deep garrisons require the tick and the calendar");
+  const tick = BigInt(Math.floor(Math.min(timestamp, dayAtIndex(calendar, today.index).end) / interval));
+  return tick > paid ? (tick - paid) * today.rules.loss_per_tick : 0n;
 }

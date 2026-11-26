@@ -44,10 +44,9 @@ it("holds for the troops' ticks when they run out before the day, else to the da
 });
 
 /** Armies keyed by explorer: the facts an army's place in the Deep leaves, as the native store holds them. */
-const armies = (held: { field?: number[]; guard?: number[]; count: bigint; lastTick: number }) => {
+const armies = (held: { field: number[]; count: bigint; lastTick: number }) => {
   const keyed: Record<string, Record<number, unknown>> = {
-    DeepArmy: Object.fromEntries((held.field ?? []).map((id) => [id, { last_tick: BigInt(held.lastTick) }])),
-    DeepGuard: Object.fromEntries((held.guard ?? []).map((id) => [id, { site_id: 800n, slot: 0 }])),
+    DeepArmy: Object.fromEntries(held.field.map((id) => [id, { last_tick: BigInt(held.lastTick) }])),
     ArmyProgress: Object.fromEntries([1, 2, 3].map((id) => [id, { oaths: 0 }])),
     ArmyDay: Object.fromEntries([1, 2, 3].map((id) => [id, { day: 0n }])),
     ExplorerTroops: Object.fromEntries(
@@ -75,8 +74,7 @@ it("drains an army waiting in the field of the Deep exactly as its attrition say
   expect(armyDrain(field, army(1, 100n), start + 5 * tick)).toMatchObject({ ticksToEmpty: 0, ticksLeft: 0 });
 });
 
-it("drains a joined guard from the troops it holds, and no army that stands above the Deep", () => {
-  const held = armies({ guard: [2], field: [], count: 100n, lastTick: 0 });
-  expect(armyDrain(held, army(2, 100n), start)).toMatchObject({ ticksToEmpty: 5 });
-  expect(armyDrain(held, army(3, 100n), start)).toBeUndefined();
+it("drains no army that stands above the Deep", () => {
+  const above = armies({ field: [1], count: 100n, lastTick: 0 });
+  expect(armyDrain(above, army(3, 100n), start)).toBeUndefined();
 });

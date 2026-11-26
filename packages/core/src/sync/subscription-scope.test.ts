@@ -132,14 +132,13 @@ it("drops expired armies before reading positions on the shared map", () => {
   expect(scope.expedition!.day).toBe(1);
 });
 
-it("includes shared Deep field armies and all held guards with their home facts", () => {
+it("includes shared Deep field armies and every garrison home with its home facts", () => {
   const extra: typeof rows = [
     { model: "DeepSite", value: { entity_id: "200", kind: 0, day: "0" } },
     { model: "TileOccupancy", value: { entity_id: "200", category: "46", alt: false, col: 512, row: 3584 } },
     { model: "TileOccupancy", value: { entity_id: "301", category: "26", alt: false, col: 511, row: 3584 } },
-    { model: "DeepGuard", value: { explorer_id: "302", site_id: "200", slot: 3 } },
+    { model: "GarrisonSlot", value: { structure_id: "200", slot: 3, home: "9" } },
     { model: "ExplorerTroops", value: { explorer_id: "301", owner: "8", troops: { count: "1000000000" } } },
-    { model: "ExplorerTroops", value: { explorer_id: "302", owner: "9", troops: { count: "1000000000" } } },
   ];
   const shared: ScopeRowReader = (model, spacing, keys) =>
     [...rows, ...extra].filter(
@@ -147,9 +146,9 @@ it("includes shared Deep field armies and all held guards with their home facts"
     );
   const scope = deriveGameSyncScope("0xa", 350, expedition, shared);
   expect(scope.expedition?.regions).toContain("0:3");
-  for (const id of ["200", "301", "302", "8", "9"]) expect(scope.expedition?.entities).toContain(id);
-  expect(rowInGameSyncScope("ExplorerTroops", { explorer_id: "302", owner: "9" }, scope)).toBe(true);
-  expect(rowInGameSyncScope("DeepArmy", { explorer_id: "302" }, scope)).toBe(true);
+  for (const id of ["200", "301", "8", "9"]) expect(scope.expedition?.entities).toContain(id);
+  expect(rowInGameSyncScope("ExplorerTroops", { explorer_id: "301", owner: "8" }, scope)).toBe(true);
+  expect(rowInGameSyncScope("DeepArmy", { explorer_id: "301" }, scope)).toBe(true);
   expect(rowInGameSyncScope("Structure", { entity_id: "9" }, scope)).toBe(true);
   expect(rowInGameSyncScope("ArmySlot", { structure_id: "9", epoch: 0 }, scope)).toBe(true);
   expect(rowInGameSyncScope("ArmySlot", { structure_id: "9", epoch: 1 }, scope)).toBe(false);

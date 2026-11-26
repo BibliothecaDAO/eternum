@@ -1,11 +1,6 @@
 import "./deep-site.css";
 
-import { heldOaths } from "@bibliothecadao/eternum";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
-import { orderMeaning } from "@/ui/design-system/icon-meaning";
-import { oathEffectDescription, oathName } from "../army/oath-details";
-import type { PickEffectBase } from "../pick-effect-format";
-import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { type Price } from "@/ui/design-system/kit/price-faces";
 import {
@@ -58,8 +53,6 @@ export interface DeepOpening {
 
 export interface DeepSlot {
   slot: number;
-  armyId: number;
-  oaths: number;
   category: Troops["category"];
   tier: Troops["tier"];
   realm: string;
@@ -81,10 +74,10 @@ export type DeepGuard =
     }
   | { kind: "open" };
 
-export type DeepBlock = "pickArmy" | "guarding" | "full" | "rival" | "otherDay" | "noTroops";
+export type DeepBlock = "pickArmy" | "guarding" | "rival" | "otherDay" | "noTroops";
 
 export type DeepOrder =
-  | { kind: "act"; verb: "attack" | "take" | "join"; stamina?: number; busy?: string; onAct: () => void }
+  | { kind: "act"; verb: "attack" | "take"; stamina?: number; busy?: string; onAct: () => void }
   | { kind: "short"; verb: "attack"; line: string }
   | { kind: "move"; prices: readonly Price[]; onMove: () => void }
   | { kind: "closed" };
@@ -96,7 +89,6 @@ export interface DeepSiteProps {
   opening: DeepOpening | null;
   guard: DeepGuard;
   fight?: DeepSiteFight;
-  pickBase: PickEffectBase;
   order: DeepOrder | DeepBlock;
   onClose: () => void;
 }
@@ -108,7 +100,7 @@ const FIGHT_ORDER = Array.from(
 
 const siteName = (key: DeepSiteProps["site"]) => deepSites.find((each) => each.key === key)!.name;
 
-export const DeepSiteView = ({ site, ring, rates, opening, guard, fight, pickBase, order, onClose }: DeepSiteProps) => {
+export const DeepSiteView = ({ site, ring, rates, opening, guard, fight, order, onClose }: DeepSiteProps) => {
   const name = siteName(site);
   const secondary = rates && secondaryRate(rates);
   return (
@@ -119,12 +111,8 @@ export const DeepSiteView = ({ site, ring, rates, opening, guard, fight, pickBas
     >
       <div data-deep-site={site} data-deep-guard={guard.kind} className="deep-site">
         {rates ? <RateStrip rates={rates} /> : opening && <LockedKinds pays={opening.pays} />}
-        {fight ? (
-          <FightPreview site={site} fight={fight} guard={guard} />
-        ) : (
-          <GuardStrip site={site} guard={guard} pickBase={pickBase} />
-        )}
-        {fight && guard.kind === "held" && <GuardStrip site={site} guard={guard} pickBase={pickBase} />}
+        {fight ? <FightPreview site={site} fight={fight} guard={guard} /> : <GuardStrip site={site} guard={guard} />}
+        {fight && guard.kind === "held" && <GuardStrip site={site} guard={guard} />}
         {rates && secondary?.kind !== "drain" && <PoisonStrip rates={rates} />}
         {opening && <OpeningBar opening={opening} />}
       </div>
@@ -266,7 +254,7 @@ const FightPreview = ({
   guard: DeepGuard;
 }) => {
   const result = fight.result && !("refused" in fight.result) ? fight.result : undefined;
-  const frontGuard = guard.kind === "held" ? guard.slots.find((each) => each.armyId === guard.next) : undefined;
+  const frontGuard = guard.kind === "held" ? guard.slots.find((each) => each.slot === guard.next) : undefined;
   const defenderLabel = guard.kind === "beast" ? DEEP_BEASTS[site].name : (frontGuard?.realm ?? TROOPS);
   const defenderArt =
     guard.kind === "beast" ? beastMeaning(beastModel(DEEP_BEASTS[site])) : troopMeaning(fight.defenderTroops);
@@ -301,17 +289,14 @@ const FightPreview = ({
   );
 };
 
-const slotTip = (slot: DeepSlot, next: boolean, pickBase: PickEffectBase): string => {
-  const oaths = heldOaths(slot.oaths).map((id) => `${oathName(id)} (${oathEffectDescription(id, pickBase)})`);
-  return [
+const slotTip = (slot: DeepSlot, next: boolean): string =>
+  [
     next ? `${slot.realm} · ${DEEP_WORDS.facesNext}` : slot.realm,
     formatExact(slot.troops),
     DEEP_WORDS.drainTick(slot.lossPerTick),
     DEEP_WORDS.lasts(slot.ticks.left, slot.ticks.time),
     DEEP_WORDS.share(slot.share),
-    ...oaths,
   ].join(" · ");
-};
 
 const BeastRow = ({ site, guard }: { site: DeepSiteProps["site"]; guard: Extract<DeepGuard, { kind: "beast" }> }) => (
   <div data-deep-beast className="deep-beast">
@@ -329,15 +314,7 @@ const BeastRow = ({ site, guard }: { site: DeepSiteProps["site"]; guard: Extract
   </div>
 );
 
-const GuardStrip = ({
-  site,
-  guard,
-  pickBase,
-}: {
-  site: DeepSiteProps["site"];
-  guard: DeepGuard;
-  pickBase: PickEffectBase;
-}) => {
+const GuardStrip = ({ site, guard }: { site: DeepSiteProps["site"]; guard: DeepGuard }) => {
   if (guard.kind === "beast") return <BeastRow site={site} guard={guard} />;
   if (guard.kind === "open") return <HudRow lead={<Icon name="flag" size={32} />} title={DEEP_WORDS.open} />;
   const filled = FIGHT_ORDER.flatMap((slot) => {
@@ -345,7 +322,6 @@ const GuardStrip = ({
     return held ? [held] : [];
   });
   const free = FIGHT_ORDER.filter((slot) => !guard.slots.some((each) => each.slot === slot));
-  const frontGuard = filled.find((each) => each.armyId === guard.next) ?? filled[0];
   return (
     <div data-deep-slots className="deep-held">
       <div
@@ -367,8 +343,8 @@ const GuardStrip = ({
       <div className="deep-guards">
         <div className="deep-guards__row">
           {filled.map((held) => {
-            const isNext = held.armyId === guard.next;
-            const tip = slotTip(held, isNext, pickBase);
+            const isNext = held.slot === guard.next;
+            const tip = slotTip(held, isNext);
             return (
               <span
                 key={held.slot}
@@ -407,30 +383,11 @@ const GuardStrip = ({
           ))}
         </div>
       </div>
-      {frontGuard && (
-        <div data-guard-oaths={frontGuard.oaths} className="flex flex-wrap items-center gap-1.5 empty:hidden">
-          {heldOaths(frontGuard.oaths).map((id) => (
-            <span
-              key={id}
-              data-oath={id}
-              title={oathEffectDescription(id, pickBase)}
-              className="inline-flex items-center gap-1 text-hud-label text-hud-muted"
-            >
-              <Icon name={orderMeaning(id)} size={16} />
-              {oathName(id)}
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
 
-const verbWord = (verb: "attack" | "take" | "join", phone: boolean) =>
-  verb === "join" && phone ? DEEP_WORDS.joinShort : DEEP_WORDS[verb];
-
 const OrderFoot = ({ order }: { order: DeepOrder | DeepBlock }) => {
-  const phone = useHudLayout() !== "desktop";
   if (typeof order === "string") return <HudWindowFoot note={DEEP_WORDS[order]} />;
   if (order.kind === "closed") return null;
   const footPrices = order.kind === "move" ? order.prices : undefined;
@@ -444,7 +401,7 @@ const OrderFoot = ({ order }: { order: DeepOrder | DeepBlock }) => {
           busy={order.busy}
           onClick={order.onAct}
         >
-          {verbWord(order.verb, phone)}
+          {DEEP_WORDS[order.verb]}
           {order.stamina !== undefined && order.stamina > 0 && <AttackStamina stamina={order.stamina} />}
         </HudButton>
       )}

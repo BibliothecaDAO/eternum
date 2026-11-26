@@ -88,7 +88,7 @@ export class MapSiteManager {
   private readonly unsubscribeSides: () => void;
   private drawnDay: number | undefined;
   private drawnTick: number | undefined;
-  private readonly guardingExplorers = new Set<bigint>();
+  private garrisoned = false;
   private standards?: OrderStandard;
   private readonly heights = new Map<DrawnSite["key"], number>();
   private modelVisible = true;
@@ -156,18 +156,19 @@ export class MapSiteManager {
       const touched = changes.some(
         (change) =>
           change.model === "DeepSite" ||
-          change.model === "DeepGuard" ||
+          change.model === "GarrisonSlot" ||
+          change.model === "DeepTick" ||
           change.model === "DeepEntries" ||
           change.model === "DeepRules" ||
           change.model === "HomeAspect" ||
           change.model === "SliceRules" ||
           (change.model === "Guard" && this.guardsDeepSite(change.current ?? change.previous)) ||
-          this.touchesGuardingArmy(change),
+          (this.garrisoned && change.model === "Structure"),
       );
       if (touched) this.refresh();
     });
     this.unsubscribeChainTime = useChainTimeStore.subscribe(() => {
-      if (this.deepDay() !== this.drawnDay || (this.guardingExplorers.size > 0 && this.deepTick() !== this.drawnTick)) {
+      if (this.deepDay() !== this.drawnDay || (this.garrisoned && this.deepTick() !== this.drawnTick)) {
         this.refresh();
       }
     });
@@ -228,10 +229,7 @@ export class MapSiteManager {
     this.drawnDay = this.deepDay();
     this.drawnTick = this.deepTick();
     const sitesById = this.readSitesById();
-    this.guardingExplorers.clear();
-    for (const view of sitesById.values()) {
-      for (const guard of view.guards) this.guardingExplorers.add(guard.army.explorer_id);
-    }
+    this.garrisoned = [...sitesById.values()].some((view) => view.garrisons.length > 0);
     this.refreshPlates();
     const heldSites: Array<{ hex: PlacedSite; site: DeepSiteView }> = [];
     for (const site of this.sites) {
@@ -239,7 +237,7 @@ export class MapSiteManager {
       if (site.key.startsWith("deep:")) {
         for (const hex of hexes) {
           const view = sitesById.get(hex.entityId);
-          if (view && view.guards.length > 0) heldSites.push({ hex, site: view });
+          if (view && view.garrisons.length > 0) heldSites.push({ hex, site: view });
         }
       }
       const model = this.models.get(site.key);
@@ -443,29 +441,15 @@ export class MapSiteManager {
     }
   }
 
-  private touchesGuardingArmy(change: { model: string; current?: unknown; previous?: unknown }): boolean {
-    if (this.guardingExplorers.size === 0) return false;
-    if (change.model === "Structure") return true;
-    if (
-      change.model !== "ExplorerTroops" &&
-      change.model !== "DeepArmy" &&
-      change.model !== "ArmyDay" &&
-      change.model !== "ArmyProgress"
-    ) {
-      return false;
-    }
-    const row = (change.current ?? change.previous) as { explorer_id?: bigint } | undefined;
-    return row?.explorer_id !== undefined && this.guardingExplorers.has(row.explorer_id);
-  }
-
   private guardsDeepSite(guard: { structure_id: bigint } | undefined): boolean {
     return guard !== undefined && this.deepKindOf(safeInteger(guard.structure_id)) !== undefined;
   }
 
   private holderColor(site: DeepSiteView | undefined): string | null {
-    const holder = site?.guards[0]?.army;
+    const holder = site?.garrisons[0];
     if (!holder) return null;
-    const home = this.store.get("Structure", { game_id: holder.game_id, entity_id: holder.owner });
+    const gameId = configManager.getActiveGameId();
+    const home = this.store.get("Structure", { game_id: gameId, entity_id: holder.home });
     const owner = home?.owner ?? 0n;
     const watched = watchedSide(owner);
     if (watched) return watched.colour;
@@ -473,7 +457,7 @@ export class MapSiteManager {
     return SIDE_HEX[
       sideOf({
         isMine: isViewerOwner(owner, viewer),
-        isAlly: isAspectAlly(this.store, holder.game_id, viewer, holder.owner),
+        isAlly: isAspectAlly(this.store, gameId, viewer, holder.home),
         owner: { address: owner },
       })
     ];
@@ -498,10 +482,13 @@ export class MapSiteManager {
     let slot = 0;
     const limit = SITE_CAPACITY * nativeRuleConstants.DEEP_GUARD_SLOTS;
     for (const { hex, site } of heldSites) {
-      const count = site.guards.length;
+      const count = site.garrisons.length;
       for (let index = 0; index < count && slot < limit; index += 1) {
-        const guard = site.guards[index]!;
-        const home = this.store.get("Structure", { game_id: guard.army.game_id, entity_id: guard.army.owner });
+        const garrison = site.garrisons[index]!;
+        const home = this.store.get("Structure", {
+          game_id: configManager.getActiveGameId(),
+          entity_id: garrison.home,
+        });
         const orderId = home?.metadata.order;
         this.standards.setMatrixAt(slot, this.standardPlacement(hex, index, count));
         this.standards.setOrderAt(slot, orderId);

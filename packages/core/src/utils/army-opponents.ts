@@ -19,16 +19,6 @@ export const commandRefusal = (
 ): "no-attack" | undefined =>
   isCommandEnabled(store.require("SliceRules", { game_id }), command) ? undefined : "no-attack";
 
-export function rivalGuardRefusal(
-  store: Pick<NativeFactStore, "require">,
-  game_id: number,
-  attacker: { home: bigint },
-  guard: { home: bigint },
-): "allied" | undefined {
-  const aspect = (side: { home: bigint }) => store.require("HomeAspect", { game_id, home: side.home }).aspect;
-  return aspect(attacker) === aspect(guard) ? "allied" : undefined;
-}
-
 /** Whether a home stands in the Aspect of one of the viewer's own realms: an Aspect's armies are allies in the Deep. */
 export function isAspectAlly(
   store: Pick<NativeFactStore, "get" | "structuresOwnedBy">,

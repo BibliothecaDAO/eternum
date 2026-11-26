@@ -37,7 +37,7 @@ export const SNAPSHOT_MODELS = [
   "ExplorerTroops",
   "DeepArmy",
   "DeepSite",
-  "DeepGuard",
+  "GarrisonSlot",
   "AltarBar",
   "WorldBane",
   "TeamBane",

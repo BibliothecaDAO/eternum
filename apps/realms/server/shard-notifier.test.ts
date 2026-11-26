@@ -291,7 +291,7 @@ const createHerald = () => {
       snapshot(state.army, state.neighbourArmy, null, state.members, state.secondArmy),
       state.site,
     );
-    const model = snap.models.find(({ model }) => model === "DeepGuard")!;
+    const held = snap.models.filter(({ model }) => model === "GarrisonSlot" || model === "Guard");
     for (const connection of sockets)
       connection.socket.send(
         JSON.stringify({
@@ -300,7 +300,7 @@ const createHerald = () => {
           seq: ++connection.seq,
           block: 11,
           preconfirmed,
-          set: model.rows.map((row) => ({ model: model.model, ...row })),
+          set: held.flatMap((model) => model.rows.map((row) => ({ model: model.model, ...row }))),
           del: [],
         }),
       );
@@ -725,15 +725,11 @@ describe.concurrent("shard notifications", () => {
     }, 150_000);
   });
 
-  it("does not alert held or exhausted Deep armies", async () => {
+  it("does not alert an exhausted army in the Deep", async () => {
     const { herald, push, worker } = await createHarness("important");
     try {
       await worker.runCron();
       await pause(polls(5));
-      herald.act(0);
-      herald.state.army!.guard = true;
-      await pause(ticks(REST_TICKS + 1) + polls(3));
-      expect(push.received).toEqual([]);
       herald.act(0);
       herald.state.army!.deepTick = armiesTick();
       await pause(ticks(REST_TICKS + 1) + polls(3));

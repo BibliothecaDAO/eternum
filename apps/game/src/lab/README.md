@@ -54,11 +54,9 @@ fetches (the client's own modules, every script, the bytes), when its last scrip
 beside the card. `pnpm --dir apps/game prove:app <base-url> <out-dir> phone` includes this path. The retired long-format
 tribe fixture is removed.
 
-`/lab/game?scenario=deep` opens beside the allied Ethereal mine. Select Army 1, open the mine, Join, then close the site
-card and reopen Army 1 from the dock. Its panel keeps the slot's refilling stamina after the army leaves its personal
-tile. `pnpm --dir apps/game playtest:landing lab-deep-join` drives this path on desktop and phone and records the site's
-visible tick payment, the joined guard and its visible stamina bar. The site's payment reads DeepRules/RaceRules and the
-holder's AltarBar.
+`/lab/game?scenario=deep` opens beside the Ethereal mine an ally garrisons. Select Army 1 and open each site.
+`pnpm --dir apps/game playtest:landing lab-deep` drives this path on desktop and phone. The site's payment reads
+DeepRules/RaceRules and the holder's AltarBar.
 
 With Important notifications enabled, a rival-held Deep site can send one opportunity alert per site and game day.
 Opening it selects the site's map coordinate. `build.sh test-deep-alerts` drives the real notifier worker through a
@@ -304,8 +302,7 @@ The landing playtest's `lab-town` opens `/lab/game?scenario=town` on desktop and
 then deploys 400. It checks the new army, the 200 Crossbows left, and the 280 wheat left after the first Depot tier.
 This is a lab proof; the native command suite proves Range production and both town research ladders.
 
-`/lab/game?scenario=oath-battle-target` and `oath-deep-battle-target` repeat those two attacks with Power and Giants.
-The Deep guard holds Power, Giants and Protection. The landing playtest's `lab-oath-battle-target` and
-`lab-oath-deep-battle-target` check both previews and both results against `oath-damage.txt` on desktop and phone,
-retaining screenshots. The ordinary Oath pick and held slots show the three effects from generated contract constants.
-These are lab proofs.
+`/lab/game?scenario=oath-battle-target` repeats the map attack with Power and Giants. A Deep garrison holds no Oaths.
+The landing playtest's `lab-oath-battle-target` checks the preview and the result against `oath-damage.txt` on desktop
+and phone, retaining screenshots. The ordinary Oath pick and held slots show the three effects from generated contract
+constants. These are lab proofs.

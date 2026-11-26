@@ -429,11 +429,10 @@ average over 12 (the machine is shared: such a run is not evidence). A blocked s
 warnings, the reload with its cost.
 
 The shared Deep is reached through the spire's Deep entry or the map layer menu. Select a field army, then a Deep site:
-its card offers Attack against a beast or rival, Join for an allied free slot, or Take for an empty site. A held army
-appears in the site's slots, last filled fought first. `--steps lab-deep-join` opens the real map on an allied Ethereal
-mine, selects the player's army, submits Join, and records the signed InteractSite command and the confirmed guard slot
-with before/after screenshots. The lab snapshot is `/lab/game?scenario=deep`; its current facts also drive the site
-binding's component tests.
+its card offers Attack against a beast or a rival Aspect's garrison, or Take for an empty site. A site's garrison slots
+are fought highest first. `--steps lab-deep` opens the real map beside an Ethereal mine an ally garrisons, visits each
+site and frames the ring. The lab snapshot is `/lab/game?scenario=deep`; its current facts also drive the site binding's
+component tests.
 
 The race board opens from Season, or by selecting a fixed Aspect hyperstructure in the Deep. It reads heights, Glory,
 Triumph days and the winner from native facts; after a finish the same board opens over the map. `--steps lab-race` and

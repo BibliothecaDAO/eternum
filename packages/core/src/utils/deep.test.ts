@@ -244,11 +244,18 @@ describe("the shared Deep", () => {
     expect(() => readDeepSite(arriving as never, 420, 24n, 7)).toThrow("Realms entered today are unknown");
   });
 
-  it("reads a ring's six sites in place order, highest live guard first, then restores next-day beasts", () => {
+  it("reads a ring's six sites in place order, highest live garrison first, then restores next-day beasts", () => {
     const { rows, store } = fixture();
     const kinds = [0, 1, 2, 3, 0, 2];
     rows.DeepSite = kinds
-      .map((kind, place) => ({ game_id: 7, entity_id: BigInt(20 + place), kind, ring: 0, day: 0n }))
+      .map((kind, place) => ({
+        game_id: 7,
+        entity_id: BigInt(20 + place),
+        kind,
+        ring: 0,
+        day: 0n,
+        aspect: place ? 0 : 2,
+      }))
       .reverse();
     rows.Guard = rows.DeepSite.map((site) => ({
       game_id: 7,
@@ -256,6 +263,13 @@ describe("the shared Deep", () => {
       slot: 0,
       troops: { count: 0n },
     }));
+    const garrison = (slot: number, home: bigint, count: bigint) => {
+      rows.Guard!.push({ game_id: 7, structure_id: 20n, slot, troops: { count } });
+      rows.GarrisonSlot!.push({ game_id: 7, structure_id: 20n, slot, home });
+    };
+    rows.GarrisonSlot = [];
+    garrison(1, 3n, 9n * precision);
+    garrison(3, 2n, 19n * precision);
     rows.TileOccupancy!.push(
       ...rows.DeepSite.map((site) => ({
         game_id: 7,
@@ -265,24 +279,17 @@ describe("the shared Deep", () => {
         alt: false,
       })),
     );
-    rows.ExplorerTroops!.push({ game_id: 7, explorer_id: 12n, owner: 2n, troops: { count: 20n * precision } });
-    rows.DeepArmy!.push({ game_id: 7, explorer_id: 12n, last_tick: 6n });
-    rows.ArmyDay!.push({ game_id: 7, explorer_id: 12n, day: 0n });
-    rows.ArmyProgress!.push({ ...rows.ArmyProgress![0], explorer_id: 12n });
-    rows.DeepGuard = [
-      { game_id: 7, explorer_id: 11n, site_id: 20n, slot: 0 },
-      { game_id: 7, explorer_id: 12n, site_id: 20n, slot: 3 },
-    ];
     const today = readDeepSites(store, 420, 7);
     expect(today.map((site) => site.name)).toEqual(kinds.map((kind) => deepSites[kind]!.name));
     expect(today.every((site) => site.open && site.ring === 0)).toBe(true);
-    expect(today[0]!.guards.map(({ slot, army }) => [slot, army.troops.count])).toEqual([
-      [3, 19n * precision],
-      [0, 9n * precision],
+    expect(today[0]!.aspect).toBe(2);
+    expect(today[0]!.garrisons.map(({ slot, home, troops }) => [slot, home, troops.count])).toEqual([
+      [3, 2n, 19n * precision],
+      [1, 3n, 9n * precision],
     ]);
     const tomorrow = readDeepSites(store, dayAtIndex(calendar, 0).end, 7);
-    expect(tomorrow.map((site) => [site.id, site.beastTroops, site.guards])).toEqual(
-      kinds.map((_, place) => [BigInt(20 + place), 10n * precision, []]),
+    expect(tomorrow.map((site) => [site.id, site.beastTroops, site.aspect, site.garrisons])).toEqual(
+      kinds.map((_, place) => [BigInt(20 + place), 10n * precision, 0, []]),
     );
     rows.DeepSite.pop();
     expect(() => readDeepSites(store, 420, 7)).toThrow(IncompleteDeepSyncError);

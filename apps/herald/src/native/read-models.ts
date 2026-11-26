@@ -80,7 +80,7 @@ const QUEST_MODEL_SELECTOR = {
   AspectActivity: "bane-aspect",
   DeepSite: "unused",
   AspectHyperstructure: "unused",
-  DeepGuard: "unused",
+  GarrisonSlot: "unused",
   ArmyDay: "unused",
   PlayerEntry: "unused",
   ExplorerTroops: "unused",

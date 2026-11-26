@@ -201,14 +201,17 @@ function frontier() {
     destroyed_tick: 0,
   });
 
-  const deepSite = (entity_id: number, tile: Tile, beast: number, ring = 0) => {
-    write("DeepSite", { game_id: GAME_ID, entity_id, kind: nativeRuleConstants.DEEP_MINE, ring, day: 0n });
+  const deepSite = (entity_id: number, tile: Tile, beast: number, ring = 0, aspect = 0) => {
+    write("DeepSite", { game_id: GAME_ID, entity_id, kind: nativeRuleConstants.DEEP_MINE, ring, day: 0n, aspect });
     occupy(entity_id, tile, TileOccupier.DeepSite, false);
     write("Guard", guardRow(entity_id, 0, beast));
   };
 
-  const holdDeepSite = (explorer_id: number, site_id: number, slot = 0) =>
-    write("DeepGuard", { game_id: GAME_ID, explorer_id, site_id, slot });
+  const holdDeepSite = (site_id: number, tile: Tile, aspect: number, home: number, count: number, slot = 1) => {
+    deepSite(site_id, tile, 0, 0, aspect);
+    write("GarrisonSlot", { game_id: GAME_ID, structure_id: site_id, slot, home });
+    write("Guard", guardRow(site_id, slot, count));
+  };
 
   const enterDeep = (count: number) => write("DeepEntries", { game_id: GAME_ID, day: 0n, count });
 
@@ -314,19 +317,18 @@ describe("one attack forecast for every combat surface", () => {
     expect(refusalOf(game.forecast(10, 50))).toBe("fights");
   });
 
-  it("refuses to fight a Deep guard of the attacker's own Aspect, and fights a rival's (c3fd60)", () => {
+  it("refuses to fight a Deep site its own Aspect holds, and fights a rival Aspect's garrison (c3fd60)", () => {
     const game = frontier();
     game.home(1, PLAYER, 1);
-    game.home(2, RIVAL, 1);
-    game.deepSite(50, DEEP, 0);
-    game.army(10, 1, beside(DEEP));
-    game.army(20, 2, beside(DEEP, 6));
-    game.holdDeepSite(20, 50);
-    expect(refusalOf(game.forecast(10, 50))).toBe("allied");
     game.home(2, RIVAL, 2);
+    game.army(10, 1, beside(DEEP));
+    game.holdDeepSite(50, DEEP, 1, 2, 500);
+    expect(refusalOf(game.forecast(10, 50))).toBe("allied");
+    game.holdDeepSite(50, DEEP, 2, 2, 500);
     const forecast = game.forecast(10, 50);
     expect(forecast?.outcome).toBe("fights");
-    expect(forecast?.sides?.defender?.guarding).toBe(true);
+    expect(forecast?.sides?.defender).toMatchObject({ guarding: true, home: 2n });
+    expect(forecast?.sides?.defender?.troops.count).toBe(troops(500));
   });
 
   it("faces a structure's highest occupied guard slot, with the slots below it queued (c00cf4)", () => {

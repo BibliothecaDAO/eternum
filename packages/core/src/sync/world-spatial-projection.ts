@@ -302,7 +302,6 @@ const resolveArmyRenderable = (
 ): ArmySpatialRenderable | undefined => {
   if (!explorerTroops || explorerTroops.troops.count <= 0n) return undefined;
   const key = { game_id: explorerTroops.game_id, explorer_id: explorerTroops.explorer_id };
-  if (store.get("DeepGuard", key)) return undefined;
   const calendar = readExpeditionRules(store, key.game_id);
   if (calendar) {
     const now = getBlockTimestamp().currentDefaultTick;
@@ -603,12 +602,7 @@ export class WorldSpatialProjection {
         }
       }
       if (change.model === "ExplorerTroops") this.applyExplorerTroopsUpdate([change.current, change.previous]);
-      if (
-        change.model === "DeepGuard" ||
-        change.model === "DeepArmy" ||
-        change.model === "ArmyDay" ||
-        change.model === "ArmyProgress"
-      ) {
+      if (change.model === "DeepArmy" || change.model === "ArmyDay" || change.model === "ArmyProgress") {
         const key = change.current ?? change.previous;
         if (key) {
           const army = this.store.get("ExplorerTroops", { game_id: key.game_id, explorer_id: key.explorer_id });
@@ -651,7 +645,7 @@ export class WorldSpatialProjection {
     for (const [, birth] of this.store.entries("ArmyDay")) {
       const key = { game_id: birth.game_id, explorer_id: birth.explorer_id };
       const army = this.store.get("ExplorerTroops", key);
-      if (!army || army.troops.count <= 0n || this.store.get("DeepGuard", key)) continue;
+      if (!army || army.troops.count <= 0n) continue;
       const calendar = readExpeditionRules(this.store, birth.game_id);
       if (!calendar) continue;
       const now = getBlockTimestamp().currentDefaultTick;

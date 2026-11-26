@@ -4433,7 +4433,7 @@ const deepLossVectors = readFileSync(
   .trim()
   .split(/\s+/)
   .map(Number);
-const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, minimumStamina = 60) => [
+const deepSitesSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION) => [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
   {
     name: "ally-is-marked",
@@ -4477,52 +4477,6 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
           ),
   },
   {
-    name: "join-the-mine",
-    settleMs: 0,
-    play: async ({ browser, extraScreenshot }) => {
-      const before = browser.read(DEEP_JOIN_STATE);
-      if (!before.joinSite) return { before, after: before };
-      if (onADesktop()) browser.rightClick(before.joinSite);
-      else browser.tap(before.joinSite);
-      const opened = await readUntil(
-        () => browser.read(DEEP_JOIN_STATE),
-        (state) => state.sheet === JOINED_SITE.name,
-        MERGE_WAIT_MS,
-      );
-      extraScreenshot("mine-before-join");
-      if (!opened.text.includes("Join")) return { before, after: opened };
-      browser.click(REHEARSAL_WORDS.joinGuard);
-      const confirmed = await readUntil(
-        () => browser.read(DEEP_JOIN_STATE),
-        (state) => state.joined.length === 1 && state.joinSite !== null,
-        MERGE_WAIT_MS,
-      );
-      if (confirmed.joinSite) browser.tap(confirmed.joinSite);
-      const after = await readUntil(
-        () => browser.read(DEEP_JOIN_STATE),
-        (state) => state.sheet === JOINED_SITE.name && (state.slots.match(/Free slot/g) ?? []).length === 2,
-        MERGE_WAIT_MS,
-      );
-      extraScreenshot("mine-joined");
-      return { before, opened, confirmed, after };
-    },
-    verify: ({ played }) => {
-      const joined = played.after.joined;
-      const facts = joined.flatMap((row) => row.answered ?? []);
-      const guard = facts.find((fact) => fact.model === "DeepGuard" && Number(fact.value?.explorer_id) === PICKED_ARMY);
-      const leftField = facts.some((fact) => fact.model === "TileOccupancy" && fact.value === null);
-      return joined.length === 1 &&
-        guard?.value.slot === 1 &&
-        leftField &&
-        played.opened.pay.visible &&
-        played.opened.pay.labor &&
-        played.after.sheet === JOINED_SITE.name &&
-        (played.after.slots.match(/Free slot/g) ?? []).length === 2
-        ? completed(played)
-        : failed("Join must submit InteractSite once, leave the field and show the second allied guard slot", played);
-    },
-  },
-  {
     name: "deep-sites-each-selected",
     settleMs: 0,
     play: async ({ browser, extraScreenshot }) => {
@@ -4564,47 +4518,6 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
             "Each Deep site must be visited with its plate in the frame and open its own card, naming its own kind's beast while one guards it",
             played,
           ),
-  },
-  {
-    name: "reselect-guard-from-dock",
-    settleMs: 0,
-    play: async ({ browser, extraScreenshot }) => {
-      browser.press("Escape");
-      const panel = await openTheArmyPanel(browser);
-      const reading = await readUntil(
-        () => readArmyStamina(browser),
-        (state) => state.visible,
-        SHEET_WAIT_MS,
-      );
-      extraScreenshot("joined-guard-stamina");
-      return { panel, reading };
-    },
-    verify: ({ played }) =>
-      played.panel.army &&
-      played.panel.sheet === played.panel.army &&
-      played.reading.visible &&
-      played.reading.current >= minimumStamina &&
-      played.reading.current <= T2_KNIGHT_STAMINA_MAX &&
-      played.reading.maximum === T2_KNIGHT_STAMINA_MAX
-        ? completed(played)
-        : failed("The joined slot army must reopen from the dock with its refilled stamina visible", played),
-  },
-  {
-    name: "guard-shows-its-drain",
-    settleMs: 0,
-    play: async ({ browser, extraScreenshot }) => {
-      const drain = await readUntil(
-        () => browser.read(DEEP_DRAIN_STATE),
-        (state) => state.panel !== null,
-        SHEET_WAIT_MS,
-      );
-      extraScreenshot("guard-drain");
-      return { drain };
-    },
-    verify: ({ played }) =>
-      played.drain.panel?.loss === lossPerTick && played.drain.panel.ticksLeft > 0
-        ? completed(played)
-        : failed("A guard's panel must say its troop loss each tick and the ticks left", played),
   },
   {
     name: "deep-sites-framed",
@@ -6035,7 +5948,8 @@ const DISMISSED_AT_EXPRESSION = `JSON.stringify(
  * fails a command that is neither.
  */
 export const UNMEASURED_COMMANDS = {
-  InteractSite: "lab-deep-join checks joining on desktop and phone; click timing baselines are not recorded",
+  InteractSite:
+    "lab-map-sites checks a Well and a Shrine on desktop and phone; click timing baselines are not recorded",
   ClaimDailyQuest: "lab-daily-quest checks collection on desktop and phone; click timing baselines are not recorded",
   ApplyRelic: "army relic activation has a control, but its desktop and phone timing baselines are not recorded",
   MarkGameSettled:
@@ -7014,10 +6928,6 @@ export const STEP_SETS = {
     game: labSpireGame("oath-battle-target"),
     steps: battleTargetSteps(attackFromTheSiteCard, "Map", true),
   },
-  "lab-oath-deep-battle-target": {
-    game: labSpireGame("oath-deep-battle-target"),
-    steps: battleTargetSteps(attackFromTheDeepCard, "Deep", true),
-  },
   "lab-actions-oath-pick": { game: labSpireGame("oath-pick"), steps: oathPickSteps(false) },
   "lab-actions-oath-replace": { game: labSpireGame("oath-replace"), steps: oathPickSteps(true) },
   "lab-oath-slots": { game: labSpireGame("oath-slots"), steps: OATH_SLOTS_STEPS },
@@ -7417,10 +7327,10 @@ export const STEP_SETS = {
     game: labSpireGame("oath-vitriol"),
     steps: [
       ...oathPickSteps(false, "Deep").slice(0, -1),
-      ...deepJoinSteps(deepLossVectors[10] / RESOURCE_PRECISION, 40).slice(3),
+      ...deepSitesSteps(deepLossVectors[10] / RESOURCE_PRECISION).slice(3),
     ],
   },
-  "lab-deep-join": { game: labSpireGame("deep"), steps: deepJoinSteps() },
+  "lab-deep": { game: labSpireGame("deep"), steps: deepSitesSteps() },
   "lab-deep-closed": { game: labSpireGame("deep-closed"), steps: deepClosedSteps() },
   "lab-no-lords": {
     game: labSpireGame("upkeep"),

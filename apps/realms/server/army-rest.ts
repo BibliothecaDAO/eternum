@@ -103,7 +103,7 @@ export const readActorArmies = async (
   const store = await readGameFacts(
     shardUrl,
     gameId,
-    [...STAMINA_MODELS, "PlayerEntry", "DeepArmy", "DeepGuard", "DeepRules"],
+    [...STAMINA_MODELS, "PlayerEntry", "DeepArmy", "DeepRules"],
     now,
     { actor, owner: actor },
     catalogue,
@@ -115,13 +115,12 @@ export const readActorArmies = async (
   return [...store.inGame("ExplorerTroops", gameId)]
     .filter(
       (army) =>
-        !store.get("DeepGuard", { game_id: gameId, explorer_id: army.explorer_id }) &&
-        (!expedition ||
-          isCurrentExpeditionArmy(
-            expedition,
-            store.require("ArmyDay", { game_id: gameId, explorer_id: army.explorer_id }).day,
-            timestamp,
-          )),
+        !expedition ||
+        isCurrentExpeditionArmy(
+          expedition,
+          store.require("ArmyDay", { game_id: gameId, explorer_id: army.explorer_id }).day,
+          timestamp,
+        ),
     )
     .flatMap((army) => {
       const troops = resolveExplorerTroops(store, army, timestamp);

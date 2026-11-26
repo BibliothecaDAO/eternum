@@ -112,7 +112,7 @@ it("plans a Deep site opportunity from Herald's actor snapshot with public rival
   ]);
   native.applyReceipt(
     confirmedFold,
-    receipt([rowEvent("DeepGuard", [String(GAME_ID), "8"], { site_id: 999, slot: 0 })]),
+    receipt([rowEvent("GarrisonSlot", [String(GAME_ID), "999", "0"], { home: 8 })]),
     12,
     0,
   );

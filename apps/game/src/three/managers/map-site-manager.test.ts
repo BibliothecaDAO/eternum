@@ -400,13 +400,17 @@ describe("the Deep's sites on the map", () => {
         kind: kind.id,
         ring: 0,
         day: 0n,
+        aspect: [2, 3][index] ?? 0,
       })),
-      Guard: ringKinds.map((_, index) => ({
-        game_id: gameId,
-        structure_id: BigInt(10 + index),
-        slot: 0,
-        troops: { count: 0n },
-      })),
+      Guard: [
+        ...ringKinds.map((_, index) => ({
+          game_id: gameId,
+          structure_id: BigInt(10 + index),
+          slot: 0,
+          troops: { count: [1_000n * precision, 500n * precision][index] ?? 0n },
+        })),
+        { game_id: gameId, structure_id: 10n, slot: 1, troops: { count: 500n * precision } },
+      ],
       TileOccupancy: ringKinds.map((_, index) => ({
         game_id: gameId,
         entity_id: BigInt(10 + index),
@@ -414,30 +418,11 @@ describe("the Deep's sites on the map", () => {
         row: 0,
         alt: false,
       })),
-      DeepGuard: [
-        { game_id: gameId, site_id: 10n, slot: 0, explorer_id: 77n },
-        { game_id: gameId, site_id: 10n, slot: 1, explorer_id: 78n },
-        { game_id: gameId, site_id: 11n, slot: 0, explorer_id: 79n },
-      ],
-      DeepArmy: [
-        { game_id: gameId, explorer_id: 77n, last_tick: 1n },
-        { game_id: gameId, explorer_id: 78n, last_tick: 1n },
-        { game_id: gameId, explorer_id: 79n, last_tick: 1n },
-      ],
-      ArmyDay: [
-        { game_id: gameId, explorer_id: 77n, day: 0n },
-        { game_id: gameId, explorer_id: 78n, day: 0n },
-        { game_id: gameId, explorer_id: 79n, day: 0n },
-      ],
-      ArmyProgress: [
-        { game_id: gameId, explorer_id: 77n, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: 0 },
-        { game_id: gameId, explorer_id: 78n, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: 0 },
-        { game_id: gameId, explorer_id: 79n, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: 0 },
-      ],
-      ExplorerTroops: [
-        { game_id: gameId, explorer_id: 77n, owner: 9n, troops: { count: 1_000n * precision } },
-        { game_id: gameId, explorer_id: 78n, owner: 19n, troops: { count: 500n * precision } },
-        { game_id: gameId, explorer_id: 79n, owner: 29n, troops: { count: 500n * precision } },
+      DeepTick: [{ game_id: gameId, paid_tick: 1n }],
+      GarrisonSlot: [
+        { game_id: gameId, structure_id: 10n, slot: 0, home: 9n },
+        { game_id: gameId, structure_id: 10n, slot: 1, home: 19n },
+        { game_id: gameId, structure_id: 11n, slot: 0, home: 29n },
       ],
       HomeAspect: [
         { game_id: gameId, home: 9n, aspect: 2 },

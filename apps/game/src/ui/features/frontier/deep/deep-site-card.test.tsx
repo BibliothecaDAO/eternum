@@ -16,11 +16,7 @@ import { readArmyMovementReadiness } from "@/ui/features/world/components/armies
 import { nativeOathConstants as oaths, nativeRuleConstants, readDeepSites } from "@bibliothecadao/eternum/game-client";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { DeepSiteCard } from "./deep-site-card";
-import { resolveExplorerCombatTroops, resolveExplorerTroops, staminaAt } from "@bibliothecadao/eternum/troop-stamina";
-import { FrontierArmy } from "../army/frontier-army";
-import { useArmyStamina } from "../hud/army-order";
-
-const StaminaReading = () => <output>{useArmyStamina(201, 0)?.held ?? "unknown"}</output>;
+import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 
 vi.mock("@/sync/active-game-client", async (original) => ({
   ...(await original<typeof import("@/sync/active-game-client")>()),
@@ -44,7 +40,6 @@ const draw = (now?: number, scenario = deepScenario()) => {
   useBlockTimestampStore.setState({ currentBlockTimestamp: startsAt, currentDefaultTick: startsAt });
   useAccountStore.setState({ account: { address: scenario.player } as never });
   useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null });
-  const join = vi.fn().mockResolvedValue({ transaction_hash: "0x1" });
   const attack = vi.fn().mockResolvedValue({ transaction_hash: "0x1" });
   const host = document.createElement("div");
   const root = createRoot(host);
@@ -52,7 +47,7 @@ const draw = (now?: number, scenario = deepScenario()) => {
     act(() =>
       root.render(
         <GameProvider
-          value={{ store, systemCalls: { interact_site: join, attack_explorer_vs_guard: attack } } as never}
+          value={{ store, systemCalls: { attack_explorer_vs_guard: attack } } as never}
           account={{ address: scenario.player } as never}
         >
           {content ?? (
@@ -67,7 +62,7 @@ const draw = (now?: number, scenario = deepScenario()) => {
   render();
   const button = (name: string) =>
     [...host.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent?.startsWith(name));
-  return { scenario, store, host, join, attack, button, render, unmount: () => act(() => root.unmount()) };
+  return { scenario, store, host, attack, button, render, unmount: () => act(() => root.unmount()) };
 };
 
 describe("the Deep site's live native binding", () => {
@@ -168,56 +163,14 @@ describe("the Deep site's live native binding", () => {
     }
   });
 
-  it("keeps the joined slot army's refilled stamina and panel after vacating its tile", async () => {
+  it("offers no order on a site its own Aspect holds, and shows the garrison in its slots", () => {
     const hud = draw();
     try {
       expect(hud.host.querySelector("[data-deep-tag]")?.textContent).toBe("Held · Prowess");
-      expect(hud.host.textContent).toContain("Prowess");
-      expect(hud.button("Join")?.disabled).toBe(false);
-      await act(async () => hud.button("Join")!.click());
-      const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(
-        (site) => site.kind === nativeRuleConstants.DEEP_MINE,
-      )!;
-      expect(hud.join).toHaveBeenCalledTimes(1);
-      expect(hud.join).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, coord: site.position }));
-      expect(hud.attack).not.toHaveBeenCalled();
-      const answer = hud.scenario.answer(
-        {
-          kind: "InteractSite",
-          fields: {},
-          span: ["0", "201", "0", String(site.position.x), String(site.position.y)],
-        },
-        hud.store,
-        hud.scenario.startsAt,
-      );
-      act(() => hud.store.applyFacts(answer as never));
-      hud.render();
-      expect(hud.store.entityOccupancy(1, 201)).toBeUndefined();
-      expect(hud.store.require("DeepGuard", { game_id: 1, explorer_id: 201 }).slot).toBe(1);
-      expect(hud.button("Join")).toBeUndefined();
       expect(hud.host.textContent).toContain(DEEP_WORDS.guarding);
+      expect(hud.button("Attack")).toBeUndefined();
+      expect(hud.host.querySelectorAll('[data-deep-slot="filled"]')).toHaveLength(1);
       expect(hud.host.querySelectorAll("[data-deep-slot]")).toHaveLength(4);
-      const army = hud.store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
-      expect(army.troops.stamina).toEqual({ Slot: 0 });
-      const resolved = resolveExplorerTroops(hud.store, army, hud.scenario.startsAt);
-      expect(resolved).toBeDefined();
-      const rules = hud.store.require("SliceRules", { game_id: 1 });
-      const refilled = 40 + rules.troop_stamina_config.stamina_gain_per_tick;
-      const tickSeconds = Number(rules.tick_config.armies_tick_in_seconds);
-      expect(staminaAt(resolved!, hud.scenario.startsAt, rules.troop_stamina_config, tickSeconds).amount).toBe(
-        BigInt(refilled),
-      );
-      hud.render(
-        <FrontierArmy
-          realm={hud.store.require("Structure", { game_id: 1, entity_id: army.owner })}
-          onClose={() => {}}
-        />,
-      );
-      const meter = hud.host.querySelector('[data-stamina-line] [role="meter"]');
-      expect([meter?.getAttribute("aria-valuenow"), meter?.getAttribute("aria-valuemax")]).toEqual([
-        String(refilled),
-        String(rules.troop_stamina_config.stamina_knight_max * 1.2),
-      ]);
     } finally {
       hud.unmount();
     }
@@ -226,11 +179,16 @@ describe("the Deep site's live native binding", () => {
   it("sends a rival slot through the existing guard attack provider", async () => {
     const hud = draw();
     try {
+      const held = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(
+        (site) => site.kind === nativeRuleConstants.DEEP_MINE,
+      )!;
+      const row = hud.store.require("DeepSite", { game_id: 1, entity_id: held.id });
       act(() =>
-        hud.store.applyFacts([{ model: "HomeAspect", key: "0xdee2", value: { game_id: 1, home: "9", aspect: 2 } }]),
+        hud.store.applyFacts([
+          { model: "DeepSite", key: hud.store.wireKeyOf("DeepSite", row)!, value: { ...row, aspect: 2 } },
+        ]),
       );
       hud.render();
-      expect(hud.button("Join")).toBeUndefined();
       expect(hud.button("Attack")?.disabled).toBe(false);
       await act(async () => hud.button("Attack")!.click());
       const mine = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(
@@ -240,43 +198,10 @@ describe("the Deep site's live native binding", () => {
       expect(hud.attack).toHaveBeenCalledWith(
         expect.objectContaining({ explorer_id: 201, structure_id: Number(mine.id) }),
       );
-      expect(hud.join).not.toHaveBeenCalled();
     } finally {
       hud.unmount();
     }
   });
-});
-
-it("refreshes stamina from guard membership alone and keeps a missing position unknown", () => {
-  const hud = draw();
-  try {
-    const refilled = String(
-      40 + hud.store.require("SliceRules", { game_id: 1 }).troop_stamina_config.stamina_gain_per_tick,
-    );
-    hud.render(<StaminaReading />);
-    expect(hud.host.textContent).toBe(refilled);
-    const personalTile = hud.store.entityOccupancy(1, 201)!;
-    act(() =>
-      hud.store.applyFacts([
-        { model: "TileOccupancy", key: hud.store.wireKeyOf("TileOccupancy", personalTile)!, value: null },
-      ]),
-    );
-    expect(hud.host.textContent).toBe("unknown");
-    const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(
-      (site) => site.kind === nativeRuleConstants.DEEP_MINE,
-    )!;
-    const membership = { game_id: 1, explorer_id: 201n, site_id: site.id, slot: 1 };
-    act(() => hud.store.applyFacts([{ model: "DeepGuard", key: "0xdeed", value: membership }]));
-    expect(hud.host.textContent).toBe(refilled);
-    const siteTile = hud.store.entityOccupancy(1, site.id)!;
-    const siteKey = hud.store.wireKeyOf("TileOccupancy", siteTile)!;
-    act(() => hud.store.applyFacts([{ model: "TileOccupancy", key: siteKey, value: null }]));
-    expect(hud.host.textContent).toBe("unknown");
-    act(() => hud.store.applyFacts([{ model: "TileOccupancy", key: siteKey, value: siteTile }]));
-    expect(hud.host.textContent).toBe(refilled);
-  } finally {
-    hud.unmount();
-  }
 });
 
 it("counts only actual army-tick boundaries before a day ending between ticks", () => {
@@ -370,7 +295,7 @@ it("prices Deep movement from the troops left at the requested second", () => {
   );
 });
 
-it("previews the Deep guard's opening and repeated exchange before sending each attack", async () => {
+it("previews the Deep garrison's opening and repeated exchange before sending each attack", async () => {
   const hud = draw(undefined, deepBattleTargetScenario());
   const labels = () =>
     [...hud.host.querySelectorAll("[data-fight-side]")].map((node) => node.getAttribute("aria-label"));
@@ -403,10 +328,10 @@ it("previews the Deep guard's opening and repeated exchange before sending each 
       expect(hud.store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 }).troops.count).toBe(
         BigInt(ownLeft!) * BigInt(RESOURCE_PRECISION),
       );
-      expect(hud.store.require("ExplorerTroops", { game_id: 1, explorer_id: 301 }).troops.count).toBe(
+      expect(hud.store.require("Guard", { game_id: 1, structure_id: site.id, slot: 1 }).troops.count).toBe(
         BigInt(enemyLeft!) * BigInt(RESOURCE_PRECISION),
       );
-      expect(hud.store.require("ArmyCombat", { game_id: 1, explorer_id: 201 }).last_target).toBe(301n);
+      expect(hud.store.require("ArmyCombat", { game_id: 1, explorer_id: 201 }).last_target).toBe(site.id);
     }
     expect(hud.attack).toHaveBeenCalledTimes(2);
   } finally {
@@ -414,28 +339,30 @@ it("previews the Deep guard's opening and repeated exchange before sending each 
   }
 });
 
-it("shows each guard's share of the next tick from the troops it keeps after the tick's loss", () => {
+it("shows each garrison's share of the next tick from the troops it keeps after the tick's loss", () => {
   const scenario = deepScenario();
   const { store } = scenario;
   const loss = store.require("DeepRules", { game_id: 1 }).loss_per_tick;
   const quarry = readDeepSites(store, scenario.startsAt, 1).find(
     (site) => site.kind === nativeRuleConstants.DEEP_MINE,
   )!;
-  const keep = (explorer_id: number, count: bigint) => {
-    const army = store.require("ExplorerTroops", { game_id: 1, explorer_id });
-    return {
-      model: "ExplorerTroops",
-      key: store.wireKeyOf("ExplorerTroops", army)!,
-      value: wire({ ...army, troops: { ...army.troops, count } }),
-    };
-  };
+  const held = store.require("Guard", { game_id: 1, structure_id: quarry.id, slot: 1 });
+  const home = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 }).owner;
   store.applyFacts([
-    keep(301, 4n * loss),
-    keep(201, 2n * loss),
     {
-      model: "DeepGuard",
+      model: "Guard",
+      key: store.wireKeyOf("Guard", held)!,
+      value: wire({ ...held, troops: { ...held.troops, count: 4n * loss } }),
+    },
+    {
+      model: "Guard",
+      key: "0xdeee",
+      value: wire({ ...held, slot: 2, troops: { ...held.troops, count: 2n * loss } }),
+    },
+    {
+      model: "GarrisonSlot",
       key: "0xdeed",
-      value: { game_id: 1, explorer_id: "201", site_id: String(quarry.id), slot: 1 },
+      value: wire({ game_id: 1, structure_id: quarry.id, slot: 2, home }),
     },
   ] as never);
   const hud = draw(undefined, scenario);
@@ -445,31 +372,6 @@ it("shows each guard's share of the next tick from the troops it keeps after the
     );
     expect(tips.join(" ")).toContain(DEEP_WORDS.share(75));
     expect(tips.join(" ")).toContain(DEEP_WORDS.share(25));
-  } finally {
-    hud.unmount();
-  }
-});
-
-it("shows every held guard crest and refreshes it from the progress fact", () => {
-  const hud = draw(undefined, deepBattleTargetScenario(true));
-  try {
-    const crests = () => hud.host.querySelector("[data-guard-oaths]");
-    expect([...crests()!.children].map((node) => node.textContent)).toEqual(["Giants", "Protection", "Power"]);
-    expect(crests()!.querySelectorAll("img")).toHaveLength(3);
-    const guard = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(
-      (site) => site.kind === nativeRuleConstants.DEEP_MINE,
-    )!.guards[0]!.army;
-    const progress = hud.store.require("ArmyProgress", guard);
-    act(() =>
-      hud.store.applyFacts([
-        {
-          model: "ArmyProgress",
-          key: hud.store.wireKeyOf("ArmyProgress", guard)!,
-          value: { ...progress, oaths: 0 },
-        },
-      ]),
-    );
-    expect(crests()!.children).toHaveLength(0);
   } finally {
     hud.unmount();
   }

@@ -20,7 +20,6 @@ export const LANDING_SCENARIOS = [
   "lab-oath-decline",
   "lab-oath-pass-capped",
   "lab-oath-battle-target",
-  "lab-oath-deep-battle-target",
   "lab-battle-target",
   "lab-deep-battle-target",
   "lab-realm-world",

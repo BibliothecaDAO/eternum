@@ -11,8 +11,6 @@ const slot = (slot: number, realm: string, troops: number, mine = false): DeepSl
   const left = Math.ceil(troops / LOSS_PER_TICK);
   return {
     slot,
-    armyId: 100 + slot,
-    oaths: 0,
     category: "Knight",
     tier: "T1",
     realm,
@@ -31,7 +29,7 @@ const withShares = (slots: DeepSlot[]): DeepSlot[] => {
 };
 
 const noop = () => {};
-const base = { onClose: noop, pickBase: { deepLossPerTick: LOSS_PER_TICK }, ring: 0, opening: null };
+const base = { onClose: noop, ring: 0, opening: null };
 const rates = {
   tickSeconds: TICK_SECONDS,
   glory: 6,
@@ -51,7 +49,7 @@ export const DEEP_SITE_CASES = {
     guard: { kind: "beast", category: "Knight", troops: 15_000 },
     order: { kind: "act", verb: "attack", stamina: 30, onAct: noop },
   },
-  "Ethereal mine held by the player's Aspect, slots to join": {
+  "Ethereal mine held by the player's Aspect": {
     ...base,
     site: "mine",
     rates: { ...rates, glory: 0, labor: 300 },
@@ -59,10 +57,10 @@ export const DEEP_SITE_CASES = {
       kind: "held",
       aspectId: 2,
       ally: true,
-      next: 103,
+      next: 3,
       slots: withShares([slot(3, "Aldor", 6_000), slot(2, "Brek", 4_000, true)]),
     },
-    order: { kind: "act", verb: "join", onAct: noop },
+    order: "guarding",
   },
   "Bane altar, locked until more Realms enter": {
     ...base,
@@ -81,7 +79,7 @@ export const DEEP_SITE_CASES = {
       kind: "held",
       aspectId: 3,
       ally: false,
-      next: 103,
+      next: 3,
       slots: withShares([slot(3, "Havoc Guard", 6_200)]),
     },
     order: { kind: "act", verb: "attack", stamina: 30, onAct: noop },
@@ -108,7 +106,7 @@ export const DEEP_SITE_CASES = {
       kind: "held",
       aspectId: 3,
       ally: false,
-      next: 103,
+      next: 3,
       slots: withShares([slot(3, "Havoc Guard", 6_200)]),
     },
     fight: {

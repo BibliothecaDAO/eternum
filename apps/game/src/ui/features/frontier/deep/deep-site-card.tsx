@@ -14,12 +14,14 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { armyOaths, configManager, getStructureName, oathAttackStamina } from "@bibliothecadao/eternum";
 import {
   deepArmyLife,
+  deepTroopsLife,
   homeAspect,
   isBesideDeepSite,
   isDeepSiteRival,
   readDeepSites,
   safeInteger,
   nativeRuleConstants,
+  type DeepGarrison,
   type DeepSiteView as Site,
   type NativeFactStore,
 } from "@bibliothecadao/eternum/game-client";
@@ -29,7 +31,6 @@ import { useApproachTile } from "../sites/approach";
 import { readDeepSiteFight } from "../sites/site-card-plan";
 import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { useSelectedOwnArmy } from "../sites/selected-army";
-import { readPickEffectBase } from "../pick-effect-text";
 import {
   DeepSiteView,
   type DeepBlock,
@@ -40,7 +41,16 @@ import {
   type DeepRates,
 } from "./deep-site-view";
 
-const MODELS = [...STAMINA_MODELS, ...GUARD_MODELS, "DeepSite", "DeepEntries", "ArmyRelicEffect", "AltarBar"] as const;
+const MODELS = [
+  ...STAMINA_MODELS,
+  ...GUARD_MODELS,
+  "DeepSite",
+  "DeepEntries",
+  "DeepTick",
+  "GarrisonSlot",
+  "ArmyRelicEffect",
+  "AltarBar",
+] as const;
 
 export function useSelectedDeepSite(): Site | null {
   const { setup } = useGame();
@@ -67,14 +77,9 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
   const tile = { col: site.position.x, row: site.position.y, alt: site.position.alt };
   const adjacent = selected !== null && isBesideDeepSite(selected.armyTile, site);
   const block = selectionBlock(setup.store, game_id, site, selected);
-  const verb =
-    site.beastTroops > 0n || (selected !== null && isDeepSiteRival(setup.store, site, selected.army.owner))
-      ? "attack"
-      : site.guards.length
-        ? "join"
-        : "take";
+  const verb = site.beastTroops > 0n || site.garrisons.length > 0 ? "attack" : "take";
   const need =
-    verb === "join" || selected === null
+    selected === null
       ? 0
       : oathAttackStamina(armyOaths(setup.store, selected.army), configManager.getCombatConfig().stamina_attack_req);
   const stamina = useArmyStamina(userId, need);
@@ -82,15 +87,13 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
   const act = async () => {
     if (userId === null || !account.account) return;
     try {
-      await sendOnce("army", userId, { order: verb === "join" ? "use" : "attack" }, () =>
-        verb === "join"
-          ? setup.systemCalls.interact_site({ signer: account.account!, explorer_id: userId, coord: site.position })
-          : setup.systemCalls.attack_explorer_vs_guard({
-              signer: account.account!,
-              explorer_id: userId,
-              structure_id: safeInteger(site.id),
-              relic_slot: undefined,
-            }),
+      await sendOnce("army", userId, { order: "attack" }, () =>
+        setup.systemCalls.attack_explorer_vs_guard({
+          signer: account.account!,
+          explorer_id: userId,
+          structure_id: safeInteger(site.id),
+          relic_slot: undefined,
+        }),
       );
     } catch (error) {
       toast.failed(error, DEEP_WORDS.orderFailed);
@@ -132,7 +135,6 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
           ? readDeepSiteFight(setup.store, site, { army: selected.army, timestamp: now })
           : undefined
       }
-      pickBase={readPickEffectBase(setup.store, game_id)}
       order={order}
       onClose={onClose}
     />
@@ -151,8 +153,8 @@ function siteRates(
   const deep = store.require("DeepRules", { game_id });
   const pays = sitePays(store, game_id, site);
   if (!pays) return null;
-  const home = site.guards[0]?.army.owner ?? selected?.army.owner;
-  const holder = home === undefined ? undefined : homeAspect(store, game_id, home);
+  const holder =
+    site.aspect !== 0 ? site.aspect : selected ? homeAspect(store, game_id, selected.army.owner) : undefined;
   let bar: DeepRates["bar"] = null;
   if (pays.includes("bar") && holder !== undefined) {
     const reading = store.requireOrAbsent("AltarBar", { game_id, aspect: holder });
@@ -199,14 +201,9 @@ function selectionBlock(
 ): DeepBlock | undefined {
   if (!selected) return "pickArmy";
   const key = { game_id, explorer_id: selected.army.explorer_id };
-  if (store.get("DeepGuard", key)) return "guarding";
   if (store.require("ArmyDay", key).day !== BigInt(site.day)) return "otherDay";
   if (selected.army.troops.count === 0n) return "noTroops";
-  if (isDeepSiteRival(store, site, selected.army.owner) || site.beastTroops > 0n) return undefined;
-  const owner = store.require("Structure", { game_id, entity_id: selected.army.owner }).owner;
-  if (site.guards.some(({ army }) => store.require("Structure", { game_id, entity_id: army.owner }).owner === owner))
-    return "guarding";
-  if (site.guards.length === nativeRuleConstants.DEEP_GUARD_SLOTS) return "full";
+  if (site.aspect !== 0 && !isDeepSiteRival(store, site, selected.army.owner, game_id)) return "guarding";
   return undefined;
 }
 
@@ -217,36 +214,31 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, selected
       troops: Number(site.beastTroops) / RESOURCE_PRECISION,
       category: site.guard!.troops.category,
     };
-  const next = site.guards[0];
+  const next = site.garrisons[0];
   if (!next) return { kind: "open" };
-  const guards = site.guards.map((guard) => ({ ...guard, life: deepArmyLife(store, guard.army, now) }));
-  const paid = ({ army, life }: (typeof guards)[number]) =>
-    army.troops.count > life.lossPerTick ? army.troops.count - life.lossPerTick : 0n;
-  const total = guards.reduce((sum, guard) => sum + paid(guard), 0n);
-  const holderId = homeAspect(store, game_id, next.army.owner);
-  if (holderId === undefined) throw new Error("Unknown Deep holder Aspect");
-  const aspectId = catalogAspectId(holderId);
+  const loss = store.require("DeepRules", { game_id }).loss_per_tick;
+  const paid = ({ troops }: DeepGarrison) => (troops.count > loss ? troops.count - loss : 0n);
+  const total = site.garrisons.reduce((sum, garrison) => sum + paid(garrison), 0n);
+  const aspectId = catalogAspectId(site.aspect);
   const viewerAspect = selected ? homeAspect(store, game_id, selected.army.owner) : undefined;
   return {
     kind: "held",
     aspectId,
     ally: viewerAspect !== undefined && viewerAspect === aspectId,
-    next: safeInteger(next.army.explorer_id),
-    slots: guards.map((guard) => {
-      const { slot, army, life } = guard;
-      const home = store.require("Structure", { game_id, entity_id: army.owner });
+    next: next.slot,
+    slots: site.garrisons.map((garrison) => {
+      const { slot, home, troops } = garrison;
+      const life = deepTroopsLife(store, game_id, troops.count, loss, now);
       return {
         slot,
-        armyId: safeInteger(army.explorer_id),
-        oaths: armyOaths(store, army),
-        category: army.troops.category,
-        tier: army.troops.tier,
-        realm: getStructureName(home, store).name,
-        troops: Number(army.troops.count) / RESOURCE_PRECISION,
-        lossPerTick: Number(life.lossPerTick) / RESOURCE_PRECISION,
+        category: troops.category,
+        tier: troops.tier,
+        realm: getStructureName(store.require("Structure", { game_id, entity_id: home }), store).name,
+        troops: Number(troops.count) / RESOURCE_PRECISION,
+        lossPerTick: Number(loss) / RESOURCE_PRECISION,
         ticks: { left: life.ticksLeft, time: formatDuration(life.secondsLeft) },
-        share: total === 0n ? 0 : Number((paid(guard) * 100n) / total),
-        mine: selected !== null && army.owner === selected.army.owner,
+        share: total === 0n ? 0 : Number((paid(garrison) * 100n) / total),
+        mine: selected !== null && home === selected.army.owner,
       };
     }),
   };
