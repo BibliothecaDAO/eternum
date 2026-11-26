@@ -127,7 +127,7 @@ function OathChoice({
   );
 }
 
-const LONG_HERO = 8;
+const LONG_HERO = 10;
 
 const OathFace = ({ id, pickBase }: { id: number; pickBase: PickEffectBase }) => {
   const badge = oathStatBadge(id, pickBase);
@@ -332,9 +332,7 @@ const PassRow = ({
       {OATH_PICK.pass} · <Icon name="stamina" size={17} />
       <b className="oath-pick__gain">+{nativeOathConstants.PASS_STAMINA}</b>
       {stamina && (
-        <span className="oath-pick__bar">
-          · {formatAmount(stamina.current)} → {formatAmount(result)}
-        </span>
+        <span className="oath-pick__bar">{` · ${formatAmount(stamina.current)} → ${formatAmount(result)}`}</span>
       )}
     </button>
   );

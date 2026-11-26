@@ -231,7 +231,7 @@ it("opens an earned pick before the army's stamina is known, its cards answerabl
   act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
   expect(pass().disabled).toBe(false);
   expect(pass().textContent).toBe(
-    `Pass · +${oaths.PASS_STAMINA}${army.stamina.current} → ${army.stamina.current + oaths.PASS_STAMINA}`,
+    `Pass · +${oaths.PASS_STAMINA} · ${army.stamina.current} → ${army.stamina.current + oaths.PASS_STAMINA}`,
   );
   game.staminaKnown = false;
   act(() => root.render(<FrontierOathPick realm={{ game_id: 1 } as never} />));
