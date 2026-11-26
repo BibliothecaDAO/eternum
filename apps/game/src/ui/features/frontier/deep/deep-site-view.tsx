@@ -34,8 +34,6 @@ import type { DeepSiteFight } from "../sites/site-card-plan";
 
 import { DEEP_SITE_FACES, type DeepPay } from "./deep-site-faces";
 
-export type { DeepPay };
-
 export interface DeepRates {
   tickSeconds: number;
   glory: number;
