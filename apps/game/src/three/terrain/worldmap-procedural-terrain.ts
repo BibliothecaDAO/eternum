@@ -257,10 +257,7 @@ export class WorldmapProceduralTerrain {
   private surfacePresentation: "world" | "ethereal" = "world";
   private disposed = false;
 
-  constructor(
-    gameMode: GameModeId = "blitz",
-    options?: { compilePipelines?: PipelineCompiler; scene?: Scene },
-  ) {
+  constructor(gameMode: GameModeId = "blitz", options?: { compilePipelines?: PipelineCompiler; scene?: Scene }) {
     this.terrain = new ProceduralTerrain({
       streaming: true,
       gameMode,

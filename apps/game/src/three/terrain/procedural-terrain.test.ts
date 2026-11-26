@@ -524,7 +524,7 @@ describe("ProceduralTerrain", () => {
     const initial = prepareTerrainPage(blockRequest("page", 0));
     terrain.present([initial]);
 
-    const findLandMesh = () => {
+    const findLandMesh = (): Mesh | null => {
       let found: Mesh | null = null;
       terrain.object3d.traverse((object) => {
         if (object instanceof Mesh && object.name === "procedural-terrain-land") found = object;

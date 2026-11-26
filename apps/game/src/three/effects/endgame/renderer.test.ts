@@ -128,7 +128,9 @@ async function harness(ended = false, discovered = false, revealWhilePreparing =
   manager.prepareGameEnd();
   await manager.prepare();
   expect(scene.getObjectByName("Spires")).toBeDefined();
-  expect(compile).toHaveBeenCalledOnce();
+  expect(compile).toHaveBeenCalledWith(scene.getObjectByName("Spires"), scene);
+  const preparedCompiles = compile.mock.calls.length;
+  expect(preparedCompiles).toBeGreaterThanOrEqual(2);
   const update = vi.fn(),
     paused = vi.fn(),
     advance = vi.fn((frame, delta) => manager.advanceGameEnd(frame, delta, camera, { col: 2, row: 2 }));
@@ -162,7 +164,7 @@ async function harness(ended = false, discovered = false, revealWhilePreparing =
       },
       labelRuntime: { render: () => {}, shouldRender: () => false },
     });
-  return { store, registry, manager, render, paused, advance, update, compile, scene };
+  return { store, registry, manager, render, paused, advance, update, compile, preparedCompiles, scene };
 }
 it("the native settled fact starts the real renderer event, keeps Results skippable, then holds the map", async () => {
   const h = await harness();
@@ -184,7 +186,7 @@ it("the native settled fact starts the real renderer event, keeps Results skippa
   expect(h.paused).toHaveBeenLastCalledWith(true);
   expect(h.manager.getEndgameSnapshot()).toMatchObject({ mistDraws: 1, burstDraws: 0 });
   expect(h.store.getRevision()).toBe(revision);
-  expect(h.compile).toHaveBeenCalledOnce();
+  expect(h.compile).toHaveBeenCalledTimes(h.preparedCompiles);
 });
 it("an already-ended visit renders the final state and reuses a discovered spire without inventing another", async () => {
   const h = await harness(true, true);
