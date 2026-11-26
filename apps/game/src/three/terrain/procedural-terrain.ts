@@ -26,7 +26,8 @@ import { createInstancedMesh } from "../utils/create-instanced-mesh";
 
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
 
-import { BASALT_SUPPORT_HEIGHT, buildBasaltShell } from "./terrain-basalt";
+import { buildBasaltShell } from "./terrain-basalt";
+import { TERRAIN_GROUND_HEIGHT } from "./terrain-surface";
 import { findNearestTerrainHex, type TerrainWorldCoordinate } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
 import { createEtherealBorderMaterial } from "./terrain-ethereal-border-material";
@@ -719,7 +720,7 @@ function basaltPageBounds(tiles: Float32Array): Sphere {
   const box = new Box3();
   for (let index = 0; index < tiles.length; index += 2) {
     box.expandByPoint(new Vector3(tiles[index] - 1, 0, tiles[index + 1] - 1));
-    box.expandByPoint(new Vector3(tiles[index] + 1, BASALT_SUPPORT_HEIGHT, tiles[index + 1] + 1));
+    box.expandByPoint(new Vector3(tiles[index] + 1, TERRAIN_GROUND_HEIGHT, tiles[index + 1] + 1));
   }
   return box.getBoundingSphere(new Sphere());
 }

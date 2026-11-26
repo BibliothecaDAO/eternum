@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { TerrainField } from "@/three/terrain/terrain-field";
 import { prepareTerrainPage } from "@/three/terrain/terrain-page-builder";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
-import { BASALT_SUPPORT_HEIGHT } from "@/three/terrain/terrain-basalt";
+import { TERRAIN_GROUND_HEIGHT } from "@/three/terrain/terrain-surface";
 import { createTerrainVerificationRequest } from "@/three/terrain/verification/terrain-verification-fixtures";
 import { BiomeType } from "@bibliothecadao/types";
 import { ModelType } from "@/three/types/army";
@@ -25,7 +25,7 @@ describe("terrain lab previews", () => {
     expect(prepared.basaltInstances!.length).toBeGreaterThan(0);
     const center = terrainHexToWorld(selected.col, selected.row);
     for (const offset of [0, 0.4]) {
-      expect(field.sampleSurface(center.x + offset, center.z).height).toBe(BASALT_SUPPORT_HEIGHT);
+      expect(field.sampleSurface(center.x + offset, center.z).height).toBe(TERRAIN_GROUND_HEIGHT);
       expect(field.sampleSurface(center.x + offset, center.z).normal).toEqual([0, 1, 0]);
     }
   });

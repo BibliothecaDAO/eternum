@@ -1,7 +1,7 @@
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { BiomeType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
-import { BASALT_SUPPORT_HEIGHT } from "./terrain-basalt";
+import { TERRAIN_GROUND_HEIGHT } from "./terrain-surface";
 import { terrainHexToWorld } from "./terrain-coordinates";
 import { buildEtherealBorderCell } from "./terrain-ethereal-borders";
 import { createEtherealTerrainMaterial } from "./terrain-ethereal-material";
@@ -59,7 +59,7 @@ describe("ethereal terrain integration", () => {
     expect(page.borderBuffers!.indices).toHaveLength(36);
     expect(new TerrainField(source).sampleSurface(0, 0)).toEqual({
       biome: BiomeType.Ocean,
-      height: BASALT_SUPPORT_HEIGHT,
+      height: TERRAIN_GROUND_HEIGHT,
       normal: [0, 1, 0],
     });
     expect(source.cells[0].biome).toBe(BiomeType.Ocean);
@@ -80,7 +80,7 @@ describe("ethereal terrain integration", () => {
     expect(weights.some((weight, i) => weight === 0 && positions[i * 3] > 1.5)).toBe(true);
     expect(page.waterBuffers!.indices.length).toBeGreaterThan(0);
     const neighbor = terrainHexToWorld(1, 0);
-    expect(new TerrainField(source).sampleSurface(neighbor.x, neighbor.z).height).not.toBe(BASALT_SUPPORT_HEIGHT);
+    expect(new TerrainField(source).sampleSurface(neighbor.x, neighbor.z).height).not.toBe(TERRAIN_GROUND_HEIGHT);
     expect(page.request.cells.map((c) => c.biome)).toEqual([BiomeType.Ocean, BiomeType.Ocean]);
   });
 

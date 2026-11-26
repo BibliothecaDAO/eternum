@@ -27,6 +27,7 @@ import {
   resolveVillageAspectRow,
   REALM_ATLAS_COLUMNS,
   REALM_ATLAS_ROWS,
+  REALM_BANNER_TILE,
   REALM_BANNER_GROUP_SIZE,
   SETTLEMENT_RELATIONSHIP_ORDER,
   VILLAGE_BANNER_ROWS,
@@ -110,8 +111,8 @@ export class SettlementModel extends InstancedModel {
     material.side = previous.side;
     // Atlas indices must not interpolate: tiny rounding differences can cross an ownership row boundary.
     const row = varying(attribute<"float">("settlementHeraldry", "float")).setInterpolation("flat");
-    const tileWidth = this.kind === "village" ? 256 : 128;
-    const tileHeight = this.kind === "village" ? 512 : 256;
+    const tileWidth = this.kind === "village" ? 256 : REALM_BANNER_TILE.width;
+    const tileHeight = this.kind === "village" ? 512 : REALM_BANNER_TILE.height;
     const clothUv = banner
       ? uv()
           .mul(vec2((tileWidth - 1) / tileWidth, (tileHeight - 1) / tileHeight))
