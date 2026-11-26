@@ -8,8 +8,20 @@
     "offset_xyz": [0, 0, 0]
   },
   "flags": [
-    { "role": "banner", "position": [0.09, 0.887, -0.14], "size": [0.1, 0.06], "facing": 0 },
-    { "role": "banner", "position": [-0.13, 0.693, 0.22], "size": [0.08, 0.05], "facing": 0 },
-    { "role": "banner", "position": [0.35, 0.693, 0.16], "size": [0.08, 0.05], "facing": 0 }
+    {
+      "top": [0, 0.71, -0.027],
+      "width": 0.07,
+      "facing": 0
+    },
+    {
+      "top": [-0.235, 0.5, 0.312],
+      "width": 0.07,
+      "facing": 0
+    },
+    {
+      "top": [0.255, 0.48, 0.268],
+      "width": 0.07,
+      "facing": 0
+    }
   ]
 }

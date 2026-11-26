@@ -8,7 +8,20 @@
     "offset_xyz": [0, 0, 0]
   },
   "flags": [
-    { "role": "banner", "position": [-0.23, 0.59, -0.007], "size": [0.08, 0.05], "facing": 0 },
-    { "role": "banner", "position": [0.32, 0.59, 0.01], "size": [0.08, 0.05], "facing": 0 }
+    {
+      "top": [-0.015, 0.61, 0.083],
+      "width": 0.07,
+      "facing": 0
+    },
+    {
+      "top": [-0.275, 0.44, 0.074],
+      "width": 0.07,
+      "facing": 0
+    },
+    {
+      "top": [0.275, 0.44, 0.089],
+      "width": 0.07,
+      "facing": 0
+    }
   ]
 }

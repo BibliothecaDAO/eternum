@@ -57,7 +57,7 @@ export const FightSide = ({
 }) => {
   const figures = fightFigures(before, kept);
   const spoken = [`${label} ${formatExact(before)} → ${formatExact(kept)}`, figures.lost].filter(Boolean).join(", ");
-  const defeated = side === "theirs" && kept === 0;
+  const defeated = kept === 0;
   return (
     <span
       role="img"
@@ -76,7 +76,7 @@ export const FightSide = ({
         <span className="fight-side__arrow">→</span> {figures.kept}
       </b>
       {figures.taken && (
-        <span aria-hidden className="fight-side__taken" data-tone={defeated || side === "theirs" ? "good" : "bad"}>
+        <span aria-hidden className="fight-side__taken" data-tone={!defeated && side === "theirs" ? "good" : "bad"}>
           {defeated ? FIGHT_WORDS.defeated : figures.taken}
         </span>
       )}

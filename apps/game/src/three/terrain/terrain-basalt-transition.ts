@@ -1,4 +1,3 @@
-import { BASALT_SUPPORT_HEIGHT } from "./terrain-basalt";
 import {
   findNearestTerrainHex,
   terrainCellKey,
@@ -6,6 +5,7 @@ import {
   terrainNeighborCoordinates,
   type TerrainWorldCoordinate,
 } from "./terrain-coordinates";
+import { TERRAIN_GROUND_HEIGHT } from "./terrain-surface";
 import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 
 const APOTHEM = Math.sqrt(3) / 2;
@@ -41,7 +41,7 @@ export class SurfaceBasaltTransition {
     const distance = this.distanceFromPatch(x, z, findNearestTerrainHex(x, z));
     // Complete the first ring at the same height, then join the existing landform gently.
     const weight = 1 - smoothstep(0.16, MARGIN_REACH, distance);
-    return height + (BASALT_SUPPORT_HEIGHT - height) * weight;
+    return height + (TERRAIN_GROUND_HEIGHT - height) * weight;
   }
 
   stoneWeight(x: number, z: number, cell: Pick<TerrainCellInput, "col" | "row">): number {

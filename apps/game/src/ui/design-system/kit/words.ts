@@ -714,7 +714,6 @@ export const SETTINGS_WORDS = {
   haptics: "Haptics",
   appliesAfterReload: "Applies after reload",
   reload: "Reload",
-  more: "More",
   leaveGame: "Leave game",
   copy: "Copy",
 } as const;
@@ -802,14 +801,9 @@ export const FIGHT_WORDS = {
   armyLost: "Your army is lost",
   /** Under the loss, in the panel's place, before it closes: what to do next. */
   armyLostNext: "Your troops died in battle. Deploy a new army from your Realm.",
-  victory: "Victory likely",
   holds: "The guard survives",
   defeated: "Defeated",
 } as const;
-/**
- * What an attack costs a side, under its bar (a player: "# of troops lost, % lost/remaining"; owner, 3 November 2026:
- * "A probably good enough"): "−601 · 76% lost", a range where the dice decide it ("−994–1,100 · 20–22% lost").
- */
 export const FIGHT_RESULT = {
   victory: "Victory",
   cleared: (site: string) => `${site} cleared`,
@@ -1213,7 +1207,7 @@ export const BUILT = "Built";
 export const BUILD_GROUPS = {
   economy: "Economy",
   army: "Army",
-  unique: "One per realm",
+  unique: "Unique",
 } as const;
 export const requiresRank = (rank: string) => `Unlocks at ${rank}`;
 export const ONE_PER_REALM_MARK = "1×";
@@ -1628,8 +1622,6 @@ export const PLAY_WORDS = {
   resumeRehearsal: "Resume",
 } as const;
 
-/** The lore's line, on the first visit's painting and on sign-in (approved 25 September). */
-export const LORE_LINE = "The mist forgets. Your realm remembers.";
 /** Frontier's pitch on the first visit's card. */
 export const PITCH = "A new land every day";
 
@@ -1643,6 +1635,7 @@ export const SIGN_IN_PROVIDER_NAMES = {
 
 /** The sign-in flow's words: its titles, its ways in and the steps on its buttons. */
 export const SIGN_IN_WORDS = {
+  oneAccount: "One account for every Realms game.",
   enterHeading: "Enter the Frontier",
   enterSubtitle: "Free to play · No wallet required",
   /** A provider's button, in the wording Google's and Apple's brand rules allow. */
@@ -1797,7 +1790,9 @@ export const PROFILE_WORDS = {
   walletShort: "Wallet",
   settingsShort: "Settings",
   tabsLabel: "Account sections",
-  noAspectInvite: "Join an Aspect on Play to get your personal invite link.",
+  noAspectInviteTitle: "No invite link yet",
+  noAspectInvite: "Join an Aspect first — your personal link will appear here.",
+  joinAspect: "Join an Aspect",
   friendReward: `+${formatExact(FRIEND_FRAGMENTS)} ${FRAGMENTS} for each friend who reaches ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory}`,
   guide: "Guide",
   account: "Account",

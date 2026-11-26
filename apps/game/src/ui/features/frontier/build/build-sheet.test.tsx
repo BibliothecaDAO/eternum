@@ -20,7 +20,6 @@ import {
   buildingName,
   BuildingType,
   formatCharge,
-  formatExact,
   FRONTIER_BUILDING_TYPES,
   rankName,
   RESOURCE_PRECISION,
@@ -380,13 +379,14 @@ describe("the build sheet", () => {
     sheet.close();
   });
 
-  it("lays the three groups side by side on a phone, each tile without its price, the picked one's price at the foot", () => {
+  it("lays the three groups side by side on a phone, each tile with its price and no gain, the picked one's gain at the foot", () => {
     setViewportWidth(390);
     const { store, realm } = realmBoard();
     const sheet = open(store, realm);
     const groups = [...sheet.host.querySelectorAll<HTMLElement>(".build-groups > [data-build-group]")];
     expect(groups.map((group) => group.dataset.buildGroup)).toEqual(["economy", "army", "unique"]);
-    expect(sheet.host.querySelector("[data-build-grid] [data-build-price]")).toBeNull();
+    expect(sheet.card("Farm").querySelector("[data-build-price] .ui-price")).not.toBeNull();
+    expect(sheet.host.querySelector("[data-build-grid] .build-tile-gives")).toBeNull();
     act(() => sheet.card("Farm").click());
     expect(footPrice(sheet.host)).toBeTruthy();
     sheet.close();
@@ -422,7 +422,7 @@ describe("the build sheet", () => {
       const lockedButton = sheet.card(buildingName(category, true));
       expect(lockedButton).toBeDefined();
       for (const { of, amount } of expected) {
-        const label = `${formatExact(amount)} ${PRICE_FACES[of].word}`;
+        const label = `${formatCharge(amount)} ${PRICE_FACES[of].word}`;
         const priceEl = lockedButton.querySelector(`[aria-label="${label}"]`);
         expect(priceEl?.textContent).toBe(formatCharge(amount));
       }
@@ -535,6 +535,8 @@ describe("the build sheet", () => {
     const sheet = open(store, atKingdom(realm));
     expect(sheet.card("Farm").textContent).toMatch(/\+[\d,.]+\/(?:s|min)/);
     expect(price(sheet, "Farm")!.querySelector("[data-short]")).not.toBeNull();
+    expect(sheet.card("Farm").closest(".ui-card")?.hasAttribute("data-locked")).toBe(true);
+    expect((sheet.card("Farm") as HTMLButtonElement).disabled).toBe(false);
     expect(price(sheet, "Farm")!.textContent).toMatch(/\d+[mhd]$/);
     expect(price(sheet, "Supply yard")!.textContent).not.toContain("research");
     sheet.close();
@@ -617,15 +619,7 @@ it("reds only the price lines the realm holds less of, so a training building sh
     const card = [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find((button) =>
       button.textContent?.includes(buildingName(BuildingType.SupplyYard, true)),
     )!;
-    const line = (label: string) => {
-      const element = card.querySelector(`[aria-label="${label}"]`)!;
-      const color = element.classList.contains("text-hud-bad")
-        ? "red"
-        : element.classList.contains("text-hud-ink")
-          ? "white"
-          : "band's";
-      return { short: element.hasAttribute("data-short"), color };
-    };
+    const line = (label: string) => card.querySelector(`[aria-label="${label}"]`)!.hasAttribute("data-short");
     const state = {
       essence: line("6,000 Essence"),
       labor: line("1,500 Labor"),
@@ -638,20 +632,20 @@ it("reds only the price lines the realm holds less of, so a training building sh
   // The owner's realm on 3 November: Labor enough, Essence not.
   store.applyFacts([balance(ResourcesIds.Labor, 100_000n), balance(ResourcesIds.Essence, 2_000n)] as never);
   expect(lines()).toEqual({
-    essence: { short: true, color: "red" },
-    labor: { short: false, color: "white" },
+    essence: true,
+    labor: false,
   });
 
   store.applyFacts([balance(ResourcesIds.Essence, 12_000n)] as never);
   expect(lines()).toEqual({
-    essence: { short: false, color: "white" },
-    labor: { short: false, color: "white" },
+    essence: false,
+    labor: false,
   });
 
   // Labor short too: both lines red.
   store.applyFacts([balance(ResourcesIds.Labor, 1_000n), balance(ResourcesIds.Essence, 2_000n)] as never);
   expect(lines()).toEqual({
-    essence: { short: true, color: "red" },
-    labor: { short: true, color: "red" },
+    essence: true,
+    labor: true,
   });
 });

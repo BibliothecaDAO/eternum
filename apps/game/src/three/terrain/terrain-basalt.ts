@@ -1,11 +1,10 @@
 import { TERRAIN_HEX_CORNER_OFFSETS, snapTerrainCoordinate } from "./terrain-coordinates";
+import { TERRAIN_GROUND_HEIGHT } from "./terrain-surface";
 
-export const BASALT_SUPPORT_HEIGHT = 0.12;
 // Seven regular slabs per gameplay radius keep the pattern aligned across gameplay hexes.
 export const BASALT_BLOCK_RADIUS = 1 / 7;
-export const BASALT_SHELL_TRIANGLES = 16;
-export const BASALT_SHELL_VERTICES = 30;
-const SHELL_BOTTOM = 0.075;
+export const BASALT_SHELL_TRIANGLES = 4;
+export const BASALT_SHELL_VERTICES = 6;
 const UP = [0, 1, 0] as const;
 
 type Point = { x: number; y: number; z: number };
@@ -18,22 +17,9 @@ export function buildBasaltShell(): CellGeometry {
   const cap = TERRAIN_HEX_CORNER_OFFSETS.map((point) => ({
     x: snapTerrainCoordinate(point.x),
     z: snapTerrainCoordinate(point.z),
-    y: BASALT_SUPPORT_HEIGHT,
+    y: TERRAIN_GROUND_HEIGHT,
   }));
   appendFace(geometry, cap, UP, [1, 1, 1]);
-  for (let edge = 0; edge < 6; edge += 1) {
-    const start = cap[edge];
-    const end = cap[(edge + 1) % 6];
-    const dx = end.x - start.x;
-    const dz = end.z - start.z;
-    const length = Math.hypot(dx, dz);
-    appendFace(
-      geometry,
-      [start, { ...start, y: SHELL_BOTTOM }, { ...end, y: SHELL_BOTTOM }, end],
-      [dz / length, 0, -dx / length],
-      [0.55, 0.55, 0.55],
-    );
-  }
   return geometry;
 }
 
