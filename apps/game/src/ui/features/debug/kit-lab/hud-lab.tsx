@@ -1050,7 +1050,7 @@ const LabDeploySheet = ({
             ? [
                 {
                   category: TroopType.Knight,
-                  name: FRONTIER_TROOP_NAMES[TroopType.Knight],
+                  name: FRONTIER_TROOP_NAMES[TroopType.Knight].many,
                   art: "knight-t1",
                   atHome: troopsAtHome,
                 },

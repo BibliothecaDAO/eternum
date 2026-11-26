@@ -52,7 +52,7 @@ export const BuildingsList = ({
     return (
       <HudRow
         lead={<ResourceIcon resource={selectedProduction.resource} size="md" />}
-        title={resourceName(selectedProduction.resource)}
+        title={resourceName(selectedProduction.resource, false)}
         detail={`${formatCount(selectedProduction.buildings.length, "building")} producing`}
         controls={
           <HudButton kind="secondary" size="sm" onClick={() => onSelectProduction(null)}>
@@ -72,7 +72,7 @@ export const BuildingsList = ({
           <HudRow
             key={production.resource}
             lead={<ResourceIcon resource={production.resource} size="md" />}
-            title={resourceName(production.resource)}
+            title={resourceName(production.resource, false)}
             detail={formatCount(production.buildings.length, "building")}
             onClick={() => onSelectProduction(production.resource)}
             controls={

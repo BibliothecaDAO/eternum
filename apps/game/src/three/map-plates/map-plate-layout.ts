@@ -574,8 +574,7 @@ const segmentWidth = (segment: PlateSegment): number => {
     case "troops":
       return (
         TROOP_PAINTING +
-        measure(`T${segment.troops.tier}`, "chip") +
-        CHIP_PADDING +
+        (segment.troops.tier === null ? 0 : chipWidth(segment.troops.tier)) +
         measure(formatExact(segment.troops.count), "count") +
         2 * 4
       );

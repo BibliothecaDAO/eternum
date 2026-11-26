@@ -8,6 +8,7 @@ import { HUD_SHEET, SEAT_COLOURS, seatSide } from "@/tokens";
 import { attackOrder, buildArmyPlate, buildStructurePlate, guardsToTell } from "./map-plate-model";
 
 const structure = (fields: Partial<Parameters<typeof buildStructurePlate>[0]> = {}) => ({
+  frontier: false,
   entityId: 29,
   structureName: "Epakehamamut",
   structureType: StructureType.Realm,
@@ -111,6 +112,7 @@ describe("a map plate's facts", () => {
         troopCount: 1400,
         currentStamina: 60,
         maxStamina: 120,
+        frontier: false,
       },
       "Ununtutu",
       20,
@@ -125,8 +127,32 @@ describe("a map plate's facts", () => {
     });
   });
 
+  it("tells a Frontier army and guard by count alone: Frontier has no tiers", () => {
+    const army = buildArmyPlate(
+      {
+        entityId: 11,
+        isMine: true,
+        owner: { address: 1n, ownerName: "djizus", guildName: "" },
+        category: "Paladin",
+        tier: "T1",
+        troopCount: 505,
+        currentStamina: 60,
+        maxStamina: 120,
+        frontier: true,
+      },
+      "Ununtutu",
+      20,
+    );
+    expect(army.troops).toEqual({ type: "paladin", tier: null, count: 505 });
+    const guarded = buildStructurePlate(
+      structure({ frontier: true, guardArmies: [{ slot: 0, category: "Knight", tier: 1, count: 300 }] }),
+    );
+    expect(guarded.guards?.map(({ tier }) => tier)).toEqual([null]);
+  });
+
   it("says when an army or a structure is in battle (on its battle cooldown), so the map keeps it in view", () => {
     const army = {
+      frontier: false,
       entityId: 7,
       isMine: false,
       owner: { address: 2n, ownerName: "Tamsin", guildName: "" },

@@ -117,6 +117,20 @@ describe("a thing's token, its plate closed (the owner's 2026-10-19 pick: tokens
     expect(renderToStaticMarkup(<Token plate={army} />)).not.toContain("ui-seat");
   });
 
+  it("writes a Frontier army's and guard's count alone, with no tier chip", () => {
+    const scouts: ArmyPlate = { ...army, troops: { type: "paladin", tier: null, count: 505 } };
+    const camp: StructurePlate = { ...rift, guards: [{ type: "knight", tier: null, count: 300 }] };
+    const words = (html: string) =>
+      html
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    expect(words(renderToStaticMarkup(<Token plate={scouts} />))).toBe("505");
+    expect(words(renderToStaticMarkup(<Token plate={camp} />))).toBe("300");
+    expect(renderToStaticMarkup(<Token plate={scouts} />)).toContain('aria-label="Blade, 505, Stamina 25%"');
+    expect(renderToStaticMarkup(<Token plate={scouts} />)).not.toContain("ui-chip");
+  });
+
   it("says its reading in words: how it fights, strength, stamina; undefended", () => {
     expect(renderToStaticMarkup(<Token plate={army} />)).toContain('aria-label="Blade, T3 1,400, Stamina 25%"');
     expect(renderToStaticMarkup(<Token plate={rift} />)).toContain('aria-label="Blade, T2 300"');

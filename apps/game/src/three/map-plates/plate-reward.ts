@@ -29,7 +29,10 @@ export const readPlateReward = (store: NativeFactStore, structure: RewardSource)
   if (site) {
     const payout = readSiteReward(store, site).known?.reward;
     return payout
-      ? { amount: divideByPrecision(Number(payout.amount)), unit: resourceName(payout.resourceType) }
+      ? {
+          amount: divideByPrecision(Number(payout.amount)),
+          unit: resourceName(payout.resourceType, configManager.isFrontier()),
+        }
       : undefined;
   }
   const resource = heldResource(structure);
@@ -38,5 +41,7 @@ export const readPlateReward = (store: NativeFactStore, structure: RewardSource)
     getBlockTimestamp().currentDefaultTick,
     resource,
   );
-  return held ? { amount: divideByPrecision(held.balance), unit: resourceName(resource) } : undefined;
+  return held
+    ? { amount: divideByPrecision(held.balance), unit: resourceName(resource, configManager.isFrontier()) }
+    : undefined;
 };

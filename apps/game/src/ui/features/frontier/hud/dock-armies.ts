@@ -127,4 +127,4 @@ const troopCount = (troops: NativeRows["ExplorerTroops"]["troops"]): number =>
   Number(troops.count / BigInt(RESOURCE_PRECISION));
 
 export const armyName = (category: string, troops: number): string =>
-  `${formatExact(troops)} ${frontierTroopName(category) ?? TROOPS}`;
+  `${formatExact(troops)} ${frontierTroopName(category, troops) ?? TROOPS}`;

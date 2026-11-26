@@ -1,5 +1,5 @@
 import { EternumProvider, TransactionNotSentError } from "@bibliothecadao/provider";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, resourceName } from "@bibliothecadao/types";
 import { act, type ReactNode, useSyncExternalStore } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Simulate } from "react-dom/test-utils";
@@ -170,11 +170,10 @@ vi.mock("./use-transfer-sides", () => ({
   },
 }));
 
-import { iconDefinition, resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { openTransfer } from "./transfer-window";
 import { TRANSFER_REFUSED, WEIGHT_UNKNOWN } from "@/ui/design-system/kit/words";
 
-const DONKEYS = iconDefinition(resourceMeaning(ResourcesIds.Donkey)).label;
+const DONKEYS = resourceName(ResourcesIds.Donkey, false);
 
 let host: HTMLDivElement;
 let root: Root;
@@ -455,7 +454,7 @@ describe("a shipment's outcome and the draft shown meanwhile", () => {
 });
 
 describe("when the window says goods land", () => {
-  const KNIGHTS = iconDefinition(resourceMeaning(ResourcesIds.Knight)).label;
+  const KNIGHTS = resourceName(ResourcesIds.Knight, false);
   /** What a Send to row says beside its holding. */
   const note = (id: number) => host.querySelector(`[data-pick="Send to:${id}"]`)!.textContent;
 
@@ -531,8 +530,8 @@ describe("the goods' order", () => {
     );
     expect(goods).toEqual([
       "Wheat",
-      iconDefinition(resourceMeaning(ResourcesIds.Donkey)).label,
-      iconDefinition(resourceMeaning(ResourcesIds.Knight)).label,
+      resourceName(ResourcesIds.Donkey, false),
+      resourceName(ResourcesIds.Knight, false),
     ]);
   });
 });

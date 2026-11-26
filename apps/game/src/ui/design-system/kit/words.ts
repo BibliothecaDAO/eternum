@@ -534,9 +534,9 @@ export const OK = "OK";
 export const KEEP = "Keep";
 
 /** The resources Frontier's stores hold, by the catalog's names: one casing, at a line's start or inside it. */
-export const ESSENCE = resourceName(ResourcesIds.Essence);
-export const LABOR = resourceName(ResourcesIds.Labor);
-export const WHEAT = resourceName(ResourcesIds.Wheat);
+export const ESSENCE = resourceName(ResourcesIds.Essence, false);
+export const LABOR = resourceName(ResourcesIds.Labor, false);
+export const WHEAT = resourceName(ResourcesIds.Wheat, false);
 /** The realm's troops, as a store and an army's figure are named. */
 export const TROOPS = "Troops";
 export const STAMINA = "stamina";
@@ -746,7 +746,7 @@ export const inTime = (duration: string) => `in ${duration}`;
  * written as one (formatHeldAgainst), so a cost not yet held never reads as held.
  */
 export const costLine = (amount: number, held: number | undefined, resource?: ResourcesIds): string => {
-  const noun = resource === undefined ? "" : ` ${resourceName(resource)}`;
+  const noun = resource === undefined ? "" : ` ${resourceName(resource, false)}`;
   const pair = formatHeldAgainst(held, amount);
   const holding = held === undefined ? "" : ` (you have ${pair.held})`;
   return `${pair.need}${noun}${holding}`;
@@ -987,7 +987,7 @@ export const DAY_BANNER_WORDS = {
     `Aspect progress: ${formatExact(completed)}/${formatExact(required)} · Ends in ${left}`,
   baneBroken: "Bane broken",
   twiceIfBroken: "2× reward if broken",
-  rewardAmount: (amount: number, resource: ResourcesIds) => `${formatAmount(amount)} ${resourceName(resource)}`,
+  rewardAmount: (amount: number, resource: ResourcesIds) => `${formatAmount(amount)} ${resourceName(resource, false)}`,
   summary: (objective: string, progress: number, target: number, labor: number) =>
     `${objective} · ${formatExact(progress)} of ${formatExact(target)} · +${formatExact(labor)} ${LABOR}`,
   triumphRule: {

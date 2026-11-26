@@ -1,4 +1,14 @@
-import { SHRINE_USED, SHRINE_USED_LINE, StructureType, siteName, wellUsedLine } from "@bibliothecadao/types";
+import {
+  FRONTIER_TROOP_NAMES,
+  ResourcesIds,
+  SHRINE_USED,
+  SHRINE_USED_LINE,
+  siteName,
+  StructureType,
+  troopName,
+  TroopType,
+  wellUsedLine,
+} from "@bibliothecadao/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -202,7 +212,7 @@ it("formats Frontier battle stories with Frontier troop names, no tier prefix an
   expect(presentation.description).not.toContain("d20");
 });
 
-it("tells a Frontier army raised or reinforced by its Frontier troop name, no tier", () => {
+it("tells a Frontier army raised or reinforced by its Frontier troop name, one or many by the count, no tier", () => {
   const frontierStore = {
     get: (model: string) => {
       if (model === "SliceRules") return { day_unit_seconds: 14_400 };
@@ -212,18 +222,27 @@ it("tells a Frontier army raised or reinforced by its Frontier troop name, no ti
       return undefined;
     },
   } as unknown as Parameters<typeof buildStoryEventPresentation>[1];
-  const describe = (storyType: string, category: string) =>
+  const told = (storyType: string, category: string, amount: string) =>
     buildStoryEventPresentation(
-      story(storyType, { structure_id: 5, explorer_id: 7, category, tier: "T1", amount: "4535000000000" }),
+      story(storyType, { structure_id: 5, explorer_id: 7, category, tier: "T1", amount }),
       frontierStore,
     ).description;
-  expect(describe("ExplorerCreateStory", "Paladin")).toBe("4,535 Scouts");
-  expect(describe("ExplorerAddStory", "Crossbowman")).toBe("+4,535 Crossbows");
+  const scouts = FRONTIER_TROOP_NAMES[TroopType.Paladin];
+  const crossbows = FRONTIER_TROOP_NAMES[TroopType.Crossbowman];
+  expect(told("ExplorerCreateStory", "Paladin", "4535000000000")).toBe(`4,535 ${scouts.many}`);
+  expect(told("ExplorerCreateStory", "Paladin", "1000000000")).toBe(`1 ${scouts.one}`);
+  expect(told("ExplorerAddStory", "Crossbowman", "4535000000000")).toBe(`+4,535 ${crossbows.many}`);
+  expect(
+    buildStoryEventPresentation(
+      story("ProductionStory", { received_resource_type: ResourcesIds.Paladin, received_amount: "1", cost: [] }),
+      frontierStore,
+    ).title,
+  ).toContain(scouts.many);
   expect(
     buildStoryEventPresentation(
       story("ExplorerCreateStory", { category: "Paladin", tier: "T1", amount: "4535000000000" }),
     ).description,
-  ).toBe("4,535 Paladin T1");
+  ).toBe(`4,535 ${troopName(TroopType.Paladin, "T1", false)}`);
 });
 
 /**

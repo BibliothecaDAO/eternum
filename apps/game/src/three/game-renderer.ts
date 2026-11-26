@@ -1,4 +1,3 @@
-import { getGameModeId } from "@/config/game-modes";
 import { configManager } from "@bibliothecadao/eternum";
 import { resetGameEnd } from "./effects/endgame/state";
 import { mistRolls, useDayEndStore } from "@/hooks/store/use-day-end-store";
@@ -353,7 +352,7 @@ export default class GameRenderer {
             gameId: configManager.getActiveGameId(),
             // The game end's veil also rolls at a Frontier day's end, from the turn until the screen is black.
             ended: configManager.isGameOver() || mistRolls(useDayEndStore.getState()),
-            frontier: getGameModeId() === "frontier",
+            frontier: configManager.isFrontier(),
           },
           currentTime,
           cycleProgress,

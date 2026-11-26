@@ -13,7 +13,7 @@ export type DayTotals = {
 export const dayTotalCells = (totals: DayTotals): TotalCell[] => [
   { total: "reveals", icon: "explore", name: REVEALS, value: formatShort(totals.reveals) },
   { total: "cleared", icon: "flag", name: SITES_CLEARED, value: formatShort(totals.cleared) },
-  { total: "labor", icon: "labor", name: resourceName(ResourcesIds.Labor), value: gained(totals.labor) },
+  { total: "labor", icon: "labor", name: resourceName(ResourcesIds.Labor, true), value: gained(totals.labor) },
   { total: "essence", icon: "essence", name: ESSENCE, value: gained(totals.essence) },
 ];
 

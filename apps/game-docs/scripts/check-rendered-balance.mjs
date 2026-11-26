@@ -50,7 +50,7 @@ const n = (value) => value.toLocaleString("en-US");
 /** A building's price as the realm page states it: every resource it takes, by the catalog's name. */
 const buildingPrice = (config, id) =>
   config.buildings.simpleBuildingCost[id]
-    .map(({ resource, amount }) => `${n(amount)} ${resourceName(resource)}`)
+    .map(({ resource, amount }) => `${n(amount)} ${resourceName(resource, true)}`)
     .join(" + ");
 
 /**
@@ -219,11 +219,11 @@ export const frontierPhrases = (
     {
       page: "frontier/armies",
       phrases: [
-        `${FRONTIER_TROOP_NAMES[TroopType.Knight]} ${buildingName(nativeResearch.BARRACKS, true)} Blade`,
-        `${FRONTIER_TROOP_NAMES[TroopType.Crossbowman]} ${buildingName(nativeResearch.RANGE, true)} (castle level ${nativeResearch.RANGE_LEVEL + 1} (${rankName(nativeResearch.RANGE_LEVEL)})) Bow`,
-        `${FRONTIER_TROOP_NAMES[TroopType.Paladin]} ${buildingName(nativeResearch.SCOUTS_LODGE, true)} (castle level ${nativeResearch.SCOUTS_LODGE_LEVEL + 1} (${rankName(nativeResearch.SCOUTS_LODGE_LEVEL)})) Blade`,
+        `${FRONTIER_TROOP_NAMES[TroopType.Knight].many} ${buildingName(nativeResearch.BARRACKS, true)} Blade`,
+        `${FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many} ${buildingName(nativeResearch.RANGE, true)} (castle level ${nativeResearch.RANGE_LEVEL + 1} (${rankName(nativeResearch.RANGE_LEVEL)})) Bow`,
+        `${FRONTIER_TROOP_NAMES[TroopType.Paladin].many} ${buildingName(nativeResearch.SCOUTS_LODGE, true)} (castle level ${nativeResearch.SCOUTS_LODGE_LEVEL + 1} (${rankName(nativeResearch.SCOUTS_LODGE_LEVEL)})) Blade`,
         `An army holds ${n(stamina.staminaKnightMax)} stamina and recovers ${stamina.staminaGainPerTick} every ${tick / 60} minutes (${staminaPerMinute}), so an empty bar fills in ${((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tick) / 3600} hours.`,
-        `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for ${FRONTIER_TROOP_NAMES[TroopType.Knight]} and ${FRONTIER_TROOP_NAMES[TroopType.Crossbowman]}, and ${nativeRules.SCOUT_EXPLORE_STAMINA} for ${FRONTIER_TROOP_NAMES[TroopType.Paladin]}. A step on an explored tile costs ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
+        `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for ${FRONTIER_TROOP_NAMES[TroopType.Knight].many} and ${FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many}, and ${nativeRules.SCOUT_EXPLORE_STAMINA} for ${FRONTIER_TROOP_NAMES[TroopType.Paladin].many}. A step on an explored tile costs ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
         `adding +${n(logisticsBonus)} bonus stamina at rank V for ${n(stamina.staminaKnightMax + logisticsBonus)} max stamina total.`,
         `The Titans Oath adds a flat +${n(nativeOaths.TITANS_STAMINA)} on top of Logistics (${n(stamina.staminaKnightMax + nativeOaths.TITANS_STAMINA)} max stamina at Logistics 0 up to ${n(stamina.staminaKnightMax + logisticsBonus + nativeOaths.TITANS_STAMINA)} at Logistics V`,
         `A slot's first army of the day starts with a full bar (${n(stamina.staminaKnightMax)} stamina, plus your Logistics bonus).`,
@@ -274,7 +274,7 @@ export const frontierPhrases = (
     {
       page: "frontier/realm",
       phrases: [
-        `A new realm starts with ${start(26)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} waiting at home (no army is deployed yet), ${start(35)} wheat, and ${start(23)} labor.`,
+        `A new realm starts with ${start(26)} ${FRONTIER_TROOP_NAMES[TroopType.Knight].many} waiting at home (no army is deployed yet), ${start(35)} wheat, and ${start(23)} labor.`,
         `receive ${n(preset.dailyQuest.labor)} labor and ${n(preset.dailyQuest.essence)} Essence at castle level 1 (${rankName(0)}), multiplying by ${n(contract.questLevelStep)} at each higher castle level.`,
         ...armies.map(
           (count, index) =>
@@ -311,9 +311,9 @@ export const frontierPhrases = (
               .join(" ")}`,
         ),
         `Farm Wheat (${rateOf(BuildingType.ResourceWheat)}/h) Level 1 (${rankName(0)}) ${buildingPrice(config, BuildingType.ResourceWheat)}`,
-        `${buildingName(BuildingType.ResourceKnightT1, true)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} (${rateOf(BuildingType.ResourceKnightT1)}/h) Level 1 (${rankName(0)}) ${buildingPrice(config, BuildingType.ResourceKnightT1)}`,
-        `${buildingName(BuildingType.ResourceCrossbowmanT1, true)} ${FRONTIER_TROOP_NAMES[TroopType.Crossbowman]} (${rateOf(BuildingType.ResourceCrossbowmanT1)}/h) Level 2 (${rankName(1)}) ${buildingPrice(config, BuildingType.ResourceCrossbowmanT1)}`,
-        `${buildingName(BuildingType.ScoutsLodge, true)} ${FRONTIER_TROOP_NAMES[TroopType.Paladin]} (${rateOf(BuildingType.ScoutsLodge)}/h) Level 2 (${rankName(1)}) ${buildingPrice(config, BuildingType.ScoutsLodge)}`,
+        `${buildingName(BuildingType.ResourceKnightT1, true)} ${FRONTIER_TROOP_NAMES[TroopType.Knight].many} (${rateOf(BuildingType.ResourceKnightT1)}/h) Level 1 (${rankName(0)}) ${buildingPrice(config, BuildingType.ResourceKnightT1)}`,
+        `${buildingName(BuildingType.ResourceCrossbowmanT1, true)} ${FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many} (${rateOf(BuildingType.ResourceCrossbowmanT1)}/h) Level 2 (${rankName(1)}) ${buildingPrice(config, BuildingType.ResourceCrossbowmanT1)}`,
+        `${buildingName(BuildingType.ScoutsLodge, true)} ${FRONTIER_TROOP_NAMES[TroopType.Paladin].many} (${rateOf(BuildingType.ScoutsLodge)}/h) Level 2 (${rankName(1)}) ${buildingPrice(config, BuildingType.ScoutsLodge)}`,
         `Supply yard Max stamina (Logistics) Level 3 (${rankName(2)}) ${buildingPrice(config, BuildingType.SupplyYard)}`,
       ],
     },

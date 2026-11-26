@@ -4,6 +4,7 @@ import { type ResourceRequirement } from "@/ui/design-system/molecules/requireme
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { adjustWonderLordsCost } from "@/ui/utils/utils";
 import { configManager } from "@bibliothecadao/eternum";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { type BuildingType, formatExact, formatFigure, resourceName, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
 
@@ -33,9 +34,12 @@ export const BuildingHover = ({
     "Structure",
     entityId === undefined ? undefined : { game_id: configManager.getActiveGameId(), entity_id: entityId },
   );
+  const frontier = useGameModeConfig().id === "frontier";
   const population = configManager.getBuildingCategoryConfig(building).population_cost;
   const recipe =
-    resource === undefined ? null : recipeLine(resource, useSimpleCost, Boolean(structure?.metadata.has_wonder));
+    resource === undefined
+      ? null
+      : recipeLine(resource, useSimpleCost, Boolean(structure?.metadata.has_wonder), frontier);
   return (
     <div className="flex min-w-44 max-w-64 flex-col gap-1 text-left text-hud-label text-hud-ink">
       <div className="flex items-baseline justify-between gap-3">
@@ -43,14 +47,20 @@ export const BuildingHover = ({
         {population > 0 && <span className="text-hud-muted">{formatExact(population)} population</span>}
       </div>
       {gives && <span className="text-hud-good">{gives}</span>}
-      <BuildCost requirements={requirements} />
+      <BuildCost requirements={requirements} frontier={frontier} />
       {recipe && <span className="text-hud-muted">{recipe}</span>}
     </div>
   );
 };
 
 /** What building it costs, a line per resource: its icon, its name, held / needed, red while short. */
-const BuildCost = ({ requirements }: { requirements: ResourceRequirement[] | undefined }) => {
+const BuildCost = ({
+  requirements,
+  frontier,
+}: {
+  requirements: ResourceRequirement[] | undefined;
+  frontier: boolean;
+}) => {
   if (requirements === undefined) return <span className="text-hud-muted">Cost unknown</span>;
   if (requirements.length === 0) return <span className="text-hud-muted">Free to build</span>;
   return (
@@ -64,7 +74,7 @@ const BuildCost = ({ requirements }: { requirements: ResourceRequirement[] | und
           )}
         >
           <ResourceIcon resource={resource} size="xs" withTooltip={false} />
-          <span className="flex-1">{resourceName(resource)}</span>
+          <span className="flex-1">{resourceName(resource, frontier)}</span>
           <span className="text-right tabular-nums">{heldAgainstNeed(current, amount)}</span>
         </li>
       ))}
@@ -73,11 +83,11 @@ const BuildCost = ({ requirements }: { requirements: ResourceRequirement[] | und
 };
 
 /** One production cycle, what it makes from what it burns; null when it burns nothing or the recipe is unknown. */
-const recipeLine = (resource: ResourcesIds, simple: boolean, hasWonder: boolean): string | null => {
+const recipeLine = (resource: ResourcesIds, simple: boolean, hasWonder: boolean, frontier: boolean): string | null => {
   const read = configManager.getRecipeInputs(resource, simple);
   const output = configManager.getRecipeOutput(resource, simple);
   if (!read || read.length === 0 || !output) return null;
   const inputs = resource === ResourcesIds.Donkey && hasWonder ? adjustWonderLordsCost(read) : read;
-  const burns = inputs.map(({ resource: input, amount }) => `${formatFigure(amount)} ${resourceName(input)}`);
-  return `${formatFigure(output)} ${resourceName(resource)} from ${burns.join(" · ")}`;
+  const burns = inputs.map(({ resource: input, amount }) => `${formatFigure(amount)} ${resourceName(input, frontier)}`);
+  return `${formatFigure(output)} ${resourceName(resource, frontier)} from ${burns.join(" · ")}`;
 };

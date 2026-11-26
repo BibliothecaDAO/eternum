@@ -737,7 +737,7 @@ const SCOUT_DEPLOY_STEPS = [
   clickToResultStep(
     "deploy-scouts",
     "CreateExplorer",
-    (context) => deployFromTheDock(context, 400, FRONTIER_TROOP_NAMES[TroopType.Paladin]),
+    (context) => deployFromTheDock(context, 400, FRONTIER_TROOP_NAMES[TroopType.Paladin].many),
     scoutsDeployed,
   ),
 ];
@@ -747,7 +747,7 @@ const TOWN_DEPLOY_STEPS = [
   clickToResultStep(
     "deploy-crossbows",
     "CreateExplorer",
-    (context) => deployFromTheDock(context, 400, FRONTIER_TROOP_NAMES[TroopType.Crossbowman]),
+    (context) => deployFromTheDock(context, 400, FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many),
     crossbowsDeployed,
   ),
 ];

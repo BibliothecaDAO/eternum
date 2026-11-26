@@ -639,7 +639,9 @@ export const HudPrice = ({
 );
 
 const priceFace = (price: Price | ResourcePrice): { word: string; icon?: IconMeaning } =>
-  "of" in price ? PRICE_FACES[price.of] : { word: resourceName(price.resource), icon: resourceMeaning(price.resource) };
+  "of" in price
+    ? PRICE_FACES[price.of]
+    : { word: resourceName(price.resource, false), icon: resourceMeaning(price.resource) };
 
 /**
  * The HUD's one panel, for a part of the screen (a bar, a strip, a card in a band): a header band naming it (its icon,

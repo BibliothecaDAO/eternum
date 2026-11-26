@@ -1,4 +1,5 @@
 import { exploreStaminaCost } from "../utils/explore-stamina";
+import { nativeGameModeOfFamily } from "../../../../config/source/common/native-preset-modes";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import {
   BiomeType,
@@ -429,6 +430,9 @@ export class ClientConfigManager {
   }
   getFamily(): number {
     return this.game().family;
+  }
+  isFrontier(): boolean {
+    return nativeGameModeOfFamily(this.getFamily()) === "frontier";
   }
   isCommandEnabled(command: keyof typeof nativeCommandBits): boolean {
     return isCommandEnabled(this.rules(), command);

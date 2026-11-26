@@ -91,7 +91,8 @@ function ReceiptLines({ selected }: { selected: ClearedSite }) {
         {reward && (
           <span className="flex items-center gap-1">
             <Icon name={resourceMeaning(reward.resource_type)} size={28} />
-            <strong>{formatCharge(scaledToUnits(BigInt(reward.amount)))}</strong> {resourceName(reward.resource_type)}
+            <strong>{formatCharge(scaledToUnits(BigInt(reward.amount)))}</strong>{" "}
+            {resourceName(reward.resource_type, true)}
           </span>
         )}
       </div>

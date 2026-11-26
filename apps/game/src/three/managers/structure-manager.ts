@@ -1830,7 +1830,11 @@ export class StructureManager {
       entityId: structure.entityId,
       position,
       plate: buildStructurePlate(
-        { ...this.withLiveGuards(structure), watched: watchedSide(structure.owner.address) },
+        {
+          ...this.withLiveGuards(structure),
+          watched: watchedSide(structure.owner.address),
+          frontier: configManager.isFrontier(),
+        },
         useChainTimeStore.getState().getNowSeconds(),
         this.store && readPlateReward(this.store, structure),
       ),

@@ -64,7 +64,10 @@ export const ProductionWorkflows = ({
               value={selectedResource === null ? "" : String(selectedResource)}
               options={[
                 { value: "", label: "Select a resource" },
-                ...producedResources.map((resource) => ({ value: String(resource), label: resourceName(resource) })),
+                ...producedResources.map((resource) => ({
+                  value: String(resource),
+                  label: resourceName(resource, false),
+                })),
               ]}
               onChange={(value) => onSelectResource(value ? (Number(value) as ResourcesIds) : null)}
             />

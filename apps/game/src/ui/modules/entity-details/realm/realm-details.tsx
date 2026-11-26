@@ -30,7 +30,7 @@ const LaborRateRow = ({ structureId }: { structureId: ID }) => {
   const perSecond =
     timestamp > 0 ? manager.productionData(ResourcesIds.Labor, timestamp)?.productionPerSecond : undefined;
   return (
-    <SectionRow label={resourceName(ResourcesIds.Labor)}>
+    <SectionRow label={resourceName(ResourcesIds.Labor, false)}>
       <span data-tip="Labor production">
         <HudChip tone="good">
           {formatRate(perSecond)}

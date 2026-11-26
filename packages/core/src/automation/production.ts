@@ -216,7 +216,7 @@ const shouldUseSmartMinimumTroopCycle = ({
 };
 
 export const buildAutomationSkipMessage = (skip: AutomationSkipEntry): string => {
-  const resource = resourceName(skip.resourceId);
+  const resource = resourceName(skip.resourceId, false);
 
   switch (skip.reason) {
     case "No active production building":

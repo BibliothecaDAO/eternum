@@ -395,6 +395,7 @@ const plateOf = (entity: MapLabelEntity, frontier: boolean, spectate: boolean): 
         isMine,
         isAlly,
         watched,
+        frontier,
         owner,
         category: CATEGORY[troops.type],
         tier: `T${troops.tier}`,
@@ -418,6 +419,7 @@ const plateOf = (entity: MapLabelEntity, frontier: boolean, spectate: boolean): 
       mineKind: entity.kind === "rift" ? 1 : undefined,
       isMine,
       isAlly,
+      frontier,
       watched,
       owner,
       guardArmies: guardsToTell(

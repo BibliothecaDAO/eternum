@@ -29,7 +29,7 @@ export const ResourceCost = ({
   onClick,
   size = "md",
 }: ResourceCostProps) => {
-  const name = resourceName(resourceId);
+  const name = resourceName(resourceId, false);
   const held = knownAmount(balance);
   const hasSufficientBalance = held !== undefined && amount !== undefined && held >= amount;
   const showBalance = balance !== undefined && !isNaN(balance);

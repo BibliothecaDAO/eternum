@@ -42,7 +42,7 @@ export const plateSideStyle = (plate: { relation: Side; watched?: PlateWatched }
 /** A troop stack: a guard slot, or an army's troops. Its painting is its type and tier (`knight-t2`). */
 export interface PlateTroops {
   type: "crossbowman" | "knight" | "paladin";
-  tier: 1 | 2 | 3;
+  tier: 1 | 2 | 3 | null;
   count: number;
   beast?: FrontierSpecies;
   /** A guard slot's stamina, when it is known: a structure's plate, opened, draws it. */
@@ -155,10 +155,14 @@ export const plateTroopCategory = (type: PlateTroops["type"]): TroopType => {
   return category;
 };
 
-const tierOf = (tier: number | string): PlateTroops["tier"] => {
+const tierOf = (tier: number | string, frontier: boolean): PlateTroops["tier"] => {
+  if (frontier) return null;
   const value = typeof tier === "number" ? tier : Number(tier.replace(/^T/, ""));
   return value === 3 ? 3 : value === 2 ? 2 : 1;
 };
+
+export const plateTroopMeaning = (troops: PlateTroops): IconMeaning =>
+  `${troops.type}-t${troops.tier ?? 1}` as IconMeaning;
 
 /**
  * Whether a structure's plate tells its guards' stamina. A standing Frontier site's guards (a ruin, a Troll camp, beasts,
@@ -188,7 +192,7 @@ export const buildStructurePlate = (
     | "level"
     | "hasWonder"
     | "battleTimerLeft"
-  > & { watched?: SeatSide | null },
+  > & { watched?: SeatSide | null; frontier: boolean },
   nowSeconds = 0,
   reward?: PlateReward,
 ): StructurePlate => {
@@ -199,7 +203,7 @@ export const buildStructurePlate = (
       .toSorted((a, b) => a.slot - b.slot)
       .map((guard) => ({
         type: troopType(guard.category),
-        tier: tierOf(guard.tier),
+        tier: tierOf(guard.tier, structure.frontier),
         count: guard.count,
         ...(structure.frontierBeast ? { beast: structure.frontierBeast.beast } : {}),
         ...(guard.stamina && guard.stamina.max > 0 ? { stamina: guard.stamina } : {}),
@@ -231,7 +235,11 @@ export const buildStructurePlate = (
     ...watchedOf(structure.watched, ownerOf(structure.owner)),
     arrivals: (structure.incomingTroopArrivals ?? [])
       .map((arrival) => ({
-        troops: { type: troopType(arrival.troopType), tier: tierOf(arrival.troopTier), count: arrival.count },
+        troops: {
+          type: troopType(arrival.troopType),
+          tier: tierOf(arrival.troopTier, structure.frontier),
+          count: arrival.count,
+        },
         secondsLeft: Math.max(0, Number(arrival.arrivesAt) - nowSeconds),
       }))
       .toSorted((a, b) => a.secondsLeft - b.secondsLeft)
@@ -251,7 +259,7 @@ export const buildArmyPlate = (
     | "currentStamina"
     | "maxStamina"
     | "battleTimerLeft"
-  > & { isAlly?: boolean; watched?: SeatSide | null },
+  > & { isAlly?: boolean; watched?: SeatSide | null; frontier: boolean },
   homeName: string,
   /** The stamina one explore costs: a segment of its bar. */
   perExplore: number,
@@ -260,7 +268,7 @@ export const buildArmyPlate = (
   relation: sideOf(army),
   owner: ownerOf(army.owner),
   homeName,
-  troops: { type: troopType(army.category), tier: tierOf(army.tier), count: army.troopCount },
+  troops: { type: troopType(army.category), tier: tierOf(army.tier, army.frontier), count: army.troopCount },
   stamina:
     army.currentStamina === undefined || army.maxStamina <= 0
       ? undefined

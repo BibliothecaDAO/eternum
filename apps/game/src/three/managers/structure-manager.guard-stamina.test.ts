@@ -433,7 +433,7 @@ describe("a Frontier site's guards on its map plate", () => {
     (kind) => {
       expect(guardOnPlate(kind, kind)).toEqual({
         type: kind === "Rift" ? "crossbowman" : "knight",
-        tier: 1,
+        tier: null,
         count: kind === "Beasts" ? 1_000 : 1_100,
       });
     },

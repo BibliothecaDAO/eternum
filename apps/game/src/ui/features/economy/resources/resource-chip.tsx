@@ -33,7 +33,7 @@ export const ResourceChip = ({
 
   const now = useCurrentDefaultTick();
   const resourceEnumId = resourceId as ResourcesIds;
-  const name = resourceName(resourceEnumId);
+  const name = resourceName(resourceEnumId, false);
 
   // Undefined when this client holds no resource owner for the structure: the chip then shows nothing.
   const production = useMemo(

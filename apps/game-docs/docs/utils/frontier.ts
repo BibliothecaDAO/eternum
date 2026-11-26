@@ -151,7 +151,7 @@ const WHEAT = 35;
 const LABOR = 23;
 
 const priceOf = (costs: readonly { resource: number; amount: number }[]) =>
-  costs.map(({ resource, amount }) => `${n(amount)} ${resourceName(resource)}`).join(" + ");
+  costs.map(({ resource, amount }) => `${n(amount)} ${resourceName(resource, true)}`).join(" + ");
 
 const researchRow = (row: number) =>
   frontierPreset.research
@@ -254,10 +254,10 @@ const copyCostsTable = [...copyCostGroups.entries()]
 
 const buildingMeta: Partial<Record<BuildingType, { makes: string; level: number; order: number }>> = {
   [research.FARM]: { makes: "Wheat", level: 0, order: 0 },
-  [research.BARRACKS]: { makes: FRONTIER_TROOP_NAMES[TroopType.Knight], level: 0, order: 1 },
-  [research.RANGE]: { makes: FRONTIER_TROOP_NAMES[TroopType.Crossbowman], level: research.RANGE_LEVEL, order: 2 },
+  [research.BARRACKS]: { makes: FRONTIER_TROOP_NAMES[TroopType.Knight].many, level: 0, order: 1 },
+  [research.RANGE]: { makes: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many, level: research.RANGE_LEVEL, order: 2 },
   [research.SCOUTS_LODGE]: {
-    makes: FRONTIER_TROOP_NAMES[TroopType.Paladin],
+    makes: FRONTIER_TROOP_NAMES[TroopType.Paladin].many,
     level: research.SCOUTS_LODGE_LEVEL,
     order: 3,
   },
@@ -502,7 +502,7 @@ const beastFamilies = [
     name: "Herd",
     icon: beastMeaning(beastOf("herd", 0).model),
     weapon: "Blade",
-    bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman],
+    bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many,
     pays: `Wheat (${n(CONTRACT.herdGuardMultiplier)}x starting guard)`,
     surface: `${beastOf("herd", 0).name} (${range(frontierPreset.depths[0].beastWeakLower, frontierPreset.depths[0].beastWeakUpper)})`,
     veil: `${beastOf("herd", 1).name} (${range(frontierPreset.depths[1].beastWeakLower, frontierPreset.depths[1].beastWeakUpper)})`,
@@ -512,7 +512,7 @@ const beastFamilies = [
     name: "Band",
     icon: beastMeaning(beastOf("band", 0).model),
     weapon: "Bow",
-    bring: FRONTIER_TROOP_NAMES[TroopType.Knight],
+    bring: FRONTIER_TROOP_NAMES[TroopType.Knight].many,
     pays: `Oath pick (${n(CONTRACT.oathDrawCount)} Oaths)`,
     surface: `${beastOf("band", 0).name} (${range(frontierPreset.depths[0].beastStrongLower, frontierPreset.depths[0].beastStrongUpper)})`,
     veil: `${beastOf("band", 1).name} (${range(frontierPreset.depths[1].beastStrongLower, frontierPreset.depths[1].beastStrongUpper)})`,
@@ -522,7 +522,7 @@ const beastFamilies = [
     name: "Camp",
     icon: beastMeaning(beastOf("camp", 0).model),
     weapon: "Blade",
-    bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman],
+    bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many,
     pays: `Labor (${n(100 / CONTRACT.campGuardDivisor)}% starting guard) + supply post`,
     surface: `${beastOf("camp", 0).name} (${range(frontierPreset.depths[0].siteGuardLower, frontierPreset.depths[0].siteGuardUpper)})`,
     veil: `${beastOf("camp", 1).name} (${range(frontierPreset.depths[1].siteGuardLower, frontierPreset.depths[1].siteGuardUpper)})`,
@@ -532,7 +532,7 @@ const beastFamilies = [
     name: "Rift",
     icon: beastMeaning(beastOf("rift", 0).model),
     weapon: "Bow",
-    bring: FRONTIER_TROOP_NAMES[TroopType.Knight],
+    bring: FRONTIER_TROOP_NAMES[TroopType.Knight].many,
     pays: `Essence (${n(100 * CONTRACT.riftGuardMultiplier)}% starting guard)`,
     surface: `${beastOf("rift", 0).name} (${range(frontierPreset.depths[0].riftGuardLower, frontierPreset.depths[0].riftGuardUpper)})`,
     veil: `${beastOf("rift", 1).name} (${range(frontierPreset.depths[1].riftGuardLower, frontierPreset.depths[1].riftGuardUpper)})`,
@@ -542,7 +542,7 @@ const beastFamilies = [
     name: "Ruin",
     icon: beastMeaning(beastOf("ruin", 0).model),
     weapon: "Blade",
-    bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman],
+    bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many,
     pays: "1 relic or 1 Fragment cache",
     surface: ruinFamilyRange(0),
     veil: ruinFamilyRange(1),
@@ -699,9 +699,9 @@ export const FRONTIER = {
     troopsPerFragment: n(fragments.CACHE_TROOPS_PER_FRAGMENT),
   },
   troops: {
-    knight: FRONTIER_TROOP_NAMES[TroopType.Knight],
-    crossbowman: FRONTIER_TROOP_NAMES[TroopType.Crossbowman],
-    scout: FRONTIER_TROOP_NAMES[TroopType.Paladin],
+    knight: FRONTIER_TROOP_NAMES[TroopType.Knight].many,
+    crossbowman: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many,
+    scout: FRONTIER_TROOP_NAMES[TroopType.Paladin].many,
   },
   buildingsCount: n(FRONTIER_BUILDING_TYPES.length),
   buildGroupsList,
@@ -843,7 +843,9 @@ export const FRONTIER = {
         beastIcon: beastMeaning(deepBeast.model),
         troops: n(beast.count),
         weapon: beast.bow ? "Bow" : "Blade",
-        bring: beast.bow ? FRONTIER_TROOP_NAMES[TroopType.Knight] : FRONTIER_TROOP_NAMES[TroopType.Crossbowman],
+        bring: beast.bow
+          ? FRONTIER_TROOP_NAMES[TroopType.Knight].many
+          : FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many,
         pays: deepSitePays[site.key],
       };
     }),
@@ -900,24 +902,24 @@ export const FRONTIER = {
     rows: oathRows,
     pairs: [
       {
-        job: `Clear ${n(breakTarget)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} guarding a Deep site (attacking ${FRONTIER_TROOP_NAMES[TroopType.Knight]}; ${oathName(oaths.TWINS)} uses a ${n(twinsAllyCount)}-troop adjacent own army that takes 0 losses)`,
-        none: `${n(minKnightsToClear(breakTarget, { defenderGuard: true }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`,
-        first: `${oathName(oaths.POWER)}: ${n(minKnightsToClear(breakTarget, { defenderGuard: true, attackerOaths: powerMask }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`,
-        second: `${oathName(oaths.TWINS)}: ${n(minKnightsToClear(breakTarget, { defenderGuard: true, attackerOaths: twinsMask, twinCount: twinsAllyCount }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`,
+        job: `Clear ${n(breakTarget)} ${FRONTIER_TROOP_NAMES[TroopType.Knight].many} guarding a Deep site (attacking ${FRONTIER_TROOP_NAMES[TroopType.Knight].many}; ${oathName(oaths.TWINS)} uses a ${n(twinsAllyCount)}-troop adjacent own army that takes 0 losses)`,
+        none: `${n(minKnightsToClear(breakTarget, { defenderGuard: true }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight].many}`,
+        first: `${oathName(oaths.POWER)}: ${n(minKnightsToClear(breakTarget, { defenderGuard: true, attackerOaths: powerMask }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight].many}`,
+        second: `${oathName(oaths.TWINS)}: ${n(minKnightsToClear(breakTarget, { defenderGuard: true, attackerOaths: twinsMask, twinCount: twinsAllyCount }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight].many}`,
         both: `${n(
           minKnightsToClear(breakTarget, {
             defenderGuard: true,
             attackerOaths: powerMask | twinsMask,
             twinCount: twinsAllyCount,
           }),
-        )} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`,
+        )} ${FRONTIER_TROOP_NAMES[TroopType.Knight].many}`,
       },
       {
-        job: `Hold a Deep site with ${n(holdStart)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} after ${holdTicks} ticks (rival ${FRONTIER_TROOP_NAMES[TroopType.Knight]} needed to clear)`,
-        none: `${n(minKnightsToClear(holdBaseRemaining, { defenderGuard: true }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`,
-        first: `${oathName(oaths.PROTECTION)}: ${n(minKnightsToClear(holdBaseRemaining, { defenderGuard: true, defenderOaths: protectionMask }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`,
-        second: `${oathName(oaths.VITRIOL)}: ${n(minKnightsToClear(holdVitriolRemaining, { defenderGuard: true }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`,
-        both: `${n(minKnightsToClear(holdVitriolRemaining, { defenderGuard: true, defenderOaths: protectionMask }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`,
+        job: `Hold a Deep site with ${n(holdStart)} ${FRONTIER_TROOP_NAMES[TroopType.Knight].many} after ${holdTicks} ticks (rival ${FRONTIER_TROOP_NAMES[TroopType.Knight].many} needed to clear)`,
+        none: `${n(minKnightsToClear(holdBaseRemaining, { defenderGuard: true }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight].many}`,
+        first: `${oathName(oaths.PROTECTION)}: ${n(minKnightsToClear(holdBaseRemaining, { defenderGuard: true, defenderOaths: protectionMask }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight].many}`,
+        second: `${oathName(oaths.VITRIOL)}: ${n(minKnightsToClear(holdVitriolRemaining, { defenderGuard: true }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight].many}`,
+        both: `${n(minKnightsToClear(holdVitriolRemaining, { defenderGuard: true, defenderOaths: protectionMask }))} ${FRONTIER_TROOP_NAMES[TroopType.Knight].many}`,
       },
       {
         job: `Stamina spent across ${attackChainCount} won attacks`,

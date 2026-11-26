@@ -99,7 +99,7 @@ export const DeploySheet = ({
     plan?.choices.map((troops) => {
       return {
         category: troops.type,
-        name: FRONTIER_TROOP_NAMES[troops.type],
+        name: FRONTIER_TROOP_NAMES[troops.type].many,
         art: armyArt({ category: troops.type, tier: troops.tier }),
         atHome: troops.atHome,
       };

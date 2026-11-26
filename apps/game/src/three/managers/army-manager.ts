@@ -1270,6 +1270,7 @@ export class ArmyManager {
         {
           ...army,
           watched: watchedSide(army.owner.address),
+          frontier: configManager.isFrontier(),
         },
         this.resolveHomeRealmName(army),
         configManager.getExploreStaminaCost(

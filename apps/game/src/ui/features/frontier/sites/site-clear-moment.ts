@@ -33,7 +33,7 @@ export const playSiteClear = ({
 
 const payHome = ({ resourceId, amount: paid }: NonNullable<SiteClear["reward"]>, from: { x: number; y: number }) => {
   const counter = findBankedCounter(resourceId);
-  const label = `${formatGain(paid)} ${resourceName(resourceId)}`;
+  const label = `${formatGain(paid)} ${resourceName(resourceId, true)}`;
   if (!counter) {
     setTimeout(() => toast.success(label), GUARD_FALLS_MS);
     return;

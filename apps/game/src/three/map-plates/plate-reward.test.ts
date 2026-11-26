@@ -65,7 +65,7 @@ const site = (store: NativeFactStore, cleared: boolean, category: StructureType,
 
 /** The reward a plate says for this structure in this store, read as the structure manager reads it. */
 const said = (store: NativeFactStore, structure: ReturnType<typeof structureOf>) =>
-  buildStructurePlate(structure, 0, readPlateReward(store, structure)).reward;
+  buildStructurePlate({ ...structure, frontier: true }, 0, readPlateReward(store, structure)).reward;
 
 describe("what a plate says taking a camp or a rift gives", () => {
   afterEach(() => {
