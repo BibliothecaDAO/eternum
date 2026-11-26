@@ -224,3 +224,14 @@ export const HudChip = ({ className }) => <span className={cn("ui-chip", classNa
     [".frontier-tray"],
   );
 });
+
+test("a kit class drawn beside a kit surface is its companion too, so a reset aimed at it is refused", () => {
+  const companions = surfaceCompanions(`<button className="ui-popover ui-pick frontier-place" />`, SURFACES);
+  assert.deepEqual([...companions.keys()], ["ui-pick", "frontier-place"]);
+  assert.deepEqual(
+    findSurfaceResets(`.frontier-crown .ui-pick { background: transparent; }`, "x.css", companions, SURFACES).map(
+      ({ match }) => match,
+    ),
+    [".frontier-crown .ui-pick"],
+  );
+});

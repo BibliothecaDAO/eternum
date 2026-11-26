@@ -76,6 +76,7 @@ const COLOR_UTILITY =
 
 /** A literal colour; a sheet colour read through its channels (`rgb(var(--hud-accent))`) is the sheet's own. */
 const RAW_COLOR = /#[0-9a-fA-F]{3,8}\b|(?<![a-zA-Z-])(?:rgba?|hsla?|oklch)\((?!var\(--hud-)/g;
+const SURFACE_GROUND = /linear-gradient\(180deg,\s*var\(--hud-surface-from\),\s*var\(--hud-surface-to\)\)/;
 
 /**
  * Each rule, by the value it refuses. `colors` are the Tailwind config's colour names (`gold`, `danger`, the shell's
@@ -113,7 +114,7 @@ export const rules = (colors, steps) => [
   { rule: "literal font size: use --hud-text-<role>", pattern: /font-size:\s*[\d.]+(?:px|rem)/g },
   {
     rule: "a copied kit surface: a Frontier surface takes the kit's class (ui-popover, ui-pill, ui-row) for its rim and ground",
-    pattern: /linear-gradient\(180deg,\s*var\(--hud-surface-from\),\s*var\(--hud-surface-to\)\)/g,
+    pattern: new RegExp(SURFACE_GROUND.source, "g"),
     refused: true,
     within: `${APP}/ui/features/frontier/`,
   },
@@ -136,7 +137,6 @@ export const findViolations = (source, path, colors, steps) =>
   );
 
 const KIT_SHEET = `${APP}/ui/design-system/kit/hud-sheet.css`;
-const SURFACE_GROUND = /linear-gradient\(180deg,\s*var\(--hud-surface-from\),\s*var\(--hud-surface-to\)\)/;
 
 export const kitSurfaceClasses = (sheet) =>
   new Set(
@@ -165,7 +165,7 @@ const isSurfaceReset = (body) =>
   });
 const KIT_ELEMENTS = `${APP}/ui/design-system/kit/hud-elements.tsx`;
 
-const namesIn = (text) => text.split(/\s+/).filter((name) => name !== "" && !name.startsWith("ui-"));
+const namesIn = (text, surfaces) => text.split(/\s+/).filter((name) => name !== "" && !surfaces.has(name));
 
 const surfacesIn = (text, surfaces) =>
   [...text.matchAll(/[\w-]+/g)].map(([name]) => name).filter((name) => surfaces.has(name));
@@ -229,7 +229,7 @@ export const surfaceCompanions = (source, surfaces, components = new Map()) => {
         ...(components.get(tagOf(node, file)) ?? []),
       ]);
       if (drawn.size > 0)
-        for (const name of texts.flatMap(namesIn)) {
+        for (const name of texts.flatMap((text) => namesIn(text, surfaces))) {
           const own = companions.get(name) ?? new Set();
           for (const surface of drawn) own.add(surface);
           companions.set(name, own);
@@ -263,30 +263,30 @@ export const findSurfaceResets = (source, path, companions, surfaces) =>
     if (!isSurfaceReset(body)) return [];
     const line = source.slice(0, index + selectors.length - selectors.trimStart().length).split("\n").length;
     return topLevelSelectors(selectors).flatMap((selector) => {
-        const subject = selector.split(/[\s>+~]+(?![^(]*\))/).at(-1) ?? "";
-        if (/::[\w-]+/.test(subject)) return [];
-        const named = [...subject.matchAll(/\.([\w-]+)/g)].map(([, name]) => name);
-        const excluded = new Set(
-          [...subject.matchAll(/:not\(([^)]*)\)/g)].flatMap(([, inner]) =>
-            [...inner.matchAll(/\.([\w-]+)/g)].map(([, name]) => name),
-          ),
-        );
-        const reached =
-          named.length === 0
-            ? [...surfaces]
-            : named.flatMap((name) => (surfaces.has(name) ? [name] : [...(companions.get(name) ?? [])]));
-        const wiped = new Set(reached.filter((surface) => !excluded.has(surface)));
-        if (wiped.size === 0) return [];
-        return [
-          {
-            path,
-            line,
-            rule: `a feature reset over a kit surface: scope it to ${[...wiped].map((surface) => `:not(.${surface})`).join("")} so it never wipes the kit's ground and rim`,
-            match: selector,
-            refused: true,
-          },
-        ];
-      });
+      const subject = selector.split(/[\s>+~]+(?![^(]*\))/).at(-1) ?? "";
+      if (/::[\w-]+/.test(subject)) return [];
+      const named = [...subject.matchAll(/\.([\w-]+)/g)].map(([, name]) => name);
+      const excluded = new Set(
+        [...subject.matchAll(/:not\(([^)]*)\)/g)].flatMap(([, inner]) =>
+          [...inner.matchAll(/\.([\w-]+)/g)].map(([, name]) => name),
+        ),
+      );
+      const reached =
+        named.length === 0
+          ? [...surfaces]
+          : named.flatMap((name) => (surfaces.has(name) ? [name] : [...(companions.get(name) ?? [])]));
+      const wiped = new Set(reached.filter((surface) => !excluded.has(surface)));
+      if (wiped.size === 0) return [];
+      return [
+        {
+          path,
+          line,
+          rule: `a feature reset over a kit surface: scope it to ${[...wiped].map((surface) => `:not(.${surface})`).join("")} so it never wipes the kit's ground and rim`,
+          match: selector,
+          refused: true,
+        },
+      ];
+    });
   });
 
 /** Each file's count against its line: over it fails, under it fails until the line is lowered. */
@@ -333,6 +333,10 @@ const main = () => {
   );
   const frontier = filesUnder(FRONTIER);
   const surfaces = kitSurfaceClasses(readFileSync(join(ROOT, KIT_SHEET), "utf8"));
+  if (surfaces.size === 0) {
+    console.error(`${KIT_SHEET}: no kit class paints the surface ground, so no reset over a kit surface can be found`);
+    process.exit(1);
+  }
   const components = kitSurfaceComponents(readFileSync(join(ROOT, KIT_ELEMENTS), "utf8"), surfaces);
   const companions = new Map();
   for (const path of frontier.filter((each) => each.endsWith(".tsx")))
