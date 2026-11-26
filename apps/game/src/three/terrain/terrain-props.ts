@@ -380,7 +380,7 @@ function buildLayerFloraCandidate(
     priority: hash("priority"),
     scale,
     worldX,
-    worldY: context.field.sampleSurface(worldX, worldZ).height,
+    worldY: context.field.sampleHeight(worldX, worldZ),
     worldZ,
     yaw: hash("yaw") * Math.PI * 2,
   };
@@ -441,7 +441,7 @@ function buildLayerEdgeCandidate(
     priority: hash("priority"),
     scale,
     worldX: placement.worldX,
-    worldY: context.field.sampleSurface(placement.worldX, placement.worldZ).height,
+    worldY: context.field.sampleHeight(placement.worldX, placement.worldZ),
     worldZ: placement.worldZ,
     yaw: placement.yaw + (hash("flip") < 0.5 ? 0 : Math.PI),
   };
@@ -508,7 +508,7 @@ function buildLayerCornerCandidate(
     priority: hash("priority"),
     scale,
     worldX,
-    worldY: context.field.sampleSurface(worldX, worldZ).height,
+    worldY: context.field.sampleHeight(worldX, worldZ),
     worldZ,
     yaw: hash("yaw") * Math.PI * 2,
   };

@@ -5,6 +5,7 @@ description: Shrines, bands, Oath picks, Oath slots, rerolls, every Oath, and st
 
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
+import { Shot } from "@/components/Media";
 
 # Oaths
 
@@ -15,12 +16,17 @@ Aspect can be offered any of the {FRONTIER.oaths.count} Oaths. All Oaths reset w
 
 There are two ways an army triggers an Oath pick on the {FRONTIER.layers.personalOr}:
 
-1. **<GameIcon name="shrine" /> Reveal a shrine.** Research **Shrine lore** at your castle to find shrines
-   ({FRONTIER.discovery.shrine} chance per reveal). Revealing a shrine opens a pick of {FRONTIER.oaths.drawCount} Oaths
-   immediately for that army.
+1. **<GameIcon name="shrine" /> Use a shrine.** Research **Shrine lore** at your castle so reveals can uncover shrines
+   ({FRONTIER.discovery.shrine} chance per reveal). Uncovered shrines stand on the map; move any army beside one and
+   press **Use** to open a pick of {FRONTIER.oaths.drawCount} Oaths and remove the shrine.
 2. **<GameIcon name={FRONTIER.beastFamilies[1].icon} /> Clear a band.** Bands — {FRONTIER.oaths.bandSummary}
    ({FRONTIER.discovery.band} chance per reveal) — award a pick of {FRONTIER.oaths.drawCount} Oaths to the army that
    lands the last hit.
+
+<Shot
+  name="frontier/shrine"
+  caption="Move an army beside a standing Shrine and select it to open its card and press Use. The Shrine disappears from the map and opens an Oath pick."
+/>
 
 ## Rules of the pick
 
@@ -35,6 +41,11 @@ There are two ways an army triggers an Oath pick on the {FRONTIER.layers.persona
   already offered. See [Shop and referrals](/frontier/shop-and-referrals) for current Shop status.
 - **In the Deep and at day's end:** an army keeps its Oaths when it enters [the Deep](/frontier/deep); its Order icons
   show on the site panel and count in rival fight previews. All Oaths clear when the army ends with the day.
+
+<Shot
+  name="frontier/oath-pick"
+  caption="When an Oath pick opens, choose one of the three Oaths and press Swear, press Swap to replace one offer, or press Pass for stamina."
+/>
 
 ## Oath slots
 
@@ -53,7 +64,9 @@ troop kind.
 
 ## All {FRONTIER.oaths.count} Oaths
 
-Each Oath is named after one of the {FRONTIER.oaths.count} Orders and changes one rule for today:
+Each Oath is named after one of the {FRONTIER.oaths.count} Orders and changes one rule for today. In the game, each Oath
+card adapts its figures and combat icon to the army taking it (for example, Fox shows a lower reveal cost for
+{FRONTIER.troops.scout} than for {FRONTIER.troops.knight} and {FRONTIER.troops.crossbowman}):
 
 | Oath (Order)                                                                        | Aspect                           | Effect for today                 |
 | ----------------------------------------------------------------------------------- | -------------------------------- | -------------------------------- |

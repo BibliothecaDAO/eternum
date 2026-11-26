@@ -1,5 +1,8 @@
+import "./frontier-bar.css";
+
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { armiesHere, plotsUsed, REALM } from "@/ui/design-system/kit/words";
+import { HudSegment } from "@/ui/design-system/kit/hud-elements";
+import { armiesHere, MAP_VIEW, REALM } from "@/ui/design-system/kit/words";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import {
   DEEP_LAYER_TIERS,
@@ -11,10 +14,10 @@ import {
   selectLayer,
   unlockedLayerForTier,
 } from "./map-layers";
-import { useLayout } from "@/shell/frame/layout";
+import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { useHudPopover } from "./hud-popover";
 
-type PlaceTabKey = "realm" | "surface" | EtherealLayer;
+type LayerKey = "surface" | EtherealLayer;
 
 type PlaceSwitchProps = {
   isMapView: boolean;
@@ -25,47 +28,27 @@ type PlaceSwitchProps = {
   onSwitch?: () => void;
 };
 
-export const placeLines = (
-  armies: readonly { ethereal?: EtherealLayer }[],
-  plots: { used: number; total: number } | undefined,
-): Partial<Record<PlaceTabKey, string>> => {
+export const placeLines = (armies: readonly { ethereal?: EtherealLayer }[]): Partial<Record<LayerKey, string>> => {
   const on = (layer: EtherealLayer | undefined) => armiesHere(armies.filter((army) => army.ethereal === layer).length);
-  return {
-    realm: plots && plotsUsed(plots.used, plots.total),
-    surface: on(undefined),
-    1: on(1),
-    2: on(2),
-    3: on(3),
-  };
+  return { surface: on(undefined), 1: on(1), 2: on(2), 3: on(3) };
 };
 
-type PlaceEntry = {
-  key: PlaceTabKey;
+type LayerEntry = {
+  key: LayerKey;
   label: string;
   mark: IconMeaning;
   depth?: EtherealLayer;
   selected: boolean;
   locked: boolean;
   line?: string;
-  disabled: boolean;
   choose: () => void;
 };
 
-const placeEntries = ({
-  isMapView,
-  canOpenRealm = true,
-  layers,
-  onGoRealm,
-  onGoSurface,
-  onSwitch,
-}: PlaceSwitchProps): PlaceEntry[] => {
-  const activeKey: PlaceTabKey = !isMapView
-    ? "realm"
-    : !layers || layers.shown === 0
-      ? "surface"
-      : layers.shown === "deep"
-        ? 3
-        : layers.shown;
+const shownLayerKey = (layers: MapLayers | null): LayerKey =>
+  !layers || layers.shown === 0 ? "surface" : layers.shown === "deep" ? 3 : layers.shown;
+
+const layerEntries = ({ isMapView, layers, onGoSurface, onSwitch }: PlaceSwitchProps): LayerEntry[] => {
+  const shownKey = shownLayerKey(layers);
   const chooseDepth = (target: MapLayer) => {
     if (!layers) return;
     if (!isMapView) {
@@ -75,7 +58,7 @@ const placeEntries = ({
       selectLayer(layers, target, onSwitch);
     }
   };
-  const depths = DEEP_LAYER_TIERS.map((tier): PlaceEntry => {
+  const depths = DEEP_LAYER_TIERS.map((tier): LayerEntry => {
     const unlocked = unlockedLayerForTier(layers, tier);
     const layer: MapLayer = unlocked ?? (tier === 3 ? "deep" : tier);
     const locked = unlocked === null;
@@ -84,10 +67,9 @@ const placeEntries = ({
       label: layerWord(layer),
       mark: layerMark(layer),
       depth: tier,
-      selected: !locked && activeKey === tier,
+      selected: isMapView && !locked && shownKey === tier,
       locked,
       line: locked ? layerLockLine(tier) : undefined,
-      disabled: locked,
       choose: () => {
         if (unlocked !== null) chooseDepth(unlocked);
       },
@@ -95,69 +77,78 @@ const placeEntries = ({
   });
   return [
     {
-      key: "realm",
-      label: REALM,
-      mark: "realm",
-      selected: activeKey === "realm",
-      locked: false,
-      disabled: !canOpenRealm,
-      choose: onGoRealm,
-    },
-    {
       key: "surface",
       label: layerWord(0),
       mark: layerMark(0),
-      selected: activeKey === "surface",
+      selected: isMapView && shownKey === "surface",
       locked: false,
-      disabled: false,
       choose: onGoSurface,
     },
     ...depths,
   ];
 };
 
-export const PlaceMenu = ({
+export const PlaceSwitch = ({
   realm,
   lines,
   ...props
-}: PlaceSwitchProps & { realm?: { mark: IconMeaning }; lines?: Partial<Record<PlaceTabKey, string>> }) => {
-  const entries = placeEntries(props).map((entry) => ({
+}: PlaceSwitchProps & { realm?: { mark: IconMeaning }; lines?: Partial<Record<LayerKey, string>> }) => {
+  const entries = layerEntries(props).map((entry) => ({
     ...entry,
-    mark: entry.key === "realm" && realm ? realm.mark : entry.mark,
     line: entry.locked ? entry.line : lines?.[entry.key],
   }));
-  const shown = entries.find((entry) => entry.selected) ?? entries[1]!;
+  const shownKey = shownLayerKey(props.layers);
+  const shown = entries.find((entry) => entry.key === shownKey) ?? entries[0]!;
+  const inRealm = !props.isMapView;
   const { open, close, triggerProps, popover } = useHudPopover();
-  const layout = useLayout();
+  const layout = useHudLayout();
   return (
-    <div className="frontier-place-menu pointer-events-auto">
+    <div
+      role="group"
+      aria-label={MAP_VIEW}
+      data-place-switch=""
+      data-place={inRealm ? REALM : shown.label}
+      data-hud-part=""
+      className="ui-popover frontier-place-switch pointer-events-auto"
+    >
       <button
         type="button"
+        aria-label={REALM}
+        aria-pressed={inRealm}
+        disabled={props.canOpenRealm === false}
+        className="ui-pick frontier-place-switch__realm"
+        onClick={() => {
+          close();
+          props.onGoRealm();
+        }}
+      >
+        <Icon name={realm?.mark ?? "realm"} size={22} />
+        <span className="frontier-place-switch__word">{REALM}</span>
+      </button>
+      <HudSegment
         {...triggerProps}
         aria-haspopup="true"
-        aria-label={`Map view, ${shown.label}`}
+        aria-label={`${MAP_VIEW}, ${shown.label}`}
         data-place-pill=""
-        data-hud-part=""
-        data-place={shown.label}
         className="frontier-place-pill"
       >
         <Icon name={shown.mark} size={22} />
         <span className="frontier-place-pill__name">{shown.label}</span>
         <Icon name={open ? "chevron-up" : "chevron-down"} size={14} />
-      </button>
+      </HudSegment>
       {popover(
-        <div role="tablist" aria-label="Map view" data-surface-deep-switch className="frontier-place-menu__list">
+        <div role="tablist" aria-label={MAP_VIEW} data-surface-deep-switch className="frontier-place-menu__list">
           {entries.map((entry) => (
             <button
               key={entry.key}
               type="button"
               role="tab"
-              className="ui-pick frontier-place-row"
+              className="ui-row frontier-place-row"
               data-depth={entry.depth === undefined ? undefined : String(entry.depth)}
               data-locked={entry.locked || undefined}
               aria-label={entry.label}
               aria-selected={entry.selected}
-              disabled={entry.disabled}
+              disabled={entry.locked}
               onClick={() => {
                 close();
                 entry.choose();
@@ -168,10 +159,11 @@ export const PlaceMenu = ({
                 <span className="frontier-place-row__name">{entry.label}</span>
                 {entry.line && <span className="frontier-place-row__line">{entry.line}</span>}
               </span>
+              {entry.selected && <Icon name="check" size={16} className="frontier-place-row__check" />}
             </button>
           ))}
         </div>,
-        { className: "frontier-place-popover", layout },
+        { className: "ui-popover frontier-place-popover", layout },
       )}
     </div>
   );

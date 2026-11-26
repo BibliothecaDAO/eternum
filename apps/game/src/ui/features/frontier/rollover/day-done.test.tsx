@@ -10,6 +10,7 @@ import { dayOf, Position } from "@bibliothecadao/eternum";
 import { endedDay } from "../hud/day-clock";
 
 import { RECORDED_DAY } from "./recorded-day-history";
+import { DAY_SHARE_WORDS, DAY_TOTALS_UNKNOWN, SITES_CLEARED } from "@/ui/design-system/kit/words";
 
 /** Herald's history, answered as prod's answers it: a player's read keeps the events naming them, newest first. */
 const herald = vi.hoisted(() => ({
@@ -69,7 +70,7 @@ vi.mock("@/utils/card-image", async (original) => ({
   cardFile: vi.fn(async () => CARD_FILE),
 }));
 /** The card's PNG as a phone's share sheet takes it. */
-const CARD_FILE = vi.hoisted(() => new File(["card"], "frontier-day-2.png", { type: "image/png" }));
+const CARD_FILE = vi.hoisted(() => new File(["card"], "day-card.png", { type: "image/png" }));
 /** The signed-in Realms account whose links the share sheet makes. */
 const SIGNED_IN = vi.hoisted(() => ({ session: { user: { realmsId: "0xa11ce" } } }));
 vi.mock("@/hooks/context/identity-session", () => ({
@@ -268,7 +269,7 @@ it("sums the player's own day 2 as prod's history holds it, not the tail of the 
 
 it("shares day 2 as its card and a post: its best moment, the numbers it moved, and the player's own link", async () => {
   await openTheGame();
-  const share = [...host.querySelectorAll("button")].find((button) => button.textContent === "Share your day");
+  const share = [...host.querySelectorAll("button")].find((button) => button.textContent === DAY_SHARE_WORDS.share);
   await act(async () => share!.click());
   const sheet = document.body.querySelector("section[aria-label='Share your day']")!;
   // A phone draws the tall cut.
@@ -278,11 +279,11 @@ it("shares day 2 as its card and a post: its best moment, the numbers it moved, 
   expect(shown.querySelector(".day-card__realm")?.textContent).toBe("Temtinos");
   // Prod's day 2: its strongest guard fell at a Beasts den.
   expect(shown.querySelector(".day-card__headline")?.textContent).toBe("Beasts cleared");
-  expect(shown.querySelector(".day-card__detail")?.textContent).toBe("Guard of 483 beaten");
+  expect(shown.querySelector(".day-card__detail")?.textContent).toBe(DAY_SHARE_WORDS.guardBeaten("483"));
   // It opened no chest and paid no LORDS: neither is on the card.
   expect([...shown.querySelectorAll(".day-card__haul small")].map((label) => label.textContent)).toEqual([
     "Reveals",
-    "Sites cleared",
+    SITES_CLEARED,
     "Labor",
     "Essence",
   ]);
@@ -290,7 +291,7 @@ it("shares day 2 as its card and a post: its best moment, the numbers it moved, 
 
   // The link is made as the sheet opens; the post waits for nothing.
   await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
-  expect(sheet.textContent).toContain("Your days brought 12 visits · 3 new players");
+  expect(sheet.textContent).toContain(DAY_SHARE_WORDS.brought("12", "3"));
   // The link unfurls as the wide cut, which a phone's sheet draws out of sight and makes into its image at once, on the
   // device: nothing is published before a way to post is pressed.
   const wide = sheet.querySelector<HTMLElement>(".day-share__out-of-sight .day-card")!;
@@ -315,7 +316,7 @@ it("shares a phone's day through its own share sheet: the card, the post's line 
   vi.stubGlobal("navigator", Object.assign(Object.create(navigator), { canShare: () => true, share }));
   try {
     await openTheGame();
-    const open = [...host.querySelectorAll("button")].find((button) => button.textContent === "Share your day");
+    const open = [...host.querySelectorAll("button")].find((button) => button.textContent === DAY_SHARE_WORDS.share);
     await act(async () => open!.click());
     const sheet = document.body.querySelector("section[aria-label='Share your day']")!;
     const buttons = () => [...sheet.querySelectorAll<HTMLButtonElement>("button")];
@@ -351,7 +352,7 @@ it("draws a desktop's day card in the wide cut, the one its link unfurls as, and
   setViewportWidth(1440);
   try {
     await openTheGame();
-    const share = [...host.querySelectorAll("button")].find((button) => button.textContent === "Share your day");
+    const share = [...host.querySelectorAll("button")].find((button) => button.textContent === DAY_SHARE_WORDS.share);
     await act(async () => share!.click());
     const sheet = document.body.querySelector("section[aria-label='Share your day']")!;
     const cards = [...sheet.querySelectorAll<HTMLElement>(".day-card")];
@@ -384,14 +385,14 @@ it("shows a dash for each total, and says why, when the player's history no long
   }));
   herald.history = [...later, ...BEFORE_PLAYING_ON.history];
   expect(await openTheGame()).toEqual(["—Essence", "—Labor", "0Glory"]);
-  expect(host.querySelector(`${SUMMARY} [role="status"]`)?.textContent).toBe("This day's totals are unknown");
+  expect(host.querySelector(`${SUMMARY} [role="status"]`)?.textContent).toBe(DAY_TOTALS_UNKNOWN);
 });
 
 it("shows a dash for each total, and says history did not answer, with Try again, when the read fails", async () => {
   herald.withheld = Promise.reject(new Error("Herald is down"));
   herald.withheld.catch(() => undefined);
   expect(await openTheGame()).toEqual(["—Essence", "—Labor", "0Glory"]);
-  expect(host.querySelector(`${SUMMARY} [role="alert"]`)?.textContent).toBe("This day's totals are unknownTry again");
+  expect(host.querySelector(`${SUMMARY} [role="alert"]`)?.textContent).toBe("Day totals unavailableTry again");
 });
 
 describe("the alerts popup, which waits for the day's end", () => {
@@ -643,7 +644,9 @@ describe("a device arriving in a new day", () => {
       const card = host.querySelector(DAY_1)!;
       expect([...card.querySelectorAll("[data-total]")].map((cell) => cell.textContent)).toEqual(PROD_DAY_1);
 
-      const share = [...card.querySelectorAll("button")].find((button) => button.textContent === "Share your day")!;
+      const share = [...card.querySelectorAll("button")].find(
+        (button) => button.textContent === DAY_SHARE_WORDS.share,
+      )!;
       await act(async () => share.click());
       const sheet = document.body.querySelector("section[aria-label='Share your day']")!;
       expect(sheet.querySelector(".day-share__frame .day-card__day")?.textContent).toBe("Day 1");

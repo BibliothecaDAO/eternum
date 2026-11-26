@@ -15,7 +15,9 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
   identityClient: service,
 }));
 
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { SharedDaysPanel } from "./shared-days-panel";
+import { PROFILE_WORDS, SHARED_DAYS_WORDS } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -39,7 +41,9 @@ const draw = async (client = new QueryClient({ defaultOptions: { queries: { retr
   await act(async () =>
     root.render(
       <QueryClientProvider client={client}>
-        <SharedDaysPanel />
+        <MemoryRouter>
+          <SharedDaysPanel />
+        </MemoryRouter>
       </QueryClientProvider>,
     ),
   );
@@ -62,7 +66,7 @@ it("counts each step a friend took through the player's shared days in one inlin
     fragmentsEarned: 0,
   });
   await draw();
-  expect(host.querySelector("section")?.getAttribute("aria-label")).toBe("Your shared days");
+  expect(host.querySelector("section")?.getAttribute("aria-label")).toBe(SHARED_DAYS_WORDS.title);
   expect(host.querySelectorAll(".app-figure")).toHaveLength(0);
   expect(host.querySelector("[data-referrals-empty]")).toBeNull();
   expect(funnelSteps()).toEqual([
@@ -93,9 +97,7 @@ it("highlights earned Fragments in the funnel alongside the reward rule", async 
     ["1.4K", "Fragments earned"],
   ]);
   expect(host.querySelector('[data-funnel-step="fragmentsEarned"]')?.hasAttribute("data-gold")).toBe(true);
-  expect(host.querySelector("[data-referrals-reward]")?.textContent).toBe(
-    "+100 Fragments for each friend who reaches 100 Glory",
-  );
+  expect(host.querySelector("[data-referrals-reward]")?.textContent).toBe(PROFILE_WORDS.friendReward);
 });
 
 it("shows a plain-word empty state instead of zero tiles when nothing has been shared, and hides when identity fails", async () => {
@@ -145,4 +147,43 @@ it("never shows the account before's counts to the next account on the same app,
   await act(async () => refuse(new Error("identity unavailable")));
   expect(host.textContent).toBe("");
   expect(client.getQueryCache().findAll({ queryKey: ["own-shares", "0xa"] })).toEqual([]);
+});
+
+it("holds the invite link's place with one step to Play while no Aspect is held, and gives it to the link once one is", async () => {
+  service.shareTally.mockResolvedValue({
+    links: 0,
+    posted: 0,
+    visits: 0,
+    joined: 0,
+    activated: 0,
+    friendsPaid: 0,
+    fragmentsEarned: 0,
+  });
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const drawAt = async (aspect: 1 | null) =>
+    act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <MemoryRouter initialEntries={["/profile"]}>
+            <Routes>
+              <Route path="/profile" element={<SharedDaysPanel aspect={aspect} />} />
+              <Route path="/" element={<main data-play />} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>,
+      ),
+    );
+  await drawAt(null);
+  await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
+  const slot = host.querySelector("[data-invite-locked]");
+  expect(slot?.textContent).toContain(PROFILE_WORDS.noAspectInviteTitle);
+  expect(host.querySelector("[data-referrals-reward]")).not.toBeNull();
+  await drawAt(1);
+  expect(host.querySelector("[data-invite-locked]")).toBeNull();
+  await drawAt(null);
+  const join = [...host.querySelectorAll<HTMLElement>("[data-invite-locked] button, [data-invite-locked] a")].find(
+    (node) => node.textContent === PROFILE_WORDS.joinAspect,
+  )!;
+  await act(async () => join.click());
+  expect(host.querySelector("[data-play]")).not.toBeNull();
 });

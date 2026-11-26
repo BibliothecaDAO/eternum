@@ -119,7 +119,7 @@ export class TerrainLabInteraction {
     const moved = this.selectionDirty;
     if (moved) {
       const center = terrainHexToWorld(this.selected.col, this.selected.row);
-      this.armyPosition.set(center.x, this.terrain.sampleSurface(center.x, center.z).height, center.z);
+      this.armyPosition.set(center.x, this.terrain.sampleHeight(center.x, center.z), center.z);
       if (this.preview.selection) this.hover.showHover(center.x, center.z);
       else this.hover.hideHover();
       this.selectionDirty = false;
@@ -163,7 +163,7 @@ export class TerrainLabInteraction {
 
   getSelectedPosition(): Vector3 {
     const center = terrainHexToWorld(this.selected.col, this.selected.row);
-    return new Vector3(center.x, this.terrain.sampleSurface(center.x, center.z).height, center.z);
+    return new Vector3(center.x, this.terrain.sampleHeight(center.x, center.z), center.z);
   }
 
   getState() {
@@ -313,7 +313,7 @@ export class TerrainLabInteraction {
       this.matrix.makeRotationY(building.yaw);
       this.matrix.setPosition(
         center.x,
-        this.terrain.sampleSurface(center.x, center.z).height + (this.sitsDirectlyOnTerrain(building) ? 0 : 0.025),
+        this.terrain.sampleHeight(center.x, center.z) + (this.sitsDirectlyOnTerrain(building) ? 0 : 0.025),
         center.z,
       );
       const index = counts.get(building.path) ?? 0;
@@ -432,7 +432,7 @@ export class TerrainLabInteraction {
     this.ground.constant = 0;
     for (let step = 0; step < 4; step++) {
       if (!this.raycaster.ray.intersectPlane(this.ground, this.hit)) return;
-      this.ground.constant = -this.terrain.sampleSurface(this.hit.x, this.hit.z).height;
+      this.ground.constant = -this.terrain.sampleHeight(this.hit.x, this.hit.z);
     }
     const selected = findNearestTerrainHex(this.hit.x, this.hit.z);
     if (

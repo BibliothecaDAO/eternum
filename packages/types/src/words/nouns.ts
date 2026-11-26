@@ -21,6 +21,8 @@ import { GUARD_SLOT_NAMES, type GuardSlot } from "../constants/troops";
 import { StructureType } from "../constants/structure-type";
 import { deepSites } from "../constants/deep-sites";
 import { TROOP_TYPES, TroopType } from "../types/common";
+import type { QuestLine } from "../constants/quests";
+import { formatCount, nounFor } from "./count";
 
 const UNKNOWN = "—";
 
@@ -49,10 +51,9 @@ export const rankedText = (words: RankedWords | string): string =>
   typeof words === "string"
     ? words
     : words.map((part) => (typeof part === "string" ? part : part.rank === 0 ? "0" : tierNumeral(part.rank))).join("");
-/** What a skill point of a rank gives: the point itself, "[III] +1" (owner, 3 November 2026: "I like B"). */
-export const skillPointGain = (rank: number): RankedWords => [{ rank }, " +1"];
-export const siteUsedLine = (kind: "Shrine" | "Well", amount: string) =>
-  kind === "Shrine" ? `Shrine used, +${amount} XP` : `Well used, +${amount} stamina`;
+export const SHRINE_USED_LINE = "Shrine used: Oath offered";
+export const SHRINE_USED = "Shrine used";
+export const wellUsedLine = (amount: string) => `Well used: +${amount} stamina`;
 /** What scores: "250 points", "1 point" (formatPoints). Never VP or pts. */
 export const POINTS = "points";
 export const POINT = "point";
@@ -81,20 +82,22 @@ export const TROOP_WORDS = {
 
 /** Frontier's troop names; its Scout uses the Paladin category. */
 export const FRONTIER_TROOP_NAMES = {
-  [TroopType.Knight]: TROOP_WORDS[TroopType.Knight].many,
-  [TroopType.Paladin]: "Scouts",
-  [TroopType.Crossbowman]: TROOP_WORDS[TroopType.Crossbowman].many,
-} satisfies Record<TroopType, string>;
+  [TroopType.Knight]: TROOP_WORDS[TroopType.Knight],
+  [TroopType.Paladin]: { one: "Scout", many: "Scouts" },
+  [TroopType.Crossbowman]: { one: "Crossbow", many: "Crossbows" },
+} as const satisfies Record<TroopType, { one: string; many: string }>;
 
-export const frontierTroopName = (troop: TroopType | string): string | undefined =>
-  (FRONTIER_TROOP_NAMES as Record<string, string>)[troop];
+export const frontierTroopName = (troop: TroopType | string, count?: number): string | undefined => {
+  const words = (FRONTIER_TROOP_NAMES as Record<string, { one: string; many: string }>)[troop];
+  return words && (count === undefined ? words.many : nounFor(count, words.one, words.many));
+};
 
 /** Many of a troop type, by its type or its name in the game's tables: "Crossbowmen". Unknown is undefined. */
 export const troopPlural = (troop: TroopType | string): string | undefined =>
   (TROOP_WORDS as Record<string, { many: string }>)[troop]?.many;
 
-/** A troop with its tier: "Knight T1", "Paladin T3". */
-const troopName = (troop: string, tier: string): string => `${troop} ${tier}`;
+export const troopName = (troop: TroopType, tier: string, frontier: boolean): string =>
+  frontier ? FRONTIER_TROOP_NAMES[troop].many : `${troop} ${tier}`;
 
 const TROOP_RESOURCE = new RegExp(`^(${TROOP_TYPES.join("|")})(T[23])?$`);
 
@@ -102,13 +105,13 @@ const TROOP_RESOURCE = new RegExp(`^(${TROOP_TYPES.join("|")})(T[23])?$`);
  * A resource by its id, as a player reads it: its name in the game's table, a troop with its tier ("Knight T2", where
  * the table says "KnightT2"), LORDS in capitals. Unknown is a dash.
  */
-export const resourceName = (id: ResourcesIds | number | undefined): string => {
+export const resourceName = (id: ResourcesIds | number | undefined, frontier: boolean): string => {
   if (id === undefined) return UNKNOWN;
   if (id === ResourcesIds.Lords) return LORDS;
   const name = resources.find((resource) => resource.id === id)?.trait;
   if (!name) return UNKNOWN;
   const troop = TROOP_RESOURCE.exec(name);
-  return troop ? troopName(troop[1], troop[2] ?? "T1") : name;
+  return troop ? troopName(troop[1] as TroopType, troop[2] ?? "T1", frontier) : name;
 };
 
 export type StructureNamingMode = "frontier" | "blitz" | "eternum";
@@ -274,3 +277,8 @@ export const guardedSiteKind = (type: StructureType, beast?: { name: string }): 
 export const VICTORY = "Victory";
 export const ARMY_LOST = "Army lost";
 export const GUARD_HOLDS = "Guard holds";
+
+export const questObjective = (quest: QuestLine): string => `${quest.verb} ${quest.unit.many}`;
+
+export const questLine = (quest: QuestLine, target: number): string =>
+  `${quest.verb} ${formatCount(target, quest.unit.one, quest.unit.many)}`;

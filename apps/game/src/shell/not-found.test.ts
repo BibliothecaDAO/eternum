@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 
-import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
+import { REALMS_MARK } from "@/ui/design-system/icon-meaning";
 import { paintingSources } from "@/ui/design-system/kit/paintings";
 import { APP_STATE_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { appIdentity, appIdentityHtml } from "../../build/app-identity-html";
@@ -20,16 +20,16 @@ const scrimBackgroundOf = (css: string, selector: string) => {
     .trim();
 };
 
-it("keeps public/404.html and index.html in step with APP_STATE_WORDS, WORDS, paintingSources, AGE_LOCKUP, and LoadingStage", () => {
+it("keeps public/404.html and index.html in step with APP_STATE_WORDS, WORDS, paintingSources, REALMS_MARK, and LoadingStage", () => {
   const notFound = readFileSync("public/404.html", "utf8");
   const indexHtml = readFileSync("index.html", "utf8");
   const viteConfig = readFileSync("vite.config.ts", "utf8");
   const doorwayCss = readFileSync("src/ui/features/game-entry/doorway/doorway-screen.css", "utf8");
-  expect(notFound).toContain(`<img src="${AGE_LOCKUP.frontier}"`);
+  expect(notFound).toContain(`<img src="${REALMS_MARK.lettered}"`);
   expect(notFound).toContain(`<h1>${APP_STATE_WORDS.nothingHere}</h1>`);
   expect(notFound).toContain(`<p>${APP_STATE_WORDS.nothingHereLine}</p>`);
   expect(notFound).toContain(`<a href="/">${WORDS.play}</a>`);
-  expect(indexHtml).toContain(`<img src="${AGE_LOCKUP.frontier}"`);
+  expect(indexHtml).toContain('<img src="%BOOT_LOCKUP_SRC%"');
   expect(indexHtml).toContain('src="%BOOT_MIST_SRC%"');
   expect(indexHtml).toContain('srcset="%BOOT_MIST_SRCSET%"');
   expect(viteConfig).toContain("appIdentityHtml(identity)");
@@ -39,7 +39,8 @@ it("keeps public/404.html and index.html in step with APP_STATE_WORDS, WORDS, pa
   const mist = paintingSources("frontier-mist");
   expect(transformed).toContain(`src="${mist.src}"`);
   expect(transformed).toContain(`srcset="${mist.srcSet}"`);
-  expect(transformed).not.toContain("%BOOT_MIST_");
+  expect(transformed).not.toContain("%BOOT_");
+  expect(transformed).toContain(`<img src="${REALMS_MARK.lettered}" alt="" class="boot-shell__lockup"`);
   expect(scrimBackgroundOf(indexHtml, ".boot-shell__scrim")).toBe(
     scrimBackgroundOf(doorwayCss, ".doorway-stage__scrim"),
   );

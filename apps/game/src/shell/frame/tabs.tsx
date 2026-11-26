@@ -1,12 +1,18 @@
-import { CHAT_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import {
+  CHAT_WORDS,
+  DESKTOP_APP_PLACES,
+  DESKTOP_APP_PLACE_WORDS,
+  WORDS,
+  type DesktopAppPlace,
+} from "@/ui/design-system/kit/words";
 import { useRealtimeChatSelector } from "@/ui/features/social";
 import { chatUnread } from "@/ui/features/social/realtime-chat/model/direct-unread";
-import { useAppChatPane, useChatOnPage } from "../chat/app-chat-place";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { type IconMeaning } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
+import { InstallButton } from "@/pwa/pwa-install-control";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 
@@ -15,6 +21,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { AppLink, AppTopBar } from "@/ui/design-system/kit/app-elements";
 import { Portrait } from "@/ui/design-system/kit/portrait";
 import { Lockup } from "./lockup";
+import { COSMETICS_PATH } from "../cosmetics/cosmetics-route";
 import { PROFILE_PATH } from "../profile/settings-route";
 import { FRAGMENTS_PATH } from "../shop/fragments-route";
 import { useRequestSignIn } from "../sign-in/connect";
@@ -34,13 +41,36 @@ const YOU_TAB: Place = {
 
 const CHAT_TAB: Place = { to: "/chat", word: CHAT_WORDS.chat, icon: "chat", matches: ["/chat"] };
 
-export const TABS: readonly Place[] = [
-  { to: "/", word: WORDS.play, icon: "play", matches: ["/"] },
-  { to: "/season", word: WORDS.season, icon: "leaderboard", matches: ["/season", "/p/"] },
-  { to: FRAGMENTS_PATH, word: WORDS.shop, icon: "fragment", matches: [FRAGMENTS_PATH] },
-  CHAT_TAB,
-  YOU_TAB,
-];
+const PLAY_TAB: Place = { to: "/", word: DESKTOP_APP_PLACE_WORDS.play, icon: "play", matches: ["/"] };
+const SEASON_TAB: Place = {
+  to: "/season",
+  word: DESKTOP_APP_PLACE_WORDS.season,
+  icon: "leaderboard",
+  matches: ["/season", "/p/"],
+};
+const SHOP_TAB: Place = {
+  to: FRAGMENTS_PATH,
+  word: DESKTOP_APP_PLACE_WORDS.shop,
+  icon: "fragment",
+  matches: [FRAGMENTS_PATH],
+};
+const COSMETICS_TAB: Place = {
+  to: COSMETICS_PATH,
+  word: DESKTOP_APP_PLACE_WORDS.cosmetics,
+  icon: "crown",
+  matches: [COSMETICS_PATH],
+};
+
+export const TABS: readonly Place[] = [PLAY_TAB, SEASON_TAB, SHOP_TAB, CHAT_TAB, YOU_TAB];
+
+const DESKTOP_PLACE_TABS: Record<DesktopAppPlace, Place> = {
+  play: PLAY_TAB,
+  season: SEASON_TAB,
+  cosmetics: COSMETICS_TAB,
+  shop: SHOP_TAB,
+};
+
+const DESKTOP_PLACES: readonly Place[] = DESKTOP_APP_PLACES.map((place) => DESKTOP_PLACE_TABS[place]);
 
 const matchesPath = (pathname: string, match: string) =>
   match === "/" ? pathname === "/" : pathname.startsWith(match);
@@ -58,12 +88,12 @@ const useConnect = (): (() => void) | undefined => {
 /** Whether the page is one of the four places itself, which its phone head names by the lockup, not a title. */
 export const useIsPlace = (): boolean => {
   const pathname = usePageAddress();
-  return TABS.some((tab) => tab.to === pathname);
+  return [...TABS, ...DESKTOP_PLACES].some((tab) => tab.to === pathname);
 };
 
-const useActiveTab = (): string | undefined => {
+const useActiveTab = (places: readonly Place[]): string | undefined => {
   const pathname = usePageAddress();
-  return TABS.find((tab) => tab.matches.some((match) => matchesPath(pathname, match)))?.to;
+  return places.find((tab) => tab.matches.some((match) => matchesPath(pathname, match)))?.to;
 };
 
 /**
@@ -102,7 +132,7 @@ const PHONE_TAB =
   "flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-[2px] whitespace-nowrap font-ui text-xs font-semibold";
 
 export const TabBar = () => {
-  const active = useActiveTab();
+  const active = useActiveTab(TABS);
   const connect = useConnect();
   const player = useSignedInPlayer();
   const unread = useRealtimeChatSelector(chatUnread);
@@ -157,13 +187,17 @@ export const TabBar = () => {
   );
 };
 
+export const TopBarEnd = () => (
+  <span className="flex shrink-0 items-center gap-2 empty:hidden">
+    <InstallButton />
+    <LordsBalancePill />
+  </span>
+);
+
 export const DesktopBar = ({ notice }: { notice: ReactNode }) => {
-  const active = useActiveTab();
+  const active = useActiveTab([...DESKTOP_PLACES, YOU_TAB]);
   const player = useSignedInPlayer();
   const connect = useConnect();
-  const pane = useAppChatPane();
-  const chatOnPage = useChatOnPage();
-  const unread = useRealtimeChatSelector(chatUnread);
   const placeOf = (tab: Place) => ({
     to: tab.to,
     label: tab.word,
@@ -173,12 +207,8 @@ export const DesktopBar = ({ notice }: { notice: ReactNode }) => {
   return (
     <AppTopBar
       mark={<Lockup />}
-      places={TABS.filter((tab) => tab !== YOU_TAB).map((tab) =>
-        tab === CHAT_TAB && !chatOnPage
-          ? { ...placeOf(tab), onSelect: pane.toggle, current: pane.open, count: unread }
-          : placeOf(tab),
-      )}
-      balance={<LordsBalancePill />}
+      places={DESKTOP_PLACES.map(placeOf)}
+      end={<TopBarEnd />}
       player={{
         ...placeOf(YOU_TAB),
         ...(connect && { label: WORDS.connect, onSelect: connect, action: "connect" as const }),

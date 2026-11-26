@@ -1,5 +1,5 @@
 import { EternumProvider, TransactionNotSentError } from "@bibliothecadao/provider";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, resourceName } from "@bibliothecadao/types";
 import { act, type ReactNode, useSyncExternalStore } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Simulate } from "react-dom/test-utils";
@@ -170,10 +170,10 @@ vi.mock("./use-transfer-sides", () => ({
   },
 }));
 
-import { iconDefinition, resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { openTransfer } from "./transfer-window";
+import { TRANSFER_REFUSED, WEIGHT_UNKNOWN } from "@/ui/design-system/kit/words";
 
-const DONKEYS = iconDefinition(resourceMeaning(ResourcesIds.Donkey)).label;
+const DONKEYS = resourceName(ResourcesIds.Donkey, false);
 
 let host: HTMLDivElement;
 let root: Root;
@@ -239,7 +239,7 @@ describe("the transfer window's amounts", () => {
       element.textContent?.includes("Essence"),
     )!;
     expect(row.textContent).toContain("300 held");
-    expect(row.textContent).toContain("Weight unknown: cannot be sent");
+    expect(row.textContent).toContain(WEIGHT_UNKNOWN);
     expect(row.getAttribute("aria-disabled")).toBe("true");
     expect(row.querySelector("input, button")).toBeNull();
     // The goods that do have a weight still plan and send as before.
@@ -327,7 +327,7 @@ describe("the transfer window's send", () => {
     await type("Wheat: total to send", "10");
     await send();
     expect(wheatSent()).toEqual([[A, 5]]);
-    expect(world.notices.failed).toHaveBeenCalledWith(expect.any(Error), expect.any(String), {
+    expect(world.notices.failed).toHaveBeenCalledWith(expect.any(Error), TRANSFER_REFUSED, {
       description: "Nothing reached Beta.",
     });
     // Beta stays chosen alone, with its own 5; Alpha has left the window.
@@ -430,7 +430,7 @@ describe("a shipment's outcome and the draft shown meanwhile", () => {
     expect(field("Wheat: total to send")!.value).toBe("4");
     expect(field("Wheat to Beta")).toBeNull();
     expect(sendButton().textContent).toMatch(/^Send 1 good · /);
-    expect(world.notices.failed).toHaveBeenCalledWith(expect.any(Error), expect.any(String), {
+    expect(world.notices.failed).toHaveBeenCalledWith(expect.any(Error), TRANSFER_REFUSED, {
       description: "Nothing reached Beta.",
     });
   });
@@ -454,7 +454,7 @@ describe("a shipment's outcome and the draft shown meanwhile", () => {
 });
 
 describe("when the window says goods land", () => {
-  const KNIGHTS = iconDefinition(resourceMeaning(ResourcesIds.Knight)).label;
+  const KNIGHTS = resourceName(ResourcesIds.Knight, false);
   /** What a Send to row says beside its holding. */
   const note = (id: number) => host.querySelector(`[data-pick="Send to:${id}"]`)!.textContent;
 
@@ -530,8 +530,8 @@ describe("the goods' order", () => {
     );
     expect(goods).toEqual([
       "Wheat",
-      iconDefinition(resourceMeaning(ResourcesIds.Donkey)).label,
-      iconDefinition(resourceMeaning(ResourcesIds.Knight)).label,
+      resourceName(ResourcesIds.Donkey, false),
+      resourceName(ResourcesIds.Knight, false),
     ]);
   });
 });

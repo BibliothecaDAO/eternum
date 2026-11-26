@@ -9,15 +9,17 @@ import { ARMY_LABEL_POINT } from "./plates.mjs";
 import { MAP_LEAST_SHARE } from "./hud-layout.mjs";
 import { HUD_MAP_LEAST_SHARE } from "../../src/tokens";
 import {
-  ASPECT_PAGE_WORDS,
   ASPECT_STEP_WORDS,
   CHAT,
   CLOSE,
+  OK,
   DEEP_WORDS,
+  FIGHT_RESULT,
   FIGHT_WORDS,
   INVITE_WORDS,
   EXPLORE,
   MOVE,
+  OPENING_WORDS,
   EVENTS_WORDS,
   MENU,
   RESEARCH,
@@ -57,9 +59,11 @@ describe("the HUD's words the steps press and read", () => {
       feed: EVENTS_WORDS.feed,
       research: RESEARCH,
       close: CLOSE,
+      ok: OK,
       chat: CHAT,
       settings: SETTINGS,
       today: TODAY,
+      skipTutorial: OPENING_WORDS.skipTutorial,
     });
   });
 });
@@ -1047,10 +1051,10 @@ it("the ruin fight proof completes once the card opens with its Attack, the came
 
 it("requires an opened army panel and no retired LORDS controls", () => {
   const verify = STEP_SETS["lab-no-lords"].steps[1].verify;
-  const panel = { army: "Army 1", sheet: "Army 1" };
+  const panel = { army: "1,498 Knights", sheet: "1,498 Knights" };
   expect(verify({ played: { panel, controls: [] } }).status).toBe("completed");
   expect(verify({ played: { panel, controls: ["Refill"] } }).status).toBe("failed");
-  expect(verify({ played: { panel: { army: "Army 1" }, controls: [] } }).status).toBe("failed");
+  expect(verify({ played: { panel: { army: "1,498 Knights" }, controls: [] } }).status).toBe("failed");
 });
 
 it("requires the selected Aspect in both the founding command and its membership result", () => {
@@ -1161,10 +1165,18 @@ it("requires one quest command, its exact receipt, both balances credited by it 
 });
 
 it.each([
-  ["world", ["LaborGrant"], "The Cull: 2,500 of 2,500 troops. Ash Fall"],
-  ["again", ["BaneGrant"], "The Cull: 2,500 of 2,500 troops. Ash Fall"],
-  ["late", ["LaborGrant", "BaneGrant"], "The Cull: 2,500 of 2,500 troops. Ash Fall"],
-  ["team", ["LaborGrant"], "The Stand: 3 of 3 sites. Prowess's bane"],
+  [
+    "world",
+    ["LaborGrant"],
+    "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops · 2,500 of 2,500 guard troops",
+  ],
+  ["again", ["BaneGrant"], "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops · 2,500 of 2,500 guard troops"],
+  [
+    "late",
+    ["LaborGrant", "BaneGrant"],
+    "World Bane: Ash Fall · The Cull · Defeat 2,500 guard troops · 2,500 of 2,500 guard troops",
+  ],
+  ["team", ["LaborGrant"], "Bane from Prowess · The Stand · Clear 3 guarded sites · 3 of 3 guarded sites"],
 ])(
   "requires exact %s bane receipts, each credited once whatever the balances held, identity and collected UI",
   (stage, models, text) => {
@@ -1229,6 +1241,41 @@ it("reports the failed Oath capacity assertion without trying to time a missing 
   ).resolves.toMatchObject({ status: "failed", reason: "The new army did not inherit three Oath slots" });
 });
 
+describe("the supply post's steps", () => {
+  const steps = STEP_SETS["lab-supply-post"].steps;
+  const open = steps.find(({ name }) => name === "open-supply-post");
+
+  it("passes a post that lists the army beside it, then reinforces it from the map as the realm does", () => {
+    const shown = (text) => ({ found: true, state: { sheet: "Supply Post", text } });
+    expect(open.verify({ played: { found: false } }).status).toBe("failed");
+    expect(open.verify({ played: shown("Supply PostDraws from realm stockArmies in range0 beside post") }).status).toBe(
+      "failed",
+    );
+    expect(open.verify({ played: shown("Supply PostArmies in range1 beside postArmy 1 · Knights") }).status).toBe(
+      "completed",
+    );
+    expect(steps.map(({ name }) => name)).toEqual([
+      "enter-on-map",
+      "pick-army",
+      "open-supply-post",
+      "pick-army-again",
+      "open-supply-post-with-army",
+      "open-reinforce",
+      "reinforce-from-camp",
+    ]);
+  });
+
+  it("passes a click on the post with the army picked only when the post opens and lists that army", () => {
+    const fromArmy = steps.find(({ name }) => name === "open-supply-post-with-army");
+    const listed = { sheet: "Supply Post", text: "Supply PostArmies in range1 beside postArmy 1 · Knights" };
+    expect(fromArmy.verify({ played: { found: true, picked: null, state: listed } }).status).toBe("failed");
+    expect(
+      fromArmy.verify({ played: { found: false, picked: 201, state: { sheet: "Army 1", text: "" } } }).status,
+    ).toBe("failed");
+    expect(fromArmy.verify({ played: { found: true, picked: 201, state: listed } }).status).toBe("completed");
+  });
+});
+
 describe("the Season 1 rehearsal", () => {
   const steps = STEP_SETS["s1-rehearsal"].steps;
   const step = (name) => steps.find((candidate) => candidate.name === name);
@@ -1266,6 +1313,7 @@ describe("the Season 1 rehearsal", () => {
   it("presses and reads the app's own words", () => {
     expect(REHEARSAL_WORDS.startAdventure).toBe(SHARED_LINK_WORDS.play);
     expect(REHEARSAL_WORDS.copyLink).toBe(INVITE_WORDS.copy);
+    expect(REHEARSAL_WORDS.inviteFailed).toBe(INVITE_WORDS.failed);
     expect(REHEARSAL_WORDS.inviteTo("Might")).toBe(INVITE_WORDS.title("Might"));
     expect(REHEARSAL_WORDS.join("Guile")).toBe(ASPECT_STEP_WORDS.join("Guile"));
     expect(REHEARSAL_WORDS.invited).toBe(ASPECT_STEP_WORDS.invited);
@@ -1276,24 +1324,15 @@ describe("the Season 1 rehearsal", () => {
     expect(REHEARSAL_WORDS.forecasts).toEqual({
       lost: FIGHT_WORDS.armyLost,
       holds: FIGHT_WORDS.holds,
-      victory: FIGHT_WORDS.victory,
+      victory: FIGHT_RESULT.victory,
     });
     expect(readFileSync(new URL("../../AGENTS.md", import.meta.url), "utf8").replace(/\s+/g, " ")).toContain(
       `forecasts a win ("${REHEARSAL_WORDS.forecasts.victory}")`,
     );
     expect(REHEARSAL_WORDS.take).toBe(DEEP_WORDS.take);
-    expect(REHEARSAL_WORDS.beast("Balrog", 900)).toBe(DEEP_WORDS.beast("Balrog", 900));
-    expect(REHEARSAL_WORDS.open).toBe(DEEP_WORDS.open);
+    expect(REHEARSAL_WORDS.joinGuard).toBe(DEEP_WORDS.join);
     expect(REHEARSAL_WORDS.lasts(14, "28m")).toBe(DEEP_WORDS.lasts(14, "28m"));
     expect(REHEARSAL_WORDS.share(40)).toBe(DEEP_WORDS.share(40));
-    expect(REHEARSAL_WORDS.glory(6)).toBe(DEEP_WORDS.glory(6));
-    expect(REHEARSAL_WORDS.height(6)).toBe(DEEP_WORDS.height(6));
-    expect(REHEARSAL_WORDS.essence(6)).toBe(DEEP_WORDS.essence(6));
-    expect(REHEARSAL_WORDS.labor(6)).toBe(DEEP_WORDS.labor(6));
-    expect(REHEARSAL_WORDS.bar(6, 30, 100)).toBe(DEEP_WORDS.bar(6, 30, 100));
-    expect(REHEARSAL_WORDS.standingHeight(120, 900)).toBe(ASPECT_PAGE_WORDS.height(120, 900));
-    expect(REHEARSAL_WORDS.baneCharge(30, 100)).toBe(ASPECT_PAGE_WORDS.baneCharge(30, 100));
-    expect(REHEARSAL_WORDS.gloryChip).toBe(ASPECT_PAGE_WORDS.glory);
   });
 
   it("plays the friend's founding and Deep turns in the second account's page and everything else in the host's", () => {
@@ -1349,20 +1388,29 @@ describe("the Season 1 rehearsal", () => {
 
   it("reads a held site's pay, slot and the Season board in the app's own words", () => {
     expect(
-      readTickPay([DEEP_WORDS.glory(6), DEEP_WORDS.height(3), DEEP_WORDS.essence(1500), DEEP_WORDS.bar(2, 1200, 5000)]),
+      readTickPay([
+        { rate: "glory", value: "+6" },
+        { rate: "height", value: "+3" },
+        { rate: "essence", value: "+1,500" },
+        { rate: "bar", value: "+2" },
+        { rate: "drain", value: "−200" },
+      ]),
     ).toEqual({ glory: 6, height: 3, essence: 1500, bar: 2 });
     expect(
       readHeldSlot(
         `Ashfall · ${DEEP_WORDS.facesNext} · 2,800 · ${DEEP_WORDS.drainTick(70)} · ${DEEP_WORDS.lasts(14, "28m")} · ${DEEP_WORDS.share(100)}`,
       ),
     ).toEqual({ ticks: 14, share: 100, troops: 2800 });
-    expect(
-      readAspectTally({
-        height: `1Might${ASPECT_PAGE_WORDS.stage(1, 5)} · ${ASPECT_PAGE_WORDS.height(1240, 9000)}`,
-        glory: `${ASPECT_PAGE_WORDS.glory} 42`,
-        bar: `${ASPECT_PAGE_WORDS.baneBar}: ${ASPECT_PAGE_WORDS.baneCharge(30, 100)}`,
-      }),
-    ).toEqual({ height: 1240, glory: 42, bar: 30 });
+    expect(readAspectTally({ height: "1240", glory: "42.5", bar: "30" })).toEqual({
+      height: 1240,
+      glory: 42.5,
+      bar: 30,
+    });
+    expect(readAspectTally({ height: null, glory: "", bar: undefined })).toEqual({
+      height: null,
+      glory: null,
+      bar: null,
+    });
   });
 
   it("judges a tick paid only when the guard drained and each tally rose by whole ticks of the card's pay", () => {
@@ -1450,5 +1498,31 @@ describe("the realm world's deploy sheet (lab-realm-world)", () => {
       inRightRail: true,
     });
     expect(step.verify({ played }).status).toBe("completed");
+  });
+});
+
+it("the panels proof ends on Settings open at its Quality row", () => {
+  const step = STEP_SETS["lab-panels"].steps.at(-1);
+  expect(step.name).toBe("panel-settings");
+  const played = { rows: ["Quality", "Reduced motion"], qualities: ["Low", "Balanced", "High"] };
+  expect(step.verify({ played }).status).toBe("completed");
+  expect(step.verify({ played: { rows: [], qualities: [] } }).status).toBe("failed");
+});
+
+describe("lab-high-ground", () => {
+  const verify = (name) => STEP_SETS["lab-high-ground"].steps.find((step) => step.name === name).verify;
+  const plate = { layer: "route", lowest: 0.01, highest: 0.05 };
+
+  it("fails lit tiles that offer nothing to explore, so no plate on the fog's floor is measured", () => {
+    expect(verify("lit-tiles-on-ground")({ played: { plates: [plate], explores: 2 } }).status).toBe("completed");
+    expect(verify("lit-tiles-on-ground")({ played: { plates: [plate], explores: 0 } }).status).toBe("failed");
+  });
+
+  it("fails an army under its ground or over it, and a page that reports none", () => {
+    const standing = (overGround) => verify("army-on-ground")({ played: { armies: [{ entityId: 1, overGround }] } });
+    expect(standing(0.03).status).toBe("completed");
+    expect(standing(-0.2).status).toBe("failed");
+    expect(standing(0.3).status).toBe("failed");
+    expect(verify("army-on-ground")({ played: { armies: null } }).status).toBe("failed");
   });
 });

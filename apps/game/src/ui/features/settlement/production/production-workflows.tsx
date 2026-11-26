@@ -57,19 +57,22 @@ export const ProductionWorkflows = ({
       icon: "build" as const,
       content: (
         <div className="space-y-3">
-          <div className="flex flex-col gap-1 lg:hidden">
+          <div className="flex flex-col gap-1 hud-desk:hidden">
             <span className="text-hud-label text-hud-muted">Resource</span>
             <HudSelect
               label="Resource"
               value={selectedResource === null ? "" : String(selectedResource)}
               options={[
                 { value: "", label: "Select a resource" },
-                ...producedResources.map((resource) => ({ value: String(resource), label: resourceName(resource) })),
+                ...producedResources.map((resource) => ({
+                  value: String(resource),
+                  label: resourceName(resource, false),
+                })),
               ]}
               onChange={(value) => onSelectResource(value ? (Number(value) as ResourcesIds) : null)}
             />
           </div>
-          <div className="hidden lg:block">
+          <div className="hidden hud-desk:block">
             <BuildingsList
               realm={realm}
               onSelectProduction={onSelectResource}

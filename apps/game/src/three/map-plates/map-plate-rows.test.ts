@@ -1,4 +1,5 @@
-import { rankedText, skillPointGain } from "@bibliothecadao/types";
+import { aspectName, rankedText, type RankedWords } from "@bibliothecadao/types";
+import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { describe, expect, it } from "vitest";
 
 import { plateSize } from "./map-plate-layout";
@@ -74,6 +75,12 @@ const camp: StructurePlate = {
 };
 
 describe("what a map plate says opened (three rows at most, never an id; at rest a thing is its token)", () => {
+  it("never opens a place's first row on an empty half: an unknown owner leaves the name alone", () => {
+    expect(read({ ...realm, owner: "", guards: null })).toEqual(["Xeswet"]);
+    expect(read({ ...realm, name: "", guards: null })).toEqual(["Moonhand"]);
+    expect(read({ ...realm, owner: DEEP_WORDS.gate, name: aspectName(3), guards: null })).toEqual(["Gate | Havoc"]);
+  });
+
   it("opens an army with its player and home, then its troops, then its exact stamina on its own row", () => {
     expect(read(army)).toEqual(["djizus | Sangsang", "T3 300", "84/150"]);
     expect(read({ ...army, stamina: undefined })).toEqual(["djizus | Sangsang", "T3 300"]);
@@ -113,8 +120,9 @@ describe("what a map plate says opened (three rows at most, never an id; at rest
     ]);
   });
 
-  it("shows a Shrine's discovered point as its gem and +1, without a guard or leading divider", () => {
-    const shrine = { ...rift, owner: "", place: undefined, name: "Shrine", guards: null, reward: skillPointGain(3) };
+  it("shows a ranked reward as its gem, without a guard or leading divider", () => {
+    const ranked: RankedWords = [{ rank: 3 }, " +1"];
+    const shrine = { ...rift, owner: "", place: undefined, name: "Shrine", guards: null, reward: ranked };
     expect(read(shrine)).toEqual(["Shrine", "III +1"]);
     expect(plateRows(shrine).at(-1)).toEqual([{ kind: "ranked", words: [{ rank: 3 }, " +1"] }]);
   });

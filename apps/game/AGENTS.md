@@ -147,7 +147,8 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   Orders use the map's default zoom; the army must be deployed. The next order is a phone's: on a desktop an order goes
   from the map at once, so its steps are blocked there; play them with `--viewport 390x844`.
 - **Saved player state.** Pass `--storage-state /private/player-storage.json` with `--player` to restore and renew an
-  existing dev identity. If that state is signed out, the run refuses before sending an email code.
+  existing dev identity. If that state is signed out, the run refuses before sending an email code. Without `--player`
+  the file only seeds the page's storage, a returning player's settings for one.
 - **Saved passkeys.** Pass `--passkeys /private/passkeys.json` with `--player` to put that device's saved passkeys
   (DevTools' virtual authenticator credentials, as the default wallet's dev test keeps them) on the run's page, so the
   player's Realms wallet confirms without a person; the file is written back at the end with its sign counts and is
@@ -172,26 +173,26 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   host does below and builds a Barracks (the Build sheet's offers and their prices are recorded as `offers`); the host
   builds a Barracks, sends an army into the mist, attacks a site beside one of its armies (revealing up to six tiles to
   find one) and chooses the first card of an Oath pick the fight opens, its cards' texts recorded (one left standing by
-  an earlier run is answered first). A surface attack is pressed only on a card that forecasts a win ("Victory likely");
-  when no site beside its armies forecasts a win (a loss, a guard that survives, or no forecast read), the account
-  deploys its troops at home once with Max and searches on. Then the host enters the Deep through its Spire once the
-  realm knows Spire lore, attacks an open site's beast and so holds it. The host then measures the Deep's catch-up:
-  three Moves of a surface army, the cheaper of the last two being a play with nothing to settle (T0); the tick's pay
-  read on the site's card and the Season board; four ticks passed on the slot's clock with no command; one more Move
-  (T1), which settles them, since the chain settles the Deep only at the next command. T1 must be applied (the chain
-  refuses a play over its event or gas limit) and emit its rows once each, not once per tick; Glory, height and the bane
-  bar must rise by whole ticks of the card's pay; Essence and labor are read from the card only. The friend then enters
-  the Deep, attacks a rival's guard and takes an empty site, which exist only when another Aspect holds a site or a
-  site's guards died. An account whose dock is empty (a new day ends every army) first deploys an army of at most 500 of
-  its troops at home, keeping the rest for that raise; Max keeps the wheat the army burns revealing its bar, so a raised
-  army explores on. With an army out, the host's page must offer no Refill and no shop, and an Oath pick no Redraw,
-  while the game's rules as the page holds them (`window.__eternumFragmentSpends()`) enable none of BuySeal, BuyStamina
-  and RerollOath: the mask the contract refuses them by ("command disabled"). Without Spire lore the Deep steps are
-  blocked with the Spire's own row. `--steps s1-testnet` plays the host alone in a testnet game entered from its Play
-  card: founding, an army sent, and the same Fragment spends check. An action passes only when its receipt from the
-  chain's node is confirmed, succeeded and not refused by the game (`scripts/client-playtest/chain-receipts.mjs`, which
-  also records each play's l2 gas and event count); what the game does not offer yet is blocked with what the page said,
-  and a rerun in the same game passes the foundings already made.
+  an earlier run is answered first). A surface attack is pressed only on a card that forecasts a win ("Victory"); when
+  no site beside its armies forecasts a win (a loss, a guard that survives, or no forecast read), the account deploys
+  its troops at home once with Max and searches on. Then the host enters the Deep through its Spire once the realm knows
+  Spire lore, attacks an open site's beast and so holds it. The host then measures the Deep's catch-up: three Moves of a
+  surface army, the cheaper of the last two being a play with nothing to settle (T0); the tick's pay read on the site's
+  card and the Season board; four ticks passed on the slot's clock with no command; one more Move (T1), which settles
+  them, since the chain settles the Deep only at the next command. T1 must be applied (the chain refuses a play over its
+  event or gas limit) and emit its rows once each, not once per tick; Glory, height and the bane bar must rise by whole
+  ticks of the card's pay; Essence and labor are read from the card only. The friend then enters the Deep, attacks a
+  rival's guard and takes an empty site, which exist only when another Aspect holds a site or a site's guards died. An
+  account whose dock is empty (a new day ends every army) first deploys an army of at most 500 of its troops at home,
+  keeping the rest for that raise; Max keeps the wheat the army burns revealing its bar, so a raised army explores on.
+  With an army out, the host's page must offer no Refill and no shop, and an Oath pick no Redraw, while the game's rules
+  as the page holds them (`window.__eternumFragmentSpends()`) enable none of BuySeal, BuyStamina and RerollOath: the
+  mask the contract refuses them by ("command disabled"). Without Spire lore the Deep steps are blocked with the Spire's
+  own row. `--steps s1-testnet` plays the host alone in a testnet game entered from its Play card: founding, an army
+  sent, and the same Fragment spends check. An action passes only when its receipt from the chain's node is confirmed,
+  succeeded and not refused by the game (`scripts/client-playtest/chain-receipts.mjs`, which also records each play's l2
+  gas and event count); what the game does not offer yet is blocked with what the page said, and a rerun in the same
+  game passes the foundings already made.
 - **Signing in.** Each player keeps a profile under `.context/playtest-profiles/<email>`; agent-browser is handed it on
   every command (it relaunches on a temporary profile for a command that omits it). Each run opens the home page first:
   a signed-in player's bar shows them and the run goes on at once; a signed-out one presses Connect and signs in as a
@@ -240,39 +241,42 @@ Options: `--channel web|play|app-store` (default web: the app the client is play
 site, `src/runtime/distribution-channel.ts`: `play` opens the run's page with `?channel=play`, `app-store` appends
 `RealmsApp/ios` to the browser's user agent before any page opens and fails the run unless the booted page carries it
 with no service worker registered), `--renderer-modes webgpu-auto,webgpu-force-webgl` (default both), `--iterations`
-(default 3), `--cpu-throttle 4` (Chrome's CPU slowdown of this machine; not a measured laptop), `--gpu low-power` (the
-page on the machine's integrated GPU, a phone's class of GPU: the one device `vulkaninfo --summary` calls integrated,
-refused when there is none or more than one; the browser is launched seeing only that GPU through Mesa's Vulkan device
-selection, and a run that drew on another fails), `--network 20,40` (Chrome shapes the page's link to that many Mbit/s
-and that round trip in ms, so a load is timed as a player's connection serves it), `--chain-id` and `--game-id`,
-`--steps ownership-rings` (the map unselected, the player's realm selected with its owner's holdings ringed, held and
-panned, then cleared: the rings' frame cost; each phase checks the selection and ring count the page reports in
-`window.__eternumMapSelection`, and fails on a build that does not report them), `--steps blitz-orders` (a seated player
-in a Blitz game, entered by its card's **Enter**: the world map, Tab to select the readiest army, then orders by
-right-click on a tile whose hover tooltip offers Move or Explore, each held at the network while the selection is read:
-the army stays selected through an order's confirmation and is offered orders from its new tile, the tile panel's
-selected hex on that tile, a second order goes without selecting it again, a refused one leaves it selected where it
-stood, and one deselected with Escape while its order is in flight is not selected again; the army's id, hex and order
-count come from the same report), `--steps blitz-burst` (a seated Blitz player's orders as fast as keys allow: each army
-Tab lands on gets a tile whose tooltip offers Move or Explore, then every army is taken with Tab and ordered with a
-right-click back to back through DevTools input, nothing held; each order is timed from the click the client recorded to
-its send's answer, Herald's status and its army moving (a move) or its reveal rendered (an explore, which may leave the
-army in place), from `__armyMovementLatencyTraceEntries`; needs two armies that can act), `--steps blitz-spectator` (the
-spectator's map steps in a Blitz game: the world map, idle, pan, zoom, a minute of watching; the matched frame-time run
-for Blitz), `--steps blitz-plates` (the map's labels in a Blitz game as a spectator sees them, opened with the dev
-overlays so the page reports its world: read at the map's zoom, the farthest and the closest, the tiles round the centre
-hovered one by one, and at each zoom a click at each label in view, with the label layer shown then hidden, failing on
-any label not drawn in its side's colour (the page's own green, blue and red; to a spectator, each player's seat colour,
-one per seat, no two alike, nobody's grey), any label that takes a pointer, a click at a token or an open plate that
-selects another tile than the same click with the labels hidden, any label whose foot reaches below its thing's model
-top or whose span is not over its thing, as the renderer places the thing, any token, plate or order line over or within
-4px of another, or an opened plate that does not cover the token read for its thing before the hover;
-`--steps blitz-plates-player` takes the readiest army with Tab first, so each hovered tile shows its order line;
-`--steps frontier-plates` and `frontier-plates-player` the same in a Frontier game, entered on its map),
-`--steps still-map` (a Frontier spectator's map with nothing pressed, its frames recorded for 6 s at the default view
-and again at the closest, the camera distance read and required to be the closest, into `<step>-frames/` with
-`<step>-changes.png`, each pixel's share of frame pairs it changed in: what a still view shimmers with, to compare two
-builds on the same view; `--steps blitz-still-map` the same in a Blitz game; `--steps still-map-frozen-sun` and
+(default 3), `--cpu-throttle 4` (Chrome's CPU slowdown of this machine; not a measured laptop), `--device-scale 2` (the
+page drawn at that device pixel ratio, as a retina laptop or a phone, so the renderer's pixel ratio cap applies, or
+below one, as a page zoomed out), `--gpu low-power` (the page on the machine's integrated GPU, a phone's class of GPU:
+the one device `vulkaninfo --summary` calls integrated, refused when there is none or more than one; the browser is
+launched seeing only that GPU through Mesa's Vulkan device selection, and a run that drew on another fails),
+`--network 20,40` (Chrome shapes the page's link to that many Mbit/s and that round trip in ms, so a load is timed as a
+player's connection serves it), `--chain-id` and `--game-id`, `--steps ownership-rings` (the map unselected, the
+player's realm selected with its owner's holdings ringed, held and panned, then cleared: the rings' frame cost; each
+phase checks the selection and ring count the page reports in `window.__eternumMapSelection`, and fails on a build that
+does not report them), `--steps blitz-orders` (a seated player in a Blitz game, entered by its card's **Enter**: the
+world map, Tab to select the readiest army, then orders by right-click on a tile whose hover tooltip offers Move or
+Explore, each held at the network while the selection is read: the army stays selected through an order's confirmation
+and is offered orders from its new tile, the tile panel's selected hex on that tile, a second order goes without
+selecting it again, a refused one leaves it selected where it stood, and one deselected with Escape while its order is
+in flight is not selected again; the army's id, hex and order count come from the same report), `--steps blitz-burst` (a
+seated Blitz player's orders as fast as keys allow: each army Tab lands on gets a tile whose tooltip offers Move or
+Explore, then every army is taken with Tab and ordered with a right-click back to back through DevTools input, nothing
+held; each order is timed from the click the client recorded to its send's answer, Herald's status and its army moving
+(a move) or its reveal rendered (an explore, which may leave the army in place), from
+`__armyMovementLatencyTraceEntries`; needs two armies that can act), `--steps blitz-spectator` (the spectator's map
+steps in a Blitz game: the world map, idle, pan, zoom, a minute of watching; the matched frame-time run for Blitz),
+`--steps blitz-plates` (the map's labels in a Blitz game as a spectator sees them, opened with the dev overlays so the
+page reports its world: read at the map's zoom, the farthest and the closest, the tiles round the centre hovered one by
+one, and at each zoom a click at each label in view, with the label layer shown then hidden, failing on any label not
+drawn in its side's colour (the page's own green, blue and red; to a spectator, each player's seat colour, one per seat,
+no two alike, nobody's grey), any label that takes a pointer, a click at a token or an open plate that selects another
+tile than the same click with the labels hidden, any label whose foot reaches below its thing's model top or whose span
+is not over its thing, as the renderer places the thing, any token, plate or order line over or within 4px of another,
+or an opened plate that does not cover the token read for its thing before the hover; `--steps blitz-plates-player`
+takes the readiest army with Tab first, so each hovered tile shows its order line; `--steps frontier-plates` and
+`frontier-plates-player` the same in a Frontier game, entered on its map), `--steps still-map` (a Frontier spectator's
+map with nothing pressed, its frames recorded for 6 s at the default view and again at the closest, the camera distance
+read and required to be the closest, into `<step>-frames/` with `<step>-changes.png`, each pixel's share of frame pairs
+it changed in: what a still view shimmers with, to compare two builds on the same view; `--steps blitz-still-map` the
+same in a Blitz game; `--steps lab-still-map` the same on the lab's built Kingdom,
+`/lab/game?scenario=painted-buildings`, whose map has herds; `--steps still-map-frozen-sun` and
 `--steps blitz-still-map-frozen-sun` first tick the dev tools' Override Time to hold the sun, and open the page with the
 dev overlays on, as the plate lists do), `--steps lab-spire` (no live game: the lab's spire game,
 `/lab/game?scenario=spire`, the game's own route, scenes, HUD and client on a fixture held in the tab, whose player's
@@ -312,39 +316,41 @@ play it at `--viewport 390x844` too), `--steps lab-hover-zoom` (the army after i
 dev overlays on, at each wheel step from the closest zoom to the farthest: each army's token must stand over its own
 model, and the pointer on its model at its feet, middle and top must open its plate; `--steps lab-hover-zoom-pair` the
 same with the realm's two armies side by side, the merge game's), `--steps lab-high-ground`
-(`/lab/game?scenario=high-ground`, the spire's game on snow, bare rock and tundra, with the dev overlays on: the army
-picked, every tile it is lit on must lie above the highest ground under it), `--steps lab-day-turn`,
-`--steps lab-day-later`, `--steps lab-day-turn-slow` and `--steps lab-day-later-short` (the same game on Frontier's day
-2 ending, `/lab/game?scenario=day-turn` in the session or `scenario=day-later` before it opened, over prod's recorded
-history of that day, the map opened where the realm stood on day 2: the summary's totals must be the recorded player's
-own day 2 (slow: history answers only after the moment went on, and the summary opens then; short: a page of stories
-late in day 2 leaves its start unread, and the card shows dashes and says why), and Continue must bring the camera onto
-the realm's day-3 site), `--steps lab-day-later-quiet` and `--steps lab-day-later-played-on` (day 2 not played, or the
-player already played on in day 3 on another device: no summary, and the day's end still brings the camera onto the
-day-3 site), `--steps lab-season-opens` (a player in the season 30 s before its first day, their realm founded but on no
-site yet: the map must draw with no error, then day 1's turn must play, with no summary, and leave the camera on the
-realm's first site), `--steps lab-day-turn-asleep` (the owner's phone, at `--viewport 390x844`: a minute before day 2
-ends the tab's window is minimized and the page frozen, its WebGL context lost and Herald's stream silent with its
-socket open, then brought back past the end; on WebGL the page must boot again and the map draw, its middle band no more
-than half black past what it was, the loss's two error lines its outcome; on WebGPU, whose device this machine keeps,
-the silent stream must be dropped and resumed; then the summary and Continue as above), `--steps realm-load` (a
-spectator's realm view as first met: the map held still, the first press of Realm, the realm held still, back to the
-map, Realm again, and the realm's address loaded again; each step reports its downloads by kind with their bytes on the
-wire, the GPU work its frames asked for (pipelines and shaders compiled, bytes uploaded), long frames, the frames where
-the drawn scene changed and the scene marks `scene:<name>:requested` and `scene:<name>:presentable`; the boot reports
-the same as `bootWindow`), `--steps lab-realm-load` (the same on the lab's built Kingdom,
-`/lab/game?scenario=painted-buildings`, reopened on its realm with `&scene=hex`), `--steps blitz-realm-load` (the same
-on the newest live Blitz game), `--steps entry` (the game entered from a fresh profile, then the same address loaded
-again from the HTTP cache, each followed by 10 s still on the map read for what keeps running: frame callbacks,
-repeating timers and timers of 100 ms or more by the code that scheduled them, elements restyled by script, running CSS
-animations, canvases, full-screen layers a player cannot see, the boot shell and the GPU memory held, and the first
-seconds of play from one continuous frame record from the drop of the doorway (frames over 33 ms and the worst frame in
-the 5 s after it, the time to the first second of frames at or under 20 ms, each counting the frame that crosses its
-end; a record whose frames do not reach from the drop through the window is refused as incomplete, and the record is
-kept in the transcript beside its judgment, `doorwayFrames`); the reload's entry milestones are kept),
-`--steps lab-entry` (the same on the lab's built Kingdom, needing no live game), `--steps map-frames` (the spectator's
-map only: entered, idle, pan, zoom), `--model-override <dir>` (the models under `<dir>`, at their path below
-`public/models`, served in place of the deployed ones whatever their content hash, a spectator's or a lab game's only;
+(`/lab/game?scenario=high-ground`, the spire's game on snow, bare rock and tundra, its army at the edge of the revealed
+land, with the dev overlays on: the army picked, every tile it is lit on, the ones it may explore on the fog's floor
+among them, must lie on its ground, never under it nor 0.06 over it, and the army must stand on its own ground, never
+under it nor 0.06 over it), `--steps lab-day-turn`, `--steps lab-day-later`, `--steps lab-day-turn-slow` and
+`--steps lab-day-later-short` (the same game on Frontier's day 2 ending, `/lab/game?scenario=day-turn` in the session or
+`scenario=day-later` before it opened, over prod's recorded history of that day, the map opened where the realm stood on
+day 2: the summary's totals must be the recorded player's own day 2 (slow: history answers only after the moment went
+on, and the summary opens then; short: a page of stories late in day 2 leaves its start unread, and the card shows
+dashes and says why), and Continue must bring the camera onto the realm's day-3 site), `--steps lab-day-later-quiet` and
+`--steps lab-day-later-played-on` (day 2 not played, or the player already played on in day 3 on another device: no
+summary, and the day's end still brings the camera onto the day-3 site), `--steps lab-season-opens` (a player in the
+season 30 s before its first day, their realm founded but on no site yet: the map must draw with no error, then day 1's
+turn must play, with no summary, and leave the camera on the realm's first site), `--steps lab-day-turn-asleep` (the
+owner's phone, at `--viewport 390x844`: a minute before day 2 ends the tab's window is minimized and the page frozen,
+its WebGL context lost and Herald's stream silent with its socket open, then brought back past the end; on WebGL the
+page must boot again and the map draw, its middle band no more than half black past what it was, the loss's two error
+lines its outcome; on WebGPU, whose device this machine keeps, the silent stream must be dropped and resumed; then the
+summary and Continue as above), `--steps realm-load` (a spectator's realm view as first met: the map held still, the
+first press of Realm, the realm held still, back to the map, Realm again, and the realm's address loaded again; each
+step reports its downloads by kind with their bytes on the wire, the GPU work its frames asked for (pipelines and
+shaders compiled, bytes uploaded), long frames, the frames where the drawn scene changed and the scene marks
+`scene:<name>:requested` and `scene:<name>:presentable`; the boot reports the same as `bootWindow`),
+`--steps lab-realm-load` (the same on the lab's built Kingdom, `/lab/game?scenario=painted-buildings`, reopened on its
+realm with `&scene=hex`), `--steps blitz-realm-load` (the same on the newest live Blitz game), `--steps entry` (the game
+entered from a fresh profile, then the same address loaded again from the HTTP cache, each followed by 10 s still on the
+map read for what keeps running: frame callbacks, repeating timers and timers of 100 ms or more by the code that
+scheduled them, elements restyled by script, running CSS animations, canvases, full-screen layers a player cannot see,
+the boot shell and the GPU memory held, and the first seconds of play from one continuous frame record from the drop of
+the doorway (frames over 33 ms and the worst frame in the 5 s after it, the time to the first second of frames at or
+under 20 ms, each counting the frame that crosses its end; a record whose frames do not reach from the drop through the
+window is refused as incomplete, and the record is kept in the transcript beside its judgment, `doorwayFrames`); the
+reload's entry milestones are kept), `--steps lab-entry` (the same on the lab's built Kingdom, needing no live game),
+`--steps map-frames` (the spectator's map only: entered, idle, pan, zoom), `--model-override <dir>` (the models under
+`<dir>`, at their path below `public/models`, served in place of the deployed ones whatever their content hash, a
+spectator's or a lab game's only;
 `node scripts/client-playtest/heavier-models.mjs --triangles 4|16 --textures 2 --out <dir> <model>…` writes such copies
 with each triangle split into four and each KTX2 texture at twice its size), `--profile-steps <step,…>` (a `.cpuprofile`
 of each named step, and of the boot for `boot`; profiled steps' timings are not comparable with unprofiled ones),
@@ -586,22 +592,24 @@ before/after and actual fees from included receipts (a validation refusal has no
 or account address in those measurements and never fabricates an RPC reply or applies a release. Use a fresh evidence
 directory for each run; the handshake expires after three minutes.
 
-A founded free home's daily source is self-serve at game entry → Choose a daily claim → Add this daily claim. The picker
+A founded free home's daily source is self-serve at game entry → Choose a quest bonus → Add this quest bonus. The picker
 uses the same linked-wallet holdings as founding.
 
-The discovered-Spire path is `/lab/game?scenario=discovered-spire`: select Army 1, open Spire, then Enter Ethereal II.
-`pnpm --dir apps/game playtest:landing lab-discovered-spire` drives that path at desktop and phone sizes, asserts that
-only the next layer is offered and checks the command, new occupancy and camera arrival. The army panel then shows the
-new layer’s next-reveal Spire chance, read from its home/day/layer counter.
+The discovered-Spire path is `/lab/game?scenario=discovered-spire`: select the realm's first army, open Spire, then
+Enter Ethereal II. `pnpm --dir apps/game playtest:landing lab-discovered-spire` drives that path at desktop and phone
+sizes, asserts that only the next layer is offered and checks the command, new occupancy and camera arrival.
 
-The stamina effects paths are `/lab/game?scenario=stamina-mist` and `stamina-wind`: select Army 1, open its panel, read
-its bar and Full in timer. `pnpm --dir apps/game playtest:landing lab-stamina-mist lab-stamina-wind` drives both
-recorded-effect fixtures at desktop and phone sizes. Native lifecycle tests prove Explore settlement and quorum timing.
+The stamina effects paths are `/lab/game?scenario=stamina-mist` and `stamina-wind`: select the realm's first army, open
+its panel, read its bar and Full in timer. `pnpm --dir apps/game playtest:landing lab-stamina-mist lab-stamina-wind`
+drives both recorded-effect fixtures at desktop and phone sizes. Native lifecycle tests prove Explore settlement and
+quorum timing.
 
-Supply posts: `/lab/game?scenario=supply-post`, select the cleared camp beside Army 1: with one army beside it the sheet
-is that army's reinforcement, opening at Max (several armies are each offered first), then Reinforce. `lab-supply-post`
-checks the signed camp ID and resulting army and home balances on desktop and phone, retaining the camp banner,
-reinforcement sheet and response evidence.
+Supply posts: `/lab/game?scenario=supply-post`, select the cleared camp beside the realm's first army, with nothing or
+that army selected (the player's own post takes the click from a selected army): the map lights the armies beside it as
+it does for the realm, and its panel names the realm stock it draws from, when it ends and those armies; right-click (a
+phone holds) that army or tap its row for the realm's Reinforce sheet, Max, then Reinforce. `lab-supply-post` checks the
+signed camp ID and resulting army and home balances on desktop and phone, retaining the post, reinforcement sheet and
+response evidence.
 
 Scouts are raised in Deploy by selecting Scouts from the troop choices, then a count and an open army slot. The Scouts'
 Lodge opens at City and produces the separate Scout stock; it has no Scouting research. `--steps lab-scouts` uses
@@ -613,8 +621,8 @@ twice through the card, recording each command, army, guard and last-target fact
 `lab-deep-battle-target` checks the same path against a rival Deep guard. Native tests check both exchanges, rejection
 and removal. The die, Charge and Battle skill no longer modify either forecast or settlement.
 
-Oath capacity is researched at Barracks, Range and Scouts' Lodge, with two free slots and three purchases per troop.
-Deploy shows the current troop's capacity; an army's panel keeps its capacity from creation.
+Oath capacity is researched at Barracks, Range and Scouts' Lodge, with two free slots and three purchases per troop. An
+army deploys with no Oath, so Deploy shows none; an army's panel shows the capacity it keeps from creation.
 `/lab/game?scenario=oath-slots` and `lab-oath-slots` buy the third Knight slot through Research, check the exact price
 and deploy an army with three slots on desktop and phone. These are lab proofs; native tests cover immutable army
 capacity.
@@ -628,9 +636,9 @@ the Fragments the head shows (none in the Deep); the swapped card reads New and 
 first card before it chooses. `lab-actions-oath-pick` and `lab-actions-oath-replace` play `/lab/game?scenario=oath-pick`
 and `oath-replace` on desktop and phone, recording the signed choice and resulting held Oath. Each path opens Delete,
 checks the Oath loss warning, cancels to retain the army, then confirms and checks the army and Oath record disappear.
-The freed slot retains its stamina. Native tests cover Shrine reveals, persistence, deletion and remustering with an
-empty Oath record; these browser proofs use recorded offers. `lab-oath-decline` and `lab-oath-pass-capped` check the
-pass reward, including overflow at the maximum.
+The freed slot retains its stamina. Native tests cover Shrine uses, persistence, deletion and remustering with an empty
+Oath record; these browser proofs use recorded offers. `lab-oath-decline` and `lab-oath-pass-capped` check the pass
+reward, including overflow at the maximum.
 
 Vitriol changes the Deep's field and guard loss to its generated rule value. `/lab/game?scenario=oath-vitriol` and
 `lab-oath-vitriol` choose it through the Oath panel, read the reduced field drain, and join the Ethereal mine on desktop

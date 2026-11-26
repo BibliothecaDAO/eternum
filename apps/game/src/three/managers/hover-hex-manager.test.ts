@@ -101,21 +101,16 @@ describe("HoverHexManager material ownership", () => {
     expect(hoverHex.position.y).toBeCloseTo(0.03);
   });
 
-  it("drapes every outline vertex over the sampled surface at its own world position", () => {
+  it("lies flat on its tile's ground, each layer lifted over it", () => {
     const manager = new HoverHexManager(new THREE.Scene(), {
-      sampleSurface: (x, z) => ({ biome: null, height: x * 0.2 - z * 0.1, normal: [0, 1, 0] }),
+      sampleSurface: () => ({ biome: null, height: 0.4, normal: [0, 1, 0] }),
+      sampleHeight: (x, z) => x * 0.2 - z * 0.1,
     });
-    for (const [x, z] of [
-      [4, 8],
-      [-2, 3],
-    ]) {
-      manager.showHover(x, z);
-      const mesh = (manager as any).hoverHex as THREE.Mesh;
-      const vertices = mesh.geometry.getAttribute("position");
-      for (let index = 0; index < vertices.count; index++) {
-        expect(vertices.getZ(index)).toBeCloseTo((x + vertices.getX(index)) * 0.2 - (z - vertices.getY(index)) * 0.1);
-      }
-    }
+    manager.showHover(4, 8);
+    const mesh = (manager as any).hoverHex as THREE.Mesh;
+    const vertices = mesh.geometry.getAttribute("position");
+    expect(mesh.position.y).toBeCloseTo(4 * 0.2 - 8 * 0.1 + 0.03);
+    for (let index = 0; index < vertices.count; index++) expect(vertices.getZ(index)).toBe(0);
     manager.dispose();
   });
 
@@ -124,6 +119,7 @@ describe("HoverHexManager material ownership", () => {
       Math.max(Math.abs(x), 0.5 * Math.abs(x) + (Math.sqrt(3) / 2) * Math.abs(z)) < Math.sqrt(3) / 2;
     const manager = new HoverHexManager(new THREE.Scene(), {
       sampleSurface: (x, z) => ({ biome: null, height: inside(x, z) ? 0 : 0.4, normal: [0, 1, 0] }),
+      sampleHeight: (x, z) => (inside(x, z) ? 0 : 0.4),
     });
     manager.showHover(0, 0);
     for (const object of [
@@ -151,23 +147,6 @@ describe("HoverHexManager material ownership", () => {
 
     expect(hoverHalo.visible).toBe(true);
     expect(hoverHalo.parent).not.toBeNull();
-  });
-
-  it("samples between corners so curved ground cannot leave the selection floating", () => {
-    const manager = new HoverHexManager(new THREE.Scene(), {
-      sampleSurface: (x, z) => ({ biome: null, height: 0.2 * Math.cos(x * 4) * Math.cos(z * 4), normal: [0, 1, 0] }),
-    });
-    manager.showHover(0, 0);
-    for (const object of [(manager as any).hoverHex, (manager as any).hoverOutline] as THREE.Mesh[]) {
-      const positions = object.geometry.getAttribute("position");
-      expect(positions.count).toBeGreaterThan(12);
-      for (let index = 0; index < positions.count; index++) {
-        expect(positions.getZ(index)).toBeCloseTo(
-          0.2 * Math.cos(positions.getX(index) * 4) * Math.cos(positions.getY(index) * 4),
-        );
-      }
-    }
-    manager.dispose();
   });
 
   it("disposes shader material and geometry ownership", () => {

@@ -6,7 +6,7 @@ import {
   applyHexRingLook,
   createHexRingMaterials,
   createHexRingShapes,
-  drapeHexRingCopies,
+  layOnGround,
   HEX_RING_LIFT,
   type HexRingShapes,
 } from "./hex-ring";
@@ -60,11 +60,6 @@ export class OwnershipRingLayer {
     return this.centres.length;
   }
 
-  /** Terrain pages stream in after the rings are placed; each one that lands re-grounds them. */
-  refreshTerrainPlacement(): void {
-    if (this.centres.length > 0) this.drape();
-  }
-
   dispose(): void {
     for (const object of Object.values(this.objects)) {
       this.scene.remove(object);
@@ -77,7 +72,7 @@ export class OwnershipRingLayer {
   private drape(): void {
     for (const [name, object] of Object.entries(this.objects) as [RingLayerName, THREE.Mesh | THREE.LineSegments][]) {
       object.geometry.dispose();
-      object.geometry = drapeHexRingCopies(this.shapes[name], this.centres, this.terrain, HEX_RING_LIFT[name]);
+      object.geometry = layOnGround(this.shapes[name], this.centres, this.terrain, HEX_RING_LIFT[name]);
       object.visible = this.centres.length > 0;
     }
   }

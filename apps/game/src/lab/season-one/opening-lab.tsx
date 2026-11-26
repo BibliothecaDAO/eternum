@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { aspectName, aspects, type AspectId } from "@bibliothecadao/types";
-import { HudSetting, HudSwitch } from "@/ui/design-system/kit/hud-elements";
 import { OPENING_WORDS } from "@/ui/design-system/kit/words";
 import {
   OPENING,
@@ -15,7 +14,7 @@ import { OPENING_RULES } from "@/ui/features/frontier/opening/opening-fixtures";
 import {
   activeOpeningMoment,
   EMPTY_OPENING_CONTEXT,
-  openedMoments,
+  openedParts,
   reachedOnContext,
   TUTORIAL_SKIPPED,
 } from "@/ui/features/frontier/opening/opening-state";
@@ -80,13 +79,12 @@ export function OpeningLab() {
   const [ownAspect, setOwnAspect] = useState<AspectId>(1);
   const [phone, setPhone] = useState(false);
   const [completedPreview, setCompletedPreview] = useState(false);
-  const [all, setAll] = useState(false);
   const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set());
 
   const ctx = contextForMoment(selectedMoment);
   const rules = { ...OPENING_RULES, ownAspect };
   const active = activeOpeningMoment(ctx, rules, seen);
-  const opened = all ? "all" : openedMoments(new Set(), reachedOnContext(ctx));
+  const opened = openedParts(new Set(), seen, reachedOnContext(ctx));
 
   const dismissActive = () => {
     if (!active) return;
@@ -155,10 +153,6 @@ export function OpeningLab() {
           <p className="text-hud-label text-hud-muted">No active tutorial line for this context.</p>
         )}
       </div>
-
-      <HudSetting name={OPENING_WORDS.showEverything}>
-        <HudSwitch on={all} label={OPENING_WORDS.showEverything} onChange={setAll} />
-      </HudSetting>
 
       <ul data-opening-parts className="flex flex-wrap gap-2">
         {PARTS.map((part) => (

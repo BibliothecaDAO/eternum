@@ -11,4 +11,7 @@ const CARDINAL = new Intl.PluralRules("en-US");
  * "slot is", "slots are") reads "1 slot is", "2 slots are". The one plural rule: no caller picks a noun's number.
  */
 export const formatCount = (count: number, singular: string, plural = `${singular}s`): string =>
-  `${exact.format(count)} ${CARDINAL.select(count) === "one" ? singular : plural}`;
+  `${exact.format(count)} ${nounFor(count, singular, plural)}`;
+
+export const nounFor = (count: number, singular: string, plural = `${singular}s`): string =>
+  CARDINAL.select(count) === "one" ? singular : plural;

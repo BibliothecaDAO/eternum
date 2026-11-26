@@ -21,13 +21,13 @@ import type { ReactNode } from "react";
 
 import type { LordsReading } from "@/shell/value/use-lords-balance";
 
+import { BaneFigure } from "../day/bane-mark";
 import { FRONTIER_STORES, isMadeStore, isTroopStore, type StoreKind } from "../stores";
 import { AspectMedallion } from "./realm-header-chip";
 import { LandingDelta, STORE_TONES, storeLine, storeRateText, type StoreReading } from "./status-strip";
 
 export interface RealmRankUp {
   name: string;
-  gives?: string;
   need?: Price;
   refusal?: string;
   sending: boolean;
@@ -68,7 +68,7 @@ export const RealmCard = ({
   <section
     aria-label={REALM}
     data-hud-part=""
-    className="frontier-cluster-card frontier-realm-card pointer-events-auto"
+    className="ui-popover frontier-cluster-card frontier-realm-card pointer-events-auto"
   >
     <header className="frontier-realm-card__head">
       <button
@@ -111,7 +111,7 @@ export const RealmCard = ({
             caption={SHOP_WORDS.title}
             tone="gold"
             label={fragments === null ? FRAGMENTS : SHOP_WORDS.fragments(fragments)}
-            onPress={fragments === null ? undefined : onShop}
+            onPress={onShop}
           />
         </li>
         <li data-store="lords">
@@ -159,7 +159,13 @@ const StoreCell = ({
           </span>
         }
         value={<StoreValue store={store} />}
-        caption={rate ?? (troop ? undefined : FRONTIER_STORES[store.kind].word)}
+        caption={
+          rate ? (
+            <BaneFigure figure="production">{rate}</BaneFigure>
+          ) : troop ? undefined : (
+            FRONTIER_STORES[store.kind].word
+          )
+        }
         tone={rate ? "good" : undefined}
         label={storeLine(store)}
         onPress={onOpen && isMadeStore(store.kind) ? () => onOpen(store.kind) : undefined}
@@ -187,7 +193,7 @@ const Cell = ({
 }: {
   icon: ReactNode;
   value: ReactNode;
-  caption?: string;
+  caption?: ReactNode;
   tone?: "good" | "gold" | "bad";
   label: string;
   onPress?: () => void;
@@ -220,7 +226,6 @@ const NextRank = ({ rankUp }: { rankUp: RealmRankUp }) => (
   <footer className="frontier-realm-card__next">
     <span className="frontier-realm-card__next-line">
       {REALM_CARD_WORDS.nextRank} <b>{rankUp.name}</b>
-      {rankUp.gives && <span className="text-hud-muted"> · {rankUp.gives}</span>}
     </span>
     {rankUp.onUpgrade ? (
       <HudButton

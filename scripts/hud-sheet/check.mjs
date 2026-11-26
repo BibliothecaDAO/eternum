@@ -10,6 +10,7 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
 
 import { configColorsOf } from "../shell-tokens/check.mjs";
 
@@ -75,6 +76,7 @@ const COLOR_UTILITY =
 
 /** A literal colour; a sheet colour read through its channels (`rgb(var(--hud-accent))`) is the sheet's own. */
 const RAW_COLOR = /#[0-9a-fA-F]{3,8}\b|(?<![a-zA-Z-])(?:rgba?|hsla?|oklch)\((?!var\(--hud-)/g;
+const SURFACE_GROUND = /linear-gradient\(180deg,\s*var\(--hud-surface-from\),\s*var\(--hud-surface-to\)\)/;
 
 /**
  * Each rule, by the value it refuses. `colors` are the Tailwind config's colour names (`gold`, `danger`, the shell's
@@ -110,6 +112,12 @@ export const rules = (colors, steps) => [
     pattern: /(?<![\w-])font-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)(?![\w-])/g,
   },
   { rule: "literal font size: use --hud-text-<role>", pattern: /font-size:\s*[\d.]+(?:px|rem)/g },
+  {
+    rule: "a copied kit surface: a Frontier surface takes the kit's class (ui-popover, ui-pill, ui-row) for its rim and ground",
+    pattern: new RegExp(SURFACE_GROUND.source, "g"),
+    refused: true,
+    within: `${APP}/ui/features/frontier/`,
+  },
   // The browser draws a native select in its own colours, whatever the HUD's CSS says: the sheet's HudSelect replaces
   // it. No count allows one.
   { rule: "raw <select>: use HudSelect", pattern: /<select(?![\w-])/g, refused: true },
@@ -120,13 +128,166 @@ export const rules = (colors, steps) => [
 
 /** Every refused value in one file's source, with its line; `refused` when no allowlist count can let it through. */
 export const findViolations = (source, path, colors, steps) =>
-  source
-    .split("\n")
-    .flatMap((text, index) =>
-      rules(colors, steps).flatMap(({ rule, pattern, refused = false }) =>
+  source.split("\n").flatMap((text, index) =>
+    rules(colors, steps)
+      .filter(({ within }) => within === undefined || path.startsWith(within))
+      .flatMap(({ rule, pattern, refused = false }) =>
         [...text.matchAll(pattern)].map(([match]) => ({ path, line: index + 1, rule, match, refused })),
       ),
-    );
+  );
+
+const KIT_SHEET = `${APP}/ui/design-system/kit/hud-sheet.css`;
+
+export const kitSurfaceClasses = (sheet) =>
+  new Set(
+    [...sheet.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter(([, , body]) => SURFACE_GROUND.test(body))
+      .flatMap(([, selectors]) => selectors.split(",").map((selector) => selector.trim().match(/^\.(ui-[\w-]+)$/)?.[1]))
+      .filter((name) => name !== undefined),
+  );
+
+const FRONTIER = `${APP}/ui/features/frontier/`;
+const isSurfaceReset = (body) =>
+  body.split(";").some((declaration) => {
+    const [property = "", ...rest] = declaration.split(":");
+    const name = property.trim().toLowerCase();
+    const tokens = rest
+      .join(":")
+      .replace(/!important/gi, "")
+      .trim()
+      .toLowerCase()
+      .split(/\s+/);
+    if (/^background(?:-color|-image)?$/.test(name))
+      return tokens.length === 1 && ["transparent", "none"].includes(tokens[0]);
+    if (/^border(?:-(?:top|right|bottom|left|block|inline))?(?:-(?:width|style|color))?$/.test(name))
+      return tokens.some((token) => ["0", "0px", "none", "hidden", "transparent"].includes(token));
+    return false;
+  });
+const KIT_ELEMENTS = `${APP}/ui/design-system/kit/hud-elements.tsx`;
+
+const namesIn = (text, surfaces) => text.split(/\s+/).filter((name) => name !== "" && !surfaces.has(name));
+
+const surfacesIn = (text, surfaces) =>
+  [...text.matchAll(/[\w-]+/g)].map(([name]) => name).filter((name) => surfaces.has(name));
+
+export const kitSurfaceComponents = (source, surfaces) => {
+  const blocks = [
+    ...source.matchAll(/^(?:export )?const (\w+) = [\s\S]*?(?=^(?:export )?const \w+ = |$(?![\s\S]))/gm),
+  ].map(([block, name]) => ({ name, block }));
+  const drawn = new Map(
+    blocks.map(({ name, block }) => [name, new Set(surfacesIn(block, surfaces))]).filter(([, found]) => found.size > 0),
+  );
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const { name, block } of blocks)
+      for (const [each, found] of [...drawn])
+        if (each !== name && new RegExp(`<${each}\\b`).test(block)) {
+          const own = drawn.get(name) ?? new Set();
+          const before = own.size;
+          for (const surface of found) own.add(surface);
+          drawn.set(name, own);
+          if (own.size > before) grew = true;
+        }
+  }
+  return drawn;
+};
+
+const textsIn = (node) => {
+  const texts = [];
+  const visit = (each) => {
+    if (ts.isStringLiteral(each) || ts.isNoSubstitutionTemplateLiteral(each)) texts.push(each.text);
+    else if (ts.isTemplateExpression(each)) {
+      texts.push(each.head.text);
+      for (const span of each.templateSpans) {
+        visit(span.expression);
+        texts.push(span.literal.text);
+      }
+    } else ts.forEachChild(each, visit);
+  };
+  visit(node);
+  return texts;
+};
+
+const isClassName = (node, file) =>
+  (ts.isJsxAttribute(node) || ts.isPropertyAssignment(node)) && node.name.getText(file) === "className";
+
+const tagOf = (attribute, file) => {
+  const element = attribute.parent?.parent;
+  return element && (ts.isJsxOpeningElement(element) || ts.isJsxSelfClosingElement(element))
+    ? element.tagName.getText(file)
+    : null;
+};
+
+export const surfaceCompanions = (source, surfaces, components = new Map()) => {
+  const file = ts.createSourceFile("source.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const companions = new Map();
+  const visit = (node) => {
+    if (isClassName(node, file) && node.initializer) {
+      const texts = textsIn(node.initializer);
+      const drawn = new Set([
+        ...texts.flatMap((text) => surfacesIn(text, surfaces)),
+        ...(components.get(tagOf(node, file)) ?? []),
+      ]);
+      if (drawn.size > 0)
+        for (const name of texts.flatMap((text) => namesIn(text, surfaces))) {
+          const own = companions.get(name) ?? new Set();
+          for (const surface of drawn) own.add(surface);
+          companions.set(name, own);
+        }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return companions;
+};
+
+const topLevelSelectors = (text) => {
+  const selectors = [];
+  let depth = 0;
+  let from = 0;
+  for (let at = 0; at < text.length; at += 1) {
+    if (text[at] === "(") depth += 1;
+    else if (text[at] === ")") depth -= 1;
+    else if (text[at] === "," && depth === 0) {
+      selectors.push(text.slice(from, at));
+      from = at + 1;
+    }
+  }
+  return [...selectors, text.slice(from)].map((selector) => selector.trim());
+};
+
+const withoutComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, " "));
+
+export const findSurfaceResets = (source, path, companions, surfaces) =>
+  [...withoutComments(source).matchAll(/([^{}]+)\{([^{}]*)\}/g)].flatMap(({ 1: selectors, 2: body, index }) => {
+    if (!isSurfaceReset(body)) return [];
+    const line = source.slice(0, index + selectors.length - selectors.trimStart().length).split("\n").length;
+    return topLevelSelectors(selectors).flatMap((selector) => {
+      const subject = selector.split(/[\s>+~]+(?![^(]*\))/).at(-1) ?? "";
+      if (/::[\w-]+/.test(subject)) return [];
+      const named = [...subject.matchAll(/\.([\w-]+)/g)].map(([, name]) => name);
+      const excluded = new Set(
+        [...subject.matchAll(/:not\(([^)]*)\)/g)].flatMap(([, inner]) =>
+          [...inner.matchAll(/\.([\w-]+)/g)].map(([, name]) => name),
+        ),
+      );
+      const reached =
+        named.length === 0
+          ? [...surfaces]
+          : named.flatMap((name) => (surfaces.has(name) ? [name] : [...(companions.get(name) ?? [])]));
+      const wiped = new Set(reached.filter((surface) => !excluded.has(surface)));
+      if (wiped.size === 0) return [];
+      return [
+        {
+          path,
+          line,
+          rule: `a feature reset over a kit surface: scope it to ${[...wiped].map((surface) => `:not(.${surface})`).join("")} so it never wipes the kit's ground and rim`,
+          match: selector,
+          refused: true,
+        },
+      ];
+    });
+  });
 
 /** Each file's count against its line: over it fails, under it fails until the line is lowered. */
 export const ratchet = (counts, allowlist) => {
@@ -170,7 +331,21 @@ const main = () => {
   const found = SCOPE.flatMap(filesUnder).flatMap((path) =>
     findViolations(readFileSync(join(ROOT, path), "utf8"), path, colors, steps),
   );
-  const refused = found.filter((violation) => violation.refused);
+  const frontier = filesUnder(FRONTIER);
+  const surfaces = kitSurfaceClasses(readFileSync(join(ROOT, KIT_SHEET), "utf8"));
+  if (surfaces.size === 0) {
+    console.error(`${KIT_SHEET}: no kit class paints the surface ground, so no reset over a kit surface can be found`);
+    process.exit(1);
+  }
+  const components = kitSurfaceComponents(readFileSync(join(ROOT, KIT_ELEMENTS), "utf8"), surfaces);
+  const companions = new Map();
+  for (const path of frontier.filter((each) => each.endsWith(".tsx")))
+    for (const [name, drawn] of surfaceCompanions(readFileSync(join(ROOT, path), "utf8"), surfaces, components))
+      companions.set(name, new Set([...(companions.get(name) ?? []), ...drawn]));
+  const resets = frontier
+    .filter((path) => path.endsWith(".css"))
+    .flatMap((path) => findSurfaceResets(readFileSync(join(ROOT, path), "utf8"), path, companions, surfaces));
+  const refused = [...found, ...resets].filter((violation) => violation.refused);
   const violations = found.filter((violation) => !violation.refused);
   const counts = new Map();
   for (const { path } of violations) counts.set(path, (counts.get(path) ?? 0) + 1);

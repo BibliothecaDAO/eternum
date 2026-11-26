@@ -8,6 +8,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { MID_REALM } from "../research/progression-fixture";
 import { readResearchTree, type RealmResearchFacts } from "../research/research-tree";
 import { type CardMakes, BuildingCardView } from "./building-card";
+import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -112,7 +113,7 @@ it("keeps Research, dimmed, when the labor storage cannot hold the tier's price,
   });
   const verb = button(/^Upgrade$/)!;
   expect(verb.disabled).toBe(true);
-  expect(verb.textContent).toBe("Labor storage 15,000 / 25,000 · Kingdom");
+  expect(verb.textContent).toBe(RESEARCH_TREE.store("15,000", "25,000", "Kingdom"));
   act(() => verb.click());
   expect(onResearch).not.toHaveBeenCalled();
   act(() => button(/^Upgrade the Castle$/)!.click());
@@ -150,7 +151,7 @@ it("shows a training building's one figure, what every new army starts with, now
   draw(research.ROW_SUPPLY_YARD, { standing: 1 });
   expect(card().textContent).toContain("1 building");
   expect(card().textContent).not.toContain("1 buildings");
-  expect(rows()).toEqual([["Logistics", "Every new army", "216 max stamina", "→", "252 max stamina"]]);
+  expect(rows()).toEqual([["Logistics", RESEARCH_TREE.everyNewArmy, "216 max stamina", "→", "252 max stamina"]]);
   expect(button(/^Upgrade$/)).toBeDefined();
   // Common is I on the card and current column; the next tier is II.
   expect(gems()).toEqual(["I", "I", "II"]);

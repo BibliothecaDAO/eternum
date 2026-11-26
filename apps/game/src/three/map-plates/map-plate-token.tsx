@@ -3,9 +3,17 @@ import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { orderMeaning } from "@/ui/design-system/icon-meaning";
 import { HudStamina, HudTierChip, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { UNDEFENDED } from "@/ui/design-system/kit/words";
+import { combatMarkOf, type CombatMarkLook } from "@/ui/features/frontier/sites/combat-mark";
 
 import { chipWidth, labelWidth } from "./map-plate-layout";
-import { type MapPlate, type PlateTroops, type PlateWatched } from "./map-plate-model";
+import {
+  attackOrder,
+  plateTroopCategory,
+  plateTroopMeaning,
+  type MapPlate,
+  type PlateTroops,
+  type PlateWatched,
+} from "./map-plate-model";
 
 /**
  * What a token says: whose, what kind, how strong (tier and count, or undefended), an army's stamina. Never what a site
@@ -22,6 +30,7 @@ interface TokenReading {
   beast: string | null;
   /** A structure with guard slots and none filled; a Frontier realm, with no guard to tell, is not undefended. */
   undefended: boolean;
+  combat: CombatMarkLook | null;
   /** An army's stamina. */
   stamina: StaminaBar | null;
   /** To a watching viewer, its player's initial on the disk, in their seat's colour. */
@@ -32,28 +41,31 @@ interface TokenReading {
 export const tokenReading = (plate: MapPlate): TokenReading => {
   if (plate.kind === "army")
     return {
-      icon: `${plate.troops.type}-t${plate.troops.tier}` as IconMeaning,
+      icon: plateTroopMeaning(plate.troops),
       strength: { tier: plate.troops.tier, count: plate.troops.count },
       beast: null,
       undefended: false,
+      combat: combatOfStack(plate.troops),
       stamina: plate.stamina ?? null,
       mark: plate.watched?.mark ?? null,
       crest: null,
     };
   const guards = plate.guards ?? [];
+  const firstMet = attackOrder(guards)[0];
   return {
     icon: plate.icon,
     strength:
       guards.length === 0
         ? null
         : {
-            tier: guards.some((slot) => slot.beast)
+            tier: guards.some((slot) => slot.beast || slot.tier === null)
               ? null
-              : (guards.reduce<number>((top, slot) => Math.max(top, slot.tier), 1) as PlateTroops["tier"]),
+              : (guards.reduce<number>((top, slot) => Math.max(top, slot.tier ?? 1), 1) as PlateTroops["tier"]),
             count: guards.reduce((sum, slot) => sum + slot.count, 0),
           },
     beast: plate.beast ?? null,
     undefended: plate.guards !== null && guards.length === 0,
+    combat: firstMet ? combatOfStack(firstMet) : null,
     stamina: null,
     mark: plate.watched?.mark ?? null,
     crest: plate.crest ?? null,
@@ -64,6 +76,15 @@ export const tokenReading = (plate: MapPlate): TokenReading => {
  * stamina bar, the gap between readings, the strip's padding and frame. */
 const TOKEN = { disk: 30, row: 18, overlap: 2, stamina: 4, gap: 3, frame: 2 * 4 + 2 };
 const CREST_SIZE = 18;
+const COMBAT_SIZE = 14;
+
+export const combatOfStack = (troops: PlateTroops): CombatMarkLook => combatMarkOf(plateTroopCategory(troops.type));
+
+export const MapCombatBadge = ({ mark }: { mark: CombatMarkLook }) => (
+  <span className="mp-combat" data-combat-mark={mark.label} aria-hidden>
+    <Icon name={mark.icon} size={COMBAT_SIZE} />
+  </span>
+);
 
 /** A token's box, as map-plates.css draws it. */
 export const tokenSize = (plate: MapPlate): { width: number; height: number } => {
@@ -96,6 +117,7 @@ const TokenView = ({ reading }: { reading: TokenReading }) => (
           {reading.mark.letter}
         </span>
       )}
+      {reading.combat && <MapCombatBadge mark={reading.combat} />}
       {reading.crest !== null && (
         <span className="mp-token__crest" aria-hidden>
           <Icon name={orderMeaning(reading.crest)} size={CREST_SIZE} />
@@ -119,10 +141,16 @@ const TokenView = ({ reading }: { reading: TokenReading }) => (
 /** A mark in words, for whoever reads the map without seeing it: its strength and stamina. */
 const tokenWords = (reading: TokenReading): string =>
   [
+    reading.combat?.label,
     reading.undefended
       ? UNDEFENDED
       : reading.strength &&
-        `${reading.strength.tier === null ? reading.beast : `T${reading.strength.tier}`} ${formatExact(reading.strength.count)}`,
+        [
+          reading.strength.tier === null ? reading.beast : `T${reading.strength.tier}`,
+          formatExact(reading.strength.count),
+        ]
+          .filter(Boolean)
+          .join(" "),
     reading.stamina !== null && `Stamina ${formatPercent(reading.stamina.current / reading.stamina.max)}`,
   ]
     .filter(Boolean)

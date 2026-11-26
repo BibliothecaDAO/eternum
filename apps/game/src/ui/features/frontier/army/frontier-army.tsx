@@ -1,4 +1,4 @@
-import { ArmyOathSockets } from "./oath-slots";
+import { ArmyOathEffects, ArmyOathSockets } from "./oath-slots";
 import { ArmyRelicSlots } from "../relics/army-relic-slots";
 import { useState } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -24,17 +24,17 @@ const ArmyPanel = ({ army, onClose }: { army: DockArmy; onClose: () => void }) =
   if (!army.stamina) return null;
   const refill = sellsStamina(army, held) ? <ArmyRefill army={army} look="price" /> : undefined;
   return (
-    <HudSheet
-      label={army.label}
-      beside={<ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />}
-      onClose={onClose}
-    >
+    <HudSheet label={army.label} onClose={onClose}>
       <ArmyDetail army={{ ...army, stamina: army.stamina }} />
+      <ArmyOathEffects explorerId={army.explorerId} />
       <ArmyRelicSlots explorerId={army.explorerId} />
       {deleting && <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />}
       <HudWindowFoot note={<ArmyOathSockets explorerId={army.explorerId} />}>
-        {refill}
-        {spire}
+        <span className="army-foot__verbs">
+          {refill}
+          {spire}
+          <ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />
+        </span>
       </HudWindowFoot>
     </HudSheet>
   );

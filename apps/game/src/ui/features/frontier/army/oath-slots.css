@@ -45,3 +45,34 @@
   line-height: var(--hud-leading-label);
   white-space: nowrap;
 }
+.oath-effects {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.1);
+  margin: 0;
+  border-top: 1px solid var(--hud-divider);
+  padding: theme(spacing.2) 0 0;
+  list-style: none;
+}
+.oath-effects__row {
+  display: flex;
+  align-items: baseline;
+  gap: theme(spacing[1.5]);
+  font-size: var(--hud-text-body);
+  line-height: var(--hud-leading-body);
+  color: rgb(var(--hud-ink));
+}
+.oath-effects__name {
+  color: rgb(var(--hud-gold));
+  font-weight: var(--hud-weight-strong);
+}
+.oath-effects__hero {
+  font-weight: var(--hud-weight-strong);
+  color: var(--hud-good);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.oath-effects__unit {
+  min-width: 0;
+  color: var(--hud-muted);
+}

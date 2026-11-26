@@ -7,6 +7,7 @@ import type { DirectoryGame } from "./herald";
 import { directoryDay, endedSeasons, isAccelerated, seasonTitle } from "./season";
 import { chooseSeason, hasSeasonRealm, isRehearsal, seasonRealm } from "./season-pick";
 import { ARCHIVED_SEASONS } from "./season-tab/archive/archive";
+import { PLAY_WORDS } from "@/ui/design-system/kit/words";
 
 const season = (gameId: number, startMainAt: number, ownRealm: boolean): DirectoryGame => ({
   dev_mode_on: false,
@@ -37,7 +38,19 @@ const season = (gameId: number, startMainAt: number, ownRealm: boolean): Directo
     fragments: null,
     ancient_seal: false,
     structures: ownRealm
-      ? [{ entity_id: 1, category: 1, level: 1, realm_id: 7, coord_x: 0, coord_y: 0, resources_packed: "0" }]
+      ? [
+          {
+            entity_id: 1,
+            category: 1,
+            level: 1,
+            realm_id: 7,
+            coord_x: 0,
+            coord_y: 0,
+            resources_packed: "0",
+            aspect: null,
+            has_wonder: false,
+          },
+        ]
       : [],
   },
 });
@@ -60,7 +73,17 @@ describe("the season a screen shows", () => {
       player_state: {
         ...season(1, 100, false).player_state!,
         structures: [
-          { entity_id: 2, category: 5, level: 1, realm_id: 0, coord_x: 0, coord_y: 0, resources_packed: "0" },
+          {
+            entity_id: 2,
+            category: 5,
+            level: 1,
+            realm_id: 0,
+            coord_x: 0,
+            coord_y: 0,
+            resources_packed: "0",
+            aspect: null,
+            has_wonder: false,
+          },
         ],
       },
     };
@@ -134,7 +157,7 @@ describe("the season's number", () => {
     const rehearsal = { chainId: "0x52", game_id: 3, name: "rehearsal-4x", season_number: null, clock_scale: 4 };
     expect(isRehearsal(testnet)).toBe(true);
     expect(isAccelerated(testnet)).toBe(false);
-    expect(seasonTitle(testnet)).toBe("Final testnet");
+    expect(seasonTitle(testnet)).toBe(PLAY_WORDS.finalTestnet);
     expect(isRehearsal(rehearsal)).toBe(true);
     expect(isAccelerated(rehearsal)).toBe(true);
     expect(seasonTitle(rehearsal)).toBe("Rehearsal");

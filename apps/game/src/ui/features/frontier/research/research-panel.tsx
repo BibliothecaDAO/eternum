@@ -2,10 +2,19 @@ import "./research-tree.css";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudPage, HudRanked, HudTier } from "@/ui/design-system/kit/hud-elements";
+import {
+  HudActions,
+  HudButton,
+  HudCard,
+  HudPage,
+  HudPrice,
+  HudRanked,
+  HudTier,
+} from "@/ui/design-system/kit/hud-elements";
+import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import type { Fix } from "@/ui/design-system/kit/refusal";
 import { RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, tierNumeral } from "@/ui/design-system/kit/words";
-import { formatAmount, formatShort, rankName } from "@bibliothecadao/types";
+import { formatAmount, rankName } from "@bibliothecadao/types";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   type Branch,
@@ -210,18 +219,24 @@ const TreeNodeCard = ({ node, picked, onPick }: { node: TreeNode; picked: boolea
   useLayoutEffect(() => {
     if (picked) slotRef.current?.scrollIntoView?.({ block: "nearest" });
   }, [picked]);
+  const desktop = useHudLayout() === "desktop";
+  const mark = nodeMark(node);
   const look = STATE_LOOK[node.state];
   const missing = firstMissing(node);
   const price = node.needs.filter(isPrice);
-  const badge = nodeBadgeLabel(node, missing);
 
+  if (!desktop)
+    return (
+      <div ref={slotRef} className="research-node-slot">
+        <ResearchTile node={node} picked={picked} onPick={onPick} />
+      </div>
+    );
   return (
     <div ref={slotRef} className="research-node-slot">
       <button
         type="button"
         data-node={node.key}
         data-state={node.state}
-        data-has-tier={node.tier > 0 || undefined}
         data-selected={picked || undefined}
         aria-pressed={picked}
         className="ui-pick research-node"
@@ -230,45 +245,16 @@ const TreeNodeCard = ({ node, picked, onPick }: { node: TreeNode; picked: boolea
         <div className="research-node__head">
           <span className="research-node__icon">
             <Icon name={node.icon} size={32} />
-            {(node.state === "done" || (node.tier > 0 && node.state !== "ready")) && (
-              <span className="research-node__mark" data-tone="done" aria-hidden="true">
-                <Icon name="check" size={11} />
-              </span>
-            )}
-            {node.state === "locked" && node.tier === 0 && (
-              <span className="research-node__mark" data-tone="locked" aria-hidden="true">
-                <Icon name="lock" size={10} />
+            {mark && (
+              <span className="research-node__mark" data-tone={mark} aria-hidden="true">
+                <Icon name={MARK_ICON[mark]} size={11} />
               </span>
             )}
           </span>
           <div className="research-node__body">
             <span className={cn("research-node__title", look.text)}>{node.name}</span>
-            <span
-              data-research-effect
-              className={cn(
-                "research-node__delta research-node__delta--desktop tabular-nums",
-                node.state === "ready"
-                  ? "text-hud-good"
-                  : node.state === "done" || node.tier > 0
-                    ? "text-hud-gold"
-                    : "text-hud-muted",
-              )}
-            >
+            <span data-research-effect className={cn("research-node__delta tabular-nums", EFFECT_TONE[node.state])}>
               <HudRanked words={researchEffectLine(node)} />
-            </span>
-            <span
-              data-research-effect-short
-              aria-hidden="true"
-              className={cn(
-                "research-node__delta research-node__delta--phone tabular-nums",
-                node.state === "ready"
-                  ? "text-hud-good"
-                  : node.state === "done" || node.tier > 0
-                    ? "text-hud-gold"
-                    : "text-hud-muted",
-              )}
-            >
-              {node.shortEffect}
             </span>
             <TierPips node={node} />
           </div>
@@ -281,7 +267,12 @@ const TreeNodeCard = ({ node, picked, onPick }: { node: TreeNode; picked: boolea
                 <span>{RESEARCH_TREE.unlocked}</span>
               </span>
             ) : node.state === "ready" || node.state === "short" ? (
-              <PriceChips price={price} />
+              <HudPrice
+                size="sm"
+                prices={price
+                  .filter((need) => need.need > 0)
+                  .map((need) => ({ of: need.kind, amount: need.need, short: !need.met }))}
+              />
             ) : (
               missing && (
                 <span data-lock-reason className="research-node__reason">
@@ -291,38 +282,56 @@ const TreeNodeCard = ({ node, picked, onPick }: { node: TreeNode; picked: boolea
               )
             )}
           </span>
-          <span className="research-state-pill" data-badge-tone={badge.tone}>
-            {badge.text}
-          </span>
+          <NodeBadge node={node} missing={missing} />
         </div>
       </button>
     </div>
   );
 };
 
-const nodeBadgeLabel = (
-  node: TreeNode,
-  missing: Need | undefined,
-): { text: string; tone: "ready" | "done" | "calm" } => {
-  if (node.state === "ready") return { text: RESEARCH_TREE.states.ready, tone: "ready" };
-  if (node.state === "done") return { text: RESEARCH_TREE.states.done, tone: "done" };
-  if (node.tier > 0) {
-    return {
-      text: RESEARCH_TREE.tierBadge(tierNumeral(node.tier as Rank)),
-      tone: "done",
-    };
-  }
-  if (missing?.kind === "level" && node.era > 0) {
-    return {
-      text: RESEARCH_TREE.eraBadge(tierNumeral((node.era + 1) as Rank)),
-      tone: "calm",
-    };
-  }
-  return {
-    text: RESEARCH_TREE.states[node.state],
-    tone: "calm",
-  };
+const ResearchTile = ({ node, picked, onPick }: { node: TreeNode; picked: boolean; onPick: () => void }) => {
+  const mark = nodeMark(node);
+  return (
+    <HudCard
+      size="sm"
+      title={node.name}
+      picture={<Icon name={node.icon} size={24} />}
+      detail={
+        <span data-research-effect-short className={cn("tabular-nums", EFFECT_TONE[node.state])}>
+          {node.shortEffect}
+        </span>
+      }
+      corner={mark && <Icon name={MARK_ICON[mark]} size={16} />}
+      selected={picked}
+      data-node={node.key}
+      data-state={node.state}
+      data-locked={node.state === "short" || node.state === "locked" || undefined}
+      onClick={onPick}
+    />
+  );
 };
+
+type NodeMark = "done" | "locked";
+
+const MARK_ICON: Record<NodeMark, IconMeaning> = { done: "check", locked: "lock" };
+
+const nodeMark = (node: TreeNode): NodeMark | undefined =>
+  node.state === "done" ? "done" : node.state === "locked" && node.tier === 0 ? "locked" : undefined;
+
+const NodeBadge = ({ node, missing }: { node: TreeNode; missing: Need | undefined }) => {
+  if (node.state === "ready") return <StatePill word={RESEARCH_TREE.states.ready} tone="ready" />;
+  if (node.state === "done") return <StatePill word={RESEARCH_TREE.states.done} tone="done" />;
+  if (node.tier > 0) return <HudTier tier={node.tier as Rank} size="line" />;
+  if (missing?.kind === "level" && node.era > 0)
+    return <StatePill word={RESEARCH_TREE.eraBadge(tierNumeral((node.era + 1) as Rank))} tone="calm" />;
+  return <StatePill word={RESEARCH_TREE.states[node.state]} tone="calm" />;
+};
+
+const StatePill = ({ word, tone }: { word: string; tone: "ready" | "done" | "calm" }) => (
+  <span className="research-state-pill" data-badge-tone={tone}>
+    {word}
+  </span>
+);
 
 const TierPips = ({ node }: { node: TreeNode }) => (
   <span className="research-pips" data-pips={node.maxTier} aria-hidden="true">
@@ -334,19 +343,6 @@ const TierPips = ({ node }: { node: TreeNode }) => (
         data-next={index === node.tier && node.state === "ready" ? "" : undefined}
       />
     ))}
-  </span>
-);
-
-const PriceChips = ({ price }: { price: readonly Extract<Need, { kind: "essence" | "labor" }>[] }) => (
-  <span className="research-node__costs">
-    {price
-      .filter((need) => need.need > 0)
-      .map((need) => (
-        <span key={need.kind} className="research-cost tabular-nums" data-short={!need.met ? "" : undefined}>
-          <Icon name={need.kind} size={12} />
-          <span>{formatShort(need.need)}</span>
-        </span>
-      ))}
   </span>
 );
 
@@ -487,19 +483,9 @@ const NodeActionBar = ({
       </span>
       <div data-research-footer className="research-bar__footer">
         <span className="research-bar__meta">
-          {price.map((need) => (
-            <span
-              key={need.kind}
-              aria-label={needLine(need)}
-              className={cn(
-                "research-bar__price",
-                need.met ? "text-hud-ink" : node.state === "short" ? "text-hud-warn" : "text-hud-bad",
-              )}
-            >
-              <Icon name={need.kind} size={20} />
-              {formatAmount(need.need)}
-            </span>
-          ))}
+          {price.length > 0 && (
+            <HudPrice prices={price.map((need) => ({ of: need.kind, amount: need.need, short: !need.met }))} />
+          )}
           {node.state === "done" && <span className="text-hud-good">{RESEARCH_TREE.states.done}</span>}
           {missing && !isPrice(missing) && (
             <span data-lock-reason className="research-bar__reason text-hud-bad">
@@ -508,25 +494,34 @@ const NodeActionBar = ({
             </span>
           )}
         </span>
-        {node.state === "ready" ? (
-          <HudButton
-            kind="primary"
-            busy={sending ? RESEARCHING : undefined}
-            aria-label={researchActionName(node)}
-            onClick={onResearch}
-          >
-            {RESEARCH_TREE.upgrade}
-          </HudButton>
-        ) : (
-          fixing && (
-            <HudButton kind="primary" icon={fixing.icon} onClick={fixing.onFix}>
-              {fixing.word}
+        {node.state !== "done" && (
+          <HudActions className="research-bar__verbs">
+            {node.state !== "ready" && fixing && (
+              <HudButton kind="secondary" icon={fixing.icon} onClick={fixing.onFix}>
+                {fixing.word}
+              </HudButton>
+            )}
+            <HudButton
+              kind="primary"
+              disabled={node.state !== "ready"}
+              busy={sending ? RESEARCHING : undefined}
+              aria-label={researchActionName(node)}
+              onClick={onResearch}
+            >
+              {RESEARCH_TREE.upgrade}
             </HudButton>
-          )
+          </HudActions>
         )}
       </div>
     </div>
   );
+};
+
+const EFFECT_TONE: Record<NodeState, string> = {
+  ready: "text-hud-good",
+  done: "text-hud-gold",
+  short: "text-hud-muted",
+  locked: "text-hud-muted",
 };
 
 const isPrice = (need: Need): need is Extract<Need, { kind: "essence" | "labor" }> =>

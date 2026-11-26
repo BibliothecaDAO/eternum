@@ -1,6 +1,6 @@
 import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRODUCTION_MODELS } from "@bibliothecadao/eternum";
-import { NEW_ARMY, startsOn } from "@/ui/design-system/kit/words";
+import { NEW_ARMY, staminaReading, startsOn } from "@/ui/design-system/kit/words";
 import { musterStamina } from "@bibliothecadao/eternum/troop-stamina";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -31,7 +31,6 @@ import {
   TROOP_TYPES,
   TroopTier,
   TroopType,
-  formatAmount,
   formatWait,
 } from "@bibliothecadao/types";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -502,7 +501,7 @@ const fieldArmyStartLine = (troop: SelectedTroopCombo, timestamp: number): strin
     0,
     configManager.getTick(TickIds.Armies),
   );
-  return startsOn(NEW_ARMY, `${formatAmount(bar.amount)}/${formatAmount(bar.max)}`, bar.amount === bar.max);
+  return startsOn(NEW_ARMY, staminaReading(bar.amount, bar.max), bar.amount === bar.max);
 };
 
 /**
@@ -549,7 +548,7 @@ function readTroopSupply(
   timestamp: number,
 ): TroopSupply {
   const resourceId = getTroopResourceId(troop.type, troop.tier);
-  const name = resourceName(resourceId);
+  const name = resourceName(resourceId, false);
   if (structureId === undefined) return { name, perHour: undefined, secondsToFullArmy: null };
   const manager = new ResourceManager(store, structureId);
   const production = manager.productionData(resourceId, timestamp);

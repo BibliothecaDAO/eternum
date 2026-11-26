@@ -85,7 +85,7 @@ const MEASURE = `(() => {
     notice: band("notice") !== null,
     navInView: nav.length > 0 && nav.every(inView),
     fits: (!body || body.scrollHeight <= body.clientHeight + 2) && document.documentElement.scrollHeight <= innerHeight + 2,
-    failures: root.innerText.split("\\n").filter((line) => line.includes("did not answer")),
+    failures: root.innerText.split("\\n").filter((line) => line.includes("unavailable.")),
     quiet: root.innerText.includes("No season running"),
   };
 })()`;

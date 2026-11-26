@@ -1,4 +1,6 @@
 import { ResourcesIds } from "../constants/resource-ids";
+import { questCatalog } from "../constants/quests";
+import { resources } from "../constants/resources";
 import { StructureType } from "../constants/structure-type";
 import { GuardSlot } from "../constants/troops";
 import { describe, expect, it } from "vitest";
@@ -28,14 +30,17 @@ import { ageLine } from "./modes";
 import {
   asRanked,
   buildingName,
+  FRONTIER_TROOP_NAMES,
   frontierTroopName,
   guardSlotName,
   LAYER_NAMES,
   rankedText,
   rankName,
   resourceName,
-  skillPointGain,
+  questLine,
+  questObjective,
   structureName,
+  troopName,
   troopPlural,
 } from "./nouns";
 import { TROOP_TIERS, TROOP_TYPES, TroopType, troopTierIndex } from "../types/common";
@@ -100,14 +105,14 @@ describe("numbers", () => {
     expect([660, 90, 1, 100_000].map(formatDollars)).toEqual(["$6.60", "$0.90", "$0.01", "$1,000.00"]);
   });
 
-  it("writes a minute's rate whole from 1 a minute up, and to two figures below 1 (owner's rule of 26 October)", () => {
+  it("writes a minute's rate as precisely as it is read, so 1.6 a minute never shows as 2", () => {
     expect([6.3, 8.6, 12.4, 1, 1.4, 1.6, 66].map((perMinute) => formatRate(perMinute / 60))).toEqual([
-      "+6/min",
-      "+9/min",
+      "+6.3/min",
+      "+8.6/min",
       "+12/min",
       "+1/min",
-      "+1/min",
-      "+2/min",
+      "+1.4/min",
+      "+1.6/min",
       "+66/min",
     ]);
     expect([0.6, 0.25, 0.05].map((perMinute) => formatRate(perMinute / 60))).toEqual([
@@ -255,18 +260,37 @@ describe("nouns", () => {
     ]);
   });
 
-  it("gives a skill point as its rank and +1", () => {
-    expect(skillPointGain(3)).toEqual([{ rank: 3 }, " +1"]);
-    expect(rankedText(skillPointGain(3))).toBe("III +1");
+  it("names a resource as a player reads it, never by its table key", () => {
+    expect(resourceName(ResourcesIds.AncientFragment, false)).toBe("Ancient Fragment");
+    expect(resourceName(ResourcesIds.KnightT2, false)).toBe("Knight T2");
+    expect(resourceName(ResourcesIds.Paladin, false)).toBe("Paladin T1");
+    expect(resourceName(ResourcesIds.Lords, false)).toBe("LORDS");
+    expect(resourceName(ResourcesIds.Wheat, false)).toBe("Wheat");
+    expect(resourceName(9_999, false)).toBe("—");
   });
 
-  it("names a resource as a player reads it, never by its table key", () => {
-    expect(resourceName(ResourcesIds.AncientFragment)).toBe("Ancient Fragment");
-    expect(resourceName(ResourcesIds.KnightT2)).toBe("Knight T2");
-    expect(resourceName(ResourcesIds.Paladin)).toBe("Paladin T1");
-    expect(resourceName(ResourcesIds.Lords)).toBe("LORDS");
-    expect(resourceName(ResourcesIds.Wheat)).toBe("Wheat");
-    expect(resourceName(9_999)).toBe("—");
+  it("names Frontier's troops by Frontier's names alone, one or many: never a Paladin, never a tier", () => {
+    for (const troop of TROOP_TYPES) {
+      const words = FRONTIER_TROOP_NAMES[troop];
+      expect(troopName(troop, "T3", true)).toBe(words.many);
+      expect(frontierTroopName(troop, 1)).toBe(words.one);
+      expect(frontierTroopName(troop, 2)).toBe(words.many);
+      expect(frontierTroopName(troop)).toBe(words.many);
+    }
+    const frontierNames = resources.map(({ id }) => resourceName(id, true));
+    expect(frontierNames.filter((name) => /Paladin|\bT[123]\b|Tier/.test(name))).toEqual([]);
+    expect(resourceName(ResourcesIds.Paladin, true)).toBe(FRONTIER_TROOP_NAMES[TroopType.Paladin].many);
+    expect(resourceName(ResourcesIds.Wheat, true)).toBe(resourceName(ResourcesIds.Wheat, false));
+    expect(troopName(TroopType.Paladin, "T2", false)).toBe(`${TroopType.Paladin} T2`);
+  });
+
+  it("writes a quest's objective by its verb and many of its unit, and its line one or many by the target", () => {
+    for (const quest of questCatalog) {
+      expect(questObjective(quest)).toBe([quest.verb, quest.unit.many].join(" "));
+      expect(questLine(quest, 1)).toBe([quest.verb, "1", quest.unit.one].join(" "));
+      expect(questLine(quest, 2_500)).toBe([quest.verb, "2,500", quest.unit.many].join(" "));
+      expect(quest.unit.one).not.toBe(quest.unit.many);
+    }
   });
 
   it("names a rank, a structure, a guard wall and an age", () => {
@@ -522,10 +546,10 @@ describe("troops", () => {
     expect(Object.fromEntries(TROOP_TYPES.map((troop) => [troop, frontierTroopName(troop)]))).toEqual({
       [TroopType.Knight]: "Knights",
       [TroopType.Paladin]: "Scouts",
-      [TroopType.Crossbowman]: "Crossbowmen",
+      [TroopType.Crossbowman]: "Crossbows",
     });
     expect(frontierTroopName("Dragon")).toBeUndefined();
-    expect(resourceName(ResourcesIds.CrossbowmanT2)).toBe("Crossbowman T2");
+    expect(resourceName(ResourcesIds.CrossbowmanT2, false)).toBe("Crossbowman T2");
   });
 
   it("numbers every tier by its place in the catalog, and refuses one it does not hold", () => {

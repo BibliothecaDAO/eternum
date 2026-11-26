@@ -5,6 +5,7 @@ description: Starting resources, castle levels, Storeroom caps, research ranks, 
 
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
+import { Shot } from "@/components/Media";
 
 # Realm and research
 
@@ -35,7 +36,14 @@ expands storage.
 Research finishes immediately with no timer, and each building research row requires at least one copy of its building
 standing on your realm. Building research has 5 ranks (I through V), paid in Essence and labor. Farms, Workshops, and
 Conscription add {FRONTIER.research.outputStep} per rank; Rations cuts {FRONTIER.realm.rationStep} deploy wheat per
-rank; Logistics adds {FRONTIER.stamina.logisticsStep} max stamina per rank.
+rank; Logistics adds {FRONTIER.stamina.logisticsStep} max stamina per rank. In the **Research** tree, a check mark
+appears only once a node is maxed; nodes you cannot unlock or afford stay disabled, with any short resource shown in
+red.
+
+<Shot
+  name="frontier/research"
+  caption="Press Research at the top right on desktop or on the bottom bar on a phone. Tap any node to check its Essence and labor cost; short amounts show in red, and a check mark appears once a node is maxed."
+/>
 
 | Row                                                                           | Rank I                                                                                               | Rank II                                                                                              | Rank III                                                                                             | Rank IV                                                                                              | Rank V                                                                                               |
 | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -59,8 +67,10 @@ Price per troop kind: {FRONTIER.research.oathSlotsSummary}.
 
 Research these three in order. They cost only Essence.
 
-1. **<GameIcon name="well" /> Well lore** ({FRONTIER.research.lore[0].essence} Essence) lets reveals find Wells.
-2. **<GameIcon name="shrine" /> Shrine lore** ({FRONTIER.research.lore[1].essence} Essence) lets reveals find Shrines.
+1. **<GameIcon name="well" /> Well lore** ({FRONTIER.research.lore[0].essence} Essence) lets reveals uncover Wells on
+   the map; move any army beside a Well and press **Use** to refill stamina (one use per Well).
+2. **<GameIcon name="shrine" /> Shrine lore** ({FRONTIER.research.lore[1].essence} Essence) lets reveals uncover Shrines
+   on the map; move any army beside a Shrine and press **Use** to swear an Oath (one use per Shrine).
 3. **<GameIcon name="spire" /> Spire lore** ({FRONTIER.research.lore[2].essence} Essence) lets reveals find Spires to
    enter the {FRONTIER.depths[1].name}, {FRONTIER.depths[2].name}, and [the {FRONTIER.names.deep}](/frontier/deep).
 

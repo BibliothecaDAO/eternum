@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { setViewportWidth } from "@/shell/frame/test-viewport";
 
 vi.mock("@/audio/core/AudioManager", () => ({
   AudioManager: { getInstance: () => ({ play: () => Promise.resolve(null) }) },
@@ -12,14 +13,13 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { toast } from "@/ui/features/event-feed/notify";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
 import { costLine, PRICE_FACES, type Price } from "@/ui/design-system/kit/price-faces";
-import { FREE } from "@/ui/design-system/kit/words";
+import { FREE, priceRaised, startsNewArmies } from "@/ui/design-system/kit/words";
 import { buildingOpensAtLevel, configManager, type GameClient, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { type GameClientSetup, nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
 import {
   buildingName,
   BuildingType,
   formatCharge,
-  formatExact,
   FRONTIER_BUILDING_TYPES,
   rankName,
   RESOURCE_PRECISION,
@@ -28,9 +28,13 @@ import {
 import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { FRONTIER_STORES, STORE_KINDS } from "../stores";
 import { buildingCounts, realmBoard } from "./build-fixture";
+import { buildGroupOf } from "./build-options";
 import { BuildingsInFlight, BuildSheet } from "./build-sheet";
 
+beforeEach(() => setViewportWidth(1440));
+
 afterEach(() => {
+  vi.unstubAllGlobals();
   disposeGameSyncSession();
   setBlockTimestampSource(null);
   useUIStore.getState().setPreviewBuilding(null);
@@ -348,29 +352,43 @@ describe("the build sheet", () => {
     later.close();
   });
 
-  it("lays every building in one grid, the open ones first, each locked one under the rank that opens it", () => {
+  it("groups every building as the catalog does, Economy, Army and One per realm, each locked one saying the rank it needs", () => {
     const { store, realm } = realmBoard();
     const sheet = open(store, realm);
-    const tiles = [...sheet.host.querySelectorAll("[data-build-grid] .ui-card")].map((tile) => [
-      tile.querySelector(".ui-card__title")?.textContent,
-      tile.querySelector(".ui-card__corner [aria-label]")?.getAttribute("aria-label") ?? null,
+    const groups = [...sheet.host.querySelectorAll<HTMLElement>("[data-build-group]")].map((section) => [
+      section.dataset.buildGroup,
+      [...section.querySelectorAll(".ui-card__title")].map((title) => title.textContent),
     ]);
-    expect(tiles.map(([name]) => name)).toHaveLength(FRONTIER_BUILDING_TYPES.length);
-    expect(tiles.slice(0, 3)).toEqual([
-      ["Farm", null],
-      ["Workshop", null],
-      ["Barracks", null],
-    ]);
-    expect(tiles).toContainEqual(["Range", "City"]);
-    expect(tiles).toContainEqual(["Supply yard", "Kingdom"]);
+    expect(groups.map(([group]) => group)).toEqual(["economy", "army", "unique"]);
+    expect(groups.flatMap(([, names]) => names)).toHaveLength(FRONTIER_BUILDING_TYPES.length);
+    for (const category of FRONTIER_BUILDING_TYPES)
+      expect(groups.find(([group]) => group === buildGroupOf(category))?.[1]).toContain(buildingName(category, true));
+    expect(groups[0]).toEqual(["economy", ["Farm", "Workshop"]]);
+    expect(groups[1]?.[1]).toEqual(expect.arrayContaining(["Barracks", "Range"]));
+    expect(groups[2]?.[1]).toContain("Supply yard");
+    expect(sheet.card("Range").querySelector("[data-build-needs]")?.textContent).toBe("Unlocks at City");
+    expect(sheet.card("Supply yard").querySelector("[data-build-needs]")?.textContent).toBe("Unlocks at Kingdom");
     act(() => sheet.card("Farm").click());
     expect(sheet.host.querySelector("[data-build-does]")?.textContent).toMatch(/^\+[\d,.]+\/(?:s|min)$/);
     expect(sheet.button("Build")).toBeDefined();
 
     act(() => sheet.card("Range").click());
     expect(sheet.card("Range").getAttribute("aria-pressed")).toBe("true");
-    expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe("Requires City");
+    expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe("Unlocks at City");
     expect(sheet.button("Build")).toBeUndefined();
+    sheet.close();
+  });
+
+  it("lays the three groups side by side on a phone, each tile with its price and no gain, the picked one's gain at the foot", () => {
+    setViewportWidth(390);
+    const { store, realm } = realmBoard();
+    const sheet = open(store, realm);
+    const groups = [...sheet.host.querySelectorAll<HTMLElement>(".build-groups > [data-build-group]")];
+    expect(groups.map((group) => group.dataset.buildGroup)).toEqual(["economy", "army", "unique"]);
+    expect(sheet.card("Farm").querySelector("[data-build-price] .ui-price")).not.toBeNull();
+    expect(sheet.host.querySelector("[data-build-grid] .build-tile-gives")).toBeNull();
+    act(() => sheet.card("Farm").click());
+    expect(footPrice(sheet.host)).toBeTruthy();
     sheet.close();
   });
 
@@ -404,13 +422,13 @@ describe("the build sheet", () => {
       const lockedButton = sheet.card(buildingName(category, true));
       expect(lockedButton).toBeDefined();
       for (const { of, amount } of expected) {
-        const label = `${formatExact(amount)} ${PRICE_FACES[of].word}`;
+        const label = `${formatCharge(amount)} ${PRICE_FACES[of].word}`;
         const priceEl = lockedButton.querySelector(`[aria-label="${label}"]`);
         expect(priceEl?.textContent).toBe(formatCharge(amount));
       }
       act(() => lockedButton.click());
       expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe(
-        `Requires ${rankName(buildingOpensAtLevel(category))}`,
+        `Unlocks at ${rankName(buildingOpensAtLevel(category))}`,
       );
       expect(footPrice(sheet.host)).toBe(costLine(expected));
     }
@@ -432,7 +450,7 @@ describe("the build sheet", () => {
     const rangeButton = sheet.card(buildingName(BuildingType.ResourceCrossbowmanT1, true));
     expect(rangeButton.querySelector("[data-build-price]")?.textContent).toBe(FREE);
     act(() => rangeButton.click());
-    expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe("Requires City");
+    expect(sheet.host.querySelector('.ui-window__foot button[data-tone="bad"]')?.textContent).toBe("Unlocks at City");
     expect(footPrice(sheet.host)).toBe(FREE);
     sheet.close();
   });
@@ -472,7 +490,7 @@ describe("the build sheet", () => {
     );
     // The tier is the tooltip's gem, not a numeral in the words.
     const ranks = JSON.parse(sheet.card("Supply yard").closest("[data-tip]")!.getAttribute("data-tip-ranks")!);
-    expect(ranks.slice(0, 3)).toEqual(["Supply yard: ", "new armies start with Logistics ", { rank: 1 }]);
+    expect(ranks.slice(0, 3)).toEqual(["Supply yard: ", startsNewArmies("Logistics", 1)[0], { rank: 1 }]);
     // No Farm stands on the board yet (the fixture's wheat comes with the realm): its price is its base.
     expect(document.querySelector("[data-price-raised]")).toBeNull();
     const base = sheet.card("Farm").querySelector("[data-build-price]")!.textContent;
@@ -489,8 +507,8 @@ describe("the build sheet", () => {
     const risen = open(store, realm);
     act(() => risen.card("Farm").click());
     const arrow = document.querySelector(".ui-window__foot [data-price-raised]")!;
-    expect(arrow.getAttribute("aria-label")).toBe("Costs more with each one standing: 2");
-    expect(arrow.getAttribute("data-tip")).toBe("Costs more with each one standing: 2");
+    expect(arrow.getAttribute("aria-label")).toBe(priceRaised("2"));
+    expect(arrow.getAttribute("data-tip")).toBe(priceRaised("2"));
     expect(risen.card("Farm").querySelector("[data-build-price]")!.textContent).not.toBe(base);
     risen.close();
   });
@@ -517,6 +535,8 @@ describe("the build sheet", () => {
     const sheet = open(store, atKingdom(realm));
     expect(sheet.card("Farm").textContent).toMatch(/\+[\d,.]+\/(?:s|min)/);
     expect(price(sheet, "Farm")!.querySelector("[data-short]")).not.toBeNull();
+    expect(sheet.card("Farm").closest(".ui-card")?.hasAttribute("data-locked")).toBe(true);
+    expect((sheet.card("Farm") as HTMLButtonElement).disabled).toBe(false);
     expect(price(sheet, "Farm")!.textContent).toMatch(/\d+[mhd]$/);
     expect(price(sheet, "Supply yard")!.textContent).not.toContain("research");
     sheet.close();
@@ -599,15 +619,7 @@ it("reds only the price lines the realm holds less of, so a training building sh
     const card = [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find((button) =>
       button.textContent?.includes(buildingName(BuildingType.SupplyYard, true)),
     )!;
-    const line = (label: string) => {
-      const element = card.querySelector(`[aria-label="${label}"]`)!;
-      const color = element.classList.contains("text-hud-bad")
-        ? "red"
-        : element.classList.contains("text-hud-ink")
-          ? "white"
-          : "band's";
-      return { short: element.hasAttribute("data-short"), color };
-    };
+    const line = (label: string) => card.querySelector(`[aria-label="${label}"]`)!.hasAttribute("data-short");
     const state = {
       essence: line("6,000 Essence"),
       labor: line("1,500 Labor"),
@@ -620,20 +632,20 @@ it("reds only the price lines the realm holds less of, so a training building sh
   // The owner's realm on 3 November: Labor enough, Essence not.
   store.applyFacts([balance(ResourcesIds.Labor, 100_000n), balance(ResourcesIds.Essence, 2_000n)] as never);
   expect(lines()).toEqual({
-    essence: { short: true, color: "red" },
-    labor: { short: false, color: "white" },
+    essence: true,
+    labor: false,
   });
 
   store.applyFacts([balance(ResourcesIds.Essence, 12_000n)] as never);
   expect(lines()).toEqual({
-    essence: { short: false, color: "white" },
-    labor: { short: false, color: "white" },
+    essence: false,
+    labor: false,
   });
 
   // Labor short too: both lines red.
   store.applyFacts([balance(ResourcesIds.Labor, 1_000n), balance(ResourcesIds.Essence, 2_000n)] as never);
   expect(lines()).toEqual({
-    essence: { short: true, color: "red" },
-    labor: { short: true, color: "red" },
+    essence: true,
+    labor: true,
   });
 });

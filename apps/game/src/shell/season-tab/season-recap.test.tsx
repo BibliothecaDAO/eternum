@@ -69,6 +69,7 @@ import { SITE_KINDS } from "@/ui/features/frontier/board/season-detail";
 import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
 import { setViewportWidth } from "../frame/test-viewport";
 import { ARCHIVED_SEASONS, archivedSeason } from "./archive/archive";
+import { RECAP_WORDS, SEASON_ENDINGS, SHARE_WORDS } from "@/ui/design-system/kit/words";
 
 const SEASON_ONE = { chainId: ARCHIVED_SEASONS[0]!.chainId, gameId: ARCHIVED_SEASONS[0]!.game_id };
 const BOARD = archivedSeason(SEASON_ONE)!.board;
@@ -178,13 +179,13 @@ it("tells the season and its ending, then the player's four cards: their place, 
   const host = await open();
   expect([...host.querySelector("header")!.children].map((line) => line.textContent)).toEqual([
     "Playtest · Ended 31 Oct",
-    "The mist lifted",
+    SEASON_ENDINGS.lifted,
   ]);
   expect([...deck(host)!.querySelectorAll(".season-card__step")].map((step) => step.textContent)).toEqual([
     "1 · Your place",
-    "2 · The podium",
+    "2 · Podium",
     "3 · Your sites",
-    "4 · Your haul",
+    "4 · Rewards",
   ]);
   const place = card(host, "place")!;
   expect(
@@ -192,7 +193,7 @@ it("tells the season and its ending, then the player's four cards: their place, 
   ).toEqual(["#3", "of 45 realms", "Canzi"]);
   // No pool that season: no prize on the card.
   expect(place.querySelector(".season-card__prize")).toBeNull();
-  expect(text(card(host, "podium")!.querySelector("h2"))).toBe("Volcanic took the season");
+  expect(text(card(host, "podium")!.querySelector("h2"))).toBe("Volcanic won the season");
   // Camps, rifts, ruins and beasts, as Herald counts them; no Depth for a realm that never went through.
   const sites = card(host, "sites")!;
   expect(text(sites.querySelector(".season-card__big"))).toBe("114");
@@ -227,7 +228,7 @@ it("on a phone, steps through the four cards as a story: a mark each, a tap on t
   expect([frame().dataset.card, marks()]).toEqual(["place", [true, false, false, false]]);
   await pressLabelled(host, "Next card");
   expect([frame().dataset.card, marks()]).toEqual(["podium", [true, true, false, false]]);
-  await pressLabelled(host, "Previous card");
+  await pressLabelled(host, RECAP_WORDS.previous);
   expect(frame().dataset.card).toBe("place");
   // A swipe left goes on; past the last card the story stays on it.
   const swipe = (from: number, to: number) =>
@@ -277,7 +278,7 @@ it("shows a reader with no realm on the board a full four-card season overview, 
     "sites",
     "haul",
   ]);
-  expect(host.querySelector(".season-card__step")?.textContent).toBe("The podium");
+  expect(host.querySelector(".season-card__step")?.textContent).toBe("Podium");
   expect(podium(host)).toHaveLength(3);
   expect(steps(host).map(([word]) => word)).toEqual(["Exit"]);
   expect(hint(host)).toBeNull();
@@ -334,13 +335,13 @@ it("posts the season on X in two steps: Copy image puts the deck's image on the 
   const copied = pngClipboard();
   const posts = xPosts();
   const host = await open({ width: 1440 });
-  expect(hint(host)).toBe("Copy the image, then paste it in your post on X.");
+  expect(hint(host)).toBe(SHARE_WORDS.copyHint);
   await press(host, "Copy image");
   // The one image: the deck's own node at its wide size, the PNG the library made.
   expect(snapshot.calls).toEqual([{ node: deck(host), width: 1200, height: 675 }]);
   expect(copied.map((image) => image.type)).toEqual(["image/png"]);
   expect(steps(host).slice(-2)).toEqual([
-    ["Image copied", "secondary"],
+    [SHARE_WORDS.copied, "secondary"],
     ["Post on X", "primary"],
   ]);
   await press(host, "Post on X");
@@ -375,10 +376,10 @@ it("where the clipboard takes no PNG, saves the deck's image instead, and the hi
   URL.createObjectURL = () => "blob:card";
   URL.revokeObjectURL = () => {};
   const host = await open({ width: 1440 });
-  expect(hint(host)).toBe("Save the image, then add it to your post on X.");
+  expect(hint(host)).toBe(SHARE_WORDS.saveHint);
   await press(host, "Save image");
   expect(snapshot.calls.map(({ width, height }) => [width, height])).toEqual([[1200, 675]]);
-  expect(saved).toEqual(["my-season.png"]);
+  expect(saved).toEqual([RECAP_WORDS.fileName]);
   expect(steps(host).slice(-2)).toEqual([
     ["Image saved", "secondary"],
     ["Post on X", "primary"],
@@ -391,7 +392,7 @@ it("says the image could not be made when the copy fails, and keeps Copy image t
   snapshot.fails = true;
   const host = await open({ width: 1440 });
   await press(host, "Copy image");
-  expect(host.querySelector("[role=alert]")?.textContent).toBe("The image could not be made.");
+  expect(host.querySelector("[role=alert]")?.textContent).toBe(SHARE_WORDS.failed);
   expect(steps(host).slice(-2)).toEqual([
     ["Copy image", "secondary"],
     ["Post on X", "primary"],
@@ -428,7 +429,7 @@ it("in the iOS app, shares the season in one press through iOS's sheet: the deck
   expect(snapshot.words[0]).not.toContain("…");
   await press(host, "Share");
   expect(shared.map(({ files, text, url }) => [files.map((file) => [file.name, file.type]), text, url])).toEqual([
-    [[["my-season.png", "image/png"]], "Playtest · #3 of 45 realms", RESULTS],
+    [[[RECAP_WORDS.fileName, "image/png"]], "Playtest · #3 of 45 realms", RESULTS],
   ]);
   expect(host.querySelector("[role=alert]")).toBeNull();
 });
@@ -467,9 +468,7 @@ it("in the iOS app, falls back to the two steps when the sheet does not open, an
   shareSheet(refusal("NotAllowedError"));
   const host = await open({ width: 390 });
   await press(host, "Share");
-  expect(host.querySelector("[role=alert]")?.textContent).toBe(
-    "Sharing did not open. Copy the image and post it instead.",
-  );
+  expect(host.querySelector("[role=alert]")?.textContent).toBe(SHARE_WORDS.shareFailed);
   expect(steps(host)).toEqual([
     ["Exit", "secondary"],
     ["Copy image", "secondary"],
@@ -523,7 +522,7 @@ it("in the iOS app, makes no image before the season is known, then one with its
   // The directory has not answered: the deck's foot reads "Frontier" for now, and Share waits.
   await recap.show(undefined, CANZI);
   expect(snapshot.calls).toEqual([]);
-  expect(steps(recap.host).at(-1)).toEqual(["Making the image", "primary"]);
+  expect(steps(recap.host).at(-1)).toEqual([SHARE_WORDS.making, "primary"]);
   await recap.show(ARCHIVED_SEASONS[0], CANZI);
   expect(recap.host.textContent).toContain("Playtest");
   expect(snapshot.calls).toHaveLength(1);
@@ -628,7 +627,7 @@ it.each(["web", "play"] as const)(
       ["Copy image", "secondary"],
       ["Post on X", "primary"],
     ]);
-    expect(hint(host)).toBe("Copy the image, then paste it in your post on X.");
+    expect(hint(host)).toBe(SHARE_WORDS.copyHint);
     expect(snapshot.calls).toEqual([]);
     expect(shared).toEqual([]);
   },

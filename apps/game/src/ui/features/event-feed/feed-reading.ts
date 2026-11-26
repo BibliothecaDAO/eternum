@@ -54,7 +54,7 @@ type OwnWords =
 
 const BUILDING_CHANGES: Record<string, string> = {
   Created: "built",
-  Destroyed: "demolished",
+  Destroyed: "deleted",
   Paused: "paused",
   Resumed: "resumed",
 };
@@ -153,7 +153,7 @@ const paid = (
   const written = rule(scaledToUnits(BigInt(String(amount ?? 0))));
   if (written === null) return undefined;
   const id = Number(resource) as ResourcesIds;
-  return { amountText: written, icon: resourceMeaning(id), name: resourceName(id) };
+  return { amountText: written, icon: resourceMeaning(id), name: resourceName(id, true) };
 };
 
 /** The site the revealed tile holds, as the game's facts keep it. */

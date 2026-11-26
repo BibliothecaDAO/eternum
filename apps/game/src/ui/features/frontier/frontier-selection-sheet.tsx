@@ -5,6 +5,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { ReactNode } from "react";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildSheet, useOpenPlot } from "./build/build-sheet";
+import { MapSiteCard, useSelectedMapSite } from "./sites/map-site-card";
 import { TileCard, useSelectedTarget } from "./sites/tile-card";
 import { SpireCard, useSelectedTileObject } from "./sites/tile-object-cards";
 import { CastleUpgrade, useKeepSelected } from "./upgrade/castle-upgrade";
@@ -27,6 +28,7 @@ export const useSelectionCard = ({
   const openPlot = useOpenPlot(realm);
   const target = useSelectedTarget();
   const cleared = useSelectedClearedSite();
+  const mapSite = useSelectedMapSite();
   const deepSite = useSelectedDeepSite();
   const tileObject = useSelectedTileObject();
   const keep = useKeepSelected(realm);
@@ -47,7 +49,10 @@ export const useSelectionCard = ({
   const card = (kind: string, sheet: ReactNode) => ({ key: `${kind}@${at}`, sheet });
   if (realm && transfer) return card("transfer", <TransferTroopsSheet realm={realm} pair={transfer} onClose={close} />);
   if (realm && reinforcing)
-    return card("reinforce", <ReinforceSheet realm={realm} army={reinforcing} onClose={close} />);
+    return card(
+      "reinforce",
+      <ReinforceSheet realm={realm} army={reinforcing.army} post={reinforcing.post} onClose={close} />,
+    );
   if (realm && openPlot) return card("plot", <BuildSheet realm={realm} plot={openPlot} onClose={close} />);
   if (deepSite) return card("deep-site", <DeepSiteCard site={deepSite} onClose={close} />);
   if (target)
@@ -56,6 +61,7 @@ export const useSelectionCard = ({
       <TileCard selected={target} onClose={close} receipt={cleared ? <SiteReceipt selected={cleared} /> : undefined} />,
     );
   if (cleared && !armyWhereItStands) return card("cleared", <ClearedSiteSheet selected={cleared} onClose={close} />);
+  if (mapSite) return card("site", <MapSiteCard selected={mapSite} onClose={close} />);
   if (spire && !armyWhereItStands) return card("realm-spire", <RealmSpireSheet spire={spire} onClose={close} />);
   if (tileObject?.kind === "spire") return card("spire", <SpireCard onClose={close} />);
   if (realm && keep) return card("keep", <CastleUpgrade realm={realm} onResearchPage={onResearch} onClose={close} />);

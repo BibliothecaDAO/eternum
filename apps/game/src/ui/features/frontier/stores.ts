@@ -22,7 +22,11 @@ type Store = {
  * limit.
  */
 export const FRONTIER_STORES = {
-  essence: { resource: ResourcesIds.Essence, icon: resourceMeaning(ResourcesIds.Essence), word: ESSENCE },
+  essence: {
+    resource: ResourcesIds.Essence,
+    icon: resourceMeaning(ResourcesIds.Essence),
+    word: ESSENCE,
+  },
   labor: {
     resource: ResourcesIds.Labor,
     icon: resourceMeaning(ResourcesIds.Labor),
@@ -38,21 +42,21 @@ export const FRONTIER_STORES = {
   troops: {
     resource: ResourcesIds.Knight,
     icon: "troops",
-    word: FRONTIER_TROOP_NAMES[TroopType.Knight],
+    word: FRONTIER_TROOP_NAMES[TroopType.Knight].many,
     made: { category: research.BARRACKS, spentAt: "deploy" },
     troop: TroopType.Knight,
   },
   crossbows: {
     resource: ResourcesIds.Crossbowman,
     icon: resourceMeaning(ResourcesIds.Crossbowman),
-    word: FRONTIER_TROOP_NAMES[TroopType.Crossbowman],
+    word: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many,
     made: { category: research.RANGE, spentAt: "deploy" },
     troop: TroopType.Crossbowman,
   },
   scouts: {
     resource: ResourcesIds.Paladin,
     icon: resourceMeaning(ResourcesIds.Paladin),
-    word: FRONTIER_TROOP_NAMES[TroopType.Paladin],
+    word: FRONTIER_TROOP_NAMES[TroopType.Paladin].many,
     made: { category: research.SCOUTS_LODGE, spentAt: "deploy" },
     troop: TroopType.Paladin,
   },

@@ -12,7 +12,6 @@ import {
   armyOaths,
   configManager,
   type EtherealLayer,
-  getArmyName,
   liveHomeArmies,
 } from "@bibliothecadao/eternum";
 import {
@@ -23,14 +22,13 @@ import {
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
 import { armyNumber, resolveExplorerTroops, STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { formatExact, frontierTroopName, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
-import { ARMY } from "@/ui/design-system/kit/words";
+import { TROOPS } from "@/ui/design-system/kit/words";
 
 const ARMY_MODELS = [
   ...STAMINA_MODELS,
-  "EntityName",
   "DeepGuard",
   "DeepArmy",
   "ArmyDay",
@@ -70,6 +68,7 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
     () => (realmId === null ? [] : liveHomeArmies(facts.store, realmId, configManager.getActiveGameId(), timestamp)),
     [realmId, facts, timestamp],
   );
+  const names = armyNames(armies);
   return armies.map((army, index) => {
     const explorerId = safeInteger(army.explorer_id);
     const { stamina, secondsToFull } = armyBar(setup.store, army, timestamp);
@@ -78,11 +77,11 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
       explorerId,
       number,
       troopsFact: army.troops,
-      label: armyName(setup.store, explorerId, number),
+      label: names[index],
       art: armyArt(army.troops),
       stamina,
       secondsToFull,
-      troops: Number(army.troops.count / BigInt(RESOURCE_PRECISION)),
+      troops: troopCount(army.troops),
       ethereal: armyEtherealLayer(setup.store, army.game_id, explorerId),
       drain: armyDrain(setup.store, army, timestamp),
     };
@@ -117,18 +116,15 @@ export const armyBar = (
 
 export const armyArt = troopMeaning;
 
-/**
- * An army as every line outside the dock names it (the day log): by the same name as its card. An army no longer on
- * the map has no number left to read, and is "Army".
- */
-export const armyLabel = (store: NativeFactStore, explorerId: number): string => {
-  const army = store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
-  return armyName(store, explorerId, army && armyNumber(army));
+const armyNames = (armies: readonly NativeRows["ExplorerTroops"][]): string[] => {
+  const names = armies.map((army) => armyName(army.troops.category, troopCount(army.troops)));
+  return names.map((name, index) =>
+    names.indexOf(name) === names.lastIndexOf(name) ? name : `${name} (${armyNumber(armies[index]) ?? index + 1})`,
+  );
 };
 
-/** The army's own name when it has one; otherwise its number, never its entity id. */
-const armyName = (store: NativeFactStore, explorerId: number, number: number | undefined): string => {
-  const named = store.get("EntityName", { game_id: configManager.getActiveGameId(), entity_id: explorerId });
-  if (named && named.name !== 0n) return getArmyName(explorerId, store);
-  return number === undefined ? ARMY : `${ARMY} ${number}`;
-};
+const troopCount = (troops: NativeRows["ExplorerTroops"]["troops"]): number =>
+  Number(troops.count / BigInt(RESOURCE_PRECISION));
+
+export const armyName = (category: string, troops: number): string =>
+  `${formatExact(troops)} ${frontierTroopName(category, troops) ?? TROOPS}`;

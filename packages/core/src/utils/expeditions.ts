@@ -5,7 +5,6 @@ import { entityHomeNamespace } from "./entity-home";
 import { reachableDepth } from "./realm-research";
 import { MAX_U32, ResourcesIds, type MapLayer } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
 import { getBlockTimestamp } from "./timestamp";
@@ -399,33 +398,6 @@ export const armyRealmSpire = (
   if (!rules) return null;
   const depth = expeditionDepth(rules, entityMapPosition(store, gameId, explorerId));
   return spires.find((spire) => spire.targetDepth === depth + 1) ?? null;
-};
-
-/** The next eligible reveal's chance, from the same home/day/layer counter that discovers its Spire. */
-export const armySpireChance = (
-  store: NativeFactStore,
-  gameId: number,
-  explorerId: number | bigint,
-  nowSeconds: number,
-): number | null => {
-  const rules = readExpeditionRules(store, gameId);
-  const army = store.get("ExplorerTroops", { game_id: gameId, explorer_id: explorerId });
-  const position = store.entityOccupancy(gameId, explorerId);
-  if (!rules || !army || army.troops.count === 0n || !position) return null;
-  const epoch = seasonDay(rules, nowSeconds);
-  const allocation = store.get("ArmyDay", { game_id: gameId, explorer_id: explorerId });
-  if (epoch === null || !allocation || !isCurrentExpeditionArmy(rules, allocation.day, nowSeconds)) return null;
-  const depth = expeditionDepth(rules, { y: position.row });
-  const researched = reachableDepth(store, gameId, army.owner);
-  if (position.alt || depth >= DEEP_DEPTH || researched === undefined || researched === 0) return null;
-  const progress = store.requireOrAbsent("ExpeditionSpire", {
-    game_id: gameId,
-    structure_id: army.owner,
-    epoch,
-    depth,
-  });
-  if (!progress.known || progress.known.location) return null;
-  return ((progress.known.reveals + 1) * 100) / nativeRuleConstants.SPIRE_REVEAL_LIMIT;
 };
 
 /** The army's own spire while it stands on or beside it. */

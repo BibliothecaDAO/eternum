@@ -3,7 +3,7 @@
 //   node scripts/lint-guards.mjs      fails, naming each hit (CI: pnpm --dir apps/game lint:guards)
 //   node scripts/lint-guards.mjs --write-catalog-baseline   records the catalog copies standing, once some are removed
 import { ESLint } from "eslint";
-import { readFileSync, writeFileSync } from "node:fs";
+import { globSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import reactHooks from "eslint-plugin-react-hooks";
@@ -15,6 +15,7 @@ import { nameGuardConfigs } from "./name-guards.mjs";
 import { noBackGuardConfigs } from "./no-back-guards.mjs";
 import { PLAIN_WORDS_RULE, plainWordsGuardConfigs } from "./plain-words-guards.mjs";
 import { threeDebugGuardConfigs } from "./three-debug-guards.mjs";
+import { wordCopyGuardConfigs } from "./word-copy-guards.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const SOURCES = ["apps/game/src/**/*.{ts,tsx}", "packages/*/src/**/*.{ts,tsx}"];
@@ -274,6 +275,7 @@ const eslint = new ESLint({
     ...modelUrlGuardConfigs,
     ...catalogGuardConfigs,
     ...plainWordsGuardConfigs,
+    ...wordCopyGuardConfigs,
   ],
 });
 
@@ -311,11 +313,36 @@ const plainWordsHits = checkBaseline(
   "--write-plain-words-baseline",
 );
 
+const findDottedThemeKeys = () =>
+  globSync("apps/game/src/**/*.css", { cwd: REPO }).flatMap((file) =>
+    readFileSync(resolve(REPO, file), "utf8")
+      .split("\n")
+      .flatMap((text, index) =>
+        /theme\([\w-]+\.\d+\.\d/.test(text)
+          ? [
+              `${file}:${index + 1} theme() splits a key at its dot and reads a character of another value (spacing.2.5 gave "m"): write theme(spacing[2.5]).`,
+            ]
+          : [],
+      ),
+  );
+
+const findShortInAmber = () =>
+  globSync("apps/game/src/**/*.css", { cwd: REPO }).flatMap((file) =>
+    [...readFileSync(resolve(REPO, file), "utf8").matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter(([, selector, body]) => selector.includes("[data-short") && /--(hud|app)-warn\b/.test(body))
+      .map(
+        ([, selector]) =>
+          `${file}: ${selector.trim()} paints what the player cannot pay for in amber: a short price is red, read from HudPrice's short.`,
+      ),
+  );
+
 const hits = [
   ...errors.filter((error) => !isCatalogCopy(error) && !isPlainWords(error)).map(line),
   ...catalogHits,
   ...plainWordsHits,
   ...findUnownedKitSheetClasses(),
+  ...findDottedThemeKeys(),
+  ...findShortInAmber(),
 ];
 for (const hit of hits) console.log(hit);
 console.log(`lint guards: ${hits.length} hit(s)`);

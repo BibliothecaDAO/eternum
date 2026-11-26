@@ -34,6 +34,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
+import { DEPLOY_WORDS } from "./words";
 import { useModalLayer } from "./modal-layer";
 import { PRICE_FACES, type Price } from "./price-faces";
 import { useMarkFrameOpen } from "./open-frames";
@@ -395,7 +396,7 @@ export const HudTroopAmount = ({
           {held > most && " that fit"}
         </span>
       </div>
-      <HudSlider label={`${name}: how many go`} value={value} max={most} disabled={disabled} onChange={onChange} />
+      <HudSlider label={DEPLOY_WORDS.howMany(name)} value={value} max={most} disabled={disabled} onChange={onChange} />
     </div>
   );
 };
@@ -611,14 +612,25 @@ export const HudCost = ({ line }: { line: RankedWords | string }) =>
 
 export type ResourcePrice = { resource: ResourcesIds; amount: number | undefined };
 
-export const HudPrice = ({ prices }: { prices: readonly (Price | ResourcePrice)[] }) => (
-  <span className="ui-price">
+export const HudPrice = ({
+  prices,
+  size = "md",
+}: {
+  prices: readonly ((Price | ResourcePrice) & { short?: boolean })[];
+  size?: "sm" | "md";
+}) => (
+  <span className="ui-price" data-size={size}>
     {prices.length === 0 && FREE}
     {prices.map((price) => {
       const face = priceFace(price);
       return (
-        <span key={face.word} role="img" aria-label={`${formatCharge(price.amount)} ${face.word}`}>
-          {face.icon && <Icon name={face.icon} size={20} />}
+        <span
+          key={face.word}
+          role="img"
+          aria-label={`${formatCharge(price.amount)} ${face.word}`}
+          data-short={price.short || undefined}
+        >
+          {face.icon && <Icon name={face.icon} size={size === "sm" ? 14 : 20} />}
           {formatCharge(price.amount)}
         </span>
       );
@@ -627,7 +639,9 @@ export const HudPrice = ({ prices }: { prices: readonly (Price | ResourcePrice)[
 );
 
 const priceFace = (price: Price | ResourcePrice): { word: string; icon?: IconMeaning } =>
-  "of" in price ? PRICE_FACES[price.of] : { word: resourceName(price.resource), icon: resourceMeaning(price.resource) };
+  "of" in price
+    ? PRICE_FACES[price.of]
+    : { word: resourceName(price.resource, false), icon: resourceMeaning(price.resource) };
 
 /**
  * The HUD's one panel, for a part of the screen (a bar, a strip, a card in a band): a header band naming it (its icon,
@@ -1594,7 +1608,7 @@ export const SheetDock = createContext<HTMLElement | null>(null);
 /** What a surface's frame holds: its name, the icon and cue its head may carry, its way out and its body. */
 type FrameParts = {
   label: string;
-  title?: string;
+  title?: ReactNode;
   icon?: IconMeaning;
   /** What the head says or offers beside the name (a lens, the player's rank), before the way out. */
   cue?: ReactNode;
@@ -1614,7 +1628,7 @@ type FrameParts = {
  */
 const SurfaceFrame = forwardRef<
   HTMLElement,
-  FrameParts & { bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children">
+  FrameParts & { bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children" | "title">
 >(({ label, title, icon, cue, beside, onClose, bodyClassName, className, children, ...rest }, ref) => {
   const [foot, setFoot] = useState<HTMLElement | null>(null);
   const body = useMarksMoreBelow();
@@ -1689,7 +1703,7 @@ export const HudSheet = ({
   children,
 }: {
   label: string;
-  title?: string;
+  title?: ReactNode;
   icon?: IconMeaning;
   /** A quiet control right after the sheet's name, out of the body's flow and away from the cross (an army's Delete). */
   beside?: ReactNode;
@@ -2207,23 +2221,33 @@ export const HudStamina = ({
   stamina: StaminaBar | undefined;
   tone?: Tone;
   filling?: boolean;
-}) => (
-  <span
-    role="meter"
-    aria-label={STAMINA}
-    aria-valuenow={stamina?.current}
-    aria-valuemin={0}
-    aria-valuemax={stamina?.max}
-    className="ui-meter block w-full"
-    data-tone={tone}
-    data-filling={filling || undefined}
-  >
-    <i style={{ width: `${staminaShare(stamina) * 100}%` }} />
-  </span>
-);
+}) => {
+  const segment = staminaSegment(stamina);
+  return (
+    <span
+      role="meter"
+      aria-label={STAMINA}
+      aria-valuenow={stamina?.current}
+      aria-valuemin={0}
+      aria-valuemax={stamina?.max}
+      className="ui-meter block w-full"
+      data-tone={tone}
+      data-filling={filling || undefined}
+      data-segmented={segment ? "" : undefined}
+      style={segment ? ({ "--segment": segment } as React.CSSProperties) : undefined}
+    >
+      <i style={{ width: `${staminaShare(stamina) * 100}%` }} />
+    </span>
+  );
+};
+
+const STAMINA_SEGMENT = 30;
 
 const staminaShare = (stamina: StaminaBar | undefined): number =>
   !stamina || stamina.max <= 0 ? 0 : Math.min(1, Math.max(0, stamina.current / stamina.max));
+
+const staminaSegment = (stamina: StaminaBar | undefined): string | undefined =>
+  stamina && stamina.max > STAMINA_SEGMENT ? `${(STAMINA_SEGMENT / stamina.max) * 100}%` : undefined;
 
 /** What a relic works on: its chip takes that kind's colour. */
 type RelicKind = "stamina" | "damage" | "damage-reduction" | "exploration" | "production";
@@ -2322,6 +2346,10 @@ export const HudEmpty = ({ icon, line, action }: { icon: IconMeaning; line: stri
  * (never its look), and the rest are the strip's own attributes (a group's role, a title, whether what it opens is
  * open).
  */
+export const HudSegment = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement>>(
+  ({ className, ...rest }, ref) => <button ref={ref} type="button" {...rest} className={cn("ui-segment", className)} />,
+);
+
 export const HudPill = ({
   children,
   label,

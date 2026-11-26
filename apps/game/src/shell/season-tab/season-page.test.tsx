@@ -117,8 +117,9 @@ reads.settled = NO_HISTORY;
 vi.spyOn(console, "error").mockImplementation(() => undefined);
 
 import { setViewportWidth } from "../frame/test-viewport";
-import { mergeAspectRosters } from "./aspect-roster";
+import { mergeAspectRosters } from "./glory-rows";
 import { SeasonPage } from "./season-page";
+import { DAY_BANNER_WORDS, POOL_NOT_PUBLISHED, SEASON_ERROR, SEASON_WORDS, WORDS } from "@/ui/design-system/kit/words";
 
 /** Where a row led: the Results address it opened. */
 const Opened = () => <p data-opened>{useLocation().pathname}</p>;
@@ -148,7 +149,7 @@ it("says Season did not answer in the glossary's words, with Try again", async (
   const { container, unmount } = await mount(390);
   try {
     const body = container.querySelector('[data-band="body"]')!;
-    expect(body.textContent).toContain("Season did not answer.");
+    expect(body.textContent).toContain(SEASON_ERROR);
     expect(body.textContent).not.toContain("502");
   } finally {
     await unmount();
@@ -180,7 +181,7 @@ it("titles the page Season and names Frontier's own season on its board; an empt
       (panel) => panel.querySelector("h2")?.textContent === "Frontier",
     )!;
     expect(frontier.querySelector(".app-panel__cue")?.textContent).toBe("Season 1 · Day 4");
-    expect(frontier.textContent).toContain("No realm yet. Create one from Play.");
+    expect(frontier.textContent).toContain(SEASON_WORDS.boardEmpty);
     expect([...frontier.querySelectorAll("button")].map((button) => button.textContent)).toEqual(["Play"]);
   } finally {
     await unmount();
@@ -277,7 +278,7 @@ it("says no prize is published yet, its medals standing with no amount", async (
       ["1", "1—"],
       ["3", "3—"],
     ]);
-    expect(container.querySelector('[aria-label="Season prizes"]')!.textContent).toContain("Pool not published yet");
+    expect(container.querySelector('[aria-label="Season prizes"]')!.textContent).toContain(POOL_NOT_PUBLISHED);
   } finally {
     await unmount();
   }
@@ -312,7 +313,7 @@ const frontierPanel = (container: HTMLElement) =>
   [...container.querySelectorAll(".app-panel")].find((panel) => panel.querySelector("h2")?.textContent === "Frontier")!;
 const pastPanel = (container: HTMLElement) =>
   [...container.querySelectorAll(".app-panel")].find(
-    (panel) => panel.querySelector("h2")?.textContent === "Past seasons",
+    (panel) => panel.querySelector("h2")?.textContent === SEASON_WORDS.pastSeasons,
   );
 const pastRows = (container: HTMLElement) =>
   [...(pastPanel(container)?.querySelectorAll("button.app-row") ?? [])].map((row) => [
@@ -336,7 +337,7 @@ it.each([390, 1440])(
     try {
       const frontier = frontierPanel(container);
       expect(frontier.querySelector(".app-panel__cue")?.textContent).toBe("Season 0 · Ended 6 Nov");
-      expect(frontier.textContent).not.toContain("No season running");
+      expect(frontier.textContent).not.toContain(WORDS.noSeason);
       const counts = siteCounts(frontier);
       expect(counts.slice(0, 4)).toEqual([
         "331 sites cleared",
@@ -426,7 +427,7 @@ it.each([390, 1440])("keeps the last season's final board while the next is only
     const frontier = frontierPanel(container);
     expect(frontier.querySelector(".app-panel__cue")?.textContent).toBe("Season 0 · Ended 6 Nov");
     expect(frontier.querySelector("button.app-board__row .app-board__figure")?.textContent).toBe("331 sites cleared");
-    expect(frontier.textContent).not.toContain("No realm yet");
+    expect(frontier.textContent).not.toContain("No Realm yet");
   } finally {
     await unmount();
   }
@@ -466,7 +467,7 @@ it.each([390, 1440])(
   },
 );
 
-it("merges Aspect rosters into one global Glory leaderboard sorted by compareAspectMembers and capped at top 10", () => {
+it("merges Aspect rosters into one global Glory leaderboard sorted by compareAspectMembers", () => {
   const member = (rank: number, entityId: string, realmId: number, owner: string, glory: number) => ({
     rank,
     entity_id: entityId,
@@ -487,15 +488,15 @@ it("merges Aspect rosters into one global Glory leaderboard sorted by compareAsp
   const merged = mergeAspectRosters([
     {
       aspect: 1 as const,
-      roster: { game_id: "1", aspect: 1, total: 10, offset: 0, limit: 10, members: aspectOneMembers },
+      roster: { total: 10, members: aspectOneMembers },
     },
     {
       aspect: 2 as const,
-      roster: { game_id: "1", aspect: 2, total: 8, offset: 0, limit: 10, members: aspectTwoMembers },
+      roster: { total: 8, members: aspectTwoMembers },
     },
   ]);
   expect(merged.total).toBe(18);
-  expect(merged.rows).toHaveLength(10);
+  expect(merged.rows).toHaveLength(aspectOneMembers.length + aspectTwoMembers.length);
   expect(merged.rows.slice(0, 4).map((row) => [row.rank, row.aspect, row.member.entity_id, row.member.glory])).toEqual([
     [1, 2, "1003", "400000000000"],
     [2, 2, "9", "250000000000"],
@@ -538,7 +539,17 @@ it("combines all four Aspect rosters into the default Global Glory leaderboard w
           },
           player_state: {
             structures: [
-              { entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" },
+              {
+                entity_id: 1001,
+                category: 1,
+                level: 1,
+                realm_id: 1,
+                coord_x: 0,
+                coord_y: 0,
+                resources_packed: "0",
+                aspect: null,
+                has_wonder: false,
+              },
             ],
           },
         },
@@ -565,12 +576,12 @@ it("combines all four Aspect rosters into the default Global Glory leaderboard w
     const triumphs = triumphTracks[0]!;
     expect(triumphs.textContent).toContain("Clear Mist");
     expect(triumphs.textContent).toContain("1,500 height");
-    expect(triumphs.textContent).toContain("Sites are found at 150% of the usual odds");
+    expect(triumphs.textContent).toContain(DAY_BANNER_WORDS.triumphRule[1](150));
     expect(triumphs.textContent).toContain("Second Wind");
     expect(triumphs.textContent).toContain("Pale Moon");
     expect(triumphs.textContent).toContain("Spoils");
     await vi.waitFor(() => expect(container.querySelector("[data-global-roster]")?.textContent).toContain("Canzi"));
-    expect(container.querySelector("[data-global-roster]")?.textContent).toContain("Top players · 35 members");
+    expect(container.querySelector("[data-global-roster]")?.textContent).toContain(SEASON_WORDS.globalTopPlayers(35));
     expect(roster.asked.filter((path) => path.includes("/leaderboard"))).toEqual([]);
     expect(roster.asked).toEqual(
       expect.arrayContaining([
@@ -599,7 +610,7 @@ it("combines all four Aspect rosters into the default Global Glory leaderboard w
     await act(async () => ownTab.click());
     await vi.waitFor(() =>
       expect(container.querySelector(`[data-aspect-roster="${ownAspect}"]`)?.textContent).toContain(
-        "Your Aspect's top players · 12 members",
+        SEASON_WORDS.aspectRoster(12),
       ),
     );
   } finally {
@@ -641,7 +652,7 @@ it.each([1440, 390])(
       expect(container.querySelectorAll("[data-race-stage]")).toHaveLength(1);
       expect(container.querySelector("[data-race-stage]")?.getAttribute("data-race-surface")).toBe("shell");
       expect(container.querySelectorAll(".hyper-art__svg")).toHaveLength(0);
-      expect(container.textContent).not.toContain("Season did not answer.");
+      expect(container.textContent).not.toContain(SEASON_ERROR);
       const cards = [...container.querySelectorAll(".hyper-tile")];
       expect(cards).toHaveLength(4);
       expect(cards.map((card) => card.querySelector(".hyper-tile__count")?.textContent)).toEqual([
@@ -720,6 +731,8 @@ it.each([
                       coord_x: 0,
                       coord_y: 0,
                       resources_packed: "0",
+                      aspect: null,
+                      has_wonder: false,
                     },
                   ],
                 }
@@ -741,7 +754,7 @@ it.each([
       );
       expect(roster.asked).toContain("/games/1/aspects/2/members?offset=0&limit=10");
       const section = container.querySelector('[data-aspect-roster="2"]')!;
-      expect(section.textContent).toContain("Luminary's top players · 18 members");
+      expect(section.textContent).toContain(SEASON_WORDS.aspectTopPlayers("Luminary", 18));
       expect(section.textContent).toContain("340");
       expect(section.textContent).toContain("Volcanic");
       expect(section.textContent).toContain("190");
@@ -782,7 +795,17 @@ it("shows honest empty lines for empty global and Aspect boards", async () => {
           },
           player_state: {
             structures: [
-              { entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" },
+              {
+                entity_id: 1001,
+                category: 1,
+                level: 1,
+                realm_id: 1,
+                coord_x: 0,
+                coord_y: 0,
+                resources_packed: "0",
+                aspect: null,
+                has_wonder: false,
+              },
             ],
           },
         },
@@ -794,9 +817,7 @@ it("shows honest empty lines for empty global and Aspect boards", async () => {
   const { container, unmount } = await mount(1440);
   try {
     await vi.waitFor(() =>
-      expect(container.querySelector("[data-global-roster]")?.textContent).toContain(
-        "No realm yet. Create one from Play.",
-      ),
+      expect(container.querySelector("[data-global-roster]")?.textContent).toContain(SEASON_WORDS.boardEmpty),
     );
     const ownTab = [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
       (tab) => tab.textContent === aspectName(ownAspect),
@@ -804,7 +825,7 @@ it("shows honest empty lines for empty global and Aspect boards", async () => {
     await act(async () => ownTab.click());
     await vi.waitFor(() =>
       expect(container.querySelector(`[data-aspect-roster="${ownAspect}"]`)?.textContent).toContain(
-        `No realms in ${aspectName(ownAspect)} yet.`,
+        `No Realms in ${aspectName(ownAspect)} yet.`,
       ),
     );
     const insightTab = [...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
@@ -812,7 +833,9 @@ it("shows honest empty lines for empty global and Aspect boards", async () => {
     )!;
     await act(async () => insightTab.click());
     await vi.waitFor(() =>
-      expect(container.querySelector('[data-aspect-roster="4"]')?.textContent).toContain("No realms in Insight yet."),
+      expect(container.querySelector('[data-aspect-roster="4"]')?.textContent).toContain(
+        SEASON_WORDS.aspectRosterEmpty("Insight"),
+      ),
     );
   } finally {
     shards.open.mockImplementation(async () => {
@@ -839,7 +862,17 @@ it("shows ServiceFailure with Try again on the Global Glory leaderboard when Her
           },
           player_state: {
             structures: [
-              { entity_id: 1001, category: 1, level: 1, realm_id: 1, coord_x: 0, coord_y: 0, resources_packed: "0" },
+              {
+                entity_id: 1001,
+                category: 1,
+                level: 1,
+                realm_id: 1,
+                coord_x: 0,
+                coord_y: 0,
+                resources_packed: "0",
+                aspect: null,
+                has_wonder: false,
+              },
             ],
           },
         },
@@ -851,7 +884,7 @@ it("shows ServiceFailure with Try again on the Global Glory leaderboard when Her
   const { container, unmount } = await mount(1440);
   try {
     const section = () => container.querySelector("[data-global-roster]")!;
-    await vi.waitFor(() => expect(section().textContent).toContain("Season did not answer."));
+    await vi.waitFor(() => expect(section().textContent).toContain(SEASON_ERROR));
     const retry = [...section().querySelectorAll<HTMLButtonElement>("button")].find(
       (button) => button.textContent === "Try again",
     )!;

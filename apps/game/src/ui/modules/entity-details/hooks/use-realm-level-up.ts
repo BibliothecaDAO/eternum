@@ -1,4 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
+import { BUILD_ORDER_WORDS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useActNowRefusal } from "@/utils/can-issue-orders";
 import type { ID } from "@bibliothecadao/types";
@@ -43,9 +44,9 @@ const resolveLevelUpStep = (upgrade: Upgrade, provision: Provision, closed: stri
   const loading = upgrade.isUpgradeLocked;
   if (provision?.needsBootstrap) {
     const ready = !closed && !loading;
-    return { mode: "provision", word: "Provision", ready, loading, refusal: loading ? null : closed };
+    return { mode: "provision", word: BUILD_ORDER_WORDS.create, ready, loading, refusal: loading ? null : closed };
   }
-  const word = upgrade.nextLevelName ? `Level up to ${upgrade.nextLevelName}` : "Level up";
+  const word = upgrade.nextLevelName ? BUILD_ORDER_WORDS.upgradeTo(upgrade.nextLevelName) : BUILD_ORDER_WORDS.levelUp;
   const ready = upgrade.isOwner && upgrade.canUpgrade && !closed && !loading;
   const refusal = ready || loading ? null : (closed ?? levelUpRefusal(upgrade));
   return { mode: "level-up", word, ready, loading, refusal };
@@ -73,7 +74,9 @@ export const useRealmLevelUp = (structureEntityId: ID | null): RealmLevelUp | nu
       toast.failed(error, "Realm setup failed."),
     );
   const levelUp = () =>
-    sendRealmLevelUp(setup.systemCalls, signer, entityId).catch((error) => toast.failed(error, "Level up failed."));
+    sendRealmLevelUp(setup.systemCalls, signer, entityId).catch((error) =>
+      toast.failed(error, BUILD_ORDER_WORDS.upgradeFailed),
+    );
 
   return {
     ...step,

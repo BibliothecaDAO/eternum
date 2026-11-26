@@ -47,6 +47,7 @@ export interface RoamingCreature {
   haste: number;
   mood: CreatureMood;
   blockedFor: number;
+  stationSearchIn: number;
   gaze: number | null;
   leader: number | null;
   station: Point;

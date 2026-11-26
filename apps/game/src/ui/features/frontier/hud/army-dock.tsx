@@ -2,14 +2,14 @@ import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useLayout } from "@/shell/frame/layout";
+import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
-import { ARMY_SLOT_WORDS, DEPLOY, DEPLOYING, TROOPS } from "@/ui/design-system/kit/words";
+import { ARMY_SLOT_WORDS, DEPLOY, DEPLOYING } from "@/ui/design-system/kit/words";
 
-import { formatAmount, frontierTroopName, rankName, TroopTier } from "@bibliothecadao/types";
+import { rankName, TroopTier } from "@bibliothecadao/types";
 import type { Rank } from "@/ui/design-system/kit/words";
 
 import type { SlotStart } from "../deploy/deploy-plan";
@@ -41,20 +41,13 @@ export const ArmyDock = ({
   const own = actor !== null && BigInt(realm.owner) === BigInt(actor);
   const plan = useDeployPlan(realm);
   const openSlots = plan?.open;
-  const homeStock =
-    plan?.troops && plan.troops.atHome > 0
-      ? {
-          count: formatAmount(plan.troops.atHome),
-          label: `${formatAmount(plan.troops.atHome)} ${frontierTroopName(plan.troops.type) ?? TROOPS}`,
-        }
-      : undefined;
   const limits = useNativeFacts(SLOT_RULE_MODELS).store.get("SliceRules", {
     game_id: realm.game_id,
   })?.troop_limit_config;
   const openCount = ordersAllowed
     ? (openSlots?.length ?? Math.max(0, realm.base.troop_max_explorer_count - armies.length))
     : 0;
-  const desktop = useLayout() === "desktop";
+  const desktop = useHudLayout() === "desktop";
   const free = ordersAllowed ? (openSlots ?? []).toSorted((left, right) => left.slot - right.slot) : [];
   const next = free[0];
   const slots = [
@@ -75,7 +68,6 @@ export const ArmyDock = ({
         realm={realm}
         slot={entry.slot}
         pulse={entry.slot === next && armies.length === 0}
-        stock={entry.slot === next && desktop ? homeStock : undefined}
         primary={entry.slot === next}
         wide={desktop}
       />
@@ -183,16 +175,13 @@ const DockArmyRow = ({
   onOpenArmy?: (explorerId: number) => void;
 }) => {
   const { selected, stamina, oathWaiting, onPick } = useDockArmy(army, pickable, onOpenArmy);
-  const category = army.troopsFact?.category;
   return (
     <ArmyCard
       label={army.label}
-      title={(category && frontierTroopName(category)) ?? army.label}
       tier={troopRankOf(army.troopsFact?.tier)}
       drain={army.drain}
       number={army.number}
       art={army.art}
-      troops={army.troops}
       stamina={stamina}
       ethereal={army.ethereal}
       selected={selected}
@@ -217,7 +206,6 @@ const DeploySlot = ({
   realm,
   slot,
   pulse,
-  stock,
   primary,
   wide = false,
 }: {
@@ -225,7 +213,6 @@ const DeploySlot = ({
   /** The slot and its start, as the deploy plan reads it; unknown while the plan is. */
   slot: SlotStart | undefined;
   pulse: boolean;
-  stock?: { count: string; label: string };
   primary: boolean;
   wide?: boolean;
 }) => {
@@ -235,15 +222,8 @@ const DeploySlot = ({
   const onDeploy = () =>
     openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true, slot: slot?.slot });
   return wide ? (
-    <OpenSlotCard
-      number={slot?.number}
-      primary={primary}
-      filling={filling}
-      start={start}
-      stock={stock}
-      onDeploy={onDeploy}
-    />
+    <OpenSlotCard number={slot?.number} primary={primary} filling={filling} start={start} onDeploy={onDeploy} />
   ) : (
-    <OpenSlot label={DEPLOY} filling={filling} pulse={pulse} tip={start?.words} onDeploy={onDeploy} />
+    <OpenSlot label={DEPLOY} filling={filling} pulse={pulse} tip={start?.words} bar={start?.bar} onDeploy={onDeploy} />
   );
 };

@@ -1,4 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
@@ -13,12 +14,13 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { isOathResearch, researchRowOf } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { formatRate } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 
 import { buildingIcon, buildingName } from "../build/building-names";
 import { buildingsMake, standingBuildings } from "../production/store-makers";
+import { BaneFigure, BaneLine } from "../day/bane-mark";
 import { RefusedVerb } from "../refused-verb";
+import { formatRate } from "@bibliothecadao/types";
 import { useResearchActions } from "../research/research-actions";
 import { useResearchTree } from "../research/research-facts";
 import { firstMissing, type Need, needLine, researchVerb, type TreeNode } from "../research/research-tree";
@@ -46,6 +48,7 @@ export const BuildingCard = ({
   onClose: () => void;
 }) => {
   const { setup } = useGame();
+  const tick = useCurrentDefaultTick();
   useNativeRevision(["Building", "RealmKnowledge"]);
   const ordersAllowed = useUIStore(canIssueOrders);
   const tree = useResearchTree(realm);
@@ -70,7 +73,7 @@ export const BuildingCard = ({
       name={buildingName(building.category)}
       icon={buildingIcon(building.category)}
       standing={standingBuildings(setup.store, safeInteger(realm.entity_id), building.category)}
-      makes={cardMakes(buildingsMake(setup.store, realm, building.category))}
+      makes={cardMakes(buildingsMake(setup.store, realm, building.category, tick))}
       node={node}
       orders={ordersAllowed ? orders : undefined}
       onClose={onClose}
@@ -151,11 +154,14 @@ export const BuildingCardView = ({
           {makes && (
             <span className="flex items-center gap-1.5 text-hud-title tabular-nums text-hud-ink">
               <Icon name={makes.icon} size={28} />
-              {makes.rate}
+              <BaneFigure figure="production" pill>
+                {makes.rate}
+              </BaneFigure>
             </span>
           )}
           {orders?.demolish}
         </div>
+        {makes && <BaneLine figure="production" />}
         {node && (
           <CompareRows
             now={isOathResearch(node.row) ? <HudRanked words={node.gives.now} /> : <HudTier tier={tierOf(node.tier)} />}

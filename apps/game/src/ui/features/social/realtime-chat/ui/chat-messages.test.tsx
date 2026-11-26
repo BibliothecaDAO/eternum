@@ -22,6 +22,7 @@ import { GLOBAL_ROOM } from "../model/chat-rooms";
 import { useRealtimeChatStore } from "../model/store";
 import type { DirectMessage, WorldChatMessage } from "../model/types";
 import { RealtimeChatShell } from "./realtime-chat-shell";
+import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 
 const SELF = "0x7";
 const ALDRIC = "0xa1d";
@@ -192,7 +193,7 @@ describe("a room's messages", () => {
 
   it("puts a reply away with its cross, and sends what follows as a plain message", async () => {
     act(() => buttonIn(row("m2"), "Reply")!.click());
-    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Cancel the reply"]')!.click());
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Cancel reply"]')!.click());
     type("hello");
     await send();
     expect(sendWorldMessage).toHaveBeenCalledWith(GLOBAL_CHAT_CHANNEL_ID, {
@@ -253,7 +254,7 @@ describe("links", () => {
   it("asks before leaving Realms, the whole address shown, and opens only on Open", () => {
     act(() => link("www.youtube.com").click());
     const asking = host.querySelector('[role="dialog"]')!;
-    expect(asking.getAttribute("aria-label")).toBe("Leaving Realms");
+    expect(asking.getAttribute("aria-label")).toBe(CHAT_WORDS.leavingRealms);
     expect(asking.textContent).toContain(VIDEO);
     expect(opened).not.toHaveBeenCalled();
     act(() => buttonIn(document.body, "Cancel")!.click());

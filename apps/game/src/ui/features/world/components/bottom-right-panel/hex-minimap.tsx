@@ -2,6 +2,8 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { HexMarker } from "@/ui/design-system/hex-marker";
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { minimapMarkersView, type MinimapMarker } from "./minimap-markers";
+import { MAP_SITES } from "@/config/map-sites";
+import { mapSite } from "@/ui/features/frontier/sites/map-site-plan";
 import { latticeHexAt, latticeHexBoundsForWorldRect, latticeToWorld } from "@/three/utils/hex-lattice";
 import { fromRenderHex, worldOrigin } from "@/three/world-origin";
 import { WORLDMAP_CAMERA_ZOOM } from "@/three/scenes/worldmap-camera-view-profile";
@@ -226,6 +228,7 @@ const SITE_MEANINGS: Partial<Record<number, MinimapMarker["name"]>> = {
   [TileOccupier.ReservedHyperstructure]: "hyperstructure",
   [TileOccupier.Chest]: "chest",
   [TileOccupier.SupplyPost]: "camp",
+  ...Object.fromEntries(MAP_SITES.map((site) => [site.occupier, mapSite(site.kind).icon])),
 };
 
 /**

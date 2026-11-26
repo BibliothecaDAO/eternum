@@ -21,21 +21,21 @@ import {
   STORAGE,
   tooFarFrom,
   TROOPS,
+  FIGHT_RESULT,
   FIGHT_WORDS,
 } from "@/ui/design-system/kit/words";
 
 import type { OrderInFlight } from "@/hooks/store/use-actions-in-flight";
 import type { ReactNode } from "react";
 
+import { BaneFigure, BaneLine } from "../day/bane-mark";
 import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
 import { GuardToken } from "../hud/army-token";
 import { AttackStamina, FightArena } from "./fight-side";
-import { CombatMark } from "./combat-mark";
+import { CombatBadge } from "./combat-mark";
 import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
-import type { ArmyRelic } from "../relics/relic-catalog";
-import { RelicPay } from "../relics/relic-replacement";
 
 export type SiteVerb =
   | {
@@ -75,7 +75,7 @@ export const SiteCardView = ({
   guard: number | null | undefined;
   fight: SiteFight | undefined;
   pay: { icon: IconMeaning; amount: number; fits?: number } | null;
-  relic?: ArmyRelic;
+  relic?: ReactNode;
   holdsOath?: boolean;
   opensPost?: boolean;
   cache?: number;
@@ -90,18 +90,13 @@ export const SiteCardView = ({
   const title = name ? siteTitle(name, word, beast?.name) : word;
   const armyless = army === null;
   const guardIcon = beast ? beastMeaning(beast.beast) : "troops";
+  const siteGuard = site !== "Army";
   const facing = facingOf(army, guard, fight);
   const lost = facing !== undefined && isArmyLost(facing);
   const reward =
     cache !== undefined || relic || pay || holdsOath || opensPost ? (
       <Reward dimmed={facing !== undefined && !clears(facing)}>
-        {cache !== undefined ? (
-          <CachePay fragments={cache} />
-        ) : relic ? (
-          <RelicPay relic={relic} />
-        ) : pay ? (
-          <Pay pay={pay} />
-        ) : null}
+        {cache !== undefined ? <CachePay fragments={cache} /> : relic ? relic : pay ? <Pay pay={pay} /> : null}
         {holdsOath && (
           <HudChip icons={["shrine"]} tip={SITE_OATH.rule}>
             {SITE_OATH.label}
@@ -120,19 +115,32 @@ export const SiteCardView = ({
       {armyless ? (
         <header className="flex items-center gap-3">
           {typeof guard === "number" ? (
-            <GuardToken label={beast?.name ?? TROOPS} art={guardIcon} troops={guard} />
+            <BaneFigure figure="guards" pill altered={siteGuard}>
+              <GuardToken
+                label={beast?.name ?? TROOPS}
+                art={guardIcon}
+                troops={guard}
+                mark={beast && <CombatBadge category={beast.combatClass} />}
+              />
+            </BaneFigure>
           ) : (
             <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
           )}
           <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-            {beast && <CombatMark category={beast.combatClass} />}
             {what && <span className="text-hud-label text-hud-muted">{what}</span>}
             {reward}
           </span>
         </header>
       ) : (
         <>
-          <FightPanel army={army} guard={guard} facing={facing} beast={beast} guardIcon={guardIcon} />
+          <FightPanel
+            army={army}
+            guard={guard}
+            facing={facing}
+            beast={beast}
+            guardIcon={guardIcon}
+            siteGuard={siteGuard}
+          />
           {(facing || reward) && (
             <div className="fight-spoils">
               {facing && <Outcome facing={facing} />}
@@ -141,6 +149,7 @@ export const SiteCardView = ({
           )}
         </>
       )}
+      {siteGuard && typeof guard === "number" && <BaneLine figure="guards" />}
       {receipt}
       {replacement}
       <Verb
@@ -170,7 +179,7 @@ const clears = (facing: Facing) => !isArmyLost(facing) && facing.fight.guardLeft
 const outcomeWord = (facing: Facing): string => {
   if (isArmyLost(facing)) return FIGHT_WORDS.armyLost;
   if (!clears(facing)) return FIGHT_WORDS.holds;
-  return FIGHT_WORDS.victory;
+  return FIGHT_RESULT.victory;
 };
 
 const CachePay = ({ fragments }: { fragments: number }) => (
@@ -202,12 +211,14 @@ const FightPanel = ({
   facing,
   beast,
   guardIcon,
+  siteGuard,
 }: {
   army: { art: IconMeaning; troops: number } | null;
   guard: number | null | undefined;
   facing: Facing | undefined;
   beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: Troops["category"] }) | undefined;
   guardIcon: IconMeaning;
+  siteGuard: boolean;
 }) => (
   <FightArena
     ours={
@@ -224,9 +235,15 @@ const FightPanel = ({
       guard !== null
         ? {
             label: beast?.name ?? TROOPS,
-            mark: <SemanticIcon name={guardIcon} size={96} className="size-full" />,
+            mark: (
+              <span className="relative block size-full">
+                <SemanticIcon name={guardIcon} size={96} className="size-full" />
+                {beast && <CombatBadge category={beast.combatClass} />}
+              </span>
+            ),
             before: guard,
             kept: facing?.fight.guardLeft,
+            bane: siteGuard ? "guards" : undefined,
           }
         : undefined
     }
@@ -306,7 +323,7 @@ const Verb = ({
   );
 };
 
-const inFlightWord = (inFlight: OrderInFlight | undefined, own: OrderInFlight, word: string) =>
+export const inFlightWord = (inFlight: OrderInFlight | undefined, own: OrderInFlight, word: string) =>
   inFlight && (inFlight === own ? word : ON_ITS_WAY);
 
 const verbLine = (verb: SiteVerb, site: string): { line: string | undefined; warns: boolean } => {
@@ -323,7 +340,7 @@ const FootNote = ({ verb, site }: { verb: SiteVerb; site: string }) => {
     case "move":
       return <HudPrice prices={verb.prices} />;
     default:
-      return <HudNotice tone="warn" line={reasonLine(heldBack(verb, site))} />;
+      return <HudNotice tone={verb.kind === "short" ? "bad" : "warn"} line={reasonLine(heldBack(verb, site))} />;
   }
 };
 

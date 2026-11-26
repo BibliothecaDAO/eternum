@@ -19,11 +19,11 @@ import { LAB_GAME_ENDS_AT, type LabFact, type LabScenario, wire } from "./lab-ch
 const tileData = (biome: BiomeType) => BigInt(BiomeTypeToId[biome]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);
 
 /** The biome each revealed tile of a lab game lies in, by its position. */
-type LabGround = (hex: { col: number; row: number }) => BiomeType;
+export type LabGround = (hex: { col: number; row: number }) => BiomeType;
 
 const GRASSLAND: LabGround = () => BiomeType.Grassland;
 /** Snow, bare rock and tundra in turn: the highest ground the map draws, as the playtest's snow fields rise. */
-const HIGH_GROUND: LabGround = ({ col, row }) =>
+export const HIGH_GROUND: LabGround = ({ col, row }) =>
   [BiomeType.Snow, BiomeType.Bare, BiomeType.Tundra][(((col + 2 * row) % 3) + 3) % 3];
 /**
  * The fixture's rules as Frontier plays them: hour-long day units, so a day outlasts a session; Frontier's own commands
@@ -153,13 +153,6 @@ export const balancesPaid = (
     return { model: "ResourceBalance", key, value: wire({ ...held, balance: held.balance - amount }) };
   });
 
-/**
- * The spire's game on high ground (/lab/game?scenario=high-ground): the same realm, army and revealed land, every
- * revealed tile snow, bare rock or tundra, so the army's lit tiles lie on ground that rises above the old flat plates,
- * and its explore targets are sunken unexplored tiles inside that ground.
- */
-export const highGroundScenario = (): LabScenario => spireScenario(HIGH_GROUND);
-
 /** A tile beside the one given, revealed and empty: where a lab game stands a second thing by the spire's army. */
 export const besideOnOpenLand = (store: NativeFactStore, beside: { col: number; row: number }) => {
   const taken = new Set([...store.entries("TileOccupancy")].map(([, row]) => `${row.col},${row.row}`));
@@ -171,6 +164,12 @@ export const besideOnOpenLand = (store: NativeFactStore, beside: { col: number; 
   if (!open) throw new Error("The lab finds no open tile beside the spire's army");
   return { col: open.col, row: open.row };
 };
+
+export const armyDay = (store: NativeFactStore, explorerId: number, like: number = SPIRE_ARMY): LabFact => ({
+  model: "ArmyDay",
+  key: store.wireKeyOf("ArmyDay", { game_id: 1, explorer_id: explorerId }) ?? `0xad${explorerId}`,
+  value: wire({ ...store.require("ArmyDay", { game_id: 1, explorer_id: BigInt(like) }), explorer_id: explorerId }),
+});
 
 export const armyProgress = (store: NativeFactStore, explorerId: number, logistics = 1): LabFact => ({
   model: "ArmyProgress",

@@ -15,7 +15,7 @@ const session = {
   user: { id: "u", realmsId: "0x7", name: "Maelis", email: "you@mail.test", image: "04", emailVerified: true },
 } as unknown as Session;
 
-it("asks before signing out, with Keep as the safe choice", async () => {
+it("asks before signing out, with Keep as the safe choice, Sign out neutral as anything that can be undone", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   // better-auth lists its own email-code record too; only the sign-in providers are named, in the sheet's order.
   vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue(["twitter", "credential", "google"]);
@@ -37,9 +37,14 @@ it("asks before signing out, with Keep as the safe choice", async () => {
     // How the player signs in is not a way to a provider: no row of the account wears a provider's mark.
     expect(container.querySelector('[data-icon^="brand-"]')).toBeNull();
     expect(container.querySelector('[data-icon="lock"]')).not.toBeNull();
+    const look = (candidate: HTMLButtonElement | undefined) => [candidate?.dataset.kind, candidate?.dataset.tone];
+    expect(look(button("Sign out"))).toEqual(["secondary", undefined]);
     await act(async () => button("Sign out")!.click());
     // The question is the app's dialog over the page: Keep is its way out, and so is Escape.
-    expect(document.querySelector('[role="dialog"][aria-label="Sign out?"]')).not.toBeNull();
+    const asked = document.querySelector('[role="dialog"][aria-label="Sign out?"]')!;
+    expect(
+      look([...asked.querySelectorAll("button")].find((candidate) => candidate.textContent === "Sign out")),
+    ).toEqual(["secondary", undefined]);
     await act(async () => button("Keep")!.click());
     expect(document.body.textContent).not.toContain("Sign out?");
     await act(async () => button("Sign out")!.click());
@@ -51,7 +56,7 @@ it("asks before signing out, with Keep as the safe choice", async () => {
   }
 });
 
-it("edits the name in its own row, offering Claim name only once it differs (qa-app-1 P3-6), Escape putting it back", async () => {
+it("edits the name in its own row, offering Save name only once it differs (qa-app-1 P3-6), Escape putting it back", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);
   const container = document.createElement("div");
@@ -68,9 +73,7 @@ it("edits the name in its own row, offering Claim name only once it differs (qa-
     const nameRow = [...container.querySelectorAll(".app-row")].find((row) => row.textContent === "NameMaelis")!;
     await act(async () => (nameRow as HTMLElement).click());
     const claim = () =>
-      [...document.querySelectorAll<HTMLButtonElement>("button")].find(
-        (button) => button.textContent === "Claim name",
-      )!;
+      [...document.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Save name")!;
     const field = document.querySelector<HTMLInputElement>("form input")!;
     expect(field.value).toBe("Maelis");
     // The field takes the focus the row held (review-no-back-1, P2-2).

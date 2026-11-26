@@ -4,7 +4,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { skillPointGain } from "@bibliothecadao/types";
+import type { RankedWords } from "@bibliothecadao/types";
 import { Plate } from "./map-plates";
 
 import { Token, tokenReading, tokenSize } from "./map-plate-token";
@@ -60,10 +60,25 @@ describe("a thing's token, its plate closed (the owner's 2026-10-19 pick: tokens
       strength: { tier: 2, count: 300 },
       beast: null,
       undefended: false,
+      combat: { label: "Blade", icon: "combat-blade" },
       stamina: null,
       mark: null,
       crest: null,
     });
+  });
+
+  it("marks on its disk how it fights: an army's troops, a structure's guard that an attacker meets first", () => {
+    const mark = (plate: ArmyPlate | StructurePlate) => tokenReading(plate).combat?.label;
+    expect(mark(army)).toBe("Blade");
+    expect(mark({ ...army, troops: { ...army.troops, type: "crossbowman" } })).toBe("Bow");
+    expect(mark({ ...army, troops: { ...army.troops, type: "knight" } })).toBe("Blade");
+    expect(mark(realm)).toBe("Blade");
+    expect(mark({ ...realm, guards: [...realm.guards!].reverse() })).toBe("Bow");
+    expect(mark({ ...realm, guards: [] })).toBeUndefined();
+    expect(mark({ ...realm, guards: null })).toBeUndefined();
+    expect(
+      renderToStaticMarkup(<Token plate={{ ...rift, guards: [{ type: "crossbowman", tier: 1, count: 9 }] }} />),
+    ).toContain('data-combat-mark="Bow"');
   });
 
   it("wears the crest its plate names on the disk's corner", () => {
@@ -102,9 +117,23 @@ describe("a thing's token, its plate closed (the owner's 2026-10-19 pick: tokens
     expect(renderToStaticMarkup(<Token plate={army} />)).not.toContain("ui-seat");
   });
 
-  it("says its reading in words: strength, stamina; undefended", () => {
-    expect(renderToStaticMarkup(<Token plate={army} />)).toContain('aria-label="T3 1,400, Stamina 25%"');
-    expect(renderToStaticMarkup(<Token plate={rift} />)).toContain('aria-label="T2 300"');
+  it("writes a Frontier army's and guard's count alone, with no tier chip", () => {
+    const scouts: ArmyPlate = { ...army, troops: { type: "paladin", tier: null, count: 505 } };
+    const camp: StructurePlate = { ...rift, guards: [{ type: "knight", tier: null, count: 300 }] };
+    const words = (html: string) =>
+      html
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    expect(words(renderToStaticMarkup(<Token plate={scouts} />))).toBe("505");
+    expect(words(renderToStaticMarkup(<Token plate={camp} />))).toBe("300");
+    expect(renderToStaticMarkup(<Token plate={scouts} />)).toContain('aria-label="Blade, 505, Stamina 25%"');
+    expect(renderToStaticMarkup(<Token plate={scouts} />)).not.toContain("ui-chip");
+  });
+
+  it("says its reading in words: how it fights, strength, stamina; undefended", () => {
+    expect(renderToStaticMarkup(<Token plate={army} />)).toContain('aria-label="Blade, T3 1,400, Stamina 25%"');
+    expect(renderToStaticMarkup(<Token plate={rift} />)).toContain('aria-label="Blade, T2 300"');
     expect(renderToStaticMarkup(<Token plate={{ ...realm, guards: [] }} />)).toContain('aria-label="Undefended"');
   });
 
@@ -112,6 +141,14 @@ describe("a thing's token, its plate closed (the owner's 2026-10-19 pick: tokens
     expect(tokenSize(army).height).toBe(30 - 2 + 18 + 4);
     expect(tokenSize(realm).height).toBe(30 - 2 + 18);
     expect(tokenSize({ ...realm, guards: [] })).toEqual({ width: 30, height: 30 });
+  });
+});
+
+describe("a plate opened", () => {
+  it("marks each troop stack's painting with how it fights, as its token did", () => {
+    const marks = (html: string) => [...html.matchAll(/data-combat-mark="(\w+)"/g)].map((match) => match[1]);
+    expect(marks(renderToStaticMarkup(<Plate plate={realm} />))).toEqual(["Blade", "Bow"]);
+    expect(marks(renderToStaticMarkup(<Plate plate={army} />))).toEqual(["Blade"]);
   });
 });
 
@@ -123,7 +160,7 @@ describe("a Shrine's plate opened", () => {
       place: undefined,
       name: "Shrine",
       guards: null,
-      reward: skillPointGain(3),
+      reward: [{ rank: 3 }, " +1"] as RankedWords,
     };
     const html = renderToStaticMarkup(<Plate plate={shrine} />);
     // The row's gem is the kit's own size (no line or card size), named for a screen reader.

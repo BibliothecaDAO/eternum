@@ -10,9 +10,8 @@ import { useDesktopKeys } from "./desktop-keys";
 import { AppFooter } from "./footer";
 import { useLayout } from "./layout";
 import { Lockup } from "./lockup";
-import { DesktopBar, TabBar, useIsPlace } from "./tabs";
-import { AppChatPane } from "../chat/app-chat";
-import { LordsBalancePill } from "../value/lords-balance-pill";
+import { DesktopBar, TabBar, TopBarEnd, useIsPlace } from "./tabs";
+import { AppChatDock } from "../chat/app-chat";
 
 type PageFrameProps = {
   /**
@@ -26,8 +25,6 @@ type PageFrameProps = {
   notice?: ReactNode;
   /** The foot row: the page's buttons (one primary) or its stepper. */
   foot?: ReactNode;
-  /** Play, the one page that offers to install the app. */
-  offersInstall?: boolean;
   /**
    * A page that is its own scroller (Chat): on a phone its body fills the band between the top and the tabs, with no
    * footer under it; on a desktop it stands as tall as the screen gives under the bar.
@@ -58,8 +55,7 @@ type PageFrameProps = {
  */
 export const PageFrame = (props: PageFrameProps) => {
   const layout = useLayout();
-  // The page's own notice first (a refusal it caused); else the app's (offline, an update, install on Play).
-  const appNotice = useAppNotice({ offersInstall: props.offersInstall ?? false });
+  const appNotice = useAppNotice();
   const framed = { ...props, notice: props.notice ?? appNotice };
   return (
     <div data-surface="shell" data-layout={layout} className="bg-kit-ground font-body text-kit-cream">
@@ -89,7 +85,7 @@ const PhoneFrame = ({ title, notice, foot, fill = false, painting, stage = false
         className="flex min-h-12 shrink-0 items-center justify-between gap-2 px-gutter pt-[env(safe-area-inset-top)]"
       >
         <PhoneHead title={title} />
-        <LordsBalancePill />
+        <TopBarEnd />
       </header>
       {/* The page fills the first screen at least, so the footer starts below it and no fold falls among its links. */}
       <div
@@ -151,7 +147,7 @@ const DesktopFrame = ({
         {foot ? <div data-band="foot">{foot}</div> : null}
         <AppFooter />
       </div>
-      <AppChatPane />
+      <AppChatDock />
     </div>
   );
 };

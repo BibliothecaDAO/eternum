@@ -23,6 +23,7 @@ button[class^="ui"] {
   flex-direction: column;
   pointer-events: auto;
   border: 1px solid var(--hud-line);
+  border-color: var(--hud-line-top) var(--hud-line) var(--hud-line-bottom);
   border-radius: var(--hud-radius-panel);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow: var(--hud-shadow-panel);
@@ -331,6 +332,13 @@ a.ui-button {
   line-height: var(--hud-leading-body);
   font-weight: var(--hud-weight-body);
 }
+.ui-tip__line[data-tone="bane"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--hud-bane);
+  font-weight: var(--hud-weight-strong);
+}
 /* What a verb costs, exactly as charged, one compact line: under its order in a tip, centred under its button, at the
    left of a window's foot. */
 .ui-cost {
@@ -355,6 +363,18 @@ a.ui-button {
   display: inline-flex;
   align-items: center;
   gap: theme(spacing.1);
+}
+.ui-price > [data-short] {
+  color: var(--hud-bad);
+}
+.ui-price[data-size="sm"] {
+  gap: theme(spacing.2);
+  font-size: var(--hud-text-badge);
+  line-height: 1;
+  white-space: nowrap;
+}
+.ui-price[data-size="sm"] > span {
+  gap: 3px;
 }
 
 /* ── Tabs: a strip of choices; the chosen one in gold over a gold rule. ── */
@@ -416,13 +436,12 @@ a.ui-button {
   white-space: nowrap;
 }
 .ui-tabs[data-size="sm"] .ui-tab[aria-selected="true"] {
-  border-color: rgb(var(--hud-accent));
   background: var(--hud-chosen);
-  color: rgb(var(--hud-gold));
+  color: rgb(var(--hud-ink));
 }
 /* A phone's sheet is narrower than a full-size strip: each tab at the body's size, closer together. The phone layout's
  * width, not a container's: a strip that sizes to its tabs (the top bar's) cannot also be sized by them. */
-@media (max-width: 1023px) {
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
   .ui-tab {
     padding: 0 theme(spacing.2);
     font-size: var(--hud-text-body);
@@ -440,7 +459,8 @@ a.ui-button {
 }
 .ui-tab[aria-selected="true"] {
   border-bottom-color: rgb(var(--hud-accent));
-  color: rgb(var(--hud-accent));
+  background: var(--hud-chosen);
+  color: rgb(var(--hud-ink));
 }
 .ui-tab:is(:disabled, [aria-disabled="true"]) {
   cursor: not-allowed;
@@ -745,8 +765,8 @@ button.ui-ring:focus-visible .ui-ring__face {
   min-height: var(--hud-control);
   align-items: center;
   gap: theme(spacing.2);
-  border-left: 2px solid transparent;
-  border-radius: var(--hud-radius-chip);
+  border-left: 3px solid transparent;
+  border-radius: var(--hud-radius-control);
   padding: theme(spacing.1) theme(spacing.2);
   transition: background-color var(--hud-fast) var(--hud-ease);
 }
@@ -757,6 +777,11 @@ button.ui-ring:focus-visible .ui-ring__face {
 .ui-row:is([aria-selected="true"], [aria-pressed="true"], [data-selected]) {
   border-left-color: rgb(var(--hud-accent));
   background: var(--hud-chosen);
+  box-shadow: inset 0 1px 0 rgb(var(--hud-rim) / 0.14);
+}
+:is(button.ui-row, a.ui-row, .ui-row:has(> button.ui-row__choose)):is(:active, [data-state="pressed"]),
+.ui-row[data-state="pressed"] {
+  box-shadow: var(--hud-shadow-press);
 }
 /* A row that is pressed to choose it is a button with the row's look. */
 button.ui-row {
@@ -1051,7 +1076,7 @@ span.ui-row__choose {
   flex-shrink: 0;
 }
 /* A phone's frame head is one control-high row: its name and its way out, and a drag down on it closes the surface. */
-@media (max-width: 1023px) {
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
   .ui-frame__head {
     touch-action: none;
   }
@@ -1093,7 +1118,7 @@ span.ui-row__choose {
     max-height: none;
   }
 }
-@media (min-width: 1024px) {
+@media (min-width: 1024px) and (orientation: landscape), (min-width: 1440px) {
   .ui-sheet {
     inset-inline: auto;
     right: theme(spacing.2);
@@ -1109,6 +1134,7 @@ span.ui-row__choose {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--hud-line);
+  border-color: var(--hud-line-top) var(--hud-line) var(--hud-line-bottom);
   border-radius: var(--hud-radius-panel);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow: var(--hud-shadow-panel);
@@ -1150,6 +1176,7 @@ span.ui-row__choose {
    stay the panel's utilities so a caller can size it. */
 .ui-popover {
   border: 1px solid var(--hud-line);
+  border-color: var(--hud-line-top) var(--hud-line) var(--hud-line-bottom);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow: var(--hud-shadow-panel);
 }
@@ -1175,7 +1202,7 @@ span.ui-row__choose {
 /* Below the desktop HUD a workspace is the full bottom sheet, or the drawer down the right edge on a phone held
    sideways; the drawer's height is the header clearance plus its bottom inset (popover.tsx). A SurfaceFrame takes the
    workspace size by its .ui-workspace class. */
-@media (max-width: 1023px) {
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
   .ui-window__bar[data-popover-drag-handle] {
     cursor: default;
   }
@@ -1315,6 +1342,10 @@ button.ui-relic:focus-visible {
   align-items: center;
   gap: theme(spacing.2);
 }
+.ui-actions:has(> .ui-button ~ .ui-button),
+.ui-actions:has(> .ui-button[data-tone="bad"]) {
+  flex-wrap: wrap;
+}
 .ui-actions__note {
   order: 1;
   min-width: 0;
@@ -1326,9 +1357,6 @@ button.ui-relic:focus-visible {
 .ui-actions__note:empty {
   display: none;
 }
-.ui-actions:has(> .ui-button[data-tone="bad"]) {
-  flex-wrap: wrap;
-}
 .ui-actions:has(> .ui-button[data-tone="bad"]) > .ui-actions__note {
   order: -1;
   flex-basis: 100%;
@@ -1336,6 +1364,11 @@ button.ui-relic:focus-visible {
 .ui-actions > :last-child:not(.ui-actions__note) {
   order: 2;
   margin-left: auto;
+}
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
+  .ui-actions > .ui-button:last-child {
+    flex-grow: 1;
+  }
 }
 /* A note that says why the verb cannot run stands beside the verb alone, so a card's foot stays one row on a phone
    (owner, 27 October: "it doesnt fit on my s22+ screen"). Beside a fix and the verb it takes its own line over them:
@@ -1360,7 +1393,7 @@ button.ui-relic:focus-visible {
   border-top: 1px solid var(--hud-divider);
   padding: theme(spacing.3) theme(spacing.4);
 }
-@media (max-width: 1023px) {
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
   .ui-sheet .ui-window__foot {
     padding-inline: theme(spacing.3);
   }
@@ -1536,7 +1569,7 @@ button.ui-relic:focus-visible {
 }
 /* A phone's sheet is narrower than the four columns: each row on two lines, the resource beside its amount, then the
  * slider beside the quick shares. */
-@media (max-width: 1023px) {
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
   .ui-transfer__row {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
@@ -1615,7 +1648,8 @@ button.ui-relic:focus-visible {
   display: flex;
   min-width: 12rem;
   flex-direction: column;
-  border: 1px solid var(--hud-line-strong);
+  border: 1px solid var(--hud-line);
+  border-color: var(--hud-line-top) var(--hud-line) var(--hud-line-bottom);
   border-radius: var(--hud-radius-control);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow: var(--hud-shadow-panel);
@@ -1870,7 +1904,7 @@ button.ui-relic:focus-visible {
 .ui-notice[data-tone="warn"] {
   border-left-color: var(--hud-warn);
 }
-@media (max-width: 1023px) {
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
   .ui-notice {
     gap: theme(spacing[1.5]);
     padding: theme(spacing.1) theme(spacing.2);
@@ -1991,6 +2025,20 @@ button.ui-relic:focus-visible {
   border-radius: inherit;
   background: rgb(var(--hud-accent));
 }
+.ui-meter[data-segmented] {
+  position: relative;
+}
+.ui-meter[data-segmented]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 calc(var(--segment) - 1.5px),
+    rgb(var(--hud-dark)) calc(var(--segment) - 1.5px) var(--segment)
+  );
+  pointer-events: none;
+}
 .ui-meter[data-tone="good"] > i {
   background: var(--hud-good);
 }
@@ -2103,25 +2151,36 @@ button.ui-relic:focus-visible {
   align-items: center;
   gap: theme(spacing.3);
   border: 1px solid var(--hud-line);
+  border-color: var(--hud-line-top) var(--hud-line) var(--hud-line-bottom);
   border-radius: var(--hud-radius-round);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
-  box-shadow: var(--hud-shadow-panel);
+  box-shadow: var(--hud-shadow-pill);
   padding: 0 theme(spacing.4);
 }
 /* A strip that is one button: it lights under the pointer and while what it opens is open. */
-button.ui-pill {
+.ui-segment {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+button:is(.ui-pill, .ui-popover, .ui-segment) {
   cursor: pointer;
   transition:
     border-color var(--hud-fast) var(--hud-ease),
     background-color var(--hud-fast) var(--hud-ease);
 }
-button.ui-pill:is(:hover, [data-state="hover"], [aria-expanded="true"]) {
+:where(button:is(.ui-pill, .ui-popover, .ui-segment)):is(:active, [data-state="pressed"]) {
+  box-shadow: var(--hud-shadow-press);
+  transform: translateY(1px);
+}
+:where(button:is(.ui-pill, .ui-popover, .ui-segment)):is(:hover, [data-state="hover"], [aria-expanded="true"]) {
   border-color: var(--hud-line-strong);
   background:
     linear-gradient(var(--hud-hover), var(--hud-hover)),
     linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
 }
-button.ui-pill:focus-visible {
+button:is(.ui-pill, .ui-popover, .ui-segment):focus-visible {
   outline: none;
   box-shadow: var(--hud-focus);
 }
@@ -2167,12 +2226,10 @@ button.ui-pill:focus-visible {
 .ui-pick:is([aria-pressed="true"], [aria-selected="true"], [data-selected]) {
   border-color: rgb(var(--hud-accent));
   background: var(--hud-chosen);
-  outline: 2px solid rgb(var(--hud-accent));
-  outline-offset: -2px;
+  box-shadow: inset 0 1px 0 rgb(var(--hud-rim) / 0.14);
 }
 .ui-pick[data-selected][data-tone="bad"] {
   border-color: var(--hud-bad);
-  outline-color: var(--hud-bad);
 }
 
 /* ── Card: a painting to pick (a building to build), its name and words on the foot, its actions and badge over it. ── */
@@ -2227,6 +2284,10 @@ button.ui-card__choose:disabled {
 .ui-card[data-disabled] .ui-card__picture {
   opacity: 0.5;
 }
+.ui-card[data-locked] .ui-card__picture,
+.ui-card[data-locked] .ui-card__foot {
+  opacity: 0.45;
+}
 .ui-card__foot {
   position: absolute;
   inset-inline: 0;
@@ -2260,8 +2321,10 @@ button.ui-card__choose:disabled {
   display: flex;
   flex-direction: column;
   height: auto;
-  min-height: theme(spacing.hud-frontier-build-card);
+  min-height: var(--card-tile, theme(spacing.hud-frontier-build-card));
   container-type: inline-size;
+  border-radius: 12px;
+  background: var(--hud-well);
 }
 .ui-card[data-size="sm"] .ui-card__choose {
   position: static;
@@ -2269,44 +2332,62 @@ button.ui-card__choose:disabled {
   flex: 1;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  gap: theme(spacing.1);
-  padding: theme(spacing.2) theme(spacing[1.5]) theme(spacing[1.5]);
+  justify-content: center;
+  gap: 1px;
+  padding: 4px 3px;
 }
 .ui-card[data-size="sm"] .ui-card__picture {
   position: static;
   flex: none;
-  height: theme(spacing.7);
+  height: 24px;
 }
 .ui-card[data-size="sm"] .ui-card__picture > * {
   width: auto;
 }
+.ui-card[data-size="sm"] .ui-card__picture img {
+  max-height: 24px;
+}
 .ui-card[data-size="sm"] .ui-card__foot {
   position: static;
   width: 100%;
-  flex: 1;
+  flex: none;
   align-items: center;
   justify-content: flex-start;
+  gap: 1px;
   padding: 0;
   background: none;
+  text-align: center;
 }
-/* The name keeps its size until the card is too narrow for "Scouts' lodge" (a 360-wide phone), then shrinks with it. */
 .ui-card[data-size="sm"] .ui-card__title {
+  display: -webkit-box;
   max-width: 100%;
-  font-size: min(var(--hud-text-strong), 13cqi);
-  line-height: var(--hud-leading-strong);
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: min(var(--hud-text-label), 12cqi);
+  line-height: 13px;
   font-weight: var(--hud-weight-strong);
+  white-space: normal;
+  text-wrap: balance;
 }
 .ui-card[data-size="sm"] .ui-card__detail {
   flex-direction: row;
   align-items: center;
   gap: theme(spacing.1);
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-label);
+  line-height: 13px;
+  font-weight: 700;
 }
 /* A small card's band keeps a chip's frame with less room inside it, and its words shrink once the card is too narrow
    for them (a 360-wide phone), so a raised price with its wait, or "Barracks III" by its lock, reads whole. */
 .ui-card[data-size="sm"] .ui-chip {
   padding-inline: theme(spacing.1);
   font-size: min(var(--hud-text-label), 12cqi);
+}
+.ui-card[data-size="sm"] .ui-card__corner {
+  top: 5px;
+  right: 5px;
 }
 .ui-card__refusal {
   color: var(--hud-muted);

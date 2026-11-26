@@ -12,6 +12,7 @@ interface RealmAssetEntry {
   source?: string;
   seed?: number;
   aspect?: AspectId;
+  grownHeight?: number;
 }
 
 const ASPECT_SLUGS = {
@@ -36,6 +37,45 @@ const ASPECT_WONDER_LIST: readonly RealmAssetEntry[] = (Object.entries(ASPECT_SL
 );
 
 export const ASPECT_WONDER_PATHS = ASPECT_WONDER_LIST.map((asset) => asset.path);
+
+export const BASE_REALM_CANDIDATES: readonly RealmAssetEntry[] = [
+  {
+    id: "base-settlement",
+    label: "Base Settlement · thatched hamlet",
+    level: 0,
+    wonder: false,
+    source: "tripo/realms/base-settlement",
+    path: modelPath("realms/base-settlement.glb"),
+    grownHeight: 0.81,
+  },
+  {
+    id: "base-city",
+    label: "Base City · courtyard keep",
+    level: 1,
+    wonder: false,
+    source: "tripo/realms/base-city",
+    path: modelPath("realms/base-city.glb"),
+    grownHeight: 1.48,
+  },
+  {
+    id: "base-kingdom",
+    label: "Base Kingdom · slate-roofed castle",
+    level: 2,
+    wonder: false,
+    source: "tripo/realms/base-kingdom",
+    path: modelPath("realms/base-kingdom.glb"),
+    grownHeight: 2.14,
+  },
+  {
+    id: "base-empire",
+    label: "Base Empire · spired citadel",
+    level: 3,
+    wonder: false,
+    source: "tripo/realms/base-empire",
+    path: modelPath("realms/base-empire.glb"),
+    grownHeight: 3,
+  },
+];
 export const REALM_ASSETS: readonly RealmAssetEntry[] = [...assets, ...ASPECT_WONDER_LIST];
 export const REALM_PATHS = REALM_ASSETS.map((asset) => asset.path);
 

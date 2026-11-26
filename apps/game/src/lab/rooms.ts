@@ -334,10 +334,10 @@ export const ROOMS: LabRoom[] = [
             load(() => import("./season-one/deep-site-lab"), "DeepSiteLab"),
           ),
           view(
-            "Day banner",
-            "/lab/season-one/day-banner",
-            "season-one/day-banner",
-            load(() => import("./season-one/day-banner-lab"), "DayBannerLab"),
+            "Quest dock",
+            "/lab/season-one/quest-dock",
+            "season-one/quest-dock",
+            load(() => import("./season-one/quest-dock-lab"), "QuestDockLab"),
           ),
           view(
             "Opening",

@@ -7,7 +7,7 @@ import { createMapSheetFixture } from "./fixture";
 
 describe("map sheet comparison", () => {
   it("draws HUD ownership on sampled terrain, with contrast casings, and releases its scene and labels", () => {
-    const terrain = { sampleSurface: () => ({ height: 0.7 }) } as unknown as ProceduralTerrain;
+    const terrain = { sampleSurface: () => ({ height: 0.7 }), sampleHeight: () => 0.7 } as unknown as ProceduralTerrain;
     const scene = new Scene(),
       overlay = document.createElement("div");
     const presentation = new MapSheetPresentation(scene, terrain, "ownership", overlay);
@@ -56,8 +56,8 @@ describe("map sheet comparison", () => {
     expect(strip(0).some(({ explored }) => !explored)).toBe(true);
     expect(strip(0).some(({ explored }) => explored)).toBe(true);
     expect([mapAgeAccent("blitz"), mapAgeAccent("frontier"), mapAgeAccent("eternum")]).toEqual([
-      "#ffe45e",
-      "#dfaa54",
+      "#f4a644",
+      "#be96fb",
       "#e6c27a",
     ]);
   });

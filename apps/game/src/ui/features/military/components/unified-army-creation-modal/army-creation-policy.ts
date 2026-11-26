@@ -2,6 +2,7 @@ import { TROOP_RAISE_SHORT_REASON, type TroopRaiseCost } from "@bibliothecadao/e
 import { RESOURCE_PRECISION, type ResourcesIds, formatWait, formatFigure, resourceName } from "@bibliothecadao/types";
 
 import type { ResourcePrice } from "@/ui/design-system/kit/hud-elements";
+import { ARMY_MANAGEMENT } from "@/ui/design-system/kit/words";
 import type { SelectedTroopCombo, TroopSelectionOption } from "./types";
 
 /** Whole troops that fit both the stockpile and the selected army's remaining cap. */
@@ -75,7 +76,7 @@ export function troopRaisePrices(costs: TroopRaiseCost[] | undefined): ResourceP
  */
 export function describeTroopSource(name: string, inputs: readonly { resource: ResourcesIds; perTroop: number }[]) {
   const from = inputs.length
-    ? `, from ${inputs.map(({ resource, perTroop }) => `${formatFigure(perTroop)} ${resourceName(resource).toLowerCase()}`).join(" and ")} each`
+    ? `, from ${inputs.map(({ resource, perTroop }) => `${formatFigure(perTroop)} ${resourceName(resource, false).toLowerCase()}`).join(" and ")} each`
     : "";
   return `${name} are trained by a ${name} barracks on the realm board${from}.`;
 }
@@ -85,7 +86,7 @@ function describeEmptyTroop(supply: TroopSupply): string {
   if (supply.perHour !== undefined && supply.perHour > 0 && supply.secondsToFullArmy !== null) {
     return `No ${supply.name} yet: full army in ${formatWait(Math.ceil(supply.secondsToFullArmy))}`;
   }
-  return `No ${supply.name} on hand.`;
+  return ARMY_MANAGEMENT.noTroopsAvailable(supply.name);
 }
 
 /**

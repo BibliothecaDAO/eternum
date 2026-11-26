@@ -180,3 +180,20 @@ it("matches the native fight vectors for Skill, Fury and Perfection", async () =
     expect(oathSitePay(Number(held), amount!, clean === 1n)).toBe(pay);
   }
 });
+
+it("matches the native Well refill vectors, with and without Reflection", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { oathWellStamina } = await import("./oaths");
+  const fields = readFileSync(
+    new URL("../../../../contracts/l3/world-native/tests/fixtures/oath-well-stamina.txt", import.meta.url),
+    "utf8",
+  )
+    .trim()
+    .split(/\s+/)
+    .map(Number);
+  expect(fields).toHaveLength(120);
+  while (fields.length) {
+    const [held, maximum, granted] = fields.splice(0, 3) as number[];
+    expect(oathWellStamina(held!, maximum!)).toBe(granted);
+  }
+});

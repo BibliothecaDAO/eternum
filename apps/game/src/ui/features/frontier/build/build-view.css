@@ -1,59 +1,53 @@
 .build-sheet {
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
-.build-grid {
-  --build-tile: clamp(64px, calc((theme(spacing.hud-phone-sheet) - 140px) / 3), 100px);
+.build-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.build-group__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgb(var(--hud-gold));
+}
+.build-group__word {
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-label);
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.build-groups {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
   gap: 6px;
 }
-[data-build-sheet] .ui-card[data-size="sm"] {
-  min-height: 0;
-  height: var(--build-tile);
-  container-type: size;
-  border-radius: 12px;
-  background: var(--hud-well);
-}
-[data-build-sheet] .ui-card[data-size="sm"] .ui-card__choose {
+.build-group__head {
   justify-content: center;
+}
+.build-grid {
+  --card-tile: 74px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+.build-tile-detail {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
   gap: 1px;
-  padding: 4px 3px;
 }
-[data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture {
-  height: 40px;
-}
-[data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture img {
-  max-height: 40px;
-  width: auto;
-}
-[data-build-sheet] .ui-card[data-size="sm"] .ui-card__foot {
-  flex: none;
-  gap: 1px;
-}
-[data-build-sheet] .ui-card[data-size="sm"] .ui-card__title {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  font-size: min(var(--hud-text-label), 12cqi);
-  line-height: 15px;
-  white-space: normal;
-  text-wrap: balance;
-}
-[data-build-sheet] .ui-card[data-size="sm"] .ui-card__detail {
-  color: rgb(var(--hud-ink));
-  font-size: var(--hud-text-label);
-  line-height: 15px;
-  font-weight: 700;
-}
-.build-grid .ui-card[data-locked] .ui-card__picture,
-.build-grid .ui-card[data-locked] .ui-card__foot {
-  opacity: 0.45;
-}
-[data-build-sheet] .ui-card__corner {
-  top: 5px;
-  right: 5px;
+.build-tile-needs {
+  font-size: var(--hud-text-badge);
+  font-weight: var(--hud-weight-body);
+  color: var(--hud-muted);
+  white-space: nowrap;
 }
 .build-badge {
   display: flex;
@@ -67,6 +61,14 @@
 }
 .build-badge[data-standing="built"] {
   border-color: var(--hud-good);
+}
+.build-badge[data-standing="unique"] {
+  width: auto;
+  min-width: 18px;
+  padding: 0 4px;
+  font-size: var(--hud-text-badge);
+  font-weight: var(--hud-weight-strong);
+  color: rgb(var(--hud-ink));
 }
 .build-tile-gives {
   display: inline-flex;
@@ -84,6 +86,17 @@
   gap: 2px;
   white-space: nowrap;
 }
+.build-tile-price .ui-price {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 6px;
+  font-size: var(--hud-text-label);
+  line-height: inherit;
+}
+.build-tile-price .ui-price img {
+  width: 13px;
+  height: 13px;
+}
 .build-chosen {
   display: flex;
   min-width: 0;
@@ -99,8 +112,9 @@
 }
 .build-chosen__line {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 2px 10px;
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-strong);
   line-height: 20px;
@@ -109,20 +123,26 @@
 .build-does {
   color: var(--hud-good);
 }
-@container (max-height: 90px) {
+@media (min-width: 1024px) and (orientation: landscape), (min-width: 1440px) {
+  .build-groups {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+  .build-group__head {
+    justify-content: flex-start;
+  }
+  .build-grid {
+    --card-tile: 100px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
   [data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture,
   [data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture img {
-    height: 22px;
-    max-height: 22px;
+    height: 40px;
+    max-height: 40px;
   }
   [data-build-sheet] .ui-card[data-size="sm"] .ui-card__title,
   [data-build-sheet] .ui-card[data-size="sm"] .ui-card__detail {
-    line-height: 13px;
-  }
-}
-@media (min-width: 1024px) {
-  .build-grid {
-    --build-tile: 100px;
-    gap: 8px;
+    line-height: 15px;
   }
 }

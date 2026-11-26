@@ -14,7 +14,7 @@ it("builds shared display content from the original event clock, alive while its
   expect(buildStoryNotification(input)).toMatchObject({
     id: input.sourceId,
     kind: "results",
-    title: "Your Blitz is settled",
+    title: "Your Blitz ended",
     body: "Frontier: see where you finished.",
     tag: "results:/g/0xa1/7",
     createdAt: 1000,
@@ -30,7 +30,7 @@ it("builds shared display content from the original event clock, alive while its
 });
 
 it.each([
-  ["BlitzFinalized", {}, "Your Blitz is settled"],
+  ["BlitzFinalized", {}, "Your Blitz ended"],
   ["ResourceReceiveArrivalStory", {}, "Your caravan arrived"],
   ["ResourceTransferStory", { to_entity_id: 11, travel_time: 0 }, "Resources received"],
 ] as const)("gives %s its own words", (story, payload, title) => {
@@ -125,7 +125,7 @@ it.each(["LordsWithdrawn", "BuildingPlacementStory", "ExplorationReward"])(
 
 it.each([
   [{ to_entity_id: 11, travel_time: 0 }, "Resources received", "they are in your stores."],
-  [{ to_entity_id: 11, travel_time: 600 }, "Resources on the way", "a shipment is heading to your stores."],
+  [{ to_entity_id: 11, travel_time: 600 }, "Resources incoming", "a shipment is heading to your stores."],
 ] as const)("tells the receiver goods landed only when they took no road: %o", (payload, title, body) => {
   expect(storyNotificationCopy("ResourceTransferStory", payload)).toEqual({ title, body });
 });

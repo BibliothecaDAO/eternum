@@ -1,5 +1,5 @@
 import type { OpeningRules } from "@/ui/design-system/kit/words";
-import { OPENING, OPENING_MOMENTS, type OpeningContext, type OpeningMoment } from "./opening";
+import { OPENING, OPENING_MOMENTS, type Opened, type OpeningContext, type OpeningMoment } from "./opening";
 
 export const TUTORIAL_SKIPPED = "tutorial-skipped";
 
@@ -41,6 +41,7 @@ export const EMPTY_OPENING_CONTEXT: OpeningContext = {
   outOfStamina: false,
   hasRelic: false,
   openedToday: false,
+  openedQuest: false,
   openedResearch: false,
   openedSeason: false,
   openedShop: false,
@@ -53,6 +54,12 @@ export const reachedOnContext = (ctx: OpeningContext | null): OpeningMoment[] =>
 
 export const openedMoments = (kept: ReadonlySet<string>, onState: readonly OpeningMoment[]): Set<OpeningMoment> =>
   new Set([...OPENING_MOMENTS.filter((moment) => kept.has(moment)), ...onState]);
+
+export const openedParts = (
+  kept: ReadonlySet<string>,
+  seen: ReadonlySet<string>,
+  onState: readonly OpeningMoment[],
+): Opened => (seen.has(TUTORIAL_SKIPPED) ? "all" : openedMoments(kept, onState));
 
 const isCompletedOnContext = (moment: OpeningMoment, ctx: OpeningContext, isShowing: boolean): boolean => {
   const entry = OPENING[moment];

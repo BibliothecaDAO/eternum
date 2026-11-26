@@ -119,7 +119,7 @@ const RESOURCE_TIER_GROUPS: ResourceTierGroup[] = [
 ];
 
 /** The cards of a group: one column on a phone, then two, then three across the Build window. */
-const CARD_GRID = "grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3";
+const CARD_GRID = "grid grid-cols-1 gap-2 sm:grid-cols-2 hud-desk:grid-cols-3";
 
 type ResourceProductionStatus = {
   resourceId: ResourcesIds;
@@ -179,6 +179,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
           structure,
           building,
           configManager.getBuildingCategoryConfig(building).capacity_grant,
+          mode.id === "frontier",
         )
       : null;
   const structureBuildings = useNativeRow("StructureBuildings", {
@@ -626,7 +627,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
                             );
                           }}
                           active={previewBuilding?.resource === resourceId}
-                          buildingName={resourceName(resourceId)}
+                          buildingName={resourceName(resourceId, mode.id === "frontier")}
                           resource={resourceId}
                           productionStatus={productionStatus}
                           troopHint={troopHint}
@@ -703,7 +704,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
                             );
                           }}
                           active={previewBuilding?.resource === resourceId}
-                          buildingName={resourceName(resourceId)}
+                          buildingName={resourceName(resourceId, mode.id === "frontier")}
                           resource={resourceId}
                           productionStatus={productionStatus}
                           entityId={entityId}
@@ -964,7 +965,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
           <span className={useSimpleCost ? "text-hud-label text-hud-cue" : "text-hud-label"}>Resources</span>
           <HudSwitch on={useSimpleCost} label="Pay with labor" onChange={setUseSimpleCost} />
           <span className={useSimpleCost ? "text-hud-label" : "text-hud-label text-hud-cue"}>
-            {resourceName(ResourcesIds.Labor)}
+            {resourceName(ResourcesIds.Labor, mode.id === "frontier")}
           </span>
         </div>
       )}
@@ -975,7 +976,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
           if (lane !== null) setSummaryOpen(event.currentTarget.open);
         }}
       >
-        <summary className="flex min-h-11 cursor-pointer items-center text-hud-accent underline underline-offset-4 lg:hidden">
+        <summary className="flex min-h-11 cursor-pointer items-center text-hud-accent underline underline-offset-4 hud-desk:hidden">
           Built here · view buildings
         </summary>
         <RealmBuildingSummary

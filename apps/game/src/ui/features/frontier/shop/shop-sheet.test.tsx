@@ -17,6 +17,8 @@ import { sellingFragments } from "../value/fragments-fixture";
 import { GameProvider } from "@/hooks/context/game-context";
 import { transferArmies } from "../army/transfer-fixture";
 import { ShopSheet, ShopView, type ShopViewProps } from "./shop-sheet";
+import { ANCIENT_SEAL } from "@bibliothecadao/types";
+import { SHOP_WORDS } from "@/ui/design-system/kit/words";
 
 const PLAYER = "0x111";
 
@@ -62,25 +64,25 @@ const view = (over: Partial<ShopViewProps>) => {
 describe("the shop", () => {
   it("offers the Ancient Seal for 1,000 Fragments, and says what is missing in dollars while short", () => {
     view({});
-    expect(text()).toContain("Ancient Seal");
-    expect(text()).toContain("For the whole season");
-    expect(text()).toContain("Daily quest pays 50% more");
+    expect(text()).toContain(ANCIENT_SEAL);
+    expect(text()).toContain(SHOP_WORDS.passFor);
+    expect(text()).toContain(SHOP_WORDS.questBonus(50));
     expect(getPass()?.disabled).toBe(true);
-    expect(host.querySelector("[data-shop-short]")?.textContent).toBe("You have 340. Get 660 more for $6.60.");
+    expect(host.querySelector("[data-shop-short]")?.textContent).toBe(SHOP_WORDS.short(340, 660, 660));
     expect(host.querySelector("[data-code]")).not.toBeNull();
     expect(text()).toContain("Fragments 340");
-    expect(text()).toContain("1 cent each. Stamina, rerolls, the Ancient Seal.");
-    expect(text()).toContain("Each Fragment refills 2 points. A bar of 180 is 90 Fragments, $0.90.");
+    expect(text()).toContain(SHOP_WORDS.fragmentsLine(1));
+    expect(text()).toContain(SHOP_WORDS.staminaLine(2, 180, 90, 90));
   });
 
   it("prices a gap below the smallest purchase at that purchase", () => {
     view({ fragments: 990 });
-    expect(host.querySelector("[data-shop-short]")?.textContent).toBe("You have 990. Get 100 more for $1.00.");
+    expect(host.querySelector("[data-shop-short]")?.textContent).toBe(SHOP_WORDS.short(990, 100, 100));
   });
 
   it("tells an account whose Realm already pays the quest bonus that it does, beside the Seal's offer", () => {
     view({ bonusHeld: "Realm" });
-    expect(host.querySelector("[data-shop=pass]")?.textContent).toContain("Your Realm gives this bonus already");
+    expect(host.querySelector("[data-shop=pass]")?.textContent).toContain(SHOP_WORDS.bonusHeld("Realm"));
     expect(getPass()).toBeDefined();
   });
 
@@ -99,14 +101,14 @@ describe("the shop", () => {
 
   it("reads a held Ancient Seal from the account's Seal row: no purchase, no code, the Ancient Seal named as held", () => {
     renderShop([{ model: "Seal", key: "0x5ea1", value: { game_id: 1, account: PLAYER, granted_at: "1" } }]);
-    expect(text()).toContain("You have the Ancient Seal");
+    expect(text()).toContain(SHOP_WORDS.held);
     expect(getPass()).toBeUndefined();
     expect(host.querySelector("[data-shop=code]")).toBeNull();
   });
 
   it("tells the holder of a Realm settled as this home that its Realm pays the quest bonus already", () => {
     renderShop([{ model: "SettledRealm", key: "0x5e7", value: { game_id: 1, realm_id: 42, home: "7" } }]);
-    expect(host.querySelector("[data-shop=pass]")?.textContent).toContain("Your Realm gives this bonus already");
+    expect(host.querySelector("[data-shop=pass]")?.textContent).toContain(SHOP_WORDS.bonusHeld("Realm"));
     expect(getPass()).toBeDefined();
   });
 
@@ -121,15 +123,26 @@ describe("the shop", () => {
     expect(opened.searchParams.get("next")).toBe("/g/0x1/1/map#shop");
   });
 
+  it("opens closed while the game sells no Fragments: it says so and still takes an Ancient Seal code", () => {
+    renderShop([], false);
+    const closed = host.querySelector("[data-shop=closed]");
+    expect(closed?.textContent).toBe(
+      "Fragments shop closedFragments purchases and spends are closed right now. You can still use an Ancient Seal code below.Have a code?Apply",
+    );
+    expect(closed?.querySelector("[data-shop=code]")).not.toBeNull();
+    expect(host.querySelector("[data-shop=pass]")).toBeNull();
+    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Get Fragments")).toBe(false);
+  });
+
   it("names no free bonus for a home with neither a Realm nor a ticket", () => {
     renderShop([]);
-    expect(host.querySelector("[data-shop=pass]")?.textContent).not.toContain("gives this bonus already");
+    expect(host.querySelector("[data-shop=pass]")?.textContent).not.toContain("already gives this bonus");
   });
 });
 
-const renderShop = (facts: object[]) => {
+const renderShop = (facts: object[], selling = true) => {
   const store = transferArmies();
-  store.applyFacts([...facts, ...sellingFragments(store)] as never);
+  store.applyFacts([...facts, ...(selling ? sellingFragments(store) : [])] as never);
   act(() =>
     root.render(
       <MemoryRouter initialEntries={["/g/0x1/1/map"]}>

@@ -15,6 +15,7 @@ import {
   makes,
   ONE_A_REALM,
   priceRaised,
+  requiresRank,
   startsNewArmies,
   storesMore,
   type RankedWords,
@@ -46,6 +47,7 @@ import { useEffect, useMemo, useState } from "react";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 
 import { FRONTIER_STORES, madeStore, STORE_KINDS } from "../stores";
+import { BaneFigure } from "../day/bane-mark";
 import { usePartShown } from "../opening/opening-context";
 import { type BuildOption, readBuildOptions } from "./build-options";
 import { disclosedBuildOptions } from "./first-build";
@@ -115,11 +117,6 @@ const plotsHeld = (store: PlotStore, realm: NativeRows["Structure"]) => {
   return { used: total - openPlots(store, realm).length, total };
 };
 
-export const useRealmPlots = (realm: NativeRows["Structure"] | null) => {
-  const facts = useNativeFacts(BUILD_MODELS);
-  return realm ? plotsHeld(facts.store, realm) : undefined;
-};
-
 export const BuildSheet = ({
   realm,
   plot,
@@ -186,7 +183,7 @@ export const BuildSheet = ({
   const standing = (option: BuildOption): Refusal | undefined => {
     if (option.standing === "built") return { reason: { kind: "failed", line: ONE_A_REALM } };
     if (option.standing !== "open")
-      return { reason: { kind: "failed", line: `Requires ${rankName(option.standing.level)}` } };
+      return { reason: { kind: "failed", line: requiresRank(rankName(option.standing.level)) } };
     const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
     if (shortCost) {
       const have = held(shortCost.resource);
@@ -251,6 +248,8 @@ type Holdings = {
 
 const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
   key: String(option.category),
+  group: option.group,
+  opensAt: option.opensAt,
   icon: buildingIcon(option.category),
   name: buildingName(option.category),
   does: buildingDoes(option),
@@ -280,9 +279,12 @@ const standingOf = (option: BuildOption, { held, perHour }: Holdings): BuildTile
   };
 };
 
+const buildRate = (effect: Extract<BuildOption["effect"], { kind: "produces" }>): string =>
+  formatRate(effect.perHour === undefined ? undefined : effect.perHour / 3_600);
+
 const buildingDoes = ({ effect, tier }: BuildOption): RankedWords =>
   effect.kind === "produces"
-    ? [makes(FRONTIER_STORES[madeStore(effect.resource)].word, formatRate(effect.output.total))]
+    ? [makes(FRONTIER_STORES[madeStore(effect.resource)].word, buildRate(effect))]
     : effect.kind === "trains"
       ? startsNewArmies(effect.attribute, tier)
       : effect.kind === "research"
@@ -297,7 +299,10 @@ const storageShare = (bps: number) => formatPercent(bps / 10_000, { signed: true
 
 const givesOf = ({ effect }: BuildOption): BuildTile["gives"] =>
   effect.kind === "produces"
-    ? { icon: FRONTIER_STORES[madeStore(effect.resource)].icon, value: formatRate(effect.output.total) }
+    ? {
+        icon: FRONTIER_STORES[madeStore(effect.resource)].icon,
+        value: <BaneFigure figure="production">{buildRate(effect)}</BaneFigure>,
+      }
     : effect.kind === "trains"
       ? { icon: "stamina" }
       : effect.kind === "research"

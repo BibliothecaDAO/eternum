@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { BUILD_ORDER_WORDS } from "@/ui/design-system/kit/words";
 
 const REALM = 7;
 const facts = vi.hoisted(() => ({
@@ -96,7 +97,7 @@ describe("a realm's level-up step", () => {
     facts.upgrade = realm({ requirements: [] });
     calls.waitForAction.mockResolvedValue({ status: "SUCCEEDED" });
     const { seen, unmount } = await renderSurfaces();
-    expect(seen.card).toMatchObject({ word: "Level up to City", ready: true, refusal: null });
+    expect(seen.card).toMatchObject({ word: BUILD_ORDER_WORDS.upgradeTo("City"), ready: true, refusal: null });
     await act(async () => seen.card?.run());
     expect(calls.upgrade_realm).toHaveBeenCalledTimes(1);
     expect(calls.upgrade_realm).toHaveBeenCalledWith({ signer: { address: "0x1" }, realm_entity_id: REALM });
@@ -134,7 +135,7 @@ describe("a realm's level-up step", () => {
     facts.provision = { needsBootstrap: true };
     calls.waitForAction.mockResolvedValue({ status: "SUCCEEDED" });
     const { seen, unmount } = await renderSurfaces();
-    expect(seen.card).toMatchObject({ mode: "provision", word: "Provision", ready: true });
+    expect(seen.card).toMatchObject({ mode: "provision", word: BUILD_ORDER_WORDS.create, ready: true });
     await act(async () => seen.card?.run());
     expect(calls.provision_realm).toHaveBeenCalledWith({
       signer: { address: "0x1" },

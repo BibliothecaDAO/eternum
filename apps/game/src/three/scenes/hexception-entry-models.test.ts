@@ -13,6 +13,14 @@ vi.mock("@/three/utils/gltf-loader", () => ({
   gltfLoader: { loadAsync: async () => ({ scene: loaded.scene, animations: [] }) },
 }));
 
+const route = vi.hoisted(() => ({ tiles: null as unknown }));
+vi.mock("@/play/navigation/play-route-target", () => ({
+  resolvePlayRouteTarget: () => ({ hexRealmPosition: { col: 3, row: 4 }, routeWorldPosition: { col: 3, row: 4 } }),
+}));
+vi.mock("@/sync/active-game-client", () => ({
+  requireActiveGameClient: () => ({ views: { buildingTiles: () => route.tiles } }),
+}));
+
 const { getGameModeConfig } = await import("@/config/game-modes");
 const { default: HexceptionScene } = await import("./hexception");
 
@@ -92,4 +100,102 @@ it("compiles a loaded model's pipelines against the realm scene before it hands 
   expect(compilePipelines).toHaveBeenCalledWith(building.model, scene.scene);
   expect(building.model.getObjectById(mesh.id)).toBe(mesh);
   expect(new Box3().setFromObject(building.model, true).min.y).toBeCloseTo(0, 6);
+});
+
+it("asks for the route realm's models while the camera flies to it, the same ones its board then lays out", () => {
+  const buildings = [
+    { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], category: BuildingType.ResourceLabor },
+    { col: BUILDINGS_CENTER[0] + 1, row: BUILDINGS_CENTER[1], category: BuildingType.ResourceWheat, tier: 3 },
+    { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] - 1, category: BuildingType.ResourceKnightT1 },
+  ];
+  route.tiles = {
+    existingBuildings: () => buildings.map((building) => ({ ...building })),
+    structureType: () => StructureType.Realm,
+    getRealmLevel: () => 0,
+    getWonder: () => undefined,
+  };
+  const board = realmBoard(buildings);
+  board.scene.readRouteRealm = () => ({ tiles: route.tiles, realmId: 7, center: { col: 3, row: 4 }, stage: 0 });
+  board.scene.preparePageAhead = () => undefined;
+
+  board.scene.prepareWhileFlying();
+
+  expect(board.requested.toSorted()).toEqual([
+    "/models/frontier/painted/barracks-1.glb",
+    "/models/frontier/painted/farm-3.glb",
+    "/models/realms/settlement.glb",
+  ]);
+});
+
+const realmAt = (center: { col: number; row: number }, realmId: number, buildingCol: number) => ({
+  realmId,
+  center,
+  tiles: {
+    getHexCoords: () => center,
+    existingBuildings: () => [{ col: buildingCol, row: BUILDINGS_CENTER[1], category: BuildingType.ResourceWheat }],
+    structureType: () => StructureType.Realm,
+    getRealmLevel: () => 0,
+  },
+  stage: 0,
+});
+
+const realmA = realmAt({ col: 3, row: 4 }, 7, BUILDINGS_CENTER[0] + 1);
+const realmB = realmAt({ col: 10, row: 4 }, 8, BUILDINGS_CENTER[0] - 1);
+
+const sceneShowing = (realm: typeof realmA) => {
+  vi.spyOn(configManager, "getBiomeClimateConfig").mockReturnValue(undefined as never);
+  const preparePageAsync = vi.fn((request: { pageKey: string }) => Promise.resolve({ pageKey: request.pageKey }));
+  const scene = Object.assign(Object.create(HexceptionScene.prototype), {
+    game: { store: new NativeFactStore() },
+    hexceptionRadius: 4,
+    isInitialized: true,
+    gridIsStale: false,
+    lastRealmKey: `${realm.center.col},${realm.center.row}`,
+    interactiveHexManager: { clearHexes: vi.fn(), addHex: vi.fn(), setBandBare: vi.fn(), applyPlotLook: vi.fn() },
+    highlightHexManager: { setLitPlotPalette: vi.fn() },
+    proceduralTerrain: { preparePageAsync },
+  });
+  const show = (shown: typeof realmA) =>
+    Object.assign(scene, {
+      tileManager: shown.tiles,
+      shownRealmId: shown.realmId,
+      centerColRow: [shown.center.col, shown.center.row],
+      structureStage: shown.stage,
+    });
+  show(realm);
+  const setUpGrid = (shown: typeof realmA) => show(shown).prepareShownPage(scene.layOutGridCells(4));
+  return { scene, preparePageAsync, setUpGrid };
+};
+
+it("builds the ground of the realm the camera flies to, not the one on screen, and its setup takes that page", async () => {
+  const { scene, preparePageAsync, setUpGrid } = sceneShowing(realmA);
+
+  scene.preparePageAhead(realmB);
+  const flown = preparePageAsync.mock.results[0].value;
+  const shown = setUpGrid(realmB);
+
+  expect(shown).toBe(flown);
+  expect(preparePageAsync).toHaveBeenCalledTimes(1);
+  expect(await shown).toEqual({ pageKey: "hexception:10,4" });
+});
+
+it("builds setup's own page when it shows another realm than the one flown to, never the page flown for that one", async () => {
+  const { scene, preparePageAsync, setUpGrid } = sceneShowing(realmB);
+  scene.isInitialized = false;
+
+  scene.preparePageAhead(realmB);
+  const flown = preparePageAsync.mock.results[0].value;
+  const shown = setUpGrid(realmA);
+
+  expect(shown).not.toBe(flown);
+  expect(preparePageAsync).toHaveBeenCalledTimes(2);
+  expect(await shown).toEqual({ pageKey: "hexception:3,4" });
+});
+
+it("asks for no page ahead when the realm shown is the one the camera flies to", () => {
+  const { scene, preparePageAsync } = sceneShowing(realmA);
+
+  scene.preparePageAhead(realmA);
+
+  expect(preparePageAsync).not.toHaveBeenCalled();
 });

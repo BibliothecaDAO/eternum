@@ -18,7 +18,7 @@ import {
   getStructureModelPaths,
   VILLAGE_MODEL_PATH,
   CAMP_MODEL_PATH,
-  CLEARED_SITE_MODEL_PATH,
+  SUPPLY_POST_STANDARD_MODEL_PATH,
   REALM_MODEL_PATHS,
 } from "../constants/scene-constants";
 import { resolveRealmBannerRow, resolveVillageAspectRow } from "./settlement-appearance";
@@ -69,12 +69,11 @@ describe("gameplay villages", () => {
       CAMP_MODEL_PATH,
       ...FRONTIER_BEAST_PATHS,
       SUPPLY_POST_MODEL_PATH,
-      CLEARED_SITE_MODEL_PATH,
+      SUPPLY_POST_STANDARD_MODEL_PATH,
     ]);
     expect(getStructureModelPaths()[StructureType.Beasts]).toEqual([
       FRONTIER_BEASTS.cyclops.path,
       ...FRONTIER_BEAST_PATHS,
-      CLEARED_SITE_MODEL_PATH,
     ]);
     expect(new Set([VILLAGE_MODEL_PATH, CAMP_MODEL_PATH]).size).toBe(2);
     expect(buildingModelPaths()[BUILDINGS_GROUPS.VILLAGE][StructureType.Village]).toBe(VILLAGE_MODEL_PATH);

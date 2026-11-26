@@ -17,7 +17,7 @@ it("names who mentioned the player and where, never the message, opening the app
     tag: "mention:global",
     owner: "0x2",
     title: "Lady Ada mentioned you",
-    body: "In Global. Open Realms to read it.",
+    body: "In Global chat. Open Realms to read it.",
     target: "/chat",
     createdAt: 1_000,
     expiresAt: 3_601_000,

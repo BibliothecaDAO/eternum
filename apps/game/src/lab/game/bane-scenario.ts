@@ -1,4 +1,5 @@
 import {
+  dayAtIndex,
   dayOf,
   entityHomeNamespace,
   expeditionRealmSite,
@@ -9,17 +10,32 @@ import { nativeBaneConstants, nativeQuestConstants } from "@bibliothecadao/etern
 import { BiomeType, getHexesWithinRadius, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { type LabScenario, wire } from "./lab-chain";
 import { withoutArmies } from "./day-turn-scenario";
-import { questScenario } from "./quest-scenario";
+import { labQuestRulesFact, questScenario } from "./quest-scenario";
 import { revealedTile } from "./spire-scenario";
+import { withRealmEconomy } from "./day-end-scenario";
+import { homeCampBesideArmy } from "./site-effects-scenario";
+import { staminaScenario } from "./stamina-scenario";
+import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
 
 type BaneCase = "world" | "again" | "late" | "team";
 
-/** Day 1 with the confirmed result of the home's quest; collection still goes through the real provider and HUD. */
+const BANE_DAY = frontierSeasonOnePreset.banes.quietDays;
+
+const BANE_RULES = {
+  game_id: 1,
+  chance_step: frontierSeasonOnePreset.banes.chanceStep,
+  quorum_percent: 40,
+  beast_percent: 150,
+  stamina_percent: 50,
+  production_percent: 50,
+  quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10_000, 15_000],
+};
+
 export function baneScenario(stage: BaneCase): LabScenario {
   const scenario = questScenario();
   const store = withoutArmies(scenario.store);
   const calendar = readExpeditionRules(store, 1)!;
-  const start = dayOf(calendar, calendar.startMainAt)!.end;
+  const start = dayAtIndex(calendar, BANE_DAY).start;
   const startsAt = start + 60;
   const home = store.require("Structure", { game_id: 1, entity_id: 7 });
   const opensOn = expeditionRealmSite(calendar, entityHomeNamespace(home.entity_id), startsAt)!;
@@ -27,25 +43,13 @@ export function baneScenario(stage: BaneCase): LabScenario {
   const received = stage === "again";
   store.applyFacts([
     { model: "HomeAspect", key: "0xb01", value: { game_id: 1, home: 7, aspect: 2 } },
-    { model: "AspectActivity", key: "0xb02", value: { game_id: 1, aspect: 2, day: 0, active: 5 } },
-    {
-      model: "BaneRules",
-      key: "0xb03",
-      value: {
-        game_id: 1,
-        chance_step: 20,
-        quorum_percent: 40,
-        beast_percent: 150,
-        stamina_percent: 50,
-        production_percent: 50,
-        quest_counts: [3, 6, 9, 12, 20, 40, 60, 80, 2500, 6000, 10_000, 15_000],
-      },
-    },
-    { model: "WorldBane", key: "0xb04", value: { game_id: 1, day: 0, kind: 0 } },
+    { model: "AspectActivity", key: "0xb02", value: { game_id: 1, aspect: 2, day: BANE_DAY - 1, active: 5 } },
+    { model: "BaneRules", key: "0xb03", value: BANE_RULES },
+    { model: "WorldBane", key: "0xb04", value: { game_id: 1, day: BANE_DAY - 1, kind: 0 } },
     {
       model: "WorldBane",
       key: "0xb05",
-      value: { game_id: 1, day: 1, kind: stage === "team" ? 0 : nativeBaneConstants.ASH_FALL },
+      value: { game_id: 1, day: BANE_DAY, kind: stage === "team" ? 0 : nativeBaneConstants.ASH_FALL },
     },
     {
       model: "QuestProgress",
@@ -53,7 +57,7 @@ export function baneScenario(stage: BaneCase): LabScenario {
       value: {
         game_id: 1,
         home: 7,
-        day: 1,
+        day: BANE_DAY,
         progress: stage === "team" ? 3 : 2500,
         completed_level: 1,
       },
@@ -64,7 +68,7 @@ export function baneScenario(stage: BaneCase): LabScenario {
       value: {
         game_id: 1,
         aspect: 2,
-        day: 1,
+        day: BANE_DAY,
         completed: ended ? 2 : 1,
         ended_at: ended ? start + 1 : 0,
       },
@@ -81,7 +85,7 @@ export function baneScenario(stage: BaneCase): LabScenario {
             value: {
               game_id: 1,
               aspect: 2,
-              day: 1,
+              day: BANE_DAY,
               source: 1,
               issued_day: 0,
               quest: nativeQuestConstants.STAND,
@@ -129,6 +133,40 @@ export function baneScenario(stage: BaneCase): LabScenario {
   };
 }
 
+export function baneEconomyScenario(): LabScenario {
+  const scenario = baneScenario("world");
+  withRealmEconomy(scenario.store);
+  return scenario;
+}
+
+export function bloodMoonScenario(): LabScenario {
+  const scenario = staminaScenario(false);
+  scenario.store.applyFacts(homeCampBesideArmy(scenario.store) as never);
+  return withWorldBane(scenario, nativeBaneConstants.BLOOD_MOON);
+}
+
+export function withWorldBane(scenario: LabScenario, kind: number): LabScenario {
+  const { store, startsAt } = scenario;
+  const { index: day } = dayOf(readExpeditionRules(store, 1)!, startsAt)!;
+  const aspect = store.get("HomeAspect", { game_id: 1, home: 7 })?.aspect ?? 2;
+  const row = (model: string, keys: object, fresh: string, value: object) => {
+    const held = store.get(model as never, keys as never);
+    return { model, key: held ? store.wireKeyOf(model as never, held)! : fresh, value: { ...keys, ...value } };
+  };
+  store.applyFacts([
+    ...(store.get("QuestRules", { game_id: 1 }) ? [] : [labQuestRulesFact("0xb30")]),
+    ...(store.get("QuestProgress", { game_id: 1, home: 7, day })
+      ? []
+      : [row("QuestProgress", { game_id: 1, home: 7, day }, "0xb31", { progress: 0, completed_level: 0 })]),
+    row("HomeAspect", { game_id: 1, home: 7 }, "0xb32", { aspect }),
+    ...(day > 0 ? [row("AspectActivity", { game_id: 1, aspect, day: day - 1 }, "0xb33", { active: 5 })] : []),
+    row("BaneRules", { game_id: 1 }, "0xb34", BANE_RULES),
+    row("WorldBane", { game_id: 1, day }, "0xb35", { kind }),
+    row("BaneProgress", { game_id: 1, aspect, day }, "0xb36", { completed: 0, ended_at: 0 }),
+  ] as never);
+  return scenario;
+}
+
 function receipt(model: "LaborGrant" | "BaneGrant", account: string, labor: bigint, essence: bigint) {
   return {
     model,
@@ -136,7 +174,7 @@ function receipt(model: "LaborGrant" | "BaneGrant", account: string, labor: bigi
     value: wire({
       game_id: 1,
       home: 7,
-      day: 1,
+      day: BANE_DAY,
       account,
       amount: labor,
       essence,

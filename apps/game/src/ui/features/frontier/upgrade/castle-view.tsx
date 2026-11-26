@@ -9,6 +9,7 @@ import { BUILDING_FIGURES, CASTLE, CASTLE_GIVES, LABOR, UPGRADE, UPGRADING } fro
 import type { ReactNode } from "react";
 
 import { CompareRows } from "../building/compare-rows";
+import { BaneFigure } from "../day/bane-mark";
 import { RefusedVerb } from "../refused-verb";
 import { NodeTile } from "../research/research-panel";
 import type { TreeNode } from "../research/research-tree";
@@ -64,7 +65,7 @@ export const CastleView = ({
             className="flex items-center gap-1.5 self-center text-hud-title tabular-nums text-hud-ink"
           >
             <Icon name="labor" size={24} />
-            {laborRate}
+            <BaneFigure figure="production">{laborRate}</BaneFigure>
           </span>
         }
         now={<LevelHead side={now} />}

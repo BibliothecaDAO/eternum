@@ -9,7 +9,7 @@ vi.mock("@/ui/features/event-feed/quick-feed", async (original) => ({
 }));
 
 import { dayClock } from "./day-clock";
-import { DayMedallion } from "./day-pill";
+import { DayPill } from "./day-pill";
 import { FrontierPlaces } from "./frontier-desktop";
 import { isTroopStore, STORE_KINDS } from "../stores";
 import { RealmCard } from "./realm-card";
@@ -52,11 +52,11 @@ it("says the day and the time left in the top bar, and when the day ends and how
     { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400, endAt: 21 * 20 * 14_400 },
     3_600,
   );
-  act(() => root.render(<DayMedallion clock={clock} />));
+  act(() => root.render(<DayPill clock={clock} />));
   const pill = host.querySelector('[role="timer"]')!;
   expect(pill.getAttribute("aria-label")).toContain(`Day ${clock.day}`);
-  expect(pill.querySelector(".frontier-day-dial__left")?.textContent).toBeTruthy();
-  expect(pill.querySelector("img")?.getAttribute("src")).toBe("/images/hud/day-medallion-calm.webp");
+  expect(pill.querySelector(".frontier-day-pill__day")?.textContent).toBe(`Day ${clock.day}`);
+  expect(pill.querySelector(".frontier-day-pill__left")?.textContent).toBeTruthy();
   expect(pill.getAttribute("data-tip")).toMatch(/^Day ends \d\d:\d\d · .+ left · Tomorrow lasts /);
 });
 
@@ -65,7 +65,7 @@ it("reads a 24-hour day in hours on the top bar and its hover, as Play does (liv
     { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, scheduledEndAt: 21 * 20 * 14_400, endAt: 21 * 20 * 14_400 },
     3_600,
   );
-  act(() => root.render(<DayMedallion clock={{ ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 }} />));
+  act(() => root.render(<DayPill clock={{ ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 }} />));
   const pill = host.querySelector('[role="timer"]')!;
   expect(pill.getAttribute("aria-label")).toContain(`Day ${day.day}`);
   expect(pill.textContent).toContain("24h");
@@ -140,7 +140,7 @@ it("shows every stock with its rate, Fragments opening the shop, and the next ra
         name="Duskbite"
         kind="realm"
         level={0}
-        rankUp={{ name: "City", gives: "+1 army slot", sending: false, onUpgrade }}
+        rankUp={{ name: "City", sending: false, onUpgrade }}
         aspect={1}
         orderId={12}
         stores={STORE_KINDS.map((kind) => store(kind, 0, 6_000))}
@@ -165,15 +165,27 @@ it("shows every stock with its rate, Fragments opening the shop, and the next ra
   expect(card.querySelector('[data-store="fragments"]')?.textContent).toBe("250Shop");
   act(() => card.querySelector<HTMLButtonElement>('[aria-label="Fragments 250"]')!.click());
   expect(onShop).toHaveBeenCalledTimes(1);
-  expect(card.querySelector(".frontier-realm-card__next")?.textContent).toBe("Next rank City · +1 army slotUpgrade");
+  expect(card.querySelector(".frontier-realm-card__next")?.textContent).toBe("Next rank CityUpgrade");
   act(() => card.querySelector<HTMLButtonElement>("[data-realm-castle]")!.click());
   expect(onUpgrade).toHaveBeenCalledTimes(1);
 
   act(() =>
-    root.render(<RealmCard name="Duskbite" kind="realm" level={3} stores={STORES} fragments={null} lords={null} />),
+    root.render(
+      <RealmCard
+        name="Duskbite"
+        kind="realm"
+        level={3}
+        stores={STORES}
+        fragments={null}
+        lords={null}
+        onShop={onShop}
+      />,
+    ),
   );
   expect(host.querySelector("[data-realm-castle]")).toBeNull();
-  expect(host.querySelector('[data-store="fragments"] button')).toBeNull();
+  expect(host.querySelector('[data-store="fragments"]')?.textContent).toBe("—Shop");
+  act(() => host.querySelector<HTMLButtonElement>('[aria-label="Fragments"]')!.click());
+  expect(onShop).toHaveBeenCalledTimes(2);
 });
 
 it("locks the next rank, with the price it needs, until the realm can pay it", () => {
@@ -230,9 +242,9 @@ it("shows the LORDS being read, then their amount, or says the read had no answe
     const cell = host.querySelector('[data-store="lords"] [aria-label]')!;
     return [cell.textContent, cell.getAttribute("aria-label")];
   };
-  expect(lordsLabel("reading")).toEqual(["LORDS", "LORDS: reading your wallet…"]);
+  expect(lordsLabel("reading")).toEqual(["LORDS", "LORDS: loading wallet…"]);
   expect(host.querySelector('[data-store="lords"] .ui-spinner')).not.toBeNull();
-  expect(lordsLabel("failed")).toEqual(["—No answer", "LORDS: your wallet could not be read"]);
+  expect(lordsLabel("failed")).toEqual(["—Failed", "LORDS: could not load wallet"]);
   expect(lordsLabel(1_000)).toEqual(["1KLORDS", "LORDS 1K"]);
   expect(host.querySelector('[data-store="lords"] .ui-spinner')).toBeNull();
 });

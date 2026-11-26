@@ -4,29 +4,27 @@ import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudPortrait, HudStamina, HudTier } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMIES,
-  ARMY_MOVE_HINT,
   ARMY_SLOT_WORDS,
   DEPLOY,
   STAMINA,
+  staminaReading,
   TROOPS,
   type Rank,
 } from "@/ui/design-system/kit/words";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import { formatAmount } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import type { EtherealLayer } from "@bibliothecadao/eternum";
 import type { DeepArmyLife } from "@bibliothecadao/eternum/game-client";
 
+import { BaneFigure } from "../day/bane-mark";
 import { DeepDrain, EtherealMark, OathWaitingBadge } from "./army-token";
 
 export const ArmyCard = ({
   label,
-  title,
   tier,
   number,
   art,
-  troops,
   drain,
   stamina,
   ethereal,
@@ -35,13 +33,11 @@ export const ArmyCard = ({
   onPick,
 }: {
   label: string;
-  title?: string;
   tier?: Rank;
   number: number | undefined;
   drain?: DeepArmyLife;
   ethereal?: EtherealLayer;
   art: IconMeaning | undefined;
-  troops?: number;
   stamina: StaminaBar | undefined;
   selected: boolean;
   oathWaiting?: boolean;
@@ -66,16 +62,13 @@ export const ArmyCard = ({
     <span className="frontier-slot__body">
       <span className="frontier-slot__line">
         <span className="frontier-slot__title">
-          <span className="truncate">
-            {troops === undefined ? (title ?? label) : `${title ?? label} · ${formatAmount(troops)}`}
-          </span>
+          <span className="truncate">{label}</span>
           {tier !== undefined && tier > 1 && <HudTier tier={tier} />}
         </span>
         <StaminaFigure current={stamina?.current} max={stamina?.max} />
       </span>
       <HudStamina stamina={stamina} />
       {drain && <DeepDrain drain={drain} words compact />}
-      {selected && <span className="frontier-slot__detail">{ARMY_MOVE_HINT}</span>}
     </span>
   </button>
 );
@@ -85,32 +78,19 @@ export const OpenSlotCard = ({
   primary,
   filling,
   start,
-  stock,
   onDeploy,
 }: {
   number: number | undefined;
   primary: boolean;
   filling?: string;
   start?: { bar: StaminaBar; words: string };
-  stock?: { count: string; label: string };
   onDeploy: () => void;
 }) => (
   <div className="frontier-slot" data-slot-state="open" data-tip={start?.words}>
     <SlotNumber number={number} />
     <span className="frontier-slot__body">
       <span className="frontier-slot__title">{number === undefined ? DEPLOY : ARMY_SLOT_WORDS.open(number)}</span>
-      {stock ? (
-        <span className="frontier-slot__detail" data-tone="good">
-          {ARMY_SLOT_WORDS.readyAtHome(stock.label)}
-        </span>
-      ) : (
-        start && (
-          <span className="frontier-slot__detail">
-            {`${ARMY_SLOT_WORDS.anyTroop} · ${formatAmount(start.bar.current)}`}
-            <Icon name="stamina" size={14} alt={STAMINA} />
-          </span>
-        )
-      )}
+      {start && <HudStamina stamina={start.bar} />}
     </span>
     <HudButton
       kind={primary ? "primary" : "secondary"}
@@ -133,7 +113,10 @@ export const LockedSlotLine = ({ number, rank }: { number: number; rank: string 
 );
 
 export const ArmySlotsCard = ({ count, children }: { count?: string; children: ReactNode }) => (
-  <section aria-label={ARMY_SLOT_WORDS.title} className="frontier-cluster-card frontier-slots pointer-events-auto">
+  <section
+    aria-label={ARMY_SLOT_WORDS.title}
+    className="ui-popover frontier-cluster-card frontier-slots pointer-events-auto"
+  >
     <header className="frontier-slots__head">
       <span className="frontier-slots__title">{ARMIES}</span>
       {count && <span className="frontier-slots__count">{count}</span>}
@@ -152,7 +135,9 @@ const SlotNumber = ({ number }: { number: number | undefined }) => (
 
 const StaminaFigure = ({ current, max }: { current: number | undefined; max: number | undefined }) => (
   <span className="frontier-slot__figure tabular-nums">
-    {`${formatAmount(current)}/${formatAmount(max)}`}
-    <Icon name="stamina" size={14} alt={STAMINA} />
+    <BaneFigure figure="stamina" altered={current !== undefined && max !== undefined && current < max}>
+      {staminaReading(current, max)}
+      <Icon name="stamina" size={14} alt={STAMINA} />
+    </BaneFigure>
   </span>
 );

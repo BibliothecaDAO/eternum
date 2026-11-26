@@ -62,7 +62,7 @@ function transferCopy(payload: Record<string, unknown>): NotificationCopy {
   if (travel === null) throw new Error("Incomplete resource transfer story");
   return travel === 0n
     ? { title: "Resources received", body: "they are in your stores." }
-    : { title: "Resources on the way", body: "a shipment is heading to your stores." };
+    : { title: "Resources incoming", body: "a shipment is heading to your stores." };
 }
 
 /** A whole number from the story, whatever spelling it arrived in; null when it is not one. */

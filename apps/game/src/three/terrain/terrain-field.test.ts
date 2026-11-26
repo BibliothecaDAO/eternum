@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { findNearestTerrainHex, terrainHexToWorld } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
+import { applySettlementIslands } from "./terrain-settlement-ground";
+import { groundHeightOfCell } from "./terrain-surface";
 import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 import { isTerrainWaterBiome, isTerrainWaterCovered, TERRAIN_WATER_LEVEL } from "./terrain-water";
 
@@ -22,9 +24,35 @@ describe("TerrainField", () => {
     const field = new TerrainField(createRequest([cell(0, 0, BiomeType.DeepOcean)]));
     expect(field.sampleVertex(0, 0).height).toBeLessThan(-0.055);
     expect(field.sampleSurface(0, 0)).toMatchObject({ height: -0.055, normal: [0, 1, 0] });
+    expect(field.sampleHeight(0, 0)).toBe(-0.055);
   });
 
-  it("matches generated terrain geometry for placement across biomes, boundaries and structure pads", () => {
+  it("agrees with the one ground rule at every tile's centre, a reclaimed, ethereal or unknown tile among them", () => {
+    const request = applySettlementIslands(
+      createRequest([
+        cell(0, 0, BiomeType.Grassland),
+        cell(1, 0, BiomeType.Snow),
+        cell(2, 0, BiomeType.Ocean),
+        cell(3, 0, BiomeType.Ocean),
+        cell(4, 0, BiomeType.Ocean, true),
+        { ...cell(0, 1, BiomeType.Bare), surfacePresentation: "ethereal" },
+        unknownCell(1, 1, BiomeType.Ocean),
+      ]),
+    );
+    const field = new TerrainField(request);
+
+    for (const drawn of request.cells) {
+      const center = terrainHexToWorld(drawn.col, drawn.row);
+      const rule = groundHeightOfCell({
+        explored: drawn.explored,
+        biome: drawn.biome,
+        ethereal: drawn.surfacePresentation !== undefined,
+      });
+      expect(field.sampleHeight(center.x, center.z)).toBeCloseTo(rule, 6);
+    }
+  });
+
+  it("matches generated terrain geometry for placement across biomes and boundaries", () => {
     const biomes = Object.values(BiomeType).filter((biome) => biome !== BiomeType.None);
     const cells = biomes.map((biome, index) =>
       cell((index % 5) - 2, Math.floor(index / 5) - 2, biome, index % 3 === 0),
@@ -50,6 +78,7 @@ describe("TerrainField", () => {
           height: water ? TERRAIN_WATER_LEVEL : vertex.height,
           normal: water ? [0, 1, 0] : vertex.normal,
         });
+        expect(field.sampleHeight(x, z)).toBe(field.sampleSurface(x, z).height);
       }
     }
   });
@@ -268,21 +297,6 @@ describe("TerrainField", () => {
     expect(edge.waterEdgeStrength).toBeGreaterThan(0.6);
     expect(edge.waterEdgeStrength).toBeGreaterThan(dryInterior.waterEdgeStrength);
     expect(edge.successionStrength).toBeGreaterThan(dryInterior.successionStrength);
-  });
-
-  it("adds deterministic macro landforms without breaking biome ownership", () => {
-    const cells = Array.from({ length: 8 }, (_, col) => cell(col, 0, BiomeType.Scorched));
-    const first = new TerrainField(createRequest(cells));
-    const second = new TerrainField(createRequest(cells));
-    const heights = cells.map(({ col, row }) => {
-      const center = terrainHexToWorld(col, row);
-      const sample = first.sampleSurface(center.x, center.z);
-      expect(sample).toEqual(second.sampleSurface(center.x, center.z));
-      expect(sample.biome).toBe(BiomeType.Scorched);
-      return sample.height;
-    });
-
-    expect(Math.max(...heights) - Math.min(...heights)).toBeGreaterThan(0.08);
   });
 
   it("exposes a continuous shoreline signal only where land meets water", () => {

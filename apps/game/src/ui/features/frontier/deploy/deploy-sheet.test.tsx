@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { DEPLOY_WORDS, NO_OPEN_TILE, NO_TROOPS_AT_HOME, wheatForOnly } from "@/ui/design-system/kit/words";
 
 // The home ring as the map knows it: explored and empty (one tile maybe taken), or not yet synced.
 const ring = { explored: true, taken: -1 };
@@ -17,9 +18,9 @@ vi.mock("../frontier-home", async (original) => ({
 }));
 // The screen the sheet is drawn on: a desktop's rows for the slots, a phone's tokens.
 const layout = vi.hoisted(() => ({ current: "desktop" as "desktop" | "phone" }));
-vi.mock("@/shell/frame/layout", async (original) => ({
-  ...(await original<typeof import("@/shell/frame/layout")>()),
-  useLayout: () => layout.current,
+vi.mock("@/hooks/helpers/use-compact-hud", async (original) => ({
+  ...(await original<typeof import("@/hooks/helpers/use-compact-hud")>()),
+  useHudLayout: () => layout.current,
 }));
 // The production clock the sheet reads; a test moves it to watch a store fill.
 const clock = vi.hoisted(() => ({ tick: 3 }));
@@ -79,16 +80,17 @@ const render = (store: unknown, row: unknown, onClose = () => {}) => {
 };
 
 const slider = (host: HTMLElement) => host.querySelector<HTMLInputElement>(".size-row input[type=range]")!;
-const typeCount = (host: HTMLElement, value: number) => {
-  const field = slider(host);
+const field = (host: HTMLElement) => host.querySelector<HTMLInputElement>(".size-row .ui-field input")!;
+const setInput = (input: HTMLInputElement, value: number) =>
   act(() => {
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, String(value));
-    field.dispatchEvent(new Event("input", { bubbles: true }));
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, String(value));
+    input.dispatchEvent(new Event("input", { bubbles: true }));
   });
-};
+const typeCount = (host: HTMLElement, value: number) => setInput(field(host), value);
+const dragCount = (host: HTMLElement, value: number) => setInput(slider(host), value);
 const press = (host: HTMLElement, word: string) =>
   act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === word)!.click());
-const count = (host: HTMLElement) => host.querySelector(".size-row__count")?.textContent;
+const count = (host: HTMLElement) => field(host).value;
 
 /** The open slots the sheet offers, as the Armies card draws them: each one's name, and whether it is the one chosen. */
 const slotsOffered = (host: HTMLElement) =>
@@ -99,7 +101,8 @@ const slotsOffered = (host: HTMLElement) =>
 const slotButton = (host: HTMLElement, name: string) =>
   host.querySelector<HTMLButtonElement>(`[aria-label="Army slots"] button[aria-label="${name}"]`)!;
 
-const startReading = (host: HTMLElement) => host.querySelector("[data-deploy-start]")?.textContent ?? null;
+const startReading = (host: HTMLElement) =>
+  host.querySelector('[data-deploy-start] [role="meter"]')?.getAttribute("aria-valuenow") ?? null;
 
 const foot = (host: HTMLElement) => host.querySelector(".ui-window__foot")?.textContent ?? "";
 /** The red line the wheat draws when it holds the count down: its words, its mark and its one press. */
@@ -327,7 +330,16 @@ describe("the Deploy sheet", () => {
     expect(host.querySelector('.ui-price [role="img"]')?.getAttribute("aria-label")).toBe("240 Wheat");
     expect(host.textContent!.replace(foot(host), "")).not.toMatch(/wheat/i);
     const range = slider(host);
-    expect([range.getAttribute("aria-label"), range.max, range.value]).toEqual(["Knights: how many go", "420", "120"]);
+    expect([range.getAttribute("aria-label"), range.max, range.value]).toEqual([
+      DEPLOY_WORDS.howMany("Knights"),
+      "420",
+      "120",
+    ]);
+    dragCount(host, 200);
+    expect([count(host), deployButton(host)?.textContent]).toEqual(["200", "Deploy 200"]);
+    typeCount(host, 900);
+    expect([count(host), slider(host).value, deployButton(host)?.textContent]).toEqual(["420", "420", "Deploy 420"]);
+    typeCount(host, 120);
     expect(host.textContent).not.toMatch(/Day ends/i);
     expect(startReading(host)).toBe("150");
     expect(host.textContent).not.toMatch(/starts|its slot|Leaves|Steps out/);
@@ -404,7 +416,7 @@ describe("the Deploy sheet", () => {
     typeCount(host, 49);
     expect(wheatLine(host)).toBeNull();
     press(host, "Max");
-    expect([count(host), wheatLine(host)?.line]).toEqual(["50", "Wheat for only 50 of 420 troops"]);
+    expect([count(host), wheatLine(host)?.line]).toEqual(["50", wheatForOnly("50", "420")]);
     act(() => root.unmount());
     host.remove();
   });
@@ -469,7 +481,7 @@ describe("the Deploy sheet", () => {
     clock.tick = 13;
     draw();
     expect([count(host), slider(host).max, foot(host)]).toEqual(["9", "10", "18Deploy 9"]);
-    expect(wheatLine(host)?.line).toBe("Wheat for only 9 of 420 troops");
+    expect(wheatLine(host)?.line).toBe(wheatForOnly("9", "420"));
 
     typeCount(host, 5);
     clock.tick = 23;
@@ -575,7 +587,7 @@ describe("the Deploy sheet", () => {
     const { host, root } = render(store, row);
     click(host.querySelector('button[aria-label="Army 2"]')!);
     expect(deployButton(host)).toBeUndefined();
-    expect(host.querySelector(".ui-notice")!.textContent).toBe("No troops at home");
+    expect(host.querySelector(".ui-notice")!.textContent).toBe(NO_TROOPS_AT_HOME);
     const build = [...host.querySelectorAll("button")].find((button) => button.textContent === "Build")!;
     expect(build.querySelector("[data-icon]")!.getAttribute("data-icon")).toBe("barracks");
     act(() => build.click());
@@ -658,7 +670,7 @@ describe("the Deploy sheet", () => {
     // An unexplored ring leaves no tile to step out on, and there is no Deploy to send.
     ring.explored = false;
     draw();
-    expect(host.textContent).toContain("No open tile beside the realm");
+    expect(host.textContent).toContain(NO_OPEN_TILE);
     expect(deployButton(host)).toBeUndefined();
     act(() => root.unmount());
     // Closed, the sheet takes its order off the map.

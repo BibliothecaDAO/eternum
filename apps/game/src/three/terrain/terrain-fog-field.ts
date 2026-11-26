@@ -46,7 +46,8 @@ import {
   type TerrainFogMaskBounds,
   type TerrainFogMaskLayout,
 } from "./terrain-fog-mask";
-import { TERRAIN_DEEP_FOG_OPACITY, TERRAIN_FOG_GROUND_HEIGHT, type TerrainFogStyle } from "./terrain-fog-style";
+import { TERRAIN_DEEP_FOG_OPACITY, type TerrainFogStyle } from "./terrain-fog-style";
+import { TERRAIN_GROUND_HEIGHT } from "./terrain-surface";
 import type { TerrainShroudInstance } from "./terrain-types";
 
 export const TERRAIN_FOG_CELL_CAPACITY = 12_288;
@@ -88,7 +89,7 @@ interface FogMaterialSet {
 
 const FOG_MESH_NAME = "terrain-exploration-fog-field";
 // Fog owns the logical unknown-tile surface; real terrain draws over this background at any elevation.
-const FOG_PLANE_HEIGHT = TERRAIN_FOG_GROUND_HEIGHT;
+const FOG_PLANE_HEIGHT = TERRAIN_GROUND_HEIGHT;
 
 /**
  * One background covers unknown and unloaded ground; explored geometry replaces it in the opaque pass.

@@ -1,4 +1,4 @@
-import { useLayout } from "@/shell/frame/layout";
+import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { formatAmount, formatExact, formatMoment, LORDS, formatShort } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
@@ -72,7 +72,7 @@ export const SeasonList = ({
   /** When the season ends, and today against its last day while it runs; undefined until the game is known. */
   ends?: { at: number; day?: number; lastDay?: number };
 }) => {
-  const phone = useLayout() === "phone";
+  const phone = useHudLayout() === "phone";
   return (
     <HudPage label={SEASON} icon="victory" cue={<SeasonChip rank={rank} />} onClose={onClose} bodyClassName="gap-1">
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">

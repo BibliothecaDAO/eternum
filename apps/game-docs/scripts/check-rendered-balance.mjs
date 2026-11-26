@@ -35,6 +35,7 @@ import {
   deepSites,
   getProducedResource,
   orders,
+  questObjective,
   rankName,
   resourceName,
   worldBanes,
@@ -49,7 +50,7 @@ const n = (value) => value.toLocaleString("en-US");
 /** A building's price as the realm page states it: every resource it takes, by the catalog's name. */
 const buildingPrice = (config, id) =>
   config.buildings.simpleBuildingCost[id]
-    .map(({ resource, amount }) => `${n(amount)} ${resourceName(resource)}`)
+    .map(({ resource, amount }) => `${n(amount)} ${resourceName(resource, true)}`)
     .join(" + ");
 
 /**
@@ -87,7 +88,14 @@ export const frontierPhrases = (
   nativeRace,
   {
     aspectWords,
+    appWords,
+    buildGroups,
+    chatWords,
+    cosmeticsWords,
+    desktopAppPlaces,
+    desktopAppPlaceWords,
     relicWords,
+    settingsWords,
     relicKinds,
     commandBits,
     calendar,
@@ -146,6 +154,12 @@ export const frontierPhrases = (
   const personalLayers = LAYER_NAMES.slice(0, 3);
   const personalLayersAnd = listAnd(personalLayers);
   const personalLayersOr = listOr(personalLayers);
+  const allLayersAnd = listAnd(
+    LAYER_NAMES.map((name, index) => (index === LAYER_NAMES.length - 1 ? `the ${name}` : name)),
+  );
+  const settingsQualitiesOr = listOr(Object.values(settingsWords.qualities));
+  const buildGroupsList = listAnd(Object.values(buildGroups));
+  const desktopAppPlacesAnd = listAnd(desktopAppPlaces.map((place) => desktopAppPlaceWords[place]));
   const staminaRule = `Refills ${n(nativeFragments.STAMINA_PER_FRAGMENT)} stamina per Fragment on the ${personalLayersAnd}`;
   const oathSlotPrices = preset.research
     .filter((step) => step.row === nativeResearch.ROW_KNIGHT_OATHS)
@@ -197,21 +211,25 @@ export const frontierPhrases = (
         `${deepSites.length} site kinds`,
         `all ${aspectOrderCount} Oaths`,
         `all ${relicKinds.length} relic kinds`,
+        `switch between ${allLayersAnd}`,
+        `graphics quality (${settingsQualitiesOr})`,
+        `app top bar on desktop holds ${desktopAppPlacesAnd}, with ${chatWords.chat} docked at the bottom right. On a phone, ${cosmeticsWords.title} lives under ${appWords.you} → ${cosmeticsWords.title}.`,
       ],
     },
     {
       page: "frontier/armies",
       phrases: [
-        `${FRONTIER_TROOP_NAMES[TroopType.Knight]} ${buildingName(nativeResearch.BARRACKS, true)} Blade`,
-        `${FRONTIER_TROOP_NAMES[TroopType.Crossbowman]} ${buildingName(nativeResearch.RANGE, true)} (castle level ${nativeResearch.RANGE_LEVEL + 1} (${rankName(nativeResearch.RANGE_LEVEL)})) Bow`,
-        `${FRONTIER_TROOP_NAMES[TroopType.Paladin]} ${buildingName(nativeResearch.SCOUTS_LODGE, true)} (castle level ${nativeResearch.SCOUTS_LODGE_LEVEL + 1} (${rankName(nativeResearch.SCOUTS_LODGE_LEVEL)})) Blade`,
+        `${FRONTIER_TROOP_NAMES[TroopType.Knight].many} ${buildingName(nativeResearch.BARRACKS, true)} Blade`,
+        `${FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many} ${buildingName(nativeResearch.RANGE, true)} (castle level ${nativeResearch.RANGE_LEVEL + 1} (${rankName(nativeResearch.RANGE_LEVEL)})) Bow`,
+        `${FRONTIER_TROOP_NAMES[TroopType.Paladin].many} ${buildingName(nativeResearch.SCOUTS_LODGE, true)} (castle level ${nativeResearch.SCOUTS_LODGE_LEVEL + 1} (${rankName(nativeResearch.SCOUTS_LODGE_LEVEL)})) Blade`,
         `An army holds ${n(stamina.staminaKnightMax)} stamina and recovers ${stamina.staminaGainPerTick} every ${tick / 60} minutes (${staminaPerMinute}), so an empty bar fills in ${((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tick) / 3600} hours.`,
-        `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for ${FRONTIER_TROOP_NAMES[TroopType.Knight]} and ${FRONTIER_TROOP_NAMES[TroopType.Crossbowman]}, and ${nativeRules.SCOUT_EXPLORE_STAMINA} for ${FRONTIER_TROOP_NAMES[TroopType.Paladin]}. A step on an explored tile costs ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
+        `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for ${FRONTIER_TROOP_NAMES[TroopType.Knight].many} and ${FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many}, and ${nativeRules.SCOUT_EXPLORE_STAMINA} for ${FRONTIER_TROOP_NAMES[TroopType.Paladin].many}. A step on an explored tile costs ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
         `adding +${n(logisticsBonus)} bonus stamina at rank V for ${n(stamina.staminaKnightMax + logisticsBonus)} max stamina total.`,
         `The Titans Oath adds a flat +${n(nativeOaths.TITANS_STAMINA)} on top of Logistics (${n(stamina.staminaKnightMax + nativeOaths.TITANS_STAMINA)} max stamina at Logistics 0 up to ${n(stamina.staminaKnightMax + logisticsBonus + nativeOaths.TITANS_STAMINA)} at Logistics V`,
         `A slot's first army of the day starts with a full bar (${n(stamina.staminaKnightMax)} stamina, plus your Logistics bonus).`,
         `Two adjacent armies of the same troop kind can merge, moving troops only.`,
         `beside any camp your realm cleared today (supply post) on the ${personalLayersOr}`,
+        `refills ${n(nativeRules.WELL_REFILL_PERCENT)}% of its maximum: ${n(Math.round((stamina.staminaKnightMax * nativeRules.WELL_REFILL_PERCENT) / 100))} on a ${n(stamina.staminaKnightMax)} bar,`,
         staminaRule,
       ],
     },
@@ -237,7 +255,7 @@ export const frontierPhrases = (
         `${n(contract.herdGuardMultiplier)}x its starting guard on the ${LAYER_NAMES[0]}`,
         `${n(100 / contract.campGuardDivisor)}% of its starting guard on the ${LAYER_NAMES[0]}, ${n(depthRewardPercent(1))}% of that in the ${LAYER_NAMES[1]}, ${n(depthRewardPercent(2))}% in the ${LAYER_NAMES[2]}`,
         `${n(100 * contract.riftGuardMultiplier)}% of its starting guard on the ${LAYER_NAMES[0]}`,
-        `Immediately opens an Oath pick of ${n(contract.oathDrawCount)} Oaths for the revealing army, or lets you pass for +${n(nativeOaths.PASS_STAMINA)} stamina.`,
+        `Appears on the tile until any adjacent army presses Use, opening a pick of ${n(contract.oathDrawCount)} Oaths (or pass for +${n(nativeOaths.PASS_STAMINA)} stamina) and removing the Shrine.`,
         `Each ruin holds either a relic or a Fragment cache, never both.`,
         `${nativeFragments.SURFACE_CACHE_PERCENT}% on the ${LAYER_NAMES[0]}`,
       ],
@@ -256,7 +274,7 @@ export const frontierPhrases = (
     {
       page: "frontier/realm",
       phrases: [
-        `A new realm starts with ${start(26)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} waiting at home (no army is deployed yet), ${start(35)} wheat, and ${start(23)} labor.`,
+        `A new realm starts with ${start(26)} ${FRONTIER_TROOP_NAMES[TroopType.Knight].many} waiting at home (no army is deployed yet), ${start(35)} wheat, and ${start(23)} labor.`,
         `receive ${n(preset.dailyQuest.labor)} labor and ${n(preset.dailyQuest.essence)} Essence at castle level 1 (${rankName(0)}), multiplying by ${n(contract.questLevelStep)} at each higher castle level.`,
         ...armies.map(
           (count, index) =>
@@ -268,6 +286,7 @@ export const frontierPhrases = (
     {
       page: "frontier/buildings",
       phrases: [
+        `Buildings are sorted by group: ${buildGroupsList}.`,
         `Your castle makes ${castleLaborRate(0)} labor per hour at castle level 1 (${rankName(0)}), multiplying by ${n(contract.castleLaborStep)} at each castle level up to ${castleLaborRate(3)}/h at castle level 4 (${rankName(3)}).`,
         ...FRONTIER_BUILDING_TYPES.map((id) => buildingName(id, true)),
         [1, 2, 3, 4, 5, 6]
@@ -292,9 +311,9 @@ export const frontierPhrases = (
               .join(" ")}`,
         ),
         `Farm Wheat (${rateOf(BuildingType.ResourceWheat)}/h) Level 1 (${rankName(0)}) ${buildingPrice(config, BuildingType.ResourceWheat)}`,
-        `${buildingName(BuildingType.ResourceKnightT1, true)} ${FRONTIER_TROOP_NAMES[TroopType.Knight]} (${rateOf(BuildingType.ResourceKnightT1)}/h) Level 1 (${rankName(0)}) ${buildingPrice(config, BuildingType.ResourceKnightT1)}`,
-        `${buildingName(BuildingType.ResourceCrossbowmanT1, true)} ${FRONTIER_TROOP_NAMES[TroopType.Crossbowman]} (${rateOf(BuildingType.ResourceCrossbowmanT1)}/h) Level 2 (${rankName(1)}) ${buildingPrice(config, BuildingType.ResourceCrossbowmanT1)}`,
-        `${buildingName(BuildingType.ScoutsLodge, true)} ${FRONTIER_TROOP_NAMES[TroopType.Paladin]} (${rateOf(BuildingType.ScoutsLodge)}/h) Level 2 (${rankName(1)}) ${buildingPrice(config, BuildingType.ScoutsLodge)}`,
+        `${buildingName(BuildingType.ResourceKnightT1, true)} ${FRONTIER_TROOP_NAMES[TroopType.Knight].many} (${rateOf(BuildingType.ResourceKnightT1)}/h) Level 1 (${rankName(0)}) ${buildingPrice(config, BuildingType.ResourceKnightT1)}`,
+        `${buildingName(BuildingType.ResourceCrossbowmanT1, true)} ${FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many} (${rateOf(BuildingType.ResourceCrossbowmanT1)}/h) Level 2 (${rankName(1)}) ${buildingPrice(config, BuildingType.ResourceCrossbowmanT1)}`,
+        `${buildingName(BuildingType.ScoutsLodge, true)} ${FRONTIER_TROOP_NAMES[TroopType.Paladin].many} (${rateOf(BuildingType.ScoutsLodge)}/h) Level 2 (${rankName(1)}) ${buildingPrice(config, BuildingType.ScoutsLodge)}`,
         `Supply yard Max stamina (Logistics) Level 3 (${rankName(2)}) ${buildingPrice(config, BuildingType.SupplyYard)}`,
       ],
     },
@@ -333,7 +352,7 @@ export const frontierPhrases = (
     {
       page: "frontier/oaths",
       phrases: [
-        `Revealing a shrine opens a pick of ${n(contract.oathDrawCount)} Oaths immediately for that army.`,
+        `to open a pick of ${n(contract.oathDrawCount)} Oaths and remove the shrine.`,
         `award a pick of ${n(contract.oathDrawCount)} Oaths to the army that lands the last hit.`,
         `All ${aspectOrderCount} Oaths`,
         ...aspectOrders.map(
@@ -392,7 +411,7 @@ export const frontierPhrases = (
       page: "frontier/quests",
       phrases: [
         `Each of the ${dailyQuests.length} daily quests comes once every ${dailyQuests.length} days`,
-        ...dailyQuests.map((quest) => `${quest.name} ${quest.objective}`),
+        ...dailyQuests.map((quest) => `${quest.name} ${questObjective(quest)}`),
         `up to ${n(config.realmMaxLevel)}x at castle level ${n(config.realmMaxLevel)} (${rankName(config.realmMaxLevel - 1)})`,
         `multiply by ${n(contract.questLevelStep)} at each castle level (${questLevelScale}).`,
         `${n(preset.dailyQuest.labor)} labor and ${n(preset.dailyQuest.essence)} Essence`,
@@ -403,6 +422,8 @@ export const frontierPhrases = (
     {
       page: "frontier/banes",
       phrases: [
+        `The first ${n(preset.banes.quietDays)} game days never have a World Bane. From day ${n(preset.banes.quietDays + 1)} onward`,
+        `adds +${n(preset.banes.chanceStep)}% to the chance of one on the next day.`,
         `${worldBaneHead(nativeBane.ASH_FALL, baneRules).name} applies to all realm building production (wheat, labor, and troop training).`,
         `Once ${n(preset.banes.quorumPercent)}% of your Aspect's members who deployed at least one army on the previous game day finish theirs, the World Bane ends for your Aspect`,
         `Archive guards still earn their full Glory (${n(preset.deep.buildingPay.alone)} / ${n(preset.deep.buildingPay.pair)} / ${n(preset.deep.buildingPay.crowd)} per tick, split by troop count) during a Team Bane.`,
@@ -415,7 +436,7 @@ export const frontierPhrases = (
             .slice(offset, offset + config.realmMaxLevel)
             .map(n)
             .join(" / ");
-          return `${head.name} ${head.rule}. ${q.name}: ${q.objective} ${targets}`;
+          return `${head.name} ${head.rule}. ${q.name}: ${questObjective(q)} ${targets}`;
         }),
         ...Object.entries(aspectWords.triumph).map(([stageKey]) => {
           const stage = Number(stageKey);
@@ -601,9 +622,17 @@ export const loadBalanceSources = async () => {
     const { RELICS_PER_LAYER: relicsPerLayer, previewRuinGuardBounds } = await server.ssrLoadModule(
       join(here, "../../../contracts/l3/world-native/schema/site-previews.gen.ts"),
     );
-    const { ASPECT_PAGE_WORDS: aspectWords, RELIC_WORDS: relicWords } = await server.ssrLoadModule(
-      join(here, "../../game/src/ui/design-system/kit/words.ts"),
-    );
+    const {
+      ASPECT_PAGE_WORDS: aspectWords,
+      BUILD_GROUPS: buildGroups,
+      CHAT_WORDS: chatWords,
+      COSMETICS_WORDS: cosmeticsWords,
+      DESKTOP_APP_PLACES: desktopAppPlaces,
+      DESKTOP_APP_PLACE_WORDS: desktopAppPlaceWords,
+      RELIC_WORDS: relicWords,
+      SETTINGS_WORDS: settingsWords,
+      WORDS: appWords,
+    } = await server.ssrLoadModule(join(here, "../../game/src/ui/design-system/kit/words.ts"));
     const { aspectMeaning, iconUrl } = await server.ssrLoadModule(
       join(here, "../../game/src/ui/design-system/icon-meaning.ts"),
     );
@@ -681,7 +710,14 @@ export const loadBalanceSources = async () => {
       nativeResearch,
       nativeRules,
       aspectWords,
+      appWords,
+      buildGroups,
+      chatWords,
+      cosmeticsWords,
+      desktopAppPlaces,
+      desktopAppPlaceWords,
       relicWords,
+      settingsWords,
       relicKinds,
       commandBits,
       aspectMeaning,
@@ -848,6 +884,8 @@ export const FORBIDDEN_RETIRED_HUD_TERMS = [
   /\bwhat\s+you\s+can'?t\s+do\b/i,
   /\bwhat\s+you\s+can\s+do\b/i,
   /\bfar-eye\b/i,
+  /\bshow\s+everything\b/i,
+  /\bleaves\s+a\s+flag\b/i,
 ];
 
 const FORBIDDEN_PLAYER_MODE_TERMS = [...FORBIDDEN_MODE_TERMS, /\beternum\b/i, ...FORBIDDEN_RETIRED_HUD_TERMS];

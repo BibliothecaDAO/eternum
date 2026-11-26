@@ -9,6 +9,7 @@ import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { TARGET_MARKS, type AttackTargetKind } from "./site-marks";
 import { plateRows } from "@/three/map-plates/map-plate-rows";
 import { frontierSiteName, StructureType, ResourcesIds } from "@bibliothecadao/types";
+import { FIGHT_RESULT, FIGHT_WORDS, tooFarFrom } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -29,7 +30,7 @@ const army = { art: "knight-t1" as const, troops: 5_000 };
 const buttons = () => [...document.querySelectorAll<HTMLButtonElement>("section[role=dialog] button")];
 
 describe("a guarded site's card", () => {
-  it("renders the depth-I Beasts reward beside its Victory likely verdict", () => {
+  it("renders the depth-I Beasts reward beside its Victory verdict", () => {
     const { store, site, structure, attack } = campBeside("Beasts");
     placeSite(store);
     const plan = readSiteCard(store, site, structure, attack({ col: 41, row: 12, alt: false }));
@@ -49,8 +50,8 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe("Victory likely");
-    expect(document.querySelector("[data-fight-reward]")?.textContent).toBe("+5KFull: the rest did not fit");
+    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe(FIGHT_RESULT.victory);
+    expect(document.querySelector("[data-fight-reward]")?.textContent).toBe("+5KStorage full: extra lost");
   });
 
   it("heads the attack with what it earns, and reads each side before and after as numbers alone", () => {
@@ -73,7 +74,7 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Troll']")!;
-    expect(card.querySelector("[data-fight-outcome]")?.textContent).toBe("Victory likely");
+    expect(card.querySelector("[data-fight-outcome]")?.textContent).toBe(FIGHT_RESULT.victory);
     expect(card.textContent?.match(/(?<!−)1,100/g)).toHaveLength(1);
     expect(card.querySelector(".fight-spoils .opacity-50")).toBeNull();
     const sides = [...card.querySelectorAll('.fight-arena [role="img"]')].map((side) =>
@@ -138,7 +139,7 @@ describe("a guarded site's card", () => {
     );
     const card = document.querySelector("section[aria-label='Ruin']")!;
     expect(card.querySelectorAll('[data-icon="beast-ammit"]')).toHaveLength(1);
-    expect(card.querySelector("[data-fight-outcome]")?.textContent).toContain("Your army is lost");
+    expect(card.querySelector("[data-fight-outcome]")?.textContent).toContain(FIGHT_WORDS.armyLost);
     expect(card.querySelector("[data-fight-reward]")).toBeNull();
     expect(card.querySelector('[data-icon="troops"]')).toBeNull();
     expect(card.textContent).toContain("2,300");
@@ -166,7 +167,7 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Blightglow Rift']")!;
-    expect(card.querySelector("[data-fight-outcome]")?.textContent).toContain("The guard survives");
+    expect(card.querySelector("[data-fight-outcome]")?.textContent).toContain(FIGHT_WORDS.holds);
     expect(card.querySelector(".fight-spoils .opacity-50")?.textContent).toBe("+4.2K");
     expect(card.textContent).toContain("794");
     expect(card.textContent).toContain("193");
@@ -202,7 +203,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe("Victory likely");
+    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe(FIGHT_RESULT.victory);
     expect(document.querySelector("[data-fight-reward]")).toBeNull();
     expect(document.body.textContent).not.toContain("site");
     act(() =>
@@ -219,7 +220,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe("Victory likely");
+    expect(document.querySelector("[data-fight-outcome]")?.textContent).toBe(FIGHT_RESULT.victory);
   });
 
   it("earns what fits, marked Full, when the store would overflow, with Realm to make room; never blocks the attack", () => {
@@ -243,8 +244,8 @@ describe("a guarded site's card", () => {
       ),
     );
     const spoils = document.querySelector("[data-fight-reward]")!;
-    expect(spoils.textContent).toBe("+120Full: the rest did not fit");
-    expect(spoils.querySelector('[data-tip*="did not fit"]')).toBeNull();
+    expect(spoils.textContent).toBe("+120Storage full: extra lost");
+    expect(spoils.querySelector('[data-tip*="extra lost"]')).toBeNull();
     act(() =>
       buttons()
         .find((button) => button.textContent === "Realm")!
@@ -275,10 +276,10 @@ describe("a guarded site's card", () => {
       ),
     );
     const foot = document.querySelector(".ui-window__foot")!;
-    expect(foot.querySelector('[role="status"]')?.textContent).toBe("Needs 30 stamina, have 10 · in 40m");
+    expect(foot.querySelector('[role="alert"]')?.textContent).toBe("Needs 30 stamina, have 10 · in 40m");
     expect(foot.querySelector("button")?.textContent).toBe("Attack");
     expect(foot.querySelector("button")?.disabled).toBe(true);
-    expect(document.querySelectorAll('[role="status"]')).toHaveLength(1);
+    expect(document.querySelectorAll('[role="status"], [role="alert"]')).toHaveLength(1);
     expect(document.querySelector(".ui-price")).toBeNull();
   });
 });
@@ -363,7 +364,7 @@ describe("a guarded site's card with no army chosen", () => {
     const card = document.querySelector("section[aria-label='North Watch Ruin']")!;
     expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
     // Its kind is in its title, as the hover says it; the guard's token, its strength under it, then its beast.
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BladeAmmit");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Ammit");
     expect(card.querySelector("header [role='img']")?.getAttribute("aria-label")).toBe("Ammit 1,100");
     expect(card.textContent?.match(/1,100|1\.1K/g)).toHaveLength(1);
   });
@@ -385,7 +386,8 @@ describe("a guarded site's card with no army chosen", () => {
       ),
     );
     const card = document.querySelector("section[data-kit-sheet]")!;
-    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BowFairy+3.3K");
+    expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Fairy+3.3K");
+    expect(card.querySelector<HTMLElement>("header [data-combat-mark]")?.dataset.tip).toBe("Bow");
     expect(card.querySelectorAll(".ui-row")).toHaveLength(0);
     expect(card.querySelectorAll("button")).toHaveLength(1);
     expect(card.textContent).not.toContain("Pick an army");
@@ -442,7 +444,7 @@ describe("a guarded site's card for an army out of reach", () => {
       ),
     );
     expect(buttons().find((button) => button.textContent?.startsWith("Attack"))?.disabled).toBe(true);
-    expect(document.querySelector('[role="status"]')?.textContent).toBe("Too far from the Rift");
+    expect(document.querySelector('[role="status"]')?.textContent).toBe(tooFarFrom("Rift"));
   });
 
   it("offers Move toward the site, with the same line, while an order leads beside it", () => {
@@ -471,7 +473,7 @@ describe("a guarded site's card for an army out of reach", () => {
         .click(),
     );
     expect(onMove).toHaveBeenCalled();
-    expect(document.querySelector('[role="status"]')?.textContent).toBe("Too far from the Rift");
+    expect(document.querySelector('[role="status"]')?.textContent).toBe(tooFarFrom("Rift"));
   });
 });
 
@@ -491,7 +493,8 @@ it("titles a single roaming Wraith by its species", () => {
     ),
   );
   expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Wraith");
-  expect(host.querySelector("[data-combat-mark]")?.textContent).toBe("Bow");
+  const badge = host.querySelector<HTMLElement>('[role="img"][aria-label="Wraith 314"] [data-combat-mark]');
+  expect(badge?.dataset.combatMark).toBe("Bow");
 });
 
 it("heads the card with the site's kind, and offers the supply post its clear opens", () => {
@@ -606,7 +609,9 @@ describe("one fight panel for every state of every target (owner, 10-27: 'this p
         );
         const heard = (said: string, lost: string | undefined) => (lost ? `${said}, ${lost}` : said);
         expect(sides).toEqual([heard(`Army 5,000 → ${kept[0]}`, lost[0]), heard(`Troops 1,100 → ${kept[1]}`, lost[1])]);
-        expect(document.querySelector('[role="status"]')?.textContent).toBe(line(TARGET_MARKS[target].word));
+        expect(document.querySelector('[role="status"], [role="alert"]')?.textContent).toBe(
+          line(TARGET_MARKS[target].word),
+        );
         const attackBtn = buttons().find((button) => button.textContent?.startsWith("Attack"));
         expect(attackBtn?.disabled).toBe(!attacks);
         expect(attackBtn?.querySelector('[data-attack-stamina="30"]') !== null).toBe(attacks);

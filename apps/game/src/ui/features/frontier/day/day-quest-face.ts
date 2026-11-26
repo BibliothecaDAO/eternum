@@ -1,7 +1,7 @@
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { nativeQuestConstants as quest } from "@bibliothecadao/eternum/game-client";
 import { questCatalog, type QuestId } from "@bibliothecadao/types";
-import type { DayQuestFace } from "./day-banner-view";
+import type { DayQuestFace } from "./quest-dock-view";
 
 const QUEST_ICONS = {
   [quest.HUNT]: "beast-cyclops",
@@ -19,5 +19,5 @@ const QUEST_ICONS = {
 export function dayQuestFace(id: QuestId): DayQuestFace {
   const quest = questCatalog.find((quest) => quest.id === id);
   if (!quest) throw new Error(`Missing quest ${id}`);
-  return { icon: QUEST_ICONS[id], name: quest.name, unit: quest.unit, objective: quest.objective };
+  return { icon: QUEST_ICONS[id], name: quest.name, verb: quest.verb, unit: quest.unit };
 }

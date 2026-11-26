@@ -221,17 +221,20 @@ export abstract class HexagonScene {
         changed: () => this.notifyControlsChanged(),
       }),
     );
-    const sceneTerrain: TerrainSurface = { sampleSurface: (x, z) => this.getTerrainSurface().sampleSurface(x, z) };
+    const sceneTerrain: TerrainSurface = {
+      sampleSurface: (x, z) => this.getTerrainSurface().sampleSurface(x, z),
+      sampleHeight: (x, z) => this.getTerrainSurface().sampleHeight(x, z),
+    };
     this.interactiveHexManager = new InteractiveHexManager(this.scene, sceneTerrain, this.hexSpace);
     this.worldUpdateListener = new WorldUpdateListener(this.game);
     this.highlightHexManager = new HighlightHexManager(this.scene, sceneTerrain, this.hexSpace);
     this.thunderBoltManager = new ThunderBoltManager(
       this.scene,
       this.controls,
-      (x, z) => this.getTerrainSurface().sampleSurface(x, z).height,
+      (x, z) => this.getTerrainSurface().sampleHeight(x, z),
       this.hexSpace,
     );
-    this.rainEffect = new RainEffect(this.scene, (x, z) => this.getTerrainSurface().sampleSurface(x, z).height);
+    this.rainEffect = new RainEffect(this.scene, (x, z) => this.getTerrainSurface().sampleHeight(x, z));
     this.worldFx = createWorldFxRuntime({ camera: this.camera, scene: this.scene });
     this.scene.background = new Color(this.sceneName === SceneName.WorldMap ? TERRAIN_DEEP_FOG_COLOR : 0x2a1a3e);
     this.state = useUIStore.getState();
@@ -1308,6 +1311,7 @@ export abstract class HexagonScene {
   protected abstract onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void;
 
   public abstract setup(context?: SceneSetupContext): void | Promise<void>;
+  public prepareWhileFlying(): void {}
   /** Resolves once the scene has something worth showing; a flight holds the outgoing frame until then. */
   public whenPresentable(): Promise<void> {
     return Promise.resolve();

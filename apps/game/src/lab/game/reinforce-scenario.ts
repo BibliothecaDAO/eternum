@@ -7,7 +7,13 @@ import {
   readTroopRaiseCost,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { getNeighborHexes, RESOURCE_PRECISION, type TroopTier, type TroopType } from "@bibliothecadao/types";
+import {
+  getNeighborHexes,
+  RealmLevels,
+  RESOURCE_PRECISION,
+  type TroopTier,
+  type TroopType,
+} from "@bibliothecadao/types";
 
 import { type LabCommand, type LabFact, type LabScenario, wire } from "./lab-chain";
 import { raisedArmyLimit } from "./merge-scenario";
@@ -47,6 +53,20 @@ export const reinforceScenario = (): LabScenario => {
     ...game,
     answer: (command, chain, now) => answerRecruit(command, chain, now) ?? game.answer(command, chain, now),
   };
+};
+
+export const empireArmiesScenario = (): LabScenario => {
+  const game = reinforceScenario();
+  const realm = game.store.require("Structure", { game_id: 1, entity_id: 7 });
+  const slots = game.store.require("SliceRules", { game_id: 1 }).troop_limit_config.empire_armies;
+  game.store.applyFacts([
+    {
+      model: "Structure",
+      key: game.store.wireKeyOf("Structure", realm)!,
+      value: wire({ ...realm, base: { ...realm.base, level: RealmLevels.Empire, troop_max_explorer_count: slots } }),
+    },
+  ] as never);
+  return game;
 };
 
 /** ManageTroops::RecruitExplorer (troop_management.cairo's third variant). */

@@ -6,21 +6,31 @@ description: World Banes, rival Team Banes, bane quests, and hyperstructure Stag
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
 import { PipeTable } from "@/components/PipeTable";
+import { Shot } from "@/components/Media";
 
 # Banes and Triumphs
 
 Some game days bring a special day for your Aspect: a **World Bane** from the fog, a **Team Bane** sent by a rival
 Aspect from [the Deep](/frontier/deep), or a **Stage Triumph** earned by raising your Aspect's hyperstructure. On bane
-days, a bane quest replaces your normal [daily quest](/frontier/quests). A bane lasts at most that one game day.
+days, a crimson **Bane** pill replaces the quest pill at the top center, showing the world-bane mist icon (or the
+casting Aspect's mark for a Team Bane) inside a progress ring. Tap it to open the bane bar with its painting, exact
+effect, Aspect progress, and your personal bane quest. Any production, stamina, or guard figure altered by an active
+bane turns crimson across your HUD. A bane lasts at most that one game day.
+
+<Shot
+  name="frontier/bane"
+  caption="On a bane day, tap the crimson Bane pill at the top center to open the bane bar with its effect, Aspect progress, and personal bane quest."
+/>
 
 ## World Banes
 
-From day 2 onward, World Banes can start for all {FRONTIER.aspectsCount} Aspects at the start of a game day. The chance
-is 0% the day after a World Bane, and each day without a World Bane adds +{FRONTIER.banes.chanceStep} to the chance of
-one on the next day. Once any Aspect issues the season's first Team Bane, World Banes stop for the rest of the season.
-An Aspect never has a World Bane and a Team Bane on the same day.
+The first {FRONTIER.banes.quietDays} game days never have a World Bane. From day {FRONTIER.banes.firstDay} onward, World
+Banes can start for all {FRONTIER.aspectsCount} Aspects at the start of a game day. Each day without a World Bane, the
+first {FRONTIER.banes.quietDays} days included, adds +{FRONTIER.banes.chanceStep} to the chance of one on the next day.
+The chance is 0% the day after a World Bane. Once any Aspect issues the season's first Team Bane, World Banes stop for
+the rest of the season. An Aspect never has a World Bane and a Team Bane on the same day.
 
-| World Bane                                                                          | Effect while active              | Bane quest to end it                                                              | Target (Levels 1 / 2 / 3 / 4)     |
+| World Bane                                                                          | Effect while active              | Bane quest to end it                                                              | Target ({FRONTIER.realm.ranks})   |
 | ----------------------------------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------- | --------------------------------- |
 | <GameIcon name={FRONTIER.banes.world[0].icon} /> **{FRONTIER.banes.world[0].name}** | {FRONTIER.banes.world[0].effect} | **{FRONTIER.banes.world[0].questName}:** {FRONTIER.banes.world[0].questObjective} | {FRONTIER.banes.world[0].targets} |
 | <GameIcon name={FRONTIER.banes.world[1].icon} /> **{FRONTIER.banes.world[1].name}** | {FRONTIER.banes.world[1].effect} | **{FRONTIER.banes.world[1].questName}:** {FRONTIER.banes.world[1].questObjective} | {FRONTIER.banes.world[1].targets} |
@@ -32,7 +42,7 @@ Each player receives a personal bane quest — there is no single shared quest, 
 players who finish their own quest and press **Collect** that same day receive the daily quest reward. Once
 {FRONTIER.banes.quorum} of your Aspect's members who deployed at least one army on the previous game day finish theirs,
 the World Bane ends for your Aspect and finishers can press **Collect again** for a second equal reward (World Banes
-only, not Team Banes). Players who did not finish receive no reward, only the bane's penalties removed.
+only, not Team Banes). Players who did not finish receive no reward, though the bane's penalties still end for them.
 
 ## Rival Team Banes
 

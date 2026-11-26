@@ -6,12 +6,13 @@ description:
 
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
+import { Shot } from "@/components/Media";
 
 # The Deep
 
 The Deep is the shared fourth layer where all {FRONTIER.aspectsCount} Aspects meet. Every player in the season shares
 one {FRONTIER.deep.mapSize} by {FRONTIER.deep.mapSize} Deep map. There are no tiles to reveal in the Deep: every site is
-visible from the start of the day. Armies marching in the open cannot be attacked and do not block each other; player
+visible from the start of the day. Armies moving in the open cannot be attacked and do not block each other; player
 fights happen at the sites.
 
 ## Entering the Deep
@@ -42,9 +43,10 @@ sent an army into the Deep that day:
 ## The {FRONTIER.deep.sitesCount} site kinds and their beasts
 
 Every game day, fresh beasts guard every open Deep site. Deep beasts take no tick drain and do not respawn once cleared
-that day. The army that clears a Deep site's beast or last rival guard moves onto the site and becomes its guard; an
-unguarded site is open for the next army to walk into. Held sites pay out on every army tick
-({FRONTIER.stamina.tickMinutes} minutes):
+that day. Select any open site to see its beast portrait and blade or bow badge, its per-tick payout rates, and its
+green poison drain icon. Locked sites show only the reward kinds they pay until their ring opens. The army that clears a
+Deep site's beast or last rival guard moves onto the site and becomes its guard; an unguarded site is open for the next
+army to walk into. Held sites pay out on every army tick ({FRONTIER.stamina.tickMinutes} minutes):
 
 | Site                                                                 | Beast guard                                                                                                               | Mark                            | Bring                          | What holding it pays          |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------ | ----------------------------- |
@@ -52,6 +54,11 @@ unguarded site is open for the next army to walk into. Held sites pay out on eve
 | <GameIcon name="essence" /> **{FRONTIER.deep.sites[1].name}**        | <GameIcon name={FRONTIER.deep.sites[1].beastIcon} /> {FRONTIER.deep.sites[1].beastName} ({FRONTIER.deep.sites[1].troops}) | {FRONTIER.deep.sites[1].weapon} | {FRONTIER.deep.sites[1].bring} | {FRONTIER.deep.sites[1].pays} |
 | <GameIcon name="pickaxe" /> **{FRONTIER.deep.sites[2].name}**        | <GameIcon name={FRONTIER.deep.sites[2].beastIcon} /> {FRONTIER.deep.sites[2].beastName} ({FRONTIER.deep.sites[2].troops}) | {FRONTIER.deep.sites[2].weapon} | {FRONTIER.deep.sites[2].bring} | {FRONTIER.deep.sites[2].pays} |
 | <GameIcon name="flame" /> **{FRONTIER.deep.sites[3].name}**          | <GameIcon name={FRONTIER.deep.sites[3].beastIcon} /> {FRONTIER.deep.sites[3].beastName} ({FRONTIER.deep.sites[3].troops}) | {FRONTIER.deep.sites[3].weapon} | {FRONTIER.deep.sites[3].bring} | {FRONTIER.deep.sites[3].pays} |
+
+<Shot
+  name="frontier/deep-site"
+  caption="Select a Deep site with an army picked to view its per-tick payout, green poison drain, guard slots, and fight preview."
+/>
 
 **Glory** is earned **only** by holding Hyperstructure archives and Bane altars. Essence cores and Ethereal mines pay
 your realm directly in Essence or labor and give no Glory. Every Deep site's tick payout — including an Essence core's
@@ -65,8 +72,9 @@ site, split among its surviving guards by troop count.
   once the beast is cleared by standing beside the site. Allies can never attack allies.
 - **Tick order (drain before pay):** every tick ({FRONTIER.stamina.tickMinutes} minutes), every army in the Deep gains
   +{FRONTIER.stamina.perTick} stamina and loses {FRONTIER.deep.lossPerTick} troops (reduced to
-  {FRONTIER.oaths.vitriolLoss} per tick with the Vitriol Oath). When an army reaches 0 troops, it is destroyed. Held
-  sites then pay only the guards that survived the tick, split by their troop count.
+  {FRONTIER.oaths.vitriolLoss} per tick with the Vitriol Oath). Guarding armies show a green poison drain mark on their
+  token, list row, and panel. When an army reaches 0 troops, it is destroyed. Held sites then pay only the guards that
+  survived the tick, split by their troop count.
 - **Strike or wait:** because rival guards lose {FRONTIER.deep.lossPerTick} troops every tick, waiting lets you attack a
   weaker guard later while the holder earns ticks in the meantime.
 - **Attack order:** rival attackers fight one guard at a time, starting with the **last army that joined**. Guards keep

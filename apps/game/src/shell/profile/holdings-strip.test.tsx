@@ -49,6 +49,12 @@ vi.mock("../herald", async (importOriginal) => ({
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { setViewportWidth } from "../frame/test-viewport";
 import { ProfilePage } from "./profile-pages";
+import {
+  FRAGMENTS_PAGE_WORDS,
+  HELD_REALMS_UNREADABLE,
+  HOME_STEP_WORDS,
+  NO_HELD_REALMS,
+} from "@/ui/design-system/kit/words";
 
 const HELD_REALMS = "/api/value/held-realms";
 const named = (realmId: number) => `${realmId} · ${canonicalRealm(realmId)!.name}`;
@@ -115,10 +121,10 @@ describe.each([1440, 390])("Unlinked wallet on You, at %i px", (width) => {
     const you = await openYou(width);
     expect(asked).not.toContain(HELD_REALMS);
     const links = [...you.container.querySelectorAll("a, button")].filter(
-      (node) => node.textContent === "Link a wallet to pay",
+      (node) => node.textContent === FRAGMENTS_PAGE_WORDS.linkWallet,
     );
     expect(links).toHaveLength(1);
-    await you.press("Link a wallet to pay");
+    await you.press(FRAGMENTS_PAGE_WORDS.linkWallet);
     expect(you.container.querySelector("[data-you-tab]")?.getAttribute("data-you-tab")).toBe("wallet");
   });
 });
@@ -130,7 +136,7 @@ it("shows one Try again notice when Realms fail to load, and reloads into the sh
     () => held(4786),
   );
   const you = await openYou(1440);
-  await vi.waitFor(() => expect(you.container.textContent).toContain("Your Realms cannot be read right now"));
+  await vi.waitFor(() => expect(you.container.textContent).toContain(HELD_REALMS_UNREADABLE));
   expect([...you.container.querySelectorAll("button")].filter((node) => node.textContent === "Try again")).toHaveLength(
     1,
   );
@@ -138,14 +144,16 @@ it("shows one Try again notice when Realms fail to load, and reloads into the sh
   await vi.waitFor(() =>
     expect(you.container.querySelector(".profile-realm-tile__name")?.textContent).toBe(named(4786)),
   );
-  expect(you.container.querySelector(".profile-realm-tile__bonus")?.textContent).toContain("+50% daily quest labor");
+  expect(you.container.querySelector(".profile-realm-tile__bonus")?.textContent).toContain(
+    HOME_STEP_WORDS.questBonus(50),
+  );
 });
 
 it("says a linked wallet holding no Realm holds none", async () => {
   signedIn.wallet = "0x269c";
   relay(() => held());
   const you = await openYou(390);
-  await vi.waitFor(() => expect(you.container.textContent).toContain("Your linked wallet holds no Realm"));
+  await vi.waitFor(() => expect(you.container.textContent).toContain(NO_HELD_REALMS));
 });
 
 it("shows Realms in the showcase on both desktop and phone and opens the shared sheet for all Realms beyond nine", async () => {

@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 
+const DESIGN = { width: 1_440, height: 1_050 } as const;
+const READING_FLOOR = 0.8;
+
 const SCALE_AT_WIDTH: readonly (readonly [width: number, scale: number])[] = [
   [1_024, 0.71],
   [1_280, 0.93],
-  [1_440, 1],
-  [1_920, 1],
-  [2_560, 1.05],
+  [DESIGN.width, 1],
 ];
 
-export const hudScaleFor = (width: number): number => {
+const widthScale = (width: number): number => {
   const [first] = SCALE_AT_WIDTH;
   if (width <= first![0]) return first![1];
   for (let index = 1; index < SCALE_AT_WIDTH.length; index++) {
@@ -16,16 +17,18 @@ export const hudScaleFor = (width: number): number => {
     const [toWidth, toScale] = SCALE_AT_WIDTH[index]!;
     if (width <= toWidth) return fromScale + ((width - fromWidth) / (toWidth - fromWidth)) * (toScale - fromScale);
   }
-  return SCALE_AT_WIDTH[SCALE_AT_WIDTH.length - 1]![1];
+  return width / DESIGN.width;
 };
 
-/** The HUD's scale for the window's width as it is now, following it as it resizes. */
+export const hudScaleFor = (width: number, height: number): number =>
+  Math.min(widthScale(width), Math.max(READING_FLOOR, height / DESIGN.height));
+
 export const useHudScale = (): number => {
-  const [width, setWidth] = useState(() => window.innerWidth);
+  const [size, setSize] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }));
   useEffect(() => {
-    const follow = () => setWidth(window.innerWidth);
+    const follow = () => setSize({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener("resize", follow);
     return () => window.removeEventListener("resize", follow);
   }, []);
-  return hudScaleFor(width);
+  return hudScaleFor(size.width, size.height);
 };

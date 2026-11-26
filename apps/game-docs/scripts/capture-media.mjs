@@ -1,17 +1,4 @@
 #!/usr/bin/env node
-/**
- * Captures the docs' videos and screenshots (media.json) from the game itself, into the game's public `docs-media`
- * folder that the pages embed (components/Media.tsx). One command, so a changed screen is one rerun:
- *
- *   pnpm --dir apps/game-docs capture-media --base https://127.0.0.1:<port> [--session <file>] [--only a,b] [--browser <path>]
- *
- * `--base` is a running dev client (`pnpm --dir apps/game dev`): the lab's fixture pages and studio live only there.
- * Items marked `live` play the real game as a test player and need `--session`, a saved browser state (cookies and the
- * app's localStorage, with its device key); the dev client forwards its /api, and so the session, to the dev stack.
- * The browser is a Chromium on the machine's GPU with a profile of its own, closed and removed whatever happens.
- * A screenshot is a WebP; a video is the page's own screencast frames made into a constant-rate H.264 MP4, with a WebP
- * poster of its first frame. Each file is held to the size budget the plan sets; one over it fails the run.
- */
 import { spawn, execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -42,7 +29,6 @@ const args = Object.fromEntries(
 );
 if (!args.base) throw new Error("--base <running dev client> is required");
 const only = args.only ? new Set(args.only.split(",")) : null;
-const session = args.session ? JSON.parse(readFileSync(args.session, "utf8")) : null;
 
 /** A headless Chromium of our own, on the GPU, its DevTools on a free port; `close` ends it and its profile. */
 async function launchBrowser(executable) {
@@ -158,38 +144,34 @@ async function pointer(page, [x, y], button = "left") {
   await page.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button, clickCount: 1 });
 }
 
-// Where to look for a tile: points spiralling out from the page's centre, nearest first, every 40 CSS pixels up to 280.
-// The camera centres a selected army only roughly, so the search does not assume where its neighbours fall.
-const SEARCH = Array.from({ length: 15 }, (_, i) => i - 7)
-  .flatMap((x) => Array.from({ length: 15 }, (_, j) => [x * 40, (j - 7) * 40]))
-  .filter(([x, y]) => Math.hypot(x, y) <= 280)
-  .toSorted((a, b) => Math.hypot(...a) - Math.hypot(...b));
-// What the pointer's tooltip offers: Frontier's tooltip, or the map's order line under a hovered tile.
-const TOOLTIP = `(() => {
-  const tips = [...document.querySelectorAll('[role="tooltip"]')].map((tip) => tip.innerText);
-  let order = [...document.querySelectorAll("span")].find((span) => span.textContent.trim() === "Right-click to confirm");
-  while (order && !order.querySelector("span.px-1")) order = order.parentElement;
-  if (order) tips.push(order.querySelector("span.px-1").textContent);
-  return tips.join("\\n");
-})()`;
-const ARMIES = `[...document.querySelectorAll('nav[aria-label="Armies"] button[aria-pressed]')].map((button) => {
-  const r = button.getBoundingClientRect();
-  return { at: [r.x + r.width / 2, r.y + r.height / 2], stamina: Number(button.querySelector('[role="meter"]')?.getAttribute("aria-valuenow") ?? 0) };
-})`;
-
-/** Hovers points around the page's centre until the tooltip offers `order`, then presses there. */
-async function pressTileOffering(page, order, button) {
-  const { width, height } = await evaluate(page, "({ width: innerWidth, height: innerHeight })");
-  for (const [dx, dy] of SEARCH) {
-    const at = [width / 2 + dx, height / 2 + dy];
-    await page.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: at[0], y: at[1] });
-    await sleep(350);
-    if ((await evaluate(page, TOOLTIP)).includes(order)) return pointer(page, at, button);
+async function tapUntil(page, { offsets, waitFor, dismiss = "Escape", button = "left", around = "center", reselect }) {
+  for (const [dx, dy] of offsets) {
+    const origin = await evaluate(
+      page,
+      around === "army"
+        ? `(() => {
+            const slot = [...document.querySelectorAll('.mp-at[data-key^="army:"]')].find((el) => el.firstElementChild && getComputedStyle(el).display !== "none");
+            if (!slot) return [innerWidth / 2, innerHeight / 2];
+            const r = slot.firstElementChild.getBoundingClientRect();
+            return [r.left + r.width / 2, r.top + r.height / 2 + 100];
+          })()`
+        : "[innerWidth / 2, innerHeight / 2]",
+    );
+    await pointer(page, [origin[0] + dx, origin[1] + dy], button);
+    await sleep(900);
+    if (await evaluate(page, `Boolean(document.querySelector(${JSON.stringify(waitFor)}))`)) return;
+    if (dismiss) {
+      for (const type of ["keyDown", "keyUp"]) await page.send("Input.dispatchKeyEvent", { type, key: dismiss });
+      await sleep(300);
+    }
+    if (reselect) {
+      await step(page, { click: reselect });
+      await sleep(500);
+    }
   }
-  throw new Error(`no tile near the centre offers ${order}`);
+  throw new Error(`tapUntil did not open ${waitFor}`);
 }
 
-/** One step of an item, as a player gives it: open, wait, click, type, press, point, or a page script. */
 async function step(page, action) {
   if (action.optional) {
     try {
@@ -198,12 +180,7 @@ async function step(page, action) {
       return;
     }
   }
-  if (action.readiestArmy) {
-    const [readiest] = (await evaluate(page, ARMIES)).toSorted((a, b) => b.stamina - a.stamina);
-    if (!readiest) throw new Error("no army on the dock");
-    await pointer(page, readiest.at);
-    await sleep(2500);
-  } else if (action.findTile) await pressTileOffering(page, action.findTile, action.button);
+  if (action.tapUntil) await tapUntil(page, action.tapUntil);
   else if (action.open) {
     await page.send("Page.navigate", { url: urlOf(action.open) });
     await sleep(500);
@@ -212,17 +189,13 @@ async function step(page, action) {
   else if (action.waitFor)
     await waitUntil(page, `document.querySelector(${JSON.stringify(action.waitFor)})`, action.ms);
   else if (action.until) await waitUntil(page, action.until, action.ms);
-  else if (action.waitText)
-    await waitUntil(page, `document.body.innerText.includes(${JSON.stringify(action.waitText)})`, action.ms);
   else if (action.click || action.clickText) {
     const target = action.click ? `document.querySelector(${JSON.stringify(action.click)})` : byText(action.clickText);
     const at = await evaluate(page, centerOf(target));
     if (!at) throw new Error(`nothing to click: ${action.click ?? action.clickText}`);
     await pointer(page, at, action.button);
-  } else if (action.type) await page.send("Input.insertText", { text: action.type });
-  else if (action.key)
+  } else if (action.key)
     for (const type of ["keyDown", "keyUp"]) await page.send("Input.dispatchKeyEvent", { type, key: action.key });
-  else if (action.point) await pointer(page, action.point, action.button);
   else if (action.eval) await evaluate(page, action.eval);
   else throw new Error(`unknown step ${JSON.stringify(action)}`);
 }
@@ -238,19 +211,6 @@ async function setFrame(page, frame) {
     screenHeight: height,
   });
   await page.send("Emulation.setTouchEmulationEnabled", { enabled: frame === "phone", maxTouchPoints: 5 });
-}
-
-/** The saved player's cookies and app storage, on the dev client's origin. */
-async function restoreSession(page) {
-  const origin = new URL(args.base).origin;
-  for (const cookie of session.cookies)
-    await page.send("Network.setCookie", { ...cookie, domain: undefined, url: origin, sameSite: "Lax" });
-  await step(page, { open: "/offline.html" });
-  const storage = session.origins.flatMap((each) => each.localStorage);
-  await evaluate(
-    page,
-    `(${JSON.stringify(storage)}).forEach(({ name, value }) => localStorage.setItem(name, value)) || true`,
-  );
 }
 
 const kib = (file) => Math.round(statSync(file).size / 1024);
@@ -392,6 +352,8 @@ async function recordClip(page, item, frames) {
 }
 
 async function capture(page, item) {
+  await page.send("Page.navigate", { url: "about:blank" });
+  await sleep(200);
   await setFrame(page, item.frame);
   for (const action of item.setup ?? []) await step(page, action);
   return item.record ? clip(page, item) : shot(page, item);
@@ -402,13 +364,8 @@ const results = [];
 try {
   const page = await openPage(browser.ws);
   await page.send("Network.enable");
-  if (session) await restoreSession(page);
   for (const item of MEDIA) {
     if (only && !only.has(item.name)) continue;
-    if (item.live && !session) {
-      results.push({ name: item.name, skipped: "needs --session" });
-      continue;
-    }
     try {
       results.push({ name: item.name, files: await capture(page, item) });
     } catch (error) {

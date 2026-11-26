@@ -6,11 +6,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
-import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
+import { loadOpening, skipTutorial } from "./opening/opening-store";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { deepViewFor, type GameClientSetup, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { sellingFragments } from "./value/fragments-fixture";
 import type { HudSurface } from "./hud/frontier-nav";
+import { ATTACK_REFUSAL_WORDS, POOL_NOT_PUBLISHED, PROFILE_WORDS, SETTINGS_WORDS } from "@/ui/design-system/kit/words";
 
 // The real Frontier HUD on the lab's game. Only the network, the identity and the chat pane's own drawing stand in: the
 // HUD, its hooks and the stores are the real ones.
@@ -60,6 +61,9 @@ const { LabGame } = await import("@/ui/features/debug/kit-lab/lab-game");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { overrideSpectateIntent } = await import("@/utils/spectator-session");
 const { FrontierAspectPage } = await import("./aspect/aspect-page");
+const { ASPECT_PAGE_WORDS, SEASON_BOARD_WORDS } = await import("@/ui/design-system/kit/words");
+const { setActiveGame } = await import("@/runtime/world");
+const SEASON_PAGE = `section[aria-label="${SEASON_BOARD_WORDS.title}"]`;
 const { FrontierHud } = await import("./frontier-hud");
 const { BuildingType, BUILDINGS_CENTER } = await import("@bibliothecadao/types");
 const { buildingName } = await import("./build/building-names");
@@ -90,10 +94,11 @@ let host: HTMLDivElement;
 let root: Root;
 let shownStore: NativeFactStore;
 
-beforeEach(() => {
+beforeEach(async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   // These tests play the whole HUD; the opening interface has its own tests.
-  useWorldAppearanceStore.setState({ showEverything: true });
+  await loadOpening(null);
+  await skipTutorial();
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => new Response(JSON.stringify({ blocked: [], version: 0 }), { status: 200 })),
@@ -107,7 +112,7 @@ afterEach(async () => {
   act(() => root.unmount());
   host.remove();
   // A frame closed steps back off its history entry a moment later: that step lands here, not in the next test's route.
-  await new Promise((settled) => setTimeout(settled, 20));
+  await historySettles();
 });
 
 /** What the page shows of chat: whether the client is connected, and the unread count where the layout shows it. */
@@ -225,9 +230,7 @@ it("treats the desktop's Feed as any other panel: closed at start, opened from i
       shownStore.applyFacts([{ model: "RaceRules", key: "0xa500", value: wireFact(raceRules()) }] as never),
     );
     await press("Season");
-    expect(
-      host.querySelector('[data-frontier-rail][data-wide="true"] [data-wide-page] section[aria-label="Aspect Race"]'),
-    ).not.toBeNull();
+    expect(host.querySelector(`[data-frontier-rail][data-wide="true"] [data-wide-page] ${SEASON_PAGE}`)).not.toBeNull();
     expect(leftColumn().querySelector('[aria-label="Armies"]')).not.toBeNull();
     await press("Season");
     expect(panel()).toBeNull();
@@ -239,6 +242,7 @@ it("treats the desktop's Feed as any other panel: closed at start, opened from i
     await act(async () => panel()!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
     expect(panel()).toBeNull();
     await press("Feed");
+    await historySettles();
     window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
     await act(async () =>
       useUIStore.setState({
@@ -270,23 +274,21 @@ it("keeps a refused order in sight on a desktop, over the feed and over a panel 
   await renderHud();
   const notices = () => host.querySelector('[aria-label="Notices"]');
   try {
-    await act(async () => toast.error("Not enough stamina"));
+    await act(async () => toast.error(ATTACK_REFUSAL_WORDS["insufficient-stamina"]));
     expect(notices()?.closest("[data-frontier-rail]")).toBeNull();
     const feed = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Feed"]')!;
     await act(async () => feed.click());
     expect(host.querySelector('[data-frontier-rail] [data-right-page] section[aria-label="Feed"]')).not.toBeNull();
-    expect(notices()?.textContent).toContain("Not enough stamina");
+    expect(notices()?.textContent).toContain(ATTACK_REFUSAL_WORDS["insufficient-stamina"]);
     const season = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Season"]')!;
     await act(async () => season.click());
     expect(host.querySelector('[data-frontier-rail] [data-right-page] section[aria-label="Season"]')).not.toBeNull();
-    expect(notices()?.textContent).toContain("Not enough stamina");
+    expect(notices()?.textContent).toContain(ATTACK_REFUSAL_WORDS["insufficient-stamina"]);
     await act(async () =>
       shownStore.applyFacts([{ model: "RaceRules", key: "0xa500", value: wireFact(raceRules()) }] as never),
     );
-    expect(
-      host.querySelector('[data-frontier-rail] [data-wide-page] section[aria-label="Aspect Race"]'),
-    ).not.toBeNull();
-    expect(notices()?.textContent).toContain("Not enough stamina");
+    expect(host.querySelector(`[data-frontier-rail] [data-wide-page] ${SEASON_PAGE}`)).not.toBeNull();
+    expect(notices()?.textContent).toContain(ATTACK_REFUSAL_WORDS["insufficient-stamina"]);
   } finally {
     useEventFeedStore.getState().dismiss();
   }
@@ -389,7 +391,7 @@ it.each([390, 1440])(
     viewport.set(width);
     const { tiles, words } = await openSeasonWith(null);
     expect(tiles).toEqual(["2—", "1—", "3—"]);
-    expect(words).toContain("Pool not published yet");
+    expect(words).toContain(POOL_NOT_PUBLISHED);
   },
 );
 
@@ -411,8 +413,11 @@ it.each([390, 1440])(
   },
 );
 
+const okIn = (root: ParentNode) =>
+  [...root.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "OK") ?? null;
+
 it.each([390, 1440])(
-  "opens Today from the day control at %i px, in the desktop's rail or the phone's foot band, the map uncovered",
+  "opens Today from the day control at %i px, under the day pill on a desktop or under the phone's bar, the map uncovered",
   async (width) => {
     viewport.set(width);
     await renderHud();
@@ -421,8 +426,8 @@ it.each([390, 1440])(
     await act(async () => day!.click());
     const sheet = host.querySelector<HTMLElement>('section[aria-label="Today"]');
     expect(sheet).not.toBeNull();
-    expect(sheet!.closest("[data-rail-panel]") !== null).toBe(width >= 1024);
-    expect(sheet!.closest("[data-sheet-band]") !== null).toBe(width < 1024);
+    expect(sheet!.closest(".frontier-day-wrap") !== null).toBe(width >= 1024);
+    expect(sheet!.closest(".frontier-phone-today") !== null).toBe(width < 1024);
     expect(host.querySelector('section[aria-label="Realm"]') !== null).toBe(width >= 1024);
     expect(host.querySelector('nav[aria-label="Places"]')).not.toBeNull();
     expect(host.querySelector(".ui-sheet__backdrop")).toBeNull();
@@ -447,7 +452,7 @@ it.each([390, 1440])("opens and closes the Wheat store from its control at %i px
   expect(host.querySelector('section[aria-label="Wheat"]')).toBeNull();
 });
 
-it("gives a phone one place menu under its pill, whose places switch the scene and put a page away", async () => {
+it("gives a phone Realm beside one layer menu under its pill, whose presses switch the scene and put a page away", async () => {
   viewport.set(390);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
@@ -460,19 +465,20 @@ it("gives a phone one place menu under its pill, whose places switch the scene a
         `[data-surface-deep-switch] [role="tab"][aria-label="${word}"]`,
       )!;
     };
-    expect(pill().dataset.place).toBe("Surface");
+    const placeShown = () => host.querySelector<HTMLElement>("[data-place-switch]")!.dataset.place;
+    const realmButton = () => host.querySelector<HTMLButtonElement>('[data-place-switch] button[aria-label="Realm"]')!;
+    expect(placeShown()).toBe("Surface");
     expect(document.querySelector("[data-surface-deep-switch]")).toBeNull();
     await act(async () => pill().click());
     expect(
       [...document.querySelectorAll('[data-surface-deep-switch] [role="tab"]')].map((tab) =>
         tab.getAttribute("aria-label"),
       ),
-    ).toEqual(["Realm", "Surface", "Veil", "Hollow", "Deep"]);
-    const realm = await placeTab("Realm");
-    await act(async () => realm.click());
+    ).toEqual(["Surface", "Veil", "Hollow", "Deep"]);
+    await act(async () => realmButton().click());
     expect(window.location.pathname).toMatch(/\/hex$/);
     expect(document.querySelector("[data-surface-deep-switch]")).toBeNull();
-    expect(pill().dataset.place).toBe("Realm");
+    expect(placeShown()).toBe("Realm");
     expect(host.querySelector('section[aria-label="Realm"]')).toBeNull();
     await act(async () => host.querySelector<HTMLButtonElement>(".frontier-bar button.frontier-stock-chips")!.click());
     expect(host.querySelector('section[aria-label="Realm"]')).not.toBeNull();
@@ -482,8 +488,7 @@ it("gives a phone one place menu under its pill, whose places switch the scene a
     expect(host.querySelector('section[aria-label="Realm"]')).toBeNull();
     await fromMenu("Feed");
     expect(surfaceNamed("Feed")).not.toBeNull();
-    const realmAgain = await placeTab("Realm");
-    await act(async () => realmAgain.click());
+    await act(async () => realmButton().click());
     expect(window.location.pathname).toMatch(/\/hex$/);
     expect(surfaceNamed("Feed")).toBeNull();
   } finally {
@@ -634,7 +639,7 @@ const fromMenu = async (word: string) => {
   await act(async () => menuRow(word).click());
 };
 
-it("lays a phone's Settings on one page, with what is rarely touched one press away under More", async () => {
+it("lays a phone's Settings on one page, every section shown, Leave game first in the foot", async () => {
   viewport.set(390);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
@@ -643,24 +648,16 @@ it("lays a phone's Settings on one page, with what is rarely touched one press a
     await fromMenu("Settings");
     const settings = () => surfaceNamed("Settings")!;
     const words = (selector: string) => [...settings().querySelectorAll(selector)].map((part) => part.textContent);
-    const press = (word: string) =>
-      act(async () =>
-        [...settings().querySelectorAll<HTMLButtonElement>("button")]
-          .find((button) => button.textContent === word)!
-          .click(),
-      );
     expect(words(".ui-settings__volume-name")).toEqual(["Master", "Music", "Effects"]);
-    expect(words(".ui-settings__choices .ui-setting__name")).toEqual(["Quality", "FPS"]);
+    expect(words(".ui-settings__choices .ui-setting__name")).toEqual(["Quality"]);
     expect(words(".ui-settings > .ui-setting .ui-setting__name").slice(0, 3)).toEqual([
       "Mute",
       "Shadows",
-      "Reduced motion",
+      SETTINGS_WORDS.reducedMotion,
     ]);
-    expect(words("button")).not.toContain("Leave game");
-    await press("More");
-    expect(words("section > h2")).toContain("Notifications");
-    expect(words("button")).toContain("Leave game");
-    expect(words("button")).not.toContain("More");
+    expect(words("section > h2")).toContain(PROFILE_WORDS.notifications);
+    const foot = [...settings().querySelectorAll(".ui-settings__foot button")].map((button) => button.textContent);
+    expect(foot[0]).toBe(SETTINGS_WORDS.leaveGame);
   } finally {
     window.history.replaceState(null, "", route);
   }
@@ -726,7 +723,17 @@ it("routes the phone Realm panel through the one-panel state so it replaces Toda
 });
 
 /** History moves a moment after it is asked to: a closed frame's step back, or the system back, lands by then. */
-const historySettles = () => act(async () => new Promise((settled) => setTimeout(settled, 50)));
+const historySettles = async () => {
+  await act(async () => new Promise((settled) => setTimeout(settled)));
+  await act(async () => vi.waitFor(() => expect(stepsBackUntraversed, "steps back not yet traversed").toBe(0)));
+};
+let stepsBackUntraversed = 0;
+const browserBack = window.history.back.bind(window.history);
+window.history.back = () => {
+  stepsBackUntraversed += 1;
+  browserBack();
+  window.setTimeout(() => window.setTimeout(() => (stepsBackUntraversed -= 1)));
+};
 /** The system back, as a phone's back gesture sends it. */
 const systemBack = async () => {
   window.history.back();
@@ -1140,7 +1147,7 @@ it("keeps Chat reachable from its strip at the bottom right while visiting anoth
   }
 });
 
-it("orders the desktop places as Research, Feed, Season, Settings, lists the five places in the dropdown, and returns to Realm on the crest", async () => {
+it("orders the desktop places as Research, Feed, Season, Settings, sets Realm beside the four layers' menu, and returns to Realm on the crest", async () => {
   viewport.set(1440);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
@@ -1152,8 +1159,8 @@ it("orders the desktop places as Research, Feed, Season, Settings, lists the fiv
     expect(labels).toEqual(["Research", "Feed", "Season", "Settings"]);
     expect(host.querySelector('button[aria-label="Relics"]')).toBeNull();
     await act(async () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
-    const placeTabs = [...document.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) =>
-      tab.getAttribute("aria-label"),
+    const placeTabs = [...document.querySelectorAll('[aria-label="Map view"] :is([role="tab"], [aria-pressed])')].map(
+      (tab) => tab.getAttribute("aria-label"),
     );
     expect(placeTabs).toEqual(["Realm", "Surface", "Veil", "Hollow", "Deep"]);
     await act(async () => host.querySelector<HTMLButtonElement>("[data-place-pill]")!.click());
@@ -1218,6 +1225,7 @@ it("moves to the World map at the Deep hex when Go to Deep is pressed from the R
     const scenario = raceScenario(finished);
     scenario.store.setSnapshot({ gameId: 1, actor: scenario.player, timestamp: scenario.startsAt, complete: true });
     configManager.setActiveGame(1);
+    setActiveGame({ chainId: "SHARD", gameId: 1, name: "SHARD" });
     configManager.setStore(scenario.store);
     setBlockTimestampSource(() => scenario.startsAt);
     useAccountStore.setState({ account: { address: scenario.player } as never });
@@ -1236,8 +1244,8 @@ it("moves to the World map at the Deep hex when Go to Deep is pressed from the R
     return scenario;
   };
   const goToDeep = () =>
-    [...host.querySelectorAll<HTMLButtonElement>('section[aria-label="Aspect Race"] button')].find((button) =>
-      button.textContent?.includes("Go to Deep"),
+    [...host.querySelectorAll<HTMLButtonElement>(`${SEASON_PAGE} button`)].find((button) =>
+      button.textContent?.includes(ASPECT_PAGE_WORDS.goToDeep),
     );
   try {
     window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
@@ -1259,7 +1267,7 @@ it("moves to the World map at the Deep hex when Go to Deep is pressed from the R
     expect(onClose).toHaveBeenCalledTimes(2);
 
     await drawRace(true, onClose);
-    expect(host.querySelector('section[aria-label="Aspect Race"]')).not.toBeNull();
+    expect(host.querySelector("[data-season-board]")).not.toBeNull();
     expect(goToDeep()).toBeUndefined();
   } finally {
     setBlockTimestampSource(null);
@@ -1294,7 +1302,6 @@ it.each([
     const route = window.location.pathname + window.location.search;
     viewport.set(width);
     localStorage.clear();
-    useWorldAppearanceStore.setState({ showEverything: false });
     useOpeningStore.setState({
       owner: null,
       loaded: false,
@@ -1461,7 +1468,7 @@ it.each([
       expect(armyButton).not.toBeNull();
       await act(async () => armyButton!.click());
       if (layout === "desktop") {
-        expect(host.querySelector('[data-rail-panel] section[aria-label="Army 1"]')).not.toBeNull();
+        expect(host.querySelector('[data-rail-panel] section[aria-label="100 Knights"]')).not.toBeNull();
       }
       expect(useOpeningStore.getState().showing).toBe("explore");
       expect(host.querySelector('[data-tutorial-dock="explore"][data-tutorial-status="showing"]')).not.toBeNull();
@@ -1483,7 +1490,7 @@ it.each([
       expect(confirmed).not.toBeNull();
       expect(confirmed?.textContent).toContain(OPENING_WORDS.completed.explore.title);
 
-      const closeConfirmed = confirmed!.querySelector<HTMLButtonElement>('button[aria-label="Close"]');
+      const closeConfirmed = okIn(confirmed!);
       if (layout === "desktop") {
         expect(closeConfirmed).not.toBeNull();
         await act(async () => closeConfirmed!.click());
@@ -1495,7 +1502,7 @@ it.each([
         '[data-tutorial-dock="aspects"][data-tutorial-status="showing"]',
       );
       expect(raceNext?.textContent).toContain(OPENING_WORDS.titles.aspects());
-      await act(async () => raceNext!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+      await act(async () => okIn(raceNext!)!.click());
       expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
 
       await act(async () => {
@@ -1519,7 +1526,6 @@ it.each([
       expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
     } finally {
       useBlockTimestampStore.setState(previousTicks);
-      useWorldAppearanceStore.setState({ showEverything: true });
       localStorage.clear();
       window.history.replaceState(null, "", route);
       window.dispatchEvent(new Event("urlChanged"));
@@ -1543,7 +1549,6 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
   const route = window.location.pathname + window.location.search;
   viewport.set(390);
   localStorage.clear();
-  useWorldAppearanceStore.setState({ showEverything: false });
   const resetMemory = () =>
     useOpeningStore.setState({
       owner: null,
@@ -1656,7 +1661,6 @@ it("shows the day-end tutorial once in the last hour with own Aspect and reads n
     expect(host.querySelector('[data-tutorial-dock="day-end"]')).toBeNull();
   } finally {
     useBlockTimestampStore.setState(previousTicks);
-    useWorldAppearanceStore.setState({ showEverything: true });
     localStorage.clear();
     window.history.replaceState(null, "", route);
     window.dispatchEvent(new Event("urlChanged"));
@@ -1676,7 +1680,6 @@ it.each([1920, 390])(
     const route = window.location.pathname + window.location.search;
     viewport.set(width);
     localStorage.clear();
-    useWorldAppearanceStore.setState({ showEverything: false });
     const resetMemory = () =>
       useOpeningStore.setState({
         owner: null,
@@ -1740,7 +1743,7 @@ it.each([1920, 390])(
         const dock = host.querySelector<HTMLElement>("[data-tutorial-dock]");
         if (!dock) break;
         told.push(dock.dataset.tutorialDock ?? "");
-        await act(async () => dock.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+        await act(async () => okIn(dock)!.click());
         await act(async () => new Promise((settled) => setTimeout(settled, 20)));
       }
       expect(told[0]).toBe("deep");
@@ -1752,7 +1755,6 @@ it.each([1920, 390])(
       expect(host.querySelector("[data-tutorial-dock]")).toBeNull();
     } finally {
       useBlockTimestampStore.setState(previousTicks);
-      useWorldAppearanceStore.setState({ showEverything: true });
       localStorage.clear();
       window.history.replaceState(null, "", route);
       window.dispatchEvent(new Event("urlChanged"));

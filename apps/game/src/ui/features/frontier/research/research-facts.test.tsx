@@ -14,6 +14,7 @@ import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { realmBoard } from "../build/build-fixture";
 import { FrontierResearch } from "./frontier-research";
 import { useResearchTree } from "./research-facts";
+import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -83,7 +84,7 @@ it("says the tree is on its way while a fact it reads is missing, and draws the 
   );
   // The page says so in its own frame, as it stands once the tree is drawn.
   const page = host.querySelector('section[data-kit-frame][aria-label="Research"]');
-  expect(page?.querySelector('[role="status"]')?.textContent).toBe("Loading research…");
+  expect(page?.querySelector('[role="status"]')?.textContent).toBe(RESEARCH_TREE.onItsWay);
 
   act(() => store.applyFacts(ALL_PRICES.filter(({ value }) => value.row === research.ROW_LORE) as never));
   expect(host.textContent).not.toContain("Loading research");
@@ -105,7 +106,7 @@ it("opens on the tree alone, to browse, and brings a node's choice only when its
   // Nor does the panel's head repeat the Essence and labor the top bar shows.
   expect(host.querySelector(".ui-chip")).toBeNull();
 
-  act(() => host.querySelector<HTMLButtonElement>("[data-node='shrine']")!.click());
+  act(() => host.querySelector<HTMLButtonElement>("[data-node='shrine'] button")!.click());
   expect(host.querySelector("[data-lab='node-choice']")!.textContent).toContain("Shrine");
 });
 
@@ -135,6 +136,6 @@ it("reads the Conscription Camp's troops an hour from the Barracks' own rule in 
   );
   const camp = tree!.nodes.find(({ row }) => row === research.ROW_CONSCRIPTION)!;
   expect(camp.figures).toEqual([
-    expect.objectContaining({ name: "Troops an hour", line: "At each Barracks", now: "180" }),
+    expect.objectContaining({ name: RESEARCH_TREE.troopsAnHour, line: "At each Barracks", now: "180" }),
   ]);
 });

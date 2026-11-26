@@ -32,6 +32,7 @@ import {
   judgeAfterDoorway,
 } from "./evidence.mjs";
 import { watchReleaseMove } from "./stale-release.mjs";
+import { wordAt } from "../words-table.mjs";
 import {
   nativeOathConstants as oathRules,
   nativeRuleConstants as rules,
@@ -111,9 +112,11 @@ export const HUD_WORDS = {
   feed: "Feed",
   research: "Research",
   close: "Close",
+  ok: "OK",
   chat: "Chat",
   settings: "Settings",
   today: "Today",
+  skipTutorial: "Skip tutorial",
 };
 
 const PHONE_PLACE_PRESSES = {
@@ -121,6 +124,12 @@ const PHONE_PLACE_PRESSES = {
   [HUD_WORDS.feed]: (browser) => browser.tapPlace(HUD_WORDS.feed),
   [HUD_WORDS.chat]: (browser) => browser.tapPlace(HUD_WORDS.chat),
   [HUD_WORDS.season]: (browser) => browser.tapPlace(HUD_WORDS.season),
+  [HUD_WORDS.settings]: async (browser) => {
+    const tile = `section[aria-label="${HUD_WORDS.menu}"] .menu-tiles [aria-label="${HUD_WORDS.settings}"]`;
+    if (!browser.read(`Boolean(document.querySelector('${tile}'))`)) browser.tapPlace(HUD_WORDS.menu);
+    await readUntil(() => browser.read(`Boolean(document.querySelector('${tile}'))`), Boolean, SHEET_WAIT_MS);
+    browser.run(["click", tile]);
+  },
 };
 
 const DESKTOP_CHAT_STRIP = '[aria-label="Chat strip"]';
@@ -390,7 +399,7 @@ const RELIC_FORECAST_STEPS = [
       browser.press("Escape");
       await openTheArmyPanel(browser);
       for (const [index, name] of ["Uncommon Blade", "Common Ward"].entries()) {
-        browser.run(["find", "role", "button", "click", "--name", `Switch on ${name}`]);
+        browser.run(["find", "role", "button", "click", "--name", `Use ${name}`]);
         await readUntil(
           () => browser.read(`window.__labChain?.sent.filter(row => row.command.kind === 'ApplyRelic').length ?? 0`),
           (count) => count === index + 1,
@@ -516,7 +525,7 @@ const FIGHT_LOST_STEPS = [
   { name: "attack-lost", play: attackAndReadTheLoss, settleMs: 500, verify: lossShown },
   { name: "loss-closes", play: readTheLossClose, settleMs: 500, verify: lossClosed },
 ];
-const ARMY_LOST = "Your army is lost";
+const armyLost = () => wordAt("FIGHT_WORDS.armyLost");
 /** Past the loss's moment in the panel (ArmyLostSheet's ARMY_LOST_MS, 3 s), with room for a slow frame. */
 const LOSS_CLOSES_WAIT_MS = 6_000;
 
@@ -524,7 +533,7 @@ async function attackAndReadTheLoss(context) {
   const attacked = await attackFromTheSiteCard(context);
   const shown = await readUntil(
     () => context.browser.read(MERGE_STATE),
-    (state) => state.sheet === ARMY_LOST,
+    (state) => state.sheet === armyLost(),
     SHEET_WAIT_MS,
   );
   return { ...attacked, sheet: shown.sheet, sent: shown.sent, destroyed: shown.destroyed };
@@ -534,9 +543,9 @@ function lossShown({ played }) {
   if (!played.sent?.includes("BattleGuard"))
     return failed(`no attack was sent (offered ${played.offered?.join(", ")})`);
   if (!played.destroyed?.includes(played.army)) return failed(`the chain did not answer ${played.army} lost`);
-  return played.sheet === ARMY_LOST
+  return played.sheet === armyLost()
     ? completed({ army: played.army, sheet: played.sheet })
-    : failed(`expected "${ARMY_LOST}" in the panel, saw ${played.sheet ?? "no sheet"}`);
+    : failed(`expected "${armyLost()}" in the panel, saw ${played.sheet ?? "no sheet"}`);
 }
 
 async function readTheLossClose({ browser }) {
@@ -728,7 +737,7 @@ const SCOUT_DEPLOY_STEPS = [
   clickToResultStep(
     "deploy-scouts",
     "CreateExplorer",
-    (context) => deployFromTheDock(context, 400, FRONTIER_TROOP_NAMES[TroopType.Paladin]),
+    (context) => deployFromTheDock(context, 400, FRONTIER_TROOP_NAMES[TroopType.Paladin].many),
     scoutsDeployed,
   ),
 ];
@@ -738,20 +747,20 @@ const TOWN_DEPLOY_STEPS = [
   clickToResultStep(
     "deploy-crossbows",
     "CreateExplorer",
-    (context) => deployFromTheDock(context, 400, FRONTIER_TROOP_NAMES[TroopType.Crossbowman]),
+    (context) => deployFromTheDock(context, 400, FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many),
     crossbowsDeployed,
   ),
 ];
 
-const DEPLOY_SIZE = '[data-kit-sheet] .size-row input[type="range"]';
+const DEPLOY_COUNT = "[data-kit-sheet] .size-row .ui-field input";
 const setDeployCount = (browser, count) =>
   browser.read(`(() => {
-    const slider = document.querySelector(${JSON.stringify(DEPLOY_SIZE)});
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(slider, ${JSON.stringify(String(count))});
-    slider.dispatchEvent(new Event("input", { bubbles: true }));
-    return slider.value;
+    const field = document.querySelector(${JSON.stringify(DEPLOY_COUNT)});
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(field, ${JSON.stringify(String(count))});
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+    return field.value;
   })()`);
-const DEPLOY_TROOPS = `JSON.stringify(document.querySelector('[data-kit-sheet] .size-row__count')?.textContent ?? null)`;
+const DEPLOY_TROOPS = `JSON.stringify(document.querySelector(${JSON.stringify(DEPLOY_COUNT)})?.value ?? null)`;
 
 const DEPLOY_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -960,7 +969,9 @@ async function offeredDeploy(browser) {
 }
 
 function offersItsKnightsOut(deploy) {
-  return deploy?.sheet === "Deploy" && deploy.offered && !String(deploy.notice ?? "").startsWith("No troops at home");
+  return (
+    deploy?.sheet === "Deploy" && deploy.offered && !String(deploy.notice ?? "").startsWith(wordAt("NO_TROOPS_AT_HOME"))
+  );
 }
 
 function holdsItsKnightsAtHome(played) {
@@ -1351,7 +1362,7 @@ const OATH_SLOTS_STEPS = [
         `(() => {
       const sent = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "Research").at(-1);
       return sent?.answered.some(({ model, value }) => model === "RealmKnowledge" && ((BigInt(value.learned) >> 30n) & 3n) === 1n) &&
-        document.querySelector('[data-node="row-6"]')?.textContent.includes("3 Oath slots");
+        document.querySelector('[data-node="row-6"] :is([data-research-effect], [data-research-effect-short])')?.textContent.startsWith("3 ");
     })()`,
       );
       browser.tap(action.offset);
@@ -1382,9 +1393,10 @@ const OATH_SLOTS_STEPS = [
           const { left, top, right, bottom, width, height } = element.getBoundingClientRect();
           return { left, top, right, bottom, width, height };
         };
-        const parts = [...footer.querySelectorAll("button, :scope > span > span[aria-label]")].map((element) => ({
+        const parts = [...footer.querySelectorAll("button, .ui-price > span")].map((element) => ({
           text: element.textContent.trim(),
           button: element.tagName === "BUTTON",
+          disabled: element.disabled === true,
           clipped: element.scrollWidth > element.clientWidth + 1,
           ...box(element),
         }));
@@ -1397,6 +1409,7 @@ const OATH_SLOTS_STEPS = [
           viewport: { width: innerWidth, height: innerHeight },
           prices: parts.filter((part) => !part.button).map((part) => part.text),
           actions: parts.filter((part) => part.button).map((part) => part.text),
+          blocked: parts.filter((part) => part.button && part.disabled).map((part) => part.text),
           overlaps,
           clipped: parts.filter((part) => part.clipped).map((part) => part.text),
           outside: parts.filter((part) => part.left < 0 || part.right > innerWidth || part.top < 0 || part.bottom > innerHeight).map((part) => part.text),
@@ -1407,8 +1420,10 @@ const OATH_SLOTS_STEPS = [
     verify: ({ played }) =>
       played.footer &&
       played.prices.length === 2 &&
-      played.actions.length === 1 &&
+      played.actions.length === 2 &&
       /^Upgrade the Castle$/.test(played.actions[0]) &&
+      played.blocked.length === 1 &&
+      played.blocked[0] === played.actions[1] &&
       played.overlaps.length === 0 &&
       played.clipped.length === 0 &&
       played.outside.length === 0 &&
@@ -1444,10 +1459,15 @@ const OATH_SLOTS_STEPS = [
   {
     name: "read-army-oath-slots",
     play: async ({ browser }) => {
-      const army = browser.read(buttonLabelled("^Army 2$"));
+      const name = browser.read(dockArmyName(2));
+      const army = name && browser.read(buttonLabelled(`^${exactly(name)}$`));
       if (!army) return { army };
       browser.tap(army.offset);
-      const details = await readUntil(() => browser.read(buttonLabelled("^Army 2: details$")), Boolean, SHEET_WAIT_MS);
+      const details = await readUntil(
+        () => browser.read(buttonLabelled(`^${exactly(name)}: details$`)),
+        Boolean,
+        SHEET_WAIT_MS,
+      );
       if (details) browser.tap(details.offset);
       await readUntil(() => browser.read(elementAt('[data-oath-slots="3"]')), Boolean, SHEET_WAIT_MS);
       return browser.read(`(() => {
@@ -1576,29 +1596,29 @@ const BANE_COLLECTIONS = {
     button: "Collect",
     receipts: ["LaborGrant"],
     quest: "The Cull",
-    count: "2,500 of 2,500 troops",
-    head: "Ash Fall",
+    count: "2,500 of 2,500",
+    head: "World Bane: Ash Fall",
   },
   again: {
     button: "Collect again",
     receipts: ["BaneGrant"],
     quest: "The Cull",
-    count: "2,500 of 2,500 troops",
-    head: "Ash Fall",
+    count: "2,500 of 2,500",
+    head: "World Bane: Ash Fall",
   },
   late: {
     button: "Collect",
     receipts: ["LaborGrant", "BaneGrant"],
     quest: "The Cull",
-    count: "2,500 of 2,500 troops",
-    head: "Ash Fall",
+    count: "2,500 of 2,500",
+    head: "World Bane: Ash Fall",
   },
   team: {
     button: "Collect",
     receipts: ["LaborGrant"],
     quest: "The Stand",
-    count: "3 of 3 sites",
-    head: "Prowess's bane",
+    count: "3 of 3",
+    head: "Bane from Prowess",
   },
 };
 
@@ -1613,7 +1633,8 @@ const baneCollectionSteps = (expected) => [
           browser.read(`JSON.stringify((() => {
           const panel = document.querySelector('[data-daily-quest]');
           const button = [...(panel?.querySelectorAll('button') ?? [])].find(b => b.textContent === ${JSON.stringify(expected.button)});
-          return { text: panel?.textContent, collect: Boolean(button && !button.disabled) };
+          const meter = panel?.querySelector('[role="meter"]')?.getAttribute("aria-label");
+          return { text: [panel?.textContent, meter].join(" · "), collect: Boolean(button && !button.disabled) };
         })())`),
         (value) => value.collect,
         PLAYABLE_WAIT_MS,
@@ -1686,7 +1707,7 @@ function staminaEffectSteps(wind) {
           reading.current >= minimum &&
           reading.current < minimum + 10 &&
           reading.maximum === T2_KNIGHT_STAMINA_MAX &&
-          reading.text.includes("Full in")
+          reading.refills
           ? completed(played)
           : failed("Army bar and refill time must reflect the recorded stamina effects", played);
       },
@@ -1696,24 +1717,25 @@ function staminaEffectSteps(wind) {
 
 function readArmyStamina(browser) {
   return browser.read(`(() => {
-    const sheet = document.querySelector('[data-kit-sheet][aria-label^="Army "]');
+    const sheet = document.querySelector(${JSON.stringify(ARMY_SHEET)});
     const line = sheet?.querySelector('[data-stamina-line]');
     const meter = line?.querySelector('[role="meter"][aria-label="stamina"]');
     const rect = line?.getBoundingClientRect();
     return { current: Number(meter?.getAttribute('aria-valuenow')), maximum: Number(meter?.getAttribute('aria-valuemax')),
-      text: line?.textContent, visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
+      refills: Boolean(sheet?.querySelector('.army-detail__full')),
+      visible: Boolean(rect && rect.width && rect.height && rect.top >= 0 && rect.bottom <= innerHeight) };
   })()`);
 }
 
 async function openTheArmyPanel(browser) {
-  const open = browser.read(SHEET_NAME);
-  if (/^Army \d+$/.test(open ?? "")) {
-    return { army: open, sheet: open, region: browser.read(sheetRegion(`[data-kit-sheet][aria-label="${open}"]`)) };
+  const open = browser.read(ARMY_SHEET_NAME);
+  if (open) {
+    return { army: open, sheet: open, region: browser.read(sheetRegion(ARMY_SHEET)) };
   }
   const army = await focusTheArmyFromItsDock(browser);
   if (!army) return { army };
   if (browser.read(SHEET_NAME) !== army) {
-    const details = browser.read(buttonLabelled(`^${army}(: details)?$`));
+    const details = browser.read(buttonLabelled(`^${exactly(army)}(: details)?$`));
     if (details) browser.tap(details.offset);
   }
   const sheet = await readUntil(
@@ -1844,6 +1866,12 @@ const sheetRegion = (selector) => `JSON.stringify((() => {
 const REALM_LEVELS = ["Settlement", "City", "Kingdom", "Empire"];
 const CASTLE_SHEET_TEXT = `document.querySelector('[data-kit-sheet][aria-label="Castle"]')?.textContent ?? ""`;
 const SHEET_NAME = `JSON.stringify(document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null)`;
+const ARMY_SHEET = "[data-kit-sheet]:has([data-army-step])";
+const ARMY_SHEET_NAME = `JSON.stringify(document.querySelector(${JSON.stringify(ARMY_SHEET)})?.getAttribute("aria-label") ?? null)`;
+const PICKED_ARMY_NAME = `JSON.stringify(document.querySelector("[data-picked-army]")?.dataset.pickedArmy ?? document.querySelector('nav[aria-label="Armies"] button[aria-pressed="true"]')?.getAttribute("aria-label") ?? null)`;
+const exactly = (name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const dockArmyName = (number) =>
+  `JSON.stringify([...document.querySelectorAll('nav[aria-label="Armies"] button[aria-pressed]')].filter((button) => button.getAttribute("aria-label") !== "Deploy")[${number - 1}]?.getAttribute("aria-label") ?? null)`;
 const SHEET_WAIT_MS = 3_000;
 const SHEET_BUTTONS = `JSON.stringify([...document.querySelectorAll("[data-kit-sheet] button")].map((button) => button.textContent.trim()))`;
 
@@ -3126,27 +3154,6 @@ const DISCOVERED_SPIRE_STEPS = [
         : failed("Discovered Spire did not enter the adjacent layer and follow the army", played);
     },
   },
-  {
-    name: "next-spire-chance",
-    play: async ({ browser }) => {
-      await pickTheSpireArmy({ browser });
-      return readUntil(
-        () =>
-          browser.read(`JSON.stringify([...document.querySelectorAll('[data-spire-chance]')].filter(element => {
-        const rect = element.getBoundingClientRect();
-        const style = getComputedStyle(element);
-        return rect.width > 0 && rect.height > 0 && rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight && style.visibility !== 'hidden' && style.display !== 'none';
-      }).map(element => element.textContent))`),
-        (shown) => shown.includes("Spire · next reveal 10%"),
-        SPIRE_WAIT_MS,
-      );
-    },
-    settleMs: 0,
-    verify: ({ played }) =>
-      played.includes("Spire · next reveal 10%")
-        ? completed(played)
-        : failed("The new layer must show its own first-reveal Spire chance", played),
-  },
 ];
 
 const HUD_SHEETS = [
@@ -3238,16 +3245,13 @@ function mapShareRead({ played }) {
 
 /** The picked army's panel: its sheet, opened by its own details button (a phone's picked army, a desktop's row). */
 async function openThePickedArmysPanel(browser) {
-  const open = browser.read(SHEET_NAME);
-  if (/^Army \d+$/.test(open ?? "")) return open;
-  const details = browser.read(buttonLabelled("^Army \\d+(: details)?$"));
+  const open = browser.read(ARMY_SHEET_NAME);
+  if (open) return open;
+  const picked = browser.read(PICKED_ARMY_NAME);
+  const details = picked && browser.read(buttonLabelled(`^${exactly(picked)}(: details)?$`));
   if (!details) return null;
   browser.tap(details.offset);
-  return readUntil(
-    () => browser.read(SHEET_NAME),
-    (name) => /^Army \d+$/.test(name ?? ""),
-    SHEET_WAIT_MS,
-  );
+  return readUntil(() => browser.read(ARMY_SHEET_NAME), Boolean, SHEET_WAIT_MS);
 }
 
 /**
@@ -3269,7 +3273,7 @@ async function openASiteCard(browser) {
       SHEET_WAIT_MS,
     );
     offered.push(sheet);
-    if (sheet !== null && !/^Army \d+$/.test(sheet)) return { card: sheet, offered };
+    if (sheet !== null && sheet !== browser.read(ARMY_SHEET_NAME)) return { card: sheet, offered };
     if (sheet !== null) browser.press("Escape");
   }
   return { card: null, offered };
@@ -3561,7 +3565,7 @@ async function cameraAtRest(browser) {
 }
 
 /** What the switch that opens the views says: the view shown. */
-const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('[data-place-pill]')?.dataset.place ?? document.querySelector('[data-surface-deep-switch] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
+const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('[data-place-switch]')?.dataset.place ?? document.querySelector('[data-surface-deep-switch] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
 
 /** The views a lab realm with Ethereal I and II lists, and the region's rows (Frontier's spacing). */
 const LAB_LAYERS = LAYER_NAMES.slice(1, 3);
@@ -4003,7 +4007,9 @@ const everyRingSiteDrawn = (drawn) =>
 /** One Deep site's plate, found by its name: where a press on its model lands (page px from the centre), whether its plate stands wholly in the frame, and the card open now. */
 const siteState = ({ name, icon }) => `JSON.stringify((() => {
   const sheet = document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
-  const beast = document.querySelector('[data-kit-sheet] [data-state="beast"]')?.textContent ?? null;
+  const guard = document.querySelector('[data-kit-sheet] [data-deep-guard="beast"]');
+  const found = guard?.querySelector("[data-deep-beast] .deep-beast__name, [data-fight-side='theirs']");
+  const beast = found ? found.getAttribute("aria-label") ?? found.textContent : null;
   const slot = document.querySelector('.mp-at:has([data-icon="${icon}"])');
   if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return { sheet, beast, token: null, inView: false };
   const box = slot.firstElementChild.getBoundingClientRect();
@@ -4019,7 +4025,7 @@ const siteState = ({ name, icon }) => `JSON.stringify((() => {
 const SITE_MODEL_BELOW_PLATE = 65;
 
 const namesItsBeast = (line, beast) =>
-  beast === null ? line === null : typeof line === "string" && line.startsWith(`Today's beast: ${beast},`);
+  beast === null ? line === null : typeof line === "string" && line.startsWith(beast);
 
 const DEEP_JOIN_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
@@ -4031,7 +4037,7 @@ const DEEP_JOIN_STATE = `JSON.stringify({
   pay: (() => {
     const node = document.querySelector('[data-deep-pay]');
     const rect = node?.getBoundingClientRect();
-    return { text: node?.textContent ?? "", visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
+    return { labor: Boolean(node?.querySelector('[data-rate="labor"]')), visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
   })(),
   joined: (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "InteractSite"),
   joinSite: (() => {
@@ -4051,11 +4057,9 @@ const RACE_BOARD_STATE = `JSON.stringify((() => {
     const pictures = [...(node?.querySelectorAll('[role="img"][aria-label]') ?? [])].map((picture) => picture.getAttribute("aria-label"));
     return { text: [node?.textContent ?? "", ...pictures].join(" "), visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
   };
-  return { race: read('[data-aspect-race]'), members: read('[data-aspect-members]'),
+  return { race: read('[data-season-board] .season-board__aspects'), members: read('[data-season-board] .season-board__rows'),
     invite: read('[aria-label^="Invite a friend"]'), banner: read('[data-daily-quest]'),
-    stageReady: Boolean(document.querySelector('[data-race-stage][data-ready]')),
-    stageError: Boolean(document.querySelector('[data-race-stage][data-error]')),
-    scopes: window.__labChain?.scopes ?? [], ended: Boolean(document.querySelector('[data-race-ended]')) };
+    scopes: window.__labChain?.scopes ?? [], ended: document.querySelector('[data-season-board] [data-race-ended]')?.dataset.raceEnded ?? null };
 })())`;
 
 /** What the opening interface shows: the line over the map, the places on the bar and the day banner's parts. */
@@ -4067,19 +4071,14 @@ const OPENING_STATE = `JSON.stringify({
   stores: [...document.querySelectorAll("[data-store-kind], [data-kind]")].map((node) => node.getAttribute("data-store-kind") ?? node.getAttribute("data-kind")),
 })`;
 
-/** Turns Show everything on in the page's saved settings and loads the lab game again, as a player's setting persists. */
-const SHOW_EVERYTHING = `JSON.stringify((() => { localStorage.setItem("eternum-world-appearance", JSON.stringify({ state: { showEverything: true, fogStyle: "clear", reducedMotion: false, haptics: true }, version: 0 })); return true; })())`;
+const UNFOLD_TUTORIAL = `JSON.stringify((() => { const fold = document.querySelector('[data-tutorial-form="reminder"] .emissary-dock__fold-btn'); fold?.click(); return Boolean(fold); })())`;
+const PRESS_SKIP_TUTORIAL = `JSON.stringify((() => { const skip = [...document.querySelectorAll("[data-tutorial-dock] button")].find((button) => button.textContent.trim() === ${JSON.stringify(HUD_WORDS.skipTutorial)}); skip?.click(); return Boolean(skip); })())`;
 
-/** The Aspect page's feed: each fight's row, as a player reads it. */
-const ASPECT_FEED = `JSON.stringify((() => {
-  const feed = document.querySelector("[data-aspect-feed]");
-  const rect = feed?.getBoundingClientRect();
-  return {
-    visible: Boolean(rect && rect.width > 0 && rect.height > 0),
-    rows: [...(feed?.querySelectorAll(".ui-row") ?? [])].map((row) => row.textContent),
-    text: feed?.textContent ?? "",
-  };
-})())`;
+async function skipTheTutorial(browser) {
+  browser.read(UNFOLD_TUTORIAL);
+  await sleep(300);
+  for (let press = 0; press < 2 && browser.read(PRESS_SKIP_TUTORIAL); press++) await sleep(300);
+}
 
 /** Every request this page made to a rank Herald serves a legacy game: a Season 1 game asks for none. */
 const RANK_REQUESTS = `JSON.stringify(performance.getEntriesByType("resource").map((entry) => entry.name).filter((name) => /\\/leaderboard|\\/days\\/\\d+\\/ranks/.test(name)))`;
@@ -4123,7 +4122,7 @@ function raceBoardSteps(result) {
                 const state = browser.read(OPENING_STATE);
                 if (state.lines.length === 0) break;
                 told.push(state.lines[0]);
-                browser.click(HUD_WORDS.close);
+                browser.click(HUD_WORDS.ok);
                 await sleep(400);
               }
               const back = await reloadOn("Deep", "map", scenario)(context);
@@ -4143,10 +4142,10 @@ function raceBoardSteps(result) {
                 : failed("Each line must be told once, and none again after the page loads again", played),
           },
           {
-            name: "show-everything-shows-the-banner",
+            name: "skipped-tutorial-shows-the-banner",
             settleMs: 0,
             play: async (context) => {
-              context.browser.read(SHOW_EVERYTHING);
+              await skipTheTutorial(context.browser);
               const back = await reloadOn("Deep", "map", scenario)(context);
               // The lab's reloaded page offers the wallet step first; a player puts it away to play on.
               if (context.browser.read(`JSON.stringify(Boolean(document.querySelector('[aria-label="Close"]')))`))
@@ -4163,7 +4162,7 @@ function raceBoardSteps(result) {
             verify: ({ played }) =>
               played.state.banner.length > 0
                 ? completed(played)
-                : failed("With Show everything the day banner must show", played),
+                : failed("With the tutorial skipped the day banner must show", played),
           },
         ]
       : []),
@@ -4172,18 +4171,18 @@ function raceBoardSteps(result) {
       play: async ({ browser, extraScreenshot }) => {
         if (result === null) {
           browser.read(
-            `(() => { document.querySelector('[data-daily-quest] button[aria-label="${HUD_WORDS.close}"]')?.click(); return true; })()`,
+            `(() => { [...document.querySelectorAll('[data-daily-quest] button')].find((button) => button.textContent === ${JSON.stringify(HUD_WORDS.ok)})?.click(); return true; })()`,
           );
           await openPlace(browser, HUD_WORDS.season);
         }
         const race = await readUntil(
           () => browser.read(RACE_BOARD_STATE),
-          (state) => state.race.visible && state.stageReady,
+          (state) => state.race.visible,
           PLAYABLE_WAIT_MS,
         );
         extraScreenshot("aspect-standings");
         browser.read(
-          `(() => { document.querySelector('[data-aspect-members]')?.scrollIntoView({ block: 'nearest' }); return true; })()`,
+          `(() => { document.querySelector('[data-season-board] .season-board__rows')?.scrollIntoView({ block: 'nearest' }); return true; })()`,
         );
         const members = await readUntil(
           () => browser.read(RACE_BOARD_STATE),
@@ -4201,7 +4200,7 @@ function raceBoardSteps(result) {
         );
         extraScreenshot("aspect-invite");
         browser.read(
-          `(() => { const scroller = document.querySelector('[data-aspect-race-page]'); if (scroller) scroller.scrollTop = 0; return true; })()`,
+          `(() => { document.querySelector('[data-season-board]')?.scrollIntoView({ block: 'start' }); return true; })()`,
         );
         return { race, members, invite };
       },
@@ -4210,18 +4209,15 @@ function raceBoardSteps(result) {
         const members = played.members?.members;
         const scoped = played.race?.scopes?.at(-1)?.structures ?? [];
         return race?.visible &&
-          played.race?.stageReady &&
-          !played.race?.stageError &&
           members?.visible &&
           race.text.includes("Luminary") &&
           race.text.includes("Prowess") &&
           race.text.includes("Havoc") &&
           race.text.includes("Insight") &&
-          race.text.includes(result === "won" ? "10,000 of 10,000" : "6,400 of 10,000") &&
-          (result !== "expired" || race.text.includes("No Aspect finished its hyperstructure")) &&
-          !race.text.includes("LORDS") &&
+          race.text.includes(result === "won" ? "10,000/10K" : "6,400/10K") &&
+          (result !== "expired" || played.race.ended === "none") &&
           played.invite?.invite.text.includes("Invite a friend to Prowess") &&
-          !played.invite?.invite.text.includes("could not be made") &&
+          !played.invite?.invite.text.includes(REHEARSAL_WORDS.inviteFailed) &&
           members.text.includes("1,250") &&
           members.text.includes("3,750") &&
           scoped.includes(7) &&
@@ -4231,41 +4227,6 @@ function raceBoardSteps(result) {
           : failed("The scoped native race must show four heights, both members' Glory and the early winner", played);
       },
     },
-    ...(result === null
-      ? [
-          {
-            name: "aspect-feed-reads-real-fights",
-            settleMs: 0,
-            play: async ({ browser, extraScreenshot }) => {
-              browser.read(
-                `(() => { document.querySelector('[data-aspect-feed]')?.scrollIntoView({ block: 'nearest' }); return true; })()`,
-              );
-              const feed = await readUntil(
-                () => browser.read(ASPECT_FEED),
-                (state) => state.rows.length >= 4,
-                PLAYABLE_WAIT_MS,
-              );
-              extraScreenshot("aspect-feed");
-              return { feed };
-            },
-            verify: ({ played }) => {
-              const text = played.feed.rows.join(" | ");
-              return played.feed.visible &&
-                text.includes("Prowess beat Luminary") &&
-                text.includes("Luminary beat Prowess") &&
-                text.includes("Prowess and Luminary tied") &&
-                text.includes("Prowess and Luminary destroyed each other") &&
-                text.includes("Luminary was defeated") &&
-                played.feed.rows.length === 4
-                ? completed(played)
-                : failed(
-                    "The feed must name each Deep fight's winner by its troops, skip the beast, and find the Deep fights past 120 surface fights",
-                    played,
-                  );
-            },
-          },
-        ]
-      : []),
     {
       name: "no-site-rank-requests",
       settleMs: 0,
@@ -4279,10 +4240,11 @@ function raceBoardSteps(result) {
 }
 
 /** The drain chip of the open army panel, and every drain chip on the page (a dock token's, a row's). */
-const DEEP_DRAIN_STATE = `JSON.stringify({
-  panel: document.querySelector("[data-kit-sheet] [data-deep-drain]")?.getAttribute("aria-label") ?? "",
-  all: [...document.querySelectorAll("[data-deep-drain]")].map((node) => node.getAttribute("aria-label")),
-})`;
+const DEEP_DRAIN_STATE = `JSON.stringify((() => {
+  const read = (node) => ({ loss: Number(node.dataset.deepDrain), ticksLeft: Number(node.dataset.ticksLeft) });
+  const panel = document.querySelector("[data-kit-sheet] [data-deep-drain]");
+  return { panel: panel ? read(panel) : null, all: [...document.querySelectorAll("[data-deep-drain]")].map(read) };
+})())`;
 
 /** The side colour of a map label (`--mp-side`, map-plates.css): an ally's army is drawn in another colour than the player's own. */
 const ARMY_SIDES = `JSON.stringify(Object.fromEntries([...document.querySelectorAll('.mp-at[data-key^="army:"]')].map((slot) => [
@@ -4427,7 +4389,7 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
       return { drain };
     },
     verify: ({ played }) =>
-      played.drain.all.some((line) => new RegExp(`${lossPerTick} troops lost a tick; \\d+ ticks left`).test(line))
+      played.drain.all.some((drain) => drain.loss === lossPerTick && drain.ticksLeft > 0)
         ? completed(played)
         : failed(
             "An army waiting in the Deep's field must show its troop loss each tick before it holds a site",
@@ -4449,7 +4411,7 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
       );
       extraScreenshot("mine-before-join");
       if (!opened.text.includes("Join")) return { before, after: opened };
-      browser.click("Join");
+      browser.click(REHEARSAL_WORDS.joinGuard);
       const confirmed = await readUntil(
         () => browser.read(DEEP_JOIN_STATE),
         (state) => state.joined.length === 1 && state.joinSite !== null,
@@ -4473,7 +4435,7 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
         guard?.value.slot === 1 &&
         leftField &&
         played.opened.pay.visible &&
-        /\d labor/.test(played.opened.pay.text) &&
+        played.opened.pay.labor &&
         played.after.sheet === JOINED_SITE.name &&
         (played.after.slots.match(/Free slot/g) ?? []).length === 2
         ? completed(played)
@@ -4553,14 +4515,14 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
     play: async ({ browser, extraScreenshot }) => {
       const drain = await readUntil(
         () => browser.read(DEEP_DRAIN_STATE),
-        (state) => state.panel.length > 0,
+        (state) => state.panel !== null,
         SHEET_WAIT_MS,
       );
       extraScreenshot("guard-drain");
       return { drain };
     },
     verify: ({ played }) =>
-      played.drain.panel.includes(`${lossPerTick} troops lost a tick`) && /ticks left/.test(played.drain.panel)
+      played.drain.panel?.loss === lossPerTick && played.drain.panel.ticksLeft > 0
         ? completed(played)
         : failed("A guard's panel must say its troop loss each tick and the ticks left", played),
   },
@@ -4686,62 +4648,163 @@ const LAB_REINFORCE_STEPS = [
   { name: "reinforce", play: reinforceWithMax, settleMs: 1_000, verify: armyReinforced },
 ];
 
-const LAB_SUPPLY_POST_STEPS = [
+const LAB_MAP_SITES_STEPS = [
   { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
-  {
-    name: "open-supply-post",
-    settleMs: 0,
-    play: async ({ browser, extraScreenshot }) => {
-      const armyAt = armyOnScreen(browser, PICKED_ARMY);
-      browser.press("Escape");
-      if (!armyAt) return { found: false };
-      for (const [dx, dy] of NEIGHBOUR_RING) {
-        browser.tap([armyAt[0] + dx, armyAt[1] + dy]);
-        const state = await readUntil(
-          () => browser.read(REINFORCE_STATE),
-          (shown) => SUPPLY_POST_SHEET.test(shown.sheet ?? ""),
-          SHEET_WAIT_MS,
-        );
-        if (SUPPLY_POST_SHEET.test(state.sheet ?? "")) {
-          extraScreenshot("supply-post");
-          if (state.buttons.some(isReinforceVerb)) return { found: true, state };
-          const button = state.buttons.find((text) => text.startsWith("Reinforce Army"));
-          if (!button) return { found: false, state };
-          browser.click(button);
-          const sheet = await readUntil(
-            () => browser.read(REINFORCE_STATE),
-            (shown) => shown.buttons.some(isReinforceVerb),
-            SHEET_WAIT_MS,
-          );
-          return { found: sheet.buttons.some(isReinforceVerb), state, sheet };
-        }
-        browser.press("Escape");
-      }
-      return { found: false };
-    },
-    verify: ({ played }) =>
-      played.found
-        ? completed(played)
-        : failed("The cleared camp must offer reinforcement for its adjacent army", played),
-  },
-  {
-    name: "reinforce-from-camp",
-    settleMs: 1000,
-    play: async (context) => {
-      const result = await reinforceWithMax(context);
-      const calldata = context.browser.read(
-        `JSON.stringify(window.__labChain?.sent.find(({command}) => command.kind === "ManageTroops")?.command.span)`,
-      );
-      return { ...result, calldata };
-    },
-    verify: ({ played }) => {
-      if (!played.calldata || BigInt(played.calldata.at(-2)) !== 0n || BigInt(played.calldata.at(-1)) !== 711n)
-        return failed("Reinforcement must name the cleared camp", played);
-      return armyReinforced({ played });
-    },
-  },
+  { name: "use-well", play: (context) => useTheSite(context, "WELL"), settleMs: 0, verify: wellUsed },
+  { name: "use-shrine", play: (context) => useTheSite(context, "SHRINE"), settleMs: 0, verify: shrineUsed },
 ];
+
+const interactSiteAnswer = (before) => `JSON.stringify((() => {
+  const sent = (window.__labChain?.sent ?? []).slice(${before}).filter(({ command }) => command.kind === "InteractSite").at(-1);
+  return sent ? sent.answered.map(({ model, value }) => ({ model, gone: value === null, story: value?.story ?? null })) : null;
+})())`;
+
+async function useTheSite({ browser, extraScreenshot }, site) {
+  const name = wordAt(site);
+  for (const [dx, dy] of NEIGHBOUR_RING) {
+    await pickTheSpireArmy({ browser });
+    const armyAt = armyOnScreen(browser, PICKED_ARMY);
+    if (!armyAt) return { found: false };
+    browser.tap([armyAt[0] + dx, armyAt[1] + dy]);
+    const state = await readUntil(
+      () => browser.read(REINFORCE_STATE),
+      (shown) => shown.sheet === name,
+      SHEET_WAIT_MS,
+    );
+    if (state.sheet !== name) {
+      browser.press("Escape");
+      continue;
+    }
+    extraScreenshot(`${site.toLowerCase()}-card`);
+    const before = browser.read(LAB_CHAIN_LENGTH) ?? 0;
+    browser.click(wordAt("USE"));
+    const answer = await readUntil(
+      () => browser.read(interactSiteAnswer(before)),
+      (shown) => shown !== null,
+      MERGE_WAIT_MS,
+    );
+    await sleep(1500);
+    return { found: true, state, answer, pick: browser.read("Boolean(document.querySelector('[data-oath-pick]'))") };
+  }
+  return { found: false };
+}
+
+const siteGone = (answer) => answer?.some(({ model, gone }) => model === "TileOccupancy" && gone) ?? false;
+const usedFor = (answer, kind) => answer?.some(({ story }) => story?.SiteUsed?.benefit?.[kind] !== undefined) ?? false;
+
+function wellUsed({ played }) {
+  if (!played.found) return failed("No tile beside the army opens a Well's card", played);
+  const refilled = played.answer?.some(
+    ({ model, gone }) => (model === "ArmySlot" || model === "ExplorerTroops") && !gone,
+  );
+  return siteGone(played.answer) && refilled && usedFor(played.answer, "Well") && !played.pick
+    ? completed(played)
+    : failed("Using the Well must refill the army's stamina and leave the tile", played);
+}
+
+function shrineUsed({ played }) {
+  if (!played.found) return failed("No tile beside the army opens a Shrine's card", played);
+  return siteGone(played.answer) && usedFor(played.answer, "Shrine") && played.pick
+    ? completed(played)
+    : failed("Using the Shrine must open Swear an Oath and leave the tile", played);
+}
+
+const LAB_SUPPLY_POST_STEPS = supplyPostSteps();
+
+function supplyPostSteps() {
+  const post = { offset: null };
+  return [
+    { name: "enter-on-map", settleMs: 3000, verify: inScene("map") },
+    { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
+    {
+      name: "open-supply-post",
+      play: (context) => openTheSupplyPost(context, post),
+      settleMs: 0,
+      verify: supplyPostOpen,
+    },
+    { name: "pick-army-again", play: pickTheSpireArmyFromTheDock, settleMs: 0, verify: spireArmyPicked },
+    {
+      name: "open-supply-post-with-army",
+      play: (context) => openTheSupplyPostWithTheArmyPicked(context, post),
+      settleMs: 0,
+      verify: supplyPostOpenFromTheArmy,
+    },
+    { name: "open-reinforce", play: openTheReinforcement, settleMs: 0, verify: reinforceSheetOpen },
+    {
+      name: "reinforce-from-camp",
+      settleMs: 1000,
+      play: async (context) => {
+        const result = await reinforceWithMax(context);
+        const calldata = context.browser.read(
+          `JSON.stringify(window.__labChain?.sent.find(({command}) => command.kind === "ManageTroops")?.command.span)`,
+        );
+        return { ...result, calldata };
+      },
+      verify: ({ played }) => {
+        if (!played.calldata || BigInt(played.calldata.at(-2)) !== 0n || BigInt(played.calldata.at(-1)) !== 711n)
+          return failed("Reinforcement must name the cleared camp", played);
+        return armyReinforced({ played });
+      },
+    },
+  ];
+}
+
+async function openTheSupplyPost({ browser, extraScreenshot }, post = { offset: null }) {
+  const armyAt = armyOnScreen(browser, PICKED_ARMY);
+  browser.press("Escape");
+  if (!armyAt) return { found: false };
+  for (const [dx, dy] of NEIGHBOUR_RING) {
+    browser.tap([armyAt[0] + dx, armyAt[1] + dy]);
+    const state = await readUntil(
+      () => browser.read(REINFORCE_STATE),
+      (shown) => SUPPLY_POST_SHEET.test(shown.sheet ?? ""),
+      SHEET_WAIT_MS,
+    );
+    if (SUPPLY_POST_SHEET.test(state.sheet ?? "")) {
+      extraScreenshot("supply-post");
+      post.offset = [dx, dy];
+      return { found: true, state };
+    }
+    browser.press("Escape");
+  }
+  return { found: false };
+}
+
+async function pickTheSpireArmyFromTheDock(context) {
+  context.browser.press("Escape");
+  await sleep(HOVER_SETTLE_MS);
+  return pickTheSpireArmy(context);
+}
+
+async function openTheSupplyPostWithTheArmyPicked({ browser, extraScreenshot }, post) {
+  const armyAt = armyOnScreen(browser, PICKED_ARMY);
+  const picked = browser.observe().selection?.army?.id ?? null;
+  if (!armyAt || !post.offset) return { found: false, picked, offset: post.offset };
+  browser.tap([armyAt[0] + post.offset[0], armyAt[1] + post.offset[1]]);
+  const state = await readUntil(
+    () => browser.read(REINFORCE_STATE),
+    (shown) => SUPPLY_POST_SHEET.test(shown.sheet ?? ""),
+    SHEET_WAIT_MS,
+  );
+  const found = SUPPLY_POST_SHEET.test(state.sheet ?? "");
+  if (found) extraScreenshot("supply-post-from-army");
+  return { found, picked, state };
+}
+
+function supplyPostOpenFromTheArmy({ played }) {
+  if (played.picked !== PICKED_ARMY)
+    return failed(`army ${PICKED_ARMY} must be picked before the post is clicked`, played);
+  if (!played.found) return failed("A click on the supply post with the army picked must open the post", played);
+  return supplyPostOpen({ played });
+}
+
+function supplyPostOpen({ played }) {
+  if (!played.found) return failed("No tile beside the army opens its supply post", played);
+  return /Armies in range/.test(played.state.text ?? "") && /1 beside post/.test(played.state.text ?? "")
+    ? completed(played)
+    : failed("The supply post must list the army beside it", played);
+}
 
 /** A tap's finger and a hold's, as the map's gesture recognizer tells them apart (its long press is 500 ms). */
 const TAP_MS = 80;
@@ -4787,7 +4850,7 @@ async function openTheReinforcement({ browser, devTools }) {
 
 function reinforceSheetOpen({ played }) {
   if (!played.army) return failed("the map draws no token for the realm's army", played);
-  if (played.state?.sheet !== "Reinforce Army 1")
+  if (!played.state?.sheet?.startsWith("Reinforce "))
     return failed(`the right-click on the army opened ${played.state?.sheet ?? "no card"}`, played);
   return completed({ sheet: played.state.sheet, buttons: played.state.buttons });
 }
@@ -5155,38 +5218,51 @@ const LAB_HIGH_GROUND_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
   { name: "lit-tiles-on-ground", play: readTheLitTiles, settleMs: 0, verify: litTilesClearTheirGround },
+  { name: "army-on-ground", play: readTheArmies, settleMs: 0, verify: armiesStandOnTheirGround },
 ];
-/** Every lit plate's height beside the highest ground under its face, read on a 0.1 grid out to its corners. */
-const LIT_PLATES = `JSON.stringify((() => {
-  const world = window.__gameRenderer?.worldmapScene;
-  if (!world) return null;
-  const terrain = world.getTerrainSurface();
-  return world.highlightHexManager.getDebugState().plates.map(({ x, y, z }) => {
-    let ground = -Infinity;
-    for (let dx = -0.9; dx <= 0.9001; dx += 0.1)
-      for (let dz = -0.9; dz <= 0.9001; dz += 0.1)
-        if (Math.hypot(dx, dz) <= 0.9001) ground = Math.max(ground, terrain.sampleSurface(x + dx, z + dz).height);
-    return { x, z, y, ground };
-  });
-})())`;
+const LIT_PLATES = `JSON.stringify(window.__gameRenderer?.worldmapScene?.highlightHexManager.getDebugState() ?? null)`;
+const STANDING_ARMIES = `JSON.stringify(window.__gameRenderer?.worldmapScene?.armyManager.getDebugState().armies ?? null)`;
+const PLATE_FLOAT_LIMIT = 0.06;
 
 /** The selected army's lit tiles, read as drawn, once their roll-in has ended. */
 async function readTheLitTiles({ browser, extraScreenshot }) {
   await sleep(HOVER_SETTLE_MS);
   extraScreenshot("lit");
-  return { plates: browser.read(LIT_PLATES) };
+  const lit = browser.read(LIT_PLATES);
+  return { plates: lit?.plates ?? null, explores: lit?.exploreCount ?? 0 };
 }
 
-/** Every lit plate lies above the highest ground under it. */
 function litTilesClearTheirGround({ played }) {
-  const { plates } = played;
+  const { plates, explores } = played;
   if (!plates) return failed("the page does not report its world (window.__gameRenderer): no plate measured");
   if (plates.length === 0) return failed("the selected army is offered no lit tile");
-  const buried = plates.filter((plate) => plate.y <= plate.ground);
-  const clearance = Math.min(...plates.map((plate) => plate.y - plate.ground));
-  return buried.length === 0
-    ? completed({ plates: plates.length, clearance })
-    : failed(`${buried.length} of ${plates.length} lit plates lie under their own ground`, { buried, clearance });
+  if (explores === 0) return failed("the selected army is offered no tile to explore: no plate on the fog's floor");
+  const buried = plates.filter((plate) => plate.lowest <= 0);
+  const floating = plates.filter((plate) => plate.highest > PLATE_FLOAT_LIMIT);
+  const clearance = {
+    lowest: Math.min(...plates.map((plate) => plate.lowest)),
+    highest: Math.max(...plates.map((plate) => plate.highest)),
+  };
+  if (buried.length > 0)
+    return failed(`${buried.length} of ${plates.length} lit plates lie under their own ground`, { buried, clearance });
+  if (floating.length > 0)
+    return failed(`${floating.length} of ${plates.length} lit plates float over their tile`, { floating, clearance });
+  return completed({ plates: plates.length, clearance });
+}
+
+async function readTheArmies({ browser }) {
+  return { armies: browser.read(STANDING_ARMIES) };
+}
+
+function armiesStandOnTheirGround({ played }) {
+  const { armies } = played;
+  if (!armies?.length) return failed("the page reports no army standing on the map");
+  const sunk = armies.filter((army) => army.overGround < 0);
+  const floating = armies.filter((army) => army.overGround > PLATE_FLOAT_LIMIT);
+  if (sunk.length > 0) return failed(`${sunk.length} of ${armies.length} armies stand under their ground`, { sunk });
+  if (floating.length > 0)
+    return failed(`${floating.length} of ${armies.length} armies float over their ground`, { floating });
+  return completed({ armies });
 }
 
 /** Points on an army's model as drawn, its tile (0) to its top (1): the head is where the tile behind lay. */
@@ -5450,7 +5526,7 @@ const RECORDED_DAY_2 = {
 /** Day 2 past the history read: each total a dash, and the card says why. */
 const DAY_2_OUT_OF_REACH = {
   totals: ["—Reveals", "—Sites cleared", "—Labor", "—Essence"],
-  notice: "This day's totals are unknown",
+  notice: "Day totals unavailable",
 };
 /** Realm 7's site on day 3 of the lab's calendar: its region's column, four regions a day down (contract hexes). */
 const LAB_DAY_3_SITE = { col: 650, row: 850 };
@@ -6008,6 +6084,7 @@ const BUILD_BARRACKS_STEP = {
 export const REHEARSAL_WORDS = {
   startAdventure: "Start your adventure",
   copyLink: "Copy link",
+  inviteFailed: "Could not create invite link.",
   inviteTo: (aspect) => `Invite a friend to ${aspect}`,
   join: (aspect) => `Join ${aspect}`,
   invited: "Invited",
@@ -6018,21 +6095,12 @@ export const REHEARSAL_WORDS = {
   forecasts: {
     lost: "Your army is lost",
     holds: "The guard survives",
-    victory: "Victory likely",
+    victory: "Victory",
   },
   take: "Take",
-  beast: (name, troops) => `Today's beast: ${name}, ${troops} troops`,
-  open: "No guard: the next army takes it",
+  joinGuard: "Join guard",
   lasts: (ticks, time) => `${ticks} ticks left (${time})`,
   share: (percent) => `${percent}% of each tick`,
-  glory: (amount) => `${amount} Glory`,
-  height: (amount) => `+${amount} height to your Aspect's hyperstructure`,
-  essence: (amount) => `${amount} Essence`,
-  labor: (amount) => `${amount} labor`,
-  bar: (perTick, charge, threshold) => `+${perTick} on the bane bar: ${charge} of ${threshold}`,
-  standingHeight: (height, finish) => `${height} of ${finish}`,
-  baneCharge: (charge, threshold) => `${charge} of ${threshold}`,
-  gloryChip: "Glory",
 };
 const INVITE_PREFIX = REHEARSAL_WORDS.inviteTo("");
 const JOIN_PREFIX = REHEARSAL_WORDS.join("");
@@ -6051,29 +6119,17 @@ const numberIn = (text, pattern) => {
   const match = pattern.exec(text ?? "");
   return match ? Number(match[1].replace(/,/g, "")) : null;
 };
-const PAY_PATTERNS = {
-  glory: wordPattern(REHEARSAL_WORDS.glory, "n"),
-  height: wordPattern(REHEARSAL_WORDS.height, "n"),
-  essence: wordPattern(REHEARSAL_WORDS.essence, "n"),
-  labor: wordPattern(REHEARSAL_WORDS.labor, "n"),
-  bar: wordPattern(REHEARSAL_WORDS.bar, "n", "any", "any"),
-};
 const SLOT_PATTERNS = {
   ticks: wordPattern(REHEARSAL_WORDS.lasts, "n", "any"),
   share: wordPattern(REHEARSAL_WORDS.share, "n"),
   troops: /(?:^| · )([\d,]+)(?: · |$)/,
 };
-const TALLY_PATTERNS = {
-  height: new RegExp(`· ${wordPattern(REHEARSAL_WORDS.standingHeight, "n", "any").source}`),
-  glory: new RegExp(`^${REHEARSAL_WORDS.gloryChip} ([\\d,]+)$`),
-  bar: wordPattern(REHEARSAL_WORDS.baneCharge, "n", "any"),
-};
 
-export function readTickPay(chips) {
+export function readTickPay(rates) {
   const pay = {};
-  for (const [part, pattern] of Object.entries(PAY_PATTERNS)) {
-    const chip = chips.find((text) => pattern.test(text));
-    if (chip) pay[part] = numberIn(chip, pattern);
+  for (const { rate, value } of rates) {
+    if (rate === "drain") continue;
+    pay[rate] = Number(value.replace(/[^\d]/g, ""));
   }
   return pay;
 }
@@ -6088,11 +6144,8 @@ export function readHeldSlot(text) {
 }
 
 export function readAspectTally(read) {
-  return {
-    height: numberIn(read.height, TALLY_PATTERNS.height),
-    glory: numberIn(read.glory, TALLY_PATTERNS.glory),
-    bar: numberIn(read.bar, TALLY_PATTERNS.bar),
-  };
+  const figure = (value) => (value === null || value === undefined || value === "" ? null : Number(value));
+  return { height: figure(read.height), glory: figure(read.glory), bar: figure(read.bar) };
 }
 
 export function judgeTickPaid(before, after) {
@@ -6129,16 +6182,17 @@ const DEEP_SITE_CARD = `JSON.stringify((() => {
     name: sheet?.getAttribute("aria-label") ?? null,
     text: sheet?.textContent ?? "",
     holder: sheet?.querySelector("[data-aspect-holder]")?.dataset.side ?? null,
-    pay: [...(sheet?.querySelectorAll("[data-deep-pay] .ui-chip") ?? [])].map((chip) => chip.textContent.trim()),
+    guard: sheet?.querySelector("[data-deep-guard]")?.dataset.deepGuard ?? null,
+    pay: [...(sheet?.querySelectorAll("[data-deep-pay] [data-rate]") ?? [])].map((rate) => ({ rate: rate.dataset.rate, value: rate.querySelector("b")?.textContent ?? "" })),
     mine: sheet?.querySelector("[data-deep-slots] [data-deep-slot][data-mine]")?.getAttribute("aria-label") ?? null,
     buttons: [...(sheet?.querySelectorAll("button:not([disabled])") ?? [])].map((button) => button.getAttribute("aria-label") || button.textContent.trim()),
   };
 })())`;
 
 const ASPECT_TALLY = `JSON.stringify({
-  height: document.querySelector("[data-aspect-race] [data-own]")?.textContent ?? null,
-  glory: document.querySelector('[data-aspect-members] [aria-selected="true"] [aria-label^="${REHEARSAL_WORDS.gloryChip} "]')?.getAttribute("aria-label") ?? null,
-  bar: document.querySelector("[data-aspect-bane]")?.textContent ?? null,
+  height: document.querySelector("[data-season-board] .season-aspect[data-own]")?.dataset.height ?? null,
+  glory: document.querySelector("[data-season-standing]")?.dataset.glory ?? null,
+  bar: document.querySelector("[data-season-standing] [data-charge]")?.dataset.charge ?? null,
 })`;
 
 const DEEP_SITE_KEYS = new Set(DEEP_SITE_NAMES.map(({ name }) => name));
@@ -6432,11 +6486,9 @@ async function enterTheDeep({ browser, extraScreenshot }, shared, slot) {
   return { depths: state.depths, army: state.army };
 }
 
-const BEAST_PREFIX = REHEARSAL_WORDS.beast("", "").split(":")[0];
-
 const BEAST_SITE = {
   verb: REHEARSAL_WORDS.attack,
-  matches: (card) => card.text.includes(BEAST_PREFIX),
+  matches: (card) => card.guard === "beast",
   missing: `no ${DEEP_LAYER} site in view holds today's beast`,
 };
 const RIVAL_SITE = {
@@ -6446,7 +6498,7 @@ const RIVAL_SITE = {
 };
 const EMPTY_SITE = {
   verb: REHEARSAL_WORDS.take,
-  matches: (card) => card.text.includes(REHEARSAL_WORDS.open),
+  matches: (card) => card.guard === "open",
   missing: `no ${DEEP_LAYER} site in view stands empty: each holds today's beast or a guard`,
 };
 
@@ -6862,10 +6914,11 @@ export const STEP_SETS = {
   ),
   "lab-merge-loses-training": {
     game: labSpireGame("merge-loses-training"),
-    steps: labMergeSteps("Confirm merge into Army 2"),
+    steps: labMergeSteps("Confirm merge into 2,517 Knights"),
   },
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps(null) },
   "lab-supply-post": { game: labSpireGame("supply-post"), steps: LAB_SUPPLY_POST_STEPS },
+  "lab-map-sites": { game: labSpireGame("map-sites"), steps: LAB_MAP_SITES_STEPS },
   "lab-reinforce": { game: labSpireGame("reinforce"), steps: LAB_REINFORCE_STEPS },
   "lab-actions": { game: labSpireGame("actions"), steps: ACTION_STEPS },
   "lab-actions-spire": { game: LAB_SPIRE, steps: SPIRE_ACTION_STEPS },
@@ -6908,7 +6961,7 @@ export const STEP_SETS = {
         name: "world-screen",
         settleMs: 3_000,
         play: async ({ browser, extraScreenshot }) => {
-          browser.read(SHOW_EVERYTHING);
+          await skipTheTutorial(browser);
           browser.run(["reload"]);
           await sleep(3_000);
           if (browser.read(`JSON.stringify(Boolean(document.querySelector('[aria-label="Close"]')))`))
@@ -6920,7 +6973,7 @@ export const STEP_SETS = {
             places: [...document.querySelectorAll('nav[aria-label="Places"] button')].map((button) => button.getAttribute('aria-label') || button.textContent?.trim()),
             questChip: Boolean(document.querySelector('[data-daily-quest-chip]')),
             depthSwitch: Boolean(document.querySelector('[data-surface-deep-switch]')),
-            realmWorld: [...document.querySelectorAll('[aria-label="Map view"] [role="tab"]')].map((tab) => tab.getAttribute('aria-label') || tab.textContent?.trim()),
+            realmWorld: [...document.querySelectorAll('[aria-label="Map view"] :is([role="tab"], [aria-pressed])')].map((tab) => tab.getAttribute('aria-label') || tab.textContent?.trim()),
             armies: document.querySelectorAll('nav[aria-label="Armies"] button').length,
             desktopStores: [...document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]')].map((tile) => tile.dataset.store),
             realmCard: Boolean(document.querySelector('.frontier-realm-card')),
@@ -6970,11 +7023,12 @@ export const STEP_SETS = {
         name: "world-selected-army",
         settleMs: 1_500,
         play: async ({ browser, extraScreenshot }) => {
-          await pickArmy(browser, "Army 1");
+          const army = browser.read(dockArmyName(1));
+          await pickArmy(browser, army);
           const selected = await readUntil(
             () =>
               browser.read(
-                `Boolean(document.querySelector('nav[aria-label="Armies"] button[aria-label="Army 1"][aria-pressed="true"]'))`,
+                `Boolean(document.querySelector('nav[aria-label="Armies"] button[aria-label="${army}"][aria-pressed="true"]'))`,
               ),
             Boolean,
             SHEET_WAIT_MS,
@@ -6983,8 +7037,8 @@ export const STEP_SETS = {
             () =>
               browser.read(
                 onADesktop()
-                  ? `Boolean(document.querySelector('[data-kit-sheet][aria-label="Army 1"]'))`
-                  : `Boolean(document.querySelector('button[aria-label="Army 1: details"]'))`,
+                  ? `Boolean(document.querySelector('[data-kit-sheet][aria-label="${army}"]'))`
+                  : `Boolean(document.querySelector('button[aria-label="${army}: details"]'))`,
               ),
             Boolean,
             SHEET_WAIT_MS,
@@ -6999,7 +7053,10 @@ export const STEP_SETS = {
         verify: ({ played }) =>
           played.selected && played.detailsShown
             ? completed(played)
-            : failed("Selecting Army 1 on World must highlight it and show its army panel or picked row", played),
+            : failed(
+                "Selecting the first army on World must highlight it and show its army panel or picked row",
+                played,
+              ),
       },
       {
         name: "realm-screen",
@@ -7153,7 +7210,7 @@ export const STEP_SETS = {
         name: "panel-research",
         settleMs: 3_000,
         play: async ({ browser, extraScreenshot }) => {
-          browser.read(SHOW_EVERYTHING);
+          await skipTheTutorial(browser);
           browser.run(["reload"]);
           await sleep(3_000);
           await openPlace(browser, HUD_WORDS.research);
@@ -7241,6 +7298,30 @@ export const STEP_SETS = {
             ? completed(played)
             : failed("Menu or Settings must open from its control", played),
       },
+      {
+        name: "panel-settings",
+        settleMs: 0,
+        play: async ({ browser, extraScreenshot }) => {
+          if (!browser.read(`Boolean(document.querySelector('.ui-settings'))`))
+            await openPlace(browser, HUD_WORDS.settings);
+          const ready = await readUntil(
+            () =>
+              browser.read(`JSON.stringify({
+                rows: [...document.querySelectorAll('.ui-settings .ui-setting__name')].map((name) => name.textContent),
+                qualities: [...document.querySelectorAll('.ui-settings .ui-setting')]
+                  .filter((row) => row.querySelector('.ui-setting__name')?.textContent === 'Quality')
+                  .flatMap((row) => [...row.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent)),
+              })`),
+            (state) => state.qualities.length > 0,
+            SHEET_WAIT_MS,
+          );
+          const shot = extraScreenshot("settings");
+          browser.run(["press", "Escape"]);
+          return { ...ready, shot };
+        },
+        verify: ({ played }) =>
+          played.qualities.length > 0 ? completed(played) : failed("Settings must open with its Quality row", played),
+      },
     ],
   },
   "lab-hud-sheets": { game: labSpireGame("panels"), steps: HUD_SHEET_STEPS },
@@ -7325,6 +7406,7 @@ export const STEP_SETS = {
   "lab-realm-load": { game: { ...LAB_SPIRE, lab: "painted-buildings" }, steps: realmLoadSteps("painted-buildings") },
   "blitz-realm-load": { game: BLITZ, steps: realmLoadSteps() },
   "still-map": { game: FRONTIER, steps: stillMapSteps(FRONTIER_MAP) },
+  "lab-still-map": { game: { ...LAB_SPIRE, lab: "painted-buildings" }, steps: stillMapSteps(FRONTIER_MAP) },
   "still-map-frozen-sun": { game: FRONTIER, steps: frozenSunStillMapSteps(FRONTIER_MAP), devOverlays: true },
   "blitz-still-map": { game: BLITZ, steps: stillMapSteps(BLITZ_MAP) },
   "blitz-still-map-frozen-sun": { game: BLITZ, steps: frozenSunStillMapSteps(BLITZ_MAP), devOverlays: true },

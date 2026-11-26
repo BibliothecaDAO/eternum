@@ -1,7 +1,7 @@
 import { type CSSProperties, type ReactNode, type RefObject, useLayoutEffect, useRef, useState } from "react";
 
 import { useKeyboardHeight } from "@/hooks/use-keyboard-inset";
-import { useSideways, useTablet } from "@/shell/frame/layout";
+import { useHudSideways, useHudTablet } from "@/hooks/helpers/use-compact-hud";
 import { HUD_COLUMN_MARK, HUD_FOOT_MARK, HUD_TOP_MARK } from "@/three/utils/labels/hud-clearance";
 import { SheetDock } from "@/ui/design-system/kit/hud-elements";
 
@@ -19,7 +19,6 @@ const BAND_GAP = 6;
 /** Every slot of a phone's HUD, as Frontier fills them. */
 type Bands = {
   strip: ReactNode;
-  banner?: ReactNode;
   page?: ReactNode;
   notices?: ReactNode;
   action?: ReactNode;
@@ -28,15 +27,16 @@ type Bands = {
   children?: ReactNode;
 };
 
-export const HudBands = (bands: Bands) => (useSideways() ? <SidewaysBands {...bands} /> : <UprightBands {...bands} />);
+export const HudBands = (bands: Bands) =>
+  useHudSideways() ? <SidewaysBands {...bands} /> : <UprightBands {...bands} />;
 
-const UprightBands = ({ strip, banner, page, notices, action, dock, nav, children }: Bands) => {
+const UprightBands = ({ strip, page, notices, action, dock, nav, children }: Bands) => {
   const bar = useRef<HTMLDivElement>(null);
   const foot = useEdge(bar, (rect) => window.innerHeight - rect.top + BAND_GAP);
   const topBand = useRef<HTMLDivElement>(null);
   const top = useEdge(topBand, (rect) => rect.bottom + BAND_GAP);
   const [sheetBand, setSheetBand] = useState<HTMLDivElement | null>(null);
-  const tablet = useTablet();
+  const tablet = useHudTablet();
   return (
     <div
       data-hud-form={tablet ? "tablet" : "phone"}
@@ -46,7 +46,6 @@ const UprightBands = ({ strip, banner, page, notices, action, dock, nav, childre
     >
       <div ref={topBand} {...HUD_TOP_MARK} data-keyboard-hides className="flex flex-col gap-1.5">
         <div className="relative">{strip}</div>
-        {banner}
       </div>
       <div data-map-band className="relative min-h-0 flex-1" />
       <div
@@ -71,7 +70,7 @@ const UprightBands = ({ strip, banner, page, notices, action, dock, nav, childre
   );
 };
 
-const SidewaysBands = ({ strip, banner, page, notices, action, dock, nav, children }: Bands) => {
+const SidewaysBands = ({ strip, page, notices, action, dock, nav, children }: Bands) => {
   const top = useRef<HTMLDivElement>(null);
   const sheetTop = useEdge(top, (rect) => rect.bottom + BAND_GAP);
   return (
@@ -87,7 +86,6 @@ const SidewaysBands = ({ strip, banner, page, notices, action, dock, nav, childr
       <div {...HUD_COLUMN_MARK} className="flex min-h-0 w-hud-column flex-col gap-1.5">
         <div ref={top} data-keyboard-hides className="flex flex-col gap-1.5">
           <div className="relative">{strip}</div>
-          {banner}
         </div>
         <div className="flex flex-col gap-1.5">{notices}</div>
         {page ? <PageBand className="flex-1">{page}</PageBand> : <UnderSheet action={action} dock={dock} />}

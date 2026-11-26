@@ -1,7 +1,6 @@
 import type { RendererSurfaceLike } from "./renderer-backend";
 import type { RendererBackend } from "./renderer-backend";
 import type { RendererLabelRuntime } from "./renderer-label-runtime";
-import { RENDERER_PIXEL_RATIO_CAP } from "./render-profile";
 
 interface ResizeRendererDisplayInput {
   backend: RendererBackend & { renderer: RendererSurfaceLike };
@@ -19,13 +18,8 @@ interface ResizeRendererDisplayInput {
   windowWidth: number;
 }
 
-export function resolveRendererTargetPixelRatio(input: { devicePixelRatio: number }): number {
-  const devicePixelRatio = Math.max(input.devicePixelRatio || 1, 1);
-  return Math.min(devicePixelRatio, resolveRendererPixelRatioCap());
-}
-
-export function resolveRendererPixelRatioCap(): number {
-  return RENDERER_PIXEL_RATIO_CAP;
+export function resolveRendererTargetPixelRatio(input: { devicePixelRatio: number; cap: number }): number {
+  return Math.min(input.devicePixelRatio || 1, input.cap);
 }
 
 export function resizeRendererDisplay(input: ResizeRendererDisplayInput): void {

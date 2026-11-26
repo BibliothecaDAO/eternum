@@ -1,17 +1,17 @@
 import "./picked-army.css";
 
-import { HudChip, HudIconButton, HudPanel, HudPortrait, HudStamina } from "@/ui/design-system/kit/hud-elements";
+import { HudIconButton, HudPanel, HudPortrait, HudStamina } from "@/ui/design-system/kit/hud-elements";
 import { Icon } from "@/ui/design-system/icon";
-import { CLOSE, PICKED_ARMY, STAMINA, TROOPS } from "@/ui/design-system/kit/words";
-import { formatAmount, formatShort } from "@bibliothecadao/types";
+import { CLOSE, PICKED_ARMY, staminaLabel, staminaReading, TROOPS } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
+import { BaneFigure } from "../day/bane-mark";
 import { DeepDrain, EtherealMark } from "./army-token";
 import type { DockArmy } from "./dock-armies";
 
 export type PickedArmyView = Pick<
   DockArmy,
-  "explorerId" | "label" | "number" | "art" | "stamina" | "secondsToFull" | "troops" | "ethereal" | "drain"
+  "explorerId" | "label" | "number" | "art" | "stamina" | "secondsToFull" | "ethereal" | "drain"
 >;
 
 export const PickedArmy = ({
@@ -47,21 +47,16 @@ export const PickedArmy = ({
         </span>
         <span className="army-tray__body">
           <span className="army-tray__name">{army.label}</span>
-          {army.troops !== undefined && (
-            <span className="army-tray__troops">
-              <HudChip icons={army.art ? [army.art] : ["troops"]} label={TROOPS}>
-                {formatShort(army.troops)}
-              </HudChip>
-            </span>
-          )}
           {army.stamina && (
             <span className="army-tray__stamina">
               <Icon name="stamina" size={18} />
               <span className="army-tray__bar">
                 <HudStamina stamina={army.stamina} />
               </span>
-              <b aria-label={`${STAMINA} ${formatAmount(army.stamina.current)}`}>
-                {formatAmount(army.stamina.current)}
+              <b aria-label={staminaLabel(army.stamina.current, army.stamina.max)}>
+                <BaneFigure figure="stamina" altered={army.stamina.current < army.stamina.max}>
+                  {staminaReading(army.stamina.current, army.stamina.max)}
+                </BaneFigure>
               </b>
             </span>
           )}

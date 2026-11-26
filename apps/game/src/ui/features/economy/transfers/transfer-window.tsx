@@ -17,14 +17,21 @@ import {
   HudTransfer,
   HudWindow,
 } from "@/ui/design-system/kit/hud-elements";
-import { WEIGHT_UNKNOWN } from "@/ui/design-system/kit/words";
-import { iconDefinition, resourceMeaning } from "@/ui/design-system/icon-meaning";
+import { TRANSFER_REFUSED, WEIGHT_UNKNOWN } from "@/ui/design-system/kit/words";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { toast } from "@/ui/features/event-feed/notify";
 import { AllResourceArrivals as ResourceArrivals } from "./resource-arrivals";
 import { TransferAutomationAdvancedModal } from "@/ui/features/economy/transfers/transfer-automation-modal";
 import { deliveryLandsAt, isMilitaryResource, ResourceManager, shipmentTravelSeconds } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, ResourcesIds, formatCount, formatExact, formatHeldAgainst } from "@bibliothecadao/types";
+import {
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  formatCount,
+  formatExact,
+  formatHeldAgainst,
+  resourceName,
+} from "@bibliothecadao/types";
 import { useState } from "react";
 import { resourcesInTierOrder } from "@/ui/shared/resource-tier-order";
 import { BalancesView } from "./balances-view";
@@ -70,7 +77,6 @@ export const openTransfer = (ends: TransferEnds) => {
   });
 };
 
-const resourceName = (resource: number) => iconDefinition(resourceMeaning(resource)).label;
 /** When goods land, in whole minutes rounded up: never sooner than the chain lands them. */
 const landsText = (seconds: number) =>
   seconds < 60 ? "lands in under a minute" : `lands in ${Math.ceil(seconds / 60)} min`;
@@ -498,7 +504,7 @@ const tellOutcomes = (outcomes: ShipmentOutcome[]) => {
   for (const outcome of outcomes) {
     const to = outcome.shipment.destinationName;
     if (outcome.status === "refused")
-      toast.failed(outcome.error, "The game refused it.", { description: `Nothing reached ${to}.` });
+      toast.failed(outcome.error, TRANSFER_REFUSED, { description: `Nothing reached ${to}.` });
     if (outcome.status === "unknown") toast.warning(`No answer for ${to} yet: check Arrivals`);
     if (outcome.status === "busy") toast.warning(`Still sending to ${to}`);
   }
@@ -562,14 +568,14 @@ const GoodsGrid = ({
         rows={[
           ...sorted.map((good) => ({
             icon: resourceMeaning(good.resource),
-            name: resourceName(good.resource),
+            name: resourceName(good.resource, false),
             held: good.have,
             value: sentTotal(plans.get(good.resource), good.have),
             focus: good.resource === focus,
           })),
           ...unweighed.map((good) => ({
             icon: resourceMeaning(good.resource),
-            name: resourceName(good.resource),
+            name: resourceName(good.resource, false),
             held: good.have,
             value: 0,
             blocked: WEIGHT_UNKNOWN,
@@ -624,7 +630,7 @@ const Shares = ({
         const plan = plans.get(good.resource);
         const shares = sharesOf(plan, destinationIds, good.have);
         const honoured = honouredShares(plan, destinationIds, good.have);
-        const name = resourceName(good.resource);
+        const name = resourceName(good.resource, false);
         return (
           <HudTableRow key={good.resource} cols={cols} label={`${name} shares`}>
             <span role="cell" className="flex items-center gap-2 truncate">

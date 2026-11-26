@@ -1,7 +1,14 @@
 import "./play-page.css";
 
 import type { HeraldAspectRace } from "@bibliothecadao/eternum/game-sync";
-import { aspectName, formatExact, questCatalog, type AspectId, type QuestId } from "@bibliothecadao/types";
+import {
+  aspectName,
+  formatExact,
+  questCatalog,
+  questObjective,
+  type AspectId,
+  type QuestId,
+} from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import { Icon } from "@/ui/design-system/icon";
@@ -50,7 +57,7 @@ export const PlayPage = () => {
   const hasActiveRealm = leadFrontier !== null && leadFrontier.status === "Live" && hasSeasonRealm(leadFrontier);
   const playerAspect = facts.signedIn ? seasonPlayerAspect(leadFrontier) : null;
   return (
-    <PageFrame painting={firstVisit ? "dark-plains" : "brooding-plains"} stage={firstVisit} offersInstall>
+    <PageFrame painting={firstVisit ? "dark-plains" : "brooding-plains"} stage={firstVisit}>
       <div data-play-page className="play-grid">
         <section className="flex min-w-0 flex-col gap-3">
           <LeadOrState facts={facts} />
@@ -193,7 +200,7 @@ const TodayQuestPanel = ({ game, now }: { game: DirectoryGame; now: number }) =>
         <div className="play-today__body">
           <span className="play-today__name">{face.name}</span>
           <span className="play-today__summary">
-            {DAY_BANNER_WORDS.summary(face.objective, quest.progress, quest.target, quest.labor)}
+            {DAY_BANNER_WORDS.summary(questObjective(face), quest.progress, quest.target, quest.labor)}
           </span>
           <div className="play-today__track" aria-hidden="true">
             <div className="play-today__fill" style={{ width: `${share}%` }} />

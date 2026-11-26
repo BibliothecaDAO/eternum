@@ -87,6 +87,10 @@ paths = "apps/game/src/three/structures/beast-motion.ts apps/game/src/three/stru
 cmd = 'pnpm run build:packages && pnpm --dir apps/game exec node ./scripts/prove-beast-roster.mjs --out "$FLOW_TMP/proof"'
 paths = "apps/game/src/three/structures/beast-motion.ts apps/game/src/three/structures/frontier-model.ts apps/game/src/three/utils/instanced-motion.ts apps/game/src/lab/beast-motion/ apps/game/scripts/prove-beast-roster.mjs"
 
+[kind.prove-docs-layout]
+cmd = "pnpm run build:docs && pnpm --dir apps/game-docs test:layout"
+paths = "apps/game-docs/ apps/game/public/docs-media/ apps/game/src/tokens.ts"
+
 [gate]
 source = "contracts/l3/check-native-plan.sh"
 kinds = "gate-prelude gate-vrf gate-world gate-drift gate-events test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-blitz"
@@ -94,8 +98,20 @@ kinds = "gate-prelude gate-vrf gate-world gate-drift gate-events test-capture te
 [kind.playtest-landing]
 cmd = 'pnpm run build:packages && pnpm --dir apps/game playtest:landing --out "$FLOW_TMP/playtest"'
 
+[kind.playtest-perf]
+cmd = 'pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4196.lock" && flock 8 && perf() { pnpm --dir apps/game playtest --port 4196 --steps lab-realm-load --renderer-modes webgpu-auto --out "$FLOW_TMP/playtest/$1" "${@:2}"; } && perf desktop --iterations 5 && perf phone --iterations 3 --viewport 390x844 --network 20,60 --cpu-throttle 4 && perf laptop --iterations 1 --viewport 1440x900 && perf profiled --iterations 1 --profile-steps boot,first-realm && perf owner-laptop --iterations 1 --viewport 1829x1016 --device-scale 1.4 && perf zoomed-out --iterations 1 --viewport 9146x5081 --device-scale 0.3125'
+
+[kind.playtest-perf-quality]
+cmd = 'pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4196.lock" && flock 8 && run() { pnpm --dir apps/game playtest --port 4196 --steps lab-realm-load --renderer-modes webgpu-auto --device-scale 2 --storage-state "$FLOW_TMP/$1.json" --out "$FLOW_TMP/playtest/$1-$2" "${@:3}"; } && q() { echo "{\"cookies\":[],\"origins\":[{\"origin\":\"https://127.0.0.1:4196\",\"localStorage\":[{\"name\":\"eternum-graphics\",\"value\":\"{\\\"quality\\\":\\\"$1\\\",\\\"shadows\\\":true}\"}]}]}" > "$FLOW_TMP/$1.json" && run $1 desktop --iterations 3 && run $1 phone --iterations 3 --viewport 390x844 --gpu low-power && run $1 laptop --iterations 1 --viewport 1440x900; } && q low && q balanced && q high'
+
+[kind.playtest-perf-high]
+cmd = 'pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4196.lock" && flock 8 && run() { pnpm --dir apps/game playtest --port 4196 --renderer-modes webgpu-auto --iterations 3 --gpu low-power --out "$FLOW_TMP/playtest/$1" "${@:2}"; } && phone="--viewport 390x844 --device-scale 2 --cpu-throttle 4" && laptop="--viewport 1829x1016 --device-scale 1.4" && { failed=0; run phone-realm --steps lab-realm-load $phone || failed=1; run phone-explore --steps lab-actions $phone || failed=1; run laptop-realm --steps lab-realm-load $laptop || failed=1; run laptop-explore --steps lab-actions $laptop || failed=1; exit $failed; }'
+
+[kind.playtest-perf-explore]
+cmd = 'pnpm run build:packages && exec 8>"${FLOW_JOB%/running/*}/playtest-port-4196.lock" && flock 8 && act() { pnpm --dir apps/game playtest --port 4196 --steps lab-actions --renderer-modes webgpu-auto --out "$FLOW_TMP/playtest/$1" "${@:2}"; } && act desktop --iterations 3 && act phone --iterations 3 --viewport 390x844 --cpu-throttle 4 && act profiled --iterations 1 --viewport 390x844 --cpu-throttle 4 --profile-steps explore'
+
 [land]
-kinds = "sizes gate-prelude gate-vrf gate-world gate-events gate-drift test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-blitz test-native-plan workflow-parity playtest-landing ci-static-knip ci-client-test-client ci-herald-history-and-stream ci-services-workers ci-portal-portal ci-native-service-class-sizes-realms_vrf_verifier ci-native-game-ledger ci-native-player-account ci-native-native-deployer ci-native-native-stamping ci-native-native-provider ci-runtime-offline-tests-runner ci-runtime-offline-tests-harness ci-runtime-offline-tests-sandbox-proxy ci-amm-test-ammv2 ci-collectibles-test-collectibles ci-mmr-test-mmr ci-season_pass-test-season-pass ci-contract_scripts-runtime-tests ci-docs-docs"
+kinds = "sizes gate-prelude gate-vrf gate-world gate-events gate-drift test-capture test-combat test-discovery test-economy test-lifecycle test-registration test-resources test-world test-blitz test-native-plan workflow-parity playtest-landing prove-docs-layout ci-static-knip ci-client-test-client ci-herald-history-and-stream ci-services-workers ci-portal-portal ci-native-service-class-sizes-realms_vrf_verifier ci-native-game-ledger ci-native-player-account ci-native-native-deployer ci-native-native-stamping ci-native-native-provider ci-runtime-offline-tests-runner ci-runtime-offline-tests-harness ci-runtime-offline-tests-sandbox-proxy ci-amm-test-ammv2 ci-collectibles-test-collectibles ci-mmr-test-mmr ci-season_pass-test-season-pass ci-contract_scripts-runtime-tests ci-docs-docs"
 forbid = 'co-authored-by|claude|anthropic|codex|openai|generated with|session|^(feat|fix|chore|refactor|style|docs|test|perf|build|ci)\([^)]*\)!?: '
 
 [kind.test-client-retirement]

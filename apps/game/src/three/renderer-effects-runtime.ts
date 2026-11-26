@@ -2,6 +2,7 @@ import { replaceRendererDiagnosticDegradations } from "./renderer-diagnostics";
 import { resolveRendererEnvironmentPolicy } from "./game-renderer-policy";
 import type { RendererBackend } from "./renderer-backend";
 import type { RenderVisualProfile } from "./render-profile";
+import { resolveRendererTargetPixelRatio } from "./renderer-display-runtime";
 
 interface RendererEffectsScenes {
   hexceptionScene: { applyRenderVisualProfile(features: RenderVisualProfile): void };
@@ -9,7 +10,6 @@ interface RendererEffectsScenes {
 }
 interface CreateRendererEffectsRuntimeInput {
   backend: RendererBackend;
-  resolvePixelRatio?: (pixelRatio: number) => number;
   scenes: RendererEffectsScenes;
 }
 export interface RendererEffectsRuntime {
@@ -23,9 +23,10 @@ export function createRendererEffectsRuntime(input: CreateRendererEffectsRuntime
       replaceRendererDiagnosticDegradations(["environmentIbl"], policy.degradations);
     },
     applyRenderVisualProfile(features) {
-      const devicePixelRatio = Math.max(window.devicePixelRatio || 1, 1);
-      const requestedPixelRatio = Math.min(devicePixelRatio, features.pixelRatio);
-      const pixelRatio = input.resolvePixelRatio?.(requestedPixelRatio) ?? requestedPixelRatio;
+      const pixelRatio = resolveRendererTargetPixelRatio({
+        devicePixelRatio: window.devicePixelRatio,
+        cap: features.pixelRatio,
+      });
       input.backend.applyRenderVisuals({
         height: window.innerHeight,
         pixelRatio,

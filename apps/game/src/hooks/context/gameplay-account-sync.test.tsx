@@ -49,6 +49,7 @@ import { isExplicitSpectateSession, resolveSpectateIntent } from "@/utils/specta
 import { GameplayAccountSync } from "./gameplay-account-sync";
 import { DoorwayScreen } from "@/ui/features/game-entry/doorway/doorway-screen";
 import { doorwayView } from "@/ui/features/game-entry/doorway/doorway-view";
+import { DOORWAY_WORDS } from "@/ui/design-system/kit/words";
 
 beforeEach(async () => {
   const account = await import("../../../../../packages/core/src/account/realms-account");
@@ -109,7 +110,7 @@ it.each([
   ["device_revoked", "device_removed"],
   ["account_not_secured", "Sign in with Discord or a code."],
   ["not_your_account", "This game account is not yours."],
-  ["device_limit", "Signed in on 8 devices already."],
+  ["device_limit", DOORWAY_WORDS.deviceLimit],
 ])("shows the recovery for guardian refusal %s", async (code, expected) => {
   provider.getClassHashAt.mockRejectedValueOnce({ code: 20 });
   approveDeviceChange.mockRejectedValueOnce(new IdentityRequestError(403, code));
@@ -197,9 +198,9 @@ it.each(["entry", "boot"] as const)(
           </QueryClientProvider>,
         ),
       );
-      expect(container.textContent).toContain("Signed in on 8 devices already.");
+      expect(container.textContent).toContain(DOORWAY_WORDS.deviceLimit);
       const link = container.querySelector<HTMLAnchorElement>(`a[href="${DEVICES_PATH}"]`);
-      expect(link?.textContent).toBe("Remove a device");
+      expect(link?.textContent).toBe(DOORWAY_WORDS.removeDevice);
       expect(link?.target).toBe("_blank");
       expect(container.textContent).not.toContain("Transaction refused");
       expect(execute).toHaveBeenCalledOnce();

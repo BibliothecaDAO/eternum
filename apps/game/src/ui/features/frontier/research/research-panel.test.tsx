@@ -7,6 +7,7 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
 import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
+import { HUD_QUERIES } from "@/tokens";
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -16,7 +17,7 @@ import { nativeResearchConstants as research } from "@bibliothecadao/eternum/gam
 import { EARLY_REALM, MID_REALM } from "./progression-fixture";
 import { ResearchPanel } from "./research-panel";
 import { CastleResearch } from "../upgrade/castle-view";
-import { needLine, readResearchTree, type TreeNode } from "./research-tree";
+import { readResearchTree, type TreeNode } from "./research-tree";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -31,7 +32,18 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
+  vi.unstubAllGlobals();
 });
+
+const layoutAt = (desktop: boolean) =>
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: desktop && query === HUD_QUERIES.desktop,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+
+beforeEach(() => layoutAt(true));
 
 const nodes = readResearchTree({
   ...MID_REALM,
@@ -110,12 +122,12 @@ it("holds a locked node's verb, says why, and offers the step that opens it", ()
       />,
     ),
   );
-  expect(host.textContent).toContain("Labor storage 15,000 / 25,000 · Kingdom");
+  expect(host.textContent).toContain(RESEARCH_TREE.store("15,000", "25,000", "Kingdom"));
   expect(host.querySelector("[data-node='row-5'] button[aria-label^='Upgrade ']")).toBeNull();
-  expect(host.querySelector("button[aria-label='Upgrade Supply yard']")).toBeNull();
+  expect(host.querySelector<HTMLButtonElement>("button[aria-label='Upgrade Supply yard']")?.disabled).toBe(true);
   expect(
-    [...host.querySelectorAll<HTMLButtonElement>("[data-research-footer] button")].map((each) => each.textContent),
-  ).toEqual(["Upgrade the Castle"]);
+    [...host.querySelectorAll<HTMLButtonElement>("[data-research-footer] button")].map((each) => each.disabled),
+  ).toEqual([false, true]);
   act(() => button(/Upgrade the Castle/)!.click());
   expect(onFix).toHaveBeenCalledOnce();
 });
@@ -143,12 +155,12 @@ it("states why each locked or short row is held back in plain words without repe
     ),
   );
   const campRow = host.querySelector(`[data-node='row-${research.ROW_CONSCRIPTION}']`)!;
-  expect(campRow.querySelector("[data-lock-reason]")?.textContent).toBe("Needs the Realm at City");
+  expect(campRow.querySelector("[data-lock-reason]")?.textContent).toBe("Needs City");
   const campChoice = host.querySelector("[data-lab='node-choice']")!;
   const campReason = campChoice.querySelector("[data-lock-reason]")!.textContent;
   const campButton = campChoice.querySelector<HTMLButtonElement>("[data-research-footer] button")!.textContent;
-  expect(campReason).toBe("Needs the Realm at City");
-  expect(campButton).toBe("Upgrade the Castle");
+  expect(campReason).toBe("Needs City");
+  expect(campButton).toBe(RESEARCH_TREE.levelUpCastle);
   expect(campReason).not.toBe(campButton);
 
   const city = readResearchTree({ ...EARLY_REALM, castleLevel: 1 });
@@ -189,9 +201,7 @@ it("states why each locked or short row is held back in plain words without repe
     ),
   );
   expect(host.querySelector("[data-lab='node-choice'] [data-lock-reason]")).toBeNull();
-  expect(host.querySelector("[data-lab='node-choice'] [aria-label='Needs 2,500 Essence']")?.className).toContain(
-    "text-hud-",
-  );
+  expect(host.querySelector("[data-lab='node-choice'] .ui-price [data-short]")).not.toBeNull();
 });
 
 describe("the picked building's choice, at the panel's foot (the owner's pick C)", () => {
@@ -232,15 +242,15 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     const price = nodes
       .find(({ key }) => key === "row-0")!
       .needs.filter(({ kind }) => kind === "essence" || kind === "labor");
-    expect([...choice()!.querySelectorAll("[aria-label*='/']")].map((chip) => chip.getAttribute("aria-label"))).toEqual(
-      price.map((need) => needLine(need)),
+    expect([...choice()!.querySelectorAll(".ui-price > span")].map((chip) => chip.hasAttribute("data-short"))).toEqual(
+      price.map((need) => !need.met),
     );
   });
 
   it("says to tap a node while none is picked, and opens on the tile tapped", () => {
     const onPick = vi.fn();
     draw(null, vi.fn(), onPick);
-    expect(host.querySelector(".research-bar-idle")?.textContent).toBe("Tap a node to see its price");
+    expect(host.querySelector(".research-bar-idle")?.textContent).toBe(RESEARCH_TREE.promptPick);
     expect(choice()).toBeNull();
     expect(host.querySelectorAll("[data-node]")).toHaveLength(nodes.length);
     act(() => host.querySelector<HTMLButtonElement>("[data-node='row-1']")!.click());
@@ -413,10 +423,7 @@ it("keeps cards free of inline Upgrade buttons and routes upgrading through the 
       />,
     ),
   );
-  expect(host.querySelector("[data-node='row-6'] [data-research-effect-short]")?.textContent).toBe("2 → 3 Oaths");
-  expect(host.querySelector("[data-lab='node-choice'] [aria-label='Needs 1,000 Labor']")?.className).toContain(
-    "text-hud-",
-  );
+  expect(host.querySelector("[data-lab='node-choice'] .ui-price [data-short]")).not.toBeNull();
 });
 
 it("renders the 3-track Era tree with measured SVG prerequisite links on desktop and phone", () => {
@@ -546,11 +553,85 @@ it("renders the 3-track Era tree with measured SVG prerequisite links on desktop
   }
 });
 
-it("renders concise phone short effects and legible locked titles", () => {
+it("draws each node on a phone as the shared small card: its short effect, and the locked look when it cannot be done now", () => {
+  layoutAt(false);
   draw(null);
-  expect(host.querySelector("[data-node='row-6'] [data-research-effect-short]")?.textContent).toBe("2 → 3 Oaths");
-  expect(host.querySelector("[data-node='row-2'] [data-research-effect-short]")?.textContent).toBe("100 → 120/hr");
-  expect(host.querySelector("[data-node='row-4'] [data-research-effect-short]")?.textContent).toBe("2 → 1.8 wheat");
-  expect(host.querySelector("[data-node='well'] [data-research-effect-short]")?.textContent).toBe("+40% ⚡");
-  expect(host.querySelector("[data-node='row-6'] .research-node__title--locked")).not.toBeNull();
+  for (const node of nodes) {
+    const tile = host.querySelector(`[data-node='${node.key}']`)!;
+    expect(tile.classList.contains("ui-card")).toBe(true);
+    expect(tile.querySelector("[data-research-effect-short]")?.textContent).toBe(node.shortEffect);
+    expect(tile.hasAttribute("data-locked")).toBe(node.state === "short" || node.state === "locked");
+    expect([node.key, tile.querySelector(".ui-card__corner [data-icon]")?.getAttribute("data-icon") ?? null]).toEqual([
+      node.key,
+      node.state === "done" ? "check" : node.state === "locked" && node.tier === 0 ? "lock" : null,
+    ]);
+  }
+});
+
+it("marks a research done only when nothing is left to learn, and greys and blocks one the realm cannot pay for", () => {
+  const broke = readResearchTree({ ...MID_REALM, essence: 0, labor: 0 });
+  const short = broke.find((node) => node.state === "short" && node.tier > 0)!;
+  expect(short).toBeDefined();
+  const onResearch = vi.fn();
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={broke}
+        picked={short.key}
+        onPick={vi.fn()}
+        sending={new Set()}
+        fixFor={() => undefined}
+        onResearch={onResearch}
+        onClose={vi.fn()}
+        castleLevel={MID_REALM.castleLevel}
+      />,
+    ),
+  );
+  for (const node of broke)
+    expect([node.key, Boolean(host.querySelector(`[data-node='${node.key}'] [data-tone='done']`))]).toEqual([
+      node.key,
+      node.state === "done",
+    ]);
+  const verb = [...host.querySelectorAll<HTMLButtonElement>("[data-research-footer] button")].at(-1)!;
+  expect(verb.disabled).toBe(true);
+  act(() => verb.click());
+  expect(onResearch).not.toHaveBeenCalled();
+  expect(host.querySelector("[data-research-footer] .ui-price [data-short]")).not.toBeNull();
+});
+
+it("wears a node's tier as the kit's gem and its price as the kit's price, short where the realm cannot pay", () => {
+  const broke = readResearchTree({ ...MID_REALM, essence: 717 });
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={broke}
+        picked={null}
+        onPick={vi.fn()}
+        sending={new Set()}
+        fixFor={() => undefined}
+        onResearch={vi.fn()}
+        onClose={vi.fn()}
+        castleLevel={MID_REALM.castleLevel}
+      />,
+    ),
+  );
+  const card = (node: TreeNode) => host.querySelector(`[data-node='${node.key}']`)!;
+  const gems = broke.filter((node) => node.state !== "ready" && node.state !== "done" && node.tier > 0);
+  expect(gems.length).toBeGreaterThan(0);
+  for (const node of gems) {
+    expect([node.key, card(node).querySelector(".ui-tier")?.getAttribute("data-tier")]).toEqual([
+      node.key,
+      String(node.tier),
+    ]);
+    expect(card(node).querySelector(".research-state-pill")).toBeNull();
+  }
+  const priced = broke.filter((node) => node.state === "ready" || node.state === "short");
+  const owed = (node: TreeNode) =>
+    node.needs.flatMap((need) => ((need.kind === "essence" || need.kind === "labor") && need.need > 0 ? [need] : []));
+  expect(priced.some((node) => owed(node).some((need) => !need.met))).toBe(true);
+  for (const node of priced)
+    expect([
+      node.key,
+      [...card(node).querySelectorAll(".ui-price > span")].map((price) => price.hasAttribute("data-short")),
+    ]).toEqual([node.key, owed(node).map((need) => !need.met)]);
 });

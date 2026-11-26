@@ -5,6 +5,7 @@ description: Frontier troop kinds, deploying, stamina, Logistics, Wells, merging
 
 import { FRONTIER } from "@/utils/frontier";
 import { GameIcon } from "@/components/GameIcon";
+import { Shot } from "@/components/Media";
 
 # Troops and stamina
 
@@ -28,9 +29,15 @@ Each army holds one of these troop kinds:
 Tap an open army slot (**Deploy**) to place troops on a tile beside your realm: {FRONTIER.realm.armies[0]} slots at
 {FRONTIER.realm.castleLevelInline[0]}, up to {FRONTIER.realm.armies[3]} at {FRONTIER.realm.castleLevelInline[3]}, and
 from {FRONTIER.realm.deployCaps[0]} troops per deploy at {FRONTIER.realm.castleLevelInline[0]} up to
-{FRONTIER.realm.deployCaps[3]} at {FRONTIER.realm.castleLevelInline[3]}. Each troop costs {FRONTIER.realm.deployWheat}
-wheat to deploy (reduced by {FRONTIER.realm.rationStep} per Rations rank; see
+{FRONTIER.realm.deployCaps[3]} at {FRONTIER.realm.castleLevelInline[3]}. Each open slot displays the stamina bar its
+next army will start with. In **Deploy**, type an exact troop count, drag the slider, or press **Max**. Each troop costs
+{FRONTIER.realm.deployWheat} wheat to deploy (reduced by {FRONTIER.realm.rationStep} per Rations rank; see
 [Realm and research](/frontier/realm#the-castle) for the full castle table).
+
+<Shot
+  name="frontier/deploy"
+  caption="Tap an open army slot to open Deploy, pick a troop kind, type or slide a count, choose another slot if you want, and press Deploy to place the army beside your realm."
+/>
 
 ## Stamina
 
@@ -41,6 +48,11 @@ An army holds {FRONTIER.stamina.max} stamina and recovers {FRONTIER.stamina.perT
 tile costs {FRONTIER.stamina.step}, and an attack needs {FRONTIER.stamina.attack}. Every step and every reveal also
 costs {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a large army needs many farms.
 
+<Shot
+  name="frontier/army"
+  caption="Each army is listed by its troop count and kind. Select it to see current and max stamina, held Oath effects, and the delete button at the bottom right. Right-click a highlighted hex on desktop or tap one on a phone to move or reveal."
+/>
+
 - <GameIcon name={FRONTIER.buildingIcons.supplyYard} /> A {FRONTIER.names.supplyYard} gives new armies Logistics rank I,
   and research raises it to rank V. Each rank adds {FRONTIER.stamina.logisticsStep} (
   {FRONTIER.stamina.logisticsStepAmount}) to the base {FRONTIER.stamina.max} bar, adding
@@ -48,12 +60,19 @@ costs {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a large army needs ma
   {FRONTIER.stamina.logisticsMax} max stamina total. The Titans Oath adds a flat {FRONTIER.oaths.titansBonus} on top of
   Logistics ({FRONTIER.oaths.titansBaseMax} max stamina at Logistics 0 up to {FRONTIER.oaths.titansLogisticsMax} at
   Logistics V; [Oaths](/frontier/oaths#how-key-oaths-work)).
-- <GameIcon name="well" /> Revealing a Well refills {FRONTIER.stamina.well} immediately ({FRONTIER.stamina.wellBase} on
-  a {FRONTIER.stamina.max} bar, or {FRONTIER.stamina.wellLogisticsBase} at Logistics V). With the Reflection Oath, a
-  Well refills {FRONTIER.oaths.reflectionWell} ({FRONTIER.stamina.wellReflection} on a {FRONTIER.stamina.max} bar, or
-  {FRONTIER.stamina.wellLogisticsReflection} at Logistics V). Stamina above the bar maximum is lost.
+- <GameIcon name="well" /> Using a Well with an adjacent army refills {FRONTIER.stamina.well}:
+  {FRONTIER.stamina.wellBase}
+  on a {FRONTIER.stamina.max} bar, or {FRONTIER.stamina.wellLogisticsBase} at Logistics V. The Well is then removed from
+  the map. With the Reflection Oath, a Well refills {FRONTIER.oaths.reflectionWell}: {FRONTIER.stamina.wellReflection}
+  on a {FRONTIER.stamina.max} bar, or {FRONTIER.stamina.wellLogisticsReflection} at Logistics V. Stamina above the bar
+  maximum is lost.
 - <GameIcon name="fragment" /> {FRONTIER.shop.staminaRule} See [Shop and referrals](/frontier/shop-and-referrals) for
   current Shop status.
+
+<Shot
+  name="frontier/well"
+  caption="Move an army beside a standing Well and select it to preview the stamina refill and press Use. The Well disappears from the map once used."
+/>
 
 ### Stamina stays with the slot
 
@@ -61,17 +80,19 @@ Stamina stays on the army slot rather than on the troops inside it. Deploy picks
 another before deploying.
 
 - A slot's first army of the day starts with a full bar ({FRONTIER.stamina.max} stamina, plus your Logistics bonus).
-- When an army dies, disbands, or merges into another, its slot keeps the stamina it had left and keeps recovering.
+- When an army dies, is deleted, or merges into another, its slot keeps the stamina it had left and keeps recovering.
 - The next army deployed into that slot starts with that remaining stamina.
 - When the day ends, every slot resets so tomorrow's first army starts full again.
 
-## Merging, reinforcing, and disbanding
+## Merging, reinforcing, and deleting
 
 Two adjacent armies of the same troop kind can merge, moving **troops only**. The receiving army keeps its own Oaths,
-relics, and Logistics rank and takes the lower of the two stamina values. Nothing copies from the giving army, even into
-empty slots; if the giving army reaches 0 troops, it is destroyed and its Oaths and relics are deleted with it.
+relics, and Logistics rank and takes the lower of the two stamina values. Nothing transfers from the sending army except
+troops, even into empty slots; if the sending army reaches 0 troops, it is deleted along with its Oaths and relics.
 
 You can also reinforce an army beside your realm or beside any camp your realm cleared today (supply post) on the
-{FRONTIER.layers.personalOr} using troops and wheat from home. Disbanding an army deletes its troops after you confirm.
+{FRONTIER.layers.personalOr} using troops and wheat from home. Select your realm or supply post, then pick an adjacent
+army (or right-click it on desktop, or hold it on a phone) to enter or slide how many troops to add. Deleting an army
+removes its troops permanently after you confirm.
 
 Next: [Combat](/frontier/combat), [Oaths](/frontier/oaths), and [Relics](/frontier/relics).

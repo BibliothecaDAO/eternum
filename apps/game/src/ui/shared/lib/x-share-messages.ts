@@ -27,13 +27,13 @@ export const formatSocialText = (template: string, variables: Partial<TemplateVa
   );
 };
 
-const tweetFooterLines = [X_HANDLE, "The most insane fully onchain game, live on Starknet", APP_HOST] as const;
+const tweetFooterLines = [X_HANDLE, "Fully onchain strategy, live on Starknet", APP_HOST] as const;
 
 const tweetFooter = tweetFooterLines.join("\n");
 
 export const twitterTemplates = {
   combat: `⚔️ BATTLE DECLARED! ⚔️\n\n{attackerNameText} with {attackerTroopsText}\n\n🗡️ VS 🛡️\n\n{defenderNameText} with {defenderTroopsText}\n\n${tweetFooter}`,
-  raid: `🔥 SUCCESSFUL RAID! 🔥\n\n{attackerNameText}\n\n🗡️ VS 🛡️\n\n{defenderNameText} \n\nSpoils of war: {raidResources} 💰\n\n${tweetFooter}`,
-  joinedTribe: `⚔️ NEW ALLIANCE FORGED! ⚔️\n\nI, {addressName}, have pledged allegiance to the mighty {tribeName} tribe!\n\n${tweetFooter}`,
+  raid: `🔥 SUCCESSFUL RAID! 🔥\n\n{attackerNameText}\n\n🗡️ VS 🛡️\n\n{defenderNameText} \n\nLoot: {raidResources} 💰\n\n${tweetFooter}`,
+  joinedTribe: `⚔️ NEW ALLIANCE FORGED! ⚔️\n\nI, {addressName}, joined the {tribeName} tribe!\n\n${tweetFooter}`,
   createdTribe: `⚔️ A NEW POWER RISES! ⚔️\n\nI created the {tribeName} tribe!\n\n${tweetFooter}`,
 };

@@ -7,12 +7,7 @@ import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { StrategicMarkerLayer } from "@/three/managers/strategic-marker-layer";
 import { PathRenderer } from "@/three/managers/path-renderer";
 import { resolveHoverVisualPalette, OWNERSHIP_RING_LOOK } from "@/three/managers/worldmap-interaction-palette";
-import {
-  createHexRingShapes,
-  drapeHexRingCopies,
-  createHexRingMaterials,
-  applyHexRingLook,
-} from "@/three/managers/hex-ring";
+import { createHexRingShapes, layOnGround, createHexRingMaterials, applyHexRingLook } from "@/three/managers/hex-ring";
 import type { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import { playerColorManager } from "@/three/systems/player-colors";
@@ -60,7 +55,7 @@ export class MapSheetPresentation {
       MAP_CHAPTERS[chapter].forEach((name, index) => {
         const hex = specimenHex(c, index),
           p = terrainHexToWorld(hex.col, hex.row);
-        const position = new THREE.Vector3(p.x, terrain.sampleSurface(p.x, p.z).height, p.z);
+        const position = new THREE.Vector3(p.x, terrain.sampleHeight(p.x, p.z), p.z);
         this.addLabel(name, position);
         this.addSpecimen(column, index, position);
       }),
@@ -258,7 +253,7 @@ export class MapSheetPresentation {
     applyHexRingLook(materials, new THREE.Color(color), intensity);
     for (const name of ["halo", "glow", "outline"] as const) {
       if (scale !== 1) shapes[name].scale(scale, scale, 1);
-      const geometry = drapeHexRingCopies(shapes[name], [p], this.terrain, 0.04);
+      const geometry = layOnGround(shapes[name], [p], this.terrain, 0.04);
       const object =
         name === "outline"
           ? new THREE.LineSegments(geometry, materials[name])
@@ -278,8 +273,7 @@ export class MapSheetPresentation {
         casing: new THREE.Color(MAP_SHEET.casing).toArray() as [number, number, number],
       },
     );
-    const geometry = drapeHexRingCopies(shape, [p], this.terrain, 0.07);
-    geometry.setAttribute("color", shape.getAttribute("color").clone());
+    const geometry = layOnGround(shape, [p], this.terrain, 0.07);
     const mesh = new THREE.Mesh(
       geometry,
       new THREE.MeshBasicMaterial({
@@ -299,10 +293,7 @@ export class MapSheetPresentation {
     const geometry = new THREE.CircleGeometry(0.85, 6).rotateX(-Math.PI / 2).rotateY(Math.PI / 6);
     const positions = geometry.getAttribute("position");
     for (let i = 0; i < positions.count; i++)
-      positions.setY(
-        i,
-        this.terrain.sampleSurface(p.x + positions.getX(i), p.z + positions.getZ(i)).height + 0.025 - p.y,
-      );
+      positions.setY(i, this.terrain.sampleHeight(p.x + positions.getX(i), p.z + positions.getZ(i)) + 0.025 - p.y);
     const mesh = new THREE.Mesh(
       geometry,
       new THREE.MeshBasicMaterial({ color, opacity, transparent: true, depthWrite: false, toneMapped: false }),
@@ -325,9 +316,7 @@ export class MapSheetPresentation {
       for (let v = 0; v < vertices.count; v++)
         vertices.setY(
           v,
-          this.terrain.sampleSurface(centre.x + vertices.getX(v), centre.z + vertices.getZ(v)).height +
-            0.065 -
-            centre.y,
+          this.terrain.sampleHeight(centre.x + vertices.getX(v), centre.z + vertices.getZ(v)) + 0.065 - centre.y,
         );
       const mesh = new THREE.Mesh(
         geometry,

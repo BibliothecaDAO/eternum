@@ -5,6 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type WithdrawStep, WithdrawSheet } from "./withdraw-sheet";
 import { SeasonPayoutRow } from "./season-payout";
 import { withdrawalRefusal, withdrawalsCloseAt, withdrawStepOf } from "./withdrawal";
+import {
+  AUTOMATIC_LORDS_PAYOUT,
+  LINK_WALLET_FOR_LORDS,
+  PAYOUTS_PAUSED,
+  WITHDRAWALS_CLOSED,
+  paidWhenResumed,
+} from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -35,7 +42,7 @@ describe("Withdraw", () => {
         <WithdrawSheet
           held={1_240}
           wallet={over.wallet === undefined ? ADDRESS : over.wallet}
-          linkWalletLine="Link a wallet to receive your LORDS"
+          linkWalletLine={LINK_WALLET_FOR_LORDS}
           refusal={over.refusal ?? null}
           step={over.step ?? { kind: "pick" }}
           amount={over.amount ?? 500}
@@ -80,17 +87,17 @@ describe("Withdraw", () => {
   it("sends a player with no wallet to link one", () => {
     const ways = render({ wallet: null });
     expect(button("Withdraw")).toBeUndefined();
-    expect(host.textContent).toContain("Link a wallet to receive your LORDS");
+    expect(host.textContent).toContain(LINK_WALLET_FOR_LORDS);
     act(() => button("Link wallet")!.click());
     expect(ways.onLinkWallet).toHaveBeenCalledTimes(1);
   });
 
   it("says why nothing can leave, and that a withdrawal recorded in a pause pays when payouts resume", () => {
     render({ refusal: "Payouts paused" });
-    expect(host.textContent).toContain("Payouts paused");
+    expect(host.textContent).toContain(PAYOUTS_PAUSED);
     expect(button("Withdraw")!.disabled).toBe(true);
     render({ step: { kind: "waiting", amount: 500 } });
-    expect(host.textContent).toContain("Payouts paused: 500 waiting");
+    expect(host.textContent).toContain(paidWhenResumed("500"));
   });
 });
 
@@ -102,12 +109,12 @@ describe("a withdrawal's rules", () => {
   it("closes withdrawals in the claim window's last hour, as the shard does", () => {
     expect(closesAt).toBe(10_000 + 7 * 86_400 - 3_600);
     expect(withdrawalRefusal(open)).toBeNull();
-    expect(withdrawalRefusal({ ...open, now: closesAt })).toBe("Withdrawals have closed");
+    expect(withdrawalRefusal({ ...open, now: closesAt })).toBe(WITHDRAWALS_CLOSED);
   });
 
   it("refuses while the ledger cannot be read or its payouts are paused, the season's close first", () => {
-    expect(withdrawalRefusal({ ...open, ledgerReadable: false })).toContain("cannot be read");
-    expect(withdrawalRefusal({ ...open, paused: true })).toBe("Payouts paused");
+    expect(withdrawalRefusal({ ...open, ledgerReadable: false })).toContain("Could not load");
+    expect(withdrawalRefusal({ ...open, paused: true })).toBe(PAYOUTS_PAUSED);
     expect(withdrawalRefusal({ ...open, now: closesAt, paused: true })).toContain("closed");
     // Facts not read yet refuse nothing.
     expect(withdrawalRefusal({ ...open, closesAt: undefined, paused: undefined })).toBeNull();
@@ -148,13 +155,13 @@ describe("the realm's LORDS on the season-over card", () => {
   it("shows the remaining LORDS and automatic payout without requiring a withdrawal", () => {
     show(1_240);
     expect(host.textContent).toContain("1,240");
-    expect(host.textContent).toContain("LORDS are paid out automatically at season end");
+    expect(host.textContent).toContain(AUTOMATIC_LORDS_PAYOUT);
     expect(host.querySelector("button")).toBeNull();
   });
 
   it("tells an account with no linked wallet to link one, with Link wallet, never the automatic payout", () => {
-    const onLinkWallet = show(1_240, "Link a wallet to receive your LORDS");
-    expect(host.textContent).toContain("Link a wallet to receive your LORDS");
+    const onLinkWallet = show(1_240, LINK_WALLET_FOR_LORDS);
+    expect(host.textContent).toContain(LINK_WALLET_FOR_LORDS);
     expect(host.textContent).not.toContain("paid out automatically");
     act(() => button("Link wallet")!.click());
     expect(onLinkWallet).toHaveBeenCalledTimes(1);

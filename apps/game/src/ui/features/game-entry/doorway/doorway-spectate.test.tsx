@@ -8,6 +8,7 @@ vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => (
 
 import { DoorwayScreen } from "./doorway-screen";
 import { doorwayView, type GameRefusal } from "./doorway-view";
+import { DOORWAY_WORDS } from "@/ui/design-system/kit/words";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
@@ -28,12 +29,12 @@ it("says the map could not be drawn and offers the realm beside Try again, in pl
       ),
     );
   const withRealm = render(true);
-  expect(withRealm).toContain("The map could not be drawn.");
+  expect(withRealm).toContain(DOORWAY_WORDS.mapNotDrawn);
   expect(withRealm).toContain("Try again");
-  expect(withRealm).toContain("Open realm");
-  expect(withRealm).not.toContain("did not answer");
+  expect(withRealm).toContain("Open Realm");
+  expect(withRealm).not.toContain("World unavailable.");
   // With no realm to open there is nothing to offer but the retry.
-  expect(render(false)).not.toContain("Open realm");
+  expect(render(false)).not.toContain("Open Realm");
 });
 
 it("leads a finalized game's boot to its Results, in place of the world not answering", async () => {
@@ -50,7 +51,7 @@ it("leads a finalized game's boot to its Results, in place of the world not answ
       results="/results/0xa-5"
     />
   );
-  expect(text(renderToStaticMarkup(<MemoryRouter>{doorway(false)}</MemoryRouter>))).toContain("did not answer");
+  expect(text(renderToStaticMarkup(<MemoryRouter>{doorway(false)}</MemoryRouter>))).toContain("World unavailable.");
   await act(async () =>
     root.render(
       <MemoryRouter initialEntries={["/g/0xa/5/map"]}>
@@ -62,8 +63,8 @@ it("leads a finalized game's boot to its Results, in place of the world not answ
     ),
   );
   try {
-    expect(container.textContent).toContain("This game has ended.");
-    expect(container.textContent).not.toContain("did not answer");
+    expect(container.textContent).toContain(DOORWAY_WORDS.ended);
+    expect(container.textContent).not.toContain("World unavailable.");
     const results = [...container.querySelectorAll("button")].find((button) => button.textContent === "Results");
     await act(async () => results?.click());
     expect(container.querySelector('[data-testid="results"]')?.textContent).toBe("0xa-5");
@@ -86,13 +87,13 @@ it("tells a refused game's boot plainly and offers no retry, where any other fai
       </MemoryRouter>,
     );
   const refused = text(doorway("release"));
-  expect(refused).toContain("This game ran on a different version of the game and cannot be opened here.");
+  expect(refused).toContain(DOORWAY_WORDS.gameRefused);
   const older = text(doorway("older-numbers"));
-  expect(older).toContain("This game still runs on older balance numbers than this version of the game");
+  expect(older).toContain(DOORWAY_WORDS.gameOnOlderNumbers);
   expect(older).not.toContain("Try again");
-  expect(refused).not.toContain("did not answer");
+  expect(refused).not.toContain("World unavailable.");
   expect(refused).not.toContain("Try again");
   const failed = text(doorway(undefined));
-  expect(failed).toContain("The world did not answer.");
+  expect(failed).toContain("World unavailable.");
   expect(failed).toContain("Try again");
 });

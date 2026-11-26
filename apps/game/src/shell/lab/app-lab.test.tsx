@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 import { AppLabView } from "./app-lab";
 import { LAB_CHAIN, LAB_SHARE_CODE } from "./app-lab-fixtures";
+import { APP_STATE_WORDS, DOORWAY_WORDS, FOOTER_WORDS, SIGN_IN_WORDS } from "@/ui/design-system/kit/words";
 
 const identity = vi.hoisted(() => {
   const originalSession = { user: { name: "Original player" } };
@@ -116,16 +117,16 @@ it.each([
   ["connect/start-refused", "has an account"],
   ["connect/opening", "Opening Discord…"],
   ["connect/code", "maelis@realms.test"],
-  ["connect/code-refused", "Too many tries with that code"],
-  ["connect/handoff", "Finished with Google? Enter the code its page showed you."],
-  ["connect/name", "Claim name"],
-  ["connect/name-email", "Pick the name other players see on the leaderboards."],
-  ["doorway/sign-in", "Sign in to play."],
+  ["connect/code-refused", "Too many tries. Request a new code."],
+  ["connect/handoff", SIGN_IN_WORDS.handoff("google")],
+  ["connect/name", "Save name"],
+  ["connect/name-email", SIGN_IN_WORDS.pickName],
+  ["doorway/sign-in", DOORWAY_WORDS.signInToPlay],
   ["doorway/map", "Stolsli"],
   ["doorway/waiting", "Starts"],
   ["doorway/preparing", "Preparing… 17/24"],
-  ["terms", "Terms of Service"],
-  ["no-such-page", "Nothing here"],
+  ["terms", FOOTER_WORDS.terms],
+  ["no-such-page", APP_STATE_WORDS.nothingHere],
 ])("draws the fixture page %s", async (page, words) => {
   vi.stubGlobal(
     "fetch",

@@ -131,7 +131,7 @@ export const CompactEntityInventory = memo(
 
 /** A carried resource: its painting and how much, named on hover. */
 const InventoryResource = ({ item }: { item: DisplayItem }) => {
-  const name = resourceName(item.resourceId) ?? ResourcesIds[item.resourceId] ?? "resource";
+  const name = resourceName(item.resourceId, false) ?? ResourcesIds[item.resourceId] ?? "resource";
   return (
     <span data-tip={name}>
       <HudChip>

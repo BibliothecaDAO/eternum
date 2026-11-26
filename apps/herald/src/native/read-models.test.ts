@@ -6,7 +6,8 @@ import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import { createHeraldRequestHandler } from "../http";
 import { WorldFold } from "../world-fold";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DAILY_QUEST_MODELS, readDailyQuest } from "@bibliothecadao/eternum";
+import { DAILY_QUEST_MODELS, dayAtIndex, readDailyQuest } from "@bibliothecadao/eternum";
+import { frontierSeasonOnePreset } from "../../../../config/source/frontier/season-one";
 import { NativeFactStore, questWeek } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, worldBanes } from "@bibliothecadao/types";
 import { buildNativeDirectory, directoryFact } from "./read-models";
@@ -208,6 +209,31 @@ it("projects a late campaign source without marking any NFT as taken", () => {
 });
 
 describe("native directory", () => {
+  it("names each held realm's Aspect and whether it holds a Wonder, as the facts record them", () => {
+    const { fold, native } = world();
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("Structure", ["1", "7"], {
+          ...structureValue,
+          owner: "0x111",
+          base: { ...structureValue.base, category: "1" },
+          metadata: { ...structureValue.metadata, has_wonder: true },
+        }),
+        structure("8", "1", "0x111"),
+        rowEvent("HomeAspect", ["1", "7"], { aspect: 3n }),
+      ]),
+      11,
+      0,
+    );
+    const input = { chain: "madara", confirmedBlock: 11, timestamp: 30, fold, playerAddress: "0x111" };
+    const held = buildNativeDirectory(input).games.find((game) => game.game_id === 1)!.player_state!.structures;
+    expect(held.map(({ entity_id, aspect, has_wonder }) => ({ entity_id, aspect, has_wonder }))).toEqual([
+      { entity_id: 7, aspect: 3, has_wonder: true },
+      { entity_id: 8, aspect: null, has_wonder: false },
+    ]);
+  });
+
   it("reads native entries, structures and the clock without mirrored configuration rows", () => {
     const { fold, native } = world();
     native.applyReceipt(
@@ -560,12 +586,17 @@ describe("native directory", () => {
   it("matches core readDailyQuest on Seal bonus and WorldBane override paths", () => {
     const { fold, native, decoder } = world();
     const bane = worldBanes[0];
+    const baneDay = frontierSeasonOnePreset.banes.quietDays;
+    const now = dayAtIndex(
+      { seed: 42n, startMainAt: 20, endAt: 200, scheduledEndAt: 200, dayUnitSeconds: 5 },
+      baneDay,
+    ).start;
     native.applyReceipt(
       fold,
       receipt(
         seedDerivedRows(fold, decoder, [
           gameEvent("1", "0", "0", "frontier", "Frontier"),
-          rulesEvent("1", "3600"),
+          rulesEvent("1", "5"),
           rowEvent("QuestRules", ["1"], {
             base_counts: [1, 1, 1, 1, 1, 2, 15],
             labor: 1000n,
@@ -573,7 +604,7 @@ describe("native directory", () => {
             bonus_percent: 150,
           }),
           rowEvent("BaneRules", ["1"], {
-            chance_step: 20,
+            chance_step: frontierSeasonOnePreset.banes.chanceStep,
             quorum_percent: 25,
             beast_percent: 150,
             stamina_percent: 50,
@@ -583,8 +614,8 @@ describe("native directory", () => {
           structure("7", "1", "0x111", "0"),
           rowEvent("HomeAspect", ["1", "7"], { aspect: 2 }),
           rowEvent("Seal", ["1", "0x111"], { granted_at: 25n }),
-          rowEvent("WorldBane", ["1", "0"], { kind: bane.id }),
-          rowEvent("QuestProgress", ["1", "7", "0"], { progress: 2n, completed_level: 0 }),
+          rowEvent("WorldBane", ["1", String(baneDay)], { kind: bane.id }),
+          rowEvent("QuestProgress", ["1", "7", String(baneDay)], { progress: 2n, completed_level: 0 }),
         ]),
       ),
       11,
@@ -596,12 +627,12 @@ describe("native directory", () => {
         fold.gameRows(model, "1").map(({ key, value }) => ({ model, key, value })),
       ),
     );
-    fullStore.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 30 });
-    const core = readDailyQuest(fullStore, 1, 7, 30)!.reading.known!;
+    fullStore.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: now });
+    const core = readDailyQuest(fullStore, 1, 7, now)!.reading.known!;
     const directory = buildNativeDirectory({
       chain: "madara",
       confirmedBlock: 11,
-      timestamp: 30,
+      timestamp: now,
       fold,
       playerAddress: "0x111",
     }).games.find(({ game_id }) => game_id === 1)!;

@@ -31,7 +31,7 @@ import { APP_SHEET, APP_TYPE, HUD_MODES, TYPE } from "@/tokens";
 import { type ReactNode, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { REWARD_WORDS } from "@/ui/design-system/kit/words";
+import { ACCOUNT_DELETION_WORDS, KEEP, PROFILE_WORDS, REWARD_WORDS } from "@/ui/design-system/kit/words";
 
 import { Element } from "../sheet-element";
 import { Icon } from "@/ui/design-system/icon";
@@ -282,7 +282,7 @@ const ColourSection = () => (
 const ButtonSection = () => (
   <Element
     name="Button"
-    rule="Primary is the page's one verb (large where it leads the page, with Enter beside it on a desktop), secondary sits beside it, quiet is a way out; a loss is said in the bad tone. A verb takes its icon before its word."
+    rule="Primary is the page's one verb (large where it leads the page, with Enter beside it on a desktop), secondary sits beside it, quiet is a way out. What cannot be undone is the danger well; a smaller loss on its own row (Remove, Unlink) is secondary in the bad tone; what can be undone (Sign out, Cancel) stays neutral. A verb takes its icon before its word."
     sheet={
       <>
         <StateHeads />
@@ -306,7 +306,15 @@ const ButtonSection = () => (
           label="bad"
           render={(state) => (
             <AppButton kind="secondary" tone="bad" data-state={forced(state)} disabled={state === "disabled"}>
-              Sign out
+              {PROFILE_WORDS.remove}
+            </AppButton>
+          )}
+        />
+        <StateRow
+          label="danger"
+          render={(state) => (
+            <AppButton kind="danger" icon="trash" data-state={forced(state)} disabled={state === "disabled"}>
+              {ACCOUNT_DELETION_WORDS.title}
             </AppButton>
           )}
         />
@@ -705,6 +713,8 @@ const EmptySection = () => (
   />
 );
 
+const LAB_DEVICE = "Chrome on Windows";
+
 const DialogSection = () => (
   <Element
     name="Dialog"
@@ -712,17 +722,15 @@ const DialogSection = () => (
     rule="A question before what cannot be undone: its title, what it costs, the way out and the verb, the verb last."
     sheet={
       <AppDialog
-        title="Sign out?"
+        title={PROFILE_WORDS.removeAsk(LAB_DEVICE)}
         actions={
           <>
-            <AppButton kind="quiet">Keep me in</AppButton>
-            <AppButton kind="secondary" tone="bad">
-              Sign out
-            </AppButton>
+            <AppButton kind="quiet">{KEEP}</AppButton>
+            <AppButton kind="danger">{PROFILE_WORDS.remove}</AppButton>
           </>
         }
       >
-        This device forgets its key; signing in again brings it back.
+        {PROFILE_WORDS.removeCost}
       </AppDialog>
     }
     today={

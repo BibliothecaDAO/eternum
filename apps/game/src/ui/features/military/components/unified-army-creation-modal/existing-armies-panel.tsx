@@ -1,3 +1,4 @@
+import { ARMY_MANAGEMENT, staminaLabel } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -104,7 +105,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
       bumpMilitaryMapVersion();
       close();
     } catch (error) {
-      toast.failed(error, "The army could not be deleted.");
+      toast.failed(error, ARMY_MANAGEMENT.deleteFailed);
     } finally {
       setDeleting(false);
     }
@@ -123,7 +124,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
       {maxStamina > 0 && stamina && (
         <div
           className="flex min-w-0 flex-1 items-center gap-1.5"
-          title={`Stamina ${Number(stamina.amount)}/${maxStamina}`}
+          title={staminaLabel(Number(stamina.amount), maxStamina)}
         >
           <span className="shrink-0 text-hud-label text-hud-muted">Stamina</span>
           <span className="min-w-0 flex-1">
@@ -147,8 +148,8 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
         <HudIconButton icon="map" label="Navigate to army" kind="quiet" onClick={handleJump} />
         <HudIconButton
           icon="trash"
-          label="Disband army"
-          kind="quiet"
+          label={ARMY_MANAGEMENT.deleteArmy}
+          kind="danger"
           disabled={deleting}
           onClick={confirmsDisband ? ask : handleConfirmDelete}
         />
@@ -156,8 +157,8 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
       {confirming && (
         <div className="basis-full">
           <HudConfirm
-            question="Disband this army?"
-            verb={deleting ? "Disbanding…" : "Disband"}
+            question={ARMY_MANAGEMENT.confirmDelete}
+            verb={deleting ? ARMY_MANAGEMENT.deleting : ARMY_MANAGEMENT.remove}
             tone="bad"
             onConfirm={handleConfirmDelete}
             onCancel={close}

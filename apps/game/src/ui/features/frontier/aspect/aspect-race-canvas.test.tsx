@@ -3,8 +3,23 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AspectRaceRendererHandle, MountAspectRaceRendererInput } from "@/three/race/aspect-race-renderer";
-import { ASPECT_PAGE_CASES } from "./aspect-page-fixtures";
 import { AspectRaceCanvas } from "./aspect-race-canvas";
+
+const MID_SEASON = {
+  standings: [
+    { aspectId: 2 as const, height: 6400, finished: false },
+    { aspectId: 1 as const, height: 5200, finished: false },
+    { aspectId: 3 as const, height: 2800, finished: false },
+    { aspectId: 4 as const, height: 900, finished: false },
+  ],
+  finishHeight: 10_000,
+};
+const WON = {
+  standings: [{ ...MID_SEASON.standings[0]!, height: 10_000, finished: true }, ...MID_SEASON.standings.slice(1)],
+  finishHeight: 10_000,
+};
+
+const DEEP = { spacing: 100, rings: [{ radius: 7 }, { radius: 11 }, { radius: 15 }, { radius: 19 }] };
 
 const mockHandle: AspectRaceRendererHandle = {
   setStandings: vi.fn(),
@@ -66,9 +81,11 @@ afterEach(() => {
 
 describe("AspectRaceCanvas lifecycle", () => {
   it("mounts the production renderer, pauses off-screen, updates standings and disposes on unmount", async () => {
-    const race = ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"].race;
+    const race = MID_SEASON;
     await act(async () => {
-      root.render(<AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} />);
+      root.render(
+        <AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} deep={DEEP} surface="shell" />,
+      );
     });
 
     expect(mountAspectRaceRenderer).toHaveBeenCalledTimes(1);
@@ -82,9 +99,11 @@ describe("AspectRaceCanvas lifecycle", () => {
     act(() => intersectionCallback?.([{ isIntersecting: true }]));
     expect(mockHandle.setPaused).toHaveBeenLastCalledWith(false);
 
-    const won = ASPECT_PAGE_CASES["Age won by another Aspect"].race;
+    const won = WON;
     await act(async () => {
-      root.render(<AspectRaceCanvas standings={won.standings} finishHeight={won.finishHeight} />);
+      root.render(
+        <AspectRaceCanvas standings={won.standings} finishHeight={won.finishHeight} deep={DEEP} surface="shell" />,
+      );
     });
     expect(mockHandle.setStandings).toHaveBeenLastCalledWith(won.standings, won.finishHeight);
 
@@ -93,9 +112,11 @@ describe("AspectRaceCanvas lifecycle", () => {
   });
 
   it("supports shell and shell-compact variants, skips redundant standings updates, and keeps plates without WebGL", async () => {
-    const race = ASPECT_PAGE_CASES["Mid-season, the player's Aspect second"].race;
+    const race = MID_SEASON;
     await act(async () => {
-      root.render(<AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} surface="shell" />);
+      root.render(
+        <AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} deep={DEEP} surface="shell" />,
+      );
     });
     const shellStage = host.querySelector("[data-race-stage]")!;
     expect(shellStage.getAttribute("data-race-surface")).toBe("shell");
@@ -107,6 +128,7 @@ describe("AspectRaceCanvas lifecycle", () => {
         <AspectRaceCanvas
           standings={race.standings.map((entry) => ({ ...entry }))}
           finishHeight={race.finishHeight}
+          deep={DEEP}
           surface="shell-compact"
         />,
       );
@@ -123,7 +145,12 @@ describe("AspectRaceCanvas lifecycle", () => {
     root = createRoot(host);
     await act(async () => {
       root.render(
-        <AspectRaceCanvas standings={race.standings} finishHeight={race.finishHeight} surface="shell-compact" />,
+        <AspectRaceCanvas
+          standings={race.standings}
+          finishHeight={race.finishHeight}
+          deep={DEEP}
+          surface="shell-compact"
+        />,
       );
     });
     expect(mountAspectRaceRenderer).not.toHaveBeenCalled();

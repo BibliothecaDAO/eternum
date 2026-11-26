@@ -14,6 +14,7 @@ import {
   researchVerb,
   type RealmResearchFacts,
 } from "./research-tree";
+import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 
 const node = (realm: RealmResearchFacts, key: string) => readResearchTree(realm).find((item) => item.key === key)!;
 const why = (realm: RealmResearchFacts, key: string) => {
@@ -36,9 +37,9 @@ describe("the castle's tree as the contract rules it", () => {
     ]);
     expect(why(EARLY_REALM, "row-0")).toBe("Needs 500 Essence");
     expect(why(EARLY_REALM, "row-1")).toBe("Needs a Workshop");
-    expect(why(EARLY_REALM, "row-2")).toBe("Needs the Realm at City");
-    expect(why(EARLY_REALM, "row-4")).toBe("Needs the Realm at Kingdom");
-    expect(why(EARLY_REALM, "row-5")).toBe("Needs the Realm at Kingdom");
+    expect(why(EARLY_REALM, "row-2")).toBe("Needs City");
+    expect(why(EARLY_REALM, "row-4")).toBe("Needs Kingdom");
+    expect(why(EARLY_REALM, "row-5")).toBe("Needs Kingdom");
     expect(why({ ...EARLY_REALM, castleLevel: 2 }, "row-5")).toBe("Needs a Supply yard");
     expect(why(EARLY_REALM, "well")).toBe("Needs 2,500 Essence");
     expect(why(EARLY_REALM, "shrine")).toBe("Needs Well lore first");
@@ -121,7 +122,7 @@ it("offers independent Camp and Depot upgrades with their exact next output and 
     figures: [{ name: "Wheat per troop", line: "On each deploy", now: "1.4", next: "1.2" }],
   });
   expect(researchEffectLine(node(realm, `row-${research.ROW_CONSCRIPTION}`))).toBe(
-    "120 troops an hour → 140 troops an hour",
+    `${RESEARCH_TREE.effects.troops("120")} → ${RESEARCH_TREE.effects.troops("140")}`,
   );
   expect(researchEffectLine(node(realm, `row-${research.ROW_RATIONS}`))).toBe(
     "1.4 wheat per troop → 1.2 wheat per troop (less)",

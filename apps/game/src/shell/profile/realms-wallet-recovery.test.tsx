@@ -37,6 +37,7 @@ import { identityClient, useIdentitySessionStore } from "@/hooks/context/identit
 
 import { PayoutWalletPanel } from "./payout-wallet-panel";
 import { RealmsWalletRecovery } from "./realms-wallet-recovery";
+import { WALLET_WORDS } from "@/ui/design-system/kit/words";
 
 const WALLET = {
   address: "0x6c3d70a2d9197da8e24ee33ec8e26b00faccfaafe0fa9bd0003c0eb11397b4f",
@@ -98,24 +99,24 @@ it("offers the way in for a lost passkey while no recovery stands", async () => 
   chain.answers = [NO_ESCAPE];
   const onRecover = vi.fn();
   const view = await render(<RealmsWalletRecovery address={WALLET.address} onRecover={onRecover} />);
-  await press(view, "Lost your passkey?");
+  await press(view, WALLET_WORDS.lostPasskey);
   expect(onRecover).toHaveBeenCalledOnce();
 });
 
-it("shows a recovery under way with its day, and the owner's passkey cancels it", async () => {
+it("shows a recovery in progress with its day, and the owner's passkey cancels it", async () => {
   chain.answers = [escapeAnswer(1), NO_ESCAPE];
   const view = await render(<RealmsWalletRecovery address={WALLET.address} onRecover={vi.fn()} />);
-  expect(view.textContent).toContain("Recovery under way: a new passkey takes over this wallet on");
-  expect(view.textContent).not.toContain("Lost your passkey?");
-  await press(view, "Not you? Cancel it");
+  expect(view.textContent).toContain("Recovery in progress: a new passkey takes over on");
+  expect(view.textContent).not.toContain(WALLET_WORDS.lostPasskey);
+  await press(view, WALLET_WORDS.cancelRecovery);
   expect(signs.at(-1)).toMatchObject({
     owner: WALLET.address,
     calls: [{ contractAddress: WALLET.address, entrypoint: "cancel_escape", calldata: [] }],
   });
-  await press(view, "Confirm with your passkey");
+  await press(view, WALLET_WORDS.confirmPasskey);
   await act(async () => {});
   // Read again from the chain: canceled, so the way in shows again.
-  expect(view.textContent).toContain("Lost your passkey?");
+  expect(view.textContent).toContain(WALLET_WORDS.lostPasskey);
 });
 
 it("recovers from the payout panel: a new passkey on this device, then the emailed code, then under way", async () => {
@@ -127,9 +128,9 @@ it("recovers from the payout panel: a new passkey on this device, then the email
   chain.answers = [NO_ESCAPE];
   const changed = vi.fn();
   const panel = await render(<PayoutWalletPanel wallet={WALLET.address} email="you@mail.test" onChanged={changed} />);
-  await press(panel, "Lost your passkey?");
+  await press(panel, WALLET_WORDS.lostPasskey);
   expect(panel.textContent).toContain("In 7 days it takes over your Realms wallet");
-  await press(panel, "Make a new passkey");
+  await press(panel, WALLET_WORDS.makeNewPasskey);
   // The passkey that owns the wallet is excluded: a device still holding it is told, not overwritten.
   expect(passkeys.create).toHaveBeenCalledWith(
     { realmsId: "0x21", email: "you@mail.test", name: "Ysolde" },
@@ -147,7 +148,7 @@ it("recovers from the payout panel: a new passkey on this device, then the email
   expect(chain.wait).toHaveBeenCalledWith("0xescape", expect.anything());
   // No payout wallet changed, so the window stays open (Settings closes it on a change) and shows the recovery.
   expect(changed).not.toHaveBeenCalled();
-  expect(panel.textContent).toContain("Recovery under way");
+  expect(panel.textContent).toContain("Recovery in progress");
 });
 
 it("tells a device that still holds the passkey that there is nothing to recover", async () => {
@@ -156,7 +157,7 @@ it("tells a device that still holds the passkey that there is nothing to recover
   passkeys.create.mockRejectedValue(new DOMException("exists", "InvalidStateError"));
   chain.answers = [NO_ESCAPE];
   const panel = await render(<PayoutWalletPanel wallet={WALLET.address} email="you@mail.test" onChanged={vi.fn()} />);
-  await press(panel, "Lost your passkey?");
-  await press(panel, "Make a new passkey");
-  expect(panel.textContent).toContain("This device still has your passkey: nothing to recover.");
+  await press(panel, WALLET_WORDS.lostPasskey);
+  await press(panel, WALLET_WORDS.makeNewPasskey);
+  expect(panel.textContent).toContain("This device already has your passkey.");
 });

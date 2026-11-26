@@ -104,9 +104,9 @@ it("refuses a launch option on one command, which would relaunch the browser wit
 it.each([
   ["Realm", "hex", "Realm"],
   ["Veil", "map", "World"],
-])("observes the place a phone's pill names (%s) before the tab bar's lit scene", (place, scene, lit) => {
+])("observes the place the place switch names (%s) before the tab bar's lit scene", (place, scene, lit) => {
   const dom = new JSDOM(
-    `<button data-place-pill data-place="${place}" aria-expanded="false">${place}</button><nav aria-label="Places"><button aria-current="page">${lit}</button></nav>`,
+    `<div role="tablist" data-place-switch data-place="${place}"><button role="tab">Realm</button></div><nav aria-label="Places"><button aria-current="page">${lit}</button></nav>`,
     { url: `https://play.test/game/${scene}`, runScripts: "outside-only" },
   );
   dom.window.__rendererDiagnostics = { sceneName: scene };

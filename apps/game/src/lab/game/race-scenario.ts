@@ -1,6 +1,6 @@
 import { DAYS_PER_BAG, seasonSeconds } from "@bibliothecadao/eternum";
 import { deepCenter, nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { aspects, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { aspects, ordersOfAspect, RESOURCE_PRECISION, type AspectId } from "@bibliothecadao/types";
 import { deepScenario } from "./deep-scenario";
 import { LAB_LINKED_WALLET, wire, type LabScenario } from "./lab-chain";
 import { labQuestRulesFact } from "./quest-scenario";
@@ -48,26 +48,24 @@ export function raceScenario(finished = false): LabScenario {
       }),
     }),
   );
-  let now = startsAt;
-  if (finished) {
-    const tick = store.require("SliceRules", { game_id: 1 }).tick_config.armies_tick_in_seconds;
-    const ended_at = (BigInt(startsAt) / tick + 1n) * tick;
-    now = Number(ended_at) + 1;
-    facts.push(
-      {
-        model: "GameRegistry",
-        key: store.wireKeyOf("GameRegistry", { game_id: 1 })!,
-        value: wire({ ...game, end_at: ended_at }),
-      },
-      {
-        model: "RaceResult",
-        key: "0xa550",
-        value: wire({ game_id: 1, winner: 2, ended_at, scheduled_end_at: game.scheduled_end_at }),
-      },
-    );
-  }
-  // A rival Aspect's home, which the Aspect's fights name.
-  facts.push({ model: "HomeAspect", key: "0xa560", value: { game_id: 1, home: String(RIVAL_HOME), aspect: 2 } });
+  const slice = store.require("SliceRules", { game_id: 1 });
+  const end =
+    game.start_main_at + BigInt(seasonSeconds(Number(rules.season_days) / DAYS_PER_BAG, slice.day_unit_seconds));
+  const tick = slice.tick_config.armies_tick_in_seconds;
+  const ended_at = finished ? (BigInt(startsAt) / tick + 1n) * tick : end;
+  const now = finished ? Number(ended_at) + 1 : startsAt;
+  facts.push({
+    model: "GameRegistry",
+    key: store.wireKeyOf("GameRegistry", { game_id: 1 })!,
+    value: wire({ ...game, scheduled_end_at: end, end_at: ended_at }),
+  });
+  if (finished)
+    facts.push({
+      model: "RaceResult",
+      key: "0xa550",
+      value: wire({ game_id: 1, winner: 2, ended_at, scheduled_end_at: end }),
+    });
+  facts.push(...rivalMembers(store.require("Structure", { game_id: 1, entity_id: homes[0]!.home })));
   store.applyFacts(facts);
   return {
     ...scenario,
@@ -96,9 +94,7 @@ export function expiredRaceScenario(): LabScenario {
   const scenario = raceScenario();
   const { store } = scenario;
   const game = store.require("GameRegistry", { game_id: 1 });
-  const rules = store.require("RaceRules", { game_id: 1 });
-  const unit = store.require("SliceRules", { game_id: 1 }).day_unit_seconds;
-  const end = game.start_main_at + BigInt(seasonSeconds(Number(rules.season_days) / DAYS_PER_BAG, unit));
+  const end = game.scheduled_end_at;
   store.applyFacts([
     {
       model: "GameRegistry",
@@ -116,6 +112,55 @@ export function expiredRaceScenario(): LabScenario {
 
 const RIVAL_HOME = 11n;
 const SITE = 800n;
+
+const RIVALS = [
+  { home: RIVAL_HOME, aspect: 2, glory: 2100, realm: 412 },
+  { home: 12n, aspect: 2, glory: 640, realm: 1033 },
+  { home: 13n, aspect: 3, glory: 1800, realm: 2671 },
+  { home: 14n, aspect: 3, glory: 90, realm: 5120 },
+  { home: 15n, aspect: 4, glory: 980, realm: 7004 },
+] as const;
+
+function rivalMembers(model: NativeRows["Structure"]): GameSyncFact[] {
+  const counts = new Map<number, number>();
+  for (const { aspect } of RIVALS) counts.set(aspect, (counts.get(aspect) ?? 0) + 1);
+  return [
+    ...RIVALS.flatMap(({ home, aspect, glory, realm }, index): GameSyncFact[] => [
+      {
+        model: "Structure",
+        key: `0xa57${index}`,
+        value: wire({
+          ...model,
+          entity_id: home,
+          owner: `0x${(0x333n + BigInt(index)).toString(16)}`,
+          metadata: {
+            ...model.metadata,
+            realm_id: realm,
+            order: ordersOfAspect(aspect as AspectId)[index % 4]!.orderId,
+          },
+        }),
+      },
+      { model: "HomeAspect", key: `0xa58${index}`, value: { game_id: 1, home: String(home), aspect } },
+      {
+        model: "RaceMember",
+        key: `0xa59${index}`,
+        value: wire({
+          game_id: 1,
+          entity_id: home,
+          glory: BigInt(glory) * BigInt(RESOURCE_PRECISION),
+          contribution: BigInt(glory) * BigInt(RESOURCE_PRECISION),
+        }),
+      },
+    ]),
+    ...[...counts].map(
+      ([aspect, members]): GameSyncFact => ({
+        model: "AspectMembers",
+        key: `0xa5a${aspect}`,
+        value: { game_id: 1, aspect, members },
+      }),
+    ),
+  ];
+}
 
 /**
  * The Aspect's fights as Herald holds them, in the shapes the contract emits (BattleEvent): owners are homes, a site's

@@ -70,7 +70,7 @@ export const LevelUpRequirements = ({ step }: { step: RealmLevelUp }) => {
             >
               <div className="flex items-center gap-2">
                 <ResourceIcon resource={req.resource} size="xs" withTooltip={false} />
-                <span className="flex-1 text-hud-body text-hud-ink">{resourceName(req.resource)}</span>
+                <span className="flex-1 text-hud-body text-hud-ink">{resourceName(req.resource, false)}</span>
                 <span className={clsx("text-hud-strong ", isMet ? "text-hud-ink" : "text-hud-bad")}>
                   {heldAgainstNeed(req.current, req.amount)}
                 </span>

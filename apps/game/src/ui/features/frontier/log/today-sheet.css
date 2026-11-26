@@ -3,7 +3,15 @@
   flex-direction: column;
   gap: 10px;
 }
+.today-sheet__day {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .today-sheet__clock {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
   margin: 0;
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
@@ -13,6 +21,20 @@
 .today-sheet__clock b {
   color: rgb(var(--hud-ink));
   font-weight: 700;
+}
+.today-sheet__weekly {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.today-sheet__label {
+  margin: 0;
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-badge);
+  font-weight: var(--hud-weight-body);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hud-muted);
 }
 .today-sheet__week {
   display: flex;

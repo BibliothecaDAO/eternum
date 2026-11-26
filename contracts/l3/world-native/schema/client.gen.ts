@@ -158,6 +158,8 @@ export enum NativeTileOccupier {
   Spire = 35,
   Camp = 37,
   ReservedHyperstructure = 39,
+  Shrine = 40,
+  Well = 41,
   DormantSpire = 45,
   DeepSite = 46,
   SupplyPost = 47,

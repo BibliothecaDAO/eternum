@@ -4,6 +4,7 @@ import { HudButton, HudChip, HudMeter, HudPanel, HudTier } from "@/ui/design-sys
 import { HUD_TONE, type Tone } from "@/ui/design-system/kit/tone";
 import { BUILD, DEPLOY, FULL, MADE_BY, type Rank, REALM } from "@/ui/design-system/kit/words";
 
+import { BaneFigure, BaneLine } from "../day/bane-mark";
 import { FullIn } from "../full-in";
 import { FRONTIER_STORES, type MadeStore, type SpentAt } from "../stores";
 
@@ -48,7 +49,13 @@ export const StoreCard = ({
             <StoreAsk line={line} full={full} spentAt={spentAt} onSpend={onSpend} onBuild={onBuild} />
           </span>
           <span className={`flex items-center gap-2 whitespace-nowrap tabular-nums ${full ? "text-hud-bad" : ""}`}>
-            {full ? formatRate(0) : formatRate(line.perHour === undefined ? undefined : line.perHour / 3600)}
+            {full ? (
+              formatRate(0)
+            ) : (
+              <BaneFigure figure="production">
+                {formatRate(line.perHour === undefined ? undefined : line.perHour / 3600)}
+              </BaneFigure>
+            )}
             {line.tier !== undefined && <HudTier tier={line.tier} />}
           </span>
         </span>
@@ -56,10 +63,13 @@ export const StoreCard = ({
       {line.makers && line.makers.length > 0 && (
         <ul aria-label={MADE_BY} className="flex flex-col text-hud-label tabular-nums text-hud-muted">
           {line.makers.map((maker) => (
-            <li key={maker}>{maker}</li>
+            <li key={maker}>
+              <BaneFigure figure="production">{maker}</BaneFigure>
+            </li>
           ))}
         </ul>
       )}
+      {!full && <BaneLine figure="production" />}
       {line.limit !== undefined && (
         <span className="flex items-center gap-2">
           <span className="min-w-0 flex-1">

@@ -11,11 +11,11 @@ const formatResourceSummary = (entry: TransferAutomationEntry): string => {
     return entry.resourceConfigs
       .map((cfg) => {
         const amount = Math.max(0, Math.floor(cfg.amount ?? 0));
-        return `${resourceName(cfg.resourceId)} ${formatCharge(amount)}`;
+        return `${resourceName(cfg.resourceId, false)} ${formatCharge(amount)}`;
       })
       .join(", ");
   }
-  return entry.resourceIds.map((rid) => resourceName(rid)).join(", ");
+  return entry.resourceIds.map((rid) => resourceName(rid, false)).join(", ");
 };
 
 export const TransferAutomationAdvancedModal = () => {

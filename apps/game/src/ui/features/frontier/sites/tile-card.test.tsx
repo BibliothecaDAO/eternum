@@ -22,7 +22,6 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { acceptGameSyncStoryEvent, resetGameSyncStoryEvents } from "@/hooks/store/use-story-events-store";
 import { inFlight, sendOnce } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ATTACK_REFUSAL_WORDS } from "@/ui/design-system/kit/words";
 import { ActionPaths, ActionType, setBlockTimestampSource, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { nativeTilePackingConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
@@ -36,6 +35,9 @@ import { useArmyPanelOpens } from "../army/army-opens";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "../hud/one-panel";
 import { campBeside, otherArmyAt, placeSite, relicEffectFact, SITE, SITE_TILE } from "./site-fixture";
 import { TileCard } from "./tile-card";
+import { ATTACK_REFUSAL_WORDS, FIGHT_WORDS, tooFarFrom } from "@/ui/design-system/kit/words";
+
+const CHAIN_REASON = "stamina 4 < 20";
 
 const APPLIED = { hash: "0x1", block: 9, status: "SUCCEEDED" };
 
@@ -178,7 +180,7 @@ describe("the tile card", () => {
     try {
       const card = host.querySelector(`section[aria-label="${siteName(SITE)}"]`);
       expect(card).not.toBeNull();
-      expect(card!.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BladeGolem+825");
+      expect(card!.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Golem+825");
       expect(host.querySelector('header [aria-label="Golem 1,100"]')).not.toBeNull();
       expect(button("Attack")).toBeUndefined();
 
@@ -199,7 +201,7 @@ describe("the tile card", () => {
       const card = host.querySelector('section[aria-label="North Watch"]')!;
       expect(card).not.toBeNull();
       expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
-      expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100BladeGolem+825");
+      expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Golem+825");
       expect(card.textContent?.match(/Golem/g)).toHaveLength(1);
       expect(card.textContent).not.toMatch(/\bcamp\b/i);
     } finally {
@@ -225,7 +227,7 @@ describe("the tile card", () => {
     });
     expect(button("Move")?.disabled).toBe(false);
     expect(button("Attack")).toBeUndefined();
-    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Golem");
+    expect(host.querySelector('[role="status"]')?.textContent).toBe(tooFarFrom("Golem"));
     expect(fightSides(host)).toEqual(FORECAST);
     unmount();
   });
@@ -241,11 +243,11 @@ describe("the tile card", () => {
     // Owner, 31 October 2026: "I should still have the projection even if I'm too far I think". The attack its army
     // would send from beside the site, and its headline; only Attack waits for the army to get there.
     expect(fightSides(host)).toEqual(FORECAST);
-    expect(host.querySelector("[data-fight-outcome]")?.textContent).toContain("The guard survives");
+    expect(host.querySelector("[data-fight-outcome]")?.textContent).toContain(FIGHT_WORDS.holds);
     expect(host.querySelector("[data-fight-reward]")?.textContent).toBe("+825Post");
     expect(button("Attack")?.disabled).toBe(true);
     expect(button("Move")).toBeUndefined();
-    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Golem");
+    expect(host.querySelector('[role="status"]')?.textContent).toBe(tooFarFrom("Golem"));
     unmount();
   });
 
@@ -354,8 +356,8 @@ describe("an attack in flight on the tile card", () => {
   it("says in one line why a refused attack did not happen, and frees the army", async () => {
     const { host, button, settle, unmount } = attackInFlight();
     await act(async () => button("Attack")!.click());
-    await settle({ hash: "0x1", block: 9, status: "REJECTED", revertReason: "Not enough stamina" });
-    expect(host.querySelector('[role="status"]')?.textContent).toBe("Not enough stamina");
+    await settle({ hash: "0x1", block: 9, status: "REJECTED", revertReason: CHAIN_REASON });
+    expect(host.querySelector('[role="status"]')?.textContent).toBe(CHAIN_REASON);
     expect(inFlight("army", 201)).toBeUndefined();
     expect(button("Attack")?.disabled).toBe(false);
     // The next attack takes the line away.
@@ -588,7 +590,7 @@ describe("after the player's attack (owner, 30 October 2026: 'I'd like the army 
       vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
       try {
         const { host, unmount } = await attackThatLands(lands, { hud });
-        expect(lossSheet()?.textContent).toContain("Your troops died in battle. Deploy a new army from your Realm.");
+        expect(lossSheet()?.textContent).toContain(FIGHT_WORDS.armyLostNext);
         // In the kit's one frame, as every surface the HUD opens (frontier-hud.test).
         expect(lossSheet()?.hasAttribute("data-kit-frame")).toBe(true);
         expect(siteCard(host)).toBeNull();

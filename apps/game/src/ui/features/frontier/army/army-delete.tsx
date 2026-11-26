@@ -10,10 +10,6 @@ import { toast } from "@/ui/features/event-feed/notify";
 
 import type { DockArmy } from "../hud/dock-armies";
 
-/**
- * The army's Delete, the kit's red trash right after the panel's name, out of the body's flow and away from its cross
- * (the owner, 4 November); none for a viewer, who orders no army.
- */
 export const ArmyDeleteButton = ({ army, onPress }: { army: DockArmy; onPress: () => void }) => {
   const ordersAllowed = useUIStore(canIssueOrders);
   const busy = useInFlight("army", army.explorerId) !== undefined;

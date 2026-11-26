@@ -7,6 +7,9 @@ import { FIGHT_WORDS, fightLost, NONE_LOST } from "@/ui/design-system/kit/words"
 
 import type { ReactNode } from "react";
 
+import type { BaneFigure as BaneKind } from "../day/bane-face";
+import { BaneFigure } from "../day/bane-mark";
+
 export const AttackStamina = ({ stamina }: { stamina: number }) => (
   <span className="fight-attack-cost" data-attack-stamina={stamina}>
     <SemanticIcon name="stamina" size={16} />
@@ -21,6 +24,7 @@ type FightArenaSide = {
   mark: ReactNode;
   before: number | undefined;
   kept: Kept;
+  bane?: BaneKind;
 };
 
 export const FightArena = ({ ours, theirs }: { ours?: FightArenaSide; theirs?: FightArenaSide }) => {
@@ -41,17 +45,19 @@ export const FightSide = ({
   mark,
   before,
   kept,
+  bane,
   side,
 }: {
   label: string;
   mark: ReactNode;
   before: number | undefined;
   kept: Kept;
+  bane?: BaneKind;
   side: "ours" | "theirs";
 }) => {
   const figures = fightFigures(before, kept);
   const spoken = [`${label} ${formatExact(before)} → ${formatExact(kept)}`, figures.lost].filter(Boolean).join(", ");
-  const defeated = side === "theirs" && kept === 0;
+  const defeated = kept === 0;
   return (
     <span
       role="img"
@@ -66,10 +72,11 @@ export const FightSide = ({
         </span>
       )}
       <b aria-hidden className="fight-side__nums">
-        {figures.before} <span className="fight-side__arrow">→</span> {figures.kept}
+        {bane ? <BaneFigure figure={bane}>{figures.before}</BaneFigure> : figures.before}{" "}
+        <span className="fight-side__arrow">→</span> {figures.kept}
       </b>
       {figures.taken && (
-        <span aria-hidden className="fight-side__taken" data-tone={defeated || side === "theirs" ? "good" : "bad"}>
+        <span aria-hidden className="fight-side__taken" data-tone={!defeated && side === "theirs" ? "good" : "bad"}>
           {defeated ? FIGHT_WORDS.defeated : figures.taken}
         </span>
       )}
