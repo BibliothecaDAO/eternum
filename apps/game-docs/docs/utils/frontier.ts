@@ -34,7 +34,17 @@ import {
   RELIC_KINDS,
   relicMeaning,
 } from "../../../game/src/ui/design-system/domain-icon-meaning";
-import { ASPECT_PAGE_WORDS, RELIC_WORDS } from "../../../game/src/ui/design-system/kit/words";
+import {
+  ASPECT_PAGE_WORDS,
+  BUILD_GROUPS,
+  CHAT_WORDS,
+  COSMETICS_WORDS,
+  DESKTOP_APP_PLACES,
+  DESKTOP_APP_PLACE_WORDS,
+  RELIC_WORDS,
+  SETTINGS_WORDS,
+  WORDS,
+} from "../../../game/src/ui/design-system/kit/words";
 import { oathEffectDescription, oathName } from "../../../game/src/ui/features/frontier/army/oath-details";
 import { triumphHead, worldBaneHead } from "./bane-faces";
 import { relicEffect } from "../../../game/src/ui/features/frontier/relics/relic-catalog";
@@ -97,6 +107,12 @@ const listOr = (items: readonly string[]) =>
 const personalLayers = LAYER_NAMES.slice(0, 3);
 const personalLayersAnd = listAnd(personalLayers);
 const personalLayersOr = listOr(personalLayers);
+const allLayersAnd = listAnd(
+  LAYER_NAMES.map((name, index) => (index === LAYER_NAMES.length - 1 ? `the ${name}` : name)),
+);
+const buildGroupsList = listAnd(Object.values(BUILD_GROUPS));
+const settingsQualitiesOr = listOr(Object.values(SETTINGS_WORDS.qualities));
+const desktopAppPlacesAnd = listAnd(DESKTOP_APP_PLACES.map((place) => DESKTOP_APP_PLACE_WORDS[place]));
 const allPayTokens = listOr(Object.values(MAINNET_TOKENS).map((token) => token.symbol));
 const swapPayTokens = listOr(
   Object.entries(MAINNET_TOKENS)
@@ -650,6 +666,16 @@ export const FRONTIER = {
   layers: {
     personalAnd: personalLayersAnd,
     personalOr: personalLayersOr,
+    allAnd: allLayersAnd,
+  },
+  settings: {
+    qualitiesOr: settingsQualitiesOr,
+  },
+  app: {
+    desktopPlacesAnd: desktopAppPlacesAnd,
+    chat: CHAT_WORDS.chat,
+    cosmetics: COSMETICS_WORDS.title,
+    you: WORDS.you,
   },
   depths: frontierPreset.depths.map((depth, index) => ({
     name: LAYER_NAMES[index],
@@ -678,6 +704,7 @@ export const FRONTIER = {
     scout: FRONTIER_TROOP_NAMES[TroopType.Paladin],
   },
   buildingsCount: n(FRONTIER_BUILDING_TYPES.length),
+  buildGroupsList,
   buildings: frontierBuildings,
   buildingIcons: {
     farm: buildingMeaning(research.FARM, true),

@@ -11,7 +11,7 @@
         "ms": 120000
       },
       {
-        "wait": 4000
+        "wait": 2500
       }
     ]
   },
@@ -27,7 +27,7 @@
         "ms": 120000
       },
       {
-        "wait": 4000
+        "wait": 2500
       }
     ]
   },
@@ -43,7 +43,7 @@
         "ms": 120000
       },
       {
-        "wait": 4000
+        "wait": 2500
       }
     ]
   },
@@ -59,35 +59,10 @@
         "ms": 120000
       },
       {
-        "wait": 4000
+        "wait": 2500
       }
     ],
     "crop": "[...document.querySelectorAll('section.app-panel, section.app-window')].find((s) => s.querySelector('h2')?.textContent.trim() === 'Payout wallet')"
-  },
-  {
-    "name": "frontier/explore",
-    "frame": "desktop",
-    "setup": [
-      {
-        "open": "/lab/studio?gameMode=frontier&clean=1&capture=1"
-      },
-      {
-        "until": "document.querySelector('[data-studio-lab][data-ready=true]')",
-        "ms": 180000
-      },
-      {
-        "wait": 3000
-      }
-    ],
-    "record": [
-      {
-        "eval": "window.__studio.take('explore')"
-      },
-      {
-        "wait": 500
-      }
-    ],
-    "seconds": 8
   },
   {
     "name": "account/settings",
@@ -101,17 +76,42 @@
         "ms": 120000
       },
       {
-        "wait": 4000
+        "wait": 2500
       },
       {
         "click": "section[aria-label=\"Your wallet\"] .app-window__close",
         "optional": true
       },
       {
-        "wait": 1000
+        "wait": 800
       }
     ],
     "crop": "[...document.querySelectorAll('section.app-panel')].find((s) => s.querySelector('h2')?.textContent.trim() === 'Account')"
+  },
+  {
+    "name": "frontier/explore",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/studio?gameMode=frontier&clean=1&capture=1"
+      },
+      {
+        "until": "document.querySelector('[data-studio-lab][data-ready=true]')",
+        "ms": 180000
+      },
+      {
+        "wait": 2000
+      }
+    ],
+    "record": [
+      {
+        "eval": "window.__studio.take('explore')"
+      },
+      {
+        "wait": 500
+      }
+    ],
+    "seconds": 7
   },
   {
     "name": "frontier/realm-tiers",
@@ -125,7 +125,7 @@
         "ms": 180000
       },
       {
-        "wait": 3000
+        "wait": 2000
       }
     ],
     "record": [
@@ -141,63 +141,101 @@
   {
     "name": "frontier/hud",
     "frame": "desktop",
-    "live": true,
     "setup": [
       {
-        "open": "/"
+        "open": "/lab/game?scenario=quest"
       },
       {
-        "clickText": "Resume"
-      },
-      {
-        "waitFor": "[data-place-pill]",
+        "waitFor": "[data-place-switch]",
         "ms": 60000
       },
       {
-        "wait": 4000
+        "wait": 3000
       }
     ]
   },
   {
     "name": "frontier/hud-phone",
     "frame": "phone",
-    "live": true,
     "setup": [
       {
-        "open": "/"
+        "open": "/lab/game?scenario=quest"
       },
       {
-        "clickText": "Resume"
-      },
-      {
-        "waitFor": "[data-place-pill]",
+        "waitFor": "[data-place-switch]",
         "ms": 60000
       },
       {
-        "wait": 4000
+        "wait": 3000
       }
     ]
   },
   {
     "name": "frontier/places",
     "frame": "phone",
-    "live": true,
     "setup": [
       {
-        "open": "/"
-      },
-      {
-        "clickText": "Resume"
+        "open": "/lab/game?scenario=quest"
       },
       {
         "waitFor": "[data-place-pill]",
         "ms": 60000
       },
       {
-        "wait": 3000
+        "wait": 2500
       },
       {
         "click": "[data-place-pill]"
+      },
+      {
+        "waitFor": "[data-surface-deep-switch]",
+        "ms": 10000
+      },
+      {
+        "wait": 600
+      }
+    ]
+  },
+  {
+    "name": "frontier/build",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/game?scenario=realm-world"
+      },
+      {
+        "waitFor": "[data-place-switch] button[aria-label=\"Realm\"]",
+        "ms": 60000
+      },
+      {
+        "wait": 2000
+      },
+      {
+        "click": "[data-place-switch] button[aria-label=\"Realm\"]"
+      },
+      {
+        "wait": 4500
+      },
+      {
+        "tapUntil": {
+          "waitFor": "[data-build-sheet]",
+          "offsets": [
+            [0, -230],
+            [0, -210],
+            [0, -190],
+            [0, -170],
+            [0, -150],
+            [0, -130],
+            [-60, -90],
+            [60, -90],
+            [150, -90],
+            [-150, -90],
+            [150, 90],
+            [-150, 90],
+            [0, 150],
+            [0, 190]
+          ]
+        }
       },
       {
         "wait": 800
@@ -205,96 +243,108 @@
     ]
   },
   {
-    "name": "frontier/build",
-    "frame": "desktop",
-    "live": true,
-    "setup": [
-      {
-        "open": "/"
-      },
-      {
-        "clickText": "Resume"
-      },
-      {
-        "waitFor": "[data-place-pill]",
-        "ms": 60000
-      },
-      {
-        "click": "[data-place-pill]"
-      },
-      {
-        "click": "[data-surface-deep-switch] button[aria-label=\"Realm\"]"
-      },
-      {
-        "wait": 3500
-      }
-    ]
-  },
-  {
     "name": "frontier/deploy",
     "frame": "desktop",
-    "live": true,
     "setup": [
       {
-        "open": "/"
+        "open": "/lab/game?scenario=town"
       },
       {
-        "clickText": "Resume"
-      },
-      {
-        "waitFor": "[data-place-pill]",
+        "waitFor": "aside[aria-label=\"Realm\"] button[aria-label=\"Deploy\"]",
         "ms": 60000
+      },
+      {
+        "wait": 2500
       },
       {
         "click": "aside[aria-label=\"Realm\"] button[aria-label=\"Deploy\"]"
       },
       {
-        "wait": 2000
+        "waitFor": "[data-deploy-start]",
+        "ms": 10000
+      },
+      {
+        "wait": 1000
       }
     ]
   },
   {
     "name": "frontier/army",
     "frame": "desktop",
-    "live": true,
     "setup": [
       {
-        "open": "/"
+        "open": "/lab/game?scenario=oath-battle-target"
       },
       {
-        "clickText": "Resume"
-      },
-      {
-        "waitFor": "[data-place-pill]",
+        "waitFor": ".mp-token",
         "ms": 60000
       },
       {
-        "click": "aside[aria-label=\"Realm\"] nav[aria-label=\"Armies\"] button[aria-pressed]"
+        "waitFor": "[data-slot-state=\"army\"]",
+        "ms": 60000
       },
       {
-        "wait": 2000
+        "wait": 1500
+      },
+      {
+        "clickText": "Skip tutorial",
+        "optional": true
+      },
+      {
+        "wait": 500
+      },
+      {
+        "click": "[data-slot-state=\"army\"]"
+      },
+      {
+        "wait": 1000
+      },
+      {
+        "click": "[data-slot-state=\"army\"]"
+      },
+      {
+        "wait": 1200
       }
     ]
   },
   {
     "name": "frontier/fight-card",
-    "frame": "desktop",
+    "frame": "game",
     "setup": [
       {
         "open": "/lab/game?scenario=camp"
       },
       {
-        "waitFor": "aside[aria-label=\"Realm\"] button[aria-label*=\"Army\"]",
+        "waitFor": "[data-slot-state=\"army\"]",
         "ms": 60000
       },
       {
-        "wait": 3500
+        "wait": 2000
       },
       {
-        "click": "aside[aria-label=\"Realm\"] button[aria-label*=\"Army\"]"
+        "click": "[data-slot-state=\"army\"]"
       },
       {
-        "wait": 2500
+        "wait": 1500
+      },
+      {
+        "tapUntil": {
+          "around": "army",
+          "button": "right",
+          "waitFor": "[data-fight-outcome]",
+          "dismiss": null,
+          "offsets": [
+            [65, -95],
+            [137, 0],
+            [70, 100],
+            [-75, 100],
+            [-135, 0],
+            [-67, -95]
+          ]
+        }
+      },
+      {
+        "wait": 800
       }
     ]
   },
@@ -303,90 +353,105 @@
     "frame": "desktop",
     "setup": [
       {
-        "open": "/lab/game?scenario=oath-pick"
+        "open": "/lab/game?scenario=oath-pick-crossbows"
       },
       {
-        "waitFor": "aside[aria-label=\"Realm\"] button[aria-label*=\"Army\"]",
+        "waitFor": "[data-slot-state=\"army\"]",
         "ms": 60000
       },
       {
-        "wait": 3500
+        "wait": 2500
       },
       {
-        "click": "aside[aria-label=\"Realm\"] button[aria-label*=\"Army\"]"
+        "click": "[data-slot-state=\"army\"]"
       },
       {
         "waitFor": "[data-oath-pick]",
         "ms": 15000
+      },
+      {
+        "wait": 1000
       }
     ]
   },
   {
     "name": "frontier/research",
     "frame": "desktop",
-    "live": true,
     "setup": [
       {
-        "open": "/"
+        "open": "/lab/game?scenario=research"
       },
       {
-        "clickText": "Resume"
-      },
-      {
-        "waitFor": "[data-place-pill]",
+        "waitFor": "nav[aria-label=\"Places\"] button[aria-label*=\"Research\"]",
         "ms": 60000
+      },
+      {
+        "wait": 2000
       },
       {
         "click": "nav[aria-label=\"Places\"] button[aria-label*=\"Research\"]"
       },
       {
-        "wait": 1500
+        "waitFor": "[data-research-tree]",
+        "ms": 15000
+      },
+      {
+        "wait": 800
+      },
+      {
+        "click": "[data-node][data-state=\"short\"]",
+        "optional": true
+      },
+      {
+        "wait": 800
       }
     ]
   },
   {
     "name": "frontier/season",
     "frame": "desktop",
-    "live": true,
     "setup": [
       {
-        "open": "/"
+        "open": "/lab/game?scenario=race"
       },
       {
-        "clickText": "Resume"
-      },
-      {
-        "waitFor": "[data-place-pill]",
+        "waitFor": "nav[aria-label=\"Places\"] button[aria-label*=\"Season\"]",
         "ms": 60000
+      },
+      {
+        "wait": 2000
       },
       {
         "click": "nav[aria-label=\"Places\"] button[aria-label*=\"Season\"]"
       },
       {
-        "wait": 1500
+        "waitFor": "[data-season-board]",
+        "ms": 15000
+      },
+      {
+        "wait": 1200
       }
     ]
   },
   {
     "name": "frontier/today",
     "frame": "desktop",
-    "live": true,
     "setup": [
       {
-        "open": "/"
+        "open": "/lab/game?scenario=quest"
       },
       {
-        "clickText": "Resume"
-      },
-      {
-        "waitFor": "[data-place-pill]",
+        "waitFor": "header[aria-label=\"Game controls\"] button[aria-label=\"Today\"]",
         "ms": 60000
+      },
+      {
+        "wait": 2000
       },
       {
         "click": "header[aria-label=\"Game controls\"] button[aria-label=\"Today\"]"
       },
       {
-        "wait": 1500
+        "wait": 1200
       }
     ]
   },
@@ -406,6 +471,118 @@
       },
       {
         "wait": 2500
+      }
+    ]
+  },
+  {
+    "name": "frontier/bane",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/game?scenario=bane-economy"
+      },
+      {
+        "waitFor": "[data-daily-quest-chip][data-tone=\"bane\"]",
+        "ms": 60000
+      },
+      {
+        "wait": 2500
+      },
+      {
+        "click": "[data-daily-quest-chip]"
+      },
+      {
+        "waitFor": "[data-bane-row]",
+        "ms": 10000
+      },
+      {
+        "wait": 1000
+      }
+    ]
+  },
+  {
+    "name": "frontier/deep-site",
+    "frame": "desktop",
+    "setup": [
+      {
+        "open": "/lab/game?scenario=deep-battle-target"
+      },
+      {
+        "waitFor": "[data-slot-state=\"army\"]",
+        "ms": 60000
+      },
+      {
+        "wait": 2500
+      },
+      {
+        "click": "[data-slot-state=\"army\"]"
+      },
+      {
+        "wait": 2000
+      },
+      {
+        "tapUntil": {
+          "waitFor": "[data-deep-site]",
+          "dismiss": null,
+          "offsets": [
+            [0, 0],
+            [0, -40],
+            [85, 0],
+            [-85, 0],
+            [45, -75],
+            [-45, -75],
+            [45, 75],
+            [-45, 75]
+          ]
+        }
+      },
+      {
+        "wait": 1000
+      }
+    ]
+  },
+  {
+    "name": "frontier/supply-post",
+    "frame": "game",
+    "setup": [
+      {
+        "open": "/lab/game?scenario=supply-post"
+      },
+      {
+        "waitFor": "[data-slot-state=\"army\"]",
+        "ms": 60000
+      },
+      {
+        "wait": 2000
+      },
+      {
+        "click": "[data-slot-state=\"army\"]"
+      },
+      {
+        "wait": 1500
+      },
+      {
+        "key": "Escape"
+      },
+      {
+        "wait": 500
+      },
+      {
+        "tapUntil": {
+          "around": "army",
+          "waitFor": "[data-supply-army]",
+          "offsets": [
+            [65, -95],
+            [137, 0],
+            [70, 100],
+            [-75, 100],
+            [-135, 0],
+            [-67, -95]
+          ]
+        }
+      },
+      {
+        "wait": 800
       }
     ]
   }
