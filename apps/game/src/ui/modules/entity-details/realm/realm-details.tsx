@@ -1,4 +1,4 @@
-import { RESOURCE_PRODUCTION_MODELS, configManager } from "@bibliothecadao/eternum";
+import { RESOURCE_PRODUCTION_MODELS } from "@bibliothecadao/eternum";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip } from "@/ui/design-system/kit/hud-elements";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -30,7 +30,7 @@ const LaborRateRow = ({ structureId }: { structureId: ID }) => {
   const perSecond =
     timestamp > 0 ? manager.productionData(ResourcesIds.Labor, timestamp)?.productionPerSecond : undefined;
   return (
-    <SectionRow label={resourceName(ResourcesIds.Labor, configManager.isFrontier())}>
+    <SectionRow label={resourceName(ResourcesIds.Labor, false)}>
       <span data-tip="Labor production">
         <HudChip tone="good">
           {formatRate(perSecond)}

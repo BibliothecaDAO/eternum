@@ -185,7 +185,7 @@ const LocalTilePanel = () => {
   }, [producedResource, liveStructure, buildingCategory, setup.store]);
 
   const producedResourceName = useMemo(() => {
-    return producedResource !== undefined ? resourceName(producedResource, configManager.isFrontier()) : null;
+    return producedResource !== undefined ? resourceName(producedResource, false) : null;
   }, [producedResource]);
 
   // Undefined when the recipe is unknown here: shown as "—", never as a free cost.
@@ -451,7 +451,7 @@ const LocalTilePanel = () => {
                         {consumedBy.length > 0 ? (
                           <div className="grid grid-cols-3 gap-2">
                             {consumedBy.map((resourceId) => {
-                              const name = resourceName(Number(resourceId), configManager.isFrontier());
+                              const name = resourceName(Number(resourceId), false);
                               return (
                                 <HudChip key={resourceId}>
                                   <ResourceIcon withTooltip={false} resource={Number(resourceId)} size="xs" />
@@ -484,7 +484,7 @@ const LocalTilePanel = () => {
           {ongoingCost !== undefined && ongoingCost.length > 0 && (
             <SectionRow label="Burns a cycle">
               {ongoingCost.map((entry, index) => {
-                const name = resourceName(Number(entry.resource), configManager.isFrontier());
+                const name = resourceName(Number(entry.resource), false);
                 return (
                   <span key={`${entry.resource}-${index}`} title={name}>
                     <HudChip tone="bad">
@@ -513,7 +513,7 @@ const LocalTilePanel = () => {
               {buildCost.length > 0 && (
                 <SectionRow label="Build cost">
                   {buildCost.map((entry, index) => {
-                    const name = resourceName(Number(entry.resource), configManager.isFrontier());
+                    const name = resourceName(Number(entry.resource), false);
                     const balanceInfo = getBalance(structureEntityId, entry.resource, currentDefaultTick, setup.store);
                     const balance = knownAmount(balanceInfo.balance);
                     const hasEnough = balance !== undefined && balance >= entry.amount;

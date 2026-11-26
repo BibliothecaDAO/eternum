@@ -7,7 +7,7 @@ import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { dayOf } from "@bibliothecadao/eternum";
-import { TroopType } from "@bibliothecadao/types";
+import { FRONTIER_TROOP_NAMES, TroopType } from "@bibliothecadao/types";
 
 import { OpeningProvider } from "../opening/opening-context";
 import { EARLY_REALM, MID_REALM } from "../research/progression-fixture";
@@ -434,8 +434,8 @@ describe("the phone tab bar", () => {
   });
 
   it("names an army by its troops, and the picked army by that name alone, with no chip for the count", () => {
-    expect(armyName(TroopType.Paladin, 6_938)).toBe("6,938 Scouts");
-    expect(armyName(TroopType.Crossbowman, 1)).toBe("1 Crossbows");
+    expect(armyName(TroopType.Paladin, 6_938)).toBe(`6,938 ${FRONTIER_TROOP_NAMES[TroopType.Paladin].many}`);
+    expect(armyName(TroopType.Crossbowman, 1)).toBe(`1 ${FRONTIER_TROOP_NAMES[TroopType.Crossbowman].one}`);
     act(() =>
       root.render(
         <PickedArmy

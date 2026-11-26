@@ -6,7 +6,6 @@ import {
   ResourceManager,
   getTotalResourceWeightKg,
   calculateDonkeysNeeded,
-  configManager,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -16,11 +15,11 @@ const formatResourceSummary = (entry: TransferAutomationEntry): string => {
     return entry.resourceConfigs
       .map((cfg) => {
         const amount = Math.max(0, Math.floor(cfg.amount ?? 0));
-        return `${resourceName(cfg.resourceId, configManager.isFrontier())} ${formatCharge(amount)}`;
+        return `${resourceName(cfg.resourceId, false)} ${formatCharge(amount)}`;
       })
       .join(", ");
   }
-  return entry.resourceIds.map((rid) => resourceName(rid, configManager.isFrontier())).join(", ");
+  return entry.resourceIds.map((rid) => resourceName(rid, false)).join(", ");
 };
 
 export const TransferAutomationAdvancedModal = () => {

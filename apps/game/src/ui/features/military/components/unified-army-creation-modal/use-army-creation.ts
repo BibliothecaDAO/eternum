@@ -548,7 +548,7 @@ function readTroopSupply(
   timestamp: number,
 ): TroopSupply {
   const resourceId = getTroopResourceId(troop.type, troop.tier);
-  const name = resourceName(resourceId, configManager.isFrontier());
+  const name = resourceName(resourceId, false);
   if (structureId === undefined) return { name, perHour: undefined, secondsToFullArmy: null };
   const manager = new ResourceManager(store, structureId);
   const production = manager.productionData(resourceId, timestamp);

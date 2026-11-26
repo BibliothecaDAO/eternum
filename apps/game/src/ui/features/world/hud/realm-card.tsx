@@ -15,7 +15,7 @@ import { formatUsedBuildingTilesLabel } from "@/ui/features/world/containers/str
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { divideByPrecision, type ResourceManager, configManager } from "@bibliothecadao/eternum";
+import { divideByPrecision, type ResourceManager } from "@bibliothecadao/eternum";
 import { inferRealmPreset, REALM_PRESETS, type RealmPresetId } from "@bibliothecadao/eternum/automation";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import {
@@ -189,11 +189,12 @@ const ResourceRings = ({
   summary: StructureProductionSummary;
 }) => {
   const readings = useResourceReadings(resources, summary);
+  const frontier = useGameModeConfig().id === "frontier";
   if (readings.length === 0) return <p className="text-hud-body text-hud-muted">No resources yet.</p>;
   return (
     <ul aria-label="Resources" className="grid grid-cols-5 justify-items-center gap-y-5 pb-2 pt-2">
       {readings.map((reading) => (
-        <li key={reading.resourceId} aria-label={describeResource(reading)}>
+        <li key={reading.resourceId} aria-label={describeResource(reading, frontier)}>
           <ProductionStatusBadge
             resource={reading.resourceId}
             isProducing={reading.producing}
@@ -208,8 +209,8 @@ const ResourceRings = ({
 };
 
 /** "Wheat · 12,400 held · 3 buildings": what the holding has of it; the ring inside reads its production. */
-const describeResource = ({ resourceId, held, buildings }: ResourceReading): string => {
-  const parts = [`${resourceName(resourceId, configManager.isFrontier())} · ${formatExact(Math.floor(held))} held`];
+const describeResource = ({ resourceId, held, buildings }: ResourceReading, frontier: boolean): string => {
+  const parts = [`${resourceName(resourceId, frontier)} · ${formatExact(Math.floor(held))} held`];
   if (buildings > 0) parts.push(formatCount(buildings, "building"));
   return parts.join(" · ");
 };

@@ -64,7 +64,7 @@ const BuildCost = ({ requirements }: { requirements: ResourceRequirement[] | und
           )}
         >
           <ResourceIcon resource={resource} size="xs" withTooltip={false} />
-          <span className="flex-1">{resourceName(resource, configManager.isFrontier())}</span>
+          <span className="flex-1">{resourceName(resource, false)}</span>
           <span className="text-right tabular-nums">{heldAgainstNeed(current, amount)}</span>
         </li>
       ))}
@@ -79,7 +79,7 @@ const recipeLine = (resource: ResourcesIds, simple: boolean, hasWonder: boolean)
   if (!read || read.length === 0 || !output) return null;
   const inputs = resource === ResourcesIds.Donkey && hasWonder ? adjustWonderLordsCost(read) : read;
   const burns = inputs.map(
-    ({ resource: input, amount }) => `${formatFigure(amount)} ${resourceName(input, configManager.isFrontier())}`,
+    ({ resource: input, amount }) => `${formatFigure(amount)} ${resourceName(input, false)}`,
   );
-  return `${formatFigure(output)} ${resourceName(resource, configManager.isFrontier())} from ${burns.join(" · ")}`;
+  return `${formatFigure(output)} ${resourceName(resource, false)} from ${burns.join(" · ")}`;
 };

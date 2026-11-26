@@ -93,7 +93,7 @@ export const ResourceProductionControls = ({
 
   const amountField = (
     <AmountInput
-      label={`Amount of ${resourceName(selectedResource, configManager.isFrontier())}`}
+      label={`Amount of ${resourceName(selectedResource, false)}`}
       value={sizing.by === "output" ? sizing.amount : run ? fromUnits(run.outputUnits) : 0}
       max={Number.POSITIVE_INFINITY}
       onChange={(amount) => setSizing({ by: "output", amount })}
@@ -103,12 +103,12 @@ export const ResourceProductionControls = ({
   if (compact)
     return (
       <section
-        aria-label={`${resourceName(selectedResource, configManager.isFrontier())} production`}
+        aria-label={`${resourceName(selectedResource, false)} production`}
         className="flex flex-col gap-2"
       >
         <span className="flex flex-col gap-1">
           <span className="text-hud-label text-hud-muted">
-            Amount of {resourceName(selectedResource, configManager.isFrontier())}
+            Amount of {resourceName(selectedResource, false)}
           </span>
           {amountField}
         </span>
@@ -118,7 +118,7 @@ export const ResourceProductionControls = ({
             : `${runOutputLine(run, selectedResource)} from ${run.inputs
                 .map(
                   (input) =>
-                    `${formatCharge(fromUnits(input.units))} ${resourceName(input.resource, configManager.isFrontier())}`,
+                    `${formatCharge(fromUnits(input.units))} ${resourceName(input.resource, false)}`,
                 )
                 .join(" · ")}`}
         </p>
@@ -158,7 +158,7 @@ export const ResourceProductionControls = ({
   return (
     <HudPanel
       kind="section"
-      title={`Start production · ${resourceName(selectedResource, configManager.isFrontier())}`}
+      title={`Start production · ${resourceName(selectedResource, false)}`}
       collapsible={false}
     >
       <div className="flex flex-col gap-3">
@@ -219,7 +219,7 @@ const runVerdict = (
  */
 const noCycleReason = (recipe: ProductionRecipe, sizing: RunSizing): string => {
   if (sizing.by === "input")
-    return `Spend at least ${formatTypedNumber(fromUnits(oneCycleOf(recipe, sizing.resource)))} ${resourceName(sizing.resource, configManager.isFrontier())}`;
+    return `Spend at least ${formatTypedNumber(fromUnits(oneCycleOf(recipe, sizing.resource)))} ${resourceName(sizing.resource, false)}`;
   if (sizing.by === "output") return "Enter an amount to make";
   return "Not enough resources";
 };
@@ -236,4 +236,4 @@ const runInputs = (run: ProductionRun, sizing: RunSizing, balances: Record<numbe
 
 /** What the run makes: "10 Crossbowman T1", the whole cycles' output, which may be more than was typed. */
 const runOutputLine = (run: ProductionRun, resource: number) =>
-  `${formatCharge(fromUnits(run.outputUnits))} ${resourceName(resource, configManager.isFrontier())}`;
+  `${formatCharge(fromUnits(run.outputUnits))} ${resourceName(resource, false)}`;

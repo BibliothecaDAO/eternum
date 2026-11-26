@@ -40,6 +40,7 @@ vi.mock("@/ui/design-system/molecules/resource-icon", () => ({ ResourceIcon: () 
 // An explore costs 20 stamina: a segment of the army's bar.
 beforeEach(() => {
   vi.spyOn(configManager, "getExploreStaminaCost").mockReturnValue(20);
+  vi.spyOn(configManager, "isFrontier").mockReturnValue(false);
 });
 
 afterEach(() => {

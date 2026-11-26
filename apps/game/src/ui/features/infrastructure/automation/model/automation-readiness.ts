@@ -33,7 +33,7 @@ export const readAutomationBalance = (resources: ResourceManager, tick: number, 
   const balance = resources.balanceWithProduction(tick, resourceId)?.balance;
   if (balance === undefined)
     throw new AutomationUnavailable({
-      message: `${resourceName(resourceId, configManager.isFrontier())} balance is not synchronized.`,
+      message: `${resourceName(resourceId, false)} balance is not synchronized.`,
     });
   return Number(balance) / RESOURCE_PRECISION;
 };
@@ -50,7 +50,7 @@ export const readTransferResources = (resources: ResourceManager, tick: number, 
             const weight = configManager.getResourceWeightKg(id);
             if (weight === undefined)
               throw new AutomationUnavailable({
-                message: `${resourceName(id, configManager.isFrontier())} weight is not synchronized.`,
+                message: `${resourceName(id, false)} weight is not synchronized.`,
               });
             weights.set(id, weight);
           }

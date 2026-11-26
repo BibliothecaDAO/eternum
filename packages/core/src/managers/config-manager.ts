@@ -432,7 +432,7 @@ export class ClientConfigManager {
     return this.game().family;
   }
   isFrontier(): boolean {
-    return this.store !== undefined && nativeGameModeOfFamily(this.getFamily()) === "frontier";
+    return nativeGameModeOfFamily(this.getFamily()) === "frontier";
   }
   isCommandEnabled(command: keyof typeof nativeCommandBits): boolean {
     return isCommandEnabled(this.rules(), command);
