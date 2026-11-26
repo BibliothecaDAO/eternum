@@ -452,8 +452,9 @@ fn a_migration_free_release_reaches_a_populated_season_one_game_rewriting_no_fac
     let (d, game_id) = super::aspects::setup_aspects(97);
     let mine = super::deep_sites::site(d, game_id, crate::rules::DEEP_MINE);
     let guard = super::deep_sites::deployed(d, game_id, 1, 1500);
-    super::deep_sites::seize(d, guard, mine, 0);
-    assert!(super::deep_sites::held(d, guard).is_some());
+    let holder = interact_with_state(d.games, || crate::logic::troops::explorer(guard).unwrap().owner);
+    let garrison = super::deep_sites::seize(d, guard, mine, 0);
+    assert_eq!(super::deep_sites::holder(d, garrison), holder);
     let visitor = super::army_activity::player(d, 9701);
     let walker = super::deep_sites::deployed(visitor, game_id, 2, 1000);
     interact_with_state(
@@ -465,11 +466,11 @@ fn a_migration_free_release_reaches_a_populated_season_one_game_rewriting_no_fac
             );
         },
     );
-    let armies = array![guard, walker].span();
+    let armies = array![walker].span();
     super::set_launcher(d, d.actor);
     let releases = IReleasesDispatcher { contract_address: d.games };
     let candidate = releases.release(1);
-    let before = season_facts(d, game_id, armies);
+    let before = season_facts(d, game_id, armies, garrison);
     start_cheat_caller_address(d.games, authority());
     releases
         .register_release(2, crate::logic::release::Release { previous: 1, ..candidate }, releases.release_classes(1));
@@ -477,7 +478,7 @@ fn a_migration_free_release_reaches_a_populated_season_one_game_rewriting_no_fac
     let mut tune = spy_events();
     releases.apply_release(game_id, 2);
     assert_only_pin_moved(ref tune, d, game_id, 2);
-    assert_eq!(season_facts(d, game_id, armies), before);
+    assert_eq!(season_facts(d, game_id, armies, garrison), before);
     assert_eq!(releases.open_release_of(crate::game::FRONTIER), 1);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
     let tick = (super::play_fixture::FIXTURE_START / interval + 1) * interval;
@@ -489,8 +490,8 @@ fn a_migration_free_release_reaches_a_populated_season_one_game_rewriting_no_fac
         ),
         tick,
     );
-    assert!(season_facts(d, game_id, armies) != before);
-    let played = season_facts(d, game_id, armies);
+    assert!(season_facts(d, game_id, armies, garrison) != before);
+    let played = season_facts(d, game_id, armies, garrison);
     start_cheat_caller_address(d.games, authority());
     releases
         .register_release(3, crate::logic::release::Release { previous: 2, ..candidate }, releases.release_classes(1));
@@ -498,7 +499,7 @@ fn a_migration_free_release_reaches_a_populated_season_one_game_rewriting_no_fac
     let mut rollback = spy_events();
     releases.apply_release(game_id, 3);
     assert_only_pin_moved(ref rollback, d, game_id, 3);
-    assert_eq!(season_facts(d, game_id, armies), played);
+    assert_eq!(season_facts(d, game_id, armies, garrison), played);
     assert_eq!(releases.release(3), crate::logic::release::Release { previous: 2, ..candidate });
     assert_eq!(releases.game_release(game_id), 3);
 }
@@ -548,7 +549,9 @@ fn assert_only_pin_moved(ref spy: snforge_std::EventSpy, d: super::Deployment, g
     assert_eq!(*pin.data.at(3), release_id.into());
 }
 
-fn season_facts(d: super::Deployment, game_id: u32, armies: Span<ExplorerKey>) -> Array<felt252> {
+fn season_facts(
+    d: super::Deployment, game_id: u32, armies: Span<ExplorerKey>, garrison: crate::guards::GuardKey,
+) -> Array<felt252> {
     interact_with_state(
         d.games,
         || {
@@ -562,11 +565,17 @@ fn season_facts(d: super::Deployment, game_id: u32, armies: Span<ExplorerKey>) -
                 let explorer = crate::logic::troops::explorer(*army).unwrap();
                 explorer.serialize(ref facts);
                 crate::logic::progression::require(*army).serialize(ref facts);
-                state.deep.guards.read((game_id, *army.explorer_id)).serialize(ref facts);
                 let home = ResourceKey { game_id, entity_id: explorer.owner };
                 for resource_type in 1_u8..59 {
                     crate::logic::resources::balance(home, resource_type).serialize(ref facts);
                 }
+            }
+            crate::logic::guards::guard(garrison).serialize(ref facts);
+            let holder = crate::logic::deep_garrisons::home(garrison);
+            holder.serialize(ref facts);
+            for resource_type in 1_u8..59 {
+                crate::logic::resources::balance(ResourceKey { game_id, entity_id: holder }, resource_type)
+                    .serialize(ref facts);
             }
             facts
         },

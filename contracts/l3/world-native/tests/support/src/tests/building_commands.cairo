@@ -78,5 +78,5 @@ pub fn level_up(d: super::Deployment, home: ResourceKey, timestamp: u64) {
     for cost in crate::logic::upgrades::recipe(level + 1).costs {
         super::resource_commands::grant(d, home, *cost.resource_type, *cost.amount);
     }
-    assert!(execute(d, Command::LevelUp(home.entity_id), timestamp));
+    assert!(super::resource_commands::execute_in_game(d, home.game_id, Command::LevelUp(home.entity_id), timestamp));
 }

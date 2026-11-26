@@ -145,7 +145,7 @@ fn successful_attacks_record_their_target_and_refusals_preserve_it() {
     super::deep_sites::seize(rival, guard, target, 0);
     super::deep_sites::beside(d, attacker, target, 1);
     super::deep_sites::applied(d, game_id, super::deep_sites::fight(attacker, target), FIXTURE_START);
-    assert_eq!(combat_at(d, attacker), crate::combat::ArmyCombat { last_target: guard.explorer_id });
+    assert_eq!(combat_at(d, attacker), crate::combat::ArmyCombat { last_target: target.entity_id });
     let before = army(d, attacker);
     set_explorer_fixture(
         d.games,
@@ -163,7 +163,7 @@ fn successful_attacks_record_their_target_and_refusals_preserve_it() {
     );
     let tired = army(d, attacker);
     assert!(!execute_in_game(d, game_id, super::deep_sites::fight(attacker, target), FIXTURE_START));
-    assert_eq!(combat_at(d, attacker).last_target, guard.explorer_id);
+    assert_eq!(combat_at(d, attacker).last_target, target.entity_id);
     assert_eq!(army(d, attacker), tired);
 }
 
