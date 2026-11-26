@@ -433,6 +433,27 @@ const markRow = (guardCount: number, bow: boolean) => {
   };
 };
 
+const matchupGuardSizes = [campMid, 10_000] as const;
+const advantageMultipliers = [exampleMultiplier, 2, 3] as const;
+const crossbowsBeatBladeAtExample = matchupGuardSizes.every((guardCount) => {
+  const send = Math.round(guardCount * exampleMultiplier);
+  const crossbows = runFight("Crossbowman", send, "Knight", guardCount);
+  const knights = runFight("Knight", send, "Knight", guardCount);
+  return crossbows.wins && crossbows.kept > knights.kept;
+});
+const knightsBeatBowAtAdvantage = matchupGuardSizes.every((guardCount) =>
+  advantageMultipliers.every((multiplier) => {
+    const send = Math.round(guardCount * multiplier);
+    const knights = runFight("Knight", send, "Crossbowman", guardCount);
+    const crossbows = runFight("Crossbowman", send, "Crossbowman", guardCount);
+    return knights.wins && knights.kept > crossbows.kept;
+  }),
+);
+const knightsLoseEvenSmallBow = !runFight("Knight", campMid, "Crossbowman", campMid).wins;
+if (!crossbowsBeatBladeAtExample || !knightsBeatBowAtAdvantage || !knightsLoseEvenSmallBow) {
+  throw new Error("Combat matchup prose and Bring column disagree with forecastFight outcomes");
+}
+
 const herdBps = Math.round(
   (frontierPreset.discovery.beastsBps * rule.BEAST_HERD_SHARE) / (rule.BEAST_HERD_SHARE + rule.BEAST_BAND_SHARE),
 );
@@ -639,7 +660,7 @@ export const FRONTIER = {
     exampleKnightsKept: n(exampleKnights.kept),
     exampleKnightsLost: n(exampleKnights.lost),
     exampleKnightsExchanges: n(exampleKnights.exchanges),
-    markRows: [markRow(campMid, false), markRow(campMid, true), markRow(10_000, false), markRow(10_000, true)],
+    markRows: matchupGuardSizes.flatMap((size) => [markRow(size, false), markRow(size, true)]),
   },
   discovery: {
     herd: pct(herdBps),
