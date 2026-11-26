@@ -1,3 +1,5 @@
+use crate::stamina::StaminaSourceTrait;
+
 #[starknet::component]
 pub mod RelicState {
     use starknet::ContractAddress;
@@ -70,10 +72,13 @@ pub mod RelicState {
         ) {
             let execution = crate::commands::execution_context(game_id, context);
             self.assert_command(game_id, execution.timestamp, execution);
-            assert!(crate::logic::deep::contains(game_id, command.coord), "site must be in the Deep");
-            crate::deep::IDeepSitesDispatcherTrait::join_deep_site(
-                crate::logic::deep_sites::dispatcher(game_id), game_id, actor, command, context,
-            );
+            if crate::logic::deep::contains(game_id, command.coord) {
+                crate::deep::IDeepSitesDispatcherTrait::join_deep_site(
+                    crate::logic::deep_sites::dispatcher(game_id), game_id, actor, command, context,
+                );
+                return;
+            }
+            super::use_frontier_site(actor, command, context, execution);
         }
     }
 
@@ -223,4 +228,68 @@ pub mod RelicState {
             assert_playing(game_context.game.unbox(), timestamp);
         }
     }
+}
+
+fn use_frontier_site(
+    actor: starknet::ContractAddress,
+    command: crate::relics::InteractSite,
+    context: crate::commands::ActionContext,
+    execution: crate::commands::ExecutionContext,
+) {
+    let game_id = execution.game_id;
+    let key = crate::troops::ExplorerKey { game_id, explorer_id: command.explorer_id };
+    let army = crate::logic::troops::command_explorer(key, Some(actor), execution.timestamp, execution);
+    assert!(army.troops.count != 0, "explorer is dead");
+    crate::expeditions::assert_same_region(army.coord, command.coord, crate::logic::settlement::spacing());
+    assert!(crate::geometry::adjacent(army.coord, command.coord), "explorer is not adjacent to site");
+    let site = consume_frontier_site(crate::geometry::tile_key(game_id, command.coord));
+    let benefit = if site == crate::taxonomy::SHRINE_OCCUPIER {
+        offer_shrine_oaths(key, command.coord, context);
+        crate::relics::SiteBenefit::Shrine(0)
+    } else {
+        crate::relics::SiteBenefit::Well(refill_at_well(key, army, execution.rules.unbox().troop_stamina_config))
+    };
+    crate::logic::stories::emit_entity_story(
+        crate::resources::ResourceKey { game_id, entity_id: command.explorer_id },
+        actor,
+        crate::ownership::Story::SiteUsed(
+            crate::relics::SiteUsed { explorer_id: command.explorer_id, coord: command.coord, benefit },
+        ),
+        execution.timestamp,
+    );
+}
+
+fn consume_frontier_site(key: crate::map::TileKey) -> u8 {
+    let site = crate::logic::map::occupancy(key);
+    assert!(crate::discovery::is_frontier_site(site), "tile is not a shrine or well");
+    let site = site.unwrap();
+    crate::logic::map::MapState::vacate(key, site.entity_id);
+    site.category
+}
+
+fn offer_shrine_oaths(
+    key: crate::troops::ExplorerKey, coord: crate::troops::Coord, context: crate::commands::ActionContext,
+) {
+    let mut raw_root = context.raw_root;
+    crate::oaths::IOathsDispatcherTrait::offer_oaths(
+        crate::oaths::IOathsLibraryDispatcher {
+            class_hash: crate::logic::release::class_of(key.game_id, crate::slots::RELICS),
+        },
+        key,
+        coord,
+        crate::random::game_root(ref raw_root, key.game_id),
+    );
+}
+
+fn refill_at_well(
+    key: crate::troops::ExplorerKey, army: crate::troops::ExplorerTroops, rules: crate::rules::TroopStaminaConfig,
+) -> u64 {
+    let before = army.troops.stamina.inline().amount;
+    let mut troops = army.troops;
+    crate::logic::oaths::refill_at_well(key, ref troops, rules);
+    let previous = crate::troops::ExplorerRecordTrait::into_record(
+        crate::logic::troops::explorer(key).expect('missing explorer'),
+    );
+    crate::logic::army_slot_storage::persist(key, previous, troops);
+    troops.stamina.inline().amount - before
 }
