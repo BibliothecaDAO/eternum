@@ -49,13 +49,31 @@ Then four modifiers apply:
 
 Every troop and every guard carries a **mark** on its map token and portrait: either **blade** or **bow**.
 
-- **Bow against blade:** the bow strikes first, and the blade hits back only with the troops that survive that strike.
-- **Same mark:** two blades or two bows strike at the same time.
+| Troop                             | Mark  | Damage dealt                                                                      | Special                                                                                           |
+| --------------------------------- | ----- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **{FRONTIER.troops.knight}**      | Blade | **Full damage**                                                                   | Takes **{FRONTIER.attributes.knightGuardReduction} less damage** while guarding a Deep site       |
+| **{FRONTIER.troops.crossbowman}** | Bow   | **{FRONTIER.attributes.lightDamageReduction} less** than {FRONTIER.troops.knight} | **Strikes first** against Blade enemies                                                           |
+| **{FRONTIER.troops.scout}**       | Blade | **{FRONTIER.attributes.lightDamageReduction} less** than {FRONTIER.troops.knight} | Reveals tiles for **{FRONTIER.stamina.scoutReveal}** stamina instead of {FRONTIER.stamina.reveal} |
 
-Because of first strike, bring **{FRONTIER.troops.crossbowman}** (bow) against blade enemies (herds, camps, ruins,
-{FRONTIER.combat.bladeDeepBeasts}) and **{FRONTIER.troops.knight}** (blade) against bow enemies (bands, rifts,
-{FRONTIER.combat.bowDeepBeasts}). As a rule of thumb, clearing a guard with no Oaths or relics takes about
-{FRONTIER.combat.exampleRatio} the guard's troops with the matching mark.
+| Attacker | Defender | Who strikes first                                           |
+| -------- | -------- | ----------------------------------------------------------- |
+| Bow      | Blade    | **Attacker (bow)** — defender hits back only with survivors |
+| Blade    | Bow      | **Defender (bow)** — attacker hits back only with survivors |
+| Bow      | Bow      | **Simultaneous** — both sides hit at the same time          |
+| Blade    | Blade    | **Simultaneous** — both sides hit at the same time          |
+
+Bring **{FRONTIER.troops.crossbowman}** (bow) against blade enemies (herds, camps, ruins,
+{FRONTIER.combat.bladeDeepBeasts}): even with {FRONTIER.attributes.lightDamageReduction} less damage than
+{FRONTIER.troops.knight}, striking first against blades lets them clear with fewer losses. Bring
+**{FRONTIER.troops.knight}** (blade) against bow enemies (bands, rifts, {FRONTIER.combat.bowDeepBeasts}): the bow
+defender still strikes first — which punishes equal-sized small fights — but in winning fights {FRONTIER.troops.knight}'
+full damage outweighs the bow's first strike and beats {FRONTIER.troops.crossbowman}'
+{FRONTIER.attributes.lightDamageReduction} damage cut. **{FRONTIER.troops.scout}** (blade) also deal
+{FRONTIER.attributes.lightDamageReduction} less damage with no first strike, so use them to reveal mist cheaply
+({FRONTIER.stamina.scoutReveal} stamina), not for heavy fights. **{FRONTIER.troops.knight}** are also the strongest
+guard for holding Deep sites, taking {FRONTIER.attributes.knightGuardReduction} less damage from every attack. As a rule
+of thumb, bringing about {FRONTIER.combat.exampleRatio} the guard's troops clears a site cleanly with no Oaths or
+relics.
 
 ## Worked example
 

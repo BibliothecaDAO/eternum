@@ -1,7 +1,13 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DEPLOY_WORDS, NO_OPEN_TILE, NO_TROOPS_AT_HOME, wheatForOnly } from "@/ui/design-system/kit/words";
+import {
+  DEPLOY_WORDS,
+  NO_OPEN_TILE,
+  NO_TROOPS_AT_HOME,
+  TROOP_TRAIT_WORDS,
+  wheatForOnly,
+} from "@/ui/design-system/kit/words";
 
 // The home ring as the map knows it: explored and empty (one tile maybe taken), or not yet synced.
 const ring = { explored: true, taken: -1 };
@@ -45,10 +51,11 @@ import {
   setBlockTimestampSource,
   spawnRing,
 } from "@bibliothecadao/eternum";
-import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
+import { nativeRuleConstants, type GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { Direction, RESOURCE_PRECISION, TROOP_TYPES, TroopTier, TroopType } from "@bibliothecadao/types";
 import { frontierDay } from "./deploy-fixture";
 import { DeploySheet } from "./deploy-sheet";
+import { troopFigures, troopTraits } from "./troop-figures";
 
 afterEach(() => {
   layout.current = "desktop";
@@ -256,6 +263,31 @@ describe("the Deploy sheet", () => {
       }
     },
   );
+
+  it("tells each troop's fight and reveal traits on its card, in its tip, and under the cards for the one chosen", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store, row } = frontierDay();
+    const figures = {
+      lightCut: 100 - nativeRuleConstants.FRONTIER_LIGHT_DAMAGE_PERCENT,
+      guardCut: 100 - nativeRuleConstants.FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT,
+      scoutReveal: nativeRuleConstants.SCOUT_EXPLORE_STAMINA,
+      baseReveal: store.require("SliceRules", { game_id: 1 }).troop_stamina_config.stamina_explore_stamina_cost,
+    };
+    expect(troopFigures(store, 1)).toEqual(figures);
+    const knight = { mark: "blade", light: false, guard: true, scout: false } as const;
+    expect(troopTraits(TroopType.Knight)).toEqual(knight);
+    const { host, root } = render(store, row);
+    try {
+      const card = host.querySelector<HTMLElement>(".deploy-troop-card")!;
+      expect(card.getAttribute("aria-pressed")).toBe("true");
+      expect(card.querySelector("[data-troop-trait]")?.textContent).toBe(TROOP_TRAIT_WORDS.card(knight, figures));
+      expect(card.getAttribute("data-tip")).toBe(TROOP_TRAIT_WORDS.tip(knight, figures));
+      expect(host.querySelector("[data-troop-summary]")?.textContent).toBe(TROOP_TRAIT_WORDS.summary(knight, figures));
+    } finally {
+      act(() => root.unmount());
+      host.remove();
+    }
+  });
 
   it("opens on the slot the Armies card's Deploy named", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

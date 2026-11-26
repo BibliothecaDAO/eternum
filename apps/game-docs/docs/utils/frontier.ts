@@ -494,6 +494,11 @@ const bowDeepBeasts = deepSites
   .map((site) => DEEP_BEASTS[site.key].name)
   .join(", ");
 
+const guardMark = (bow: boolean) =>
+  bow
+    ? { weapon: "Bow", bring: FRONTIER_TROOP_NAMES[TroopType.Knight].many }
+    : { weapon: "Blade", bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many };
+
 const ruinFamilyRange = (depth: number) =>
   `${beastOf("ruin", depth).name} (${range(...previewRuinGuardBounds(depth + 1, depth))} to ${range(...previewRuinGuardBounds(depth + RELICS_PER_LAYER, depth))})`;
 
@@ -501,8 +506,7 @@ const beastFamilies = [
   {
     name: "Herd",
     icon: beastMeaning(beastOf("herd", 0).model),
-    weapon: "Blade",
-    bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many,
+    ...guardMark(false),
     pays: `Wheat (${n(CONTRACT.herdGuardMultiplier)}x starting guard)`,
     surface: `${beastOf("herd", 0).name} (${range(frontierPreset.depths[0].beastWeakLower, frontierPreset.depths[0].beastWeakUpper)})`,
     veil: `${beastOf("herd", 1).name} (${range(frontierPreset.depths[1].beastWeakLower, frontierPreset.depths[1].beastWeakUpper)})`,
@@ -511,8 +515,7 @@ const beastFamilies = [
   {
     name: "Band",
     icon: beastMeaning(beastOf("band", 0).model),
-    weapon: "Bow",
-    bring: FRONTIER_TROOP_NAMES[TroopType.Knight].many,
+    ...guardMark(true),
     pays: `Oath pick (${n(CONTRACT.oathDrawCount)} Oaths)`,
     surface: `${beastOf("band", 0).name} (${range(frontierPreset.depths[0].beastStrongLower, frontierPreset.depths[0].beastStrongUpper)})`,
     veil: `${beastOf("band", 1).name} (${range(frontierPreset.depths[1].beastStrongLower, frontierPreset.depths[1].beastStrongUpper)})`,
@@ -521,8 +524,7 @@ const beastFamilies = [
   {
     name: "Camp",
     icon: beastMeaning(beastOf("camp", 0).model),
-    weapon: "Blade",
-    bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many,
+    ...guardMark(false),
     pays: `Labor (${n(100 / CONTRACT.campGuardDivisor)}% starting guard) + supply post`,
     surface: `${beastOf("camp", 0).name} (${range(frontierPreset.depths[0].siteGuardLower, frontierPreset.depths[0].siteGuardUpper)})`,
     veil: `${beastOf("camp", 1).name} (${range(frontierPreset.depths[1].siteGuardLower, frontierPreset.depths[1].siteGuardUpper)})`,
@@ -531,8 +533,7 @@ const beastFamilies = [
   {
     name: "Rift",
     icon: beastMeaning(beastOf("rift", 0).model),
-    weapon: "Bow",
-    bring: FRONTIER_TROOP_NAMES[TroopType.Knight].many,
+    ...guardMark(true),
     pays: `Essence (${n(100 * CONTRACT.riftGuardMultiplier)}% starting guard)`,
     surface: `${beastOf("rift", 0).name} (${range(frontierPreset.depths[0].riftGuardLower, frontierPreset.depths[0].riftGuardUpper)})`,
     veil: `${beastOf("rift", 1).name} (${range(frontierPreset.depths[1].riftGuardLower, frontierPreset.depths[1].riftGuardUpper)})`,
@@ -541,8 +542,7 @@ const beastFamilies = [
   {
     name: "Ruin",
     icon: beastMeaning(beastOf("ruin", 0).model),
-    weapon: "Blade",
-    bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many,
+    ...guardMark(false),
     pays: "1 relic or 1 Fragment cache",
     surface: ruinFamilyRange(0),
     veil: ruinFamilyRange(1),
@@ -842,10 +842,7 @@ export const FRONTIER = {
         beastName: deepBeast.name,
         beastIcon: beastMeaning(deepBeast.model),
         troops: n(beast.count),
-        weapon: beast.bow ? "Bow" : "Blade",
-        bring: beast.bow
-          ? FRONTIER_TROOP_NAMES[TroopType.Knight].many
-          : FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many,
+        ...guardMark(beast.bow),
         pays: deepSitePays[site.key],
       };
     }),

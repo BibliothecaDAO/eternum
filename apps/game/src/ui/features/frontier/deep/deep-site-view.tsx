@@ -33,7 +33,7 @@ import { beastMeaning, troopMeaning } from "@/ui/design-system/domain-icon-meani
 import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/balance.gen";
 
 import { AttackStamina, FightArena } from "../sites/fight-side";
-import { CombatBadge, combatMarkOf } from "../sites/combat-mark";
+import { BeastMarkBadge, combatMarkOf } from "../sites/combat-mark";
 import type { DeepSiteFight } from "../sites/site-card-plan";
 
 import { DEEP_SITE_FACES } from "./deep-site-faces";
@@ -272,7 +272,7 @@ const FightPreview = ({
     guard.kind === "beast" ? beastMeaning(beastModel(DEEP_BEASTS[site])) : troopMeaning(fight.defenderTroops);
   const defenderBadge =
     guard.kind === "beast" ? (
-      <CombatBadge category={guard.category} />
+      <BeastMarkBadge category={guard.category} />
     ) : guard.kind === "held" ? (
       <span className="deep-fight__aspect" aria-hidden="true">
         <AspectMark aspect={guard.aspectId} size={14} decorative />
@@ -317,7 +317,7 @@ const BeastRow = ({ site, guard }: { site: DeepSiteProps["site"]; guard: Extract
   <div data-deep-beast className="deep-beast">
     <span className="deep-beast__portrait">
       <Icon name={beastMeaning(beastModel(DEEP_BEASTS[site]))} size={48} className="size-full" />
-      <CombatBadge category={guard.category} />
+      <BeastMarkBadge category={guard.category} />
     </span>
     <span className="deep-beast__words">
       <span className="deep-beast__name">

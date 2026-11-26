@@ -329,7 +329,7 @@ import {
   type SocialProvider,
 } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
-import type { AttackRefusal } from "@bibliothecadao/eternum";
+import type { AttackRefusal, CombatMark } from "@bibliothecadao/eternum";
 import {
   aspectName,
   type AspectId,
@@ -362,6 +362,8 @@ import {
   type QuestUnit,
   ASPECT_REWARD,
   formatOrdinal,
+  FRONTIER_TROOP_NAMES,
+  TroopType,
 } from "@bibliothecadao/types";
 
 /** A step on that scale, common (1) to legendary (5). */
@@ -1224,6 +1226,62 @@ export const DEPLOY_WORDS = {
   howMany: (troop: string) => `${troop} to deploy`,
   deployCount: (count: number) => `${DEPLOY} ${formatExact(count)}`,
 } as const;
+export const COMBAT_MARK_WORDS = { blade: "Blade", bow: "Bow" } as const satisfies Record<CombatMark, string>;
+const lessBy = (cut: number) => formatPercent(-cut / 100, { signed: true });
+const told = (...parts: (string | false)[]) => parts.filter((part): part is string => part !== false).join(" · ");
+const STRIKE_ORDER_WORDS = {
+  card: { blade: false, bow: "1st strike" },
+  summary: { blade: false, bow: `Strikes first vs blades` },
+  tip: {
+    blade: `Hits together vs ${COMBAT_MARK_WORDS.blade}, after ${COMBAT_MARK_WORDS.bow}`,
+    bow: `Strikes first vs ${COMBAT_MARK_WORDS.blade}, together vs ${COMBAT_MARK_WORDS.bow}`,
+  },
+} as const satisfies Record<"card" | "summary" | "tip", Record<CombatMark, string | false>>;
+export interface TroopFigures {
+  lightCut: number;
+  guardCut: number;
+  scoutReveal: number;
+  baseReveal: number;
+}
+export interface TroopTraits {
+  mark: CombatMark;
+  light: boolean;
+  guard: boolean;
+  scout: boolean;
+}
+const LIGHT_AGAINST = FRONTIER_TROOP_NAMES[TroopType.Knight].many;
+export const TROOP_TRAIT_WORDS = {
+  card: ({ mark, light, guard, scout }: TroopTraits, figures: TroopFigures) =>
+    told(
+      !light && "Full dmg",
+      STRIKE_ORDER_WORDS.card[mark],
+      guard && "Guard",
+      scout && formatExact(figures.scoutReveal),
+      light && lessBy(figures.lightCut),
+    ),
+  summary: ({ mark, light, guard, scout }: TroopTraits, figures: TroopFigures) =>
+    told(
+      COMBAT_MARK_WORDS[mark],
+      !light && "Full damage",
+      STRIKE_ORDER_WORDS.summary[mark],
+      scout && `Reveals for ${formatExact(figures.scoutReveal)} stamina (not ${formatExact(figures.baseReveal)})`,
+      light && `${lessBy(figures.lightCut)} damage vs ${LIGHT_AGAINST}`,
+      guard && `${lessBy(figures.guardCut)} damage taken guarding in the ${DEEP}`,
+    ),
+  tip: ({ mark, light, guard, scout }: TroopTraits, figures: TroopFigures) =>
+    told(
+      COMBAT_MARK_WORDS[mark],
+      !light && "Full damage",
+      STRIKE_ORDER_WORDS.tip[mark],
+      light && `${lessBy(figures.lightCut)} damage vs ${LIGHT_AGAINST}`,
+      guard && `${lessBy(figures.guardCut)} damage taken in the ${DEEP}`,
+      scout && `Reveals tiles for ${formatExact(figures.scoutReveal)} stamina`,
+    ),
+} as const;
+export const BEAST_MARK_TIPS = {
+  blade: `${COMBAT_MARK_WORDS.blade} · Hits together vs ${COMBAT_MARK_WORDS.blade} · ${COMBAT_MARK_WORDS.bow} strikes first against it`,
+  bow: `${COMBAT_MARK_WORDS.bow} · Strikes first against ${COMBAT_MARK_WORDS.blade} · Hits together vs ${COMBAT_MARK_WORDS.bow}`,
+} as const satisfies Record<CombatMark, string>;
 export const SIZE_ROW = { fewer: "One fewer", more: "One more", max: "Max" } as const;
 export const BUILD = "Build";
 export const BUILT = "Built";

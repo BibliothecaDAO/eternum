@@ -6,7 +6,7 @@
 .deploy-troop-card {
   display: flex;
   min-width: 0;
-  height: 92px;
+  min-height: 92px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -33,6 +33,25 @@
   font-size: var(--hud-text-label);
   line-height: var(--hud-leading-label);
   font-variant-numeric: tabular-nums;
+}
+.deploy-troop-card__trait {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 2px;
+  overflow: hidden;
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deploy-troop-summary {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  text-align: center;
 }
 .deploy-size {
   border: 1px solid var(--hud-line);
