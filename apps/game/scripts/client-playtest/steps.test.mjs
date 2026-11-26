@@ -1330,7 +1330,6 @@ describe("the Season 1 rehearsal", () => {
       `forecasts a win ("${REHEARSAL_WORDS.forecasts.victory}")`,
     );
     expect(REHEARSAL_WORDS.take).toBe(DEEP_WORDS.take);
-    expect(REHEARSAL_WORDS.joinGuard).toBe(DEEP_WORDS.join);
     expect(REHEARSAL_WORDS.lasts(14, "28m")).toBe(DEEP_WORDS.lasts(14, "28m"));
     expect(REHEARSAL_WORDS.share(40)).toBe(DEEP_WORDS.share(40));
   });

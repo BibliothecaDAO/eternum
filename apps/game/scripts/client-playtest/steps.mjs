@@ -6094,7 +6094,6 @@ export const REHEARSAL_WORDS = {
     victory: "Victory",
   },
   take: "Take",
-  joinGuard: "Join guard",
   lasts: (ticks, time) => `${ticks} ticks left (${time})`,
   share: (percent) => `${percent}% of each tick`,
 };
