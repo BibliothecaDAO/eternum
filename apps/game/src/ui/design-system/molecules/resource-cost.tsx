@@ -1,4 +1,3 @@
-import { configManager } from "@bibliothecadao/eternum";
 import { knownAmount } from "@/ui/utils/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { formatCharge, resourceName, formatHeldAgainst } from "@bibliothecadao/types";
@@ -30,7 +29,7 @@ export const ResourceCost = ({
   onClick,
   size = "md",
 }: ResourceCostProps) => {
-  const name = resourceName(resourceId, configManager.isFrontier());
+  const name = resourceName(resourceId, false);
   const held = knownAmount(balance);
   const hasSufficientBalance = held !== undefined && amount !== undefined && held >= amount;
   const showBalance = balance !== undefined && !isNaN(balance);

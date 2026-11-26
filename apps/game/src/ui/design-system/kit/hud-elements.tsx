@@ -1,4 +1,3 @@
-import { configManager } from "@bibliothecadao/eternum";
 import { MEDAL_COLORS } from "@/tokens";
 import {
   formatTypedNumber,
@@ -636,7 +635,7 @@ export const HudPrice = ({ prices }: { prices: readonly ((Price | ResourcePrice)
 const priceFace = (price: Price | ResourcePrice): { word: string; icon?: IconMeaning } =>
   "of" in price
     ? PRICE_FACES[price.of]
-    : { word: resourceName(price.resource, configManager.isFrontier()), icon: resourceMeaning(price.resource) };
+    : { word: resourceName(price.resource, false), icon: resourceMeaning(price.resource) };
 
 /**
  * The HUD's one panel, for a part of the screen (a bar, a strip, a card in a band): a header band naming it (its icon,
