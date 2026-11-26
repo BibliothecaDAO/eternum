@@ -6,7 +6,8 @@ import type { MadaraRpc } from "./madara-rpc";
 import { NativeDecoder } from "./native/decoder";
 import { gameRegistryEvent, manifest, receipt, rowEvent, schema, shardManifest } from "./native/fixtures";
 import { NativeIngestion } from "./native/ingestion";
-import { RELEASE_DEFINITIONS } from "./native/release-definition";
+import { RELEASE_DEFINITIONS, releaseDefinition } from "./native/release-definition";
+import { NATIVE_RELEASES } from "../../../deploy/release/native-release";
 import type { DecodedRecord } from "./types";
 import { WorldFold } from "./world-fold";
 import { releaseLine } from "../../../packages/core/src/test-support/releases";
@@ -47,7 +48,8 @@ const target = {
 const season = { start: 1_800_000_000, end: 1_800_000_000 + 4 * 14_400 };
 const ledgerSettlesRace = vi.fn();
 
-const [release, definition] = [...RELEASE_DEFINITIONS][0]!;
+const release = NATIVE_RELEASES.frontier.release;
+const definition = releaseDefinition(RELEASE_DEFINITIONS, release);
 
 function seasonOneLaunch() {
   return [

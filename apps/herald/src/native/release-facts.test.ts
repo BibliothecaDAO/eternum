@@ -29,7 +29,8 @@ import { NativeIngestion } from "./ingestion";
 import { loadNativeWorld } from "./load";
 import { releaseLine } from "../../../../packages/core/src/test-support/releases";
 import { presetRelease } from "./preset-fixtures";
-import { readReleaseDefinitions, releaseDefinitionText } from "./release-definition";
+import { RELEASE_DEFINITIONS, readReleaseDefinitions, releaseDefinitionText } from "./release-definition";
+import { NATIVE_RELEASES } from "../../../../deploy/release/native-release";
 
 const registration = (presetId = 5, amend?: (definition: ReturnType<typeof buildNativePreset>) => void) =>
   presetRelease(presetId, 1, amend);
@@ -288,6 +289,9 @@ describe("a release's rule rows", () => {
     expect(() => readReleaseDefinitions({ definition: JSON.parse(written).definition })).toThrow(
       "A release definition names no release",
     );
+    expect(() => readReleaseDefinitions(JSON.parse(written), JSON.parse(written))).toThrow(
+      `Two rule definitions for release ${JSON.parse(written).release}`,
+    );
   });
 
   it("uses the preset map only when the chain explicitly records no map override", () => {
@@ -514,6 +518,35 @@ describe("a game's rule rows follow its release", () => {
     await replayed.native.replay({ fold: replayed.fold, rpc, fromBlock: 11, toBlock: 12 });
     expect(ruleRows(replayed.fold)).toEqual(ruleRows(launchedOn(upgraded)));
     expect(clientBarracksPrice(replayed.fold)).toEqual([{ resource: ResourcesIds.Labor, amount: 500 }]);
+  });
+
+  it("holds a rule definition for every release from the oldest archived one through the current release", () => {
+    const releases = [...RELEASE_DEFINITIONS.keys()].sort((left, right) => left - right);
+    const oldest = releases[0]!;
+    const current = NATIVE_RELEASES.frontier.release;
+    expect(releases).toEqual(Array.from({ length: current - oldest + 1 }, (_, index) => oldest + index));
+  });
+
+  it("folds a game the shard walks 22 to 23 to 24, one apply_release each, as a game launched on 24", () => {
+    const released = structuredClone(manifest);
+    released.native.releases = releaseLine(schema.identity, [22, 23, 24]);
+    const world = () => {
+      const decoder = new NativeDecoder(released);
+      return { fold: new WorldFold(decoder.registry), native: new NativeIngestion(decoder, RELEASE_DEFINITIONS) };
+    };
+    const on = (release: number) => ({ ...registration(), release });
+    const walked = world();
+    walked.native.applyReceipt(walked.fold, receipt(launch(on(22))), 11, 0);
+    for (const [block, release] of [
+      [12, 23],
+      [13, 24],
+    ] as const) {
+      const applied = rowEvent("GameRelease", ["1"], { release_id: release, created_release_id: 22 });
+      walked.native.applyReceipt(walked.fold, receipt([applied], `0x${block.toString(16)}`), block, 0);
+    }
+    const direct = world();
+    direct.native.applyReceipt(direct.fold, receipt(launch(on(24))), 11, 0);
+    expect(ruleRows(walked.fold)).toEqual(ruleRows(direct.fold));
   });
 
   it("takes a restored checkpoint's rule rows from each game's current release", async () => {
