@@ -13,8 +13,8 @@ import {
 } from "@/ui/design-system/kit/hud-elements";
 import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import type { Fix } from "@/ui/design-system/kit/refusal";
-import { RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, tierNumeral } from "@/ui/design-system/kit/words";
-import { formatAmount, formatShort, rankName } from "@bibliothecadao/types";
+import { RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank } from "@/ui/design-system/kit/words";
+import { formatAmount, rankName } from "@bibliothecadao/types";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   type Branch,
@@ -224,7 +224,6 @@ const TreeNodeCard = ({ node, picked, onPick }: { node: TreeNode; picked: boolea
   const look = STATE_LOOK[node.state];
   const missing = firstMissing(node);
   const price = node.needs.filter(isPrice);
-  const badge = nodeBadgeLabel(node, missing);
 
   if (!desktop)
     return (
@@ -268,7 +267,12 @@ const TreeNodeCard = ({ node, picked, onPick }: { node: TreeNode; picked: boolea
                 <span>{RESEARCH_TREE.unlocked}</span>
               </span>
             ) : node.state === "ready" || node.state === "short" ? (
-              <PriceChips price={price} />
+              <HudPrice
+                size="sm"
+                prices={price
+                  .filter((need) => need.need > 0)
+                  .map((need) => ({ of: need.kind, amount: need.need, short: !need.met }))}
+              />
             ) : (
               missing && (
                 <span data-lock-reason className="research-node__reason">
@@ -278,9 +282,7 @@ const TreeNodeCard = ({ node, picked, onPick }: { node: TreeNode; picked: boolea
               )
             )}
           </span>
-          <span className="research-state-pill" data-badge-tone={badge.tone}>
-            {badge.text}
-          </span>
+          <NodeBadge node={node} missing={missing} />
         </div>
       </button>
     </div>
@@ -316,29 +318,19 @@ const MARK_ICON: Record<NodeMark, IconMeaning> = { done: "check", locked: "lock"
 const nodeMark = (node: TreeNode): NodeMark | undefined =>
   node.state === "done" ? "done" : node.state === "locked" && node.tier === 0 ? "locked" : undefined;
 
-const nodeBadgeLabel = (
-  node: TreeNode,
-  missing: Need | undefined,
-): { text: string; tone: "ready" | "done" | "calm" } => {
-  if (node.state === "ready") return { text: RESEARCH_TREE.states.ready, tone: "ready" };
-  if (node.state === "done") return { text: RESEARCH_TREE.states.done, tone: "done" };
-  if (node.tier > 0) {
-    return {
-      text: RESEARCH_TREE.tierBadge(tierNumeral(node.tier as Rank)),
-      tone: "done",
-    };
-  }
-  if (missing?.kind === "level" && node.era > 0) {
-    return {
-      text: RESEARCH_TREE.eraBadge(tierNumeral((node.era + 1) as Rank)),
-      tone: "calm",
-    };
-  }
-  return {
-    text: RESEARCH_TREE.states[node.state],
-    tone: "calm",
-  };
+const NodeBadge = ({ node, missing }: { node: TreeNode; missing: Need | undefined }) => {
+  if (node.state === "ready") return <StatePill word={RESEARCH_TREE.states.ready} tone="ready" />;
+  if (node.state === "done") return <StatePill word={RESEARCH_TREE.states.done} tone="done" />;
+  if (node.tier > 0) return <HudTier tier={node.tier as Rank} size="line" />;
+  if (missing?.kind === "level" && node.era > 0) return <HudTier tier={(node.era + 1) as Rank} size="line" />;
+  return <StatePill word={RESEARCH_TREE.states[node.state]} tone="calm" />;
 };
+
+const StatePill = ({ word, tone }: { word: string; tone: "ready" | "done" | "calm" }) => (
+  <span className="research-state-pill" data-badge-tone={tone}>
+    {word}
+  </span>
+);
 
 const TierPips = ({ node }: { node: TreeNode }) => (
   <span className="research-pips" data-pips={node.maxTier} aria-hidden="true">
@@ -350,19 +342,6 @@ const TierPips = ({ node }: { node: TreeNode }) => (
         data-next={index === node.tier && node.state === "ready" ? "" : undefined}
       />
     ))}
-  </span>
-);
-
-const PriceChips = ({ price }: { price: readonly Extract<Need, { kind: "essence" | "labor" }>[] }) => (
-  <span className="research-node__costs">
-    {price
-      .filter((need) => need.need > 0)
-      .map((need) => (
-        <span key={need.kind} className="research-cost tabular-nums" data-short={!need.met ? "" : undefined}>
-          <Icon name={need.kind} size={12} />
-          <span>{formatShort(need.need)}</span>
-        </span>
-      ))}
   </span>
 );
 

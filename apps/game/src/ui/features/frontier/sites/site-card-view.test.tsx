@@ -276,10 +276,10 @@ describe("a guarded site's card", () => {
       ),
     );
     const foot = document.querySelector(".ui-window__foot")!;
-    expect(foot.querySelector('[role="status"]')?.textContent).toBe("Needs 30 stamina, have 10 · in 40m");
+    expect(foot.querySelector('[role="alert"]')?.textContent).toBe("Needs 30 stamina, have 10 · in 40m");
     expect(foot.querySelector("button")?.textContent).toBe("Attack");
     expect(foot.querySelector("button")?.disabled).toBe(true);
-    expect(document.querySelectorAll('[role="status"]')).toHaveLength(1);
+    expect(document.querySelectorAll('[role="status"], [role="alert"]')).toHaveLength(1);
     expect(document.querySelector(".ui-price")).toBeNull();
   });
 });
@@ -609,7 +609,9 @@ describe("one fight panel for every state of every target (owner, 10-27: 'this p
         );
         const heard = (said: string, lost: string | undefined) => (lost ? `${said}, ${lost}` : said);
         expect(sides).toEqual([heard(`Army 5,000 → ${kept[0]}`, lost[0]), heard(`Troops 1,100 → ${kept[1]}`, lost[1])]);
-        expect(document.querySelector('[role="status"]')?.textContent).toBe(line(TARGET_MARKS[target].word));
+        expect(document.querySelector('[role="status"], [role="alert"]')?.textContent).toBe(
+          line(TARGET_MARKS[target].word),
+        );
         const attackBtn = buttons().find((button) => button.textContent?.startsWith("Attack"));
         expect(attackBtn?.disabled).toBe(!attacks);
         expect(attackBtn?.querySelector('[data-attack-stamina="30"]') !== null).toBe(attacks);

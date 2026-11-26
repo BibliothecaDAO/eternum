@@ -2292,8 +2292,6 @@ export const RESEARCH_TREE = {
   currentEra: "Current",
   readyCount: (count: number) => `${RESEARCH_STATES.ready} (${formatExact(count)})`,
   unlocked: "Unlocked",
-  tierBadge: (numeral: string) => `Tier ${numeral}`,
-  eraBadge: (numeral: string) => `Era ${numeral}`,
   promptPick: "Tap a node to see its price",
   states: RESEARCH_STATES,
   outputs: {

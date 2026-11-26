@@ -129,7 +129,7 @@ export const DeepSiteView = ({ site, ring, rates, opening, guard, fight, pickBas
         {opening && <OpeningBar opening={opening} />}
       </div>
       <OrderFoot order={order} />
-      {typeof order === "object" && order.kind === "short" && <HudNotice tone="warn" line={order.line} />}
+      {typeof order === "object" && order.kind === "short" && <HudNotice tone="bad" line={order.line} />}
     </HudSheet>
   );
 };

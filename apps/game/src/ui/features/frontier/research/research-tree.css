@@ -659,27 +659,6 @@
     align-items: center;
   }
 
-  .research-node__costs {
-    display: inline-flex;
-    align-items: center;
-    gap: theme(spacing.2);
-  }
-
-  .research-cost {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    color: rgb(var(--hud-ink));
-    font-size: var(--hud-text-badge);
-    line-height: 1;
-    font-weight: var(--hud-weight-strong);
-    white-space: nowrap;
-  }
-
-  .research-cost[data-short] {
-    color: var(--hud-warn);
-  }
-
   .research-node__unlocked {
     display: inline-flex;
     align-items: center;

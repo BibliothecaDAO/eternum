@@ -367,6 +367,15 @@ a.ui-button {
 .ui-price > [data-short] {
   color: var(--hud-bad);
 }
+.ui-price[data-size="sm"] {
+  gap: theme(spacing.2);
+  font-size: var(--hud-text-badge);
+  line-height: 1;
+  white-space: nowrap;
+}
+.ui-price[data-size="sm"] > span {
+  gap: 3px;
+}
 
 /* ── Tabs: a strip of choices; the chosen one in gold over a gold rule. ── */
 /* A strip too wide for its place wraps to a second row: no tab ever leaves the panel it stands in. */
