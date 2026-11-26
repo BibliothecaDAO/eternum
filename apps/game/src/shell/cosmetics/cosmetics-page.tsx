@@ -352,7 +352,8 @@ const OwnedAction = ({
     const canRetry = equip && sending === null && failed === action;
     return <AccountStatePrompt onRetry={canRetry ? () => void equip(action) : undefined} />;
   }
-  if (!equip || (!worn && !realmSkinIsDrawn(skin))) return <p className="cosmetics__note">{defaultOrderLine()}</p>;
+  if (!equip || (!worn && !realmSkinIsDrawn(skin, facts.level)))
+    return <p className="cosmetics__note">{defaultOrderLine()}</p>;
   const busyFor = (code: number) => (sending === code ? COSMETICS_WORDS.equip : undefined);
   const wordFor = (code: number, word: string) => (failed === code ? TRY_AGAIN : word);
   if (!worn)

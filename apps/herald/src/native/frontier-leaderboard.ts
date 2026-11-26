@@ -22,11 +22,12 @@ export function prepareFrontierLeaderboard(modelRows: (model: string) => FoldRow
   if (isSeasonOneGame(modelRows, gameId)) throw new Error("Season 1 ranks Aspects by height, not players by sites");
   const realms = gameRows(modelRows("Structure"), gameId);
   const skins = gameRows(modelRows("RealmSkin"), gameId);
+  const seals = gameRows(modelRows("Seal"), gameId);
   const prize = prizeOf(modelRows, gameId);
   return (history: readonly HeraldHistoryEvent[]): HeraldFrontierLeaderboard => ({
     game_id: integer(gameId).toString(),
     mode: "frontier",
-    entries: rankPlayers(settledPlayers(realms, skins), gameId, history),
+    entries: rankPlayers(settledPlayers(realms, skins, seals), gameId, history),
     prize,
   });
 }
@@ -79,8 +80,9 @@ function prizeOf(modelRows: (model: string) => FoldRow[], gameId: string): Heral
   };
 }
 
-function settledPlayers(structures: Row[], skins: Row[]): Map<string, Standing> {
+function settledPlayers(structures: Row[], skins: Row[], seals: Row[]): Map<string, Standing> {
   const players = new Map<string, Standing>();
+  const sealHolders = new Set(seals.map((row) => address(row.account)));
   for (const structure of structures) {
     if (!isRealmCategory(number(record(structure.base).category))) continue;
     const metadata = record(structure.metadata);
@@ -93,6 +95,7 @@ function settledPlayers(structures: Row[], skins: Row[]): Map<string, Standing> 
         structure_id: integer(structure.entity_id).toString(),
         has_wonder: metadata.has_wonder,
         realm_skin: equippedRealmSkin(skins, structure.entity_id),
+        ancient_seal: sealHolders.has(owner),
         rank: 0,
         sites_cleared: { total: 0, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
         chests_earned: 0,

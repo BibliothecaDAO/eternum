@@ -7,6 +7,7 @@ import { LordName } from "./realm-marks";
 import { configManager, showsWonder, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboard, HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
+import { orderAspect } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -159,7 +160,15 @@ const listRow = (entry: Entry, own: boolean, names: PlayerNames): SeasonListRow 
   realm: {
     level: entry.level,
     depth: entry.deepest_depth,
-    hasWonder: showsWonder(entry.has_wonder === true, entry.realm_skin),
+    hasWonder: showsWonder(
+      {
+        hasWonder: entry.has_wonder === true,
+        sealHeld: entry.ancient_seal === true,
+        aspect: entry.order ? orderAspect(entry.order) : null,
+      },
+      entry.realm_skin,
+      entry.level,
+    ),
   },
   name: (
     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">

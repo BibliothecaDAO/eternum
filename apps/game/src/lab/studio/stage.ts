@@ -80,7 +80,9 @@ export class StudioStage implements LabStage {
         terrain.preparePageAsync(createStudioTerrainRequest(revealed)),
       ),
     );
-    for (const asset of REALM_ASSETS.filter((entry) => !entry.wonder).toSorted((a, b) => a.level - b.level)) {
+    for (const asset of REALM_ASSETS.filter((entry) => !entry.wonder && !entry.skin).toSorted(
+      (a, b) => a.level - b.level,
+    )) {
       const realm = new SettlementModel(await gltfLoader.loadAsync(asset.path), 1, "realm");
       realm.setCount(1);
       realm.setMatrixAt(0, this.placementMatrix("realm", facingTheMapCamera(asset.path)));

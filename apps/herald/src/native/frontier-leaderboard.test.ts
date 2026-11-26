@@ -175,11 +175,15 @@ it("publishes equipped families alongside the original Wonder ownership", () => 
   (rows.Structure![1]!.value.metadata as Record<string, unknown>).has_wonder = true;
   const { BASE_REALM_SKIN, DEFAULT_REALM_SKIN } = REALM_SKIN_FAMILIES;
   rows.RealmSkin = [{ key: "skin", value: { game_id: 1, entity_id: 2n, family: BASE_REALM_SKIN } }];
+  rows.Seal = [{ key: "seal", value: { game_id: 1, account: 11 } }];
   expect(
-    prepareFrontierLeaderboard(read, "1")([]).entries.map(({ has_wonder, realm_skin }) => [has_wonder, realm_skin]),
+    prepareFrontierLeaderboard(
+      read,
+      "1",
+    )([]).entries.map(({ has_wonder, realm_skin, ancient_seal }) => [has_wonder, realm_skin, ancient_seal]),
   ).toEqual([
-    [false, DEFAULT_REALM_SKIN],
-    [true, BASE_REALM_SKIN],
+    [false, DEFAULT_REALM_SKIN, false],
+    [true, BASE_REALM_SKIN, true],
   ]);
 });
 

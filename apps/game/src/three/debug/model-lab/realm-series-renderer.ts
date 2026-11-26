@@ -3,7 +3,13 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { initializeProceduralCharacterRendererRuntime } from "../../characters/procedural-character-renderer-runtime";
 import { ORDER_STANDARD_NAME } from "../../structures/order-standard";
 import { SettlementModel } from "../../structures/settlement-model";
-import { BASE_REALM_CANDIDATES, REALM_ASSETS, realmModelIndex } from "../../structures/realm-design";
+import {
+  BASE_REALM_CANDIDATES,
+  REALM_ASSETS,
+  SEASON_ONE_REALM_ASSETS,
+  realmModelIndex,
+} from "../../structures/realm-design";
+import { hasSeasonOneRealmKit, resolveSeasonOneRealmKit } from "../../structures/realm-kit";
 import { gltfLoader } from "../../utils/utils";
 import { configureRendererColorOutput } from "../../renderer-color-output";
 import { ModelLabEnvironment } from "./model-lab-environment";
@@ -24,6 +30,7 @@ export interface RealmSeriesSettings {
   distance: number;
   lineup: boolean;
   base: boolean;
+  s1: boolean;
   reference?: string;
   comparison: "before" | "after" | "pair";
 }
@@ -74,9 +81,8 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
     const labels: string[] = [];
     let height = 0;
     for (const [slot, { asset, before }] of series.entries()) {
-      const gltf = await gltfLoader.loadAsync(
-        before ? `${settings.reference!.replace(/\/$/, "")}/${asset.id}.glb` : asset.path,
-      );
+      const modelPath = before ? `${settings.reference!.replace(/\/$/, "")}/${asset.id}.glb` : asset.path;
+      const gltf = resolveSeasonOneRealmKit(modelPath) ?? (await gltfLoader.loadAsync(modelPath));
       const modelHeight = new Box3().setFromObject(gltf.scene).max.y;
       height = Math.max(height, modelHeight);
       const model = new SettlementModel(gltf, 1, "realm", asset.wonder);
@@ -123,6 +129,12 @@ type SeriesSlot = { asset: (typeof REALM_ASSETS)[number]; before: boolean };
 function realmSeries(settings: RealmSeriesSettings): SeriesSlot[] {
   const shipped = (level: number, wonder = settings.wonder) =>
     REALM_ASSETS[realmModelIndex(level, wonder, settings.seed)];
+  if (settings.s1) {
+    const level = hasSeasonOneRealmKit(settings.level) ? settings.level : 0;
+    return [shipped(level, false), ...SEASON_ONE_REALM_ASSETS.filter((asset) => asset.level === level)].map(
+      (asset) => ({ asset, before: false }),
+    );
+  }
   if (settings.base)
     return [0, 1, 2, 3]
       .flatMap((level) => [shipped(level, false), ...BASE_REALM_CANDIDATES.filter((asset) => asset.level === level)])

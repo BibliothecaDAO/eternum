@@ -18,8 +18,11 @@ export function RealmSeriesLab() {
     distance: Number(params.get("distance") ?? 20),
     lineup: params.get("lineup") === "1",
     base: params.get("base") === "1",
+    s1: params.get("s1") === "1",
     reference:
-      params.get("wonder") === "1" || params.get("base") === "1" ? undefined : (params.get("reference") ?? undefined),
+      params.get("wonder") === "1" || params.get("base") === "1" || params.get("s1") === "1"
+        ? undefined
+        : (params.get("reference") ?? undefined),
     comparison:
       params.get("comparison") === "before" ? "before" : params.get("comparison") === "pair" ? "pair" : "after",
   };
@@ -98,7 +101,7 @@ export function RealmSeriesLab() {
           <select
             aria-label="Series"
             value={Number(settings.wonder)}
-            disabled={settings.base}
+            disabled={settings.base || settings.s1}
             onChange={(e) => change("wonder", e.target.value)}
           >
             <option value="0">Normal</option>
@@ -153,7 +156,7 @@ export function RealmSeriesLab() {
           <input
             type="checkbox"
             checked={settings.lineup}
-            disabled={settings.base || Boolean(settings.reference && settings.comparison !== "after")}
+            disabled={settings.base || settings.s1 || Boolean(settings.reference && settings.comparison !== "after")}
             onChange={(e) => change("lineup", e.target.checked ? "1" : "0")}
           />{" "}
           All ages
@@ -162,9 +165,19 @@ export function RealmSeriesLab() {
           <input
             type="checkbox"
             checked={settings.base}
+            disabled={settings.s1}
             onChange={(e) => change("base", e.target.checked ? "1" : "0")}
           />{" "}
           Base rank candidates
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={settings.s1}
+            disabled={settings.base}
+            onChange={(e) => change("s1", e.target.checked ? "1" : "0")}
+          />{" "}
+          Season 1 kits
         </label>
       </header>
       <p role="status" style={{ padding: "0 16px" }}>

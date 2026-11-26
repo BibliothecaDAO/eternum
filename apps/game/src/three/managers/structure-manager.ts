@@ -3,11 +3,13 @@ import { publishMapSelection } from "@/observability/map-selection";
 import { FrontierModel, frontierModelKind, type BeastLayer } from "../structures/frontier-model";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
+import { resolveSeasonOneRealmKit } from "../structures/realm-kit";
 import { MineKinds, orderAspect, structureName, troopTierIndex } from "@bibliothecadao/types";
 import {
   configManager,
   expeditionDepth,
   readExpeditionRules,
+  realmWornSkinFamily,
   siteDisplayName,
   siteKindOf,
   type SiteKind,
@@ -448,10 +450,11 @@ export class StructureManager {
           changes.length === 0 ||
           changes.some(
             (change) =>
-              change.model !== "Guard" &&
-              change.model !== "Structure" &&
-              change.model !== "ExpeditionSite" &&
-              GUARD_MODELS.some((model) => model === change.model),
+              change.model === "Seal" ||
+              (change.model !== "Guard" &&
+                change.model !== "Structure" &&
+                change.model !== "ExpeditionSite" &&
+                GUARD_MODELS.some((model) => model === change.model)),
           );
         for (const change of changes) {
           if (change.model === "Guard") {
@@ -467,7 +470,8 @@ export class StructureManager {
           } else if (
             change.model === "Structure" ||
             change.model === "ExpeditionSite" ||
-            change.model === "StructureBuildings"
+            change.model === "StructureBuildings" ||
+            change.model === "RealmSkin"
           ) {
             const row = change.current ?? change.previous;
             if (row?.game_id === configManager.getActiveGameId()) touched.add(safeInteger(row.entity_id));
@@ -636,6 +640,17 @@ export class StructureManager {
         ? readStandingFrontierBeast(this.store, configManager.getActiveGameId(), renderable.entityId)
         : undefined,
       realmOrder: renderInfo.type === StructureType.Realm ? structureComponent?.metadata.order : undefined,
+      realmSkin:
+        renderInfo.type === StructureType.Realm && this.store
+          ? realmWornSkinFamily(
+              this.store,
+              structureComponent,
+              this.mode.id === "frontier" && structureComponent.metadata.order
+                ? orderAspect(structureComponent.metadata.order)
+                : null,
+              renderInfo.level,
+            )
+          : undefined,
       cosmeticId: cosmetic.skin.cosmeticId,
       cosmeticAssetPaths: cosmetic.skin.assetPaths,
       usesFallbackCosmeticSkin: cosmetic.skin.isFallback,
@@ -992,7 +1007,7 @@ export class StructureManager {
   private async loadStructureModel(structureType: StructureType, modelPath: string): Promise<StructureModel> {
     if (structureType === StructureType.Hyperstructure) return new HyperstructureModel(STRUCTURE_INSTANCE_CAPACITY);
     const startedAt = performance.now();
-    const gltf = await gltfLoader.loadAsync(modelPath);
+    const gltf = resolveSeasonOneRealmKit(modelPath) ?? (await gltfLoader.loadAsync(modelPath));
     recordWorldmapRenderDuration("structureModelLoadMs", performance.now() - startedAt);
     recordGameEntryDuration(`structure-model-load:${modelPath}`, performance.now() - startedAt);
     const model = this.createStructureModel(gltf, structureType, modelPath);
@@ -1345,6 +1360,7 @@ export class StructureManager {
           structure.hasWonder,
           structure.entityId,
           this.mode.id === "frontier" && structure.realmOrder ? orderAspect(structure.realmOrder) : null,
+          structure.realmSkin,
         )
       : structure.stage;
   }

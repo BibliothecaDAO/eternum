@@ -1,5 +1,7 @@
+import { REALM_SKIN_FAMILIES } from "@bibliothecadao/eternum";
 import type { AspectId } from "@bibliothecadao/types";
 import { modelPath } from "../utils/model-url";
+import { SEASON_ONE_REALM_KIT_LEVELS, hasSeasonOneRealmKit, seasonOneRealmKitPath } from "./realm-kit";
 import { resolveAgeWonderDesign } from "./wonder-design.mjs";
 import assets from "./realm-assets.json";
 
@@ -12,6 +14,7 @@ interface RealmAssetEntry {
   source?: string;
   seed?: number;
   aspect?: AspectId;
+  skin?: "season-1";
 }
 
 const ASPECT_SLUGS = {
@@ -21,12 +24,14 @@ const ASPECT_SLUGS = {
   4: "insight",
 } as const satisfies Record<AspectId, string>;
 
+const aspectTitle = (slug: string) => `${slug[0]!.toUpperCase()}${slug.slice(1)}`;
+
 const ASPECT_WONDER_LIST: readonly RealmAssetEntry[] = (Object.entries(ASPECT_SLUGS) as [string, string][]).map(
   ([key, slug]) => {
     const aspect = Number(key) as AspectId;
     return {
       id: `wonder-${slug}`,
-      label: `Aspect Wonder · ${slug[0].toUpperCase()}${slug.slice(1)}`,
+      label: `Aspect Wonder · ${aspectTitle(slug)}`,
       level: 3,
       wonder: true,
       aspect,
@@ -36,6 +41,21 @@ const ASPECT_WONDER_LIST: readonly RealmAssetEntry[] = (Object.entries(ASPECT_SL
 );
 
 export const ASPECT_WONDER_PATHS = ASPECT_WONDER_LIST.map((asset) => asset.path);
+
+export const SEASON_ONE_REALM_ASSETS: readonly RealmAssetEntry[] = SEASON_ONE_REALM_KIT_LEVELS.flatMap((level) =>
+  (Object.entries(ASPECT_SLUGS) as [string, string][]).map(([key, slug]) => {
+    const aspect = Number(key) as AspectId;
+    return {
+      id: `season-1-${slug}-${level}`,
+      label: `Season 1 · ${aspectTitle(slug)}`,
+      level,
+      wonder: false,
+      aspect,
+      skin: "season-1" as const,
+      path: seasonOneRealmKitPath(aspect, level),
+    };
+  }),
+);
 
 export const BASE_REALM_CANDIDATES: readonly RealmAssetEntry[] = [
   {
@@ -71,18 +91,27 @@ export const BASE_REALM_CANDIDATES: readonly RealmAssetEntry[] = [
     path: modelPath("realms/base-empire.glb"),
   },
 ];
-export const REALM_ASSETS: readonly RealmAssetEntry[] = [...assets, ...ASPECT_WONDER_LIST];
+export const REALM_ASSETS: readonly RealmAssetEntry[] = [...assets, ...ASPECT_WONDER_LIST, ...SEASON_ONE_REALM_ASSETS];
 export const REALM_PATHS = REALM_ASSETS.map((asset) => asset.path);
 
-/** Structure levels stay zero-based; only the presentation of a wonder changes. */
 export function realmModelIndex(
   level: number,
   wonder: boolean,
   entityId: string | number | bigint,
   aspect?: AspectId | null,
+  realmSkin?: number | null,
 ): number {
   if (!Number.isInteger(level) || level < 0 || level > 3) throw new Error(`Unknown realm level ${level}`);
-  if (!wonder) return level;
+  if (!wonder) {
+    if (realmSkin === REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN && aspect != null && hasSeasonOneRealmKit(level)) {
+      const index = REALM_ASSETS.findIndex(
+        (asset) => asset.skin === "season-1" && asset.aspect === aspect && asset.level === level,
+      );
+      if (index < 0) throw new Error(`Missing Season 1 realm kit for aspect ${aspect} level ${level}`);
+      return index;
+    }
+    return level;
+  }
   if (aspect != null) {
     const id = `wonder-${ASPECT_SLUGS[aspect]}`;
     const index = REALM_ASSETS.findIndex((asset) => asset.id === id);

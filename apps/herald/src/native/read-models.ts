@@ -39,6 +39,7 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "SettlementProgress",
   "Structure",
   "RealmSkin",
+  "Seal",
   "TileOccupancy",
   "PlayerEntry",
   "AspectRules",

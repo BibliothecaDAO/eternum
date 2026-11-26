@@ -102,6 +102,13 @@ describe("the skin a realm wears", () => {
     expect(wornRealmSkin({ ...wonderRealm, equipped: REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN })?.id).toBe(
       "wonder-havoc",
     );
+    expect(
+      wornRealmSkin({
+        ...wonderRealm,
+        equipped: REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN,
+        level: RealmLevels.Settlement,
+      })?.id,
+    ).toBe("season-1-havoc");
     const lostTheSeal = { ...wonderRealm, sealHeld: false, equipped: REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN };
     expect(wornRealmSkin(lostTheSeal)?.id).toBe("wonder-havoc");
   });
@@ -112,12 +119,13 @@ describe("the skin the page shows worn, against how the game draws the realm", (
     for (const sealHeld of [false, true])
       for (const aspect of [1, 2, 3, 4] as const)
         for (const hasWonder of [false, true])
-          for (const equipped of Object.values(REALM_SKIN_FAMILIES)) {
-            const worn = wornRealmSkin({ sealHeld, aspect, hasWonder, equipped });
-            expect(worn?.family === "wonder", `${sealHeld} ${aspect} ${hasWonder} ${equipped}`).toBe(
-              showsWonder(hasWonder, equipped),
-            );
-          }
+          for (const equipped of Object.values(REALM_SKIN_FAMILIES))
+            for (const level of REALM_RANKS) {
+              const worn = wornRealmSkin({ sealHeld, aspect, hasWonder, equipped, level });
+              expect(worn?.family === "wonder", `${sealHeld} ${aspect} ${hasWonder} ${equipped} ${level}`).toBe(
+                showsWonder({ hasWonder, sealHeld, aspect }, equipped, level),
+              );
+            }
   });
 
   it("does not assign an Aspect variant to a Wonder realm without an Aspect", () => {

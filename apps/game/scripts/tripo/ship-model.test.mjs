@@ -432,7 +432,7 @@ describe("ship-model pipeline", () => {
   it("holds an image-to-3D banner to the narrowest wall banner a scripted City, Kingdom or Empire hangs, rounded down", async () => {
     const io = await createReader();
     const widths = [];
-    for (const asset of REALM_ASSETS.filter((entry) => !entry.wonder && entry.level >= 1)) {
+    for (const asset of REALM_ASSETS.filter((entry) => !entry.wonder && !entry.skin && entry.level >= 1)) {
       const doc = await io.read(fileURLToPath(new URL(`../../public${asset.path}`, import.meta.url)));
       for (const node of doc.getRoot().listNodes()) {
         if (node.getMesh()?.getExtras().orderCloth !== "banner" && node.getExtras().orderCloth !== "banner") continue;

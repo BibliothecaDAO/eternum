@@ -50,7 +50,11 @@ const frontierEntry = (entry: HeraldFrontierLeaderboardEntry, own: boolean, onCl
         <RealmBadge
           level={entry.level}
           depth={entry.deepest_depth}
-          hasWonder={showsWonder(entry.has_wonder === true, entry.realm_skin)}
+          hasWonder={showsWonder(
+            { hasWonder: entry.has_wonder === true, sealHeld: entry.ancient_seal === true, aspect: aspect ?? null },
+            entry.realm_skin,
+            entry.level,
+          )}
         />
       </>
     ),
