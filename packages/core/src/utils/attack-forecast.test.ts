@@ -202,8 +202,9 @@ function frontier() {
   });
 
   const deepSite = (entity_id: number, tile: Tile, beast: number, ring = 0, aspect = 0) => {
+    write("Structure", structureRow(entity_id, 0n, StructureType.DeepSite));
     write("DeepSite", { game_id: GAME_ID, entity_id, kind: nativeRuleConstants.DEEP_MINE, ring, day: 0n, aspect });
-    occupy(entity_id, tile, TileOccupier.DeepSite, false);
+    occupy(entity_id, tile, TileOccupier.DeepSite, true);
     write("Guard", guardRow(entity_id, 0, beast));
   };
 
@@ -329,6 +330,20 @@ describe("one attack forecast for every combat surface", () => {
     expect(forecast?.outcome).toBe("fights");
     expect(forecast?.sides?.defender).toMatchObject({ guarding: true, home: 2n });
     expect(forecast?.sides?.defender?.troops.count).toBe(troops(500));
+  });
+
+  it("does not offer a free claim while the next day's beast is awaiting settlement", () => {
+    const game = frontier();
+    const tomorrow = dayAtIndex(
+      { seed: 0n, startMainAt: START, scheduledEndAt: START + DAY * 50, endAt: START + DAY * 50, dayUnitSeconds: DAY },
+      0,
+    ).end;
+    game.home(1, PLAYER, 1);
+    game.deepSite(50, DEEP, 0);
+    game.army(10, 1, beside(DEEP));
+    expect(game.forecast(10, 50)?.outcome).toBe("claims");
+    game.army(10, 1, beside(DEEP), { day: 1 });
+    expect(game.forecast(10, 50, tomorrow)).toBeUndefined();
   });
 
   it("faces a structure's highest occupied guard slot, with the slots below it queued (c00cf4)", () => {

@@ -313,6 +313,7 @@ function deepSiteDefence(scene: Scene, attacker: Combatant, siteId: bigint): Def
   if (aggressor) return refused(aggressor, alone);
   const allied = site.aspect !== 0 && !isDeepSiteRival(scene.store, site, attacker.home, scene.gameId);
   const defence = readDeepSiteDefender(scene.store, site);
+  if (!defence && site.beastTroops > 0n) return undefined;
   if (!defence) return allied ? refused("allied", alone) : { claims: attacker };
   const rules = scene.store.require("SliceRules", { game_id: scene.gameId });
   const queued = site.garrisons.slice(1).map((next) => garrisonCombatant(next, tile, rules));
