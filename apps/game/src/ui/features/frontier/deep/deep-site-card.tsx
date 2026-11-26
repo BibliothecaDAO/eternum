@@ -267,7 +267,7 @@ function DeepTransferAction({
         <HudButton
           kind={guarding ? "primary" : "secondary"}
           disabled={busy || amount <= 0 || amount > action.max}
-          onClick={() => void onSend(amount)}
+          onClick={() => onSend(amount)}
         >
           {guarding ? DEEP_WORDS.guard : WITHDRAW}
         </HudButton>
