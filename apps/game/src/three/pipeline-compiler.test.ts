@@ -336,6 +336,7 @@ describe("createPipelineCompiler", () => {
 
     const scene = new Scene();
     const overlayScene = new Scene();
+    overlayScene.add(new Mesh(new BoxGeometry(), new MeshBasicMaterial()));
     const camera = new PerspectiveCamera();
     const sun = new DirectionalLight();
     sun.castShadow = true;
