@@ -3,6 +3,7 @@ use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use world_test_support::tests::Deployment;
 use world_test_support::tests::play_fixture::FIXTURE_START;
 use world_test_support::tests::resource_commands::{execute_in_game, set_explorer_fixture};
+use crate::combat_actions::{IBattlesDispatcherTrait, IBattlesLibraryDispatcher};
 use crate::commands::Command;
 use crate::guards::GuardKey;
 use crate::resources::ResourceKey;
@@ -436,8 +437,8 @@ fn two_allies_garrison_a_claimed_site_and_a_rival_takes_it_slot_by_slot() {
 }
 
 #[test]
-#[should_panic(expected: "Deep garrisons only defend their site")]
-fn a_deep_garrison_cannot_launch_a_guard_attack() {
+#[should_panic(expected: "command disabled")]
+fn frontier_disables_guard_attack_on_a_deep_garrison() {
     let (d, game_id) = setup(831);
     let target = site(d, game_id, crate::rules::DEEP_FOUNDATION);
     let owner = player(d, 8310);
@@ -449,8 +450,31 @@ fn a_deep_garrison_cannot_launch_a_guard_attack() {
     beside(d, attacker, target, 2);
     let guard = crate::troop_management::GuardSlot { structure_id: target.entity_id, slot: 3 };
     let attack = crate::combat_actions::GuardAttack { guard, explorer_id: attacker.explorer_id };
-    let context = crate::tests::context(d.games, game_id);
-    interact_with_state(d.games, || crate::logic::combat::guard_attack(game_id, owner.actor, attack, context));
+    execute_in_game(owner, game_id, Command::GuardAttack(attack), FIXTURE_START);
+}
+
+#[test]
+#[should_panic(expected: "Deep garrisons only defend their site")]
+fn a_deep_garrison_cannot_launch_a_guard_attack() {
+    let (d, game_id) = setup(832);
+    let target = site(d, game_id, crate::rules::DEEP_FOUNDATION);
+    let owner = player(d, 8320);
+    let first = deployed(owner, game_id, 1, 1000);
+    claim(owner, first, target, 0);
+    applied(owner, game_id, garrison(first, slot(target, 3), troops(400)), FIXTURE_START);
+    let rival = player(d, 8321);
+    let attacker = deployed(rival, game_id, 2, 1000);
+    beside(d, attacker, target, 2);
+    let guard = crate::troop_management::GuardSlot { structure_id: target.entity_id, slot: 3 };
+    let attack = crate::combat_actions::GuardAttack { guard, explorer_id: attacker.explorer_id };
+    let context = crate::commands::action_context(crate::tests::context(d.games, game_id));
+    interact_with_state(
+        d.games,
+        || {
+            let class_hash = crate::logic::release::class_of(game_id, crate::slots::COMBAT);
+            IBattlesLibraryDispatcher { class_hash }.guard_attack(game_id, owner.actor, attack, context);
+        },
+    );
 }
 
 #[test]
