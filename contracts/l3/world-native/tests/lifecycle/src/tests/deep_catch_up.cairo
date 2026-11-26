@@ -7,7 +7,7 @@ use crate::guards::GuardKey;
 use crate::resources::ResourceKey;
 use crate::troops::ExplorerKey;
 use super::army_activity::player;
-use super::deep_sites::{applied, beside, deployed, fight, garrison, slot, wound_beast};
+use super::deep_sites::{applied, beside, deployed, fight, garrison, slot, withdraw, wound_beast};
 
 const TICK: u64 = 120;
 const START: u64 = world_test_support::tests::play_fixture::FIXTURE_START;
@@ -500,6 +500,17 @@ fn an_attack_on_a_rolled_ring_waits_while_later_rings_roll_and_keeps_the_ring_it
     let attacker = fresh_army(d, first_army(d, game_id, *homes.at(0)), 9910002, end, first_ring);
     let waited = measured(owner, game_id, fight(attacker, first_ring), end + TICK);
     assert_eq!(waited.refusal, "The Deep is catching up, try again in a moment");
+    assert_eq!(rolled_rings(d, game_id), 1);
+}
+
+#[test]
+fn a_withdrawal_cannot_save_the_previous_days_garrison_while_its_ring_awaits_rollover() {
+    let (d, game_id, _, owner, homes) = held_deep_with_a_day_turn(19, every_site_at_the_empire_cap());
+    let end = to_the_day_turn(d, game_id, 0);
+    let last_ring = site_at(d, game_id, 3 * crate::rules::DEEP_RING_SITES);
+    let army = fresh_army(d, first_army(d, game_id, *homes.at(0)), 9910003, end, last_ring);
+    let result = measured(owner, game_id, withdraw(slot(last_ring, 0), army, crate::rules::RESOURCE_PRECISION), end);
+    assert_eq!(result.refusal, "Deep is settling, try again");
     assert_eq!(rolled_rings(d, game_id), 1);
 }
 

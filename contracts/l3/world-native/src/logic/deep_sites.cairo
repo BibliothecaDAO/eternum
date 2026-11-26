@@ -77,6 +77,13 @@ pub fn assert_open(game_id: u32, site: DeepSite) {
     assert!(is_open(game_id, site), "Deep ring closed");
 }
 
+pub fn assert_settled(game_id: u32, site: DeepSite, context: ExecutionContext) {
+    let game = context.game.unbox();
+    let day = crate::days::day_of(game, crate::clock::day_unit_seconds(game), context.timestamp);
+    assert!(site.day == day.index, "Deep is settling, try again");
+    crate::logic::deep_ticks::assert_caught_up(game_id, context);
+}
+
 pub fn count_entry(game_id: u32, home: u64, context: ExecutionContext) {
     let day = crate::days::day_of(
         context.game.unbox(), crate::clock::day_unit_seconds(context.game.unbox()), context.timestamp,

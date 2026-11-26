@@ -1,5 +1,6 @@
 use starknet::ContractAddress;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+use crate::commands::ExecutionContext;
 use crate::deep::GarrisonSlot;
 use crate::guards::GuardKey;
 use crate::resources::ResourceKey;
@@ -14,8 +15,9 @@ pub fn is_site(game_id: u32, structure_id: u64) -> bool {
         && crate::logic::deep_sites::site(ResourceKey { game_id, entity_id: structure_id }).is_some()
 }
 
-pub fn assert_garrison(key: GuardKey, army_home: u64, troops: Troops) {
+pub fn assert_garrison(key: GuardKey, army_home: u64, troops: Troops, context: ExecutionContext) {
     let site = crate::logic::deep_sites::site(site_key(key)).expect('missing Deep site');
+    crate::logic::deep_sites::assert_settled(key.game_id, site, context);
     assert!(site.aspect != 0, "site is not claimed");
     assert!(
         crate::logic::aspects::home_aspect(ResourceKey { game_id: key.game_id, entity_id: army_home }) == site.aspect,
@@ -44,7 +46,9 @@ pub fn assert_garrison(key: GuardKey, army_home: u64, troops: Troops) {
     }
 }
 
-pub fn assert_withdraw(key: GuardKey, army_home: u64) {
+pub fn assert_withdraw(key: GuardKey, army_home: u64, context: ExecutionContext) {
+    let site = crate::logic::deep_sites::site(site_key(key)).expect('missing Deep site');
+    crate::logic::deep_sites::assert_settled(key.game_id, site, context);
     assert!(home(key) == army_home, "slot belongs to another player");
 }
 
