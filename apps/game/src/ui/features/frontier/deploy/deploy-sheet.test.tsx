@@ -55,7 +55,7 @@ import { nativeRuleConstants, type GameClientSetup } from "@bibliothecadao/etern
 import { Direction, RESOURCE_PRECISION, TROOP_TYPES, TroopTier, TroopType } from "@bibliothecadao/types";
 import { frontierDay } from "./deploy-fixture";
 import { DeploySheet } from "./deploy-sheet";
-import { troopFigures } from "./troop-figures";
+import { troopFigures, troopTraits } from "./troop-figures";
 
 afterEach(() => {
   layout.current = "desktop";
@@ -274,16 +274,18 @@ describe("the Deploy sheet", () => {
       baseReveal: store.require("SliceRules", { game_id: 1 }).troop_stamina_config.stamina_explore_stamina_cost,
     };
     expect(troopFigures(store, 1)).toEqual(figures);
+    const knight = { mark: "blade", light: false, guard: true, scout: false } as const;
+    expect(troopTraits(TroopType.Knight)).toEqual(knight);
     const { host, root } = render(store, row);
     try {
       const card = host.querySelector<HTMLElement>(".deploy-troop-card")!;
       expect(card.getAttribute("aria-pressed")).toBe("true");
       expect(card.querySelector("[data-troop-trait]")?.textContent).toBe(
-        TROOP_TRAIT_WORDS[TroopType.Knight].card(figures),
+        TROOP_TRAIT_WORDS.card(knight, figures),
       );
-      expect(card.getAttribute("data-tip")).toBe(TROOP_TRAIT_WORDS[TroopType.Knight].tip(figures));
+      expect(card.getAttribute("data-tip")).toBe(TROOP_TRAIT_WORDS.tip(knight, figures));
       expect(host.querySelector("[data-troop-summary]")?.textContent).toBe(
-        TROOP_TRAIT_WORDS[TroopType.Knight].summary(figures),
+        TROOP_TRAIT_WORDS.summary(knight, figures),
       );
     } finally {
       act(() => root.unmount());

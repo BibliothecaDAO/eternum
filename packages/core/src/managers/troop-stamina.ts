@@ -1,4 +1,4 @@
-export { exploreStaminaCost } from "../utils/explore-stamina";
+export { exploreStaminaCost, revealsAtScoutCost } from "../utils/explore-stamina";
 import { readStaminaEffects } from "../client/views/stamina";
 import { expeditionDepth, readExpeditionRules } from "../utils/expeditions";
 export { STAMINA_MODELS } from "../client/views/stamina";

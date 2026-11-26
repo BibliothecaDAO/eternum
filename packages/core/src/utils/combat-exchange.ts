@@ -68,12 +68,21 @@ export type ExchangeRefusal = "no-troops" | "cooldown" | "insufficient-stamina";
 
 type FirstStrikeSide = "attacker" | "defender" | null;
 
+export type CombatMark = "blade" | "bow";
+
+export const troopMark = (category: ExchangeTroops["category"]): CombatMark =>
+  category === "Crossbowman" ? "bow" : "blade";
+
+export const dealsLightDamage = (category: ExchangeTroops["category"]): boolean => category !== "Knight";
+
+export const takesDeepGuardCut = (category: ExchangeTroops["category"]): boolean => category === "Knight";
+
 export const resolveFirstStrike = (
   attacker: ExchangeTroops["category"],
   defender: ExchangeTroops["category"],
 ): FirstStrikeSide => {
-  const attackerBow = attacker === "Crossbowman";
-  const defenderBow = defender === "Crossbowman";
+  const attackerBow = troopMark(attacker) === "bow";
+  const defenderBow = troopMark(defender) === "bow";
   if (attackerBow && !defenderBow) return "attacker";
   if (defenderBow && !attackerBow) return "defender";
   return null;
@@ -217,9 +226,9 @@ const exchangeDamage = (
 
   attackerDamage = mul(attackerDamage, incomingMultiplier(defender, context.defenderIsStructureGuard));
   defenderDamage = mul(defenderDamage, incomingMultiplier(attacker, context.attackerIsStructureGuard));
-  if (attacker.category !== "Knight")
+  if (dealsLightDamage(attacker.category))
     attackerDamage = mul(attackerDamage, percent(nativeRuleConstants.FRONTIER_LIGHT_DAMAGE_PERCENT));
-  if (defender.category !== "Knight")
+  if (dealsLightDamage(defender.category))
     defenderDamage = mul(defenderDamage, percent(nativeRuleConstants.FRONTIER_LIGHT_DAMAGE_PERCENT));
 
   const attackerBoosts = activeBoosts(attacker, context.timestamp);
@@ -303,7 +312,7 @@ const biomeBonus = (category: ExchangeTroops["category"], biome: BiomeType, dama
 };
 
 const incomingMultiplier = (troops: ExchangeTroops, isStructureGuard: boolean): Fixed =>
-  isStructureGuard && troops.category === "Knight"
+  isStructureGuard && takesDeepGuardCut(troops.category)
     ? percent(nativeRuleConstants.FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT)
     : unscaled(1);
 
