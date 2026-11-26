@@ -1,6 +1,7 @@
 import type { ProceduralUnitActor, ProceduralUnitConfig, ProceduralUnitRuntime } from "@/three/characters";
 import { T1_KNIGHT_WORLD_SCALE } from "@/three/constants/army-constants";
 import { beginModelPreparation } from "@/three/model-preparation";
+import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import type { CosmeticAttachmentTemplate } from "@/three/cosmetics/types";
 import { intersectSweptSphere } from "@/three/projectiles/arrow-ballistics";
 import type { ProjectileSweepHit, ProjectileSweepRequest } from "@/three/projectiles/projectile-hit-query";
@@ -66,7 +67,10 @@ export class ProceduralArmyCharacterLayer {
   private shadowsEnabled = false;
   private disposed = false;
 
-  public constructor(private readonly scene: Scene) {}
+  public constructor(
+    private readonly scene: Scene,
+    private readonly compilePipelines?: PipelineCompiler,
+  ) {}
 
   public sync(presentations: readonly ProceduralArmyCharacterPresentation[]): void {
     if (this.disposed) return;
@@ -344,8 +348,7 @@ export class ProceduralArmyCharacterLayer {
     const hitTarget = this.createHitTarget(presentation);
     actor.object.add(hitTarget);
     this.applyActorShadowState(actor);
-    this.scene.add(actor.object);
-    return {
+    const record: ProceduralArmyActorRecord = {
       actor,
       actorFamily: resolveActorFamily(presentation),
       configSignature,
@@ -353,6 +356,26 @@ export class ProceduralArmyCharacterLayer {
       hitTarget,
       posed: false,
     };
+    this.attachActorObject(presentation.entityId, record);
+    return record;
+  }
+
+  private attachActorObject(entityId: number, record: ProceduralArmyActorRecord): void {
+    if (!this.compilePipelines) {
+      this.scene.add(record.actor.object);
+      return;
+    }
+    const generation = this.generation;
+    void this.compilePipelines(record.actor.object, this.scene)
+      .then(() => {
+        if (this.disposed || generation !== this.generation || this.actors.get(entityId) !== record) return;
+        this.scene.add(record.actor.object);
+      })
+      .catch((error) => {
+        if (this.disposed || generation !== this.generation || this.actors.get(entityId) !== record) return;
+        console.error("[ProceduralArmyCharacterLayer] Failed to precompile actor pipelines", error);
+        this.scene.add(record.actor.object);
+      });
   }
 
   private clearActors(): void {

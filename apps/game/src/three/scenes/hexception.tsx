@@ -364,7 +364,10 @@ export default class HexceptionScene extends HexagonScene {
   ) {
     super(SceneName.Hexception, controls, game, mouse, raycaster, sceneManager);
 
-    this.proceduralTerrain = new ProceduralTerrain();
+    this.proceduralTerrain = new ProceduralTerrain({
+      compilePipelines: this.compilePipelines,
+      scene: this.scene,
+    });
     this.scene.add(this.proceduralTerrain.object3d);
     this.mode = getGameModeConfig();
     this.hoverLabelManager = new HexHoverLabel(this.scene);

@@ -61,6 +61,7 @@ export interface RendererBackend {
   readonly capabilities: RendererBackendCapabilities;
   readonly renderer?: RendererSurfaceLike;
   applyRenderVisuals(input: { pixelRatio: number; shadows: boolean; width: number; height: number }): void;
+  compileObjectAsync?(object: Object3D, camera: Camera, targetScene: Scene): Promise<void>;
   dispose(): void;
   initialize(): Promise<RendererInitDiagnostics>;
   renderFrame(pipeline: RendererFramePipeline): void;

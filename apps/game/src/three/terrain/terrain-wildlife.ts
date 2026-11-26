@@ -1,4 +1,5 @@
-import { Group, Matrix4, Vector3 } from "three";
+import { Group, Matrix4, Vector3, type Scene } from "three";
+import type { PipelineCompiler } from "../pipeline-compiler";
 import { clone as cloneWithSkeleton } from "three/addons/utils/SkeletonUtils.js";
 import type { MeshStandardNodeMaterial } from "three/webgpu";
 import { createCreatureAnimator } from "./creatures/biome-creature-animator.js";
@@ -39,6 +40,7 @@ export class TerrainWildlife {
   readonly object3d = new Group();
   private readonly population = new BiomeCreaturePopulation((from, to, species) => this.isPathClear(from, to, species));
   private readonly templates = new Map<CreatureSpecies, Promise<Group | null>>();
+  private readonly compiledSpecies = new Set<CreatureSpecies>();
   private readonly views = new Map<number, WildlifeView>();
   private readonly failures = new Set<string>();
   private readonly threats: WildlifeThreat[] = [];
@@ -57,6 +59,8 @@ export class TerrainWildlife {
   constructor(
     private readonly sampleSurface: (x: number, z: number) => TerrainSurfaceSample,
     private readonly reveal: (material: MeshStandardNodeMaterial) => void,
+    private readonly compilePipelines?: PipelineCompiler,
+    private readonly targetScene?: Scene,
   ) {
     this.object3d.name = "terrain-wildlife";
   }
@@ -196,8 +200,21 @@ export class TerrainWildlife {
         rigScale: rig.scale.x * root.scale.x,
         ground: null,
       };
-      this.views.set(creature.id, view);
       this.poseView(view, creature);
+      if (this.compilePipelines && this.targetScene && !this.compiledSpecies.has(creature.species)) {
+        try {
+          await this.compilePipelines(root, this.targetScene);
+          this.compiledSpecies.add(creature.species);
+        } catch (error) {
+          console.error(`[terrain-wildlife] Could not precompile ${creature.species}`, error);
+        }
+        if (this.disposed || this.views.has(creature.id) || !this.population.creatures.has(creature.id)) {
+          releaseDrawnObject(root);
+          releaseBiomeCreatureBones(root);
+          continue;
+        }
+      }
+      this.views.set(creature.id, view);
       this.object3d.add(root);
     }
   }
