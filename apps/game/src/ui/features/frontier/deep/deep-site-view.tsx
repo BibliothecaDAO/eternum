@@ -335,10 +335,10 @@ const GuardStrip = ({ site, guard }: { site: DeepSiteProps["site"]; guard: DeepG
         <span>
           · {DEEP_WORDS.guardsCount(guard.slots.length, nativeRuleConstants.DEEP_GUARD_SLOTS)} ·{" "}
           {DEEP_WORDS.slotsOpen(free.length)}
+          {filled.length > 0 && " · "}
         </span>
         {filled.length > 0 && (
           <span data-deep-poisoned className="deep-poisoned">
-            {" · "}
             {DEEP_WORDS.poisoned}
           </span>
         )}
