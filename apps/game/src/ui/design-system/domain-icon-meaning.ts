@@ -2,6 +2,7 @@ import { homeIcon, homeKind } from "./home-icons";
 import {
   aspectName,
   BuildingType,
+  deepSites,
   getProducedResource,
   StructureType,
   type AspectId,
@@ -83,6 +84,19 @@ const structureMeanings = {
   [StructureType.Beasts]: "beasts",
   [StructureType.DeepSite]: "deep-crystal",
 } satisfies Record<StructureType, IconMeaning>;
+export const DEEP_SITE_MEANINGS = {
+  foundation: "hyperstructure",
+  core: "essence",
+  mine: "pickaxe",
+  altar: "flame",
+} as const satisfies Record<(typeof deepSites)[number]["key"], IconMeaning>;
+
+export function deepSiteMeaning(kind: number): IconMeaning {
+  const site = deepSites.find(({ id }) => id === kind);
+  if (!site) throw new Error(`Unknown Deep site kind ${kind}`);
+  return DEEP_SITE_MEANINGS[site.key];
+}
+
 export function structureMeaning(
   category: StructureType,
   mode?: StructureNamingMode,
@@ -104,6 +118,10 @@ export function readStructureMeaning(
 ): IconMeaning {
   const category = structure.base.category;
   if (category === StructureType.Realm) return realmMeaning(structure.base.level, realmShowsWonder(store, structure));
+  if (category === StructureType.DeepSite)
+    return deepSiteMeaning(
+      store.require("DeepSite", { game_id: structure.game_id, entity_id: structure.entity_id }).kind,
+    );
   if (!isGuardedSite(category)) return structureMeaning(category);
   const mode = nativeGameModeOfFamily(store.require("GameRegistry", { game_id: structure.game_id }).family);
   const guard =

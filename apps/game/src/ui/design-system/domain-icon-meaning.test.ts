@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { BuildingType, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { BuildingType, deepSites, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
 import { nativeStoryVariants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
 import {
   beastMeaning,
   buildingMeaning,
+  DEEP_SITE_MEANINGS,
+  deepSiteMeaning,
   readStructureMeaning,
   storyMeaning,
   structureMeaning,
@@ -116,4 +118,29 @@ it("reads native Wonder identity at each level, keeping free and ordinary held R
       );
     }
   }
+});
+
+describe("Deep site icon meanings", () => {
+  it("maps every catalog Deep site kind to its single-source icon and rejects unknown kinds", () => {
+    const { store, structure } = campBeside();
+    for (const site of deepSites) {
+      expect(deepSiteMeaning(site.id)).toBe(DEEP_SITE_MEANINGS[site.key]);
+      expect(iconDefinition(deepSiteMeaning(site.id)).label).toBeTruthy();
+      store.applyFacts([
+        {
+          model: "DeepSite",
+          key: `0xd5${site.id}`,
+          value: { game_id: 1, entity_id: BigInt(900 + site.id), kind: site.id, ring: 0, day: 0n, aspect: 0 },
+        },
+      ]);
+      expect(
+        readStructureMeaning(store, {
+          ...structure,
+          entity_id: BigInt(900 + site.id),
+          base: { ...structure.base, category: StructureType.DeepSite },
+        }),
+      ).toBe(DEEP_SITE_MEANINGS[site.key]);
+    }
+    expect(() => deepSiteMeaning(99)).toThrow("Unknown Deep site kind 99");
+  });
 });

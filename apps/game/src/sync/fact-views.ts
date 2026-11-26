@@ -32,6 +32,7 @@ export interface FactView<T> {
   models: readonly NativeModelName[];
   /** `viewer` is the signed-in player, null for a spectator (see accountAddress). */
   read: (store: NativeFactStore, viewer: ContractAddress | null) => T;
+  clock?: (store: NativeFactStore) => string | number | undefined;
 }
 
 /** Whose a thing is also reads an open game's seats and whether the viewer watches: a reading holds for one of each. */
@@ -47,6 +48,7 @@ interface ViewReading {
   viewer: ContractAddress | null;
   sides: Sides;
   revision: number;
+  clock: string | number | undefined;
   value: unknown;
 }
 
@@ -61,6 +63,7 @@ export const readFactView = <T>(
   view: FactView<T>,
   viewer = accountAddress(),
   sides = currentSides(),
+  clock = view.clock?.(store),
 ): T => {
   const revision = store.getRevision();
   const last = lastReadings.get(view);
@@ -68,12 +71,13 @@ export const readFactView = <T>(
     last?.store === store &&
     last.viewer === viewer &&
     last.revision === revision &&
+    last.clock === clock &&
     last.sides.seats === sides.seats &&
     last.sides.spectating === sides.spectating
   )
     return last.value as T;
   const value = view.read(store, viewer);
-  lastReadings.set(view, { store, viewer, sides, revision, value });
+  lastReadings.set(view, { store, viewer, sides, revision, clock, value });
   return value;
 };
 
@@ -90,9 +94,20 @@ export const watchFactView = <T>(
   const stopAccount = useAccountStore.subscribe((state, previous) => {
     if (state.account?.address !== previous.account?.address) publish();
   });
+  let lastClock = view.clock?.(store);
+  const stopClock = view.clock
+    ? useChainTimeStore.subscribe(() => {
+        const nextClock = view.clock!(store);
+        if (nextClock !== lastClock) {
+          lastClock = nextClock;
+          publish();
+        }
+      })
+    : undefined;
   return () => {
     stopFacts();
     stopAccount();
+    stopClock?.();
   };
 };
 

@@ -6,10 +6,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import { type RefObject, useLayoutEffect, useRef } from "react";
 
 import { HeadlineLine } from "./headline-line";
-import type { Headline, HeadlineType } from "./headline-types";
+import { type Headline, HEADLINE_DISPLAY_MS, type ThemedHeadlineType } from "./headline-types";
+import { AspectMark } from "@/ui/design-system/aspect-mark";
 
 /** Each kind of news: its painting and its tone (none reads in the age's accent); its eyebrow is the words module's. */
-const HEADLINE_THEME_MAP: Record<HeadlineType, { icon: IconMeaning; tone?: "good" | "bad" | "warn" }> = {
+const HEADLINE_THEME_MAP: Record<ThemedHeadlineType, { icon: IconMeaning; tone?: "good" | "bad" | "warn" }> = {
   "realm-fall": { icon: "realm", tone: "bad" },
   "hyper-capture": { icon: "crown" },
   elimination: { icon: "skull", tone: "bad" },
@@ -23,7 +24,6 @@ const HEADLINE_THEME_MAP: Record<HeadlineType, { icon: IconMeaning; tone?: "good
  * takes no click, so whatever it covers stays playable. A headline with a place keeps it in its Feed row, one tap away.
  */
 export function NewsHeadlineBanner({ headline }: { headline: Headline | null }) {
-  const theme = headline ? HEADLINE_THEME_MAP[headline.icon] : null;
   const band = useRef<HTMLDivElement>(null);
   usePublishedHeight(band, NOTICE_BAND);
   return (
@@ -33,7 +33,7 @@ export function NewsHeadlineBanner({ headline }: { headline: Headline | null }) 
     >
       <OfflineNotice />
       <AnimatePresence mode="wait">
-        {headline && theme && (
+        {headline && (
           <motion.div
             key={headline.id}
             initial={{ y: -32, opacity: 0, scale: 0.96 }}
@@ -42,13 +42,27 @@ export function NewsHeadlineBanner({ headline }: { headline: Headline | null }) 
             transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
             className="flex w-full justify-center"
           >
-            <HudBanner
-              tone={theme.tone}
-              icon={theme.icon}
-              eyebrow={HEADLINE_EYEBROWS[headline.icon]}
-              title={headline.title}
-              line={<HeadlineLine parts={headline.description} />}
-            />
+            {headline.type === "deep-capture" ? (
+              <HudBanner
+                tone={headline.look.tone}
+                icon={headline.look.icon}
+                eyebrow={headline.look.eyebrow}
+                title={headline.title}
+                line={<HeadlineLine parts={headline.description} />}
+                ceremony={{
+                  lastsMs: HEADLINE_DISPLAY_MS,
+                  pip: <AspectMark aspect={headline.look.aspect} size={18} decorative />,
+                }}
+              />
+            ) : (
+              <HudBanner
+                tone={HEADLINE_THEME_MAP[headline.icon].tone}
+                icon={HEADLINE_THEME_MAP[headline.icon].icon}
+                eyebrow={HEADLINE_EYEBROWS[headline.icon]}
+                title={headline.title}
+                line={<HeadlineLine parts={headline.description} />}
+              />
+            )}
           </motion.div>
         )}
       </AnimatePresence>

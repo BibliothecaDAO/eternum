@@ -4063,11 +4063,9 @@ const POINTER_PARKED = [0, -300];
 /** An army's tile below its token at the map's default zoom (a player run never zooms): its label point's height. */
 const TOKEN_ABOVE_TILE_PX = 100;
 
-const DEEP_SITE_ICONS = { foundation: "hyperstructure", core: "essence", mine: "pickaxe", altar: "flame" };
 const DEEP_SITE_NAMES = deepSites.map(({ key, name }) => ({
   name,
   key: `deep:${key}`,
-  icon: DEEP_SITE_ICONS[key],
   beast: DEEP_BEASTS[key].name,
 }));
 const HELD_SITE = DEEP_SITE_NAMES.find(({ key }) => key === "deep:altar");
@@ -4076,12 +4074,12 @@ const everyRingSiteDrawn = (drawn) =>
   DEEP_SITE_NAMES.reduce((total, site) => total + (drawn[site.key] ?? 0), 0) === rules.DEEP_RING_SITES;
 
 /** One Deep site's plate, found by its name: where a press on its model lands (page px from the centre), whether its plate stands wholly in the frame, and the card open now. */
-const siteState = ({ name, icon }) => `JSON.stringify((() => {
+const siteState = ({ key }) => `JSON.stringify((() => {
   const sheet = document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
   const guard = document.querySelector('[data-kit-sheet] [data-deep-guard="beast"]');
   const found = guard?.querySelector("[data-deep-beast] .deep-beast__name, [data-fight-side='theirs']");
   const beast = found ? found.getAttribute("aria-label") ?? found.textContent : null;
-  const slot = document.querySelector('.mp-at:has([data-icon="${icon}"])');
+  const slot = ${sitePlateSlot(JSON.stringify(key))};
   if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return { sheet, beast, token: null, inView: false };
   const box = slot.firstElementChild.getBoundingClientRect();
   return {
@@ -4095,14 +4093,17 @@ const siteState = ({ name, icon }) => `JSON.stringify((() => {
 
 const SITE_MODEL_BELOW_PLATE = 65;
 
+const DEEP_SITE_SLOTS = `[...document.querySelectorAll('.mp-at[data-key^="deep-site:"]')]`;
+const sitePlateSlot = (key) =>
+  `document.querySelector('.mp-at[data-key="deep-site:' + window.__eternumMapSelection?.siteHexes?.[${key}]?.entity + '"]')`;
+
 const namesItsBeast = (line, beast) =>
   beast === null ? line === null : typeof line === "string" && line.startsWith(beast);
 
 const DEEP_HELD_SITE_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
   site: (() => {
-    const slot = [...document.querySelectorAll('.mp-at')].find((node) =>
-      node.querySelector('[data-icon="${HELD_SITE.icon}"]') || node.querySelector('.mp-word')?.textContent === "${HELD_SITE.name}");
+    const slot = ${sitePlateSlot(JSON.stringify(HELD_SITE.key))};
     if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return null;
     const token = slot.firstElementChild.getBoundingClientRect();
     return [Math.round(token.left + token.width / 2 - innerWidth / 2), Math.round(token.bottom + ${SITE_MODEL_BELOW_PLATE} - innerHeight / 2)];
@@ -4317,11 +4318,11 @@ const ARMY_SIDES = `JSON.stringify(Object.fromEntries([...document.querySelector
  */
 const DRAWN_SITES = `JSON.stringify({
   drawn: window.__eternumMapSelection?.drawnSites ?? {},
-  plates: ${JSON.stringify(DEEP_SITE_NAMES.map((site) => site.icon))}.flatMap((icon) => {
-    const slot = document.querySelector('.mp-at:has([data-icon="' + icon + '"])');
+  plates: ${JSON.stringify(DEEP_SITE_NAMES.map((site) => site.key))}.flatMap((key) => {
+    const slot = ${sitePlateSlot("key")};
     if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return [];
     const box = slot.firstElementChild.getBoundingClientRect();
-    return [{ icon, inView: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight }];
+    return [{ key, inView: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight }];
   }),
 })`;
 
@@ -4501,10 +4502,10 @@ const deepSitesSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION) =
   },
 ];
 
-const SITE_TOKENS = `JSON.stringify([...document.querySelectorAll(".mp-at")].flatMap((slot) => {
+const SITE_TOKENS = `JSON.stringify(${DEEP_SITE_SLOTS}.flatMap((slot) => {
   if (getComputedStyle(slot).display === "none") return [];
   const icon = slot.querySelector("[data-icon]")?.getAttribute("data-icon");
-  return icon && ${JSON.stringify([...DEEP_SITE_NAMES.map((site) => site.icon), "lock"])}.includes(icon) ? [icon] : [];
+  return icon ? [icon] : [];
 }))`;
 
 const deepClosedSteps = () => [
@@ -6057,14 +6058,13 @@ const JOIN_PREFIX = REHEARSAL_WORDS.join("");
 
 const DEEP_SITE_KEYS = new Set(DEEP_SITE_NAMES.map(({ name }) => name));
 
-const DEEP_SITE_PLATES = `JSON.stringify(${JSON.stringify(DEEP_SITE_NAMES.map(({ icon }) => icon))}.flatMap((icon) =>
-  [...document.querySelectorAll('.mp-at:has([data-icon="' + icon + '"])')].flatMap((slot) => {
+const DEEP_SITE_PLATES = `JSON.stringify(${DEEP_SITE_SLOTS}.flatMap((slot) => {
     if (getComputedStyle(slot).display === "none" || !slot.firstElementChild) return [];
     const box = slot.firstElementChild.getBoundingClientRect();
     if (box.left < 0 || box.right > innerWidth || box.top < 0 || box.bottom > innerHeight) return [];
     return [{ key: slot.getAttribute("data-key"),
       token: [Math.round(box.left + box.width / 2 - innerWidth / 2), Math.round(box.bottom + ${SITE_MODEL_BELOW_PLATE} - innerHeight / 2)] }];
-  })))`;
+  }))`;
 
 const DEEP_SITE_CARD = `JSON.stringify((() => {
   const sheet = document.querySelector("[data-kit-sheet]");

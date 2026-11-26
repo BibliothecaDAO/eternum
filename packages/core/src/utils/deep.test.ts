@@ -17,6 +17,7 @@ import {
   readDeepRingOpening,
   readDeepSite,
   readDeepSites,
+  readSyncedDeepSites,
 } from "../client/views/deep-sites";
 import { dayAtIndex } from "./days";
 
@@ -278,6 +279,7 @@ describe("the shared Deep", () => {
     rows.GarrisonSlot = [];
     garrison(1, 3n, 9n * precision);
     garrison(3, 2n, 19n * precision);
+    rows.Structure = [{ game_id: 7, entity_id: 20n, owner: 0x222n }];
     rows.TileOccupancy!.push(
       ...rows.DeepSite.map((site) => ({
         game_id: 7,
@@ -290,18 +292,23 @@ describe("the shared Deep", () => {
     const today = readDeepSites(store, 420, 7);
     expect(today.map((site) => site.name)).toEqual(kinds.map((kind) => deepSites[kind]!.name));
     expect(today.every((site) => site.open && site.ring === 0)).toBe(true);
-    expect(today[0]!.aspect).toBe(2);
+    expect([today[0]!.aspect, today[0]!.holder, today[1]!.holder]).toEqual([2, 0x222n, 0n]);
     expect(today[0]!.garrisons.map(({ slot, home, troops }) => [slot, home, troops.count])).toEqual([
       [3, 2n, 18n * precision],
       [1, 3n, 8n * precision],
     ]);
+    expect(readSyncedDeepSites(store, undefined, 7)).toEqual([]);
+    expect(readSyncedDeepSites(store, 420, 7).map((site) => [site.id, site.holder])).toEqual(
+      today.map((site) => [site.id, site.holder]),
+    );
     const tomorrow = readDeepSites(store, dayAtIndex(calendar, 0).end, 7);
-    expect(tomorrow.map((site) => [site.id, site.beastTroops, site.aspect, site.garrisons])).toEqual(
-      kinds.map((_, place) => [BigInt(20 + place), 10n * precision, 0, []]),
+    expect(tomorrow.map((site) => [site.id, site.beastTroops, site.holder, site.aspect, site.garrisons])).toEqual(
+      kinds.map((_, place) => [BigInt(20 + place), 10n * precision, 0n, 0, []]),
     );
     rows.DeepSite.pop();
     expect(() => readDeepSites(store, 420, 7)).toThrow(IncompleteDeepSyncError);
     expect(() => readDeepSites(store, 420, 7)).toThrow("Incomplete Deep site facts");
+    expect(readSyncedDeepSites(store, 420, 7)).toEqual([]);
   });
 
   it("throws IncompleteDeepSyncError when day entries are unknown, plain Error on missing rules, and empty outside the game window", () => {

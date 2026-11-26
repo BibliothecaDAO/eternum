@@ -1,5 +1,13 @@
 import { CAPTURE_AFTERMATH, isViewerOwner } from "@bibliothecadao/eternum";
-import { NEUTRAL_OWNER_NAME, StructureType } from "@bibliothecadao/types";
+import {
+  aspectName,
+  catalogAspectId,
+  DEEP_CAPTURE_LINES,
+  NEUTRAL_OWNER_NAME,
+  StructureType,
+} from "@bibliothecadao/types";
+import type { IconMeaning } from "@/ui/design-system/icon";
+import { DEEP_CAPTURE_WORDS } from "@/ui/design-system/kit/words";
 import type { Headline, HeadlinePart } from "./headline-types";
 
 /** A realm or hyperstructure that changed hands, as the native Structure row's transition shows it. */
@@ -49,3 +57,48 @@ const captureTitle = (isHyperstructure: boolean, playerTook: boolean, playerLost
 
 /** Realms and hyperstructures; rifts and camps change hands too often to be news. */
 export const NEWSWORTHY_CAPTURES = new Set<StructureType>([StructureType.Realm, StructureType.Hyperstructure]);
+
+interface DeepCapture {
+  structureId: number;
+  site: { name: string; icon: IconMeaning; beast: string; at: { x: number; y: number } | null };
+  newOwner: bigint;
+  takerAspect: number;
+  holderAspect: number | undefined;
+  viewerAspects: ReadonlySet<number>;
+  at: number;
+}
+
+export function buildDeepCaptureHeadline(capture: DeepCapture): Headline {
+  const taker = capture.takerAspect;
+  const holder = capture.holderAspect;
+  const ours = (aspect: number | undefined) => aspect !== undefined && capture.viewerAspects.has(aspect);
+  const lost = ours(holder) && !ours(taker);
+  const site = capture.site.name;
+  const takerName = aspectName(taker);
+  return {
+    id: `deep-capture:${capture.structureId}:${holder ?? 0}:${taker}:${capture.at}`,
+    type: "deep-capture",
+    icon: "deep-capture",
+    look: {
+      icon: capture.site.icon,
+      eyebrow: lost ? DEEP_CAPTURE_WORDS.siteLost : DEEP_CAPTURE_WORDS.eyebrow(takerName),
+      ...(lost ? { tone: "bad" as const } : {}),
+      aspect: catalogAspectId(taker),
+    },
+    title: lost
+      ? DEEP_CAPTURE_WORDS.lost(site)
+      : holder === undefined
+        ? DEEP_CAPTURE_WORDS.taken(site)
+        : DEEP_CAPTURE_WORDS.seized(site),
+    description: [
+      { player: capture.newOwner },
+      DEEP_CAPTURE_WORDS.sentence(
+        holder === undefined
+          ? DEEP_CAPTURE_LINES.slew(takerName, capture.site.beast, site)
+          : DEEP_CAPTURE_LINES.seized(takerName, site, aspectName(holder)),
+      ),
+    ],
+    location: capture.site.at ? { ...capture.site.at, entityId: capture.structureId } : undefined,
+    timestamp: capture.at,
+  };
+}

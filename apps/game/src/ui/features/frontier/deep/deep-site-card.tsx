@@ -47,13 +47,13 @@ import { useApproachTile } from "../sites/approach";
 import { readDeepSiteFight } from "../sites/site-card-plan";
 import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
 import { useSelectedOwnArmy } from "../sites/selected-army";
+import { readDeepSitePays } from "./deep-site-faces";
 import {
   DeepSiteView,
   type DeepBlock,
   type DeepGuard,
   type DeepOpening,
   type DeepOrder,
-  type DeepPay,
   type DeepRates,
 } from "./deep-site-view";
 
@@ -66,6 +66,8 @@ const MODELS = [
   "GarrisonSlot",
   "ArmyRelicEffect",
   "AltarBar",
+  "RaceRules",
+  "BaneRules",
 ] as const;
 
 export function useSelectedDeepSite(): Site | null {
@@ -281,7 +283,7 @@ function DeepTransferAction({
 
 function siteRates(store: NativeFactStore, game_id: number, site: Site, selected: Selected): DeepRates | null {
   const deep = store.require("DeepRules", { game_id });
-  const pays = sitePays(store, game_id, site);
+  const pays = readDeepSitePays(store, game_id, site.kind);
   if (!pays) return null;
   const holder =
     site.aspect !== 0 ? site.aspect : selected ? homeAspect(store, game_id, selected.army.owner) : undefined;
@@ -303,23 +305,7 @@ function siteRates(store: NativeFactStore, game_id: number, site: Site, selected
 }
 
 function siteOpening(store: NativeFactStore, game_id: number, site: Site): DeepOpening {
-  return { entered: site.entered, realms: site.opensAt, pays: sitePays(store, game_id, site) ?? [] };
-}
-
-function sitePays(store: NativeFactStore, game_id: number, site: Site): DeepPay[] | null {
-  const race = store.get("RaceRules", { game_id });
-  if (!race && !store.absenceKnown("RaceRules", { game_id }).known) return null;
-  const banes = store.get("BaneRules", { game_id });
-  if (!banes && !store.absenceKnown("BaneRules", { game_id }).known) return null;
-  const resources = site.kind === nativeRuleConstants.DEEP_CORE || site.kind === nativeRuleConstants.DEEP_MINE;
-  const pays: (DeepPay | false)[] = [
-    !resources && Boolean(race) && "glory",
-    Boolean(race) && site.kind === nativeRuleConstants.DEEP_FOUNDATION && "height",
-    site.kind === nativeRuleConstants.DEEP_CORE && "essence",
-    site.kind === nativeRuleConstants.DEEP_MINE && "labor",
-    Boolean(banes) && site.kind === nativeRuleConstants.DEEP_ALTAR && "bar",
-  ];
-  return pays.filter((pay): pay is DeepPay => pay !== false);
+  return { entered: site.entered, realms: site.opensAt, pays: readDeepSitePays(store, game_id, site.kind) ?? [] };
 }
 
 function selectionBlock(
@@ -338,8 +324,7 @@ function selectionBlock(
 }
 
 function ownsSite(store: NativeFactStore, game_id: number, site: Site, selected: NonNullable<Selected>): boolean {
-  const owner = store.require("Structure", { game_id, entity_id: site.id }).owner;
-  return store.require("Structure", { game_id, entity_id: selected.army.owner }).owner === owner;
+  return store.require("Structure", { game_id, entity_id: selected.army.owner }).owner === site.holder;
 }
 
 function guardView(store: NativeFactStore, game_id: number, site: Site, viewer: bigint | null, now: number): DeepGuard {
@@ -354,8 +339,7 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, viewer: 
   const paid = ({ troops }: DeepGarrison) => (troops.count > loss ? troops.count - loss : 0n);
   const total = site.garrisons.reduce((sum, garrison) => sum + paid(garrison), 0n);
   const aspectId = catalogAspectId(site.aspect);
-  const owner = store.get("Structure", { game_id, entity_id: site.id })?.owner;
-  const viewerSide = isViewerOwner(owner, viewer)
+  const viewerSide = isViewerOwner(site.holder, viewer)
     ? "own"
     : viewerAspects(store, game_id, viewer).has(aspectId)
       ? "ally"

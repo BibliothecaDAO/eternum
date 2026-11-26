@@ -1837,7 +1837,7 @@ export class StructureManager {
   }
 
   private updateStructureCompactLabel(structure: StructureInfo, position: Vector3): void {
-    if (!this.contentLadder.labels || structure.supplyPost) {
+    if (!this.contentLadder.labels || structure.supplyPost || structure.structureType === StructureType.DeepSite) {
       this.removeStructureCompactLabel(structure.entityId);
       return;
     }
