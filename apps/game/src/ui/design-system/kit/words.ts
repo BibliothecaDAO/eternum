@@ -829,7 +829,7 @@ export const FIGHT_WORDS = {
 } as const;
 export const FIGHT_RESULT = {
   victory: "Victory",
-  cleared: (site: string) => `${site} cleared`,
+  cleared: "cleared",
 } as const;
 export const fightLost = (lost: string, share: string) => `−${lost} · ${share}% lost`;
 export const NONE_LOST = "None lost";
