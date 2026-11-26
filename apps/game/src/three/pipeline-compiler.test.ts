@@ -335,6 +335,7 @@ describe("createPipelineCompiler", () => {
     );
 
     const scene = new Scene();
+    const overlayScene = new Scene();
     const camera = new PerspectiveCamera();
     const sun = new DirectionalLight();
     sun.castShadow = true;
@@ -349,6 +350,7 @@ describe("createPipelineCompiler", () => {
     let activeTarget: unknown = null;
     let activeMRT: unknown = null;
     const releaseCompile: Array<() => void> = [];
+    const observedOverlays: Array<{ target: unknown; mrt: unknown; overrideMaterial: unknown }> = [];
     const renderer = {
       autoClear: false,
       samples: 1,
@@ -366,7 +368,13 @@ describe("createPipelineCompiler", () => {
       clearDepth: vi.fn(),
       dispose: vi.fn(),
       init: vi.fn(async () => undefined),
-      render: vi.fn(),
+      render: vi.fn((renderedScene: Object3D) => {
+        observedOverlays.push({
+          target: activeTarget,
+          mrt: activeMRT,
+          overrideMaterial: (renderedScene as Scene).overrideMaterial,
+        });
+      }),
       setPixelRatio: vi.fn(),
       setSize: vi.fn(),
       getOutputBufferType: () => HalfFloatType,
@@ -424,13 +432,16 @@ describe("createPipelineCompiler", () => {
 
     const compilation = compile(model, scene);
 
+    const overlayPasses = [{ scene: overlayScene, camera }];
+
     await vi.waitFor(() => expect(releaseCompile).toHaveLength(1));
     const mainCompileTarget = activeTarget;
     const mainCompileMRT = activeMRT;
     expect(mainCompileTarget).not.toBeNull();
     expect(mainCompileMRT).not.toBeNull();
-    backend.renderFrame({ mainScene: scene, mainCamera: camera });
+    backend.renderFrame({ mainScene: scene, mainCamera: camera, overlayPasses });
     expect(observedFrames[0]).toEqual({ target: null, mrt: null, overrideMaterial: null });
+    expect(observedOverlays[0]).toEqual({ target: null, mrt: null, overrideMaterial: null });
     expect(activeTarget).toBe(mainCompileTarget);
     expect(activeMRT).toBe(mainCompileMRT);
     releaseCompile.shift()!();
@@ -439,8 +450,9 @@ describe("createPipelineCompiler", () => {
     expect(activeTarget).toBe(shadowMap);
     expect(activeMRT).toBeNull();
     expect(scene.overrideMaterial).toBeNull();
-    backend.renderFrame({ mainScene: scene, mainCamera: camera });
+    backend.renderFrame({ mainScene: scene, mainCamera: camera, overlayPasses });
     expect(observedFrames[1]).toEqual({ target: null, mrt: null, overrideMaterial: null });
+    expect(observedOverlays[1]).toEqual({ target: null, mrt: null, overrideMaterial: null });
     expect(activeTarget).toBe(shadowMap);
     releaseCompile.shift()!();
 

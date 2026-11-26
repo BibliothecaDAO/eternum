@@ -387,16 +387,10 @@ function renderClearedMainScene(
   pipeline: RendererFramePipeline,
 ): void {
   const previousAutoClear = renderer.autoClear;
-  const previousTarget = renderer.getRenderTarget?.();
-  const previousMRT = renderer.getMRT?.();
   renderer.autoClear = true;
-  renderer.setRenderTarget?.(null);
-  renderer.setMRT?.(null);
   try {
     finish.render(pipeline.mainScene, pipeline.mainCamera);
   } finally {
-    renderer.setRenderTarget?.(previousTarget ?? null);
-    renderer.setMRT?.(previousMRT ?? null);
     renderer.autoClear = previousAutoClear;
   }
 }
@@ -578,10 +572,19 @@ export function createWebGPURendererBackend(
     },
     renderFrame(pipeline: RendererFramePipeline) {
       if (!renderer || !finish) return;
-      renderMainFrameWithRecovery(renderer, finish, pipeline, () =>
-        sizeRenderer(window.innerWidth, window.innerHeight),
-      );
-      renderRendererOverlayPasses(renderer, pipeline);
+      const previousTarget = renderer.getRenderTarget?.();
+      const previousMRT = renderer.getMRT?.();
+      renderer.setRenderTarget?.(null);
+      renderer.setMRT?.(null);
+      try {
+        renderMainFrameWithRecovery(renderer, finish, pipeline, () =>
+          sizeRenderer(window.innerWidth, window.innerHeight),
+        );
+        renderRendererOverlayPasses(renderer, pipeline);
+      } finally {
+        renderer.setRenderTarget?.(previousTarget ?? null);
+        renderer.setMRT?.(previousMRT ?? null);
+      }
     },
     resize(width: number, height: number) {
       sizeRenderer(width, height);
