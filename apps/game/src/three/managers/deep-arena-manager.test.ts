@@ -117,4 +117,28 @@ describe("the Deep arena", () => {
     });
     manager.destroy();
   });
+
+  it("compiles every Aspect gate through compilePipelines before attaching it to the arena", async () => {
+    vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
+    const store = { get: () => undefined, subscribe: () => () => {} };
+    const scene = new Scene();
+    const release: Array<() => void> = [];
+    const compilePipelines = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          release.push(resolve);
+        }),
+    );
+
+    const manager = new DeepArenaManager(scene, store as never, FLAT_TERRAIN_SURFACE, compilePipelines);
+    await vi.waitFor(() => expect(compilePipelines).toHaveBeenCalledTimes(4));
+
+    const arena = scene.getObjectByName("deep-arena")!;
+    const gateGroups = arena.children.filter((child) => child.name.startsWith("deep-gate:"));
+    expect(gateGroups.every((group) => group.children.length === 0)).toBe(true);
+
+    release.splice(0).forEach((resolve) => resolve());
+    await vi.waitFor(() => expect(gateGroups.every((group) => group.children.length === 1)).toBe(true));
+    manager.destroy();
+  });
 });
