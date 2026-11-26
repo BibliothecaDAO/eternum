@@ -1,5 +1,6 @@
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import releaseFile from "../../../../contracts/l3/world-native/schema/release-definition.json";
+import releaseArchive from "./release-definitions.json";
 import type { DecodedRecord } from "../types";
 
 class NativeReleaseDefinitionUnknown extends Error {
@@ -22,16 +23,17 @@ export function releaseDefinitionText(release: number, definition: unknown): str
 }
 
 export function readReleaseDefinitions(...files: unknown[]): ReleaseDefinitions {
-  return new Map(
-    files.map((file) => {
-      const { release, definition } = file as { release: number; definition: unknown };
-      if (!Number.isSafeInteger(release)) throw new Error("A release definition names no release");
-      return [release, revive(definition) as DecodedRecord];
-    }),
-  );
+  const definitions = new Map<number, DecodedRecord>();
+  for (const file of files) {
+    const { release, definition } = file as { release: number; definition: unknown };
+    if (!Number.isSafeInteger(release)) throw new Error("A release definition names no release");
+    if (definitions.has(release)) throw new Error(`Two rule definitions for release ${release}`);
+    definitions.set(release, revive(definition) as DecodedRecord);
+  }
+  return definitions;
 }
 
-export const RELEASE_DEFINITIONS = readReleaseDefinitions(releaseFile);
+export const RELEASE_DEFINITIONS = readReleaseDefinitions(...releaseArchive, releaseFile);
 
 export function releaseDefinition(definitions: ReleaseDefinitions, release: number): DecodedRecord {
   const definition = definitions.get(release);
