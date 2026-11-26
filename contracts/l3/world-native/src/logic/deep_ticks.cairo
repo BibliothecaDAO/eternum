@@ -2,9 +2,10 @@ use core::dict::Felt252Dict;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::commands::ExecutionContext;
 use crate::deep::{DeepShare, IDeepBanesDispatcherTrait};
-use crate::logic::race::DeepRaceTrait;
 use crate::guards::GuardKey;
+use crate::logic::race::DeepRaceTrait;
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
+use crate::stamina::StaminaSourceTrait;
 
 #[derive(Copy, Drop)]
 struct Guard {

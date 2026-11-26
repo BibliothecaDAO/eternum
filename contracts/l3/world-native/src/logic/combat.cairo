@@ -87,8 +87,10 @@ fn guard_target(
             crate::logic::deep_sites::assert_open(key.game_id, site);
             assert!(
                 site.aspect == 0
-                    || crate::logic::aspects::home_aspect(ResourceKey { game_id: key.game_id, entity_id: attacker.owner })
-                        != site.aspect,
+                    || crate::logic::aspects::home_aspect(
+                        ResourceKey { game_id: key.game_id, entity_id: attacker.owner },
+                    ) != site
+                        .aspect,
                 "your Aspect holds this site",
             );
             let coord = crate::logic::map::entity_coord(key).expect('missing Deep site position');
@@ -437,7 +439,6 @@ pub fn guard_attack(
 pub fn explorer_owner(key: ExplorerKey, explorer: ExplorerTroops) -> ContractAddress {
     crate::logic::structures::owner(ResourceKey { game_id: key.game_id, entity_id: explorer.owner })
 }
-
 
 
 pub fn try_capture(

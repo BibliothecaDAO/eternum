@@ -40,7 +40,7 @@ fn terrain(game_id: u32) -> crate::settlement::ITerrainDerivationLibraryDispatch
         class_hash: crate::logic::release::release_class(release, crate::slots::SETTLEMENT),
     }
 }
-use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+use starknet::storage::StorageMapReadAccess;
 use crate::map::{TileKey, TileOpt};
 
 pub fn occupancy(key: TileKey) -> Option<crate::map::TileOccupancy> {

@@ -559,7 +559,8 @@ pub mod TroopsLogic {
             if let crate::troop_management::Army::Guard(slot) = command.source {
                 if crate::logic::deep_garrisons::is_site(game_id, slot.structure_id) {
                     crate::logic::deep_garrisons::record(
-                        crate::guards::GuardKey { game_id, structure_id: slot.structure_id, slot: slot.slot }, target.home,
+                        crate::guards::GuardKey { game_id, structure_id: slot.structure_id, slot: slot.slot },
+                        target.home,
                     );
                 }
             }
@@ -587,7 +588,8 @@ pub mod TroopsLogic {
                 if crate::logic::deep_garrisons::is_site(game_id, slot.structure_id) {
                     crate::logic::deep_ticks::assert_caught_up(game_id, game_context);
                     crate::logic::deep_garrisons::assert_withdraw(
-                        crate::guards::GuardKey { game_id, structure_id: slot.structure_id, slot: slot.slot }, target_home,
+                        crate::guards::GuardKey { game_id, structure_id: slot.structure_id, slot: slot.slot },
+                        target_home,
                     );
                 }
             }
