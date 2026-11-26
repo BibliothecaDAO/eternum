@@ -117,82 +117,108 @@ fn expedition_armies_merge_into_the_lower_stamina_and_never_past_the_size_limit(
     assert_eq!(troops.resolved_explorer(source).unwrap().troops.count, source_count - RESOURCE_PRECISION);
 }
 
-#[test]
-fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stamina() {
-    for direction in 0_u8..6 {
-        let d = setup();
-        let (game_id, home, _) = expedition_home(d);
-        let (army, _) = expedition_armies(d, home);
-        let state = GameState { contract_address: d.games };
-        let mut before = state.resolved_explorer(army).unwrap();
-        let center = crate::expeditions::site(
-            crate::logic::settlement::spacing(), crate::entity_ids::namespace(home.entity_id), 0, 0,
-        );
-        // Direction 1 is occupied by the second army; use the first army there only after removing it.
-        if direction == 1 {
-            let armies = IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home);
-            assert!(
-                execute_in_game(
-                    d,
-                    game_id,
-                    Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(*armies.at(1))),
-                    super::play_fixture::FIXTURE_START + 1,
-                ),
-            );
-        }
-        before.coord = crate::geometry::neighbor(center, direction);
-        crate::tests::resource_commands::set_explorer_fixture(d.games, army, before);
-        let veteran = crate::progression::ArmyProgress { logistics: 5, oath_slots: 1, ..Default::default() };
-        write_progress(d, army, veteran);
-        let maximum = crate::progression::stamina_max(
-            veteran, before.troops.category, crate::balance::rules::TROOP_STAMINA_CONFIG,
-        );
-        let bar = if direction == 0 {
-            7
-        } else {
-            maximum
-        };
-        assert!(maximum > crate::balance::rules::TROOP_STAMINA_CONFIG.stamina_initial.into());
-        timers(d, army, bar, (super::play_fixture::FIXTURE_START + 50).try_into().unwrap());
-        let resource_type = crate::troops::stock_resource(before.troops.category, before.troops.tier);
-        let resources = IResourceOperationsDispatcher { contract_address: d.games };
-        let stock_key = ResourceSlot { game_id, entity_id: home.entity_id, resource_type };
-        super::resource_commands::fund_troops(d, home, resource_type, 2 * RESOURCE_PRECISION);
-        let stock = resources.resource_balance(stock_key);
-        let capacity = resources.resource_weight(ResourceKey { game_id, entity_id: army.explorer_id }).capacity;
-        let count = before.troops.count;
-        let elapsed = if direction == 0 {
-            crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds
-        } else {
-            0
-        };
-        let expected_bar = if direction == 0 {
-            bar + crate::balance::rules::TROOP_STAMINA_CONFIG.stamina_gain_per_tick.into()
-        } else {
-            bar
-        };
-        super::resource_commands::assert_executes(
-            d,
-            game_id,
-            crate::tests::frontier_economy::reinforce(army.explorer_id, 2),
-            super::play_fixture::FIXTURE_START + 10 + elapsed,
-        );
-        let after = state.resolved_explorer(army).unwrap();
-        assert_eq!(after.coord, before.coord);
-        assert_eq!(after.troops.count, count + 2 * RESOURCE_PRECISION);
-        assert_eq!(slot_at_home(d, army, home.entity_id, 0).stamina.amount, expected_bar);
-        assert_eq!(
-            slot_at_home(d, army, home.entity_id, 0).stamina.settled_at,
-            (super::play_fixture::FIXTURE_START + 10 + elapsed).try_into().unwrap(),
-        );
-        assert_eq!(after.troops.battle_cooldown_end, (super::play_fixture::FIXTURE_START + 50).try_into().unwrap());
-        assert_eq!(progress(d, army), Some(veteran));
-        assert_eq!(resources.resource_balance(stock_key), stock - 2 * RESOURCE_PRECISION);
-        assert_eq!(
-            resources.resource_weight(ResourceKey { game_id, entity_id: army.explorer_id }).capacity,
-            capacity * (count + 2 * RESOURCE_PRECISION) / count,
+fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stamina(direction: u8) {
+    let d = setup();
+    let (game_id, home, _) = expedition_home(d);
+    let (army, _) = expedition_armies(d, home);
+    let state = GameState { contract_address: d.games };
+    let mut before = state.resolved_explorer(army).unwrap();
+    let center = crate::expeditions::site(
+        crate::logic::settlement::spacing(), crate::entity_ids::namespace(home.entity_id), 0, 0,
+    );
+    if direction == 1 {
+        let armies = IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home);
+        assert!(
+            execute_in_game(
+                d,
+                game_id,
+                Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(*armies.at(1))),
+                super::play_fixture::FIXTURE_START + 1,
+            ),
         );
     }
+    before.coord = crate::geometry::neighbor(center, direction);
+    crate::tests::resource_commands::set_explorer_fixture(d.games, army, before);
+    let veteran = crate::progression::ArmyProgress { logistics: 5, oath_slots: 1, ..Default::default() };
+    write_progress(d, army, veteran);
+    let maximum = crate::progression::stamina_max(
+        veteran, before.troops.category, crate::balance::rules::TROOP_STAMINA_CONFIG,
+    );
+    let bar = if direction == 0 {
+        7
+    } else {
+        maximum
+    };
+    assert!(maximum > crate::balance::rules::TROOP_STAMINA_CONFIG.stamina_initial.into());
+    timers(d, army, bar, (super::play_fixture::FIXTURE_START + 50).try_into().unwrap());
+    let resource_type = crate::troops::stock_resource(before.troops.category, before.troops.tier);
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let stock_key = ResourceSlot { game_id, entity_id: home.entity_id, resource_type };
+    super::resource_commands::fund_troops(d, home, resource_type, 2 * RESOURCE_PRECISION);
+    let stock = resources.resource_balance(stock_key);
+    let capacity = resources.resource_weight(ResourceKey { game_id, entity_id: army.explorer_id }).capacity;
+    let count = before.troops.count;
+    let elapsed = if direction == 0 {
+        crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds
+    } else {
+        0
+    };
+    let expected_bar = if direction == 0 {
+        bar + crate::balance::rules::TROOP_STAMINA_CONFIG.stamina_gain_per_tick.into()
+    } else {
+        bar
+    };
+    super::resource_commands::assert_executes(
+        d,
+        game_id,
+        crate::tests::frontier_economy::reinforce(army.explorer_id, 2),
+        super::play_fixture::FIXTURE_START + 10 + elapsed,
+    );
+    let after = state.resolved_explorer(army).unwrap();
+    assert_eq!(after.coord, before.coord);
+    assert_eq!(after.troops.count, count + 2 * RESOURCE_PRECISION);
+    assert_eq!(slot_at_home(d, army, home.entity_id, 0).stamina.amount, expected_bar);
+    assert_eq!(
+        slot_at_home(d, army, home.entity_id, 0).stamina.settled_at,
+        (super::play_fixture::FIXTURE_START + 10 + elapsed).try_into().unwrap(),
+    );
+    assert_eq!(after.troops.battle_cooldown_end, (super::play_fixture::FIXTURE_START + 50).try_into().unwrap());
+    assert_eq!(progress(d, army), Some(veteran));
+    assert_eq!(resources.resource_balance(stock_key), stock - 2 * RESOURCE_PRECISION);
+    assert_eq!(
+        resources.resource_weight(ResourceKey { game_id, entity_id: army.explorer_id }).capacity,
+        capacity * (count + 2 * RESOURCE_PRECISION) / count,
+    );
+}
+
+#[test]
+fn expedition_recruitment_after_a_tick_uses_todays_home_and_preserves_progress_and_slot_stamina() {
+    expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stamina(0);
+}
+
+#[test]
+fn expedition_recruitment_toward_direction_1_uses_todays_home_and_preserves_progress_and_slot_stamina() {
+    expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stamina(1);
+}
+
+#[test]
+fn expedition_recruitment_toward_direction_2_uses_todays_home_and_preserves_progress_and_slot_stamina() {
+    expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stamina(2);
+}
+
+#[test]
+fn expedition_recruitment_toward_direction_3_uses_todays_home_and_preserves_progress_and_slot_stamina() {
+    expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stamina(3);
+}
+
+#[test]
+fn expedition_recruitment_toward_direction_4_uses_todays_home_and_preserves_progress_and_slot_stamina() {
+    expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stamina(4);
+}
+
+#[test]
+fn expedition_recruitment_toward_direction_5_uses_todays_home_and_preserves_progress_and_slot_stamina() {
+    expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stamina(5);
 }
 
 #[test]

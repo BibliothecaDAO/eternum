@@ -231,6 +231,7 @@ fn a_foundation_pays_four_allies_glory_by_post_loss_slot_troops_and_repeated_com
         homes.append(ResourceKey { game_id, entity_id: army(d, key).owner });
         guards.append(seize(member, key, target, index));
     }
+    let (homes, guards) = (homes.span(), guards.span());
     let visitor = player(d, 9599);
     let mover = deployed(visitor, game_id, 2, 1000);
     let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
