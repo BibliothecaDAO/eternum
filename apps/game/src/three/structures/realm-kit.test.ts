@@ -10,6 +10,7 @@ import { withFlagCloth } from "./flag-cloth";
 import { REALM_ASSETS, realmModelIndex } from "./realm-design";
 import {
   SEASON_ONE_REALM_KIT_LEVELS,
+  type SeasonOneRealmKitLevel,
   createSeasonOneRealmKit,
   isSeasonOneRealmKitPath,
   parseSeasonOneRealmKitPath,
@@ -18,7 +19,15 @@ import {
 } from "./realm-kit";
 import { resolveStructureRotationY } from "./structure-orientation";
 
-const MAX_SETTLEMENT_TRIANGLES = 8000;
+const MAX_TRIANGLES_BY_LEVEL = {
+  0: 8000,
+  1: 12000,
+} as const satisfies Record<SeasonOneRealmKitLevel, number>;
+
+const HEIGHT_BAND_BY_LEVEL = {
+  0: { min: 0.75, max: 1.05 },
+  1: { min: 1.15, max: 1.55 },
+} as const satisfies Record<SeasonOneRealmKitLevel, { min: number; max: number }>;
 
 function countTriangles(mesh: Mesh): number {
   const index = mesh.geometry.getIndex();
@@ -26,89 +35,107 @@ function countTriangles(mesh: Mesh): number {
   return count / 3;
 }
 
-describe("Season 1 procedural Aspect Settlement kit", () => {
-  it("builds a grounded, floorless, hex-fit, bounded-budget Settlement with 1:2 wall banners for every catalog Aspect", () => {
-    const signatures = new Set<string>();
+describe("Season 1 procedural Aspect Realm kit", () => {
+  it("builds a grounded, floorless, hex-fit, bounded-budget kit with 1:2 wall banners and clear height staircase for every drawn rank and catalog Aspect", () => {
     const triangle = new Triangle();
     const normal = new Vector3();
+    const heightsByAspect = new Map<number, number[]>();
 
-    for (const { id: aspect } of aspects) {
-      const path = seasonOneRealmKitPath(aspect, 0);
-      expect(isSeasonOneRealmKitPath(path)).toBe(true);
-      expect(parseSeasonOneRealmKitPath(path)).toEqual({ aspect, level: 0 });
-      expect(isRealmModelPath(path)).toBe(true);
-      expect(isSettlementModelPath(path)).toBe(true);
-      expect(resolveStructureRotationY([path], 1.2)).toBe(0);
+    for (const level of SEASON_ONE_REALM_KIT_LEVELS) {
+      const signatures = new Set<string>();
+      const heightBand = HEIGHT_BAND_BY_LEVEL[level];
+      const maxTriangles = MAX_TRIANGLES_BY_LEVEL[level];
 
-      const gltf = resolveSeasonOneRealmKit(path);
-      expect(gltf).not.toBeNull();
+      for (const { id: aspect } of aspects) {
+        const path = seasonOneRealmKitPath(aspect, level);
+        expect(isSeasonOneRealmKitPath(path)).toBe(true);
+        expect(parseSeasonOneRealmKitPath(path)).toEqual({ aspect, level });
+        expect(isRealmModelPath(path)).toBe(true);
+        expect(isSettlementModelPath(path)).toBe(true);
+        expect(resolveStructureRotationY([path], 1.2)).toBe(0);
 
-      const meshes: Mesh[] = [];
-      let totalTriangles = 0;
-      const bounds = new Box3();
+        const gltf = resolveSeasonOneRealmKit(path);
+        expect(gltf).not.toBeNull();
 
-      gltf!.scene.traverse((node) => {
-        if (node instanceof Mesh) {
-          meshes.push(node);
-          expect(node.scale.x).toBe(1);
-          expect(node.scale.y).toBe(1);
-          expect(node.scale.z).toBe(1);
-          const geometry = node.geometry;
-          for (const attr of ["position", "normal", "uv", "color"]) {
-            const buffer = geometry.getAttribute(attr);
-            expect(buffer, `${path} ${node.name} ${attr}`).toBeDefined();
-            expect(Array.from(buffer.array).every(Number.isFinite), `${path} ${node.name} ${attr}`).toBe(true);
+        const meshes: Mesh[] = [];
+        let totalTriangles = 0;
+        const bounds = new Box3();
+
+        gltf!.scene.traverse((node) => {
+          if (node instanceof Mesh) {
+            meshes.push(node);
+            expect(node.scale.x).toBe(1);
+            expect(node.scale.y).toBe(1);
+            expect(node.scale.z).toBe(1);
+            const geometry = node.geometry;
+            for (const attr of ["position", "normal", "uv", "color"]) {
+              const buffer = geometry.getAttribute(attr);
+              expect(buffer, `${path} ${node.name} ${attr}`).toBeDefined();
+              expect(Array.from(buffer.array).every(Number.isFinite), `${path} ${node.name} ${attr}`).toBe(true);
+            }
+            const positions = geometry.getAttribute("position");
+            const index = geometry.getIndex();
+            const count = index?.count ?? positions.count;
+            for (let face = 0; face < count; face += 3) {
+              triangle.a.fromBufferAttribute(positions, index ? index.getX(face) : face);
+              triangle.b.fromBufferAttribute(positions, index ? index.getX(face + 1) : face + 1);
+              triangle.c.fromBufferAttribute(positions, index ? index.getX(face + 2) : face + 2);
+              expect(triangle.getArea(), `${path} ${node.name} face ${face / 3}`).toBeGreaterThan(1e-12);
+              expect(triangle.getNormal(normal).length(), `${path} ${node.name}`).toBeCloseTo(1, 5);
+            }
+            totalTriangles += countTriangles(node);
+            geometry.computeBoundingBox();
+            bounds.union(geometry.boundingBox!);
           }
-          const positions = geometry.getAttribute("position");
-          const index = geometry.getIndex();
-          const count = index?.count ?? positions.count;
-          for (let face = 0; face < count; face += 3) {
-            triangle.a.fromBufferAttribute(positions, index ? index.getX(face) : face);
-            triangle.b.fromBufferAttribute(positions, index ? index.getX(face + 1) : face + 1);
-            triangle.c.fromBufferAttribute(positions, index ? index.getX(face + 2) : face + 2);
-            expect(triangle.getArea(), `${path} ${node.name} face ${face / 3}`).toBeGreaterThan(1e-12);
-            expect(triangle.getNormal(normal).length(), `${path} ${node.name}`).toBeCloseTo(1, 5);
-          }
-          totalTriangles += countTriangles(node);
-          geometry.computeBoundingBox();
-          bounds.union(geometry.boundingBox!);
+        });
+
+        expect(meshes.length).toBeGreaterThanOrEqual(2);
+        expect(meshes.length).toBeLessThanOrEqual(3);
+        expect(totalTriangles).toBeGreaterThan(200);
+        expect(totalTriangles).toBeLessThanOrEqual(maxTriangles);
+        expect(bounds.min.y).toBeGreaterThanOrEqual(-0.002);
+        expect(bounds.min.y).toBeLessThanOrEqual(0.02);
+        expect(bounds.max.y).toBeGreaterThanOrEqual(heightBand.min);
+        expect(bounds.max.y).toBeLessThanOrEqual(heightBand.max);
+        expect(Math.max(Math.abs(bounds.min.x), Math.abs(bounds.max.x))).toBeLessThanOrEqual(0.9);
+        expect(Math.max(Math.abs(bounds.min.z), Math.abs(bounds.max.z))).toBeLessThanOrEqual(0.9);
+
+        const rankHeights = heightsByAspect.get(aspect) ?? [];
+        rankHeights.push(bounds.max.y);
+        heightsByAspect.set(aspect, rankHeights);
+
+        const anchors = requireFlagAnchors(gltf!.scene.userData.flagAnchors, path);
+        expect(anchors.length).toBe(2);
+        for (const anchor of anchors) {
+          expect(anchor.facing).toBe(0);
+          expect(anchor.top[1] - anchor.width * 2).toBeGreaterThan(0.02);
         }
-      });
 
-      expect(meshes.length).toBeGreaterThanOrEqual(2);
-      expect(meshes.length).toBeLessThanOrEqual(3);
-      expect(totalTriangles).toBeGreaterThan(200);
-      expect(totalTriangles).toBeLessThanOrEqual(MAX_SETTLEMENT_TRIANGLES);
-      expect(bounds.min.y).toBeGreaterThanOrEqual(-0.002);
-      expect(bounds.min.y).toBeLessThanOrEqual(0.02);
-      expect(bounds.max.y).toBeGreaterThanOrEqual(0.75);
-      expect(bounds.max.y).toBeLessThanOrEqual(1.05);
-      expect(Math.max(Math.abs(bounds.min.x), Math.abs(bounds.max.x))).toBeLessThanOrEqual(0.9);
-      expect(Math.max(Math.abs(bounds.min.z), Math.abs(bounds.max.z))).toBeLessThanOrEqual(0.9);
+        withFlagCloth(gltf!);
+        const cloth = gltf!.scene.getObjectByName("Realm banner cloth");
+        expect(cloth).toBeInstanceOf(Mesh);
+        expect(cloth?.userData.orderCloth).toBe("banner");
 
-      const anchors = requireFlagAnchors(gltf!.scene.userData.flagAnchors, path);
-      expect(anchors.length).toBe(2);
-      for (const anchor of anchors) {
-        expect(anchor.facing).toBe(0);
-        expect(anchor.top[1] - anchor.width * 2).toBeGreaterThan(0.02);
+        const firstColor = Array.from((meshes[0]!.geometry.getAttribute("color").array as Float32Array).slice(0, 12))
+          .map((value) => value.toFixed(3))
+          .join(",");
+        signatures.add(`${totalTriangles}:${firstColor}`);
+
+        gltf!.scene.traverse((node) => {
+          if (node instanceof Mesh) node.geometry.dispose();
+        });
       }
 
-      withFlagCloth(gltf!);
-      const cloth = gltf!.scene.getObjectByName("Realm banner cloth");
-      expect(cloth).toBeInstanceOf(Mesh);
-      expect(cloth?.userData.orderCloth).toBe("banner");
-
-      const firstColor = Array.from((meshes[0]!.geometry.getAttribute("color").array as Float32Array).slice(0, 12))
-        .map((value) => value.toFixed(3))
-        .join(",");
-      signatures.add(`${totalTriangles}:${firstColor}`);
-
-      gltf!.scene.traverse((node) => {
-        if (node instanceof Mesh) node.geometry.dispose();
-      });
+      expect(signatures.size).toBe(aspects.length);
     }
 
-    expect(signatures.size).toBe(aspects.length);
+    for (const { id: aspect } of aspects) {
+      const heights = heightsByAspect.get(aspect)!;
+      expect(heights).toHaveLength(SEASON_ONE_REALM_KIT_LEVELS.length);
+      for (let index = 1; index < heights.length; index++) {
+        expect(heights[index]!).toBeGreaterThan(heights[index - 1]! + 0.2);
+      }
+    }
   });
 
   it("rejects malformed or unsupported procedural realm kit paths", () => {
@@ -117,11 +144,13 @@ describe("Season 1 procedural Aspect Settlement kit", () => {
     expect(parseSeasonOneRealmKitPath("procedural:season-1-realm:1:3")).toBeNull();
     expect(parseSeasonOneRealmKitPath("procedural:season-1-realm:1:0:extra")).toBeNull();
     expect(resolveSeasonOneRealmKit("procedural:season-1-realm:99:0")).toBeNull();
-    const direct = createSeasonOneRealmKit(1, 0);
-    expect(direct.scene.children.length).toBeGreaterThanOrEqual(2);
-    direct.scene.traverse((node) => {
-      if (node instanceof Mesh) node.geometry.dispose();
-    });
+    for (const level of SEASON_ONE_REALM_KIT_LEVELS) {
+      const direct = createSeasonOneRealmKit(1, level);
+      expect(direct.scene.children.length).toBeGreaterThanOrEqual(2);
+      direct.scene.traverse((node) => {
+        if (node instanceof Mesh) node.geometry.dispose();
+      });
+    }
   });
 
   it("agrees across Cosmetics page, world map, and realm view for every Seal, Aspect, Wonder, equipped skin, and level", () => {
@@ -159,7 +188,7 @@ describe("Season 1 procedural Aspect Settlement kit", () => {
               if (expectSeasonOne) {
                 expect(mapAsset.aspect).toBe(aspect);
                 expect(mapAsset.level).toBe(level);
-                expect(hexSelection.tierPath).toBe(seasonOneRealmKitPath(aspect, 0));
+                expect(hexSelection.tierPath).toBe(seasonOneRealmKitPath(aspect, level as SeasonOneRealmKitLevel));
               } else if (showsWonder) {
                 expect(mapAsset.wonder).toBe(true);
                 expect(hexSelection.tierPath).toBe(mapAsset.path);

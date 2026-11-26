@@ -109,6 +109,20 @@ describe("the skin a realm wears", () => {
         level: RealmLevels.Settlement,
       })?.id,
     ).toBe("season-1-havoc");
+    expect(
+      wornRealmSkin({
+        ...wonderRealm,
+        equipped: REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN,
+        level: RealmLevels.City,
+      })?.id,
+    ).toBe("season-1-havoc");
+    expect(
+      wornRealmSkin({
+        ...wonderRealm,
+        equipped: REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN,
+        level: RealmLevels.Kingdom,
+      })?.id,
+    ).toBe("wonder-havoc");
     const lostTheSeal = { ...wonderRealm, sealHeld: false, equipped: REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN };
     expect(wornRealmSkin(lostTheSeal)?.id).toBe("wonder-havoc");
   });

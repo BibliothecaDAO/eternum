@@ -22,8 +22,8 @@ vi.mock("@bibliothecadao/eternum", () => {
         CreateArmy: "CreateArmy",
       },
       FELT_CENTER: 0,
-      SEASON_ONE_DRAWN_LEVELS: [0],
-      hasSeasonOneRealmSkinAt: (level: number | null | undefined) => level === 0,
+      SEASON_ONE_DRAWN_LEVELS: [0, 1],
+      hasSeasonOneRealmSkinAt: (level: number | null | undefined) => level === 0 || level === 1,
     } as Record<string, unknown>,
     {
       get: (target, prop) => (prop in target ? target[prop as string] : scalar),

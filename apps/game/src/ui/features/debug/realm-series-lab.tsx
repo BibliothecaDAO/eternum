@@ -156,7 +156,7 @@ export function RealmSeriesLab() {
           <input
             type="checkbox"
             checked={settings.lineup}
-            disabled={settings.base || settings.s1 || Boolean(settings.reference && settings.comparison !== "after")}
+            disabled={settings.base || Boolean(settings.reference && settings.comparison !== "after")}
             onChange={(e) => change("lineup", e.target.checked ? "1" : "0")}
           />{" "}
           All ages

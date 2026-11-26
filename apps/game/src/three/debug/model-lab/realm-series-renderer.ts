@@ -9,7 +9,11 @@ import {
   SEASON_ONE_REALM_ASSETS,
   realmModelIndex,
 } from "../../structures/realm-design";
-import { hasSeasonOneRealmKit, resolveSeasonOneRealmKit } from "../../structures/realm-kit";
+import {
+  SEASON_ONE_REALM_KIT_LEVELS,
+  hasSeasonOneRealmKit,
+  resolveSeasonOneRealmKit,
+} from "../../structures/realm-kit";
 import { gltfLoader } from "../../utils/utils";
 import { configureRendererColorOutput } from "../../renderer-color-output";
 import { ModelLabEnvironment } from "./model-lab-environment";
@@ -130,9 +134,14 @@ function realmSeries(settings: RealmSeriesSettings): SeriesSlot[] {
   const shipped = (level: number, wonder = settings.wonder) =>
     REALM_ASSETS[realmModelIndex(level, wonder, settings.seed)];
   if (settings.s1) {
-    const level = hasSeasonOneRealmKit(settings.level) ? settings.level : 0;
-    return [shipped(level, false), ...SEASON_ONE_REALM_ASSETS.filter((asset) => asset.level === level)].map(
-      (asset) => ({ asset, before: false }),
+    const levels = settings.lineup
+      ? SEASON_ONE_REALM_KIT_LEVELS
+      : [hasSeasonOneRealmKit(settings.level) ? settings.level : 0];
+    return levels.flatMap((level) =>
+      [shipped(level, false), ...SEASON_ONE_REALM_ASSETS.filter((asset) => asset.level === level)].map((asset) => ({
+        asset,
+        before: false,
+      })),
     );
   }
   if (settings.base)

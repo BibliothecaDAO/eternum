@@ -10,7 +10,7 @@ export const realmSkinEnabled = (commandMask: bigint): boolean =>
 
 const { DEFAULT_REALM_SKIN, BASE_REALM_SKIN, SEASON_ONE_REALM_SKIN, WONDER_REALM_SKIN } = REALM_SKIN_FAMILIES;
 
-export const SEASON_ONE_DRAWN_LEVELS = [0] as const;
+export const SEASON_ONE_DRAWN_LEVELS = [0, 1] as const;
 
 interface RealmSkinHolding {
   readonly sealHeld: boolean;
