@@ -13,7 +13,7 @@ import {
 } from "@/ui/design-system/kit/hud-elements";
 import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import type { Fix } from "@/ui/design-system/kit/refusal";
-import { RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank } from "@/ui/design-system/kit/words";
+import { RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, tierNumeral } from "@/ui/design-system/kit/words";
 import { formatAmount, rankName } from "@bibliothecadao/types";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
@@ -322,7 +322,8 @@ const NodeBadge = ({ node, missing }: { node: TreeNode; missing: Need | undefine
   if (node.state === "ready") return <StatePill word={RESEARCH_TREE.states.ready} tone="ready" />;
   if (node.state === "done") return <StatePill word={RESEARCH_TREE.states.done} tone="done" />;
   if (node.tier > 0) return <HudTier tier={node.tier as Rank} size="line" />;
-  if (missing?.kind === "level" && node.era > 0) return <HudTier tier={(node.era + 1) as Rank} size="line" />;
+  if (missing?.kind === "level" && node.era > 0)
+    return <StatePill word={RESEARCH_TREE.eraBadge(tierNumeral((node.era + 1) as Rank))} tone="calm" />;
   return <StatePill word={RESEARCH_TREE.states[node.state]} tone="calm" />;
 };
 

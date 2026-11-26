@@ -93,10 +93,10 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.frontier-quest-orb:focus-visible {
+.frontier-quest-orb:not(.ui-popover):focus-visible {
   outline: none;
 }
-.frontier-quest-orb:focus-visible .frontier-progress-ring--lg {
+.frontier-quest-orb:not(.ui-popover):focus-visible .frontier-progress-ring--lg {
   box-shadow: var(--hud-focus);
 }
 .frontier-quest-orb__alert {
