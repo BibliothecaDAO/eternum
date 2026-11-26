@@ -99,7 +99,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { deepGateTiles, nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { DeepLandmarkModel } from "../structures/deep-landmarks";
-import { resolveOrderSignumCell } from "../structures/order-standard";
+import { ORDER_STANDARD_NAME, resolveOrderSignumCell } from "../structures/order-standard";
 import { FRONTIER_BEASTS } from "../structures/frontier-beast";
 import { DEEP_SITE_MODELS } from "../structures/deep-landmarks";
 import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
@@ -485,7 +485,7 @@ describe("the Deep's sites on the map", () => {
       setOpenGameSeats(watchedGame, []);
       overrideSpectateIntent(false);
     }
-    const signum = scene.getObjectByName("Order stone signum")!;
+    const signum = scene.getObjectByName(ORDER_STANDARD_NAME)!;
     const emblem = signum.getObjectByName("Order signum emblem") as InstancedMesh;
     const cell = emblem.geometry.getAttribute("signumOrderCell");
     expect(emblem.count).toBe(3);

@@ -715,7 +715,6 @@ export const SETTINGS_WORDS = {
   haptics: "Haptics",
   appliesAfterReload: "Applies after reload",
   reload: "Reload",
-  more: "More",
   leaveGame: "Leave game",
   copy: "Copy",
 } as const;
