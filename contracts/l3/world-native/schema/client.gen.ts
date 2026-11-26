@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "9b7aa8a205c71b344b52249df2677aa3676f921957b6a4e423afbeebc862a1b6";
+export const nativeFactSchemaIdentity = "9350c8c56b388922143ba0c028d0eaf68b1f358b7a8557713a5e2bebcba3eea9";
 export const nativeIdentifiers = {
   "rule": {
     "ENTRY_ENTITLEMENT": 0,
@@ -93,6 +93,8 @@ export const nativeIdentifiers = {
     "LORE_WELLS": 1,
     "LORE_SHRINES": 2,
     "LORE_SPIRES": 3,
+    "LORE_SHRINES_LEVEL": 1,
+    "LORE_SPIRES_LEVEL": 2,
     "STOREROOM": 2,
     "STOREROOM_LEVEL": 1,
     "WORKSHOP": 25,
@@ -112,12 +114,6 @@ export const nativeIdentifiers = {
   "family": {
     "FRONTIER": 1,
     "BLITZ": 2
-  },
-  "realmSkin": {
-    "DEFAULT_REALM_SKIN": 0,
-    "BASE_REALM_SKIN": 1,
-    "SEASON_ONE_REALM_SKIN": 2,
-    "WONDER_REALM_SKIN": 3
   }
 } as const;
 export const nativeReleaseConstants = {
@@ -284,7 +280,6 @@ export interface NativeRows {
   Building: { readonly game_id: number; readonly structure_id: bigint; readonly inner_col: number; readonly inner_row: number; readonly category: number; readonly paused: boolean; readonly labor_paid: bigint };
   StructureBuildings: { readonly game_id: number; readonly entity_id: bigint; readonly packed_counts_1: bigint; readonly packed_counts_2: bigint; readonly packed_counts_3: bigint; readonly population: { readonly current: number; readonly max: number } };
   EntityName: { readonly game_id: number; readonly entity_id: bigint; readonly name: bigint };
-  RealmSkin: { readonly game_id: number; readonly entity_id: bigint; readonly family: number };
   ResourceRule: { readonly game_id: number; readonly resource_type: number; readonly unit_weight: bigint; readonly realm_rate: bigint; readonly village_rate: bigint };
   UpgradeLimits: { readonly game_id: number; readonly realm_max: number; readonly village_max: number };
   UpgradeRecipe: { readonly game_id: number; readonly level: number; readonly costs: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
@@ -375,7 +370,6 @@ export interface NativeKeys {
   Building: { readonly game_id: number; readonly structure_id: bigint; readonly inner_col: number; readonly inner_row: number };
   StructureBuildings: { readonly game_id: number; readonly entity_id: bigint };
   EntityName: { readonly game_id: number; readonly entity_id: bigint };
-  RealmSkin: { readonly game_id: number; readonly entity_id: bigint };
   ResourceRule: { readonly game_id: number; readonly resource_type: number };
   UpgradeLimits: { readonly game_id: number };
   UpgradeRecipe: { readonly game_id: number; readonly level: number };
@@ -1898,18 +1892,6 @@ export const nativeFactModels = {
       "name": "felt"
     }
   },
-  "RealmSkin": {
-    "keys": [
-      "game_id",
-      "entity_id"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "entity_id": "u64",
-      "family": "u8"
-    }
-  },
   "ResourceRule": {
     "keys": [
       "game_id",
@@ -2451,11 +2433,6 @@ export const nativeSyncScopes = {
     ]
   },
   "EntityName": {
-    "entities": [
-      "entity_id"
-    ]
-  },
-  "RealmSkin": {
     "entities": [
       "entity_id"
     ]

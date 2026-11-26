@@ -87,6 +87,8 @@
       "LORE_WELLS": 1,
       "LORE_SHRINES": 2,
       "LORE_SPIRES": 3,
+      "LORE_SHRINES_LEVEL": 1,
+      "LORE_SPIRES_LEVEL": 2,
       "STOREROOM": 2,
       "STOREROOM_LEVEL": 1,
       "WORKSHOP": 25,
@@ -106,12 +108,6 @@
     "family": {
       "FRONTIER": 1,
       "BLITZ": 2
-    },
-    "realmSkin": {
-      "DEFAULT_REALM_SKIN": 0,
-      "BASE_REALM_SKIN": 1,
-      "SEASON_ONE_REALM_SKIN": 2,
-      "WONDER_REALM_SKIN": 3
     }
   },
   "tilePackingConstants": {
@@ -5430,33 +5426,6 @@
       "valueLength": 1
     },
     {
-      "name": "RealmSkin",
-      "identity": "0x5265616c6d536b696e",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "entity_id",
-          "type": "core::integer::u64",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "family",
-          "type": "core::integer::u8",
-          "id": "0x66616d696c79",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 2,
-      "valueLength": 1
-    },
-    {
       "name": "ResourceRule",
       "identity": "0x5265736f7572636552756c65",
       "scope": "game",
@@ -7202,11 +7171,6 @@
           "name": "InteractSite",
           "type": "world_native::relics::InteractSite",
           "wireId": 69
-        },
-        {
-          "name": "SetRealmSkin",
-          "type": "world_native::names::SetRealmSkin",
-          "wireId": 79
         }
       ]
     },
@@ -8182,16 +8146,6 @@
         }
       ]
     },
-    "world_native::names::RealmSkin": {
-      "type": "struct",
-      "name": "world_native::names::RealmSkin",
-      "members": [
-        {
-          "name": "family",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
     "world_native::names::SetEntityName": {
       "type": "struct",
       "name": "world_native::names::SetEntityName",
@@ -8203,20 +8157,6 @@
         {
           "name": "name",
           "type": "core::felt252"
-        }
-      ]
-    },
-    "world_native::names::SetRealmSkin": {
-      "type": "struct",
-      "name": "world_native::names::SetRealmSkin",
-      "members": [
-        {
-          "name": "entity_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "family",
-          "type": "core::integer::u8"
         }
       ]
     },
@@ -10472,5 +10412,5 @@
       ]
     }
   },
-  "identity": "9b7aa8a205c71b344b52249df2677aa3676f921957b6a4e423afbeebc862a1b6"
+  "identity": "9350c8c56b388922143ba0c028d0eaf68b1f358b7a8557713a5e2bebcba3eea9"
 }
