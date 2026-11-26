@@ -10,6 +10,7 @@ import { entityMapPosition } from "../../utils/tile";
 import { journeyDistance } from "../../utils/travel";
 
 export interface DeepSiteView {
+  gameId: number;
   id: bigint;
   kind: (typeof deepSites)[number]["id"];
   name: (typeof deepSites)[number]["name"];
@@ -120,6 +121,7 @@ function deepSiteView(
     (row) => row.kind === site.kind && ringOpens(payingAt, siteRing(today, row)),
   ).length;
   return {
+    gameId,
     id: site.entity_id,
     kind: kind.id,
     name: kind.name,
@@ -210,11 +212,11 @@ export function isBesideDeepSite(tile: { col: number; row: number; alt: boolean 
   return tile.alt === site.position.alt && journeyDistance({ x: tile.col, y: tile.row }, site.position) === 1;
 }
 
-export function readDeepSiteDefender(store: NativeFactStore, gameId: number, site: DeepSiteView) {
+export function readDeepSiteDefender(store: NativeFactStore, site: DeepSiteView) {
   const garrison = site.garrisons[0];
   const troops = garrison?.troops ?? (site.beastTroops > 0n ? site.guard?.troops : undefined);
   if (!troops) return undefined;
-  const rules = store.require("SliceRules", { game_id: gameId });
+  const rules = store.require("SliceRules", { game_id: site.gameId });
   return { troops: inlineTroops(troops, rules), oaths: 0, guarding: garrison !== undefined };
 }
 
