@@ -4079,7 +4079,7 @@ const DEEP_SITE_NAMES = deepSites.map(({ key, name }) => ({
   icon: DEEP_SITE_ICONS[key],
   beast: DEEP_BEASTS[key].name,
 }));
-const JOINED_SITE = DEEP_SITE_NAMES.find(({ key }) => key === "deep:mine");
+const JOINED_SITE = DEEP_SITE_NAMES.find(({ key }) => key === "deep:altar");
 const everyRingSiteDrawn = (drawn) =>
   DEEP_SITE_NAMES.every((site) => drawn[site.key] > 0) &&
   DEEP_SITE_NAMES.reduce((total, site) => total + (drawn[site.key] ?? 0), 0) === rules.DEEP_RING_SITES;
@@ -4122,7 +4122,7 @@ const DEEP_JOIN_STATE = `JSON.stringify({
   joined: (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "InteractSite"),
   joinSite: (() => {
     const slot = [...document.querySelectorAll('.mp-at')].find((node) =>
-      node.querySelector('[data-icon="pickaxe"]') || node.querySelector('.mp-word')?.textContent === "${JOINED_SITE.name}");
+      node.querySelector('[data-icon="${JOINED_SITE.icon}"]') || node.querySelector('.mp-word')?.textContent === "${JOINED_SITE.name}");
     if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return null;
     const token = slot.firstElementChild.getBoundingClientRect();
     // The plate floats over the site's model: the press goes to the model under it, not to the hex behind the plate.

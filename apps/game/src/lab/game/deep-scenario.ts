@@ -11,6 +11,8 @@ import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
 
+export const HELD_SITE = "altar" satisfies (typeof deepSites)[number]["key"];
+
 export const deepScenario = (closedRing = false): LabScenario => {
   const scenario = spireScenario();
   const { store, startsAt } = scenario;
@@ -56,12 +58,12 @@ export const deepScenario = (closedRing = false): LabScenario => {
     {
       model: "GarrisonSlot",
       key: "0xdee8",
-      value: { game_id: 1, structure_id: String(siteId("mine")), slot: 1, home: String(allyHome) },
+      value: { game_id: 1, structure_id: String(siteId(HELD_SITE)), slot: 1, home: String(allyHome) },
     },
     {
       model: "Guard",
       key: "0xdee5",
-      value: wire({ game_id: 1, structure_id: siteId("mine"), slot: 1, troops: army.troops, destroyed_tick: 0 }),
+      value: wire({ game_id: 1, structure_id: siteId(HELD_SITE), slot: 1, troops: army.troops, destroyed_tick: 0 }),
     },
     { model: "TileOccupancy", key: store.wireKeyOf("TileOccupancy", at)!, value: null },
     { model: "TileOccupancy", key: "0xdee9", value: wire({ ...at, col: center.col - 1, row: center.row }) },
@@ -101,7 +103,7 @@ export const deepScenario = (closedRing = false): LabScenario => {
           kind: site.id,
           ring: 0,
           day: "0",
-          aspect: site.key === "mine" && place < deepSites.length ? 1 : 0,
+          aspect: site.key === HELD_SITE && place < deepSites.length ? 1 : 0,
         },
       },
       {
@@ -127,7 +129,7 @@ export const deepScenario = (closedRing = false): LabScenario => {
           troops: {
             ...army.troops,
             category: beast.bow ? "Crossbowman" : "Knight",
-            count: site.key === "mine" ? 0n : beast.count,
+            count: site.key === HELD_SITE && place < deepSites.length ? 0n : beast.count,
           },
           destroyed_tick: 0,
         }),

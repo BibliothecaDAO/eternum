@@ -1,13 +1,8 @@
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
-import { StructureType } from "@bibliothecadao/types";
-import {
-  nativeRuleConstants,
-  readDeepSites,
-  nativeOathConstants as oaths,
-  type NativeFactStore,
-} from "@bibliothecadao/eternum/game-client";
-import { deepScenario } from "./deep-scenario";
+import { deepSites, StructureType } from "@bibliothecadao/types";
+import { readDeepSites, nativeOathConstants as oaths, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { deepScenario, HELD_SITE } from "./deep-scenario";
 import { siteAt } from "./after-battle-scenario";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { besideOnOpenLand, spireScenario } from "./spire-scenario";
@@ -46,7 +41,8 @@ export function deepBattleTargetScenario(): LabScenario {
   const game = deepScenario();
   const troops = prepareBattleArmy(game);
   const { store } = game;
-  const site = readDeepSites(store, game.startsAt, 1).find(({ kind }) => kind === nativeRuleConstants.DEEP_MINE)!;
+  const heldKind = deepSites.find(({ key }) => key === HELD_SITE)!.id;
+  const site = readDeepSites(store, game.startsAt, 1).find(({ kind }) => kind === heldKind)!;
   const garrison = site.garrisons[0]!;
   const guard = store.require("Guard", { game_id: 1, structure_id: site.id, slot: garrison.slot });
   const aspect = store.require("HomeAspect", { game_id: 1, home: garrison.home });

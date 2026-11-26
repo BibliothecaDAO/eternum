@@ -13,6 +13,7 @@ import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { toast } from "@/ui/features/event-feed/notify";
 import { armyOaths, configManager, getStructureName, oathAttackStamina } from "@bibliothecadao/eternum";
 import {
+  deepAlliesGarrison,
   deepArmyLife,
   deepTroopsLife,
   homeAspect,
@@ -203,8 +204,14 @@ function selectionBlock(
   const key = { game_id, explorer_id: selected.army.explorer_id };
   if (store.require("ArmyDay", key).day !== BigInt(site.day)) return "otherDay";
   if (selected.army.troops.count === 0n) return "noTroops";
-  if (site.aspect !== 0 && !isDeepSiteRival(store, site, selected.army.owner, game_id)) return "guarding";
+  if (site.aspect !== 0 && !isDeepSiteRival(store, site, selected.army.owner, game_id))
+    return deepAlliesGarrison(site.kind) || ownsSite(store, game_id, site, selected) ? "guarding" : "ownerOnly";
   return undefined;
+}
+
+function ownsSite(store: NativeFactStore, game_id: number, site: Site, selected: NonNullable<Selected>): boolean {
+  const owner = store.require("Structure", { game_id, entity_id: site.id }).owner;
+  return store.require("Structure", { game_id, entity_id: selected.army.owner }).owner === owner;
 }
 
 function guardView(store: NativeFactStore, game_id: number, site: Site, selected: Selected, now: number): DeepGuard {

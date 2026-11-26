@@ -1,4 +1,5 @@
 import { deepBattleTargetScenario } from "@/lab/game/battle-target-scenario";
+import { HELD_SITE } from "@/lab/game/deep-scenario";
 import {
   nativeOathConstants as oaths,
   nativeRuleConstants,
@@ -8,7 +9,7 @@ import {
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { afterEach, describe, expect, it } from "vitest";
 import { armyRelicReward, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import { deepSites, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { readDeepSiteFight, readArmyCard, readSiteCard } from "./site-card-plan";
 import {
@@ -359,9 +360,10 @@ it("keeps a Knight garrison protected and removes that protection from the beast
   const key = { game_id: 1, explorer_id: 201n };
   const army = store.require("ExplorerTroops", key);
   const attack = { army, timestamp: startsAt };
-  const mine = () => readDeepSites(store, startsAt, 1).find(({ kind }) => kind === nativeRuleConstants.DEEP_MINE)!;
-  expect(readDeepSiteFight(store, mine(), attack)?.result).toEqual({ troopsLost: 330, guardLeft: 754 });
-  const site = mine();
+  const heldKind = deepSites.find(({ key }) => key === HELD_SITE)!.id;
+  const held = () => readDeepSites(store, startsAt, 1).find(({ kind }) => kind === heldKind)!;
+  expect(readDeepSiteFight(store, held(), attack)?.result).toEqual({ troopsLost: 330, guardLeft: 754 });
+  const site = held();
   const garrison = store.require("GarrisonSlot", { game_id: 1, structure_id: site.id, slot: site.garrisons[0]!.slot });
   store.applyFacts([
     { model: "GarrisonSlot", key: store.wireKeyOf("GarrisonSlot", garrison)!, value: null },
@@ -371,10 +373,10 @@ it("keeps a Knight garrison protected and removes that protection from the beast
       value: { ...site.guard!, troops: { ...army.troops, category: "Knight" } },
     },
   ]);
-  expect(readDeepSiteFight(store, mine(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
+  expect(readDeepSiteFight(store, held(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
   const combat = store.require("ArmyCombat", key);
   store.applyFacts([
     { model: "ArmyCombat", key: store.wireKeyOf("ArmyCombat", key)!, value: { ...combat, last_target: site.id } },
   ]);
-  expect(readDeepSiteFight(store, mine(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
+  expect(readDeepSiteFight(store, held(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
 });

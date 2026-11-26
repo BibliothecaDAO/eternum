@@ -7,11 +7,11 @@ import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store"
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { wire } from "@/lab/game/lab-chain";
 import { deepBattleTargetScenario } from "@/lab/game/battle-target-scenario";
-import { deepScenario } from "@/lab/game/deep-scenario";
+import { deepScenario, HELD_SITE } from "@/lab/game/deep-scenario";
 import { raceScenario } from "@/lab/game/race-scenario";
 import { baneScenario } from "@/lab/game/bane-scenario";
 import { configManager, type ResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { deepSites, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
 import { nativeOathConstants as oaths, nativeRuleConstants, readDeepSites } from "@bibliothecadao/eternum/game-client";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
@@ -31,6 +31,8 @@ afterEach(() => {
   setBlockTimestampSource(null);
   vi.restoreAllMocks();
 });
+
+const HELD = deepSites.find(({ key }) => key === HELD_SITE)!.id;
 
 const draw = (now?: number, scenario = deepScenario()) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -52,7 +54,7 @@ const draw = (now?: number, scenario = deepScenario()) => {
         >
           {content ?? (
             <DeepSiteCard
-              site={readDeepSites(store, startsAt, 1).find((site) => site.kind === nativeRuleConstants.DEEP_MINE)!}
+              site={readDeepSites(store, startsAt, 1).find((site) => site.kind === HELD)!}
               onClose={() => {}}
             />
           )}
@@ -179,9 +181,7 @@ describe("the Deep site's live native binding", () => {
   it("sends a rival slot through the existing guard attack provider", async () => {
     const hud = draw();
     try {
-      const held = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(
-        (site) => site.kind === nativeRuleConstants.DEEP_MINE,
-      )!;
+      const held = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.kind === HELD)!;
       const row = hud.store.require("DeepSite", { game_id: 1, entity_id: held.id });
       act(() =>
         hud.store.applyFacts([
@@ -191,9 +191,7 @@ describe("the Deep site's live native binding", () => {
       hud.render();
       expect(hud.button("Attack")?.disabled).toBe(false);
       await act(async () => hud.button("Attack")!.click());
-      const mine = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(
-        (site) => site.kind === nativeRuleConstants.DEEP_MINE,
-      )!;
+      const mine = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((site) => site.kind === HELD)!;
       expect(hud.attack).toHaveBeenCalledTimes(1);
       expect(hud.attack).toHaveBeenCalledWith(
         expect.objectContaining({ explorer_id: 201, structure_id: Number(mine.id) }),
@@ -308,9 +306,7 @@ it("previews the Deep garrison's opening and repeated exchange before sending ea
       expect(labels().some((label) => label?.includes(`→ ${enemyLeft},`))).toBe(true);
       expect(hud.button("Attack")?.disabled).toBe(false);
       await act(async () => hud.button("Attack")!.click());
-      const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(
-        ({ kind }) => kind === nativeRuleConstants.DEEP_MINE,
-      )!;
+      const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find(({ kind }) => kind === HELD)!;
       const answer = hud.scenario.answer(
         {
           kind: "BattleGuard",
@@ -343,9 +339,7 @@ it("shows each garrison's share of the next tick from the troops it keeps after 
   const scenario = deepScenario();
   const { store } = scenario;
   const loss = store.require("DeepRules", { game_id: 1 }).loss_per_tick;
-  const quarry = readDeepSites(store, scenario.startsAt, 1).find(
-    (site) => site.kind === nativeRuleConstants.DEEP_MINE,
-  )!;
+  const quarry = readDeepSites(store, scenario.startsAt, 1).find((site) => site.kind === HELD)!;
   const held = store.require("Guard", { game_id: 1, structure_id: quarry.id, slot: 1 });
   const home = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 }).owner;
   store.applyFacts([

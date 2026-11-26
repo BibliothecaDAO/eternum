@@ -938,6 +938,7 @@ export const DEEP_WORDS = {
   take: "Take",
   pickArmy: `Select an army in the ${DEEP}`,
   guarding: "Already guarding",
+  ownerOnly: "Only the site's owner garrisons here",
   rival: "Held by a rival Aspect",
   otherDay: "Only today's armies can fight here",
   opensAt: (realms: number) => `Opens at ${formatExact(realms)} Realms today`,

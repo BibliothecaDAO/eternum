@@ -7,7 +7,7 @@ import {
   type NativeModelName,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeRowDefinitions } from "../client/native-row";
-import { currentArmy, currentResourceWeight, deepTerrain, deepTiles } from "./deep";
+import { currentArmy, currentResourceWeight, deepAlliesGarrison, deepTerrain, deepTiles } from "./deep";
 import { armyCombatRefusal } from "./army-opponents";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import {
@@ -396,5 +396,21 @@ it("pays a Foundation or Altar by the native building-pay vectors for each count
   while (fields.length) {
     const [alone, pair, crowd, open, expected] = fields.splice(0, 5) as [number, number, number, number, number];
     expect(deepBuildingPay({ alone, pair, crowd }, open)).toBe(expected);
+  }
+});
+
+it("lets allies garrison a site by the native ally-garrison vectors for each kind", async () => {
+  const { readFileSync } = await import("node:fs");
+  const fields = readFileSync(
+    new URL("../../../../contracts/l3/world-native/tests/fixtures/deep-ally-garrison.txt", import.meta.url),
+    "utf8",
+  )
+    .trim()
+    .split(/\s+/)
+    .map(Number);
+  expect(fields.length).toBe(deepSites.length * 2);
+  while (fields.length) {
+    const [kind, allies] = fields.splice(0, 2) as [number, number];
+    expect(deepAlliesGarrison(kind)).toBe(allies === 1);
   }
 });

@@ -74,7 +74,7 @@ export type DeepGuard =
     }
   | { kind: "open" };
 
-export type DeepBlock = "pickArmy" | "guarding" | "rival" | "otherDay" | "noTroops";
+export type DeepBlock = "pickArmy" | "guarding" | "ownerOnly" | "rival" | "otherDay" | "noTroops";
 
 export type DeepOrder =
   | { kind: "act"; verb: "attack" | "take"; stamina?: number; busy?: string; onAct: () => void }

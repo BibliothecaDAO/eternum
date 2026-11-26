@@ -59,7 +59,7 @@ export {
   type RaceMemberRow,
 } from "./views/race";
 export { questBonusPercent, sellsFragments } from "./views/quests";
-export { currentArmy, currentResourceWeight } from "../utils/deep";
+export { currentArmy, currentResourceWeight, deepAlliesGarrison } from "../utils/deep";
 export {
   deepCenter,
   deepGateTiles,

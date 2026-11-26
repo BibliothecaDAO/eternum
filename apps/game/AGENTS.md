@@ -430,7 +430,7 @@ warnings, the reload with its cost.
 
 The shared Deep is reached through the spire's Deep entry or the map layer menu. Select a field army, then a Deep site:
 its card offers Attack against a beast or a rival Aspect's garrison, or Take for an empty site. A site's garrison slots
-are fought highest first. `--steps lab-deep` opens the real map beside an Ethereal mine an ally garrisons, visits each
+are fought highest first. `--steps lab-deep` opens the real map beside a Bane altar an ally garrisons, visits each
 site and frames the ring. The lab snapshot is `/lab/game?scenario=deep`; its current facts also drive the site binding's
 component tests.
 
@@ -644,7 +644,7 @@ proofs use recorded offers. `lab-oath-decline` and `lab-oath-pass-capped` check 
 the maximum.
 
 Vitriol changes the Deep's field and guard loss to its generated rule value. `/lab/game?scenario=oath-vitriol` and
-`lab-oath-vitriol` choose it through the Oath panel, read the reduced field drain, and join the Ethereal mine on desktop
+`lab-oath-vitriol` choose it through the Oath panel, read the reduced field drain, and visit the Deep sites on desktop
 and phone. Native command tests prove the old rate settles before a choice or replacement and the new rate applies only
 to later ticks; shared vectors check exact troop counts in the contract and client.
 

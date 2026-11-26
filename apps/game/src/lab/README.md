@@ -54,7 +54,7 @@ fetches (the client's own modules, every script, the bytes), when its last scrip
 beside the card. `pnpm --dir apps/game prove:app <base-url> <out-dir> phone` includes this path. The retired long-format
 tribe fixture is removed.
 
-`/lab/game?scenario=deep` opens beside the Ethereal mine an ally garrisons. Select Army 1 and open each site.
+`/lab/game?scenario=deep` opens beside the Bane altar an ally garrisons. Select Army 1 and open each site.
 `pnpm --dir apps/game playtest:landing lab-deep` drives this path on desktop and phone. The site's payment reads
 DeepRules/RaceRules and the holder's AltarBar.
 

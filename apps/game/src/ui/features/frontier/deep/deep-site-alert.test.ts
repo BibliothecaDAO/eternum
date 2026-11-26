@@ -1,14 +1,16 @@
 import { siteGuardTroops } from "../../../../../../realms/server/fixtures/shard-world";
 import { expect, it } from "vitest";
-import { deepScenario } from "@/lab/game/deep-scenario";
+import { deepScenario, HELD_SITE } from "@/lab/game/deep-scenario";
 import { planDeepRingOpenings, planDeepSiteWatches } from "../../../../../../realms/server/deep-site-watch";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { deepSites, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import {
   nativeRuleConstants,
   readDeepSites,
   type NativeModelName,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
+
+const HELD = deepSites.find(({ key }) => key === HELD_SITE)!;
 
 function fixture(guardCounts = [siteGuardTroops(1)]) {
   const { store, startsAt, player } = deepScenario();
@@ -218,8 +220,8 @@ it("offers an open site with no garrison at once, since taking it needs no fight
   ungarrison(f);
   expect(f.plan()).toEqual([
     expect.objectContaining({
-      kind: nativeRuleConstants.DEEP_MINE,
-      siteName: "Ethereal mine",
+      kind: HELD.id,
+      siteName: HELD.name,
       dueAt: f.startsAt * 1000,
     }),
   ]);
@@ -234,7 +236,7 @@ it("ignores a closed ring, then plans each open site at its own time and announc
   expect(f.rings()).toEqual([]);
   f.write("DeepEntries", { game_id: 1, day: 0n, count: 30 });
   const open = f.plan();
-  expect(open.map(({ kind }) => kind)).toEqual([nativeRuleConstants.DEEP_MINE, nativeRuleConstants.DEEP_MINE]);
+  expect(open.map(({ kind }) => kind)).toEqual([HELD.id, HELD.id]);
   expect(open.find(({ siteId }) => siteId === guarded[0]!.siteId)?.dueAt).toBe(guarded[0]!.dueAt);
   expect(open.find(({ siteId }) => siteId !== guarded[0]!.siteId)?.dueAt).toBe(f.startsAt * 1000);
   expect(f.rings()).toEqual([expect.objectContaining({ ring: 1, day: 0, sites: nativeRuleConstants.DEEP_RING_SITES })]);
