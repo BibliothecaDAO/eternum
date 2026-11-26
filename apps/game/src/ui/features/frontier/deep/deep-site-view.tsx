@@ -338,7 +338,8 @@ const GuardStrip = ({ site, guard }: { site: DeepSiteProps["site"]; guard: DeepG
         </span>
         {filled.length > 0 && (
           <span data-deep-poisoned className="deep-poisoned">
-            {" · "}{DEEP_WORDS.poisoned}
+            {" · "}
+            {DEEP_WORDS.poisoned}
           </span>
         )}
       </div>

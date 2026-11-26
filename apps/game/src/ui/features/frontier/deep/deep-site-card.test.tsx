@@ -175,11 +175,15 @@ describe("the Deep site's live native binding", () => {
       expect(hud.button("Attack")).toBeUndefined();
       expect(hud.host.querySelectorAll('[data-deep-slot="filled"]')).toHaveLength(1);
       expect(hud.host.querySelectorAll("[data-deep-slot]")).toHaveLength(4);
-      act(() => hud.store.applyFacts(site.garrisons.map(({ slot }) => ({
-        model: "GarrisonSlot" as const,
-        key: hud.store.wireKeyOf("GarrisonSlot", { game_id: 1, structure_id: site.id, slot })!,
-        value: null,
-      }))));
+      act(() =>
+        hud.store.applyFacts(
+          site.garrisons.map(({ slot }) => ({
+            model: "GarrisonSlot" as const,
+            key: hud.store.wireKeyOf("GarrisonSlot", { game_id: 1, structure_id: site.id, slot })!,
+            value: null,
+          })),
+        ),
+      );
       hud.render();
       expect(hud.host.querySelector("[data-deep-tag]")?.textContent).toBe(held);
       expect(hud.host.querySelectorAll('[data-deep-slot="filled"]')).toHaveLength(0);

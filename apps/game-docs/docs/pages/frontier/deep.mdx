@@ -45,8 +45,8 @@ sent an army into the Deep that day:
 Every game day, fresh beasts guard every open Deep site. Deep beasts take no tick drain and do not respawn once cleared
 that day. Select any open site to see its beast portrait and blade or bow badge, its per-tick payout rates, and its
 green poison drain icon. Locked sites show only the reward kinds they pay until their ring opens. Clearing the last
-defender claims the site for your player. Your army stays beside the site, and every guard slot starts empty. Sites
-with garrisoned troops pay out on every army tick ({FRONTIER.stamina.tickMinutes} minutes):
+defender claims the site for your player. Your army stays beside the site, and every guard slot starts empty. Sites with
+garrisoned troops pay out on every army tick ({FRONTIER.stamina.tickMinutes} minutes):
 
 | Site                                                                 | Beast guard                                                                                                               | Mark                            | Bring                          | What holding it pays          |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------ | ----------------------------- |
@@ -67,11 +67,11 @@ site, split among its surviving guards by troop count.
 
 ## Guard slots, troop drain, and PvP
 
-- **Guard slots:** a claimed Deep site has {FRONTIER.deep.guardSlots} guard slots. Transfer troops from an adjacent
-  army to garrison it. The owner's Aspect can garrison {FRONTIER.deep.alliedSites}. Only the owner can garrison
+- **Guard slots:** a claimed Deep site has {FRONTIER.deep.guardSlots} guard slots. Transfer troops from an adjacent army
+  to garrison it. The owner's Aspect can garrison {FRONTIER.deep.alliedSites}. Only the owner can garrison
   {FRONTIER.deep.ownerSites}.
-- **Slot capacity:** each slot holds one player's troops of a single type and tier, up to that player's army cap.
-  A player can use multiple slots with different troop types or tiers. Only the player who supplied a slot can withdraw
+- **Slot capacity:** each slot holds one player's troops of a single type and tier, up to that player's army cap. A
+  player can use multiple slots with different troop types or tiers. Only the player who supplied a slot can withdraw
   its troops, into their own adjacent army.
 - **Tick order (drain before pay):** every tick ({FRONTIER.stamina.tickMinutes} minutes), every army in the Deep gains
   +{FRONTIER.stamina.perTick} stamina and loses {FRONTIER.deep.lossPerTick} troops (reduced to
