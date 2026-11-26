@@ -90,6 +90,7 @@ export const frontierPhrases = (
     aspectWords,
     buildGroups,
     relicWords,
+    settingsWords,
     relicKinds,
     commandBits,
     calendar,
@@ -148,6 +149,11 @@ export const frontierPhrases = (
   const personalLayers = LAYER_NAMES.slice(0, 3);
   const personalLayersAnd = listAnd(personalLayers);
   const personalLayersOr = listOr(personalLayers);
+  const allLayersAnd = listAnd(
+    LAYER_NAMES.map((name, index) => (index === LAYER_NAMES.length - 1 ? `the ${name}` : name)),
+  );
+  const settingsQualitiesOr = listOr(Object.values(settingsWords.qualities));
+  const buildGroupsList = listAnd(Object.values(buildGroups));
   const staminaRule = `Refills ${n(nativeFragments.STAMINA_PER_FRAGMENT)} stamina per Fragment on the ${personalLayersAnd}`;
   const oathSlotPrices = preset.research
     .filter((step) => step.row === nativeResearch.ROW_KNIGHT_OATHS)
@@ -199,6 +205,8 @@ export const frontierPhrases = (
         `${deepSites.length} site kinds`,
         `all ${aspectOrderCount} Oaths`,
         `all ${relicKinds.length} relic kinds`,
+        `switch between ${allLayersAnd}`,
+        `graphics quality (${settingsQualitiesOr})`,
       ],
     },
     {
@@ -270,7 +278,7 @@ export const frontierPhrases = (
     {
       page: "frontier/buildings",
       phrases: [
-        `Buildings are sorted into three groups: ${buildGroups.economy}, ${buildGroups.army}, and ${buildGroups.unique}.`,
+        `Buildings are sorted by group: ${buildGroupsList}.`,
         `Your castle makes ${castleLaborRate(0)} labor per hour at castle level 1 (${rankName(0)}), multiplying by ${n(contract.castleLaborStep)} at each castle level up to ${castleLaborRate(3)}/h at castle level 4 (${rankName(3)}).`,
         ...FRONTIER_BUILDING_TYPES.map((id) => buildingName(id, true)),
         [1, 2, 3, 4, 5, 6]
@@ -610,6 +618,7 @@ export const loadBalanceSources = async () => {
       ASPECT_PAGE_WORDS: aspectWords,
       BUILD_GROUPS: buildGroups,
       RELIC_WORDS: relicWords,
+      SETTINGS_WORDS: settingsWords,
     } = await server.ssrLoadModule(join(here, "../../game/src/ui/design-system/kit/words.ts"));
     const { aspectMeaning, iconUrl } = await server.ssrLoadModule(
       join(here, "../../game/src/ui/design-system/icon-meaning.ts"),
@@ -690,6 +699,7 @@ export const loadBalanceSources = async () => {
       aspectWords,
       buildGroups,
       relicWords,
+      settingsWords,
       relicKinds,
       commandBits,
       aspectMeaning,
