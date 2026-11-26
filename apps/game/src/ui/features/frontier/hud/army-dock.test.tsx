@@ -22,14 +22,7 @@ import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { frontierDay } from "../deploy/deploy-fixture";
 import { ArmyDock, readArmySlots } from "./army-dock";
 import { frontierSeasonOnePreset } from "../../../../../../../config/source/frontier/season-one";
-import {
-  formatAmount,
-  FRONTIER_TROOP_NAMES,
-  LAYER_NAMES,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  TroopType,
-} from "@bibliothecadao/types";
+import { LAYER_NAMES, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { startsOn } from "@/ui/design-system/kit/words";
 
 const BELOW_SURFACE = LAYER_NAMES.slice(1)
@@ -174,7 +167,7 @@ it.each(["phone", "desktop"] as const)(
 );
 
 it.each(["phone", "desktop"] as const)(
-  "on a founded Realm with no army on %s, offers open Deploy slots, the desktop naming the preset Knights at home",
+  "on a founded Realm with no army on %s, offers open Deploy slots, each with the stamina its army starts on",
   (size) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     layout.current = size;
@@ -233,13 +226,14 @@ it.each(["phone", "desktop"] as const)(
     try {
       const slots = [...host.querySelectorAll<HTMLButtonElement>('button[aria-label="Deploy"]')];
       expect(slots).toHaveLength(row.base.troop_max_explorer_count);
-      const expectedCount = formatAmount(startingKnights);
-      const expectedLabel = `${expectedCount} ${FRONTIER_TROOP_NAMES[TroopType.Knight]}`;
-      if (size === "desktop") {
-        expect(slots[0].closest(".frontier-slot")?.textContent).toContain(`${expectedLabel} ready at home`);
-      } else {
-        expect(slots.map((slot) => slot.textContent)).toEqual(slots.map(() => "+"));
-      }
+      const start = (slot: HTMLButtonElement) => {
+        const row = slot.closest<HTMLElement>(".frontier-slot") ?? slot;
+        return [row.querySelector('[role="meter"]') !== null, row.querySelector(".frontier-slot__detail")];
+      };
+      expect(slots.map(start)).toEqual(slots.map(() => [true, null]));
+      expect(
+        (slots[0].closest(".frontier-slot") ?? slots[0]).querySelector('[role="meter"]')?.getAttribute("aria-valuenow"),
+      ).toBe("150");
       act(() => slots[0].click());
       expect(useUIStore.getState().pendingMilitaryAction).toMatchObject({ structureId: 7, slot: 0 });
     } finally {
