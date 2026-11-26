@@ -289,6 +289,9 @@ describe("a release's rule rows", () => {
     expect(() => readReleaseDefinitions({ definition: JSON.parse(written).definition })).toThrow(
       "A release definition names no release",
     );
+    expect(() => readReleaseDefinitions(JSON.parse(written), JSON.parse(written))).toThrow(
+      `Two rule definitions for release ${JSON.parse(written).release}`,
+    );
   });
 
   it("uses the preset map only when the chain explicitly records no map override", () => {

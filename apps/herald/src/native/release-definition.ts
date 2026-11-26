@@ -23,13 +23,14 @@ export function releaseDefinitionText(release: number, definition: unknown): str
 }
 
 export function readReleaseDefinitions(...files: unknown[]): ReleaseDefinitions {
-  return new Map(
-    files.map((file) => {
-      const { release, definition } = file as { release: number; definition: unknown };
-      if (!Number.isSafeInteger(release)) throw new Error("A release definition names no release");
-      return [release, revive(definition) as DecodedRecord];
-    }),
-  );
+  const definitions = new Map<number, DecodedRecord>();
+  for (const file of files) {
+    const { release, definition } = file as { release: number; definition: unknown };
+    if (!Number.isSafeInteger(release)) throw new Error("A release definition names no release");
+    if (definitions.has(release)) throw new Error(`Two rule definitions for release ${release}`);
+    definitions.set(release, revive(definition) as DecodedRecord);
+  }
+  return definitions;
 }
 
 export const RELEASE_DEFINITIONS = readReleaseDefinitions(...releaseArchive, releaseFile);
