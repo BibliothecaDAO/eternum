@@ -107,9 +107,9 @@ import { DeepLandmarkModel } from "../structures/deep-landmarks";
 import { ORDER_STANDARD_NAME, resolveOrderSignumCell } from "../structures/order-standard";
 import { FRONTIER_BEASTS } from "../structures/frontier-beast";
 import { DEEP_SITE_MODELS } from "../structures/deep-landmarks";
-import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
+import { DEEP_SITE_FACES, deepSitePlatePay } from "@/ui/features/frontier/deep/deep-site-faces";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { ownerAndAspect } from "@/ui/design-system/kit/words";
+import { DEEP_WORDS, ownerAndAspect } from "@/ui/design-system/kit/words";
 import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 import { MapSiteManager } from "./map-site-manager";
 import { PLATE_CLEARANCE } from "./structure-visible-presentation";
@@ -404,6 +404,8 @@ describe("the Deep's sites on the map", () => {
         },
       ],
       DeepEntries: [{ game_id: gameId, day: 0n, count: 10 }],
+      RaceRules: [{ game_id: gameId }],
+      BaneRules: [{ game_id: gameId }],
       DeepSite: ringKinds.map((kind, index) => ({
         game_id: gameId,
         entity_id: BigInt(10 + index),
@@ -462,6 +464,7 @@ describe("the Deep's sites on the map", () => {
         return row;
       },
       requireOrAbsent: (model: string, key: Record<string, unknown>) => ({ known: get(model, key) ?? null }),
+      absenceKnown: () => ({ known: true }),
       entityOccupancy: (game_id: number, entity_id: bigint) => get("TileOccupancy", { game_id, entity_id }),
       inGame: (model: string) => rows[model] ?? [],
       structuresOwnedBy: (_gameId: number, owner: bigint) =>
@@ -514,9 +517,28 @@ describe("the Deep's sites on the map", () => {
       undefined,
       ringKinds.find(({ key }) => key === "altar")!.name,
       beastMeaning(basilisk),
-      DEEP_SITE_FACES.altar.pays(),
+      DEEP_WORDS.altarPlate,
       [{ type: "crossbowman", tier: null, count: 5_000, beast: basilisk }],
     ]);
+    expect(
+      deepSitePlatePay(store as never, gameId, { kind: nativeRuleConstants.DEEP_FOUNDATION, buildingPay: 3 }),
+    ).toBe(DEEP_WORDS.foundationPlate(3));
+    rows.BaneRules = [];
+    rows.RaceRules = [];
+    expect(
+      deepSitePlatePay(store as never, gameId, { kind: nativeRuleConstants.DEEP_FOUNDATION, buildingPay: 3 }),
+    ).toBeUndefined();
+    const noRulesManager = new MapSiteManager(
+      new Scene(),
+      projection as never,
+      store as never,
+      plates as never,
+      noGates() as never,
+    );
+    expect(plateOf(altarSite).reward).toBeUndefined();
+    noRulesManager.destroy();
+    rows.BaneRules = [{ game_id: gameId }];
+    rows.RaceRules = [{ game_id: gameId }];
     heldSpy.mockClear();
     const watchedGame = { chainId: "WATCH_TEST", gameId, name: "WATCH_TEST" };
     setActiveGame(watchedGame);

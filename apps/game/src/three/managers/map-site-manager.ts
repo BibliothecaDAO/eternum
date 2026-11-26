@@ -1,5 +1,5 @@
 import { SIDE_HEX, type Side } from "@/tokens";
-import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
+import { DEEP_SITE_FACES, deepSitePlatePay } from "@/ui/features/frontier/deep/deep-site-faces";
 import { DEEP_WORDS, ownerAndAspect } from "@/ui/design-system/kit/words";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import {
@@ -163,6 +163,8 @@ export class MapSiteManager {
           change.model === "DeepTick" ||
           change.model === "DeepEntries" ||
           change.model === "DeepRules" ||
+          change.model === "RaceRules" ||
+          change.model === "BaneRules" ||
           change.model === "HomeAspect" ||
           change.model === "SliceRules" ||
           (change.model === "Guard" && this.guardsDeepSite(change.current ?? change.previous)) ||
@@ -351,7 +353,14 @@ export class MapSiteManager {
     if (closed) return plainPlate(kind, "lock", DEEP_WORDS.opensAt(closed.realms));
     if (view && view.holder !== 0n) return this.claimedPlate(kind, view);
     const beast = this.beastTroops(entityId);
-    if (beast > 0n) return beastPlate(kind, beast, view, this.ownerSide(0n, 0, ""));
+    if (beast > 0n)
+      return beastPlate(
+        kind,
+        beast,
+        view,
+        this.ownerSide(0n, 0, ""),
+        view ? deepSitePlatePay(this.store, configManager.getActiveGameId(), view) : undefined,
+      );
     return plainPlate(kind, DEEP_SITE_FACES[kind.key].icon);
   }
 
@@ -586,6 +595,7 @@ const beastPlate = (
   troops: bigint,
   view: DeepSiteView | undefined,
   side: { relation: Side; watched?: PlateWatched },
+  reward: string | undefined,
 ): MapPlate => {
   const beast = DEEP_BEASTS[kind.key];
   const species = beastModel(beast);
@@ -605,7 +615,7 @@ const beastPlate = (
         beast: species,
       },
     ],
-    ...(view ? { reward: DEEP_SITE_FACES[kind.key].pays(view.buildingPay) } : {}),
+    ...(reward ? { reward } : {}),
     arrivals: [],
   };
 };

@@ -32,7 +32,9 @@ import { AttackStamina, FightArena } from "../sites/fight-side";
 import { BeastMarkBadge, combatMarkOf } from "../sites/combat-mark";
 import type { DeepSiteFight } from "../sites/site-card-plan";
 
-import { DEEP_SITE_FACES } from "./deep-site-faces";
+import { DEEP_SITE_FACES, type DeepPay } from "./deep-site-faces";
+
+export type { DeepPay };
 
 export interface DeepRates {
   tickSeconds: number;
@@ -43,8 +45,6 @@ export interface DeepRates {
   bar: { perTick: number; charge: number; threshold: number } | null;
   drain: number;
 }
-
-export type DeepPay = keyof typeof DEEP_WORDS.kinds;
 
 export interface DeepOpening {
   entered: number;
