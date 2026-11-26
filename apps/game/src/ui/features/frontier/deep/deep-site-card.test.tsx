@@ -14,7 +14,7 @@ import { configManager, type ResourceManager, setBlockTimestampSource } from "@b
 import { aspectName, catalogAspectId, deepSites, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
 import { nativeOathConstants as oaths, nativeRuleConstants, readDeepSites } from "@bibliothecadao/eternum/game-client";
-import { DEEP_WORDS } from "@/ui/design-system/kit/words";
+import { DEEP_WORDS, WITHDRAW } from "@/ui/design-system/kit/words";
 import { DeepSiteCard } from "./deep-site-card";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 
@@ -43,13 +43,15 @@ const draw = (now?: number, scenario = deepScenario()) => {
   useAccountStore.setState({ account: { address: scenario.player } as never });
   useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null });
   const attack = vi.fn().mockResolvedValue({ transaction_hash: "0x1" });
+  const guard = vi.fn().mockResolvedValue({ transaction_hash: "0x1" });
+  const withdraw = vi.fn().mockResolvedValue({ transaction_hash: "0x1" });
   const host = document.createElement("div");
   const root = createRoot(host);
   const render = (content?: ReactNode) =>
     act(() =>
       root.render(
         <GameProvider
-          value={{ store, systemCalls: { attack_explorer_vs_guard: attack } } as never}
+          value={{ store, systemCalls: { attack_explorer_vs_guard: attack, explorer_guard_swap: guard, guard_explorer_swap: withdraw } } as never}
           account={{ address: scenario.player } as never}
         >
           {content ?? (
@@ -64,7 +66,7 @@ const draw = (now?: number, scenario = deepScenario()) => {
   render();
   const button = (name: string) =>
     [...host.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent?.startsWith(name));
-  return { scenario, store, host, attack, button, render, unmount: () => act(() => root.unmount()) };
+  return { scenario, store, host, attack, guard, withdraw, button, render, unmount: () => act(() => root.unmount()) };
 };
 
 describe("the Deep site's live native binding", () => {
@@ -171,10 +173,11 @@ describe("the Deep site's live native binding", () => {
       const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((candidate) => candidate.kind === HELD)!;
       const held = DEEP_WORDS.tag.held(aspectName(catalogAspectId(site.aspect)));
       expect(hud.host.querySelector("[data-deep-tag]")?.textContent).toBe(held);
-      expect(hud.host.textContent).toContain(DEEP_WORDS.guarding);
       expect(hud.button("Attack")).toBeUndefined();
       expect(hud.host.querySelector("[data-fight-side]")).toBeNull();
       expect(hud.host.querySelector("[data-aspect-holder]")?.getAttribute("data-side")).toBe("own");
+      expect(hud.button(DEEP_WORDS.guard)).toBeDefined();
+      expect(hud.button(WITHDRAW)).toBeUndefined();
       expect(hud.host.querySelectorAll('[data-deep-slot="filled"]')).toHaveLength(1);
       expect(hud.host.querySelectorAll("[data-deep-slot]")).toHaveLength(4);
       act(() =>
@@ -193,6 +196,43 @@ describe("the Deep site's live native binding", () => {
       expect(hud.host.querySelector("[data-deep-poisoned]")).toBeNull();
       act(() => useUIStore.getState().selectOnMap(null));
       expect(hud.host.querySelector("[data-deep-tag]")?.textContent).toBe(held);
+    } finally {
+      hud.unmount();
+    }
+  });
+
+  it("guards an empty slot and withdraws from its own matching slot through Transfer", async () => {
+    const hud = draw();
+    const site = () => readDeepSites(hud.store, hud.scenario.startsAt, 1).find((candidate) => candidate.kind === HELD)!;
+    const typeAmount = (label: string, amount: number) => {
+      const input = hud.host.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, String(amount));
+      act(() => input.dispatchEvent(new Event("input", { bubbles: true })));
+    };
+    try {
+      const slot = nativeRuleConstants.DEEP_GUARD_SLOTS - 1;
+      typeAmount(DEEP_WORDS.guardAmount, 100);
+      await act(async () => hud.button(DEEP_WORDS.guard)!.click());
+      expect(hud.guard).toHaveBeenCalledWith(expect.objectContaining({
+        from_explorer_id: 201, to_structure_id: Number(site().id), to_guard_slot: slot, count: 100 * RESOURCE_PRECISION,
+      }));
+      const army = hud.store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
+      const existing = site().garrisons[0]!;
+      act(() => hud.store.applyFacts([
+        { model: "ExplorerTroops", key: hud.store.wireKeyOf("ExplorerTroops", army)!, value: {
+          ...army,
+          troops: { ...army.troops, count: army.troops.count - 100n * BigInt(RESOURCE_PRECISION) },
+        } },
+        { model: "GarrisonSlot", key: "0xaaaa", value: { game_id: 1, structure_id: site().id, slot, home: army.owner } },
+        { model: "Guard", key: "0xaaab", value: { game_id: 1, structure_id: site().id, slot, destroyed_tick: 0,
+          troops: { ...existing.troops, count: 100n * BigInt(RESOURCE_PRECISION) } } },
+      ]));
+      hud.render();
+      typeAmount(DEEP_WORDS.withdrawAmount, 50);
+      await act(async () => hud.button(WITHDRAW)!.click());
+      expect(hud.withdraw).toHaveBeenCalledWith(expect.objectContaining({
+        from_structure_id: Number(site().id), from_guard_slot: slot, to_explorer_id: 201, count: 50 * RESOURCE_PRECISION,
+      }));
     } finally {
       hud.unmount();
     }

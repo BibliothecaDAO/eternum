@@ -1147,6 +1147,8 @@ finisher. Canonical proof: `playtest --steps lab-race-expired`.
   signed out, **Create your Realm**. Lab: `/lab/app/preseason-invited/s/MRGHT234`; proof: `build.sh prove-season-one`.
 - Select a Deep site to see its garrison slots, troop loss per tick and remaining ticks. An army of the player's Aspect
   is drawn as an ally on the map.
+- With an army selected beside a claimed Deep site, enter a troop count and press **Guard**. Use **Withdraw** to
+  bring troops of the same type back into that army from a slot supplied by its realm.
 - **Today** shows the week's seven quests with today marked.
 
 The Deep has four gates, one an Aspect (north Prowess, east Luminary, south Havoc, west Insight), each drawn on its tile

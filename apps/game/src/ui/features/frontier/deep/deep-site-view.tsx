@@ -1,5 +1,6 @@
 import "./deep-site.css";
 
+import type { ReactNode } from "react";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { type Price } from "@/ui/design-system/kit/price-faces";
@@ -90,6 +91,7 @@ export interface DeepSiteProps {
   guard: DeepGuard;
   fight?: DeepSiteFight;
   order: DeepOrder | DeepBlock;
+  transfers?: ReactNode;
   onClose: () => void;
 }
 
@@ -100,7 +102,7 @@ const FIGHT_ORDER = Array.from(
 
 const siteName = (key: DeepSiteProps["site"]) => deepSites.find((each) => each.key === key)!.name;
 
-export const DeepSiteView = ({ site, ring, rates, opening, guard, fight, order, onClose }: DeepSiteProps) => {
+export const DeepSiteView = ({ site, ring, rates, opening, guard, fight, order, transfers, onClose }: DeepSiteProps) => {
   const name = siteName(site);
   const secondary = rates && secondaryRate(rates);
   return (
@@ -116,7 +118,7 @@ export const DeepSiteView = ({ site, ring, rates, opening, guard, fight, order, 
         {rates && secondary?.kind !== "drain" && <PoisonStrip rates={rates} />}
         {opening && <OpeningBar opening={opening} />}
       </div>
-      <OrderFoot order={order} />
+      {transfers ?? <OrderFoot order={order} />}
       {typeof order === "object" && order.kind === "short" && <HudNotice tone="bad" line={order.line} />}
     </HudSheet>
   );

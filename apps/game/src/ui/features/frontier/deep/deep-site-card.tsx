@@ -1,5 +1,5 @@
 import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -8,10 +8,11 @@ import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import { DEEP_WORDS } from "@/ui/design-system/kit/words";
+import { AmountInput, HudButton, HudNotice, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
+import { DEEP_WORDS, TRANSFER_TROOPS, WITHDRAW } from "@/ui/design-system/kit/words";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { toast } from "@/ui/features/event-feed/notify";
-import { armyOaths, configManager, getStructureName, isViewerOwner, oathAttackStamina } from "@bibliothecadao/eternum";
+import { armyOaths, configManager, getStructureName, isViewerOwner, multiplyByPrecision, oathAttackStamina } from "@bibliothecadao/eternum";
 import {
   deepAlliesGarrison,
   deepTroopsLife,
@@ -24,9 +25,10 @@ import {
   type DeepGarrison,
   type DeepSiteView as Site,
   type NativeFactStore,
+  type NativeRows,
   viewerAspects,
 } from "@bibliothecadao/eternum/game-client";
-import { catalogAspectId, deepSites, formatDuration, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { catalogAspectId, deepSites, formatDuration, getDirectionBetweenAdjacentHexes, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
 import { useApproachTile } from "../sites/approach";
 import { readDeepSiteFight } from "../sites/site-card-plan";
@@ -124,6 +126,27 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
             }
           : "pickArmy"));
   const catalog = deepSites.find((kind) => kind.id === site.kind)!;
+  const transfers = site.open && adjacent && block === "guarding" && selected && account.account
+    ? deepTransfers(setup.store, site, selected.army)
+    : [];
+  const sendTransfer = async ({ kind, slot }: DeepTransfer, amount: number) => {
+    if (!selected || userId === null || !account.account) return;
+    const direction = getDirectionBetweenAdjacentHexes(
+      kind === "guard" ? selected.armyTile : tile,
+      kind === "guard" ? tile : selected.armyTile,
+    );
+    if (direction === null) return;
+    const signer = account.account;
+    const structure = safeInteger(site.id);
+    const count = multiplyByPrecision(amount);
+    try {
+      await sendOnce("army", userId, { order: "use" }, () => kind === "guard"
+        ? setup.systemCalls.explorer_guard_swap({ signer, from_explorer_id: userId, to_structure_id: structure, to_guard_slot: slot, to_structure_direction: direction, count })
+        : setup.systemCalls.guard_explorer_swap({ signer, from_structure_id: structure, from_guard_slot: slot, to_explorer_id: userId, to_explorer_direction: direction, count }));
+    } catch (error) {
+      toast.failed(error, TRANSFER_TROOPS.failed);
+    }
+  };
   return (
     <DeepSiteView
       site={catalog.key}
@@ -137,12 +160,74 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
           : undefined
       }
       order={order}
+      transfers={selected && transfers.length > 0 ? (
+        <HudWindowFoot>
+          <div className="flex flex-col gap-2">
+            {transfers.map((action) => (
+              <DeepTransferAction
+                key={`${site.id}:${userId}:${action.kind}:${action.slot}`}
+                action={action}
+                armyTroops={selected.army.troops.count}
+                busy={busy !== undefined}
+                onSend={(amount) => sendTransfer(action, amount)}
+              />
+            ))}
+          </div>
+        </HudWindowFoot>
+      ) : undefined}
       onClose={onClose}
     />
   );
 }
 
 type Selected = ReturnType<typeof useSelectedOwnArmy>;
+
+type DeepTransfer = { kind: "guard" | "withdraw"; slot: number; max: number };
+
+function deepTransfers(store: NativeFactStore, site: Site, army: NativeRows["ExplorerTroops"]): DeepTransfer[] {
+  const troops = army.troops;
+  const home = store.require("Structure", { game_id: site.gameId, entity_id: army.owner });
+  const unit = BigInt(RESOURCE_PRECISION);
+  const cap = BigInt(configManager.getMaxArmySize(home.base.level, troops.tier)) * unit;
+  const held = site.garrisons.find(({ home, troops: guard }) =>
+    home === army.owner && guard.category === troops.category && guard.tier === troops.tier,
+  );
+  const slot = held?.slot ?? Array.from(
+    { length: nativeRuleConstants.DEEP_GUARD_SLOTS },
+    (_, index) => nativeRuleConstants.DEEP_GUARD_SLOTS - 1 - index,
+  ).find((slot) => !site.garrisons.some((guard) => guard.slot === slot));
+  if (slot === undefined) return [];
+  const guarded = held?.troops.count ?? 0n;
+  const guard = Math.min(Number(troops.count / unit), Math.max(0, Number((cap - guarded) / unit)));
+  const withdraw = Math.min(Number(guarded / unit), Math.max(0, Number((cap - troops.count) / unit)));
+  const actions: DeepTransfer[] = [];
+  if (guard > 0) actions.push({ kind: "guard", slot, max: guard });
+  if (withdraw > 0) actions.push({ kind: "withdraw", slot, max: withdraw });
+  return actions;
+}
+
+function DeepTransferAction({ action, armyTroops, busy, onSend }: {
+  action: DeepTransfer;
+  armyTroops: bigint;
+  busy: boolean;
+  onSend: (amount: number) => Promise<void>;
+}) {
+  const [amount, setAmount] = useState(0);
+  const guarding = action.kind === "guard";
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <AmountInput label={guarding ? DEEP_WORDS.guardAmount : DEEP_WORDS.withdrawAmount} value={amount} max={action.max} disabled={busy} onChange={setAmount} />
+        <HudButton kind={guarding ? "primary" : "secondary"} disabled={busy || amount <= 0 || amount > action.max} onClick={() => void onSend(amount)}>
+          {guarding ? DEEP_WORDS.guard : WITHDRAW}
+        </HudButton>
+      </div>
+      {guarding && amount > 0 && BigInt(multiplyByPrecision(amount)) === armyTroops && (
+        <HudNotice tone="warn" line={DEEP_WORDS.guardAll} />
+      )}
+    </div>
+  );
+}
 
 function siteRates(store: NativeFactStore, game_id: number, site: Site, selected: Selected): DeepRates | null {
   const deep = store.require("DeepRules", { game_id });
