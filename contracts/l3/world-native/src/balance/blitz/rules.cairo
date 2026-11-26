@@ -59,7 +59,6 @@ pub const TROOP_LIMIT_CONFIG: crate::rules::TroopLimitConfig = crate::rules::Tro
     empire_guard_slots: 4,
     starting_guard: 1000,
     camp_armies: 1,
-    explore_reward_strength_cap: 3000,
     light_guard_lower_bound: 999,
     light_guard_upper_bound: 1499,
     heavy_guard_lower_bound: 1499,

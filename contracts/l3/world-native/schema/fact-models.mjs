@@ -39,6 +39,8 @@ export const factWireTypes = [
     name: "world_native::expeditions::DepthRules",
     members: [
       { name: "reveal_percent", type: "core::integer::u16" },
+      { name: "reveal_cap", type: "core::integer::u32" },
+      { name: "rift_essence_bps", type: "core::integer::u16" },
       { name: "site_guard_lower", type: "core::integer::u16" },
       { name: "site_guard_upper", type: "core::integer::u16" },
       { name: "rift_guard_lower", type: "core::integer::u16" },
@@ -1600,6 +1602,8 @@ const behaviouralFacts = {
     domain: "expedition",
     fields: {
       revealPercent: "reveal_percent",
+      revealCap: "reveal_cap",
+      riftEssenceBps: "rift_essence_bps",
       siteGuardLower: "site_guard_lower",
       siteGuardUpper: "site_guard_upper",
       riftGuardLower: "rift_guard_lower",

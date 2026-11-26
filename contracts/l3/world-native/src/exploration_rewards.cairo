@@ -1,9 +1,6 @@
 use starknet::ContractAddress;
 use crate::resources::{ESSENCE, LABOR, ResourceKey};
 
-// A dormant spire pays a flat Essence jackpot before the active Exploration relic bonus.
-pub const SPIRE_ESSENCE_AMOUNT: u128 = 1000 * crate::rules::RESOURCE_PRECISION;
-
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ExtractedReward {
     pub explorer_id: u64,
@@ -35,34 +32,29 @@ pub trait IExplorationGrant<T> {
     );
 }
 
-/// The strength every exploration reward pays on: the army's troops, each weighted by its tier, up to the preset's cap
-/// when it sets one. Troop counts carry resource precision, so the reward strength does.
 fn reward_strength(troops: crate::troops::Troops, limits: crate::rules::TroopLimitConfig) -> u128 {
     let tier_strength: u128 = match troops.tier {
         crate::troops::TroopTier::T1 => limits.t1_tier_strength.into(),
         crate::troops::TroopTier::T2 => limits.t2_tier_strength.into(),
         crate::troops::TroopTier::T3 => limits.t3_tier_strength.into(),
     };
-    let strength = troops.count * tier_strength;
-    let cap: u128 = limits.explore_reward_strength_cap.into();
-    if cap == 0 {
-        strength
-    } else {
-        core::cmp::min(strength, cap * crate::rules::RESOURCE_PRECISION)
-    }
+    troops.count * tier_strength
 }
 
-/// A Frontier reveal: its depth's percent of the reward strength, in Essence or labor, never boosted.
 pub fn reveal_reward(
-    troops: crate::troops::Troops, limits: crate::rules::TroopLimitConfig, percent: u16, seed: u256,
+    troops: crate::troops::Troops,
+    limits: crate::rules::TroopLimitConfig,
+    depth: crate::expeditions::DepthRules,
+    seed: u256,
 ) -> crate::resources::ResourceAmount {
+    let uncapped = reward_strength(troops, limits) * depth.reveal_percent.into() / 100;
+    let amount = core::cmp::min(uncapped, depth.reveal_cap.into() * crate::rules::RESOURCE_PRECISION);
     crate::resources::ResourceAmount {
         resource_type: if crate::random::range(seed, 18, 2) == 0 {
             ESSENCE
         } else {
             LABOR
-        },
-        amount: reward_strength(troops, limits) * percent.into() / 100,
+        }, amount,
     }
 }
 #[cfg(feature: "blitz")]
@@ -78,11 +70,15 @@ pub fn pool_reward(
     rewards: Span<ExplorationReward>,
     troops: crate::troops::Troops,
     limits: crate::rules::TroopLimitConfig,
+    strength_cap: u32,
     timestamp: u64,
     seed: u256,
 ) -> crate::resources::ResourceAmount {
     let drawn = draw(rewards, seed);
-    let amount = reward_strength(troops, limits) * drawn.percent / 100;
+    let capped = core::cmp::min(
+        reward_strength(troops, limits), strength_cap.into() * crate::rules::RESOURCE_PRECISION,
+    );
+    let amount = capped * drawn.percent / 100;
     let boosts = troops.boosts;
     crate::resources::ResourceAmount {
         resource_type: drawn.resource_type,

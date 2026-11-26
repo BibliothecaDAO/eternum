@@ -108,6 +108,8 @@ export interface NativePreset {
   };
   depths: Array<{
     revealPercent: number;
+    revealCap: number;
+    riftEssenceBps: number;
     siteGuardLower: number;
     siteGuardUpper: number;
     riftGuardLower: number;

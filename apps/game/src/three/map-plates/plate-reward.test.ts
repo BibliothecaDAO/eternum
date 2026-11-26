@@ -33,7 +33,9 @@ const site = (store: NativeFactStore, cleared: boolean, category: StructureType,
       value: {
         game_id: GAME,
         depth: 0,
-        reveal_percent: 15,
+        reveal_percent: 10,
+        reveal_cap: 1000,
+        rift_essence_bps: 15000,
         site_guard_lower: 100,
         site_guard_upper: 100,
         rift_guard_lower: 100,
@@ -75,7 +77,7 @@ describe("what a plate says taking a camp or a rift gives", () => {
 
   it.each([
     [StructureType.Camp, "50 Labor", 100],
-    [StructureType.Rift, "300 Essence", 100],
+    [StructureType.Rift, "150 Essence", 100],
     [StructureType.Beasts, "400 Wheat", 100],
     [StructureType.Beasts, undefined, 200],
   ])(

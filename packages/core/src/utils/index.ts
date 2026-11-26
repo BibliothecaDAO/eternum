@@ -12,7 +12,6 @@ export * from "./castle-reach";
 export * from "./attack-forecast";
 export * from "./combat-exchange";
 export * from "./realm-skin";
-export * from "./reveal-yield";
 export * from "./combat-simulator";
 export * from "./entities";
 export * from "./mode-rules";

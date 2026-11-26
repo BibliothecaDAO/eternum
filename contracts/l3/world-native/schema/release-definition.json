@@ -68,7 +68,6 @@
         "empire_guard_slots": 0,
         "starting_guard": 0,
         "camp_armies": 0,
-        "explore_reward_strength_cap": 10000,
         "light_guard_lower_bound": 800,
         "light_guard_upper_bound": 1599,
         "heavy_guard_lower_bound": 800,
@@ -250,8 +249,8 @@
         {
           "resource_type": 23,
           "unit_weight": 1,
-          "realm_rate": "27777778",
-          "village_rate": "13888889"
+          "realm_rate": "33333333",
+          "village_rate": "16666666"
         },
         {
           "resource_type": 24,
@@ -268,8 +267,8 @@
         {
           "resource_type": 26,
           "unit_weight": 1,
-          "realm_rate": "27777778",
-          "village_rate": "13888889"
+          "realm_rate": "33333333",
+          "village_rate": "16666666"
         },
         {
           "resource_type": 27,
@@ -286,8 +285,8 @@
         {
           "resource_type": 29,
           "unit_weight": 1,
-          "realm_rate": "27777778",
-          "village_rate": "13888889"
+          "realm_rate": "33333333",
+          "village_rate": "16666666"
         },
         {
           "resource_type": 30,
@@ -304,8 +303,8 @@
         {
           "resource_type": 32,
           "unit_weight": 1,
-          "realm_rate": "27777778",
-          "village_rate": "13888889"
+          "realm_rate": "33333333",
+          "village_rate": "16666666"
         },
         {
           "resource_type": 33,
@@ -322,8 +321,8 @@
         {
           "resource_type": 35,
           "unit_weight": 1,
-          "realm_rate": "83333333",
-          "village_rate": "41666666"
+          "realm_rate": "66666667",
+          "village_rate": "33333333"
         },
         {
           "resource_type": 36,
@@ -668,7 +667,7 @@
           "recipe": {
             "simple_output": "0",
             "simple_inputs": [],
-            "complex_output": "27777778",
+            "complex_output": "33333333",
             "complex_inputs": []
           }
         },
@@ -700,7 +699,7 @@
                 "amount": "2000000000"
               }
             ],
-            "complex_output": "27777778",
+            "complex_output": "33333333",
             "complex_inputs": []
           }
         },
@@ -732,7 +731,7 @@
                 "amount": "2000000000"
               }
             ],
-            "complex_output": "27777778",
+            "complex_output": "33333333",
             "complex_inputs": []
           }
         },
@@ -764,7 +763,7 @@
                 "amount": "2000000000"
               }
             ],
-            "complex_output": "27777778",
+            "complex_output": "33333333",
             "complex_inputs": []
           }
         },
@@ -791,7 +790,7 @@
           "recipe": {
             "simple_output": "0",
             "simple_inputs": [],
-            "complex_output": "83333333",
+            "complex_output": "66666667",
             "complex_inputs": []
           }
         },
@@ -1009,7 +1008,7 @@
           "config": {
             "resource_type": 38,
             "building_category": 39,
-            "production_rate": "57870370",
+            "production_rate": "66666667",
             "cap_min": "3000000000000",
             "cap_steps": 1
           }
@@ -1036,8 +1035,8 @@
       "board": {
         "Some": {
           "demolition_refund_bps": 5000,
-          "workshop_rate": "55555556",
-          "output_step_bps": 2000,
+          "workshop_rate": "33333333",
+          "output_step_bps": 5000,
           "storage_step_bps": 10000,
           "ration_step": "200000000",
           "troop_store_deploys": 2,
@@ -1052,7 +1051,7 @@
           "row": 0,
           "tier": 1,
           "price": {
-            "essence": "500000000000",
+            "essence": "1000000000000",
             "labor": "500000000000"
           }
         },
@@ -1060,7 +1059,7 @@
           "row": 0,
           "tier": 2,
           "price": {
-            "essence": "1000000000000",
+            "essence": "2000000000000",
             "labor": "1000000000000"
           }
         },
@@ -1068,7 +1067,7 @@
           "row": 0,
           "tier": 3,
           "price": {
-            "essence": "2500000000000",
+            "essence": "5000000000000",
             "labor": "2500000000000"
           }
         },
@@ -1076,7 +1075,7 @@
           "row": 0,
           "tier": 4,
           "price": {
-            "essence": "5000000000000",
+            "essence": "10000000000000",
             "labor": "5000000000000"
           }
         },
@@ -1084,15 +1083,15 @@
           "row": 0,
           "tier": 5,
           "price": {
-            "essence": "10000000000000",
-            "labor": "10000000000000"
+            "essence": "17000000000000",
+            "labor": "8500000000000"
           }
         },
         {
           "row": 1,
           "tier": 1,
           "price": {
-            "essence": "500000000000",
+            "essence": "1000000000000",
             "labor": "500000000000"
           }
         },
@@ -1100,7 +1099,7 @@
           "row": 1,
           "tier": 2,
           "price": {
-            "essence": "1000000000000",
+            "essence": "2000000000000",
             "labor": "1000000000000"
           }
         },
@@ -1108,7 +1107,7 @@
           "row": 1,
           "tier": 3,
           "price": {
-            "essence": "2500000000000",
+            "essence": "5000000000000",
             "labor": "2500000000000"
           }
         },
@@ -1116,7 +1115,7 @@
           "row": 1,
           "tier": 4,
           "price": {
-            "essence": "5000000000000",
+            "essence": "10000000000000",
             "labor": "5000000000000"
           }
         },
@@ -1124,200 +1123,200 @@
           "row": 1,
           "tier": 5,
           "price": {
-            "essence": "10000000000000",
-            "labor": "10000000000000"
+            "essence": "17000000000000",
+            "labor": "8500000000000"
           }
         },
         {
-          "row": 5,
+          "row": 2,
           "tier": 1,
           "price": {
-            "essence": "5000000000000",
+            "essence": "2500000000000",
             "labor": "1000000000000"
           }
         },
         {
-          "row": 5,
+          "row": 2,
           "tier": 2,
           "price": {
-            "essence": "10000000000000",
+            "essence": "5000000000000",
+            "labor": "2000000000000"
+          }
+        },
+        {
+          "row": 2,
+          "tier": 3,
+          "price": {
+            "essence": "12500000000000",
+            "labor": "5000000000000"
+          }
+        },
+        {
+          "row": 2,
+          "tier": 4,
+          "price": {
+            "essence": "25000000000000",
+            "labor": "10000000000000"
+          }
+        },
+        {
+          "row": 2,
+          "tier": 5,
+          "price": {
+            "essence": "42500000000000",
+            "labor": "17000000000000"
+          }
+        },
+        {
+          "row": 4,
+          "tier": 1,
+          "price": {
+            "essence": "5000000000000",
             "labor": "2500000000000"
           }
         },
         {
-          "row": 5,
+          "row": 4,
+          "tier": 2,
+          "price": {
+            "essence": "10000000000000",
+            "labor": "5000000000000"
+          }
+        },
+        {
+          "row": 4,
           "tier": 3,
           "price": {
             "essence": "25000000000000",
-            "labor": "5000000000000"
+            "labor": "12500000000000"
           }
         },
         {
-          "row": 5,
+          "row": 4,
           "tier": 4,
           "price": {
             "essence": "50000000000000",
-            "labor": "10000000000000"
-          }
-        },
-        {
-          "row": 5,
-          "tier": 5,
-          "price": {
-            "essence": "100000000000000",
             "labor": "25000000000000"
           }
         },
         {
-          "row": 2,
+          "row": 4,
+          "tier": 5,
+          "price": {
+            "essence": "85000000000000",
+            "labor": "42500000000000"
+          }
+        },
+        {
+          "row": 5,
           "tier": 1,
           "price": {
-            "essence": "2500000000000",
-            "labor": "500000000000"
-          }
-        },
-        {
-          "row": 2,
-          "tier": 2,
-          "price": {
             "essence": "5000000000000",
-            "labor": "1000000000000"
-          }
-        },
-        {
-          "row": 2,
-          "tier": 3,
-          "price": {
-            "essence": "12500000000000",
             "labor": "2500000000000"
           }
         },
         {
-          "row": 2,
-          "tier": 4,
+          "row": 5,
+          "tier": 2,
           "price": {
-            "essence": "25000000000000",
+            "essence": "10000000000000",
             "labor": "5000000000000"
           }
         },
         {
-          "row": 2,
-          "tier": 5,
+          "row": 5,
+          "tier": 3,
           "price": {
-            "essence": "50000000000000",
+            "essence": "25000000000000",
             "labor": "12500000000000"
           }
         },
         {
-          "row": 4,
-          "tier": 1,
-          "price": {
-            "essence": "2500000000000",
-            "labor": "500000000000"
-          }
-        },
-        {
-          "row": 4,
-          "tier": 2,
-          "price": {
-            "essence": "5000000000000",
-            "labor": "1000000000000"
-          }
-        },
-        {
-          "row": 4,
-          "tier": 3,
-          "price": {
-            "essence": "12500000000000",
-            "labor": "2500000000000"
-          }
-        },
-        {
-          "row": 4,
+          "row": 5,
           "tier": 4,
           "price": {
-            "essence": "25000000000000",
+            "essence": "50000000000000",
+            "labor": "25000000000000"
+          }
+        },
+        {
+          "row": 5,
+          "tier": 5,
+          "price": {
+            "essence": "85000000000000",
+            "labor": "42500000000000"
+          }
+        },
+        {
+          "row": 6,
+          "tier": 1,
+          "price": {
+            "essence": "10000000000000",
             "labor": "5000000000000"
           }
         },
         {
-          "row": 4,
-          "tier": 5,
+          "row": 6,
+          "tier": 2,
+          "price": {
+            "essence": "20000000000000",
+            "labor": "10000000000000"
+          }
+        },
+        {
+          "row": 6,
+          "tier": 3,
           "price": {
             "essence": "50000000000000",
-            "labor": "12500000000000"
-          }
-        },
-        {
-          "row": 6,
-          "tier": 1,
-          "price": {
-            "essence": "5000000000000",
-            "labor": "1000000000000"
-          }
-        },
-        {
-          "row": 6,
-          "tier": 2,
-          "price": {
-            "essence": "35000000000000",
-            "labor": "7500000000000"
-          }
-        },
-        {
-          "row": 6,
-          "tier": 3,
-          "price": {
-            "essence": "150000000000000",
-            "labor": "35000000000000"
+            "labor": "25000000000000"
           }
         },
         {
           "row": 7,
           "tier": 1,
           "price": {
-            "essence": "5000000000000",
-            "labor": "1000000000000"
+            "essence": "10000000000000",
+            "labor": "5000000000000"
           }
         },
         {
           "row": 7,
           "tier": 2,
           "price": {
-            "essence": "35000000000000",
-            "labor": "7500000000000"
+            "essence": "20000000000000",
+            "labor": "10000000000000"
           }
         },
         {
           "row": 7,
           "tier": 3,
           "price": {
-            "essence": "150000000000000",
-            "labor": "35000000000000"
+            "essence": "50000000000000",
+            "labor": "25000000000000"
           }
         },
         {
           "row": 11,
           "tier": 1,
           "price": {
-            "essence": "5000000000000",
-            "labor": "1000000000000"
+            "essence": "10000000000000",
+            "labor": "5000000000000"
           }
         },
         {
           "row": 11,
           "tier": 2,
           "price": {
-            "essence": "35000000000000",
-            "labor": "7500000000000"
+            "essence": "20000000000000",
+            "labor": "10000000000000"
           }
         },
         {
           "row": 11,
           "tier": 3,
           "price": {
-            "essence": "150000000000000",
-            "labor": "35000000000000"
+            "essence": "50000000000000",
+            "labor": "25000000000000"
           }
         },
         {
@@ -1607,7 +1606,7 @@
             "simple_cost": [
               {
                 "resource_type": 23,
-                "amount": "500000000000"
+                "amount": "1000000000000"
               }
             ],
             "complex_cost": []
@@ -1639,7 +1638,7 @@
             "simple_cost": [
               {
                 "resource_type": 23,
-                "amount": "500000000000"
+                "amount": "1000000000000"
               }
             ],
             "complex_cost": []
@@ -1739,11 +1738,11 @@
             "simple_cost": [
               {
                 "resource_type": 38,
-                "amount": "2500000000000"
+                "amount": "5000000000000"
               },
               {
                 "resource_type": 23,
-                "amount": "500000000000"
+                "amount": "1000000000000"
               }
             ],
             "complex_cost": []
@@ -1775,7 +1774,7 @@
             "simple_cost": [
               {
                 "resource_type": 23,
-                "amount": "500000000000"
+                "amount": "1000000000000"
               }
             ],
             "complex_cost": []
@@ -1813,7 +1812,7 @@
           "costs": [
             {
               "resource_type": 23,
-              "amount": "2500000000000"
+              "amount": "4000000000000"
             }
           ]
         },
@@ -1821,7 +1820,7 @@
           "costs": [
             {
               "resource_type": 23,
-              "amount": "15000000000000"
+              "amount": "12000000000000"
             }
           ]
         },
@@ -1829,7 +1828,7 @@
           "costs": [
             {
               "resource_type": 23,
-              "amount": "50000000000000"
+              "amount": "40000000000000"
             }
           ]
         }
@@ -1863,6 +1862,8 @@
       "depths": [
         {
           "reveal_percent": 10,
+          "reveal_cap": 1000,
+          "rift_essence_bps": 15000,
           "site_guard_lower": 1170,
           "site_guard_upper": 1430,
           "rift_guard_lower": 1350,
@@ -1882,7 +1883,9 @@
           "beast_strong_upper": 495
         },
         {
-          "reveal_percent": 15,
+          "reveal_percent": 10,
+          "reveal_cap": 1500,
+          "rift_essence_bps": 15000,
           "site_guard_lower": 2340,
           "site_guard_upper": 2860,
           "rift_guard_lower": 2700,
@@ -1902,7 +1905,9 @@
           "beast_strong_upper": 990
         },
         {
-          "reveal_percent": 20,
+          "reveal_percent": 10,
+          "reveal_cap": 2000,
+          "rift_essence_bps": 15000,
           "site_guard_lower": 4680,
           "site_guard_upper": 5720,
           "rift_guard_lower": 5400,
@@ -1930,11 +1935,11 @@
           },
           {
             "resource_type": 35,
-            "amount": "6000000000000"
+            "amount": "5000000000000"
           },
           {
             "resource_type": 23,
-            "amount": "2000000000000"
+            "amount": "3000000000000"
           }
         ],
         "starting_troops": [

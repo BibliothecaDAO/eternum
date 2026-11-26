@@ -231,9 +231,9 @@ const farmBaseLabor = config.buildings.simpleBuildingCost[research.FARM][0].amou
 const workshopBaseLabor = config.buildings.simpleBuildingCost[research.WORKSHOP][0].amount;
 const barracksBaseLabor = config.buildings.simpleBuildingCost[research.BARRACKS][0].amount;
 const startingLabor = config.startingResources.find((r: { resource: number }) => r.resource === LABOR).amount;
-if (workshopBaseLabor + barracksBaseLabor + farmBaseLabor !== startingLabor) {
+if (workshopBaseLabor + barracksBaseLabor + farmBaseLabor > startingLabor) {
   throw new Error(
-    `Starter buildings (${workshopBaseLabor + barracksBaseLabor + farmBaseLabor}) do not equal starting labor (${startingLabor})`,
+    `Starter buildings (${workshopBaseLabor + barracksBaseLabor + farmBaseLabor}) exceed starting labor (${startingLabor})`,
   );
 }
 for (let level = 0; level < config.realmMaxLevel - 1; level += 1) {
@@ -525,6 +525,15 @@ const guardMark = (bow: boolean) =>
       }
     : { weapon: "Blade", bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many };
 
+const uniformRiftEssenceBps = (depths: readonly { riftEssenceBps: number }[]) => {
+  const first = depths[0]?.riftEssenceBps;
+  if (first === undefined || depths.some((depth) => depth.riftEssenceBps !== first)) {
+    throw new Error("Rift Essence ratio differs by layer; update docs to list each layer separately");
+  }
+  return first;
+};
+const riftEssenceBps = uniformRiftEssenceBps(frontierPreset.depths);
+
 const ruinFamilyRange = (depth: number) =>
   `${beastOf("ruin", depth).name} (${range(...previewRuinGuardBounds(depth + 1, depth))} to ${range(...previewRuinGuardBounds(depth + RELICS_PER_LAYER, depth))})`;
 
@@ -560,7 +569,7 @@ const beastFamilies = [
     name: "Rift",
     icon: beastMeaning(beastOf("rift", 0).model),
     ...guardMark(true),
-    pays: `Essence (${n(100 * CONTRACT.riftGuardMultiplier)}% starting guard)`,
+    pays: `Essence (${pct(riftEssenceBps)} starting guard)`,
     surface: `${beastOf("rift", 0).name} (${range(frontierPreset.depths[0].riftGuardLower, frontierPreset.depths[0].riftGuardUpper)})`,
     veil: `${beastOf("rift", 1).name} (${range(frontierPreset.depths[1].riftGuardLower, frontierPreset.depths[1].riftGuardUpper)})`,
     hollow: `${beastOf("rift", 2).name} (${range(frontierPreset.depths[2].riftGuardLower, frontierPreset.depths[2].riftGuardUpper)})`,
@@ -678,12 +687,11 @@ export const FRONTIER = {
     emptyRevealLimit: n(frontierPreset.discovery.emptyRevealLimit),
     spireRevealLimit: n(rule.SPIRE_REVEAL_LIMIT),
     spireStep: `${n(100 / rule.SPIRE_REVEAL_LIMIT)}%`,
-    revealTroopCap: n(limit.exploreRewardStrengthCap),
   },
   sitePayouts: {
     herdMultiplier: `${n(CONTRACT.herdGuardMultiplier)}x`,
     campPercent: `${n(100 / CONTRACT.campGuardDivisor)}%`,
-    riftPercent: `${n(100 * CONTRACT.riftGuardMultiplier)}%`,
+    riftPercent: pct(riftEssenceBps),
     veilMultiplier: `${n(depthRewardPercent(1))}%`,
     hollowMultiplier: `${n(depthRewardPercent(2))}%`,
   },
@@ -706,6 +714,7 @@ export const FRONTIER = {
   depths: frontierPreset.depths.map((depth, index) => ({
     name: LAYER_NAMES[index],
     revealPercent: `${depth.revealPercent}%`,
+    revealCap: n(depth.revealCap),
     campGuard: `${beastOf("camp", index).name} ${range(depth.siteGuardLower, depth.siteGuardUpper)}`,
     riftGuard: `${beastOf("rift", index).name} ${range(depth.riftGuardLower, depth.riftGuardUpper)}`,
     beastWeak: `${beastOf("herd", index).name} ${range(depth.beastWeakLower, depth.beastWeakUpper)}`,

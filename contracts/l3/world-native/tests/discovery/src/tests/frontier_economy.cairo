@@ -52,24 +52,26 @@ fn raising_troops_pays_two_wheat_each_from_settled_wheat_and_fails_when_the_real
     assert!(execute(deployment, build(home, FARM, WEST), FIXTURE_START + 40));
     assert!(execute(deployment, build(home, FARM, 1), FIXTURE_START + 40));
     let wheat = rate(deployment, home, WHEAT);
-    assert!(50 * wheat >= 8 * RESOURCE_PRECISION && 50 * wheat < 16 * RESOURCE_PRECISION);
+    let span: u64 = (8 * RESOURCE_PRECISION / wheat + 1).try_into().unwrap();
+    let elapsed: u128 = span.into();
+    assert!(elapsed * wheat >= 8 * RESOURCE_PRECISION && elapsed * wheat < 16 * RESOURCE_PRECISION);
 
-    assert!(execute(deployment, raise(home, 3, 2, 2), FIXTURE_START + 90));
+    assert!(execute(deployment, raise(home, 3, 2, 2), FIXTURE_START + 40 + span));
     assert_eq!(stored(deployment, home, KNIGHT), 17 * RESOURCE_PRECISION);
-    assert_eq!(stored(deployment, home, WHEAT), 50 * wheat - 6 * RESOURCE_PRECISION);
+    assert_eq!(stored(deployment, home, WHEAT), elapsed * wheat - 6 * RESOURCE_PRECISION);
     let army = newest_army(deployment, home);
-    assert!(execute(deployment, reinforce(army, 1), FIXTURE_START + 90));
+    assert!(execute(deployment, reinforce(army, 1), FIXTURE_START + 40 + span));
     assert_eq!(stored(deployment, home, KNIGHT), 16 * RESOURCE_PRECISION);
-    assert_eq!(stored(deployment, home, WHEAT), 50 * wheat - 8 * RESOURCE_PRECISION);
+    assert_eq!(stored(deployment, home, WHEAT), elapsed * wheat - 8 * RESOURCE_PRECISION);
 
     let before = super::resource_commands::resource_facts(deployment, home);
     let mut rejected = snforge_std::spy_events();
-    assert_terminal_rejection(deployment, raise(home, 4, 3, 3), FIXTURE_START + 90);
+    assert_terminal_rejection(deployment, raise(home, 4, 3, 3), FIXTURE_START + 40 + span);
     assert_eq!(
         super::play_fixture::rejection(ref rejected, deployment.games).reason, "realm cannot pay to raise troops",
     );
     let mut rejected = snforge_std::spy_events();
-    assert_terminal_rejection(deployment, reinforce(army, 4), FIXTURE_START + 90);
+    assert_terminal_rejection(deployment, reinforce(army, 4), FIXTURE_START + 40 + span);
     assert_eq!(
         super::play_fixture::rejection(ref rejected, deployment.games).reason, "realm cannot pay to raise troops",
     );
@@ -78,9 +80,9 @@ fn raising_troops_pays_two_wheat_each_from_settled_wheat_and_fails_when_the_real
         IStructureOperationsDispatcher { contract_address: deployment.games }.home_armies(home).len(), starting + 1,
     );
 
-    assert!(execute(deployment, raise(home, 4, 3, 3), FIXTURE_START + 140));
+    assert!(execute(deployment, raise(home, 4, 3, 3), FIXTURE_START + 40 + 2 * span));
     assert_eq!(stored(deployment, home, KNIGHT), 12 * RESOURCE_PRECISION);
-    assert_eq!(stored(deployment, home, WHEAT), 100 * wheat - 16 * RESOURCE_PRECISION);
+    assert_eq!(stored(deployment, home, WHEAT), 2 * elapsed * wheat - 16 * RESOURCE_PRECISION);
 }
 
 #[test]
@@ -265,6 +267,8 @@ fn range_produces_deployable_crossbows_and_depot_prices_deployment_and_reinforce
         if tier == 1 {
             assert!(execute(d, build(home, crate::research::RATIONS_DEPOT, 2), FIXTURE_START + 100));
         } else if tier > 1 {
+            let price = crate::logic::research::price(crate::research::ROW_RATIONS, tier);
+            grant(d, home, crate::resources::LABOR, price.labor);
             assert!(
                 execute(d, super::building_commands::research(home, crate::research::ROW_RATIONS), FIXTURE_START + 100),
             );

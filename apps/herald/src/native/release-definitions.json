@@ -69,7 +69,6 @@
           "empire_guard_slots": 0,
           "starting_guard": 0,
           "camp_armies": 0,
-          "explore_reward_strength_cap": 10000,
           "light_guard_lower_bound": 800,
           "light_guard_upper_bound": 1599,
           "heavy_guard_lower_bound": 800,
@@ -1864,6 +1863,8 @@
         "depths": [
           {
             "reveal_percent": 10,
+            "reveal_cap": 1000,
+            "rift_essence_bps": 30000,
             "site_guard_lower": 1170,
             "site_guard_upper": 1430,
             "rift_guard_lower": 1350,
@@ -1884,6 +1885,8 @@
           },
           {
             "reveal_percent": 15,
+            "reveal_cap": 1500,
+            "rift_essence_bps": 30000,
             "site_guard_lower": 2340,
             "site_guard_upper": 2860,
             "rift_guard_lower": 2700,
@@ -1904,6 +1907,8 @@
           },
           {
             "reveal_percent": 20,
+            "reveal_cap": 2000,
+            "rift_essence_bps": 30000,
             "site_guard_lower": 4680,
             "site_guard_upper": 5720,
             "rift_guard_lower": 5400,
@@ -2315,7 +2320,6 @@
           "empire_guard_slots": 0,
           "starting_guard": 0,
           "camp_armies": 0,
-          "explore_reward_strength_cap": 10000,
           "light_guard_lower_bound": 800,
           "light_guard_upper_bound": 1599,
           "heavy_guard_lower_bound": 800,
@@ -4110,6 +4114,8 @@
         "depths": [
           {
             "reveal_percent": 10,
+            "reveal_cap": 1000,
+            "rift_essence_bps": 30000,
             "site_guard_lower": 1170,
             "site_guard_upper": 1430,
             "rift_guard_lower": 1350,
@@ -4130,6 +4136,8 @@
           },
           {
             "reveal_percent": 15,
+            "reveal_cap": 1500,
+            "rift_essence_bps": 30000,
             "site_guard_lower": 2340,
             "site_guard_upper": 2860,
             "rift_guard_lower": 2700,
@@ -4150,6 +4158,8 @@
           },
           {
             "reveal_percent": 20,
+            "reveal_cap": 2000,
+            "rift_essence_bps": 30000,
             "site_guard_lower": 4680,
             "site_guard_upper": 5720,
             "rift_guard_lower": 5400,
@@ -4561,7 +4571,6 @@
           "empire_guard_slots": 0,
           "starting_guard": 0,
           "camp_armies": 0,
-          "explore_reward_strength_cap": 10000,
           "light_guard_lower_bound": 800,
           "light_guard_upper_bound": 1599,
           "heavy_guard_lower_bound": 800,
@@ -6356,6 +6365,8 @@
         "depths": [
           {
             "reveal_percent": 10,
+            "reveal_cap": 1000,
+            "rift_essence_bps": 30000,
             "site_guard_lower": 1170,
             "site_guard_upper": 1430,
             "rift_guard_lower": 1350,
@@ -6376,6 +6387,8 @@
           },
           {
             "reveal_percent": 15,
+            "reveal_cap": 1500,
+            "rift_essence_bps": 30000,
             "site_guard_lower": 2340,
             "site_guard_upper": 2860,
             "rift_guard_lower": 2700,
@@ -6396,6 +6409,8 @@
           },
           {
             "reveal_percent": 20,
+            "reveal_cap": 2000,
+            "rift_essence_bps": 30000,
             "site_guard_lower": 4680,
             "site_guard_upper": 5720,
             "rift_guard_lower": 5400,
@@ -6807,7 +6822,6 @@
           "empire_guard_slots": 0,
           "starting_guard": 0,
           "camp_armies": 0,
-          "explore_reward_strength_cap": 10000,
           "light_guard_lower_bound": 800,
           "light_guard_upper_bound": 1599,
           "heavy_guard_lower_bound": 800,
@@ -8602,6 +8616,8 @@
         "depths": [
           {
             "reveal_percent": 10,
+            "reveal_cap": 1000,
+            "rift_essence_bps": 30000,
             "site_guard_lower": 1170,
             "site_guard_upper": 1430,
             "rift_guard_lower": 1350,
@@ -8622,6 +8638,8 @@
           },
           {
             "reveal_percent": 15,
+            "reveal_cap": 1500,
+            "rift_essence_bps": 30000,
             "site_guard_lower": 2340,
             "site_guard_upper": 2860,
             "rift_guard_lower": 2700,
@@ -8642,6 +8660,8 @@
           },
           {
             "reveal_percent": 20,
+            "reveal_cap": 2000,
+            "rift_essence_bps": 30000,
             "site_guard_lower": 4680,
             "site_guard_upper": 5720,
             "rift_guard_lower": 5400,
@@ -9053,7 +9073,6 @@
           "empire_guard_slots": 0,
           "starting_guard": 0,
           "camp_armies": 0,
-          "explore_reward_strength_cap": 10000,
           "light_guard_lower_bound": 800,
           "light_guard_upper_bound": 1599,
           "heavy_guard_lower_bound": 800,
@@ -10848,6 +10867,8 @@
         "depths": [
           {
             "reveal_percent": 10,
+            "reveal_cap": 1000,
+            "rift_essence_bps": 30000,
             "site_guard_lower": 1170,
             "site_guard_upper": 1430,
             "rift_guard_lower": 1350,
@@ -10868,6 +10889,8 @@
           },
           {
             "reveal_percent": 15,
+            "reveal_cap": 1500,
+            "rift_essence_bps": 30000,
             "site_guard_lower": 2340,
             "site_guard_upper": 2860,
             "rift_guard_lower": 2700,
@@ -10888,6 +10911,8 @@
           },
           {
             "reveal_percent": 20,
+            "reveal_cap": 2000,
+            "rift_essence_bps": 30000,
             "site_guard_lower": 4680,
             "site_guard_upper": 5720,
             "rift_guard_lower": 5400,

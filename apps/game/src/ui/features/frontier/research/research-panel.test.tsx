@@ -65,6 +65,7 @@ const draw = (picked: string | null, onResearch = vi.fn(), onPick = vi.fn(), onF
     ),
   );
 const button = (text: RegExp) => [...host.querySelectorAll("button")].find((each) => text.test(each.textContent ?? ""));
+const outputPercent = (tier: number) => `${100 + (tier * MID_REALM.board.outputStepBps) / 100}%`;
 
 it("draws every node of the three branches in one panel, each with its state, and picks one in place", () => {
   const onPick = vi.fn();
@@ -122,7 +123,9 @@ it("holds a locked node's verb, says why, and offers the step that opens it", ()
       />,
     ),
   );
-  expect(host.textContent).toContain(RESEARCH_TREE.store("15,000", "25,000", "Kingdom"));
+  const storeCap = MID_REALM.laborStore(MID_REALM.castleLevel).toLocaleString("en-US");
+  const tierLabor = MID_REALM.price(research.ROW_SUPPLY_YARD, 5).labor.toLocaleString("en-US");
+  expect(host.textContent).toContain(RESEARCH_TREE.store(storeCap, tierLabor, "Kingdom"));
   expect(host.querySelector("[data-node='row-5'] button[aria-label^='Upgrade ']")).toBeNull();
   expect(host.querySelector<HTMLButtonElement>("button[aria-label='Upgrade Supply yard']")?.disabled).toBe(true);
   expect(
@@ -228,7 +231,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
         />,
       ),
     );
-    expect(choice()!.textContent).toContain("Farm · 200%");
+    expect(choice()!.textContent).toContain(`Farm · ${outputPercent(5)}`);
   });
 
   it("stands after the whole tree, outside its scroll, with the price held against and Research", () => {
@@ -237,7 +240,9 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     // Not inside the tree's scroll: no tile the tree scrolls to can push it out of view.
     expect(tree.contains(choice())).toBe(false);
     expect(tree.compareDocumentPosition(choice()!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(choice()!.querySelector("[data-choice-summary]")?.textContent).toBe("Farm · 120% → 140%");
+    expect(choice()!.querySelector("[data-choice-summary]")?.textContent).toBe(
+      `Farm · ${outputPercent(1)} → ${outputPercent(2)}`,
+    );
     expect(host.querySelectorAll("button[aria-label='Upgrade Farm']")).toHaveLength(1);
     const price = nodes
       .find(({ key }) => key === "row-0")!
@@ -263,8 +268,9 @@ it("shows the Farm's output step without a production formula", () => {
   const lines = [...host.querySelectorAll("[data-lab='node-choice'] [data-choice-summary]")].map(
     (line) => line.textContent,
   );
-  expect(lines).toEqual(["Farm · 120% → 140%"]);
-  expect(host.querySelector("[data-node='row-0'] [data-research-effect]")?.textContent).toBe("120% → 140%");
+  const farmStep = `${outputPercent(1)} → ${outputPercent(2)}`;
+  expect(lines).toEqual([`Farm · ${farmStep}`]);
+  expect(host.querySelector("[data-node='row-0'] [data-research-effect]")?.textContent).toBe(farmStep);
   expect(host.querySelector("[data-node='row-4'] [data-research-effect]")?.textContent).toBe(
     "2 wheat per troop → 1.8 wheat per troop (less)",
   );

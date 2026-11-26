@@ -59,6 +59,8 @@ describe("guard and site icon meanings", () => {
       rift_guard_upper: 1600,
       reveal_site_neighbors: false,
       reveal_percent: 10,
+      reveal_cap: 1000,
+      rift_essence_bps: 15000,
       chest: { common: 5000, uncommon: 2700, rare: 1400, epic: 600, legendary: 300 },
       guard_step: 100,
     };

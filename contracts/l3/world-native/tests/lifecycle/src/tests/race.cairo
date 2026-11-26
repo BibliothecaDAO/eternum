@@ -562,6 +562,11 @@ fn spoils_clear(category: u8) {
     );
     let site = interact_with_state(d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap());
     let discovered_relic = interact_with_state(d.games, || crate::logic::army_relics::ruin(site_key));
+    world_test_support::tests::frontier_economy::settle(d, home, crate::resources::LABOR, now + 60);
+    let held_labor = interact_with_state(d.games, || crate::logic::resources::balance(home, crate::resources::LABOR));
+    if held_labor > 0 {
+        world_test_support::tests::frontier_economy::spend(d, home, crate::resources::LABOR, held_labor, now + 60);
+    }
     assert!(
         execute_in_game(
             d,
@@ -578,14 +583,15 @@ fn spoils_clear(category: u8) {
         d.games,
         || {
             let receipt = crate::logic::expeditions::expedition_site(site_key).unwrap().clear.unwrap();
-            let band = crate::expeditions::is_band(site, crate::logic::expeditions::depth_rules(0));
+            let rules = crate::logic::expeditions::depth_rules(0);
+            let band = crate::expeditions::is_band(site, rules);
             assert_eq!(crate::logic::progression::require(key).oath_pick != 0, band);
             if category == crate::taxonomy::RUIN_CATEGORY {
                 assert_eq!(receipt.reward, None);
                 assert!(discovered_relic.is_some());
                 assert_eq!(crate::logic::army_relics::read(key).first, discovered_relic);
             } else {
-                let base = crate::expeditions::site_reward(category, site, 0, band);
+                let base = crate::expeditions::site_reward(category, site, 0, band, rules);
                 assert_eq!(
                     receipt.reward,
                     base.map(|reward| crate::resources::ResourceAmount { amount: reward.amount * 2, ..reward }),

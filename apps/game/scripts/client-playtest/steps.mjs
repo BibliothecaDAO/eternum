@@ -34,6 +34,7 @@ import { watchReleaseMove } from "./stale-release.mjs";
 import { wordAt } from "../words-table.mjs";
 import {
   nativeOathConstants as oathRules,
+  nativeResearchConstants as researchRules,
   nativeRuleConstants as rules,
 } from "../../../../contracts/l3/world-native/schema/balance.gen.ts";
 import { openOrderSendGate, touchAt, VIEWPORT } from "./browser-session.mjs";
@@ -52,6 +53,10 @@ import { DESKTOP_MIN_WIDTH, judgeHudLayout, MAP_LEAST_SHARE } from "./hud-layout
  */
 
 const T2_KNIGHT_STAMINA_MAX = release.definition.rules.troop_stamina_config.stamina_knight_max * 1.2;
+const KNIGHT_OATH_TIER_ONE_PRICE = release.definition.structures.research.find(
+  ({ row, tier }) => row === researchRules.ROW_KNIGHT_OATHS && tier === 1,
+)?.price;
+if (!KNIGHT_OATH_TIER_ONE_PRICE) throw new Error("Release definition missing Knight Oath tier-1 price");
 const SCENE_WAIT_MS = 15_000;
 const SCENE_HOLD_MS = 3_000;
 const PLACE_PRESSES = 2;
@@ -1367,7 +1372,10 @@ const OATH_SLOTS_STEPS = [
         essence: balanceChange(answer, ResourcesIds.Essence),
         labor: balanceChange(answer, ResourcesIds.Labor),
       };
-      if (paid.essence !== -5000n * BigInt(RESOURCE_PRECISION) || paid.labor !== -1000n * BigInt(RESOURCE_PRECISION))
+      if (
+        paid.essence !== -BigInt(KNIGHT_OATH_TIER_ONE_PRICE.essence) ||
+        paid.labor !== -BigInt(KNIGHT_OATH_TIER_ONE_PRICE.labor)
+      )
         return failed("Oath research charged the wrong price", {
           paid: { essence: String(paid.essence), labor: String(paid.labor) },
         });

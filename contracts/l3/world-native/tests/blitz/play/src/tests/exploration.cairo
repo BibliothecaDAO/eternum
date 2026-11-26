@@ -39,6 +39,7 @@ fn donkey_root(game_id: u32, troops: crate::troops::Troops) -> u256 {
             crate::balance::exploration::EXPLORATION_REWARDS.span(),
             troops,
             crate::balance::rules::TROOP_LIMIT_CONFIG,
+            crate::balance::exploration::EXPLORATION_STRENGTH_CAP,
             RESTED_AT,
             reward_seed,
         );
@@ -138,7 +139,7 @@ fn a_reveal_pays_its_army_home_from_the_exploration_pool() {
     assert!(explore_with_root(d, home.game_id, id, root, RESTED_AT));
     let limits = crate::balance::rules::TROOP_LIMIT_CONFIG;
     let strength = core::cmp::min(
-        ARMY_UNITS * limits.t1_tier_strength.into(), limits.explore_reward_strength_cap.into(),
+        ARMY_UNITS * limits.t1_tier_strength.into(), crate::balance::exploration::EXPLORATION_STRENGTH_CAP.into(),
     );
     assert_eq!(balance(d, home, DONKEY) - before, strength * RESOURCE_PRECISION / 10);
 }

@@ -1096,7 +1096,8 @@ Presentation: `/lab/app/wallet-ready/doorway/aspect`, `aspect-realm`, `aspect-ke
 `/lab/app/wallet-ready/doorway/` mount the production picker; `build.sh prove-season-one` stills the last two. The full
 founding flow is `/lab/game?scenario=aspect-settle`; the canonical playtest's `--steps lab-aspect-settle` opens Play,
 verifies no automatic founding, taps an Aspect and checks the command plus resulting membership facts, no army, and the
-starting stores (2,000 Knights at home, 6,000 wheat, 2,000 labor, no Essence). The player deploys from the dock.
+starting stores from `contracts/l3/world-native/schema/release-definition.json` (Knights at home, wheat, labor, and no
+Essence). The player deploys from the dock.
 
 ## Daily quest collection
 

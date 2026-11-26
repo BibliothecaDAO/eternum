@@ -461,7 +461,11 @@ pub fn assert_capture_at(
     assert_eq!(total_relics, 0);
     assert_eq!(
         resources.resource_balance(essence) - before_rift,
-        rift.initial_guard_count * 3 * (2 + Into::<u8, u128>::into(depth)) / 2,
+        rift.initial_guard_count
+            * crate::logic::expeditions::depth_rules(depth).rift_essence_bps.into()
+            / 10000
+            * (2 + Into::<u8, u128>::into(depth))
+            / 2,
     );
     let baseline = resources.resource_balance(essence);
     for time in array![capture_at + 4, capture_at + 29, capture_at + 89, capture_at + 139] {
@@ -511,7 +515,9 @@ pub fn assert_capture_at(
                     if payout.site_id == camp_id {
                         camp_reward
                     } else {
-                        crate::expeditions::site_reward(category, expected, depth, false)
+                        crate::expeditions::site_reward(
+                            category, expected, depth, false, crate::logic::expeditions::depth_rules(depth),
+                        )
                     },
                 );
             }

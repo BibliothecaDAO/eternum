@@ -250,15 +250,21 @@ export const frontierPhrases = (
     },
     {
       page: "frontier/expedition",
-      phrases: [
-        ...preset.depths.map((depth, index) => `${LAYER_NAMES[index]} ${depth.revealPercent}%`),
-        `${n(contract.herdGuardMultiplier)}x its starting guard on the ${LAYER_NAMES[0]}`,
-        `${n(100 / contract.campGuardDivisor)}% of its starting guard on the ${LAYER_NAMES[0]}, ${n(depthRewardPercent(1))}% of that in the ${LAYER_NAMES[1]}, ${n(depthRewardPercent(2))}% in the ${LAYER_NAMES[2]}`,
-        `${n(100 * contract.riftGuardMultiplier)}% of its starting guard on the ${LAYER_NAMES[0]}`,
-        `Appears on the tile until any adjacent army presses Use, opening a pick of ${n(contract.oathDrawCount)} Oaths (or pass for +${n(nativeOaths.PASS_STAMINA)} stamina) and removing the Shrine.`,
-        `Each ruin holds either a relic or a Fragment cache, never both.`,
-        `${nativeFragments.SURFACE_CACHE_PERCENT}% on the ${LAYER_NAMES[0]}`,
-      ],
+      phrases: (() => {
+        const riftBps = preset.depths[0].riftEssenceBps;
+        if (preset.depths.some((depth) => depth.riftEssenceBps !== riftBps)) {
+          throw new Error("Rift Essence ratio differs across layers; update expedition balance check");
+        }
+        return [
+          ...preset.depths.map((depth, index) => `${LAYER_NAMES[index]} ${depth.revealPercent}% ${n(depth.revealCap)}`),
+          `${n(contract.herdGuardMultiplier)}x its starting guard on the ${LAYER_NAMES[0]}`,
+          `${n(100 / contract.campGuardDivisor)}% of its starting guard on the ${LAYER_NAMES[0]}, ${n(depthRewardPercent(1))}% of that in the ${LAYER_NAMES[1]}, ${n(depthRewardPercent(2))}% in the ${LAYER_NAMES[2]}`,
+          `${n(riftBps / 100)}% of its starting guard on the ${LAYER_NAMES[0]}`,
+          `Appears on the tile until any adjacent army presses Use, opening a pick of ${n(contract.oathDrawCount)} Oaths (or pass for +${n(nativeOaths.PASS_STAMINA)} stamina) and removing the Shrine.`,
+          `Each ruin holds either a relic or a Fragment cache, never both.`,
+          `${nativeFragments.SURFACE_CACHE_PERCENT}% on the ${LAYER_NAMES[0]}`,
+        ];
+      })(),
     },
     {
       page: "frontier/beasts",

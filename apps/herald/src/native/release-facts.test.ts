@@ -9,10 +9,12 @@ import {
   BuildingType,
   RESOURCE_PRECISION,
   ResourcesIds,
+  StructureType,
   TroopTier,
   TroopType,
   type Troops,
 } from "@bibliothecadao/types";
+import { siteReward } from "../../../../packages/core/src/utils/expeditions";
 import { ClientConfigManager } from "../../../../packages/core/src/managers/config-manager";
 import { affordableAt, musterStamina, staminaAt } from "../../../../packages/core/src/managers/troop-stamina";
 import { readFileSync } from "node:fs";
@@ -197,6 +199,10 @@ describe("a release's rule rows", () => {
     const expectedDepths = preset.definition.settlement.depths;
     expect(depths.map((row) => Number(row.guard_step))).toEqual(expectedDepths.map((row) => row.guard_step));
     expect(depths.map((row) => Number(row.reveal_percent))).toEqual(expectedDepths.map((row) => row.reveal_percent));
+    expect(depths.map((row) => Number(row.reveal_cap))).toEqual(expectedDepths.map((row) => row.reveal_cap));
+    expect(depths.map((row) => Number(row.rift_essence_bps))).toEqual(
+      expectedDepths.map((row) => row.rift_essence_bps),
+    );
     expect(depths.every((row) => !Object.hasOwn(row, "supply_multiplier"))).toBe(true);
     expect(world.fold.gameRows("GameOverrides", "1")).toHaveLength(1);
     for (const scope of [undefined, {}, world.fold.subscriptionScope("1", "0x123", 1234)]) {
@@ -562,6 +568,53 @@ describe("a game's rule rows follow its release", () => {
     const direct = world();
     direct.native.applyReceipt(direct.fold, receipt(launch(on(24))), 11, 0);
     expect(ruleRows(walked.fold)).toEqual(ruleRows(direct.fold));
+  });
+
+  it("derives release 24 and release 25 depth reveal caps and rift essence ratios into client site rewards", () => {
+    const current = NATIVE_RELEASES.frontier.release;
+    const released = structuredClone(manifest);
+    released.native.releases = releaseLine(schema.identity, [24, current]);
+    const foldStore = (release: number) => {
+      const decoder = new NativeDecoder(released);
+      const fold = new WorldFold(decoder.registry);
+      const native = new NativeIngestion(decoder, RELEASE_DEFINITIONS);
+      native.applyReceipt(fold, receipt(launch({ ...registration(), release })), 11, 0);
+      const store = new NativeFactStore();
+      for (const model of ["SettlementRules", "DepthRules"] as const) {
+        store.applyFacts(fold.gameRows(model, "1").map(({ key, value }) => ({ model, key, value })));
+      }
+      return store;
+    };
+    const surfaceRift = {
+      game_id: 1,
+      row: 1,
+      category: StructureType.Rift,
+      initial_guard_count: 1_100n * BigInt(RESOURCE_PRECISION),
+      clear: null,
+    };
+    const r24 = foldStore(24);
+    expect([0, 1, 2].map((depth) => r24.require("DepthRules", { game_id: 1, depth }))).toMatchObject([
+      { reveal_percent: 10, reveal_cap: 1000, rift_essence_bps: 30000 },
+      { reveal_percent: 15, reveal_cap: 1500, rift_essence_bps: 30000 },
+      { reveal_percent: 20, reveal_cap: 2000, rift_essence_bps: 30000 },
+    ]);
+    expect(siteReward(r24, surfaceRift)).toEqual({
+      resourceType: ResourcesIds.Essence,
+      amount: 3_300n * BigInt(RESOURCE_PRECISION),
+    });
+    const r25 = foldStore(current);
+    const expectedCurrentDepths = frontierSeasonOnePreset.depths.map((depth) => ({
+      reveal_percent: depth.revealPercent,
+      reveal_cap: depth.revealCap,
+      rift_essence_bps: depth.riftEssenceBps,
+    }));
+    expect(expectedCurrentDepths.map((_, depth) => r25.require("DepthRules", { game_id: 1, depth }))).toMatchObject(
+      expectedCurrentDepths,
+    );
+    expect(siteReward(r25, surfaceRift)).toEqual({
+      resourceType: ResourcesIds.Essence,
+      amount: (surfaceRift.initial_guard_count * BigInt(frontierSeasonOnePreset.depths[0]!.riftEssenceBps)) / 10_000n,
+    });
   });
 
   it("takes a restored checkpoint's rule rows from each game's current release", async () => {

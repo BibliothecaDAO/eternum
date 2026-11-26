@@ -13,17 +13,42 @@ export const buildingIds = Object.values(BuildingType).filter(
   (id): id is BuildingType => typeof id === "number" && id !== BuildingType.None,
 );
 
-// Common I is half the old first price; II–V retain the four established prices.
-const essenceLadder = [0.5, 1, 4, 12, 30];
-const laborLadder = [0.5, 1, 3, 8, 20];
-const buildingRows = [
-  { row: research.ROW_FARM, essence: 1000, labor: 1000 },
-  { row: research.ROW_WORKSHOP, essence: 2000, labor: 2000 },
-  ...[research.ROW_SUPPLY_YARD].map((row) => ({
-    row,
-    essence: 12000,
-    labor: 3000,
-  })),
+export const FRONTIER_COST_GROWTH_BPS = 10000;
+
+const RESEARCH_RANK_STARTS = [
+  { essenceCost: 1000, laborCost: 500 },
+  { essenceCost: 2500, laborCost: 1000 },
+  { essenceCost: 5000, laborCost: 2500 },
+  { essenceCost: 10000, laborCost: 5000 },
+] as const;
+
+function researchTierScaleBps(tier: number, growthBps = FRONTIER_COST_GROWTH_BPS): number {
+  return 10000 + (tier - 1) ** 2 * growthBps;
+}
+
+function buildResearchRow(row: number, rank: number, tiers: number) {
+  const start = RESEARCH_RANK_STARTS[rank]!;
+  return Array.from({ length: tiers }, (_, index) => {
+    const tier = index + 1;
+    const scaleBps = researchTierScaleBps(tier);
+    return {
+      row,
+      tier,
+      essenceCost: (start.essenceCost * scaleBps) / 10000,
+      laborCost: (start.laborCost * scaleBps) / 10000,
+    };
+  });
+}
+
+const researchRows = [
+  { row: research.ROW_FARM, rank: 0, tiers: 5 },
+  { row: research.ROW_WORKSHOP, rank: 0, tiers: 5 },
+  { row: research.ROW_CONSCRIPTION, rank: research.CONSCRIPTION_CAMP_LEVEL, tiers: 5 },
+  { row: research.ROW_RATIONS, rank: research.RATIONS_DEPOT_LEVEL, tiers: 5 },
+  { row: research.ROW_SUPPLY_YARD, rank: research.SUPPLY_YARD_LEVEL, tiers: 5 },
+  { row: research.ROW_KNIGHT_OATHS, rank: 3, tiers: research.OATH_SLOTS_STEPS },
+  { row: research.ROW_SCOUT_OATHS, rank: 3, tiers: research.OATH_SLOTS_STEPS },
+  { row: research.ROW_CROSSBOW_OATHS, rank: 3, tiers: research.OATH_SLOTS_STEPS },
 ];
 
 export const frontierPreset = {
@@ -77,34 +102,7 @@ export const frontierPreset = {
     resourceStoreCaps: [6000, 18000, 40000, 80000],
   },
   research: [
-    ...buildingRows.flatMap(({ row, essence, labor }) =>
-      essenceLadder.map((factor, index) => ({
-        row,
-        tier: index + 1,
-        essenceCost: row === research.ROW_SUPPLY_YARD && index === 1 ? 16000 : essence * factor,
-        laborCost: labor * laborLadder[index]!,
-      })),
-    ),
-    ...[research.ROW_CONSCRIPTION, research.ROW_RATIONS].flatMap((row) =>
-      [2500, 5000, 12500, 25000, 50000].map((essenceCost, index) => ({
-        row,
-        tier: index + 1,
-        essenceCost,
-        laborCost: [500, 1000, 2500, 5000, 12500][index]!,
-      })),
-    ),
-    ...[research.ROW_KNIGHT_OATHS, research.ROW_SCOUT_OATHS, research.ROW_CROSSBOW_OATHS].flatMap((row) =>
-      [
-        [5000, 1000],
-        [35000, 7500],
-        [150000, 35000],
-      ].map(([essenceCost, laborCost], index) => ({
-        row,
-        tier: index + 1,
-        essenceCost: essenceCost!,
-        laborCost: laborCost!,
-      })),
-    ),
+    ...researchRows.flatMap(({ row, rank, tiers }) => buildResearchRow(row, rank, tiers)),
     ...[2500, 5000, 10000].map((essenceCost, index) => ({
       row: research.ROW_LORE,
       tier: index + 1,
@@ -133,6 +131,8 @@ export const frontierPreset = {
   depths: [
     {
       revealPercent: 10,
+      revealCap: 1000,
+      riftEssenceBps: 15000,
       siteGuardLower: 1200,
       siteGuardUpper: 1400,
       riftGuardLower: 1400,
@@ -146,7 +146,9 @@ export const frontierPreset = {
       chest: { common: 5000, uncommon: 2700, rare: 1400, epic: 600, legendary: 300 },
     },
     {
-      revealPercent: 15,
+      revealPercent: 10,
+      revealCap: 1500,
+      riftEssenceBps: 15000,
       siteGuardLower: 2400,
       siteGuardUpper: 2800,
       riftGuardLower: 2800,
@@ -160,7 +162,9 @@ export const frontierPreset = {
       chest: { common: 0, uncommon: 5000, rare: 2833, epic: 1500, legendary: 667 },
     },
     {
-      revealPercent: 20,
+      revealPercent: 10,
+      revealCap: 2000,
+      riftEssenceBps: 15000,
       siteGuardLower: 4700,
       siteGuardUpper: 5700,
       riftGuardLower: 5400,
@@ -174,7 +178,9 @@ export const frontierPreset = {
       chest: { common: 0, uncommon: 0, rare: 5500, epic: 3000, legendary: 1500 },
     },
     {
-      revealPercent: 25,
+      revealPercent: 10,
+      revealCap: 2500,
+      riftEssenceBps: 15000,
       siteGuardLower: 9300,
       siteGuardUpper: 11500,
       riftGuardLower: 10700,

@@ -11,20 +11,6 @@ const layerRuinOdds = [
   { common: 0, uncommon: 0, rare: 6000, epic: 3000, legendary: 1000 },
 ];
 
-const fieldsAndToolsPrices = [500, 1000, 2500, 5000, 10000].map((cost) => ({ essenceCost: cost, laborCost: cost }));
-const logisticsPrices = [
-  [5000, 1000],
-  [10000, 2500],
-  [25000, 5000],
-  [50000, 10000],
-  [100000, 25000],
-].map(([essenceCost, laborCost]) => ({ essenceCost: essenceCost!, laborCost: laborCost! }));
-const researchPrices: Record<number, { essenceCost: number; laborCost: number }[]> = {
-  [research.ROW_FARM]: fieldsAndToolsPrices,
-  [research.ROW_WORKSHOP]: fieldsAndToolsPrices,
-  [research.ROW_SUPPLY_YARD]: logisticsPrices,
-};
-
 const orderAspects: NativePreset["orderAspects"] = orders
   .filter(({ aspect }) => aspect !== null)
   .map(({ aspect }) => aspect!);
@@ -41,25 +27,32 @@ export const frontierSeasonOnePreset = {
         staminaPaladinMax: 180,
         staminaDefenseReq: 0,
       },
-      limit: { exploreRewardStrengthCap: 10000 },
     },
     resources: {
       productionBySimpleRecipe: { [ResourcesIds.Paladin]: [{ resource: ResourcesIds.Wheat, amount: 2 }] },
       productionBySimpleRecipeOutputs: { [ResourcesIds.Paladin]: 1 },
       productionByComplexRecipeOutputs: {
-        [ResourcesIds.Paladin]: 100 / 3600,
-        [ResourcesIds.Knight]: 100 / 3600,
-        [ResourcesIds.Labor]: 100 / 3600,
-        [ResourcesIds.Wheat]: 300 / 3600,
+        [ResourcesIds.Paladin]: 120 / 3600,
+        [ResourcesIds.Knight]: 120 / 3600,
+        [ResourcesIds.Labor]: 120 / 3600,
+        [ResourcesIds.Wheat]: 240 / 3600,
       },
     },
     buildings: {
       simpleBuildingCost: {
         [research.FARM]: [{ resource: ResourcesIds.Labor, amount: 500 }],
-        [research.BARRACKS]: [{ resource: ResourcesIds.Labor, amount: 500 }],
-        [research.SCOUTS_LODGE]: [{ resource: ResourcesIds.Labor, amount: 500 }],
+        [research.BARRACKS]: [{ resource: ResourcesIds.Labor, amount: 1000 }],
+        [research.SCOUTS_LODGE]: [{ resource: ResourcesIds.Labor, amount: 1000 }],
         [research.WORKSHOP]: [{ resource: ResourcesIds.Labor, amount: 1000 }],
         [research.STOREROOM]: [{ resource: ResourcesIds.Labor, amount: 10000 }],
+        [research.CONSCRIPTION_CAMP]: [
+          { resource: ResourcesIds.Essence, amount: 2500 },
+          { resource: ResourcesIds.Labor, amount: 500 },
+        ],
+        [research.RATIONS_DEPOT]: [
+          { resource: ResourcesIds.Essence, amount: 5000 },
+          { resource: ResourcesIds.Labor, amount: 1000 },
+        ],
         [research.SUPPLY_YARD]: [
           { resource: ResourcesIds.Essence, amount: 5000 },
           { resource: ResourcesIds.Labor, amount: 1000 },
@@ -68,13 +61,13 @@ export const frontierSeasonOnePreset = {
     },
     startingResources: [
       { resource: ResourcesIds.Knight, amount: 2000 },
-      { resource: ResourcesIds.Wheat, amount: 6000 },
-      { resource: ResourcesIds.Labor, amount: 2000 },
+      { resource: ResourcesIds.Wheat, amount: 5000 },
+      { resource: ResourcesIds.Labor, amount: 3000 },
     ],
     realmUpgradeCosts: {
-      1: [{ resource: ResourcesIds.Labor, amount: 2500 }],
-      2: [{ resource: ResourcesIds.Labor, amount: 15000 }],
-      3: [{ resource: ResourcesIds.Labor, amount: 50000 }],
+      1: [{ resource: ResourcesIds.Labor, amount: 4000 }],
+      2: [{ resource: ResourcesIds.Labor, amount: 12000 }],
+      3: [{ resource: ResourcesIds.Labor, amount: 40000 }],
     },
   },
   orderAspects,
@@ -93,11 +86,11 @@ export const frontierSeasonOnePreset = {
   })),
   board: {
     ...frontierPreset.board!,
-    workshopRate: 200 / 3600,
+    workshopRate: 120 / 3600,
+    outputStepBps: 5000,
     storageStepBps: 10000,
     laborStoreCaps: [5000, 15000, 50000, 100000],
   },
-  research: frontierPreset.research.map((price) => ({ ...price, ...researchPrices[price.row]?.[price.tier - 1] })),
   labor: null,
   dailyQuest: { baseCounts: [1, 1, 1, 1, 1, 2, 15], labor: 1000, essence: 1500, bonusPercent: 150 },
   banes: {

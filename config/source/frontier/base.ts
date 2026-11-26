@@ -1,5 +1,5 @@
 import { FRONTIER_ARMIES_TICK_SECONDS } from "./clock";
-import { buildingIds, frontierPreset } from "./native";
+import { buildingIds, FRONTIER_COST_GROWTH_BPS, frontierPreset } from "./native";
 import { nativeResearchConstants as research } from "../../../contracts/l3/world-native/schema/balance.gen";
 import { RESOURCE_PRECISION } from "../../../packages/types/src/constants";
 import type { ConfigPatch } from "../common/merge-config";
@@ -7,40 +7,32 @@ import { mergeConfigPatches } from "../common/merge-config";
 import { arenaBaseConfig } from "../common/arena/base";
 
 const resourceIds = Array.from({ length: 58 }, (_, index) => index + 1);
-const laborCosts: Record<number, number> = {
-  [research.WORKSHOP]: 2000,
-  [research.BARRACKS]: 400,
-  [research.RANGE]: 500,
-  [research.FARM]: 400,
+const explicitBuildingCosts: Record<number, Array<{ resource: number; amount: number }>> = {
+  [research.WORKSHOP]: [{ resource: 23, amount: 2000 }],
+  [research.BARRACKS]: [{ resource: 23, amount: 400 }],
+  [research.RANGE]: [{ resource: 23, amount: 1000 }],
+  [research.FARM]: [{ resource: 23, amount: 400 }],
+  [research.CONSCRIPTION_CAMP]: [
+    { resource: 38, amount: 2500 },
+    { resource: 23, amount: 500 },
+  ],
+  [research.RATIONS_DEPOT]: [
+    { resource: 38, amount: 5000 },
+    { resource: 23, amount: 1000 },
+  ],
+  [research.SUPPLY_YARD]: [
+    { resource: 38, amount: 5000 },
+    { resource: 23, amount: 1000 },
+  ],
 };
 const rates: Record<number, number> = {
   23: 0.028,
   26: 0.028,
-  29: 100 / 3600,
+  29: 120 / 3600,
   35: 0.084,
 };
 const noPopulation = Object.fromEntries(buildingIds.map((id) => [id, 0]));
-const buildingCosts = Object.fromEntries(
-  buildingIds.map((id) => {
-    if (id === research.SUPPLY_YARD || id === research.CONSCRIPTION_CAMP || id === research.RATIONS_DEPOT) {
-      const row =
-        id === research.CONSCRIPTION_CAMP
-          ? research.ROW_CONSCRIPTION
-          : id === research.RATIONS_DEPOT
-            ? research.ROW_RATIONS
-            : research.ROW_SUPPLY_YARD;
-      const rank = frontierPreset.research!.find((price) => price.row === row && price.tier === 1)!;
-      return [
-        id,
-        [
-          { resource: 38, amount: rank.essenceCost },
-          { resource: 23, amount: rank.laborCost },
-        ],
-      ];
-    }
-    return [id, laborCosts[id] === undefined ? [] : [{ resource: 23, amount: laborCosts[id] }]];
-  }),
-);
+const buildingCosts = Object.fromEntries(buildingIds.map((id) => [id, explicitBuildingCosts[id] ?? []]));
 // Barracks train from nothing. A troop's recipe is what its realm pays, per troop, to raise it into an army.
 const troopRaiseCosts = Object.fromEntries(
   resourceIds.map((id) => [id, id === 26 || id === 29 ? [{ resource: 35, amount: 2 }] : []]),
@@ -81,7 +73,7 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
   },
   buildings: {
     // A copy costs its base times 1 + (copies - 1)^2: a surcharge of 1.0, in basis points.
-    buildingFixedCostScalePercent: 10000,
+    buildingFixedCostScalePercent: FRONTIER_COST_GROWTH_BPS,
     buildingPopulation: noPopulation,
     buildingCapacity: noPopulation,
     simpleBuildingCost: buildingCosts,
@@ -147,7 +139,7 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
   },
   mines: {
     kinds: {
-      1: { resourceType: 38, buildingCategory: 39, productionRate: 5000 / 86400, capMinimum: 3000, capSteps: 1 },
+      1: { resourceType: 38, buildingCategory: 39, productionRate: 240 / 3600, capMinimum: 3000, capSteps: 1 },
     },
     surfacePool: [{ kind: 1, weight: 1 }],
   },

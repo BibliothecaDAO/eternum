@@ -5,6 +5,8 @@ use crate::relics::ChestTiers;
 pub const DEPTH_RULES: [DepthRules; 3] = [
     DepthRules {
         reveal_percent: 10,
+        reveal_cap: 1000,
+        rift_essence_bps: 15000,
         site_guard_lower: 1170,
         site_guard_upper: 1430,
         rift_guard_lower: 1350,
@@ -18,7 +20,9 @@ pub const DEPTH_RULES: [DepthRules; 3] = [
         beast_strong_upper: 495,
     },
     DepthRules {
-        reveal_percent: 15,
+        reveal_percent: 10,
+        reveal_cap: 1500,
+        rift_essence_bps: 15000,
         site_guard_lower: 2340,
         site_guard_upper: 2860,
         rift_guard_lower: 2700,
@@ -32,7 +36,9 @@ pub const DEPTH_RULES: [DepthRules; 3] = [
         beast_strong_upper: 990,
     },
     DepthRules {
-        reveal_percent: 20,
+        reveal_percent: 10,
+        reveal_cap: 2000,
+        rift_essence_bps: 15000,
         site_guard_lower: 4680,
         site_guard_upper: 5720,
         rift_guard_lower: 5400,

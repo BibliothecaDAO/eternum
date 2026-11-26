@@ -138,6 +138,25 @@ fn settled_supplies(d: Deployment, home: ResourceKey, timestamp: u64) -> (u128, 
     )
 }
 
+fn building_labor_cost(category: u8) -> u128 {
+    let building = *crate::balance::structures::BUILDINGS.span().at(category.into() - 1);
+    let mut amount = 0_u128;
+    for cost in crate::balance::structures::BUILDING_COSTS.span().slice(building.first_cost, building.simple_count) {
+        if *cost.resource_type == crate::resources::LABOR {
+            amount = *cost.amount;
+        }
+    }
+    amount
+}
+
+fn drain_labor(d: Deployment, home: ResourceKey, timestamp: u64) {
+    world_test_support::tests::frontier_economy::settle(d, home, crate::resources::LABOR, timestamp);
+    let held = interact_with_state(d.games, || crate::logic::resources::balance(home, crate::resources::LABOR));
+    if held > 0 {
+        world_test_support::tests::frontier_economy::spend(d, home, crate::resources::LABOR, held, timestamp);
+    }
+}
+
 fn claim(d: Deployment, home: ResourceKey, day: u64, timestamp: u64) -> bool {
     execute_in_game(
         d,
@@ -301,6 +320,7 @@ fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
         crate::banes::required(5, crate::balance::banes::QUORUM_PERCENT),
     );
     complete(first, home, 1, tomorrow + 60);
+    drain_labor(d, home, tomorrow + 60);
     assert!(claim(first, home, 1, tomorrow + 60));
     interact_with_state(
         d.games,
@@ -336,6 +356,7 @@ fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
     let third_home = *homes.at(2);
     assert!(!claim(third, third_home, 1, tomorrow + 180));
     complete(third, third_home, 1, tomorrow + 181);
+    drain_labor(d, third_home, tomorrow + 182);
     let third_before = settled_supplies(d, third_home, tomorrow + 182);
     assert!(claim(third, third_home, 1, tomorrow + 182));
     for (target, (labor_before, essence_before), rewards) in array![
@@ -365,11 +386,15 @@ fn quorum_ends_the_effect_once_and_collection_pays_the_second_reward_once() {
 fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still_work() {
     let (d, game_id) = super::aspects::setup_aspects(5);
     let home = found(d, game_id, FIXTURE_START);
+    let start_labor = interact_with_state(d.games, || crate::logic::resources::balance(home, crate::resources::LABOR));
+    let workshop_cost = building_labor_cost(crate::research::WORKSHOP);
+    let barracks_cost = building_labor_cost(crate::research::BARRACKS);
+    let farm_cost = building_labor_cost(crate::research::FARM);
     build(d, home, crate::research::WORKSHOP, 0, FIXTURE_START);
     let rate: u128 = interact_with_state(
         d.games,
         || {
-            assert_eq!(crate::logic::resources::balance(home, crate::resources::LABOR), 1000 * RESOURCE_PRECISION);
+            assert_eq!(crate::logic::resources::balance(home, crate::resources::LABOR), start_labor - workshop_cost);
             crate::logic::resources::production(home, crate::resources::LABOR).production_rate
         },
     )
@@ -408,7 +433,11 @@ fn real_production_splits_at_the_bane_start_and_quorum_end_and_army_stores_still
     let now = tomorrow + 1000;
     build(d, home, crate::research::FARM, 2, now);
     let ordinary_seconds: u128 = (tomorrow - FIXTURE_START + 400).into();
-    let expected = rate * ordinary_seconds
+    let expected = start_labor
+        - workshop_cost
+        - barracks_cost
+        - farm_cost
+        + rate * ordinary_seconds
         + rate * 600 * Into::<u16, u128>::into(crate::balance::banes::PRODUCTION_PERCENT) / 100;
     interact_with_state(
         d.games,

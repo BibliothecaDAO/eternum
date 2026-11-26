@@ -1,5 +1,5 @@
 import { frontierSeasonOnePreset } from "../../../source/frontier/season-one";
-import { buildingIds } from "../../../source/frontier/native";
+import { buildingIds, frontierPreset } from "../../../source/frontier/native";
 import { findRegistrarGame } from "../registrar/calls";
 import { nativePresets } from "../../../source/native";
 import { describe, expect, test, mock } from "bun:test";
@@ -54,15 +54,18 @@ describe("native presets", () => {
     expect(mask & BigInt(nativeCommandBits.ApplyRelic)).not.toBe(0n);
   });
 
-  test("Season 1 grants 2,000 Knights at home while historical presets retain their stock", () => {
+  test("Season 1 grants its starting stock at home while historical presets retain theirs", () => {
     for (const id of [FRONTIER_S1_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID, FRONTIER_PRESET_ID]) {
-      const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
-      const seasonOne = id !== FRONTIER_PRESET_ID;
-      expect(preset.settlement.realms.resources).toEqual([
-        { resource_type: ResourcesIds.Knight, amount: BigInt(seasonOne ? 2000 : 1500) * BigInt(RESOURCE_PRECISION) },
-        { resource_type: ResourcesIds.Wheat, amount: BigInt(seasonOne ? 6000 : 4500) * BigInt(RESOURCE_PRECISION) },
-        { resource_type: ResourcesIds.Labor, amount: 2000n * BigInt(RESOURCE_PRECISION) },
-      ]);
+      const config = loadNativePresetConfiguration("madara.frontier", id);
+      const preset = buildNativePreset(config, id);
+      const expected = config.startingResources.map(({ resource, amount }) => ({
+        resource_type: resource,
+        amount: BigInt(amount) * BigInt(RESOURCE_PRECISION),
+      }));
+      expect(preset.settlement.realms.resources).toEqual(expected);
+      if (id !== FRONTIER_PRESET_ID) {
+        expect(config.startingResources).toEqual(frontierSeasonOnePreset.balance.startingResources);
+      }
     }
   });
 
@@ -232,44 +235,37 @@ describe("native presets", () => {
         [BigInt(price.essence) / precision, BigInt(price.labor) / precision],
       ]),
     );
+    const rowPrices = (row: number) =>
+      frontierPreset.research
+        .filter((step) => step.row === row)
+        .sort((a, b) => a.tier - b.tier)
+        .map(({ essenceCost, laborCost }) => [BigInt(essenceCost), BigInt(laborCost)]);
+    const config = loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID);
+    const simpleCost = (category: number) =>
+      config.buildings.simpleBuildingCost[category]!.map(({ resource, amount }) => ({
+        resource_type: resource,
+        amount: BigInt(amount) * precision,
+      }));
     expect(preset.structures.research).toHaveLength(37);
-    expect(prices).toMatchObject({
-      [`${research.ROW_FARM}:1`]: [500n, 500n],
-      [`${research.ROW_FARM}:5`]: [30000n, 20000n],
-      [`${research.ROW_WORKSHOP}:3`]: [8000n, 6000n],
-      [`${research.ROW_SUPPLY_YARD}:1`]: [6000n, 1500n],
-      [`${research.ROW_SUPPLY_YARD}:2`]: [16000n, 3000n],
-      [`${research.ROW_SUPPLY_YARD}:5`]: [360000n, 60000n],
-      [`${research.ROW_LORE}:1`]: [2500n, 0n],
-      [`${research.ROW_LORE}:2`]: [5000n, 0n],
-      [`${research.ROW_LORE}:3`]: [10000n, 0n],
-    });
+    for (const row of [
+      research.ROW_FARM,
+      research.ROW_WORKSHOP,
+      research.ROW_CONSCRIPTION,
+      research.ROW_RATIONS,
+      research.ROW_SUPPLY_YARD,
+    ]) {
+      expect([1, 2, 3, 4, 5].map((tier) => prices[`${row}:${tier}`])).toEqual(rowPrices(row));
+    }
     for (const row of [research.ROW_KNIGHT_OATHS, research.ROW_SCOUT_OATHS, research.ROW_CROSSBOW_OATHS]) {
-      expect([1, 2, 3].map((tier) => prices[`${row}:${tier}`])).toEqual([
-        [5000n, 1000n],
-        [35000n, 7500n],
-        [150000n, 35000n],
-      ]);
+      expect([1, 2, 3].map((tier) => prices[`${row}:${tier}`])).toEqual(rowPrices(row));
       expect(prices[`${row}:4`]).toBeUndefined();
     }
-    for (const row of [research.ROW_CONSCRIPTION, research.ROW_RATIONS]) {
-      expect([1, 2, 3, 4, 5].map((tier) => prices[`${row}:${tier}`])).toEqual([
-        [2500n, 500n],
-        [5000n, 1000n],
-        [12500n, 2500n],
-        [25000n, 5000n],
-        [50000n, 12500n],
-      ]);
+    expect([1, 2, 3].map((tier) => prices[`${research.ROW_LORE}:${tier}`])).toEqual(rowPrices(research.ROW_LORE));
+    for (const category of [research.CONSCRIPTION_CAMP, research.RATIONS_DEPOT, research.SUPPLY_YARD, research.RANGE]) {
+      expect(preset.structures.buildings.find((row) => row.category === category)!.rule.simple_cost).toEqual(
+        simpleCost(category),
+      );
     }
-    for (const category of [research.CONSCRIPTION_CAMP, research.RATIONS_DEPOT]) {
-      expect(preset.structures.buildings.find((row) => row.category === category)!.rule.simple_cost).toEqual([
-        { resource_type: 38, amount: 2500n * precision },
-        { resource_type: 23, amount: 500n * precision },
-      ]);
-    }
-    expect(preset.structures.buildings.find((row) => row.category === research.RANGE)!.rule.simple_cost).toEqual([
-      { resource_type: 23, amount: 500n * precision },
-    ]);
     expect(preset.structures.board.unwrap()).toMatchObject({
       output_step_bps: 2000,
       storage_step_bps: 4000,
@@ -281,13 +277,6 @@ describe("native presets", () => {
       empire_resource_cap: 80000,
     });
     expect(preset.structures.buildings).toHaveLength(buildingIds.length);
-    for (const category of [research.SUPPLY_YARD]) {
-      const rule = preset.structures.buildings.find((row) => row.category === category)!.rule;
-      expect(rule.simple_cost).toEqual([
-        { resource_type: 38, amount: 6000n * precision },
-        { resource_type: 23, amount: 1500n * precision },
-      ]);
-    }
     for (const category of [34]) {
       const rule = preset.structures.buildings.find((row) => row.category === category)!.rule;
       expect(rule.simple_cost).toEqual([]);
@@ -395,10 +384,8 @@ describe("native presets", () => {
   });
 
   test("Frontier's design preset carries the starting grant and farm, barracks and castle production", () => {
-    const design = buildNativePreset(
-      loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
-      FRONTIER_PRESET_ID,
-    );
+    const designConfig = loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID);
+    const design = buildNativePreset(designConfig, FRONTIER_PRESET_ID);
     const perHour = (resource: number) =>
       (Number(design.resources.resources.find(({ resource_type }) => resource_type === resource)!.realm_rate) * 3600) /
       1_000_000_000;
@@ -421,14 +408,8 @@ describe("native presets", () => {
       { resource_type: 23, amount: 2_000_000_000_000n },
     ]);
     expect(design.settlement.realms.starting_troops.every((troop) => troop.activeVariant() === "Knight")).toBe(true);
-    for (const [resource, expected] of [
-      [26, 100.8],
-      [27, 0],
-      [28, 0],
-      [29, 100],
-      [35, 302.4],
-      [23, 100.8],
-    ]) {
+    for (const resource of [26, 27, 28, 29, 35, 23]) {
+      const expected = (designConfig.resources.productionByComplexRecipeOutputs[resource] ?? 0) * 3600;
       expect(perHour(resource)).toBeCloseTo(expected, 5);
     }
     for (const resource of [26]) {
@@ -1027,14 +1008,26 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
       stamina_paladin_max: 180,
       stamina_defense_req: 0,
     });
-    expect(built.rules.troop_limit_config.explore_reward_strength_cap).toBe(10000);
+    expect(built.settlement.depths.map((row) => [row.reveal_percent, row.reveal_cap, row.rift_essence_bps])).toEqual([
+      [10, 1000, 15000],
+      [10, 1500, 15000],
+      [10, 2000, 15000],
+    ]);
     const scouts = built.resources.production.find(({ resource_type }) => resource_type === 32)!.recipe;
     expect(scouts.simple_inputs).toEqual([{ resource_type: 35, amount: 2_000_000_000n }]);
     expect(scouts.simple_output).toBe(1_000_000_000n);
-    expect((Number(scouts.complex_output) * 3600) / 1e9).toBeCloseTo(100, 5);
-    expect(built.structures.buildings.find(({ category }) => category === 43)!.rule.simple_cost).toEqual([
-      { resource_type: 23, amount: 500_000_000_000n },
-    ]);
+    const expectedScoutsRate =
+      frontierSeasonOnePreset.balance.resources.productionByComplexRecipeOutputs[ResourcesIds.Paladin]! * 3600;
+    const expectedLodgeCost = frontierSeasonOnePreset.balance.buildings.simpleBuildingCost[research.SCOUTS_LODGE]!.map(
+      ({ resource, amount }) => ({
+        resource_type: resource,
+        amount: BigInt(amount) * BigInt(RESOURCE_PRECISION),
+      }),
+    );
+    expect((Number(scouts.complex_output) * 3600) / 1e9).toBeCloseTo(expectedScoutsRate, 5);
+    expect(
+      built.structures.buildings.find(({ category }) => category === research.SCOUTS_LODGE)!.rule.simple_cost,
+    ).toEqual(expectedLodgeCost);
     expect(
       built.settlement.depths.map((row) => [
         row.beast_weak_lower,

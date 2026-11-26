@@ -1056,10 +1056,14 @@ it("requires the selected Aspect in both the founding command and its membership
   const choice = { sent: 0, cards: ["Join Prowess", "Join Luminary", "Join Havoc", "Join Insight"] };
   const seen = { scene: "hex", rendered: "hex", place: "Realm", playable: true };
   const orders = [{ label: "Play as the Order shown first", order: "3" }];
+  const release = JSON.parse(
+    readFileSync(
+      new URL("../../../../contracts/l3/world-native/schema/release-definition.json", import.meta.url),
+      "utf8",
+    ),
+  );
   const startRows = [
-    [26, "2000000000000"],
-    [35, "6000000000000"],
-    [23, "2000000000000"],
+    ...release.definition.settlement.realms.resources.map(({ resource_type, amount }) => [resource_type, amount]),
     [38, "0"],
   ].map(([resource_type, balance]) => ({ model: "ResourceBalance", value: { resource_type, balance } }));
   const founded = {

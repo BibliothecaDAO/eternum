@@ -87,8 +87,8 @@ describe("Frontier's tile card", () => {
     const rift = campBeside("Rift");
     expect(readSiteCard(rift.store, rift.site, rift.structure, null).payout).toEqual({
       resourceId: ResourcesIds.Essence,
-      amount: 4_950,
-      fits: 4_950,
+      amount: 2_475,
+      fits: 2_475,
     });
   });
 });
@@ -224,8 +224,8 @@ it("clips the Plunder reward after applying its bonus and leaves wheat unchanged
     readSiteCard(rift.store, rift.site, rift.structure, rift.attack({ col: 41, row: 12, alt: false })).payout,
   ).toEqual({
     resourceId: ResourcesIds.Essence,
-    amount: 5940,
-    fits: 5940,
+    amount: 2970,
+    fits: 2970,
   });
 });
 

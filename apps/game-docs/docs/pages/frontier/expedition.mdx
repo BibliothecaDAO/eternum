@@ -23,14 +23,13 @@ over explored tiles costs {FRONTIER.stamina.step} stamina per step and finds not
 ## What a reveal pays
 
 Every tile an army reveals sends Essence or labor straight to your realm (50% chance of each). The payout is a share of
-the army's troop count, capped at {FRONTIER.discovery.revealTroopCap} troops counted per reveal, and grows on deeper
-layers:
+the army's troop count, capped per tile by layer:
 
-| Layer                     | Reveal pays, of the army's troops  |
-| ------------------------- | ---------------------------------- |
-| {FRONTIER.depths[0].name} | {FRONTIER.depths[0].revealPercent} |
-| {FRONTIER.depths[1].name} | {FRONTIER.depths[1].revealPercent} |
-| {FRONTIER.depths[2].name} | {FRONTIER.depths[2].revealPercent} |
+| Layer                     | Reveal pays, of the army's troops  | Max per tile                   |
+| ------------------------- | ---------------------------------- | ------------------------------ |
+| {FRONTIER.depths[0].name} | {FRONTIER.depths[0].revealPercent} | {FRONTIER.depths[0].revealCap} |
+| {FRONTIER.depths[1].name} | {FRONTIER.depths[1].revealPercent} | {FRONTIER.depths[1].revealCap} |
+| {FRONTIER.depths[2].name} | {FRONTIER.depths[2].revealPercent} | {FRONTIER.depths[2].revealCap} |
 
 ## What a reveal can find
 

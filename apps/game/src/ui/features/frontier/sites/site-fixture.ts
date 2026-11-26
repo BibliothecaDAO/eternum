@@ -59,7 +59,9 @@ export const campBeside = (
     set("0x901", "DepthRules", {
       game_id: 1,
       depth: 1,
-      reveal_percent: 15,
+      reveal_percent: 10,
+      reveal_cap: 1500,
+      rift_essence_bps: 15000,
       site_guard_lower: 3000,
       site_guard_upper: 5000,
       rift_guard_lower: 3000,

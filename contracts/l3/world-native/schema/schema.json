@@ -5597,6 +5597,18 @@
           "feltLength": 1
         },
         {
+          "name": "reveal_cap",
+          "type": "core::integer::u32",
+          "id": "0x72657665616c5f636170",
+          "feltLength": 1
+        },
+        {
+          "name": "rift_essence_bps",
+          "type": "core::integer::u16",
+          "id": "0x726966745f657373656e63655f627073",
+          "feltLength": 1
+        },
+        {
           "name": "site_guard_lower",
           "type": "core::integer::u16",
           "id": "0x736974655f67756172645f6c6f776572",
@@ -5664,11 +5676,13 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 16,
+      "valueLength": 18,
       "observation": {
         "domain": "expedition",
         "fields": {
           "revealPercent": "reveal_percent",
+          "revealCap": "reveal_cap",
+          "riftEssenceBps": "rift_essence_bps",
           "siteGuardLower": "site_guard_lower",
           "siteGuardUpper": "site_guard_upper",
           "riftGuardLower": "rift_guard_lower",
@@ -5880,7 +5894,7 @@
           "name": "troop_limit_config",
           "type": "world_native::rules::TroopLimitConfig",
           "id": "0x74726f6f705f6c696d69745f636f6e666967",
-          "feltLength": 26
+          "feltLength": 25
         },
         {
           "name": "capacity_config",
@@ -5950,7 +5964,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 88,
+      "valueLength": 87,
       "derivedFrom": "preset"
     }
   ],
@@ -7613,6 +7627,14 @@
       "members": [
         {
           "name": "reveal_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "reveal_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "rift_essence_bps",
           "type": "core::integer::u16"
         },
         {
@@ -9659,10 +9681,6 @@
         {
           "name": "camp_armies",
           "type": "core::integer::u16"
-        },
-        {
-          "name": "explore_reward_strength_cap",
-          "type": "core::integer::u16"
         }
       ]
     },
@@ -10479,5 +10497,5 @@
       ]
     }
   },
-  "identity": "f25aefd3fd203df6166c5f397bd28e2d54dde54c54da9a5f0670a59f27f704b6"
+  "identity": "b9a4507c091cb37a98df851b4949e4c58824e123697365b53c16cc6a317bb57a"
 }
