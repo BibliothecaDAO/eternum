@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { findViolations, lowered, ratchet, stepsOf } from "./check.mjs";
+import {
+  findSurfaceResets,
+  findViolations,
+  kitSurfaceClasses,
+  kitSurfaceComponents,
+  lowered,
+  ratchet,
+  stepsOf,
+  surfaceCompanions,
+} from "./check.mjs";
 
 const COLORS = ["gold", "danger", "kit"];
 const STEPS = ["caption", "body", "title-lg"];
@@ -110,3 +119,108 @@ test("the shell's type steps are read from the token file", () =>
     stepsOf(`export const TYPE = {\n  /** a */\n  caption: ["14px", "20px"],\n  "title-lg": "40px",\n} as const;`),
     ["caption", "title-lg"],
   ));
+
+const GROUND = "background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));";
+const SURFACES = kitSurfaceClasses(`/* The panel. */
+.ui-panel { ${GROUND} }
+.ui-popover,
+.ui-pill { border: 1px solid var(--hud-line); ${GROUND} }
+.ui-confirm { ${GROUND} }
+.ui-panel__head { color: var(--hud-muted); }
+.ui-chip { background: var(--hud-well); }`);
+
+test("the kit's surfaces are the kit classes its sheet paints with the surface ground", () =>
+  assert.deepEqual([...SURFACES].sort(), ["ui-confirm", "ui-panel", "ui-pill", "ui-popover"]));
+
+test("a feature reset that would wipe a kit surface is refused, and the same reset kept off kit surfaces passes", () => {
+  const companions = surfaceCompanions(
+    `<button className={desktop ? "ui-popover frontier-quest-orb" : "frontier-quest-orb"} />
+<div className={cn(open && "ui-pill", "frontier-day")} />
+<button className={\`ui-popover frontier-orb\${phone ? " frontier-orb--phone" : ""}\`} />
+<div className="frontier-dock" />
+<div className="ui-confirm alerts-popup" />`,
+    SURFACES,
+  );
+  assert.deepEqual(
+    [...companions].map(([name, drawn]) => [name, [...drawn]]),
+    [
+      ["frontier-quest-orb", ["ui-popover"]],
+      ["frontier-day", ["ui-pill"]],
+      ["frontier-orb", ["ui-popover"]],
+      ["frontier-orb--phone", ["ui-popover"]],
+      ["alerts-popup", ["ui-confirm"]],
+    ],
+  );
+  const resets = findSurfaceResets(
+    `.frontier-quest-orb {
+  border: 0;
+  background: transparent;
+}
+.frontier-crown .frontier-quest-orb { border: none; }
+.frontier-quest-orb:not(.ui-popover) { border: 0; background: transparent; }
+.frontier-quest-orb:not(.ui-pick) { border: 0; }
+.frontier-day { background: transparent !important; border: 0 none; }
+.frontier-dock { background: transparent; }
+.alerts-popup { background: transparent; }
+.alerts-popup:not(.ui-popover) { border: 0; }
+.alerts-popup:not(.ui-confirm) { border: 0; }
+.frontier-crown .ui-popover { background: none; }
+.frontier-crown > button { border: 0; }
+/* The card fades. */
+.frontier-fade { background: transparent; }
+.frontier-quest-orb:not(.ui-panel, .ui-popover) { border: 0; }
+.frontier-quest-orb::after { background: linear-gradient(180deg, transparent 35%, var(--hud-surface-from)); }
+@media (max-width: 700px) {
+  .frontier-quest-orb .frontier-ring { border: 0; }
+}`,
+    "apps/game/src/ui/features/frontier/hud/bar.css",
+    companions,
+    SURFACES,
+  );
+  assert.deepEqual(
+    resets.map(({ line, match, refused }) => [line, match, refused]),
+    [
+      [1, ".frontier-quest-orb", true],
+      [5, ".frontier-crown .frontier-quest-orb", true],
+      [7, ".frontier-quest-orb:not(.ui-pick)", true],
+      [8, ".frontier-day", true],
+      [10, ".alerts-popup", true],
+      [11, ".alerts-popup:not(.ui-popover)", true],
+      [13, ".frontier-crown .ui-popover", true],
+      [14, ".frontier-crown > button", true],
+    ],
+  );
+});
+
+test("a class handed to a kit component that draws a surface is a kit surface too, and a none reset wipes it as well", () => {
+  const components = kitSurfaceComponents(
+    `const Frame = ({ className }) => <section className={cn("ui ui-panel", className)} />;
+export const HudPage = (props) => <Frame {...props} />;
+export const HudChip = ({ className }) => <span className={cn("ui-chip", className)} />;
+`,
+    SURFACES,
+  );
+  assert.deepEqual(
+    [...components].map(([name, drawn]) => [name, [...drawn]]),
+    [
+      ["Frame", ["ui-panel"]],
+      ["HudPage", ["ui-panel"]],
+    ],
+  );
+  const companions = surfaceCompanions(
+    `<HudPage className="frontier-tray" label="Army" /><HudChip className="frontier-tag" />
+<HudPage onClose={() => setOpen(false)} className={cn("frontier-army-panel", open && "is-open")}>x</HudPage>`,
+    SURFACES,
+    components,
+  );
+  assert.deepEqual([...companions.keys()], ["frontier-tray", "frontier-army-panel", "is-open"]);
+  assert.deepEqual(
+    findSurfaceResets(
+      `.frontier-tray { background: none; }\n.frontier-tag { background: none; }`,
+      "x.css",
+      companions,
+      SURFACES,
+    ).map(({ match }) => match),
+    [".frontier-tray"],
+  );
+});
