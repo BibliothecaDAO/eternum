@@ -151,9 +151,9 @@ describe("the shared Deep", () => {
       { radius: 8, realms: 2 },
       { radius: 11, realms: 3 },
     ];
-    rows.DeepSite = [0, 1, 2].map((ring) => ({ game_id: 7, entity_id: BigInt(24 + ring), kind: 0, ring, day: 0n }));
-    rows.DeepSite.push({ game_id: 7, entity_id: 27n, kind: 3, ring: 1, day: 0n });
-    rows.Guard = rows.DeepSite.filter((site) => site.aspect === 0).map((site) => ({
+    rows.DeepSite = [0, 1, 2].map((ring) => ({ game_id: 7, entity_id: BigInt(24 + ring), kind: 0, ring, day: 0n, aspect: 0 }));
+    rows.DeepSite.push({ game_id: 7, entity_id: 27n, kind: 3, ring: 1, day: 0n, aspect: 0 });
+    rows.Guard = rows.DeepSite.map((site) => ({
       game_id: 7,
       structure_id: site.entity_id,
       slot: 0,
@@ -258,7 +258,7 @@ describe("the shared Deep", () => {
         aspect: place ? 0 : 2,
       }))
       .reverse();
-    rows.Guard = rows.DeepSite.map((site) => ({
+    rows.Guard = rows.DeepSite.filter((site) => site.aspect === 0).map((site) => ({
       game_id: 7,
       structure_id: site.entity_id,
       slot: 0,

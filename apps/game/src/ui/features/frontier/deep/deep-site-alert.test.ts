@@ -52,7 +52,10 @@ function fixture(guardCounts = [siteGuardTroops(1)]) {
   const site = { game_id: 1, entity_id: mine.structure_id };
   const held = store.require("Guard", { game_id: 1, structure_id: mine.structure_id, slot: mine.slot });
   const rival = store.require("Structure", { game_id: 1, entity_id: mine.home });
-  store.applyFacts([{ model: "GarrisonSlot", key: store.wireKeyOf("GarrisonSlot", mine)!, value: null }]);
+  store.applyFacts([
+    { model: "GarrisonSlot", key: store.wireKeyOf("GarrisonSlot", mine)!, value: null },
+    { model: "Guard", key: store.wireKeyOf("Guard", held)!, value: null },
+  ]);
   change("DeepSite", site, { aspect: 2 });
   change("Structure", site, { owner: rival.owner });
   for (const [index, count] of guardCounts.entries()) {
@@ -200,11 +203,10 @@ it("forecasts the same opportunity regardless of the last attacked target", () =
 
 const ungarrison = (f: ReturnType<typeof fixture>) =>
   f.store.applyFacts(
-    [...f.store.inGame("GarrisonSlot", 1)].map((row) => ({
-      model: "GarrisonSlot" as const,
-      key: f.store.wireKeyOf("GarrisonSlot", row)!,
-      value: null,
-    })),
+    [...f.store.inGame("GarrisonSlot", 1)].flatMap((row) => [
+      { model: "GarrisonSlot" as const, key: f.store.wireKeyOf("GarrisonSlot", row)!, value: null },
+      { model: "Guard" as const, key: f.store.wireKeyOf("Guard", row)!, value: null },
+    ]),
   );
 
 function secondRing(f: ReturnType<typeof fixture>, realms: number) {

@@ -212,6 +212,8 @@ function frontier() {
 
   const holdDeepSite = (site_id: number, tile: Tile, aspect: number, home: number, count: number, slot = 1) => {
     deepSite(site_id, tile, 0, 0, aspect);
+    const owner = store.require("Structure", { game_id: GAME_ID, entity_id: home }).owner;
+    write("Structure", structureRow(site_id, owner, StructureType.DeepSite));
     write("GarrisonSlot", { game_id: GAME_ID, structure_id: site_id, slot, home });
     write("Guard", guardRow(site_id, slot, count));
   };
@@ -325,7 +327,7 @@ describe("one attack forecast for every combat surface", () => {
     game.home(1, PLAYER, 1);
     game.home(2, RIVAL, 2);
     game.army(10, 1, beside(DEEP));
-    game.holdDeepSite(50, DEEP, 1, 2, 500);
+    game.holdDeepSite(50, DEEP, 1, 1, 500);
     expect(refusalOf(game.forecast(10, 50))).toBe("allied");
     game.holdDeepSite(50, DEEP, 2, 2, 500);
     const forecast = game.forecast(10, 50);

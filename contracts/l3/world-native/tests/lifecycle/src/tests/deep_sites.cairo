@@ -420,7 +420,8 @@ fn two_allies_garrison_a_claimed_site_and_a_rival_takes_it_slot_by_slot() {
         game_id,
         Command::GuardAttack(
             crate::combat_actions::GuardAttack {
-                guard: guard_slot(slot(target, 2)), explorer_id: attacker.explorer_id,
+                guard: crate::troop_management::GuardSlot { structure_id: target.entity_id, slot: 2 },
+                explorer_id: attacker.explorer_id,
             },
         ),
         FIXTURE_START,

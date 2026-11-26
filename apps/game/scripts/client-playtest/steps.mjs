@@ -2435,12 +2435,11 @@ async function focusTheArmyFromItsDock(browser) {
  * screen (its token; the camera is left where it is: picking an army does not always centre it), and names the region
  * its result shows in: the explored tile, or the army's figure, which a move sets off.
  */
-async function orderBesideArmy({ browser, extraScreenshot }, verb, heldBack = null) {
+async function orderBesideArmy({ browser, extraScreenshot }, verb) {
   const armyName = await focusTheArmyFromItsDock(browser);
   if (!armyName) return { offered: [], army: armyName };
   const selection = browser.observe().selection;
   const armyId = selection?.army?.id ?? null;
-  if (heldBack !== null && armyId === heldBack) return { army: armyName, armyId, offered: [], heldBack: true };
   const armyAt = armyOnScreen(browser, armyId);
   if (!armyAt)
     return { army: armyName, armyId, offered: [], aimed: "the army is not within reach of the view's centre" };
@@ -6062,73 +6061,11 @@ export const REHEARSAL_WORDS = {
     victory: "Victory",
   },
   take: "Take",
-  lasts: (ticks, time) => `${ticks} ticks left (${time})`,
-  share: (percent) => `${percent}% of each tick`,
 };
 const INVITE_PREFIX = REHEARSAL_WORDS.inviteTo("");
 const JOIN_PREFIX = REHEARSAL_WORDS.join("");
 
-const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const wordPattern = (word, ...parts) => {
-  const marks = parts.map((_, index) => `§${index}§`);
-  return new RegExp(
-    parts.reduce(
-      (source, part, index) => source.replace(marks[index], part === "n" ? "([\\d,]+)" : "(?:.*?)"),
-      escapeRegExp(word(...marks)),
-    ),
-  );
-};
-const numberIn = (text, pattern) => {
-  const match = pattern.exec(text ?? "");
-  return match ? Number(match[1].replace(/,/g, "")) : null;
-};
-const SLOT_PATTERNS = {
-  ticks: wordPattern(REHEARSAL_WORDS.lasts, "n", "any"),
-  share: wordPattern(REHEARSAL_WORDS.share, "n"),
-  troops: /(?:^| · )([\d,]+)(?: · |$)/,
-};
-
-export function readTickPay(rates) {
-  const pay = {};
-  for (const { rate, value } of rates) {
-    if (rate === "drain") continue;
-    pay[rate] = Number(value.replace(/[^\d]/g, ""));
-  }
-  return pay;
-}
-
-export function readHeldSlot(text) {
-  if (!text) return null;
-  return {
-    ticks: numberIn(text, SLOT_PATTERNS.ticks),
-    share: numberIn(text, SLOT_PATTERNS.share),
-    troops: numberIn(text, SLOT_PATTERNS.troops),
-  };
-}
-
-export function readAspectTally(read) {
-  const figure = (value) => (value === null || value === undefined || value === "" ? null : Number(value));
-  return { height: figure(read.height), glory: figure(read.glory), bar: figure(read.bar) };
-}
-
-export function judgeTickPaid(before, after) {
-  const { pay, slot, tally } = before;
-  if (!(after.slot?.troops < slot.troops)) return { failed: "the guard lost no troops: no tick was settled" };
-  const ticks = [];
-  const gains = {};
-  for (const part of ["glory", "height", "bar"]) {
-    if (!pay[part]) continue;
-    if (tally[part] === null || after.tally[part] === null)
-      return { gains, failed: `the Season board shows no exact ${part}` };
-    const gained = after.tally[part] - tally[part];
-    gains[part] = gained;
-    if (!(gained > 0)) return { gains, failed: `the tick paid no ${part}` };
-    if (slot.share === 100) ticks.push(gained / pay[part]);
-  }
-  if (ticks.some((count) => !Number.isInteger(count) || count !== ticks[0]))
-    return { gains, ticks, failed: "the gains are not one whole number of ticks of the card's pay" };
-  return { gains, ticks: ticks[0] ?? null };
-}
+const DEEP_SITE_KEYS = new Set(DEEP_SITE_NAMES.map(({ name }) => name));
 
 const DEEP_SITE_PLATES = `JSON.stringify(${JSON.stringify(DEEP_SITE_NAMES.map(({ icon }) => icon))}.flatMap((icon) =>
   [...document.querySelectorAll('.mp-at:has([data-icon="' + icon + '"])')].flatMap((slot) => {
@@ -6146,48 +6083,10 @@ const DEEP_SITE_CARD = `JSON.stringify((() => {
     text: sheet?.textContent ?? "",
     holder: sheet?.querySelector("[data-aspect-holder]")?.dataset.side ?? null,
     guard: sheet?.querySelector("[data-deep-guard]")?.dataset.deepGuard ?? null,
-    pay: [...(sheet?.querySelectorAll("[data-deep-pay] [data-rate]") ?? [])].map((rate) => ({ rate: rate.dataset.rate, value: rate.querySelector("b")?.textContent ?? "" })),
-    mine: sheet?.querySelector("[data-deep-slots] [data-deep-slot][data-mine]")?.getAttribute("aria-label") ?? null,
+    occupiedSlots: sheet?.querySelectorAll('[data-deep-slot="filled"]').length ?? null,
     buttons: [...(sheet?.querySelectorAll("button:not([disabled])") ?? [])].map((button) => button.getAttribute("aria-label") || button.textContent.trim()),
   };
 })())`;
-
-const ASPECT_TALLY = `JSON.stringify({
-  height: document.querySelector("[data-season-board] .season-aspect[data-own]")?.dataset.height ?? null,
-  glory: document.querySelector("[data-season-standing]")?.dataset.glory ?? null,
-  bar: document.querySelector("[data-season-standing] [data-charge]")?.dataset.charge ?? null,
-})`;
-
-const DEEP_SITE_KEYS = new Set(DEEP_SITE_NAMES.map(({ name }) => name));
-const DEEP_TICK_WAIT_MS = 300_000;
-const CATCH_UP_TICKS = 4;
-const IDLE_PLAYS = 3;
-const CATCH_UP_EVENTS_AT_MOST = 8;
-
-export const idlePlayOf = (plays) =>
-  plays
-    .slice(1)
-    .reduce((least, play) =>
-      play.events < least.events || (play.events === least.events && play.l2Gas < least.l2Gas) ? play : least,
-    );
-
-export function judgeCatchUp(t0, t1, ticks) {
-  const measured = {
-    ticks,
-    l2Gas: t1.l2Gas - t0.l2Gas,
-    events: t1.events - t0.events,
-    t1: { l2Gas: t1.l2Gas, events: t1.events },
-  };
-  if (measured.events <= 0)
-    return { ...measured, failed: "the catch-up play settled nothing: another command settled the ticks first" };
-  if (measured.events > CATCH_UP_EVENTS_AT_MOST)
-    return {
-      ...measured,
-      failed: `the catch-up play emitted ${measured.events} more events than the idle one: rows once per tick, not once each`,
-    };
-  return measured;
-}
-const TICK_SETTLED_WAIT_MS = 60_000;
 
 async function selectArmy(browser, army) {
   for (const { label } of browser.armies()) {
@@ -6204,10 +6103,6 @@ function s1RehearsalSteps() {
     link: null,
     deepArmy: null,
     allyDeepArmy: null,
-    held: null,
-    tick: null,
-    t0: null,
-    t1: null,
   };
   return [
     rehearsalStep({ name: "found-the-host-realm", play: (context) => foundHostRealm(context, shared) }),
@@ -6250,10 +6145,6 @@ function s1RehearsalSteps() {
       name: "fight-a-beast",
       play: (context) => actAtADeepSite(context, shared, "deepArmy", BEAST_SITE),
     }),
-    rehearsalStep({ name: "catch-up-t0", play: (context) => measureTheIdlePlay(context, shared), sends: 0 }),
-    rehearsalStep({ name: "read-the-tick-pay", play: (context) => readTheTickPay(context, shared), sends: 0 }),
-    rehearsalStep({ name: "catch-up-t1", play: (context) => measureTheCatchUpPlay(context, shared), sends: 0 }),
-    rehearsalStep({ name: "the-tick-paid", play: (context) => judgeTheTick(context, shared), sends: 0 }),
     rehearsalStep({
       name: "ally-enters-the-deep",
       as: "ally",
@@ -6482,13 +6373,6 @@ async function openDeepSite(browser, plate) {
   );
 }
 
-async function openHeldSite(browser, held) {
-  const plate = browser.read(DEEP_SITE_PLATES).find(({ key }) => key === held.key);
-  if (!plate) return null;
-  const card = await openDeepSite(browser, plate);
-  return card.name === held.name ? card : null;
-}
-
 async function actAtADeepSite({ browser, extraScreenshot }, shared, slot, want) {
   const army = shared[slot];
   if (army === null) return { blocked: `no army entered the ${DEEP_LAYER}` };
@@ -6497,12 +6381,12 @@ async function actAtADeepSite({ browser, extraScreenshot }, shared, slot, want) 
   for (const plate of browser.read(DEEP_SITE_PLATES)) {
     const card = await openDeepSite(browser, plate);
     seen.push({ name: card.name, buttons: card.buttons });
-    if (want.matches(card)) return actOnTheSite({ browser, extraScreenshot }, shared, slot, plate, want);
+    if (want.matches(card)) return actOnTheSite({ browser, extraScreenshot }, want);
   }
   return { army, seen, blocked: want.missing };
 }
 
-async function actOnTheSite({ browser, extraScreenshot }, shared, slot, plate, want) {
+async function actOnTheSite({ browser, extraScreenshot }, want) {
   const sheetButton = (label) => browser.read(buttonIn("[data-kit-sheet]", `^${label}$`));
   const move = sheetButton(REHEARSAL_WORDS.move);
   if (move) browser.tap(move.offset);
@@ -6512,63 +6396,12 @@ async function actOnTheSite({ browser, extraScreenshot }, shared, slot, plate, w
   if (!verb)
     return { card, moved: Boolean(move), blocked: `the ${card.name} never offered ${want.verb}: ${card.text}` };
   browser.tap(verb.offset);
-  const after = await readUntil(
-    () => browser.read(DEEP_SITE_CARD),
-    (now) => now.mine !== null,
-    ORDER_OUTCOME_WAIT_MS,
-  );
+  const claimed = (now) => now.name === card.name && now.holder === "ally" && now.occupiedSlots === 0;
+  const after = await readUntil(() => browser.read(DEEP_SITE_CARD), claimed, ORDER_OUTCOME_WAIT_MS);
   extraScreenshot(`after-${want.verb.toLowerCase()}`);
-  if (after.mine === null)
-    return { card, after, failed: `the army does not guard the ${card.name} after ${want.verb}` };
-  if (slot === "deepArmy") shared.held = { key: plate.key, name: card.name };
+  if (!claimed(after))
+    return { card, after, failed: `the ${card.name} was not claimed with empty slots after ${want.verb}` };
   return { site: card.name, moved: Boolean(move), card, after };
-}
-
-const minutesOf = (time) => {
-  const [, days = 0, hours = 0, minutes = 0] = /^(?:(\d+)d)?\s*(?:(\d+)h)?\s*(?:(\d+)m)?$/.exec(time ?? "") ?? [];
-  return (Number(days) * 24 + Number(hours)) * 60 + Number(minutes);
-};
-const SLOT_TIME = new RegExp(
-  escapeRegExp(REHEARSAL_WORDS.lasts("§0§", "§1§")).replace("§0§", "[\\d,]+").replace("§1§", "([^)]*)"),
-);
-const slotMinutes = (card) => {
-  const match = SLOT_TIME.exec(card.mine ?? "");
-  return match ? minutesOf(match[1]) : null;
-};
-
-async function readTheTickPay({ browser, extraScreenshot }, shared) {
-  if (!shared.held) return { blocked: `the host's army guards no ${DEEP_LAYER} site` };
-  await openTheSeason(browser);
-  const tally = readAspectTally(browser.read(ASPECT_TALLY));
-  extraScreenshot("tally-before-the-tick");
-  browser.press("Escape");
-  const card = await openHeldSite(browser, shared.held);
-  if (!card) return { tally, failed: `the ${shared.held.name}'s card did not open` };
-  const pay = readTickPay(card.pay);
-  const slot = readHeldSlot(card.mine);
-  extraScreenshot("tick-pay");
-  let last = slotMinutes(card);
-  let crossed = 0;
-  await readUntil(
-    () => {
-      const now = slotMinutes(browser.read(DEEP_SITE_CARD));
-      if (now !== null && last !== null && now > last) crossed += 1;
-      last = now ?? last;
-      return crossed >= CATCH_UP_TICKS;
-    },
-    Boolean,
-    DEEP_TICK_WAIT_MS * CATCH_UP_TICKS,
-  );
-  if (crossed < CATCH_UP_TICKS)
-    return {
-      pay,
-      slot,
-      tally,
-      crossed,
-      blocked: `the guard's time left moved at ${crossed} ticks, not ${CATCH_UP_TICKS}`,
-    };
-  shared.tick = { pay, slot, tally };
-  return { pay, slot, tally, crossed };
 }
 
 async function receiptOfTheNextAction({ browser, owner }, before) {
@@ -6581,13 +6414,12 @@ async function receiptOfTheNextAction({ browser, owner }, before) {
   return receipt ?? null;
 }
 
-async function sendOneOrder(context, verb, heldBack = null) {
+async function sendOneOrder(context, verb) {
   const deployed = await deployWhenTheDockIsEmpty(context);
   if (deployed?.blocked || deployed?.failed) return deployed;
   const before = context.browser.read(SENT_ACTIONS);
-  const order = await orderBesideArmy(context, verb, heldBack);
+  const order = await orderBesideArmy(context, verb);
   if (!order.army) return { deployed, order, blocked: "the dock holds no army to send" };
-  if (order.heldBack) return { deployed, order, blocked: "the readiest army is the Deep guard, not a surface army" };
   if (!order.target) return { deployed, order, blocked: `nothing beside the readiest army offers ${verb}` };
   const receipt = await receiptOfTheNextAction(context, before);
   if (!receipt?.applied) return { deployed, order, receipt, failed: `the chain did not apply the ${verb}` };
@@ -6617,7 +6449,6 @@ async function deployAnArmy(context, atMost) {
   return arrived ? { receipt } : { receipt, failed: "the deployed army did not reach the dock" };
 }
 
-const sendOneMove = (context, shared) => sendOneOrder(context, REHEARSAL_WORDS.move, shared.deepArmy);
 
 const SITE_SEARCH_REVEALS = 6;
 
@@ -6755,48 +6586,6 @@ async function attackBesideAnArmy(context) {
     return { army, offered, declined, forecast, receipt };
   }
   return { offered, declined };
-}
-
-async function measureTheIdlePlay(context, shared) {
-  if (!shared.held) return { blocked: `the host's army guards no ${DEEP_LAYER} site` };
-  const plays = [];
-  for (let index = 0; index < IDLE_PLAYS; index += 1) {
-    const play = await sendOneMove(context, shared);
-    if (play.blocked || play.failed) return { plays, ...play };
-    plays.push(play.receipt);
-  }
-  shared.t0 = idlePlayOf(plays);
-  return { plays, t0: shared.t0 };
-}
-
-async function measureTheCatchUpPlay(context, shared) {
-  if (!shared.t0 || !shared.tick) return { blocked: "no idle play and no tick pay were read before the catch-up" };
-  const play = await sendOneMove(context, shared);
-  if (play.blocked || play.failed) return play;
-  shared.t1 = play.receipt;
-  return { t1: shared.t1 };
-}
-
-async function judgeTheTick({ browser, extraScreenshot }, shared) {
-  if (!shared.tick || !shared.t1) return { blocked: "no catch-up play was sent after the ticks" };
-  const card = await openHeldSite(browser, shared.held);
-  if (!card) return { failed: `the ${shared.held.name}'s card did not open` };
-  const slot = await readUntil(
-    () => readHeldSlot(browser.read(DEEP_SITE_CARD).mine),
-    (now) => now === null || now.troops < shared.tick.slot.troops,
-    TICK_SETTLED_WAIT_MS,
-  );
-  extraScreenshot("site-after-the-tick");
-  browser.press("Escape");
-  if (slot === null) return { blocked: "the guard died at the tick, so it earned nothing" };
-  await openTheSeason(browser);
-  const tally = readAspectTally(browser.read(ASPECT_TALLY));
-  extraScreenshot("tally-after-the-tick");
-  browser.press("Escape");
-  const after = { slot, tally };
-  const paid = judgeTickPaid(shared.tick, after);
-  const catchUp = judgeCatchUp(shared.t0, shared.t1, paid.ticks);
-  return { before: shared.tick, after, ...paid, catchUp, failed: paid.failed ?? catchUp.failed };
 }
 
 export const STEP_SETS = {

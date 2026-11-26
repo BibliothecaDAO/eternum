@@ -365,9 +365,12 @@ it("keeps a Knight garrison protected and removes that protection from the beast
   const site = held();
   const garrison = store.require("GarrisonSlot", { game_id: 1, structure_id: site.id, slot: site.garrisons[0]!.slot });
   const deepSite = store.require("DeepSite", { game_id: 1, entity_id: site.id });
+  const owner = store.require("Structure", { game_id: 1, entity_id: site.id });
   store.applyFacts([
     { model: "GarrisonSlot", key: store.wireKeyOf("GarrisonSlot", garrison)!, value: null },
+    { model: "Guard", key: store.wireKeyOf("Guard", garrison)!, value: null },
     { model: "DeepSite", key: store.wireKeyOf("DeepSite", deepSite)!, value: { ...deepSite, aspect: 0 } },
+    { model: "Structure", key: store.wireKeyOf("Structure", owner)!, value: { ...owner, owner: 0n } },
     {
       model: "Guard",
       key: "0x100",
