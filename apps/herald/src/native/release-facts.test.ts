@@ -30,6 +30,7 @@ import { loadNativeWorld } from "./load";
 import { releaseLine } from "../../../../packages/core/src/test-support/releases";
 import { presetRelease } from "./preset-fixtures";
 import { RELEASE_DEFINITIONS, readReleaseDefinitions, releaseDefinitionText } from "./release-definition";
+import { NATIVE_RELEASES } from "../../../../deploy/release/native-release";
 
 const registration = (presetId = 5, amend?: (definition: ReturnType<typeof buildNativePreset>) => void) =>
   presetRelease(presetId, 1, amend);
@@ -514,6 +515,13 @@ describe("a game's rule rows follow its release", () => {
     await replayed.native.replay({ fold: replayed.fold, rpc, fromBlock: 11, toBlock: 12 });
     expect(ruleRows(replayed.fold)).toEqual(ruleRows(launchedOn(upgraded)));
     expect(clientBarracksPrice(replayed.fold)).toEqual([{ resource: ResourcesIds.Labor, amount: 500 }]);
+  });
+
+  it("holds a rule definition for every release from the oldest archived one through the current release", () => {
+    const releases = [...RELEASE_DEFINITIONS.keys()].sort((left, right) => left - right);
+    const oldest = releases[0]!;
+    const current = NATIVE_RELEASES.frontier.release;
+    expect(releases).toEqual(Array.from({ length: current - oldest + 1 }, (_, index) => oldest + index));
   });
 
   it("folds a game the shard walks 22 to 23 to 24, one apply_release each, as a game launched on 24", () => {
