@@ -57,40 +57,6 @@ export const SEASON_ONE_REALM_ASSETS: readonly RealmAssetEntry[] = SEASON_ONE_RE
   }),
 );
 
-export const BASE_REALM_CANDIDATES: readonly RealmAssetEntry[] = [
-  {
-    id: "base-settlement",
-    label: "Base Settlement · thatched hamlet",
-    level: 0,
-    wonder: false,
-    source: "tripo/realms/base-settlement",
-    path: modelPath("realms/base-settlement.glb"),
-  },
-  {
-    id: "base-city",
-    label: "Base City · courtyard keep",
-    level: 1,
-    wonder: false,
-    source: "tripo/realms/base-city",
-    path: modelPath("realms/base-city.glb"),
-  },
-  {
-    id: "base-kingdom",
-    label: "Base Kingdom · slate-roofed castle",
-    level: 2,
-    wonder: false,
-    source: "tripo/realms/base-kingdom",
-    path: modelPath("realms/base-kingdom.glb"),
-  },
-  {
-    id: "base-empire",
-    label: "Base Empire · spired citadel",
-    level: 3,
-    wonder: false,
-    source: "tripo/realms/base-empire",
-    path: modelPath("realms/base-empire.glb"),
-  },
-];
 export const REALM_ASSETS: readonly RealmAssetEntry[] = [...assets, ...ASPECT_WONDER_LIST, ...SEASON_ONE_REALM_ASSETS];
 export const REALM_PATHS = REALM_ASSETS.map((asset) => asset.path);
 
