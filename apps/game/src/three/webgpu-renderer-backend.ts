@@ -68,7 +68,7 @@ interface WebGPURendererBackendDependencies {
   now(): number;
 }
 
-type SceneFinish = Pick<MapFinish, "render" | "dispose"> & Partial<Pick<MapFinish, "compileObjectAsync">>;
+type SceneFinish = Pick<MapFinish, "compileObjectAsync" | "render" | "dispose">;
 
 interface WebGpuRendererModules {
   threeWebGPUModule: typeof import("three/webgpu");
@@ -528,14 +528,10 @@ export function createWebGPURendererBackend(
       sizeRenderer(input.width, input.height);
     },
     async compileObjectAsync(object, camera, targetScene) {
-      if (!renderer) {
+      if (!finish) {
         return;
       }
-      if (finish?.compileObjectAsync) {
-        await finish.compileObjectAsync(object, camera, targetScene);
-        return;
-      }
-      await renderer.compileAsync?.(object, camera, targetScene);
+      await finish.compileObjectAsync(object, camera, targetScene);
     },
     dispose() {
       cleanupDeviceDiagnostics?.();
