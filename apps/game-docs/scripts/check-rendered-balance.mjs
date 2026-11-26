@@ -88,7 +88,14 @@ export const frontierPhrases = (
   nativeRace,
   {
     aspectWords,
+    appWords,
+    buildGroups,
+    chatWords,
+    cosmeticsWords,
+    desktopAppPlaces,
+    desktopAppPlaceWords,
     relicWords,
+    settingsWords,
     relicKinds,
     commandBits,
     calendar,
@@ -147,6 +154,12 @@ export const frontierPhrases = (
   const personalLayers = LAYER_NAMES.slice(0, 3);
   const personalLayersAnd = listAnd(personalLayers);
   const personalLayersOr = listOr(personalLayers);
+  const allLayersAnd = listAnd(
+    LAYER_NAMES.map((name, index) => (index === LAYER_NAMES.length - 1 ? `the ${name}` : name)),
+  );
+  const settingsQualitiesOr = listOr(Object.values(settingsWords.qualities));
+  const buildGroupsList = listAnd(Object.values(buildGroups));
+  const desktopAppPlacesAnd = listAnd(desktopAppPlaces.map((place) => desktopAppPlaceWords[place]));
   const staminaRule = `Refills ${n(nativeFragments.STAMINA_PER_FRAGMENT)} stamina per Fragment on the ${personalLayersAnd}`;
   const oathSlotPrices = preset.research
     .filter((step) => step.row === nativeResearch.ROW_KNIGHT_OATHS)
@@ -198,6 +211,9 @@ export const frontierPhrases = (
         `${deepSites.length} site kinds`,
         `all ${aspectOrderCount} Oaths`,
         `all ${relicKinds.length} relic kinds`,
+        `switch between ${allLayersAnd}`,
+        `graphics quality (${settingsQualitiesOr})`,
+        `app top bar on desktop holds ${desktopAppPlacesAnd}, with ${chatWords.chat} docked at the bottom right. On a phone, ${cosmeticsWords.title} lives under ${appWords.you} → ${cosmeticsWords.title}.`,
       ],
     },
     {
@@ -213,6 +229,7 @@ export const frontierPhrases = (
         `A slot's first army of the day starts with a full bar (${n(stamina.staminaKnightMax)} stamina, plus your Logistics bonus).`,
         `Two adjacent armies of the same troop kind can merge, moving troops only.`,
         `beside any camp your realm cleared today (supply post) on the ${personalLayersOr}`,
+        `refills ${n(nativeRules.WELL_REFILL_PERCENT)}% of its maximum: ${n(Math.round((stamina.staminaKnightMax * nativeRules.WELL_REFILL_PERCENT) / 100))} on a ${n(stamina.staminaKnightMax)} bar,`,
         staminaRule,
       ],
     },
@@ -238,7 +255,7 @@ export const frontierPhrases = (
         `${n(contract.herdGuardMultiplier)}x its starting guard on the ${LAYER_NAMES[0]}`,
         `${n(100 / contract.campGuardDivisor)}% of its starting guard on the ${LAYER_NAMES[0]}, ${n(depthRewardPercent(1))}% of that in the ${LAYER_NAMES[1]}, ${n(depthRewardPercent(2))}% in the ${LAYER_NAMES[2]}`,
         `${n(100 * contract.riftGuardMultiplier)}% of its starting guard on the ${LAYER_NAMES[0]}`,
-        `Immediately opens an Oath pick of ${n(contract.oathDrawCount)} Oaths for the revealing army, or lets you pass for +${n(nativeOaths.PASS_STAMINA)} stamina.`,
+        `Appears on the tile until any adjacent army presses Use, opening a pick of ${n(contract.oathDrawCount)} Oaths (or pass for +${n(nativeOaths.PASS_STAMINA)} stamina) and removing the Shrine.`,
         `Each ruin holds either a relic or a Fragment cache, never both.`,
         `${nativeFragments.SURFACE_CACHE_PERCENT}% on the ${LAYER_NAMES[0]}`,
       ],
@@ -269,6 +286,7 @@ export const frontierPhrases = (
     {
       page: "frontier/buildings",
       phrases: [
+        `Buildings are sorted by group: ${buildGroupsList}.`,
         `Your castle makes ${castleLaborRate(0)} labor per hour at castle level 1 (${rankName(0)}), multiplying by ${n(contract.castleLaborStep)} at each castle level up to ${castleLaborRate(3)}/h at castle level 4 (${rankName(3)}).`,
         ...FRONTIER_BUILDING_TYPES.map((id) => buildingName(id, true)),
         [1, 2, 3, 4, 5, 6]
@@ -334,7 +352,7 @@ export const frontierPhrases = (
     {
       page: "frontier/oaths",
       phrases: [
-        `Revealing a shrine opens a pick of ${n(contract.oathDrawCount)} Oaths immediately for that army.`,
+        `to open a pick of ${n(contract.oathDrawCount)} Oaths and remove the shrine.`,
         `award a pick of ${n(contract.oathDrawCount)} Oaths to the army that lands the last hit.`,
         `All ${aspectOrderCount} Oaths`,
         ...aspectOrders.map(
@@ -604,9 +622,17 @@ export const loadBalanceSources = async () => {
     const { RELICS_PER_LAYER: relicsPerLayer, previewRuinGuardBounds } = await server.ssrLoadModule(
       join(here, "../../../contracts/l3/world-native/schema/site-previews.gen.ts"),
     );
-    const { ASPECT_PAGE_WORDS: aspectWords, RELIC_WORDS: relicWords } = await server.ssrLoadModule(
-      join(here, "../../game/src/ui/design-system/kit/words.ts"),
-    );
+    const {
+      ASPECT_PAGE_WORDS: aspectWords,
+      BUILD_GROUPS: buildGroups,
+      CHAT_WORDS: chatWords,
+      COSMETICS_WORDS: cosmeticsWords,
+      DESKTOP_APP_PLACES: desktopAppPlaces,
+      DESKTOP_APP_PLACE_WORDS: desktopAppPlaceWords,
+      RELIC_WORDS: relicWords,
+      SETTINGS_WORDS: settingsWords,
+      WORDS: appWords,
+    } = await server.ssrLoadModule(join(here, "../../game/src/ui/design-system/kit/words.ts"));
     const { aspectMeaning, iconUrl } = await server.ssrLoadModule(
       join(here, "../../game/src/ui/design-system/icon-meaning.ts"),
     );
@@ -684,7 +710,14 @@ export const loadBalanceSources = async () => {
       nativeResearch,
       nativeRules,
       aspectWords,
+      appWords,
+      buildGroups,
+      chatWords,
+      cosmeticsWords,
+      desktopAppPlaces,
+      desktopAppPlaceWords,
       relicWords,
+      settingsWords,
       relicKinds,
       commandBits,
       aspectMeaning,
@@ -851,6 +884,8 @@ export const FORBIDDEN_RETIRED_HUD_TERMS = [
   /\bwhat\s+you\s+can'?t\s+do\b/i,
   /\bwhat\s+you\s+can\s+do\b/i,
   /\bfar-eye\b/i,
+  /\bshow\s+everything\b/i,
+  /\bleaves\s+a\s+flag\b/i,
 ];
 
 const FORBIDDEN_PLAYER_MODE_TERMS = [...FORBIDDEN_MODE_TERMS, /\beternum\b/i, ...FORBIDDEN_RETIRED_HUD_TERMS];

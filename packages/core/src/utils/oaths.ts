@@ -2,7 +2,10 @@ import type { NativeFactStore } from "../client/native-fact-store";
 import { div, mul, ONE, unscaled, type Fixed } from "./cubit-fixed";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { nativeOathConstants as oathRules } from "../../../../contracts/l3/world-native/schema/balance.gen";
+import {
+  nativeOathConstants as oathRules,
+  nativeRuleConstants as gameRules,
+} from "../../../../contracts/l3/world-native/schema/balance.gen";
 
 export function oathBit(oath: number): number {
   return 1 << (oath - 1);
@@ -94,6 +97,13 @@ export function oathStaminaBonus(oaths: number): number {
 
 export function oathRegenBps(oaths: number): number {
   return holdsOath(oaths, oathRules.ENLIGHTENMENT) ? oathRules.ENLIGHTENMENT_REGEN_BPS : 10_000;
+}
+
+export function oathWellStamina(oaths: number, maximum: number): number {
+  const percent = holdsOath(oaths, oathRules.REFLECTION)
+    ? oathRules.REFLECTION_WELL_PERCENT
+    : gameRules.WELL_REFILL_PERCENT;
+  return Math.floor((maximum * percent) / 100);
 }
 
 export function oathExploreStamina(oaths: number, base: number): number {

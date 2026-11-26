@@ -401,14 +401,11 @@ it("reads a historical skill purchase through the story formatter", async () => 
   expect(gems()).toEqual([["IV", "line"]]);
 });
 
-it("draws a tier bought and a Shrine's point in the story's own words, each rank as its gem", async () => {
+it("draws a tier bought in the story's own words, its rank as its gem", async () => {
   expect(
     (await draw(story(KRUMP, "TierBought", { explorer_id: 71, attribute: "Logistics", tier: 3, price: 400 }))).words,
   ).toBe("Krump · Logistics III");
   expect(gems()).toEqual([["III", "line"]]);
-  const shrine = story(KRUMP, "SiteUsed", { explorer_id: 71, coord: { x: 3, y: 4 }, benefit: { ShrinePoint: 2 } });
-  expect((await draw(shrine)).words).toBe("Krump · Shrine used, II +1");
-  expect(gems()).toEqual([["II", "line"]]);
 });
 
 it("names who moved troops once, with how many moved (prod's day: 'Maelis Maelis moved 1,095 troops')", async () => {

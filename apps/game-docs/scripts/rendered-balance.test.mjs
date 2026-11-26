@@ -86,7 +86,7 @@ test("the rendered armies check rejects the Knight reveal cost for Scouts", () =
 test("no built HTML page or llm.txt names Blitz, Devcon or Season 0, and synthetic regressions fail", () => {
   const llm = readFileSync(join(dist, "llm.txt"), "utf8");
   assert.deepEqual(forbiddenModePages(dist, llm), []);
-  for (const term of ["Blitz", "Devcon", "Season 0", "Next up", "Up next"]) {
+  for (const term of ["Blitz", "Devcon", "Season 0", "Next up", "Up next", "Show everything", "leaves a flag"]) {
     const fakeDist = mkdtempSync(join(tmpdir(), "rendered-mode-"));
     try {
       mkdirSync(join(fakeDist, "frontier"), { recursive: true });

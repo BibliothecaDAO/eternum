@@ -4,7 +4,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { skillPointGain } from "@bibliothecadao/types";
+import type { RankedWords } from "@bibliothecadao/types";
 import { Plate } from "./map-plates";
 
 import { Token, tokenReading, tokenSize } from "./map-plate-token";
@@ -160,7 +160,7 @@ describe("a Shrine's plate opened", () => {
       place: undefined,
       name: "Shrine",
       guards: null,
-      reward: skillPointGain(3),
+      reward: [{ rank: 3 }, " +1"] as RankedWords,
     };
     const html = renderToStaticMarkup(<Plate plate={shrine} />);
     // The row's gem is the kit's own size (no line or card size), named for a screen reader.

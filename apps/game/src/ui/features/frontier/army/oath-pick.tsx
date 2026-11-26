@@ -1,7 +1,6 @@
 import "./oath-pick.css";
 
 import { useState, type CSSProperties } from "react";
-import { create } from "zustand";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { configManager } from "@bibliothecadao/eternum";
 import { useDockArmies, type DockArmy } from "../hud/dock-armies";
@@ -44,16 +43,6 @@ const useWaitingPick = (explorerId: number) => {
 
 export const useOathWaiting = (explorerId: number) => useWaitingPick(explorerId) !== undefined;
 
-const useHeldPicks = create<{ held: ReadonlySet<number> }>(() => ({ held: new Set() }));
-
-export const holdOathPick = (explorerId: number, ms: number) => {
-  useHeldPicks.setState(({ held }) => ({ held: new Set([...held, explorerId]) }));
-  setTimeout(
-    () => useHeldPicks.setState(({ held }) => ({ held: new Set([...held].filter((id) => id !== explorerId)) })),
-    ms,
-  );
-};
-
 export function FrontierOathPick({ realm }: { realm: NativeRows["Structure"] | null }) {
   const allowed = useUIStore(canIssueOrders);
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
@@ -65,8 +54,7 @@ export function FrontierOathPick({ realm }: { realm: NativeRows["Structure"] | n
 
 const WaitingOathPick = ({ army, fragments }: { army: DockArmy; fragments: number | null }) => {
   const progress = useWaitingPick(army.explorerId);
-  const held = useHeldPicks((state) => state.held.has(army.explorerId));
-  if (!progress || held) return null;
+  if (!progress) return null;
   return (
     <HudModalLayer>
       <ArmyOathPick key={army.explorerId} army={army} progress={progress} fragments={fragments} />

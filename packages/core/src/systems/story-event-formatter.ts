@@ -1,6 +1,8 @@
-import { type RankedWords, rankedText, skillPointGain } from "@bibliothecadao/types";
+import { type RankedWords, rankedText } from "@bibliothecadao/types";
 import {
-  siteUsedLine,
+  SHRINE_USED,
+  SHRINE_USED_LINE,
+  wellUsedLine,
   buildingName,
   fightVerdict,
   formatCharge,
@@ -241,17 +243,18 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
   },
   SiteUsed: (event, payload, components, resolvePlayerName) => {
     const benefit = payload.benefit as Record<string, unknown> | undefined;
-    if (benefit?.ShrinePoint !== undefined) {
-      const rank = toNumber(benefit.ShrinePoint);
-      if (rank === null) throw new Error("Incomplete shrine point story");
-      const army = describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName));
-      return rankedStory(["Shrine used, ", ...skillPointGain(rank)], [army], "scroll");
-    }
-    const kind = benefit?.Shrine !== undefined ? "Shrine" : benefit?.Well !== undefined ? "Well" : null;
-    const amount = kind && toNumber(benefit![kind]);
-    if (kind === null || amount === null) throw new Error("Incomplete site use story");
+    const well = benefit?.Well !== undefined ? toNumber(benefit.Well) : undefined;
+    const title =
+      benefit?.Shrine !== undefined
+        ? SHRINE_USED_LINE
+        : benefit?.ShrinePoint !== undefined
+          ? SHRINE_USED
+          : well !== undefined && well !== null
+            ? wellUsedLine(formatExact(well))
+            : null;
+    if (title === null) throw new Error("Incomplete site use story");
     return {
-      title: siteUsedLine(kind, formatExact(amount)),
+      title,
       description: describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
       icon: "scroll",
     };

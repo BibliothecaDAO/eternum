@@ -10,8 +10,11 @@ import {
   SPIRE_WORDS,
   STAMINA,
   TRANSFER_TROOPS,
+  SITE_USE_WORDS,
   UNEXPLORED,
+  USE,
 } from "@/ui/design-system/kit/words";
+import { type MapSiteKind, mapSite, siteGainLine } from "../sites/map-site-plan";
 import {
   type ActionPath,
   ActionPaths,
@@ -36,6 +39,7 @@ type TileOrder = {
   staminaWait: number | undefined;
   /** The stamina the army holds now, for a refused stamina need; undefined when that is unknown. */
   staminaHeld: number | undefined;
+  site?: { kind: MapSiteKind; gain: number | undefined; stamina: { current: number; max: number } | undefined };
   /** The selection is the player's realm, not an army: its Help raises troops into the army beside it. */
   byRealm: boolean;
 };
@@ -60,8 +64,9 @@ export const orderTip = (order: TileOrder): OrderTip | null => {
   const ordered = orderOf(order);
   if (ordered) return ordered;
 
+  const reward = order.site ? siteGainLine(order.site.kind, order.site.gain, order.site.stamina) : null;
   const refused = refusalLine(order);
-  return refused === null ? null : { line: refused, cost: null };
+  return refused === null ? (reward ? { line: reward, cost: null } : null) : { line: refused, cost: reward };
 };
 
 const ORDERS: Partial<Record<ActionType, string>> = {
@@ -71,15 +76,20 @@ const ORDERS: Partial<Record<ActionType, string>> = {
   [ActionType.Help]: TRANSFER_TROOPS.title,
   [ActionType.SpireTravel]: "Enter the Spire",
   [ActionType.EnterDepth]: SPIRE_WORDS.order,
+  [ActionType.UseSite]: USE,
 };
 
-const orderOf = ({ path, exploreStamina, food, byRealm }: TileOrder): OrderTip | null => {
+const orderOf = ({ path, exploreStamina, food, site, byRealm }: TileOrder): OrderTip | null => {
   const actionType = path && path.length >= 2 ? ActionPaths.getActionType(path) : undefined;
   // The realm's Help is a reinforcement, priced on its sheet.
   if (path && byRealm && actionType === ActionType.Help) return { line: REINFORCE.verb, cost: null };
   const line = actionType === undefined ? undefined : ORDERS[actionType];
   if (!path || line === undefined) return null;
   if (actionType === ActionType.EnterDepth) return { line, cost: null };
+  if (actionType === ActionType.UseSite)
+    return site
+      ? { line: SITE_USE_WORDS.verb(mapSite(site.kind).name), cost: siteGainLine(site.kind, site.gain, site.stamina) }
+      : { line, cost: null };
   const stamina = computeEffectiveStaminaCost(path.slice(1), actionType, exploreStamina);
   const pieces = [
     ...(stamina > 0 ? [`${formatCharge(stamina)} ${STAMINA}`] : []),
@@ -111,7 +121,8 @@ export const refusedOrderVerb = ({
  * Why no order leads here, as the planner recorded it; a fogged tile it said nothing of is only unexplored, and a
  * revealed one it said nothing of has nothing to say.
  */
-const refusalLine = ({ refusal, staminaWait, staminaHeld, explored }: TileOrder): string | null => {
+const refusalLine = ({ refusal, staminaWait, staminaHeld, explored, site }: TileOrder): string | null => {
+  if (refusal?.reason === "too-far" && site) return SITE_USE_WORDS.moveBeside;
   if (refusal) return reasonLine(orderRefusalReason(refusal, { held: staminaHeld, wait: staminaWait }));
   return explored ? null : UNEXPLORED;
 };

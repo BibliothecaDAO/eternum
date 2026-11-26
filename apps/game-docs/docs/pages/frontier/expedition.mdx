@@ -44,8 +44,8 @@ and guard size by layer):
 | <GameIcon name="camp" /> Camp                           | {FRONTIER.discovery.camp}                                                                  | Blade guard. Clearing it pays labor ({FRONTIER.sitePayouts.campPercent} of its starting guard on the {FRONTIER.depths[0].name}, {FRONTIER.sitePayouts.veilMultiplier} of that in the {FRONTIER.depths[1].name}, {FRONTIER.sitePayouts.hollowMultiplier} in the {FRONTIER.depths[2].name}) and creates a supply post. |
 | <GameIcon name="rift" /> Rift                           | {FRONTIER.discovery.rift}                                                                  | Bow guard. Clearing it pays Essence ({FRONTIER.sitePayouts.riftPercent} of its starting guard on the {FRONTIER.depths[0].name}, {FRONTIER.sitePayouts.veilMultiplier} of that in the {FRONTIER.depths[1].name}, {FRONTIER.sitePayouts.hollowMultiplier} in the {FRONTIER.depths[2].name}).                           |
 | <GameIcon name="ruin" /> Ruin                           | {FRONTIER.discovery.ruin}                                                                  | Blade guard. Clearing it awards either 1 relic or 1 Fragment cache (never both).                                                                                                                                                                                                                                     |
-| <GameIcon name="shrine" /> Shrine                       | {FRONTIER.discovery.shrine}                                                                | Needs Shrine lore. Immediately opens an Oath pick of {FRONTIER.oaths.drawCount} Oaths for the revealing army, or lets you pass for +{FRONTIER.oaths.passStamina} stamina.                                                                                                                                            |
-| <GameIcon name="well" /> Well                           | {FRONTIER.discovery.well}                                                                  | Needs Well lore. Immediately refills {FRONTIER.stamina.well} for the revealing army ({FRONTIER.oaths.reflectionWell} with Reflection).                                                                                                                                                                               |
+| <GameIcon name="shrine" /> Shrine                       | {FRONTIER.discovery.shrine}                                                                | Needs Shrine lore. Appears on the tile until any adjacent army presses Use, opening a pick of {FRONTIER.oaths.drawCount} Oaths (or pass for +{FRONTIER.oaths.passStamina} stamina) and removing the Shrine.                                                                                                          |
+| <GameIcon name="well" /> Well                           | {FRONTIER.discovery.well}                                                                  | Needs Well lore. Appears on the tile until any adjacent army presses Use, refilling {FRONTIER.stamina.well} ({FRONTIER.oaths.reflectionWell} with Reflection) and removing the Well.                                                                                                                                 |
 | <GameIcon name="spire" /> Spire                         | {FRONTIER.discovery.spireStep} on 1st reveal (+{FRONTIER.discovery.spireStep} each reveal) | Needs Spire lore. Guaranteed within {FRONTIER.discovery.spireRevealLimit} reveals on each layer. Leads one layer down.                                                                                                                                                                                               |
 | Nothing found                                           | {FRONTIER.discovery.nothing}                                                               | Empty tile. The reveal still pays Essence or labor to your realm.                                                                                                                                                                                                                                                    |
 
@@ -62,10 +62,17 @@ the account whose army lands the last hit.
 
 ## Supply posts
 
-Select any camp you cleared today and pick an adjacent army to add troops to that army from your home troop stock,
-paying the same wheat cost as deploying at home. Supply posts work on the {FRONTIER.depths[0].name},
-{FRONTIER.depths[1].name}, and {FRONTIER.depths[2].name} until the day ends. Clearing a camp in the
-{FRONTIER.depths[2].name} lets you top up an army right before it enters [the Deep](/frontier/deep).
+Select any camp you cleared today to open its **Supply Post** panel, which shows your home troop stock, when the post
+expires, and every adjacent army in range. Click an army in the panel (or right-click a lit army on the map on desktop,
+or hold it on a phone) to add troops to that army from home, paying the same wheat cost as deploying at home. Supply
+posts work on the {FRONTIER.depths[0].name}, {FRONTIER.depths[1].name}, and {FRONTIER.depths[2].name} until the day
+ends. Clearing a camp in the {FRONTIER.depths[2].name} lets you top up an army right before it enters
+[the Deep](/frontier/deep).
+
+<Shot
+  name="frontier/supply-post"
+  caption="Select a camp you cleared today to open its Supply Post panel with home stock, time left, and adjacent armies you can reinforce."
+/>
 
 ## The Spire and deeper layers
 
@@ -81,5 +88,5 @@ day. Send {FRONTIER.troops.scout} ahead to find each Spire cheaply, then move yo
 <Shot
   name="frontier/places"
   frame="phone"
-  caption="Tap the place dropdown at the top left on a phone (top center on desktop) to switch between your Realm, the Surface, and each deeper layer you open."
+  caption="Tap the layer dropdown beside Realm at the top left on a phone (top center on desktop) to switch between the Surface and each deeper layer you open."
 />

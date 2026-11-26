@@ -40,10 +40,10 @@ holds it.
 
   ```bash
   pnpm --dir apps/game dev --host 127.0.0.1 --port <port>
-  pnpm --dir apps/game-docs capture-media --base https://127.0.0.1:<port> [--session <saved test player>] [--only a,b]
+  pnpm --dir apps/game-docs capture-media --base https://127.0.0.1:<port> [--only a,b]
   ```
 
-  Most items film the lab's fixture pages and studio. Items marked `live` play the dev stack as a saved test player.
+  Every item captures a lab fixture page or studio take.
 
 - **Moved pages** keep their old addresses through `_redirects`.
 

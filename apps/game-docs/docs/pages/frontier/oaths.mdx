@@ -16,9 +16,9 @@ Aspect can be offered any of the {FRONTIER.oaths.count} Oaths. All Oaths reset w
 
 There are two ways an army triggers an Oath pick on the {FRONTIER.layers.personalOr}:
 
-1. **<GameIcon name="shrine" /> Reveal a shrine.** Research **Shrine lore** at your castle to find shrines
-   ({FRONTIER.discovery.shrine} chance per reveal). Revealing a shrine opens a pick of {FRONTIER.oaths.drawCount} Oaths
-   immediately for that army.
+1. **<GameIcon name="shrine" /> Use a shrine.** Research **Shrine lore** at your castle so reveals can uncover shrines
+   ({FRONTIER.discovery.shrine} chance per reveal). Uncovered shrines stand on the map; move any army beside one and
+   press **Use** to open a pick of {FRONTIER.oaths.drawCount} Oaths and remove the shrine.
 2. **<GameIcon name={FRONTIER.beastFamilies[1].icon} /> Clear a band.** Bands — {FRONTIER.oaths.bandSummary}
    ({FRONTIER.discovery.band} chance per reveal) — award a pick of {FRONTIER.oaths.drawCount} Oaths to the army that
    lands the last hit.
@@ -59,7 +59,9 @@ troop kind.
 
 ## All {FRONTIER.oaths.count} Oaths
 
-Each Oath is named after one of the {FRONTIER.oaths.count} Orders and changes one rule for today:
+Each Oath is named after one of the {FRONTIER.oaths.count} Orders and changes one rule for today. In the game, each Oath
+card adapts its figures and combat icon to the army taking it (for example, Fox shows a lower reveal cost for
+{FRONTIER.troops.scout} than for {FRONTIER.troops.knight} and {FRONTIER.troops.crossbowman}):
 
 | Oath (Order)                                                                        | Aspect                           | Effect for today                 |
 | ----------------------------------------------------------------------------------- | -------------------------------- | -------------------------------- |

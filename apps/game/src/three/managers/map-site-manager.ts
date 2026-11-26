@@ -48,6 +48,8 @@ import { DEEP_GATEWAY_HEIGHT } from "./deep-arena-manager";
 import { FRONTIER_BEASTS } from "../structures/frontier-beast";
 import { FrontierModel } from "../structures/frontier-model";
 import InstancedModel from "@/three/managers/instanced-model";
+import { MAP_SITES, type MapSiteKind, mapSiteOf } from "@/config/map-sites";
+import { frontierPaintedPath } from "../structures/frontier-painted-buildings";
 import { FELT_CENTER } from "@/ui/config";
 import {
   projectionChangesForLayer,
@@ -92,6 +94,13 @@ export class MapSiteManager {
   private modelVisible = true;
   private destroyed = false;
   private readonly sites: DrawnSite[] = [
+    ...MAP_SITES.map((site) => ({
+      key: site.kind,
+      name: site.kind,
+      stands: (tile: TileSpatialRenderable) => tile.occupierType === site.occupier,
+      model: () => paintedSiteModel(site.kind),
+      scale: 1,
+    })),
     ...deepSites.map((kind) => ({
       key: `deep:${kind.key}`,
       name: kind.name,
@@ -540,7 +549,16 @@ const beastModelOf = async (species: BeastModel) => {
   return { model: new FrontierModel(gltf, SITE_CAPACITY, species), height: new Box3().setFromObject(gltf.scene).max.y };
 };
 
-const isMapSite = (occupier: number | undefined): boolean => occupier === TileOccupier.DeepSite;
+const paintedSiteModel = async (kind: MapSiteKind) => {
+  const gltf = await gltfLoader.loadAsync(frontierPaintedPath(kind.toLowerCase()));
+  return {
+    model: new InstancedModel(gltf, SITE_CAPACITY, false, kind),
+    height: new Box3().setFromObject(gltf.scene).max.y,
+  };
+};
+
+const isMapSite = (occupier: number | undefined): boolean =>
+  mapSiteOf(occupier) !== null || occupier === TileOccupier.DeepSite;
 
 const gatePlate = (aspect: AspectId, own: boolean): MapPlate => ({
   kind: "structure",

@@ -1,4 +1,4 @@
-import { aspectName, rankedText, skillPointGain } from "@bibliothecadao/types";
+import { aspectName, rankedText, type RankedWords } from "@bibliothecadao/types";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { describe, expect, it } from "vitest";
 
@@ -120,8 +120,9 @@ describe("what a map plate says opened (three rows at most, never an id; at rest
     ]);
   });
 
-  it("shows a Shrine's discovered point as its gem and +1, without a guard or leading divider", () => {
-    const shrine = { ...rift, owner: "", place: undefined, name: "Shrine", guards: null, reward: skillPointGain(3) };
+  it("shows a ranked reward as its gem, without a guard or leading divider", () => {
+    const ranked: RankedWords = [{ rank: 3 }, " +1"];
+    const shrine = { ...rift, owner: "", place: undefined, name: "Shrine", guards: null, reward: ranked };
     expect(read(shrine)).toEqual(["Shrine", "III +1"]);
     expect(plateRows(shrine).at(-1)).toEqual([{ kind: "ranked", words: [{ rank: 3 }, " +1"] }]);
   });
