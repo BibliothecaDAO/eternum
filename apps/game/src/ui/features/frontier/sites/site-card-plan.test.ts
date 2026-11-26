@@ -2,7 +2,6 @@ import { deepBattleTargetScenario } from "@/lab/game/battle-target-scenario";
 import { HELD_SITE } from "@/lab/game/deep-scenario";
 import {
   nativeOathConstants as oaths,
-  nativeRuleConstants,
   nativeStructureConstants,
   readDeepSites,
 } from "@bibliothecadao/eternum/game-client";
