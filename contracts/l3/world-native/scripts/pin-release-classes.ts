@@ -23,7 +23,10 @@ export function repinnedRelease(
   if (built.release === pinned.release && changed.length > 0) {
     const differ = `Frontier logic classes ${changed.join(", ")} differ from release ${pinned.release}'s pin`;
     const reopen = `open release ${pinned.release + 1} in deploy/release/native-release.ts, then repin (${REPIN})`;
-    if (!write) throw new Error(`${differ}, and a shard refuses other classes under one release id: ${reopen}.`);
+    if (!write)
+      throw new Error(
+        `${differ}: repin (${REPIN}), which repins release ${pinned.release} while no environment's shard has registered it, and asks for release ${pinned.release + 1} once one has.`,
+      );
     const unread = registrations.find(({ releases }) => releases === null);
     if (unread)
       throw new Error(

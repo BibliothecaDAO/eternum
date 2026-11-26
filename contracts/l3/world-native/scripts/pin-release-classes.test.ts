@@ -12,9 +12,9 @@ test("the same classes under the pinned release pass", () => {
   expect(repinnedRelease(release15, release15, false, [])).toEqual(release15);
 });
 
-test("a changed logic class under the pinned release is refused when only checked", () => {
+test("a changed logic class under the pinned release is refused when only checked, pointing at the repin", () => {
   expect(() => repinnedRelease(changed, release15, false, unregistered)).toThrow(
-    "Frontier logic classes combat differ from release 15's pin, and a shard refuses other classes under one release id: open release 16",
+    "Frontier logic classes combat differ from release 15's pin: repin (bun contracts/l3/world-native/scripts/pin-release-classes.ts --write), which repins release 15 while no environment's shard has registered it, and asks for release 16 once one has.",
   );
 });
 
