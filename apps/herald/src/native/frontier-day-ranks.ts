@@ -2,7 +2,7 @@ import type { MadaraRpc } from "../madara-rpc";
 import { isCheckGame } from "../game-directory";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import type { HeraldFrontierDayRanks, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
-import { buildFrontierLeaderboard } from "./frontier-leaderboard";
+import { prepareFrontierLeaderboard } from "./frontier-leaderboard";
 import { integer, number, required } from "./values";
 import { isSeasonOneGame } from "./season-one";
 import { historyEventOf, type HistoryStore } from "../history-store";
@@ -21,11 +21,8 @@ export function closingFrontierDays(
   const boards = new Map<string, HeraldFrontierDayRanks["entries"]>();
   return closedDayBounds(modelRows, previousTimestamp, timestamp, confirmedBlock).map((day) => {
     if (!boards.has(day.game_id)) {
-      const board = buildFrontierLeaderboard(
-        modelRows,
-        day.game_id,
-        history.filter((event) => integer(event.game_id) === integer(day.game_id)),
-      );
+      const rank = prepareFrontierLeaderboard(modelRows, day.game_id);
+      const board = rank(history.filter((event) => integer(event.game_id) === integer(day.game_id)));
       boards.set(
         day.game_id,
         board.entries.map(({ address, structure_id, rank }) => ({ address, structure_id, rank })),

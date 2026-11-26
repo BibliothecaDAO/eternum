@@ -1,5 +1,6 @@
 import { dayAtIndex } from "../utils/days";
 import { currentArmy, deepTiles, deepTerrain } from "../utils/deep";
+import { realmShowsWonder } from "../utils/realm-skin";
 import { getBlockTimestamp } from "../utils/timestamp";
 import {
   isArmyCurrent,
@@ -247,7 +248,7 @@ const resolveUnoccupiedStructureRenderable = (
   const site = { col: position.x, row: position.y };
   const level = Math.min(3, Math.max(0, structure.base.level));
   const occupierType =
-    (structure.metadata.has_wonder ? TileOccupier.RealmWonderLevel1 : TileOccupier.RealmRegularLevel1) + level;
+    (realmShowsWonder(store, structure) ? TileOccupier.RealmWonderLevel1 : TileOccupier.RealmRegularLevel1) + level;
   return {
     kind: "structure",
     spatialId: `entity:${safeInteger(structure.entity_id)}` as const,
@@ -626,7 +627,12 @@ export class WorldSpatialProjection {
     )
       this.nextTimeRefresh = this.nextTimedChangeAt();
     for (const change of changes) {
-      if (change.model === "Structure" || change.model === "ExpeditionSite" || change.model === "TileOccupancy") {
+      if (
+        change.model === "Structure" ||
+        change.model === "ExpeditionSite" ||
+        change.model === "TileOccupancy" ||
+        change.model === "RealmSkin"
+      ) {
         for (const source of [change.previous, change.current]) {
           if (source && source.entity_id !== 0n) this.applyStructureEntityUpdate(source);
         }

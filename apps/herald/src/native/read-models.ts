@@ -5,7 +5,13 @@ import type {
   HeraldPlayerQuest,
   HeraldPlayerStructure,
 } from "@bibliothecadao/eternum/game-sync";
-import { DAILY_QUEST_MODELS, nativeGameModeOfFamily, readDailyQuest } from "@bibliothecadao/eternum";
+import {
+  DAILY_QUEST_MODELS,
+  nativeGameModeOfFamily,
+  readDailyQuest,
+  realmSkinEnabled,
+  REALM_SKIN_FAMILIES,
+} from "@bibliothecadao/eternum";
 import { dayOf, expeditionRealmSite, entityHomeNamespace, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 import {
   NativeFactStore,
@@ -32,6 +38,7 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "SettlementRules",
   "SettlementProgress",
   "Structure",
+  "RealmSkin",
   "TileOccupancy",
   "PlayerEntry",
   "AspectRules",
@@ -100,6 +107,7 @@ interface DirectoryRows {
   fragments: FoldRow[];
   seals: FoldRow[];
   homeAspects: FoldRow[];
+  realmSkins: FoldRow[];
 }
 
 const FIRST_SEASON = 1;
@@ -161,6 +169,7 @@ function directoryRows(input: DirectoryInput): DirectoryRows {
     fragments: rows("Fragments"),
     seals: rows("Seal"),
     homeAspects: rows("HomeAspect"),
+    realmSkins: rows("RealmSkin"),
   };
 }
 
@@ -290,6 +299,8 @@ export function directoryFact(model: string, row: Row | undefined): unknown {
       return row.bonus_percent;
     case "AspectHyperstructure":
       return [row.aspect, row.height];
+    case "RealmSkin":
+      return row.family;
     case "Structure":
       return [
         row.owner,
@@ -334,7 +345,8 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
   const { settlementRules, progress, structures } = facts;
   const mode = nativeGameModeOfFamily(number(game.family));
   const settlement = required(settlementRules, game.game_id, "SettlementRules");
-  const dayUnitSeconds = number(required(facts.rules, game.game_id, "SliceRules").day_unit_seconds);
+  const rules = required(facts.rules, game.game_id, "SliceRules");
+  const dayUnitSeconds = number(rules.day_unit_seconds);
   const state = gameRows(progress, game.game_id)[0];
   const settlements = gameRows(structures, game.game_id).filter(
     (row) => SETTLEMENT_CATEGORIES.includes(number(record(row.base).category)) && integer(row.owner) !== 0n,
@@ -366,6 +378,8 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     aspect_race: aspectRaceOf(facts, game.game_id),
     quest_bonus_percent: questBonusPercentOf(facts, game.game_id),
     player_state: directoryPlayerState(game, facts, input),
+    realm_skin_enabled:
+      mode === "frontier" && rules.command_mask !== undefined && realmSkinEnabled(integer(rules.command_mask)),
     registration: {
       count:
         mode === "frontier"
@@ -438,12 +452,18 @@ function playerStructure(
     resources_packed: integer(row.resources_packed).toString(),
     aspect: homeAspectOf(facts, game.game_id, row.entity_id),
     has_wonder: Boolean(record(row.metadata).has_wonder),
+    realm_skin: equippedRealmSkin(gameRows(facts.realmSkins, game.game_id), row.entity_id),
   };
 }
 
 function homeAspectOf(facts: DirectoryRows, gameId: unknown, home: unknown): AspectId | null {
   const row = gameRows(facts.homeAspects, gameId).find((each) => integer(each.home) === integer(home));
   return row ? catalogAspectId(number(row.aspect)) : null;
+}
+
+export function equippedRealmSkin(skins: Row[], realm: unknown): number {
+  const row = skins.find((each) => integer(each.entity_id) === integer(realm));
+  return row ? number(row.family) : REALM_SKIN_FAMILIES.DEFAULT_REALM_SKIN;
 }
 
 function structurePosition(

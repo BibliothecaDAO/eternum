@@ -82,6 +82,10 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.arrivals_offload(props);
   };
 
+  const set_realm_skin = async (props: SystemProps.SetRealmSkinProps): Promise<GetTransactionReceiptResponse> => {
+    return await provider.set_realm_skin(props);
+  };
+
   const set_entity_name = async (props: SystemProps.SetEntityNameProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.set_entity_name(props);
   };
@@ -242,6 +246,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     send_resources_multiple: withAuth(send_resources_multiple),
     arrivals_offload: withAuth(arrivals_offload),
     set_entity_name: withAuth(set_entity_name),
+    set_realm_skin: withAuth(set_realm_skin),
     upgrade_realm: withAuth(upgrade_realm),
     provision_realm: withAuth(provision_realm),
     receive_army_grant: withAuth(receive_army_grant),

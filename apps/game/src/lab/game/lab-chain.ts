@@ -6,7 +6,15 @@ import { answerLabChat } from "@/shell/lab/lab-chat";
 import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
 import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
-import { dayOf, fragmentsSold, nativeGameModeOfFamily, readExpeditionRules } from "@bibliothecadao/eternum";
+import {
+  dayOf,
+  equippedRealmSkin,
+  fragmentsSold,
+  holdsWonder,
+  nativeGameModeOfFamily,
+  readExpeditionRules,
+  realmSkinEnabled,
+} from "@bibliothecadao/eternum";
 import {
   compareAspectMembers,
   NativeFactStore,
@@ -230,6 +238,7 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
   answerDirectory(
     chain,
     now,
+    () => herald.confirmedBlock(),
     (url) => answerHeraldRead(url, scenario, chain, now, herald.confirmedBlock()),
     () => playerState(chain, scenario.player),
     // The home page's entry reads the game's clock against the wall clock, as a live chain's runs with it: a game
@@ -284,7 +293,8 @@ const playerState = (chain: NativeFactStore, player: string) => {
       coord_y: null,
       resources_packed: String(structure.resources_packed),
       aspect: homeAspect(chain, structure.entity_id),
-      has_wonder: structure.metadata.has_wonder,
+      has_wonder: holdsWonder(structure),
+      realm_skin: equippedRealmSkin(chain, structure),
     }));
   const entitlements = [...chain.rows("EntryEntitlement")];
   const own = entitlements.find((row) => BigInt(row.owner) === BigInt(player));
@@ -305,6 +315,7 @@ const playerState = (chain: NativeFactStore, player: string) => {
 const answerDirectory = (
   chain: NativeFactStore,
   now: () => number,
+  confirmedBlock: () => number,
   read: (url: URL) => unknown,
   playerStateNow: () => ReturnType<typeof playerState>,
   clockOffset: number,
@@ -376,6 +387,7 @@ const answerDirectory = (
       return playerStateNow();
     },
     registration: null,
+    realm_skin_enabled: realmSkinEnabled(rules.command_mask),
     settled_realms_count: 1,
     settled_villages_count: 0,
     settlement: null,
@@ -390,11 +402,24 @@ const answerDirectory = (
     if (url.pathname === "/api/guardian") return json(LAB_GUARDIAN);
     if (url.pathname === "/api/factory/calendar") return json({ phases: [] });
     if (url.pathname === "/api/directory")
-      return json({ shard: { url: LAB_GAME.url, chainId: LAB_GAME.chainId, games: [game], manifest } });
+      return json({
+        shard: {
+          url: LAB_GAME.url,
+          chainId: LAB_GAME.chainId,
+          games: [game],
+          manifest,
+          confirmedBlock: confirmedBlock(),
+        },
+      });
     if (url.host !== shard.host) return network(input, init);
     if (url.pathname === "/manifest") return json(manifest);
     if (url.pathname === "/games")
-      return json({ chain: LAB_GAME.chainId, world_address: "0x1ab", confirmed_block: now(), games: [game] });
+      return json({
+        chain: LAB_GAME.chainId,
+        world_address: "0x1ab",
+        confirmed_block: confirmedBlock(),
+        games: [game],
+      });
     const answer = read(url);
     if (answer === NOT_FOUND) return Promise.resolve(new Response(null, { status: 404 }));
     if (answer instanceof Promise) return answer.then(json);
@@ -611,7 +636,12 @@ const answerHeraldSocket = (herald: LabHerald) => {
  * (it joins one through a sign-in and the shard's node, neither of which the lab has), so the lab takes that setter.
  */
 const seatPlayer = (account: AccountInterface) =>
-  useAccountStore.setState({ account, owner: "lab", provisioningError: null, setGameplayAccount: () => undefined });
+  useAccountStore.setState({
+    account,
+    owner: LAB_SESSION.user.realmsId,
+    provisioningError: null,
+    setGameplayAccount: () => undefined,
+  });
 
 /**
  * The player's account: it signs nothing, it reads each play call's command, records it, and has the lab's Herald

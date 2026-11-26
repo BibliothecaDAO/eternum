@@ -11,6 +11,7 @@ export interface DirectoryShard {
   url: string;
   chainId: string;
   games: DirectoryEntry[] | null;
+  confirmedBlock?: number;
   /** The shard's manifest, which the app opens it from without asking the shard again. */
   manifest: ShardManifest | null;
   error?: "unavailable";

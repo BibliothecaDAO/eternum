@@ -235,3 +235,8 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.cosmetics__badge[data-standing="equipped"] {
+  border-color: var(--app-good);
+  color: var(--app-good);
+}

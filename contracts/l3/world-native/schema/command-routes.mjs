@@ -187,6 +187,11 @@ export const commandRoutes = [
     logic: "movement",
     entrypoint: "interact_site",
   },
+  {
+    name: "SetRealmSkin",
+    logic: "structures",
+    entrypoint: "set_realm_skin",
+  },
 ];
 
 export const blitzCommandRoutes = [

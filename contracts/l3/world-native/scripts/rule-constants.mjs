@@ -33,6 +33,7 @@ export async function readBalanceConstants(root) {
     nativeFragmentConstants: await readFragmentConstants(root),
     nativeFamilyConstants: await readFamilyConstants(root),
     nativeStructureConstants: await readStructureConstants(root),
+    nativeRealmSkinConstants: await readRealmSkinConstants(root),
   };
 }
 
@@ -95,6 +96,10 @@ async function readOathConstants(root) {
 
 async function readFamilyConstants(root) {
   return unsignedConstants(await readFile(new URL("src/game.cairo", root), "utf8"), "8");
+}
+
+async function readRealmSkinConstants(root) {
+  return unsignedConstants(await readFile(new URL("src/names.cairo", root), "utf8"), "8");
 }
 
 async function readFragmentConstants(root) {

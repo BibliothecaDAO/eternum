@@ -41,6 +41,7 @@ export const gameRefOf = (game: DirectoryGame): GameRef => ({ chainId: game.chai
 interface ShardDirectory {
   /** Live and upcoming games; a settled game lives in the history instead. */
   games: DirectoryGame[];
+  confirmedBlock?: number;
 }
 
 const DIRECTORY_QUERY_KEY = ["shell", "directory"] as const;
@@ -53,7 +54,7 @@ export const fetchDirectories = async (player: string | null): Promise<ShardDire
   const shard = await fetchDirectory(player);
   if (!shard?.games) return { games: [] };
   const { chainId } = shard;
-  return { games: shard.games.map((game) => ({ ...game, chainId })) };
+  return { games: shard.games.map((game) => ({ ...game, chainId })), confirmedBlock: shard.confirmedBlock };
 };
 
 interface GuardianIdentity {

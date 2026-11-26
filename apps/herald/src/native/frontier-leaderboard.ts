@@ -9,6 +9,7 @@ import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import type { FoldRow } from "../types";
 import { address, gameRows, integer, number, record, required, type Row } from "./values";
 import { frontierRewardOf } from "./frontier-rewards";
+import { equippedRealmSkin } from "./read-models";
 import { isSeasonOneGame } from "./season-one";
 
 interface Standing {
@@ -16,14 +17,21 @@ interface Standing {
   lastClear?: HeraldHistoryEvent;
 }
 
-export function buildFrontierLeaderboard(
-  modelRows: (model: string) => FoldRow[],
-  gameId: string,
-  history: readonly HeraldHistoryEvent[],
-): HeraldFrontierLeaderboard {
+export function prepareFrontierLeaderboard(modelRows: (model: string) => FoldRow[], gameId: string) {
   required(modelRows("GameRegistry"), gameId, "GameRegistry");
   if (isSeasonOneGame(modelRows, gameId)) throw new Error("Season 1 ranks Aspects by height, not players by sites");
-  const players = settledPlayers(gameRows(modelRows("Structure"), gameId));
+  const realms = gameRows(modelRows("Structure"), gameId);
+  const skins = gameRows(modelRows("RealmSkin"), gameId);
+  const prize = prizeOf(modelRows, gameId);
+  return (history: readonly HeraldHistoryEvent[]): HeraldFrontierLeaderboard => ({
+    game_id: integer(gameId).toString(),
+    mode: "frontier",
+    entries: rankPlayers(settledPlayers(realms, skins), gameId, history),
+    prize,
+  });
+}
+
+function rankPlayers(players: Map<string, Standing>, gameId: string, history: readonly HeraldHistoryEvent[]) {
   const receipts = new Set<string>();
   for (const event of history) {
     if (integer(event.game_id) !== integer(gameId)) throw new Error("Frontier history game mismatch");
@@ -38,11 +46,10 @@ export function buildFrontierLeaderboard(
     (a, b) => compareStandings(a, b) || a.entry.address.localeCompare(b.entry.address),
   );
   let rank = 0;
-  const entries = standings.map((standing, index) => {
+  return standings.map((standing, index) => {
     if (index === 0 || compareStandings(standings[index - 1]!, standing) !== 0) rank = index + 1;
     return { ...standing.entry, rank };
   });
-  return { game_id: integer(gameId).toString(), mode: "frontier", entries, prize: prizeOf(modelRows, gameId) };
 }
 
 /**
@@ -72,7 +79,7 @@ function prizeOf(modelRows: (model: string) => FoldRow[], gameId: string): Heral
   };
 }
 
-function settledPlayers(structures: Row[]): Map<string, Standing> {
+function settledPlayers(structures: Row[], skins: Row[]): Map<string, Standing> {
   const players = new Map<string, Standing>();
   for (const structure of structures) {
     if (!isRealmCategory(number(record(structure.base).category))) continue;
@@ -85,6 +92,7 @@ function settledPlayers(structures: Row[]): Map<string, Standing> {
         address: owner,
         structure_id: integer(structure.entity_id).toString(),
         has_wonder: metadata.has_wonder,
+        realm_skin: equippedRealmSkin(skins, structure.entity_id),
         rank: 0,
         sites_cleared: { total: 0, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
         chests_earned: 0,

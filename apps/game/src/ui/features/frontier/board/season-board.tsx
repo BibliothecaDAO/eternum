@@ -4,7 +4,7 @@ import { type PlayerNames, usePlayerDisplayName, usePlayerNames } from "@/hooks/
 import { startRealmVisit } from "@/sync/active-game-client";
 import { PlayerSeatMark } from "@/hooks/use-watched-side";
 import { LordName } from "./realm-marks";
-import { configManager, type ExpeditionRules } from "@bibliothecadao/eternum";
+import { configManager, showsWonder, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboard, HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { useQuery } from "@tanstack/react-query";
@@ -159,7 +159,7 @@ const listRow = (entry: Entry, own: boolean, names: PlayerNames): SeasonListRow 
   realm: {
     level: entry.level,
     depth: entry.deepest_depth,
-    hasWonder: entry.has_wonder,
+    hasWonder: showsWonder(entry.has_wonder === true, entry.realm_skin),
   },
   name: (
     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">

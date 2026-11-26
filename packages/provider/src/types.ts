@@ -120,6 +120,7 @@ export enum TransactionType {
 
   // Structures & Ownership
   SET_ENTITY_NAME = "set_entity_name",
+  SET_REALM_SKIN = "set_realm_skin",
   TRANSFER_STRUCTURE_OWNERSHIP = "transfer_structure_ownership",
   CLAIM_WONDER_POINTS = "claim_wonder_points",
   CLAIM_PLAYER_FAITH_POINTS = "claim_player_faith_points",

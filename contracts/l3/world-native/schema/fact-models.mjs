@@ -811,6 +811,16 @@ export const factWireTypes = [
   },
   {
     type: "struct",
+    name: "world_native::names::RealmSkin",
+    members: [
+      {
+        name: "family",
+        type: "core::integer::u8",
+      },
+    ],
+  },
+  {
+    type: "struct",
     name: "world_native::relics::ChestRules",
     members: [
       {
@@ -1490,6 +1500,7 @@ export function defineFactModels({ struct, model: declare }) {
     model("Building", "game", struct("buildings::BuildingKey"), struct("buildings::Building")),
     model("StructureBuildings", "game", struct("resources::ResourceKey"), struct("buildings::StructureBuildings")),
     model("EntityName", "game", struct("resources::ResourceKey"), struct("names::EntityName")),
+    model("RealmSkin", "game", struct("resources::ResourceKey"), struct("names::RealmSkin")),
 
     model(
       "ResourceRule",
@@ -1771,4 +1782,5 @@ export const syncScopes = {
   ResourceArrival: byEntity,
   StructureBuildings: byEntity,
   EntityName: byEntity,
+  RealmSkin: byEntity,
 };

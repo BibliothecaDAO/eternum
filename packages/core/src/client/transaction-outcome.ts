@@ -1,7 +1,7 @@
 import { gameplayRejection } from "@bibliothecadao/provider";
 import type { GetTransactionReceiptResponse, RpcProvider } from "starknet";
 
-import { transactionAnswer, TransactionNoAnswerError } from "./transaction-answer";
+import { pause, transactionAnswer, TransactionNoAnswerError } from "./transaction-answer";
 
 import type { GameSyncRuntime } from "../sync/game-sync-runtime";
 import type { GameSyncTransaction } from "../sync/game-sync-types";
@@ -95,6 +95,31 @@ const appliedNothing = (
 function succeeded(transactionHash: string, block: number | null): ActionOutcome {
   return { hash: transactionHash, block, status: "SUCCEEDED" };
 }
+
+export const waitForConfirmedActionReceipt = (
+  rpc: Rpc,
+  games: string,
+  hash: string,
+  stopped?: AbortSignal,
+  startedAt?: number,
+): Promise<ActionOutcome> =>
+  transactionAnswer(
+    hash,
+    undefined,
+    async (until) => {
+      for (;;) {
+        until.throwIfAborted();
+        const receipt = await rpc.getTransactionReceipt(hash).catch(() => undefined);
+        const preconfirmed =
+          receipt && "finality_status" in receipt && String(receipt.finality_status) === "PRE_CONFIRMED";
+        const block = receipt && !preconfirmed ? blockOf(receipt) : null;
+        if (receipt && block !== null) return refusalIn(receipt, games, hash) ?? succeeded(hash, block);
+        await pause(1_000, until);
+      }
+    },
+    stopped,
+    startedAt,
+  );
 
 const blockOf = (receipt: GetTransactionReceiptResponse): number | null =>
   "block_number" in receipt && typeof receipt.block_number === "number" ? receipt.block_number : null;

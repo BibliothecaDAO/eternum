@@ -2,26 +2,98 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import type { AccountInterface } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { HeraldPlayerStructure } from "@bibliothecadao/eternum/game-sync";
+import { TransactionNoAnswerError } from "@bibliothecadao/eternum/game-client";
 import { seasonGameName, StructureType } from "@bibliothecadao/types";
 
-const directory = vi.hoisted(() => ({ games: [] as unknown[] | null }));
+const directory = vi.hoisted(() => ({ games: [] as unknown[] | null, confirmedBlock: 10 }));
 vi.mock("../herald", async (original) => ({
   ...(await original<typeof import("../herald")>()),
   useDirectory: () => ({
-    data: directory.games === null ? undefined : { games: directory.games },
+    data: directory.games === null ? undefined : { games: directory.games, confirmedBlock: directory.confirmedBlock },
     isPending: directory.games === null,
     isError: false,
+    refetch: async () => {},
   }),
 }));
+const player = vi.hoisted(() => ({
+  signedIn: false,
+  refused: false,
+  outcomeMissing: false,
+  beforeOutcome: async () => {},
+  reportedBlock: 11 as number | null,
+  beforeAttach: () => {},
+  activeGame: null as { chainId: string; gameId: number } | null,
+  sent: [] as { context: unknown; command: unknown }[],
+}));
+vi.mock("@/hooks/context/identity-session", async (original) => {
+  const actual = await original<typeof import("@/hooks/context/identity-session")>();
+  const session = () => ({
+    status: player.signedIn ? "signed-in" : "signed-out",
+    session: player.signedIn
+      ? { session: { id: "signed-in-test" }, user: { image: null, name: "Aldric", realmsId: "0x123" } }
+      : null,
+  });
+  return {
+    ...actual,
+    useIdentitySession: session,
+    useIdentitySessionStore: Object.assign(actual.useIdentitySessionStore, {
+      getState: session,
+    }),
+  };
+});
+const testSigner = vi.hoisted(() => ({
+  address: "0x1",
+  getChainId: async () => "0x52",
+  getTransactionReceipt: vi.fn<() => Promise<{ block_number: number }>>(async () => ({ block_number: 15 })),
+}));
+const joinGameplayAccount = vi.hoisted(() => vi.fn(async () => testSigner));
+vi.mock("@/hooks/context/gameplay-account-sync", async (original) => ({
+  ...(await original<typeof import("@/hooks/context/gameplay-account-sync")>()),
+  joinGameplayAccount,
+}));
+vi.mock("@/runtime/world/store", async (original) => ({
+  ...(await original<typeof import("@/runtime/world/store")>()),
+  getActiveGame: () => player.activeGame,
+}));
+vi.mock("@/runtime/world/shards", () => ({
+  requireOpenShard: async (chainId: string) => ({ chainId }),
+}));
+vi.mock("@/init/bootstrap", () => ({
+  attachGameClient: async (context: unknown) => {
+    player.beforeAttach();
+    return {
+      shard: { worldAddress: "0x1ab" },
+      setup: {
+        systemCalls: {
+          set_realm_skin: async (command: unknown) => {
+            player.sent.push({ context, command });
+            return { transaction_hash: "0x1" };
+          },
+        },
+      },
+      waitForAction: async (hash: string) => {
+        await player.beforeOutcome();
+        if (player.outcomeMissing) throw new TransactionNoAnswerError(hash);
+        return player.refused
+          ? { hash, block: 11, status: "REJECTED", revertReason: "game is over" }
+          : { hash, block: player.reportedBlock, status: "SUCCEEDED" };
+      },
+    };
+  },
+}));
 
+import { DeviceLimitError, DeviceRemovedError, REALM_SKIN_FAMILIES } from "@bibliothecadao/eternum";
+import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { REALM_SKINS } from "@/three/cosmetics/realm-skins";
-import { COSMETICS_WORDS } from "@/ui/design-system/kit/words";
+import { COSMETICS_WORDS, DOORWAY_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
 
 import { setViewportWidth } from "../frame/test-viewport";
-import { PROFILE_PATH } from "../profile/settings-route";
+import { DEVICES_PATH, PROFILE_PATH } from "../profile/settings-route";
 import { FRAGMENTS_PATH } from "../shop/fragments-route";
 import { CosmeticsPage } from "./cosmetics-page";
 import { COSMETICS_HASH, COSMETICS_PATH } from "./cosmetics-route";
@@ -38,6 +110,7 @@ const realm = (over: Partial<HeraldPlayerStructure>): HeraldPlayerStructure => (
   resources_packed: "0",
   aspect: null,
   has_wonder: false,
+  realm_skin: 0,
   ...over,
 });
 
@@ -47,6 +120,7 @@ const season = (structures: HeraldPlayerStructure[], ancient_seal: boolean) => (
   name: seasonGameName(NOW - 1_000),
   mode: "frontier",
   status: "Live",
+  realm_skin_enabled: true,
   clock: { start_main_at: NOW - 1_000, end_at: NOW + 100_000 },
   player_state: { registered: true, settled: true, structures, fragments: null, ancient_seal },
 });
@@ -58,8 +132,24 @@ const Where = () => {
 
 let root: Root | null = null;
 afterEach(async () => {
+  if (root) {
+    directory.confirmedBlock = 15;
+    await drawAgain();
+  }
   await act(async () => root?.unmount());
   root = null;
+  player.signedIn = false;
+  player.refused = false;
+  player.outcomeMissing = false;
+  player.beforeOutcome = async () => {};
+  player.reportedBlock = 11;
+  player.beforeAttach = () => {};
+  player.activeGame = null;
+  player.sent = [];
+  directory.confirmedBlock = 10;
+  joinGameplayAccount.mockClear();
+  testSigner.getTransactionReceipt.mockReset().mockResolvedValue({ block_number: 15 });
+  useAccountStore.getState().setGameplayAccount(null, null);
 });
 
 const open = async (width = 1440) => {
@@ -98,6 +188,12 @@ const standings = (container: HTMLElement) =>
 const buttonNamed = (container: HTMLElement, name: string) =>
   [...container.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === name);
 
+const press = (container: HTMLElement, name: string) =>
+  act(async () => {
+    buttonNamed(container, name)!.click();
+    await vi.dynamicImportSettled();
+  });
+
 const pick = async (container: HTMLElement, skin: string) =>
   act(async () => container.querySelector<HTMLElement>(`[data-skin="${skin}"]`)!.click());
 
@@ -115,7 +211,10 @@ describe("the Cosmetics page", () => {
 
   it("owns only the base skin for a player the season knows nothing of", async () => {
     directory.games = [];
-    expect(standings(await open())).toEqual({
+    const container = await open();
+    expect(container.querySelector('[data-preview="base"]')).not.toBeNull();
+    expect(container.querySelector('[data-standing="equipped"]')).toBeNull();
+    expect(standings(container)).toEqual({
       "wonder-prowess": "wonder",
       "wonder-luminary": "wonder",
       "wonder-havoc": "wonder",
@@ -169,7 +268,7 @@ describe("the Cosmetics page", () => {
     directory.games = [];
     const container = await open();
     await pick(container, "season-1-insight");
-    await act(async () => buttonNamed(container, COSMETICS_WORDS.unlockInPass)!.click());
+    await press(container, COSMETICS_WORDS.unlockInPass);
     expect(container.querySelector("[data-where]")!.textContent).toBe(FRAGMENTS_PATH);
   });
 
@@ -192,14 +291,293 @@ describe("the Cosmetics page", () => {
     ).toHaveLength(1);
   });
 
-  it("offers no Equip, and says the default order the game wears for an owned skin", async () => {
+  it("asks a player not signed in to connect before equipping a skin they would own", async () => {
     directory.games = [];
     const container = await open();
     await pick(container, "base");
-    expect(container.textContent).not.toContain("Equip");
+    expect(buttonNamed(container, COSMETICS_WORDS.connectToEquip)).toBeDefined();
+  });
+
+  it("offers nothing to equip without a realm in the season, saying the default order the game wears", async () => {
+    player.signedIn = true;
+    directory.games = [];
+    const container = await open();
+    await pick(container, "base");
+    expect(buttonNamed(container, COSMETICS_WORDS.equip)).toBeUndefined();
     expect(container.querySelector(".cosmetics__note")!.textContent).toBe(
-      COSMETICS_WORDS.defaultOrder(["Wonder", "Season 1", "Devcon", "Base"]),
+      COSMETICS_WORDS.defaultOrder([COSMETICS_WORDS.families.wonder, COSMETICS_WORDS.families.base]),
     );
+  });
+
+  it("joins the season shard from a fresh tab and equips a skin through that game's client", async () => {
+    player.signedIn = true;
+    directory.games = [season([realm({ entity_id: 7, aspect: 3, has_wonder: true })], false)];
+    const container = await open();
+    expect(container.querySelector('[data-skin="wonder-havoc"] [data-standing="equipped"]')).not.toBeNull();
+    await pick(container, "base");
+    await press(container, COSMETICS_WORDS.equip);
+    expect(joinGameplayAccount).toHaveBeenCalledWith({ chainId: "0x52" }, "0x123");
+    expect(player.sent).toEqual([
+      {
+        context: expect.objectContaining({ chainId: "0x52", gameId: 1, intent: "play" }),
+        command: { signer: testSigner, entity_id: 7, family: REALM_SKIN_FAMILIES.BASE_REALM_SKIN },
+      },
+    ]);
+  });
+
+  it("equips the player's live rehearsal realm when the official season has no realm for them", async () => {
+    player.signedIn = true;
+    directory.games = [
+      season([], false),
+      { ...season([realm({ entity_id: 8, aspect: 3, has_wonder: true })], false), game_id: 2, name: "rehearsal" },
+    ];
+    const container = await open();
+    await pick(container, "base");
+    await press(container, COSMETICS_WORDS.equip);
+    expect(player.sent).toEqual([
+      {
+        context: expect.objectContaining({ gameId: 2 }),
+        command: { signer: testSigner, entity_id: 8, family: REALM_SKIN_FAMILIES.BASE_REALM_SKIN },
+      },
+    ]);
+  });
+
+  it("equips the realm in the last game played when both live games have a realm", async () => {
+    player.signedIn = true;
+    player.activeGame = { chainId: "0x52", gameId: 2 };
+    directory.games = [
+      season([realm({ entity_id: 7, aspect: 3, has_wonder: true })], false),
+      { ...season([realm({ entity_id: 8, aspect: 3, has_wonder: true })], false), game_id: 2, name: "rehearsal" },
+    ];
+    const container = await open();
+    await pick(container, "base");
+    await press(container, COSMETICS_WORDS.equip);
+    expect(player.sent.map(({ command }) => command)).toEqual([
+      { signer: testSigner, entity_id: 8, family: REALM_SKIN_FAMILIES.BASE_REALM_SKIN },
+    ]);
+  });
+
+  it("offers the existing sign-in recovery when the gameplay device has been revoked", async () => {
+    player.signedIn = true;
+    joinGameplayAccount.mockRejectedValueOnce(new DeviceRemovedError("0x1"));
+    directory.games = [season([realm({ aspect: 3, has_wonder: true })], false)];
+    const container = await open();
+    await pick(container, "base");
+    await press(container, COSMETICS_WORDS.equip);
+    expect(buttonNamed(container, "Sign in again")).toBeDefined();
+    expect(buttonNamed(container, TRY_AGAIN)).toBeUndefined();
+  });
+
+  it("rechecks a cached device before retrying a refused equip", async () => {
+    player.signedIn = true;
+    player.refused = true;
+    useAccountStore.getState().setGameplayAccount(testSigner as unknown as AccountInterface, "0x123");
+    joinGameplayAccount.mockRejectedValueOnce(new DeviceRemovedError("0x1"));
+    directory.games = [season([realm({ aspect: 3, has_wonder: true })], false)];
+    const container = await open();
+    await pick(container, "base");
+    await press(container, COSMETICS_WORDS.equip);
+    expect(player.sent).toHaveLength(1);
+    await press(container, TRY_AGAIN);
+    expect(isAccountStatePrompt(useAccountStore.getState().provisioningError)).toBe(true);
+    expect(player.sent).toHaveLength(1);
+  });
+
+  it("links to device management when the gameplay device limit is reached", async () => {
+    player.signedIn = true;
+    joinGameplayAccount.mockRejectedValueOnce(new DeviceLimitError());
+    directory.games = [season([realm({ aspect: 3, has_wonder: true })], false)];
+    const container = await open();
+    await pick(container, "base");
+    await press(container, COSMETICS_WORDS.equip);
+    expect(container.querySelector(`a[href="${DEVICES_PATH}"]`)?.textContent).toBe(DOORWAY_WORDS.removeDevice);
+    expect(player.sent).toEqual([]);
+  });
+
+  it("keeps both actions locked until the directory reaches the receipt's block, even if the previous skin is back", async () => {
+    player.signedIn = true;
+    const home = realm({ aspect: 3, has_wonder: true, realm_skin: REALM_SKIN_FAMILIES.BASE_REALM_SKIN });
+    directory.games = [season([home], false)];
+    const container = await open();
+    await pick(container, "wonder-havoc");
+    await press(container, COSMETICS_WORDS.equip);
+    await pick(container, "base");
+    expect(buttonNamed(container, COSMETICS_WORDS.useDefaultOrder)?.disabled).toBe(true);
+    await pick(container, "wonder-havoc");
+    expect(buttonNamed(container, COSMETICS_WORDS.equip)?.disabled).toBe(true);
+    expect(player.sent).toHaveLength(1);
+
+    directory.confirmedBlock = 11;
+    await drawAgain();
+    expect(buttonNamed(container, COSMETICS_WORDS.equip)?.disabled).toBe(false);
+  });
+
+  it("does not restore a signer or submit if the player signs out while the client attaches", async () => {
+    player.signedIn = true;
+    player.beforeAttach = () => {
+      player.signedIn = false;
+    };
+    directory.games = [season([realm({ aspect: 3, has_wonder: true })], false)];
+    const container = await open();
+    await pick(container, "base");
+    await press(container, COSMETICS_WORDS.equip);
+    expect(player.sent).toEqual([]);
+    expect(useAccountStore.getState().account).toBeNull();
+  });
+
+  it("waits for the transaction's block when the first status has no block", async () => {
+    player.signedIn = true;
+    player.reportedBlock = null;
+    directory.games = [season([realm({ aspect: 3, has_wonder: true })], false)];
+    const container = await open();
+    await pick(container, "base");
+    await press(container, COSMETICS_WORDS.equip);
+    expect(testSigner.getTransactionReceipt).toHaveBeenCalledWith("0x1");
+    directory.confirmedBlock = 14;
+    await drawAgain();
+    expect(buttonNamed(container, COSMETICS_WORDS.equip)?.disabled).toBe(true);
+    directory.confirmedBlock = 15;
+    await drawAgain();
+    expect(buttonNamed(container, COSMETICS_WORDS.equip)?.disabled).toBe(false);
+  });
+
+  it("releases an applied equip when the directory shows it during a receipt outage", async () => {
+    player.signedIn = true;
+    player.reportedBlock = null;
+    testSigner.getTransactionReceipt.mockRejectedValue(new Error("receipt unavailable"));
+    const home = realm({ aspect: 3, has_wonder: true });
+    directory.games = [season([home], false)];
+    const container = await open();
+    await pick(container, "base");
+    await press(container, COSMETICS_WORDS.equip);
+    expect(buttonNamed(container, COSMETICS_WORDS.equip)?.disabled).toBe(true);
+    directory.games = [season([{ ...home, realm_skin: REALM_SKIN_FAMILIES.BASE_REALM_SKIN }], false)];
+    await drawAgain();
+    expect(buttonNamed(container, COSMETICS_WORDS.useDefaultOrder)?.disabled).toBe(false);
+  });
+
+  it("does not attach the old game when the player leaves Cosmetics during the account join", async () => {
+    player.signedIn = true;
+    const attach = vi.fn();
+    player.beforeAttach = attach;
+    let finishJoin!: (signer: typeof testSigner) => void;
+    joinGameplayAccount.mockImplementationOnce(() => new Promise((resolve) => (finishJoin = resolve)));
+    directory.games = [season([realm({ aspect: 3, has_wonder: true })], false)];
+    const container = await open();
+    await pick(container, "base");
+    await press(container, COSMETICS_WORDS.equip);
+    await act(async () => root?.unmount());
+    root = null;
+    await act(async () => finishJoin(testSigner));
+    expect(attach).not.toHaveBeenCalled();
+    expect(player.sent).toEqual([]);
+  });
+
+  it("retains a submitted equip across a remount while its outcome is unknown", async () => {
+    player.signedIn = true;
+    player.outcomeMissing = true;
+    let finishWait!: () => void;
+    player.beforeOutcome = () => new Promise((resolve) => (finishWait = resolve));
+    directory.games = [season([realm({ aspect: 3, has_wonder: true })], false)];
+    const first = await open();
+    await pick(first, "base");
+    await press(first, COSMETICS_WORDS.equip);
+    await act(async () => root?.unmount());
+    root = null;
+    const reopened = await open();
+    await pick(reopened, "base");
+    expect(buttonNamed(reopened, COSMETICS_WORDS.equip)?.disabled).toBe(true);
+    expect(player.sent).toHaveLength(1);
+    await act(async () => finishWait());
+    expect(buttonNamed(reopened, TRY_AGAIN)?.disabled).toBe(false);
+  });
+
+  it("offers the unaligned Wonder to a Wonder realm without an Aspect", async () => {
+    player.signedIn = true;
+    const home = realm({ has_wonder: true, realm_skin: REALM_SKIN_FAMILIES.BASE_REALM_SKIN });
+    directory.games = [season([home], false)];
+    const container = await open();
+    await pick(container, "wonder");
+    await press(container, COSMETICS_WORDS.equip);
+    expect(player.sent.map(({ command }) => command)).toEqual([
+      { signer: testSigner, entity_id: home.entity_id, family: REALM_SKIN_FAMILIES.WONDER_REALM_SKIN },
+    ]);
+  });
+
+  it("offers no Equip on a skin the game cannot draw yet, though the realm holds it", async () => {
+    player.signedIn = true;
+    useAccountStore.setState({ account: { address: "0x1" } } as never);
+    directory.games = [season([realm({ entity_id: 7, aspect: 3 })], true)];
+    const container = await open();
+    expect(container.querySelector<HTMLElement>("[data-preview]")!.dataset.preview).toBe("base");
+    await pick(container, "season-1-havoc");
+    expect(container.querySelector('[data-skin="season-1-havoc"]')!.getAttribute("data-standing")).toBe("owned");
+    expect(buttonNamed(container, COSMETICS_WORDS.equip)).toBeUndefined();
+  });
+
+  it("leaves Equip unavailable when the live game's rules do not enable it", async () => {
+    player.signedIn = true;
+    const game = season([realm({ aspect: 3, has_wonder: true })], false);
+    directory.games = [{ ...game, realm_skin_enabled: false }];
+    const container = await open();
+    await pick(container, "base");
+    expect(buttonNamed(container, COSMETICS_WORDS.equip)).toBeUndefined();
+  });
+
+  it("says Try again only on the skin whose submitted equip was rejected", async () => {
+    player.signedIn = true;
+    player.refused = true;
+    useAccountStore.setState({ account: { address: "0x1" } } as never);
+    const equipped = realm({
+      entity_id: 7,
+      aspect: 3,
+      has_wonder: true,
+      realm_skin: REALM_SKIN_FAMILIES.BASE_REALM_SKIN,
+    });
+    directory.games = [season([equipped], false)];
+    const container = await open();
+    await pick(container, "wonder-havoc");
+    await press(container, COSMETICS_WORDS.equip);
+    expect(buttonNamed(container, TRY_AGAIN)).toBeDefined();
+    await pick(container, "base");
+    expect(buttonNamed(container, COSMETICS_WORDS.useDefaultOrder)).toBeDefined();
+    expect(buttonNamed(container, TRY_AGAIN)).toBeUndefined();
+  });
+
+  it("shows the equipped skin worn, and its owner may go back to the default order", async () => {
+    player.signedIn = true;
+    useAccountStore.setState({ account: { address: "0x1" } } as never);
+    const equipped = realm({
+      entity_id: 7,
+      aspect: 3,
+      has_wonder: true,
+      realm_skin: REALM_SKIN_FAMILIES.BASE_REALM_SKIN,
+    });
+    directory.games = [season([equipped], false)];
+    const container = await open();
+    expect(container.querySelector<HTMLElement>("[data-preview]")!.dataset.preview).toBe("base");
+    expect(container.querySelector('[data-skin="base"] [data-standing="equipped"]')).not.toBeNull();
+    await press(container, COSMETICS_WORDS.useDefaultOrder);
+    expect(player.sent.map(({ command }) => command)).toEqual([
+      { signer: testSigner, entity_id: 7, family: REALM_SKIN_FAMILIES.DEFAULT_REALM_SKIN },
+    ]);
+  });
+
+  it("only offers default order when it would change the worn skin", async () => {
+    player.signedIn = true;
+    useAccountStore.setState({ account: { address: "0x1" } } as never);
+    const owningWonder = realm({ aspect: 3, has_wonder: true, realm_skin: REALM_SKIN_FAMILIES.BASE_REALM_SKIN });
+    directory.games = [season([owningWonder], false)];
+    const container = await open();
+    await pick(container, "wonder-havoc");
+    await press(container, COSMETICS_WORDS.equip);
+    expect(player.sent.map(({ command }) => command)).toEqual([
+      { signer: testSigner, entity_id: owningWonder.entity_id, family: REALM_SKIN_FAMILIES.WONDER_REALM_SKIN },
+    ]);
+    directory.games = [season([{ ...owningWonder, realm_skin: REALM_SKIN_FAMILIES.WONDER_REALM_SKIN }], false)];
+    await drawAgain();
+    expect(container.querySelector('[data-skin="wonder-havoc"] [data-standing="equipped"]')).not.toBeNull();
+    expect(buttonNamed(container, COSMETICS_WORDS.useDefaultOrder)).toBeUndefined();
   });
 
   it("opens inside You on a phone", async () => {

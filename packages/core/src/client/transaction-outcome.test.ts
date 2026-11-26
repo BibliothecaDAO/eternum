@@ -2,7 +2,7 @@ import { TransactionNotSentError } from "@bibliothecadao/provider";
 import { byteArray, hash, shortString } from "starknet";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { waitForActionOutcome } from "./transaction-outcome";
+import { waitForActionOutcome, waitForConfirmedActionReceipt } from "./transaction-outcome";
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
@@ -30,6 +30,24 @@ const rpcAnswering = (answer: ReturnType<typeof receipt>) => ({
   getTransactionReceipt: vi.fn(async () => answer as never),
 });
 const running = new AbortController().signal;
+
+it("keeps a numbered pre-confirmed receipt pending and releases it when the shared wait expires", async () => {
+  const rpc = rpcAnswering(receipt());
+  const ended = expect(waitForConfirmedActionReceipt(rpc, GAMES, TX, running)).rejects.toThrow("No answer");
+  await vi.runAllTimersAsync();
+  await ended;
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+it("reads again when a numbered receipt is pre-confirmed and returns the confirmed block", async () => {
+  const rpc = rpcAnswering(receipt({ block_number: 15, finality_status: "ACCEPTED_ON_L2" }));
+  rpc.getTransactionReceipt.mockResolvedValueOnce(receipt() as never);
+  const answer = waitForConfirmedActionReceipt(rpc, GAMES, TX, running);
+  await vi.runAllTimersAsync();
+  await expect(answer).resolves.toEqual({ hash: TX, block: 15, status: "SUCCEEDED" });
+  expect(rpc.getTransactionReceipt).toHaveBeenCalledTimes(2);
+});
+
 /** The runtime's contract: a resync reaches its listeners, and a new listener hears the last applied snapshot. */
 const runtimeWith = (status: Promise<{ block: number | null; hash: string; status: string }>) => {
   const listeners = new Set<(throughBlock: number) => void>();

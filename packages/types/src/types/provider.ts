@@ -15,6 +15,11 @@ export interface SetEntityNameProps extends SystemSigner {
   name: string;
 }
 
+export interface SetRealmSkinProps extends SystemSigner {
+  entity_id: BigNumberish;
+  family: number;
+}
+
 export interface SendResourcesMultipleProps extends SystemSigner {
   calls: {
     sender_entity_id: BigNumberish;

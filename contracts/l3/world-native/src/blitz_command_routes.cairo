@@ -12,7 +12,7 @@ pub const COMMAND_IDS: [u32; 42] = [
     74, 75, 73, 76, 72, 0, 1, 2, 3, 4, 6, 8, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 29, 43, 53, 54, 55, 56,
     57, 58, 59, 60, 64, 65, 66, 67, 69, 77, 78,
 ];
-pub const COMMAND_ROUTES: [Option<CommandRoute>; 79] = [
+pub const COMMAND_ROUTES: [Option<CommandRoute>; 80] = [
     Some(CommandRoute { logic: 6, selector: selector!("create_explorer"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 15, selector: selector!("explore"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 12, selector: selector!("battle"), items_offset: Some(2), batch: false }),
@@ -81,6 +81,7 @@ pub const COMMAND_ROUTES: [Option<CommandRoute>; 79] = [
     Some(CommandRoute { logic: 14, selector: selector!("reroll_oath"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 7, selector: selector!("seat_blitz_roster"), items_offset: None, batch: true }),
     Some(CommandRoute { logic: 5, selector: selector!("raise_hyperstructure"), items_offset: None, batch: false }),
+    None,
 ];
 
 #[derive(Copy, Drop, Debug, PartialEq)]

@@ -1,5 +1,5 @@
 import type { NodeHealth } from "./node-health";
-import { buildFrontierLeaderboard } from "./native/frontier-leaderboard";
+import { prepareFrontierLeaderboard } from "./native/frontier-leaderboard";
 import type {
   HeraldAspectRoster,
   HeraldAspectRosterMember,
@@ -372,15 +372,9 @@ function cachedLeaderboard(state: HeraldHttpState) {
     let response: HeraldFrontierLeaderboard;
     if (number(rules.day_unit_seconds) > 0) {
       if (!state.history || state.undecodableEventCount() > 0) throw new Error("Frontier history unavailable");
-      // Capture current facts before awaiting SQL, so a newer head cannot mix into this board.
-      const facts = new Map(
-        ["GameRegistry", "Structure", "FrontierPrize", "ChestRules", "LordsWithdrawal"].map((model) => [
-          model,
-          state.fold.modelRows(model),
-        ]),
-      );
+      const rank = prepareFrontierLeaderboard(state.fold.modelRows, gameId);
       const history = await state.history.frontierHistory(gameId, head);
-      response = buildFrontierLeaderboard((model) => facts.get(model) ?? [], gameId, history);
+      response = rank(history);
     } else {
       throw new Error(`Game ${gameId} has no Frontier leaderboard`);
     }

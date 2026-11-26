@@ -6,6 +6,8 @@ export { nativeModelDefinition } from "./native-models";
 export * from "./submit";
 export * from "./shard";
 export * from "./story-participants";
+export { waitForConfirmedActionReceipt } from "./transaction-outcome";
+export { TransactionNoAnswerError } from "./transaction-answer";
 
 export type { NativeRows, NativeKeys, NativeModelName } from "../../../../contracts/l3/world-native/schema/client.gen";
 export {

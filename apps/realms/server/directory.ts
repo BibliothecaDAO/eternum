@@ -14,6 +14,7 @@ interface DirectoryShard {
 interface ShardRead {
   games: HeraldGameDirectoryEntry[];
   manifest: ShardManifest;
+  confirmedBlock: number;
 }
 
 type ShardListing =
@@ -237,19 +238,22 @@ const listShard = async (shard: DirectoryShard, read: () => Promise<ShardRead>):
 
 /** A shard whose manifest cannot be read is unavailable, like one whose games cannot be: no client could open it. */
 const readShard = async (shard: DirectoryShard, gamesUrl: string, fetchShard: typeof fetch): Promise<ShardRead> => {
-  const [games, manifest] = await Promise.all([
-    fetchShardGames(shard, gamesUrl, fetchShard),
+  const [directory, manifest] = await Promise.all([
+    fetchShardDirectory(shard, gamesUrl, fetchShard),
     readManifest(shard.url, fetchShard),
   ]);
   // A Herald serving another chain's manifest would open this shard's games on that chain.
   if (!manifest || BigInt(manifest.chainId) !== BigInt(shard.chainId)) {
     throw new Error(`manifest is not chain ${shard.chainId}`);
   }
-  return { games, manifest: manifest as ShardManifest };
+  return { games: directory.games, confirmedBlock: directory.confirmed_block, manifest: manifest as ShardManifest };
 };
 
 /** A shard's games, read within the shard timeout and refused unless its Herald folds the shard's own chain. */
-export const fetchShardGames = async (shard: DirectoryShard, url: string, fetchShard: typeof fetch) => {
+export const fetchShardGames = async (shard: DirectoryShard, url: string, fetchShard: typeof fetch) =>
+  (await fetchShardDirectory(shard, url, fetchShard)).games;
+
+const fetchShardDirectory = async (shard: DirectoryShard, url: string, fetchShard: typeof fetch) => {
   const response = await fetchShard(url, { signal: AbortSignal.timeout(SHARD_TIMEOUT_MS), redirect: "manual" });
   if (!response.ok) throw new Error(`games directory answered ${response.status}`);
   const directory = (await response.json()) as HeraldGameDirectory;
@@ -257,7 +261,7 @@ export const fetchShardGames = async (shard: DirectoryShard, url: string, fetchS
   if (!Array.isArray(directory.games) || BigInt(directory.chain) !== BigInt(shard.chainId)) {
     throw new Error(`games directory is not chain ${shard.chainId}`);
   }
-  return directory.games;
+  return directory;
 };
 
 /** The account class and guardian key that, with a Realms id, place a player's account on every shard we list. */

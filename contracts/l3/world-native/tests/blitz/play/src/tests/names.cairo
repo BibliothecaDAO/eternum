@@ -38,3 +38,24 @@ fn a_player_does_not_name_a_realm_of_another() {
     assert!(!execute_in_game(d, home.game_id, name(rival_home.entity_id, 'Taken'), NOW));
     assert_eq!(named(d, home, rival_home.entity_id), 0);
 }
+
+#[test]
+fn blitz_buy_seal_and_move_dispatch_to_their_handlers() {
+    let mut encoded = array![];
+    Command::BuySeal.serialize(ref encoded);
+    let (_, route, payload) = crate::commands::route_command(encoded.span()).unwrap();
+    assert_eq!(route.selector, selector!("buy_seal"));
+    assert!(payload.is_empty());
+    let mut encoded = array![];
+    Command::Move(crate::commands::Move { explorer_id: 7, directions: array![0_u8].span() }).serialize(ref encoded);
+    let (_, route, payload) = crate::commands::route_command(encoded.span()).unwrap();
+    assert_eq!(route.selector, selector!("move_explorer"));
+    assert_eq!(payload, array![7, 1, 0].span());
+}
+
+#[test]
+fn frontier_realm_skin_tag_has_no_blitz_route() {
+    let values = array![79, 7, crate::names::BASE_REALM_SKIN.into()];
+    assert_eq!(crate::commands::route_command(values.span()).unwrap_err(), 'INVALID_COMMAND');
+    assert!(!crate::rules::command_enabled(crate::balance::rules::SWITCHES.command_mask, 79));
+}

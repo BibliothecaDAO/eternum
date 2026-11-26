@@ -15,6 +15,7 @@ export type StructureWithMetadata = Structure & {
   displayName: string;
   originalName: string;
   realmLevel: number;
+  showsWonder: boolean;
   realmLevelLabel: string | null;
   population: number;
   guardCount: number | undefined;

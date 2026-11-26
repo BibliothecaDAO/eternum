@@ -1,5 +1,9 @@
 import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/balance.gen";
-import { nativeBlitzCommandBits, nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
+import {
+  nativeBlitzCommandBits,
+  nativeCommandBits,
+  nativeFrontierOnlyCommandBits,
+} from "../../../contracts/l3/world-native/schema/commands.gen";
 
 export const arenaModeRules =
   rule.HOME_REWARDS | rule.DISCOVER_CAMPS | rule.CAPTURE_VILLAGES | rule.SAME_OWNER_TRANSFER | rule.PRODUCTION_START;
@@ -10,7 +14,9 @@ function commandBits(commands: NativeCommand[]): bigint {
   return commands.reduce((mask, command) => mask | BigInt(nativeCommandBits[command]), 0n);
 }
 
-const allCommands = Object.keys(nativeCommandBits) as NativeCommand[];
+const arenaCommands = (Object.keys(nativeCommandBits) as NativeCommand[]).filter(
+  (command) => !Object.hasOwn(nativeFrontierOnlyCommandBits, command),
+);
 const arenaClosedCommands: NativeCommand[] = [
   "EnterDepth",
   "Research",
@@ -56,11 +62,11 @@ const blitzReturnedCommands: NativeCommand[] = [
 
 const blitzOnlyCommandMask = Object.values(nativeBlitzCommandBits).reduce((mask, bit) => mask | BigInt(bit), 0n);
 
-export const arenaCommandMask = (commandBits(allCommands) & ~commandBits(arenaClosedCommands)) | blitzOnlyCommandMask;
+export const arenaCommandMask = (commandBits(arenaCommands) & ~commandBits(arenaClosedCommands)) | blitzOnlyCommandMask;
 
 const blitzCommandsWithoutRoute = ["OpenRelicChest", "CraftRelic"];
 
-const blitzPendingRoutedCommands = allCommands.filter(
+const blitzPendingRoutedCommands = arenaCommands.filter(
   (command) => !arenaClosedCommands.includes(command) && !blitzReturnedCommands.includes(command),
 );
 

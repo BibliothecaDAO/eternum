@@ -36,6 +36,17 @@ fn retired_command_tags_have_neither_a_route_nor_a_typed_command() {
 }
 
 #[test]
+fn realm_skin_wire_tag_dispatches_to_its_own_handler() {
+    let mut encoded = array![];
+    Command::SetRealmSkin(crate::names::SetRealmSkin { entity_id: 7, family: crate::names::BASE_REALM_SKIN })
+        .serialize(ref encoded);
+    let (tag, route, payload) = validated_command(encoded.span()).unwrap();
+    assert_eq!(tag, 79);
+    assert_eq!(route.selector, selector!("set_realm_skin"));
+    assert_eq!(payload, array![7, crate::names::BASE_REALM_SKIN.into()].span());
+}
+
+#[test]
 fn stories_keep_their_original_tags_and_reject_retired_tags() {
     let story = Story::StructureLevelUpStory(StructureLevelUpStory { new_level: 2 });
     let mut encoded = array![];

@@ -22,6 +22,7 @@ interface MapSelectionSnapshot {
   camera: { col: number; row: number } | null;
   /** How many of each site kind the map draws a model for (the Deep's sites by `deep:<position>`), for the sites' proof. */
   drawnSites: Record<string, number>;
+  drawnRealmSkin: ((entityId: number) => "base" | "wonder" | null) | null;
   /** The contract hex each drawn Deep site model stands on, by the same keys (the proof walks the camera to each). */
   siteHexes: Record<string, { col: number; row: number }>;
   /** The layer the map shows: the depth below (true) or the surface. */

@@ -1,4 +1,4 @@
-import { configManager, getExplorerOwner } from "@bibliothecadao/eternum";
+import { configManager, getExplorerOwner, realmShowsWonder } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import type { FactView } from "@/sync/fact-views";
 import { sideOf, watchedSide } from "@/utils/entity-ownership";
@@ -13,6 +13,7 @@ export interface MinimapMarker {
 export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
   models: [
     "Structure",
+    "RealmSkin",
     "ExplorerTroops",
     "PlayerEntry",
     "GameRegistry",
@@ -38,7 +39,7 @@ export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
       const category = row.base.category;
       const name =
         category === StructureType.Realm
-          ? realmMarkerMeaning(row.base.level, row.metadata.has_wonder)
+          ? realmMarkerMeaning(row.base.level, realmShowsWonder(store, row))
           : category === StructureType.Village
             ? "map-village"
             : category === StructureType.Mine

@@ -59,8 +59,8 @@ vi.mock("@/runtime/world/herald-pre-session-reader", () => ({
   }),
 }));
 
-vi.mock("@/services/settlement", () => ({
-  submitSettlement: async (_context: unknown, submit: (client: unknown) => Promise<unknown>) => {
+vi.mock("@/services/game-command", () => ({
+  submitGameCommand: async (_context: unknown, submit: (client: unknown) => Promise<unknown>) => {
     const result = await submit({
       setup: {
         systemCalls: {

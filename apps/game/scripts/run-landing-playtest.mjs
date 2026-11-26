@@ -26,12 +26,14 @@ export const LANDING_SCENARIOS = [
   "lab-realm-world",
   "lab-race",
   "lab-panels",
+  "lab-cosmetics",
   "lab-hud-sheets",
   "lab-high-ground",
 ];
 
 const VIEWPORTS = ["1920x1080", "390x844"];
 const SCENARIO_VIEWPORTS = {
+  "lab-cosmetics": ["1440x900", "390x844"],
   "lab-realm-world": ["1440x900", "1920x1080", "390x844"],
   "lab-hud-sheets": ["360x800", "390x844", "768x1024"],
 };

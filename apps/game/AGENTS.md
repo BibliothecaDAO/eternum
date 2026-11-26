@@ -304,18 +304,21 @@ signed, and home failing on such a card or on no open plot opening Build), `--st
 and then by the HUD's way out (a phone's Menu, Exit; a desktop Back again, as its Leave game loads the page afresh), and
 entered by Resume each time: each leave failing short of the home page or with the game's label layer still mounted,
 each return on the map's labels or plates read on entry missing; play it at `--viewport 390x844` too),
-`--steps lab-hud-devices` (`/lab/game?scenario=sites`, the map's share of the page on a device: at rest, the army
-picked, its panel, a site's card, Chat and the Menu, each read by hit-testing a grid 8 px apart for where the map's
-canvas is the first thing a press reaches and which HUD part takes each other point, with the share above a phone's
-keyboard; run it at each device's size with `--viewport`), `--steps lab-ruin-fight` (`/lab/game?scenario=ruin-fight`,
-the owner's army beside the ruin before its fight: the army picked from the HUD must bring the camera onto it; then, on
-a phone with the ruin first panned under where its card opens, the ruin's card opened from the map (a right-click, a
-tap) and **Attack** pressed must leave the camera where it was, the chain's BattleGuard answered, the ruin gone, the
-army at 4,011; then the Feed, opened from its place, must tell the attack and the clear it won as one row, the clear's;
-play it at `--viewport 390x844` too), `--steps lab-hover-zoom` (the army after its fight, with nothing selected and the
-dev overlays on, at each wheel step from the closest zoom to the farthest: each army's token must stand over its own
-model, and the pointer on its model at its feet, middle and top must open its plate; `--steps lab-hover-zoom-pair` the
-same with the realm's two armies side by side, the merge game's), `--steps lab-high-ground`
+`--steps lab-cosmetics` (`/lab/game?scenario=wonder-skin`, a Wonder realm entered through Resume: leave the map, equip
+the base skin from Cosmetics, resume and see the base realm model and mark, then use the default order and resume to see
+the Wonder model and mark again; `build.sh playtest-cosmetics` plays both desktop and phone), `--steps lab-hud-devices`
+(`/lab/game?scenario=sites`, the map's share of the page on a device: at rest, the army picked, its panel, a site's
+card, Chat and the Menu, each read by hit-testing a grid 8 px apart for where the map's canvas is the first thing a
+press reaches and which HUD part takes each other point, with the share above a phone's keyboard; run it at each
+device's size with `--viewport`), `--steps lab-ruin-fight` (`/lab/game?scenario=ruin-fight`, the owner's army beside the
+ruin before its fight: the army picked from the HUD must bring the camera onto it; then, on a phone with the ruin first
+panned under where its card opens, the ruin's card opened from the map (a right-click, a tap) and **Attack** pressed
+must leave the camera where it was, the chain's BattleGuard answered, the ruin gone, the army at 4,011; then the Feed,
+opened from its place, must tell the attack and the clear it won as one row, the clear's; play it at
+`--viewport 390x844` too), `--steps lab-hover-zoom` (the army after its fight, with nothing selected and the dev
+overlays on, at each wheel step from the closest zoom to the farthest: each army's token must stand over its own model,
+and the pointer on its model at its feet, middle and top must open its plate; `--steps lab-hover-zoom-pair` the same
+with the realm's two armies side by side, the merge game's), `--steps lab-high-ground`
 (`/lab/game?scenario=high-ground`, the spire's game on snow, bare rock and tundra, its army at the edge of the revealed
 land, with the dev overlays on: the army picked, every tile it is lit on, the ones it may explore on the fog's floor
 among them, must lie on its ground, never under it nor 0.06 over it, and the army must stand on its own ground, never

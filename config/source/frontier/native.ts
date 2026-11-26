@@ -60,6 +60,7 @@ export const frontierPreset = {
       "EnterDepth",
       "InteractSite",
       "SetEntityName",
+      "SetRealmSkin",
       "MarkGameSettled",
     ] satisfies Array<keyof typeof nativeCommandBits>
   ).reduce((mask, command) => mask | BigInt(nativeCommandBits[command]), 0n),
