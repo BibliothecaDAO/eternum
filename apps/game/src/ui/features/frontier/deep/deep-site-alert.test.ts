@@ -53,7 +53,8 @@ function fixture(guardCounts = [siteGuardTroops(1)]) {
   const held = store.require("Guard", { game_id: 1, structure_id: mine.structure_id, slot: mine.slot });
   store.applyFacts([{ model: "GarrisonSlot", key: store.wireKeyOf("GarrisonSlot", mine)!, value: null }]);
   change("DeepSite", site, { aspect: 2 });
-  for (const [slot, count] of guardCounts.entries()) {
+  for (const [index, count] of guardCounts.entries()) {
+    const slot = nativeRuleConstants.DEEP_GUARD_SLOTS - 1 - index;
     const troops = { ...held.troops, count: BigInt(count) * BigInt(RESOURCE_PRECISION) };
     write("Guard", { ...held, slot, troops });
     write("GarrisonSlot", { ...mine, slot, home: 9n });
@@ -82,7 +83,7 @@ it("forecasts every rival garrison in order with the same surviving attacker", (
   expect(watches).toHaveLength(1);
   expect(watches[0]!.dueAt).toBeGreaterThan(pair.startsAt * 1000);
   expect(pair.plan(watches[0]!.dueAt / 1000)[0]!.dueAt).toBe(watches[0]!.dueAt);
-  expect(pair.store.require("Guard", { game_id: 1, structure_id: pair.site.entity_id, slot: 1 }).troops.count).toBe(
+  expect(pair.store.require("Guard", { game_id: 1, structure_id: pair.site.entity_id, slot: 3 }).troops.count).toBe(
     BigInt(siteGuardTroops(1)) * BigInt(RESOURCE_PRECISION),
   );
 });

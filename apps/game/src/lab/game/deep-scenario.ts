@@ -30,8 +30,8 @@ export const deepScenario = (closedRing = false): LabScenario => {
   const local = {
     foundation: { x: 18, y: 25 },
     core: { x: 25, y: 18 },
-    mine: { x: 25, y: 25 },
-    altar: { x: 32, y: 25 },
+    mine: { x: 32, y: 25 },
+    altar: { x: 25, y: 25 },
   } satisfies Record<(typeof deepSites)[number]["key"], { x: number; y: number }>;
   const rules = seasonOneDeepRules(closedRing);
   const facts: LabFact[] = [

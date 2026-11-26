@@ -70,7 +70,7 @@ it("plans a Deep site opportunity from Herald's actor snapshot with public rival
     PLAYER_ACCOUNT,
   );
   const rows = (model: string) => shared.models.find((candidate) => candidate.model === model)!.rows;
-  expect(rows("Guard").map(({ value }) => Number(value.structure_id))).toEqual(
+  expect(rows("Guard").flatMap(({ value }) => (Number(value.slot) === 0 ? [Number(value.structure_id)] : []))).toEqual(
     rows("DeepSite").map(({ value }) => Number(value.entity_id)),
   );
   const ownerOnly = live.snapshot(String(GAME_ID), ["ExplorerTroops"], PLAYER_ACCOUNT, PLAYER_ACCOUNT);
