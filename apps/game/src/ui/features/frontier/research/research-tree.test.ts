@@ -186,6 +186,10 @@ it("assigns every node its contract era and derives prerequisite link states fro
   ]);
   expect(readResearchLinks(readResearchTree(MID_REALM))).toEqual([
     { key: "well->shrine", from: "well", to: "shrine", state: "done" },
+    { key: "shrine->spire", from: "shrine", to: "spire", state: "locked" },
+  ]);
+  expect(readResearchLinks(readResearchTree({ ...MID_REALM, castleLevel: research.SPIRE_LORE_LEVEL }))).toEqual([
+    { key: "well->shrine", from: "well", to: "shrine", state: "done" },
     { key: "shrine->spire", from: "shrine", to: "spire", state: "ready" },
   ]);
 });

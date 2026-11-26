@@ -484,7 +484,7 @@ it("renders the 3-track Era tree with measured SVG prerequisite links on desktop
       ]),
     ).toEqual([
       ["well->shrine", "done", "M 340 300 C 360 300, 360 300, 380 300"],
-      ["shrine->spire", "ready", "M 560 300 C 580 300, 580 300, 600 300"],
+      ["shrine->spire", "locked", "M 560 300 C 580 300, 580 300, 600 300"],
     ]);
     expect(host.querySelector("[data-node='row-0'] [data-pips]")?.getAttribute("data-pips")).toBe("5");
     expect(host.querySelector("[data-node='row-6'] [data-pips]")?.getAttribute("data-pips")).toBe("3");
