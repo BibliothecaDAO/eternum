@@ -18,11 +18,11 @@ import { deepAlliesGarrison } from "@bibliothecadao/eternum/game-client";
 import { MAINNET_TOKENS } from "../../../../packages/chain/src/tokens";
 import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
 import { buildablePlotCount } from "../../../../packages/core/src/utils/castle-reach";
-import { loreOpensAtLevel } from "../../../../packages/core/src/utils/realm-research";
 import {
   buildingCopyCost,
   buildingCopyMultiplier,
   isOnePerRealm,
+  loreOpensAtLevel,
   oathAttackStamina,
   oathDeepLossPerTick,
   oathFuryRefund,
