@@ -362,6 +362,8 @@ import {
   type QuestUnit,
   ASPECT_REWARD,
   formatOrdinal,
+  FRONTIER_TROOP_NAMES,
+  TroopType,
 } from "@bibliothecadao/types";
 
 /** A step on that scale, common (1) to legendary (5). */
@@ -1222,6 +1224,44 @@ export const DEPLOY_WORDS = {
   howMany: (troop: string) => `${troop} to deploy`,
   deployCount: (count: number) => `${DEPLOY} ${formatExact(count)}`,
 } as const;
+export const COMBAT_MARK_WORDS = { blade: "Blade", bow: "Bow" } as const;
+const lessBy = (cut: number) => formatPercent(-cut / 100, { signed: true });
+/** The combat figures a troop's traits are told with: the light troops' damage cut, the Deep guard's, and each reveal's stamina. */
+export interface TroopFigures {
+  lightCut: number;
+  guardCut: number;
+  scoutReveal: number;
+  baseReveal: number;
+}
+/** What a troop does differently in a fight and on a reveal: its Deploy card's line, its pick's summary and its full tip. */
+export const TROOP_TRAIT_WORDS = {
+  [TroopType.Knight]: {
+    card: () => "Full dmg · Guard",
+    summary: ({ guardCut }: TroopFigures) =>
+      `${COMBAT_MARK_WORDS.blade} · Full damage · ${lessBy(guardCut)} damage taken garrisoned in the ${DEEP}`,
+    tip: ({ guardCut }: TroopFigures) =>
+      `${COMBAT_MARK_WORDS.blade} · Full damage · Hits together vs ${COMBAT_MARK_WORDS.blade}, after ${COMBAT_MARK_WORDS.bow} · ${lessBy(guardCut)} damage taken in ${DEEP}`,
+  },
+  [TroopType.Crossbowman]: {
+    card: ({ lightCut }: TroopFigures) => `1st strike · ${lessBy(lightCut)}`,
+    summary: ({ lightCut }: TroopFigures) =>
+      `${COMBAT_MARK_WORDS.bow} · Strikes first vs blades · ${lessBy(lightCut)} damage vs ${FRONTIER_TROOP_NAMES[TroopType.Knight].many}`,
+    tip: ({ lightCut }: TroopFigures) =>
+      `${COMBAT_MARK_WORDS.bow} · Strikes first vs ${COMBAT_MARK_WORDS.blade}, together vs ${COMBAT_MARK_WORDS.bow} · ${lessBy(lightCut)} damage vs ${FRONTIER_TROOP_NAMES[TroopType.Knight].many}`,
+  },
+  [TroopType.Paladin]: {
+    card: ({ scoutReveal, lightCut }: TroopFigures) => `${formatExact(scoutReveal)} · ${lessBy(lightCut)} dmg`,
+    summary: ({ scoutReveal, baseReveal, lightCut }: TroopFigures) =>
+      `${COMBAT_MARK_WORDS.blade} · Reveals for ${formatExact(scoutReveal)} stamina (not ${formatExact(baseReveal)}) · ${lessBy(lightCut)} damage`,
+    tip: ({ scoutReveal, lightCut }: TroopFigures) =>
+      `${COMBAT_MARK_WORDS.blade} · ${lessBy(lightCut)} damage vs ${FRONTIER_TROOP_NAMES[TroopType.Knight].many} · Reveals tiles for ${formatExact(scoutReveal)} stamina`,
+  },
+} satisfies Record<TroopType, Record<"card" | "summary" | "tip", (figures: TroopFigures) => string>>;
+/** A wild beast's mark, told by strike order alone: a beast has no Deep guard cut and no reveal. */
+export const BEAST_MARK_TIPS = {
+  blade: `${COMBAT_MARK_WORDS.blade} · Hits together vs ${COMBAT_MARK_WORDS.blade} · ${COMBAT_MARK_WORDS.bow} strikes first against it`,
+  bow: `${COMBAT_MARK_WORDS.bow} · Strikes first against ${COMBAT_MARK_WORDS.blade} · Hits together vs ${COMBAT_MARK_WORDS.bow}`,
+} as const satisfies Record<keyof typeof COMBAT_MARK_WORDS, string>;
 export const SIZE_ROW = { fewer: "One fewer", more: "One more", max: "Max" } as const;
 export const BUILD = "Build";
 export const BUILT = "Built";
