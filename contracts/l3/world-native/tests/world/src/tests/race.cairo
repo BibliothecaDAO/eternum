@@ -13,6 +13,19 @@ fn building_pay_matches_the_client_vectors_by_rings_open() {
 }
 
 #[test]
+fn allies_garrison_a_foundation_and_an_altar_but_only_the_owner_a_core_or_a_mine_as_the_client_vectors_say() {
+    let data = read_txt(@FileTrait::new("../fixtures/deep-ally-garrison.txt"));
+    let mut fields = data.span();
+    let mut kinds = 0;
+    while !fields.is_empty() {
+        let (kind, allies): (u8, bool) = Serde::deserialize(ref fields).unwrap();
+        assert_eq!(crate::rules::deep_allies_garrison(kind), allies);
+        kinds += 1;
+    }
+    assert_eq!(kinds, crate::rules::DEEP_KIND_COUNT);
+}
+
+#[test]
 fn glory_is_split_by_troops_and_preserves_every_fractional_unit() {
     let amount = 5 * crate::rules::RESOURCE_PRECISION;
     let shares = array![DeepShare { home: 30, troops: 1000 }, DeepShare { home: 10, troops: 3000 }].span();

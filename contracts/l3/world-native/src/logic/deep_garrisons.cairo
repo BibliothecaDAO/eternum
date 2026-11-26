@@ -21,6 +21,14 @@ pub fn assert_garrison(key: GuardKey, army_home: u64, troops: Troops) {
         crate::logic::aspects::home_aspect(ResourceKey { game_id: key.game_id, entity_id: army_home }) == site.aspect,
         "only the owner and his Aspect garrison this site",
     );
+    if !crate::rules::deep_allies_garrison(site.kind) {
+        assert!(
+            crate::logic::structures::owner(
+                ResourceKey { game_id: key.game_id, entity_id: army_home },
+            ) == crate::logic::structures::owner(site_key(key)),
+            "only the owner garrisons this site",
+        );
+    }
     let holder = home(key);
     assert!(holder == 0 || holder == army_home, "slot belongs to another player");
     let held = crate::logic::guards::guard(key).troops;
