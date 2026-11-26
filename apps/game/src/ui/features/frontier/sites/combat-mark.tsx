@@ -1,34 +1,26 @@
 import type { TroopType } from "@bibliothecadao/types";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { BEAST_MARK_TIPS, COMBAT_MARK_WORDS } from "@/ui/design-system/kit/words";
 
 export interface CombatMarkLook {
-  label: "Blade" | "Bow";
+  label: (typeof COMBAT_MARK_WORDS)[keyof typeof COMBAT_MARK_WORDS];
   icon: IconMeaning;
+  beastTip: string;
 }
 
-const BLADE: CombatMarkLook = { label: "Blade", icon: "combat-blade" };
-const BOW: CombatMarkLook = { label: "Bow", icon: "combat-bow" };
+const BLADE: CombatMarkLook = { label: COMBAT_MARK_WORDS.blade, icon: "combat-blade", beastTip: BEAST_MARK_TIPS.blade };
+const BOW: CombatMarkLook = { label: COMBAT_MARK_WORDS.bow, icon: "combat-bow", beastTip: BEAST_MARK_TIPS.bow };
 
 const COMBAT_MARKS = { Knight: BLADE, Paladin: BLADE, Crossbowman: BOW } satisfies Record<TroopType, CombatMarkLook>;
 
 export const combatMarkOf = (category: TroopType): CombatMarkLook => COMBAT_MARKS[category];
 
-export const CombatMark = ({ category, size = 20 }: { category: TroopType; size?: 14 | 16 | 20 }) => {
-  const { label, icon } = combatMarkOf(category);
-  return (
-    <span data-combat-mark={label} className="inline-flex items-center gap-1 text-hud-label text-hud-muted">
-      <Icon name={icon} size={size} />
-      {label}
-    </span>
-  );
-};
-
-export const CombatBadge = ({ category }: { category: TroopType }) => {
-  const { label, icon } = combatMarkOf(category);
+export const BeastMarkBadge = ({ category }: { category: TroopType }) => {
+  const { label, icon, beastTip } = combatMarkOf(category);
   return (
     <span
       aria-hidden="true"
-      data-tip={label}
+      data-tip={beastTip}
       data-combat-mark={label}
       className="absolute -bottom-1 -right-1 flex size-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark"
     >

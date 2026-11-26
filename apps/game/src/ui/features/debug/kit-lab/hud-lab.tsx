@@ -37,6 +37,7 @@ import { GLOBAL_ROOM } from "@/ui/features/social/realtime-chat/model/chat-rooms
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
 import { PickedArmy, type PickedArmyView } from "@/ui/features/frontier/hud/picked-army";
 import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
+import { troopFigures } from "@/ui/features/frontier/deploy/troop-figures";
 import { SiteCardView } from "@/ui/features/frontier/sites/site-card-view";
 import { AlertsPopupCard } from "@/ui/features/frontier/alerts-popup";
 import { DayDoneCard } from "@/ui/features/frontier/rollover/day-done-card";
@@ -1034,6 +1035,7 @@ const LabDeploySheet = ({
   stores: readonly StoreReading[];
   open: SlotStart[];
 }) => {
+  const { setup } = useGame();
   const [slot, setSlot] = useState<number | null>(null);
   const start = slot === null ? open[0] : open.find((entry) => entry.slot === slot);
   const [count, setCount] = useState(deploy.count);
@@ -1058,6 +1060,7 @@ const LabDeploySheet = ({
             : [],
         selected: troopsAtHome > 0 ? TroopType.Knight : undefined,
         onPick: noop,
+        figures: troopFigures(setup.store, 1),
       }}
       art={troopsAtHome === 0 ? undefined : ("knight-t1" as const)}
       troopsAtHome={troopsAtHome}
