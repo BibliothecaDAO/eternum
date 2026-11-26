@@ -86,6 +86,17 @@
   gap: 2px;
   white-space: nowrap;
 }
+.build-tile-price .ui-price {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 6px;
+  font-size: var(--hud-text-label);
+  line-height: inherit;
+}
+.build-tile-price .ui-price img {
+  width: 13px;
+  height: 13px;
+}
 .build-chosen {
   display: flex;
   min-width: 0;
@@ -124,5 +135,14 @@
     --card-tile: 100px;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
+  }
+  [data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture,
+  [data-build-sheet] .ui-card[data-size="sm"] .ui-card__picture img {
+    height: 40px;
+    max-height: 40px;
+  }
+  [data-build-sheet] .ui-card[data-size="sm"] .ui-card__title,
+  [data-build-sheet] .ui-card[data-size="sm"] .ui-card__detail {
+    line-height: 15px;
   }
 }

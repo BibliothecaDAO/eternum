@@ -97,6 +97,8 @@ function releaseSignumAtlas(entry: SharedSignumAtlas): void {
   }
 }
 
+export const ORDER_STANDARD_NAME = "Order stone signum";
+
 export class OrderStandard {
   readonly group = new Group();
   readonly body: InstancedMesh;
@@ -113,7 +115,7 @@ export class OrderStandard {
     placement: InstancedMesh | number,
     offset: SignumOffset = typeof placement === "number" ? ZERO_OFFSET : SIGNUM_OFFSET,
   ) {
-    this.group.name = "Order stone signum";
+    this.group.name = ORDER_STANDARD_NAME;
     const slots = typeof placement === "number" ? placement : placement.instanceMatrix.count;
     this.aspectAttr = new InstancedBufferAttribute(new Float32Array(slots), 1);
     this.clothColorAttr = new InstancedBufferAttribute(new Float32Array(slots * 3), 3);

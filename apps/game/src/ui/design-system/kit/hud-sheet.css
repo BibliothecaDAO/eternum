@@ -2269,6 +2269,10 @@ button.ui-card__choose:disabled {
 .ui-card[data-disabled] .ui-card__picture {
   opacity: 0.5;
 }
+.ui-card[data-locked] .ui-card__picture,
+.ui-card[data-locked] .ui-card__foot {
+  opacity: 0.45;
+}
 .ui-card__foot {
   position: absolute;
   inset-inline: 0;
@@ -2320,13 +2324,13 @@ button.ui-card__choose:disabled {
 .ui-card[data-size="sm"] .ui-card__picture {
   position: static;
   flex: none;
-  height: 40px;
+  height: 24px;
 }
 .ui-card[data-size="sm"] .ui-card__picture > * {
   width: auto;
 }
 .ui-card[data-size="sm"] .ui-card__picture img {
-  max-height: 40px;
+  max-height: 24px;
 }
 .ui-card[data-size="sm"] .ui-card__foot {
   position: static;
@@ -2337,6 +2341,7 @@ button.ui-card__choose:disabled {
   gap: 1px;
   padding: 0;
   background: none;
+  text-align: center;
 }
 .ui-card[data-size="sm"] .ui-card__title {
   display: -webkit-box;
@@ -2345,7 +2350,7 @@ button.ui-card__choose:disabled {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   font-size: min(var(--hud-text-label), 12cqi);
-  line-height: 15px;
+  line-height: 13px;
   font-weight: var(--hud-weight-strong);
   white-space: normal;
   text-wrap: balance;
@@ -2356,7 +2361,7 @@ button.ui-card__choose:disabled {
   gap: theme(spacing.1);
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-label);
-  line-height: 15px;
+  line-height: 13px;
   font-weight: 700;
 }
 /* A small card's band keeps a chip's frame with less room inside it, and its words shrink once the card is too narrow
@@ -2368,10 +2373,6 @@ button.ui-card__choose:disabled {
 .ui-card[data-size="sm"] .ui-card__corner {
   top: 5px;
   right: 5px;
-}
-.ui-card[data-locked] .ui-card__picture,
-.ui-card[data-locked] .ui-card__foot {
-  opacity: 0.45;
 }
 .ui-card__refusal {
   color: var(--hud-muted);

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { formatShort } from "@bibliothecadao/types";
 
+import { FIGHT_WORDS } from "@/ui/design-system/kit/words";
 import { FightSide, fightFigures, type Kept } from "./fight-side";
 
 const drawn = (before: number | undefined, kept: Kept, side: "ours" | "theirs" = "ours") =>
@@ -25,11 +26,12 @@ describe("what a fight costs a side", () => {
     expect(spoken(drawn(794, 193))).toBe("Army 794 → 193, −601 · 76% lost");
   });
 
-  it("says a guard left with none is Defeated, and greys its painting", () => {
-    const page = drawn(1_000, 0, "theirs");
-    expect(read(page)).toEqual({ nums: "1,000 → 0", taken: "Defeated", tone: "good" });
-    expect(page.querySelector(".fight-side--gone")).not.toBeNull();
-    expect(drawn(1_000, 0, "ours").querySelector(".fight-side--gone")).toBeNull();
+  it("says a side left with none is Defeated, in the loss's red, and greys its painting, ours or theirs", () => {
+    for (const side of ["theirs", "ours"] as const) {
+      const page = drawn(1_000, 0, side);
+      expect(read(page)).toEqual({ nums: "1,000 → 0", taken: FIGHT_WORDS.defeated, tone: "bad" });
+      expect(page.querySelector(".fight-side--gone")).not.toBeNull();
+    }
   });
 
   it("never says 0% or 100% while some are lost or kept, 100% once none are kept", () => {

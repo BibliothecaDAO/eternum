@@ -293,7 +293,7 @@ const ResearchTile = ({ node, picked, onPick }: { node: TreeNode; picked: boolea
     <HudCard
       size="sm"
       title={node.name}
-      picture={<Icon name={node.icon} size={40} />}
+      picture={<Icon name={node.icon} size={24} />}
       detail={
         <span data-research-effect-short className={cn("tabular-nums", EFFECT_TONE[node.state])}>
           {node.shortEffect}
