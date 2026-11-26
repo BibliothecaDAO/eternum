@@ -514,11 +514,8 @@ export const factWireTypes = [
   },
   {
     type: "struct",
-    name: "world_native::deep::DeepGuard",
-    members: [
-      { name: "site_id", type: "core::integer::u64" },
-      { name: "slot", type: "core::integer::u8" },
-    ],
+    name: "world_native::deep::GarrisonSlot",
+    members: [{ name: "home", type: "core::integer::u64" }],
   },
   {
     type: "struct",
@@ -527,6 +524,7 @@ export const factWireTypes = [
       { name: "kind", type: "core::integer::u8" },
       { name: "ring", type: "core::integer::u8" },
       { name: "day", type: "core::integer::u64" },
+      { name: "aspect", type: "core::integer::u8" },
     ],
   },
   {
@@ -1456,7 +1454,7 @@ export function defineFactModels({ struct, model: declare }) {
       ],
       [{ name: "count", type: "core::integer::u32" }],
     ),
-    model("DeepGuard", "game", struct("troops::ExplorerKey"), struct("deep::DeepGuard")),
+    model("GarrisonSlot", "game", struct("guards::GuardKey"), struct("deep::GarrisonSlot")),
     model("DeepArmy", "game", struct("troops::ExplorerKey"), struct("deep::DeepArmy")),
     model(
       "AspectActivity",
@@ -1769,7 +1767,7 @@ export const syncScopes = {
   DeepTick: shared,
   DeepSite: shared,
   DeepEntries: shared,
-  DeepGuard: shared,
+  GarrisonSlot: shared,
   DeepArmy: shared,
   ArmySlot: { entities: ["structure_id"], epoch: "epoch" },
   ExplorerTroops: { entities: ["explorer_id"] },
