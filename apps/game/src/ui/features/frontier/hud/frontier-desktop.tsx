@@ -9,9 +9,11 @@ import { FeedToasts, useUnreadImportantCount } from "@/ui/features/event-feed/qu
 import { FollowingArmyPill } from "@/ui/features/world/containers/top-header/following-army-pill";
 import { HudFoot } from "@/ui/features/world/hud/desktop-hud";
 import { HudMinimap } from "@/ui/features/world/hud/minimap";
+import { formatShort } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 
 import type { HudSurface } from "./frontier-nav";
+import { hudGloryTip, showHudGlory, type HudGloryState } from "./hud-glory";
 import { useHudPlaces } from "./hud-places";
 import { HudPopoverRoot } from "./hud-popover";
 import { useHudScale } from "./hud-scale";
@@ -126,11 +128,13 @@ export const FrontierPlaces = ({
   surface,
   onSurface,
   research,
+  glory,
   lead,
 }: {
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
   research?: boolean;
+  glory?: HudGloryState | null;
   lead?: ReactNode;
 }) => {
   const unread = useUnreadImportantCount(surface === "feed");
@@ -140,38 +144,57 @@ export const FrontierPlaces = ({
   places.set("settings", SETTINGS_PLACE);
   const tabs = DESKTOP_PLACE_ORDER.flatMap((key) => places.get(key) ?? []);
   const toggle = (key: HudSurface) => onSurface(surface === key ? null : key);
+  const seasonGlory = showHudGlory(glory) ? glory : null;
   return (
     <div className="frontier-commands pointer-events-auto">
       {lead}
       <nav aria-label="Places" role="tablist" className="frontier-places">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            role="tab"
-            aria-selected={surface === tab.key}
-            aria-label={tab.ariaLabel}
-            className="ui-popover ui-pick frontier-place"
-            onClick={() => toggle(tab.key)}
-          >
-            <Icon name={tab.icon} size={16} />
-            <span>{tab.label}</span>
-            {tab.count !== undefined && (
-              <span
-                className="frontier-place__badge"
-                data-tone={tab.countTone}
-                data-shape={tab.countTone === "good" ? "diamond" : undefined}
-                aria-label={tab.countLabel}
-              >
-                <span className="frontier-place__badge-value">{tab.count}</span>
-              </span>
-            )}
-          </button>
-        ))}
+        {tabs.map((tab) => {
+          const withGlory = tab.key === "season" && seasonGlory !== null;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={surface === tab.key}
+              aria-label={tab.ariaLabel}
+              data-glory={withGlory ? "true" : undefined}
+              data-tip={withGlory ? hudGloryTip(seasonGlory) : undefined}
+              className="ui-popover ui-pick frontier-place"
+              onClick={() => toggle(tab.key)}
+            >
+              <Icon name={tab.icon} size={16} />
+              <span>{tab.label}</span>
+              {withGlory && <SeasonGloryReadout glory={seasonGlory} />}
+              {tab.count !== undefined && (
+                <span
+                  className="frontier-place__badge"
+                  data-tone={tab.countTone}
+                  data-shape={tab.countTone === "good" ? "diamond" : undefined}
+                  aria-label={tab.countLabel}
+                >
+                  <span className="frontier-place__badge-value">{tab.count}</span>
+                </span>
+              )}
+            </button>
+          );
+        })}
       </nav>
     </div>
   );
 };
+
+const SeasonGloryReadout = ({ glory }: { glory: HudGloryState }) => (
+  <>
+    <span className="frontier-place__sep" aria-hidden="true">
+      ·
+    </span>
+    <span className="frontier-place__glory" data-glory-value="">
+      {formatShort(glory.glory)}
+    </span>
+    {glory.active && <span className="frontier-place__live" data-glory-live="" aria-hidden="true" />}
+  </>
+);
 
 type PlaceTab = {
   key: HudSurface;

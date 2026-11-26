@@ -49,6 +49,7 @@ export {
 export {
   compareAspectMembers,
   gloryAmount,
+  ownRaceGlory,
   raceFinishHeight,
   raceStage,
   raceStageHeight,
@@ -59,7 +60,7 @@ export {
   type RaceMemberRow,
 } from "./views/race";
 export { questBonusPercent, sellsFragments } from "./views/quests";
-export { currentArmy, currentResourceWeight, deepAlliesGarrison } from "../utils/deep";
+export { activeDeepSitePayPerMinute, currentArmy, currentResourceWeight, deepAlliesGarrison } from "../utils/deep";
 export {
   deepCenter,
   deepGateTiles,
