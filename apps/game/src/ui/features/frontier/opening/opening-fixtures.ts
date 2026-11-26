@@ -1,5 +1,4 @@
-import { nativeOathConstants, nativeResearchConstants } from "@bibliothecadao/eternum/game-client";
-import { rankName } from "@bibliothecadao/types";
+import { nativeOathConstants } from "@bibliothecadao/eternum/game-client";
 import type { OpeningRules } from "@/ui/design-system/kit/words";
 
 export const OPENING_RULES: OpeningRules = {
@@ -14,7 +13,6 @@ export const OPENING_RULES: OpeningRules = {
   staminaPerFragment: 2,
   relicMinutesPerTier: 30,
   scoutExploreStamina: 10,
-  shrineLoreRank: rankName(nativeResearchConstants.SHRINE_LORE_LEVEL),
   exploreStamina: 20,
   dayLeftSeconds: 1_800,
 };
