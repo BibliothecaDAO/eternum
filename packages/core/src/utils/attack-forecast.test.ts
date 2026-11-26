@@ -69,6 +69,8 @@ function frontier() {
       stamina_defense_req: 0,
     },
   });
+  const tickSeconds = Number(release.definition.rules.tick_config.armies_tick_in_seconds);
+  write("DeepTick", { game_id: GAME_ID, paid_tick: Math.floor(NOW / tickSeconds) });
   ClientConfigManager.instance().setStore(store);
   write("SettlementRules", {
     game_id: GAME_ID,

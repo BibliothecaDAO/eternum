@@ -44,6 +44,7 @@ const fixture = () => {
       },
     ],
     DeepArmy: [{ game_id: 7, explorer_id: 11n, last_tick: 6n }],
+    DeepTick: [{ game_id: 7, paid_tick: 6n }],
     ArmyDay: [{ game_id: 7, explorer_id: 11n, day: 0n }],
     ArmyProgress: [{ game_id: 7, explorer_id: 11n, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: 0 }],
     ExplorerTroops: [{ game_id: 7, explorer_id: 11n, owner: 1n, troops: { count: 10n * precision } }],
@@ -284,8 +285,8 @@ describe("the shared Deep", () => {
     expect(today.every((site) => site.open && site.ring === 0)).toBe(true);
     expect(today[0]!.aspect).toBe(2);
     expect(today[0]!.garrisons.map(({ slot, home, troops }) => [slot, home, troops.count])).toEqual([
-      [3, 2n, 19n * precision],
-      [1, 3n, 9n * precision],
+      [3, 2n, 18n * precision],
+      [1, 3n, 8n * precision],
     ]);
     const tomorrow = readDeepSites(store, dayAtIndex(calendar, 0).end, 7);
     expect(tomorrow.map((site) => [site.id, site.beastTroops, site.aspect, site.garrisons])).toEqual(
