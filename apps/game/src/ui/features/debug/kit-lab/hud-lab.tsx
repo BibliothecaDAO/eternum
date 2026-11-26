@@ -55,7 +55,7 @@ import { buildingIcon, buildingName } from "@/ui/features/frontier/build/buildin
 import { nativeResearchConstants as research, nativeStructureConstants } from "@bibliothecadao/eternum/game-client";
 import { type RealmResearchFacts, readResearchTree } from "@/ui/features/frontier/research/research-tree";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
-import { FRONTIER_STORES, STORE_KINDS } from "@/ui/features/frontier/stores";
+import { STORE_KINDS } from "@/ui/features/frontier/stores";
 import { type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams, useSearchParams } from "react-router-dom";
 import { type SlotStart, wheatStopsAt } from "@/ui/features/frontier/deploy/deploy-plan";
@@ -1382,7 +1382,6 @@ const LabDock = ({ lab }: { lab: LabState }) => {
             number={slot.number}
             primary={index === 0}
             start={slot.start}
-            stock={index === 0 ? { count: "1,200", label: `1,200 ${FRONTIER_STORES.troops.word}` } : undefined}
             onDeploy={noop}
           />
         ))}
@@ -1404,7 +1403,14 @@ const LabDock = ({ lab }: { lab: LabState }) => {
         />
       ))}
       {labSlots(lab).map((slot) => (
-        <OpenSlot key={slot.number} label="Deploy" pulse={slot.pulse} tip={slot.start?.words} onDeploy={noop} />
+        <OpenSlot
+          key={slot.number}
+          label="Deploy"
+          pulse={slot.pulse}
+          tip={slot.start?.words}
+          bar={slot.start?.bar}
+          onDeploy={noop}
+        />
       ))}
     </nav>
   );

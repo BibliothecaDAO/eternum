@@ -78,27 +78,19 @@ export const OpenSlotCard = ({
   primary,
   filling,
   start,
-  stock,
   onDeploy,
 }: {
   number: number | undefined;
   primary: boolean;
   filling?: string;
   start?: { bar: StaminaBar; words: string };
-  stock?: { count: string; label: string };
   onDeploy: () => void;
 }) => (
   <div className="frontier-slot" data-slot-state="open" data-tip={start?.words}>
     <SlotNumber number={number} />
     <span className="frontier-slot__body">
       <span className="frontier-slot__title">{number === undefined ? DEPLOY : ARMY_SLOT_WORDS.open(number)}</span>
-      {stock ? (
-        <span className="frontier-slot__detail" data-tone="good">
-          {ARMY_SLOT_WORDS.readyAtHome(stock.label)}
-        </span>
-      ) : (
-        start && <HudStamina stamina={start.bar} />
-      )}
+      {start && <HudStamina stamina={start.bar} />}
     </span>
     <HudButton
       kind={primary ? "primary" : "secondary"}
