@@ -267,8 +267,8 @@ fn well_lore_opens_at_settlement_shrine_lore_at_city_and_spire_lore_at_kingdom()
     assert!(execute(d, research(home, crate::research::ROW_LORE), FIXTURE_START + 40));
     assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_LORE), crate::research::LORE_WELLS);
     for (level, tier) in array![
-        (crate::research::LORE_SHRINES_LEVEL, crate::research::LORE_SHRINES),
-        (crate::research::LORE_SPIRES_LEVEL, crate::research::LORE_SPIRES),
+        (crate::research::SHRINE_LORE_LEVEL, crate::research::LORE_SHRINES),
+        (crate::research::SPIRE_LORE_LEVEL, crate::research::LORE_SPIRES),
     ] {
         let mut refused = snforge_std::spy_events();
         assert!(!execute(d, research(home, crate::research::ROW_LORE), FIXTURE_START + 40));

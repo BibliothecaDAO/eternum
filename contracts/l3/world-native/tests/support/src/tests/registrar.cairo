@@ -72,7 +72,7 @@ pub fn learn_spire_lore(d: super::Deployment, home: crate::resources::ResourceKe
         },
     );
     super::resource_commands::grant(d, home, crate::resources::ESSENCE, budget);
-    let kingdom = crate::research::LORE_SPIRES_LEVEL;
+    let kingdom = crate::research::SPIRE_LORE_LEVEL;
     while super::building_commands::realm_level(d, home) < kingdom {
         super::building_commands::level_up(d, home, timestamp);
     }
