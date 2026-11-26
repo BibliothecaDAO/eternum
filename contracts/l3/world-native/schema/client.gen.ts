@@ -259,9 +259,9 @@ export interface NativeRows {
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly logistics: number; readonly oath_slots: number; readonly oaths: number; readonly oath_pick: number };
   ArmyDay: { readonly game_id: number; readonly explorer_id: bigint; readonly day: bigint };
   DeepTick: { readonly game_id: number; readonly paid_tick: bigint };
-  DeepSite: { readonly game_id: number; readonly entity_id: bigint; readonly kind: number; readonly ring: number; readonly day: bigint };
+  DeepSite: { readonly game_id: number; readonly entity_id: bigint; readonly kind: number; readonly ring: number; readonly day: bigint; readonly aspect: number };
   DeepEntries: { readonly game_id: number; readonly day: bigint; readonly count: number };
-  DeepGuard: { readonly game_id: number; readonly explorer_id: bigint; readonly site_id: bigint; readonly slot: number };
+  GarrisonSlot: { readonly game_id: number; readonly structure_id: bigint; readonly slot: number; readonly home: bigint };
   DeepArmy: { readonly game_id: number; readonly explorer_id: bigint; readonly last_tick: bigint };
   AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint; readonly active: number };
   ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number; readonly explorer_id: bigint; readonly stamina: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } };
@@ -351,7 +351,7 @@ export interface NativeKeys {
   DeepTick: { readonly game_id: number };
   DeepSite: { readonly game_id: number; readonly entity_id: bigint };
   DeepEntries: { readonly game_id: number; readonly day: bigint };
-  DeepGuard: { readonly game_id: number; readonly explorer_id: bigint };
+  GarrisonSlot: { readonly game_id: number; readonly structure_id: bigint; readonly slot: number };
   DeepArmy: { readonly game_id: number; readonly explorer_id: bigint };
   AspectActivity: { readonly game_id: number; readonly aspect: number; readonly day: bigint };
   ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number };
@@ -1457,7 +1457,8 @@ export const nativeFactModels = {
       "entity_id": "u64",
       "kind": "u8",
       "ring": "u8",
-      "day": "u64"
+      "day": "u64",
+      "aspect": "u8"
     }
   },
   "DeepEntries": {
@@ -1480,17 +1481,18 @@ export const nativeFactModels = {
       }
     }
   },
-  "DeepGuard": {
+  "GarrisonSlot": {
     "keys": [
       "game_id",
-      "explorer_id"
+      "structure_id",
+      "slot"
     ],
     "scope": "game",
     "fields": {
       "game_id": "u32",
-      "explorer_id": "u64",
-      "site_id": "u64",
-      "slot": "u8"
+      "structure_id": "u64",
+      "slot": "u8",
+      "home": "u64"
     }
   },
   "DeepArmy": {
@@ -2378,7 +2380,7 @@ export const nativeSyncScopes = {
   "DeepTick": "shared",
   "DeepSite": "shared",
   "DeepEntries": "shared",
-  "DeepGuard": "shared",
+  "GarrisonSlot": "shared",
   "DeepArmy": "shared",
   "ArmySlot": {
     "entities": [
