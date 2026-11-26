@@ -937,7 +937,7 @@ export const DEEP_WORDS = {
   attack: "Attack",
   take: "Take",
   pickArmy: `Select an army in the ${DEEP}`,
-  guarding: "Already guarding",
+  guarding: "Your Aspect holds this site",
   ownerOnly: "Only the site's owner garrisons here",
   rival: "Held by a rival Aspect",
   otherDay: "Only today's armies can fight here",

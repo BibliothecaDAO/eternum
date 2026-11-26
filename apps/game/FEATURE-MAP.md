@@ -1145,8 +1145,8 @@ finisher. Canonical proof: `playtest --steps lab-race-expired`.
 - An invite's landing (`/s/<code>`): **<name> invites you**, **Join <Aspect>** with its four Orders' crests and members,
   "Members of one Aspect never fight each other." and the Order the sharer kept; before the season **Starts in …** and,
   signed out, **Create your Realm**. Lab: `/lab/app/preseason-invited/s/MRGHT234`; proof: `build.sh prove-season-one`.
-- A Deep guard shows its troop loss each tick and the ticks left on its army row, token and panel; an army of the
-  player's Aspect is drawn as an ally on the map.
+- Select a Deep site to see its garrison slots, troop loss per tick and remaining ticks. An army of the player's
+  Aspect is drawn as an ally on the map.
 - **Today** shows the week's seven quests with today marked.
 
 The Deep has four gates, one an Aspect (north Prowess, east Luminary, south Havoc, west Insight), each drawn on its tile

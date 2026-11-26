@@ -643,7 +643,7 @@ stamina. Native tests cover Shrine uses, persistence, deletion and remustering w
 proofs use recorded offers. `lab-oath-decline` and `lab-oath-pass-capped` check the pass reward, including overflow at
 the maximum.
 
-Vitriol changes the Deep's field and guard loss to its generated rule value. `/lab/game?scenario=oath-vitriol` and
+Vitriol changes the Deep's field army loss to its generated rule value. `/lab/game?scenario=oath-vitriol` and
 `lab-oath-vitriol` choose it through the Oath panel, read the reduced field drain, and visit the Deep sites on desktop
 and phone. Native command tests prove the old rate settles before a choice or replacement and the new rate applies only
 to later ticks; shared vectors check exact troop counts in the contract and client.

@@ -22,6 +22,7 @@ import {
   buildingCopyCost,
   buildingCopyMultiplier,
   isOnePerRealm,
+  loreOpensAtLevel,
   oathAttackStamina,
   oathDeepLossPerTick,
   oathFuryRefund,
@@ -754,6 +755,8 @@ export const FRONTIER = {
       )
       .join("; "),
     lore: researchRow(research.ROW_LORE),
+    shrineLoreRank: rankName(loreOpensAtLevel(research.LORE_SHRINES)),
+    spireLoreRank: rankName(loreOpensAtLevel(research.LORE_SPIRES)),
     outputStep: pct(frontierPreset.board.outputStepBps),
   },
   attributes: {
