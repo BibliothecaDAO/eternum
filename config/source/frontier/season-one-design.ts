@@ -76,7 +76,7 @@ export const seasonOneDesign = {
   stamina: { reveal: 20, move: 10, attack: 30, defence: 0, wellPercent: 40, perFragment: 2, logisticsStepPercent: 20 },
   oaths: {
     count: 16,
-    passStamina: 60,
+    passStamina: 40,
     powerDamagePercent: 20,
     skillDamagePercent: 30,
     skillBelowStamina: 10,
