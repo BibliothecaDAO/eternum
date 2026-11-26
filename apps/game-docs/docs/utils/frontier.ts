@@ -496,7 +496,10 @@ const bowDeepBeasts = deepSites
 
 const guardMark = (bow: boolean) =>
   bow
-    ? { weapon: "Bow", bring: FRONTIER_TROOP_NAMES[TroopType.Knight].many }
+    ? {
+        weapon: "Bow",
+        bring: `${FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many} (${FRONTIER_TROOP_NAMES[TroopType.Knight].many} at ${exampleMultiplier}x+)`,
+      }
     : { weapon: "Blade", bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many };
 
 const ruinFamilyRange = (depth: number) =>
