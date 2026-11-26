@@ -953,7 +953,7 @@ export class ArmyManager {
 
   public async prewarmExploreModels(): Promise<void> {
     if (this.isDestroyed) return;
-    const exploreModels = Object.values(TROOP_TO_MODEL).flatMap((byTier) => Object.values(byTier));
+    const exploreModels = Object.values(TROOP_TO_MODEL).map((byTier) => byTier[TroopTier.T1]);
     for (const modelType of exploreModels) {
       if (this.isDestroyed) return;
       await this.armyModel.preloadModels([modelType]);

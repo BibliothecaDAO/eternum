@@ -8095,7 +8095,7 @@ export default class WorldmapScene extends WarpTravel {
       this.explorePrewarmHandle = window.setTimeout(() => {
         this.explorePrewarmHandle = null;
         void this.runExploreAssetPrewarm();
-      }, 250);
+      }, 1_500);
     });
   }
 
@@ -8123,7 +8123,7 @@ export default class WorldmapScene extends WarpTravel {
         this.explorePrewarmHandle = window.setTimeout(() => {
           this.explorePrewarmHandle = null;
           resolve();
-        }, 50);
+        }, 200);
       });
     }
   }

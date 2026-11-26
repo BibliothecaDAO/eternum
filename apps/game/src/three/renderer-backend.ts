@@ -144,12 +144,16 @@ export interface RendererSurfaceLike {
   clearDepth(): void;
   domElement: HTMLCanvasElement;
   dispose(): void;
+  getMRT?(): unknown;
+  getRenderTarget?(): unknown;
   info: RendererInfoLike;
   initTexture?(texture: Texture): void;
   outputColorSpace?: string;
   render(scene: Object3D, camera: Camera): void;
   compileAsync?(object: Object3D, camera: Camera, targetScene?: Scene | null): Promise<unknown>;
+  setMRT?(mrtNode: unknown): void;
   setPixelRatio(pixelRatio: number): void;
+  setRenderTarget?(target: unknown): void;
   setSize(width: number, height: number): void;
   shadowMap: {
     enabled: boolean;

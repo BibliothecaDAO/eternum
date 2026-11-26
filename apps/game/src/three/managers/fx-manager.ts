@@ -273,9 +273,7 @@ export class FXManager {
     if (!this.textures.has(config.textureUrl)) {
       const texture = acquireFxTexture(config.textureUrl, (loaded) => {
         if (this.destroyed) return;
-        void this.backend
-          .warmIconTexture?.(loaded, this.compilePipelines, config.renderMode)
-          ?.catch(() => undefined);
+        void this.backend.warmIconTexture?.(loaded, this.compilePipelines, config.renderMode)?.catch(() => undefined);
       });
       this.textures.set(config.textureUrl, texture);
     }

@@ -927,15 +927,16 @@ export class StructureManager {
   public async prewarmExploreModels(): Promise<void> {
     if (this.isDestroyed) return;
     for (const [structureTypeKey, paths] of Object.entries(this.structureModelPaths)) {
+      if (this.isDestroyed) return;
       const structureType = Number(structureTypeKey) as StructureType;
-      if (!Number.isFinite(structureType)) continue;
-      for (let modelIndex = 0; modelIndex < paths.length; modelIndex += 1) {
-        if (this.isDestroyed) return;
-        const modelPath = paths[modelIndex];
-        if (!modelPath || frontierModelKind(modelPath) === null) continue;
-        if (this.structureModels.get(structureType)?.has(modelIndex)) continue;
-        await this.ensureStructureModel(structureType, modelIndex);
-      }
+      const basePath = paths[0];
+      const isExploreShell =
+        structureType === StructureType.Camp ||
+        structureType === StructureType.Rift ||
+        Boolean(basePath && frontierModelKind(basePath));
+      if (!Number.isFinite(structureType) || !basePath || !isExploreShell) continue;
+      if (this.structureModels.get(structureType)?.has(0)) continue;
+      await this.ensureStructureModel(structureType, 0);
     }
   }
 
