@@ -642,6 +642,7 @@ export const OATH_PICK = {
   redrawPrice: "One reroll",
   used: "Used",
   fresh: "New",
+  selected: "Selected",
   pass: "Pass",
   notChosen: "Could not choose Oath.",
   notRedrawn: "Could not reroll Oath.",
