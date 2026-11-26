@@ -63,9 +63,9 @@ export const readFactView = <T>(
   view: FactView<T>,
   viewer = accountAddress(),
   sides = currentSides(),
+  clock = view.clock?.(store),
 ): T => {
   const revision = store.getRevision();
-  const clock = view.clock?.(store);
   const last = lastReadings.get(view);
   if (
     last?.store === store &&

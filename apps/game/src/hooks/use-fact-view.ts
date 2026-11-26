@@ -18,7 +18,7 @@ export const useFactView = <T>(view: FactView<T>): T => {
   const seats = useSyncExternalStore(subscribeSeats, readSeatsRevision, readSeatsRevision);
   const clock = useChainTimeStore(() => (view.clock ? view.clock(facts.store) : undefined));
   return useMemo(
-    () => readFactView(facts.store, view, viewer, { seats, spectating }),
+    () => readFactView(facts.store, view, viewer, { seats, spectating }, clock),
     [view, viewer, spectating, facts, seats, clock],
   );
 };
