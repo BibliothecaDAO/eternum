@@ -17,16 +17,7 @@ import {
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { Price } from "@/ui/design-system/kit/price-faces";
-import {
-  exploresBought,
-  MOVE,
-  SITE_OATH,
-  SITE_USE_WORDS,
-  STAMINA,
-  USE,
-  USING,
-  wellRefillShare,
-} from "@/ui/design-system/kit/words";
+import { MOVE, SITE_OATH, SITE_USE_WORDS, STAMINA, USE, USING, wellRefillShare } from "@/ui/design-system/kit/words";
 import {
   ActionPaths,
   ActionType,
@@ -128,7 +119,7 @@ export const MapSiteCard = ({
   );
 };
 
-const MapSiteCardView = ({
+export const MapSiteCardView = ({
   kind,
   gain,
   army,
@@ -268,20 +259,15 @@ const WellUser = ({ army, gain }: { army: DockArmy; gain: number | undefined }) 
 );
 
 const WellAfter = ({ stamina, gain }: { stamina: StaminaBar | undefined; gain: number | undefined }) => {
-  const after = stamina && gain !== undefined ? stamina.current + wellRefillLands(gain, stamina) : undefined;
-  const bought = exploresOf(gain, stamina);
+  const lands = stamina && gain !== undefined ? wellRefillLands(gain, stamina) : undefined;
   return (
     <span className="flex min-w-0 flex-1 items-center gap-2 tabular-nums text-hud-ink">
       <span className="min-w-8 flex-1">
-        <HudStamina stamina={stamina && after !== undefined ? { ...stamina, current: after } : stamina} />
+        <HudStamina stamina={stamina} gain={lands} />
       </span>
-      {formatShortChange(stamina?.current, after)}
-      {bought && <HudChip icons={["explore"]}>{exploresBought(bought)}</HudChip>}
+      <span className="whitespace-nowrap">
+        {formatShortChange(stamina?.current, stamina && lands !== undefined ? stamina.current + lands : undefined)}
+      </span>
     </span>
   );
-};
-
-const exploresOf = (gain: number | undefined, stamina: StaminaBar | undefined): number | undefined => {
-  if (gain === undefined || !stamina || stamina.perExplore <= 0) return undefined;
-  return Math.floor(wellRefillLands(gain, stamina) / stamina.perExplore) || undefined;
 };

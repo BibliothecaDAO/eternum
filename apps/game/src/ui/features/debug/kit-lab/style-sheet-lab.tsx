@@ -648,6 +648,7 @@ const MeterSection = () => (
       <div className="flex max-w-xs flex-col gap-3">
         <HudStamina stamina={{ current: 86, max: 140, perExplore: 20 }} />
         <HudStamina stamina={{ current: 86, max: 140, perExplore: 20 }} filling />
+        <HudStamina stamina={{ current: 86, max: 140, perExplore: 20 }} gain={36} />
         <HudMeter share={0.35} label="Production" />
         <HudMeter share={0.9} tone="warn" label="Storage" />
         <HudMeter share={0.1} tone="bad" label="Food" />
