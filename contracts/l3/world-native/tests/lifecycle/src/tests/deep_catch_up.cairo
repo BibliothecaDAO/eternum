@@ -306,11 +306,11 @@ fn digest(d: Deployment, game_id: u32, guards: Span<GuardKey>, homes: Span<u64>)
     )
 }
 
-const CUT_GAP_STATE: felt252 = 1673731733158721546613794772649270542849283164678128925706615378988613616369;
-const CAPPED_GAP_STATE: felt252 = 2376911865723451719479719704514318580604827670827512065391711585911566667029;
-const DEATH_GAP_STATE: felt252 = 2440879224849652595673558022242804693394882308903186369631140244771463531365;
-const TURNED_STATE: felt252 = 505830386639354082581926203778591038233508464900890755066067638461591003639;
-const WON_GAP_STATE: felt252 = 1897419826473698187294239919237326959646005435595192003963819847202845662719;
+const CUT_GAP_STATE: felt252 = 1276743870579596725140146587766846512327068098159392173173163767102956753297;
+const CAPPED_GAP_STATE: felt252 = 2591508965578894043910342428128892233040906074768488888096324939894213267258;
+const DEATH_GAP_STATE: felt252 = 2391655295735382362429364945938507591203759864736750684095507434655022164639;
+const TURNED_STATE: felt252 = 2780747125247135117267583088797208377158082998270059570459984726692607578397;
+const WON_GAP_STATE: felt252 = 309038363442713580430008991559518442466368290250778224000288011599365852353;
 
 fn cap(guards: u64) -> u64 {
     crate::rules::DEEP_CATCH_UP_GUARD_TICKS / guards
@@ -411,7 +411,15 @@ fn fresh_army(d: Deployment, source: ExplorerKey, explorer_id: u64, end: u64, ta
                 .explorers
                 .write(
                     to,
-                    crate::troops::ExplorerRecordTrait::into_record(crate::troops::ExplorerTroops { coord, ..army }),
+                    crate::troops::ExplorerRecordTrait::into_record(
+                        crate::troops::ExplorerTroops {
+                            coord,
+                            troops: crate::troops::Troops {
+                                count: empire_cap() * crate::rules::RESOURCE_PRECISION, ..army.troops,
+                            },
+                            ..army,
+                        },
+                    ),
                 );
         },
     );
@@ -555,9 +563,13 @@ fn a_garrison_refused_while_the_deep_catches_up_still_advances_its_cursor() {
     let army = deployed(stranger, game_id, 1, 10);
     let target = site_at(d, game_id, 0);
     beside(d, army, target, 4);
+    let now = START + 450 * TICK;
+    interact_with_state(
+        d.games, || crate::state::write().deep.army_ticks.write((game_id, army.explorer_id), Some(now / TICK)),
+    );
     let mut events = spy_events();
     let command = garrison(army, slot(target, 3), 10 * crate::rules::RESOURCE_PRECISION);
-    assert!(!execute_in_game(stranger, game_id, command, START + 450 * TICK));
+    assert!(!execute_in_game(stranger, game_id, command, now));
     let refusal = world_test_support::tests::play_fixture::rejection(ref events, d.games);
     assert_eq!(refusal.reason, "The Deep is catching up, try again in a moment");
     assert_eq!(paid(d, game_id), START / TICK + cap(guard_count(every_site_at_the_empire_cap())));

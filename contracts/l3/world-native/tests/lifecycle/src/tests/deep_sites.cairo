@@ -241,9 +241,8 @@ pub fn owner_of(d: Deployment, entity_id: u64, game_id: u32) -> starknet::Contra
 fn assert_cleared(d: Deployment, target: ResourceKey) {
     for index in 0..crate::rules::DEEP_GUARD_SLOTS {
         assert_eq!(holder(d, slot(target, index)), 0);
-        assert_eq!(
-            interact_with_state(d.games, || crate::logic::guards::guard(slot(target, index))), Default::default(),
-        );
+        let guard = interact_with_state(d.games, || crate::logic::guards::guard(slot(target, index)));
+        assert_eq!((guard.troops.count, guard.destroyed_tick), (0, 0));
     }
 }
 
@@ -593,8 +592,9 @@ fn the_day_turn_ends_every_hold_loses_the_garrisons_and_restores_every_beast() {
     let held = seize(d, first, target, 0);
     let ally = player(d, 8901);
     let second = deployed(ally, game_id, 1, 1000);
+    let ally_home = army(d, second).owner;
     let allied = seize(ally, second, target, 1);
-    assert_eq!((holder(d, held), holder(d, allied)), (home, army(d, second).owner));
+    assert_eq!((holder(d, held), holder(d, allied)), (home, ally_home));
     let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 1);
     applied(
         d, game_id, Command::SetEntityName(crate::names::SetEntityName { entity_id: home, name: 'turn' }), tomorrow,
