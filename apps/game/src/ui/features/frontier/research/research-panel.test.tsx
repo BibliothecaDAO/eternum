@@ -6,6 +6,8 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
 // @vitest-environment jsdom
+import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
+import { HUD_QUERIES } from "@/tokens";
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -16,7 +18,6 @@ import { EARLY_REALM, MID_REALM } from "./progression-fixture";
 import { ResearchPanel } from "./research-panel";
 import { CastleResearch } from "../upgrade/castle-view";
 import { readResearchTree, type TreeNode } from "./research-tree";
-import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -31,7 +32,18 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
+  vi.unstubAllGlobals();
 });
+
+const layoutAt = (desktop: boolean) =>
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: desktop && query === HUD_QUERIES.desktop,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+
+beforeEach(() => layoutAt(true));
 
 const nodes = readResearchTree({
   ...MID_REALM,
@@ -411,7 +423,6 @@ it("keeps cards free of inline Upgrade buttons and routes upgrading through the 
       />,
     ),
   );
-  expect(host.querySelector("[data-node='row-6'] [data-research-effect-short]")?.textContent).toBe("2 → 3 Oaths");
   expect(host.querySelector("[data-lab='node-choice'] .ui-price [data-short]")).not.toBeNull();
 });
 
@@ -542,13 +553,19 @@ it("renders the 3-track Era tree with measured SVG prerequisite links on desktop
   }
 });
 
-it("renders concise phone short effects and legible locked titles", () => {
+it("draws each node on a phone as the shared small card: its short effect, and the locked look when it cannot be done now", () => {
+  layoutAt(false);
   draw(null);
-  expect(host.querySelector("[data-node='row-6'] [data-research-effect-short]")?.textContent).toBe("2 → 3 Oaths");
-  expect(host.querySelector("[data-node='row-2'] [data-research-effect-short]")?.textContent).toBe("100 → 120/hr");
-  expect(host.querySelector("[data-node='row-4'] [data-research-effect-short]")?.textContent).toBe("2 → 1.8 wheat");
-  expect(host.querySelector("[data-node='well'] [data-research-effect-short]")?.textContent).toBe("+40% ⚡");
-  expect(host.querySelector("[data-node='row-6'] .research-node__title--locked")).not.toBeNull();
+  for (const node of nodes) {
+    const tile = host.querySelector(`[data-node='${node.key}']`)!;
+    expect(tile.classList.contains("ui-card")).toBe(true);
+    expect(tile.querySelector("[data-research-effect-short]")?.textContent).toBe(node.shortEffect);
+    expect(tile.hasAttribute("data-locked")).toBe(node.state === "short" || node.state === "locked");
+    expect([node.key, tile.querySelector(".ui-card__corner [data-icon]")?.getAttribute("data-icon") ?? null]).toEqual([
+      node.key,
+      node.state === "done" ? "check" : node.state === "locked" && node.tier === 0 ? "lock" : null,
+    ]);
+  }
 });
 
 it("marks a research done only when nothing is left to learn, and greys and blocks one the realm cannot pay for", () => {

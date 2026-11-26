@@ -2306,8 +2306,10 @@ button.ui-card__choose:disabled {
   display: flex;
   flex-direction: column;
   height: auto;
-  min-height: theme(spacing.hud-frontier-build-card);
+  min-height: var(--card-tile, theme(spacing.hud-frontier-build-card));
   container-type: inline-size;
+  border-radius: 12px;
+  background: var(--hud-well);
 }
 .ui-card[data-size="sm"] .ui-card__choose {
   position: static;
@@ -2315,45 +2317,62 @@ button.ui-card__choose:disabled {
   flex: 1;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  gap: theme(spacing.1);
-  padding: theme(spacing.2) theme(spacing[1.5]) theme(spacing[1.5]);
+  justify-content: center;
+  gap: 1px;
+  padding: 4px 3px;
 }
 .ui-card[data-size="sm"] .ui-card__picture {
   position: static;
   flex: none;
-  height: theme(spacing.7);
+  height: 24px;
 }
 .ui-card[data-size="sm"] .ui-card__picture > * {
   width: auto;
 }
+.ui-card[data-size="sm"] .ui-card__picture img {
+  max-height: 24px;
+}
 .ui-card[data-size="sm"] .ui-card__foot {
   position: static;
   width: 100%;
-  flex: 1;
+  flex: none;
   align-items: center;
   justify-content: flex-start;
+  gap: 1px;
   padding: 0;
   background: none;
   text-align: center;
 }
-/* The name keeps its size until the card is too narrow for "Scouts' lodge" (a 360-wide phone), then shrinks with it. */
 .ui-card[data-size="sm"] .ui-card__title {
+  display: -webkit-box;
   max-width: 100%;
-  font-size: min(var(--hud-text-strong), 13cqi);
-  line-height: var(--hud-leading-strong);
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: min(var(--hud-text-label), 12cqi);
+  line-height: 13px;
   font-weight: var(--hud-weight-strong);
+  white-space: normal;
+  text-wrap: balance;
 }
 .ui-card[data-size="sm"] .ui-card__detail {
   flex-direction: row;
   align-items: center;
   gap: theme(spacing.1);
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-label);
+  line-height: 13px;
+  font-weight: 700;
 }
 /* A small card's band keeps a chip's frame with less room inside it, and its words shrink once the card is too narrow
    for them (a 360-wide phone), so a raised price with its wait, or "Barracks III" by its lock, reads whole. */
 .ui-card[data-size="sm"] .ui-chip {
   padding-inline: theme(spacing.1);
   font-size: min(var(--hud-text-label), 12cqi);
+}
+.ui-card[data-size="sm"] .ui-card__corner {
+  top: 5px;
+  right: 5px;
 }
 .ui-card__refusal {
   color: var(--hud-muted);
