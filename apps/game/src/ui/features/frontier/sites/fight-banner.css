@@ -116,7 +116,8 @@
 }
 @media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
   .fight-banner {
-    top: 76px;
+    top: 68px;
+    width: min(420px, calc(100vw - 16px));
   }
   .fight-banner__crest {
     width: 42px;
