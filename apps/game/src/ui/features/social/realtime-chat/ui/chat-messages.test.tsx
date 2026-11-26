@@ -163,6 +163,22 @@ describe("a room's messages", () => {
     expect(host.textContent).not.toMatch(/<Aldric>|\[\d\d:\d\d\]/);
   });
 
+  it("reads a run's head as its time, then its sender, then the words, and a message within the run as its words alone", () => {
+    const parts = (id: string) =>
+      [...row(id).querySelector("p")!.children].map((part) =>
+        part.matches("[data-message-time]")
+          ? "time"
+          : part.matches("[data-message-words]")
+            ? "words"
+            : part.textContent,
+      );
+    expect(parts("m1")).toEqual(["time", "Aldric", "words"]);
+    expect(parts("m2")).toEqual(["words"]);
+    expect(parts("m4")).toEqual(["time", "Corwin", "words"]);
+    expect(row("m4").querySelector(".min-w-0")!.firstElementChild!.matches("button")).toBe(true);
+    expect(row("m4").querySelector(".min-w-0")!.lastElementChild!.matches("p")).toBe(true);
+  });
+
   it("leaves numbers as words: no place, no button in them", () => {
     expect(words("m3")).toBe("sent 1,200 knights, 3,046 left at home");
     expect(row("m3").querySelectorAll("[data-message-words] button, [data-message-words] a")).toHaveLength(0);
