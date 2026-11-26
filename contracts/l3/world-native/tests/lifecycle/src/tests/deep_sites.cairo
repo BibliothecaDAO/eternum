@@ -416,18 +416,6 @@ fn two_allies_garrison_a_claimed_site_and_a_rival_takes_it_slot_by_slot() {
     let attacker = deployed(rival, game_id, 2, 1500);
     beside(d, attacker, target, 2);
     refused(
-        owner,
-        game_id,
-        Command::GuardAttack(
-            crate::combat_actions::GuardAttack {
-                guard: crate::troop_management::GuardSlot { structure_id: target.entity_id, slot: 2 },
-                explorer_id: attacker.explorer_id,
-            },
-        ),
-        FIXTURE_START,
-        "Deep garrisons only defend their site",
-    );
-    refused(
         rival,
         game_id,
         garrison(attacker, slot(target, 1), troops(100)),
@@ -445,6 +433,24 @@ fn two_allies_garrison_a_claimed_site_and_a_rival_takes_it_slot_by_slot() {
     assert_eq!(owner_of(d, target.entity_id, game_id), owner_of(d, army(d, attacker).owner, game_id));
     assert_eq!(holding(d, target), 2);
     assert_cleared(d, target);
+}
+
+#[test]
+#[should_panic(expected: "Deep garrisons only defend their site")]
+fn a_deep_garrison_cannot_launch_a_guard_attack() {
+    let (d, game_id) = setup(831);
+    let target = site(d, game_id, crate::rules::DEEP_FOUNDATION);
+    let owner = player(d, 8310);
+    let first = deployed(owner, game_id, 1, 1000);
+    claim(owner, first, target, 0);
+    applied(owner, game_id, garrison(first, slot(target, 3), troops(400)), FIXTURE_START);
+    let rival = player(d, 8311);
+    let attacker = deployed(rival, game_id, 2, 1000);
+    beside(d, attacker, target, 2);
+    let guard = crate::troop_management::GuardSlot { structure_id: target.entity_id, slot: 3 };
+    let attack = crate::combat_actions::GuardAttack { guard, explorer_id: attacker.explorer_id };
+    let context = crate::tests::context(d.games, game_id);
+    interact_with_state(d.games, || crate::logic::combat::guard_attack(game_id, owner.actor, attack, context));
 }
 
 #[test]
