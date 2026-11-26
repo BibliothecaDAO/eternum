@@ -1,5 +1,5 @@
 {
-  "release": 24,
+  "release": 25,
   "logic": {
     "season": "0x236ea032e700ea8e5f495d18fdf0bfa490f1bd9d293bc2705a198c58cf64fca",
     "map": "0x419f7f1db3c2436ea3f533dad114db6defdf2f5722d76efe43d611d2e4622c8",
@@ -15,7 +15,7 @@
     "registry": "0x59caa0c04e247f206cd1536a01d33df3903044b5fae5282c48cb0de48e3f00a",
     "combat": "0x673afe12fb2c66ad92d36a095ff4adc1a916cd9db0c301ad8c123ed8f598a19",
     "bridge": "0x20cef58a2df2ab88a57cee35ec51369c76dbf673671c100cd3aa040cc08f914",
-    "relics": "0x5bd96e2ed2fcc494d616d1a64fc2ccdf784babee3fd8f3f907303641fa065f8",
+    "relics": "0x43c280edb5e5ca9b31b2b87cf5f8944fbf697cbdcbc5982dccfa55664f77729",
     "movement": "0x1cdc408a9a9978f4adfe9b9dbd25068b6896072c57ac93363a58406140f064"
   }
 }
