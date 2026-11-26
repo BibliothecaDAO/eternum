@@ -353,22 +353,6 @@
   overflow-wrap: break-word;
 }
 
-.research-node__delta--desktop {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.research-node__delta--phone {
-  display: block;
-}
-
 .research-pips {
   display: inline-flex;
   align-items: center;
@@ -653,20 +637,6 @@
     overflow-wrap: normal;
   }
 
-  .research-node__delta--desktop {
-    position: static;
-    width: auto;
-    height: auto;
-    margin: 0;
-    overflow: visible;
-    clip: auto;
-    white-space: normal;
-  }
-
-  .research-node__delta--phone {
-    display: none;
-  }
-
   .research-pip {
     width: 14px;
     height: 3.5px;
@@ -687,27 +657,6 @@
     min-width: 0;
     flex: 1;
     align-items: center;
-  }
-
-  .research-node__costs {
-    display: inline-flex;
-    align-items: center;
-    gap: theme(spacing.2);
-  }
-
-  .research-cost {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    color: rgb(var(--hud-ink));
-    font-size: var(--hud-text-badge);
-    line-height: 1;
-    font-weight: var(--hud-weight-strong);
-    white-space: nowrap;
-  }
-
-  .research-cost[data-short] {
-    color: var(--hud-warn);
   }
 
   .research-node__unlocked {
@@ -787,51 +736,12 @@
 
 @media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
   .research-tree__tracks {
+    --card-tile: 74px;
     gap: theme(spacing[1.5]);
   }
 
   .research-track,
   .research-era-cell {
     gap: theme(spacing[2.5]);
-  }
-
-  .research-node {
-    height: 74px;
-    justify-content: center;
-    gap: 2px;
-    padding: theme(spacing.1);
-  }
-
-  .research-node__head,
-  .research-node__body {
-    gap: 1px;
-  }
-
-  .research-node__icon {
-    width: 32px;
-    height: 32px;
-    border: 0;
-    background: none;
-  }
-
-  .research-node__delta--phone {
-    width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .research-node__title {
-    width: 100%;
-    font-family: inherit;
-    font-size: var(--hud-text-label);
-    line-height: var(--hud-leading-label);
-    letter-spacing: 0;
-    text-transform: none;
-    overflow-wrap: anywhere;
-  }
-
-  .research-pips {
-    display: none;
   }
 }

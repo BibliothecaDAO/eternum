@@ -106,7 +106,7 @@ it("opens on the tree alone, to browse, and brings a node's choice only when its
   // Nor does the panel's head repeat the Essence and labor the top bar shows.
   expect(host.querySelector(".ui-chip")).toBeNull();
 
-  act(() => host.querySelector<HTMLButtonElement>("[data-node='shrine']")!.click());
+  act(() => host.querySelector<HTMLButtonElement>("[data-node='shrine'] button")!.click());
   expect(host.querySelector("[data-lab='node-choice']")!.textContent).toContain("Shrine");
 });
 

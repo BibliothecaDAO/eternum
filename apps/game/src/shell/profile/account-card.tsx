@@ -79,12 +79,11 @@ const useNameFocusReturn = (open: Open) => {
   return { card, leaveName };
 };
 
-/** Sign out, Settings' last step: a loss, so in the bad tone, asking first. */
 export const SignOut = () => {
   const [asking, setAsking] = useState(false);
   return (
     <>
-      <AppButton kind="secondary" tone="bad" icon="exit" onClick={() => setAsking(true)}>
+      <AppButton kind="secondary" icon="exit" onClick={() => setAsking(true)}>
         {PROFILE_WORDS.signOut}
       </AppButton>
       {asking && (
@@ -96,11 +95,7 @@ export const SignOut = () => {
               <AppButton kind="quiet" onClick={() => setAsking(false)}>
                 {KEEP}
               </AppButton>
-              <AppButton
-                kind="secondary"
-                tone="bad"
-                onClick={() => void signOutIdentitySession().catch(reportSignOutFailure)}
-              >
+              <AppButton kind="secondary" onClick={() => void signOutIdentitySession().catch(reportSignOutFailure)}>
                 {PROFILE_WORDS.signOut}
               </AppButton>
             </>

@@ -612,8 +612,14 @@ export const HudCost = ({ line }: { line: RankedWords | string }) =>
 
 export type ResourcePrice = { resource: ResourcesIds; amount: number | undefined };
 
-export const HudPrice = ({ prices }: { prices: readonly ((Price | ResourcePrice) & { short?: boolean })[] }) => (
-  <span className="ui-price">
+export const HudPrice = ({
+  prices,
+  size = "md",
+}: {
+  prices: readonly ((Price | ResourcePrice) & { short?: boolean })[];
+  size?: "sm" | "md";
+}) => (
+  <span className="ui-price" data-size={size}>
     {prices.length === 0 && FREE}
     {prices.map((price) => {
       const face = priceFace(price);
@@ -624,7 +630,7 @@ export const HudPrice = ({ prices }: { prices: readonly ((Price | ResourcePrice)
           aria-label={`${formatCharge(price.amount)} ${face.word}`}
           data-short={price.short || undefined}
         >
-          {face.icon && <Icon name={face.icon} size={20} />}
+          {face.icon && <Icon name={face.icon} size={size === "sm" ? 14 : 20} />}
           {formatCharge(price.amount)}
         </span>
       );

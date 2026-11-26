@@ -61,7 +61,11 @@ afterEach(async () => {
 it("says what is deleted and what stays, the wallet's recovery included, before any code is sent", async () => {
   const sendCode = vi.spyOn(identityClient, "sendSignInCode");
   await mount();
+  const kindOf = (word: string) =>
+    [...document.body.querySelectorAll("button")].find((button) => button.textContent === word)?.dataset.kind;
+  expect(kindOf(ACCOUNT_DELETION_WORDS.title)).toBe("danger");
   await press(ACCOUNT_DELETION_WORDS.title);
+  expect(kindOf(ACCOUNT_DELETION_WORDS.sendCode)).toBe("danger");
   const sheet = document.body.textContent!;
   expect(sheet).toContain("permanent");
   expect(sheet).toContain(ACCOUNT_DELETION_WORDS.goes[2]);

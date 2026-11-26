@@ -7,9 +7,9 @@ import { canIssueOrders } from "@/utils/can-issue-orders";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
-import { ARMY_SLOT_WORDS, DEPLOY, DEPLOYING, TROOPS } from "@/ui/design-system/kit/words";
+import { ARMY_SLOT_WORDS, DEPLOY, DEPLOYING } from "@/ui/design-system/kit/words";
 
-import { formatAmount, frontierTroopName, rankName, TroopTier } from "@bibliothecadao/types";
+import { rankName, TroopTier } from "@bibliothecadao/types";
 import type { Rank } from "@/ui/design-system/kit/words";
 
 import type { SlotStart } from "../deploy/deploy-plan";
@@ -41,13 +41,6 @@ export const ArmyDock = ({
   const own = actor !== null && BigInt(realm.owner) === BigInt(actor);
   const plan = useDeployPlan(realm);
   const openSlots = plan?.open;
-  const homeStock =
-    plan?.troops && plan.troops.atHome > 0
-      ? {
-          count: formatAmount(plan.troops.atHome),
-          label: `${formatAmount(plan.troops.atHome)} ${frontierTroopName(plan.troops.type, plan.troops.atHome) ?? TROOPS}`,
-        }
-      : undefined;
   const limits = useNativeFacts(SLOT_RULE_MODELS).store.get("SliceRules", {
     game_id: realm.game_id,
   })?.troop_limit_config;
@@ -75,7 +68,6 @@ export const ArmyDock = ({
         realm={realm}
         slot={entry.slot}
         pulse={entry.slot === next && armies.length === 0}
-        stock={entry.slot === next && desktop ? homeStock : undefined}
         primary={entry.slot === next}
         wide={desktop}
       />
@@ -214,7 +206,6 @@ const DeploySlot = ({
   realm,
   slot,
   pulse,
-  stock,
   primary,
   wide = false,
 }: {
@@ -222,7 +213,6 @@ const DeploySlot = ({
   /** The slot and its start, as the deploy plan reads it; unknown while the plan is. */
   slot: SlotStart | undefined;
   pulse: boolean;
-  stock?: { count: string; label: string };
   primary: boolean;
   wide?: boolean;
 }) => {
@@ -232,15 +222,8 @@ const DeploySlot = ({
   const onDeploy = () =>
     openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true, slot: slot?.slot });
   return wide ? (
-    <OpenSlotCard
-      number={slot?.number}
-      primary={primary}
-      filling={filling}
-      start={start}
-      stock={stock}
-      onDeploy={onDeploy}
-    />
+    <OpenSlotCard number={slot?.number} primary={primary} filling={filling} start={start} onDeploy={onDeploy} />
   ) : (
-    <OpenSlot label={DEPLOY} filling={filling} pulse={pulse} tip={start?.words} onDeploy={onDeploy} />
+    <OpenSlot label={DEPLOY} filling={filling} pulse={pulse} tip={start?.words} bar={start?.bar} onDeploy={onDeploy} />
   );
 };
