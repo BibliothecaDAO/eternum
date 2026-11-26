@@ -68,7 +68,7 @@ interface WebGPURendererBackendDependencies {
   now(): number;
 }
 
-type SceneFinish = Pick<MapFinish, "render" | "dispose">;
+type SceneFinish = Pick<MapFinish, "render" | "dispose"> & Partial<Pick<MapFinish, "compileObjectAsync">>;
 
 interface WebGpuRendererModules {
   threeWebGPUModule: typeof import("three/webgpu");
@@ -220,6 +220,9 @@ function resolveWebGpuRendererDevice(renderer: WebGPURendererSurface): WebGPURen
 }
 
 const drawsPlain = (renderer: RendererSurfaceLike): SceneFinish => ({
+  compileObjectAsync: async (object, camera, targetScene) => {
+    await renderer.compileAsync?.(object, camera, targetScene);
+  },
   render: (scene, camera) => renderer.render(scene, camera),
   dispose: () => {},
 });
@@ -523,6 +526,16 @@ export function createWebGPURendererBackend(
       requestedPixelRatio = input.pixelRatio;
       renderer.shadowMap.enabled = input.shadows;
       sizeRenderer(input.width, input.height);
+    },
+    async compileObjectAsync(object, camera, targetScene) {
+      if (!renderer) {
+        return;
+      }
+      if (finish?.compileObjectAsync) {
+        await finish.compileObjectAsync(object, camera, targetScene);
+        return;
+      }
+      await renderer.compileAsync?.(object, camera, targetScene);
     },
     dispose() {
       cleanupDeviceDiagnostics?.();

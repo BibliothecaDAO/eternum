@@ -8,6 +8,7 @@ import {
 } from "../fx/world-fx-backends";
 import type { RendererFxCapabilities } from "../renderer-fx-capabilities";
 import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
+import { warmTexturePipeline, type PipelineCompiler } from "../pipeline-compiler";
 
 type FXType = "skull" | "compass" | "troopDiff" | string;
 
@@ -21,20 +22,22 @@ interface FXConfig {
 interface FXManagerOptions {
   backendFactory?: typeof createWorldFxBackend;
   capabilities?: RendererFxCapabilities;
+  compilePipelines?: PipelineCompiler;
 }
 
 const buildSharedFxTexturePath = (fileName: string): string => `/textures/${fileName}`;
 const fxTextureLoader = new THREE.TextureLoader();
 const fxTextureCache = new Map<string, { references: number; texture: THREE.Texture }>();
 
-function acquireFxTexture(textureUrl: string): THREE.Texture {
+function acquireFxTexture(textureUrl: string, onLoad?: (texture: THREE.Texture) => void): THREE.Texture {
   const cached = fxTextureCache.get(textureUrl);
   if (cached) {
     cached.references += 1;
+    if (cached.texture.image) onLoad?.(cached.texture);
     return cached.texture;
   }
 
-  const texture = fxTextureLoader.load(textureUrl);
+  const texture = fxTextureLoader.load(textureUrl, (loaded) => onLoad?.(loaded));
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.minFilter = THREE.LinearFilter;
   texture.magFilter = THREE.LinearFilter;
@@ -59,15 +62,18 @@ function releaseFxTexture(textureUrl: string): void {
 
 export class FXManager {
   private readonly backend: WorldFxBackend;
+  private readonly compilePipelines?: PipelineCompiler;
   private readonly defaultSize: number;
   private readonly fxConfigs: Map<FXType, FXConfig> = new Map();
   private readonly scene: THREE.Scene;
   private readonly textures: Map<string, THREE.Texture> = new Map();
   private readonly activeLabelFx: Set<WorldFxHandle> = new Set();
+  private destroyed = false;
 
   constructor(scene: THREE.Scene, defaultSize: number = 1.5, options: FXManagerOptions = {}) {
     this.scene = scene;
     this.defaultSize = defaultSize;
+    this.compilePipelines = options.compilePipelines;
     this.backend = (options.backendFactory ?? createWorldFxBackend)({
       capabilities: options.capabilities ?? snapshotRendererFxCapabilities(),
       scene,
@@ -177,6 +183,7 @@ export class FXManager {
   }
 
   public destroy(): void {
+    this.destroyed = true;
     this.activeLabelFx.clear();
     this.backend.destroy();
     this.textures.forEach((_texture, textureUrl) => releaseFxTexture(textureUrl));
@@ -264,7 +271,11 @@ export class FXManager {
 
   private registerFX(type: FXType, config: FXConfig): void {
     if (!this.textures.has(config.textureUrl)) {
-      this.textures.set(config.textureUrl, acquireFxTexture(config.textureUrl));
+      const texture = acquireFxTexture(config.textureUrl, (loaded) => {
+        if (this.destroyed) return;
+        void warmTexturePipeline(this.compilePipelines, this.scene, loaded).catch(() => undefined);
+      });
+      this.textures.set(config.textureUrl, texture);
     }
 
     this.fxConfigs.set(type, config);

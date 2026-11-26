@@ -62,6 +62,10 @@ export default class GameRenderer {
   private readonly pipelineCompiler = createPipelineCompiler({
     getRenderer: () => this.backend?.renderer,
     getCamera: () => this.camera,
+    compileObjectAsync: (object, camera, targetScene) =>
+      this.backend?.compileObjectAsync?.(object, camera, targetScene) ??
+      this.backend?.renderer?.compileAsync?.(object, camera, targetScene).then(() => undefined) ??
+      Promise.resolve(),
   });
   private raycaster!: RendererInteractionRuntime["raycaster"];
   private mouse!: RendererInteractionRuntime["pointer"];

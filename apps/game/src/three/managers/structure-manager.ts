@@ -340,7 +340,7 @@ export class StructureManager {
     this.renderChunkSize = renderChunkSize;
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
-    this.fxManager = fxManager || new FXManager(scene);
+    this.fxManager = fxManager || new FXManager(scene, 1.5, { compilePipelines });
     this.attachmentManager = new CosmeticAttachmentManager(scene);
     this.store = gameContext?.store as NativeFactStore | undefined;
     this.visibilityManager = visibilityManager;
@@ -922,6 +922,21 @@ export class StructureManager {
 
     this.chunkAssetPrewarmPromises.set(chunkKey, prewarmPromise);
     return prewarmPromise;
+  }
+
+  public async prewarmExploreModels(): Promise<void> {
+    if (this.isDestroyed) return;
+    for (const [structureTypeKey, paths] of Object.entries(this.structureModelPaths)) {
+      const structureType = Number(structureTypeKey) as StructureType;
+      if (!Number.isFinite(structureType)) continue;
+      for (let modelIndex = 0; modelIndex < paths.length; modelIndex += 1) {
+        if (this.isDestroyed) return;
+        const modelPath = paths[modelIndex];
+        if (!modelPath || frontierModelKind(modelPath) === null) continue;
+        if (this.structureModels.get(structureType)?.has(modelIndex)) continue;
+        await this.ensureStructureModel(structureType, modelIndex);
+      }
+    }
   }
 
   private async ensureStructureModel(structureType: StructureType, modelIndex: number): Promise<StructureModel> {

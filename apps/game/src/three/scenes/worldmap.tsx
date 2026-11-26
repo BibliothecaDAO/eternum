@@ -203,6 +203,7 @@ import { reclaimsLandFromWater } from "@/three/terrain/terrain-settlement-ground
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
 import { env } from "../../../env";
+import { afterWorldInteractive } from "@/game-entry/world-interactive";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager, type HoverLabelReconcileResult } from "../managers/hover-label-manager";
 import {
@@ -1127,6 +1128,8 @@ export default class WorldmapScene extends WarpTravel {
 
   private fxManager!: FXManager;
   private resourceFXManager!: ResourceFXManager;
+  private explorePrewarmCancelled = false;
+  private explorePrewarmHandle: number | null = null;
   private combatPresentation?: CombatPresentationCoordinator;
   private combatPresentationRuntime!: WorldmapCombatPresentation;
   private armyIndex: number = 0;
@@ -1218,13 +1221,16 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private initializeWorldmapSceneServices(): void {
-    this.fxManager = new FXManager(this.scene, 1);
-    this.proceduralTerrain = new WorldmapProceduralTerrain(getGameModeId());
+    this.fxManager = new FXManager(this.scene, 1, { compilePipelines: this.compilePipelines });
+    this.proceduralTerrain = new WorldmapProceduralTerrain(getGameModeId(), {
+      compilePipelines: this.compilePipelines,
+      scene: this.scene,
+    });
     this.refreshTerrainPropOccupancy();
     this.scene.add(this.proceduralTerrain.object3d);
     this.strategicMarkers = new StrategicMarkerLayer();
     this.scene.add(this.strategicMarkers.object3d);
-    this.resourceFXManager = new ResourceFXManager(this.scene, 1.2);
+    this.resourceFXManager = new ResourceFXManager(this.scene, 1.2, { compilePipelines: this.compilePipelines });
     void this.proceduralTerrain.loadProps().catch((error) => {
       console.warn("[WorldMap] Optional procedural terrain props failed to load", error);
     });
@@ -1357,8 +1363,15 @@ export default class WorldmapScene extends WarpTravel {
       this.mapPlates.createScope("shrine"),
       this.mapPlates.createScope("deep-gate"),
       this.getTerrainSurface(),
+      this.compilePipelines,
     );
-    this.deepArenaManager = new DeepArenaManager(this.scene, this.game.store, this.getTerrainSurface());
+    this.deepArenaManager = new DeepArenaManager(
+      this.scene,
+      this.game.store,
+      this.getTerrainSurface(),
+      this.compilePipelines,
+    );
+    this.scheduleExploreAssetPrewarm();
 
     // Bootstrap applyRenderVisualProfile may have run before these managers existed; apply the
     // fixed visual limits now that the managers are available.
@@ -8076,6 +8089,45 @@ export default class WorldmapScene extends WarpTravel {
     ]);
   }
 
+  private scheduleExploreAssetPrewarm(): void {
+    afterWorldInteractive(() => {
+      if (this.explorePrewarmCancelled) return;
+      this.explorePrewarmHandle = window.setTimeout(() => {
+        this.explorePrewarmHandle = null;
+        void this.runExploreAssetPrewarm();
+      }, 250);
+    });
+  }
+
+  private async runExploreAssetPrewarm(): Promise<void> {
+    const steps: Array<() => Promise<void>> = [
+      () => this.mapSiteManager.prewarmExploreSites(),
+      () => this.structureManager.prewarmExploreModels(),
+      () => this.armyManager.prewarmExploreModels(),
+      ...(configManager.isFrontier() ? [() => this.spireManager.prewarmExploreModel()] : []),
+    ];
+    for (const step of steps) {
+      if (this.explorePrewarmCancelled) return;
+      try {
+        await step();
+      } catch (error) {
+        if (!this.explorePrewarmCancelled) {
+          console.warn("[WorldMap] Idle explore asset prewarm step failed", error);
+        }
+      }
+      await new Promise<void>((resolve) => {
+        if (this.explorePrewarmCancelled) {
+          resolve();
+          return;
+        }
+        this.explorePrewarmHandle = window.setTimeout(() => {
+          this.explorePrewarmHandle = null;
+          resolve();
+        }, 50);
+      });
+    }
+  }
+
   public advanceGameEnd(frame: ReturnType<typeof endgameFrame>, delta: number): void {
     if (frame.phase === "live") {
       if (this.veilIsNear()) this.spireManager.prepareGameEnd();
@@ -8489,6 +8541,11 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   destroy() {
+    this.explorePrewarmCancelled = true;
+    if (this.explorePrewarmHandle !== null) {
+      clearTimeout(this.explorePrewarmHandle);
+      this.explorePrewarmHandle = null;
+    }
     this.logInteractionDebug("destroy_called", {
       existingStoreSubscriptionCount: this.storeSubscriptions.length,
       ...this.getInteractionDebugSnapshot(),
