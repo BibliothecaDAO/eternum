@@ -13,7 +13,7 @@ import { context } from "three/tsl";
 import * as ThreeWebGPU from "three/webgpu";
 import { describe, expect, it } from "vitest";
 
-import { createDeepFloorMaterial } from "./deep-floor-material";
+import { createDeepFloorMaterial, DEEP_FLOOR } from "./deep-floor-material";
 import { GroundLights } from "./ground-lights";
 import { createLayerFloorMaterial } from "./layer-floor-material";
 import { TerrainBiomeMap } from "./terrain-biome-map";
@@ -90,7 +90,7 @@ describe("WebGL fallback terrain fragment shaders", () => {
     const surface = createTerrainMaterials(biomeMap.texture, lights);
     const veil = createLayerFloorMaterial(1, biomeMap.texture);
     const hollow = createLayerFloorMaterial(2, biomeMap.texture);
-    const deep = createDeepFloorMaterial();
+    const deep = createDeepFloorMaterial(DEEP_FLOOR);
 
     try {
       const surfaceGlsl = compileWebGLFragmentShader(surface.land);

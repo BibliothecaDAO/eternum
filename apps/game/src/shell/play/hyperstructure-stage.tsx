@@ -10,7 +10,7 @@ import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { ASPECT_PAGE_WORDS, OF, SEASON_WORDS } from "@/ui/design-system/kit/words";
 import { AspectRaceCanvas } from "@/ui/features/frontier/aspect/aspect-race-canvas";
 
-import { type AspectRaceStanding, RACE_STAGE_COUNT, raceStageOf, type stageTriumphsOf } from "../season";
+import { type AspectRaceStanding, RACE_STAGE_COUNT, raceStageOf, SEASON_DEEP, type stageTriumphsOf } from "../season";
 
 type StageTriumph = ReturnType<typeof stageTriumphsOf>[number];
 
@@ -160,6 +160,7 @@ export const HyperstructureRaceStage = ({
       <AspectRaceCanvas
         standings={standings}
         finishHeight={finishHeight}
+        deep={SEASON_DEEP}
         surface={compact ? "shell-compact" : "shell"}
       />
       <div className={compact ? "hyper-stage__grid hyper-stage__grid--compact" : "hyper-stage__grid"}>
