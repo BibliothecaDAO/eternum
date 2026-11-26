@@ -280,13 +280,9 @@ describe("the Deploy sheet", () => {
     try {
       const card = host.querySelector<HTMLElement>(".deploy-troop-card")!;
       expect(card.getAttribute("aria-pressed")).toBe("true");
-      expect(card.querySelector("[data-troop-trait]")?.textContent).toBe(
-        TROOP_TRAIT_WORDS.card(knight, figures),
-      );
+      expect(card.querySelector("[data-troop-trait]")?.textContent).toBe(TROOP_TRAIT_WORDS.card(knight, figures));
       expect(card.getAttribute("data-tip")).toBe(TROOP_TRAIT_WORDS.tip(knight, figures));
-      expect(host.querySelector("[data-troop-summary]")?.textContent).toBe(
-        TROOP_TRAIT_WORDS.summary(knight, figures),
-      );
+      expect(host.querySelector("[data-troop-summary]")?.textContent).toBe(TROOP_TRAIT_WORDS.summary(knight, figures));
     } finally {
       act(() => root.unmount());
       host.remove();
