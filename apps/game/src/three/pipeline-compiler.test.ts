@@ -407,7 +407,7 @@ describe("createPipelineCompiler", () => {
         isMobileDevice: false,
         pixelRatio: 1,
         postProcessing: true,
-        requestedMode: "webgpu",
+        requestedMode: "webgpu-auto",
       },
       {
         createRenderer: async () => ({ renderer }),
