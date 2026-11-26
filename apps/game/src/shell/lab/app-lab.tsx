@@ -70,6 +70,10 @@ import { LabConnect, LabDayShare, LabDoorway } from "./app-lab-flows";
 import { answerLabChat } from "./lab-chat";
 import { AppChatConnection } from "../chat/app-chat";
 import { ChatPage } from "../chat/chat-page";
+import { seasonRealm } from "../season-pick";
+import { seasonRewardLedgerKey, seasonRewardRosterKey, type SeasonRewardLedgerRead } from "../value/season-reward";
+import { SeasonRewardProvider } from "../value/season-reward-popup";
+import { RACE_CLAIM_WINDOW_SECONDS } from "@realms-world/value-ledger/codecs";
 
 export const AppLabView = () => {
   const { screen } = useParams();
@@ -108,26 +112,28 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
   const { "*": page = "" } = useParams();
   return (
     <PageAddress.Provider value={`/${page}`}>
-      <Routes>
-        <Route index element={<PlayPage />} />
-        <Route path="season" element={<SeasonPage />} />
-        <Route path="results/:id" element={<ResultsPage />} />
-        <Route path={PROFILE_PATH.slice(1)} element={<ProfilePage />} />
-        <Route path={`${PROFILE_PATH.slice(1)}/settings`} element={<SettingsRedirect />} />
-        <Route path="p/:address" element={<PlayerPage />} />
-        <Route path="scroll" element={<WhatsNewPage />} />
-        <Route path="chat" element={<ChatPage />} />
-        <Route path="terms" element={<TermsPage />} />
-        <Route path="privacy" element={<PrivacyPage />} />
-        <Route path="credits" element={<CreditsPage />} />
-        <Route path="connect/:step" element={<LabConnect />} />
-        <Route path="doorway/:state" element={<LabDoorway />} />
-        <Route path="s/:code" element={<SharedLinkPage />} />
-        <Route path="share/day" element={<LabDayShare />} />
-        <Route path={COSMETICS_PATH.slice(1)} element={<CosmeticsPage />} />
-        <Route path={FRAGMENTS_PATH.slice(1)} element={<FragmentsPage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+      <SeasonRewardProvider>
+        <Routes>
+          <Route index element={<PlayPage />} />
+          <Route path="season" element={<SeasonPage />} />
+          <Route path="results/:id" element={<ResultsPage />} />
+          <Route path={PROFILE_PATH.slice(1)} element={<ProfilePage />} />
+          <Route path={`${PROFILE_PATH.slice(1)}/settings`} element={<SettingsRedirect />} />
+          <Route path="p/:address" element={<PlayerPage />} />
+          <Route path="scroll" element={<WhatsNewPage />} />
+          <Route path="chat" element={<ChatPage />} />
+          <Route path="terms" element={<TermsPage />} />
+          <Route path="privacy" element={<PrivacyPage />} />
+          <Route path="credits" element={<CreditsPage />} />
+          <Route path="connect/:step" element={<LabConnect />} />
+          <Route path="doorway/:state" element={<LabDoorway />} />
+          <Route path="s/:code" element={<SharedLinkPage />} />
+          <Route path="share/day" element={<LabDayShare />} />
+          <Route path={COSMETICS_PATH.slice(1)} element={<CosmeticsPage />} />
+          <Route path={FRAGMENTS_PATH.slice(1)} element={<FragmentsPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </SeasonRewardProvider>
     </PageAddress.Provider>
   );
 };
@@ -229,7 +235,51 @@ const createLabClient = (screen: LabScreen, field: number | null) => {
     const total = season?.aspect_members?.[id] ?? 12;
     client.setQueryData(["shell", "aspect-roster", LAB_CHAIN, 1, id], labAspectRoster(id, total, ownAspect, ownRealm));
   }
+  seedLabSeasonReward(client, screen);
   return client;
+};
+
+const LAB_REWARD_SCREENS: ReadonlySet<LabScreen> = new Set([
+  "reward-waiting",
+  "reward-urgent",
+  "reward-sending",
+  "reward-paid",
+]);
+
+const seedLabSeasonReward = (client: QueryClient, screen: LabScreen) => {
+  if (!LAB_REWARD_SCREENS.has(screen)) return;
+  const ended = LAB_SCREENS[screen].games.find((game) => game.status === "Ended");
+  const realm = ended ? seasonRealm(ended) : null;
+  const aspect = ended ? seasonPlayerAspect(ended) : null;
+  if (!ended || !realm || aspect === null) return;
+  const now = Math.floor(Date.now() / 1000);
+  const postedAt =
+    screen === "reward-urgent" ? now - (RACE_CLAIM_WINDOW_SECONDS - (11 * 3600 + 42 * 60)) : now - 10 * 3600;
+  const roster = [
+    {
+      rank: 1,
+      entity_id: String(realm.entity_id),
+      realm_id: realm.realm_id,
+      owner: LAB_PLAYER,
+      glory: String(5_000n * BigInt(RESOURCE_PRECISION)),
+    },
+    {
+      rank: 2,
+      entity_id: "99999",
+      realm_id: 1,
+      owner: Object.keys(LAB_PROFILES)[0] ?? LAB_PLAYER,
+      glory: String(5_000n * BigInt(RESOURCE_PRECISION)),
+    },
+  ];
+  const ledger: SeasonRewardLedgerRead = {
+    postedAt,
+    closed: false,
+    paid: screen === "reward-paid" ? { wallet: LAB_PAYOUT_WALLETS[screen]!, amount: 1_420n * 10n ** 18n } : null,
+    transactionHash:
+      screen === "reward-paid" ? "0x07c1b2a3d4e5f60718293a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d" : null,
+  };
+  client.setQueryData(seasonRewardRosterKey(LAB_CHAIN, ended.game_id, aspect), roster);
+  client.setQueryData(seasonRewardLedgerKey(LAB_CHAIN, ended.game_id, realm.entity_id), ledger);
 };
 
 function installLabFixtures(screen: LabScreen, field: number | null): () => void {

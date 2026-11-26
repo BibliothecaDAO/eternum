@@ -19,7 +19,7 @@ import { forgetDeviceKey } from "@bibliothecadao/eternum";
 
 import { setAppMusic, useAppMusic } from "../app-music";
 import { CosmeticsWorkspace, RealmCosmeticsShortcut } from "../cosmetics/cosmetics-page";
-import { COSMETICS_HASH, COSMETICS_PATH } from "../cosmetics/cosmetics-route";
+import { COSMETICS_PATH } from "../cosmetics/cosmetics-route";
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { useRealmsPlayer } from "../herald";
@@ -33,35 +33,17 @@ import { DevicesCard } from "./devices-page";
 import { NotificationsCard } from "./notifications";
 import { PayoutWalletPanel } from "./payout-wallet-panel";
 import { PlayerCard, ProfileView, RealmsShowcase, RecentGames, useOwnSeasonStanding } from "./profile-view";
-import { DELETE_ACCOUNT_HASH, DEVICES_HASH } from "./settings-route";
+import { hubTabFromLocation, PROFILE_TAB_HASH, type ProfileHubTab } from "./settings-route";
 import { SharedDaysPanel } from "./shared-days-panel";
+import { useCurrentSeasonReward } from "../value/season-reward-context";
 
-type HubTab = "overview" | "cosmetics" | "referrals" | "wallet" | "settings";
-
-const HUB_TABS: readonly { key: HubTab; label: string; short: string; icon: IconMeaning; phone?: true }[] = [
+const HUB_TABS: readonly { key: ProfileHubTab; label: string; short: string; icon: IconMeaning; phone?: true }[] = [
   { key: "overview", label: PROFILE_WORDS.overviewTab, short: PROFILE_WORDS.overviewShort, icon: "realm" },
   { key: "cosmetics", label: COSMETICS_WORDS.title, short: COSMETICS_WORDS.title, icon: "crown", phone: true },
   { key: "referrals", label: PROFILE_WORDS.referralsTab, short: PROFILE_WORDS.referralsShort, icon: "people" },
   { key: "wallet", label: PROFILE_WORDS.walletTab, short: PROFILE_WORDS.walletShort, icon: "backpack" },
   { key: "settings", label: PROFILE_WORDS.settings, short: PROFILE_WORDS.settingsShort, icon: "person" },
 ];
-
-const TAB_HASH: Record<HubTab, string> = {
-  overview: "#realms",
-  cosmetics: COSMETICS_HASH,
-  referrals: "#referrals",
-  wallet: "#wallet",
-  settings: "#settings",
-};
-
-const TAB_BY_HASH = new Map<string, HubTab>([
-  ...(Object.entries(TAB_HASH) as [HubTab, string][]).map(([tab, hash]) => [hash, tab] as const),
-  [DEVICES_HASH, "wallet"],
-  [DELETE_ACCOUNT_HASH, "settings"],
-]);
-
-const hubTabFromLocation = (hash: string, search: string): HubTab =>
-  TAB_BY_HASH.get(hash) ?? (nextOf(search) !== null ? "wallet" : "overview");
 
 export const ProfilePage = () => {
   const { hash, search } = useLocation();
@@ -79,7 +61,7 @@ export const ProfilePage = () => {
 
 export const SettingsRedirect = () => {
   const { pathname, search, hash } = useLocation();
-  const targetHash = hash || (nextOf(search) !== null ? TAB_HASH.wallet : TAB_HASH.settings);
+  const targetHash = hash || (nextOf(search) !== null ? PROFILE_TAB_HASH.wallet : PROFILE_TAB_HASH.settings);
   return <Navigate to={{ pathname: pathname.replace(/\/settings\/?$/, ""), search, hash: targetHash }} replace />;
 };
 
@@ -93,20 +75,22 @@ const useReturnOnceLinked = (returnTo: string | null, payout: string | null) => 
   }, [linkedOnArrival, navigate, payout, returnTo]);
 };
 
-const AccountHub = ({ account, tab }: { account: string; tab: HubTab }) => {
+const AccountHub = ({ account, tab }: { account: string; tab: ProfileHubTab }) => {
   const { session } = useIdentitySession();
   const refresh = useIdentitySessionStore((state) => state.refresh);
   const desktop = useLayout() === "desktop";
   const { hash, search } = useLocation();
   const navigate = useNavigate();
   const standing = useOwnSeasonStanding(account);
+  const reward = useCurrentSeasonReward();
+  const waitingReward = reward?.status === "waiting";
   const payout = session ? payoutAddressOf(session.user) : null;
   useReturnOnceLinked(nextOf(search), payout);
   useEffect(() => {
     if (hash) document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start" });
   }, [hash, tab, desktop]);
   if (!session) return null;
-  const openTab = (next: HubTab) => navigate({ hash: TAB_HASH[next], search }, { replace: true });
+  const openTab = (next: ProfileHubTab) => navigate({ hash: PROFILE_TAB_HASH[next], search }, { replace: true });
   const workspace = (
     <div className="you-workspace" data-you-tab={tab}>
       {tab === "overview" && (
@@ -121,7 +105,12 @@ const AccountHub = ({ account, tab }: { account: string; tab: HubTab }) => {
       {tab === "wallet" && (
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           <AppPanel title={WALLET_WORDS.payoutWallet} icon="backpack">
-            <PayoutWalletPanel wallet={payout} email={session.user.email} onChanged={() => void refresh()} />
+            <PayoutWalletPanel
+              wallet={payout}
+              email={session.user.email}
+              reward={reward}
+              onChanged={() => void refresh()}
+            />
           </AppPanel>
           <div id="devices" className="scroll-mt-4">
             <AppPanel title={PROFILE_WORDS.devices} icon="monitor" flush>
@@ -157,7 +146,7 @@ const AccountHub = ({ account, tab }: { account: string; tab: HubTab }) => {
           label={PROFILE_WORDS.tabsLabel}
           value={tab}
           onChange={openTab}
-          tabs={HUB_TABS.map(({ key, short }) => ({ key, label: short }))}
+          tabs={HUB_TABS.map(({ key, short }) => ({ key, label: short, dot: key === "wallet" && waitingReward }))}
         >
           <div className="pt-4">{workspace}</div>
         </AppTabs>
@@ -180,6 +169,7 @@ const AccountHub = ({ account, tab }: { account: string; tab: HubTab }) => {
             >
               <Icon name={icon} size={20} />
               <span>{label}</span>
+              {key === "wallet" && waitingReward && <span data-reward-dot className="reward-dot ml-auto" />}
             </button>
           ))}
         </nav>

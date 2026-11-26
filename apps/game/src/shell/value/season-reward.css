@@ -1,0 +1,306 @@
+.reward-popup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.9rem;
+}
+
+.reward-popup__eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--app-gold);
+}
+
+.reward-popup__title {
+  margin: 0;
+  font-family: var(--app-face-title);
+  font-size: clamp(1.5rem, 3.2vw, 1.85rem);
+  line-height: 1.1;
+  color: var(--app-ink);
+}
+
+.reward-popup__hero {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: var(--app-radius-card);
+  border: 1px solid color-mix(in srgb, var(--app-gold) 36%, transparent);
+  background: color-mix(in srgb, var(--app-dark) 80%, transparent);
+}
+
+.reward-popup__medallion {
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid color-mix(in srgb, var(--app-gold) 60%, transparent);
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--app-gold) 26%, transparent), var(--app-dark));
+  flex-shrink: 0;
+}
+
+.reward-popup__amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.reward-popup__number {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-ink);
+}
+
+.reward-popup__unit {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--app-gold);
+  margin-left: 0.35rem;
+}
+
+.reward-popup__sub {
+  font-size: 0.78rem;
+  color: var(--app-muted);
+  margin-top: 0.25rem;
+}
+
+.reward-popup__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.88rem;
+  color: var(--app-ink);
+}
+
+.reward-popup__copy-sub {
+  color: var(--app-muted);
+  font-size: 0.8rem;
+}
+
+.reward-popup__countdown {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  text-align: left;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--app-radius-control);
+  border: 1px solid color-mix(in srgb, var(--app-gold) 42%, transparent);
+  background: color-mix(in srgb, var(--app-gold) 10%, transparent);
+}
+
+.reward-popup__countdown[data-urgent="true"] {
+  border-color: color-mix(in srgb, var(--app-bad) 60%, transparent);
+  background: color-mix(in srgb, var(--app-bad) 14%, transparent);
+}
+
+.reward-popup__countdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--app-gold);
+}
+
+.reward-popup__countdown[data-urgent="true"] .reward-popup__countdown-row {
+  color: var(--app-bad);
+}
+
+.reward-popup__countdown-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.reward-popup__bar {
+  height: 0.25rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-ink) 14%, transparent);
+  overflow: hidden;
+}
+
+.reward-popup__bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--app-gold);
+}
+
+.reward-popup__countdown[data-urgent="true"] .reward-popup__bar-fill {
+  background: var(--app-bad);
+}
+
+.reward-popup__deadline-line {
+  font-size: 0.76rem;
+  color: var(--app-muted);
+}
+
+.reward-popup__actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.reward-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--app-gold) 58%, transparent);
+  background: color-mix(in srgb, var(--app-gold) 15%, var(--app-dark));
+  color: var(--app-ink);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.reward-pill[data-urgent="true"] {
+  border-color: color-mix(in srgb, var(--app-bad) 65%, transparent);
+  background: color-mix(in srgb, var(--app-bad) 18%, var(--app-dark));
+}
+
+.reward-pill__left {
+  color: var(--app-muted);
+  font-weight: 600;
+}
+
+.reward-pill[data-urgent="true"] .reward-pill__left {
+  color: var(--app-bad);
+}
+
+.reward-phone-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--app-radius-control);
+  border: 1px solid color-mix(in srgb, var(--app-gold) 52%, transparent);
+  background: color-mix(in srgb, var(--app-gold) 15%, var(--app-dark));
+  color: var(--app-ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.reward-phone-bar[data-urgent="true"] {
+  border-color: color-mix(in srgb, var(--app-bad) 62%, transparent);
+  background: color-mix(in srgb, var(--app-bad) 18%, var(--app-dark));
+}
+
+.reward-phone-bar__lead {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.reward-phone-bar__cta {
+  flex-shrink: 0;
+  padding: 0.22rem 0.6rem;
+  border-radius: 0.45rem;
+  background: var(--app-gold);
+  color: var(--app-dark);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.reward-phone-bar[data-urgent="true"] .reward-phone-bar__cta {
+  background: var(--app-bad);
+  color: var(--app-ink);
+}
+
+.reward-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--app-gold);
+  box-shadow: 0 0 0 2px var(--app-dark);
+}
+
+.reward-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: var(--app-radius-card);
+  border: 1px solid color-mix(in srgb, var(--app-gold) 48%, transparent);
+  background: color-mix(in srgb, var(--app-gold) 11%, var(--app-well));
+}
+
+.reward-banner[data-tone="urgent"] {
+  border-color: color-mix(in srgb, var(--app-bad) 58%, transparent);
+  background: color-mix(in srgb, var(--app-bad) 13%, var(--app-well));
+}
+
+.reward-banner[data-tone="good"] {
+  border-color: color-mix(in srgb, var(--app-good) 52%, transparent);
+  background: color-mix(in srgb, var(--app-good) 11%, var(--app-well));
+}
+
+.reward-banner__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.reward-banner__lead {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.reward-banner__title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--app-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.reward-banner__sub {
+  font-size: 0.78rem;
+  color: var(--app-muted);
+}
+
+.reward-banner__body {
+  font-size: 0.82rem;
+  color: var(--app-ink);
+  line-height: 1.4;
+}
+
+.reward-banner__timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--app-gold);
+  border: 1px solid color-mix(in srgb, var(--app-gold) 42%, transparent);
+  background: color-mix(in srgb, var(--app-gold) 14%, transparent);
+}
+
+.reward-banner[data-tone="urgent"] .reward-banner__timer {
+  color: var(--app-bad);
+  border-color: color-mix(in srgb, var(--app-bad) 52%, transparent);
+  background: color-mix(in srgb, var(--app-bad) 16%, transparent);
+}

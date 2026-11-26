@@ -2115,6 +2115,33 @@ export const REWARD_WORDS = {
   noLords: "No LORDS now",
 } as const;
 
+export const SEASON_REWARD_WORDS = {
+  title: (lords: string) => `You earned ${lords} LORDS`,
+  endedEyebrow: (season: string, aspect: string) => `${season} ended · ${aspect}`,
+  gloryReward: "Glory reward",
+  automaticLine: "Link a wallet and your LORDS send automatically.",
+  noFeeLine: "No manual transaction or network fee needed.",
+  timeLeftToLink: (left: string) => `${left} left to link a wallet`,
+  closesAt: (date: string) => `Closes ${date}`,
+  urgentTitle: (left: string, lords: string) => `${left} left — link a wallet today to receive ${lords} LORDS`,
+  urgentSub: "Unpaid LORDS return to the treasury when the window closes.",
+  waitingBadge: (lords: string) => `${lords} LORDS waiting`,
+  waitingCompact: (lords: string, left: string) => `${lords} LORDS · ${left}`,
+  waitingSeason: (season: string) => `${season} reward · Unpaid`,
+  waitingPanelNote: (lords: string, date: string) =>
+    `Link a wallet below and your ${lords} LORDS send automatically on the next payout tick. Closes ${date}.`,
+  firstWalletZeroHold: "First wallet linked receives at once.",
+  sendingTitle: "Sending payout automatically",
+  sendingBody: (lords: string, address: string) =>
+    `Sending ${lords} LORDS to ${address} on the next payout tick. Nothing else to sign.`,
+  paidTitle: (lords: string) => `${lords} LORDS paid`,
+  paidSub: (season: string, address: string) => `${season} reward received in ${address}`,
+  paidChip: "Paid",
+  linkAction: "Link",
+  linkWalletNow: "Link wallet now",
+  windowLabel: "Season reward",
+} as const;
+
 /** The three alert levels (ruled). */
 export const LEVEL_WORDS = { off: "Off", important: "Important", all: "All" } as const;
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { raceRewards, type RaceFacts } from "./race-amounts";
+import { raceRewards, type RaceFacts } from "@bibliothecadao/types";
 
 const LORDS = 10n ** 18n;
 const GLORY = 10n ** 9n;

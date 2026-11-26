@@ -1,4 +1,4 @@
-import { WALLET_WORDS } from "@/ui/design-system/kit/words";
+import { SEASON_REWARD_WORDS, WALLET_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import {
   IdentityRequestError,
@@ -28,6 +28,8 @@ import { invalidateLordsBalance } from "../value/use-lords-balance";
 import { WalletUnread } from "@/shell/value/wallet-unread";
 import { RealmsWalletFunds } from "./realms-wallet-funds";
 import { RealmsWalletRecovery, RecoverStart } from "./realms-wallet-recovery";
+import type { SeasonRewardState } from "../value/season-reward-context";
+import { PayoutWalletRewardBanner } from "../value/season-reward-surfaces";
 
 const WalletPicker = lazy(() =>
   import("@/shell/value/wallet-actions").then((module) => ({ default: module.WalletPicker })),
@@ -61,11 +63,13 @@ type Step =
 export const PayoutWalletPanel = ({
   wallet,
   email,
+  reward = null,
   onChanged,
 }: {
   /** The linked wallet's address; null when the account has none. */
   wallet: string | null;
   email: string;
+  reward?: SeasonRewardState | null;
   onChanged: () => void;
 }) => {
   const queryClient = useQueryClient();
@@ -96,6 +100,7 @@ export const PayoutWalletPanel = ({
         <Linked
           address={wallet}
           isDefault={isDefault}
+          reward={reward}
           onReplace={() => setStep({ kind: "choose" })}
           onUnlink={() => setStep({ kind: "code", change: { kind: "unlink" } })}
           onRecover={recover}
@@ -109,6 +114,9 @@ export const PayoutWalletPanel = ({
         <p className="text-app-heading text-app-ink">{WALLET_WORDS.unlinkTitle}</p>
       )}
       {walletUnread && <WalletUnread onRetry={readWalletAgain} />}
+      {wallet === null && reward?.status === "waiting" && step.kind === "choose" && (
+        <PayoutWalletRewardBanner reward={reward} />
+      )}
       {body()}
       {defaultWallet && !isDefault && (step.kind === "linked" || step.kind === "choose") && (
         <RealmsWallet address={defaultWallet.address} onRecover={recover} />
@@ -271,6 +279,7 @@ const CodeStep = ({ change, email, onDone }: { change: Change; email: string; on
 const Linked = ({
   address,
   isDefault,
+  reward,
   onReplace,
   onUnlink,
   onRecover,
@@ -278,19 +287,24 @@ const Linked = ({
   address: string;
   /** The account's own default wallet, which the player knows by name rather than by address. */
   isDefault: boolean;
+  reward: SeasonRewardState | null;
   onReplace: () => void;
   onUnlink: () => void;
   onRecover: () => void;
 }) => {
   const [sending, setSending] = useState(false);
+  const chipWord = reward?.status === "paid" ? SEASON_REWARD_WORDS.paidChip : WALLET_WORDS.canReceive;
   return (
     <>
       {!isDefault && <Track at={STEPS.length} />}
       <WalletCard
         address={address}
         name={isDefault ? WALLET_WORDS.realmsWallet : undefined}
-        chip={{ icon: "check", word: WALLET_WORDS.canReceive }}
+        chip={{ icon: "check", word: chipWord }}
       />
+      {reward && (reward.status === "sending" || reward.status === "paid") && (
+        <PayoutWalletRewardBanner reward={reward} />
+      )}
       {isDefault && <RealmsWalletFunds address={address} onSending={setSending} />}
       {!sending && (
         <>

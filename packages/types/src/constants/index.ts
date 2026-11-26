@@ -6,6 +6,7 @@ export * from "./hex";
 export * from "./market";
 export * from "./misc";
 export * from "./orders";
+export * from "./race-rewards";
 export * from "./realmLevels";
 export * from "./relics";
 export * from "./shop";

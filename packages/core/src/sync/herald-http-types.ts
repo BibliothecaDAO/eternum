@@ -56,6 +56,7 @@ export interface HeraldAspectRace {
   season_days: number;
   heights: Record<AspectId, number>;
   triumph_percents: Record<TriumphStage, number>;
+  winner?: AspectId | null;
 }
 
 /** The requesting player's standing in one game: everything the entry screens read before the player joins. */

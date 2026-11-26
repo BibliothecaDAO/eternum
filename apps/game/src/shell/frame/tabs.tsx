@@ -26,6 +26,7 @@ import { PROFILE_PATH } from "../profile/settings-route";
 import { FRAGMENTS_PATH } from "../shop/fragments-route";
 import { useRequestSignIn } from "../sign-in/connect";
 import { LordsBalancePill } from "../value/lords-balance-pill";
+import { RewardWaitingDot, RewardWaitingPill } from "../value/season-reward-surfaces";
 import { usePageAddress } from "./page-address";
 
 type Place = { to: string; word: string; icon: IconMeaning; matches: readonly string[] };
@@ -178,6 +179,7 @@ export const TabBar = () => {
                   {unread}
                 </span>
               )}
+              {tab === YOU_TAB && <RewardWaitingDot className="absolute -right-1 -top-0.5" />}
             </span>
             {tab.word}
           </AppLink>
@@ -187,8 +189,9 @@ export const TabBar = () => {
   );
 };
 
-export const TopBarEnd = () => (
+export const TopBarEnd = ({ showRewardPill = false }: { showRewardPill?: boolean }) => (
   <span className="flex shrink-0 items-center gap-2 empty:hidden">
+    {showRewardPill && <RewardWaitingPill />}
     <InstallButton />
     <LordsBalancePill />
   </span>
@@ -208,11 +211,16 @@ export const DesktopBar = ({ notice }: { notice: ReactNode }) => {
     <AppTopBar
       mark={<Lockup />}
       places={DESKTOP_PLACES.map(placeOf)}
-      end={<TopBarEnd />}
+      end={<TopBarEnd showRewardPill />}
       player={{
         ...placeOf(YOU_TAB),
         ...(connect && { label: WORDS.connect, onSelect: connect, action: "connect" as const }),
-        ...(player && { label: player.name, portrait: player.url, place: YOU_TAB.word }),
+        ...(player && {
+          label: player.name,
+          portrait: player.url,
+          place: YOU_TAB.word,
+          badge: <RewardWaitingDot className="absolute -right-0.5 -top-0.5" />,
+        }),
       }}
       notice={notice}
     />
