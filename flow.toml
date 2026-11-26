@@ -7,10 +7,6 @@ cmd = "bash contracts/l3/check-native.sh build"
 [kind.build-blitz]
 cmd = "bash contracts/l3/check-native.sh build-blitz"
 
-[kind.pin-release-classes]
-paths = "contracts/ deploy/release/native-release.ts .tool-versions"
-cmd = 'bash contracts/l3/check-native.sh build && bun contracts/l3/world-native/scripts/pin-release-classes.ts --write && cp contracts/l3/world-native/release-classes.json "$FLOW_TMP/"'
-
 [kind.sizes]
 cmd = "bash contracts/l3/check-native.sh sizes"
 paths = "contracts/ .tool-versions"
