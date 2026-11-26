@@ -37,7 +37,7 @@ const REQUIRED_WARMUP_OWNERS = [
 ];
 
 const HAS_WARMUP_INVOCATION =
-  /\b(?:this\.)?compilePipelines\??\s*\(|\bcreatePipelineCompiler\s*\(|\bwarmIconTexture\??\s*\(/;
+  /\b(?:this\.)?compilePipelines(?:\?\.)?\s*\(|\bcreatePipelineCompiler\s*\(|\bwarmIconTexture(?:\?\.)?\s*\(/;
 
 function collectRuntimeThreeFiles(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
