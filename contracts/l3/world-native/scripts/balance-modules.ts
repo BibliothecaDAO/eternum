@@ -11,7 +11,7 @@ import { blitzExplorationRewards } from "../../../../config/source/blitz/balance
 import { blitzPendingCommandMask } from "../../../../config/source/common/native-commands";
 import { FRONTIER_S1_PRESET_ID } from "../../../../config/source/common/native-preset-modes";
 import { nativePresetForId } from "../../../../config/source/native";
-import { releaseDefinitionText } from "../../../../apps/herald/src/native/release-definition";
+import { archiveOutgoingRelease, releaseDefinitionText } from "../../../../apps/herald/src/native/release-definition";
 import { NATIVE_RELEASES } from "../../../../deploy/release/native-release";
 import wireIds from "../schema/wire-ids.json";
 
@@ -69,10 +69,19 @@ export function blitzBalanceModules(definition: PresetDefinition): Record<string
 
 export function writeRelease(frontier: PresetDefinition, blitz: PresetDefinition): void {
   writeBalanceModules(balanceModules(frontier), blitzBalanceModules(blitz));
+  archiveCurrentRelease(NATIVE_RELEASES.frontier.release);
   writeFileSync(
     new URL("schema/release-definition.json", world),
     releaseDefinitionText(NATIVE_RELEASES.frontier.release, frontier),
   );
+}
+
+function archiveCurrentRelease(incoming: number): void {
+  const archivePath = new URL("../../../../apps/herald/src/native/release-definitions.json", import.meta.url);
+  const archive = JSON.parse(readFileSync(archivePath, "utf8"));
+  const outgoing = JSON.parse(readFileSync(new URL("schema/release-definition.json", world), "utf8"));
+  const next = archiveOutgoingRelease(archive, outgoing, incoming);
+  if (next !== archive) writeFileSync(archivePath, `${JSON.stringify(next, null, 2)}\n`);
 }
 
 function writeBalanceModules(frontier: Record<string, string>, blitz: Record<string, string>): void {

@@ -29,7 +29,12 @@ import { NativeIngestion } from "./ingestion";
 import { loadNativeWorld } from "./load";
 import { releaseLine } from "../../../../packages/core/src/test-support/releases";
 import { presetRelease } from "./preset-fixtures";
-import { RELEASE_DEFINITIONS, readReleaseDefinitions, releaseDefinitionText } from "./release-definition";
+import {
+  RELEASE_DEFINITIONS,
+  archiveOutgoingRelease,
+  readReleaseDefinitions,
+  releaseDefinitionText,
+} from "./release-definition";
 import { NATIVE_RELEASES } from "../../../../deploy/release/native-release";
 
 const registration = (presetId = 5, amend?: (definition: ReturnType<typeof buildNativePreset>) => void) =>
@@ -518,6 +523,16 @@ describe("a game's rule rows follow its release", () => {
     await replayed.native.replay({ fold: replayed.fold, rpc, fromBlock: 11, toBlock: 12 });
     expect(ruleRows(replayed.fold)).toEqual(ruleRows(launchedOn(upgraded)));
     expect(clientBarracksPrice(replayed.fold)).toEqual([{ resource: ResourcesIds.Labor, amount: 500 }]);
+  });
+
+  it("archives the outgoing release once when a new one is cut, and refuses a release older than the archive's", () => {
+    const archive = [21, 22].map((release) => ({ release, definition: { release } }));
+    const outgoing = { release: 23, definition: { release: 23 } };
+    const cut = archiveOutgoingRelease(archive, outgoing, 24);
+    expect(cut.map(({ release }) => release)).toEqual([21, 22, 23]);
+    expect(archiveOutgoingRelease(cut, outgoing, 24)).toBe(cut);
+    expect(archiveOutgoingRelease(archive, outgoing, 23)).toBe(archive);
+    expect(() => archiveOutgoingRelease(archive, outgoing, 22)).toThrow("Release 22 cannot follow release 23");
   });
 
   it("holds a rule definition for every release from the oldest archived one through the current release", () => {

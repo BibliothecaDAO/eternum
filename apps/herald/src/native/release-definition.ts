@@ -35,6 +35,14 @@ export function readReleaseDefinitions(...files: unknown[]): ReleaseDefinitions 
 
 export const RELEASE_DEFINITIONS = readReleaseDefinitions(...releaseArchive, releaseFile);
 
+type ReleaseFile = { release: number; definition: unknown };
+
+export function archiveOutgoingRelease(archive: readonly ReleaseFile[], outgoing: ReleaseFile, incoming: number) {
+  if (outgoing.release > incoming) throw new Error(`Release ${incoming} cannot follow release ${outgoing.release}`);
+  if (outgoing.release === incoming || archive.some(({ release }) => release === outgoing.release)) return archive;
+  return [...archive, outgoing].sort((left, right) => left.release - right.release);
+}
+
 export function releaseDefinition(definitions: ReleaseDefinitions, release: number): DecodedRecord {
   const definition = definitions.get(release);
   if (!definition) throw new NativeReleaseDefinitionUnknown(release);
