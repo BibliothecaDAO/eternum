@@ -337,7 +337,7 @@ describe("the shared Deep", () => {
   it("reads a site's beast from its guard and the day alone, before the day's entries are known", () => {
     const { rows, store } = fixture();
     rows.DeepRules = [{ game_id: 7, loss_per_tick: precision, beasts: [{ count: 10n * precision, bow: false }] }];
-    rows.DeepSite = [{ game_id: 7, entity_id: 20n, kind: 0, ring: 0, day: 0n }];
+    rows.DeepSite = [{ game_id: 7, entity_id: 20n, kind: 0, ring: 0, day: 0n, aspect: 0 }];
     rows.Guard = [{ game_id: 7, structure_id: 20n, slot: 0, troops: { count: 4n * precision } }];
     expect(readDeepBeastTroops(store, 420, 20n, 7)).toBe(4n * precision);
     expect(readDeepBeastTroops(store, dayAtIndex(calendar, 0).end, 20n, 7)).toBe(10n * precision);
