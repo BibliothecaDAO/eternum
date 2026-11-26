@@ -396,10 +396,13 @@ fn fresh_army(d: Deployment, source: ExplorerKey, explorer_id: u64, end: u64, ta
             write.troops.combat.write(to, read.troops.combat.read(from));
             write.troops.progress.write(to, read.troops.progress.read(from));
             write.resources.resource_exists.write(to, true);
-            write.resources.weights.write(to, read.resources.weights.read(from));
             write.deep.army_ticks.write(to, Some(end / TICK));
             let coord = crate::geometry::neighbor(crate::logic::map::entity_coord(target).unwrap(), 3);
             let army = crate::logic::army_slots::resolve(source, crate::logic::troops::explorer(source).unwrap(), None);
+            let count = empire_cap() * crate::rules::RESOURCE_PRECISION;
+            let weight = read.resources.weights.read(from);
+            let capacity = weight.capacity / army.troops.count * count;
+            write.resources.weights.write(to, crate::resources::Weight { capacity, ..weight });
             crate::logic::map::MapState::relocate_fixture(
                 ResourceKey { game_id: source.game_id, entity_id: explorer_id },
                 coord,
@@ -413,11 +416,7 @@ fn fresh_army(d: Deployment, source: ExplorerKey, explorer_id: u64, end: u64, ta
                     to,
                     crate::troops::ExplorerRecordTrait::into_record(
                         crate::troops::ExplorerTroops {
-                            coord,
-                            troops: crate::troops::Troops {
-                                count: empire_cap() * crate::rules::RESOURCE_PRECISION, ..army.troops,
-                            },
-                            ..army,
+                            coord, troops: crate::troops::Troops { count, ..army.troops }, ..army,
                         },
                     ),
                 );

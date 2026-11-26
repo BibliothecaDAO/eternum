@@ -452,12 +452,45 @@ fn a_player_holds_a_second_slot_with_another_troop_type_but_never_mixes_types_in
     refused(d, game_id, garrison(key, slot(target, 3), troops(100)), FIXTURE_START, "slot holds another troop type");
     applied(d, game_id, garrison(key, slot(target, 2), troops(100)), FIXTURE_START);
     assert_eq!((holder(d, slot(target, 3)), holder(d, slot(target, 2))), (home, home));
+    let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
+    let boundary = (FIXTURE_START / interval + 1) * interval;
+    applied(d, game_id, Command::SetEntityName(crate::names::SetEntityName { entity_id: home, name: 'two' }), boundary);
+    let rules = crate::logic::deep_sites::rules();
+    assert_eq!(garrisoned(d, slot(target, 3)), troops(100) - rules.loss_per_tick);
+    assert_eq!(garrisoned(d, slot(target, 2)), troops(100) - rules.loss_per_tick);
+    let pay = interact_with_state(d.games, || super::deep_ticks::held_pay(game_id, crate::rules::DEEP_FOUNDATION, 1));
+    let paid: u128 = Into::<u32, u128>::into(pay) * crate::rules::RESOURCE_PRECISION;
+    assert_eq!(
+        interact_with_state(d.games, || crate::logic::race::member(ResourceKey { game_id, entity_id: home }).glory),
+        paid,
+    );
+}
+
+#[test]
+fn only_the_owner_garrisons_an_ethereal_mine_even_beside_his_allies() {
+    let (d, game_id) = setup(90);
+    let target = site(d, game_id, crate::rules::DEEP_MINE);
+    let owner = player(d, 9000);
+    let first = deployed(owner, game_id, 1, 1000);
+    let ally = player(d, 9001);
+    let second = deployed(ally, game_id, 1, 1000);
+    claim(owner, first, target, 0);
+    beside(d, second, target, 1);
+    refused(
+        ally,
+        game_id,
+        garrison(second, slot(target, 3), troops(100)),
+        FIXTURE_START,
+        "only the owner garrisons this site",
+    );
+    applied(owner, game_id, garrison(first, slot(target, 3), troops(100)), FIXTURE_START);
+    assert_eq!(holder(d, slot(target, 3)), army(d, first).owner);
 }
 
 #[test]
 fn an_owner_withdraws_to_his_own_army_and_an_emptied_slot_is_free_again() {
     let (d, game_id) = setup(85);
-    let target = site(d, game_id, crate::rules::DEEP_MINE);
+    let target = site(d, game_id, crate::rules::DEEP_FOUNDATION);
     let owner = player(d, 8500);
     let first = deployed(owner, game_id, 1, 1000);
     let ally = player(d, 8501);

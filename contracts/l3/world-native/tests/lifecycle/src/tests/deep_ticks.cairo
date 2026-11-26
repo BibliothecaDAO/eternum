@@ -91,7 +91,7 @@ fn a_late_rejected_move_pays_all_sites_at_the_win_then_stops_before_later_ticks(
     }
 }
 
-fn held_pay(game_id: u32, kind: u8, rings_open: u8) -> u32 {
+pub fn held_pay(game_id: u32, kind: u8, rings_open: u8) -> u32 {
     let mut open = 0_u8;
     for index in 0..crate::logic::deep_sites::site_count() {
         let key = ResourceKey { game_id, entity_id: crate::logic::deep_sites::site_id(game_id, index) };
@@ -219,22 +219,17 @@ fn advance(d: Deployment, key: ExplorerKey, direction: u8, now: u64) {
 }
 
 #[test]
-fn the_mine_pays_four_post_loss_shares_and_repeated_commands_do_not_pay_again() {
+fn a_foundation_pays_four_allies_glory_by_post_loss_slot_troops_and_repeated_commands_do_not_pay_again() {
     let (d, game_id) = setup(95);
-    let target = site(d, game_id, crate::rules::DEEP_MINE);
+    let target = site(d, game_id, crate::rules::DEEP_FOUNDATION);
     let mut guards = array![];
     let mut homes = array![];
-    let mut balances = array![];
     let rules = crate::logic::deep_sites::rules();
     for index in 0_u8..4 {
         let member = player(d, 9500 + index.into());
         let key = deployed(member, game_id, 1, (Into::<u8, u128>::into(index) + 2) * 200);
-        let home = ResourceKey { game_id, entity_id: army(d, key).owner };
-        let held = seize(member, key, target, index);
-        stop_passive_labor(d, home);
-        balances.append(balance(d, home, crate::resources::LABOR));
-        guards.append(held);
-        homes.append(home);
+        homes.append(ResourceKey { game_id, entity_id: army(d, key).owner });
+        guards.append(seize(member, key, target, index));
     }
     let visitor = player(d, 9599);
     let mover = deployed(visitor, game_id, 2, 1000);
@@ -242,10 +237,11 @@ fn the_mine_pays_four_post_loss_shares_and_repeated_commands_do_not_pay_again() 
     let boundary = (FIXTURE_START / interval + 1) * interval;
     advance(visitor, mover, 3, boundary);
     advance(visitor, mover, 0, boundary + 1);
+    let pay: u128 = interact_with_state(d.games, || held_pay(game_id, crate::rules::DEEP_FOUNDATION, 1)).into();
     for index in 0_u32..4 {
         assert_eq!(
-            balance(d, *homes.at(index), crate::resources::LABOR) - *balances.at(index),
-            (Into::<u32, u128>::into(index) + 1) * rules.mine_per_tick / 10,
+            interact_with_state(d.games, || crate::logic::race::member(*homes.at(index)).glory),
+            (Into::<u32, u128>::into(index) + 1) * pay * RESOURCE_PRECISION / 10,
         );
         assert_eq!(
             garrisoned(d, *guards.at(index)),
