@@ -692,11 +692,11 @@ describe("terrain wildlife lifecycle", () => {
 
   it("compiles a biome creature rig through compilePipelines before attaching it to the wildlife root", async () => {
     const scene = new Scene();
-    let finishFirstCompile: (() => void) | null = null;
+    const firstCompile: { resolve: (() => void) | null } = { resolve: null };
     const compilePipelines = vi.fn(() => {
-      if (!finishFirstCompile) {
+      if (!firstCompile.resolve) {
         return new Promise<void>((resolve) => {
-          finishFirstCompile = resolve;
+          firstCompile.resolve = resolve;
         });
       }
       return Promise.resolve();
@@ -716,11 +716,11 @@ describe("terrain wildlife lifecycle", () => {
       await vi.waitFor(() => expect(compilePipelines).toHaveBeenCalledOnce());
       expect(wildlife.object3d.children).toHaveLength(0);
 
-      finishFirstCompile!();
+      firstCompile.resolve?.();
       await loading;
       expect(wildlife.object3d.children.length).toBeGreaterThan(0);
     } finally {
-      finishFirstCompile?.();
+      firstCompile.resolve?.();
       wildlife.dispose();
     }
   });
