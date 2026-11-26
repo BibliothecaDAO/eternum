@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { configManager, siteDisplayName } from "@bibliothecadao/eternum";
+import { configManager, setBlockTimestampSource, siteDisplayName } from "@bibliothecadao/eternum";
 import { formatShort, ResourcesIds } from "@bibliothecadao/types";
 import { GameProvider } from "@/hooks/context/game-context";
 import { FIGHT_RESULT } from "@/ui/design-system/kit/words";
@@ -14,6 +14,7 @@ let root: Root;
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
+  setBlockTimestampSource(() => 1_000);
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -28,6 +29,7 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
+  setBlockTimestampSource(null);
   vi.restoreAllMocks();
 });
 

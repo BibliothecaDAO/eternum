@@ -62,9 +62,9 @@ const ClearBanner = ({ clear }: { clear: SiteClear }) => {
             </HudChip>
           )}
           {opensPost && (
-            <span className="fight-banner__post">
-              <HudChip icons={["flag"]}>{SUPPLY_POST.open}</HudChip>
-            </span>
+            <HudChip icons={["flag"]} tone="gold">
+              {SUPPLY_POST.open}
+            </HudChip>
           )}
           {clear.troopsLost > 0 && (
             <HudChip icons={["troops"]} label={TROOPS} tone="bad">
