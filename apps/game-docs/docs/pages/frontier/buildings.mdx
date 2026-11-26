@@ -10,14 +10,15 @@ import { PipeTable } from "@/components/PipeTable";
 
 # Buildings
 
-Tap an open plot on your realm to build. Your castle makes {FRONTIER.realm.castleLaborRates[0]} labor per hour at
-{FRONTIER.realm.castleLevelInline[0]}, multiplying by {FRONTIER.realm.castleLaborStep} at each castle level up to
-{FRONTIER.realm.castleLaborRates[3]}/h at {FRONTIER.realm.castleLevelInline[3]}. Each of the {FRONTIER.buildingsCount}
-buildings opens at its castle level and costs labor (plus Essence for unique buildings):
+Tap an open plot on your realm to open **Build**. Buildings are sorted by group: {FRONTIER.buildGroupsList}. Your castle
+makes {FRONTIER.realm.castleLaborRates[0]} labor per hour at {FRONTIER.realm.castleLevelInline[0]}, multiplying by
+{FRONTIER.realm.castleLaborStep} at each castle level up to {FRONTIER.realm.castleLaborRates[3]}/h at
+{FRONTIER.realm.castleLevelInline[3]}. Each of the {FRONTIER.buildingsCount} buildings opens at its castle level and
+costs labor (plus Essence for unique buildings):
 
 <Shot
   name="frontier/build"
-  caption="Switch to Realm from the place dropdown and tap any highlighted open plot to open Build. Pick a building to check its output and cost before placing it."
+  caption="Press Realm in the top bar and tap an open plot to open Build. Pick a building to check its output and cost before you build."
 />
 
 | Building                                                                    | Makes                         | Opens at                      | First copy price              |

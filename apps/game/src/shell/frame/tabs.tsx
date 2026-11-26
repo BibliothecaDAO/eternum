@@ -1,4 +1,10 @@
-import { CHAT_WORDS, COSMETICS_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import {
+  CHAT_WORDS,
+  DESKTOP_APP_PLACES,
+  DESKTOP_APP_PLACE_WORDS,
+  WORDS,
+  type DesktopAppPlace,
+} from "@/ui/design-system/kit/words";
 import { useRealtimeChatSelector } from "@/ui/features/social";
 import { chatUnread } from "@/ui/features/social/realtime-chat/model/direct-unread";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
@@ -35,19 +41,36 @@ const YOU_TAB: Place = {
 
 const CHAT_TAB: Place = { to: "/chat", word: CHAT_WORDS.chat, icon: "chat", matches: ["/chat"] };
 
-const PLAY_TAB: Place = { to: "/", word: WORDS.play, icon: "play", matches: ["/"] };
-const SEASON_TAB: Place = { to: "/season", word: WORDS.season, icon: "leaderboard", matches: ["/season", "/p/"] };
-const SHOP_TAB: Place = { to: FRAGMENTS_PATH, word: WORDS.shop, icon: "fragment", matches: [FRAGMENTS_PATH] };
+const PLAY_TAB: Place = { to: "/", word: DESKTOP_APP_PLACE_WORDS.play, icon: "play", matches: ["/"] };
+const SEASON_TAB: Place = {
+  to: "/season",
+  word: DESKTOP_APP_PLACE_WORDS.season,
+  icon: "leaderboard",
+  matches: ["/season", "/p/"],
+};
+const SHOP_TAB: Place = {
+  to: FRAGMENTS_PATH,
+  word: DESKTOP_APP_PLACE_WORDS.shop,
+  icon: "fragment",
+  matches: [FRAGMENTS_PATH],
+};
 const COSMETICS_TAB: Place = {
   to: COSMETICS_PATH,
-  word: COSMETICS_WORDS.title,
+  word: DESKTOP_APP_PLACE_WORDS.cosmetics,
   icon: "crown",
   matches: [COSMETICS_PATH],
 };
 
 export const TABS: readonly Place[] = [PLAY_TAB, SEASON_TAB, SHOP_TAB, CHAT_TAB, YOU_TAB];
 
-const DESKTOP_PLACES: readonly Place[] = [PLAY_TAB, SEASON_TAB, COSMETICS_TAB, SHOP_TAB];
+const DESKTOP_PLACE_TABS: Record<DesktopAppPlace, Place> = {
+  play: PLAY_TAB,
+  season: SEASON_TAB,
+  cosmetics: COSMETICS_TAB,
+  shop: SHOP_TAB,
+};
+
+const DESKTOP_PLACES: readonly Place[] = DESKTOP_APP_PLACES.map((place) => DESKTOP_PLACE_TABS[place]);
 
 const matchesPath = (pathname: string, match: string) =>
   match === "/" ? pathname === "/" : pathname.startsWith(match);

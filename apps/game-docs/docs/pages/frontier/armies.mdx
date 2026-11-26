@@ -29,13 +29,14 @@ Each army holds one of these troop kinds:
 Tap an open army slot (**Deploy**) to place troops on a tile beside your realm: {FRONTIER.realm.armies[0]} slots at
 {FRONTIER.realm.castleLevelInline[0]}, up to {FRONTIER.realm.armies[3]} at {FRONTIER.realm.castleLevelInline[3]}, and
 from {FRONTIER.realm.deployCaps[0]} troops per deploy at {FRONTIER.realm.castleLevelInline[0]} up to
-{FRONTIER.realm.deployCaps[3]} at {FRONTIER.realm.castleLevelInline[3]}. Each troop costs {FRONTIER.realm.deployWheat}
-wheat to deploy (reduced by {FRONTIER.realm.rationStep} per Rations rank; see
+{FRONTIER.realm.deployCaps[3]} at {FRONTIER.realm.castleLevelInline[3]}. Each open slot displays the stamina bar its
+next army will start with. In **Deploy**, type an exact troop count, drag the slider, or press **Max**. Each troop costs
+{FRONTIER.realm.deployWheat} wheat to deploy (reduced by {FRONTIER.realm.rationStep} per Rations rank; see
 [Realm and research](/frontier/realm#the-castle) for the full castle table).
 
 <Shot
   name="frontier/deploy"
-  caption="Press Deploy on an open army slot, pick a troop kind and count, choose a slot if you want another, and press Deploy to place the army beside your realm."
+  caption="Tap an open army slot to open Deploy, pick a troop kind, type or slide a count, choose another slot if you want, and press Deploy to place the army beside your realm."
 />
 
 ## Stamina
@@ -63,7 +64,7 @@ costs {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a large army needs ma
 
 <Shot
   name="frontier/army"
-  caption="Select an army to open its tray showing troop count, stamina bar, Oath slots, and delete button. Right-click a highlighted hex on desktop or tap one on a phone to move or reveal."
+  caption="Each army is listed by its troop count and kind. Select it to see current and max stamina, held Oath effects, and the delete button at the bottom right. Right-click a highlighted hex on desktop or tap one on a phone to move or reveal."
 />
 
 ### Stamina stays with the slot
@@ -83,7 +84,8 @@ relics, and Logistics rank and takes the lower of the two stamina values. Nothin
 troops, even into empty slots; if the sending army reaches 0 troops, it is deleted along with its Oaths and relics.
 
 You can also reinforce an army beside your realm or beside any camp your realm cleared today (supply post) on the
-{FRONTIER.layers.personalOr} using troops and wheat from home. Deleting an army removes its troops permanently after you
-confirm.
+{FRONTIER.layers.personalOr} using troops and wheat from home. Select your realm or supply post, then pick an adjacent
+army (or right-click it on desktop, or hold it on a phone) to enter or slide how many troops to add. Deleting an army
+removes its troops permanently after you confirm.
 
 Next: [Combat](/frontier/combat), [Oaths](/frontier/oaths), and [Relics](/frontier/relics).

@@ -1678,6 +1678,15 @@ export const BLITZ_WORDS = {
   lobby: "Lobby",
 } as const;
 
+export const DESKTOP_APP_PLACES = ["play", "season", "cosmetics", "shop"] as const;
+export type DesktopAppPlace = (typeof DESKTOP_APP_PLACES)[number];
+export const DESKTOP_APP_PLACE_WORDS: Record<DesktopAppPlace, string> = {
+  play: WORDS.play,
+  season: WORDS.season,
+  cosmetics: COSMETICS_WORDS.title,
+  shop: WORDS.shop,
+};
+
 /** A Blitz lobby's chat: its panel, its field and the lines that stand where a message cannot go. */
 export const CHAT_WORDS = {
   historyUnavailable: "Chat history is unavailable. Try again.",
