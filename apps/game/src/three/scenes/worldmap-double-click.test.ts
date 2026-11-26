@@ -34,6 +34,7 @@ describe("a double-click on the world map goes inside only what has an inside", 
       Rift: "nothing",
       Ruin: "nothing",
       Beasts: "nothing",
+      DeepSite: "nothing",
     });
   });
 
