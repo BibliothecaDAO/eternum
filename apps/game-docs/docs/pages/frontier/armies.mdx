@@ -48,6 +48,11 @@ An army holds {FRONTIER.stamina.max} stamina and recovers {FRONTIER.stamina.perT
 tile costs {FRONTIER.stamina.step}, and an attack needs {FRONTIER.stamina.attack}. Every step and every reveal also
 costs {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a large army needs many farms.
 
+<Shot
+  name="frontier/army"
+  caption="Each army is listed by its troop count and kind. Select it to see current and max stamina, held Oath effects, and the delete button at the bottom right. Right-click a highlighted hex on desktop or tap one on a phone to move or reveal."
+/>
+
 - <GameIcon name={FRONTIER.buildingIcons.supplyYard} /> A {FRONTIER.names.supplyYard} gives new armies Logistics rank I,
   and research raises it to rank V. Each rank adds {FRONTIER.stamina.logisticsStep} (
   {FRONTIER.stamina.logisticsStepAmount}) to the base {FRONTIER.stamina.max} bar, adding
@@ -65,8 +70,8 @@ costs {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a large army needs ma
   current Shop status.
 
 <Shot
-  name="frontier/army"
-  caption="Each army is listed by its troop count and kind. Select it to see current and max stamina, held Oath effects, and the delete button at the bottom right. Right-click a highlighted hex on desktop or tap one on a phone to move or reveal."
+  name="frontier/well"
+  caption="Move an army beside a standing Well and select it to preview the stamina refill and press Use. The Well disappears from the map once used."
 />
 
 ### Stamina stays with the slot
