@@ -1,41 +1,132 @@
 .fight-banner {
   position: fixed;
-  top: 140px;
+  top: 92px;
   left: 50%;
   z-index: 45;
   display: flex;
-  width: min(310px, calc(100vw - 80px));
+  width: min(420px, calc(100vw - 32px));
   flex-direction: column;
-  align-items: center;
-  gap: theme(spacing.1);
+  align-items: stretch;
+  overflow: hidden;
   transform: translateX(-50%);
-  border: 1.5px solid color-mix(in srgb, var(--hud-good) 65%, transparent);
-  border-radius: 18px;
-  padding: 14px 10px 12px;
+  border: 1.5px solid rgb(var(--hud-gold) / 0.65);
+  border-radius: 16px;
+  padding: 0;
   color: rgb(var(--hud-ink));
+  box-shadow:
+    var(--hud-shadow-panel),
+    0 0 38px rgb(var(--hud-gold) / 0.18);
   pointer-events: auto;
   animation: fight-banner-rises 240ms var(--hud-ease);
 }
-.fight-banner__crown {
-  margin-top: -40px;
-  filter: drop-shadow(var(--hud-shadow-control));
+.fight-banner::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(var(--hud-gold)),
+    var(--hud-selected),
+    rgb(var(--hud-gold)),
+    transparent
+  );
+  content: "";
+}
+.fight-banner::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  transform-origin: left;
+  background: linear-gradient(90deg, rgb(var(--hud-gold)), var(--hud-selected));
+  content: "";
+  animation: fight-banner-runs var(--fight-banner-ms) linear forwards;
+}
+.fight-banner__top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: radial-gradient(90% 80% at 50% 0%, rgb(var(--hud-gold) / 0.26), transparent 70%);
+  padding: 16px 18px 14px;
+}
+.fight-banner__crest {
+  position: relative;
+  display: flex;
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--hud-selected);
+  border-radius: var(--hud-radius-round);
+  background: radial-gradient(circle, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: 0 0 18px rgb(var(--hud-gold) / 0.3);
+}
+.fight-banner__crest::before,
+.fight-banner__crest::after {
+  position: absolute;
+  top: 50%;
+  width: 96px;
+  height: 1px;
+  content: "";
+}
+.fight-banner__crest::before {
+  right: calc(100% + 12px);
+  background: linear-gradient(90deg, transparent, rgb(var(--hud-gold) / 0.7));
+}
+.fight-banner__crest::after {
+  left: calc(100% + 12px);
+  background: linear-gradient(90deg, rgb(var(--hud-gold) / 0.7), transparent);
+}
+.fight-banner__crest > img {
+  width: 30px;
+  height: 30px;
 }
 .fight-banner__word {
-  color: var(--hud-good);
+  background: linear-gradient(180deg, rgb(var(--hud-ink)), var(--hud-selected) 55%, rgb(var(--hud-gold)));
+  background-clip: text;
+  color: transparent;
   font-family: var(--hud-font-display);
   font-size: var(--hud-text-hero);
   font-weight: 400;
-  line-height: 1;
+  letter-spacing: 0.08em;
+  line-height: var(--hud-leading-hero);
 }
 .fight-banner__site {
-  color: var(--hud-muted);
-  font-size: var(--hud-text-label);
+  color: rgb(var(--hud-ink) / 0.88);
+  font-size: var(--hud-text-body);
+  line-height: var(--hud-leading-body);
+}
+.fight-banner__site > b {
+  color: rgb(var(--hud-ink));
+  font-weight: var(--hud-weight-strong);
 }
 .fight-banner__chips {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: theme(spacing[1.5]);
+  gap: 8px;
+  border-top: 1px solid rgb(var(--hud-gold) / 0.22);
+  background: var(--hud-well);
+  padding: 10px 18px 12px;
+}
+@media (max-width: 1023px), (orientation: portrait) and (max-width: 1439px) {
+  .fight-banner {
+    top: 68px;
+    width: min(420px, calc(100vw - 16px));
+  }
+  .fight-banner__crest {
+    width: 42px;
+    height: 42px;
+  }
+  .fight-banner__crest > img {
+    width: 26px;
+    height: 26px;
+  }
 }
 @keyframes fight-banner-rises {
   from {
@@ -43,8 +134,16 @@
     transform: translate(-50%, 12px);
   }
 }
+@keyframes fight-banner-runs {
+  to {
+    transform: scaleX(0);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .fight-banner {
     animation: none;
+  }
+  .fight-banner::after {
+    display: none;
   }
 }

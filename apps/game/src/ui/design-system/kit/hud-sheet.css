@@ -527,6 +527,11 @@ a.ui-button {
   background: color-mix(in srgb, var(--hud-warn) 14%, transparent);
   color: var(--hud-warn);
 }
+.ui-chip[data-tone="gold"] {
+  border-color: color-mix(in srgb, var(--hud-selected) 45%, transparent);
+  background: color-mix(in srgb, var(--hud-selected) 14%, transparent);
+  color: var(--hud-selected);
+}
 /* A chip that acts: a chip's size, so it stands level with the tags beside it, with a secondary button's frame and
    no fill, so it reads as a press among them. */
 button.ui-chip {
