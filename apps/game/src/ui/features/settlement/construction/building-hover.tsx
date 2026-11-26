@@ -78,8 +78,6 @@ const recipeLine = (resource: ResourcesIds, simple: boolean, hasWonder: boolean)
   const output = configManager.getRecipeOutput(resource, simple);
   if (!read || read.length === 0 || !output) return null;
   const inputs = resource === ResourcesIds.Donkey && hasWonder ? adjustWonderLordsCost(read) : read;
-  const burns = inputs.map(
-    ({ resource: input, amount }) => `${formatFigure(amount)} ${resourceName(input, false)}`,
-  );
+  const burns = inputs.map(({ resource: input, amount }) => `${formatFigure(amount)} ${resourceName(input, false)}`);
   return `${formatFigure(output)} ${resourceName(resource, false)} from ${burns.join(" · ")}`;
 };

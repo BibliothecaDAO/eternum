@@ -102,24 +102,16 @@ export const ResourceProductionControls = ({
 
   if (compact)
     return (
-      <section
-        aria-label={`${resourceName(selectedResource, false)} production`}
-        className="flex flex-col gap-2"
-      >
+      <section aria-label={`${resourceName(selectedResource, false)} production`} className="flex flex-col gap-2">
         <span className="flex flex-col gap-1">
-          <span className="text-hud-label text-hud-muted">
-            Amount of {resourceName(selectedResource, false)}
-          </span>
+          <span className="text-hud-label text-hud-muted">Amount of {resourceName(selectedResource, false)}</span>
           {amountField}
         </span>
         <p className="text-hud-label">
           {run === undefined
             ? "—"
             : `${runOutputLine(run, selectedResource)} from ${run.inputs
-                .map(
-                  (input) =>
-                    `${formatCharge(fromUnits(input.units))} ${resourceName(input.resource, false)}`,
-                )
+                .map((input) => `${formatCharge(fromUnits(input.units))} ${resourceName(input.resource, false)}`)
                 .join(" · ")}`}
         </p>
         {failure ? (
@@ -156,11 +148,7 @@ export const ResourceProductionControls = ({
   );
 
   return (
-    <HudPanel
-      kind="section"
-      title={`Start production · ${resourceName(selectedResource, false)}`}
-      collapsible={false}
-    >
+    <HudPanel kind="section" title={`Start production · ${resourceName(selectedResource, false)}`} collapsible={false}>
       <div className="flex flex-col gap-3">
         <div className="grid grid-cols-1 gap-4">
           <div className="flex flex-col gap-2">
