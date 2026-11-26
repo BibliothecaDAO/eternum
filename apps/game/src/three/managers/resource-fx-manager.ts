@@ -167,18 +167,23 @@ export class ResourceFXManager {
           loadedTexture.colorSpace = THREE.SRGBColorSpace;
           loadedTexture.minFilter = THREE.LinearFilter;
           loadedTexture.magFilter = THREE.LinearFilter;
+          const finish = () => {
+            this.inflightLoads.delete(resourceId);
+            if (this.destroyed) {
+              loadedTexture.dispose();
+              reject(new Error("ResourceFXManager destroyed"));
+              return;
+            }
+            this.resourceTextures.set(resourceId, loadedTexture);
+            resolve(loadedTexture);
+          };
+          if (!this.compilePipelines) {
+            finish();
+            return;
+          }
           void warmTexturePipeline(this.compilePipelines, this.scene, loadedTexture)
             .catch(() => undefined)
-            .finally(() => {
-              this.inflightLoads.delete(resourceId);
-              if (this.destroyed) {
-                loadedTexture.dispose();
-                reject(new Error("ResourceFXManager destroyed"));
-                return;
-              }
-              this.resourceTextures.set(resourceId, loadedTexture);
-              resolve(loadedTexture);
-            });
+            .finally(finish);
         },
         undefined,
         (error) => {

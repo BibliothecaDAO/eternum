@@ -20,7 +20,10 @@ import { resetWorldmapRenderDiagnostics, snapshotWorldmapRenderDiagnostics } fro
 
 describe("createPipelineCompiler", () => {
   beforeEach(() => resetWorldmapRenderDiagnostics());
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
 
   it("records elapsed compilation time even when pipeline preparation fails", async () => {
     vi.spyOn(performance, "now").mockReturnValueOnce(100).mockReturnValueOnce(350);
@@ -140,6 +143,13 @@ describe("createPipelineCompiler", () => {
   });
 
   it("compiles against MapFinish MRT renderTarget and shadow pass for shadow casters then restores state", async () => {
+    vi.stubGlobal(
+      "Image",
+      class {
+        src = "";
+        onload: (() => void) | null = null;
+      },
+    );
     const scene = new Scene();
     const camera = new PerspectiveCamera();
     const sun = new DirectionalLight();

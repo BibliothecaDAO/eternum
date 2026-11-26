@@ -83,14 +83,14 @@ describe("model warm-up chokepoint guard", () => {
   it("wires WorldmapScene compilePipelines into every owned runtime model, terrain, and FX manager", () => {
     const worldmapSource = readFileSync(path.join(THREE_ROOT, "scenes/worldmap.tsx"), "utf8");
     const requiredWiring = [
-      /new FXManager\([^)]*compilePipelines:\s*this\.compilePipelines/,
-      /new ResourceFXManager\([^)]*compilePipelines:\s*this\.compilePipelines/,
-      /new WorldmapProceduralTerrain\([^)]*compilePipelines:\s*this\.compilePipelines/,
-      /new MapSiteManager\([\s\S]*?this\.compilePipelines\s*,?\s*\)/,
-      /new DeepArenaManager\([\s\S]*?this\.compilePipelines\s*,?\s*\)/,
-      /new SpireManager\([\s\S]*?this\.compilePipelines/,
-      /new StructureManager\([\s\S]*?this\.compilePipelines/,
-      /new ArmyManager\([\s\S]*?this\.compilePipelines/,
+      /new FXManager\([^;]*compilePipelines:\s*this\.compilePipelines/,
+      /new ResourceFXManager\([^;]*compilePipelines:\s*this\.compilePipelines/,
+      /new WorldmapProceduralTerrain\([^;]*compilePipelines:\s*this\.compilePipelines/,
+      /new MapSiteManager\([^;]*this\.compilePipelines/,
+      /new DeepArenaManager\([^;]*this\.compilePipelines/,
+      /new SpireManager\([^;]*this\.compilePipelines/,
+      /new StructureManager\([^;]*this\.compilePipelines/,
+      /new ArmyManager\([^;]*this\.compilePipelines/,
     ];
 
     for (const pattern of requiredWiring) {
