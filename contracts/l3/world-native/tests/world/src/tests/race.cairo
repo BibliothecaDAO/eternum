@@ -42,6 +42,16 @@ fn glory_is_split_by_troops_and_preserves_every_fractional_unit() {
 }
 
 #[test]
+fn slots_with_the_same_home_share_remainders_in_slot_order() {
+    let shares = array![DeepShare { home: 30, troops: 1 }, DeepShare { home: 10, troops: 1 }, DeepShare {
+        home: 10, troops: 1,
+    }]
+        .span();
+    assert_eq!(split_payment(1, shares), array![0, 1, 0].span());
+    assert_eq!(split_payment(2, shares), array![0, 1, 1].span());
+}
+
+#[test]
 fn remainder_follows_home_identity_instead_of_guard_slot_order() {
     let first = array![DeepShare { home: 9, troops: 1 }, DeepShare { home: 3, troops: 1 }].span();
     let second = array![DeepShare { home: 3, troops: 1 }, DeepShare { home: 9, troops: 1 }].span();

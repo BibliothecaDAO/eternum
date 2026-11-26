@@ -84,6 +84,7 @@ fn guard_target(
                 context.game.unbox(), crate::clock::day_unit_seconds(context.game.unbox()), context.timestamp,
             );
             assert!(site.day == day.index, "Deep is settling, try again");
+            crate::logic::deep_ticks::assert_caught_up(key.game_id, context);
             crate::logic::deep_sites::assert_open(key.game_id, site);
             assert!(
                 site.aspect == 0
