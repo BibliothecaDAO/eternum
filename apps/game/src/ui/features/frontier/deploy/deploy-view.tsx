@@ -85,9 +85,7 @@ export const DeployView = ({
     troopSelection?.choices.find(({ category }) => category === troopSelection.selected)?.name ?? TROOPS;
   return (
     <HudSheet label={DEPLOY} cue={start?.start && <StartBar stamina={start.start} />} onClose={onClose}>
-      {troopSelection && troopSelection.choices.length > 0 && (
-        <TroopChoices {...troopSelection} />
-      )}
+      {troopSelection && troopSelection.choices.length > 0 && <TroopChoices {...troopSelection} />}
       {amount.most > 0 && (
         <div className="deploy-size">
           <SizeRow
