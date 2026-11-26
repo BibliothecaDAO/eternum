@@ -2048,6 +2048,19 @@ button.ui-relic:focus-visible {
 .ui-meter[data-tone="bad"] > i {
   background: var(--hud-bad);
 }
+.ui-meter[data-gain] {
+  display: flex;
+}
+.ui-meter[data-gain] > i {
+  flex: none;
+}
+.ui-meter[data-gain] > i:first-child {
+  border-radius: var(--hud-radius-round) 0 0 var(--hud-radius-round);
+}
+.ui-meter > i[data-gain] {
+  border-radius: 0 var(--hud-radius-round) var(--hud-radius-round) 0;
+  background: rgb(var(--hud-gold));
+}
 /* Filling (stamina refilling): a light sweeps across the fill, on its own tone; still, a brighter leading edge. */
 .ui-meter[data-filling] > i {
   position: relative;

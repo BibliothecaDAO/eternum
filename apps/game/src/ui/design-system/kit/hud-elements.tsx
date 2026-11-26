@@ -2217,12 +2217,16 @@ export const HudStamina = ({
   stamina,
   tone = "good",
   filling = false,
+  gain = 0,
 }: {
   stamina: StaminaBar | undefined;
   tone?: Tone;
   filling?: boolean;
+  gain?: number;
 }) => {
   const segment = staminaSegment(stamina);
+  const share = staminaShare(stamina);
+  const gainShare = stamina && stamina.max > 0 ? Math.min(1 - share, Math.max(0, gain / stamina.max)) : 0;
   return (
     <span
       role="meter"
@@ -2234,9 +2238,11 @@ export const HudStamina = ({
       data-tone={tone}
       data-filling={filling || undefined}
       data-segmented={segment ? "" : undefined}
+      data-gain={gainShare > 0 || undefined}
       style={segment ? ({ "--segment": segment } as React.CSSProperties) : undefined}
     >
-      <i style={{ width: `${staminaShare(stamina) * 100}%` }} />
+      <i style={{ width: `${share * 100}%` }} />
+      {gainShare > 0 && <i data-gain style={{ width: `${gainShare * 100}%` }} />}
     </span>
   );
 };
