@@ -14,7 +14,7 @@ import {
   type Texture,
 } from "three";
 import { vec4 } from "three/tsl";
-import { NodeMaterial } from "three/webgpu";
+import { MeshBasicNodeMaterial } from "three/webgpu";
 import { beginModelPreparation } from "./model-preparation";
 import { incrementWorldmapRenderCounter, recordWorldmapRenderDuration } from "./perf/worldmap-render-diagnostics";
 
@@ -31,9 +31,10 @@ export interface PipelineCompilingRenderer {
 }
 
 type CompileObjectAsync = (object: Object3D, camera: Camera, targetScene: Scene) => Promise<void>;
+type ReadyShadowLight = Light & { shadow: { map: RenderTarget; camera: Camera } };
 
 const pendingRendererCompiles = new WeakMap<PipelineCompilingRenderer, Promise<void>>();
-let sharedShadowPassMaterial: NodeMaterial | null = null;
+let sharedShadowPassMaterial: MeshBasicNodeMaterial | null = null;
 
 export function createPipelineCompiler(input: {
   getRenderer: () => PipelineCompilingRenderer | undefined;
@@ -89,7 +90,12 @@ async function compileShadowPasses(
   object: Object3D,
   targetScene: Scene,
 ): Promise<void> {
-  if (!renderer?.shadowMap?.enabled || !renderer.compileAsync || !renderer.getRenderTarget || !renderer.setRenderTarget) {
+  if (
+    !renderer?.shadowMap?.enabled ||
+    !renderer.compileAsync ||
+    !renderer.getRenderTarget ||
+    !renderer.setRenderTarget
+  ) {
     return;
   }
   const shadowLights = collectReadyShadowLights(targetScene);
@@ -103,8 +109,8 @@ async function compileShadowPasses(
     targetScene.overrideMaterial = getShadowPassMaterial();
     renderer.setMRT?.(null);
     for (const light of shadowLights) {
-      renderer.setRenderTarget(light.shadow!.map);
-      await renderer.compileAsync(object, light.shadow!.camera, targetScene);
+      renderer.setRenderTarget(light.shadow.map);
+      await renderer.compileAsync(object, light.shadow.camera, targetScene);
     }
   } finally {
     targetScene.overrideMaterial = previousOverride;
@@ -114,14 +120,20 @@ async function compileShadowPasses(
   }
 }
 
-function collectReadyShadowLights(scene: Scene): Light[] {
-  const lights: Light[] = [];
+function collectReadyShadowLights(scene: Scene): ReadyShadowLight[] {
+  const lights: ReadyShadowLight[] = [];
   scene.traverse((child) => {
-    if (child instanceof Light && child.castShadow && child.shadow?.map && child.shadow?.camera) {
+    if (isReadyShadowLight(child)) {
       lights.push(child);
     }
   });
   return lights;
+}
+
+function isReadyShadowLight(child: Object3D): child is ReadyShadowLight {
+  if (!(child instanceof Light) || !child.castShadow) return false;
+  const shadow = (child as Light & { shadow?: { map?: RenderTarget | null; camera?: Camera } }).shadow;
+  return Boolean(shadow?.map && shadow?.camera);
 }
 
 function hasShadowCaster(object: Object3D): boolean {
@@ -143,11 +155,11 @@ function hideNonShadowCasters(object: Object3D): Array<[Mesh, boolean]> {
   return hidden;
 }
 
-function getShadowPassMaterial(): NodeMaterial {
+function getShadowPassMaterial(): MeshBasicNodeMaterial {
   if (!sharedShadowPassMaterial) {
-    const material = new NodeMaterial();
+    const material = new MeshBasicNodeMaterial();
     material.colorNode = vec4(0, 0, 0, 1);
-    (material as NodeMaterial & { isShadowPassMaterial: boolean }).isShadowPassMaterial = true;
+    (material as MeshBasicNodeMaterial & { isShadowPassMaterial: boolean }).isShadowPassMaterial = true;
     material.name = "ShadowMaterial";
     material.blending = NoBlending;
     material.fog = false;
