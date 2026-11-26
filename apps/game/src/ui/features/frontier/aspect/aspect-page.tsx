@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
@@ -12,8 +13,8 @@ import {
 } from "@/shell/season-tab/glory-rows";
 import { requireActiveGame } from "@/runtime/world";
 import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
-import { HudPage, HudSkeleton } from "@/ui/design-system/kit/hud-elements";
-import { ASPECT_PAGE_WORDS, SEASON_BOARD_WORDS } from "@/ui/design-system/kit/words";
+import { HudNotice, HudPage, HudSkeleton } from "@/ui/design-system/kit/hud-elements";
+import { ASPECT_PAGE_WORDS, SEASON_BOARD_WORDS, SEASON_ERROR } from "@/ui/design-system/kit/words";
 import { configManager, getStructureName, Position } from "@bibliothecadao/eternum";
 import {
   deepViewFor,
@@ -53,12 +54,24 @@ export function FrontierAspectPage({ day, onClose }: { day?: { day: number; last
     return (
       <HudPage label={SEASON_BOARD_WORDS.title} icon="crown" onClose={onClose}>
         <div data-season-reading={reading.unknown ?? "no race"}>
-          <HudSkeleton rows={6} />
+          <SeasonBoardHold unknown={reading.unknown} />
         </div>
       </HudPage>
     );
   const { chainId, gameId } = requireActiveGame();
   return <SeasonBoardPage board={board} game={{ chainId, gameId }} day={day} onClose={onClose} />;
+}
+
+const isSnapshotLoading = (unknown: string) => /^INCOMPLETE_(?:ACTOR_)?SNAPSHOT\b/.test(unknown);
+
+function SeasonBoardHold({ unknown }: { unknown: string | undefined }) {
+  const failed = unknown !== undefined && !isSnapshotLoading(unknown);
+  useEffect(() => {
+    if (failed && import.meta.env.DEV) console.error(`Season board unreadable: ${unknown}`);
+  }, [failed, unknown]);
+  if (unknown === undefined) return <HudNotice line={SEASON_BOARD_WORDS.noRace} />;
+  if (failed) return <HudNotice tone="bad" line={SEASON_ERROR} />;
+  return <HudSkeleton rows={6} />;
 }
 
 function SeasonBoardPage({
