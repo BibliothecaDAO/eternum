@@ -4478,6 +4478,8 @@ const deepSitesSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION) =
     name: "deep-sites-framed",
     settleMs: 0,
     play: async ({ browser, extraScreenshot }) => {
+      browser.hover(POINTER_PARKED);
+      await sleep(HOVER_SETTLE_MS);
       // Zoomed all the way out, as a player does with the wheel, the camera frames the whole Deep strip: the three sites.
       browser.run(["eval", `void window.__playtest.wheel(100, ${ZOOM_IN_NOTCHES})`]);
       await sleep(ZOOM_SETTLE_MS);
