@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
-import { PICK_EFFECT_WORDS } from "@/ui/design-system/kit/words";
+import { OATH_PICK, PICK_EFFECT_WORDS } from "@/ui/design-system/kit/words";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { formatCount, FRAGMENT, FRAGMENTS } from "@bibliothecadao/types";
+import { formatCount, formatShort, FRAGMENT, FRAGMENTS } from "@bibliothecadao/types";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { DockArmy } from "../hud/dock-armies";
 
@@ -269,7 +269,7 @@ it("redraws the card at its place for its Fragments, once a pick, never short of
   ]);
   const rageRedraw = redraws()[2]!;
   expect(rageRedraw.getAttribute("aria-label")).toBe(`Swap Rage for ${formatCount(price, FRAGMENT, FRAGMENTS)}`);
-  expect(rageRedraw.textContent).toBe("Swap");
+  expect(rageRedraw.textContent).toBe(`${OATH_PICK.swap} ·${formatShort(price)}`);
   await act(async () => redraws()[2]!.click());
   expect(game.rerollOath).toHaveBeenCalledWith({
     signer: game.signer,

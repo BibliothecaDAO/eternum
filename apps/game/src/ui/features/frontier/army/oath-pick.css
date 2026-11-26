@@ -154,13 +154,13 @@
 }
 .oath-choice__swap {
   display: flex;
-  width: 44px;
+  min-width: 44px;
   height: 44px;
   flex: none;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 3px;
+  padding: 0 theme(spacing.2);
   border: 1px solid var(--hud-line-strong);
   border-radius: 10px;
   background: var(--hud-well);
@@ -171,6 +171,10 @@
   color: var(--hud-muted);
   font-size: var(--hud-text-badge);
   font-style: normal;
+}
+.oath-choice__swap > b {
+  font-size: var(--hud-text-label);
+  font-variant-numeric: tabular-nums;
 }
 .oath-choice__swap:disabled {
   opacity: 0.45;
@@ -366,9 +370,7 @@
   position: absolute;
   top: 10px;
   right: 10px;
-  width: auto;
   height: 26px;
-  flex-direction: row;
   gap: 4px;
   padding: 0 8px;
 }
