@@ -31,7 +31,7 @@ interface HudPlacesState {
 
 export const HUD_PLACES = [
   { key: "research", label: RESEARCH, icon: "research" },
-  { key: "season", label: SEASON, icon: "victory" },
+  { key: "season", label: SEASON, icon: "crown" },
   { key: "feed", label: EVENTS_WORDS.feed, icon: "chronicles" },
   { key: "chat", label: CHAT, icon: "chat" },
 ] as const satisfies readonly { key: HudPlaceKey; label: string; icon: IconMeaning }[];

@@ -41,6 +41,7 @@ import { BaneDayProvider } from "./day/bane-mark";
 import { closeQuestDock, QuestDock, useQuestDockOpen } from "./day/quest-dock";
 import { FrontierDesktop, FrontierPlaces } from "./hud/frontier-desktop";
 import { FrontierFeed } from "./hud/frontier-feed";
+import { showHudGlory, useHudGlory } from "./hud/hud-glory";
 import { RealmCard } from "./hud/realm-card";
 import { useResearchTree } from "./research/research-facts";
 import { canResearchNow } from "./research/research-tree";
@@ -176,6 +177,7 @@ const FrontierHudBody = ({
   const openArmy = armyPanel.pick;
   const pickArmy = usePickArmy();
   const seasonRank = useSeasonRank();
+  const hudGlory = useHudGlory();
   const fragmentsHeld = useFragmentsHeld();
   const layers = useMapLayers(rules, shown, visit ? null : realm);
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
@@ -314,6 +316,15 @@ const FrontierHudBody = ({
         realmOpen: realmVisible,
         onOpenRealm: () => setSurface(surface === "realm" ? null : "realm"),
       }}
+      season={
+        showHudGlory(hudGlory)
+          ? {
+              glory: hudGlory,
+              open: surface === "season",
+              onOpen: () => setSurface(surface === "season" ? null : "season"),
+            }
+          : undefined
+      }
       placeSwitch={placeSwitch}
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
       questCard={noticeAtFoot ? undefined : questDock || undefined}
@@ -393,6 +404,7 @@ const FrontierHudBody = ({
           surface={surface}
           onSurface={setSurface}
           research={own ? canResearchNow(research?.nodes) : undefined}
+          glory={hudGlory}
           lead={
             spectating ? (
               <IdentityChip compact season={{ rank: seasonRank, onOpen: () => setSurface("season") }} />

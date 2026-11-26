@@ -1151,6 +1151,11 @@ export const ASPECT_PAGE_WORDS = {
   triumph: { 1: "Clear Mist", 2: "Second Wind", 3: "Pale Moon", 4: "Spoils" },
   glory: "Glory",
 } as const;
+export const HUD_GLORY_WORDS = {
+  tip: (glory: number) => DEEP_WORDS.glory(glory),
+  earningTip: (glory: number, perMin: number) =>
+    `${DEEP_WORDS.glory(glory)} · ${formatFigure(perMin, { signed: true })} ${ASPECT_PAGE_WORDS.glory}/m`,
+} as const;
 export const SEASON_BOARD_WORDS = {
   title: `${COUNTDOWN_WORDS.title} Leaderboard`,
   phoneTitle: COUNTDOWN_WORDS.title,

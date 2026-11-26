@@ -2,6 +2,7 @@ import "./phone-hud.css";
 
 import { Icon } from "@/ui/design-system/icon";
 import { SheetDock } from "@/ui/design-system/kit/hud-elements";
+import { SEASON } from "@/ui/design-system/kit/words";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
@@ -11,6 +12,7 @@ import type { ReactNode } from "react";
 import { FRONTIER_STORES, type StoreKind } from "../stores";
 import { FrontierDayClock } from "./day-pill";
 import { pickStores } from "./header-stores";
+import { hudGloryTip, type HudGloryState } from "./hud-glory";
 import { LandingDelta, STORE_TONES, storeLine, type StoreReading } from "./status-strip";
 
 const BAR_STORE_KINDS: readonly StoreKind[] = ["essence", "labor", "wheat"];
@@ -30,9 +32,16 @@ export const FrontierTopBar = ({
   <TopBarView {...view} clock={<FrontierDayClock rules={rules} compact onOpenToday={onOpenToday} />} />
 );
 
+type SeasonGlory = {
+  glory: HudGloryState;
+  open?: boolean;
+  onOpen: () => void;
+};
+
 type TopBarViewProps = {
   stocks: Stocks;
   clock: ReactNode;
+  season?: SeasonGlory;
   placeSwitch?: ReactNode;
   quest?: ReactNode;
   questCard?: ReactNode;
@@ -45,6 +54,7 @@ type TopBarViewProps = {
 export const TopBarView = ({
   stocks,
   clock,
+  season,
   placeSwitch,
   quest,
   questCard,
@@ -54,10 +64,11 @@ export const TopBarView = ({
   todayCard,
 }: TopBarViewProps) => (
   <div className="frontier-phone-top">
-    <div className="ui-popover frontier-bar pointer-events-auto">
+    <div className="ui-popover frontier-bar pointer-events-auto" data-has-glory={season ? "" : undefined}>
       {placeSwitch}
       <StockChips {...stocks} />
       <div className="frontier-bar__day">{clock}</div>
+      {season && <SeasonGloryButton {...season} />}
     </div>
     {realmCard ?? (todayCard && <TodayUnderBar card={todayCard} />) ?? (
       <div data-map-cluster className="frontier-phone-float">
@@ -74,6 +85,24 @@ export const TopBarView = ({
       </div>
     )}
   </div>
+);
+
+const SeasonGloryButton = ({ glory, open = false, onOpen }: SeasonGlory) => (
+  <button
+    type="button"
+    aria-label={SEASON}
+    aria-expanded={open}
+    data-tip={hudGloryTip(glory)}
+    data-glory="true"
+    className="frontier-bar__glory"
+    onClick={onOpen}
+  >
+    <Icon name="crown" size={14} />
+    <span className="frontier-bar__glory-value" data-glory-value="">
+      {formatShort(glory.glory)}
+    </span>
+    {glory.active && <span className="frontier-bar__glory-live" data-glory-live="" aria-hidden="true" />}
+  </button>
 );
 
 const TodayUnderBar = ({ card }: { card: ReactNode }) => (

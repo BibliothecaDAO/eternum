@@ -131,6 +131,12 @@ function readOwnAspect(
 
 export const gloryAmount = (raw: bigint | string): number => Number(BigInt(raw)) / RESOURCE_PRECISION;
 
+export const ownRaceGlory = (board: RaceBoard): number | null => {
+  if (!board.own) return null;
+  const mine = board.own.members.find((member) => member.mine);
+  return gloryAmount(mine?.glory ?? 0n);
+};
+
 export const compareAspectMembers = (a: { glory: bigint; home: bigint }, b: { glory: bigint; home: bigint }): number =>
   a.glory === b.glory ? (a.home < b.home ? -1 : 1) : a.glory > b.glory ? -1 : 1;
 

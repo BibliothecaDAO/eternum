@@ -11,6 +11,7 @@ import {
 } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeRowDefinitions } from "../client/native-row";
 import {
+  activeDeepSitePayPerMinute,
   currentArmy,
   currentResourceWeight,
   deepAlliesGarrison,
@@ -764,5 +765,55 @@ describe("unsettled Deep Essence and Labor projection", () => {
     store.applyFacts([put("0x12", "Guard", guardRow(50, 0, 1400n * precision))] as never);
     expect(notifications).toBeGreaterThan(beforeGuardNotify);
     stop();
+  });
+
+  it("matches projectedDeepResourcePayout on the next tick and stops on drain-to-zero, day-end, or RaceResult", () => {
+    const { store, rows } = fixture();
+    const amountPerTick = 300n * precision;
+    const loss = 100n * precision;
+    rows.DeepRules = [
+      {
+        game_id: 7,
+        loss_per_tick: loss,
+        core_per_tick: amountPerTick,
+        mine_per_tick: 0n,
+        building_pay: { alone: 0, pair: 0, crowd: 0 },
+        rings: [{ radius: 1, realms: 0 }],
+        beasts: [{ count: 0n, bow: false }],
+      },
+    ];
+    rows.DeepTick = [{ game_id: 7, paid_tick: 6n }];
+    rows.DeepSite = [{ game_id: 7, entity_id: 50n, kind: nativeRuleConstants.DEEP_CORE, ring: 0, day: 0n, aspect: 1 }];
+    rows.GarrisonSlot = [
+      { game_id: 7, structure_id: 50n, slot: 0, home: 1n },
+      { game_id: 7, structure_id: 50n, slot: 1, home: 2n },
+    ];
+    rows.Guard = [
+      { game_id: 7, structure_id: 50n, slot: 0, troops: { count: 200n * precision } },
+      { game_id: 7, structure_id: 50n, slot: 1, troops: { count: 400n * precision } },
+    ];
+
+    const site = {
+      day: 0,
+      garrisons: [
+        { slot: 1, home: 2n, troops: { count: 400n * precision } },
+        { slot: 0, home: 1n, troops: { count: 200n * precision } },
+      ],
+    };
+    const nextTickProjected = projectedDeepResourcePayout(store, 7, 1n, ResourcesIds.Essence, 420);
+    const activePerMin = activeDeepSitePayPerMinute(store, 7, site, 1n, amountPerTick, 360);
+    expect(activePerMin).toBe(nextTickProjected);
+
+    const dyingSite = {
+      day: 0,
+      garrisons: [{ slot: 0, home: 1n, troops: { count: loss } }],
+    };
+    expect(activeDeepSitePayPerMinute(store, 7, dyingSite, 1n, amountPerTick, 360)).toBe(0n);
+
+    const dayEnd = dayAtIndex(calendar, 0).end;
+    expect(activeDeepSitePayPerMinute(store, 7, site, 1n, amountPerTick, dayEnd)).toBe(0n);
+
+    rows.RaceResult = [{ game_id: 7, winner: 1, ended_at: 360n, scheduled_end_at: 999999n }];
+    expect(activeDeepSitePayPerMinute(store, 7, site, 1n, amountPerTick, 360)).toBe(0n);
   });
 });

@@ -422,6 +422,37 @@
   flex: none;
   padding: 0;
 }
+.frontier-place[data-glory="true"] {
+  border-color: rgb(var(--hud-gold) / 0.55);
+  box-shadow:
+    var(--hud-shadow-panel),
+    0 0 14px rgb(var(--hud-gold) / 0.24),
+    inset 0 0 10px rgb(var(--hud-gold) / 0.08);
+  padding: 0 8px;
+}
+.frontier-place__sep {
+  color: var(--hud-muted);
+  font-family: var(--hud-font);
+  line-height: 1;
+}
+.frontier-place__glory {
+  color: rgb(var(--hud-gold));
+  font-family: var(--hud-font);
+  font-size: var(--hud-text-body);
+  line-height: 1;
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.frontier-place__live {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-good);
+  box-shadow: 0 0 6px var(--hud-good);
+}
 .frontier-place__badge {
   position: absolute;
   top: -9px;

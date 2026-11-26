@@ -18,7 +18,7 @@ import { ASPECT_PAGE_WORDS, SEASON_BOARD_WORDS, SEASON_ERROR } from "@/ui/design
 import { configManager, getStructureName, Position } from "@bibliothecadao/eternum";
 import {
   deepViewFor,
-  gloryAmount,
+  ownRaceGlory,
   RACE_MODELS,
   readRaceBoard,
   nativeRaceConstants,
@@ -211,7 +211,7 @@ function standingOf(
     aspectId: catalogAspectId(own.aspect),
     aspectRank: standing?.rank ?? 0,
     order: order && { orderId: order.orderId, orderName: order.orderName },
-    glory: gloryAmount(glory),
+    glory: ownRaceGlory(board) ?? 0,
     gloryRank: (mine && places.get(mine.home)) ?? null,
     shares,
     pool,

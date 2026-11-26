@@ -11,7 +11,14 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { deepViewFor, type GameClientSetup, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { sellingFragments } from "./value/fragments-fixture";
 import type { HudSurface } from "./hud/frontier-nav";
-import { ATTACK_REFUSAL_WORDS, POOL_NOT_PUBLISHED, PROFILE_WORDS, SETTINGS_WORDS } from "@/ui/design-system/kit/words";
+import {
+  ATTACK_REFUSAL_WORDS,
+  HUD_GLORY_WORDS,
+  POOL_NOT_PUBLISHED,
+  PROFILE_WORDS,
+  SEASON,
+  SETTINGS_WORDS,
+} from "@/ui/design-system/kit/words";
 
 // The real Frontier HUD on the lab's game. Only the network, the identity and the chat pane's own drawing stand in: the
 // HUD, its hooks and the stores are the real ones.
@@ -1761,3 +1768,104 @@ it.each([1920, 390])(
     }
   },
 );
+
+it("shows confirmed Season Glory inside the desktop Season button and phone top bar pill, with a live dot only while guarding a Glory site", async () => {
+  const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
+  const { deepSites, formatShort, RESOURCE_PRECISION } = await import("@bibliothecadao/types");
+  const { readDeepSites } = await import("@bibliothecadao/eternum/game-client");
+  const scenario = raceScenario();
+  const previousTicks = useBlockTimestampStore.getState();
+  const route = window.location.pathname + window.location.search;
+  const altarId = BigInt(800 + deepSites.find((site) => site.key === "altar")!.id);
+  const interval = Number(scenario.store.require("SliceRules", { game_id: 1 }).tick_config.armies_tick_in_seconds);
+  const pay = readDeepSites(scenario.store, scenario.startsAt, 1).find((site) => site.id === altarId)!.buildingPay;
+
+  viewport.set(1440);
+  scenario.store.setSnapshot({ gameId: 1, actor: scenario.player, timestamp: scenario.startsAt, complete: true });
+  configManager.setActiveGame(1);
+  setActiveGame({ chainId: "0x1ab9", gameId: 1, name: "0x1ab9" });
+  configManager.setStore(scenario.store);
+  setBlockTimestampSource(() => scenario.startsAt);
+  useBlockTimestampStore.setState({
+    currentBlockTimestamp: scenario.startsAt,
+    currentDefaultTick: scenario.startsAt,
+    currentArmiesTick: scenario.startsAt,
+  });
+  useAccountStore.setState({ account: { address: scenario.player } as never });
+
+  try {
+    window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=50&row=350");
+    await act(async () =>
+      root.render(
+        <MemoryRouter>
+          <QueryClientProvider client={new QueryClient()}>
+            <GameProvider
+              value={{ store: scenario.store } as unknown as GameClientSetup}
+              account={{ address: scenario.player } as never}
+            >
+              <FrontierHud seasonOver={SeasonOver} rules={readExpeditionRules(scenario.store, 1)!} />
+            </GameProvider>
+          </QueryClientProvider>
+        </MemoryRouter>,
+      ),
+    );
+
+    const desktopSeason = () =>
+      host.querySelector<HTMLButtonElement>(`nav[aria-label="Places"] button[aria-label="${SEASON}"]`)!;
+    expect(desktopSeason().querySelector("[data-glory-value]")?.textContent).toBe(formatShort(1250));
+    expect(desktopSeason().querySelector("[data-glory-live]")).toBeNull();
+    expect(desktopSeason().getAttribute("data-tip")).toBe(HUD_GLORY_WORDS.tip(1250));
+
+    const allySlotKey = scenario.store.wireKeyOf("GarrisonSlot", { game_id: 1, structure_id: altarId, slot: 1 })!;
+    const allyGuardKey = scenario.store.wireKeyOf("Guard", { game_id: 1, structure_id: altarId, slot: 1 })!;
+    const sampleGuard = scenario.store.require("Guard", { game_id: 1, structure_id: altarId, slot: 1 });
+    await act(async () =>
+      scenario.store.applyFacts([
+        { model: "GarrisonSlot", key: allySlotKey, value: null },
+        { model: "Guard", key: allyGuardKey, value: null },
+      ] as never),
+    );
+    expect(desktopSeason().querySelector("[data-glory-live]")).toBeNull();
+
+    await act(async () =>
+      scenario.store.applyFacts([
+        {
+          model: "GarrisonSlot",
+          key: "0xf901",
+          value: { game_id: 1, structure_id: String(altarId), slot: 0, home: "7" },
+        },
+        {
+          model: "Guard",
+          key: "0xf902",
+          value: wireFact({
+            game_id: 1,
+            structure_id: altarId,
+            slot: 0,
+            troops: { ...sampleGuard.troops, count: 500n * BigInt(RESOURCE_PRECISION) },
+            destroyed_tick: 0,
+          }),
+        },
+      ] as never),
+    );
+    expect(desktopSeason().querySelector("[data-glory-live]")).not.toBeNull();
+    expect(desktopSeason().getAttribute("data-tip")).toBe(HUD_GLORY_WORDS.earningTip(1250, pay * (60 / interval)));
+
+    await act(async () => desktopSeason().click());
+    expect(host.querySelector(SEASON_PAGE)).not.toBeNull();
+    await act(async () => desktopSeason().click());
+    expect(host.querySelector(SEASON_PAGE)).toBeNull();
+
+    await act(async () => viewport.set(390));
+    const phonePill = () => host.querySelector<HTMLButtonElement>(".frontier-bar__glory")!;
+    expect(phonePill()).not.toBeNull();
+    expect(phonePill().querySelector("[data-glory-value]")?.textContent).toBe(formatShort(1250));
+    expect(phonePill().querySelector("[data-glory-live]")).not.toBeNull();
+    expect(phonePill().getAttribute("data-tip")).toBe(HUD_GLORY_WORDS.earningTip(1250, pay * (60 / interval)));
+
+    await act(async () => phonePill().click());
+    expect(host.querySelector(`section[aria-label="${SEASON_BOARD_WORDS.phoneTitle}"]`)).not.toBeNull();
+  } finally {
+    useBlockTimestampStore.setState(previousTicks);
+    window.history.replaceState(null, "", route);
+  }
+});

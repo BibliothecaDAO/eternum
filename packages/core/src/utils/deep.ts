@@ -122,7 +122,38 @@ type DeepPayoutContext = {
   interval: bigint;
   cursor: bigint;
   last: bigint;
+  endTick: bigint;
+  active: boolean;
 };
+
+type ActiveDeepSite = {
+  day: number;
+  garrisons: readonly { slot: number; home: bigint; troops: { count: bigint } }[];
+};
+
+export function activeDeepSitePayPerMinute(
+  store: Pick<NativeFactStore, "get">,
+  gameId: number,
+  site: ActiveDeepSite,
+  home: bigint,
+  amountPerTick: bigint,
+  timestamp: number,
+): bigint {
+  if (amountPerTick <= 0n || site.garrisons.length === 0) return 0n;
+  const rules = store.get("DeepRules", { game_id: gameId });
+  if (!rules) return 0n;
+  const context = readDeepPayoutContext(store, gameId, rules, timestamp);
+  if (!context || !context.active) return 0n;
+  const nextTick = BigInt(Math.floor(timestamp)) / context.interval + 1n;
+  if (nextTick > context.endTick || nextTick > siteDayEndTick(context, BigInt(site.day))) return 0n;
+  const sorted = [...site.garrisons]
+    .sort((left, right) => left.slot - right.slot)
+    .map(({ home: guardHome, troops }) => ({ home: guardHome, troops: troops.count }));
+  const surviving = drainGarrisonStep(sorted, context.rules.loss_per_tick);
+  if (!surviving.some((share) => share.home === home)) return 0n;
+  const perTick = homeShareOfTick(amountPerTick, surviving, home);
+  return (perTick * 60n) / context.interval;
+}
 
 export function projectedDeepResourcePayout(
   store: Pick<NativeFactStore, "get" | "inGame">,
@@ -194,12 +225,28 @@ function readDeepPayoutContext(
   if (interval <= 0n) throw new Error("Invalid Deep tick rules");
   const now = BigInt(Math.floor(timestamp));
   if (now < game.start_main_at) {
-    return { rules, calendar, interval, cursor: deepTick.paid_tick, last: deepTick.paid_tick };
+    return {
+      rules,
+      calendar,
+      interval,
+      cursor: deepTick.paid_tick,
+      last: deepTick.paid_tick,
+      endTick: game.end_at / interval,
+      active: false,
+    };
   }
   const raceResult = store.get("RaceResult", { game_id: gameId });
   const endAt = raceResult ? raceResult.ended_at : game.end_at;
   const capped = now < endAt ? now : endAt;
-  return { rules, calendar, interval, cursor: deepTick.paid_tick, last: capped / interval };
+  return {
+    rules,
+    calendar,
+    interval,
+    cursor: deepTick.paid_tick,
+    last: capped / interval,
+    endTick: endAt / interval,
+    active: !raceResult,
+  };
 }
 
 function readSiteGarrisons(
@@ -219,6 +266,10 @@ function readSiteGarrisons(
   return garrisons;
 }
 
+function siteDayEndTick(context: DeepPayoutContext, siteDay: bigint): bigint {
+  return BigInt(dayAtIndex(context.calendar, Number(siteDay)).end) / context.interval;
+}
+
 function projectSitePayout(
   site: NativeRows["DeepSite"],
   garrisons: readonly DeepShare[],
@@ -227,8 +278,7 @@ function projectSitePayout(
   context: DeepPayoutContext,
 ): bigint {
   if (garrisons.length === 0 || amountPerTick === 0n) return 0n;
-  const dayEnd = BigInt(dayAtIndex(context.calendar, Number(site.day)).end);
-  const dayEndTick = dayEnd / context.interval;
+  const dayEndTick = siteDayEndTick(context, site.day);
   const siteLast = context.last < dayEndTick ? context.last : dayEndTick;
   if (siteLast <= context.cursor) return 0n;
   const ticks = siteLast - context.cursor;
@@ -249,6 +299,15 @@ function projectSitePayout(
   return sumSplitPayouts(garrisons, home, amountPerTick, loss, payableTicks);
 }
 
+function drainGarrisonStep(garrisons: readonly DeepShare[], loss: bigint): DeepShare[] {
+  const alive: DeepShare[] = [];
+  for (const garrison of garrisons) {
+    const troops = garrison.troops > loss ? garrison.troops - loss : 0n;
+    if (troops > 0n) alive.push({ home: garrison.home, troops });
+  }
+  return alive;
+}
+
 function sumSplitPayouts(
   garrisons: readonly DeepShare[],
   home: bigint,
@@ -256,15 +315,10 @@ function sumSplitPayouts(
   loss: bigint,
   payableTicks: bigint,
 ): bigint {
-  let counts = garrisons.map((garrison) => garrison.troops);
+  let alive: DeepShare[] = [...garrisons];
   let owed = 0n;
   for (let step = 0n; step < payableTicks; step++) {
-    counts = counts.map((count) => (count > loss ? count - loss : 0n));
-    const alive: DeepShare[] = [];
-    for (let index = 0; index < garrisons.length; index++) {
-      const troops = counts[index]!;
-      if (troops > 0n) alive.push({ home: garrisons[index]!.home, troops });
-    }
+    alive = drainGarrisonStep(alive, loss);
     if (alive.length === 0) break;
     owed += homeShareOfTick(amountPerTick, alive, home);
   }
