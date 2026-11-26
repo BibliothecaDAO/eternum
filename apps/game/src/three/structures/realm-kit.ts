@@ -127,6 +127,12 @@ const KIT_BUILDERS = {
     3: buildHavocCity,
     4: buildInsightCity,
   },
+  2: {
+    1: buildProwessKingdom,
+    2: buildLuminaryKingdom,
+    3: buildHavocKingdom,
+    4: buildInsightKingdom,
+  },
 } as const satisfies Record<SeasonOneRealmKitLevel, Record<AspectId, AspectKitBuilder>>;
 
 const SETTLEMENT_BANNER_X = 0.41;
@@ -137,6 +143,10 @@ const SETTLEMENT_BANNER_WIDTH = 0.125;
 const CITY_BANNER_X = 0.44;
 const CITY_BANNER_Z = 0.675;
 const CITY_BANNER_WIDTH = 0.13;
+
+const KINGDOM_BANNER_X = 0.45;
+const KINGDOM_BANNER_Z = 0.68;
+const KINGDOM_BANNER_WIDTH = 0.135;
 
 const HEX_PERIMETER_POINTS: readonly (readonly [number, number])[] = [
   [-0.22, 0.62],
@@ -505,6 +515,441 @@ function buildInsightCity(parts: KitParts, palette: AspectKitPalette): void {
   addInsightCityGate(parts, palette);
   addWallBannerRails(parts, palette.rail, 0.42, CITY_BANNER_Z, CITY_BANNER_X, CITY_BANNER_WIDTH);
   addInsightObservatory(parts, palette);
+}
+
+function buildProwessKingdom(parts: KitParts, palette: AspectKitPalette): void {
+  addHexCurtainWall(parts, {
+    height: 0.54,
+    thickness: 0.11,
+    wallColor: palette.stone,
+    baseColor: palette.trim,
+    trimColor: palette.trim,
+    trimY: 0.52,
+    bandY: 0.28,
+  });
+  addWallCrenelations(parts, 0.54, 0.11, palette.stone, palette.trim, "flat");
+  addPerimeterPilasters(parts, 0.62, 0.16, palette.stone, palette.trim, true);
+  addProwessCityGate(parts, palette);
+  addWallBannerRails(parts, palette.rail, 0.45, KINGDOM_BANNER_Z, KINGDOM_BANNER_X, KINGDOM_BANNER_WIDTH);
+  addProwessTwinTowers(parts, palette);
+}
+
+function buildLuminaryKingdom(parts: KitParts, palette: AspectKitPalette): void {
+  addHexCurtainWall(parts, {
+    height: 0.52,
+    thickness: 0.105,
+    wallColor: palette.stone,
+    baseColor: palette.stoneShade,
+    trimColor: palette.accent,
+    trimY: 0.5,
+    bandY: 0.15,
+  });
+  addWallArcades(parts, palette.stoneShade, palette.accent);
+  addPerimeterPilasters(parts, 0.58, 0.155, palette.stone, palette.accent, false);
+  addLuminaryCityGate(parts, palette);
+  addWallBannerRails(parts, palette.rail, 0.43, KINGDOM_BANNER_Z, KINGDOM_BANNER_X, KINGDOM_BANNER_WIDTH);
+  addLuminaryTwinTowers(parts, palette);
+}
+
+function buildHavocKingdom(parts: KitParts, palette: AspectKitPalette): void {
+  addHexCurtainWall(parts, {
+    height: 0.55,
+    thickness: 0.115,
+    wallColor: palette.stone,
+    baseColor: palette.stoneShade,
+    trimColor: palette.accent,
+    trimY: 0.52,
+    bandY: 0.27,
+  });
+  addWallCrenelations(parts, 0.55, 0.115, palette.stoneShade, palette.stone, "jagged");
+  addWallStuds(parts, 0.37, 0.115, palette.trim);
+  for (const [x, z] of HEX_PERIMETER_POINTS) {
+    parts.masonry.push(
+      piece(cutStoneBlock(0.17, 0.63, 0.17), palette.stone, x, 0.315, z),
+      piece(cutStoneBlock(0.19, 0.055, 0.19), palette.stoneShade, x, 0.63, z),
+      piece(new ConeGeometry(0.082, 0.16, 4), palette.stoneShade, x, 0.72, z, Math.PI / 4),
+    );
+  }
+  addHavocCityGate(parts, palette);
+  addWallBannerRails(parts, palette.rail, 0.44, 0.69, KINGDOM_BANNER_X, KINGDOM_BANNER_WIDTH);
+  addHavocTwinTowers(parts, palette);
+}
+
+function buildInsightKingdom(parts: KitParts, palette: AspectKitPalette): void {
+  addHexCurtainWall(parts, {
+    height: 0.52,
+    thickness: 0.105,
+    wallColor: palette.stone,
+    baseColor: palette.stoneShade,
+    trimColor: palette.trim,
+    trimY: 0.5,
+    bandY: 0.25,
+  });
+  for (const { from, to } of HEX_WALL_SEGMENTS) {
+    const dx = to[0] - from[0];
+    const dz = to[1] - from[1];
+    const length = Math.hypot(dx, dz);
+    const yaw = Math.atan2(dx, dz);
+    parts.masonry.push(
+      piece(
+        cutStoneBlock(0.116, 0.028, length + 0.02),
+        palette.accent,
+        (from[0] + to[0]) / 2,
+        0.39,
+        (from[1] + to[1]) / 2,
+        yaw,
+      ),
+    );
+  }
+  addPerimeterPilasters(parts, 0.58, 0.15, palette.trim, palette.accent, false);
+  addInsightCityGate(parts, palette);
+  addWallBannerRails(parts, palette.rail, 0.43, KINGDOM_BANNER_Z, KINGDOM_BANNER_X, KINGDOM_BANNER_WIDTH);
+  addInsightTwinTowers(parts, palette);
+}
+
+function addTwinTowerSkybridge(
+  parts: KitParts,
+  options: {
+    z: number;
+    bridgeY: number;
+    span: number;
+    depth: number;
+    bodyColor: string;
+    trimColor: string;
+    archRadius: number;
+    crenelated: boolean;
+    roofColor?: string;
+  },
+): void {
+  const { z, bridgeY, span, depth, bodyColor, trimColor, archRadius } = options;
+  parts.masonry.push(
+    piece(cutStoneBlock(span, 0.13, depth), bodyColor, 0, bridgeY + 0.11, z),
+    piece(cutStoneBlock(span + 0.04, 0.04, depth + 0.04), trimColor, 0, bridgeY + 0.18, z),
+    piece(new TorusGeometry(archRadius, 0.055, 6, 14, Math.PI), bodyColor, 0, bridgeY - 0.06, z),
+    piece(new TorusGeometry(archRadius + 0.025, 0.022, 5, 14, Math.PI), trimColor, 0, bridgeY - 0.06, z + depth / 2),
+    piece(new TorusGeometry(archRadius + 0.025, 0.022, 5, 14, Math.PI), trimColor, 0, bridgeY - 0.06, z - depth / 2),
+  );
+  if (options.crenelated) {
+    for (const faceZ of [z + depth / 2 - 0.03, z - depth / 2 + 0.03]) {
+      for (let slot = -1; slot <= 1; slot++) {
+        parts.masonry.push(
+          piece(cutStoneBlock(0.085, 0.08, 0.055), bodyColor, slot * 0.16, bridgeY + 0.23, faceZ),
+          piece(cutStoneBlock(0.095, 0.028, 0.065), trimColor, slot * 0.16, bridgeY + 0.275, faceZ),
+        );
+      }
+    }
+  }
+  if (options.roofColor) {
+    const vault = new CylinderGeometry(depth * 0.56, depth * 0.56, span, 10, 1, false, 0, Math.PI)
+      .rotateX(Math.PI / 2)
+      .rotateZ(Math.PI / 2);
+    parts.masonry.push(piece(vault, options.roofColor, 0, bridgeY + 0.18, z));
+  }
+}
+
+function addProwessTwinTowers(parts: KitParts, palette: AspectKitPalette): void {
+  const towerZ = -0.14;
+  const shaftHeight = 1.44;
+  const towerSize = 0.42;
+  const gallerySize = 0.52;
+
+  for (const side of [-1, 1]) {
+    const tx = side * 0.42;
+    parts.masonry.push(
+      piece(cutStoneBlock(towerSize, shaftHeight, towerSize), palette.stone, tx, shaftHeight / 2, towerZ),
+      piece(cutStoneBlock(towerSize + 0.05, 0.09, towerSize + 0.05), palette.trim, tx, 0.045, towerZ),
+      piece(cutStoneBlock(towerSize + 0.04, 0.045, towerSize + 0.04), palette.trim, tx, 0.64, towerZ),
+      piece(cutStoneBlock(towerSize + 0.04, 0.045, towerSize + 0.04), palette.trim, tx, 1.08, towerZ),
+      piece(cutStoneBlock(gallerySize, 0.13, gallerySize), palette.stone, tx, shaftHeight + 0.04, towerZ),
+      piece(cutStoneBlock(gallerySize + 0.03, 0.045, gallerySize + 0.03), palette.trim, tx, shaftHeight - 0.02, towerZ),
+      piece(cutStoneBlock(gallerySize + 0.03, 0.04, gallerySize + 0.03), palette.trim, tx, shaftHeight + 0.11, towerZ),
+      piece(new ConeGeometry(0.27, 0.44, 4), palette.roof, tx, shaftHeight + 0.34, towerZ, Math.PI / 4),
+      piece(new CylinderGeometry(0.055, 0.075, 0.06, 6), palette.trim, tx, shaftHeight + 0.56, towerZ),
+    );
+    for (const sx of [-1, 1]) {
+      for (const sz of [-1, 1]) {
+        parts.masonry.push(
+          piece(
+            cutStoneBlock(0.07, shaftHeight + 0.02, 0.07),
+            palette.trim,
+            tx + sx * (towerSize / 2 - 0.01),
+            (shaftHeight + 0.02) / 2,
+            towerZ + sz * (towerSize / 2 - 0.01),
+          ),
+        );
+        const cornerStart = new Vector3(tx + sx * 0.19, shaftHeight + 0.12, towerZ + sz * 0.19);
+        const spireTip = new Vector3(tx, shaftHeight + 0.56, towerZ);
+        parts.masonry.push(piece(beamBetween(cornerStart, spireTip, 0.036), palette.trim));
+      }
+    }
+    for (const edge of [-1, 1]) {
+      for (let m = -1; m <= 1; m++) {
+        parts.masonry.push(
+          piece(
+            cutStoneBlock(0.09, 0.09, 0.075),
+            palette.stone,
+            tx + m * 0.18,
+            shaftHeight + 0.16,
+            towerZ + edge * (gallerySize / 2 - 0.03),
+          ),
+          piece(
+            cutStoneBlock(0.1, 0.03, 0.085),
+            palette.trim,
+            tx + m * 0.18,
+            shaftHeight + 0.21,
+            towerZ + edge * (gallerySize / 2 - 0.03),
+          ),
+          piece(
+            cutStoneBlock(0.075, 0.09, 0.09),
+            palette.stone,
+            tx + edge * (gallerySize / 2 - 0.03),
+            shaftHeight + 0.16,
+            towerZ + m * 0.18,
+          ),
+          piece(
+            cutStoneBlock(0.085, 0.03, 0.1),
+            palette.trim,
+            tx + edge * (gallerySize / 2 - 0.03),
+            shaftHeight + 0.21,
+            towerZ + m * 0.18,
+          ),
+        );
+      }
+    }
+    parts.glow.push(
+      piece(new OctahedronGeometry(0.068, 0).scale(0.85, 1.4, 0.85), palette.gem, tx, shaftHeight + 0.65, towerZ),
+      piece(cutStoneBlock(0.075, 0.13, 0.032), palette.gem, tx, 0.86, towerZ + towerSize / 2 + 0.012),
+      piece(cutStoneBlock(0.075, 0.13, 0.032), palette.gem, tx, 1.24, towerZ + towerSize / 2 + 0.012),
+    );
+  }
+
+  addTwinTowerSkybridge(parts, {
+    z: towerZ,
+    bridgeY: 1.14,
+    span: 0.48,
+    depth: 0.28,
+    bodyColor: palette.stone,
+    trimColor: palette.trim,
+    archRadius: 0.2,
+    crenelated: true,
+  });
+}
+
+function addLuminaryTwinTowers(parts: KitParts, palette: AspectKitPalette): void {
+  const towerZ = -0.14;
+  const shaftHeight = 1.48;
+  const towerSize = 0.4;
+
+  for (const side of [-1, 1]) {
+    const tx = side * 0.42;
+    parts.masonry.push(
+      piece(cutStoneBlock(towerSize, shaftHeight, towerSize), palette.stone, tx, shaftHeight / 2, towerZ),
+      piece(cutStoneBlock(towerSize + 0.05, 0.08, towerSize + 0.05), palette.stoneShade, tx, 0.04, towerZ),
+      piece(cutStoneBlock(towerSize + 0.055, 0.048, towerSize + 0.055), palette.accent, tx, 0.6, towerZ),
+      piece(cutStoneBlock(towerSize + 0.06, 0.052, towerSize + 0.06), palette.accent, tx, 1.14, towerZ),
+      piece(cutStoneBlock(towerSize + 0.07, 0.065, towerSize + 0.07), palette.accent, tx, shaftHeight + 0.01, towerZ),
+      piece(new ConeGeometry(0.28, 0.46, 4), palette.roof, tx, shaftHeight + 0.27, towerZ, Math.PI / 4),
+      piece(new TorusGeometry(0.07, 0.018, 5, 12), palette.trim, tx, shaftHeight + 0.55, towerZ),
+    );
+    for (const sx of [-1, 1]) {
+      for (const sz of [-1, 1]) {
+        const cornerStart = new Vector3(tx + sx * 0.19, shaftHeight + 0.04, towerZ + sz * 0.19);
+        const spireTip = new Vector3(tx, shaftHeight + 0.5, towerZ);
+        parts.masonry.push(piece(beamBetween(cornerStart, spireTip, 0.028), palette.stone));
+      }
+      parts.masonry.push(
+        piece(
+          new TorusGeometry(0.062, 0.018, 5, 10, Math.PI),
+          palette.accent,
+          tx + sx * 0.095,
+          1.34,
+          towerZ + towerSize / 2 + 0.012,
+        ),
+        piece(
+          cutStoneBlock(0.09, 0.16, 0.028),
+          palette.stoneShade,
+          tx + sx * 0.095,
+          1.26,
+          towerZ + towerSize / 2 + 0.008,
+        ),
+      );
+      parts.glow.push(
+        piece(cutStoneBlock(0.055, 0.13, 0.026), palette.gem, tx + sx * 0.095, 1.28, towerZ + towerSize / 2 + 0.018),
+      );
+    }
+    parts.glow.push(
+      piece(new IcosahedronGeometry(0.052, 1), palette.gem, tx, shaftHeight + 0.55, towerZ),
+      piece(cutStoneBlock(0.065, 0.16, 0.028), palette.gem, tx, 0.88, towerZ + towerSize / 2 + 0.012),
+    );
+  }
+
+  addTwinTowerSkybridge(parts, {
+    z: towerZ,
+    bridgeY: 0.96,
+    span: 0.48,
+    depth: 0.28,
+    bodyColor: palette.stone,
+    trimColor: palette.accent,
+    archRadius: 0.21,
+    crenelated: false,
+    roofColor: palette.roof,
+  });
+}
+
+function addHavocTwinTowers(parts: KitParts, palette: AspectKitPalette): void {
+  const towerZ = -0.14;
+  const shaftHeight = 1.48;
+  const towerSize = 0.42;
+  const gallerySize = 0.52;
+
+  for (const side of [-1, 1]) {
+    const tx = side * 0.42;
+    parts.masonry.push(
+      piece(cutStoneBlock(towerSize, shaftHeight, towerSize), palette.stone, tx, shaftHeight / 2, towerZ),
+      piece(cutStoneBlock(towerSize + 0.05, 0.09, towerSize + 0.05), palette.stoneShade, tx, 0.045, towerZ),
+      piece(cutStoneBlock(towerSize + 0.045, 0.05, towerSize + 0.045), palette.accent, tx, 0.62, towerZ),
+      piece(cutStoneBlock(towerSize + 0.045, 0.05, towerSize + 0.045), palette.accent, tx, 1.08, towerZ),
+      piece(cutStoneBlock(gallerySize, 0.14, gallerySize), palette.stoneShade, tx, shaftHeight + 0.04, towerZ),
+      piece(
+        cutStoneBlock(gallerySize + 0.03, 0.045, gallerySize + 0.03),
+        palette.accent,
+        tx,
+        shaftHeight - 0.02,
+        towerZ,
+      ),
+      piece(
+        new OctahedronGeometry(0.055, 0).scale(0.8, 1.45, 0.7),
+        palette.trim,
+        tx,
+        0.86,
+        towerZ + towerSize / 2 + 0.02,
+      ),
+      piece(
+        new OctahedronGeometry(0.055, 0).scale(0.8, 1.45, 0.7),
+        palette.trim,
+        tx,
+        1.26,
+        towerZ + towerSize / 2 + 0.02,
+      ),
+    );
+    for (const sx of [-1, 1]) {
+      for (const sz of [-1, 1]) {
+        const cx = tx + sx * (gallerySize / 2 - 0.03);
+        const cz = towerZ + sz * (gallerySize / 2 - 0.03);
+        parts.masonry.push(
+          piece(cutStoneBlock(0.11, 0.15, 0.11), palette.stone, cx, shaftHeight + 0.18, cz),
+          piece(new ConeGeometry(0.072, 0.24, 4), palette.stoneShade, cx, shaftHeight + 0.36, cz, Math.PI / 4),
+        );
+      }
+    }
+    parts.masonry.push(
+      piece(new ConeGeometry(0.082, 0.34, 4), palette.stoneShade, tx, shaftHeight + 0.42, towerZ, Math.PI / 4),
+    );
+    parts.glow.push(
+      piece(new OctahedronGeometry(0.088, 0).scale(0.85, 1.5, 0.85), palette.gem, tx, shaftHeight + 0.24, towerZ),
+    );
+  }
+
+  addTwinTowerSkybridge(parts, {
+    z: towerZ,
+    bridgeY: 1.08,
+    span: 0.48,
+    depth: 0.28,
+    bodyColor: palette.stoneShade,
+    trimColor: palette.accent,
+    archRadius: 0.2,
+    crenelated: true,
+  });
+  for (let spike = -1; spike <= 1; spike++) {
+    parts.masonry.push(
+      piece(new ConeGeometry(0.048, 0.14, 4), palette.stone, spike * 0.14, 1.42, towerZ + 0.11, Math.PI / 4),
+    );
+  }
+
+  parts.masonry.push(
+    piece(new CylinderGeometry(0.12, 0.16, 0.34, 6), palette.stone, 0, 0.17, 0.24),
+    piece(new CylinderGeometry(0.16, 0.12, 0.08, 6), palette.stoneShade, 0, 0.37, 0.24),
+  );
+  parts.glow.push(
+    piece(new OctahedronGeometry(0.11, 0).scale(0.75, 2.2, 0.75), palette.gem, 0, 0.65, 0.24),
+    piece(new OctahedronGeometry(0.055, 0).scale(0.8, 1.4, 0.8).rotateZ(0.28), palette.gem, -0.07, 0.5, 0.26),
+    piece(new OctahedronGeometry(0.055, 0).scale(0.8, 1.4, 0.8).rotateZ(-0.28), palette.gem, 0.07, 0.5, 0.22),
+  );
+}
+
+function addInsightTwinTowers(parts: KitParts, palette: AspectKitPalette): void {
+  const towerZ = -0.14;
+  const shaftHeight = 1.42;
+  const towerSize = 0.4;
+
+  for (const side of [-1, 1]) {
+    const tx = side * 0.42;
+    parts.masonry.push(
+      piece(cutStoneBlock(towerSize, shaftHeight, towerSize), palette.stone, tx, shaftHeight / 2, towerZ),
+      piece(cutStoneBlock(towerSize + 0.045, 0.08, towerSize + 0.045), palette.stoneShade, tx, 0.04, towerZ),
+      piece(cutStoneBlock(towerSize + 0.045, 0.045, towerSize + 0.045), palette.accent, tx, 0.62, towerZ),
+      piece(cutStoneBlock(towerSize + 0.05, 0.045, towerSize + 0.05), palette.accent, tx, 1.12, towerZ),
+      piece(cutStoneBlock(towerSize + 0.055, 0.05, towerSize + 0.055), palette.trim, tx, shaftHeight, towerZ),
+      piece(new CylinderGeometry(0.21, 0.22, 0.18, 8), palette.stone, tx, shaftHeight + 0.11, towerZ),
+      piece(new TorusGeometry(0.225, 0.022, 5, 14).rotateX(Math.PI / 2), palette.accent, tx, shaftHeight + 0.2, towerZ),
+      piece(
+        new SphereGeometry(0.225, 14, 7, 0, Math.PI * 2, 0, Math.PI / 2),
+        palette.roof,
+        tx,
+        shaftHeight + 0.2,
+        towerZ,
+      ),
+      piece(new CylinderGeometry(0.065, 0.085, 0.045, 8), palette.accent, tx, shaftHeight + 0.43, towerZ),
+    );
+    for (const sx of [-1, 1]) {
+      for (const sz of [-1, 1]) {
+        parts.masonry.push(
+          piece(
+            cutStoneBlock(0.075, shaftHeight + 0.02, 0.075),
+            palette.trim,
+            tx + sx * (towerSize / 2 - 0.005),
+            (shaftHeight + 0.02) / 2,
+            towerZ + sz * (towerSize / 2 - 0.005),
+          ),
+        );
+      }
+    }
+    for (let rib = 0; rib < 4; rib++) {
+      parts.masonry.push(
+        piece(
+          new TorusGeometry(0.228, 0.016, 5, 12, Math.PI),
+          rib % 2 === 0 ? palette.stone : palette.accent,
+          tx,
+          shaftHeight + 0.2,
+          towerZ,
+          (rib * Math.PI) / 4,
+        ),
+      );
+    }
+    parts.glow.push(
+      piece(new OctahedronGeometry(0.052, 0).scale(0.85, 1.35, 0.85), palette.gem, tx, shaftHeight + 0.51, towerZ),
+      piece(cutStoneBlock(0.06, 0.15, 0.028), palette.gem, tx, 0.9, towerZ + towerSize / 2 + 0.012),
+    );
+  }
+
+  addTwinTowerSkybridge(parts, {
+    z: towerZ,
+    bridgeY: 1.12,
+    span: 0.48,
+    depth: 0.26,
+    bodyColor: palette.stone,
+    trimColor: palette.trim,
+    archRadius: 0.2,
+    crenelated: false,
+  });
+  parts.masonry.push(
+    piece(cutStoneBlock(0.46, 0.032, 0.032), palette.accent, 0, 1.38, towerZ + 0.11),
+    piece(cutStoneBlock(0.46, 0.032, 0.032), palette.accent, 0, 1.38, towerZ - 0.11),
+    piece(new TorusGeometry(0.19, 0.022, 6, 16).rotateX(Math.PI / 2), palette.stone, 0, 0.46, 0.14),
+    piece(new TorusGeometry(0.16, 0.018, 5, 16).rotateY(Math.PI / 4).rotateX(0.42), palette.accent, 0, 0.84, 0.14),
+    piece(new TorusGeometry(0.14, 0.016, 5, 16).rotateY(-Math.PI / 4).rotateX(-0.35), palette.accent, 0, 0.84, 0.14),
+  );
+  parts.glow.push(piece(new OctahedronGeometry(0.115, 0).scale(0.82, 1.45, 0.82), palette.gem, 0, 0.84, 0.14));
 }
 
 function addWallCrenelations(

@@ -574,12 +574,23 @@ describe("the Cosmetics page", () => {
   it("offers no Equip on a skin the game cannot draw yet, though the realm holds it", async () => {
     player.signedIn = true;
     useAccountStore.setState({ account: { address: "0x1" } } as never);
-    directory.games = [season([realm({ entity_id: 7, aspect: 3 })], true)];
+    directory.games = [season([realm({ entity_id: 7, aspect: 3, level: 3 })], true)];
     const container = await open();
     expect(container.querySelector<HTMLElement>("[data-preview]")!.dataset.preview).toBe("base");
     await pick(container, "season-1-havoc");
     expect(container.querySelector('[data-skin="season-1-havoc"]')!.getAttribute("data-standing")).toBe("owned");
     expect(buttonNamed(container, COSMETICS_WORDS.equip)).toBeUndefined();
+  });
+
+  it("wears and equips the Season 1 Aspect skin at Kingdom rank once the Seal is held", async () => {
+    player.signedIn = true;
+    useAccountStore.setState({ account: { address: "0x1" } } as never);
+    directory.games = [season([realm({ entity_id: 7, aspect: 3, level: 2 })], true)];
+    const container = await open();
+    expect(container.querySelector<HTMLElement>("[data-preview]")!.dataset.preview).toBe("season-1-havoc");
+    expect(container.querySelector('[data-skin="season-1-havoc"] [data-standing="equipped"]')).not.toBeNull();
+    await pick(container, "base");
+    expect(buttonNamed(container, COSMETICS_WORDS.equip)).toBeDefined();
   });
 
   it("leaves Equip unavailable when the live game's rules do not enable it", async () => {

@@ -22,11 +22,13 @@ import { resolveStructureRotationY } from "./structure-orientation";
 const MAX_TRIANGLES_BY_LEVEL = {
   0: 8000,
   1: 12000,
+  2: 16000,
 } as const satisfies Record<SeasonOneRealmKitLevel, number>;
 
 const HEIGHT_BAND_BY_LEVEL = {
   0: { min: 0.75, max: 1.05 },
   1: { min: 1.15, max: 1.55 },
+  2: { min: 1.8, max: 2.25 },
 } as const satisfies Record<SeasonOneRealmKitLevel, { min: number; max: number }>;
 
 function countTriangles(mesh: Mesh): number {
