@@ -27,6 +27,7 @@ import { canIssueOrders } from "@/utils/can-issue-orders";
 import {
   buildableRadius,
   configManager,
+  DEEP_PAYOUT_MODELS,
   getBalance,
   getRealmInfo,
   resolveUseSimpleCost,
@@ -55,6 +56,7 @@ import { type BuildTile, BuildView } from "./build-view";
 import { buildingIcon, buildingName } from "./building-names";
 
 const BUILD_MODELS = [
+  ...DEEP_PAYOUT_MODELS,
   "Building",
   "ResourceBalance",
   "ResourceProduction",
@@ -179,7 +181,7 @@ export const BuildSheet = ({
   };
 
   const held = (resource: number) =>
-    knownAmount(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
+    knownAmount(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store, realm.game_id).balance);
   const standing = (option: BuildOption): Refusal | undefined => {
     if (option.standing === "built") return { reason: { kind: "failed", line: ONE_A_REALM } };
     if (option.standing !== "open")

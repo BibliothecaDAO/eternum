@@ -1,4 +1,4 @@
-import { currentResourceWeight } from "../utils/deep";
+import { currentResourceWeight, DEEP_PAYOUT_MODELS, projectedDeepResourcePayout } from "../utils/deep";
 import {
   nativeResearchConstants as research,
   nativeStructureConstants as structures,
@@ -17,6 +17,7 @@ import { configManager } from "./config-manager";
 export const RESOURCE_PRODUCTION_MODELS = [
   ...SCOPE_INPUT_MODELS,
   ...BANE_MODELS,
+  ...DEEP_PAYOUT_MODELS,
   "ResourceBalance",
   "ResourceProduction",
   "ResourceWeight",
@@ -75,6 +76,7 @@ export class ResourceManager {
         if (!RESOURCE_PRODUCTION_MODELS.some((model) => model === change.model)) return false;
         const row = change.current ?? change.previous;
         if (!row || !("game_id" in row) || row.game_id !== this.gameId) return false;
+        if (DEEP_PAYOUT_MODELS.some((model) => model === change.model)) return true;
         if ("entity_id" in row) return row.entity_id === BigInt(this.entityId);
         if ("structure_id" in row) return row.structure_id === BigInt(this.entityId);
         if ("home" in row) return row.home === BigInt(this.entityId);
@@ -186,16 +188,24 @@ export class ResourceManager {
       : settled.amount < production.output_amount_left
         ? settled.amount
         : production.output_amount_left;
-    // A store keeps nothing past its own limit, as the contract adds production to it.
+    const deepPayout = projectedDeepResourcePayout(
+      this.store,
+      this.gameId,
+      BigInt(this.entityId),
+      resourceId,
+      currentTick,
+    );
+    if (deepPayout === undefined) return undefined;
+    const totalAdded = amountProduced + deepPayout;
     const limit = this.storeLimit(resourceId);
     const room = limit === undefined ? undefined : limit > balance ? limit - balance : 0n;
-    const fitting = this._limitProductionByStoreCapacity(amountProduced, resourceId);
+    const fitting = this._limitProductionByStoreCapacity(totalAdded, resourceId);
     const amountProducedLimited = room === undefined || fitting < room ? fitting : room;
     const kept = balance + amountProducedLimited;
     return {
       balance: Number(kept),
-      hasReachedMaxCapacity: amountProducedLimited < amountProduced || (limit !== undefined && kept >= limit),
-      amountProduced,
+      hasReachedMaxCapacity: amountProducedLimited < totalAdded || (limit !== undefined && kept >= limit),
+      amountProduced: totalAdded,
       amountProducedLimited,
     };
   }

@@ -2,6 +2,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { knownAmount } from "@/ui/utils/utils";
 import {
+  DEEP_PAYOUT_MODELS,
   getBalance,
   realmLearned,
   RESEARCH_ROWS,
@@ -23,6 +24,7 @@ import { standingBuildings } from "../production/store-makers";
 import { type LearnedRow, readResearchTree, type RealmResearchFacts, type TreeNode } from "./research-tree";
 
 const RESEARCH_MODELS = [
+  ...DEEP_PAYOUT_MODELS,
   "RealmKnowledge",
   "ResearchPrice",
   "ResourceRule",
@@ -65,8 +67,8 @@ const readResearchFacts = (
 ): RealmResearchFacts | undefined => {
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
   const entity = safeInteger(realm.entity_id);
-  const essence = knownAmount(getBalance(entity, ResourcesIds.Essence, tick, store).balance);
-  const labor = knownAmount(getBalance(entity, ResourcesIds.Labor, tick, store).balance);
+  const essence = knownAmount(getBalance(entity, ResourcesIds.Essence, tick, store, realm.game_id).balance);
+  const labor = knownAmount(getBalance(entity, ResourcesIds.Labor, tick, store, realm.game_id).balance);
 
   const board = store.get("BoardRules", { game_id: realm.game_id });
   if (learned === undefined || essence === undefined || labor === undefined || !board) return undefined;

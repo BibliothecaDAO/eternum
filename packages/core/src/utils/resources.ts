@@ -8,12 +8,13 @@ export const getBalance = (
   resourceId: ResourcesIds,
   currentDefaultTick: number,
   store: NativeFactStore,
+  gameId?: number,
 ) => ({
   // Undefined without an entity, or when this client holds no resource owner for it: unknown, never zero.
   balance:
     entityId === undefined
       ? undefined
-      : new ResourceManager(store, entityId).balanceWithProduction(currentDefaultTick, resourceId)?.balance,
+      : new ResourceManager(store, entityId, gameId).balanceWithProduction(currentDefaultTick, resourceId)?.balance,
   resourceId,
 });
 

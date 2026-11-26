@@ -1,13 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { BiomeType, BiomeTypeToId, deepSites } from "@bibliothecadao/types";
-import type { NativeFactStore } from "../client/native-fact-store";
+import { BiomeType, BiomeTypeToId, deepSites, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { NativeFactStore } from "../client/native-fact-store";
+import { ResourceManager } from "../managers/resource-manager";
+import { gameRegistryRow } from "../test-support/game-registry";
+import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import {
   nativeTilePackingConstants,
   type NativeModelName,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeRowDefinitions } from "../client/native-row";
-import { currentArmy, currentResourceWeight, deepAlliesGarrison, deepTerrain, deepTiles } from "./deep";
+import {
+  currentArmy,
+  currentResourceWeight,
+  deepAlliesGarrison,
+  deepTerrain,
+  deepTiles,
+  projectedDeepResourcePayout,
+} from "./deep";
 import { armyCombatRefusal } from "./army-opponents";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import {
@@ -430,4 +440,329 @@ it("lets allies garrison a site by the native ally-garrison vectors for each kin
     expect([0, 1]).toContain(allies);
     expect(deepAlliesGarrison(kind)).toBe(allies === 1);
   }
+});
+
+describe("unsettled Deep Essence and Labor projection", () => {
+  const deepStore = () => {
+    const store = new NativeFactStore();
+    const put = (key: string, model: string, value: Record<string, unknown> | null) => ({ model, key, value });
+    store.applyFacts([
+      put("0x1", "SliceRules", {
+        ...release.definition.rules,
+        game_id: 7,
+        mode_rules: 0,
+        day_unit_seconds: 100,
+        tick_config: { ...release.definition.rules.tick_config, armies_tick_in_seconds: 60 },
+      }),
+      put("0x1a0", "SettlementRules", {
+        game_id: 7,
+        registration_start: 1,
+        registration_limit: 2,
+        spacing: 10,
+        mode: "Single",
+      }),
+      put(
+        "0x2",
+        "GameRegistry",
+        gameRegistryRow({ game_id: 7, start_main_at: "360", scheduled_end_at: "288360", end_at: "288360", seed: "1" }),
+      ),
+    ] as never);
+    store.setSnapshot({ gameId: 7, complete: true, actor: "0x111", timestamp: 600 });
+    const facts = [
+      put("0x3", "BoardRules", {
+        game_id: 7,
+        demolition_refund_bps: 0,
+        workshop_rate: 0,
+        output_step_bps: 2500,
+        troop_store_deploys: 2,
+        settlement_resource_cap: 6000,
+        city_resource_cap: 18000,
+        kingdom_resource_cap: 40000,
+        empire_resource_cap: 80000,
+        storage_step_bps: 5000,
+        ration_step: String(precision / 4n),
+      }),
+      put("0x4", "DeepRules", {
+        game_id: 7,
+        gate_distance: 24,
+        rings: [{ radius: 7, realms: 0 }],
+        beasts: [0, 1, 2, 3].map((kind) => ({ count: String(10n * precision), bow: kind % 2 === 1 })),
+        loss_per_tick: String(200n * precision),
+        core_per_tick: String(300n * precision),
+        mine_per_tick: String(300n * precision),
+        building_pay: { alone: 6, pair: 3, crowd: 2 },
+        altar_threshold: 1500,
+      }),
+      put("0x5", "DeepTick", { game_id: 7, paid_tick: 6 }),
+      put("0x6", "Structure", {
+        game_id: 7,
+        entity_id: 1,
+        owner: "0x111",
+        base: {
+          category: StructureType.Realm,
+          level: 0,
+          created_at: 0,
+          troop_max_guard_count: 0,
+          troop_max_explorer_count: 3,
+          starting_troops_granted: false,
+        },
+        resources_packed: 0,
+        metadata: { realm_id: 1, village_realm: 0, mine_kind: 0, deepest_depth: 0, has_wonder: false, order: 0 },
+      }),
+      put("0x7", "ResourceWeight", {
+        game_id: 7,
+        entity_id: 1,
+        capacity: String((1n << 128n) - 1n),
+        weight: 0,
+      }),
+      put("0x10a", "TileOccupancy", {
+        game_id: 7,
+        entity_id: "50",
+        col: 5,
+        row: 35,
+        alt: false,
+        category: TileOccupier.DeepSite,
+        is_structure: true,
+      }),
+      put("0x10b", "TileOccupancy", {
+        game_id: 7,
+        entity_id: "51",
+        col: 6,
+        row: 35,
+        alt: false,
+        category: TileOccupier.DeepSite,
+        is_structure: true,
+      }),
+      ...release.definition.resources.resources.map((rule) =>
+        put(`0x50${rule.resource_type}`, "ResourceRule", { ...rule, game_id: 7 }),
+      ),
+    ];
+    store.applyFacts(facts as never);
+    return { store, put };
+  };
+
+  const guardRow = (siteId: number, slot: number, count: bigint) => ({
+    game_id: 7,
+    structure_id: siteId,
+    slot,
+    troops: {
+      category: "Knight",
+      tier: "T1",
+      count: String(count),
+      stamina: { Inline: { amount: "0", settled_at: 0, remainder: 0 } },
+      boosts: {
+        incr_damage_dealt_percent_num: 0,
+        incr_damage_dealt_end_at: 0,
+        decr_damage_gotten_percent_num: 0,
+        decr_damage_gotten_end_at: 0,
+        incr_stamina_regen_percent_num: 0,
+        incr_stamina_regen_seconds_left: 0,
+        incr_explore_reward_percent_num: 0,
+        incr_explore_reward_end_at: 0,
+      },
+      battle_cooldown_end: 0,
+    },
+    destroyed_tick: 0,
+  });
+
+  it("projects unsettled Core Essence and Mine Labor ticks, stops when garrisons drain to zero, and ignores other site kinds and resources", () => {
+    const { store, put } = deepStore();
+    store.applyFacts([
+      put("0x10", "DeepSite", {
+        game_id: 7,
+        entity_id: 50,
+        kind: nativeRuleConstants.DEEP_CORE,
+        ring: 0,
+        day: 0,
+        aspect: 1,
+      }),
+      put("0x11", "GarrisonSlot", { game_id: 7, structure_id: 50, slot: 0, home: 1 }),
+      put("0x12", "Guard", guardRow(50, 0, 401n * precision)),
+      put("0x13", "DeepSite", {
+        game_id: 7,
+        entity_id: 51,
+        kind: nativeRuleConstants.DEEP_ALTAR,
+        ring: 0,
+        day: 0,
+        aspect: 1,
+      }),
+      put("0x14", "GarrisonSlot", { game_id: 7, structure_id: 51, slot: 0, home: 1 }),
+      put("0x15", "Guard", guardRow(51, 0, 1000n * precision)),
+    ] as never);
+
+    expect(projectedDeepResourcePayout(store, 7, 1n, ResourcesIds.Essence, 419)).toBe(0n);
+    expect(projectedDeepResourcePayout(store, 7, 1n, ResourcesIds.Essence, 420)).toBe(300n * precision);
+    expect(projectedDeepResourcePayout(store, 7, 1n, ResourcesIds.Essence, 480)).toBe(600n * precision);
+    expect(projectedDeepResourcePayout(store, 7, 1n, ResourcesIds.Essence, 540)).toBe(600n * precision);
+    expect(projectedDeepResourcePayout(store, 7, 1n, ResourcesIds.Labor, 480)).toBe(0n);
+    expect(projectedDeepResourcePayout(store, 7, 1n, ResourcesIds.Wheat, 480)).toBe(0n);
+
+    store.applyFacts([put("0x12", "Guard", guardRow(50, 0, 200n * precision))] as never);
+    expect(projectedDeepResourcePayout(store, 7, 1n, ResourcesIds.Essence, 420)).toBe(0n);
+  });
+
+  it("cuts off unsettled payouts at day end and at race end, and pays zero before main start", () => {
+    const { store, put } = deepStore();
+    store.applyFacts([
+      put("0x10", "DeepSite", {
+        game_id: 7,
+        entity_id: 50,
+        kind: nativeRuleConstants.DEEP_CORE,
+        ring: 0,
+        day: 0,
+        aspect: 1,
+      }),
+      put("0x11", "GarrisonSlot", { game_id: 7, structure_id: 50, slot: 0, home: 1 }),
+      put("0x12", "Guard", guardRow(50, 0, 5000n * precision)),
+    ] as never);
+
+    expect(projectedDeepResourcePayout(store, 7, 1n, ResourcesIds.Essence, 359)).toBe(0n);
+    expect(projectedDeepResourcePayout(store, 7, 1n, ResourcesIds.Essence, 660)).toBe(1500n * precision);
+    expect(projectedDeepResourcePayout(store, 7, 1n, ResourcesIds.Essence, 900)).toBe(1500n * precision);
+
+    store.applyFacts([
+      put("0x20", "RaceResult", { game_id: 7, winner: 1, ended_at: 480, scheduled_end_at: 288360 }),
+    ] as never);
+    expect(projectedDeepResourcePayout(store, 7, 1n, ResourcesIds.Essence, 660)).toBe(600n * precision);
+  });
+
+  it("handles two slots held by one realm and exact multi-home remainder splits", () => {
+    const { store, put } = deepStore();
+    store.applyFacts([
+      put("0x4", "DeepRules", {
+        game_id: 7,
+        gate_distance: 24,
+        rings: [{ radius: 7, realms: 0 }],
+        beasts: [0, 1, 2, 3].map((kind) => ({ count: String(10n * precision), bow: kind % 2 === 1 })),
+        loss_per_tick: String(200n * precision),
+        core_per_tick: "10",
+        mine_per_tick: "13",
+        building_pay: { alone: 6, pair: 3, crowd: 2 },
+        altar_threshold: 1500,
+      }),
+      put("0x10", "DeepSite", {
+        game_id: 7,
+        entity_id: 50,
+        kind: nativeRuleConstants.DEEP_CORE,
+        ring: 0,
+        day: 0,
+        aspect: 1,
+      }),
+      put("0x11", "GarrisonSlot", { game_id: 7, structure_id: 50, slot: 0, home: 1 }),
+      put("0x12", "Guard", guardRow(50, 0, 400n * precision)),
+      put("0x13", "GarrisonSlot", { game_id: 7, structure_id: 50, slot: 1, home: 1 }),
+      put("0x14", "Guard", guardRow(50, 1, 801n * precision)),
+    ] as never);
+
+    expect(projectedDeepResourcePayout(store, 7, 1n, ResourcesIds.Essence, 600)).toBe(40n);
+
+    store.applyFacts([
+      put("0x15", "DeepSite", {
+        game_id: 7,
+        entity_id: 51,
+        kind: nativeRuleConstants.DEEP_MINE,
+        ring: 0,
+        day: 0,
+        aspect: 1,
+      }),
+      put("0x16", "GarrisonSlot", { game_id: 7, structure_id: 51, slot: 0, home: 2 }),
+      put("0x17", "Guard", guardRow(51, 0, 500n * precision)),
+      put("0x18", "GarrisonSlot", { game_id: 7, structure_id: 51, slot: 1, home: 1 }),
+      put("0x19", "Guard", guardRow(51, 1, 500n * precision)),
+      put("0x1a", "GarrisonSlot", { game_id: 7, structure_id: 51, slot: 2, home: 3 }),
+      put("0x1b", "Guard", guardRow(51, 2, 700n * precision)),
+    ] as never);
+
+    expect(projectedDeepResourcePayout(store, 7, 1n, ResourcesIds.Labor, 420)).toBe(4n);
+    expect(projectedDeepResourcePayout(store, 7, 2n, ResourcesIds.Labor, 420)).toBe(3n);
+    expect(projectedDeepResourcePayout(store, 7, 3n, ResourcesIds.Labor, 420)).toBe(6n);
+    expect(projectedDeepResourcePayout(store, 7, 1n, ResourcesIds.Labor, 480)).toBe(7n);
+    expect(projectedDeepResourcePayout(store, 7, 2n, ResourcesIds.Labor, 480)).toBe(5n);
+    expect(projectedDeepResourcePayout(store, 7, 3n, ResourcesIds.Labor, 480)).toBe(14n);
+    expect(projectedDeepResourcePayout(store, 7, 1n, ResourcesIds.Labor, 540)).toBe(7n);
+    expect(projectedDeepResourcePayout(store, 7, 2n, ResourcesIds.Labor, 540)).toBe(5n);
+    expect(projectedDeepResourcePayout(store, 7, 3n, ResourcesIds.Labor, 540)).toBe(27n);
+    expect(projectedDeepResourcePayout(store, 7, 3n, ResourcesIds.Labor, 600)).toBe(27n);
+  });
+
+  it("settles with zero jump, caps Labor at storeLimit while leaving Essence uncapped, and notifies ResourceManager subscribers", () => {
+    const { store, put } = deepStore();
+    const manager = new ResourceManager(store, 1, 7);
+    let notifications = 0;
+    const stop = manager.subscribe(() => {
+      notifications += 1;
+    });
+
+    store.applyFacts([
+      put("0x30", "ResourceBalance", {
+        game_id: 7,
+        entity_id: 1,
+        resource_type: ResourcesIds.Essence,
+        balance: String(1000n * precision),
+      }),
+      put("0x31", "ResourceBalance", {
+        game_id: 7,
+        entity_id: 1,
+        resource_type: ResourcesIds.Labor,
+        balance: String(4800n * precision),
+      }),
+      put("0x10", "DeepSite", {
+        game_id: 7,
+        entity_id: 50,
+        kind: nativeRuleConstants.DEEP_CORE,
+        ring: 0,
+        day: 0,
+        aspect: 1,
+      }),
+      put("0x11", "GarrisonSlot", { game_id: 7, structure_id: 50, slot: 0, home: 1 }),
+      put("0x12", "Guard", guardRow(50, 0, 2000n * precision)),
+      put("0x13", "DeepSite", {
+        game_id: 7,
+        entity_id: 51,
+        kind: nativeRuleConstants.DEEP_MINE,
+        ring: 0,
+        day: 0,
+        aspect: 1,
+      }),
+      put("0x14", "GarrisonSlot", { game_id: 7, structure_id: 51, slot: 0, home: 1 }),
+      put("0x15", "Guard", guardRow(51, 0, 2000n * precision)),
+    ] as never);
+
+    const beforeSettleEssence = manager.balanceWithProduction(480, ResourcesIds.Essence)!;
+    const beforeSettleLabor = manager.balanceWithProduction(480, ResourcesIds.Labor)!;
+    expect(beforeSettleEssence.balance).toBe(Number(1600n * precision));
+    expect(beforeSettleLabor.balance).toBe(Number(5000n * precision));
+    expect(beforeSettleLabor.hasReachedMaxCapacity).toBe(true);
+    expect(
+      store.get("ResourceBalance", { game_id: 7, entity_id: 1, resource_type: ResourcesIds.Essence })?.balance,
+    ).toBe(1000n * precision);
+
+    const beforeNotifies = notifications;
+    store.applyFacts([
+      put("0x5", "DeepTick", { game_id: 7, paid_tick: 8 }),
+      put("0x30", "ResourceBalance", {
+        game_id: 7,
+        entity_id: 1,
+        resource_type: ResourcesIds.Essence,
+        balance: String(1600n * precision),
+      }),
+      put("0x31", "ResourceBalance", {
+        game_id: 7,
+        entity_id: 1,
+        resource_type: ResourcesIds.Labor,
+        balance: String(5000n * precision),
+      }),
+      put("0x12", "Guard", guardRow(50, 0, 1600n * precision)),
+      put("0x15", "Guard", guardRow(51, 0, 1600n * precision)),
+    ] as never);
+
+    expect(notifications).toBeGreaterThan(beforeNotifies);
+    expect(manager.balanceWithProduction(480, ResourcesIds.Essence)!.balance).toBe(beforeSettleEssence.balance);
+    expect(manager.balanceWithProduction(480, ResourcesIds.Labor)!.balance).toBe(beforeSettleLabor.balance);
+
+    const beforeGuardNotify = notifications;
+    store.applyFacts([put("0x12", "Guard", guardRow(50, 0, 1400n * precision))] as never);
+    expect(notifications).toBeGreaterThan(beforeGuardNotify);
+    stop();
+  });
 });

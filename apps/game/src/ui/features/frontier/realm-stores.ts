@@ -3,7 +3,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import type { Tone } from "@/ui/design-system/kit/tone";
 import { knownAmount } from "@/ui/utils/utils";
-import { type ExpeditionRules, getBalance, ResourceManager } from "@bibliothecadao/eternum";
+import { DEEP_PAYOUT_MODELS, type ExpeditionRules, getBalance, ResourceManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, type ResourcesIds } from "@bibliothecadao/types";
 
@@ -38,17 +38,24 @@ export const readRealmStore = (
   clock: { now: number },
 ): RealmStore => {
   const stock = FRONTIER_STORES[kind].resource;
-  const amount = wholeBalance(store, safeInteger(realm.entity_id), stock, clock.now);
-  const rawLimit = new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id).storeLimit(stock);
+  const realmId = safeInteger(realm.entity_id);
+  const amount = wholeBalance(store, realmId, stock, clock.now, realm.game_id);
+  const rawLimit = new ResourceManager(store, realmId, realm.game_id).storeLimit(stock);
   const limit = rawLimit === undefined ? undefined : Number(rawLimit / BigInt(RESOURCE_PRECISION));
-  const perHour = realmPerHour(store, safeInteger(realm.entity_id), stock, clock.now);
+  const perHour = realmPerHour(store, realmId, stock, clock.now);
   const fullIn = secondsUntilFull(amount, limit, perHour);
-  const nextIn = secondsUntilNextUnit(store, safeInteger(realm.entity_id), stock, clock.now, perHour);
+  const nextIn = secondsUntilNextUnit(store, realmId, stock, clock.now, perHour, realm.game_id);
   return { amount, limit, perHour, nextIn, fullIn, tone: storeTone(fullIn) };
 };
 
-const wholeBalance = (store: NativeFactStore, realmId: number, resourceId: ResourcesIds, tick: number) => {
-  const balance = knownAmount(getBalance(realmId, resourceId, tick, store).balance);
+const wholeBalance = (
+  store: NativeFactStore,
+  realmId: number,
+  resourceId: ResourcesIds,
+  tick: number,
+  gameId: number,
+) => {
+  const balance = knownAmount(getBalance(realmId, resourceId, tick, store, gameId).balance);
   return balance === undefined ? undefined : Math.floor(balance);
 };
 
@@ -59,8 +66,9 @@ const secondsUntilNextUnit = (
   resourceId: ResourcesIds,
   tick: number,
   perHour: number | undefined,
+  gameId: number,
 ): number | undefined => {
-  const held = knownAmount(getBalance(realmId, resourceId, tick, store).balance);
+  const held = knownAmount(getBalance(realmId, resourceId, tick, store, gameId).balance);
   return held === undefined ? undefined : secondsUntilHeld(held, Math.floor(held) + 1, perHour);
 };
 
@@ -79,6 +87,7 @@ const storeTone = (fullIn: number | undefined): Tone =>
   fullIn === undefined ? "calm" : fullIn === 0 ? "ember" : fullIn <= AMBER_SECONDS ? "amber" : "calm";
 
 const STORE_MODELS = [
+  ...DEEP_PAYOUT_MODELS,
   "ResourceBalance",
   "ResourceProduction",
   "ResourceWeight",
