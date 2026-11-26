@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "2843acae7b6c6854001c0e2e807f140259f1506d291c10a02c227987d8d0b48b";
+export const nativeFactSchemaIdentity = "f25aefd3fd203df6166c5f397bd28e2d54dde54c54da9a5f0670a59f27f704b6";
 export const nativeIdentifiers = {
   "rule": {
     "ENTRY_ENTITLEMENT": 0,
@@ -114,6 +114,12 @@ export const nativeIdentifiers = {
   "family": {
     "FRONTIER": 1,
     "BLITZ": 2
+  },
+  "realmSkin": {
+    "DEFAULT_REALM_SKIN": 0,
+    "BASE_REALM_SKIN": 1,
+    "SEASON_ONE_REALM_SKIN": 2,
+    "WONDER_REALM_SKIN": 3
   }
 } as const;
 export const nativeReleaseConstants = {
@@ -280,6 +286,7 @@ export interface NativeRows {
   Building: { readonly game_id: number; readonly structure_id: bigint; readonly inner_col: number; readonly inner_row: number; readonly category: number; readonly paused: boolean; readonly labor_paid: bigint };
   StructureBuildings: { readonly game_id: number; readonly entity_id: bigint; readonly packed_counts_1: bigint; readonly packed_counts_2: bigint; readonly packed_counts_3: bigint; readonly population: { readonly current: number; readonly max: number } };
   EntityName: { readonly game_id: number; readonly entity_id: bigint; readonly name: bigint };
+  RealmSkin: { readonly game_id: number; readonly entity_id: bigint; readonly family: number };
   ResourceRule: { readonly game_id: number; readonly resource_type: number; readonly unit_weight: bigint; readonly realm_rate: bigint; readonly village_rate: bigint };
   UpgradeLimits: { readonly game_id: number; readonly realm_max: number; readonly village_max: number };
   UpgradeRecipe: { readonly game_id: number; readonly level: number; readonly costs: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
@@ -370,6 +377,7 @@ export interface NativeKeys {
   Building: { readonly game_id: number; readonly structure_id: bigint; readonly inner_col: number; readonly inner_row: number };
   StructureBuildings: { readonly game_id: number; readonly entity_id: bigint };
   EntityName: { readonly game_id: number; readonly entity_id: bigint };
+  RealmSkin: { readonly game_id: number; readonly entity_id: bigint };
   ResourceRule: { readonly game_id: number; readonly resource_type: number };
   UpgradeLimits: { readonly game_id: number };
   UpgradeRecipe: { readonly game_id: number; readonly level: number };
@@ -1894,6 +1902,18 @@ export const nativeFactModels = {
       "name": "felt"
     }
   },
+  "RealmSkin": {
+    "keys": [
+      "game_id",
+      "entity_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "entity_id": "u64",
+      "family": "u8"
+    }
+  },
   "ResourceRule": {
     "keys": [
       "game_id",
@@ -2435,6 +2455,11 @@ export const nativeSyncScopes = {
     ]
   },
   "EntityName": {
+    "entities": [
+      "entity_id"
+    ]
+  },
+  "RealmSkin": {
     "entities": [
       "entity_id"
     ]

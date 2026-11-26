@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "2843acae7b6c6854001c0e2e807f140259f1506d291c10a02c227987d8d0b48b",
+  "schemaIdentity": "f25aefd3fd203df6166c5f397bd28e2d54dde54c54da9a5f0670a59f27f704b6",
   "commandAbi": [
     {
       "type": "interface",
@@ -222,6 +222,11 @@
           "name": "InteractSite",
           "type": "world_native::relics::InteractSite",
           "wireId": 69
+        },
+        {
+          "name": "SetRealmSkin",
+          "type": "world_native::names::SetRealmSkin",
+          "wireId": 79
         }
       ]
     },
@@ -940,6 +945,20 @@
           "type": "world_native::troops::Coord"
         }
       ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::names::SetRealmSkin",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "family",
+          "type": "core::integer::u8"
+        }
+      ]
     }
   ],
   "events": [
@@ -1279,6 +1298,10 @@
     },
     {
       "name": "EntityName",
+      "scope": "game"
+    },
+    {
+      "name": "RealmSkin",
       "scope": "game"
     },
     {
