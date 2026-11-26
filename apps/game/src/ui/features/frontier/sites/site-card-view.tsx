@@ -340,7 +340,7 @@ const FootNote = ({ verb, site }: { verb: SiteVerb; site: string }) => {
     case "move":
       return <HudPrice prices={verb.prices} />;
     default:
-      return <HudNotice tone="warn" line={reasonLine(heldBack(verb, site))} />;
+      return <HudNotice tone={verb.kind === "short" ? "bad" : "warn"} line={reasonLine(heldBack(verb, site))} />;
   }
 };
 

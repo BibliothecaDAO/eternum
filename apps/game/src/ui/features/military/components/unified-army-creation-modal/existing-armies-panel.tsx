@@ -149,7 +149,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
         <HudIconButton
           icon="trash"
           label={ARMY_MANAGEMENT.deleteArmy}
-          kind="quiet"
+          kind="danger"
           disabled={deleting}
           onClick={confirmsDisband ? ask : handleConfirmDelete}
         />

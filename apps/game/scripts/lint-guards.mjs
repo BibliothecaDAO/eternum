@@ -326,12 +326,23 @@ const findDottedThemeKeys = () =>
       ),
   );
 
+const findShortInAmber = () =>
+  globSync("apps/game/src/**/*.css", { cwd: REPO }).flatMap((file) =>
+    [...readFileSync(resolve(REPO, file), "utf8").matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter(([, selector, body]) => selector.includes("[data-short") && /--(hud|app)-warn\b/.test(body))
+      .map(
+        ([, selector]) =>
+          `${file}: ${selector.trim()} paints what the player cannot pay for in amber: a short price is red, read from HudPrice's short.`,
+      ),
+  );
+
 const hits = [
   ...errors.filter((error) => !isCatalogCopy(error) && !isPlainWords(error)).map(line),
   ...catalogHits,
   ...plainWordsHits,
   ...findUnownedKitSheetClasses(),
   ...findDottedThemeKeys(),
+  ...findShortInAmber(),
 ];
 for (const hit of hits) console.log(hit);
 console.log(`lint guards: ${hits.length} hit(s)`);

@@ -1362,7 +1362,7 @@ const OATH_SLOTS_STEPS = [
         `(() => {
       const sent = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "Research").at(-1);
       return sent?.answered.some(({ model, value }) => model === "RealmKnowledge" && ((BigInt(value.learned) >> 30n) & 3n) === 1n) &&
-        document.querySelector('[data-node="row-6"]')?.textContent.includes("3 Oath slots");
+        document.querySelector('[data-node="row-6"] :is([data-research-effect], [data-research-effect-short])')?.textContent.startsWith("3 ");
     })()`,
       );
       browser.tap(action.offset);

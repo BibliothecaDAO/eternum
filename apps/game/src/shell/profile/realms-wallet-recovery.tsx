@@ -51,7 +51,7 @@ export const RealmsWalletRecovery = ({ address, onRecover }: { address: string; 
         </Suspense>
       ) : (
         <span>
-          <AppButton kind="quiet" tone="bad" icon="close" onClick={() => setCancelling(true)}>
+          <AppButton kind="quiet" icon="close" onClick={() => setCancelling(true)}>
             {WALLET_WORDS.cancelRecovery}
           </AppButton>
         </span>

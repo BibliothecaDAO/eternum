@@ -101,7 +101,7 @@ export const DevicesCard = ({ realmsId }: { realmsId: string }) => {
               <AppButton kind="quiet" onClick={() => setAsking(null)}>
                 {KEEP}
               </AppButton>
-              <AppButton kind="secondary" tone="bad" onClick={() => void remove(asking)}>
+              <AppButton kind="danger" onClick={() => void remove(asking)}>
                 {PROFILE_WORDS.remove}
               </AppButton>
             </>

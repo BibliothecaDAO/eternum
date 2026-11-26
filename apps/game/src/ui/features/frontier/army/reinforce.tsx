@@ -219,7 +219,7 @@ const ReinforceLimit = ({
   wheatStop: ReturnType<typeof wheatStopsAt>;
 }) => {
   if (plan.current >= plan.cap) return <HudNotice tone="warn" line={TRANSFER_TROOPS.cap(plan.cap)} />;
-  if (plan.stock === 0) return <HudNotice tone="warn" line={NO_TROOPS_AT_HOME} />;
+  if (plan.stock === 0) return <HudNotice tone="bad" line={NO_TROOPS_AT_HOME} />;
   if (!wheatStop) return null;
   if (wheatStop.troops > 0)
     return <HudLine icon="wheat" line={wheatForOnly(formatExact(wheatStop.troops), formatExact(wheatStop.of))} />;
