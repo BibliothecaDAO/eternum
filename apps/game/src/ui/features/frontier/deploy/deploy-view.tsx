@@ -31,6 +31,7 @@ import {
 
 import { SizeRow } from "../size-row";
 import type { SlotStart } from "./deploy-plan";
+import { troopTraits } from "./troop-figures";
 
 export interface DeployTroopChoiceView {
   category: TroopType;
@@ -145,11 +146,6 @@ const StartBar = ({ stamina }: { stamina: StaminaBar }) => (
   </span>
 );
 
-const TRAIT_MARK = { Knight: null, Crossbowman: null, Paladin: "stamina" } satisfies Record<
-  TroopType,
-  IconMeaning | null
->;
-
 const TroopChoices = ({
   choices,
   selected,
@@ -170,7 +166,7 @@ const TroopChoices = ({
           className="ui-pick deploy-troop-card"
           aria-label={choice.name}
           aria-pressed={selected === choice.category}
-          data-tip={TROOP_TRAIT_WORDS[choice.category].tip(figures)}
+          data-tip={TROOP_TRAIT_WORDS.tip(troopTraits(choice.category), figures)}
           onClick={() => onPick(choice.category)}
         >
           <Icon name={choice.art} size={46} />
@@ -182,21 +178,18 @@ const TroopChoices = ({
     </div>
     {selected !== undefined && (
       <p data-troop-summary="" className="deploy-troop-summary">
-        {TROOP_TRAIT_WORDS[selected].summary(figures)}
+        {TROOP_TRAIT_WORDS.summary(troopTraits(selected), figures)}
       </p>
     )}
   </>
 );
 
-const TroopTraitLine = ({ category, figures }: { category: TroopType; figures: TroopFigures }) => {
-  const mark = TRAIT_MARK[category];
-  return (
-    <span data-troop-trait="" className="deploy-troop-card__trait">
-      {mark && <Icon name={mark} size={12} />}
-      {TROOP_TRAIT_WORDS[category].card(figures)}
-    </span>
-  );
-};
+const TroopTraitLine = ({ category, figures }: { category: TroopType; figures: TroopFigures }) => (
+  <span data-troop-trait="" className="deploy-troop-card__trait">
+    {troopTraits(category).scout && <Icon name="stamina" size={12} />}
+    {TROOP_TRAIT_WORDS.card(troopTraits(category), figures)}
+  </span>
+);
 
 const DeploySlots = ({
   open,

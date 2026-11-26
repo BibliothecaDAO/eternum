@@ -1,4 +1,5 @@
 import type { TroopType } from "@bibliothecadao/types";
+import { type CombatMark, troopMark } from "@bibliothecadao/eternum";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { BEAST_MARK_TIPS, COMBAT_MARK_WORDS } from "@/ui/design-system/kit/words";
 
@@ -8,12 +9,12 @@ export interface CombatMarkLook {
   beastTip: string;
 }
 
-const BLADE: CombatMarkLook = { label: COMBAT_MARK_WORDS.blade, icon: "combat-blade", beastTip: BEAST_MARK_TIPS.blade };
-const BOW: CombatMarkLook = { label: COMBAT_MARK_WORDS.bow, icon: "combat-bow", beastTip: BEAST_MARK_TIPS.bow };
+const MARK_LOOKS = {
+  blade: { label: COMBAT_MARK_WORDS.blade, icon: "combat-blade", beastTip: BEAST_MARK_TIPS.blade },
+  bow: { label: COMBAT_MARK_WORDS.bow, icon: "combat-bow", beastTip: BEAST_MARK_TIPS.bow },
+} satisfies Record<CombatMark, CombatMarkLook>;
 
-const COMBAT_MARKS = { Knight: BLADE, Paladin: BLADE, Crossbowman: BOW } satisfies Record<TroopType, CombatMarkLook>;
-
-export const combatMarkOf = (category: TroopType): CombatMarkLook => COMBAT_MARKS[category];
+export const combatMarkOf = (category: TroopType): CombatMarkLook => MARK_LOOKS[troopMark(category)];
 
 export const BeastMarkBadge = ({ category }: { category: TroopType }) => {
   const { label, icon, beastTip } = combatMarkOf(category);
