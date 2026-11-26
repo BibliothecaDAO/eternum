@@ -361,21 +361,21 @@ export class ProceduralArmyCharacterLayer {
   }
 
   private attachActorObject(entityId: number, record: ProceduralArmyActorRecord): void {
-    if (!this.compilePipelines) {
-      this.scene.add(record.actor.object);
+    if (this.compilePipelines) {
+      const generation = this.generation;
+      void this.compilePipelines(record.actor.object, this.scene)
+        .then(() => {
+          if (this.disposed || generation !== this.generation || this.actors.get(entityId) !== record) return;
+          this.scene.add(record.actor.object);
+        })
+        .catch((error) => {
+          if (this.disposed || generation !== this.generation || this.actors.get(entityId) !== record) return;
+          console.error("[ProceduralArmyCharacterLayer] Failed to precompile actor pipelines", error);
+          this.scene.add(record.actor.object);
+        });
       return;
     }
-    const generation = this.generation;
-    void this.compilePipelines(record.actor.object, this.scene)
-      .then(() => {
-        if (this.disposed || generation !== this.generation || this.actors.get(entityId) !== record) return;
-        this.scene.add(record.actor.object);
-      })
-      .catch((error) => {
-        if (this.disposed || generation !== this.generation || this.actors.get(entityId) !== record) return;
-        console.error("[ProceduralArmyCharacterLayer] Failed to precompile actor pipelines", error);
-        this.scene.add(record.actor.object);
-      });
+    this.scene.add(record.actor.object);
   }
 
   private clearActors(): void {

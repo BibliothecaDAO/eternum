@@ -39,6 +39,7 @@ import {
   ARMY_MODEL_SCALE,
   ARMY_PLATE_HEIGHT,
   isShipModel,
+  TROOP_TO_MODEL,
   TROOP_TO_SHIP_MODEL,
 } from "@/three/constants/army-constants";
 import { type ArmyPace, ModelType } from "@/three/types/army";
@@ -952,7 +953,7 @@ export class ArmyManager {
 
   public async prewarmExploreModels(): Promise<void> {
     if (this.isDestroyed) return;
-    const exploreModels = [ModelType.Knight1, ModelType.Crossbowman1, ModelType.Paladin1];
+    const exploreModels = Object.values(TROOP_TO_MODEL).flatMap((byTier) => Object.values(byTier));
     for (const modelType of exploreModels) {
       if (this.isDestroyed) return;
       await this.armyModel.preloadModels([modelType]);

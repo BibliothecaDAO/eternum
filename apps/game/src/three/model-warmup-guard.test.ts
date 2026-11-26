@@ -36,6 +36,9 @@ const REQUIRED_WARMUP_OWNERS = [
   "race/aspect-race-renderer.ts",
 ];
 
+const HAS_WARMUP_INVOCATION =
+  /\b(?:this\.)?compilePipelines\??\s*\(|\bcreatePipelineCompiler\s*\(|\bwarmIconTexture\??\s*\(/;
+
 function collectRuntimeThreeFiles(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     const full = path.join(dir, entry);
@@ -53,7 +56,7 @@ function collectRuntimeThreeFiles(dir: string, out: string[] = []): string[] {
 }
 
 describe("model warm-up chokepoint guard", () => {
-  it("refuses any runtime GLB loader under apps/game/src/three/ that bypasses PipelineCompiler", () => {
+  it("refuses any runtime GLB loader under apps/game/src/three/ that does not invoke PipelineCompiler", () => {
     const runtimeFiles = collectRuntimeThreeFiles(THREE_ROOT);
     const offenders: string[] = [];
 
@@ -61,23 +64,65 @@ describe("model warm-up chokepoint guard", () => {
       if (PURE_GLTF_LOADER_ALLOWLIST.has(rel)) continue;
       const source = readFileSync(path.join(THREE_ROOT, rel), "utf8");
       if (!/\bgltfLoader\b/.test(source)) continue;
-      const usesWarmup = /\b(compilePipelines|createPipelineCompiler|warmTexturePipeline)\b/.test(source);
-      if (!usesWarmup) offenders.push(rel);
+      if (!HAS_WARMUP_INVOCATION.test(source)) offenders.push(rel);
     }
 
     expect(offenders).toEqual([]);
   });
 
-  it("ensures every runtime model and FX owner routes through the shared PipelineCompiler chokepoint", () => {
+  it("ensures every runtime model and FX owner invokes the shared PipelineCompiler chokepoint", () => {
     const missing: string[] = [];
 
     for (const rel of REQUIRED_WARMUP_OWNERS) {
       const source = readFileSync(path.join(THREE_ROOT, rel), "utf8");
-      const usesWarmup = /\b(compilePipelines|createPipelineCompiler|warmTexturePipeline)\b/.test(source);
-      if (!usesWarmup) missing.push(rel);
+      if (!HAS_WARMUP_INVOCATION.test(source)) missing.push(rel);
     }
 
     expect(missing).toEqual([]);
+  });
+
+  it("requires scene-attaching model loaders to invoke compilePipelines before attaching to the scene", () => {
+    const orderedLoaders: Array<{ file: string; compileCall: RegExp; attachCall: RegExp }> = [
+      {
+        file: "managers/map-site-manager.ts",
+        compileCall: /await this\.compilePipelines\(model\.group,\s*this\.scene\)/,
+        attachCall: /this\.scene\.add\(model\.group\)/,
+      },
+      {
+        file: "managers/spire-manager.ts",
+        compileCall: /await this\.compilePipelines\(nextModel\.group,\s*this\.scene\)/,
+        attachCall: /this\.scene\.add\(this\.model\.group\)/,
+      },
+      {
+        file: "managers/deep-arena-manager.ts",
+        compileCall: /await this\.compilePipelines\(model,\s*this\.scene\)/,
+        attachCall: /this\.gates\[aspect\]\.add\(model\)/,
+      },
+      {
+        file: "terrain/procedural-terrain.ts",
+        compileCall: /await this\.compilePipelines\(pools\.object3d,\s*this\.targetScene\)/,
+        attachCall: /this\.object3d\.add\(pools\.object3d\)/,
+      },
+      {
+        file: "terrain/terrain-wildlife.ts",
+        compileCall: /await this\.compilePipelines\(root,\s*this\.targetScene\)/,
+        attachCall: /this\.object3d\.add\(root\)/,
+      },
+      {
+        file: "characters/procedural-army-character-layer.ts",
+        compileCall: /this\.compilePipelines\(record\.actor\.object,\s*this\.scene\)/,
+        attachCall: /this\.scene\.add\(record\.actor\.object\)/,
+      },
+    ];
+
+    for (const { file, compileCall, attachCall } of orderedLoaders) {
+      const source = readFileSync(path.join(THREE_ROOT, file), "utf8");
+      const compileMatch = compileCall.exec(source);
+      const attachMatch = attachCall.exec(source);
+      expect(compileMatch, `${file} must invoke compilePipelines`).not.toBeNull();
+      expect(attachMatch, `${file} must attach its model`).not.toBeNull();
+      expect(compileMatch!.index, `${file} must compile before attaching`).toBeLessThan(attachMatch!.index);
+    }
   });
 
   it("wires WorldmapScene compilePipelines into every owned runtime model, terrain, and FX manager", () => {

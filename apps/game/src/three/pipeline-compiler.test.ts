@@ -1,21 +1,26 @@
 import {
   BoxGeometry,
   DirectionalLight,
+  DoubleSide,
   Group,
   HalfFloatType,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   PerspectiveCamera,
   PointLight,
   RenderTarget,
   Scene,
+  Sprite,
+  SpriteMaterial,
   Texture,
   type Object3D,
 } from "three";
 import type { WebGPURenderer } from "three/webgpu";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createWorldFxBackend } from "./fx/world-fx-backends";
 import { MapFinish } from "./map-finish";
-import { createPipelineCompiler, warmTexturePipeline } from "./pipeline-compiler";
+import { createPipelineCompiler } from "./pipeline-compiler";
 import { resetWorldmapRenderDiagnostics, snapshotWorldmapRenderDiagnostics } from "./perf/worldmap-render-diagnostics";
 
 describe("createPipelineCompiler", () => {
@@ -234,19 +239,76 @@ describe("createPipelineCompiler", () => {
     shadowMap.dispose();
   });
 
-  it("warms standalone textures through the shared pipeline compiler chokepoint", async () => {
+  it("warms FX icon textures using each backend's exact drawn material and depth state", async () => {
     const texture = new Texture();
     const scene = new Scene();
+    const compiledObjects: Object3D[] = [];
     const initTexture = vi.fn();
-    const compileAsync = vi.fn(async () => undefined);
     const compile = createPipelineCompiler({
-      getRenderer: () => ({ compileAsync, initTexture }),
+      getRenderer: () => ({
+        initTexture,
+        compileAsync: async (object: Object3D) => {
+          compiledObjects.push(object);
+        },
+      }),
       getCamera: () => new PerspectiveCamera(),
     });
 
-    await warmTexturePipeline(compile, scene, texture);
+    const billboardBackend = createWorldFxBackend({
+      scene,
+      capabilities: {
+        supportsBillboardMeshFx: true,
+        supportsDomLabelFx: false,
+        supportsSpriteSceneFx: false,
+      },
+    });
+    await billboardBackend.warmIconTexture?.(texture, compile);
+    await billboardBackend.warmIconTexture?.(texture, compile, "ground");
+
+    const legacyBackend = createWorldFxBackend({
+      scene,
+      capabilities: {
+        supportsBillboardMeshFx: false,
+        supportsDomLabelFx: false,
+        supportsSpriteSceneFx: true,
+      },
+    });
+    await legacyBackend.warmIconTexture?.(texture, compile);
+
+    expect(compiledObjects).toHaveLength(3);
+    const billboardMesh = compiledObjects[0] as Mesh;
+    expect(billboardMesh).toBeInstanceOf(Mesh);
+    expect(billboardMesh.material).toBeInstanceOf(MeshBasicMaterial);
+    expect(billboardMesh.material).toMatchObject({
+      map: texture,
+      transparent: true,
+      side: DoubleSide,
+      depthTest: false,
+      depthWrite: false,
+    });
+
+    const decalMesh = compiledObjects[1] as Mesh;
+    expect(decalMesh).toBeInstanceOf(Mesh);
+    expect(decalMesh.material).toMatchObject({
+      map: texture,
+      transparent: true,
+      side: DoubleSide,
+      depthTest: true,
+      depthWrite: false,
+    });
+
+    const legacySprite = compiledObjects[2] as Sprite;
+    expect(legacySprite).toBeInstanceOf(Sprite);
+    expect(legacySprite.material).toBeInstanceOf(SpriteMaterial);
+    expect(legacySprite.material).toMatchObject({
+      map: texture,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+    });
 
     expect(initTexture).toHaveBeenCalledWith(texture);
-    expect(compileAsync).toHaveBeenCalledTimes(1);
+    billboardBackend.destroy();
+    legacyBackend.destroy();
   });
 });

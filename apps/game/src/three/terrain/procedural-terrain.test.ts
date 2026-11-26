@@ -598,15 +598,15 @@ describe("ProceduralTerrain", () => {
 
   it("precompiles terrain prop pools through compilePipelines before attaching them to the terrain root", async () => {
     const scene = new Scene();
-    let attachedBeforeCompile = false;
-    const terrain = new ProceduralTerrain({
-      scene,
-      compilePipelines: async (object, targetScene) => {
-        expect(targetScene).toBe(scene);
-        attachedBeforeCompile = terrain.object3d.children.includes(object);
-      },
+    let attachedBeforeCompile = true;
+    const compilePipelines = vi.fn(async (object, targetScene) => {
+      expect(targetScene).toBe(scene);
+      attachedBeforeCompile = terrain.object3d.children.includes(object);
     });
+    const terrain = new ProceduralTerrain({ scene, compilePipelines });
     await terrain.loadProps();
+    expect(compilePipelines).toHaveBeenCalledOnce();
+    expect(compilePipelines).toHaveBeenCalledWith(expect.objectContaining({ name: "terrain-prop-pools" }), scene);
     expect(attachedBeforeCompile).toBe(false);
     expect(terrain.arePropsLoaded()).toBe(true);
     terrain.dispose();
