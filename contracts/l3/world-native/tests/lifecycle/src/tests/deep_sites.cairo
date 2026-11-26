@@ -416,6 +416,17 @@ fn two_allies_garrison_a_claimed_site_and_a_rival_takes_it_slot_by_slot() {
     let attacker = deployed(rival, game_id, 2, 1500);
     beside(d, attacker, target, 2);
     refused(
+        owner,
+        game_id,
+        Command::GuardAttack(
+            crate::combat_actions::GuardAttack {
+                guard: guard_slot(slot(target, 2)), explorer_id: attacker.explorer_id,
+            },
+        ),
+        FIXTURE_START,
+        "Deep garrisons only defend their site",
+    );
+    refused(
         rival,
         game_id,
         garrison(attacker, slot(target, 1), troops(100)),
@@ -426,6 +437,9 @@ fn two_allies_garrison_a_claimed_site_and_a_rival_takes_it_slot_by_slot() {
     assert_eq!((holder(d, slot(target, 3)), garrisoned(d, slot(target, 3))), (0, 0));
     assert_eq!((holder(d, slot(target, 2)), garrisoned(d, slot(target, 2))), (second_home, troops(300)));
     assert_eq!(owner_of(d, target.entity_id, game_id), owner_of(d, first_home, game_id));
+    applied(owner, game_id, garrison(first, slot(target, 3), troops(100)), FIXTURE_START);
+    assert_eq!(garrisoned(d, slot(target, 3)), troops(100));
+    applied(owner, game_id, withdraw(slot(target, 3), first, troops(100)), FIXTURE_START);
     applied(rival, game_id, fight(attacker, target), FIXTURE_START);
     assert_eq!(owner_of(d, target.entity_id, game_id), owner_of(d, army(d, attacker).owner, game_id));
     assert_eq!(holding(d, target), 2);

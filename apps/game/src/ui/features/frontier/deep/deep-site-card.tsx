@@ -14,7 +14,6 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { armyOaths, configManager, getStructureName, oathAttackStamina } from "@bibliothecadao/eternum";
 import {
   deepAlliesGarrison,
-  deepArmyLife,
   deepTroopsLife,
   homeAspect,
   isBesideDeepSite,
@@ -25,6 +24,7 @@ import {
   type DeepGarrison,
   type DeepSiteView as Site,
   type NativeFactStore,
+  viewerAspects,
 } from "@bibliothecadao/eternum/game-client";
 import { catalogAspectId, deepSites, formatDuration, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
@@ -128,9 +128,9 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
     <DeepSiteView
       site={catalog.key}
       ring={site.ring}
-      rates={site.open ? siteRates(setup.store, game_id, site, selected, now) : null}
+      rates={site.open ? siteRates(setup.store, game_id, site, selected) : null}
       opening={site.open ? null : siteOpening(setup.store, game_id, site)}
-      guard={guardView(setup.store, game_id, site, selected, now)}
+      guard={guardView(setup.store, game_id, site, account.account ? BigInt(account.account.address) : null, now)}
       fight={
         verb === "attack" && selected
           ? readDeepSiteFight(setup.store, site, { army: selected.army, timestamp: now })
@@ -144,13 +144,7 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
 
 type Selected = ReturnType<typeof useSelectedOwnArmy>;
 
-function siteRates(
-  store: NativeFactStore,
-  game_id: number,
-  site: Site,
-  selected: Selected,
-  now: number,
-): DeepRates | null {
+function siteRates(store: NativeFactStore, game_id: number, site: Site, selected: Selected): DeepRates | null {
   const deep = store.require("DeepRules", { game_id });
   const pays = sitePays(store, game_id, site);
   if (!pays) return null;
@@ -164,8 +158,7 @@ function siteRates(
   }
   return {
     tickSeconds: Number(store.require("SliceRules", { game_id }).tick_config.armies_tick_in_seconds),
-    drain:
-      Number(selected ? deepArmyLife(store, selected.army, now).lossPerTick : deep.loss_per_tick) / RESOURCE_PRECISION,
+    drain: Number(deep.loss_per_tick) / RESOURCE_PRECISION,
     glory: pays.includes("glory") ? site.buildingPay : 0,
     height: pays.includes("height") ? site.buildingPay : 0,
     essence: pays.includes("essence") ? Number(deep.core_per_tick) / RESOURCE_PRECISION : 0,
@@ -214,7 +207,7 @@ function ownsSite(store: NativeFactStore, game_id: number, site: Site, selected:
   return store.require("Structure", { game_id, entity_id: selected.army.owner }).owner === owner;
 }
 
-function guardView(store: NativeFactStore, game_id: number, site: Site, selected: Selected, now: number): DeepGuard {
+function guardView(store: NativeFactStore, game_id: number, site: Site, viewer: bigint | null, now: number): DeepGuard {
   if (site.beastTroops > 0n)
     return {
       kind: "beast",
@@ -226,25 +219,25 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, selected
   const paid = ({ troops }: DeepGarrison) => (troops.count > loss ? troops.count - loss : 0n);
   const total = site.garrisons.reduce((sum, garrison) => sum + paid(garrison), 0n);
   const aspectId = catalogAspectId(site.aspect);
-  const viewerAspect = selected ? homeAspect(store, game_id, selected.army.owner) : undefined;
   return {
     kind: "held",
     aspectId,
-    ally: viewerAspect !== undefined && viewerAspect === aspectId,
+    ally: viewerAspects(store, game_id, viewer).has(aspectId),
     next: site.garrisons[0]?.slot,
     slots: site.garrisons.map((garrison) => {
       const { slot, home, troops } = garrison;
+      const realm = store.require("Structure", { game_id, entity_id: home });
       const life = deepTroopsLife(store, game_id, troops.count, loss, now);
       return {
         slot,
         category: troops.category,
         tier: troops.tier,
-        realm: getStructureName(store.require("Structure", { game_id, entity_id: home }), store).name,
+        realm: getStructureName(realm, store).name,
         troops: Number(troops.count) / RESOURCE_PRECISION,
         lossPerTick: Number(loss) / RESOURCE_PRECISION,
         ticks: { left: life.ticksLeft, time: formatDuration(life.secondsLeft) },
         share: total === 0n ? 0 : Number((paid(garrison) * 100n) / total),
-        mine: selected !== null && home === selected.army.owner,
+        mine: realm.owner === viewer,
       };
     }),
   };

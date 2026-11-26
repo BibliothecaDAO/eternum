@@ -189,6 +189,8 @@ describe("the Deep site's live native binding", () => {
       expect(hud.host.querySelectorAll('[data-deep-slot="filled"]')).toHaveLength(0);
       expect(hud.host.querySelectorAll('[data-deep-slot="empty"]')).toHaveLength(nativeRuleConstants.DEEP_GUARD_SLOTS);
       expect(hud.host.querySelector("[data-deep-poisoned]")).toBeNull();
+      act(() => useUIStore.getState().selectOnMap(null));
+      expect(hud.host.querySelector("[data-deep-tag]")?.textContent).toBe(held);
     } finally {
       hud.unmount();
     }
@@ -244,7 +246,7 @@ it("counts only actual army-tick boundaries before a day ending between ticks", 
   }
 });
 
-it("shows the selected army's own Deep poison, Vitriol included, on a site's drain cell", () => {
+it("shows the site's garrison drain even when the selected field army has Vitriol", () => {
   const hud = draw();
   try {
     const mine = () =>
@@ -267,7 +269,7 @@ it("shows the selected army's own Deep poison, Vitriol included, on a site's dra
       ]),
     );
     hud.render(<DeepSiteCard site={mine()} onClose={() => {}} />);
-    expect(drain()).toBe(`−${oaths.VITRIOL_LOSS_PER_TICK.toLocaleString("en-US")}`);
+    expect(drain()).toBe(`−${base.toLocaleString("en-US")}`);
   } finally {
     hud.unmount();
   }

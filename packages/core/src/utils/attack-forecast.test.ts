@@ -207,7 +207,7 @@ function frontier() {
     write("Structure", structureRow(entity_id, 0n, StructureType.DeepSite));
     write("DeepSite", { game_id: GAME_ID, entity_id, kind: nativeRuleConstants.DEEP_MINE, ring, day: 0n, aspect });
     occupy(entity_id, tile, TileOccupier.DeepSite, true);
-    write("Guard", guardRow(entity_id, 0, beast));
+    if (aspect === 0) write("Guard", guardRow(entity_id, 0, beast));
   };
 
   const holdDeepSite = (site_id: number, tile: Tile, aspect: number, home: number, count: number, slot = 1) => {

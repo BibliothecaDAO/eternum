@@ -6,7 +6,7 @@ import {
   nativeResearchConstants,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { deepSites, RESOURCE_PRECISION, TileOccupier } from "@bibliothecadao/types";
+import { deepSites, RESOURCE_PRECISION, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
@@ -93,7 +93,19 @@ export const deepScenario = (closedRing = false): LabScenario => {
   for (const [place, { site, offset }] of ring.entries()) {
     const beast = rules.beasts[site.id]!;
     const entityId = BigInt(800 + place);
+    const held = site.key === HELD_SITE && place < deepSites.length;
     facts.push(
+      {
+        model: "Structure",
+        key: `0xdeed${place}`,
+        value: wire({
+          ...home,
+          entity_id: entityId,
+          owner: held ? home.owner : 0n,
+          base: { ...home.base, category: StructureType.DeepSite, level: 0, troop_max_explorer_count: 0,
+            troop_max_guard_count: nativeRuleConstants.DEEP_GUARD_SLOTS },
+        }),
+      },
       {
         model: "DeepSite",
         key: `0xdeea${place}`,
@@ -103,7 +115,7 @@ export const deepScenario = (closedRing = false): LabScenario => {
           kind: site.id,
           ring: 0,
           day: "0",
-          aspect: site.key === HELD_SITE && place < deepSites.length ? 1 : 0,
+          aspect: held ? 1 : 0,
         },
       },
       {
@@ -116,10 +128,11 @@ export const deepScenario = (closedRing = false): LabScenario => {
           row: center.row + offset.y - half,
           alt: false,
           category: TileOccupier.DeepSite,
-          is_structure: false,
+          is_structure: true,
         },
       },
-      {
+    );
+    if (!held) facts.push({
         model: "Guard",
         key: `0xdeec${place}`,
         value: wire({
@@ -129,12 +142,11 @@ export const deepScenario = (closedRing = false): LabScenario => {
           troops: {
             ...army.troops,
             category: beast.bow ? "Crossbowman" : "Knight",
-            count: site.key === HELD_SITE && place < deepSites.length ? 0n : beast.count,
+            count: beast.count,
           },
           destroyed_tick: 0,
         }),
-      },
-    );
+      });
   }
   const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: army.owner });
   let learned = knowledge.learned;

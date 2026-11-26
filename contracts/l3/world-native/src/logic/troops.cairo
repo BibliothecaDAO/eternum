@@ -548,6 +548,7 @@ pub mod TroopsLogic {
                     let site = crate::logic::deep_garrisons::is_site(game_id, slot.structure_id);
                     if site {
                         home.base.level = source.level;
+                        guard.destroyed_tick = 0;
                     }
                     self.add_guard_troops(key, ref guard, source.troops, command.amount, home, rules, timestamp, false);
                     crate::logic::guards::GuardState::save(key, guard);

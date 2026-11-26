@@ -146,15 +146,15 @@ export function deepBuildingPay(pay: NativeRows["DeepRules"]["building_pay"], op
 function todaysBeast(store: NativeFactStore, today: DeepDay, site: NativeRows["DeepSite"]) {
   if (site.day > BigInt(today.index)) throw new Error("Deep site is ahead of the game clock");
   const current = site.day === BigInt(today.index);
-  const guard = current
-    ? store.require("Guard", { game_id: site.game_id, structure_id: site.entity_id, slot: 0 })
-    : undefined;
   const beast = today.rules.beasts[site.kind];
   if (!beast) throw new Error(`Site ${site.entity_id} is outside its preset rules`);
   const category = beast.bow ? TroopType.Crossbowman : TroopType.Knight;
-  if (!guard) return { current, guard, troops: beast.count, category };
-  const garrisoned = store.get("GarrisonSlot", { game_id: site.game_id, structure_id: site.entity_id, slot: 0 });
-  return { current, guard, troops: garrisoned ? 0n : guard.troops.count, category: guard.troops.category };
+  if (!current) return { current, guard: undefined, troops: beast.count, category };
+  const key = { game_id: site.game_id, structure_id: site.entity_id, slot: 0 };
+  if (site.aspect !== 0) return { current, guard: store.get("Guard", key), troops: 0n, category };
+  const guard = store.get("Guard", key);
+  if (!guard && !store.absenceKnown("Guard", key).known) throw new IncompleteDeepSyncError("Deep beast is unknown");
+  return { current, guard, troops: guard?.troops.count ?? 0n, category: guard?.troops.category ?? category };
 }
 
 type RingOpening = { known: { open: boolean; realms: number } } | { unknown: string };
@@ -210,13 +210,12 @@ export function isBesideDeepSite(tile: { col: number; row: number; alt: boolean 
   return tile.alt === site.position.alt && journeyDistance({ x: tile.col, y: tile.row }, site.position) === 1;
 }
 
-export function readDeepSiteDefender(store: NativeFactStore, site: DeepSiteView) {
-  if (!site.guard) return undefined;
-  const rules = store.require("SliceRules", { game_id: site.guard.game_id });
+export function readDeepSiteDefender(store: NativeFactStore, gameId: number, site: DeepSiteView) {
   const garrison = site.garrisons[0];
-  if (garrison) return { troops: inlineTroops(garrison.troops, rules), oaths: 0, guarding: true };
-  if (site.beastTroops === 0n) return undefined;
-  return { troops: inlineTroops(site.guard.troops, rules), oaths: 0, guarding: false };
+  const troops = garrison?.troops ?? (site.beastTroops > 0n ? site.guard?.troops : undefined);
+  if (!troops) return undefined;
+  const rules = store.require("SliceRules", { game_id: gameId });
+  return { troops: inlineTroops(troops, rules), oaths: 0, guarding: garrison !== undefined };
 }
 
 function readGarrisons(

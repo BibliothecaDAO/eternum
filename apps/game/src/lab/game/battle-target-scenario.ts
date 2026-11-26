@@ -47,6 +47,8 @@ export function deepBattleTargetScenario(): LabScenario {
   const guard = store.require("Guard", { game_id: 1, structure_id: site.id, slot: garrison.slot });
   const aspect = store.require("HomeAspect", { game_id: 1, home: garrison.home });
   const held = store.require("DeepSite", { game_id: 1, entity_id: site.id });
+  const structure = store.require("Structure", { game_id: 1, entity_id: site.id });
+  const holder = store.require("Structure", { game_id: 1, entity_id: garrison.home });
   const rules = store.require("SliceRules", { game_id: 1 });
   const tickSeconds = 3600;
   const tick = Math.floor(game.startsAt / tickSeconds);
@@ -59,6 +61,7 @@ export function deepBattleTargetScenario(): LabScenario {
     },
     { model: "HomeAspect", key: store.wireKeyOf("HomeAspect", aspect)!, value: wire({ ...aspect, aspect: 2 }) },
     { model: "DeepSite", key: store.wireKeyOf("DeepSite", held)!, value: wire({ ...held, aspect: 2 }) },
+    { model: "Structure", key: store.wireKeyOf("Structure", structure)!, value: wire({ ...structure, owner: holder.owner }) },
     {
       model: "SliceRules",
       key: store.wireKeyOf("SliceRules", rules)!,

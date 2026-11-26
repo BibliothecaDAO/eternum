@@ -58,7 +58,7 @@ export const DEEP_SITE_CASES = {
       aspectId: 2,
       ally: true,
       next: 3,
-      slots: withShares([slot(3, "Aldor", 6_000), slot(2, "Brek", 4_000, true)]),
+      slots: withShares([slot(3, "Aldor", 6_000, true), { ...slot(2, "Aldor", 4_000, true), category: "Crossbowman" }]),
     },
     order: "guarding",
   },

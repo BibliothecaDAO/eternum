@@ -377,6 +377,7 @@ pub fn guard_attack(
 ) {
     let rules = authorize(game_id, context);
     let home = owned_structure(game_id, command.guard.structure_id, actor);
+    assert!(home.base.category != crate::taxonomy::DEEP_SITE_CATEGORY, "Deep garrisons only defend their site");
     assert!(command.guard.slot < home.base.troop_max_guard_count, "invalid guard slot");
     let guard_key = crate::guards::GuardKey {
         game_id, structure_id: command.guard.structure_id, slot: command.guard.slot,

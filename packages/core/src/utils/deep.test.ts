@@ -153,7 +153,7 @@ describe("the shared Deep", () => {
     ];
     rows.DeepSite = [0, 1, 2].map((ring) => ({ game_id: 7, entity_id: BigInt(24 + ring), kind: 0, ring, day: 0n }));
     rows.DeepSite.push({ game_id: 7, entity_id: 27n, kind: 3, ring: 1, day: 0n });
-    rows.Guard = rows.DeepSite.map((site) => ({
+    rows.Guard = rows.DeepSite.filter((site) => site.aspect === 0).map((site) => ({
       game_id: 7,
       structure_id: site.entity_id,
       slot: 0,

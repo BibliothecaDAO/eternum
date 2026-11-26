@@ -10,7 +10,6 @@ import {
   ResourcesIds,
   RESOURCE_PRECISION,
 } from "@bibliothecadao/types";
-import iconMeanings from "../../asset-sources/facets/semantic-map.json" with { type: "json" };
 import release from "../../../../contracts/l3/world-native/schema/release-definition.json" with { type: "json" };
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import sharp from "sharp";
@@ -484,7 +483,6 @@ function battleTargetSteps(attack, place, withOaths = false) {
           army &&
           guard &&
           openingRecorded &&
-          (!withOaths || place !== "Deep" || played.guardOaths?.includes(fields[23])) &&
           BigInt(army.troops.count) === BigInt(attacker) * 1_000_000_000n &&
           BigInt(guard.troops.count) === BigInt(defender) * 1_000_000_000n &&
           played.forecast?.length === 2 &&
@@ -497,12 +495,6 @@ function battleTargetSteps(attack, place, withOaths = false) {
     ),
   ];
 }
-
-const ORDER_MEANING = Object.fromEntries(
-  Object.entries(iconMeanings).flatMap(([name, meaning]) =>
-    meaning.orderId === undefined ? [] : [[meaning.orderId, name]],
-  ),
-);
 
 const FIGHT_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -4364,31 +4356,7 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
   const forecast = browser.read(
     `Array.from(document.querySelectorAll('[data-kit-sheet] [data-fight-side]'), node => node.getAttribute('aria-label'))`,
   );
-  const guardOaths = browser.read(
-    `Array.from(document.querySelectorAll("[data-guard-oaths]"), node => {
-      const meanings = ${JSON.stringify(ORDER_MEANING)};
-      const visible = Array.from(node.querySelectorAll("[data-oath] img")).filter(image => {
-        const box = image.getBoundingClientRect();
-        const shown = image.checkVisibility({ opacityProperty: true, visibilityProperty: true });
-        return shown && box.width > 0 && box.height > 0;
-      });
-      const painted = visible.filter(image =>
-        image.dataset.icon === meanings[image.closest("[data-oath]").dataset.oath],
-      );
-      const mask = Number(node.dataset.guardOaths);
-      const shownMask = painted.reduce((bits, image) => bits | (1 << (Number(image.closest("[data-oath]").dataset.oath) - 1)), 0);
-      const held = mask.toString(2).split("").filter(bit => bit === "1").length;
-      return visible.length === held && painted.length === held && shownMask === mask ? mask : 0;
-    })`,
-  );
   extraScreenshot("deep-forecast-before-attack");
-  if (guardOaths.some(Boolean)) {
-    browser.read(
-      `(() => { document.querySelector('[data-guard-oaths]')?.scrollIntoView({ block: "nearest" }); return true; })()`,
-    );
-    await sleep(HOVER_SETTLE_MS);
-    extraScreenshot("guard-oaths");
-  }
   const after = browser.read("window.__labChain?.sent.length ?? 0");
   const armyId = browser.observe().selection?.army?.id;
   watchFor(
@@ -4396,10 +4364,10 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
     "fought",
     `(() => {
     const answer = (window.__labChain?.sent ?? []).slice(${after}).filter(({ command }) => command.kind === "BattleGuard").at(-1);
-    const rows = (answer?.answered ?? []).filter(({ model, value }) => model === "ExplorerTroops" && value !== null);
-    const ours = rows.find(({ value }) => Number(value.explorer_id) === ${armyId});
-    const theirs = rows.find(({ value }) => Number(value.explorer_id) !== ${armyId});
-    const count = (row) => (BigInt(row.value.troops.count) / 1000000000n).toLocaleString("en-US");
+    const rows = (answer?.answered ?? []).filter(({ value }) => value !== null);
+    const ours = rows.find(({ model, value }) => model === "ExplorerTroops" && Number(value.explorer_id) === ${armyId});
+    const theirs = rows.find(({ model, value }) => model === "Guard" && Number(value.structure_id) === Number(answer.command.fields.defender_id));
+    const count = (row) => (BigInt(row.value.troops.count) / ${RESOURCE_PRECISION}n).toLocaleString("en-US");
     return ours && theirs && document.querySelector('.mp-at[data-key="army:${armyId}"] .mp-count')?.textContent === count(ours)
       && [...document.querySelectorAll('[data-deep-slots] [data-deep-slot="filled"]')].some((slot) => (slot.getAttribute('aria-label') ?? '').includes(count(theirs)));
   })()`,
@@ -4420,7 +4388,7 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
     (state) => state.sheet === JOINED_SITE.name,
     SHEET_WAIT_MS,
   );
-  return { forecast, guardOaths, watching: true };
+  return { forecast, watching: true };
 }
 
 const deepLossVectors = readFileSync(
