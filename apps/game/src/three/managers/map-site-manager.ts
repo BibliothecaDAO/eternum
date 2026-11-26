@@ -13,7 +13,6 @@ import {
 import {
   IncompleteDeepSyncError,
   deepGateTiles,
-  isAspectAlly,
   nativeRuleConstants,
   readDeepBeastTroops,
   readDeepRingOpening,
@@ -446,18 +445,18 @@ export class MapSiteManager {
   }
 
   private holderColor(site: DeepSiteView | undefined): string | null {
-    const holder = site?.garrisons[0];
-    if (!holder) return null;
+    if (!site?.aspect) return null;
     const gameId = configManager.getActiveGameId();
-    const home = this.store.get("Structure", { game_id: gameId, entity_id: holder.home });
-    const owner = home?.owner ?? 0n;
+    const structure = this.store.get("Structure", { game_id: gameId, entity_id: site.id });
+    if (!structure) return null;
+    const { owner } = structure;
     const watched = watchedSide(owner);
     if (watched) return watched.colour;
     const viewer = accountAddress() ?? null;
     return SIDE_HEX[
       sideOf({
         isMine: isViewerOwner(owner, viewer),
-        isAlly: isAspectAlly(this.store, gameId, viewer, holder.home),
+        isAlly: viewerAspects(this.store, gameId, viewer).has(site.aspect),
         owner: { address: owner },
       })
     ];

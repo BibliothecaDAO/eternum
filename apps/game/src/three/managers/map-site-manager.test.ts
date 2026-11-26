@@ -431,6 +431,8 @@ describe("the Deep's sites on the map", () => {
       ],
       Structure: [
         { game_id: gameId, entity_id: 9n, owner: 0x111n, metadata: { order: firstOrder!.orderId } },
+        { game_id: gameId, entity_id: 10n, owner: 0x111n },
+        { game_id: gameId, entity_id: 11n, owner: 0x333n },
         { game_id: gameId, entity_id: 19n, owner: 0x222n, metadata: { order: secondOrder!.orderId } },
         { game_id: gameId, entity_id: 29n, owner: 0x333n, metadata: { order: rivalOrder!.orderId } },
       ],
@@ -455,14 +457,14 @@ describe("the Deep's sites on the map", () => {
     const scene = new Scene();
     const manager = new MapSiteManager(scene, projection as never, store as never, plates as never, noGates() as never);
     await vi.waitFor(() => {
-      expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.ally);
+      expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.own);
       expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.enemy);
     });
     heldSpy.mockClear();
     const watchedGame = { chainId: "WATCH_TEST", gameId, name: "WATCH_TEST" };
     setActiveGame(watchedGame);
     overrideSpectateIntent(true);
-    setOpenGameSeats(watchedGame, [0x333n, 0x222n]);
+    setOpenGameSeats(watchedGame, [0x333n, 0x111n]);
     try {
       expect(heldSpy).toHaveBeenCalledWith(0, SEAT_COLOURS[0]);
       expect(heldSpy).toHaveBeenCalledWith(0, SEAT_COLOURS[1]);
@@ -483,14 +485,14 @@ describe("the Deep's sites on the map", () => {
     heldSpy.mockClear();
     headAt(120);
     expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.own);
-    expect(heldSpy).toHaveBeenCalledWith(0, null);
+    expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.enemy);
     expect(emblem.count).toBe(1);
     expect(cell.getX(0)).toBe(resolveOrderSignumCell(firstOrder!.orderId));
 
     heldSpy.mockClear();
     headAt(180);
-    expect(heldSpy).toHaveBeenCalledWith(0, null);
-    expect(heldSpy.mock.calls.every(([, color]) => color === null)).toBe(true);
+    expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.own);
+    expect(heldSpy).toHaveBeenCalledWith(0, SIDE_HEX.enemy);
     expect(emblem.count).toBe(0);
 
     manager.destroy();

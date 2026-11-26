@@ -70,7 +70,7 @@ export type DeepGuard =
       aspectId: AspectId;
       ally: boolean;
       slots: readonly DeepSlot[];
-      next: number;
+      next: number | undefined;
     }
   | { kind: "open" };
 
@@ -334,11 +334,13 @@ const GuardStrip = ({ site, guard }: { site: DeepSiteProps["site"]; guard: DeepG
         <span className={guard.ally ? "text-hud-ally" : "text-hud-bad"}>{aspectName(guard.aspectId)}</span>
         <span>
           · {DEEP_WORDS.guardsCount(guard.slots.length, nativeRuleConstants.DEEP_GUARD_SLOTS)} ·{" "}
-          {DEEP_WORDS.slotsOpen(free.length)} ·
+          {DEEP_WORDS.slotsOpen(free.length)}
         </span>
-        <span data-deep-poisoned className="deep-poisoned">
-          {DEEP_WORDS.poisoned}
-        </span>
+        {filled.length > 0 && (
+          <span data-deep-poisoned className="deep-poisoned">
+            {" · "}{DEEP_WORDS.poisoned}
+          </span>
+        )}
       </div>
       <div className="deep-guards">
         <div className="deep-guards__row">

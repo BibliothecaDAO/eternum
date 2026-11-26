@@ -219,10 +219,9 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, selected
     return {
       kind: "beast",
       troops: Number(site.beastTroops) / RESOURCE_PRECISION,
-      category: site.guard!.troops.category,
+      category: site.beastCategory,
     };
-  const next = site.garrisons[0];
-  if (!next) return { kind: "open" };
+  if (site.aspect === 0) return { kind: "open" };
   const loss = store.require("DeepRules", { game_id }).loss_per_tick;
   const paid = ({ troops }: DeepGarrison) => (troops.count > loss ? troops.count - loss : 0n);
   const total = site.garrisons.reduce((sum, garrison) => sum + paid(garrison), 0n);
@@ -232,7 +231,7 @@ function guardView(store: NativeFactStore, game_id: number, site: Site, selected
     kind: "held",
     aspectId,
     ally: viewerAspect !== undefined && viewerAspect === aspectId,
-    next: next.slot,
+    next: site.garrisons[0]?.slot,
     slots: site.garrisons.map((garrison) => {
       const { slot, home, troops } = garrison;
       const life = deepTroopsLife(store, game_id, troops.count, loss, now);

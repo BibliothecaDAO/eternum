@@ -1,5 +1,5 @@
 import { inlineTroops } from "../../managers/troop-stamina";
-import { deepSites, layerName } from "@bibliothecadao/types";
+import { deepSites, layerName, TroopType } from "@bibliothecadao/types";
 import { type NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeRuleConstants } from "../../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeFactStore } from "../native-fact-store";
@@ -21,6 +21,7 @@ export interface DeepSiteView {
   buildingPay: number;
   day: number;
   beastTroops: bigint;
+  beastCategory: NativeRows["Guard"]["troops"]["category"];
   guard: NativeRows["Guard"] | undefined;
   aspect: number;
   /** Defensive order: the highest live slot is faced next. */
@@ -112,7 +113,7 @@ function deepSiteView(
   if (!kind) throw new Error(`Unknown site kind ${site.kind}`);
   const gameId = site.game_id;
   const entered = requireEntered(realmsEntered(store, gameId, today));
-  const { current, guard, troops } = todaysBeast(store, today, site);
+  const { current, guard, troops, category } = todaysBeast(store, today, site);
   const isOpen = (row: NativeRows["DeepSite"]) => ringOpens(entered, siteRing(today, row));
   const payingAt = Math.max(entered, siteRing(today, site).realms);
   const openOfKind = [...store.inGame("DeepSite", gameId)].filter(
@@ -130,6 +131,7 @@ function deepSiteView(
     buildingPay: deepBuildingPay(today.rules.building_pay, openOfKind),
     day: today.index,
     beastTroops: troops,
+    beastCategory: category,
     guard,
     aspect: current ? site.aspect : 0,
     garrisons: current ? readGarrisons(store, today, site, timestamp) : [],
@@ -149,9 +151,10 @@ function todaysBeast(store: NativeFactStore, today: DeepDay, site: NativeRows["D
     : undefined;
   const beast = today.rules.beasts[site.kind];
   if (!beast) throw new Error(`Site ${site.entity_id} is outside its preset rules`);
-  if (!guard) return { current, guard, troops: beast.count };
+  const category = beast.bow ? TroopType.Crossbowman : TroopType.Knight;
+  if (!guard) return { current, guard, troops: beast.count, category };
   const garrisoned = store.get("GarrisonSlot", { game_id: site.game_id, structure_id: site.entity_id, slot: 0 });
-  return { current, guard, troops: garrisoned ? 0n : guard.troops.count };
+  return { current, guard, troops: garrisoned ? 0n : guard.troops.count, category: guard.troops.category };
 }
 
 type RingOpening = { known: { open: boolean; realms: number } } | { unknown: string };

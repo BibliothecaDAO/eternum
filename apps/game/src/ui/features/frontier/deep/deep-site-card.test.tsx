@@ -11,7 +11,7 @@ import { deepScenario, HELD_SITE } from "@/lab/game/deep-scenario";
 import { raceScenario } from "@/lab/game/race-scenario";
 import { baneScenario } from "@/lab/game/bane-scenario";
 import { configManager, type ResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { deepSites, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { aspectName, catalogAspectId, deepSites, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
 import { nativeOathConstants as oaths, nativeRuleConstants, readDeepSites } from "@bibliothecadao/eternum/game-client";
 import { DEEP_WORDS } from "@/ui/design-system/kit/words";
@@ -168,11 +168,23 @@ describe("the Deep site's live native binding", () => {
   it("offers no order on a site its own Aspect holds, and shows the garrison in its slots", () => {
     const hud = draw();
     try {
-      expect(hud.host.querySelector("[data-deep-tag]")?.textContent).toBe("Held · Prowess");
+      const site = readDeepSites(hud.store, hud.scenario.startsAt, 1).find((candidate) => candidate.kind === HELD)!;
+      const held = DEEP_WORDS.tag.held(aspectName(catalogAspectId(site.aspect)));
+      expect(hud.host.querySelector("[data-deep-tag]")?.textContent).toBe(held);
       expect(hud.host.textContent).toContain(DEEP_WORDS.guarding);
       expect(hud.button("Attack")).toBeUndefined();
       expect(hud.host.querySelectorAll('[data-deep-slot="filled"]')).toHaveLength(1);
       expect(hud.host.querySelectorAll("[data-deep-slot]")).toHaveLength(4);
+      act(() => hud.store.applyFacts(site.garrisons.map(({ slot }) => ({
+        model: "GarrisonSlot" as const,
+        key: hud.store.wireKeyOf("GarrisonSlot", { game_id: 1, structure_id: site.id, slot })!,
+        value: null,
+      }))));
+      hud.render();
+      expect(hud.host.querySelector("[data-deep-tag]")?.textContent).toBe(held);
+      expect(hud.host.querySelectorAll('[data-deep-slot="filled"]')).toHaveLength(0);
+      expect(hud.host.querySelectorAll('[data-deep-slot="empty"]')).toHaveLength(nativeRuleConstants.DEEP_GUARD_SLOTS);
+      expect(hud.host.querySelector("[data-deep-poisoned]")).toBeNull();
     } finally {
       hud.unmount();
     }
