@@ -17,15 +17,7 @@ import {
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { Price } from "@/ui/design-system/kit/price-faces";
-import {
-  MOVE,
-  SITE_OATH,
-  SITE_USE_WORDS,
-  STAMINA,
-  USE,
-  USING,
-  wellRefillShare,
-} from "@/ui/design-system/kit/words";
+import { MOVE, SITE_OATH, SITE_USE_WORDS, STAMINA, USE, USING, wellRefillShare } from "@/ui/design-system/kit/words";
 import {
   ActionPaths,
   ActionType,
