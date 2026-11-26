@@ -3,12 +3,12 @@ import {
   Light,
   Mesh,
   NoBlending,
+  Scene,
   SkinnedMesh,
   type Camera,
   type Material,
   type Object3D,
   type RenderTarget,
-  type Scene,
   type Texture,
 } from "three";
 import { vec4 } from "three/tsl";
@@ -33,6 +33,7 @@ type ReadyShadowLight = Light & { shadow: { map: RenderTarget; camera: Camera } 
 
 const pendingRendererCompiles = new WeakMap<PipelineCompilingRenderer, Promise<void>>();
 let sharedShadowPassMaterial: MeshBasicNodeMaterial | null = null;
+let sharedShadowCompileScene: Scene | null = null;
 
 export function createPipelineCompiler(input: {
   getRenderer: () => PipelineCompilingRenderer | undefined;
@@ -102,16 +103,14 @@ async function compileShadowPasses(
   const hiddenMeshes = hideNonShadowCasters(object);
   const previousTarget = renderer.getRenderTarget();
   const previousMRT = renderer.getMRT?.();
-  const previousOverride = targetScene.overrideMaterial;
+  const shadowScene = getShadowCompileScene();
   try {
-    targetScene.overrideMaterial = getShadowPassMaterial();
     renderer.setMRT?.(null);
     for (const light of shadowLights) {
       renderer.setRenderTarget(light.shadow.map);
-      await renderer.compileAsync(object, light.shadow.camera, targetScene);
+      await renderer.compileAsync(object, light.shadow.camera, shadowScene);
     }
   } finally {
-    targetScene.overrideMaterial = previousOverride;
     renderer.setRenderTarget(previousTarget);
     if (renderer.setMRT) renderer.setMRT(previousMRT ?? null);
     for (const [mesh, visible] of hiddenMeshes) mesh.visible = visible;
@@ -151,6 +150,15 @@ function hideNonShadowCasters(object: Object3D): Array<[Mesh, boolean]> {
     }
   });
   return hidden;
+}
+
+function getShadowCompileScene(): Scene {
+  if (!sharedShadowCompileScene) {
+    const scene = new Scene();
+    scene.overrideMaterial = getShadowPassMaterial();
+    sharedShadowCompileScene = scene;
+  }
+  return sharedShadowCompileScene;
 }
 
 function getShadowPassMaterial(): MeshBasicNodeMaterial {

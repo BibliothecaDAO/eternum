@@ -387,10 +387,16 @@ function renderClearedMainScene(
   pipeline: RendererFramePipeline,
 ): void {
   const previousAutoClear = renderer.autoClear;
+  const previousTarget = renderer.getRenderTarget?.();
+  const previousMRT = renderer.getMRT?.();
   renderer.autoClear = true;
+  renderer.setRenderTarget?.(null);
+  renderer.setMRT?.(null);
   try {
     finish.render(pipeline.mainScene, pipeline.mainCamera);
   } finally {
+    renderer.setRenderTarget?.(previousTarget ?? null);
+    renderer.setMRT?.(previousMRT ?? null);
     renderer.autoClear = previousAutoClear;
   }
 }

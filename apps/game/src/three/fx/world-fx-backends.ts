@@ -495,7 +495,7 @@ abstract class BaseWorldFxBackend implements WorldFxBackend {
   protected readonly root = new THREE.Group();
 
   constructor(
-    scene: THREE.Scene,
+    protected readonly scene: THREE.Scene,
     protected readonly capabilities: RendererFxCapabilities,
   ) {
     this.root.name = "world-fx";
@@ -627,7 +627,8 @@ class WebGpuBillboardWorldFxBackend extends BaseWorldFxBackend {
     renderMode?: FXRenderMode,
   ): Promise<void> {
     if (!compilePipelines || !this.capabilities.supportsBillboardMeshFx) return;
-    const material = renderMode === "ground" ? createGroundDecalMaterial(texture) : createBillboardIconMaterial(texture);
+    const material =
+      renderMode === "ground" ? createGroundDecalMaterial(texture) : createBillboardIconMaterial(texture);
     await warmMeshIconMaterial(this.scene, material, compilePipelines);
   }
 }
