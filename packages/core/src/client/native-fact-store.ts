@@ -26,6 +26,7 @@ import {
   scopeInputKeys,
   rowInGameSyncScope,
   isExpeditionScopedModel,
+  isSharedGameSyncModel,
   type GameSyncScope,
 } from "../sync/model-manifest";
 
@@ -163,15 +164,24 @@ export class NativeFactStore implements GameSyncStore {
   }
 
   private scopeUnknown(model: NativeModelName, row: Record<string, unknown>): string | undefined {
+    const placed = this.scopePlacement(model, row);
+    if (placed.unknown) return placed.unknown;
+    return placed.known === "outside" ? `OUTSIDE_SNAPSHOT_SCOPE: ${model}` : undefined;
+  }
+
+  private scopePlacement(model: NativeModelName, row: Record<string, unknown>): NativeFactResult<"inside" | "outside"> {
     const snapshot = this.snapshot;
-    if (!snapshot?.complete || snapshot.gameId !== Number(row.game_id)) return `INCOMPLETE_SNAPSHOT: ${model}`;
-    if (snapshot.actor === undefined) return `INCOMPLETE_ACTOR_SNAPSHOT: ${model}`;
+    if (!snapshot?.complete || snapshot.gameId !== Number(row.game_id)) return { unknown: `INCOMPLETE_SNAPSHOT: ${model}` };
+    if (snapshot.actor === undefined) return { unknown: `INCOMPLETE_ACTOR_SNAPSHOT: ${model}` };
     const result = isExpeditionScopedModel(model)
       ? this.subscriptionScope()
       : { known: { actor: snapshot.actor ?? undefined } };
-    if (!result.known) return result.unknown;
-    if (!rowInGameSyncScope(model, row, result.known)) return `OUTSIDE_SNAPSHOT_SCOPE: ${model}`;
-    return undefined;
+    if (!result.known) return result;
+    return { known: rowInGameSyncScope(model, row, result.known) ? "inside" : "outside" };
+  }
+
+  private isSharedRowBeyondParent(model: NativeModelName, parent: NativeModelName, parentKeys: Record<string, unknown>) {
+    return isSharedGameSyncModel(model) && this.scopePlacement(parent, parentKeys).known === "outside";
   }
 
   private absenceUnknown(model: NativeModelName, keys: object, absence: DeclaredAbsence): string | undefined {
@@ -182,7 +192,10 @@ export class NativeFactStore implements GameSyncStore {
       const parentKeys = Object.fromEntries(
         Object.entries(absence.parentKeys!).map(([parent, child]) => [parent, key[child]]),
       );
-      if (!this.get(absence.parent, parentKeys as NativeKeys[typeof absence.parent]))
+      if (
+        !this.get(absence.parent, parentKeys as NativeKeys[typeof absence.parent]) &&
+        !this.isSharedRowBeyondParent(model, absence.parent, parentKeys)
+      )
         return `UNKNOWN_PARENT: ${model} requires ${absence.parent}`;
     }
     return undefined;
