@@ -51,7 +51,16 @@ const draw = (now?: number, scenario = deepScenario()) => {
     act(() =>
       root.render(
         <GameProvider
-          value={{ store, systemCalls: { attack_explorer_vs_guard: attack, explorer_guard_swap: guard, guard_explorer_swap: withdraw } } as never}
+          value={
+            {
+              store,
+              systemCalls: {
+                attack_explorer_vs_guard: attack,
+                explorer_guard_swap: guard,
+                guard_explorer_swap: withdraw,
+              },
+            } as never
+          }
           account={{ address: scenario.player } as never}
         >
           {content ?? (
@@ -213,26 +222,55 @@ describe("the Deep site's live native binding", () => {
       const slot = nativeRuleConstants.DEEP_GUARD_SLOTS - 1;
       typeAmount(DEEP_WORDS.guardAmount, 100);
       await act(async () => hud.button(DEEP_WORDS.guard)!.click());
-      expect(hud.guard).toHaveBeenCalledWith(expect.objectContaining({
-        from_explorer_id: 201, to_structure_id: Number(site().id), to_guard_slot: slot, count: 100 * RESOURCE_PRECISION,
-      }));
+      expect(hud.guard).toHaveBeenCalledWith(
+        expect.objectContaining({
+          from_explorer_id: 201,
+          to_structure_id: Number(site().id),
+          to_guard_slot: slot,
+          count: 100 * RESOURCE_PRECISION,
+        }),
+      );
       const army = hud.store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
       const existing = site().garrisons[0]!;
-      act(() => hud.store.applyFacts([
-        { model: "ExplorerTroops", key: hud.store.wireKeyOf("ExplorerTroops", army)!, value: {
-          ...army,
-          troops: { ...army.troops, count: army.troops.count - 100n * BigInt(RESOURCE_PRECISION) },
-        } },
-        { model: "GarrisonSlot", key: "0xaaaa", value: { game_id: 1, structure_id: site().id, slot, home: army.owner } },
-        { model: "Guard", key: "0xaaab", value: { game_id: 1, structure_id: site().id, slot, destroyed_tick: 0,
-          troops: { ...existing.troops, count: 100n * BigInt(RESOURCE_PRECISION) } } },
-      ]));
+      act(() =>
+        hud.store.applyFacts([
+          {
+            model: "ExplorerTroops",
+            key: hud.store.wireKeyOf("ExplorerTroops", army)!,
+            value: {
+              ...army,
+              troops: { ...army.troops, count: army.troops.count - 100n * BigInt(RESOURCE_PRECISION) },
+            },
+          },
+          {
+            model: "GarrisonSlot",
+            key: "0xaaaa",
+            value: { game_id: 1, structure_id: site().id, slot, home: army.owner },
+          },
+          {
+            model: "Guard",
+            key: "0xaaab",
+            value: {
+              game_id: 1,
+              structure_id: site().id,
+              slot,
+              destroyed_tick: 0,
+              troops: { ...existing.troops, count: 100n * BigInt(RESOURCE_PRECISION) },
+            },
+          },
+        ]),
+      );
       hud.render();
       typeAmount(DEEP_WORDS.withdrawAmount, 50);
       await act(async () => hud.button(WITHDRAW)!.click());
-      expect(hud.withdraw).toHaveBeenCalledWith(expect.objectContaining({
-        from_structure_id: Number(site().id), from_guard_slot: slot, to_explorer_id: 201, count: 50 * RESOURCE_PRECISION,
-      }));
+      expect(hud.withdraw).toHaveBeenCalledWith(
+        expect.objectContaining({
+          from_structure_id: Number(site().id),
+          from_guard_slot: slot,
+          to_explorer_id: 201,
+          count: 50 * RESOURCE_PRECISION,
+        }),
+      );
     } finally {
       hud.unmount();
     }
