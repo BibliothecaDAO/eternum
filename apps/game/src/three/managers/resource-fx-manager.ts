@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { createWorldFxBackend, type WorldFxBackend, type WorldFxHandle } from "../fx/world-fx-backends";
 import type { RendererFxCapabilities } from "../renderer-fx-capabilities";
 import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
+import type { PipelineCompiler } from "../pipeline-compiler";
 
 interface ResourceFXOptions {
   labelText?: string;
@@ -16,6 +17,7 @@ interface ResourceFXOptions {
 interface ResourceFXManagerOptions {
   backendFactory?: typeof createWorldFxBackend;
   capabilities?: RendererFxCapabilities;
+  compilePipelines?: PipelineCompiler;
 }
 
 interface ActiveResourceFx {
@@ -30,10 +32,13 @@ export class ResourceFXManager {
   private readonly defaultSize: number;
   private readonly textureLoader: THREE.TextureLoader;
   private readonly backend: WorldFxBackend;
+  private readonly compilePipelines?: PipelineCompiler;
+  private destroyed = false;
 
   constructor(scene: THREE.Scene, defaultSize: number = 1.2, options: ResourceFXManagerOptions = {}) {
     this.scene = scene;
     this.defaultSize = defaultSize;
+    this.compilePipelines = options.compilePipelines;
     this.textureLoader = new THREE.TextureLoader();
     this.backend = (options.backendFactory ?? createWorldFxBackend)({
       capabilities: options.capabilities ?? snapshotRendererFxCapabilities(),
@@ -135,6 +140,7 @@ export class ResourceFXManager {
   }
 
   public destroy(): void {
+    this.destroyed = true;
     this.activeResourceFX.clear();
     this.backend.destroy();
     this.resourceTextures.forEach((texture) => {
@@ -161,9 +167,24 @@ export class ResourceFXManager {
           loadedTexture.colorSpace = THREE.SRGBColorSpace;
           loadedTexture.minFilter = THREE.LinearFilter;
           loadedTexture.magFilter = THREE.LinearFilter;
-          this.resourceTextures.set(resourceId, loadedTexture);
-          this.inflightLoads.delete(resourceId);
-          resolve(loadedTexture);
+          const finish = () => {
+            this.inflightLoads.delete(resourceId);
+            if (this.destroyed) {
+              loadedTexture.dispose();
+              reject(new Error("ResourceFXManager destroyed"));
+              return;
+            }
+            this.resourceTextures.set(resourceId, loadedTexture);
+            resolve(loadedTexture);
+          };
+          if (!this.compilePipelines || !this.backend.warmIconTexture) {
+            finish();
+            return;
+          }
+          void this.backend
+            .warmIconTexture(loadedTexture, this.compilePipelines)
+            .catch(() => undefined)
+            .finally(finish);
         },
         undefined,
         (error) => {

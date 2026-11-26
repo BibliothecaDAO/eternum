@@ -1,7 +1,16 @@
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { BiomeType, StructureType } from "@bibliothecadao/types";
-import { EventDispatcher, Group, InstancedMesh, Mesh, PerspectiveCamera, Scene } from "three";
+import {
+  EventDispatcher,
+  Group,
+  InstancedMesh,
+  Mesh,
+  MeshBasicMaterial,
+  PerspectiveCamera,
+  Scene,
+  type WebGLRenderer,
+} from "three";
 import { describe, expect, it, vi } from "vitest";
 
 import { DEEP_SURFACE_CODE } from "./ethereal-depths";
@@ -182,9 +191,18 @@ describe("ProceduralTerrain", () => {
     const replacement = prepareTerrainPage(request(BiomeType.Grassland, true));
     terrain.present([replacement]);
     expect(dispose).toHaveBeenCalledOnce();
-    expect(released).toHaveBeenCalledOnce();
+    expect(released).not.toHaveBeenCalled();
 
     const replacementMesh = terrain.object3d.getObjectByName("procedural-terrain-land") as Mesh;
+    replacementMesh.onAfterRender(
+      {} as WebGLRenderer,
+      new Scene(),
+      new PerspectiveCamera(),
+      replacementMesh.geometry,
+      replacementMesh.material as never,
+      null as never,
+    );
+    expect(released).toHaveBeenCalledOnce();
     const replacementDispose = vi.spyOn(replacementMesh.geometry, "dispose");
     terrain.dispose();
     terrain.dispose();
@@ -498,6 +516,99 @@ describe("ProceduralTerrain", () => {
     });
 
     expect(terrain.present([first, second]).settlementSites).toBe(1);
+    terrain.dispose();
+  });
+
+  it("retains replaced page render objects until the replacement land mesh finishes its main pass", () => {
+    const terrain = new ProceduralTerrain();
+    const initial = prepareTerrainPage(blockRequest("page", 0));
+    terrain.present([initial]);
+
+    const findLandMesh = (): Mesh | null => {
+      let found: Mesh | null = null;
+      terrain.object3d.traverse((object) => {
+        if (object instanceof Mesh && object.name === "procedural-terrain-land") found = object;
+      });
+      return found;
+    };
+
+    const firstLand = findLandMesh();
+    expect(firstLand).not.toBeNull();
+    let disposedCount = 0;
+    (firstLand as unknown as EventDispatcher<{ dispose: object }>).addEventListener("dispose", () => {
+      disposedCount += 1;
+    });
+
+    const updated = prepareTerrainPage(blockRequest("page", 0, { exploredCell: [0, 6] }));
+    terrain.present([updated]);
+
+    const replacementLand = findLandMesh();
+    expect(replacementLand).not.toBeNull();
+    expect(replacementLand).not.toBe(firstLand);
+    expect(disposedCount).toBe(0);
+
+    const scene = new Scene();
+    const camera = new PerspectiveCamera();
+    const overrideMaterial = new MeshBasicMaterial();
+    scene.overrideMaterial = overrideMaterial;
+    replacementLand!.onAfterRender(
+      {} as WebGLRenderer,
+      scene,
+      camera,
+      replacementLand!.geometry,
+      overrideMaterial,
+      null as never,
+    );
+    expect(disposedCount).toBe(0);
+
+    scene.overrideMaterial = null;
+    replacementLand!.onAfterRender(
+      {} as WebGLRenderer,
+      scene,
+      camera,
+      replacementLand!.geometry,
+      replacementLand!.material as never,
+      null as never,
+    );
+    expect(disposedCount).toBe(1);
+
+    overrideMaterial.dispose();
+    terrain.dispose();
+  });
+
+  it("flushes retired page groups on dispose even if the replacement page never rendered", () => {
+    const terrain = new ProceduralTerrain();
+    terrain.present([prepareTerrainPage(blockRequest("page", 0))]);
+    let firstLand: Mesh | null = null;
+    terrain.object3d.traverse((object) => {
+      if (object instanceof Mesh && object.name === "procedural-terrain-land") firstLand = object;
+    });
+    expect(firstLand).not.toBeNull();
+    let disposedCount = 0;
+    (firstLand as unknown as EventDispatcher<{ dispose: object }>).addEventListener("dispose", () => {
+      disposedCount += 1;
+    });
+
+    terrain.present([prepareTerrainPage(blockRequest("page", 0, { exploredCell: [1, 6] }))]);
+    expect(disposedCount).toBe(0);
+
+    terrain.dispose();
+    expect(disposedCount).toBe(1);
+  });
+
+  it("precompiles terrain prop pools through compilePipelines before attaching them to the terrain root", async () => {
+    const scene = new Scene();
+    let attachedBeforeCompile = true;
+    const compilePipelines = vi.fn(async (object, targetScene) => {
+      expect(targetScene).toBe(scene);
+      attachedBeforeCompile = terrain.object3d.children.includes(object);
+    });
+    const terrain = new ProceduralTerrain({ scene, compilePipelines });
+    await terrain.loadProps();
+    expect(compilePipelines).toHaveBeenCalledOnce();
+    expect(compilePipelines).toHaveBeenCalledWith(expect.objectContaining({ name: "terrain-prop-pools" }), scene);
+    expect(attachedBeforeCompile).toBe(false);
+    expect(terrain.arePropsLoaded()).toBe(true);
     terrain.dispose();
   });
 });

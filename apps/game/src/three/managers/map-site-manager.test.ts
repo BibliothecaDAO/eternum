@@ -662,6 +662,41 @@ describe("the Deep's sites on the map", () => {
     manager.destroy();
     clock.tick = 0;
   });
+
+  it("compiles a site model through compilePipelines before attaching it to the scene", async () => {
+    mode.id = "frontier";
+    load.mockReset();
+    load.mockResolvedValue({ scene: new Mesh(new BoxGeometry(1, 2, 1), new MeshBasicMaterial()) });
+    const scene = new Scene();
+    const tiles = [tile(4, TileOccupier.Well)];
+    const projection = { getTiles: () => tiles, subscribeTiles: () => () => {} };
+    const plates = { setLabel: vi.fn(), retainOnly: vi.fn(), dispose: vi.fn(), setHover: vi.fn(), clearHover: vi.fn() };
+    const store = { get: () => undefined, inGame: () => [], subscribe: () => () => {} };
+    let finishCompile!: () => void;
+    const compilePipelines = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishCompile = resolve;
+        }),
+    );
+
+    const manager = new MapSiteManager(
+      scene,
+      projection as never,
+      store as never,
+      plates as never,
+      noGates() as never,
+      undefined,
+      compilePipelines,
+    );
+
+    await vi.waitFor(() => expect(compilePipelines).toHaveBeenCalledOnce());
+    expect(scene.children).toHaveLength(0);
+
+    finishCompile();
+    await vi.waitFor(() => expect(scene.children).toHaveLength(1));
+    manager.destroy();
+  });
 });
 
 function guardedSites(tick: number | undefined, beaten: string[] = [], closed: string[] = []) {

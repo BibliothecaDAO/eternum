@@ -59,6 +59,7 @@ import {
   type TileSpatialRenderable,
 } from "@bibliothecadao/eternum/game-sync";
 import { Box3, Object3D, Scene } from "three";
+import type { PipelineCompiler } from "../pipeline-compiler";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
 import { getWorldPositionForHex } from "../utils";
 import { gltfLoader } from "../utils/utils";
@@ -141,6 +142,7 @@ export class MapSiteManager {
     private readonly plates: MapPlateScope,
     private readonly gates: MapPlateScope,
     private readonly terrain: TerrainSurface = FLAT_TERRAIN_SURFACE,
+    private readonly compilePipelines: PipelineCompiler = async () => {},
   ) {
     this.unsubscribe = projection.subscribeTiles((changes) => {
       const onLayer = projectionChangesForLayer(changes, activeMapLayer());
@@ -403,11 +405,26 @@ export class MapSiteManager {
     return row !== undefined && this.deepKindOf(safeInteger(row.entity_id)) !== undefined;
   }
 
+  public async prewarmExploreSites(): Promise<void> {
+    if (this.destroyed) return;
+    const exploreKeys = new Set<string>(MAP_SITES.map((site) => site.kind));
+    const pending: Promise<void>[] = [];
+    for (const site of this.sites) {
+      if (!exploreKeys.has(site.key) || this.models.has(site.key)) continue;
+      this.load(site);
+      const loading = this.loading.get(site.key);
+      if (loading) pending.push(loading);
+    }
+    await Promise.all(pending);
+  }
+
   private load(site: DrawnSite): void {
     if (this.loading.has(site.key)) return;
     const loading = site
       .model()
-      .then(({ model, height }) => {
+      .then(async ({ model, height }) => {
+        if (this.destroyed) return model.dispose();
+        await this.compilePipelines(model.group, this.scene);
         if (this.destroyed) return model.dispose();
         this.heights.set(site.key, height * site.scale);
         model.group.visible = this.modelVisible;

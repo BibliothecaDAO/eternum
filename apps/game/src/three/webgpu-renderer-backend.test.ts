@@ -10,7 +10,13 @@ import { resetRendererStartupTimings, snapshotRendererStartupTimings } from "./p
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
 import { createRenderableOverlayScene } from "./renderer-overlay-passes.test-fixture";
 
-const drawsThrough = (renderer: { render(scene: unknown, camera: unknown): void }) => ({
+const drawsThrough = (renderer: {
+  compileAsync?(object: unknown, camera: unknown, targetScene?: unknown): Promise<unknown>;
+  render(scene: unknown, camera: unknown): void;
+}) => ({
+  compileObjectAsync: async (object: unknown, camera: unknown, targetScene: unknown) => {
+    await renderer.compileAsync?.(object, camera, targetScene);
+  },
   render: (scene: unknown, camera: unknown) => renderer.render(scene, camera),
   dispose: () => {},
 });

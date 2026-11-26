@@ -78,4 +78,31 @@ describe("spires on the map", () => {
     expect(loadAsync).toHaveBeenCalledOnce();
     manager.destroy();
   });
+
+  it("compiles the main spire model through compilePipelines before attaching it to the scene", async () => {
+    loadAsync.mockClear();
+    const projection = {
+      getTiles: () => [tile(1, TileOccupier.Spire)],
+      subscribeTiles: () => () => {},
+    };
+    const scene = new Scene();
+    const release: Array<() => void> = [];
+    const compilePipelines = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          release.push(resolve);
+        }),
+    );
+
+    const manager = new SpireManager(scene, projection as never, new Group(), undefined, undefined, compilePipelines);
+    await vi.waitFor(() => expect(compilePipelines).toHaveBeenCalledOnce());
+    expect(scene.children).toHaveLength(0);
+
+    release.shift()!();
+    await vi.waitFor(() => expect(scene.children).toHaveLength(1));
+    await vi.waitFor(() => expect(release.length).toBeGreaterThanOrEqual(1));
+    release.splice(0).forEach((resolve) => resolve());
+    await manager.prepare();
+    manager.destroy();
+  });
 });
