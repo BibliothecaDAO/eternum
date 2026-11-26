@@ -1,5 +1,5 @@
 import { BiomeType } from "@bibliothecadao/types";
-import { type EventDispatcher, type Group, type Mesh, type Object3D, Vector3 } from "three";
+import { type EventDispatcher, type Group, type Mesh, type Object3D, Scene, Vector3 } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCreatureAnimator } from "./creatures/biome-creature-animator.js";
 import { creatureTraits } from "./creatures/biome-creature-catalog";
@@ -688,6 +688,41 @@ describe("terrain wildlife lifecycle", () => {
     expect(released).toHaveBeenCalledTimes(releasedMeshes.length);
     wildlife.dispose();
     expect(wildlife.object3d.children).toHaveLength(0);
+  });
+
+  it("compiles a biome creature rig through compilePipelines before attaching it to the wildlife root", async () => {
+    const scene = new Scene();
+    let finishFirstCompile: (() => void) | null = null;
+    const compilePipelines = vi.fn(() => {
+      if (!finishFirstCompile) {
+        return new Promise<void>((resolve) => {
+          finishFirstCompile = resolve;
+        });
+      }
+      return Promise.resolve();
+    });
+    const wildlife = new TerrainWildlife(
+      () => ({ biome: BiomeType.Grassland, height: 0, normal: [0, 1, 0] }),
+      () => {},
+      compilePipelines,
+      scene,
+    );
+    try {
+      wildlife.sync(
+        cells().map((cell) => ({ ...cell, biome: BiomeType.Grassland })),
+        [],
+      );
+      const loading = wildlife.load();
+      await vi.waitFor(() => expect(compilePipelines).toHaveBeenCalledOnce());
+      expect(wildlife.object3d.children).toHaveLength(0);
+
+      finishFirstCompile!();
+      await loading;
+      expect(wildlife.object3d.children.length).toBeGreaterThan(0);
+    } finally {
+      finishFirstCompile?.();
+      wildlife.dispose();
+    }
   });
 });
 

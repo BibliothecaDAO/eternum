@@ -39,7 +39,7 @@ const REQUIRED_WARMUP_OWNERS = [
 ];
 
 const MODEL_LOADER_SYMBOL =
-  /\b(gltfLoader|loadCosmeticAsset|ensureCosmeticAsset|resolveAllSkinGltfs|resolvePrimarySkinGltf|loadTerrainPropCatalog|loadBiomeCreature|loadDeepLandmark)\b/;
+  /\b(gltfLoader|loadCosmeticAsset|resolveAllSkinGltfs|resolvePrimarySkinGltf|loadTerrainPropCatalog|loadBiomeCreature|loadDeepLandmark)\b/;
 
 const HAS_WARMUP_INVOCATION =
   /\b(?:this\.)?compilePipelines(?:\?\.)?\s*\(|\bcreatePipelineCompiler\s*\(|\bwarmIconTexture(?:\?\.)?\s*\(/;
