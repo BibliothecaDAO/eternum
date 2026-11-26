@@ -1,4 +1,5 @@
-import { PICK_EFFECT_WORDS } from "@/ui/design-system/kit/words";
+import { OATH_PICK, PICK_EFFECT_WORDS } from "@/ui/design-system/kit/words";
+import { formatShort } from "@bibliothecadao/types";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -113,10 +114,10 @@ it("waits on its army until the army is picked, then offers three compact cards 
     PICK_EFFECT_WORDS.revealTileStamina,
     PICK_EFFECT_WORDS.siteRewards,
   ]);
-  expect(host.querySelectorAll("[data-reroll-oath]")).toHaveLength(3);
-  expect(host.querySelector(".oath-pick__head .ui-chip")?.textContent).toBe(
-    String(nativeFragmentConstants.OATH_REROLL_FRAGMENTS),
+  expect([...host.querySelectorAll<HTMLButtonElement>("[data-reroll-oath]")].map((swap) => swap.textContent)).toEqual(
+    Array(3).fill(formatShort(nativeFragmentConstants.OATH_REROLL_FRAGMENTS)),
   );
+  expect(host.querySelector(".oath-pick__head .ui-chip")?.textContent).toBe(OATH_PICK.swapsShort);
   expect(host.querySelector(".oath-pick__title span")?.textContent).toBe("Slot 1 of 2 · 1,498 Knights");
   expect(swear().textContent).toBe("Swear Power");
   await act(async () => host.querySelector<HTMLButtonElement>(`[data-oath-id="${oaths.FOX}"]`)!.click());
@@ -155,7 +156,7 @@ it("marks the swapped card New and its head Used once the pick's one reroll is s
   expect(state.rerollOath).toHaveBeenCalledWith(expect.objectContaining({ index: 0 }));
   state.progress.oath_pick = oaths.GIANTS - 1 + ((oaths.FOX - 1) << 4) + ((oaths.RAGE - 1) << 8) + oaths.REROLLED;
   draw();
-  expect(host.querySelector(".oath-pick__head .ui-chip")?.textContent).toBe("Used");
+  expect(host.querySelector(".oath-pick__head .ui-chip")?.textContent).toBe(OATH_PICK.rerollUsed);
   expect(host.querySelectorAll("[data-reroll-oath]")).toHaveLength(0);
   expect(cards().map((card) => card.querySelector(".oath-choice__new")?.textContent ?? null)).toEqual([
     "New",

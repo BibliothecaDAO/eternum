@@ -71,6 +71,7 @@ function OathChoice({
   disabled,
   onChoose,
   swap,
+  spread,
 }: {
   id: number;
   pickBase: PickEffectBase;
@@ -79,6 +80,7 @@ function OathChoice({
   disabled: boolean;
   onChoose: () => void;
   swap?: { index: number; disabled: boolean; onSwap: () => void };
+  spread: boolean;
 }) {
   const name = oathName(id);
   return (
@@ -118,8 +120,10 @@ function OathChoice({
             data-reroll-oath={swap.index}
             aria-label={OATH_PICK.swapFor(name, REDRAW_PRICE)}
           >
-            <Icon name="refresh" size={18} />
-            <i>{OATH_PICK.swap}</i>
+            <Icon name="refresh" size={16} />
+            {spread && <i>{OATH_PICK.swap} ·</i>}
+            <Icon name="fragment" size={16} />
+            <b>{formatShort(REDRAW_COST)}</b>
           </button>
         )
       )}
@@ -226,11 +230,9 @@ function ArmyOathPick({
         </span>
         {fragments !== null &&
           (redrawn ? (
-            <HudChip>{OATH_PICK.used}</HudChip>
+            <HudChip tone="good">{OATH_PICK.rerollUsed}</HudChip>
           ) : (
-            <HudChip icons={["refresh", "fragment"]} label={OATH_PICK.redrawPrice}>
-              {formatShort(REDRAW_COST)}
-            </HudChip>
+            <HudChip>{spread ? OATH_PICK.swapsPerPick : OATH_PICK.swapsShort}</HudChip>
           ))}
       </header>
       <div className="oath-pick__body">
@@ -267,6 +269,7 @@ function ArmyOathPick({
                   fresh={redrawn && swappedAt === index}
                   disabled={busy}
                   onChoose={() => setChosenAt(index)}
+                  spread={spread}
                   swap={
                     rerollIndex !== null && fragments !== null
                       ? {

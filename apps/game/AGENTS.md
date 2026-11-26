@@ -632,13 +632,14 @@ commands until answered. It waits as a shrine on the army's token (the clear's V
 opens when the army is picked. Choose a card and Swear it with the gold button; with full slots, choose the held Oath it
 replaces, or Pass for the stamina shown on its row, capped at the army's maximum. The open pick cannot be dismissed by
 Escape, Back or an outside press. One Swap a pick replaces the card it is on with an Oath neither held nor shown, for
-the Fragments the head shows (none in the Deep); the swapped card reads New and the head Used. The playtest swaps the
-first card before it chooses. `lab-actions-oath-pick` and `lab-actions-oath-replace` play `/lab/game?scenario=oath-pick`
-and `oath-replace` on desktop and phone, recording the signed choice and resulting held Oath. Each path opens Delete,
-checks the Oath loss warning, cancels to retain the army, then confirms and checks the army and Oath record disappear.
-The freed slot retains its stamina. Native tests cover Shrine uses, persistence, deletion and remustering with an empty
-Oath record; these browser proofs use recorded offers. `lab-oath-decline` and `lab-oath-pass-capped` check the pass
-reward, including overflow at the maximum.
+the Fragments its own button shows (none in the Deep), while the head says the pick has one swap; the swapped card reads
+New, every other Swap goes and the head reads Reroll used. The playtest swaps the first card before it chooses.
+`lab-actions-oath-pick` and `lab-actions-oath-replace` play `/lab/game?scenario=oath-pick` and `oath-replace` on desktop
+and phone, recording the signed choice and resulting held Oath. Each path opens Delete, checks the Oath loss warning,
+cancels to retain the army, then confirms and checks the army and Oath record disappear. The freed slot retains its
+stamina. Native tests cover Shrine uses, persistence, deletion and remustering with an empty Oath record; these browser
+proofs use recorded offers. `lab-oath-decline` and `lab-oath-pass-capped` check the pass reward, including overflow at
+the maximum.
 
 Vitriol changes the Deep's field and guard loss to its generated rule value. `/lab/game?scenario=oath-vitriol` and
 `lab-oath-vitriol` choose it through the Oath panel, read the reduced field drain, and join the Ethereal mine on desktop
