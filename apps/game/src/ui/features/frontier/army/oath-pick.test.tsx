@@ -173,3 +173,19 @@ it("passes for the stamina it gives, capped at the bar's maximum", async () => {
   await act(async () => pass.click());
   expect(state.chooseOath).toHaveBeenCalledWith(expect.objectContaining({ oath: null, replace: null }));
 });
+
+it("tags 7 to 9 character arrow and word hero badges as compact long while keeping Selected on the chosen card", () => {
+  state.progress.oath_pick = oaths.DETECTION - 1 + ((oaths.ENLIGHTENMENT - 1) << 4) + ((oaths.REFLECTION - 1) << 8);
+  draw();
+  expect(cards().map((card) => card.querySelector(".oath-choice__selected")?.textContent ?? null)).toEqual([
+    OATH_PICK.selected,
+    null,
+    null,
+  ]);
+  expect(cards().map((card) => card.querySelector(".oath-choice__effect")?.getAttribute("data-long"))).toEqual([
+    "compact",
+    null,
+    "compact",
+  ]);
+  expect(cards().every((card) => card.querySelector(".oath-choice__well") !== null)).toBe(true);
+});
