@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { REALM_ASSETS, REALM_PATHS, realmModelIndex, isWonderModelPath } from "./realm-design";
-import { aspectWonderKitPath } from "./realm-kit";
+import { ASPECT_WONDER_KIT_LEVELS, aspectWonderKitPath } from "./realm-kit";
 import { getStructureModelPaths, isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
 import { aspects, rankName, RealmLevels, StructureType } from "@bibliothecadao/types";
 
@@ -35,21 +35,24 @@ describe("picked realm series", () => {
     for (const level of [-1, 4, 1.5, NaN]) expect(() => realmModelIndex(level, false, 1)).toThrow();
   });
 
-  it("maps every catalog Aspect to its procedural Wonder kit at Settlement and its Aspect Wonder model at higher ranks", () => {
+  it("maps every catalog Aspect to its procedural Wonder kit at Settlement and City and its Aspect Wonder model at higher ranks", () => {
     const seenIds = new Set<string>();
     for (const { id: aspect, name } of aspects) {
-      const settlementIndex = realmModelIndex(RealmLevels.Settlement, true, 1003, aspect);
-      const settlementAsset = REALM_ASSETS[settlementIndex];
-      expect(settlementAsset.wonder).toBe(true);
-      expect(settlementAsset.aspect).toBe(aspect);
-      expect(settlementAsset.level).toBe(RealmLevels.Settlement);
-      expect(settlementAsset.id).toBe(`wonder-${name.toLowerCase()}-0`);
-      expect(settlementAsset.label).toBe(`Aspect Wonder · ${name} · ${rankName(RealmLevels.Settlement)}`);
-      expect(settlementAsset.path).toBe(aspectWonderKitPath(aspect, RealmLevels.Settlement));
-      expect(isWonderModelPath(settlementAsset.path)).toBe(true);
-      expect(isRealmModelPath(settlementAsset.path) && isSettlementModelPath(settlementAsset.path)).toBe(true);
+      for (const level of ASPECT_WONDER_KIT_LEVELS) {
+        const kitIndex = realmModelIndex(level, true, 1003, aspect);
+        const kitAsset = REALM_ASSETS[kitIndex];
+        expect(kitAsset.wonder).toBe(true);
+        expect(kitAsset.aspect).toBe(aspect);
+        expect(kitAsset.level).toBe(level);
+        expect(kitAsset.id).toBe(`wonder-${name.toLowerCase()}-${level}`);
+        expect(kitAsset.label).toBe(`Aspect Wonder · ${name} · ${rankName(level)}`);
+        expect(kitAsset.path).toBe(aspectWonderKitPath(aspect, level));
+        expect(isWonderModelPath(kitAsset.path)).toBe(true);
+        expect(isRealmModelPath(kitAsset.path) && isSettlementModelPath(kitAsset.path)).toBe(true);
+        seenIds.add(kitAsset.id);
+      }
 
-      const higherIndex = realmModelIndex(RealmLevels.City, true, 1003, aspect);
+      const higherIndex = realmModelIndex(RealmLevels.Kingdom, true, 1003, aspect);
       const higherAsset = REALM_ASSETS[higherIndex];
       expect(higherAsset.wonder).toBe(true);
       expect(higherAsset.aspect).toBe(aspect);
@@ -57,13 +60,15 @@ describe("picked realm series", () => {
       expect(higherAsset.label).toBe(`Aspect Wonder · ${name}`);
       expect(isWonderModelPath(higherAsset.path)).toBe(true);
       expect(isRealmModelPath(higherAsset.path) && isSettlementModelPath(higherAsset.path)).toBe(true);
-      for (const level of [RealmLevels.Kingdom, RealmLevels.Empire]) {
-        expect(realmModelIndex(level, true, 1003, aspect)).toBe(higherIndex);
-      }
-      seenIds.add(settlementAsset.id);
+      expect(realmModelIndex(RealmLevels.Empire, true, 1003, aspect)).toBe(higherIndex);
     }
-    expect(seenIds.size).toBe(aspects.length);
+    expect(seenIds.size).toBe(aspects.length * 2);
 
-    expect(REALM_ASSETS[realmModelIndex(RealmLevels.Settlement, true, 1003, null)].id).toBe("standing-stones");
+    const unalignedSettlement = REALM_ASSETS[realmModelIndex(RealmLevels.Settlement, true, 1003, null)];
+    expect(unalignedSettlement.id).toBe("standing-stones");
+    expect(unalignedSettlement.aspect).toBeUndefined();
+    const unalignedCity = REALM_ASSETS[realmModelIndex(RealmLevels.City, true, 1003, null)];
+    expect(unalignedCity.id).toBe("oath-arch");
+    expect(unalignedCity.aspect).toBeUndefined();
   });
 });
