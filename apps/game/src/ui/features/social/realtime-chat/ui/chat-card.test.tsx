@@ -6,10 +6,11 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The real chat over the lab's game, its map the real one the HUD reads: only the map's movement stands in.
-const moved = vi.hoisted(() => ({ openOnMap: vi.fn(), store: null as unknown }));
+const moved = vi.hoisted(() => ({ openOnMap: vi.fn(), visit: vi.fn(), store: null as unknown }));
 vi.mock("@/sync/active-game-client", async (original) => ({
   ...(await original<typeof import("@/sync/active-game-client")>()),
   getActiveGameStore: () => moved.store,
+  startRealmVisit: moved.visit,
 }));
 vi.mock("@/play/navigation/open-place", async (original) => ({
   ...(await original<typeof import("@/play/navigation/open-place")>()),
@@ -233,6 +234,7 @@ beforeEach(() => {
   heldReads = [];
   useEventFeedStore.getState().dismiss();
   moved.openOnMap.mockClear();
+  moved.visit.mockClear();
   vi.stubGlobal("fetch", serve);
   host = document.createElement("div");
   document.body.append(host);
@@ -271,7 +273,16 @@ describe("a player's card, in a game", () => {
   it("opens the map on the player's realm from it", () => {
     act(() => nameButton("m1")!.click());
     act(() => card()!.querySelector<HTMLButtonElement>("[data-place] button")!.click());
-    expect(moved.openOnMap).toHaveBeenCalledWith(expect.anything(), { kind: "structure", entityId: ALDRIC_REALM });
+    const owner = realmsAccountAddress(ALDRIC, LAB_GUARDIAN.accountClassHash, LAB_GUARDIAN.publicKey);
+    expect(moved.visit).toHaveBeenCalledWith({
+      player: `0x${BigInt(owner).toString(16)}`,
+      structureId: ALDRIC_REALM,
+      opensOn: {
+        tile: { col: expect.any(Number), row: expect.any(Number), alt: false },
+        select: { kind: "structure", entityId: ALDRIC_REALM },
+      },
+    });
+    expect(moved.openOnMap).not.toHaveBeenCalled();
   });
 
   it("writes to the player privately from Message", () => {

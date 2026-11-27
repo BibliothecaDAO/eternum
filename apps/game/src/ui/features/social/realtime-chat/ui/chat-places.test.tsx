@@ -63,6 +63,8 @@ const REALM = 7;
 const UNSEEN_ARMY = 999;
 /** A realm and an army out of this player's view (their map has not loaded them), each sent with its tile. */
 const FAR_REALM = 4242;
+const FELLOW_REALM = 4343;
+const FELLOW_OWNER = { player: "0xfe110", realm: FELLOW_REALM };
 const FAR_ARMY = 5150;
 const FAR_REALM_TILE = { col: 65, row: 4, alt: false };
 /** Whose realm they are: the player a visit streams. */
@@ -129,6 +131,7 @@ const installRoom = (realmName: string, realmIcon: string, today: number) => {
             "back then",
             place(FAR_REALM, "structure", today - 3 * 86_400, realmIcon, "Aunomipen", LAB, FAR_REALM_TILE, FAR_OWNER),
           ),
+          said("m15", "visit fellow", place(FELLOW_REALM, "structure", today, realmIcon, "Hope's Realm")),
           // Sent by a client that names and paints the lab realm as another player's camp.
           said("m5", "come home", place(REALM, "structure", today, "camp", "Isolde's Realm")),
           // The realm's number in another game: on this chain, and on another chain.
@@ -188,6 +191,16 @@ const mount = async (mode: "frontier" | "blitz") => {
                     base: { ...realm.base, category: StructureType.Camp },
                   }),
                 },
+                {
+                  model: "Structure",
+                  key: "0x10f7",
+                  value: json({
+                    ...realm,
+                    entity_id: FELLOW_REALM,
+                    owner: FELLOW_OWNER.player,
+                    metadata: { ...realm.metadata, realm_id: 9 },
+                  }),
+                },
                 ...(mode === "blitz"
                   ? [
                       { model: "SliceRules", key: "0x100", value: json({ ...rules, day_unit_seconds: 0 }) },
@@ -237,6 +250,7 @@ beforeEach(() => {
   undoLayout = layOutChatLists();
   moved.openOnMap.mockClear();
   moved.selectArmy.mockClear();
+  moved.visit.mockClear();
   sendWorldMessage.mockClear();
   host = document.createElement("div");
   document.body.append(host);
@@ -399,6 +413,21 @@ describe("places in chat, in a Frontier game", () => {
     expect(chip("m3").hasAttribute("data-gone")).toBe(false);
     expect(chip("m3").textContent).toBe("Iron Wardens");
     expect(chip("m3").querySelector("button")!.disabled).toBe(true);
+  });
+
+  it("starts a realm visit for another player's realm already loaded in the store", () => {
+    expect(chip("m15").hasAttribute("data-gone")).toBe(false);
+    expect(chip("m15").querySelector("button")!.disabled).toBe(false);
+    act(() => chip("m15").querySelector("button")!.click());
+    expect(moved.visit).toHaveBeenLastCalledWith({
+      player: FELLOW_OWNER.player,
+      structureId: FELLOW_REALM,
+      opensOn: {
+        tile: { col: expect.any(Number), row: expect.any(Number), alt: false },
+        select: { kind: "structure", entityId: FELLOW_REALM },
+      },
+    });
+    expect(moved.openOnMap).not.toHaveBeenCalled();
   });
 
   it("sends a place alone, with no words, as its name", async () => {
