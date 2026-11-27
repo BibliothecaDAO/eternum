@@ -1,9 +1,10 @@
 import type { SiteKind } from "@bibliothecadao/eternum";
 import { LORDS, formatShort, layerName } from "@bibliothecadao/types";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { TARGET_MARKS } from "../sites/site-marks";
-import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
-import { CHESTS, CLEARED, ESSENCE, LABOR, LAYER, SEASON, VISIT } from "@/ui/design-system/kit/words";
+import { OrderEmblem, OrderLine } from "@/ui/design-system/kit/order-emblem";
+import { CHESTS, ESSENCE, LABOR, LAYER, SEASON, SITES_CLEARED, VISIT } from "@/ui/design-system/kit/words";
 
 /** A realm's season, as Herald totals it. */
 export type SeasonDetail = {
@@ -44,49 +45,51 @@ export const SeasonDetailSheet = ({
   onVisit?: () => void;
   onClose: () => void;
 }) => (
-  // The sheet's header names the realm; under it, its Order and its rank.
   <HudSheet label={label} onClose={onClose}>
     <div className="flex flex-col gap-3">
       <header className="flex items-center justify-between gap-2.5">
-        <OrderEmblem order={detail.order} size={34} />
+        {detail.order > 0 ? (
+          <OrderLine
+            orderId={detail.order}
+            size={30}
+            className="inline-flex min-w-0 items-center gap-2 font-hud-display text-hud-body text-hud-ink"
+          />
+        ) : (
+          <OrderEmblem order={detail.order} size={30} />
+        )}
         <HudChip icons={["victory"]} label={SEASON}>
           {`#${detail.rank}`}
         </HudChip>
       </header>
-      <div className="flex flex-wrap items-center justify-center gap-1.5">
-        <HudChip icons={["flag"]} label={CLEARED}>
-          {formatShort(detail.sites.total)}
-        </HudChip>
-        <span aria-hidden className="text-hud-body text-hud-muted">
-          =
-        </span>
-        {/* Each kind as every attack card draws it: the guard that holds it, and its name. */}
-        {SITE_KINDS.map((kind) => (
-          <HudChip key={kind} icons={[TARGET_MARKS[kind].icon]} label={TARGET_MARKS[kind].word}>
-            {formatShort(detail.sites[SITE_COUNTS[kind]])}
-          </HudChip>
-        ))}
-      </div>
-      <div className="flex items-center justify-center gap-1.5">
-        <HudChip icons={["chest"]} label={CHESTS}>
-          {formatShort(detail.chests)}
-        </HudChip>
-        <HudChip icons={["lords"]} label={LORDS}>
-          {formatShort(detail.lords)}
-        </HudChip>
-        {detail.depth > 0 && (
-          <HudChip icons={["portal"]} label={LAYER}>
-            {layerName(detail.depth)}
-          </HudChip>
-        )}
-      </div>
-      <div className="flex items-center justify-center gap-1.5">
-        <HudChip icons={["essence"]} label={ESSENCE}>
-          {formatShort(detail.essence, { signed: true })}
-        </HudChip>
-        <HudChip icons={["labor"]} label={LABOR}>
-          {formatShort(detail.labor, { signed: true })}
-        </HudChip>
+      <section className="flex flex-col gap-2 rounded-hud-control border border-hud-line bg-hud-well p-2.5">
+        <div
+          className="flex items-center justify-between gap-2 border-b border-hud-divider pb-1.5"
+          aria-label={`${SITES_CLEARED} ${formatShort(detail.sites.total)}`}
+          data-tip={`${SITES_CLEARED}: ${formatShort(detail.sites.total)}`}
+        >
+          <span className="inline-flex items-center gap-1.5 text-hud-label text-hud-muted">
+            <Icon name="flag" size={16} />
+            <span>{SITES_CLEARED}</span>
+          </span>
+          <span className="tabular-nums text-hud-strong text-hud-ink">{formatShort(detail.sites.total)}</span>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {SITE_KINDS.map((kind) => (
+            <DetailStat
+              key={kind}
+              icon={TARGET_MARKS[kind].icon}
+              label={TARGET_MARKS[kind].word}
+              value={formatShort(detail.sites[SITE_COUNTS[kind]])}
+            />
+          ))}
+        </div>
+      </section>
+      <div className="grid grid-cols-2 gap-1.5">
+        <DetailStat icon="chest" label={CHESTS} value={formatShort(detail.chests)} boxed />
+        <DetailStat icon="lords" label={LORDS} value={formatShort(detail.lords)} boxed />
+        <DetailStat icon="essence" label={ESSENCE} value={formatShort(detail.essence, { signed: true })} boxed />
+        <DetailStat icon="labor" label={LABOR} value={formatShort(detail.labor, { signed: true })} boxed />
+        {detail.depth > 0 && <DetailStat icon="portal" label={LAYER} value={layerName(detail.depth)} boxed wide />}
       </div>
       {onVisit && (
         <HudButton kind="primary" icon="explore" onClick={onVisit}>
@@ -95,4 +98,34 @@ export const SeasonDetailSheet = ({
       )}
     </div>
   </HudSheet>
+);
+
+const DetailStat = ({
+  icon,
+  label,
+  value,
+  boxed = false,
+  wide = false,
+}: {
+  icon: IconMeaning;
+  label: string;
+  value: string;
+  boxed?: boolean;
+  wide?: boolean;
+}) => (
+  <div
+    aria-label={`${label} ${value}`}
+    data-tip={`${label}: ${value}`}
+    className={
+      boxed
+        ? `flex min-w-0 items-center justify-between gap-1.5 rounded-hud-control border border-hud-line bg-hud-well px-2.5 py-1.5${wide ? " col-span-2" : ""}`
+        : "flex min-w-0 items-center justify-between gap-1.5 rounded-hud-control px-1.5 py-1"
+    }
+  >
+    <span className="inline-flex min-w-0 items-center gap-1.5 text-hud-label text-hud-muted">
+      <Icon name={icon} size={18} />
+      <span className="truncate">{label}</span>
+    </span>
+    <span className="shrink-0 tabular-nums text-hud-strong text-hud-ink">{value}</span>
+  </div>
 );

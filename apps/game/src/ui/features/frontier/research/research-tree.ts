@@ -1,6 +1,6 @@
 import { buildingOpensAtLevel, isOathResearch, logisticsStamina, loreOpensAtLevel } from "@bibliothecadao/eternum";
 import type { IconMeaning, IconMark } from "@/ui/design-system/icon";
-import { RESEARCH_TREE, SHRINE, SPIRE, STAMINA, type RankedWords, type Tier, WELL } from "@/ui/design-system/kit/words";
+import { RESEARCH_TREE, SHRINE, SPIRE, type RankedWords, type Tier, WELL } from "@/ui/design-system/kit/words";
 import { nativeResearchConstants as research, nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, formatExact, formatFigure, formatPercent, rankName } from "@bibliothecadao/types";
 
@@ -298,6 +298,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   return Object.values(rows).flat();
 
   function loreLadder(): TreeNode[] {
+    const wellPercent = formatExact(nativeRuleConstants.WELL_REFILL_PERCENT);
     const ladder: {
       key: string;
       site: string;
@@ -305,38 +306,34 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       tier: number;
       line: string;
       now: string;
-      next: string;
-      shortEffect: (done: boolean) => string;
+      shortEffect: () => string;
     }[] = [
       {
         key: "well",
         site: WELL,
         icon: "well",
         tier: research.LORE_WELLS,
-        line: RESEARCH_TREE.wellLore,
-        now: RESEARCH_TREE.none,
-        next: RESEARCH_TREE.each(`${formatExact(nativeRuleConstants.WELL_REFILL_PERCENT)}% max ${STAMINA}`),
-        shortEffect: () => RESEARCH_TREE.shortEffects.well(formatExact(nativeRuleConstants.WELL_REFILL_PERCENT)),
+        line: RESEARCH_TREE.loreDescriptions.well(wellPercent),
+        now: RESEARCH_TREE.loreEffects.well(wellPercent),
+        shortEffect: () => RESEARCH_TREE.shortEffects.well(wellPercent),
       },
       {
         key: "shrine",
         site: SHRINE,
         icon: "shrine",
         tier: research.LORE_SHRINES,
-        line: RESEARCH_TREE.shrineLore,
-        now: RESEARCH_TREE.closed,
-        next: RESEARCH_TREE.opens,
-        shortEffect: (done) => RESEARCH_TREE.shortEffects.open(done),
+        line: RESEARCH_TREE.loreDescriptions.shrine,
+        now: RESEARCH_TREE.loreEffects.shrine,
+        shortEffect: () => RESEARCH_TREE.shortEffects.shrine,
       },
       {
         key: "spire",
         site: SPIRE,
         icon: "spire",
         tier: research.LORE_SPIRES,
-        line: RESEARCH_TREE.opensLayers,
-        now: RESEARCH_TREE.closed,
-        next: RESEARCH_TREE.opens,
-        shortEffect: (done) => RESEARCH_TREE.shortEffects.open(done),
+        line: RESEARCH_TREE.loreDescriptions.spire,
+        now: RESEARCH_TREE.loreEffects.spire,
+        shortEffect: () => RESEARCH_TREE.shortEffects.spire,
       },
     ];
     return ladder.map((step, index) => {
@@ -362,7 +359,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         ROWS.lore,
         RESEARCH_TREE.lore(step.site),
         step.icon,
-        { line: step.line, now: step.now, next: step.next },
+        { line: step.line, now: step.now },
         step.shortEffect,
         index as ResearchEra,
         step.tier,
@@ -483,7 +480,7 @@ export const firstMissing = (node: TreeNode): Need | undefined => node.needs.fin
 export const needLine = (need: Need): string => {
   switch (need.kind) {
     case "level":
-      return RESEARCH_TREE.needsLevel(need.level);
+      return need.met ? RESEARCH_TREE.rankMet(need.level) : RESEARCH_TREE.needsLevel(need.level);
     case "stands":
       return need.met ? RESEARCH_TREE.stands(need.building) : RESEARCH_TREE.needsBuilding(need.building);
     case "tier":
