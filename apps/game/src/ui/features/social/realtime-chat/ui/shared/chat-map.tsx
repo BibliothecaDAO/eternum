@@ -10,7 +10,7 @@ import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { type ReactNode, useMemo } from "react";
 
 import { placeKey, placeOnMap, type SharedPlace, sharedPlaceOf } from "../../model/place";
-import { type ChatMap, ChatMapContext, useChatMap, usePlaceReader } from "./use-chat-map";
+import { type ChatMap, ChatMapContext, useChatMap, useGamePlayerAspect, usePlaceReader } from "./use-chat-map";
 
 /**
  * The game's map for the chat inside it: what the player selected (or, on a phone, what Chat set aside as it opened
@@ -22,6 +22,7 @@ export const GameChatMap = ({ children }: { children: ReactNode }) => {
   } = useGame();
   const read = usePlaceReader();
   const accountOf = useRealmsAccountOf();
+  const aspectOf = useGamePlayerAspect();
   const registered = usePlayers();
   const players = useMemo(
     () =>
@@ -49,6 +50,7 @@ export const GameChatMap = ({ children }: { children: ReactNode }) => {
           return placeOnMap(store, game, { kind: "structure", entityId: Number(structure.entity_id) }, now);
       return null;
     },
+    aspectOf,
   };
   return <ChatMapContext.Provider value={map}>{children}</ChatMapContext.Provider>;
 };

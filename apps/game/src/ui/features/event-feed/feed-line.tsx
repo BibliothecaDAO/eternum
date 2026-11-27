@@ -1,31 +1,23 @@
 import "./feed-line.css";
-import { HudRanked } from "@/ui/design-system/kit/hud-elements";
+import { HudAspectName, HudRanked } from "@/ui/design-system/kit/hud-elements";
 import { useGame } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { feltEquals } from "@bibliothecadao/eternum/game-client";
+import { playerAspectOf, usePlayerAspects } from "@/hooks/use-player-aspect";
 import { involvesPlayer } from "./event-stories";
 import { usePlayerNames } from "@/hooks/use-player-profile";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Icon } from "@/ui/design-system/icon";
 import { type RankedWords } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
-import { formatClockTime, formatShortDuration } from "@bibliothecadao/types";
+import { type AspectId, formatClockTime, formatShortDuration } from "@bibliothecadao/types";
 import { storyMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 
-import { type FeedReading, readFeedStory, type ToldReading } from "./feed-reading";
+import { readFeedStory, type ToldReading } from "./feed-reading";
 import { useStoryOpener } from "./story-feed-row";
 import { useSiteBeastMeaning } from "./use-site-beast";
 
 const OUTCOME_TONES = { good: "text-hud-good", bad: "text-hud-bad", neutral: "text-hud-muted" } as const;
-
-type Concern = "world" | "own" | "good" | "bad";
-const CONCERN_RULES: Record<Concern, string> = {
-  world: "bg-hud-ink",
-  own: "bg-hud-gold",
-  good: "bg-hud-good",
-  bad: "bg-hud-bad",
-};
 
 export const FeedLine = ({ story }: { story: ProcessedStoryEvent }) => {
   const line = useToldLine(story);
@@ -50,12 +42,6 @@ export const FeedRuleLine = ({ story }: { story: ProcessedStoryEvent }) => {
       story={story}
       line={line}
       className="ui-event ui-feed-line feed-rule-line items-center"
-      lead={
-        <span
-          className={`my-1 w-1 shrink-0 self-stretch rounded-full ${CONCERN_RULES[line.concern]}`}
-          aria-hidden="true"
-        />
-      }
       end={<span className="ui-event__time">{formatShortDuration(Math.max(1, now - story.timestampMs / 1000))}</span>}
     >
       {line.words}
@@ -70,50 +56,54 @@ const useToldLine = (story: ProcessedStoryEvent) => {
     setup: { store },
   } = useGame();
   const names = usePlayerNames();
+  const playerAspects = usePlayerAspects();
   const player = useAccountStore((state) => state.account?.address ?? null);
   const reading = readFeedStory(story, store);
   const own = involvesPlayer(story, player);
+  const actorAspect = playerAspectOf(playerAspects, reading.actor);
   const words = (
     <span className="ui-event__text">
       {"words" in reading ? (
-        <OwnWordsLine words={reading.words} named={reading.named} name={reading.actor && names.text(reading.actor)} />
+        <OwnWordsLine
+          words={reading.words}
+          named={reading.named}
+          name={reading.actor && names.text(reading.actor)}
+          aspect={actorAspect}
+        />
       ) : (
         <>
-          <Name text={names.text(reading.actor)} /> {reading.verb}
-          {reading.object && <ObjectWords object={reading.object} names={names.text} />}
+          <Name text={names.text(reading.actor)} aspect={actorAspect} /> {reading.verb}
+          {reading.object && (
+            <ObjectWords
+              object={reading.object}
+              names={names.text}
+              aspect={"player" in reading.object ? playerAspectOf(playerAspects, reading.object.player) : null}
+            />
+          )}
           {reading.outcome && <span className={OUTCOME_TONES[reading.outcome.tone]}> · {reading.outcome.word}</span>}
         </>
       )}
     </span>
   );
-  return { reading, own, concern: whoItConcerns(reading, own, own && feltEquals(reading.actor, player)), words };
+  return { reading, own, words };
 };
 
 const FeedRow = ({
   story,
   line,
   className,
-  lead,
   end,
   children,
 }: {
   story: ProcessedStoryEvent;
   line: ToldLine;
   className: string;
-  lead?: ReactNode;
   end?: ReactNode;
   children: ReactNode;
 }) => {
   const open = useStoryOpener(story);
   return (
-    <div
-      className={className}
-      data-feed-line
-      data-story={story.story}
-      data-own={line.own || undefined}
-      data-rule={line.concern}
-    >
-      {lead}
+    <div className={className} data-feed-line data-story={story.story} data-own={line.own || undefined}>
       {open ? (
         <button type="button" className="ui-event__open items-center" onClick={open}>
           {children}
@@ -137,19 +127,15 @@ const FeedRow = ({
   );
 };
 
-const whoItConcerns = (reading: FeedReading, own: boolean, actedByPlayer: boolean): Concern => {
-  if (!own) return "world";
-  const tone = actedByPlayer && "outcome" in reading ? reading.outcome?.tone : undefined;
-  return tone === "good" || tone === "bad" ? tone : "own";
-};
-
 /** What the act was done to, its painting set in the line. */
 const ObjectWords = ({
   object,
   names,
+  aspect,
 }: {
   object: NonNullable<ToldReading["object"]>;
   names: (address: string) => string;
+  aspect: AspectId | null;
 }) => (
   <>
     {" "}
@@ -158,7 +144,13 @@ const ObjectWords = ({
     ) : (
       object.icon && <Icon name={object.icon} size={16} className="ui-feed-line__glyph" />
     )}
-    {"player" in object ? names(object.player) : <HudRanked words={object.name} />}
+    {"player" in object ? (
+      <HudAspectName aspect={aspect} className="text-hud-strong">
+        {names(object.player)}
+      </HudAspectName>
+    ) : (
+      <HudRanked words={object.name} />
+    )}
   </>
 );
 
@@ -169,7 +161,11 @@ const SiteGlyph = ({ site }: { site: number }) => {
 };
 
 /** Who did it. */
-const Name = ({ text }: { text: string }) => <strong>{text}</strong>;
+const Name = ({ text, aspect }: { text: string; aspect: AspectId | null }) => (
+  <HudAspectName as="strong" aspect={aspect}>
+    {text}
+  </HudAspectName>
+);
 
 /**
  * A story in its own words with who did it named once: where its formatter wrote the actor's name (`named`), the name
@@ -180,22 +176,24 @@ const OwnWordsLine = ({
   words,
   named,
   name,
+  aspect,
 }: {
   words: RankedWords | string;
   named: { at: number; length: number } | undefined;
   name: string | undefined;
+  aspect: AspectId | null;
 }) => {
   if (!name) return <HudRanked words={words} />;
   if (!named || typeof words !== "string")
     return (
       <>
-        <Name text={name} /> · <HudRanked words={words} />
+        <Name text={name} aspect={aspect} /> · <HudRanked words={words} />
       </>
     );
   return (
     <>
       {words.slice(0, named.at)}
-      <Name text={words.slice(named.at, named.at + named.length)} />
+      <Name text={words.slice(named.at, named.at + named.length)} aspect={aspect} />
       {words.slice(named.at + named.length)}
     </>
   );

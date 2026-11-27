@@ -1,15 +1,18 @@
-import { createContext, useContext } from "react";
+import { createContext, useCallback, useContext } from "react";
 
 import { useGame } from "@/hooks/context/game-context";
 import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
+import { playerAspectOf, usePlayerAspects } from "@/hooks/use-player-aspect";
 
 import { linkFrom, openOnMap } from "@/play/navigation/open-place";
 import { getActiveGame } from "@/runtime/world/store";
 import { needsRealmVisit, startRealmVisit } from "@/sync/active-game-client";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { isExpeditionRealm, Position, structureMapPosition } from "@bibliothecadao/eternum";
+import type { AspectId } from "@bibliothecadao/types";
+import { useChatPeople } from "../../hooks/use-chat-people";
 import { placeLoaded, placeOnMap, sameGame, type SharedPlace } from "../../model/place";
 
 /**
@@ -35,6 +38,7 @@ export interface ChatMap {
   read: (place: SharedPlace) => PlaceReading;
   /** A player's realm in this game, by their Realms id, as a place to open; none for a player with no realm here. */
   realmOf: (playerId: string) => SharedPlace | null;
+  aspectOf: (playerId: string) => AspectId | null;
   /** The game's registered players with a claimed name, each with their portrait: whom chat mentions in a game. */
   players: readonly { name: string; portrait: string | null }[];
 }
@@ -42,6 +46,19 @@ export interface ChatMap {
 export const ChatMapContext = createContext<ChatMap | null>(null);
 
 export const useChatMap = () => useContext(ChatMapContext);
+
+const NO_ASPECT = (): AspectId | null => null;
+
+export const useChatPlayerAspect = (): ((playerId: string) => AspectId | null) => useChatMap()?.aspectOf ?? NO_ASPECT;
+
+export const useGamePlayerAspect = (): ((playerId: string) => AspectId | null) => {
+  const people = useChatPeople();
+  const playerAspects = usePlayerAspects();
+  return useCallback(
+    (playerId: string) => playerAspectOf(playerAspects, people.accountOf(playerId)),
+    [playerAspects, people],
+  );
+};
 
 const PLACE_MODELS = ["Structure", "ExplorerTroops", "TileOccupancy"] as const;
 
