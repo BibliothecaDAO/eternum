@@ -8,13 +8,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // The identity client binds fetch when its module loads; nothing in these tests reaches the network.
 vi.hoisted(() => vi.stubGlobal("fetch", async () => new Response(null, { status: 401 })));
 
-const passkeys = vi.hoisted(() => ({ create: vi.fn() }));
-vi.mock("@/ui/modules/identity/passkey", () => ({
-  createPasskey: passkeys.create,
-  signWithPasskey: vi.fn(),
-  PasskeyUnavailableError: class PasskeyUnavailableError extends Error {},
-}));
-
 /** The app the client runs in; the web unless a test is about the iOS app. */
 const app = vi.hoisted(() => ({ channel: "web" as "web" | "play" | "app-store" }));
 vi.mock("@/runtime/distribution-channel", () => ({
@@ -29,7 +22,7 @@ import { useRequestSignIn, useConnectStore } from "./connect";
 import { TabBar } from "../frame/tabs";
 import { PayoutWalletPanel } from "../profile/payout-wallet-panel";
 import { linkWalletHref } from "../profile/settings-route";
-import { accountAnswers, deviceLastPlayedBeforeTheAnswer, leaveThePage } from "../standing-prompts-fixture";
+import { accountAnswers, leaveThePage } from "../standing-prompts-fixture";
 import { ConnectFlow } from "./connect-flow";
 import { APP_WAIT_MS, discordAndroidIntent, discordAppUrl } from "./discord-app";
 import { forgetSocialStart, pendingSocialStart, rememberSocialStart } from "./social-pending";
@@ -175,7 +168,7 @@ describe("Connect", () => {
       expect(saved.name).toBe("Ysolde");
       expect(IDENTITY_PORTRAITS).toContain(saved.image);
       expect(ui.where()).toBe(NEXT);
-      expect(ui.window()?.getAttribute("aria-label")).toBe("Your wallet");
+      expect(ui.window()).toBeNull();
     } finally {
       await ui.unmount();
     }
@@ -375,109 +368,28 @@ describe("Connect", () => {
 });
 
 describe("Your wallet", () => {
-  const WALLET = {
-    address: "0x6c3d70a2d9197da8e24ee33ec8e26b00faccfaafe0fa9bd0003c0eb11397b4f",
-    credentialId: "cred",
-    publicKeyX: "0x1",
-    origin: "https://realms.test",
-    rpId: "realms.test",
-  };
   const named = (user: Partial<Session["user"]> = {}) =>
     useIdentitySessionStore.setState({
       status: "signed-in",
       session: sessionOf({ name: "Ysolde", address: null, ...user }),
     });
 
-  it("meets a named account with no payout wallet on any page, and makes its wallet with one passkey", async () => {
+  it("never interrupts a named account without a payout wallet at registration", async () => {
     named();
     vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
-    passkeys.create.mockResolvedValue({ credentialId: "cred", publicKey: "spki" });
-    const create = vi.spyOn(identityClient, "createDefaultWallet").mockResolvedValue(WALLET);
-    vi.spyOn(identityClient, "getSession").mockResolvedValue(sessionOf({ name: "Ysolde", address: WALLET.address }));
-    const ui = await mount("/g/0x5245414c4d53/1/map");
-    try {
-      expect(ui.window()?.getAttribute("aria-label")).toBe("Your wallet");
-      expect(ui.container.textContent).toContain(WALLET_WORDS.haveOne);
-      expect(ui.container.textContent).not.toContain("I need one");
-      await act(async () =>
-        [...ui.container.querySelectorAll("button")].find((b) => b.textContent === WALLET_WORDS.createWallet)!.click(),
-      );
-      expect(passkeys.create).toHaveBeenCalledWith({ realmsId: "0x7", email: "you@mail.test", name: "Ysolde" });
-      expect(create).toHaveBeenCalledWith({ passkey: { credentialId: "cred", publicKey: "spki" } });
-      await act(async () => {});
-      expect(ui.window()).toBeNull();
-    } finally {
-      await ui.unmount();
-    }
-  });
-
-  it("asks an older sign-in for the emailed code, then makes the wallet from the same passkey", async () => {
-    named({ realmsId: "0x9" });
-    vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
-    vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue(sentCode(300));
-    passkeys.create.mockResolvedValue({ credentialId: "cred", publicKey: "spki" });
-    const create = vi
-      .spyOn(identityClient, "createDefaultWallet")
-      .mockRejectedValueOnce(new IdentityRequestError(403, "CODE_REQUIRED"))
-      .mockResolvedValueOnce(WALLET);
-    vi.spyOn(identityClient, "getSession").mockResolvedValue(sessionOf({ name: "Ysolde", address: WALLET.address }));
-    const ui = await mount("/");
-    try {
-      await act(async () =>
-        [...ui.container.querySelectorAll("button")].find((b) => b.textContent === WALLET_WORDS.createWallet)!.click(),
-      );
-      expect(ui.container.textContent).toContain("Code sent to you@mail.test");
-      await ui.type('input[autocomplete="one-time-code"]', "123456");
-      // The passkey made before the code is sent again with it: the server kept nothing of it.
-      expect(create).toHaveBeenLastCalledWith({ passkey: { credentialId: "cred", publicKey: "spki" }, code: "123456" });
-      await act(async () => {});
-      expect(ui.window()).toBeNull();
-    } finally {
-      await ui.unmount();
-    }
-  });
-
-  const closeTheInvitation = (ui: Awaited<ReturnType<typeof mount>>) =>
-    act(async () => ui.query<HTMLButtonElement>('[role="dialog"] button[aria-label="Close"]')!.click());
-
-  it("invites an account once: closed, it stays closed when the page loads again, on this device and on another", async () => {
-    named();
-    vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
-    const first = await mount("/");
-    expect(first.window()?.getAttribute("aria-label")).toBe("Your wallet");
-    await closeTheInvitation(first);
-    expect(first.window()).toBeNull();
-    await first.unmount();
-    for (const device of ["same", "another"] as const) {
-      await leaveThePage(device);
-      const again = await mount("/");
-      expect(again.window()).toBeNull();
-      await again.unmount();
-    }
-    expect([...answers.seen]).toEqual(["wallet-invitation"]);
-  });
-
-  it("stays closed on a device that last played before the account was invited on another", async () => {
-    named();
-    vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
-    answers.seen.add("wallet-invitation");
-    deviceLastPlayedBeforeTheAnswer("0x7");
     const ui = await mount("/");
     try {
       expect(ui.window()).toBeNull();
+      expect([...answers.seen]).toEqual([]);
     } finally {
       await ui.unmount();
     }
   });
 
-  it("opens the wallet for a declined account when a page that needs one sends the player to link it", async () => {
+  it("opens the wallet panel on demand when a surface sends an unlinked account to link one", async () => {
     named();
     vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
     vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);
-    const first = await mount("/");
-    await closeTheInvitation(first);
-    await first.unmount();
-    await leaveThePage();
     const session = useIdentitySessionStore.getState().session!;
     const settings = await mount("/shop", undefined, false, <WalletAsk session={session} />);
     try {
@@ -486,35 +398,6 @@ describe("Your wallet", () => {
       expect(settings.query('[data-payout-wallet="none"]')?.textContent).toContain(WALLET_WORDS.createWallet);
     } finally {
       await settings.unmount();
-    }
-  });
-
-  it("stays closed while the account's answers cannot be read", async () => {
-    named();
-    answers.down = true;
-    vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
-    const ui = await mount("/");
-    try {
-      expect(ui.window()).toBeNull();
-    } finally {
-      await ui.unmount();
-    }
-  });
-
-  it("says why when the browser cannot make a passkey, and keeps the window open", async () => {
-    // Another account than the tests above, whose wallet this page already knows.
-    named({ realmsId: "0x8" });
-    vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
-    passkeys.create.mockRejectedValue(new DOMException("cancelled", "NotAllowedError"));
-    const ui = await mount("/");
-    try {
-      await act(async () =>
-        [...ui.container.querySelectorAll("button")].find((b) => b.textContent === WALLET_WORDS.createWallet)!.click(),
-      );
-      expect(ui.container.textContent).toContain("Passkey cancelled. Try again.");
-      expect(ui.window()?.getAttribute("aria-label")).toBe("Your wallet");
-    } finally {
-      await ui.unmount();
     }
   });
 });

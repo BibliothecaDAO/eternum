@@ -28,6 +28,13 @@ vi.mock("@/runtime/distribution-channel", () => ({
   opensThirdPartySignIn: () => app.channel !== "app-store",
 }));
 
+const passkeys = vi.hoisted(() => ({ create: vi.fn() }));
+vi.mock("@/ui/modules/identity/passkey", () => ({
+  createPasskey: passkeys.create,
+  signWithPasskey: vi.fn(),
+  PasskeyUnavailableError: class PasskeyUnavailableError extends Error {},
+}));
+
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { IdentityRequestError } from "@realms-world/identity";
 
@@ -69,6 +76,7 @@ const typeCode = async (container: HTMLElement, code: string) => {
 afterEach(async () => {
   for (const unmount of mounted.splice(0)) await unmount();
   vi.restoreAllMocks();
+  passkeys.create.mockReset();
   app.channel = "web";
 });
 
@@ -155,4 +163,48 @@ it("offers no wallet to link inside the iOS app, where none can open: the Realms
   const none = await mount(null);
   expect(none.textContent).toContain(WALLET_WORDS.createWallet);
   expect(none.textContent).not.toContain(WALLET_WORDS.haveOne);
+});
+
+it("creates a default passkey wallet, asks for an emailed code when required, and reports passkey cancellation", async () => {
+  const createdWallet = {
+    address: "0x6c3d70a2d9197da8e24ee33ec8e26b00faccfaafe0fa9bd0003c0eb11397b4f",
+    credentialId: "cred",
+    publicKeyX: "0x1",
+    origin: "https://realms.test",
+    rpId: "realms.test",
+  };
+  useIdentitySessionStore.setState({
+    status: "signed-in",
+    session: {
+      session: { id: "s", expiresAt: "2099-01-01T00:00:00.000Z", userId: "u" },
+      user: { id: "u", realmsId: "0x7", name: "Ysolde", email: "you@mail.test" },
+    },
+  });
+  vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
+  vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue({ success: true, expires_at: 300 });
+  passkeys.create.mockResolvedValueOnce({ credentialId: "cred", publicKey: "spki" });
+  const create = vi
+    .spyOn(identityClient, "createDefaultWallet")
+    .mockRejectedValueOnce(new IdentityRequestError(403, "CODE_REQUIRED"))
+    .mockResolvedValueOnce(createdWallet);
+  const onChanged = vi.fn();
+  const panel = await mount(null, onChanged);
+
+  await press(panel, WALLET_WORDS.createWallet);
+  expect(panel.textContent).toContain(WALLET_WORDS.codeSentTo);
+  await typeCode(panel, "123456");
+  expect(create).toHaveBeenLastCalledWith({ passkey: { credentialId: "cred", publicKey: "spki" }, code: "123456" });
+  expect(onChanged).toHaveBeenCalledOnce();
+
+  useIdentitySessionStore.setState({
+    status: "signed-in",
+    session: {
+      session: { id: "s2", expiresAt: "2099-01-01T00:00:00.000Z", userId: "u2" },
+      user: { id: "u2", realmsId: "0x8", name: "Ysolde", email: "you@mail.test" },
+    },
+  });
+  passkeys.create.mockRejectedValueOnce(new DOMException("cancelled", "NotAllowedError"));
+  const retryPanel = await mount(null);
+  await press(retryPanel, WALLET_WORDS.createWallet);
+  expect(retryPanel.textContent).toContain("Passkey");
 });
