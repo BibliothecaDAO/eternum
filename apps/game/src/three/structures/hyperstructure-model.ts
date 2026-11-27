@@ -1,4 +1,4 @@
-import { Color, Euler, Matrix4, Mesh, MeshStandardMaterial, Quaternion, type Texture, Vector3 } from "three";
+import { Color, Euler, Matrix4, Mesh, MeshStandardMaterial, Quaternion, Vector3 } from "three";
 import InstancedModel from "../managers/instanced-model";
 import { queueInstanceUpdate } from "../utils/instance-update-ranges";
 import {
@@ -44,7 +44,6 @@ export class HyperstructureModel extends InstancedModel {
   private readonly placements = new Map<number, TowerPlacement>();
   private readonly presentations = new Map<number, TowerPlacement>();
   private readonly visibleSlots = new Map<number, Set<number>>();
-  private readonly stoneTexture: Texture;
   private readonly parts: { name: string; family?: string; course?: number; masonry: boolean }[];
   private readonly masonryTint = new Color();
   private readonly local = new Matrix4();
@@ -62,7 +61,6 @@ export class HyperstructureModel extends InstancedModel {
   constructor(capacity: number) {
     const kit = createHyperstructureKit();
     super(kit, capacity, false, "Hyperstructure");
-    this.stoneTexture = ((kit.scene.children[0] as Mesh).material as MeshStandardMaterial).map!;
     this.power = createHyperstructurePower(capacity);
     this.parts = kit.scene.children.map((part, index) => {
       this.instancedMeshes[index].name = part.name;
@@ -169,7 +167,6 @@ export class HyperstructureModel extends InstancedModel {
     this.presentations.clear();
     this.visibleSlots.clear();
     super.dispose();
-    this.stoneTexture.dispose();
   }
 
   private tintMasonry(index: number, placement: TowerPlacement): void {

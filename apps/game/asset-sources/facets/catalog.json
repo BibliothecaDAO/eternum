@@ -161,13 +161,14 @@
       "source": {
         "model": "procedural:hyperstructure",
         "inputs": {
-          "apps/game/src/three/structures/hyperstructure-kit.ts": "c07bccfb3db16bfc3ee3d61103b92e619f38db2fef8cf9489202e214d3da07dd",
+          "apps/game/src/three/structures/hyperstructure-kit.ts": "5cfbaac4270bc2e18507e03ef7f6798eaa7a5fbaaac862772179ef4bf5ec3b1f",
           "apps/game/src/three/structures/hyperstructure-design.ts": "38e9ae3b979ab15786e464e4860d76129c538f6ca456f5884eaba583f7ead369",
           "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca",
-          "apps/game/src/three/structures/hyperstructure-model.ts": "1ec99bfd8918f1a4bd247fe334f5f2902cbdcc30c3a3c55c4c97c6abc840e5ad",
-          "apps/game/src/three/structures/hyperstructure-power.ts": "676b2984ac5ab209f6d483181ff2294f1d8f951d9be916c23ddc2a9409cb8057"
+          "apps/game/src/three/structures/hyperstructure-model.ts": "0224a46e4e5712a98443facd5cb6371519548913321d820df08189061de15012",
+          "apps/game/src/three/structures/hyperstructure-power.ts": "676b2984ac5ab209f6d483181ff2294f1d8f951d9be916c23ddc2a9409cb8057",
+          "apps/game/src/three/structures/procgen-masonry-material.ts": "e5df08c3d7514518d03e3eeaa16eeb59f0243f0a8d8748f80c4892097031fd0c"
         },
-        "sha256": "55a54c24ca98ef285482532e61546259790166ef1f9f0c5d6076fb5f1313408a"
+        "sha256": "61a6545c47456e7c2cf4a7ffadea9590199a11ab8552a109daa0455d270289d7"
       }
     },
     {

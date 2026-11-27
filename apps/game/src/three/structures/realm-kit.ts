@@ -6,7 +6,6 @@ import {
   Color,
   ConeGeometry,
   CylinderGeometry,
-  DataTexture,
   ExtrudeGeometry,
   Float32BufferAttribute,
   Group,
@@ -15,7 +14,6 @@ import {
   MeshStandardMaterial,
   OctahedronGeometry,
   Quaternion,
-  RepeatWrapping,
   Shape,
   SphereGeometry,
   TorusGeometry,
@@ -24,6 +22,7 @@ import {
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { mergeGeometries, mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 import type { FlagAnchor } from "./flag-anchors";
+import { createProcgenMasonryMaterial } from "./procgen-masonry-material";
 
 export const SEASON_ONE_REALM_KIT_LEVELS: readonly RealmLevels[] = Object.values(RealmLevels).filter(
   (level): level is RealmLevels => typeof level === "number",
@@ -202,8 +201,6 @@ const HEX_WALL_SEGMENTS: readonly WallSegment[] = HEX_PERIMETER_POINTS.slice(0, 
   from,
   to: HEX_PERIMETER_POINTS[index + 1]!,
 }));
-
-let cachedStoneGrain: DataTexture | null = null;
 
 function isCatalogRealmLevel(level: number): level is RealmLevels {
   return SEASON_ONE_REALM_KIT_LEVELS.some((rank) => rank === level);
@@ -3925,18 +3922,8 @@ function combineParts(parts: KitPart[]): BufferGeometry {
   return indexed;
 }
 
-function createMasonryMaterial(): MeshStandardMaterial {
-  const grain = sharedStoneGrain();
-  return new MeshStandardMaterial({
-    vertexColors: true,
-    map: grain,
-    bumpMap: grain,
-    roughnessMap: grain,
-    bumpScale: 0.005,
-    roughness: 0.78,
-    metalness: 0.16,
-    flatShading: true,
-  });
+function createMasonryMaterial() {
+  return createProcgenMasonryMaterial();
 }
 
 function createGlowMaterial(palette: AspectKitPalette): MeshStandardMaterial {
@@ -3948,25 +3935,4 @@ function createGlowMaterial(palette: AspectKitPalette): MeshStandardMaterial {
     metalness: 0.2,
     flatShading: true,
   });
-}
-
-function sharedStoneGrain(): DataTexture {
-  if (cachedStoneGrain) return cachedStoneGrain;
-  const size = 128;
-  const data = new Uint8Array(size * size * 4);
-  for (let y = 0; y < size; y++)
-    for (let x = 0; x < size; x++) {
-      const hash = Math.imul(x + 1, 374761393) ^ Math.imul(y + 1, 668265263);
-      const grain = ((hash ^ (hash >>> 13)) >>> 0) % 35;
-      const value = 212 + grain;
-      const offset = (y * size + x) * 4;
-      data.set([value, value, value, 255], offset);
-    }
-  const texture = new DataTexture(data, size, size);
-  texture.wrapS = texture.wrapT = RepeatWrapping;
-  texture.repeat.set(3, 3);
-  texture.userData.eternumContentHash = "season-1-realm-kit-stone-grain-v1";
-  texture.needsUpdate = true;
-  cachedStoneGrain = texture;
-  return texture;
 }

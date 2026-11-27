@@ -2,6 +2,7 @@ import { heldHeadingCorrection, poleAxisOf, yawOfPlacement } from "../structures
 import { markShadowCastersChanged } from "../shadow-refresh-policy";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { createTripoModelMaterial, isTripoModelMesh } from "../materials/tripo-model-material";
+import { isProcgenMasonryMaterial } from "../structures/procgen-masonry-material";
 import { MinesMaterialsParams, PREVIEW_BUILD_COLOR_INVALID } from "@/three/constants";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import {
@@ -174,7 +175,9 @@ export default class InstancedModel {
           return;
         }
         let material: Material = child.material as MeshStandardMaterial;
-        if (isTripoModelMesh(child) && material instanceof MeshStandardMaterial) {
+        if (isProcgenMasonryMaterial(material)) {
+          material = child.material as Material;
+        } else if (isTripoModelMesh(child) && material instanceof MeshStandardMaterial) {
           material = createTripoModelMaterial(material);
         } else {
           let standard = material as MeshStandardMaterial;

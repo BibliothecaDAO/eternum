@@ -3,7 +3,6 @@ import {
   BufferGeometry,
   Color,
   CylinderGeometry,
-  DataTexture,
   Float32BufferAttribute,
   Group,
   Shape,
@@ -12,10 +11,10 @@ import {
   Vector3,
   SphereGeometry,
   IcosahedronGeometry,
+  Material,
   Mesh,
   MeshStandardMaterial,
   OctahedronGeometry,
-  RepeatWrapping,
   TorusGeometry,
 } from "three";
 import { mergeGeometries, mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
@@ -26,6 +25,7 @@ import {
   HYPERSTRUCTURE_FAMILIES,
   type HyperstructureFamily,
 } from "./hyperstructure-design";
+import { createProcgenMasonryMaterial } from "./procgen-masonry-material";
 
 const STONE = "#41494e";
 const EDGE = "#646c70";
@@ -36,7 +36,7 @@ type Part = { geometry: BufferGeometry; color: string };
 /** Shared foundation, family masonry, and independent crown mechanisms. */
 export function createHyperstructureKit(foundationOnly = false): Pick<GLTF, "scene" | "animations"> {
   const scene = new Group();
-  const masonry = createMasonryMaterial(foundationOnly);
+  const masonry = createProcgenMasonryMaterial();
   addPart(scene, "base", foundation(), masonry);
   if (foundationOnly) return { scene, animations: [] };
   const { core, channels } = createPowerMaterials();
@@ -48,8 +48,8 @@ export function createHyperstructureKit(foundationOnly = false): Pick<GLTF, "sce
   addPart(scene, "collar", crownCollar(), masonry);
   addPart(scene, "prongs", crownProngs(), masonry);
   addPart(scene, "astrolabe", astrolabe(), masonry);
-  addPart(scene, "astrolabe:outer", new TorusGeometry(0.34, 0.022, 5, 48), masonry);
-  addPart(scene, "astrolabe:inner", new TorusGeometry(0.29, 0.016, 5, 48), masonry);
+  addPart(scene, "astrolabe:outer", combine([piece(new TorusGeometry(0.34, 0.022, 5, 48), EDGE)]), masonry);
+  addPart(scene, "astrolabe:inner", combine([piece(new TorusGeometry(0.29, 0.016, 5, 48), EDGE)]), masonry);
   addPart(scene, "petals", petals(), masonry);
   addPart(scene, "crystals", crystals(), masonry);
   addPart(scene, "crescent", crescent(), masonry);
@@ -63,20 +63,6 @@ export function createHyperstructureKit(foundationOnly = false): Pick<GLTF, "sce
   addPart(scene, "channels", crownInlays(), channels);
   addPart(scene, "activation", new TorusGeometry(0.24, 0.009, 5, 48).rotateX(Math.PI / 2), core);
   return { scene, animations: [] };
-}
-
-function createMasonryMaterial(foundationOnly: boolean): MeshStandardMaterial {
-  const grain = foundationOnly ? null : stoneGrain();
-  return new MeshStandardMaterial({
-    vertexColors: true,
-    map: grain,
-    bumpMap: grain,
-    roughnessMap: grain,
-    bumpScale: 0.006,
-    roughness: 0.78,
-    metalness: 0.16,
-    flatShading: true,
-  });
 }
 
 function createPowerMaterials() {
@@ -98,7 +84,7 @@ function createPowerMaterials() {
   return { core, channels };
 }
 
-function addPart(scene: Group, name: string, geometry: BufferGeometry, material: MeshStandardMaterial): void {
+function addPart(scene: Group, name: string, geometry: BufferGeometry, material: Material): void {
   const mesh = new Mesh(geometry, material);
   mesh.name = name;
   mesh.userData.hyperstructurePart = name;
@@ -492,22 +478,4 @@ function crownInlays(): BufferGeometry {
     parts.push(piece(new BoxGeometry(0.012, 0.6, 0.014), "#ffffff", Math.sin(a) * 0.313, 0.46, Math.cos(a) * 0.313, a));
   }
   return combine(parts);
-}
-
-function stoneGrain(): DataTexture {
-  const size = 128;
-  const data = new Uint8Array(size * size * 4);
-  for (let y = 0; y < size; y++)
-    for (let x = 0; x < size; x++) {
-      const hash = Math.imul(x + 1, 374761393) ^ Math.imul(y + 1, 668265263);
-      const grain = ((hash ^ (hash >>> 13)) >>> 0) % 39;
-      const value = 204 + grain;
-      const offset = (y * size + x) * 4;
-      data.set([value, value, value, 255], offset);
-    }
-  const texture = new DataTexture(data, size, size);
-  texture.wrapS = texture.wrapT = RepeatWrapping;
-  texture.repeat.set(3, 3);
-  texture.needsUpdate = true;
-  return texture;
 }
