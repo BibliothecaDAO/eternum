@@ -1,5 +1,6 @@
-import { HudButton, HudChip, HudRow } from "@/ui/design-system/kit/hud-elements";
+import { HudAspectName, HudButton, HudChip, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
+import type { AspectId } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 
@@ -9,6 +10,7 @@ import { useChatPeople } from "../../hooks/use-chat-people";
 import { whenSent } from "../../model/message-grouping";
 import { useMute } from "../shared/player-card";
 import { ChatPortrait } from "../shared/chat-portrait";
+import { useChatPlayerAspect } from "../shared/use-chat-map";
 
 /**
  * Messages: the player's private conversations, the latest first, each by the other player's name with its last line,
@@ -30,6 +32,7 @@ export function MessagesList() {
   );
   const known = useRealtimeChatSelector((state) => state.blockList !== null);
   const people = useChatPeople();
+  const aspectOf = useChatPlayerAspect();
   const muted = useRealtimeChatSelector((state) => state.blockList?.blocked) ?? [];
 
   const conversations = useMemo(
@@ -60,7 +63,7 @@ export function MessagesList() {
             key={other}
             lead={<ChatPortrait playerId={other} size="lg" className="rounded-full" />}
             label={name}
-            title={name}
+            title={<HudAspectName aspect={aspectOf(other)}>{name}</HudAspectName>}
             detail={<span className="block truncate">{last.content}</span>}
             trail={
               unreadCount > 0 ? (
@@ -83,6 +86,7 @@ export function MessagesList() {
               key={playerId}
               playerId={playerId}
               name={people.nameOf(playerId, online[playerId]?.displayName)}
+              aspect={aspectOf(playerId)}
             />
           ))}
         </section>
@@ -92,12 +96,12 @@ export function MessagesList() {
 }
 
 /** A muted player in Messages: their portrait and name, and Unmute, which brings their conversation back. */
-const MutedPlayer = ({ playerId, name }: { playerId: string; name: string }) => {
+const MutedPlayer = ({ playerId, name, aspect }: { playerId: string; name: string; aspect: AspectId | null }) => {
   const { toggle } = useMute(playerId);
   return (
     <HudRow
       lead={<ChatPortrait playerId={playerId} size="lg" className="rounded-full" />}
-      title={name}
+      title={<HudAspectName aspect={aspect}>{name}</HudAspectName>}
       controls={
         <HudButton kind="secondary" size="sm" onClick={toggle}>
           {CHAT_WORDS.unmute}

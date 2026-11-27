@@ -1,8 +1,9 @@
 import "./message-row.css";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { HudAspectName, HudButton } from "@/ui/design-system/kit/hud-elements";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
+import type { AspectId } from "@bibliothecadao/types";
 import { type MouseEvent, type PointerEvent, type ReactNode, useCallback, useEffect, useRef } from "react";
 
 const SWIPE_PX = 56;
@@ -19,8 +20,8 @@ export const MessageRow = ({
   children,
 }: {
   id: string;
-  run?: { name: string; time: string; onName?: () => void };
-  quote?: { name: string; excerpt: string; onShow: () => void };
+  run?: { name: string; aspect?: AspectId | null; time: string; onName?: () => void };
+  quote?: { name: string; aspect?: AspectId | null; excerpt: string; onShow: () => void };
   mentionsMe?: boolean;
   lit?: boolean;
   onReply?: () => void;
@@ -111,7 +112,9 @@ export const MessageRow = ({
             className="flex w-full min-w-0 items-center gap-1 text-left text-hud-label text-hud-muted"
           >
             <span aria-hidden className="h-2 w-3 shrink-0 rounded-tl border-l-2 border-t-2 border-hud-line-strong" />
-            <span className="shrink-0 text-hud-accent">{quote.name}</span>
+            <HudAspectName aspect={quote.aspect ?? null} className="shrink-0">
+              {quote.name}
+            </HudAspectName>
             <span className="truncate">{quote.excerpt}</span>
           </button>
         )}
@@ -123,11 +126,13 @@ export const MessageRow = ({
           )}
           {run &&
             (run.onName ? (
-              <button type="button" onClick={run.onName} className="mr-1.5 text-hud-strong text-hud-accent">
-                {run.name}
+              <button type="button" onClick={run.onName} className="mr-1.5 text-hud-strong">
+                <HudAspectName aspect={run.aspect ?? null}>{run.name}</HudAspectName>
               </button>
             ) : (
-              <span className="mr-1.5 text-hud-strong text-hud-accent">{run.name}</span>
+              <HudAspectName aspect={run.aspect ?? null} className="mr-1.5 text-hud-strong">
+                {run.name}
+              </HudAspectName>
             ))}
           <span data-message-words>{children}</span>
         </p>

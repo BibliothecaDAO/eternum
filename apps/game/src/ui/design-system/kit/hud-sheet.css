@@ -1035,6 +1035,14 @@ span.ui-row__choose {
   color: rgb(var(--hud-accent));
   font-weight: var(--hud-weight-strong);
 }
+.ui-aspect-name,
+.ui-event__text strong.ui-aspect-name {
+  color: rgb(var(--hud-ink));
+}
+.ui-aspect-name[data-aspect],
+.ui-event__text strong.ui-aspect-name[data-aspect] {
+  color: rgb(var(--hud-aspect));
+}
 /* A Feed line (Frontier's Feed, option A): who, what and to what on one line and one baseline, what it paid at its end,
    every line one height. A painting inside the words sits on the text, never on the line's box, so it moves no word. */
 .ui-feed-line .ui-event__text {
@@ -1058,7 +1066,9 @@ span.ui-row__choose {
 }
 /* The player's own row, in every lens: its words, its names and what it paid in gold, as the Feed drew it before
    option A (owner, 27 October: "when a row is mine should put the row in yellow like it did before"). */
-.ui-feed-line[data-own] :is(.ui-event__text, .ui-event__text strong, .ui-feed-line__reward) {
+.ui-feed-line[data-own] .ui-event__text,
+.ui-feed-line[data-own] .ui-event__text .ui-aspect-name:not([data-aspect]),
+.ui-feed-line[data-own] .ui-feed-line__reward {
   color: rgb(var(--hud-gold));
 }
 

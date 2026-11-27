@@ -1,10 +1,10 @@
-import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { HudAspectName, HudButton } from "@/ui/design-system/kit/hud-elements";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { useRealtimeChatActions, useRealtimeChatSelector } from "../../hooks/use-realtime-chat";
 import { PlaceChip } from "./chat-map";
-import { useChatMap } from "./use-chat-map";
+import { useChatMap, useChatPlayerAspect } from "./use-chat-map";
 import { ChatPortrait } from "./chat-portrait";
 
 /**
@@ -29,6 +29,7 @@ export const useMute = (playerId: string) => {
 export const PlayerCard = ({ playerId, name }: { playerId: string; name: string }) => {
   const actions = useRealtimeChatActions();
   const realm = useChatMap()?.realmOf(playerId) ?? null;
+  const aspect = useChatPlayerAspect()(playerId);
   const { muted, toggle: mute } = useMute(playerId);
   return (
     <li
@@ -38,7 +39,9 @@ export const PlayerCard = ({ playerId, name }: { playerId: string; name: string 
     >
       <ChatPortrait playerId={playerId} size="lg" className="rounded-full" />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-hud-strong text-hud-ink">{name}</p>
+        <p className="truncate text-hud-strong">
+          <HudAspectName aspect={aspect}>{name}</HudAspectName>
+        </p>
         {realm && <PlaceChip place={realm} />}
       </div>
       {!muted && (
