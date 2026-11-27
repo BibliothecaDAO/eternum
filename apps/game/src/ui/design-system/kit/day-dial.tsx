@@ -1,3 +1,4 @@
+import { UNKNOWN } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { TONE_STROKE, TONE_TEXT, type Tone } from "./tone";
@@ -42,7 +43,7 @@ export const DayDial = ({
         />
       </svg>
       <span aria-hidden className="relative text-sm tabular-nums">
-        {day ?? "—"}
+        {day ?? UNKNOWN}
       </span>
     </span>
   );

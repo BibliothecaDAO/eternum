@@ -10,7 +10,7 @@ import {
 } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { formatUsedBuildingTilesLabel } from "@/ui/features/world/containers/structure-status";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
-import { formatPopulation, type ID, StructureType } from "@bibliothecadao/types";
+import { formatPopulation, type ID, StructureType, UNKNOWN } from "@bibliothecadao/types";
 import { memo, useCallback } from "react";
 
 const CategoryIcon = ({
@@ -38,7 +38,7 @@ const resolveStatusTone = (
   if (!capabilities.hasPopulationDetails) return null;
 
   const occupied = structure.guardCount;
-  if (occupied === undefined) return { tone: "amber", title: "Guards: —" };
+  if (occupied === undefined) return { tone: "amber", title: `Guards: ${UNKNOWN}` };
   const max = structure.structure.base.troop_max_guard_count;
 
   if (max > 0 && occupied === 0) {
@@ -131,7 +131,7 @@ export const StructureStatusRow = memo(
     const explorerMax = base.troop_max_explorer_count;
     const showMilitaryStats =
       statsVariant === "military" && capabilities.hasPopulationDetails && (guardMax > 0 || explorerMax > 0);
-    const guardsLabel = showMilitaryStats && guardMax > 0 ? `${guardOccupied ?? "—"}/${guardMax}` : null;
+    const guardsLabel = showMilitaryStats && guardMax > 0 ? `${guardOccupied ?? UNKNOWN}/${guardMax}` : null;
     const explorersLabel = showMilitaryStats && explorerMax > 0 ? `${explorerOccupied}/${explorerMax}` : null;
     const isRealm = structure.category === StructureType.Realm;
     const isFavorite = structure.isFavorite;

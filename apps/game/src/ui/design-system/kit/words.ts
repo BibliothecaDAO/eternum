@@ -478,14 +478,14 @@ export const COUNTDOWN_WORDS = {
 } as const;
 export const PRESEASON_WORDS = {
   aspectTitle: "Season 1 Aspect",
-  optionalLine: "Optional — choose your Season 1 Aspect now or later. You can change it any time until Season 1 opens.",
+  optionalLine: "Optional: choose your Season 1 Aspect now or later. You can change it any time until Season 1 opens.",
   joined: "Joined",
   pick: "Choose your side",
   orderTitle: "Choose your Order",
   orderLine: (aspect: string) => `Inside ${aspect}. Your Order is your Realm's name and crest.`,
   playAs: (order: string) => `Play as ${order}`,
   invitePickPrompt:
-    "Pick an Aspect above to unlock your Season 1 invite link — friends start in your Aspect when Season 1 opens.",
+    "Pick an Aspect above to unlock your Season 1 invite link. Friends start in your Aspect when Season 1 opens.",
   inviteSignedOut: "Sign in to get your Season 1 invite link and earn Fragments when friends join.",
 } as const;
 export const SEASON_INVITE_WORDS = {
@@ -1881,7 +1881,7 @@ export const PROFILE_WORDS = {
   settingsShort: "Settings",
   tabsLabel: "Account sections",
   noAspectInviteTitle: "No invite link yet",
-  noAspectInvite: "Join an Aspect first — your personal link will appear here.",
+  noAspectInvite: "Join an Aspect first. Your personal link will appear here.",
   joinAspect: "Join an Aspect",
   friendReward: `+${formatExact(FRIEND_FRAGMENTS)} ${FRAGMENTS} for each friend who reaches ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory}`,
   guide: "Guide",
@@ -2280,7 +2280,7 @@ export const formatTravelBlockedSummary = ({
 
   if (requirements.length === 0) return null;
 
-  return `Cannot move — needs ${requirements.join(" and ")}`;
+  return `Cannot move: needs ${requirements.join(" and ")}`;
 };
 
 /** The visible reason food keeps an army still: what one step costs it (a charge) and what its realm holds. */
@@ -2410,8 +2410,8 @@ export const RESEARCH_TREE = {
     open: (done: boolean) => (done ? RESEARCH_OPEN : "Opens"),
   },
   nouns: { essence: ESSENCE, labor: LABOR },
-  wellLore: `Uncover ${WELL}s on the map — use one to refill ${STAMINA}`,
-  shrineLore: `Uncover ${SHRINE}s on the map — use one to swear an Oath`,
+  wellLore: `Uncover ${WELL}s on the map. Use one to refill ${STAMINA}`,
+  shrineLore: `Uncover ${SHRINE}s on the map. Use one to swear an Oath`,
   each: (gain: string) => `${gain} each`,
   lore: loreOf,
   opensLayers: `Opens every layer under the ${layerName(0)}`,
@@ -2470,9 +2470,9 @@ export const QUICK_ATTACK_WORDS = {
 } as const;
 
 export const BATTLE_OUTCOME_WORDS = {
-  Victory: "Victory — the enemy was defeated",
-  Defeat: "Defeat — your force was defeated",
-  Draw: "Both armies survive — no decisive result",
+  Victory: "Victory: the enemy was defeated",
+  Defeat: "Defeat: your force was defeated",
+  Draw: "Both armies survive: no decisive result",
 } as const;
 
 export const TRIBE_WORDS = {

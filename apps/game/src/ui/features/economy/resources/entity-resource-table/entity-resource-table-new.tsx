@@ -1,4 +1,4 @@
-import { RESOURCE_TIER_NAMES } from "@bibliothecadao/types";
+import { RESOURCE_TIER_NAMES, UNKNOWN } from "@bibliothecadao/types";
 import { knownAmount } from "@/ui/utils/utils";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { realmLevelNumber } from "@/ui/lib/realm-level";
@@ -414,7 +414,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                                   </span>
                                 </div>
                               ) : (
-                                <span className="text-hud-cue">—</span>
+                                <span className="text-hud-cue">{UNKNOWN}</span>
                               )}
                             </td>
                             {structureColumns.map((structure) => {

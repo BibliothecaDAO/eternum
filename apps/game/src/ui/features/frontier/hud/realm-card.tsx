@@ -16,7 +16,7 @@ import {
 } from "@/ui/design-system/kit/words";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
-import { aspectName, FRAGMENTS, formatShort, LORDS, rankName, type AspectId } from "@bibliothecadao/types";
+import { aspectName, FRAGMENTS, formatShort, LORDS, rankName, type AspectId, UNKNOWN } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import type { LordsReading } from "@/shell/value/use-lords-balance";
@@ -107,7 +107,7 @@ export const RealmCard = ({
         <li data-store="fragments">
           <Cell
             icon={<Icon name="fragment" size={30} />}
-            value={fragments === null ? "—" : formatShort(fragments)}
+            value={fragments === null ? UNKNOWN : formatShort(fragments)}
             caption={SHOP_WORDS.title}
             tone="gold"
             label={fragments === null ? FRAGMENTS : SHOP_WORDS.fragments(fragments)}
@@ -178,7 +178,7 @@ const StoreValue = ({ store }: { store: StoreReading }) => {
   const shown = useLandedValue(store.flyTarget, store.amount);
   return (
     <span className={STORE_TONES[store.tone].text}>
-      {shown === undefined ? "—" : <TickNumber value={shown} format={formatShort} />}
+      {shown === undefined ? UNKNOWN : <TickNumber value={shown} format={formatShort} />}
     </span>
   );
 };
@@ -269,7 +269,7 @@ const lordsValue = (lords: LordsReading | null) =>
   ) : lords === "reading" ? (
     <span className="ui-spinner" aria-hidden="true" />
   ) : (
-    "—"
+    UNKNOWN
   );
 
 const lordsLine = (lords: LordsReading | null) =>

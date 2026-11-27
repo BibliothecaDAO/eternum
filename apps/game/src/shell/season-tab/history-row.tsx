@@ -1,4 +1,4 @@
-import { formatAmount, formatClockTime, formatOrdinal } from "@bibliothecadao/types";
+import { formatAmount, formatClockTime, formatOrdinal, UNKNOWN } from "@bibliothecadao/types";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
@@ -45,7 +45,7 @@ export const HistoryRow = ({ game, player, now }: { game: DirectoryGame; player:
             </AppChip>
           )}
           <span className="w-12 text-right text-app-strong tabular-nums text-app-ink">
-            {rank === undefined ? "—" : formatOrdinal(rank)}
+            {rank === undefined ? UNKNOWN : formatOrdinal(rank)}
           </span>
         </>
       }

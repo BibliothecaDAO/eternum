@@ -5,7 +5,7 @@ import { SheetDock } from "@/ui/design-system/kit/hud-elements";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
-import { formatShort } from "@bibliothecadao/types";
+import { formatShort, UNKNOWN } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
 import { FRONTIER_STORES, type StoreKind } from "../stores";
@@ -111,7 +111,7 @@ const StockChip = ({ store }: { store: StoreReading }) => {
         <Icon name={FRONTIER_STORES[store.kind].icon} size={20} />
       </span>
       <span className={`frontier-stock-chip__value ${STORE_TONES[store.tone].text}`}>
-        {shown === undefined ? "—" : <TickNumber value={shown} format={formatShort} />}
+        {shown === undefined ? UNKNOWN : <TickNumber value={shown} format={formatShort} />}
       </span>
     </span>
   );

@@ -1,3 +1,4 @@
+import { UNKNOWN } from "@bibliothecadao/types";
 import { KEEP, PROFILE_WORDS, SIGN_IN_PROVIDER_NAMES, SIGN_IN_WORDS } from "@/ui/design-system/kit/words";
 import { nameRuleViolation, SOCIAL_PROVIDERS, type Session } from "@realms-world/identity";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -44,7 +45,7 @@ export const AccountCard = ({ session }: { session: Session }) => {
           <AppSetting
             icon="person"
             name={PROFILE_WORDS.name}
-            value={account ? <PlayerName account={account} /> : (identityUsername(session) ?? "—")}
+            value={account ? <PlayerName account={account} /> : (identityUsername(session) ?? UNKNOWN)}
             onClick={() => setOpen("name")}
           />
         )}
@@ -124,14 +125,14 @@ const SignInMethods = ({ session }: { session: Session }) => {
       active = false;
     };
   }, [session.user.id]);
-  if (providers === null) return "—";
+  if (providers === null) return UNKNOWN;
   const methods = [
     ...SOCIAL_PROVIDERS.filter((provider) => providers.includes(provider)).map(
       (provider) => SIGN_IN_PROVIDER_NAMES[provider],
     ),
     ...(session.user.emailVerified ? [PROFILE_WORDS.email] : []),
   ];
-  return methods.join(" · ") || "—";
+  return methods.join(" · ") || UNKNOWN;
 };
 
 /**

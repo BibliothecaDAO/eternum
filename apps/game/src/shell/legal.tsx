@@ -438,17 +438,17 @@ const PRIVACY: LegalSection[] = [
         <p>Our Services integrate with third-party platforms including:</p>
         <ul>
           <li>
-            <strong>Cartridge Controller, Ready and Braavos</strong> — Starknet wallets you may link as your payout
+            <strong>Cartridge Controller, Ready and Braavos</strong>: Starknet wallets you may link as your payout
             wallet. Linking one asks it to sign a single message; it signs none of your game actions
           </li>
           <li>
-            <strong>Starknet / Ethereum</strong> — Public blockchain networks for on-chain game execution
+            <strong>Starknet / Ethereum</strong>: Public blockchain networks for on-chain game execution
           </li>
           <li>
-            <strong>Discord</strong> — Sign-in, if you choose it
+            <strong>Discord</strong>: Sign-in, if you choose it
           </li>
           <li>
-            <strong>Resend</strong> — Sends our emails
+            <strong>Resend</strong>: Sends our emails
           </li>
         </ul>
         <p>These services have their own privacy policies. We encourage you to review them.</p>

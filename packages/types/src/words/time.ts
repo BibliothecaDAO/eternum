@@ -3,7 +3,7 @@
  * day, and how long ago something was. Unknown is a dash.
  */
 
-const DASH = "—";
+import { UNKNOWN } from "./nouns";
 /** A moment just gone, and how long ago one was: "just now", "5m ago" (formatAgo). */
 const JUST_NOW = "just now";
 const AGO = "ago";
@@ -14,7 +14,7 @@ const AGO = "ago";
  * its durations stay in hours ("30h").
  */
 export const formatDuration = (seconds: number | undefined, { days = true } = {}): string => {
-  if (seconds === undefined) return DASH;
+  if (seconds === undefined) return UNKNOWN;
   const minutes = Math.max(0, Math.ceil(seconds / 60));
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
@@ -62,7 +62,7 @@ const CLOCK = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-dig
 
 /** A moment (unix seconds) as the device's local clock time, "21:40". */
 export const formatClockTime = (unixSeconds: number | undefined): string =>
-  unixSeconds === undefined ? DASH : CLOCK.format(new Date(unixSeconds * 1000));
+  unixSeconds === undefined ? UNKNOWN : CLOCK.format(new Date(unixSeconds * 1000));
 
 const DAY_MONTH = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" });
 const DAY_MONTH_YEAR = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
@@ -83,7 +83,7 @@ const formatDay = (
   unixSeconds: number | undefined,
   nowSeconds: number,
 ): string => {
-  if (unixSeconds === undefined) return DASH;
+  if (unixSeconds === undefined) return UNKNOWN;
   const date = new Date(unixSeconds * 1000);
   const sameYear = date.getFullYear() === new Date(nowSeconds * 1000).getFullYear();
   return (sameYear ? thisYear : otherYear).format(date);
@@ -94,7 +94,7 @@ const formatDay = (
  * would read as already past once that time has gone by today.
  */
 export const formatMoment = (unixSeconds: number | undefined, nowSeconds = Date.now() / 1000): string =>
-  unixSeconds === undefined ? DASH : `${formatDate(unixSeconds, nowSeconds)} ${formatClockTime(unixSeconds)}`;
+  unixSeconds === undefined ? UNKNOWN : `${formatDate(unixSeconds, nowSeconds)} ${formatClockTime(unixSeconds)}`;
 
 /** A post or guide's day, written "2025-01-13" in the bundled content, as the device's local day ("13 Jan 2025"). */
 export const formatContentDay = (day: string): string => {
@@ -130,7 +130,7 @@ export const formatCountdown = (seconds: number): string => {
  * a day back its date ("7 Oct"), which says more than a count of days.
  */
 export const formatAgo = (unixSeconds: number | undefined, nowSeconds = Date.now() / 1000): string => {
-  if (unixSeconds === undefined) return DASH;
+  if (unixSeconds === undefined) return UNKNOWN;
   const elapsed = Math.max(0, Math.floor(nowSeconds - unixSeconds));
   if (elapsed < 10) return JUST_NOW;
   if (elapsed < 60) return `${elapsed}s ${AGO}`;

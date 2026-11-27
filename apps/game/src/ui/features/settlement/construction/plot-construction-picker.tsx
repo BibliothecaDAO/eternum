@@ -11,6 +11,7 @@ import {
   resourceName,
   ResourcesIds,
   type TroopType,
+  UNKNOWN,
 } from "@bibliothecadao/types";
 import { useEffect, useState } from "react";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -206,7 +207,7 @@ const PaintedCost = ({ requirements }: { requirements: Choice["requirements"] })
   const frontier = useGameModeConfig().id === "frontier";
   return (
     <span className="flex flex-wrap gap-x-2 gap-y-1 tabular-nums">
-      {requirements === undefined && "—"}
+      {requirements === undefined && UNKNOWN}
       {requirements?.map((cost) => (
         <span
           key={cost.resource}

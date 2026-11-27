@@ -1,3 +1,4 @@
+import { UNKNOWN } from "@bibliothecadao/types";
 import { useGame } from "@/hooks/context/game-context";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -84,7 +85,7 @@ export const useRealmVisitNavigation = (home: NativeRows["Structure"] | null) =>
 export const RealmVisitFoot = ({ home }: { home: NativeRows["Structure"] | null }) => {
   const visit = useRealmVisit();
   const visited = useVisitedRealm(visit);
-  const name = usePlayerDisplayName(visit?.player) ?? "—";
+  const name = usePlayerDisplayName(visit?.player) ?? UNKNOWN;
   if (!visit) return null;
 
   return (
