@@ -18,7 +18,7 @@ import { DEEP_PALETTE } from "../terrain/deep-floor-material";
 import { MaterialPool } from "../utils/material-pool";
 import { modelPath } from "../utils/model-url";
 import { gltfLoader } from "../utils/utils";
-import { createDeepArchiveKit, createDeepCoreKit } from "./deep-site-kit";
+import { createDeepArchiveKit, createDeepCoreKit, createDeepMineKit } from "./deep-site-kit";
 import { isProcgenMasonryMaterial } from "./procgen-masonry-material";
 
 type DeepSiteKey = (typeof deepSites)[number]["key"];
@@ -27,7 +27,7 @@ type DeepSiteSource = { readonly kit: () => Pick<GLTF, "scene" | "animations"> }
 export const DEEP_SITE_SOURCES = {
   foundation: { kit: createDeepArchiveKit },
   core: { kit: createDeepCoreKit },
-  mine: { glb: modelPath("frontier/deep/mine.glb") },
+  mine: { kit: createDeepMineKit },
   altar: { glb: modelPath("frontier/deep/altar.glb") },
 } as const satisfies Record<DeepSiteKey, DeepSiteSource>;
 

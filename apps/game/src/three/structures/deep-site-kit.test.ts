@@ -9,9 +9,11 @@ import {
   createDeepGateKit,
   createDeepGateVeilGeometry,
   createDeepGateVeilMaterial,
+  createDeepMineKit,
   DEEP_ARCHIVE_HEIGHT,
   DEEP_CORE_HEIGHT,
   DEEP_GATE_HEIGHT,
+  DEEP_MINE_HEIGHT,
 } from "./deep-site-kit";
 import { createProcgenMasonryMaterial, isProcgenMasonryMaterial } from "./procgen-masonry-material";
 
@@ -22,6 +24,8 @@ const MAX_ARCHIVE_TRIANGLES = 4_500;
 const MAX_ARCHIVE_HEIGHT_TO_WIDTH = 1.15;
 const MAX_CORE_TRIANGLES = 4_500;
 const MAX_CORE_HEIGHT_TO_WIDTH = 1.15;
+const MAX_MINE_TRIANGLES = 4_500;
+const MAX_MINE_HEIGHT_TO_WIDTH = 1.15;
 
 function countTriangles(mesh: Mesh): number {
   const index = mesh.geometry.getIndex();
@@ -269,6 +273,83 @@ describe("procedural Deep site kits", () => {
 
     const width = bounds.max.x - bounds.min.x;
     expect(bounds.max.y / width, "core H/W").toBeLessThanOrEqual(MAX_CORE_HEIGHT_TO_WIDTH);
+
+    const maxX = Math.max(Math.abs(bounds.min.x), Math.abs(bounds.max.x));
+    const maxZ = Math.max(Math.abs(bounds.min.z), Math.abs(bounds.max.z));
+    expect(maxX).toBeLessThanOrEqual(HEX_APOTHEM - 0.12);
+    expect(maxX + Math.sqrt(3) * maxZ).toBeLessThanOrEqual(2 * HEX_APOTHEM);
+
+    for (const mesh of meshes) {
+      mesh.geometry.dispose();
+      (mesh.material as MeshStandardMaterial).dispose();
+    }
+    sharedMasonry.dispose();
+  });
+
+  it("builds a grounded, floorless, hex-fit Ethereal Mine with shared ProcgenMasonryNodeMaterial, amber & cyan crystals, and deep_gem holder sockets", () => {
+    const sharedMasonry = createProcgenMasonryMaterial();
+    const sharedKey = sharedMasonry.customProgramCacheKey();
+    const triangle = new Triangle();
+    const normal = new Vector3();
+
+    const kit = createDeepMineKit();
+    kit.scene.updateMatrixWorld(true);
+    const meshes: Mesh[] = [];
+    let totalTriangles = 0;
+    const bounds = new Box3();
+
+    kit.scene.traverse((node) => {
+      if (!(node instanceof Mesh)) return;
+      meshes.push(node);
+      expect(node.scale.x).toBe(1);
+      expect(node.scale.y).toBe(1);
+      expect(node.scale.z).toBe(1);
+
+      const geometry = node.geometry;
+      for (const attr of ["position", "normal", "uv"]) {
+        const buffer = geometry.getAttribute(attr);
+        expect(buffer, `${node.name} ${attr}`).toBeDefined();
+        expect(Array.from(buffer.array).every(Number.isFinite), `${node.name} ${attr}`).toBe(true);
+      }
+      const positions = geometry.getAttribute("position");
+      const index = geometry.getIndex();
+      const count = index?.count ?? positions.count;
+      for (let face = 0; face < count; face += 3) {
+        triangle.a.fromBufferAttribute(positions, index ? index.getX(face) : face);
+        triangle.b.fromBufferAttribute(positions, index ? index.getX(face + 1) : face + 1);
+        triangle.c.fromBufferAttribute(positions, index ? index.getX(face + 2) : face + 2);
+        expect(triangle.getArea(), `${node.name} face ${face / 3}`).toBeGreaterThan(1e-12);
+        expect(triangle.getNormal(normal).length(), `${node.name}`).toBeCloseTo(1, 5);
+      }
+
+      totalTriangles += countTriangles(node);
+      bounds.union(new Box3().setFromObject(node));
+    });
+
+    expect(meshes.length).toBe(4);
+    const [masonry, amber, cyan, socket] = meshes;
+    expect(isProcgenMasonryMaterial(masonry!.material as MeshStandardMaterial)).toBe(true);
+    expect(masonry!.material).toBeInstanceOf(FrostedStandardNodeMaterial);
+    const masonryMat = masonry!.material as FrostedStandardNodeMaterial;
+    expect(masonryMat.customProgramCacheKey()).toBe(sharedKey);
+    expect(masonryMat.map).toBeNull();
+    expect(masonryMat.bumpMap).toBeNull();
+    expect(masonryMat.roughnessMap).toBeNull();
+    expect(masonry!.geometry.getAttribute("color")).toBeDefined();
+
+    expect((amber!.material as MeshStandardMaterial).emissiveIntensity).toBeGreaterThan(0.5);
+    expect((cyan!.material as MeshStandardMaterial).emissiveIntensity).toBeGreaterThan(0.5);
+    expect(socket!.name).toContain("deep_gem");
+
+    expect(totalTriangles).toBeGreaterThan(500);
+    expect(totalTriangles).toBeLessThanOrEqual(MAX_MINE_TRIANGLES);
+    expect(bounds.min.y).toBeGreaterThanOrEqual(-0.002);
+    expect(bounds.min.y).toBeLessThanOrEqual(0.005);
+    expect(bounds.max.y).toBeCloseTo(DEEP_MINE_HEIGHT, 1);
+    expect(bounds.max.y).toBeLessThanOrEqual(1.4);
+
+    const width = bounds.max.x - bounds.min.x;
+    expect(bounds.max.y / width, "mine H/W").toBeLessThanOrEqual(MAX_MINE_HEIGHT_TO_WIDTH);
 
     const maxX = Math.max(Math.abs(bounds.min.x), Math.abs(bounds.max.x));
     const maxZ = Math.max(Math.abs(bounds.min.z), Math.abs(bounds.max.z));

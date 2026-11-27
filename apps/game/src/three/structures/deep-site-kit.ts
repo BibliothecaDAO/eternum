@@ -14,6 +14,7 @@ import {
   Mesh,
   MeshStandardMaterial,
   Path,
+  Quaternion,
   Shape,
   Vector3,
 } from "three";
@@ -27,6 +28,7 @@ import { createProcgenMasonryMaterial } from "./procgen-masonry-material";
 export const DEEP_GATE_HEIGHT = 1.34;
 export const DEEP_ARCHIVE_HEIGHT = 1.18;
 export const DEEP_CORE_HEIGHT = 1.08;
+export const DEEP_MINE_HEIGHT = 1.22;
 
 interface KitPart {
   readonly geometry: BufferGeometry;
@@ -54,6 +56,17 @@ const SILVER_STEEL = "#c2c6cc";
 const SILVER_SHADE = "#9fa5b0";
 const ESSENCE_TEAL = "#4ef7d8";
 const ESSENCE_EMISSIVE = "#22e0bc";
+
+const QUARRY_MAIN = "#303642";
+const QUARRY_EDGE = "#424a59";
+const QUARRY_SHADE = "#1e232c";
+const GANTRY_MAIN = "#7c563a";
+const GANTRY_EDGE = "#9c7048";
+const IRON_DARK = "#2c3038";
+const AMBER_CRYSTAL = "#ff9e2c";
+const AMBER_EMISSIVE = "#e86a0c";
+const CYAN_CRYSTAL = "#4af0ff";
+const CYAN_EMISSIVE = "#14c8e6";
 
 const PYLON_X = 0.42;
 const PYLON_BASE_W = 0.28;
@@ -130,6 +143,201 @@ export function createDeepCoreKit(): Pick<GLTF, "scene" | "animations"> {
 
   root.add(masonryMesh, orbMesh, socketMesh);
   return { scene: root, animations: [] };
+}
+
+export function createDeepMineKit(): Pick<GLTF, "scene" | "animations"> {
+  const masonryParts: KitPart[] = [];
+  const amberParts: KitPart[] = [];
+  const cyanParts: KitPart[] = [];
+  const socketParts: KitPart[] = [];
+
+  addMineQuarryPit(masonryParts, socketParts);
+  addMineHoistGantry(masonryParts, socketParts);
+  addMinePulleyAndBasket(masonryParts, amberParts, cyanParts);
+  addMineCrystalVeins(amberParts, cyanParts);
+
+  const root = new Group();
+  root.name = "deep-site-kit-mine";
+
+  const masonryMesh = buildMasonryMesh(masonryParts, "deep-mine-masonry");
+  const amberMesh = buildCrystalMesh(amberParts, AMBER_CRYSTAL, AMBER_EMISSIVE, "deep-mine-amber");
+  const cyanMesh = buildCrystalMesh(cyanParts, CYAN_CRYSTAL, CYAN_EMISSIVE, "deep-mine-cyan");
+  const socketMesh = buildSocketGemMesh(socketParts, "deep_gem_mine");
+
+  root.add(masonryMesh, amberMesh, cyanMesh, socketMesh);
+  return { scene: root, animations: [] };
+}
+
+function addMineQuarryPit(masonryParts: KitPart[], socketParts: KitPart[]): void {
+  addHollowRing(masonryParts, 0, 0.17, 0.612, 0.452, 8, QUARRY_MAIN, Math.PI / 8);
+  addHollowRing(masonryParts, 0.17, 0.335, 0.598, 0.448, 8, QUARRY_MAIN, Math.PI / 8);
+  addHollowRing(masonryParts, 0.33, 0.365, 0.608, 0.442, 8, QUARRY_EDGE, Math.PI / 8);
+
+  addHollowRing(masonryParts, 0.16, 0.255, 0.456, 0.345, 8, QUARRY_MAIN, Math.PI / 8);
+  addHollowRing(masonryParts, 0, 0.162, 0.355, 0.24, 8, QUARRY_SHADE, Math.PI / 8);
+
+  for (let i = 0; i < 4; i++) {
+    const angle = (i * Math.PI) / 2 + Math.PI / 4;
+    addRotatedBox(
+      socketParts,
+      Math.cos(angle) * 0.535,
+      0.372,
+      Math.sin(angle) * 0.535,
+      0.044,
+      0.022,
+      0.044,
+      -angle,
+      DEEP_PALETTE.gold,
+    );
+  }
+}
+
+function addMineHoistGantry(masonryParts: KitPart[], socketParts: KitPart[]): void {
+  const frameX = 0.43;
+  const footZ = 0.255;
+  const footY = 0.33;
+  const apexY = 1.06;
+
+  for (const side of [-1, 1] as const) {
+    const x = side * frameX;
+    addStrut(masonryParts, [x, footY, footZ], [x, apexY, 0.032], 0.064, 0.068, GANTRY_MAIN);
+    addStrut(masonryParts, [x, footY, -footZ], [x, apexY, -0.032], 0.064, 0.068, GANTRY_MAIN);
+    addStrut(masonryParts, [x, 0.7, 0.142], [x, 0.7, -0.142], 0.046, 0.052, GANTRY_MAIN);
+    addStrut(masonryParts, [x, 0.7, 0.08], [x, 0.92, -0.045], 0.036, 0.04, GANTRY_EDGE);
+    addStrut(masonryParts, [x, 0.7, -0.08], [x, 0.92, 0.045], 0.036, 0.04, GANTRY_EDGE);
+
+    addBox(masonryParts, x, footY + 0.025, footZ, 0.088, 0.052, 0.092, BRONZE_MAIN);
+    addBox(masonryParts, x, footY + 0.025, -footZ, 0.088, 0.052, 0.092, BRONZE_MAIN);
+    addBox(masonryParts, x, apexY - 0.015, 0, 0.096, 0.115, 0.128, GANTRY_EDGE);
+    addBox(masonryParts, x + side * 0.052, apexY - 0.015, 0, 0.018, 0.085, 0.092, BRONZE_MAIN);
+    addBox(socketParts, x + side * 0.065, apexY - 0.015, 0, 0.018, 0.044, 0.044, DEEP_PALETTE.gold);
+  }
+
+  addBox(masonryParts, 0, 1.105, 0, 1.07, 0.105, 0.118, GANTRY_MAIN);
+  addBox(masonryParts, 0, 1.162, 0, 1.09, 0.022, 0.132, GANTRY_EDGE);
+  for (const side of [-1, 1] as const) {
+    addBox(masonryParts, side * 0.51, 1.105, 0, 0.052, 0.12, 0.134, BRONZE_MAIN);
+    addBox(socketParts, side * 0.548, 1.105, 0, 0.022, 0.054, 0.054, DEEP_PALETTE.gold);
+  }
+}
+
+function addMinePulleyAndBasket(masonryParts: KitPart[], amberParts: KitPart[], cyanParts: KitPart[]): void {
+  const upperWheel = new CylinderGeometry(0.082, 0.082, 0.05, 14);
+  upperWheel.rotateX(Math.PI / 2);
+  upperWheel.translate(0, 1.132, 0);
+  masonryParts.push({ geometry: upperWheel, color: IRON_DARK });
+
+  for (const face of [-1, 1] as const) {
+    const flange = new CylinderGeometry(0.088, 0.088, 0.014, 14);
+    flange.rotateX(Math.PI / 2);
+    flange.translate(0, 1.132, face * 0.032);
+    masonryParts.push({ geometry: flange, color: BRONZE_MAIN });
+  }
+
+  const lowerWheel = new CylinderGeometry(0.052, 0.052, 0.036, 12);
+  lowerWheel.rotateX(Math.PI / 2);
+  lowerWheel.translate(0, 0.935, 0);
+  masonryParts.push({ geometry: lowerWheel, color: IRON_DARK });
+  addBox(masonryParts, 0, 0.935, 0, 0.068, 0.11, 0.052, BRONZE_MAIN);
+
+  addBox(masonryParts, 0, 0.85, 0, 0.022, 0.17, 0.022, IRON_DARK);
+
+  const basketY = 0.65;
+  addHollowRing(masonryParts, basketY - 0.01, basketY + 0.02, 0.095, 0.04, 6, IRON_DARK);
+  addHollowRing(masonryParts, basketY + 0.105, basketY + 0.13, 0.122, 0.096, 6, BRONZE_MAIN);
+  for (let i = 0; i < 6; i++) {
+    const angle = (i * Math.PI) / 3;
+    const bx = Math.cos(angle) * 0.085;
+    const bz = Math.sin(angle) * 0.085;
+    const tx = Math.cos(angle) * 0.112;
+    const tz = Math.sin(angle) * 0.112;
+    addStrut(masonryParts, [bx, basketY, bz], [tx, basketY + 0.125, tz], 0.018, 0.018, BRONZE_MAIN);
+    if (i % 2 === 0) {
+      addStrut(masonryParts, [tx, basketY + 0.125, tz], [0, 0.82, 0], 0.014, 0.014, IRON_DARK);
+    }
+  }
+
+  addCrystalCluster(amberParts, -0.025, basketY + 0.04, 0.01, 0.55, 0.4, AMBER_CRYSTAL);
+  addCrystalCluster(cyanParts, 0.045, basketY + 0.05, 0.035, 0.52, -0.5, CYAN_CRYSTAL);
+}
+
+function addMineCrystalVeins(amberParts: KitPart[], cyanParts: KitPart[]): void {
+  addCrystalCluster(amberParts, -0.14, 0.25, -0.22, 1.15, 0.2, AMBER_CRYSTAL);
+  addCrystalCluster(cyanParts, 0.06, 0.24, -0.25, 0.95, -0.35, CYAN_CRYSTAL);
+  addCrystalCluster(cyanParts, -0.31, 0.25, 0.04, 0.88, 0.9, CYAN_CRYSTAL);
+  addCrystalCluster(amberParts, -0.27, 0.24, 0.15, 0.78, 1.25, AMBER_CRYSTAL);
+  addCrystalCluster(amberParts, 0.26, 0.25, 0.11, 0.82, -0.95, AMBER_CRYSTAL);
+  addCrystalCluster(cyanParts, 0.31, 0.25, -0.04, 0.85, -1.2, CYAN_CRYSTAL);
+  addCrystalCluster(amberParts, 0.12, 0.15, 0.19, 0.72, 2.4, AMBER_CRYSTAL);
+  addCrystalCluster(cyanParts, -0.11, 0.15, 0.2, 0.68, 2.9, CYAN_CRYSTAL);
+}
+
+function addCrystalCluster(
+  parts: KitPart[],
+  x: number,
+  y: number,
+  z: number,
+  scale: number,
+  yaw: number,
+  color: string,
+): void {
+  const spires: ReadonlyArray<readonly [number, number, number, number, number, number]> = [
+    [0, 0, 0.046 * scale, 0.21 * scale, 0.08, 0.05],
+    [0.042 * scale, 0.025 * scale, 0.034 * scale, 0.155 * scale, 0.24, -0.22],
+    [-0.038 * scale, 0.02 * scale, 0.032 * scale, 0.145 * scale, -0.22, 0.18],
+    [0.01 * scale, -0.04 * scale, 0.028 * scale, 0.12 * scale, -0.18, -0.26],
+  ];
+  const rotY = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), yaw);
+  const offset = new Vector3();
+
+  for (const [ox, oz, radius, height, tiltX, tiltZ] of spires) {
+    const geometry = new CylinderGeometry(radius * 0.22, radius, height, 6);
+    geometry.translate(0, height / 2, 0);
+    geometry.rotateX(tiltX);
+    geometry.rotateZ(tiltZ);
+    geometry.rotateY(yaw);
+    offset.set(ox, 0, oz).applyQuaternion(rotY);
+    geometry.translate(x + offset.x, y, z + offset.z);
+    parts.push({ geometry, color });
+  }
+}
+
+function addStrut(
+  parts: KitPart[],
+  from: readonly [number, number, number],
+  to: readonly [number, number, number],
+  width: number,
+  depth: number,
+  color: string,
+): void {
+  const start = new Vector3(from[0], from[1], from[2]);
+  const end = new Vector3(to[0], to[1], to[2]);
+  const delta = end.clone().sub(start);
+  const length = delta.length();
+  const geometry = new BoxGeometry(width, length, depth);
+  const quat = new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), delta.normalize());
+  geometry.applyQuaternion(quat);
+  const mid = start.add(end).multiplyScalar(0.5);
+  geometry.translate(mid.x, mid.y, mid.z);
+  parts.push({ geometry, color });
+}
+
+function buildCrystalMesh(parts: readonly KitPart[], colorHex: string, emissiveHex: string, name: string): Mesh {
+  const geometry = combineParts(parts, false);
+  const material = new MeshStandardMaterial({
+    name,
+    color: new Color(colorHex),
+    emissive: new Color(emissiveHex),
+    emissiveIntensity: 1.2,
+    roughness: 0.18,
+    metalness: 0.1,
+    flatShading: true,
+  });
+  const mesh = new Mesh(geometry, material);
+  mesh.name = name;
+  mesh.castShadow = false;
+  mesh.receiveShadow = false;
+  return mesh;
 }
 
 function addCoreBaseCollar(parts: KitPart[]): void {

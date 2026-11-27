@@ -64,15 +64,22 @@ describe("deep landmark holder colours", () => {
     expect(core.instancedMeshes.some((mesh) => isProcgenMasonryMaterial(mesh.material as Material))).toBe(true);
     expect(core.instancedMeshes.some((mesh) => mesh.geometry.getAttribute("landmarkGlow"))).toBe(true);
 
-    const glbMineScene = await loadDeepLandmark("mine", 1);
-    expect(loadModel).toHaveBeenCalledWith(DEEP_SITE_SOURCES.mine.glb);
-    const glbMine = new DeepLandmarkModel(glbMineScene, 2, "Ethereal mine", 1);
-    expect(glbMine.instancedMeshes.some((mesh) => mesh.geometry.getAttribute("landmarkGlow"))).toBe(true);
+    const mineScene = await loadDeepLandmark("mine", 1);
+    expect(loadModel).not.toHaveBeenCalled();
+    const mine = new DeepLandmarkModel(mineScene, 2, "Ethereal mine", 1);
+    expect(mine.instancedMeshes.some((mesh) => isProcgenMasonryMaterial(mesh.material as Material))).toBe(true);
+    expect(mine.instancedMeshes.some((mesh) => mesh.geometry.getAttribute("landmarkGlow"))).toBe(true);
+
+    const glbAltarScene = await loadDeepLandmark("altar", 1);
+    expect(loadModel).toHaveBeenCalledWith(DEEP_SITE_SOURCES.altar.glb);
+    const glbAltar = new DeepLandmarkModel(glbAltarScene, 2, "Bane altar", 1);
+    expect(glbAltar.instancedMeshes.some((mesh) => mesh.geometry.getAttribute("landmarkGlow"))).toBe(true);
 
     active.dispose();
     active.dispose();
     dormant.dispose();
     core.dispose();
-    glbMine.dispose();
+    mine.dispose();
+    glbAltar.dispose();
   });
 });
