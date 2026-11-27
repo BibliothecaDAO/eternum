@@ -18,7 +18,7 @@ import { GameProvider } from "@/hooks/context/game-context";
 import { NativeFactStore, type GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 import { ROW_PX, layOutChatLists, scrollOf, scrollTo } from "@/hooks/use-stick-to-latest.test-support";
-import { useRealtimeChatStore } from "../model/store";
+import { useRealtimeChatStore, WORLD_HISTORY_PAGE_LIMIT } from "../model/store";
 import { GLOBAL_ROOM } from "../model/chat-rooms";
 import type { DirectMessage, WorldChatMessage, WorldChatZoneState } from "../model/types";
 import { RealtimeChatShell } from "./realtime-chat-shell";
@@ -56,9 +56,10 @@ const room = (zoneId: string, count: number): WorldChatZoneState => ({
 });
 
 const loadWorldHistory = vi.fn(() => Promise.resolve());
+const loadDirectHistory = vi.fn(() => Promise.resolve());
 
 /** Signed in, Global and this game's room joined with their history read, and one DM thread: no socket, no fetch. */
-const installRooms = ({ globalCount = 20 } = {}) => {
+const installRooms = ({ globalCount = 20, dmCount = 12, dmHasMore = false } = {}) => {
   const { actions } = useRealtimeChatStore.getState();
   useRealtimeChatStore.setState({
     connectionStatus: "connected",
@@ -71,9 +72,9 @@ const installRooms = ({ globalCount = 20 } = {}) => {
     dmThreads: {
       [THREAD]: {
         thread: { id: THREAD, participants: ["0x7", "0xada"], createdAt: new Date(0).toISOString(), unreadCounts: {} },
-        messages: Array.from({ length: 12 }, (_, index) => directMessage(index)),
-        hasMoreHistory: false,
-        lastFetchedCursor: undefined,
+        messages: Array.from({ length: dmCount }, (_, index) => directMessage(index)),
+        hasMoreHistory: dmHasMore,
+        lastFetchedCursor: dmHasMore ? "dm-older" : undefined,
         isFetchingHistory: false,
         pendingMessages: [],
       },
@@ -85,7 +86,7 @@ const installRooms = ({ globalCount = 20 } = {}) => {
       initializeClient: () => undefined,
       resetClient: () => undefined,
       loadWorldHistory,
-      loadDirectHistory: () => Promise.resolve(),
+      loadDirectHistory,
       markZoneAsRead: () => undefined,
       markThreadAsRead: () => undefined,
     },
@@ -95,13 +96,14 @@ const installRooms = ({ globalCount = 20 } = {}) => {
 let store: NativeFactStore;
 let host: HTMLDivElement;
 let root: Root;
-let undoLayout: () => void;
+let undoLayout: ReturnType<typeof layOutChatLists>;
 
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   store = new NativeFactStore();
   undoLayout = layOutChatLists();
   loadWorldHistory.mockClear();
+  loadDirectHistory.mockClear();
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -231,4 +233,78 @@ it("asks for older messages near the start, and keeps the reader's message in pl
   const top = scrollOf(messageList()).top;
   expect(top).toBe(40 + 10 * ROW_PX);
   expect(messageList().querySelectorAll("li")[2 + 10]?.textContent).toBe(reading);
+});
+
+it("loads older world history automatically when the first page does not fill a tall panel, then stops once full", () => {
+  undoLayout();
+  undoLayout = layOutChatLists(600);
+  installRooms({ globalCount: 10 });
+  openChat();
+
+  expect(loadWorldHistory).toHaveBeenCalledTimes(1);
+  expect(loadWorldHistory).toHaveBeenLastCalledWith({
+    zoneId: GLOBAL_CHAT_CHANNEL_ID,
+    cursor: "older",
+    limit: WORLD_HISTORY_PAGE_LIMIT,
+  });
+  expect(WORLD_HISTORY_PAGE_LIMIT).toBe(50);
+
+  const page2 = Array.from({ length: 10 }, (_, index) => worldMessage(GLOBAL_CHAT_CHANNEL_ID, -10 + index));
+  act(() =>
+    useRealtimeChatStore.setState((state) => {
+      const zone = state.worldZones[GLOBAL_CHAT_CHANNEL_ID]!;
+      return {
+        worldZones: {
+          ...state.worldZones,
+          [GLOBAL_CHAT_CHANNEL_ID]: {
+            ...zone,
+            messages: [...page2, ...zone.messages],
+            lastFetchedCursor: "older-2",
+            hasMoreHistory: true,
+          },
+        },
+      };
+    }),
+  );
+  expect(loadWorldHistory).toHaveBeenCalledTimes(1);
+
+  act(() => undoLayout.resize(900));
+  expect(loadWorldHistory).toHaveBeenCalledTimes(2);
+  expect(loadWorldHistory).toHaveBeenLastCalledWith({
+    zoneId: GLOBAL_CHAT_CHANNEL_ID,
+    cursor: "older-2",
+    limit: WORLD_HISTORY_PAGE_LIMIT,
+  });
+});
+
+it("stops auto-loading short pages once history ends and also auto-fills direct message threads", () => {
+  undoLayout();
+  undoLayout = layOutChatLists(600);
+  installRooms({ globalCount: 4, dmCount: 4, dmHasMore: true });
+  openChat();
+
+  expect(loadWorldHistory).toHaveBeenCalledTimes(1);
+  const older = Array.from({ length: 2 }, (_, index) => worldMessage(GLOBAL_CHAT_CHANNEL_ID, -2 + index));
+  act(() =>
+    useRealtimeChatStore.setState((state) => {
+      const zone = state.worldZones[GLOBAL_CHAT_CHANNEL_ID]!;
+      return {
+        worldZones: {
+          ...state.worldZones,
+          [GLOBAL_CHAT_CHANNEL_ID]: {
+            ...zone,
+            messages: [...older, ...zone.messages],
+            hasMoreHistory: false,
+            lastFetchedCursor: null,
+          },
+        },
+      };
+    }),
+  );
+  expect(loadWorldHistory).toHaveBeenCalledTimes(1);
+
+  act(() => button("Messages")?.click());
+  act(() => button("Ada")?.click());
+  expect(loadDirectHistory).toHaveBeenCalledTimes(1);
+  expect(loadDirectHistory).toHaveBeenLastCalledWith(THREAD, "dm-older");
 });

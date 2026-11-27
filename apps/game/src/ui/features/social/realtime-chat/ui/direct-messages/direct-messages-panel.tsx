@@ -16,6 +16,7 @@ import { placeMetadata, placeOf } from "../../model/place";
 import { replyMetadata, replyOf } from "../../model/reply";
 import { PlaceChip } from "../shared/chat-map";
 import { useMute } from "../shared/player-card";
+import { nextHistoryCursor } from "../../model/store";
 import { useStickToLatest } from "@/hooks/use-stick-to-latest";
 import { JumpToLatest } from "../shared/jump-to-latest";
 import { useLinkOpener } from "../shared/leaving-realms";
@@ -103,15 +104,11 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, className }: D
   const dmMessages = thread?.messages ?? NO_MESSAGES;
   const dateSeparators = useMemo(() => computeDateSeparators(dmMessages), [dmMessages]);
 
-  const loadOlder = () => {
-    if (thread?.hasMoreHistory && thread.lastFetchedCursor && !thread.isFetchingHistory && !thread.historyError) {
-      void loadHistory(thread.lastFetchedCursor);
-    }
-  };
+  const olderCursor = nextHistoryCursor(thread);
   const { scrollerRef, hasNewer, jumpToLatest } = useStickToLatest({
     oldest: dmMessages[0]?.id,
     newest: dmMessages.at(-1)?.id,
-    onNearOldest: loadOlder,
+    onNearOldest: olderCursor ? () => void loadHistory(olderCursor) : undefined,
   });
 
   return (

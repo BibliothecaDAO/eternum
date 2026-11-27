@@ -7,10 +7,12 @@ const BOX_PX = 200;
  * rows (`li`) at ROW_PX each, its scroll position clamps to what scrolls, as a browser's does, and a box never resizes.
  * Returns the way to undo it.
  */
-export const layOutChatLists = () => {
+export const layOutChatLists = (initialBoxPx = BOX_PX) => {
+  let boxPx = initialBoxPx;
   const positions = new WeakMap<Element, number>();
+  const observers = new Set<ResizeObserverCallback>();
   const contentHeight = (element: Element) => element.querySelectorAll("li").length * ROW_PX;
-  const furthest = (element: Element) => Math.max(0, contentHeight(element) - BOX_PX);
+  const furthest = (element: Element) => Math.max(0, contentHeight(element) - boxPx);
   const descriptors = (["scrollHeight", "clientHeight", "scrollTop"] as const).map(
     (name) => [name, Object.getOwnPropertyDescriptor(Element.prototype, name)] as const,
   );
@@ -21,7 +23,7 @@ export const layOutChatLists = () => {
         return contentHeight(this);
       },
     },
-    clientHeight: { configurable: true, get: () => BOX_PX },
+    clientHeight: { configurable: true, get: () => boxPx },
     scrollTop: {
       configurable: true,
       get(this: Element) {
@@ -34,16 +36,27 @@ export const layOutChatLists = () => {
   });
   const resizeObserver = globalThis.ResizeObserver;
   globalThis.ResizeObserver = class {
-    observe() {}
+    constructor(private readonly callback: ResizeObserverCallback) {}
+    observe() {
+      observers.add(this.callback);
+    }
     unobserve() {}
-    disconnect() {}
+    disconnect() {
+      observers.delete(this.callback);
+    }
   };
-  return () => {
+  const undo = () => {
     for (const [name, descriptor] of descriptors) {
       if (descriptor) Object.defineProperty(Element.prototype, name, descriptor);
     }
     globalThis.ResizeObserver = resizeObserver;
   };
+  return Object.assign(undo, {
+    resize: (nextBoxPx: number) => {
+      boxPx = nextBoxPx;
+      for (const callback of observers) callback([], {} as ResizeObserver);
+    },
+  });
 };
 
 /** The list's scroll position, and the furthest it goes: where the latest message shows. */
