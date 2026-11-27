@@ -60,14 +60,14 @@ const MAX_HEIGHT_TO_WIDTH_BY_LEVEL = {
 const WONDER_HEIGHT_BAND_BY_LEVEL = {
   0: { min: 0.7, max: 0.92 },
   1: { min: 1.15, max: 1.38 },
-  2: null,
+  2: { min: 1.85, max: 2.5 },
   3: null,
 } as const satisfies Record<RealmLevels, { min: number; max: number } | null>;
 
 const MAX_WONDER_HEIGHT_TO_WIDTH_BY_LEVEL = {
   0: 0.56,
   1: 0.8,
-  2: null,
+  2: 1.48,
   3: null,
 } as const satisfies Record<RealmLevels, number | null>;
 

@@ -1,10 +1,17 @@
 import { expect, it } from "vitest";
-import { BuildingType, FRONTIER_BUILDING_TYPES, StructureType, BUILDINGS_CENTER } from "@bibliothecadao/types";
+import {
+  BuildingType,
+  FRONTIER_BUILDING_TYPES,
+  RealmLevels,
+  StructureType,
+  BUILDINGS_CENTER,
+} from "@bibliothecadao/types";
 import { getGameModeConfig } from "./index";
 import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
 import { buildingModelPaths, BUILDINGS_GROUPS, getStructureModelPaths } from "@/three/constants/scene-constants";
 import { resolveBuildingModelSelection } from "@/three/scenes/hexception-building-model";
 import { frontierPaintedBuildingPath, frontierPaintedPath } from "@/three/structures/frontier-painted-buildings";
+import { aspectWonderKitPath } from "@/three/structures/realm-kit";
 
 it("gives every Frontier building its own distinct model without changing other modes", () => {
   const frontier = getGameModeConfig(GAME_FAMILIES.frontier).assets;
@@ -100,7 +107,12 @@ it("selects all five painted tiers while keeping Storeroom on its own model and 
     { category: BuildingType.ResourceLabor, col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], tier: 1 },
     { stage: 2, structureId: 1003, wonder: true, aspect: 1, frontier: true },
   );
-  expect(frontierWonder.tierPath).toBe("/models/realms/wonder-prowess.glb");
+  expect(frontierWonder.tierPath).toBe(aspectWonderKitPath(1, RealmLevels.Kingdom));
+  const frontierEmpireWonder = resolveBuildingModelSelection(
+    { category: BuildingType.ResourceLabor, col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], tier: 1 },
+    { stage: 3, structureId: 1003, wonder: true, aspect: 1, frontier: true },
+  );
+  expect(frontierEmpireWonder.tierPath).toBe("/models/realms/wonder-prowess.glb");
   const blitzWonder = resolveBuildingModelSelection(
     { category: BuildingType.ResourceLabor, col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], tier: 1 },
     { stage: 2, structureId: 1003, wonder: true, aspect: 1, frontier: false },

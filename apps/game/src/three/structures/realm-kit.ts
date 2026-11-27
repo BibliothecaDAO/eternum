@@ -154,7 +154,12 @@ const ASPECT_WONDER_BUILDERS = {
     3: buildHavocWonderCity,
     4: buildInsightWonderCity,
   },
-  2: null,
+  2: {
+    1: buildProwessWonderKingdom,
+    2: buildLuminaryWonderKingdom,
+    3: buildHavocWonderKingdom,
+    4: buildInsightWonderKingdom,
+  },
   3: null,
 } as const satisfies Record<RealmLevels, Record<AspectId, AspectKitBuilder> | null>;
 
@@ -2521,6 +2526,434 @@ function buildInsightWonderCity(parts: KitParts, palette: AspectKitPalette): voi
       piece(new CylinderGeometry(0.024, 0.055, 0.72, 6), palette.stone, px, 0.87, pz),
     );
     parts.glow.push(piece(new OctahedronGeometry(0.048, 0).scale(0.75, 1.5, 0.75), palette.gem, px, 1.255, pz));
+  }
+}
+
+function buildProwessWonderKingdom(parts: KitParts, palette: AspectKitPalette): void {
+  addHexCurtainWall(parts, {
+    height: 0.48,
+    thickness: 0.1,
+    wallColor: palette.stone,
+    baseColor: palette.trim,
+    trimColor: palette.trim,
+    trimY: 0.455,
+    bandY: 0.24,
+  });
+  addWonderBastionGate(parts, palette.stone, palette.trim, palette.timber, palette.stoneShade, 0.54);
+  addWallBannerRails(parts, palette.rail, 0.38, KINGDOM_BANNER_Z, KINGDOM_BANNER_X, KINGDOM_BANNER_WIDTH);
+
+  for (const { from, to } of HEX_WALL_SEGMENTS) {
+    const dx = to[0] - from[0];
+    const dz = to[1] - from[1];
+    const length = Math.hypot(dx, dz);
+    const yaw = Math.atan2(dx, dz);
+    const cx = (from[0] + to[0]) / 2;
+    const cz = (from[1] + to[1]) / 2;
+    parts.masonry.push(piece(cutStoneBlock(0.12, 0.07, length * 0.36), palette.stoneShade, cx, 0.515, cz, yaw));
+  }
+
+  for (const [x, z] of HEX_PERIMETER_POINTS) {
+    parts.masonry.push(
+      piece(cutStoneBlock(0.16, 0.66, 0.16), palette.stone, x, 0.33, z),
+      piece(cutStoneBlock(0.185, 0.07, 0.185), palette.trim, x, 0.035, z),
+      piece(cutStoneBlock(0.175, 0.042, 0.175), palette.trim, x, 0.4, z),
+      piece(cutStoneBlock(0.185, 0.055, 0.185), palette.trim, x, 0.67, z),
+    );
+    parts.glow.push(piece(new OctahedronGeometry(0.06, 0).scale(0.85, 1.45, 0.85), palette.gem, x, 0.775, z));
+  }
+
+  const centerZ = -0.04;
+  parts.masonry.push(
+    piece(new CylinderGeometry(0.41, 0.46, 0.22, 8), palette.stoneShade, 0, 0.11, centerZ),
+    piece(new CylinderGeometry(0.35, 0.42, 0.24, 8), palette.stone, 0, 0.32, centerZ),
+    piece(new CylinderGeometry(0.37, 0.38, 0.055, 8), palette.trim, 0, 0.455, centerZ),
+    piece(new CylinderGeometry(0.22, 0.31, 1.28, 8), palette.stone, 0, 1.11, centerZ),
+    piece(new CylinderGeometry(0.275, 0.24, 0.14, 8), palette.stoneShade, 0, 1.77, centerZ),
+    piece(new TorusGeometry(0.275, 0.04, 6, 18).rotateX(Math.PI / 2), palette.trim, 0, 1.88, centerZ),
+  );
+  for (let side = 0; side < 8; side++) {
+    const angle = (side * Math.PI) / 4;
+    const dx = Math.cos(angle);
+    const dz = Math.sin(angle);
+    parts.masonry.push(
+      piece(
+        cutStoneBlock(0.045, 0.34, 0.032),
+        palette.trim,
+        dx * 0.295,
+        0.74,
+        centerZ + dz * 0.295,
+        -angle + Math.PI / 2,
+      ),
+      piece(
+        cutStoneBlock(0.04, 0.32, 0.03),
+        palette.trim,
+        dx * 0.255,
+        1.32,
+        centerZ + dz * 0.255,
+        -angle + Math.PI / 2,
+      ),
+    );
+  }
+
+  for (let arch = 0; arch < 4; arch++) {
+    const angle = (arch * Math.PI) / 2 + Math.PI / 4;
+    const dx = Math.cos(angle);
+    const dz = Math.sin(angle);
+    const p0 = new Vector3(dx * 0.64, 0.44, centerZ + dz * 0.64);
+    const p1 = new Vector3(dx * 0.56, 0.98, centerZ + dz * 0.56);
+    const p2 = new Vector3(dx * 0.42, 1.44, centerZ + dz * 0.42);
+    const p3 = new Vector3(dx * 0.25, 1.75, centerZ + dz * 0.25);
+    parts.masonry.push(
+      piece(beamBetween(p0, p1, 0.058), palette.trim),
+      piece(beamBetween(p1, p2, 0.052), palette.trim),
+      piece(beamBetween(p2, p3, 0.046), palette.trim),
+    );
+  }
+
+  for (let prong = 0; prong < 6; prong++) {
+    const angle = (prong * Math.PI) / 3;
+    const px = Math.cos(angle) * 0.245;
+    const pz = centerZ + Math.sin(angle) * 0.245;
+    parts.masonry.push(
+      piece(cutStoneBlock(0.058, 0.3, 0.036), palette.trim, px, 2.01, pz, -angle + Math.PI / 2),
+      piece(new ConeGeometry(0.038, 0.14, 4), palette.trim, px, 2.22, pz, -angle + Math.PI / 4),
+    );
+  }
+  parts.glow.push(piece(new IcosahedronGeometry(0.185, 1), palette.gem, 0, 1.98, centerZ));
+}
+
+function buildLuminaryWonderKingdom(parts: KitParts, palette: AspectKitPalette): void {
+  addHexCurtainWall(parts, {
+    height: 0.52,
+    thickness: 0.1,
+    wallColor: palette.stone,
+    baseColor: palette.accent,
+    trimColor: palette.roof,
+    trimY: 0.5,
+    bandY: 0.27,
+  });
+  addWonderBastionGate(parts, palette.stone, palette.accent, palette.roof, palette.stoneShade, 0.58);
+  addWallBannerRails(parts, palette.rail, 0.38, KINGDOM_BANNER_Z, KINGDOM_BANNER_X, KINGDOM_BANNER_WIDTH);
+
+  const spireCorners: readonly (readonly [number, number])[] = [
+    [-0.6, 0.62],
+    [0.6, 0.62],
+    [-0.72, -0.38],
+    [0.72, -0.38],
+  ];
+  for (const [x, z] of spireCorners) {
+    parts.masonry.push(
+      piece(new CylinderGeometry(0.11, 0.125, 0.68, 6), palette.stone, x, 0.34, z),
+      piece(new CylinderGeometry(0.135, 0.135, 0.06, 6), palette.accent, x, 0.03, z),
+      piece(new CylinderGeometry(0.13, 0.13, 0.05, 6), palette.accent, x, 0.68, z),
+      piece(new CylinderGeometry(0.095, 0.105, 0.5, 6), palette.stone, x, 0.94, z),
+      piece(new CylinderGeometry(0.115, 0.108, 0.055, 6), palette.roof, x, 1.2, z),
+      piece(new ConeGeometry(0.102, 0.62, 6), palette.accent, x, 1.535, z),
+    );
+    parts.glow.push(piece(cutStoneBlock(0.04, 0.2, 0.04), palette.gem, x, 0.94, z + 0.088));
+  }
+  for (const [x, z] of [
+    [-0.78, 0.18],
+    [0.78, 0.18],
+    [-0.3, -0.72],
+    [0.3, -0.72],
+  ] as const) {
+    parts.masonry.push(
+      piece(cutStoneBlock(0.145, 0.58, 0.145), palette.stone, x, 0.29, z),
+      piece(cutStoneBlock(0.165, 0.055, 0.165), palette.accent, x, 0.59, z),
+    );
+  }
+
+  const centerZ = -0.02;
+  const drumHeight = 0.82;
+  parts.masonry.push(
+    piece(new CylinderGeometry(0.45, 0.49, 0.14, 8), palette.accent, 0, 0.07, centerZ),
+    piece(new CylinderGeometry(0.41, 0.44, drumHeight, 8), palette.stone, 0, drumHeight / 2 + 0.04, centerZ),
+    piece(new CylinderGeometry(0.44, 0.43, 0.06, 8), palette.roof, 0, drumHeight + 0.06, centerZ),
+    piece(new TorusGeometry(0.39, 0.03, 6, 16).rotateX(Math.PI / 2), palette.accent, 0, drumHeight + 0.11, centerZ),
+    piece(new TorusGeometry(0.35, 0.024, 6, 16).rotateX(Math.PI / 2), palette.roof, 0, 1.22, centerZ),
+    piece(new TorusGeometry(0.24, 0.022, 6, 16).rotateX(Math.PI / 2), palette.roof, 0, 1.52, centerZ),
+  );
+  for (let side = 0; side < 8; side++) {
+    const angle = (side * Math.PI) / 4;
+    const dx = Math.sin(angle);
+    const dz = Math.cos(angle);
+    parts.masonry.push(
+      piece(
+        cutStoneBlock(0.065, drumHeight + 0.02, 0.065),
+        palette.stoneShade,
+        dx * 0.42,
+        drumHeight / 2 + 0.04,
+        centerZ + dz * 0.42,
+        angle,
+      ),
+    );
+    parts.glow.push(
+      piece(cutStoneBlock(0.085, 0.22, 0.03), palette.gem, dx * 0.405, 0.62, centerZ + dz * 0.405, angle),
+    );
+    const cage0 = new Vector3(dx * 0.39, drumHeight + 0.11, centerZ + dz * 0.39);
+    const cage1 = new Vector3(dx * 0.35, 1.22, centerZ + dz * 0.35);
+    const cage2 = new Vector3(dx * 0.24, 1.52, centerZ + dz * 0.24);
+    const cage3 = new Vector3(dx * 0.08, 1.72, centerZ + dz * 0.08);
+    parts.masonry.push(
+      piece(beamBetween(cage0, cage1, 0.03), palette.accent),
+      piece(beamBetween(cage1, cage2, 0.028), palette.accent),
+      piece(beamBetween(cage2, cage3, 0.026), palette.roof),
+    );
+  }
+
+  for (let buttress = 0; buttress < 4; buttress++) {
+    const angle = (buttress * Math.PI) / 2 + Math.PI / 4;
+    const dx = Math.cos(angle);
+    const dz = Math.sin(angle);
+    const b0 = new Vector3(dx * 0.56, 0.48, centerZ + dz * 0.56);
+    const b1 = new Vector3(dx * 0.45, 0.98, centerZ + dz * 0.45);
+    const b2 = new Vector3(dx * 0.36, 1.38, centerZ + dz * 0.36);
+    parts.masonry.push(
+      piece(beamBetween(b0, b1, 0.056), palette.stone),
+      piece(beamBetween(b1, b2, 0.048), palette.stone),
+    );
+  }
+
+  parts.glow.push(piece(new IcosahedronGeometry(0.24, 1), palette.gem, 0, 1.18, centerZ));
+  parts.masonry.push(
+    piece(new CylinderGeometry(0.11, 0.13, 0.08, 8), palette.accent, 0, 1.74, centerZ),
+    piece(new TorusGeometry(0.32, 0.038, 6, 20).rotateX(Math.PI / 2), palette.stone, 0, 1.88, centerZ),
+    piece(new TorusGeometry(0.32, 0.018, 5, 20).rotateX(Math.PI / 2), palette.trim, 0, 1.91, centerZ),
+  );
+}
+
+function buildHavocWonderKingdom(parts: KitParts, palette: AspectKitPalette): void {
+  addHexCurtainWall(parts, {
+    height: 0.5,
+    thickness: 0.1,
+    wallColor: palette.stone,
+    baseColor: palette.stoneShade,
+    trimColor: palette.accent,
+    trimY: 0.39,
+    bandY: 0.15,
+  });
+  addWonderBastionGate(parts, palette.stone, palette.accent, palette.timber, palette.stoneShade, 0.56);
+  addWallBannerRails(parts, palette.rail, 0.37, KINGDOM_BANNER_Z, KINGDOM_BANNER_X, KINGDOM_BANNER_WIDTH);
+
+  for (const { from, to } of HEX_WALL_SEGMENTS) {
+    const dx = to[0] - from[0];
+    const dz = to[1] - from[1];
+    const length = Math.hypot(dx, dz);
+    const yaw = Math.atan2(dx, dz);
+    const cx = (from[0] + to[0]) / 2;
+    const cz = (from[1] + to[1]) / 2;
+    const outX = dz / length;
+    const outZ = -dx / length;
+    parts.masonry.push(
+      piece(cutStoneBlock(0.125, 0.085, length * 0.34), palette.stoneShade, cx, 0.535, cz, yaw),
+      piece(
+        new OctahedronGeometry(0.044, 0).scale(0.65, 1.15, 0.95),
+        palette.trim,
+        cx + outX * 0.064,
+        0.39,
+        cz + outZ * 0.064,
+        yaw,
+      ),
+    );
+  }
+
+  for (const [x, z] of HEX_PERIMETER_POINTS) {
+    parts.masonry.push(
+      piece(cutStoneBlock(0.16, 0.64, 0.16), palette.stone, x, 0.32, z),
+      piece(cutStoneBlock(0.18, 0.055, 0.18), palette.accent, x, 0.42, z),
+      piece(cutStoneBlock(0.155, 0.055, 0.155), palette.stoneShade, x, 0.65, z),
+    );
+    parts.glow.push(piece(new OctahedronGeometry(0.058, 0).scale(0.75, 1.7, 0.75), palette.gem, x, 0.76, z));
+  }
+
+  const centerZ = -0.04;
+  for (let outerHorn = 0; outerHorn < 4; outerHorn++) {
+    const angle = (outerHorn * Math.PI) / 2 + Math.PI / 4;
+    const dx = Math.cos(angle);
+    const dz = Math.sin(angle);
+    const h0 = new Vector3(dx * 0.66, 0.14, centerZ + dz * 0.66);
+    const h1 = new Vector3(dx * 0.76, 0.72, centerZ + dz * 0.76);
+    const h2 = new Vector3(dx * 0.64, 1.16, centerZ + dz * 0.64);
+    const h3 = new Vector3(dx * 0.44, 1.44, centerZ + dz * 0.44);
+    parts.masonry.push(
+      piece(beamBetween(h0, h1, 0.1), palette.stoneShade),
+      piece(beamBetween(h1, h2, 0.082), palette.stoneShade),
+      piece(beamBetween(h2, h3, 0.052), palette.stoneShade),
+    );
+  }
+
+  parts.masonry.push(
+    piece(new CylinderGeometry(0.43, 0.47, 0.18, 8), palette.stoneShade, 0, 0.09, centerZ),
+    piece(new CylinderGeometry(0.35, 0.43, 0.68, 8), palette.stone, 0, 0.5, centerZ),
+    piece(new CylinderGeometry(0.28, 0.35, 0.66, 8), palette.stone, 0, 1.15, centerZ),
+    piece(new TorusGeometry(0.39, 0.042, 6, 14).rotateX(Math.PI / 2), palette.accent, 0, 0.84, centerZ),
+    piece(new TorusGeometry(0.31, 0.04, 6, 14).rotateX(Math.PI / 2), palette.accent, 0, 1.46, centerZ),
+  );
+  for (let rib = 0; rib < 8; rib++) {
+    const angle = (rib * Math.PI) / 4;
+    const dx = Math.cos(angle);
+    const dz = Math.sin(angle);
+    const r0 = new Vector3(dx * 0.44, 0.16, centerZ + dz * 0.44);
+    const r1 = new Vector3(dx * 0.36, 0.84, centerZ + dz * 0.36);
+    const r2 = new Vector3(dx * 0.29, 1.48, centerZ + dz * 0.29);
+    parts.masonry.push(
+      piece(beamBetween(r0, r1, 0.052), palette.accent),
+      piece(beamBetween(r1, r2, 0.044), palette.accent),
+    );
+    const slitAngle = angle + Math.PI / 8;
+    const sx = Math.cos(slitAngle);
+    const sz = Math.sin(slitAngle);
+    parts.glow.push(
+      piece(
+        cutStoneBlock(0.042, 0.24, 0.03),
+        palette.gem,
+        sx * 0.39,
+        0.56,
+        centerZ + sz * 0.39,
+        -slitAngle + Math.PI / 2,
+      ),
+      piece(
+        cutStoneBlock(0.038, 0.22, 0.03),
+        palette.gem,
+        sx * 0.32,
+        1.15,
+        centerZ + sz * 0.32,
+        -slitAngle + Math.PI / 2,
+      ),
+    );
+    parts.masonry.push(
+      piece(
+        new OctahedronGeometry(0.042, 0).scale(0.65, 1.15, 0.95),
+        palette.trim,
+        sx * 0.35,
+        1.32,
+        centerZ + sz * 0.35,
+        -slitAngle + Math.PI / 2,
+      ),
+    );
+  }
+
+  for (let horn = 0; horn < 4; horn++) {
+    const angle = (horn * Math.PI) / 2 + Math.PI / 4;
+    const dx = Math.cos(angle);
+    const dz = Math.sin(angle);
+    const c0 = new Vector3(dx * 0.27, 1.44, centerZ + dz * 0.27);
+    const c1 = new Vector3(dx * 0.45, 1.66, centerZ + dz * 0.45);
+    const c2 = new Vector3(dx * 0.38, 2.12, centerZ + dz * 0.38);
+    parts.masonry.push(
+      piece(beamBetween(c0, c1, 0.065), palette.stoneShade),
+      piece(beamBetween(c1, c2, 0.044), palette.stoneShade),
+    );
+  }
+
+  parts.glow.push(
+    piece(new CylinderGeometry(0.115, 0.165, 0.56, 6), palette.gem, 0, 1.72, centerZ),
+    piece(new ConeGeometry(0.115, 0.28, 6), palette.gem, 0, 2.14, centerZ),
+  );
+}
+
+function buildInsightWonderKingdom(parts: KitParts, palette: AspectKitPalette): void {
+  addHexCurtainWall(parts, {
+    height: 0.49,
+    thickness: 0.1,
+    wallColor: palette.stone,
+    baseColor: palette.stoneShade,
+    trimColor: palette.roof,
+    trimY: 0.28,
+    bandY: 0.465,
+  });
+  addWonderBastionGate(parts, palette.stone, palette.roof, palette.accent, palette.stoneShade, 0.55);
+  addWallBannerRails(parts, palette.rail, 0.37, KINGDOM_BANNER_Z, KINGDOM_BANNER_X, KINGDOM_BANNER_WIDTH);
+
+  for (const { from, to } of HEX_WALL_SEGMENTS) {
+    const dx = to[0] - from[0];
+    const dz = to[1] - from[1];
+    const length = Math.hypot(dx, dz);
+    const yaw = Math.atan2(dx, dz);
+    const cx = (from[0] + to[0]) / 2;
+    const cz = (from[1] + to[1]) / 2;
+    parts.masonry.push(piece(cutStoneBlock(0.028, 0.028, length), palette.accent, cx, 0.545, cz, yaw));
+  }
+
+  const domeTurrets: readonly (readonly [number, number])[] = [
+    [-0.6, 0.62],
+    [0.6, 0.62],
+    [-0.72, -0.38],
+    [0.72, -0.38],
+  ];
+  for (const [x, z] of domeTurrets) {
+    parts.masonry.push(
+      piece(new CylinderGeometry(0.12, 0.13, 0.72, 8), palette.stone, x, 0.36, z),
+      piece(new CylinderGeometry(0.138, 0.138, 0.065, 8), palette.roof, x, 0.28, z),
+      piece(new CylinderGeometry(0.138, 0.13, 0.048, 8), palette.accent, x, 0.725, z),
+      piece(new SphereGeometry(0.135, 12, 7, 0, Math.PI * 2, 0, Math.PI / 2), palette.roof, x, 0.735, z),
+      piece(new TorusGeometry(0.135, 0.018, 5, 14).rotateX(Math.PI / 2), palette.accent, x, 0.74, z),
+    );
+    parts.glow.push(piece(new OctahedronGeometry(0.05, 0).scale(0.8, 1.45, 0.8), palette.gem, x, 0.92, z));
+  }
+  for (const [x, z] of [
+    [-0.78, 0.18],
+    [0.78, 0.18],
+    [-0.3, -0.72],
+    [0.3, -0.72],
+  ] as const) {
+    parts.masonry.push(
+      piece(cutStoneBlock(0.145, 0.54, 0.145), palette.stone, x, 0.27, z),
+      piece(cutStoneBlock(0.155, 0.055, 0.155), palette.roof, x, 0.28, z),
+      piece(cutStoneBlock(0.045, 0.06, 0.045), palette.accent, x, 0.555, z),
+    );
+  }
+  for (const [x, z] of [
+    [-0.6, 0.62],
+    [0.6, 0.62],
+  ] as const) {
+    parts.glow.push(piece(cutStoneBlock(0.036, 0.16, 0.036), palette.gem, x, 0.14, z + 0.115));
+  }
+
+  const centerZ = -0.04;
+  parts.masonry.push(
+    piece(new CylinderGeometry(0.39, 0.43, 0.2, 8), palette.stoneShade, 0, 0.1, centerZ),
+    piece(new CylinderGeometry(0.28, 0.37, 1.38, 8), palette.stone, 0, 0.88, centerZ),
+    piece(new CylinderGeometry(0.335, 0.34, 0.085, 8), palette.roof, 0, 1.14, centerZ),
+    piece(new CylinderGeometry(0.34, 0.29, 0.2, 8), palette.stone, 0, 1.66, centerZ),
+    piece(new CylinderGeometry(0.355, 0.345, 0.075, 8), palette.roof, 0, 1.62, centerZ),
+    piece(new TorusGeometry(0.345, 0.032, 6, 16).rotateX(Math.PI / 2), palette.accent, 0, 1.77, centerZ),
+    piece(new CylinderGeometry(0.14, 0.18, 0.08, 8), palette.roof, 0, 1.81, centerZ),
+  );
+  for (let side = 0; side < 8; side++) {
+    const angle = (side * Math.PI) / 4;
+    const dx = Math.sin(angle);
+    const dz = Math.cos(angle);
+    parts.glow.push(
+      piece(cutStoneBlock(0.038, 0.72, 0.03), palette.gem, dx * 0.345, 0.72, centerZ + dz * 0.345, angle),
+      piece(cutStoneBlock(0.034, 0.3, 0.03), palette.gem, dx * 0.3, 1.38, centerZ + dz * 0.3, angle),
+    );
+  }
+
+  const orreryY = 2.02;
+  parts.masonry.push(
+    piece(new TorusGeometry(0.245, 0.022, 6, 18), palette.accent, 0, orreryY, centerZ),
+    piece(new TorusGeometry(0.23, 0.02, 6, 18).rotateY(Math.PI / 3).rotateX(0.38), palette.accent, 0, orreryY, centerZ),
+    piece(
+      new TorusGeometry(0.215, 0.018, 6, 18).rotateY(-Math.PI / 3).rotateX(-0.34),
+      palette.roof,
+      0,
+      orreryY,
+      centerZ,
+    ),
+  );
+  parts.glow.push(piece(new IcosahedronGeometry(0.165, 1), palette.gem, 0, orreryY, centerZ));
+
+  for (let prong = 0; prong < 4; prong++) {
+    const angle = (prong * Math.PI) / 2 + Math.PI / 4;
+    const px = Math.cos(angle) * 0.32;
+    const pz = centerZ + Math.sin(angle) * 0.32;
+    parts.masonry.push(
+      piece(new CylinderGeometry(0.042, 0.06, 0.24, 6), palette.stoneShade, px, 1.72, pz),
+      piece(new CylinderGeometry(0.018, 0.044, 0.56, 6), palette.stone, px, 2.06, pz),
+    );
+    parts.glow.push(piece(new OctahedronGeometry(0.042, 0).scale(0.75, 1.5, 0.75), palette.gem, px, 2.38, pz));
   }
 }
 
