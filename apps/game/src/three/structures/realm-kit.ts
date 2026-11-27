@@ -8,7 +8,6 @@ import {
   Group,
   IcosahedronGeometry,
   Mesh,
-  MeshStandardMaterial,
   OctahedronGeometry,
   SphereGeometry,
   TorusGeometry,
@@ -16,6 +15,7 @@ import {
 } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { createBaseRealmKit, isBaseRealmKitPath, parseBaseRealmKitPath } from "./base-realm-kit";
+import { PROCGEN_ASPECT_GLOW_STYLES, createProcgenGlowMaterial } from "./procgen-glow-material";
 import { createProcgenMasonryMaterial } from "./procgen-masonry-material";
 import {
   beamBetween,
@@ -230,14 +230,14 @@ export function createSeasonOneRealmKit(aspect: AspectId, level: RealmLevels): G
   const palette = ASPECT_PALETTES[aspect];
   const parts: KitParts = { masonry: [], glow: [], anchors: [] };
   KIT_BUILDERS[level][aspect](parts, palette);
-  return assembleKitGltf(`season-1-${aspectName(aspect).toLowerCase()}-${level}`, parts, palette);
+  return assembleKitGltf(`season-1-${aspectName(aspect).toLowerCase()}-${level}`, aspect, parts, palette);
 }
 
 export function createAspectWonderKit(aspect: AspectId, level: RealmLevels): GLTF {
   const palette = ASPECT_PALETTES[aspect];
   const parts: KitParts = { masonry: [], glow: [], anchors: [] };
   ASPECT_WONDER_BUILDERS[level][aspect](parts, palette);
-  return assembleKitGltf(`aspect-wonder-${aspectName(aspect).toLowerCase()}-${level}`, parts, palette);
+  return assembleKitGltf(`aspect-wonder-${aspectName(aspect).toLowerCase()}-${level}`, aspect, parts, palette);
 }
 
 export function resolveProceduralRealmKit(path: string): GLTF | null {
@@ -249,14 +249,14 @@ export function resolveProceduralRealmKit(path: string): GLTF | null {
   return wonder ? createAspectWonderKit(wonder.aspect, wonder.level) : null;
 }
 
-function assembleKitGltf(name: string, parts: KitParts, palette: AspectKitPalette): GLTF {
+function assembleKitGltf(name: string, aspect: AspectId, parts: KitParts, palette: AspectKitPalette): GLTF {
   const scene = new Group();
   scene.name = name;
   const masonryMesh = new Mesh(combineParts(parts.masonry), createMasonryMaterial());
   masonryMesh.name = `${scene.name}:masonry`;
   scene.add(masonryMesh);
   if (parts.glow.length > 0) {
-    const glowMesh = new Mesh(combineParts(parts.glow), createGlowMaterial(palette));
+    const glowMesh = new Mesh(combineParts(parts.glow), createGlowMaterial(aspect, palette));
     glowMesh.name = `${scene.name}:glow`;
     scene.add(glowMesh);
   }
@@ -3840,13 +3840,10 @@ function createMasonryMaterial() {
   return createProcgenMasonryMaterial();
 }
 
-function createGlowMaterial(palette: AspectKitPalette): MeshStandardMaterial {
-  return new MeshStandardMaterial({
-    vertexColors: true,
+function createGlowMaterial(aspect: AspectId, palette: AspectKitPalette) {
+  return createProcgenGlowMaterial({
     emissive: palette.emissive,
     emissiveIntensity: palette.emissiveIntensity,
-    roughness: 0.22,
-    metalness: 0.2,
-    flatShading: true,
+    ...PROCGEN_ASPECT_GLOW_STYLES[aspect],
   });
 }
