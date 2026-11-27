@@ -23,7 +23,30 @@ import type {
 } from "./types";
 import { fetchApi } from "@/runtime/app-api";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
-import { receiptDue } from "./direct-unread";
+import { receiptDue, threadShown } from "./direct-unread";
+
+export const WORLD_HISTORY_PAGE_LIMIT = 10;
+
+const loadWorldFirstPageIfNeeded = (state: RealtimeChatStore, zoneId: string) => {
+  const zone = state.worldZones[zoneId];
+  if (!zone || !state.baseUrl || !state.joinedZoneIds.includes(zoneId)) return;
+  if (zone.lastFetchedCursor !== undefined || !zone.hasMoreHistory || zone.isFetchingHistory || zone.historyError)
+    return;
+  void state.actions.loadWorldHistory({ zoneId, limit: WORLD_HISTORY_PAGE_LIMIT });
+};
+
+const loadDirectFirstPageIfNeeded = (state: RealtimeChatStore, threadId: string) => {
+  const thread = state.dmThreads[threadId];
+  if (!thread || !state.baseUrl || !threadShown(state, threadId)) return;
+  if (
+    thread.lastFetchedCursor !== undefined ||
+    !thread.hasMoreHistory ||
+    thread.isFetchingHistory ||
+    thread.historyError
+  )
+    return;
+  void state.actions.loadDirectHistory(threadId);
+};
 
 const normalizeHttpBaseUrl = (raw: string): string => {
   try {
@@ -463,6 +486,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           },
         });
       }
+      loadWorldFirstPageIfNeeded(get(), zoneId);
     },
     // Each view is read where it stands: the room shown counts nothing unread, a conversation open neither; leaving one
     // lets its messages count again.
@@ -486,6 +510,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       actions.setActiveZone(undefined);
       actions.setActiveThread(threadId);
       set({ view: { kind: "conversation", threadId } });
+      loadDirectFirstPageIfNeeded(get(), threadId);
     },
     setActiveZone: (zoneId) => {
       const { worldZones, unreadWorldTotal, activeZoneId } = get();
@@ -976,7 +1001,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       });
     },
     loadWorldHistory: async ({ zoneId, cursor, limit, since, replaceExisting }: LoadWorldChatHistoryParams) => {
-      const { baseUrl, joinedZoneIds } = get();
+      const { baseUrl, client, joinedZoneIds } = get();
       if (!baseUrl || !joinedZoneIds.includes(zoneId) || get().worldZones[zoneId]?.isFetchingHistory) return;
 
       set((state) => {
@@ -1010,6 +1035,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         }
 
         const data = await response.json();
+        if (get().client !== client) return;
         const incomingUnsorted = Array.isArray(data?.messages)
           ? (data.messages as any[]).map((record) => mapWorldChatRecordToMessage(record, zoneId))
           : [];
@@ -1042,6 +1068,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           };
         });
       } catch (error) {
+        if (get().client !== client) return;
         console.error("Failed to load world chat history", error);
         set((state) => {
           const currentZone = state.worldZones[zoneId] ?? createWorldZoneState(zoneId);
@@ -1073,6 +1100,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
             [threadId]: {
               ...existing,
               isFetchingHistory: true,
+              historyError: undefined,
             },
           },
         };
@@ -1088,8 +1116,8 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         const response = await fetchApi(url.toString(), { credentials: "include" });
 
         if (!response.ok) {
-          // Handle 404 gracefully - new threads don't have history yet
           if (response.status === 404) {
+            if (get().client !== client) return;
             set((state) => {
               const existing = state.dmThreads[threadId];
               if (!existing) return state;
@@ -1099,7 +1127,9 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
                   [threadId]: {
                     ...existing,
                     hasMoreHistory: false,
+                    lastFetchedCursor: null,
                     isFetchingHistory: false,
+                    historyError: undefined,
                   },
                 },
               };
@@ -1130,6 +1160,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
                 [threadId]: {
                   ...existing,
                   isFetchingHistory: false,
+                  historyError: undefined,
                 },
               },
             };
@@ -1146,11 +1177,13 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
                 hasMoreHistory: Boolean(data?.nextCursor),
                 lastFetchedCursor: data?.nextCursor ?? null,
                 isFetchingHistory: false,
+                historyError: undefined,
               },
             },
           };
         });
       } catch (error) {
+        if (get().client !== client) return;
         console.error("Failed to load direct chat history", error);
         set((state) => {
           const existing = state.dmThreads[threadId];
@@ -1161,6 +1194,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               [threadId]: {
                 ...existing,
                 isFetchingHistory: false,
+                historyError: CHAT_WORDS.historyUnavailable,
               },
             },
           };
@@ -1202,7 +1236,8 @@ const askBlockList = async (method: string, path = "", body?: unknown): Promise<
 const holdBlockList = (list: BlockList) => {
   const { heldWorldMessages } = useRealtimeChatStore.getState();
   useRealtimeChatStore.setState({ blockList: list, heldWorldMessages: [] });
-  const { actions } = useRealtimeChatStore.getState();
+  const state = useRealtimeChatStore.getState();
   for (const { zoneId, message, clientMessageId } of heldWorldMessages)
-    actions.receiveWorldMessage(zoneId, message, { clientMessageId });
+    state.actions.receiveWorldMessage(zoneId, message, { clientMessageId });
+  if (state.view.kind === "conversation") loadDirectFirstPageIfNeeded(state, state.view.threadId);
 };

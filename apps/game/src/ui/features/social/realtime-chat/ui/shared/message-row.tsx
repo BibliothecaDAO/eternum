@@ -73,6 +73,11 @@ export const MessageRow = ({
           </button>
         )}
         <p className="break-words">
+          {run && (
+            <span data-message-time className="mr-1.5 tabular-nums text-hud-label text-hud-cue">
+              {run.time}
+            </span>
+          )}
           {run &&
             (run.onName ? (
               <button type="button" onClick={run.onName} className="mr-1.5 text-hud-strong text-hud-accent">
@@ -82,7 +87,6 @@ export const MessageRow = ({
               <span className="mr-1.5 text-hud-strong text-hud-accent">{run.name}</span>
             ))}
           <span data-message-words>{children}</span>
-          {run && <span className="ml-1.5 text-hud-label text-hud-cue">{run.time}</span>}
         </p>
       </div>
       {onReply && (

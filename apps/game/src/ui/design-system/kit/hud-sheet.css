@@ -527,6 +527,11 @@ a.ui-button {
   background: color-mix(in srgb, var(--hud-warn) 14%, transparent);
   color: var(--hud-warn);
 }
+.ui-chip[data-tone="gold"] {
+  border-color: color-mix(in srgb, var(--hud-selected) 45%, transparent);
+  background: color-mix(in srgb, var(--hud-selected) 14%, transparent);
+  color: var(--hud-selected);
+}
 /* A chip that acts: a chip's size, so it stands level with the tags beside it, with a secondary button's frame and
    no fill, so it reads as a press among them. */
 button.ui-chip {
@@ -2047,6 +2052,19 @@ button.ui-relic:focus-visible {
 }
 .ui-meter[data-tone="bad"] > i {
   background: var(--hud-bad);
+}
+.ui-meter[data-gain] {
+  display: flex;
+}
+.ui-meter[data-gain] > i {
+  flex: none;
+}
+.ui-meter[data-gain] > i:first-child {
+  border-radius: var(--hud-radius-round) 0 0 var(--hud-radius-round);
+}
+.ui-meter > i[data-gain] {
+  border-radius: 0 var(--hud-radius-round) var(--hud-radius-round) 0;
+  background: rgb(var(--hud-gold));
 }
 /* Filling (stamina refilling): a light sweeps across the fill, on its own tone; still, a brighter leading edge. */
 .ui-meter[data-filling] > i {

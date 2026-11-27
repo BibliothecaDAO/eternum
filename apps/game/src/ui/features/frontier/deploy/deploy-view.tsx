@@ -23,12 +23,15 @@ import {
   NO_OPEN_TILE,
   NO_TROOPS_AT_HOME,
   noTroopsUntil,
+  TROOP_TRAIT_WORDS,
   TROOPS,
+  type TroopFigures,
   wheatForOnly,
 } from "@/ui/design-system/kit/words";
 
 import { SizeRow } from "../size-row";
 import type { SlotStart } from "./deploy-plan";
+import { troopTraits } from "./troop-figures";
 
 export interface DeployTroopChoiceView {
   category: TroopType;
@@ -60,6 +63,7 @@ export const DeployView = ({
     choices: readonly DeployTroopChoiceView[];
     selected: TroopType | undefined;
     onPick: (category: TroopType) => void;
+    figures: TroopFigures;
   };
   art: IconMeaning | undefined;
   troopsAtHome: number | undefined;
@@ -82,13 +86,7 @@ export const DeployView = ({
     troopSelection?.choices.find(({ category }) => category === troopSelection.selected)?.name ?? TROOPS;
   return (
     <HudSheet label={DEPLOY} cue={start?.start && <StartBar stamina={start.start} />} onClose={onClose}>
-      {troopSelection && troopSelection.choices.length > 0 && (
-        <TroopChoices
-          choices={troopSelection.choices}
-          selected={troopSelection.selected}
-          onPick={troopSelection.onPick}
-        />
-      )}
+      {troopSelection && troopSelection.choices.length > 0 && <TroopChoices {...troopSelection} />}
       {amount.most > 0 && (
         <div className="deploy-size">
           <SizeRow
@@ -152,27 +150,45 @@ const TroopChoices = ({
   choices,
   selected,
   onPick,
+  figures,
 }: {
   choices: readonly DeployTroopChoiceView[];
   selected: TroopType | undefined;
   onPick: (category: TroopType) => void;
+  figures: TroopFigures;
 }) => (
-  <div role="group" aria-label={DEPLOY_WORDS.troopType} className="deploy-troops">
-    {choices.map((choice) => (
-      <button
-        key={choice.category}
-        type="button"
-        className="ui-pick deploy-troop-card"
-        aria-label={choice.name}
-        aria-pressed={selected === choice.category}
-        onClick={() => onPick(choice.category)}
-      >
-        <Icon name={choice.art} size={46} />
-        <span className="deploy-troop-card__name">{choice.name}</span>
-        <span className="deploy-troop-card__home">{formatExact(choice.atHome)}</span>
-      </button>
-    ))}
-  </div>
+  <>
+    <div role="group" aria-label={DEPLOY_WORDS.troopType} className="deploy-troops">
+      {choices.map((choice) => (
+        <button
+          key={choice.category}
+          type="button"
+          className="ui-pick deploy-troop-card"
+          aria-label={choice.name}
+          aria-pressed={selected === choice.category}
+          data-tip={TROOP_TRAIT_WORDS.tip(troopTraits(choice.category), figures)}
+          onClick={() => onPick(choice.category)}
+        >
+          <Icon name={choice.art} size={46} />
+          <span className="deploy-troop-card__name">{choice.name}</span>
+          <span className="deploy-troop-card__home">{formatExact(choice.atHome)}</span>
+          <TroopTraitLine category={choice.category} figures={figures} />
+        </button>
+      ))}
+    </div>
+    {selected !== undefined && (
+      <p data-troop-summary="" className="deploy-troop-summary">
+        {TROOP_TRAIT_WORDS.summary(troopTraits(selected), figures)}
+      </p>
+    )}
+  </>
+);
+
+const TroopTraitLine = ({ category, figures }: { category: TroopType; figures: TroopFigures }) => (
+  <span data-troop-trait="" className="deploy-troop-card__trait">
+    {troopTraits(category).scout && <Icon name="stamina" size={12} />}
+    {TROOP_TRAIT_WORDS.card(troopTraits(category), figures)}
+  </span>
 );
 
 const DeploySlots = ({

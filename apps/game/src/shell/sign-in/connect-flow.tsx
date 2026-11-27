@@ -1,4 +1,4 @@
-import { SIGN_IN_PROVIDER_NAMES, SIGN_IN_WORDS, WALLET_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { SIGN_IN_PROVIDER_NAMES, SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { IdentityRequestError, type Session, type SocialProvider } from "@realms-world/identity";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -9,7 +9,6 @@ import {
   useIdentitySession,
   useIdentitySessionStore,
 } from "@/hooks/context/identity-session";
-import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { opensThirdPartySignIn } from "@/runtime/distribution-channel";
 import { failureSentence, type IdentityAction } from "@/ui/modules/identity/identity-failures";
 
@@ -17,15 +16,12 @@ import { returnPathOf } from "../return-path";
 import { CodeStep } from "./code-step";
 import { claimDefaultName } from "./default-name";
 import { useConnectStore } from "./connect";
-import { ShellWindow } from "../frame/shell-window";
 import { SignInStage } from "./sign-in-stage";
 import { opensDiscordApp } from "./discord-app";
 import { useSocialAttempt } from "./social-attempt";
 import { forgetSocialStart, pendingSocialStart, rememberSocialStart, type SocialPending } from "./social-pending";
 import { HandoffStep } from "./handoff-step";
 import { ProfileStep } from "./profile-step";
-import { PayoutWalletPanel } from "../profile/payout-wallet-panel";
-import { useStandingPrompt } from "../standing-prompts";
 import { StartStep } from "./start-step";
 
 /**
@@ -57,17 +53,9 @@ export const ConnectFlow = () => {
   }, [returned.line, endPending]);
   useGoOnOnceNamed(named, pending, endPending);
   const naming = useDefaultName(session, named, refresh);
-  const invitation = useStandingPrompt("wallet-invitation", named && payoutAddressOf(session.user) === null);
 
   if (!settled && !request && !returned.line) return null;
-  if (named) {
-    if (!invitation.open) return null;
-    return (
-      <ShellWindow title={WALLET_WORDS.yourWallet} onClose={invitation.close}>
-        <PayoutWalletPanel wallet={null} email={session.user.email} onChanged={() => void refresh()} />
-      </ShellWindow>
-    );
-  }
+  if (named) return null;
   if (session) {
     if (naming !== "refused" || (nameDismissed && !request)) return null;
     return (

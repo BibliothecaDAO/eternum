@@ -37,7 +37,7 @@ import { resultsHref } from "@/shell/season-tab/results-link";
 import { questBonusPercentOf } from "@/shell/season";
 import { seasonRealm } from "@/shell/season-pick";
 import { doorwayRealmFromId, toPaddedFeltAddress } from "./doorway/doorway-realm";
-import { DoorwayScreen } from "./doorway/doorway-screen";
+import { DoorwayScreen, RealmRising } from "./doorway/doorway-screen";
 import { doorwayView } from "./doorway/doorway-view";
 
 import type { GameRef } from "@bibliothecadao/eternum/game-client";
@@ -696,11 +696,18 @@ export const GameEntryModal = ({
       />
     ) : undefined;
   const showsHomePicker = choosingHome && !warnsOfSide && isFrontierMode && worldMeta !== null && sideAnswer !== "free";
+  const showsEntryModeSwitch =
+    choosingHome &&
+    !warnsOfSide &&
+    choosesAspect &&
+    !choosingSource &&
+    registeredRealmId === null &&
+    heldRealmsCount > 0;
 
   return (
     <DoorwayScreen
       view={view}
-      realm={doorwayRealm}
+      realm={showsEntryModeSwitch ? null : doorwayRealm}
       game={worldMeta ?? undefined}
       onRetry={
         accountError
@@ -726,7 +733,7 @@ export const GameEntryModal = ({
       )}
       {choosingHome && !warnsOfSide && (
         <>
-          {choosesAspect && !choosingSource && registeredRealmId === null && (
+          {showsEntryModeSwitch && (
             <EntryModeSwitch
               heldCount={heldRealmsCount}
               playingFree={sideAnswer === "free"}
@@ -738,6 +745,7 @@ export const GameEntryModal = ({
               }}
             />
           )}
+          {showsEntryModeSwitch && sideAnswer !== "free" && doorwayRealm && <RealmRising realm={doorwayRealm} />}
           {showsHomePicker && (
             <HomeSourcePicker
               title={choosingSource ? HOME_STEP_WORDS.attachTitle : undefined}

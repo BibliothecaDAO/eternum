@@ -1,3 +1,4 @@
+import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { formatClockTime } from "@bibliothecadao/types";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
@@ -92,19 +93,6 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, className }: D
     if (due) markAsRead();
   }, [markAsRead, due]);
 
-  // Its history is read once, when it opens: a conversation listed from the server holds only its last line until then.
-  useEffect(() => {
-    if (
-      resolvedThreadId &&
-      thread &&
-      thread.lastFetchedCursor === undefined &&
-      thread.hasMoreHistory &&
-      !thread.isFetchingHistory
-    ) {
-      loadHistory(undefined);
-    }
-  }, [resolvedThreadId, thread, loadHistory]);
-
   const typing = useMemo(() => {
     if (!resolvedThreadId) return [];
     return Object.values(typingIndicators).filter(
@@ -116,7 +104,9 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, className }: D
   const dateSeparators = useMemo(() => computeDateSeparators(dmMessages), [dmMessages]);
 
   const loadOlder = () => {
-    if (thread?.hasMoreHistory && !thread.isFetchingHistory) void loadHistory(thread.lastFetchedCursor ?? undefined);
+    if (thread?.hasMoreHistory && thread.lastFetchedCursor && !thread.isFetchingHistory && !thread.historyError) {
+      void loadHistory(thread.lastFetchedCursor);
+    }
   };
   const { scrollerRef, hasNewer, jumpToLatest } = useStickToLatest({
     oldest: dmMessages[0]?.id,
@@ -136,6 +126,15 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, className }: D
         {thread && (
           <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
             <div ref={scrollerRef} className="flex-1 min-h-0 overflow-y-auto pr-1">
+              {thread.historyError && (
+                <div className="mb-2">
+                  <HudNotice
+                    tone="bad"
+                    line={thread.historyError}
+                    retry={() => loadHistory(thread.lastFetchedCursor ?? undefined)}
+                  />
+                </div>
+              )}
               {thread.isFetchingHistory && (
                 <div className="flex justify-center py-2">
                   <span className="text-hud-label text-hud-cue">Loading older messages...</span>
@@ -196,7 +195,7 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, className }: D
                     </Fragment>
                   );
                 })}
-                {thread.messages.length === 0 && (
+                {thread.messages.length === 0 && !thread.isFetchingHistory && !thread.historyError && (
                   <li className="text-hud-body text-hud-cue">{CHAT_WORDS.noMessages}</li>
                 )}
               </ul>

@@ -329,7 +329,7 @@ import {
   type SocialProvider,
 } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
-import type { AttackRefusal } from "@bibliothecadao/eternum";
+import type { AttackRefusal, CombatMark } from "@bibliothecadao/eternum";
 import {
   aspectName,
   type AspectId,
@@ -362,6 +362,8 @@ import {
   type QuestUnit,
   ASPECT_REWARD,
   formatOrdinal,
+  FRONTIER_TROOP_NAMES,
+  TroopType,
 } from "@bibliothecadao/types";
 
 /** A step on that scale, common (1) to legendary (5). */
@@ -639,9 +641,11 @@ export const OATH_PICK = {
   another: "Choose another",
   swap: "Swap",
   swapFor: (oath: string, price: string) => `Swap ${oath} for ${price}`,
-  redrawPrice: "One reroll",
-  used: "Used",
+  swapsPerPick: "1 swap per pick",
+  swapsShort: "1 swap",
+  rerollUsed: "Reroll used",
   fresh: "New",
+  selected: "Selected",
   pass: "Pass",
   notChosen: "Could not choose Oath.",
   notRedrawn: "Could not reroll Oath.",
@@ -785,7 +789,6 @@ export const SHRINE = "Shrine";
 export const WELL = "Well";
 export const USE = "Use";
 export const USING = "Using…";
-export const exploresBought = (count: number) => `+${count} ${count === 1 ? "explore" : "explores"}`;
 export const wellRefillShare = (percent: number): string => `${formatPercent(percent / 100)} max`;
 export const SITE_USE_WORDS = {
   verb: (site: string) => `${USE} ${site}`,
@@ -827,7 +830,7 @@ export const FIGHT_WORDS = {
 } as const;
 export const FIGHT_RESULT = {
   victory: "Victory",
-  cleared: (site: string) => `${site} cleared`,
+  cleared: "cleared",
 } as const;
 export const fightLost = (lost: string, share: string) => `−${lost} · ${share}% lost`;
 export const NONE_LOST = "None lost";
@@ -1146,6 +1149,7 @@ export const ASPECT_PAGE_WORDS = {
 export const SEASON_BOARD_WORDS = {
   title: `${COUNTDOWN_WORDS.title} Leaderboard`,
   phoneTitle: COUNTDOWN_WORDS.title,
+  noRace: "No Season race in this world.",
   day: (day: number, lastDay: number) => `Day ${formatExact(day)} of ${formatExact(lastDay)}`,
   poolRule: `${formatExact(ASPECT_REWARD.lordsPerHeight)} LORDS per height · +${formatShort(ASPECT_REWARD.finishBonus)} for 1st`,
   pool: (lords: number) => `${formatShort(lords)} LORDS`,
@@ -1222,6 +1226,62 @@ export const DEPLOY_WORDS = {
   howMany: (troop: string) => `${troop} to deploy`,
   deployCount: (count: number) => `${DEPLOY} ${formatExact(count)}`,
 } as const;
+export const COMBAT_MARK_WORDS = { blade: "Blade", bow: "Bow" } as const satisfies Record<CombatMark, string>;
+const lessBy = (cut: number) => formatPercent(-cut / 100, { signed: true });
+const told = (...parts: (string | false)[]) => parts.filter((part): part is string => part !== false).join(" · ");
+const STRIKE_ORDER_WORDS = {
+  card: { blade: false, bow: "1st strike" },
+  summary: { blade: false, bow: `Strikes first vs blades` },
+  tip: {
+    blade: `Hits together vs ${COMBAT_MARK_WORDS.blade}, after ${COMBAT_MARK_WORDS.bow}`,
+    bow: `Strikes first vs ${COMBAT_MARK_WORDS.blade}, together vs ${COMBAT_MARK_WORDS.bow}`,
+  },
+} as const satisfies Record<"card" | "summary" | "tip", Record<CombatMark, string | false>>;
+export interface TroopFigures {
+  lightCut: number;
+  guardCut: number;
+  scoutReveal: number;
+  baseReveal: number;
+}
+export interface TroopTraits {
+  mark: CombatMark;
+  light: boolean;
+  guard: boolean;
+  scout: boolean;
+}
+const LIGHT_AGAINST = FRONTIER_TROOP_NAMES[TroopType.Knight].many;
+export const TROOP_TRAIT_WORDS = {
+  card: ({ mark, light, guard, scout }: TroopTraits, figures: TroopFigures) =>
+    told(
+      !light && "Full dmg",
+      STRIKE_ORDER_WORDS.card[mark],
+      guard && "Guard",
+      scout && formatExact(figures.scoutReveal),
+      light && lessBy(figures.lightCut),
+    ),
+  summary: ({ mark, light, guard, scout }: TroopTraits, figures: TroopFigures) =>
+    told(
+      COMBAT_MARK_WORDS[mark],
+      !light && "Full damage",
+      STRIKE_ORDER_WORDS.summary[mark],
+      scout && `Reveals for ${formatExact(figures.scoutReveal)} stamina (not ${formatExact(figures.baseReveal)})`,
+      light && `${lessBy(figures.lightCut)} damage vs ${LIGHT_AGAINST}`,
+      guard && `${lessBy(figures.guardCut)} damage taken guarding in the ${DEEP}`,
+    ),
+  tip: ({ mark, light, guard, scout }: TroopTraits, figures: TroopFigures) =>
+    told(
+      COMBAT_MARK_WORDS[mark],
+      !light && "Full damage",
+      STRIKE_ORDER_WORDS.tip[mark],
+      light && `${lessBy(figures.lightCut)} damage vs ${LIGHT_AGAINST}`,
+      guard && `${lessBy(figures.guardCut)} damage taken in the ${DEEP}`,
+      scout && `Reveals tiles for ${formatExact(figures.scoutReveal)} stamina`,
+    ),
+} as const;
+export const BEAST_MARK_TIPS = {
+  blade: `${COMBAT_MARK_WORDS.blade} · Hits together vs ${COMBAT_MARK_WORDS.blade} · ${COMBAT_MARK_WORDS.bow} strikes first against it`,
+  bow: `${COMBAT_MARK_WORDS.bow} · Strikes first against ${COMBAT_MARK_WORDS.blade} · Hits together vs ${COMBAT_MARK_WORDS.bow}`,
+} as const satisfies Record<CombatMark, string>;
 export const SIZE_ROW = { fewer: "One fewer", more: "One more", max: "Max" } as const;
 export const BUILD = "Build";
 export const BUILT = "Built";
@@ -1465,7 +1525,7 @@ export const FRAGMENTS_PAGE_WORDS = {
   inGameUsesTitle: `In-game ${FRAGMENTS} uses`,
   inGameStamina: (points: number) =>
     `Refill stamina above the ${DEEP} (+${formatExact(points)} stamina per ${FRAGMENT})`,
-  inGameOath: (cost: number) => `Reroll Oath choices (${formatExact(cost)} ${FRAGMENTS})`,
+  inGameOath: (cost: number) => `Swap one Oath card (${formatCount(cost, FRAGMENT, FRAGMENTS)})`,
   closedTitle: `${FRAGMENTS} shop closed`,
   closedLine: `${FRAGMENTS} purchases and spends are closed right now. You can still use an ${ANCIENT_SEAL} code below.`,
   noLiveSeason: "No live Frontier season right now. Check back when the season opens.",

@@ -1,11 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { describe, expect, it, vi } from "vitest";
 import { expiredRaceScenario, raceScenario } from "@/lab/game/race-scenario";
 import { rowsOf, wire } from "@/lab/game/lab-chain";
 import { NativeFactStore, raceFinishHeight, readRaceBoard } from "@bibliothecadao/eternum/game-client";
 import { configManager, getStructureName } from "@bibliothecadao/eternum";
 import { aspectName, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { raceStageOf } from "@/shell/season";
-import { seasonBoard } from "./aspect-page";
+import { SEASON_BOARD_WORDS, SEASON_ERROR } from "@/ui/design-system/kit/words";
+import { FrontierAspectPage, seasonBoard } from "./aspect-page";
+
+const context = vi.hoisted(() => ({ store: null as unknown }));
+vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: context.store } }) }));
+vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
+vi.mock("../frontier-home", () => ({ useFrontierRealm: () => null }));
 
 function fixture(finished = false) {
   const scenario = raceScenario(finished);
@@ -136,6 +144,35 @@ describe("the race board from native facts", () => {
     ]);
     expect(read().known!.race!.own!.members.map(({ home }) => home)).toEqual([9n, 7n]);
   });
+
+  it("reads a rival member who has earned nothing as zero Glory while their realm is outside the client's scope", () => {
+    const { store, read } = fixture();
+    store.applyFacts(
+      (["RaceMember", "Structure"] as const).map((model) => ({
+        model,
+        key: store.wireKeyOf(model, { game_id: 1, entity_id: 15 })!,
+        value: null,
+      })),
+    );
+    expect(store.get("Structure", { game_id: 1, entity_id: 15 })).toBeUndefined();
+    const rival = read().known!.race!.aspects.find(({ aspect }) => aspect === 4)!;
+    expect(rival.members.map(({ home, glory, contribution }) => ({ home, glory, contribution }))).toEqual([
+      { home: 15n, glory: 0n, contribution: 0n },
+    ]);
+    expect(store.requireOrAbsent("RaceMember", { game_id: 1, entity_id: 15 }).known?.glory).toBe(0n);
+  });
+
+  it("keeps a member unknown whose realm the client's scope should hold but does not", () => {
+    const { store, read } = fixture();
+    store.applyFacts(
+      (["RaceMember", "Structure"] as const).map((model) => ({
+        model,
+        key: store.wireKeyOf(model, { game_id: 1, entity_id: 9 })!,
+        value: null,
+      })),
+    );
+    expect(read().unknown).toBe("UNKNOWN_PARENT: RaceMember requires Structure");
+  });
 });
 
 it("reads an expired race from its final snapshot without inventing a finisher", () => {
@@ -155,4 +192,53 @@ it("reads an expired race from its final snapshot without inventing a finisher",
       () => null,
     ).result,
   ).toEqual({ winner: null });
+});
+
+describe("the Season page before its board can be drawn", () => {
+  const shown = (store: NativeFactStore) => {
+    context.store = store;
+    configManager.setActiveGame(1);
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const host = document.body.appendChild(document.createElement("div"));
+    const root = createRoot(host);
+    act(() => root.render(<FrontierAspectPage onClose={() => {}} />));
+    const page = {
+      skeletonRows: host.querySelectorAll(".ui-skeleton").length,
+      notice: host.querySelector<HTMLElement>(".ui-notice"),
+    };
+    act(() => root.unmount());
+    host.remove();
+    return page;
+  };
+
+  it("holds its rows only while the snapshot loads", () => {
+    const { store, player, startsAt } = fixture();
+    store.setSnapshot({ gameId: 1, actor: player, timestamp: startsAt, complete: false });
+    expect(shown(store)).toEqual({ skeletonRows: 6, notice: null });
+  });
+
+  it("says the Season is unavailable when complete facts still cannot make a board", () => {
+    const { store } = fixture();
+    store.applyFacts([
+      {
+        model: "AspectHyperstructure",
+        key: store.wireKeyOf("AspectHyperstructure", { game_id: 1, aspect: 4 })!,
+        value: null,
+      },
+    ]);
+    const page = shown(store);
+    expect(page.skeletonRows).toBe(0);
+    expect(page.notice?.getAttribute("role")).toBe("alert");
+    expect(page.notice?.textContent).toBe(SEASON_ERROR);
+  });
+
+  it("says a world without a race has none", () => {
+    const { player, startsAt } = fixture();
+    const store = new NativeFactStore();
+    store.setSnapshot({ gameId: 1, actor: player, timestamp: startsAt, complete: true });
+    const page = shown(store);
+    expect(page.skeletonRows).toBe(0);
+    expect(page.notice?.getAttribute("role")).toBe("status");
+    expect(page.notice?.textContent).toBe(SEASON_BOARD_WORDS.noRace);
+  });
 });

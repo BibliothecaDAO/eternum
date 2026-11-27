@@ -21,7 +21,9 @@ import {
   type Intersection,
   type Object3D,
   type Raycaster,
+  type Scene,
 } from "three";
+import type { PipelineCompiler } from "../pipeline-compiler";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
@@ -138,6 +140,7 @@ export class ProceduralTerrain {
   private readonly materials: TerrainMaterials;
   private readonly wildlife: TerrainWildlife;
   private readonly pages = new Map<string, PresentedTerrainPage>();
+  private readonly retiredPageGroups = new Map<string, Group>();
   private readonly presentationGroup = new Group();
   private readonly etherealMaterial = createEtherealTerrainMaterial();
   private readonly layerFloors = new Map<PersonalLayer, MeshStandardNodeMaterial>();
@@ -158,13 +161,25 @@ export class ProceduralTerrain {
   private readonly movementEffects: TerrainMovementEffects;
   private disposed = false;
   private isPropTileOccupied: (col: number, row: number) => boolean = () => false;
+  private readonly compilePipelines?: PipelineCompiler;
+  private readonly targetScene?: Scene;
   private readonly releaseAppearance: () => void;
 
   constructor({
     streaming = false,
     deepFloor = DEEP_FLOOR,
-  }: { streaming?: boolean; gameMode?: GameModeId; deepFloor?: DeepFloorUniforms } = {}) {
+    compilePipelines,
+    scene,
+  }: {
+    streaming?: boolean;
+    gameMode?: GameModeId;
+    deepFloor?: DeepFloorUniforms;
+    compilePipelines?: PipelineCompiler;
+    scene?: Scene;
+  } = {}) {
     this.deepFloorUniforms = deepFloor;
+    this.compilePipelines = compilePipelines;
+    this.targetScene = scene;
     this.fogField = new TerrainFogField();
     if (streaming) this.fogField.enableStreaming();
     this.object3d.name = "procedural-terrain";
@@ -173,6 +188,8 @@ export class ProceduralTerrain {
     this.wildlife = new TerrainWildlife(
       (x, z) => this.sampleSurface(x, z),
       (material) => this.fogField.applyRevealToMaterial(material),
+      compilePipelines,
+      scene,
     );
     this.object3d.add(this.wildlife.object3d);
     this.object3d.add(this.presentationGroup);
@@ -214,8 +231,15 @@ export class ProceduralTerrain {
       return;
     }
     if (!this.propPools) {
-      this.propPools = pools;
       this.applyPropExplorationReveal(pools);
+      if (this.compilePipelines && this.targetScene) {
+        await this.compilePipelines(pools.object3d, this.targetScene);
+        if (this.disposed) {
+          pools.dispose();
+          return;
+        }
+      }
+      this.propPools = pools;
       this.object3d.add(pools.object3d);
       this.writeRetainedPagesToPools();
     }
@@ -516,6 +540,7 @@ export class ProceduralTerrain {
     if (this.disposed) return;
     this.disposed = true;
     this.releaseAppearance();
+    this.flushAllRetiredPageGroups();
     this.pages.forEach(disposePageGeometry);
     this.pages.clear();
     for (const material of this.layerFloors.values()) material.dispose();
@@ -570,10 +595,42 @@ export class ProceduralTerrain {
     const retained = this.pages.get(pageKey);
     if (retained) {
       this.presentationGroup.remove(retained.group);
-      disposePageGeometry(retained);
+      this.retirePageAfterNextRender(pageKey, retained.group, presented.group);
     }
     this.pages.set(pageKey, presented);
     this.presentationGroup.add(presented.group);
+  }
+
+  private retirePageAfterNextRender(pageKey: string, retiredGroup: Group, replacementGroup: Group): void {
+    this.flushRetiredPageGroup(pageKey);
+    disposePageBuffers(retiredGroup);
+    const anchor = findPageRenderAnchor(replacementGroup);
+    if (!anchor) {
+      releaseRetiredPageGroup(retiredGroup);
+      return;
+    }
+    this.retiredPageGroups.set(pageKey, retiredGroup);
+    const previousAfterRender = anchor.onAfterRender;
+    anchor.onAfterRender = (renderer, scene, camera, geometry, material, group) => {
+      previousAfterRender.call(anchor, renderer, scene, camera, geometry, material, group);
+      if (scene.overrideMaterial !== null) return;
+      anchor.onAfterRender = previousAfterRender;
+      if (this.retiredPageGroups.get(pageKey) === retiredGroup) {
+        this.flushRetiredPageGroup(pageKey);
+      }
+    };
+  }
+
+  private flushRetiredPageGroup(pageKey: string): void {
+    const retired = this.retiredPageGroups.get(pageKey);
+    if (!retired) return;
+    this.retiredPageGroups.delete(pageKey);
+    releaseRetiredPageGroup(retired);
+  }
+
+  private flushAllRetiredPageGroups(): void {
+    this.retiredPageGroups.forEach((group) => releaseRetiredPageGroup(group));
+    this.retiredPageGroups.clear();
   }
 
   private releasePageWrites(pageKey: string): void {
@@ -582,6 +639,7 @@ export class ProceduralTerrain {
   }
 
   private releasePageGeometry(pageKey: string): void {
+    this.flushRetiredPageGroup(pageKey);
     const page = this.pages.get(pageKey);
     if (!page) return;
     this.presentationGroup.remove(page.group);
@@ -797,17 +855,37 @@ function disableTerrainRaycast(raycaster: Raycaster, intersects: Intersection<Ob
   void intersects;
 }
 
+function findPageRenderAnchor(group: Group): Mesh | null {
+  let fallback: Mesh | null = null;
+  for (const child of group.children) {
+    if (!(child instanceof Mesh)) continue;
+    if (child.name === "procedural-terrain-land") return child;
+    fallback ??= child;
+  }
+  return fallback;
+}
+
 function disposePageGeometry(page: PresentedTerrainPage): void {
   disposePageGroup(page.group);
 }
 
-function disposePageGroup(group: Group): void {
+function disposePageBuffers(group: Group): void {
+  group.traverse((object) => {
+    if (object instanceof Mesh && !object.geometry.userData.sharedTerrain) object.geometry.dispose();
+  });
+}
+
+function releaseRetiredPageGroup(group: Group): void {
   group.traverse((object) => {
     if (object instanceof InstancedMesh) object.dispose();
-    if (object instanceof Mesh && !object.geometry.userData.sharedTerrain) object.geometry.dispose();
   });
   releaseDrawnObject(group);
   group.clear();
+}
+
+function disposePageGroup(group: Group): void {
+  disposePageBuffers(group);
+  releaseRetiredPageGroup(group);
 }
 
 function requireUniquePageKeys(pages: readonly PreparedTerrainPage[]): void {

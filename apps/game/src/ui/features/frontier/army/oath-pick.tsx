@@ -1,6 +1,7 @@
 import "./oath-pick.css";
 
 import { useState, type CSSProperties } from "react";
+import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { configManager } from "@bibliothecadao/eternum";
 import { useDockArmies, type DockArmy } from "../hud/dock-armies";
@@ -70,6 +71,7 @@ function OathChoice({
   disabled,
   onChoose,
   swap,
+  spread,
 }: {
   id: number;
   pickBase: PickEffectBase;
@@ -78,6 +80,7 @@ function OathChoice({
   disabled: boolean;
   onChoose: () => void;
   swap?: { index: number; disabled: boolean; onSwap: () => void };
+  spread: boolean;
 }) {
   const name = oathName(id);
   return (
@@ -87,6 +90,11 @@ function OathChoice({
       data-fresh={fresh || undefined}
       style={aspectOf(id)}
     >
+      {chosen && (
+        <span className="oath-choice__selected" aria-hidden="true">
+          {OATH_PICK.selected}
+        </span>
+      )}
       <button
         type="button"
         className="oath-choice__pick"
@@ -112,8 +120,10 @@ function OathChoice({
             data-reroll-oath={swap.index}
             aria-label={OATH_PICK.swapFor(name, REDRAW_PRICE)}
           >
-            <Icon name="refresh" size={18} />
-            <i>{OATH_PICK.swap}</i>
+            <Icon name="refresh" size={16} />
+            {spread && <i>{OATH_PICK.swap} ·</i>}
+            <Icon name="fragment" size={16} />
+            <b>{formatShort(REDRAW_COST)}</b>
           </button>
         )
       )}
@@ -121,20 +131,20 @@ function OathChoice({
   );
 }
 
+const LONG_HERO = 10;
+
 const OathFace = ({ id, pickBase }: { id: number; pickBase: PickEffectBase }) => {
   const badge = oathStatBadge(id, pickBase);
   return (
     <>
       <span className="oath-choice__ring" aria-hidden="true">
-        <Icon name={orderMeaning(id)} size={36} />
+        <Icon name={orderMeaning(id)} size={46} />
       </span>
-      <span className="oath-choice__words">
-        <span className="oath-choice__line">
-          <b className="oath-choice__name">{oathName(id)}</b>
-          <span className="oath-choice__effect">
-            <Icon name={badge.icon} size={17} />
-            {badge.hero}
-          </span>
+      <b className="oath-choice__name">{oathName(id)}</b>
+      <span className="oath-choice__well">
+        <span className="oath-choice__effect" data-long={badge.hero.length >= LONG_HERO || undefined}>
+          <Icon name={badge.icon} size={28} />
+          {badge.hero}
         </span>
         <span className="oath-choice__unit">{badge.unit}</span>
       </span>
@@ -170,6 +180,7 @@ function ArmyOathPick({
   const redrawn = progress.oath_pick >= nativeOathConstants.REROLLED;
   const busy = !allowed || sending;
   const troopLabel = FRONTIER_TROOP_NAMES[army.troopsFact.category as TroopType].many;
+  const spread = useHudLayout() === "desktop";
 
   const choose = (oath: number | null, replace: number | null = null) =>
     sendOnce("army", army.explorerId, { order: "use" }, () =>
@@ -201,6 +212,8 @@ function ArmyOathPick({
       className="ui ui-panel oath-pick"
       data-oath-pick={progress.oath_pick}
       data-oath-held={progress.oaths}
+      data-spread={spread || undefined}
+      data-replacing={replacing || undefined}
     >
       <header className="oath-pick__head">
         <HudPortrait icon={army.art} label={army.label} />
@@ -217,11 +230,9 @@ function ArmyOathPick({
         </span>
         {fragments !== null &&
           (redrawn ? (
-            <HudChip>{OATH_PICK.used}</HudChip>
+            <HudChip tone="good">{OATH_PICK.rerollUsed}</HudChip>
           ) : (
-            <HudChip icons={["refresh", "fragment"]} label={OATH_PICK.redrawPrice}>
-              {formatShort(REDRAW_COST)}
-            </HudChip>
+            <HudChip>{spread ? OATH_PICK.swapsPerPick : OATH_PICK.swapsShort}</HudChip>
           ))}
       </header>
       <div className="oath-pick__body">
@@ -238,12 +249,12 @@ function ArmyOathPick({
                   onClick={() => choose(chosen, id)}
                 >
                   <OathFace id={id} pickBase={baseFor(id)} />
+                  <span className="oath-choice__cue" aria-hidden="true">
+                    {OATH_PICK.replace(oathName(id))}
+                  </span>
                 </button>
               </div>
             ))}
-            <HudButton kind="secondary" disabled={sending} onClick={() => setReplacing(false)}>
-              {OATH_PICK.another}
-            </HudButton>
           </>
         ) : (
           <>
@@ -258,6 +269,7 @@ function ArmyOathPick({
                   fresh={redrawn && swappedAt === index}
                   disabled={busy}
                   onChoose={() => setChosenAt(index)}
+                  spread={spread}
                   swap={
                     rerollIndex !== null && fragments !== null
                       ? {
@@ -270,23 +282,31 @@ function ArmyOathPick({
                 />
               );
             })}
-            <PassRow stamina={army.stamina} disabled={busy} onPass={() => void choose(null)} />
           </>
         )}
       </div>
-      {!replacing && chosen !== undefined && (
-        <footer className="oath-pick__foot">
-          <HudButton
-            kind="primary"
-            icon={orderMeaning(chosen)}
-            disabled={busy}
-            data-oath-swear={chosen}
-            onClick={() => (full ? setReplacing(true) : choose(chosen))}
-          >
-            {OATH_PICK.swear(oathName(chosen))}
+      <footer className="oath-pick__foot">
+        {replacing ? (
+          <HudButton kind="secondary" disabled={sending} onClick={() => setReplacing(false)}>
+            {OATH_PICK.another}
           </HudButton>
-        </footer>
-      )}
+        ) : (
+          <>
+            <PassRow stamina={army.stamina} disabled={busy} onPass={() => void choose(null)} />
+            {chosen !== undefined && (
+              <HudButton
+                kind="primary"
+                icon={orderMeaning(chosen)}
+                disabled={busy}
+                data-oath-swear={chosen}
+                onClick={() => (full ? setReplacing(true) : choose(chosen))}
+              >
+                {OATH_PICK.swear(oathName(chosen))}
+              </HudButton>
+            )}
+          </>
+        )}
+      </footer>
     </section>
   );
 }
@@ -312,15 +332,10 @@ const PassRow = ({
       data-oath-pass-maximum={stamina?.max}
       data-oath-pass-result={result}
     >
-      <Icon name="stamina" size={17} />
-      {OATH_PICK.pass} · <b className="oath-pick__gain">+{nativeOathConstants.PASS_STAMINA}</b>
+      {OATH_PICK.pass} · <Icon name="stamina" size={17} />
+      <b className="oath-pick__gain">+{nativeOathConstants.PASS_STAMINA}</b>
       {stamina && (
-        <>
-          <Icon name="stamina" size={17} />
-          <span className="oath-pick__bar">
-            {formatAmount(stamina.current)} → {formatAmount(result)}
-          </span>
-        </>
+        <span className="oath-pick__bar">{` · ${formatAmount(stamina.current)} → ${formatAmount(result)}`}</span>
       )}
     </button>
   );

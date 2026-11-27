@@ -1,4 +1,4 @@
-import type { Camera, Object3D } from "three";
+import { FloatType, type Camera, type Object3D, type RenderTarget, type Scene } from "three";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
 import { smaa } from "three/addons/tsl/display/SMAANode.js";
 import type Node from "three/src/nodes/core/Node.js";
@@ -35,6 +35,11 @@ export class MapFinish {
     this.finish.render(scene, camera);
   }
 
+  async compileObjectAsync(object: Object3D, camera: Camera, targetScene: Scene): Promise<void> {
+    this.finish ??= createFinish(this.renderer, targetScene, camera);
+    await this.finish.compileObjectAsync(object, camera, targetScene);
+  }
+
   dispose(): void {
     this.finish?.dispose();
     this.finish = undefined;
@@ -42,15 +47,29 @@ export class MapFinish {
 }
 
 interface Finish {
+  compileObjectAsync(object: Object3D, camera: Camera, targetScene: Scene): Promise<void>;
   render(scene: Object3D, camera: Camera): void;
   dispose(): void;
 }
 
+interface FinishCompilingRenderer {
+  samples?: number;
+  reversedDepthBuffer?: boolean;
+  getOutputBufferType?(): number;
+  getRenderTarget(): RenderTarget | null;
+  setRenderTarget(target: RenderTarget | null): void;
+  getMRT(): unknown;
+  setMRT(mrtNode: unknown): void;
+  compileAsync(object: Object3D, camera: Camera, targetScene?: Scene | null): Promise<unknown>;
+}
+
 function createFinish(renderer: WebGPURenderer, scene: Object3D, camera: Camera): Finish {
+  const compilingRenderer = renderer as unknown as FinishCompilingRenderer;
   const scenePass = pass(scene, camera);
   scenePass.setMRT(mrt({ output, emissive }));
   const colour = scenePass.getTextureNode("output");
   const glow = bloom(scenePass.getTextureNode("emissive"), GLOW.strength, GLOW.radius, GLOW.threshold);
+  configurePassRenderTarget(compilingRenderer, scenePass);
   const lit = colour.add(asColour(glow));
   const toned = renderOutput(vec4(afternoon(lit.rgb), 1));
   const smoothed = smaa(toned);
@@ -59,6 +78,19 @@ function createFinish(renderer: WebGPURenderer, scene: Object3D, camera: Camera)
   pipeline.outputColorTransform = false;
   pipeline.outputNode = asColour(smoothed).add(vec4(dither, dither, dither, 0));
   return {
+    compileObjectAsync: async (object, viewer, targetScene) => {
+      configurePassRenderTarget(compilingRenderer, scenePass);
+      const previousTarget = compilingRenderer.getRenderTarget();
+      const previousMRT = compilingRenderer.getMRT();
+      compilingRenderer.setRenderTarget(scenePass.renderTarget);
+      compilingRenderer.setMRT(scenePass.getMRT());
+      try {
+        await compilingRenderer.compileAsync(object, viewer, targetScene);
+      } finally {
+        compilingRenderer.setRenderTarget(previousTarget);
+        compilingRenderer.setMRT(previousMRT);
+      }
+    },
     render: (shown, viewer) => {
       scenePass.scene = shown;
       scenePass.camera = viewer;
@@ -66,6 +98,19 @@ function createFinish(renderer: WebGPURenderer, scene: Object3D, camera: Camera)
     },
     dispose: () => [pipeline, scenePass, glow, smoothed].forEach((owned) => releasable(owned).dispose()),
   };
+}
+
+function configurePassRenderTarget(renderer: FinishCompilingRenderer, scenePass: ReturnType<typeof pass>): void {
+  const target = scenePass.renderTarget;
+  if (typeof renderer.samples === "number") target.samples = renderer.samples;
+  if (typeof renderer.getOutputBufferType === "function") {
+    const outputType = renderer.getOutputBufferType() as typeof target.texture.type;
+    target.texture.type = outputType;
+    for (const texture of target.textures) texture.type = outputType;
+  }
+  if (renderer.reversedDepthBuffer === true && target.depthTexture !== null) {
+    target.depthTexture.type = FloatType;
+  }
 }
 
 const asColour = (node: object) => node as unknown as Node<"vec4">;

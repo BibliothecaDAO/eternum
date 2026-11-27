@@ -340,8 +340,8 @@ export class StructureManager {
     this.renderChunkSize = renderChunkSize;
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
-    this.fxManager = fxManager || new FXManager(scene);
-    this.attachmentManager = new CosmeticAttachmentManager(scene);
+    this.fxManager = fxManager || new FXManager(scene, 1.5, { compilePipelines });
+    this.attachmentManager = new CosmeticAttachmentManager(scene, compilePipelines);
     this.store = gameContext?.store as NativeFactStore | undefined;
     this.visibilityManager = visibilityManager;
     this.mode = getGameModeConfig();
@@ -922,6 +922,22 @@ export class StructureManager {
 
     this.chunkAssetPrewarmPromises.set(chunkKey, prewarmPromise);
     return prewarmPromise;
+  }
+
+  public async prewarmExploreModels(): Promise<void> {
+    if (this.isDestroyed) return;
+    for (const [structureTypeKey, paths] of Object.entries(this.structureModelPaths)) {
+      if (this.isDestroyed) return;
+      const structureType = Number(structureTypeKey) as StructureType;
+      const basePath = paths[0];
+      const isExploreShell =
+        structureType === StructureType.Camp ||
+        structureType === StructureType.Rift ||
+        Boolean(basePath && frontierModelKind(basePath));
+      if (!Number.isFinite(structureType) || !basePath || !isExploreShell) continue;
+      if (this.structureModels.get(structureType)?.has(0)) continue;
+      await this.ensureStructureModel(structureType, 0);
+    }
   }
 
   private async ensureStructureModel(structureType: StructureType, modelIndex: number): Promise<StructureModel> {

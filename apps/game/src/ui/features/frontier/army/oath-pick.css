@@ -82,11 +82,15 @@
   background: color-mix(in srgb, var(--hud-good) 8%, transparent);
 }
 .oath-choice__pick {
-  display: flex;
+  display: grid;
   min-width: 0;
   flex: 1;
+  grid-template-columns: 46px auto minmax(0, 1fr);
+  grid-template-areas:
+    "ring name effect"
+    "ring unit unit";
   align-items: center;
-  gap: theme(spacing[2.5]);
+  column-gap: theme(spacing[2.5]);
   border: 0;
   background: transparent;
   padding: 0;
@@ -99,31 +103,31 @@
   width: 46px;
   height: 46px;
   flex: none;
+  grid-area: ring;
   align-items: center;
   justify-content: center;
   border: 2px solid rgb(var(--hud-aspect, var(--hud-gold)));
   border-radius: var(--hud-radius-round);
   background: radial-gradient(circle, var(--hud-surface-from), var(--hud-surface-to));
 }
-.oath-choice__words {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-}
-.oath-choice__line {
-  display: flex;
-  align-items: center;
-  gap: theme(spacing.2);
+.oath-choice__ring > img {
+  width: 36px;
+  height: 36px;
 }
 .oath-choice__name {
+  grid-area: name;
   color: rgb(var(--hud-aspect, var(--hud-gold)));
   font-family: var(--hud-font-display);
   font-size: var(--hud-text-display);
   font-weight: 400;
   line-height: 1.1;
 }
+.oath-choice__well {
+  display: contents;
+}
 .oath-choice__effect {
   display: inline-flex;
+  grid-area: effect;
   align-items: center;
   gap: 3px;
   font-size: var(--hud-text-strong);
@@ -131,7 +135,12 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+.oath-choice__effect > img {
+  width: 17px;
+  height: 17px;
+}
 .oath-choice__unit {
+  grid-area: unit;
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
   line-height: var(--hud-leading-label);
@@ -139,15 +148,19 @@
 .oath-choice__unit::first-letter {
   text-transform: uppercase;
 }
+.oath-choice__selected,
+.oath-choice__cue {
+  display: none;
+}
 .oath-choice__swap {
   display: flex;
-  width: 44px;
+  min-width: 44px;
   height: 44px;
   flex: none;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 3px;
+  padding: 0 theme(spacing.2);
   border: 1px solid var(--hud-line-strong);
   border-radius: 10px;
   background: var(--hud-well);
@@ -158,6 +171,10 @@
   color: var(--hud-muted);
   font-size: var(--hud-text-badge);
   font-style: normal;
+}
+.oath-choice__swap > b {
+  font-size: var(--hud-text-label);
+  font-variant-numeric: tabular-nums;
 }
 .oath-choice__swap:disabled {
   opacity: 0.45;
@@ -187,9 +204,205 @@
 .oath-pick__foot {
   display: flex;
   flex: none;
+  flex-direction: column;
+  gap: theme(spacing[2.5]);
   border-top: 1px solid var(--hud-divider);
   padding: theme(spacing[2.5]) theme(spacing.3) theme(spacing.3);
 }
 .oath-pick__foot > .ui-button {
   flex: 1;
+}
+
+.oath-pick[data-spread] {
+  width: min(824px, calc(100vw - 48px));
+  max-width: none;
+  border-radius: 18px;
+}
+.oath-pick[data-spread] .oath-pick__head {
+  height: 64px;
+  gap: 12px;
+  border-bottom: 1px solid var(--hud-divider);
+  padding: 0 20px;
+}
+.oath-pick[data-spread] .oath-pick__head > .ui-portrait {
+  width: 40px;
+  height: 40px;
+}
+.oath-pick[data-spread] .oath-pick__body {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  overflow: visible;
+  padding: 18px 20px 16px;
+}
+.oath-pick[data-spread][data-replacing] .oath-pick__body {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.oath-pick[data-spread] .oath-choice {
+  position: relative;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid color-mix(in srgb, rgb(var(--hud-aspect, var(--hud-gold))) 36%, var(--hud-line-strong));
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgb(var(--hud-aspect, var(--hud-gold)) / 0.16), transparent 70%),
+    var(--hud-surface-to);
+  padding: 18px 14px 16px;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+.oath-pick[data-spread] .oath-choice:hover {
+  transform: translateY(-3px);
+  border-color: rgb(var(--hud-aspect, var(--hud-gold)) / 0.78);
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgb(var(--hud-aspect, var(--hud-gold)) / 0.24), transparent 70%),
+    var(--hud-surface-to);
+}
+.oath-pick[data-spread] .oath-choice[data-selected] {
+  transform: translateY(-4px);
+  border: 2px solid rgb(var(--hud-aspect, var(--hud-gold)));
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgb(var(--hud-aspect, var(--hud-gold)) / 0.3), transparent 70%),
+    var(--hud-surface-to);
+  box-shadow:
+    var(--hud-shadow-panel),
+    0 0 28px rgb(var(--hud-aspect, var(--hud-gold)) / 0.26);
+}
+.oath-pick[data-spread] .oath-choice[data-selected]::after {
+  position: absolute;
+  right: 18%;
+  bottom: -1px;
+  left: 18%;
+  height: 4px;
+  border-radius: 4px 4px 0 0;
+  background: rgb(var(--hud-aspect, var(--hud-gold)));
+  content: "";
+}
+.oath-pick[data-spread] .oath-choice[data-fresh] {
+  border-color: var(--hud-good);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--hud-good) 18%, transparent);
+}
+.oath-pick[data-spread][data-replacing] .oath-choice:hover {
+  border-color: var(--hud-bad);
+  background:
+    radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--hud-bad) 18%, transparent), transparent 70%),
+    var(--hud-surface-to);
+}
+.oath-pick[data-spread] .oath-choice__pick {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.oath-pick[data-spread] .oath-choice__ring {
+  width: 66px;
+  height: 66px;
+  margin-top: 6px;
+  border-width: 2.5px;
+  box-shadow: 0 0 22px rgb(var(--hud-aspect, var(--hud-gold)) / 0.34);
+}
+.oath-pick[data-spread] .oath-choice__ring > img {
+  width: 46px;
+  height: 46px;
+}
+.oath-pick[data-spread] .oath-choice__name {
+  margin-top: 8px;
+  font-size: var(--hud-text-display);
+}
+.oath-pick[data-spread] .oath-choice__well {
+  display: flex;
+  width: 100%;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 14px;
+  border: 1px solid rgb(var(--hud-aspect, var(--hud-gold)) / 0.28);
+  border-radius: 11px;
+  background: var(--hud-well);
+  padding: 15px 12px 13px;
+}
+.oath-pick[data-spread] .oath-choice[data-selected] .oath-choice__well {
+  border-color: rgb(var(--hud-aspect, var(--hud-gold)) / 0.52);
+}
+.oath-pick[data-spread] .oath-choice__effect {
+  gap: 8px;
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-hero);
+  line-height: var(--hud-leading-hero);
+  text-shadow: 0 0 14px rgb(var(--hud-aspect, var(--hud-gold)) / 0.45);
+}
+.oath-pick[data-spread] .oath-choice__effect[data-long] {
+  font-size: var(--hud-text-display);
+  line-height: var(--hud-leading-display);
+}
+.oath-pick[data-spread] .oath-choice__effect > img {
+  width: 28px;
+  height: 28px;
+}
+.oath-pick[data-spread] .oath-choice__unit {
+  color: rgb(var(--hud-ink) / 0.9);
+  font-size: var(--hud-text-body);
+  font-weight: var(--hud-weight-body);
+  line-height: var(--hud-leading-body);
+  white-space: normal;
+}
+.oath-pick[data-spread] .oath-choice__selected {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: block;
+  border: 1px solid rgb(var(--hud-aspect, var(--hud-gold)));
+  border-radius: var(--hud-radius-round);
+  padding: 2px 8px;
+  color: rgb(var(--hud-aspect, var(--hud-gold)));
+  font-size: var(--hud-text-badge);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.oath-pick[data-spread] .oath-choice__swap {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  height: 26px;
+  gap: 4px;
+  padding: 0 8px;
+}
+.oath-pick[data-spread] .oath-choice__swap > img {
+  width: 14px;
+  height: 14px;
+}
+.oath-pick[data-spread] .oath-choice__new {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+.oath-pick[data-spread] .oath-choice__cue {
+  margin-top: 10px;
+  color: var(--hud-bad);
+  font-size: var(--hud-text-label);
+  font-weight: 700;
+}
+.oath-pick[data-spread] .oath-choice:hover .oath-choice__cue {
+  display: block;
+}
+.oath-pick[data-spread] .oath-pick__foot {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px 18px;
+}
+.oath-pick[data-spread] .oath-pick__pass {
+  height: 48px;
+  flex: 0 0 auto;
+  padding: 0 18px;
+}
+.oath-pick[data-spread] .oath-pick__foot > .ui-button {
+  height: 48px;
 }

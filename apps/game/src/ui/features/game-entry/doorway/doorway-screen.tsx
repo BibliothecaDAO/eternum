@@ -59,7 +59,9 @@ export const DoorwayScreen = ({
     <div data-surface="shell" className="fixed inset-0 z-50 overflow-y-auto bg-app-ground">
       <PageFrame painting={game ? gamePainting(game) : undefined} stage foot={desktop ? undefined : verb}>
         {desktop ? (
-          <div className="flex min-h-[calc(100dvh-var(--app-bar)-3rem)] items-center justify-center py-2">
+          <div
+            className={`flex min-h-[calc(100dvh-var(--app-bar)-3rem)] justify-center py-2 ${wide ? "items-start" : "items-center"}`}
+          >
             <AppPanel className={wide ? "w-full" : "w-column"}>
               <div className="flex flex-col items-stretch gap-5">
                 {realm && <RealmRising realm={realm} />}
@@ -70,7 +72,9 @@ export const DoorwayScreen = ({
             </AppPanel>
           </div>
         ) : (
-          <div className="mx-auto flex min-h-full w-full max-w-doorway flex-col items-center justify-center gap-5 py-4">
+          <div
+            className={`mx-auto flex min-h-full w-full max-w-doorway flex-col items-center gap-5 py-4 ${wide ? "justify-start" : "justify-center"}`}
+          >
             {realm && <RealmRising realm={realm} />}
             {hold}
             {children}
@@ -81,8 +85,8 @@ export const DoorwayScreen = ({
   );
 };
 
-const RealmRising = ({ realm }: { realm: DoorwayRealm }) => (
-  <div className="flex flex-col items-center gap-3">
+export const RealmRising = ({ realm }: { realm: DoorwayRealm }) => (
+  <div data-realm-rising className="flex flex-col items-center gap-3">
     {realm.aspect != null ? (
       <AspectMark aspect={realm.aspect} size={56} />
     ) : (

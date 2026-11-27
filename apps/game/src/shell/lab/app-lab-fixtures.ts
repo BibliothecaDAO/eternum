@@ -1,4 +1,4 @@
-import { triumphPercentsOf } from "@bibliothecadao/eternum/game-client";
+import { questBonusPercent, triumphPercentsOf } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { orderAspect, StructureType } from "@bibliothecadao/types";
 import { LORDS_ADDRESS } from "@realms-world/chain";
@@ -98,6 +98,8 @@ const owned = {
   today_quest: { quest_id: 2, progress: 0, target: 1, labor: 1_500 },
 };
 
+export const LAB_QUEST_BONUS_PERCENT = questBonusPercent(release.definition.economy.quests.Some);
+
 /** Frontier's season on Day 12, the player's realm in it or not. */
 const frontier = (withRealm: boolean) =>
   game({
@@ -123,7 +125,7 @@ const frontier = (withRealm: boolean) =>
       heights: { 1: 6_400, 2: 7_850, 3: 4_100, 4: 2_900 },
       triumph_percents: triumphPercentsOf(release.definition.economy.race.Some),
     },
-    quest_bonus_percent: 50,
+    quest_bonus_percent: LAB_QUEST_BONUS_PERCENT,
     player_state: withRealm ? owned : null,
   });
 
@@ -146,7 +148,7 @@ const endedFrontier = game({
     heights: { 1: 10_000, 2: 8_420, 3: 6_180, 4: 4_910 },
     triumph_percents: triumphPercentsOf(release.definition.economy.race.Some),
   },
-  quest_bonus_percent: 50,
+  quest_bonus_percent: LAB_QUEST_BONUS_PERCENT,
   player_state: owned,
 });
 

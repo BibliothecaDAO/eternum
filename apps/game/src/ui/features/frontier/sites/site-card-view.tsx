@@ -33,7 +33,7 @@ import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
 import { GuardToken } from "../hud/army-token";
 import { AttackStamina, FightArena } from "./fight-side";
-import { CombatBadge } from "./combat-mark";
+import { BeastMarkBadge } from "./combat-mark";
 import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
 
@@ -120,7 +120,7 @@ export const SiteCardView = ({
                 label={beast?.name ?? TROOPS}
                 art={guardIcon}
                 troops={guard}
-                mark={beast && <CombatBadge category={beast.combatClass} />}
+                mark={beast && <BeastMarkBadge category={beast.combatClass} />}
               />
             </BaneFigure>
           ) : (
@@ -238,7 +238,7 @@ const FightPanel = ({
             mark: (
               <span className="relative block size-full">
                 <SemanticIcon name={guardIcon} size={96} className="size-full" />
-                {beast && <CombatBadge category={beast.combatClass} />}
+                {beast && <BeastMarkBadge category={beast.combatClass} />}
               </span>
             ),
             before: guard,
