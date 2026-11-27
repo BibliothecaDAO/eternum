@@ -14,6 +14,7 @@ import {
 import { Color } from "three";
 import { HyperstructureTypesNames } from "../types";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
+import { PROCEDURAL_RIFT_PATH } from "../structures/reward-tile-kit";
 import {
   FALLEN_REALM_MODEL_PATHS,
   FRONTIER_BEAST_PATHS,
@@ -51,7 +52,7 @@ enum BuildingFilenames {
   Dragonhide = "dragonhide.glb",
 }
 
-export const RiftModelPath = modelPath("reward-tiles/rift.glb");
+export const RiftModelPath = PROCEDURAL_RIFT_PATH;
 const RIFT_MODEL_PATH = RiftModelPath;
 
 export const VILLAGE_MODEL_PATH: string = OUTPOST_PATHS.village;

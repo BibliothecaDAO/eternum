@@ -20,7 +20,7 @@ type FrontierBuildingModelSpec =
 
 export const FRONTIER_PAINTED_BUILDINGS = catalogue as readonly FrontierPaintedBuilding[];
 
-export function frontierPaintedPath(id: string): string {
+function frontierPaintedPath(id: string): string {
   const building = FRONTIER_PAINTED_BUILDINGS.find((entry) => entry.id === id);
   if (!building) throw new Error(`Unknown painted Frontier building: ${id}`);
   return building.path;

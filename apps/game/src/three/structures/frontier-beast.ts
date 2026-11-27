@@ -99,7 +99,7 @@ const GUARDED_SITE_COMPOSITIONS = {
     beastY: 0,
   },
   Rift: {
-    baseScale: 1.09,
+    baseScale: 1,
     baseZ: 0,
     beastZ: 0,
     beastY: 0.2,

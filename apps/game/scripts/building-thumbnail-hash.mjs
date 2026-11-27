@@ -8,9 +8,18 @@ const REALM_SUPPORT_SOURCE_FILES = [
   "src/three/structures/procgen-masonry-material.ts",
 ];
 
+const REWARD_TILE_SOURCE_FILES = [
+  "src/three/structures/reward-tile-kit.ts",
+  "src/three/structures/procgen-masonry-material.ts",
+];
+
 export function buildingThumbnailModelSha256(model, gameDir) {
   if (model.startsWith("procedural:realm-support:")) {
     const combined = Buffer.concat(REALM_SUPPORT_SOURCE_FILES.map((file) => readFileSync(resolve(gameDir, file))));
+    return createHash("sha256").update(combined).digest("hex");
+  }
+  if (model.startsWith("procedural:reward-tile:")) {
+    const combined = Buffer.concat(REWARD_TILE_SOURCE_FILES.map((file) => readFileSync(resolve(gameDir, file))));
     return createHash("sha256").update(combined).digest("hex");
   }
   return createHash("sha256")

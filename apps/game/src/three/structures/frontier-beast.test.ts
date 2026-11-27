@@ -19,6 +19,8 @@ import {
 import { getStructureModelPaths } from "../constants/scene-constants";
 import { getGameModeConfig } from "@/config/game-modes";
 import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
+import { Mesh, Vector3 } from "three";
+import { resolveProceduralModel } from "./procedural-model-resolver";
 import { resolveStructureRotationY } from "./structure-orientation";
 import {
   FRONTIER_BEASTS,
@@ -61,34 +63,31 @@ const without = (store: ReturnType<typeof facts>, missing: string) => {
 };
 
 describe("Frontier guard identity", () => {
-  it("fits the painted rift to all six terrain edges and corners at its live composition", async () => {
-    const { createDecoderModule } = createRequire(import.meta.url)("draco3dgltf");
-    const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
-      "draco3d.decoder": await createDecoderModule(),
-    });
+  it("fits the procedural rift inside all six terrain edges at its live composition", () => {
     const paths = getGameModeConfig(GAME_FAMILIES.frontier).assets.structureModelPaths[StructureType.Rift];
-    const root = (await io.readBinary(readFileSync(new URL(`../../../public${paths[0]}`, import.meta.url)))).getRoot();
+    const kit = resolveProceduralModel(paths[0]);
+    expect(kit).not.toBeNull();
     const composition = frontierSiteComposition(StructureType.Rift);
-    const points = root.listMeshes().flatMap((mesh) =>
-      mesh.listPrimitives().flatMap((primitive) => {
-        const positions = primitive.getAttribute("POSITION")!;
-        return Array.from({ length: positions.getCount() }, (_, index) => {
-          const [x, , z] = positions.getElement(index, [0, 0, 0]);
-          return [x * composition.baseScale, z * composition.baseScale + composition.baseZ];
-        });
-      }),
-    );
+    const point = new Vector3();
+    const points: Array<[number, number]> = [];
+    kit!.scene.updateMatrixWorld(true);
+    kit!.scene.traverse((part) => {
+      if (!(part instanceof Mesh)) return;
+      const positions = part.geometry.getAttribute("position");
+      for (let index = 0; index < positions.count; index++) {
+        point.fromBufferAttribute(positions, index).applyMatrix4(part.matrixWorld);
+        points.push([point.x * composition.baseScale, point.z * composition.baseScale + composition.baseZ]);
+      }
+      part.geometry.dispose();
+    });
     for (let direction = 0; direction < 6; direction++) {
       expect(resolveStructureRotationY([paths[0], FRONTIER_BEASTS["dark-fey"].path], (direction * Math.PI) / 3)).toBe(
         0,
       );
       const angle = (direction * Math.PI) / 3;
       const edge = Math.max(...points.map(([x, z]) => x * Math.cos(angle) + z * Math.sin(angle)));
-      expect(edge).toBeCloseTo(Math.sqrt(3) / 2, 2);
-      const corner = angle + Math.PI / 6;
-      expect(Math.min(...points.map(([x, z]) => Math.hypot(x - Math.cos(corner), z - Math.sin(corner))))).toBeLessThan(
-        0.015,
-      );
+      expect(edge).toBeGreaterThan(0.72);
+      expect(edge).toBeLessThanOrEqual(Math.sqrt(3) / 2);
     }
   });
 
@@ -240,7 +239,7 @@ describe("Frontier guard identity", () => {
         idle: rift.idle,
       });
       expect(frontierSiteComposition(StructureType.Rift)).toEqual({
-        baseScale: 1.09,
+        baseScale: 1,
         baseZ: 0,
         beastZ: 0,
         beastY: 0.2,

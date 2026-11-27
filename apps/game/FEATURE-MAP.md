@@ -889,8 +889,8 @@ In a Frontier game a player meets the set here (the paths are chosen in `src/con
 (Realm), the Farm, Workshop and Barracks at their tier, the four training buildings and the Essence rift; on the world
 map, each Shrine, Well and Essence rift (fallen realm ruins use the procedural `ruin-kit.ts` variants across all modes).
 The camp is drawn only in the lab. The board and the placement preview keep any part with a `poleAxis` at its authored
-heading (`src/three/structures/held-heading.ts`), as `InstancedModel` does.
-`pnpm --dir apps/game verify:painted-buildings` checks the deliveries (`public/models/frontier/painted/SOURCE.md`).
+heading (`src/three/structures/held-heading.ts`), as `InstancedModel` does. Every retired painted Frontier model now
+resolves to its runtime procedural kit, with no `.glb` deliveries left under `public/models/frontier/painted/`.
 
 ## Frontier day end
 

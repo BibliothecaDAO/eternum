@@ -17,7 +17,7 @@ export const StructureTypeToNameMapping: Record<StructureType, string> = {
 };
 
 export const MineKinds = {
-  1: { name: "Rift", model: "/models/reward-tiles/rift.glb" },
+  1: { name: "Rift", model: "procedural:reward-tile:rift" },
   2: { name: "Fragment Mine", model: "/models/new-buildings-opt/mine.glb" },
 } as const;
 

@@ -25,7 +25,6 @@ jobs:
           keep: |
             apps/game/asset-sources/facets/masters
             apps/game/asset-sources/frontier-beasts
-            apps/game/asset-sources/frontier-painted
             apps/game/asset-sources/lab/frontier-beasts
             apps/game/asset-sources/lab/realm-level-icons
             apps/game/asset-sources/lab/rss-icons/before
@@ -52,7 +51,6 @@ jobs:
             apps/game/public/models/outposts
             apps/game/public/models/terrain-flora
             apps/game/public/models/realms
-            apps/game/public/models/reward-tiles
             apps/game/public/models/ships
             apps/game/public/models/units
             apps/game/public/textures/realms

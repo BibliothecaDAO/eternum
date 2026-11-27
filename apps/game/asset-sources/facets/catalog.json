@@ -149,7 +149,7 @@
         "inputs": {
           "apps/game/src/three/structures/outpost-kit.ts": "a81b316c698f651f3333196f448bc76ac15a422c9c31877eb137534fea8dc7f0",
           "apps/game/src/three/structures/procgen-masonry-material.ts": "e5df08c3d7514518d03e3eeaa16eeb59f0243f0a8d8748f80c4892097031fd0c",
-          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "afeb096afb8f2cdb34615755bfb77d18e64ce788834654225d972b5b6b237c0c"
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "3d28265df146219184c87fb81764f5702e7d0deaa35ff2ad56e1f613c01af8ea"
         },
         "sha256": "d295f9ec04bd168a81a7ad3caddafd07c89a0d391ce604d7d32b09e7602704e9"
       }
@@ -164,7 +164,7 @@
         "inputs": {
           "apps/game/src/three/structures/hyperstructure-kit.ts": "866ada3e27f95438dffddb646a73be5279bb83c4da872653f6a2cd7a467bb344",
           "apps/game/src/three/structures/hyperstructure-design.ts": "38e9ae3b979ab15786e464e4860d76129c538f6ca456f5884eaba583f7ead369",
-          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "afeb096afb8f2cdb34615755bfb77d18e64ce788834654225d972b5b6b237c0c",
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "3d28265df146219184c87fb81764f5702e7d0deaa35ff2ad56e1f613c01af8ea",
           "apps/game/src/three/structures/hyperstructure-model.ts": "0224a46e4e5712a98443facd5cb6371519548913321d820df08189061de15012",
           "apps/game/src/three/structures/hyperstructure-power.ts": "676b2984ac5ab209f6d483181ff2294f1d8f951d9be916c23ddc2a9409cb8057",
           "apps/game/src/three/structures/procgen-geometry.ts": "25db8a2a802669d371049e76bb393522d727204dfb1e30dc9c7bd7adeed17d78",
@@ -180,13 +180,14 @@
       "family": "Structures",
       "prompt": "prompts/chest.txt",
       "source": {
-        "model": "/models/reward-tiles/chest-c2.glb",
+        "model": "procedural:reward-tile:chest",
         "inputs": {
-          "apps/game/public/models/reward-tiles/chest-c2.glb": "e65db3a9a319316b0f485bf9feeb426b74b970a17a619ce758991d91cf2fd438",
-          "apps/game/src/three/rewards/chest-presentation.ts": "85e99e1dbb26ef1360a72159d41450a4af120262da40b25c82fb2f7165b1d4ce",
-          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "afeb096afb8f2cdb34615755bfb77d18e64ce788834654225d972b5b6b237c0c"
+          "apps/game/src/three/structures/reward-tile-kit.ts": "e3b358038b9fc834d630ee261fcaeb618f49447e75e4c71141c19cc7bce24c7c",
+          "apps/game/src/three/rewards/chest-presentation.ts": "5c610e109cb44f90415907918c27f2e418f8d79f9a21ea15d5084500e01651a9",
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "3d28265df146219184c87fb81764f5702e7d0deaa35ff2ad56e1f613c01af8ea",
+          "apps/game/src/three/structures/procgen-masonry-material.ts": "e5df08c3d7514518d03e3eeaa16eeb59f0243f0a8d8748f80c4892097031fd0c"
         },
-        "sha256": "dbb342171232be10ede039516ec4893e54fe93ec9b2293e2ad8fb21645794d9f"
+        "sha256": "39f1251c7810ebf81635159db44425502954de8722461d98d91b694a911c9a0a"
       }
     },
     {
@@ -2573,12 +2574,13 @@
       "family": "Structures",
       "prompt": "prompts/rift.txt",
       "source": {
-        "model": "/models/reward-tiles/rift.glb",
+        "model": "procedural:reward-tile:rift",
         "inputs": {
-          "apps/game/public/models/reward-tiles/rift.glb": "134730f681899c93287d6167946d58c3f9cfdca7b443f8131e495638135ed2d9",
-          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "afeb096afb8f2cdb34615755bfb77d18e64ce788834654225d972b5b6b237c0c"
+          "apps/game/src/three/structures/reward-tile-kit.ts": "e3b358038b9fc834d630ee261fcaeb618f49447e75e4c71141c19cc7bce24c7c",
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "3d28265df146219184c87fb81764f5702e7d0deaa35ff2ad56e1f613c01af8ea",
+          "apps/game/src/three/structures/procgen-masonry-material.ts": "e5df08c3d7514518d03e3eeaa16eeb59f0243f0a8d8748f80c4892097031fd0c"
         },
-        "sha256": "45d92b72f0a877456444727a386e433d174b1ed285e4917029102a54fdd08ff3"
+        "sha256": "097c83b6eed07cfdd0946d0c3cefe2cbace36b3b40f4fa066f71d03b7b3d4ff3"
       }
     },
     {
@@ -2591,7 +2593,7 @@
         "inputs": {
           "apps/game/src/three/structures/spire-kit.ts": "aa4dd205838e266ba95bfc433baf350ebabb6fceaa93f2c5ac8acdb775207f66",
           "apps/game/src/three/structures/procgen-masonry-material.ts": "e5df08c3d7514518d03e3eeaa16eeb59f0243f0a8d8748f80c4892097031fd0c",
-          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "afeb096afb8f2cdb34615755bfb77d18e64ce788834654225d972b5b6b237c0c"
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "3d28265df146219184c87fb81764f5702e7d0deaa35ff2ad56e1f613c01af8ea"
         },
         "sha256": "2ce9b22c027cec3649924979864c555b80a0ba3f93734b9830e24c7ef4bb5144"
       }
@@ -2623,7 +2625,7 @@
         "model": "/models/new-buildings-opt/farm.glb",
         "inputs": {
           "apps/game/public/models/new-buildings-opt/farm.glb": "29bdee8dc0e9db8e45afc730b7092cfc794d9fef07dc145d67afcf1d197c4187",
-          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "afeb096afb8f2cdb34615755bfb77d18e64ce788834654225d972b5b6b237c0c"
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "3d28265df146219184c87fb81764f5702e7d0deaa35ff2ad56e1f613c01af8ea"
         },
         "sha256": "b5dae52cc40030b7bdf9788defb0070ae9e6630740bd5e3edcfc34e092ef3568"
       }
@@ -2636,7 +2638,7 @@
         "model": "/models/new-buildings-opt/workshop.glb",
         "inputs": {
           "apps/game/public/models/new-buildings-opt/workshop.glb": "f9b2864946c7d9122de26ee471447b2aeb042c0cc2a4bb4467bfe997b8298210",
-          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "afeb096afb8f2cdb34615755bfb77d18e64ce788834654225d972b5b6b237c0c"
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "3d28265df146219184c87fb81764f5702e7d0deaa35ff2ad56e1f613c01af8ea"
         },
         "sha256": "b4e88a332b13a62fa3a78a207f9608b0e3b8fa044ddef072d0b7debed2e95aa1"
       }
@@ -2656,7 +2658,7 @@
         "model": "/models/new-buildings-opt/workers_hut.glb",
         "inputs": {
           "apps/game/public/models/new-buildings-opt/workers_hut.glb": "1b158f385d0c420e0cb0516a097c905bb9f621da01a665d43713162b8018d353",
-          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "afeb096afb8f2cdb34615755bfb77d18e64ce788834654225d972b5b6b237c0c"
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "3d28265df146219184c87fb81764f5702e7d0deaa35ff2ad56e1f613c01af8ea"
         },
         "sha256": "9495de6067634afad03bd5239def44324332cf708d4e8d846bafe2cf92d01dca"
       }

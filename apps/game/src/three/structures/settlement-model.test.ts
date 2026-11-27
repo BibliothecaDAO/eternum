@@ -174,7 +174,7 @@ describe("gameplay realms", () => {
 
 it("loads both mine models regardless of game mode", () => {
   expect(getStructureModelPaths()[StructureType.Mine]).toEqual([
-    "/models/reward-tiles/rift.glb",
+    "procedural:reward-tile:rift",
     "/models/new-buildings-opt/mine.glb",
   ]);
 });
