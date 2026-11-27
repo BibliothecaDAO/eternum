@@ -128,7 +128,7 @@ export function MessageComposer({
       className="flex flex-shrink-0 flex-col gap-1 border-t border-hud-divider px-3 pb-3 pt-2.5"
     >
       {replying && (
-        <div className="flex min-w-0 items-center gap-1.5 px-1 text-hud-label text-hud-muted">
+        <div className="flex min-w-0 items-center gap-1.5 rounded-r border-l-2 border-hud-accent bg-hud-well px-2 py-1 text-hud-label text-hud-muted">
           <span className="shrink-0 text-hud-accent">{replying.name}</span>
           <span className="min-w-0 flex-1 truncate">{replying.excerpt}</span>
           <HudIconButton
