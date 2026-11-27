@@ -2,8 +2,9 @@ import { useEffect, useRef, type ReactNode } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
-import { HudChip, HudPage, HudPill } from "@/ui/design-system/kit/hud-elements";
+import { HudAspectName, HudChip, HudPage, HudPill } from "@/ui/design-system/kit/hud-elements";
 import { CHAT, CHAT_WORDS } from "@/ui/design-system/kit/words";
+import type { AspectId } from "@bibliothecadao/types";
 
 import { useChatPeople } from "@/ui/features/social/realtime-chat/hooks/use-chat-people";
 import { useRealtimeChatSelector } from "@/ui/features/social";
@@ -35,8 +36,8 @@ const chatStripLine = ({
   connection: RealtimeConnectionStatus;
   joined: boolean;
   history: HistoryState;
-  last: string | undefined;
-}): string => {
+  last: ReactNode;
+}): ReactNode => {
   if (!signedIn) return CHAT_WORDS.signInToChat;
   if (connection === "connected" && !joined) return CHAT_UNAVAILABLE;
   if (last) return last;
@@ -48,10 +49,12 @@ export const useChatStrip = ({
   zoneId,
   signedIn,
   readPlace,
+  aspectOf,
 }: {
   zoneId: string;
   signedIn: boolean;
   readPlace: (place: SharedPlace) => string;
+  aspectOf?: (playerId: string) => AspectId | null;
 }) => {
   const connection = useRealtimeChatSelector((state) => state.connectionStatus);
   const joined = useRealtimeChatSelector((state) => state.joinedZoneIds.includes(zoneId));
@@ -64,14 +67,20 @@ export const useChatStrip = ({
   const unread = useRealtimeChatSelector(chatUnread);
   const people = useChatPeople();
   const lastPlace = lastMessage ? placeOf(lastMessage.metadata) : null;
+  const senderAspect = lastMessage && aspectOf ? aspectOf(lastMessage.sender.playerId) : null;
   const stripLine = chatStripLine({
     signedIn,
     connection,
     joined,
     history,
-    last:
-      lastMessage &&
-      `${people.nameOf(lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${messageWords(lastMessage.content, lastPlace?.name ?? null, lastPlace ? readPlace(lastPlace) : null)}`,
+    last: lastMessage && (
+      <>
+        <HudAspectName aspect={senderAspect}>
+          {people.nameOf(lastMessage.sender.playerId, lastMessage.sender.displayName)}
+        </HudAspectName>
+        {`: ${messageWords(lastMessage.content, lastPlace?.name ?? null, lastPlace ? readPlace(lastPlace) : null)}`}
+      </>
+    ),
   });
   return { stripLine, unread };
 };
@@ -91,7 +100,7 @@ export function ChatDock({
   onOpenChange: (open: boolean) => void;
   signedIn: boolean;
   onSignIn: () => void;
-  stripLine: string;
+  stripLine: ReactNode;
   unread: number;
   foldToIcon?: boolean;
   className?: string;

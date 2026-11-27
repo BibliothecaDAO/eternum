@@ -38,6 +38,7 @@ const GAME_MAP = {
   selected: null,
   read: (place: { name: string; icon: never }) => ({ name: place.name, icon: place.icon, open: null, elsewhere: true }),
   realmOf: () => null,
+  aspectOf: () => null,
   players: PLAYERS.flatMap((player) =>
     player.name ? [{ name: player.name, portrait: `/portrait/${player.address}.png` }] : [],
   ),

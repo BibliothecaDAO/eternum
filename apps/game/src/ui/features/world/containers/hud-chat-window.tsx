@@ -15,7 +15,7 @@ import {
 import { chatRooms, gameAspectRooms } from "@/ui/features/social/realtime-chat/model/chat-rooms";
 import { useGrantedRooms } from "@/ui/features/social/realtime-chat/hooks/use-granted-rooms";
 import { ChatDock, useChatStrip } from "@/ui/features/social/realtime-chat/ui/chat-dock";
-import { usePlaceReader } from "@/ui/features/social/realtime-chat/ui/shared/use-chat-map";
+import { useGamePlayerAspect, usePlaceReader } from "@/ui/features/social/realtime-chat/ui/shared/use-chat-map";
 import { configManager } from "@bibliothecadao/eternum";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
@@ -85,10 +85,12 @@ export function useGameChat(open: boolean) {
     return () => setShellOpen(false);
   }, [open, setShellOpen]);
   const readPlace = usePlaceReader();
+  const aspectOf = useGamePlayerAspect();
   const { stripLine, unread } = useChatStrip({
     zoneId,
     signedIn: initializer !== null,
     readPlace: (place) => readPlace(place).name,
+    aspectOf,
   });
   return { initializer, requestSignIn, rooms, unread, stripLine };
 }

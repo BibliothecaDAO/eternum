@@ -1,5 +1,6 @@
-import { MEDAL_COLORS } from "@/tokens";
+import { aspectVariables, MEDAL_COLORS } from "@/tokens";
 import {
+  type AspectId,
   formatTypedNumber,
   formatExact,
   formatPercent,
@@ -17,6 +18,7 @@ import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import {
   type ButtonHTMLAttributes,
+  type CSSProperties,
   createContext,
   forwardRef,
   Fragment,
@@ -53,6 +55,29 @@ import { CLOSE, FREE, type RankedWords, rankedText, STAMINA, type Rank, tierNume
  * places a gold, silver or bronze disc with its place, the first with the crown over it; below them, `below` (the rank
  * as the board writes it).
  */
+export const HudAspectName = ({
+  aspect,
+  as = "span",
+  className,
+  children,
+}: {
+  aspect: AspectId | null;
+  as?: "span" | "strong";
+  className?: string;
+  children: ReactNode;
+}) => {
+  const Tag = as;
+  return (
+    <Tag
+      className={cn("ui-aspect-name", className)}
+      data-aspect={aspect ?? undefined}
+      style={aspect !== null ? (aspectVariables(aspect) as CSSProperties) : undefined}
+    >
+      {children}
+    </Tag>
+  );
+};
+
 export const HudPlaceMedal = ({ place, size = 22, below }: { place: number; size?: number; below: ReactNode }) =>
   place >= 1 && place <= 3 ? (
     <span
