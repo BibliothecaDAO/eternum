@@ -17,7 +17,7 @@ import {
 } from "./terrain-lab-buildings";
 import { HyperstructureModel } from "../structures/hyperstructure-model";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
-import { isSeasonOneRealmKitPath, resolveSeasonOneRealmKit } from "../structures/realm-kit";
+import { isProceduralRealmKitPath, resolveProceduralRealmKit } from "../structures/realm-kit";
 import { SpireModel } from "../structures/spire-model";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import type { WeatherState } from "@/three/managers/weather-manager";
@@ -128,7 +128,7 @@ export class TerrainLabInteraction {
     this.hover.update(delta);
     for (const [key, model] of this.models) {
       if (
-        (key.startsWith("/") || key === HYPERSTRUCTURE_MODEL_PATH || isSeasonOneRealmKitPath(key)) &&
+        (key.startsWith("/") || key === HYPERSTRUCTURE_MODEL_PATH || isProceduralRealmKitPath(key)) &&
         model.group.visible
       ) {
         if (model instanceof RewardTileModel) model.updatePresentation(0);
@@ -333,7 +333,7 @@ export class TerrainLabInteraction {
       counts.set(building.path, index + 1);
     }
     for (const [path, model] of this.models) {
-      if (!path.startsWith("/") && path !== HYPERSTRUCTURE_MODEL_PATH && !isSeasonOneRealmKitPath(path)) continue;
+      if (!path.startsWith("/") && path !== HYPERSTRUCTURE_MODEL_PATH && !isProceduralRealmKitPath(path)) continue;
       const count = counts.get(path) ?? 0;
       model.setCount(count);
       model.group.visible = count > 0;
@@ -368,7 +368,7 @@ export class TerrainLabInteraction {
     const gltf =
       path === HYPERSTRUCTURE_MODEL_PATH
         ? null
-        : (resolveSeasonOneRealmKit(path) ?? (await gltfLoader.loadAsync(path)));
+        : (resolveProceduralRealmKit(path) ?? (await gltfLoader.loadAsync(path)));
     if (this.disposed) return null;
     const model = gltf ? this.createPreviewModel(gltf, path, capacity, name) : new HyperstructureModel(capacity);
     let retained = false;

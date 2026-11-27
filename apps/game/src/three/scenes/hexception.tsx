@@ -10,7 +10,7 @@ import { holdPartHeadings } from "../structures/held-heading";
 import { frontierPaintedBuildingPath } from "../structures/frontier-painted-buildings";
 import { buildingTypeTier, realmWornSkinFamily } from "@bibliothecadao/eternum";
 import { isWonderModelPath } from "../structures/realm-design";
-import { resolveSeasonOneRealmKit } from "../structures/realm-kit";
+import { resolveProceduralRealmKit } from "../structures/realm-kit";
 import { RealmLivingAura } from "../structures/realm-living-aura";
 import { HexceptionModels, disposeBuildingModel, prepareBuildingModel } from "./hexception-models";
 import { SettlementAnimation } from "../structures/settlement-animation";
@@ -633,7 +633,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private async loadBuildingModel(path: string): Promise<{ model: Group; animations: AnimationClip[] }> {
-    const gltf = resolveSeasonOneRealmKit(path) ?? (await loader.loadAsync(path));
+    const gltf = resolveProceduralRealmKit(path) ?? (await loader.loadAsync(path));
     if (isRealmModelPath(path)) withFlagCloth(gltf);
     const model = prepareBuildingModel(gltf.scene as Group);
     if (this.destroyed) {

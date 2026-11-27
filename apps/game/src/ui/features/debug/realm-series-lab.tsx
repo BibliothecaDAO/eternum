@@ -93,7 +93,6 @@ export function RealmSeriesLab() {
           <select
             aria-label="Series"
             value={Number(settings.wonder)}
-            disabled={settings.s1}
             onChange={(e) => change("wonder", e.target.value)}
           >
             <option value="0">Normal</option>

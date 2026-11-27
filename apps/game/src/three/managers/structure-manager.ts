@@ -3,7 +3,7 @@ import { publishMapSelection } from "@/observability/map-selection";
 import { FrontierModel, frontierModelKind, type BeastLayer } from "../structures/frontier-model";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
-import { resolveSeasonOneRealmKit } from "../structures/realm-kit";
+import { resolveProceduralRealmKit } from "../structures/realm-kit";
 import { MineKinds, orderAspect, structureName, troopTierIndex } from "@bibliothecadao/types";
 import {
   configManager,
@@ -1006,7 +1006,7 @@ export class StructureManager {
   private async loadStructureModel(structureType: StructureType, modelPath: string): Promise<StructureModel> {
     if (structureType === StructureType.Hyperstructure) return new HyperstructureModel(STRUCTURE_INSTANCE_CAPACITY);
     const startedAt = performance.now();
-    const gltf = resolveSeasonOneRealmKit(modelPath) ?? (await gltfLoader.loadAsync(modelPath));
+    const gltf = resolveProceduralRealmKit(modelPath) ?? (await gltfLoader.loadAsync(modelPath));
     recordWorldmapRenderDuration("structureModelLoadMs", performance.now() - startedAt);
     recordGameEntryDuration(`structure-model-load:${modelPath}`, performance.now() - startedAt);
     const model = this.createStructureModel(gltf, structureType, modelPath);

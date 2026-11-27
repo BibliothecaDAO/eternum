@@ -3,8 +3,17 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { initializeProceduralCharacterRendererRuntime } from "../../characters/procedural-character-renderer-runtime";
 import { ORDER_STANDARD_NAME } from "../../structures/order-standard";
 import { SettlementModel } from "../../structures/settlement-model";
-import { REALM_ASSETS, SEASON_ONE_REALM_ASSETS, realmModelIndex } from "../../structures/realm-design";
-import { SEASON_ONE_REALM_KIT_LEVELS, resolveSeasonOneRealmKit } from "../../structures/realm-kit";
+import {
+  ASPECT_WONDER_KIT_ASSETS,
+  REALM_ASSETS,
+  SEASON_ONE_REALM_ASSETS,
+  realmModelIndex,
+} from "../../structures/realm-design";
+import {
+  ASPECT_WONDER_KIT_LEVELS,
+  SEASON_ONE_REALM_KIT_LEVELS,
+  resolveProceduralRealmKit,
+} from "../../structures/realm-kit";
 import { gltfLoader } from "../../utils/utils";
 import { configureRendererColorOutput } from "../../renderer-color-output";
 import { ModelLabEnvironment } from "./model-lab-environment";
@@ -76,7 +85,7 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
     let height = 0;
     for (const [slot, { asset, before }] of series.entries()) {
       const modelPath = before ? `${settings.reference!.replace(/\/$/, "")}/${asset.id}.glb` : asset.path;
-      const gltf = resolveSeasonOneRealmKit(modelPath) ?? (await gltfLoader.loadAsync(modelPath));
+      const gltf = resolveProceduralRealmKit(modelPath) ?? (await gltfLoader.loadAsync(modelPath));
       const modelHeight = new Box3().setFromObject(gltf.scene).max.y;
       height = Math.max(height, modelHeight);
       const model = new SettlementModel(gltf, 1, "realm", asset.wonder);
@@ -124,6 +133,15 @@ function realmSeries(settings: RealmSeriesSettings): SeriesSlot[] {
   const shipped = (level: number, wonder = settings.wonder) =>
     REALM_ASSETS[realmModelIndex(level, wonder, settings.seed)];
   if (settings.s1) {
+    if (settings.wonder) {
+      const levels = settings.lineup ? ASPECT_WONDER_KIT_LEVELS : [settings.level];
+      return levels.flatMap((level) =>
+        [shipped(level, true), ...ASPECT_WONDER_KIT_ASSETS.filter((asset) => asset.level === level)].map((asset) => ({
+          asset,
+          before: false,
+        })),
+      );
+    }
     const levels = settings.lineup ? SEASON_ONE_REALM_KIT_LEVELS : [settings.level];
     return levels.flatMap((level) =>
       [shipped(level, false), ...SEASON_ONE_REALM_ASSETS.filter((asset) => asset.level === level)].map((asset) => ({

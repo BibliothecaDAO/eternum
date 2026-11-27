@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { REALM_ASSETS, REALM_PATHS, realmModelIndex, isWonderModelPath } from "./realm-design";
+import { aspectWonderKitPath } from "./realm-kit";
 import { getStructureModelPaths, isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
-import { aspects, StructureType } from "@bibliothecadao/types";
+import { aspects, rankName, RealmLevels, StructureType } from "@bibliothecadao/types";
 
 describe("picked realm series", () => {
   it("keeps the chain's zero-based level mapping and gives every wonder its own realm body", () => {
@@ -34,22 +35,35 @@ describe("picked realm series", () => {
     for (const level of [-1, 4, 1.5, NaN]) expect(() => realmModelIndex(level, false, 1)).toThrow();
   });
 
-  it("maps every catalog Aspect to its own Aspect Wonder model across all realm levels", () => {
+  it("maps every catalog Aspect to its procedural Wonder kit at Settlement and its Aspect Wonder model at higher ranks", () => {
     const seenIds = new Set<string>();
     for (const { id: aspect, name } of aspects) {
-      const index = realmModelIndex(0, true, 1003, aspect);
-      const asset = REALM_ASSETS[index];
-      expect(asset.wonder).toBe(true);
-      expect(asset.aspect).toBe(aspect);
-      expect(asset.id).toBe(`wonder-${name.toLowerCase()}`);
-      expect(asset.label).toBe(`Aspect Wonder · ${name}`);
-      expect(isWonderModelPath(asset.path)).toBe(true);
-      expect(isRealmModelPath(asset.path) && isSettlementModelPath(asset.path)).toBe(true);
-      for (const level of [1, 2, 3]) {
-        expect(realmModelIndex(level, true, 1003, aspect)).toBe(index);
+      const settlementIndex = realmModelIndex(RealmLevels.Settlement, true, 1003, aspect);
+      const settlementAsset = REALM_ASSETS[settlementIndex];
+      expect(settlementAsset.wonder).toBe(true);
+      expect(settlementAsset.aspect).toBe(aspect);
+      expect(settlementAsset.level).toBe(RealmLevels.Settlement);
+      expect(settlementAsset.id).toBe(`wonder-${name.toLowerCase()}-0`);
+      expect(settlementAsset.label).toBe(`Aspect Wonder · ${name} · ${rankName(RealmLevels.Settlement)}`);
+      expect(settlementAsset.path).toBe(aspectWonderKitPath(aspect, RealmLevels.Settlement));
+      expect(isWonderModelPath(settlementAsset.path)).toBe(true);
+      expect(isRealmModelPath(settlementAsset.path) && isSettlementModelPath(settlementAsset.path)).toBe(true);
+
+      const higherIndex = realmModelIndex(RealmLevels.City, true, 1003, aspect);
+      const higherAsset = REALM_ASSETS[higherIndex];
+      expect(higherAsset.wonder).toBe(true);
+      expect(higherAsset.aspect).toBe(aspect);
+      expect(higherAsset.id).toBe(`wonder-${name.toLowerCase()}`);
+      expect(higherAsset.label).toBe(`Aspect Wonder · ${name}`);
+      expect(isWonderModelPath(higherAsset.path)).toBe(true);
+      expect(isRealmModelPath(higherAsset.path) && isSettlementModelPath(higherAsset.path)).toBe(true);
+      for (const level of [RealmLevels.Kingdom, RealmLevels.Empire]) {
+        expect(realmModelIndex(level, true, 1003, aspect)).toBe(higherIndex);
       }
-      seenIds.add(asset.id);
+      seenIds.add(settlementAsset.id);
     }
     expect(seenIds.size).toBe(aspects.length);
+
+    expect(REALM_ASSETS[realmModelIndex(RealmLevels.Settlement, true, 1003, null)].id).toBe("standing-stones");
   });
 });

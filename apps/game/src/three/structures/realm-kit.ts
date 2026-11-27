@@ -29,6 +29,14 @@ export const SEASON_ONE_REALM_KIT_LEVELS: readonly RealmLevels[] = Object.values
   (level): level is RealmLevels => typeof level === "number",
 );
 
+export type AspectWonderKitLevel = typeof RealmLevels.Settlement;
+
+const ASPECT_WONDER_KIT_LEVEL_SET: ReadonlySet<RealmLevels> = new Set([RealmLevels.Settlement]);
+
+export const ASPECT_WONDER_KIT_LEVELS: readonly AspectWonderKitLevel[] = SEASON_ONE_REALM_KIT_LEVELS.filter(
+  (level): level is AspectWonderKitLevel => ASPECT_WONDER_KIT_LEVEL_SET.has(level),
+);
+
 interface AspectKitPalette {
   readonly stone: string;
   readonly stoneShade: string;
@@ -59,6 +67,7 @@ interface WallSegment {
 }
 
 const SEASON_ONE_KIT_PREFIX = "procedural:season-1-realm:";
+const ASPECT_WONDER_KIT_PREFIX = "procedural:aspect-wonder:";
 
 const ASPECT_PALETTES = {
   1: {
@@ -140,6 +149,15 @@ const KIT_BUILDERS = {
   },
 } as const satisfies Record<RealmLevels, Record<AspectId, AspectKitBuilder>>;
 
+const ASPECT_WONDER_BUILDERS = {
+  0: {
+    1: buildProwessWonderSettlement,
+    2: buildLuminaryWonderSettlement,
+    3: buildHavocWonderSettlement,
+    4: buildInsightWonderSettlement,
+  },
+} as const satisfies Record<AspectWonderKitLevel, Record<AspectId, AspectKitBuilder>>;
+
 const SETTLEMENT_BANNER_X = 0.41;
 const SETTLEMENT_BANNER_Y = 0.31;
 const SETTLEMENT_BANNER_Z = 0.655;
@@ -181,40 +199,69 @@ function isCatalogRealmLevel(level: number): level is RealmLevels {
   return SEASON_ONE_REALM_KIT_LEVELS.some((rank) => rank === level);
 }
 
+function isAspectWonderKitLevel(level: number): level is AspectWonderKitLevel {
+  return ASPECT_WONDER_KIT_LEVELS.some((rank) => rank === level);
+}
+
 export function seasonOneRealmKitPath(aspect: AspectId, level: RealmLevels): string {
   return `${SEASON_ONE_KIT_PREFIX}${aspect}:${level}`;
 }
 
-export function isSeasonOneRealmKitPath(path: string): boolean {
-  return parseSeasonOneRealmKitPath(path) !== null;
+export function aspectWonderKitPath(aspect: AspectId, level: AspectWonderKitLevel): string {
+  return `${ASPECT_WONDER_KIT_PREFIX}${aspect}:${level}`;
 }
 
 export function parseSeasonOneRealmKitPath(path: string): { aspect: AspectId; level: RealmLevels } | null {
-  if (!path.startsWith(SEASON_ONE_KIT_PREFIX)) return null;
-  const [aspectText, levelText, extra] = path.slice(SEASON_ONE_KIT_PREFIX.length).split(":");
+  return parseProceduralKitPath(path, SEASON_ONE_KIT_PREFIX, isCatalogRealmLevel);
+}
+
+export function parseAspectWonderKitPath(path: string): { aspect: AspectId; level: AspectWonderKitLevel } | null {
+  return parseProceduralKitPath(path, ASPECT_WONDER_KIT_PREFIX, isAspectWonderKitLevel);
+}
+
+function parseProceduralKitPath<L extends RealmLevels>(
+  path: string,
+  prefix: string,
+  isValidLevel: (level: number) => level is L,
+): { aspect: AspectId; level: L } | null {
+  if (!path.startsWith(prefix)) return null;
+  const [aspectText, levelText, extra] = path.slice(prefix.length).split(":");
   if (extra !== undefined || !aspectText || !levelText) return null;
   const aspectId = Number(aspectText);
   const level = Number(levelText);
   const validAspect = aspects.some(({ id }) => id === aspectId);
-  if (!validAspect || !isCatalogRealmLevel(level)) return null;
+  if (!validAspect || !isValidLevel(level)) return null;
   return { aspect: aspectId as AspectId, level };
+}
+
+export function isProceduralRealmKitPath(path: string): boolean {
+  return parseSeasonOneRealmKitPath(path) !== null || parseAspectWonderKitPath(path) !== null;
 }
 
 export function createSeasonOneRealmKit(aspect: AspectId, level: RealmLevels): GLTF {
   const palette = ASPECT_PALETTES[aspect];
   const parts: KitParts = { masonry: [], glow: [], anchors: [] };
   KIT_BUILDERS[level][aspect](parts, palette);
-  return assembleKitGltf(aspect, level, parts, palette);
+  return assembleKitGltf(`season-1-${aspectName(aspect).toLowerCase()}-${level}`, parts, palette);
 }
 
-export function resolveSeasonOneRealmKit(path: string): GLTF | null {
-  const parsed = parseSeasonOneRealmKitPath(path);
-  return parsed ? createSeasonOneRealmKit(parsed.aspect, parsed.level) : null;
+export function createAspectWonderKit(aspect: AspectId, level: AspectWonderKitLevel): GLTF {
+  const palette = ASPECT_PALETTES[aspect];
+  const parts: KitParts = { masonry: [], glow: [], anchors: [] };
+  ASPECT_WONDER_BUILDERS[level][aspect](parts, palette);
+  return assembleKitGltf(`aspect-wonder-${aspectName(aspect).toLowerCase()}-${level}`, parts, palette);
 }
 
-function assembleKitGltf(aspect: AspectId, level: number, parts: KitParts, palette: AspectKitPalette): GLTF {
+export function resolveProceduralRealmKit(path: string): GLTF | null {
+  const seasonOne = parseSeasonOneRealmKitPath(path);
+  if (seasonOne) return createSeasonOneRealmKit(seasonOne.aspect, seasonOne.level);
+  const wonder = parseAspectWonderKitPath(path);
+  return wonder ? createAspectWonderKit(wonder.aspect, wonder.level) : null;
+}
+
+function assembleKitGltf(name: string, parts: KitParts, palette: AspectKitPalette): GLTF {
   const scene = new Group();
-  scene.name = `season-1-${aspectName(aspect).toLowerCase()}-${level}`;
+  scene.name = name;
   const masonryMesh = new Mesh(combineParts(parts.masonry), createMasonryMaterial());
   masonryMesh.name = `${scene.name}:masonry`;
   scene.add(masonryMesh);
@@ -1798,6 +1845,335 @@ function addInsightObservatory(parts: KitParts, palette: AspectKitPalette): void
     piece(new TorusGeometry(0.115, 0.016, 5, 16).rotateY(-Math.PI / 3).rotateX(-0.3), palette.accent, 0, gyroY, gyroZ),
   );
   parts.glow.push(piece(new OctahedronGeometry(0.075, 0).scale(0.82, 1.35, 0.82), palette.gem, 0, gyroY, gyroZ));
+}
+
+function buildProwessWonderSettlement(parts: KitParts, palette: AspectKitPalette): void {
+  addHexCurtainWall(parts, {
+    height: 0.34,
+    thickness: 0.095,
+    wallColor: palette.stone,
+    baseColor: palette.trim,
+    trimColor: palette.trim,
+    trimY: 0.32,
+    bandY: 0.17,
+  });
+  addWonderBastionGate(parts, palette.stone, palette.trim, palette.timber, palette.stoneShade);
+  addWallBannerRails(parts, palette.rail, SETTLEMENT_BANNER_Y);
+
+  for (const [x, z] of HEX_PERIMETER_POINTS) {
+    parts.masonry.push(
+      piece(cutStoneBlock(0.14, 0.4, 0.14), palette.stone, x, 0.2, z),
+      piece(cutStoneBlock(0.165, 0.06, 0.165), palette.trim, x, 0.03, z),
+      piece(cutStoneBlock(0.165, 0.05, 0.165), palette.trim, x, 0.41, z),
+    );
+    parts.glow.push(piece(new OctahedronGeometry(0.05, 0).scale(0.85, 1.35, 0.85), palette.gem, x, 0.485, z));
+  }
+
+  parts.masonry.push(
+    piece(new CylinderGeometry(0.42, 0.46, 0.13, 8), palette.stoneShade, 0, 0.065, -0.03),
+    piece(new CylinderGeometry(0.435, 0.445, 0.035, 8), palette.trim, 0, 0.135, -0.03),
+    piece(new CylinderGeometry(0.34, 0.38, 0.13, 8), palette.stone, 0, 0.205, -0.03),
+    piece(new CylinderGeometry(0.355, 0.36, 0.035, 8), palette.trim, 0, 0.275, -0.03),
+    piece(new CylinderGeometry(0.25, 0.29, 0.08, 8), palette.stoneShade, 0, 0.32, -0.03),
+    piece(new TorusGeometry(0.23, 0.03, 6, 16).rotateX(Math.PI / 2), palette.trim, 0, 0.365, -0.03),
+  );
+  parts.glow.push(
+    piece(new CylinderGeometry(0.19, 0.19, 0.03, 8), palette.gem, 0, 0.355, -0.03),
+    piece(new IcosahedronGeometry(0.165, 1), palette.gem, 0, 0.565, -0.03),
+  );
+
+  for (let spoke = 0; spoke < 4; spoke++) {
+    const angle = (spoke * Math.PI) / 2 + Math.PI / 4;
+    const dx = Math.cos(angle);
+    const dz = Math.sin(angle);
+    const foot = new Vector3(dx * 0.27, 0.35, -0.03 + dz * 0.27);
+    const waist = new Vector3(dx * 0.21, 0.48, -0.03 + dz * 0.21);
+    const tip = new Vector3(dx * 0.185, 0.62, -0.03 + dz * 0.185);
+    parts.masonry.push(
+      piece(beamBetween(foot, waist, 0.034), palette.trim),
+      piece(beamBetween(waist, tip, 0.028), palette.trim),
+    );
+  }
+}
+
+function buildLuminaryWonderSettlement(parts: KitParts, palette: AspectKitPalette): void {
+  addHexCurtainWall(parts, {
+    height: 0.37,
+    thickness: 0.095,
+    wallColor: palette.stone,
+    baseColor: palette.accent,
+    trimColor: palette.roof,
+    trimY: 0.355,
+    bandY: 0.2,
+  });
+  addWonderBastionGate(parts, palette.stone, palette.accent, palette.roof, palette.stoneShade);
+  addWallBannerRails(parts, palette.rail, SETTLEMENT_BANNER_Y);
+
+  const turretCorners: readonly (readonly [number, number])[] = [
+    [-0.6, 0.62],
+    [0.6, 0.62],
+    [-0.72, -0.38],
+    [0.72, -0.38],
+  ];
+  for (const [x, z] of turretCorners) {
+    parts.masonry.push(
+      piece(new CylinderGeometry(0.088, 0.098, 0.52, 6), palette.stone, x, 0.26, z),
+      piece(new CylinderGeometry(0.105, 0.105, 0.05, 6), palette.accent, x, 0.025, z),
+      piece(new CylinderGeometry(0.105, 0.098, 0.045, 6), palette.roof, x, 0.525, z),
+      piece(new ConeGeometry(0.082, 0.2, 6), palette.accent, x, 0.645, z),
+    );
+  }
+  for (const [x, z] of [
+    [-0.78, 0.18],
+    [0.78, 0.18],
+    [-0.3, -0.72],
+    [0.3, -0.72],
+  ] as const) {
+    parts.masonry.push(
+      piece(cutStoneBlock(0.13, 0.42, 0.13), palette.stone, x, 0.21, z),
+      piece(cutStoneBlock(0.15, 0.05, 0.15), palette.accent, x, 0.43, z),
+    );
+  }
+
+  const centerZ = -0.02;
+  const drumHeight = 0.4;
+  parts.masonry.push(
+    piece(new CylinderGeometry(0.34, 0.37, 0.08, 8), palette.accent, 0, 0.04, centerZ),
+    piece(new CylinderGeometry(0.31, 0.32, drumHeight, 8), palette.stone, 0, drumHeight / 2 + 0.02, centerZ),
+    piece(new CylinderGeometry(0.34, 0.33, 0.05, 8), palette.roof, 0, drumHeight + 0.03, centerZ),
+    piece(new TorusGeometry(0.24, 0.028, 6, 16).rotateX(Math.PI / 2), palette.trim, 0, drumHeight + 0.06, centerZ),
+  );
+  for (let side = 0; side < 8; side++) {
+    const angle = (side * Math.PI) / 4;
+    const outX = Math.sin(angle);
+    const outZ = Math.cos(angle);
+    parts.masonry.push(
+      piece(
+        cutStoneBlock(0.055, drumHeight + 0.02, 0.055),
+        palette.stoneShade,
+        outX * 0.32,
+        drumHeight / 2 + 0.02,
+        centerZ + outZ * 0.32,
+        angle,
+      ),
+    );
+    parts.glow.push(
+      piece(cutStoneBlock(0.068, 0.14, 0.025), palette.gem, outX * 0.305, 0.25, centerZ + outZ * 0.305, angle),
+    );
+  }
+  parts.glow.push(piece(new IcosahedronGeometry(0.16, 1), palette.gem, 0, 0.56, centerZ));
+
+  const apexY = 0.815;
+  for (let rib = 0; rib < 4; rib++) {
+    const angle = (rib * Math.PI) / 2 + Math.PI / 4;
+    const dx = Math.cos(angle);
+    const dz = Math.sin(angle);
+    const p0 = new Vector3(dx * 0.36, 0.36, centerZ + dz * 0.36);
+    const p1 = new Vector3(dx * 0.33, 0.59, centerZ + dz * 0.33);
+    const p2 = new Vector3(dx * 0.21, 0.75, centerZ + dz * 0.21);
+    const p3 = new Vector3(dx * 0.06, apexY, centerZ + dz * 0.06);
+    parts.masonry.push(
+      piece(beamBetween(p0, p1, 0.044), palette.stone),
+      piece(beamBetween(p1, p2, 0.04), palette.stone),
+      piece(beamBetween(p2, p3, 0.036), palette.roof),
+    );
+  }
+  parts.masonry.push(
+    piece(new CylinderGeometry(0.075, 0.09, 0.065, 6), palette.accent, 0, apexY + 0.01, centerZ),
+    piece(new ConeGeometry(0.06, 0.055, 6), palette.roof, 0, apexY + 0.065, centerZ),
+  );
+}
+
+function buildHavocWonderSettlement(parts: KitParts, palette: AspectKitPalette): void {
+  addHexCurtainWall(parts, {
+    height: 0.36,
+    thickness: 0.095,
+    wallColor: palette.stone,
+    baseColor: palette.stoneShade,
+    trimColor: palette.accent,
+    trimY: 0.285,
+    bandY: 0.12,
+  });
+  addWonderBastionGate(parts, palette.stone, palette.accent, palette.timber, palette.stoneShade);
+  addWallBannerRails(parts, palette.rail, SETTLEMENT_BANNER_Y);
+
+  for (const { from, to } of HEX_WALL_SEGMENTS) {
+    const dx = to[0] - from[0];
+    const dz = to[1] - from[1];
+    const length = Math.hypot(dx, dz);
+    const yaw = Math.atan2(dx, dz);
+    const cx = (from[0] + to[0]) / 2;
+    const cz = (from[1] + to[1]) / 2;
+    const outX = dz / length;
+    const outZ = -dx / length;
+    parts.masonry.push(
+      piece(cutStoneBlock(0.115, 0.06, length * 0.32), palette.stoneShade, cx, 0.385, cz, yaw),
+      piece(
+        new OctahedronGeometry(0.036, 0).scale(0.65, 1.15, 0.95),
+        palette.trim,
+        cx + outX * 0.056,
+        0.285,
+        cz + outZ * 0.056,
+        yaw,
+      ),
+    );
+  }
+
+  for (const [x, z] of HEX_PERIMETER_POINTS) {
+    parts.masonry.push(
+      piece(cutStoneBlock(0.145, 0.42, 0.145), palette.stone, x, 0.21, z),
+      piece(cutStoneBlock(0.165, 0.05, 0.165), palette.accent, x, 0.31, z),
+      piece(cutStoneBlock(0.135, 0.05, 0.135), palette.stoneShade, x, 0.43, z),
+    );
+    parts.glow.push(piece(new OctahedronGeometry(0.048, 0).scale(0.75, 1.55, 0.75), palette.gem, x, 0.51, z));
+  }
+
+  const centerZ = -0.03;
+  parts.masonry.push(
+    piece(new CylinderGeometry(0.35, 0.39, 0.1, 8), palette.stoneShade, 0, 0.05, centerZ),
+    piece(new CylinderGeometry(0.27, 0.34, 0.34, 8), palette.stone, 0, 0.26, centerZ),
+    piece(new TorusGeometry(0.31, 0.025, 5, 12).rotateX(Math.PI / 2), palette.accent, 0, 0.24, centerZ),
+    piece(new TorusGeometry(0.265, 0.026, 5, 12).rotateX(Math.PI / 2), palette.accent, 0, 0.41, centerZ),
+  );
+  for (let rib = 0; rib < 8; rib++) {
+    const angle = (rib * Math.PI) / 4;
+    const dx = Math.cos(angle);
+    const dz = Math.sin(angle);
+    const bottom = new Vector3(dx * 0.35, 0.08, centerZ + dz * 0.35);
+    const top = new Vector3(dx * 0.27, 0.43, centerZ + dz * 0.27);
+    parts.masonry.push(piece(beamBetween(bottom, top, 0.038), palette.accent));
+    if (rib % 2 === 0) {
+      const slitAngle = angle + Math.PI / 8;
+      parts.glow.push(
+        piece(
+          cutStoneBlock(0.036, 0.16, 0.028),
+          palette.gem,
+          Math.cos(slitAngle) * 0.305,
+          0.26,
+          centerZ + Math.sin(slitAngle) * 0.305,
+          -slitAngle + Math.PI / 2,
+        ),
+      );
+    }
+  }
+  for (let fang = 0; fang < 4; fang++) {
+    const angle = (fang * Math.PI) / 2 + Math.PI / 4;
+    const dx = Math.cos(angle);
+    const dz = Math.sin(angle);
+    const base = new Vector3(dx * 0.25, 0.4, centerZ + dz * 0.25);
+    const mid = new Vector3(dx * 0.29, 0.51, centerZ + dz * 0.29);
+    const tip = new Vector3(dx * 0.19, 0.61, centerZ + dz * 0.19);
+    parts.masonry.push(
+      piece(beamBetween(base, mid, 0.042), palette.stoneShade),
+      piece(beamBetween(mid, tip, 0.03), palette.stoneShade),
+    );
+  }
+
+  parts.glow.push(
+    piece(new CylinderGeometry(0.095, 0.13, 0.3, 6), palette.gem, 0, 0.54, centerZ),
+    piece(new ConeGeometry(0.095, 0.17, 6), palette.gem, 0, 0.775, centerZ),
+  );
+  for (let shard = 0; shard < 4; shard++) {
+    const angle = (shard * Math.PI) / 2;
+    const sx = Math.cos(angle) * 0.14;
+    const sz = centerZ + Math.sin(angle) * 0.14;
+    parts.glow.push(
+      piece(
+        new OctahedronGeometry(0.055, 0).scale(0.75, 1.7, 0.75).rotateZ(-Math.cos(angle) * 0.22),
+        palette.gem,
+        sx,
+        0.49,
+        sz,
+      ),
+    );
+  }
+}
+
+function buildInsightWonderSettlement(parts: KitParts, palette: AspectKitPalette): void {
+  addHexCurtainWall(parts, {
+    height: 0.35,
+    thickness: 0.095,
+    wallColor: palette.stone,
+    baseColor: palette.stoneShade,
+    trimColor: palette.roof,
+    trimY: 0.2,
+    bandY: 0.33,
+  });
+  addWonderBastionGate(parts, palette.stone, palette.roof, palette.accent, palette.stoneShade);
+  addWallBannerRails(parts, palette.rail, SETTLEMENT_BANNER_Y);
+
+  for (const { from, to } of HEX_WALL_SEGMENTS) {
+    const dx = to[0] - from[0];
+    const dz = to[1] - from[1];
+    const length = Math.hypot(dx, dz);
+    const yaw = Math.atan2(dx, dz);
+    const cx = (from[0] + to[0]) / 2;
+    const cz = (from[1] + to[1]) / 2;
+    parts.masonry.push(piece(cutStoneBlock(0.025, 0.025, length), palette.accent, cx, 0.395, cz, yaw));
+  }
+  for (const [x, z] of HEX_PERIMETER_POINTS) {
+    parts.masonry.push(
+      piece(cutStoneBlock(0.135, 0.39, 0.135), palette.stone, x, 0.195, z),
+      piece(cutStoneBlock(0.145, 0.055, 0.145), palette.roof, x, 0.2, z),
+      piece(cutStoneBlock(0.04, 0.06, 0.04), palette.accent, x, 0.4, z),
+    );
+  }
+  for (const [x, z] of [
+    [-0.6, 0.62],
+    [0.6, 0.62],
+  ] as const) {
+    parts.glow.push(piece(cutStoneBlock(0.032, 0.12, 0.032), palette.gem, x, 0.11, z + 0.06));
+  }
+
+  const centerZ = -0.04;
+  parts.masonry.push(
+    piece(new CylinderGeometry(0.41, 0.44, 0.14, 8), palette.stoneShade, 0, 0.07, centerZ),
+    piece(new CylinderGeometry(0.42, 0.425, 0.038, 8), palette.roof, 0, 0.155, centerZ),
+    piece(new CylinderGeometry(0.32, 0.35, 0.14, 8), palette.stone, 0, 0.23, centerZ),
+    piece(new CylinderGeometry(0.33, 0.335, 0.035, 8), palette.accent, 0, 0.31, centerZ),
+    piece(new CylinderGeometry(0.14, 0.18, 0.07, 8), palette.roof, 0, 0.355, centerZ),
+    piece(new TorusGeometry(0.21, 0.02, 6, 18), palette.accent, 0, 0.56, centerZ),
+    piece(new TorusGeometry(0.195, 0.018, 6, 18).rotateY(Math.PI / 3).rotateX(0.38), palette.accent, 0, 0.56, centerZ),
+    piece(new TorusGeometry(0.18, 0.016, 6, 18).rotateY(-Math.PI / 3).rotateX(-0.34), palette.roof, 0, 0.56, centerZ),
+  );
+  parts.glow.push(piece(new IcosahedronGeometry(0.135, 1), palette.gem, 0, 0.56, centerZ));
+
+  for (const side of [-1, 1]) {
+    const px = side * 0.35;
+    parts.masonry.push(
+      piece(new CylinderGeometry(0.055, 0.072, 0.22, 6), palette.stoneShade, px, 0.24, centerZ),
+      piece(new CylinderGeometry(0.065, 0.065, 0.04, 6), palette.roof, px, 0.35, centerZ),
+      piece(new CylinderGeometry(0.022, 0.05, 0.42, 6), palette.stone, px, 0.57, centerZ),
+    );
+    parts.glow.push(piece(new OctahedronGeometry(0.042, 0).scale(0.75, 1.45, 0.75), palette.gem, px, 0.82, centerZ));
+  }
+}
+
+function addWonderBastionGate(
+  parts: KitParts,
+  stoneColor: string,
+  trimColor: string,
+  grateColor: string,
+  shadeColor: string,
+): void {
+  for (const side of [-1, 1]) {
+    parts.masonry.push(
+      piece(cutStoneBlock(0.13, 0.42, 0.15), stoneColor, side * 0.19, 0.21, 0.62),
+      piece(cutStoneBlock(0.15, 0.05, 0.17), trimColor, side * 0.19, 0.42, 0.62),
+    );
+  }
+  parts.masonry.push(
+    piece(new TorusGeometry(0.19, 0.055, 6, 12, Math.PI), stoneColor, 0, 0.33, 0.62),
+    piece(new TorusGeometry(0.21, 0.024, 5, 12, Math.PI), trimColor, 0, 0.33, 0.65),
+    piece(cutStoneBlock(0.28, 0.3, 0.05), shadeColor, 0, 0.15, 0.6),
+  );
+  for (const bar of [-0.09, -0.03, 0.03, 0.09]) {
+    parts.masonry.push(piece(cutStoneBlock(0.022, 0.3, 0.03), grateColor, bar, 0.15, 0.635));
+  }
+  parts.masonry.push(
+    piece(cutStoneBlock(0.26, 0.028, 0.035), grateColor, 0, 0.11, 0.638),
+    piece(cutStoneBlock(0.26, 0.028, 0.035), grateColor, 0, 0.22, 0.638),
+  );
 }
 
 function addHexCurtainWall(
