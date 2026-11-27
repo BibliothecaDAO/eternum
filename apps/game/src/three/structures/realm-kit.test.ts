@@ -34,11 +34,18 @@ const MAX_TRIANGLES_BY_LEVEL = {
 } as const satisfies Record<RealmLevels, number>;
 
 const HEIGHT_BAND_BY_LEVEL = {
-  0: { min: 0.75, max: 1.05 },
-  1: { min: 1.15, max: 1.55 },
+  0: { min: 0.65, max: 0.85 },
+  1: { min: 1.05, max: 1.32 },
   2: { min: 1.8, max: 2.25 },
   3: { min: 2.65, max: 3.15 },
 } as const satisfies Record<RealmLevels, { min: number; max: number }>;
+
+const MAX_HEIGHT_TO_WIDTH_BY_LEVEL = {
+  0: 0.5,
+  1: 0.78,
+  2: 1.32,
+  3: 1.8,
+} as const satisfies Record<RealmLevels, number>;
 
 function countTriangles(mesh: Mesh): number {
   const index = mesh.geometry.getIndex();
@@ -108,6 +115,8 @@ describe("Season 1 procedural Aspect Realm kit", () => {
         expect(bounds.min.y).toBeLessThanOrEqual(0.02);
         expect(bounds.max.y).toBeGreaterThanOrEqual(heightBand.min);
         expect(bounds.max.y).toBeLessThanOrEqual(heightBand.max);
+        const width = bounds.max.x - bounds.min.x;
+        expect(bounds.max.y / width, `${path} H/W`).toBeLessThanOrEqual(MAX_HEIGHT_TO_WIDTH_BY_LEVEL[level]);
         expect(Math.max(Math.abs(bounds.min.x), Math.abs(bounds.max.x))).toBeLessThanOrEqual(0.9);
         expect(Math.max(Math.abs(bounds.min.z), Math.abs(bounds.max.z))).toBeLessThanOrEqual(0.9);
 
