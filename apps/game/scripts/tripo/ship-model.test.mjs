@@ -353,7 +353,7 @@ describe("ship-model pipeline", () => {
   it("keeps every remaining Tripo Deep building within its budget, grounded, <= 1.42 tall and inside the unit hex", async () => {
     const io = await createReader();
     const entries = DEEP_SITE_GLB_PATHS.map((publicPath) => ({ publicPath, kind: "deepBuilding" }));
-    expect(entries.length).toBe(3);
+    expect(entries.length).toBe(2);
 
     for (const { publicPath, kind } of entries) {
       const modelPath = fileURLToPath(new URL(`../../public${publicPath}`, import.meta.url));

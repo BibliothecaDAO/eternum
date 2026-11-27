@@ -26,6 +26,7 @@ import { createProcgenMasonryMaterial } from "./procgen-masonry-material";
 
 export const DEEP_GATE_HEIGHT = 1.34;
 export const DEEP_ARCHIVE_HEIGHT = 1.18;
+export const DEEP_CORE_HEIGHT = 1.08;
 
 interface KitPart {
   readonly geometry: BufferGeometry;
@@ -45,6 +46,14 @@ const BASALT_EDGE = "#464c55";
 const GOLD_MAIN = "#d4a644";
 const GOLD_LIGHT = "#e8bc58";
 const GOLD_SHADE = "#a87d2e";
+
+const SLATE_MAIN = "#3e4659";
+const SLATE_EDGE = "#4f5970";
+const SLATE_INNER = "#2a454d";
+const SILVER_STEEL = "#c2c6cc";
+const SILVER_SHADE = "#9fa5b0";
+const ESSENCE_TEAL = "#4ef7d8";
+const ESSENCE_EMISSIVE = "#22e0bc";
 
 const PYLON_X = 0.42;
 const PYLON_BASE_W = 0.28;
@@ -102,6 +111,131 @@ export function createDeepArchiveKit(): Pick<GLTF, "scene" | "animations"> {
 
   root.add(masonryMesh, socketMesh);
   return { scene: root, animations: [] };
+}
+
+export function createDeepCoreKit(): Pick<GLTF, "scene" | "animations"> {
+  const masonryParts: KitPart[] = [];
+  const socketParts: KitPart[] = [];
+
+  addCoreBaseCollar(masonryParts);
+  addCoreContainmentRibs(masonryParts, socketParts);
+  addCoreEquatorialRing(masonryParts, socketParts);
+
+  const root = new Group();
+  root.name = "deep-site-kit-core";
+
+  const masonryMesh = buildMasonryMesh(masonryParts, "deep-core-masonry");
+  const orbMesh = buildEssenceOrbMesh("deep-core-orb");
+  const socketMesh = buildSocketGemMesh(socketParts, "deep_gem_core");
+
+  root.add(masonryMesh, orbMesh, socketMesh);
+  return { scene: root, animations: [] };
+}
+
+function addCoreBaseCollar(parts: KitPart[]): void {
+  addHollowRing(parts, 0, 0.132, 0.485, 0.345, 6, SLATE_MAIN, Math.PI / 6);
+  addHollowRing(parts, 0.128, 0.15, 0.468, 0.358, 6, SLATE_EDGE, Math.PI / 6);
+}
+
+function addCoreContainmentRibs(masonryParts: KitPart[], socketParts: KitPart[]): void {
+  const ribCount = 6;
+  for (let i = 0; i < ribCount; i++) {
+    const angle = (i * Math.PI * 2) / ribCount + Math.PI / 6;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const yaw = -angle;
+
+    addRotatedBox(masonryParts, cos * 0.405, 0.145, sin * 0.405, 0.125, 0.056, 0.128, yaw, SILVER_STEEL);
+    addRotatedBox(socketParts, cos * 0.47, 0.145, sin * 0.47, 0.022, 0.032, 0.054, yaw, DEEP_PALETTE.gold);
+
+    const outerRib = createCurvedRibGeometry(0.095, false);
+    outerRib.rotateY(yaw);
+    masonryParts.push({ geometry: outerRib, color: SLATE_MAIN });
+
+    const innerLinings = createCurvedRibGeometry(0.068, true);
+    innerLinings.rotateY(yaw);
+    masonryParts.push({ geometry: innerLinings, color: SLATE_INNER });
+  }
+}
+
+function createCurvedRibGeometry(width: number, innerFaceOnly: boolean): BufferGeometry {
+  const steps = 10;
+  const outerProfile: Array<[number, number]> = [];
+  const innerProfile: Array<[number, number]> = [];
+  const yStart = 0.13;
+  const yEnd = DEEP_CORE_HEIGHT;
+
+  for (let s = 0; s <= steps; s++) {
+    const t = s / steps;
+    const y = yStart + (yEnd - yStart) * t;
+    const bow = Math.sin(t * Math.PI);
+    const baseR = 0.405 + (0.315 - 0.405) * t;
+    const midR = baseR + bow * 0.155;
+    const radialThickness = innerFaceOnly ? 0.016 : 0.088 * (1 - 0.18 * t);
+    const innerR = midR - 0.044 * (1 - 0.18 * t) - (innerFaceOnly ? 0.003 : 0);
+    const outerR = innerR + radialThickness;
+    outerProfile.push([outerR, y]);
+    innerProfile.push([innerR, y]);
+  }
+
+  const shape = new Shape();
+  shape.moveTo(outerProfile[0]![0], outerProfile[0]![1]);
+  for (let i = 1; i < outerProfile.length; i++) {
+    shape.lineTo(outerProfile[i]![0], outerProfile[i]![1]);
+  }
+  for (let i = innerProfile.length - 1; i >= 0; i--) {
+    shape.lineTo(innerProfile[i]![0], innerProfile[i]![1]);
+  }
+  shape.closePath();
+
+  const geometry = new ExtrudeGeometry(shape, {
+    depth: width,
+    bevelEnabled: !innerFaceOnly,
+    bevelThickness: 0.008,
+    bevelSize: 0.007,
+    bevelSegments: 1,
+  });
+  geometry.translate(0, 0, -width / 2);
+  return geometry;
+}
+
+function addCoreEquatorialRing(masonryParts: KitPart[], socketParts: KitPart[]): void {
+  addHollowRing(masonryParts, 0.515, 0.532, 0.536, 0.478, 24, SILVER_SHADE);
+  addHollowRing(masonryParts, 0.53, 0.588, 0.548, 0.472, 24, SILVER_STEEL);
+  addHollowRing(masonryParts, 0.585, 0.602, 0.536, 0.478, 24, SILVER_STEEL);
+
+  const clampCount = 6;
+  for (let i = 0; i < clampCount; i++) {
+    const angle = (i * Math.PI * 2) / clampCount + Math.PI / 6;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const yaw = -angle;
+    addRotatedBox(masonryParts, cos * 0.53, 0.56, sin * 0.53, 0.075, 0.092, 0.132, yaw, SILVER_STEEL);
+    addRotatedBox(socketParts, cos * 0.57, 0.56, sin * 0.57, 0.022, 0.056, 0.056, yaw, DEEP_PALETTE.gold);
+  }
+}
+
+function buildEssenceOrbMesh(name: string): Mesh {
+  const sphere = new IcosahedronGeometry(0.235, 1);
+  const nonIndexed = sphere.index ? sphere.toNonIndexed() : sphere;
+  nonIndexed.translate(0, 0.56, 0);
+  nonIndexed.computeVertexNormals();
+  if (nonIndexed !== sphere) sphere.dispose();
+
+  const material = new MeshStandardMaterial({
+    name,
+    color: new Color(ESSENCE_TEAL),
+    emissive: new Color(ESSENCE_EMISSIVE),
+    emissiveIntensity: 1.15,
+    roughness: 0.18,
+    metalness: 0.12,
+    flatShading: true,
+  });
+  const mesh = new Mesh(nonIndexed, material);
+  mesh.name = name;
+  mesh.castShadow = false;
+  mesh.receiveShadow = false;
+  return mesh;
 }
 
 function addArchiveArcadeBase(parts: KitPart[]): void {
@@ -282,10 +416,11 @@ function addHollowRing(
   innerRadius: number,
   segments: number,
   color: string,
+  startAngle = 0,
 ): void {
   const outer = new Shape();
   for (let i = 0; i < segments; i++) {
-    const a = (i / segments) * Math.PI * 2;
+    const a = startAngle + (i / segments) * Math.PI * 2;
     const x = Math.cos(a) * outerRadius;
     const y = Math.sin(a) * outerRadius;
     if (i === 0) outer.moveTo(x, y);
@@ -295,7 +430,7 @@ function addHollowRing(
 
   const hole = new Path();
   for (let i = 0; i < segments; i++) {
-    const a = -(i / segments) * Math.PI * 2;
+    const a = startAngle - (i / segments) * Math.PI * 2;
     const x = Math.cos(a) * innerRadius;
     const y = Math.sin(a) * innerRadius;
     if (i === 0) hole.moveTo(x, y);
