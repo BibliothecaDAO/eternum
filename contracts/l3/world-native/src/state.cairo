@@ -21,7 +21,6 @@ pub type Storage =
         crate::combat::ArmyCombat,
         crate::village::VillagePass,
         crate::deep::DeepSite,
-        crate::deep::DeepGuard,
     >;
 
 pub fn read() -> starknet::storage::FlattenedStorage<Storage> {

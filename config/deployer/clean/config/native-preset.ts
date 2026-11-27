@@ -220,6 +220,8 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
     order_aspects: [...preset.orderAspects],
     depths: preset.depths.map((depth) => ({
       reveal_percent: depth.revealPercent,
+      reveal_cap: depth.revealCap,
+      rift_essence_bps: depth.riftEssenceBps,
       site_guard_lower: depth.siteGuardLower,
       site_guard_upper: depth.siteGuardUpper,
       rift_guard_lower: depth.riftGuardLower,

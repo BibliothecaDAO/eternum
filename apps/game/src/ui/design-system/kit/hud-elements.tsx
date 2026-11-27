@@ -891,7 +891,7 @@ export const HudChip = ({
   disabled = false,
   children,
 }: {
-  tone?: Tone;
+  tone?: Tone | "gold";
   /** The paintings of what it counts, one or two overlapping (stamina; a returning army's troops). */
   icons?: readonly IconMeaning[];
   /** What it counts, for assistive technology, which reads it with the chip's own words ("Stamina 120"). */
@@ -1534,22 +1534,33 @@ export const HudBanner = ({
   eyebrow,
   title,
   line,
+  ceremony,
 }: {
   tone?: Tone;
   icon: IconMeaning;
   eyebrow: string;
   title: string;
   line?: ReactNode;
+  ceremony?: { pip?: ReactNode; lastsMs: number };
 }) => (
-  <section className="ui ui-banner" data-tone={tone} role="status" aria-label={title}>
+  <section
+    className="ui ui-banner"
+    data-tone={tone}
+    data-size={ceremony ? "ceremony" : undefined}
+    role="status"
+    aria-label={title}
+    style={ceremony ? ({ "--banner-lasts": `${ceremony.lastsMs}ms` } as React.CSSProperties) : undefined}
+  >
     <span className="ui-banner__mark" aria-hidden="true">
-      <Icon name={icon} size={20} />
+      <Icon name={icon} size={ceremony ? 30 : 20} />
+      {ceremony?.pip && <span className="ui-banner__pip">{ceremony.pip}</span>}
     </span>
     <span className="ui-banner__words">
       <span className="ui-banner__eyebrow">{eyebrow}</span>
       <span className="ui-banner__title">{title}</span>
       {line && <span className="ui-banner__line">{line}</span>}
     </span>
+    {ceremony && <span className="ui-banner__timer" aria-hidden="true" />}
   </section>
 );
 
@@ -2217,12 +2228,16 @@ export const HudStamina = ({
   stamina,
   tone = "good",
   filling = false,
+  gain = 0,
 }: {
   stamina: StaminaBar | undefined;
   tone?: Tone;
   filling?: boolean;
+  gain?: number;
 }) => {
   const segment = staminaSegment(stamina);
+  const share = staminaShare(stamina);
+  const gainShare = stamina && stamina.max > 0 ? Math.min(1 - share, Math.max(0, gain / stamina.max)) : 0;
   return (
     <span
       role="meter"
@@ -2234,9 +2249,11 @@ export const HudStamina = ({
       data-tone={tone}
       data-filling={filling || undefined}
       data-segmented={segment ? "" : undefined}
+      data-gain={gainShare > 0 || undefined}
       style={segment ? ({ "--segment": segment } as React.CSSProperties) : undefined}
     >
-      <i style={{ width: `${staminaShare(stamina) * 100}%` }} />
+      <i style={{ width: `${share * 100}%` }} />
+      {gainShare > 0 && <i data-gain style={{ width: `${gainShare * 100}%` }} />}
     </span>
   );
 };

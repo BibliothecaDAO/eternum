@@ -62,12 +62,25 @@ describe("only the imperative consumers reach an imperative name reader, by reso
     expect(await hits(UI, `import { identityProfiles } from "@/services/identity/player-profiles";`)).toEqual([]);
     const reader = `import { getPlayerDisplayName } from "@/services/identity/player-profiles";\nexport const x = getPlayerDisplayName;`;
     for (const consumer of [
-      "three/managers/zz-guard-fixture.ts",
+      "three/scenes/zz-guard-fixture.ts",
       "hooks/use-player-profile.ts",
       "services/game-client.ts",
       "sync/fact-views.ts",
     ])
       expect(await hits(consumer, reader), consumer).toEqual([]);
+  });
+});
+
+describe("a map manager that reads a name redraws it when the name lands", () => {
+  const reader = `import { getPlayerDisplayName } from "@/services/identity/player-profiles";\nexport const x = getPlayerDisplayName;`;
+  const watch = `import { watchPlayerNames } from "@/hooks/use-player-profile";\nexport const y = watchPlayerNames;\n`;
+
+  it("rejects a manager that reads a name without watchPlayerNames, and leaves one that watches alone", async () => {
+    expect(await hits("three/managers/zz-guard-fixture.ts", reader)).toEqual([
+      expect.stringMatching(/^A map manager that reads a name imperatively/),
+    ]);
+    expect(await hits("three/managers/zz-guard-fixture.ts", watch + reader)).toEqual([]);
+    expect(await hits("three/scenes/zz-guard-fixture.ts", reader)).toEqual([]);
   });
 });
 

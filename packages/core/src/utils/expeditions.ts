@@ -76,10 +76,21 @@ export const siteKindOf = (category: number): SiteKind => {
 export const siteReward = (
   store: Pick<NativeFactStore, "require">,
   site: Pick<NativeRows["ExpeditionSite"], "category" | "initial_guard_count" | "clear" | "game_id" | "row">,
-): { resourceType: ResourcesIds; amount: bigint } | null =>
-  site.clear
-    ? null
-    : previewSiteReward(site.category, site.initial_guard_count, siteDepth(store, site), siteIsWraith(store, site));
+): { resourceType: ResourcesIds; amount: bigint } | null => {
+  if (site.clear) return null;
+  const depth = siteDepth(store, site);
+  const rules =
+    site.category === StructureType.Beasts || site.category === StructureType.Rift
+      ? store.require("DepthRules", { game_id: site.game_id, depth })
+      : undefined;
+  return previewSiteReward(
+    site.category,
+    site.initial_guard_count,
+    depth,
+    site.category === StructureType.Beasts && beastBand(site.initial_guard_count, rules!) === "stronger",
+    rules,
+  );
+};
 
 const siteIsWraith = (
   store: Pick<NativeFactStore, "require">,

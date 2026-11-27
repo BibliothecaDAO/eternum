@@ -8,7 +8,7 @@
       "1": {
         "resourceType": 38,
         "buildingCategory": 39,
-        "productionRate": 0.05787037037037037,
+        "productionRate": 0.06666666666666667,
         "capMinimum": 3000,
         "capSteps": 1
       },
@@ -218,7 +218,7 @@
       "26": 0.028,
       "27": 0,
       "28": 0,
-      "29": 0.027777777777777776,
+      "29": 0.03333333333333333,
       "30": 0,
       "31": 0,
       "32": 0,
@@ -774,7 +774,7 @@
       "31": [
         {
           "resource": 23,
-          "amount": 500
+          "amount": 1000
         }
       ],
       "32": [],
@@ -794,21 +794,21 @@
       "41": [
         {
           "resource": 38,
-          "amount": 2500
+          "amount": 5000
         },
         {
           "resource": 23,
-          "amount": 500
+          "amount": 1000
         }
       ],
       "42": [
         {
           "resource": 38,
-          "amount": 6000
+          "amount": 5000
         },
         {
           "resource": 23,
-          "amount": 1500
+          "amount": 1000
         }
       ],
       "43": [],

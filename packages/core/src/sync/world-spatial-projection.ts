@@ -1,5 +1,6 @@
 import { dayAtIndex } from "../utils/days";
 import { currentArmy, deepTiles, deepTerrain } from "../utils/deep";
+import { realmShowsWonder } from "../utils/realm-skin";
 import { getBlockTimestamp } from "../utils/timestamp";
 import {
   isArmyCurrent,
@@ -247,7 +248,7 @@ const resolveUnoccupiedStructureRenderable = (
   const site = { col: position.x, row: position.y };
   const level = Math.min(3, Math.max(0, structure.base.level));
   const occupierType =
-    (structure.metadata.has_wonder ? TileOccupier.RealmWonderLevel1 : TileOccupier.RealmRegularLevel1) + level;
+    (realmShowsWonder(store, structure) ? TileOccupier.RealmWonderLevel1 : TileOccupier.RealmRegularLevel1) + level;
   return {
     kind: "structure",
     spatialId: `entity:${safeInteger(structure.entity_id)}` as const,
@@ -301,7 +302,6 @@ const resolveArmyRenderable = (
 ): ArmySpatialRenderable | undefined => {
   if (!explorerTroops || explorerTroops.troops.count <= 0n) return undefined;
   const key = { game_id: explorerTroops.game_id, explorer_id: explorerTroops.explorer_id };
-  if (store.get("DeepGuard", key)) return undefined;
   const calendar = readExpeditionRules(store, key.game_id);
   if (calendar) {
     const now = getBlockTimestamp().currentDefaultTick;
@@ -602,12 +602,7 @@ export class WorldSpatialProjection {
         }
       }
       if (change.model === "ExplorerTroops") this.applyExplorerTroopsUpdate([change.current, change.previous]);
-      if (
-        change.model === "DeepGuard" ||
-        change.model === "DeepArmy" ||
-        change.model === "ArmyDay" ||
-        change.model === "ArmyProgress"
-      ) {
+      if (change.model === "DeepArmy" || change.model === "ArmyDay" || change.model === "ArmyProgress") {
         const key = change.current ?? change.previous;
         if (key) {
           const army = this.store.get("ExplorerTroops", { game_id: key.game_id, explorer_id: key.explorer_id });
@@ -626,9 +621,22 @@ export class WorldSpatialProjection {
     )
       this.nextTimeRefresh = this.nextTimedChangeAt();
     for (const change of changes) {
-      if (change.model === "Structure" || change.model === "ExpeditionSite" || change.model === "TileOccupancy") {
+      if (
+        change.model === "Structure" ||
+        change.model === "ExpeditionSite" ||
+        change.model === "TileOccupancy" ||
+        change.model === "RealmSkin"
+      ) {
         for (const source of [change.previous, change.current]) {
           if (source && source.entity_id !== 0n) this.applyStructureEntityUpdate(source);
+        }
+      } else if (change.model === "Seal") {
+        const row = change.current ?? change.previous;
+        if (!row) continue;
+        for (const [, structure] of this.store.entries("Structure")) {
+          if (structure.game_id === row.game_id && structure.owner === row.account) {
+            this.applyStructureEntityUpdate(structure);
+          }
         }
       }
     }
@@ -645,7 +653,7 @@ export class WorldSpatialProjection {
     for (const [, birth] of this.store.entries("ArmyDay")) {
       const key = { game_id: birth.game_id, explorer_id: birth.explorer_id };
       const army = this.store.get("ExplorerTroops", key);
-      if (!army || army.troops.count <= 0n || this.store.get("DeepGuard", key)) continue;
+      if (!army || army.troops.count <= 0n) continue;
       const calendar = readExpeditionRules(this.store, birth.game_id);
       if (!calendar) continue;
       const now = getBlockTimestamp().currentDefaultTick;

@@ -3,7 +3,13 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { initializeProceduralCharacterRendererRuntime } from "../../characters/procedural-character-renderer-runtime";
 import { ORDER_STANDARD_NAME } from "../../structures/order-standard";
 import { SettlementModel } from "../../structures/settlement-model";
-import { BASE_REALM_CANDIDATES, REALM_ASSETS, realmModelIndex } from "../../structures/realm-design";
+import {
+  ASPECT_WONDER_KIT_ASSETS,
+  REALM_ASSETS,
+  SEASON_ONE_REALM_ASSETS,
+  realmModelIndex,
+} from "../../structures/realm-design";
+import { SEASON_ONE_REALM_KIT_LEVELS, resolveProceduralRealmKit } from "../../structures/realm-kit";
 import { gltfLoader } from "../../utils/utils";
 import { configureRendererColorOutput } from "../../renderer-color-output";
 import { ModelLabEnvironment } from "./model-lab-environment";
@@ -23,8 +29,7 @@ export interface RealmSeriesSettings {
   owned: boolean;
   distance: number;
   lineup: boolean;
-  base: boolean;
-  grow: boolean;
+  s1: boolean;
   reference?: string;
   comparison: "before" | "after" | "pair";
 }
@@ -75,24 +80,17 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
     const labels: string[] = [];
     let height = 0;
     for (const [slot, { asset, before }] of series.entries()) {
-      const gltf = await gltfLoader.loadAsync(
-        before ? `${settings.reference!.replace(/\/$/, "")}/${asset.id}.glb` : asset.path,
-      );
+      const modelPath = before ? `${settings.reference!.replace(/\/$/, "")}/${asset.id}.glb` : asset.path;
+      const gltf = resolveProceduralRealmKit(modelPath) ?? (await gltfLoader.loadAsync(modelPath));
       const modelHeight = new Box3().setFromObject(gltf.scene).max.y;
-      const scale = settings.grow && asset.grownHeight ? asset.grownHeight / modelHeight : 1;
-      height = Math.max(height, modelHeight * scale);
+      height = Math.max(height, modelHeight);
       const model = new SettlementModel(gltf, 1, "realm", asset.wonder);
       model.group.getObjectByName(ORDER_STANDARD_NAME)!.visible = false;
       models.push(model);
       await model.prepare();
       signal.throwIfAborted();
       const x = (slot - (series.length - 1) / 2) * Math.sqrt(3) * 2;
-      model.setMatrixAt(
-        0,
-        new Matrix4()
-          .makeTranslation(x, environment.terrain.sampleHeight(x, 0), 0)
-          .multiply(new Matrix4().makeScale(scale, scale, scale)),
-      );
+      model.setMatrixAt(0, new Matrix4().makeTranslation(x, environment.terrain.sampleHeight(x, 0), 0));
       model.setCount(1);
       model.setOrderAt(0, settings.order);
       model.setRelationshipAt(0, settings.owned ? "owned" : "enemy");
@@ -130,10 +128,16 @@ type SeriesSlot = { asset: (typeof REALM_ASSETS)[number]; before: boolean };
 function realmSeries(settings: RealmSeriesSettings): SeriesSlot[] {
   const shipped = (level: number, wonder = settings.wonder) =>
     REALM_ASSETS[realmModelIndex(level, wonder, settings.seed)];
-  if (settings.base)
-    return [0, 1, 2, 3]
-      .flatMap((level) => [shipped(level, false), ...BASE_REALM_CANDIDATES.filter((asset) => asset.level === level)])
-      .map((asset) => ({ asset, before: false }));
+  if (settings.s1) {
+    const levels = settings.lineup ? SEASON_ONE_REALM_KIT_LEVELS : [settings.level];
+    const entries = settings.wonder ? ASPECT_WONDER_KIT_ASSETS : SEASON_ONE_REALM_ASSETS;
+    return levels.flatMap((level) =>
+      [shipped(level, settings.wonder), ...entries.filter((asset) => asset.level === level)].map((asset) => ({
+        asset,
+        before: false,
+      })),
+    );
+  }
   if (settings.reference && settings.comparison !== "after") {
     const asset = shipped(settings.level);
     return settings.comparison === "pair"

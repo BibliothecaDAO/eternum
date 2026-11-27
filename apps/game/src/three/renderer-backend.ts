@@ -1,4 +1,4 @@
-import type { Camera, Object3D, Scene, Texture } from "three";
+import type { Camera, Object3D, RenderTarget, Scene, Texture } from "three";
 
 import type { RendererBuildMode } from "./renderer-build-mode";
 
@@ -61,6 +61,7 @@ export interface RendererBackend {
   readonly capabilities: RendererBackendCapabilities;
   readonly renderer?: RendererSurfaceLike;
   applyRenderVisuals(input: { pixelRatio: number; shadows: boolean; width: number; height: number }): void;
+  compileObjectAsync?(object: Object3D, camera: Camera, targetScene: Scene): Promise<void>;
   dispose(): void;
   initialize(): Promise<RendererInitDiagnostics>;
   renderFrame(pipeline: RendererFramePipeline): void;
@@ -143,12 +144,16 @@ export interface RendererSurfaceLike {
   clearDepth(): void;
   domElement: HTMLCanvasElement;
   dispose(): void;
+  getMRT?(): unknown;
+  getRenderTarget?(): RenderTarget | null;
   info: RendererInfoLike;
   initTexture?(texture: Texture): void;
   outputColorSpace?: string;
   render(scene: Object3D, camera: Camera): void;
   compileAsync?(object: Object3D, camera: Camera, targetScene?: Scene | null): Promise<unknown>;
+  setMRT?(mrtNode: unknown): void;
   setPixelRatio(pixelRatio: number): void;
+  setRenderTarget?(target: RenderTarget | null): void;
   setSize(width: number, height: number): void;
   shadowMap: {
     enabled: boolean;

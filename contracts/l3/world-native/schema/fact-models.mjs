@@ -39,6 +39,8 @@ export const factWireTypes = [
     name: "world_native::expeditions::DepthRules",
     members: [
       { name: "reveal_percent", type: "core::integer::u16" },
+      { name: "reveal_cap", type: "core::integer::u32" },
+      { name: "rift_essence_bps", type: "core::integer::u16" },
       { name: "site_guard_lower", type: "core::integer::u16" },
       { name: "site_guard_upper", type: "core::integer::u16" },
       { name: "rift_guard_lower", type: "core::integer::u16" },
@@ -514,11 +516,8 @@ export const factWireTypes = [
   },
   {
     type: "struct",
-    name: "world_native::deep::DeepGuard",
-    members: [
-      { name: "site_id", type: "core::integer::u64" },
-      { name: "slot", type: "core::integer::u8" },
-    ],
+    name: "world_native::deep::GarrisonSlot",
+    members: [{ name: "home", type: "core::integer::u64" }],
   },
   {
     type: "struct",
@@ -527,6 +526,7 @@ export const factWireTypes = [
       { name: "kind", type: "core::integer::u8" },
       { name: "ring", type: "core::integer::u8" },
       { name: "day", type: "core::integer::u64" },
+      { name: "aspect", type: "core::integer::u8" },
     ],
   },
   {
@@ -806,6 +806,16 @@ export const factWireTypes = [
       {
         name: "name",
         type: "core::felt252",
+      },
+    ],
+  },
+  {
+    type: "struct",
+    name: "world_native::names::RealmSkin",
+    members: [
+      {
+        name: "family",
+        type: "core::integer::u8",
       },
     ],
   },
@@ -1446,7 +1456,7 @@ export function defineFactModels({ struct, model: declare }) {
       ],
       [{ name: "count", type: "core::integer::u32" }],
     ),
-    model("DeepGuard", "game", struct("troops::ExplorerKey"), struct("deep::DeepGuard")),
+    model("GarrisonSlot", "game", struct("guards::GuardKey"), struct("deep::GarrisonSlot")),
     model("DeepArmy", "game", struct("troops::ExplorerKey"), struct("deep::DeepArmy")),
     model(
       "AspectActivity",
@@ -1490,6 +1500,7 @@ export function defineFactModels({ struct, model: declare }) {
     model("Building", "game", struct("buildings::BuildingKey"), struct("buildings::Building")),
     model("StructureBuildings", "game", struct("resources::ResourceKey"), struct("buildings::StructureBuildings")),
     model("EntityName", "game", struct("resources::ResourceKey"), struct("names::EntityName")),
+    model("RealmSkin", "game", struct("resources::ResourceKey"), struct("names::RealmSkin")),
 
     model(
       "ResourceRule",
@@ -1591,6 +1602,8 @@ const behaviouralFacts = {
     domain: "expedition",
     fields: {
       revealPercent: "reveal_percent",
+      revealCap: "reveal_cap",
+      riftEssenceBps: "rift_essence_bps",
       siteGuardLower: "site_guard_lower",
       siteGuardUpper: "site_guard_upper",
       riftGuardLower: "rift_guard_lower",
@@ -1736,7 +1749,7 @@ export const syncScopes = {
   LaborGrant: { owners: ["account"] },
   FragmentCredit: { owners: ["account"] },
   Fragments: { owners: ["account"] },
-  Seal: { owners: ["account"] },
+  Seal: "shared",
   SpendLords: { owners: ["account"] },
   PrincipalWithdrawal: { owners: ["account"] },
   DepositReceipt: { owners: ["account"] },
@@ -1758,7 +1771,7 @@ export const syncScopes = {
   DeepTick: shared,
   DeepSite: shared,
   DeepEntries: shared,
-  DeepGuard: shared,
+  GarrisonSlot: shared,
   DeepArmy: shared,
   ArmySlot: { entities: ["structure_id"], epoch: "epoch" },
   ExplorerTroops: { entities: ["explorer_id"] },
@@ -1771,4 +1784,5 @@ export const syncScopes = {
   ResourceArrival: byEntity,
   StructureBuildings: byEntity,
   EntityName: byEntity,
+  RealmSkin: byEntity,
 };

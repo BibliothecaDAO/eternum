@@ -62,7 +62,7 @@ pub mod PrizesLogic {
             let reward = crate::exploration_rewards::reveal_reward(
                 explorer.troops,
                 rules.troop_limit_config,
-                crate::logic::expeditions::depth_rules_at(game_id, coord).reveal_percent,
+                crate::logic::expeditions::depth_rules_at(game_id, coord),
                 seed,
             );
             let oaths = crate::logic::progression::held_oaths(

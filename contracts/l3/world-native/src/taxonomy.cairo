@@ -46,6 +46,7 @@ pub const SUPPLY_POST_OCCUPIER: u8 = 47;
 pub const RIFT_CATEGORY: u8 = 9;
 pub const RUIN_CATEGORY: u8 = 10;
 pub const BEASTS_CATEGORY: u8 = 11;
+pub const DEEP_SITE_CATEGORY: u8 = 12;
 pub const RIFT_OCCUPIER: u8 = 42;
 pub const RUIN_OCCUPIER: u8 = 43;
 pub const BEASTS_OCCUPIER: u8 = 44;

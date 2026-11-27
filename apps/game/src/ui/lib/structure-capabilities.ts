@@ -65,6 +65,7 @@ const CATEGORY_CAPABILITIES: Record<StructureType, CategoryCapabilities> = {
   [StructureType.Rift]: NONE,
   [StructureType.Ruin]: NONE,
   [StructureType.Beasts]: NONE,
+  [StructureType.DeepSite]: NONE,
 };
 
 /** Whether a structure of this category can do it; an unknown category can do nothing. */

@@ -9,6 +9,27 @@ use crate::resources::ResourceKey;
 use crate::rules::RESOURCE_PRECISION;
 use crate::troops::{ArmySlotKey, ExplorerKey, StaminaSource, TroopTier, TroopType};
 
+fn realm_grant(resource_type: u8) -> u128 {
+    let mut amount = 0_u128;
+    for grant in crate::balance::settlement::REALM_GRANTS.span() {
+        if *grant.resource_type == resource_type {
+            amount = *grant.amount;
+        }
+    }
+    amount
+}
+
+fn simple_input_cost(resource_type: u8, input_type: u8) -> u128 {
+    let recipe = *crate::balance::resources::RECIPES.span().at(resource_type.into() - 1);
+    let mut amount = 0_u128;
+    for input in crate::balance::resources::RECIPE_INPUTS.span().slice(recipe.first_input, recipe.simple_count) {
+        if *input.resource_type == input_type {
+            amount = *input.amount;
+        }
+    }
+    amount
+}
+
 fn settle(d: Deployment, game_id: u32, held: bool, timestamp: u64) -> bool {
     execute_in_game(
         d,
@@ -45,7 +66,8 @@ fn free_and_held_homes_start_with_their_knights_at_home_and_no_army_then_deploy_
             attach_realm(d, game_id);
             assert_start(d, game_id);
             let home = interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
-            assert!(execute_in_game(d, game_id, super::army_activity::muster(home, 0, 0, 2000), timestamp));
+            let knights = realm_grant(crate::troops::troop_resource(TroopType::Knight, 0)) / RESOURCE_PRECISION;
+            assert!(execute_in_game(d, game_id, super::army_activity::muster(home, 0, 0, knights), timestamp));
             assert_deployed(d, game_id, timestamp);
         }
     }
@@ -74,12 +96,14 @@ fn assert_start(d: Deployment, game_id: u32) {
             let weight = crate::logic::resources::weight(key);
             let capacity: u128 = core::num::traits::Bounded::MAX;
             assert_eq!(weight.capacity, capacity);
+            let knights = crate::troops::troop_resource(TroopType::Knight, 0);
+            assert_eq!(crate::logic::resources::balance(key, knights), realm_grant(knights));
             assert_eq!(
-                crate::logic::resources::balance(key, crate::troops::troop_resource(TroopType::Knight, 0)),
-                2000 * RESOURCE_PRECISION,
+                crate::logic::resources::balance(key, crate::resources::WHEAT), realm_grant(crate::resources::WHEAT),
             );
-            assert_eq!(crate::logic::resources::balance(key, crate::resources::WHEAT), 6000 * RESOURCE_PRECISION);
-            assert_eq!(crate::logic::resources::balance(key, crate::resources::LABOR), 2000 * RESOURCE_PRECISION);
+            assert_eq!(
+                crate::logic::resources::balance(key, crate::resources::LABOR), realm_grant(crate::resources::LABOR),
+            );
             assert_eq!(crate::logic::resources::balance(key, crate::resources::ESSENCE), 0);
         },
     )
@@ -100,8 +124,15 @@ fn assert_deployed(d: Deployment, game_id: u32, timestamp: u64) {
             );
             let armies = crate::logic::troops::home_armies(key);
             assert_eq!(armies.len(), 1);
-            assert_eq!(crate::logic::resources::balance(key, crate::troops::troop_resource(TroopType::Knight, 0)), 0);
-            assert_eq!(crate::logic::resources::balance(key, crate::resources::WHEAT), 2000 * RESOURCE_PRECISION);
+            let knights = crate::troops::troop_resource(TroopType::Knight, 0);
+            let starting_knights = realm_grant(knights);
+            let deploy_wheat = (starting_knights / RESOURCE_PRECISION)
+                * simple_input_cost(knights, crate::resources::WHEAT);
+            assert_eq!(crate::logic::resources::balance(key, knights), 0);
+            assert_eq!(
+                crate::logic::resources::balance(key, crate::resources::WHEAT),
+                realm_grant(crate::resources::WHEAT) - deploy_wheat,
+            );
             assert_eq!(crate::state::read().troops.aspect_activity.read((game_id, 1, day)), 1);
             let explorer = ExplorerKey { game_id, explorer_id: *armies.at(0) };
             let army = crate::logic::troops::explorer(explorer).unwrap();
@@ -112,7 +143,7 @@ fn assert_deployed(d: Deployment, game_id: u32, timestamp: u64) {
             assert_eq!(army.owner, home);
             assert_eq!(army.troops.category, TroopType::Knight);
             assert_eq!(army.troops.tier, TroopTier::T1);
-            assert_eq!(army.troops.count, 2000 * RESOURCE_PRECISION);
+            assert_eq!(army.troops.count, starting_knights);
             assert_eq!(army.troops.stamina, StaminaSource::Slot(0));
             assert_eq!(crate::logic::army_days::require(explorer), day);
             assert_eq!(army.coord, crate::geometry::neighbor(origin, 0));

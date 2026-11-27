@@ -63,8 +63,7 @@ const createHarness = () => {
       | "DeepRules"
       | "DeepArmy"
       | "ArmyDay"
-      | "ArmyProgress"
-      | "DeepGuard",
+      | "ArmyProgress",
     alias: string,
     keys: (number | boolean)[],
     row: object,
@@ -273,17 +272,6 @@ const createHarness = () => {
           `deep-${explorer}`,
           [13, explorer],
           { game_id: 13, explorer_id: explorer, last_tick: 6n },
-          false,
-        );
-      }),
-    joinDeep: (alias: string, explorer: number, site: number) =>
-      atomic(() => {
-        remove("TileOccupancy", `army-${alias}`);
-        write(
-          "DeepGuard",
-          `guard-${explorer}`,
-          [13, explorer],
-          { game_id: 13, explorer_id: explorer, site_id: site, slot: 0 },
           false,
         );
       }),
@@ -1112,38 +1100,6 @@ describe("shared Deep spatial projection", () => {
         .find((tile) => tile.hexCoords.col === 512 && tile.hexCoords.row === 3584)!;
       expect(tile.occupierId).toBe(0);
       expect(harness.source.require("ExplorerTroops", { game_id: 13, explorer_id: 11 }).troops.count).toBe(2n);
-    } finally {
-      harness.projection.dispose();
-      setBlockTimestampSource(null);
-    }
-  });
-
-  it("folds guard membership and field departure atomically, including after rebuild", () => {
-    setBlockTimestampSource(() => 360);
-    const harness = createHarness();
-    try {
-      harness.writeDeep();
-      harness.writeArmy("field", { explorerId: 11, col: 512, row: 3584, count: 10n });
-      harness.writeDeepArmy(11);
-      harness.writeTile("site", { col: 513, row: 3584, occupierId: 20, occupierType: TileOccupier.DeepSite });
-      harness.projection.start();
-      const changes: ArmySpatialProjectionChange[][] = [];
-      harness.projection.subscribeArmies((batch) => changes.push([...batch]));
-      harness.joinDeep("field", 11, 20);
-      harness.projection.flush();
-      expect(harness.projection.getArmy(11)).toBeUndefined();
-      expect(changes).toHaveLength(1);
-      expect(changes[0]).toHaveLength(1);
-      expect(changes[0]![0]!.previous?.entityId).toBe(11);
-      expect(changes[0]![0]!.current).toBeUndefined();
-      harness.projection.rebuild();
-      expect(harness.projection.getArmies(false)).toEqual([]);
-      expect(harness.projection.getTiles(false)).toHaveLength(2500);
-      expect(harness.projection.getTiles(false).find((tile) => tile.occupierId === 20)?.hexCoords).toEqual({
-        col: 513,
-        row: 3584,
-        alt: false,
-      });
     } finally {
       harness.projection.dispose();
       setBlockTimestampSource(null);

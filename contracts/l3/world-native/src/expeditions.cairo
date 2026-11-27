@@ -43,7 +43,7 @@ pub struct SitePayout {
 
 // Camps pay labor, herds wheat, and rifts Essence.
 pub fn site_reward(
-    category: u8, site: ExpeditionSite, depth: u8, band: bool,
+    category: u8, site: ExpeditionSite, depth: u8, band: bool, rules: DepthRules,
 ) -> Option<crate::resources::ResourceAmount> {
     if band {
         return None;
@@ -54,7 +54,11 @@ pub fn site_reward(
     } else if category == crate::taxonomy::BEASTS_CATEGORY {
         Some(ResourceAmount { resource_type: WHEAT, amount: site.initial_guard_count * 4 })
     } else if category == crate::taxonomy::RIFT_CATEGORY {
-        Some(ResourceAmount { resource_type: ESSENCE, amount: site.initial_guard_count * 3 })
+        Some(
+            ResourceAmount {
+                resource_type: ESSENCE, amount: site.initial_guard_count * rules.rift_essence_bps.into() / 10000,
+            },
+        )
     } else {
         None
     };
@@ -169,6 +173,8 @@ pub fn climate(
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct DepthRules {
     pub reveal_percent: u16,
+    pub reveal_cap: u32,
+    pub rift_essence_bps: u16,
     pub site_guard_lower: u16,
     pub site_guard_upper: u16,
     pub rift_guard_lower: u16,

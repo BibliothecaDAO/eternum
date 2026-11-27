@@ -41,7 +41,7 @@ const realmBoard = (buildings: Array<{ col: number; row: number; category: Build
     mode: getGameModeConfig(GAME_FAMILIES.frontier),
     state: { structureEntityId: 7 },
     structureStage: 0,
-    tileManager: { getWonder: () => undefined },
+    tileManager: { showsWonder: () => false },
     buildings,
     models: {
       request: (path: string) => {
@@ -112,7 +112,7 @@ it("asks for the route realm's models while the camera flies to it, the same one
     existingBuildings: () => buildings.map((building) => ({ ...building })),
     structureType: () => StructureType.Realm,
     getRealmLevel: () => 0,
-    getWonder: () => undefined,
+    showsWonder: () => false,
   };
   const board = realmBoard(buildings);
   board.scene.readRouteRealm = () => ({ tiles: route.tiles, realmId: 7, center: { col: 3, row: 4 }, stage: 0 });

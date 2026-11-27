@@ -1,15 +1,15 @@
-import oathDamage from "../../../../../../../contracts/l3/world-native/tests/fixtures/oath-damage.txt?raw";
-import { deepBattleTargetScenario } from "@/lab/game/battle-target-scenario";
+import { deepArmyBattleScenario, deepBattleTargetScenario, RIVAL_DEEP_ARMY } from "@/lab/game/battle-target-scenario";
+import { HELD_SITE } from "@/lab/game/deep-scenario";
 import {
   nativeOathConstants as oaths,
-  nativeRuleConstants,
   nativeStructureConstants,
   readDeepSites,
 } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { afterEach, describe, expect, it } from "vitest";
 import { armyRelicReward, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, BiomeTypeToId, deepSites, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import { nativeTilePackingConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { readDeepSiteFight, readArmyCard, readSiteCard } from "./site-card-plan";
 import {
@@ -88,8 +88,8 @@ describe("Frontier's tile card", () => {
     const rift = campBeside("Rift");
     expect(readSiteCard(rift.store, rift.site, rift.structure, null).payout).toEqual({
       resourceId: ResourcesIds.Essence,
-      amount: 4_950,
-      fits: 4_950,
+      amount: 2_475,
+      fits: 2_475,
     });
   });
 });
@@ -114,18 +114,67 @@ it("shows only the camp reward that fits in the home labor store", () => {
   expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 825, fits: 10 });
 });
 
-it("refuses another player's army in the open, near or far, as the contract does, and shows its troops", () => {
+it("forecasts an attack on a rival army in the open and refuses a same-Aspect ally, near or far", () => {
   const { store, attack } = campBeside();
   const other = otherArmyAt(store, 42, 12);
-  const plan = readArmyCard(store, other, attack({ col: 41, row: 12, alt: false }));
-  expect(plan.kind).toBe("Army");
-  expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 300 });
-  expect(plan.payout).toBeNull();
-  expect(plan).toMatchObject({ fight: { refused: true }, blocked: "no-attack", inReach: true });
+  store.applyFacts([
+    {
+      model: "TileOpt",
+      key: "0x4212",
+      value: {
+        game_id: 1,
+        col: 42,
+        row: 12,
+        alt: false,
+        data: BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE),
+      },
+    },
+    { model: "HomeAspect", key: "0xa701", value: { game_id: 1, home: 7n, aspect: 1 } },
+    { model: "HomeAspect", key: "0xa901", value: { game_id: 1, home: 9n, aspect: 2 } },
+  ]);
+  const rival = readArmyCard(store, other, attack({ col: 41, row: 12, alt: false }));
+  expect(rival.kind).toBe("Army");
+  expect(rival.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 300 });
+  expect(rival.payout).toBeNull();
+  expect(rival.blocked).toBeUndefined();
+  expect(rival.inReach).toBe(true);
+  expect(rival.fight).toMatchObject({ troopsLost: expect.any(Number), guardLeft: expect.any(Number) });
+  expect(readArmyCard(store, other, attack({ col: 44, row: 12, alt: false }))).toMatchObject({
+    blocked: undefined,
+    inReach: false,
+  });
+
+  store.applyFacts([{ model: "HomeAspect", key: "0xa901", value: { game_id: 1, home: 9n, aspect: 1 } }]);
+  expect(readArmyCard(store, other, attack({ col: 41, row: 12, alt: false }))).toMatchObject({
+    fight: { refused: true },
+    blocked: "allied",
+    inReach: true,
+  });
   expect(readArmyCard(store, other, attack({ col: 44, row: 12, alt: false }))).toMatchObject({
     fight: { refused: true },
-    blocked: "no-attack",
+    blocked: "allied",
   });
+});
+
+it("forecasts the deep-army-battle lab scenario through both Battle exchanges without guard protection", () => {
+  const scenario = deepArmyBattleScenario();
+  const { store, startsAt } = scenario;
+  setBlockTimestampSource(() => startsAt);
+  const own = () => store.require("ExplorerTroops", { game_id: 1, explorer_id: 201n });
+  const rival = () => store.require("ExplorerTroops", { game_id: 1, explorer_id: RIVAL_DEEP_ARMY });
+
+  const first = readArmyCard(store, rival(), { army: own(), timestamp: startsAt });
+  expect(first).toMatchObject({ inReach: true, blocked: undefined, fight: { troopsLost: 294, guardLeft: 672 } });
+
+  store.applyFacts(
+    scenario.answer(
+      { kind: "Battle", fields: { attacker_id: "201", defender_id: String(RIVAL_DEEP_ARMY) }, span: [] },
+      store,
+      startsAt,
+    ) as never,
+  );
+  const second = readArmyCard(store, rival(), { army: own(), timestamp: startsAt });
+  expect(second).toMatchObject({ inReach: true, blocked: undefined, fight: { troopsLost: 199, guardLeft: 423 } });
 });
 
 it("says a stronger band holds an Oath, as the contract offers a pick on its clear, and a lowly herd none", () => {
@@ -225,8 +274,8 @@ it("clips the Plunder reward after applying its bonus and leaves wheat unchanged
     readSiteCard(rift.store, rift.site, rift.structure, rift.attack({ col: 41, row: 12, alt: false })).payout,
   ).toEqual({
     resourceId: ResourcesIds.Essence,
-    amount: 5940,
-    fits: 5940,
+    amount: 2970,
+    fits: 2970,
   });
 });
 
@@ -354,64 +403,40 @@ it("keeps the exact forecast through a last-target update and a fresh snapshot",
   expect(readSiteCard(restored, site, structure, army).fight).toEqual({ troopsLost: 457, guardLeft: 478 });
 });
 
-it("keeps a replacement Knight guard protected and removes that protection from the beast", () => {
+it("keeps a Knight garrison protected and removes that protection from the beast", () => {
   const { store, startsAt } = deepBattleTargetScenario();
   setBlockTimestampSource(() => startsAt);
   const key = { game_id: 1, explorer_id: 201n };
   const army = store.require("ExplorerTroops", key);
   const attack = { army, timestamp: startsAt };
-  const combat = store.require("ArmyCombat", key);
-  const combatKey = store.wireKeyOf("ArmyCombat", key)!;
-  const mine = () => readDeepSites(store, startsAt, 1).find(({ kind }) => kind === nativeRuleConstants.DEEP_MINE)!;
-  store.applyFacts([{ model: "ArmyCombat", key: combatKey, value: { ...combat, last_target: 301n } }]);
-  expect(readDeepSiteFight(store, mine(), attack)?.result).toEqual({ troopsLost: 330, guardLeft: 754 });
-  const oldGuard = { game_id: 1, explorer_id: 301n };
-  for (const [index, model] of (
-    ["ExplorerTroops", "DeepArmy", "ArmyDay", "ArmyCombat", "ArmyProgress", "DeepGuard"] as const
-  ).entries()) {
-    const row = store.require(model, oldGuard);
-    store.applyFacts([{ model, key: `0xeef${index}`, value: { ...row, explorer_id: 302n } }]);
-  }
-  store.applyFacts([{ model: "DeepGuard", key: store.wireKeyOf("DeepGuard", oldGuard)!, value: null }]);
-  expect(readDeepSiteFight(store, mine(), attack)?.result).toEqual({ troopsLost: 330, guardLeft: 754 });
+  const heldKind = deepSites.find(({ key }) => key === HELD_SITE)!.id;
+  const held = () => readDeepSites(store, startsAt, 1).find(({ kind }) => kind === heldKind)!;
+  expect(readDeepSiteFight(store, held(), attack)?.result).toEqual({ troopsLost: 330, guardLeft: 754 });
+  const site = held();
+  const garrison = store.require("GarrisonSlot", { game_id: 1, structure_id: site.id, slot: site.garrisons[0]!.slot });
+  const deepSite = store.require("DeepSite", { game_id: 1, entity_id: site.id });
+  const owner = store.require("Structure", { game_id: 1, entity_id: site.id });
   store.applyFacts([
-    { model: "DeepGuard", key: store.wireKeyOf("DeepGuard", { game_id: 1, explorer_id: 302n })!, value: null },
-  ]);
-  const site = mine();
-  store.applyFacts([
+    { model: "GarrisonSlot", key: store.wireKeyOf("GarrisonSlot", garrison)!, value: null },
+    { model: "Guard", key: store.wireKeyOf("Guard", garrison)!, value: null },
+    { model: "DeepSite", key: store.wireKeyOf("DeepSite", deepSite)!, value: { ...deepSite, aspect: 0 } },
+    { model: "Structure", key: store.wireKeyOf("Structure", owner)!, value: { ...owner, owner: 0n } },
     {
       model: "Guard",
-      key: store.wireKeyOf("Guard", site.guard!)!,
-      value: { ...site.guard!, troops: { ...army.troops, category: "Knight" } },
+      key: "0x100",
+      value: {
+        game_id: 1,
+        structure_id: site.id,
+        slot: 0,
+        destroyed_tick: 0,
+        troops: { ...army.troops, category: "Knight" },
+      },
     },
   ]);
-  expect(readDeepSiteFight(store, mine(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
-  store.applyFacts([{ model: "ArmyCombat", key: combatKey, value: { ...combat, last_target: site.id } }]);
-  expect(readDeepSiteFight(store, mine(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
-  store.applyFacts([{ model: "ArmyCombat", key: combatKey, value: null }]);
-  expect(readDeepSiteFight(store, mine(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
-});
-
-it("previews both armies' held damage Oaths from synchronized facts and refuses missing progress", () => {
-  const { store, startsAt } = deepBattleTargetScenario(true);
-  setBlockTimestampSource(() => startsAt);
-  const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201n });
-  const attack = { army, timestamp: startsAt };
-  const site = readDeepSites(store, startsAt, 1).find(({ kind }) => kind === nativeRuleConstants.DEEP_MINE)!;
-  const fields = oathDamage.trim().split(/\s+/).map(Number);
-  const [before, , after, guardAfter] = fields.slice(26, 30);
-  expect(readDeepSiteFight(store, site, attack)?.result).toEqual({
-    troopsLost: before! - after!,
-    guardLeft: guardAfter,
-  });
-  const guard = site.guards[0]!.army;
-  const progress = store.require("ArmyProgress", guard);
-  const key = store.wireKeyOf("ArmyProgress", guard)!;
-  store.applyFacts([{ model: "ArmyProgress", key, value: { ...progress, oaths: 0 } }]);
-  expect(readDeepSiteFight(store, site, attack)?.result).toEqual({
-    troopsLost: 262,
-    guardLeft: 705,
-  });
-  store.applyFacts([{ model: "ArmyProgress", key, value: null }]);
-  expect(() => readDeepSiteFight(store, site, attack)).toThrow("Deep attrition requires its rules and army progress");
+  expect(readDeepSiteFight(store, held(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
+  const combat = store.require("ArmyCombat", key);
+  store.applyFacts([
+    { model: "ArmyCombat", key: store.wireKeyOf("ArmyCombat", key)!, value: { ...combat, last_target: site.id } },
+  ]);
+  expect(readDeepSiteFight(store, held(), attack)?.result).toEqual({ troopsLost: 294, guardLeft: 672 });
 });

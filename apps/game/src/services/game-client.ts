@@ -9,15 +9,19 @@ type BrowserGameInput = Pick<Parameters<typeof createGameClient>[0], "shard" | "
  * Renderer boot and settlement use the same deployment and Herald store; actions are the connected gameplay account's
  * own signed invokes.
  */
-export async function createBrowserGameClient(input: BrowserGameInput) {
+export async function createBrowserGameClient(input: BrowserGameInput, assertCurrent?: () => void) {
   // The compiled bindings load when a game is entered, never with the landing.
   const { nativeBindings } = await import("@/runtime/world/native-bindings");
+  assertCurrent?.();
   return createGameClient({
     ...input,
     playerNames: getPlayerDisplayName,
     bindings: nativeBindings,
     scheduler: createBrowserScheduler(),
     // The scenes and hooks read the game's sync runtime as the active one.
-    createRuntime: installFreshGameSyncRuntime,
+    createRuntime: () => {
+      assertCurrent?.();
+      return installFreshGameSyncRuntime();
+    },
   });
 }

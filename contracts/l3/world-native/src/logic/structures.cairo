@@ -35,6 +35,16 @@ pub fn structure(key: ResourceKey) -> Option<Structure> {
     )
 }
 
+pub fn realm_holds_skin(key: ResourceKey, owner: ContractAddress, has_wonder: bool, family: u8) -> bool {
+    let state = crate::state::read();
+    crate::names::holds_realm_skin(
+        state.entry.seals.read((key.game_id, owner)).is_some(),
+        state.settlements.home_aspects.read((key.game_id, key.entity_id)),
+        has_wonder,
+        family,
+    )
+}
+
 pub mod StructureState {
     use starknet::Event as EventTrait;
     use starknet::storage::{StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
@@ -460,6 +470,39 @@ pub mod StructuresLogic {
                         model: 'EntityName',
                         keys: array![game_id.into(), command.entity_id.into()].span(),
                         values: array![command.name].span(),
+                    },
+                );
+        }
+        #[cfg(feature: "test_support")]
+        fn realm_skin(self: @ContractState, key: ResourceKey) -> crate::names::RealmSkin {
+            crate::names::RealmSkin { family: self.data.structure_rules.realm_skins.read((key.game_id, key.entity_id)) }
+        }
+        fn set_realm_skin(
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::names::SetRealmSkin,
+            context: crate::commands::ActionContext,
+        ) {
+            let context = crate::commands::execution_context(game_id, context);
+
+            assert_playing(context.game.unbox(), context.timestamp);
+            let key = ResourceKey { game_id, entity_id: command.entity_id };
+            let record = crate::logic::structures::record(key);
+            assert!(record.owner == actor, "actor does not own realm");
+            assert!(record.base.category == crate::taxonomy::REALM_CATEGORY, "not a realm");
+            assert!(
+                crate::logic::structures::realm_holds_skin(key, actor, record.metadata.has_wonder, command.family),
+                "realm skin not held",
+            );
+            self.data.structure_rules.realm_skins.write((game_id, command.entity_id), command.family);
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'RealmSkin',
+                        keys: array![game_id.into(), command.entity_id.into()].span(),
+                        values: array![command.family.into()].span(),
                     },
                 );
         }

@@ -1,4 +1,8 @@
 import {
+  aspectName,
+  DEEP_BEASTS,
+  DEEP_CAPTURE_LINES,
+  deepSites,
   FRONTIER_TROOP_NAMES,
   ResourcesIds,
   SHRINE_USED,
@@ -16,7 +20,8 @@ import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtur
 // The package index first, so the config singleton the utils read through it is evaluated before any story runs.
 // The package index first, so the config singleton the utils read through it is evaluated before any story runs.
 import { configManager } from "..";
-import { buildStoryEventPresentation, findGain } from "./story-event-formatter";
+import { buildStoryEventPresentation, CAPTURE_AFTERMATH, findGain } from "./story-event-formatter";
+import { getStructureName } from "../utils/entities";
 import type { NativeStoryVariant } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 // Structure names check the player's local renames first; core tests have no DOM.
@@ -39,11 +44,11 @@ const buildStore = () => {
       value: { game_id: 1, release_id: 3, created_release_id: 3 },
     },
   ]);
-  const setHeldRealm = (id: number, realmId: number, level: number) => {
+  const setHeldRealm = (id: number, realmId: number, level: number, owner = 0x123n) => {
     write("Structure", id, {
       game_id: 1,
       entity_id: id,
-      owner: 0x123n,
+      owner,
       base: {
         category: 1,
         level,
@@ -72,7 +77,7 @@ const buildStore = () => {
       owner,
       troops: { ...explorerFixture.expected.value.troops, tier },
     });
-  return { store, setHeldRealm, setExplorer };
+  return { store, write, setHeldRealm, setExplorer };
 };
 
 const story = (storyType: string, storyPayload: Record<string, unknown>, entityId: number | null = null): Event =>
@@ -627,7 +632,7 @@ describe("a capture", () => {
     return { ...presentation, realm: realm.replace(/ created$/, "") };
   };
 
-  const aftermath = "Its armies and deliveries went with it";
+  const aftermath = CAPTURE_AFTERMATH;
 
   it("names who took which structure from whom, and what went with it, in one line", () => {
     const { title, description, realm } = captured("0xa1", null);
@@ -644,6 +649,49 @@ describe("a capture", () => {
   it("has nothing that went with it when no player held it", () => {
     const { title, realm } = captured("0x0", "0xc1");
     expect(title).toBe(`clientlane took ${realm} from The Vanguard`);
+  });
+
+  it("reports a Deep site changing hands without transferring any assets", () => {
+    const { store, setHeldRealm } = buildStore();
+    setHeldRealm(5, 1, 1);
+    const row = store.require("Structure", { game_id: 1, entity_id: 5n });
+    const site = {
+      ...row,
+      base: { ...row.base, category: StructureType.DeepSite, level: 0, troop_max_explorer_count: 0 },
+    };
+    store.applyFacts([{ model: "Structure", key: store.wireKeyOf("Structure", row)!, value: site }]);
+    const event = story("StructureCapturedStory", { previous_owner: "0xa1", new_owner: "0xc1" }, 5);
+    expect(buildStoryEventPresentation(event, store, names).title).toBe(
+      `clientlane took ${getStructureName(site, store).name} from uxplay`,
+    );
+  });
+});
+
+describe("a Deep site's capture", () => {
+  const names = (address: string) => ({ "0xc1": "clientlane", "0xa1": "uxplay" })[address] ?? null;
+  const altar = deepSites.find(({ key }) => key === "altar")!;
+  const captured = (previousOwner: string) => {
+    const { store, write, setHeldRealm } = buildStore();
+    setHeldRealm(5, 1, 1, 0xc1n);
+    setHeldRealm(6, 2, 1, 0xa1n);
+    write("HomeAspect", 5, { game_id: 1, home: 5n, aspect: 2 });
+    write("HomeAspect", 6, { game_id: 1, home: 6n, aspect: 3 });
+    write("DeepSite", 40, { game_id: 1, entity_id: 40n, kind: altar.id, ring: 0, day: 0n, aspect: 2 });
+    return buildStoryEventPresentation(
+      story("StructureCapturedStory", { previous_owner: previousOwner, new_owner: "0xc1" }, 40),
+      store,
+      names,
+    ).title;
+  };
+
+  it("tells a site taken from its beast by the player, their Aspect and the beast they slew", () => {
+    expect(captured("0x0")).toBe(
+      `clientlane ${DEEP_CAPTURE_LINES.slew(aspectName(2), DEEP_BEASTS.altar.name, altar.name)}`,
+    );
+  });
+
+  it("tells a site seized from another Aspect by both Aspects", () => {
+    expect(captured("0xa1")).toBe(`clientlane ${DEEP_CAPTURE_LINES.seized(aspectName(2), altar.name, aspectName(3))}`);
   });
 });
 

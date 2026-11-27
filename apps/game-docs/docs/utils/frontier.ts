@@ -14,6 +14,7 @@ import {
   nativeRuleConstants as rule,
 } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
+import { deepAlliesGarrison } from "@bibliothecadao/eternum/game-client";
 import { MAINNET_TOKENS } from "../../../../packages/chain/src/tokens";
 import { logisticsStamina } from "../../../../packages/core/src/utils/attribute-tiers";
 import { buildablePlotCount } from "../../../../packages/core/src/utils/castle-reach";
@@ -21,6 +22,7 @@ import {
   buildingCopyCost,
   buildingCopyMultiplier,
   isOnePerRealm,
+  loreOpensAtLevel,
   oathAttackStamina,
   oathDeepLossPerTick,
   oathFuryRefund,
@@ -157,7 +159,7 @@ const researchRow = (row: number) =>
   frontierPreset.research
     .filter((step) => step.row === row)
     .sort((a, b) => a.tier - b.tier)
-    .map((step) => ({ essence: n(step.essenceCost), labor: n(step.laborCost) }));
+    .map((step) => ({ tier: step.tier, essence: n(step.essenceCost), labor: n(step.laborCost) }));
 
 const finishHeight = raceRules.STAGE_COUNT * racePreset.stageHeight;
 type TriumphStage = keyof typeof ASPECT_PAGE_WORDS.triumph;
@@ -229,9 +231,9 @@ const farmBaseLabor = config.buildings.simpleBuildingCost[research.FARM][0].amou
 const workshopBaseLabor = config.buildings.simpleBuildingCost[research.WORKSHOP][0].amount;
 const barracksBaseLabor = config.buildings.simpleBuildingCost[research.BARRACKS][0].amount;
 const startingLabor = config.startingResources.find((r: { resource: number }) => r.resource === LABOR).amount;
-if (workshopBaseLabor + barracksBaseLabor + farmBaseLabor !== startingLabor) {
+if (workshopBaseLabor + barracksBaseLabor + farmBaseLabor > startingLabor) {
   throw new Error(
-    `Starter buildings (${workshopBaseLabor + barracksBaseLabor + farmBaseLabor}) do not equal starting labor (${startingLabor})`,
+    `Starter buildings (${workshopBaseLabor + barracksBaseLabor + farmBaseLabor}) exceed starting labor (${startingLabor})`,
   );
 }
 for (let level = 0; level < config.realmMaxLevel - 1; level += 1) {
@@ -433,6 +435,27 @@ const markRow = (guardCount: number, bow: boolean) => {
   };
 };
 
+const matchupGuardSizes = [campMid, 10_000] as const;
+const advantageMultipliers = [exampleMultiplier, 2, 3] as const;
+const crossbowsBeatBladeAtExample = matchupGuardSizes.every((guardCount) => {
+  const send = Math.round(guardCount * exampleMultiplier);
+  const crossbows = runFight("Crossbowman", send, "Knight", guardCount);
+  const knights = runFight("Knight", send, "Knight", guardCount);
+  return crossbows.wins && crossbows.kept > knights.kept;
+});
+const knightsBeatBowAtAdvantage = matchupGuardSizes.every((guardCount) =>
+  advantageMultipliers.every((multiplier) => {
+    const send = Math.round(guardCount * multiplier);
+    const knights = runFight("Knight", send, "Crossbowman", guardCount);
+    const crossbows = runFight("Crossbowman", send, "Crossbowman", guardCount);
+    return knights.wins && knights.kept > crossbows.kept;
+  }),
+);
+const knightsLoseEvenSmallBow = !runFight("Knight", campMid, "Crossbowman", campMid).wins;
+if (!crossbowsBeatBladeAtExample || !knightsBeatBowAtAdvantage || !knightsLoseEvenSmallBow) {
+  throw new Error("Combat matchup prose and Bring column disagree with forecastFight outcomes");
+}
+
 const herdBps = Math.round(
   (frontierPreset.discovery.beastsBps * rule.BEAST_HERD_SHARE) / (rule.BEAST_HERD_SHARE + rule.BEAST_BAND_SHARE),
 );
@@ -494,6 +517,23 @@ const bowDeepBeasts = deepSites
   .map((site) => DEEP_BEASTS[site.key].name)
   .join(", ");
 
+const guardMark = (bow: boolean) =>
+  bow
+    ? {
+        weapon: "Bow",
+        bring: `${FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many} (${FRONTIER_TROOP_NAMES[TroopType.Knight].many} at ${exampleMultiplier}x+)`,
+      }
+    : { weapon: "Blade", bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many };
+
+const uniformRiftEssenceBps = (depths: readonly { riftEssenceBps: number }[]) => {
+  const first = depths[0]?.riftEssenceBps;
+  if (first === undefined || depths.some((depth) => depth.riftEssenceBps !== first)) {
+    throw new Error("Rift Essence ratio differs by layer; update docs to list each layer separately");
+  }
+  return first;
+};
+const riftEssenceBps = uniformRiftEssenceBps(frontierPreset.depths);
+
 const ruinFamilyRange = (depth: number) =>
   `${beastOf("ruin", depth).name} (${range(...previewRuinGuardBounds(depth + 1, depth))} to ${range(...previewRuinGuardBounds(depth + RELICS_PER_LAYER, depth))})`;
 
@@ -501,8 +541,7 @@ const beastFamilies = [
   {
     name: "Herd",
     icon: beastMeaning(beastOf("herd", 0).model),
-    weapon: "Blade",
-    bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many,
+    ...guardMark(false),
     pays: `Wheat (${n(CONTRACT.herdGuardMultiplier)}x starting guard)`,
     surface: `${beastOf("herd", 0).name} (${range(frontierPreset.depths[0].beastWeakLower, frontierPreset.depths[0].beastWeakUpper)})`,
     veil: `${beastOf("herd", 1).name} (${range(frontierPreset.depths[1].beastWeakLower, frontierPreset.depths[1].beastWeakUpper)})`,
@@ -511,8 +550,7 @@ const beastFamilies = [
   {
     name: "Band",
     icon: beastMeaning(beastOf("band", 0).model),
-    weapon: "Bow",
-    bring: FRONTIER_TROOP_NAMES[TroopType.Knight].many,
+    ...guardMark(true),
     pays: `Oath pick (${n(CONTRACT.oathDrawCount)} Oaths)`,
     surface: `${beastOf("band", 0).name} (${range(frontierPreset.depths[0].beastStrongLower, frontierPreset.depths[0].beastStrongUpper)})`,
     veil: `${beastOf("band", 1).name} (${range(frontierPreset.depths[1].beastStrongLower, frontierPreset.depths[1].beastStrongUpper)})`,
@@ -521,8 +559,7 @@ const beastFamilies = [
   {
     name: "Camp",
     icon: beastMeaning(beastOf("camp", 0).model),
-    weapon: "Blade",
-    bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many,
+    ...guardMark(false),
     pays: `Labor (${n(100 / CONTRACT.campGuardDivisor)}% starting guard) + supply post`,
     surface: `${beastOf("camp", 0).name} (${range(frontierPreset.depths[0].siteGuardLower, frontierPreset.depths[0].siteGuardUpper)})`,
     veil: `${beastOf("camp", 1).name} (${range(frontierPreset.depths[1].siteGuardLower, frontierPreset.depths[1].siteGuardUpper)})`,
@@ -531,9 +568,8 @@ const beastFamilies = [
   {
     name: "Rift",
     icon: beastMeaning(beastOf("rift", 0).model),
-    weapon: "Bow",
-    bring: FRONTIER_TROOP_NAMES[TroopType.Knight].many,
-    pays: `Essence (${n(100 * CONTRACT.riftGuardMultiplier)}% starting guard)`,
+    ...guardMark(true),
+    pays: `Essence (${pct(riftEssenceBps)} starting guard)`,
     surface: `${beastOf("rift", 0).name} (${range(frontierPreset.depths[0].riftGuardLower, frontierPreset.depths[0].riftGuardUpper)})`,
     veil: `${beastOf("rift", 1).name} (${range(frontierPreset.depths[1].riftGuardLower, frontierPreset.depths[1].riftGuardUpper)})`,
     hollow: `${beastOf("rift", 2).name} (${range(frontierPreset.depths[2].riftGuardLower, frontierPreset.depths[2].riftGuardUpper)})`,
@@ -541,8 +577,7 @@ const beastFamilies = [
   {
     name: "Ruin",
     icon: beastMeaning(beastOf("ruin", 0).model),
-    weapon: "Blade",
-    bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many,
+    ...guardMark(false),
     pays: "1 relic or 1 Fragment cache",
     surface: ruinFamilyRange(0),
     veil: ruinFamilyRange(1),
@@ -636,7 +671,7 @@ export const FRONTIER = {
     exampleKnightsKept: n(exampleKnights.kept),
     exampleKnightsLost: n(exampleKnights.lost),
     exampleKnightsExchanges: n(exampleKnights.exchanges),
-    markRows: [markRow(campMid, false), markRow(campMid, true), markRow(10_000, false), markRow(10_000, true)],
+    markRows: matchupGuardSizes.flatMap((size) => [markRow(size, false), markRow(size, true)]),
   },
   discovery: {
     herd: pct(herdBps),
@@ -652,12 +687,11 @@ export const FRONTIER = {
     emptyRevealLimit: n(frontierPreset.discovery.emptyRevealLimit),
     spireRevealLimit: n(rule.SPIRE_REVEAL_LIMIT),
     spireStep: `${n(100 / rule.SPIRE_REVEAL_LIMIT)}%`,
-    revealTroopCap: n(limit.exploreRewardStrengthCap),
   },
   sitePayouts: {
     herdMultiplier: `${n(CONTRACT.herdGuardMultiplier)}x`,
     campPercent: `${n(100 / CONTRACT.campGuardDivisor)}%`,
-    riftPercent: `${n(100 * CONTRACT.riftGuardMultiplier)}%`,
+    riftPercent: pct(riftEssenceBps),
     veilMultiplier: `${n(depthRewardPercent(1))}%`,
     hollowMultiplier: `${n(depthRewardPercent(2))}%`,
   },
@@ -680,6 +714,7 @@ export const FRONTIER = {
   depths: frontierPreset.depths.map((depth, index) => ({
     name: LAYER_NAMES[index],
     revealPercent: `${depth.revealPercent}%`,
+    revealCap: n(depth.revealCap),
     campGuard: `${beastOf("camp", index).name} ${range(depth.siteGuardLower, depth.siteGuardUpper)}`,
     riftGuard: `${beastOf("rift", index).name} ${range(depth.riftGuardLower, depth.riftGuardUpper)}`,
     beastWeak: `${beastOf("herd", index).name} ${range(depth.beastWeakLower, depth.beastWeakUpper)}`,
@@ -752,7 +787,7 @@ export const FRONTIER = {
           `Slot ${n(research.OATH_SLOTS_BASE + index + 1)}: ${essence} Essence, ${labor} labor`,
       )
       .join("; "),
-    lore: researchRow(research.ROW_LORE),
+    lore: researchRow(research.ROW_LORE).map((step) => ({ ...step, opensAt: rankName(loreOpensAtLevel(step.tier)) })),
     outputStep: pct(frontierPreset.board.outputStepBps),
   },
   attributes: {
@@ -816,6 +851,14 @@ export const FRONTIER = {
     gateDistance: n(deepPreset.gateDistance),
     gates: aspects.map((aspect, index) => `${aspect.name} (${deepCompass[index]})`).join(", "),
     guardSlots: n(rule.DEEP_GUARD_SLOTS),
+    alliedSites: deepSites
+      .filter(({ id }) => deepAlliesGarrison(id))
+      .map(({ name }) => name)
+      .join(" and "),
+    ownerSites: deepSites
+      .filter(({ id }) => !deepAlliesGarrison(id))
+      .map(({ name }) => name)
+      .join(" and "),
     sitesPerRing: n(rule.DEEP_RING_SITES),
     randomSitesPerRing: n(rule.DEEP_RING_SITES - deepSites.length),
     maxSameKindPerRing: n(1 + (rule.DEEP_RING_SITES - deepSites.length)),
@@ -842,10 +885,7 @@ export const FRONTIER = {
         beastName: deepBeast.name,
         beastIcon: beastMeaning(deepBeast.model),
         troops: n(beast.count),
-        weapon: beast.bow ? "Bow" : "Blade",
-        bring: beast.bow
-          ? FRONTIER_TROOP_NAMES[TroopType.Knight].many
-          : FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many,
+        ...guardMark(beast.bow),
         pays: deepSitePays[site.key],
       };
     }),

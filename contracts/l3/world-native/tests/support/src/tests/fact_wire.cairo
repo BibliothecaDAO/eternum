@@ -25,7 +25,7 @@ pub struct FactWire {
     pub expedition_spire_key: crate::spires::ExpeditionSpireKey,
     pub expedition_spire: crate::spires::ExpeditionSpire,
     pub deep_site: crate::deep::DeepSite,
-    pub deep_guard: crate::deep::DeepGuard,
+    pub garrison_slot: crate::deep::GarrisonSlot,
     pub deep_army: crate::deep::DeepArmy,
     pub army_slot: crate::troops::ArmySlot,
     pub army_progress: crate::progression::ArmyProgress,

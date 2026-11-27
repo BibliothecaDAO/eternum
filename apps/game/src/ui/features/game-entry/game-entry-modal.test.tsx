@@ -37,7 +37,7 @@ vi.mock("@/hooks/use-game-entry", () => ({
       dev_mode_on: false,
       quest_bonus_percent: 50,
       aspect_members: settlement.aspects ? { 1: 0, 2: 0, 3: 0, 4: 0 } : null,
-      player_state: { structures: [{ entity_id: 7, category: 1, realm_id: 3098, level: 2 }] },
+      player_state: { structures: settlement.settled ? [{ entity_id: 7, category: 1, realm_id: 3098, level: 2 }] : [] },
       clock: {
         start_settling_at: now - 60,
         start_main_at: now - 60,
@@ -59,8 +59,8 @@ vi.mock("@/runtime/world/herald-pre-session-reader", () => ({
   }),
 }));
 
-vi.mock("@/services/settlement", () => ({
-  submitSettlement: async (_context: unknown, submit: (client: unknown) => Promise<unknown>) => {
+vi.mock("@/services/game-command", () => ({
+  submitGameCommand: async (_context: unknown, submit: (client: unknown) => Promise<unknown>) => {
     const result = await submit({
       setup: {
         systemCalls: {
@@ -900,6 +900,78 @@ describe("a friend's Aspect invite at a Season 1 home's founding", () => {
         expect(registered).toEqual([{ gameId: 8 }]);
       } finally {
         await entry.close();
+      }
+    });
+
+    it.each([
+      ["desktop", 1440],
+      ["phone", 390],
+    ] as const)(
+      "keeps the mode toggle first above the realm crest and in the same leading slot across mode switches on %s",
+      async (_layout, viewportWidth) => {
+        const previousWidth = window.innerWidth;
+        setViewportWidth(viewportWidth);
+        realmHolder(null);
+        const entry = await openEntry();
+        try {
+          await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
+          const modeSwitch = entry.host.querySelector("[data-entry-mode-switch]")!;
+          const realmRising = entry.host.querySelector("[data-realm-rising]")!;
+          const homePicker = entry.host.querySelector("[data-home-picker]")!;
+          expect(modeSwitch).not.toBeNull();
+          expect(realmRising).not.toBeNull();
+          expect(entry.host.querySelectorAll("[data-realm-rising]")).toHaveLength(1);
+          expect(realmRising.textContent).toContain(name(538));
+          expect(modeSwitch.parentElement?.firstElementChild).toBe(modeSwitch);
+          expect(modeSwitch.compareDocumentPosition(realmRising) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+          expect(realmRising.compareDocumentPosition(homePicker) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+          const leadingParent = modeSwitch.parentElement;
+          await entry.press(HOME_STEP_WORDS.playFreeTab);
+          await vi.waitFor(() => expect(entry.host.querySelectorAll(".app-aspect-card")).toHaveLength(4));
+          const freeSwitch = entry.host.querySelector("[data-entry-mode-switch]")!;
+          expect(entry.host.querySelector("[data-realm-rising]")).toBeNull();
+          expect(freeSwitch.parentElement).toBe(leadingParent);
+          expect(freeSwitch.parentElement?.firstElementChild).toBe(freeSwitch);
+
+          await entry.press(HOME_STEP_WORDS.myRealmTab(1));
+          await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
+          const backSwitch = entry.host.querySelector("[data-entry-mode-switch]")!;
+          const backRising = entry.host.querySelector("[data-realm-rising]")!;
+          expect(backSwitch.parentElement).toBe(leadingParent);
+          expect(backSwitch.parentElement?.firstElementChild).toBe(backSwitch);
+          expect(backSwitch.compareDocumentPosition(backRising) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        } finally {
+          await entry.close();
+          setViewportWidth(previousWidth);
+        }
+      },
+    );
+
+    it("keeps the realm crest at the top when no mode toggle is shown for a side warning or registered realm", async () => {
+      realmHolder(invite(GAME));
+      const warned = await openEntry();
+      try {
+        await vi.waitFor(() => expect(warning(warned.host)).not.toBeNull());
+        expect(warned.host.querySelector("[data-entry-mode-switch]")).toBeNull();
+        const warnedRising = warned.host.querySelector("[data-realm-rising]")!;
+        expect(warnedRising.textContent).toContain(name(538));
+        expect(warnedRising.parentElement?.firstElementChild).toBe(warnedRising);
+      } finally {
+        await warned.close();
+      }
+
+      settlement.heldRealmId = 538;
+      realmHolder(null);
+      const locked = await openEntry();
+      try {
+        await vi.waitFor(() => expect(locked.featured()).toBe(name(538)));
+        expect(locked.host.querySelector("[data-entry-mode-switch]")).toBeNull();
+        const lockedRising = locked.host.querySelector("[data-realm-rising]")!;
+        expect(lockedRising.textContent).toContain(name(538));
+        expect(lockedRising.parentElement?.firstElementChild).toBe(lockedRising);
+      } finally {
+        await locked.close();
       }
     });
 

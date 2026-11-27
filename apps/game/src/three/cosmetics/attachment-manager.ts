@@ -1,4 +1,5 @@
 import { Euler, Group, Mesh, Object3D, Scene, Vector3 } from "three";
+import type { PipelineCompiler } from "../pipeline-compiler";
 import { modelPath } from "../utils/model-url";
 import { CosmeticAssetHandle, ensureCosmeticAsset, loadCosmeticAsset } from "./asset-cache";
 import { getCosmeticRegistry } from "./registry";
@@ -43,12 +44,16 @@ export class CosmeticAttachmentManager {
   private readonly templateSources = new Map<string, AttachmentSource>();
   private readonly warnedMissing = new Set<string>();
   private readonly pendingPlaceholderUpgrades = new Set<string>();
+  private readonly compiledTemplates = new Set<string>();
   private readonly tempOffset = new Vector3();
   private readonly tempRotation = new Euler();
 
-  constructor(scene: Scene) {
+  constructor(
+    private readonly scene: Scene,
+    private readonly compilePipelines?: PipelineCompiler,
+  ) {
     this.root.name = "cosmetic-attachments";
-    scene.add(this.root);
+    this.scene.add(this.root);
     this.indexRegistryAttachments();
   }
 
@@ -195,7 +200,7 @@ export class CosmeticAttachmentManager {
 
     if (existing && object.userData.cosmeticPlaceholder && pool.source) {
       const handle = ensureCosmeticAsset(pool.source.entry);
-      if (handle.status === "ready") {
+      if (this.isTemplateCompiled(template.id, handle)) {
         const upgraded = this.cloneFromAsset(handle, pool.source.assetIndex);
         if (upgraded) {
           this.disposePlaceholder(object);
@@ -204,6 +209,8 @@ export class CosmeticAttachmentManager {
             console.debug("[Cosmetics Debug] upgraded placeholder for", template.id);
           }
         }
+      } else if (handle.status === "ready") {
+        this.queuePlaceholderUpgrade(template.id, pool.source);
       }
     }
 
@@ -225,17 +232,17 @@ export class CosmeticAttachmentManager {
     const source = pool.source;
     if (source) {
       const handle = ensureCosmeticAsset(source.entry);
-      if (handle.status === "idle" || handle.status === "loading") {
+      if (handle.status === "idle" || handle.status === "loading" || !this.isTemplateCompiled(template.id, handle)) {
         this.queuePlaceholderUpgrade(template.id, source);
       }
 
-      if (handle.status === "ready") {
+      if (this.isTemplateCompiled(template.id, handle)) {
         const clone = this.cloneFromAsset(handle, source.assetIndex);
         if (clone) {
           clone.userData.cosmeticPlaceholder = false;
           return clone;
         }
-      } else if (!this.warnedMissing.has(template.id)) {
+      } else if (handle.status !== "ready" && !this.warnedMissing.has(template.id)) {
         this.warnedMissing.add(template.id);
         console.warn(
           `[Cosmetics] Attachment asset for template ${template.id} not ready (status: ${handle.status}). Using placeholder until load completes.`,
@@ -249,6 +256,10 @@ export class CosmeticAttachmentManager {
     return placeholder;
   }
 
+  private isTemplateCompiled(templateId: string, handle: CosmeticAssetHandle): boolean {
+    return handle.status === "ready" && (!this.compilePipelines || this.compiledTemplates.has(templateId));
+  }
+
   private queuePlaceholderUpgrade(templateId: string, source: AttachmentSource) {
     if (this.pendingPlaceholderUpgrades.has(templateId)) {
       return;
@@ -256,7 +267,14 @@ export class CosmeticAttachmentManager {
 
     this.pendingPlaceholderUpgrades.add(templateId);
     void loadCosmeticAsset(source.entry)
-      .then(() => {
+      .then(async (payload) => {
+        if (this.compilePipelines && !this.compiledTemplates.has(templateId)) {
+          const gltf = payload.gltfs[source.assetIndex ?? 0] ?? payload.gltfs[0];
+          if (gltf) {
+            await this.compilePipelines(gltf.scene, this.scene);
+          }
+          this.compiledTemplates.add(templateId);
+        }
         this.upgradePlaceholdersForTemplate(templateId);
       })
       .catch((error) => {

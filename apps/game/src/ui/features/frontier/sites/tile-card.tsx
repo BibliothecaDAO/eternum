@@ -12,7 +12,13 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import { ATTACK_FORECAST_MODELS, configManager, getStructureName, isViewerOwner } from "@bibliothecadao/eternum";
+import {
+  ATTACK_FORECAST_MODELS,
+  configManager,
+  DEEP_PAYOUT_MODELS,
+  getStructureName,
+  isViewerOwner,
+} from "@bibliothecadao/eternum";
 import { ATTACK_REFUSAL_WORDS } from "@/ui/design-system/kit/words";
 import {
   safeInteger,
@@ -39,6 +45,7 @@ import { RelicPay, RelicReplacement } from "../relics/relic-replacement";
 
 const SITE_MODELS = [
   ...ATTACK_FORECAST_MODELS,
+  ...DEEP_PAYOUT_MODELS,
   "ExpeditionSite",
   "ExpeditionDiscovery",
   "GameRelease",

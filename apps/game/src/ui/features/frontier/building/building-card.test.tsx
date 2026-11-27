@@ -24,6 +24,7 @@ afterEach(() => {
 });
 
 const nodeOf = (realm: RealmResearchFacts, row: number) => readResearchTree(realm).find((node) => node.row === row)!;
+const outputPercent = (realm: RealmResearchFacts, tier: number) => `${100 + (tier * realm.board.outputStepBps) / 100}%`;
 
 /** The card as a building's tap opens it, on the lab's realm some days in (a City; Farm rare, Barracks rare). */
 const draw = (
@@ -96,7 +97,7 @@ it("says what all the Farms make as one number, and their research only as gems"
 
 it("reads the Farm's output now against the next tier, and researches it", () => {
   const { onResearch } = draw(research.ROW_FARM);
-  expect(rows()).toEqual([["Fields", "Farm wheat", "120%", "→", "140%"]]);
+  expect(rows()).toEqual([["Fields", "Farm wheat", outputPercent(MID_REALM, 1), "→", outputPercent(MID_REALM, 2)]]);
   act(() => button(/^Upgrade$/)!.click());
   expect(onResearch).toHaveBeenCalledWith();
   // The tier is its gem, never its word: a Rare Farm holds II, its next tier III.
@@ -113,7 +114,9 @@ it("keeps Research, dimmed, when the labor storage cannot hold the tier's price,
   });
   const verb = button(/^Upgrade$/)!;
   expect(verb.disabled).toBe(true);
-  expect(verb.textContent).toBe(RESEARCH_TREE.store("15,000", "25,000", "Kingdom"));
+  const storeCap = MID_REALM.laborStore(MID_REALM.castleLevel).toLocaleString("en-US");
+  const tierLabor = MID_REALM.price(research.ROW_SUPPLY_YARD, 5).labor.toLocaleString("en-US");
+  expect(verb.textContent).toBe(RESEARCH_TREE.store(storeCap, tierLabor, "Kingdom"));
   act(() => verb.click());
   expect(onResearch).not.toHaveBeenCalled();
   act(() => button(/^Upgrade the Castle$/)!.click());
@@ -163,7 +166,7 @@ it("at Legendary shows what research gave, with no next column and no Research",
     learned: { ...MID_REALM.learned, [research.ROW_FARM]: { tier: 5 } },
   };
   draw(research.ROW_FARM, { realm: legendary });
-  expect(rows()).toEqual([["Fields", "Farm wheat", "200%"]]);
+  expect(rows()).toEqual([["Fields", "Farm wheat", outputPercent(MID_REALM, 5)]]);
   expect(button(/^Upgrade/)).toBeUndefined();
   expect(gems()).toEqual(["V", "V"]);
 });
@@ -172,7 +175,7 @@ it("reads a viewer's building as it stands: what it makes and its tier, with not
   draw(research.ROW_FARM, { viewer: true, makes: { icon: "wheat", rate: "+25/min" } });
   expect(card().textContent).toContain("+25/min");
   expect(card().textContent).toContain("4 buildings");
-  expect(rows()).toEqual([["Fields", "Farm wheat", "120%"]]);
+  expect(rows()).toEqual([["Fields", "Farm wheat", outputPercent(MID_REALM, 1)]]);
   expect(gems()).toEqual(["I", "I"]);
   // The sheet's close is its one control.
   expect([...host.querySelectorAll("button")].map((each) => each.getAttribute("aria-label"))).toEqual(["Close"]);

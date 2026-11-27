@@ -1,37 +1,35 @@
 import { frontierSeasonOnePreset } from "../../../../../../../config/source/frontier/season-one";
-import { formatDuration } from "@bibliothecadao/types";
+import { formatDuration, type AspectId, type Troops } from "@bibliothecadao/types";
 
-import type { DeepSiteProps, DeepSlot } from "./deep-site-view";
+import type { DeepGarrisonSlot, DeepSide, DeepSiteProps } from "./deep-site-view";
 
 const TICK_SECONDS = 120;
 const LOSS_PER_TICK = frontierSeasonOnePreset.deep.lossPerTick;
 
-/** A guard slot whose lifetime follows from its troops: they last until the drain takes them all. */
-const slot = (slot: number, realm: string, troops: number, mine = false): DeepSlot => {
-  const left = Math.ceil(troops / LOSS_PER_TICK);
-  return {
-    slot,
-    armyId: 100 + slot,
-    oaths: 0,
-    category: "Knight",
-    tier: "T1",
-    realm,
-    troops,
-    lossPerTick: LOSS_PER_TICK,
-    ticks: { left, time: formatDuration(left * TICK_SECONDS, { days: false }) },
-    share: 0,
-    mine,
-  };
-};
-
-/** Shares are troops over the guard's, out of 100, rounded to whole percents. */
-const withShares = (slots: DeepSlot[]): DeepSlot[] => {
-  const total = slots.reduce((sum, each) => sum + each.troops, 0);
-  return slots.map((each) => ({ ...each, share: Math.round((each.troops * 100) / total) }));
-};
+const slot = (
+  slot: number,
+  owner: string,
+  aspectId: AspectId,
+  side: DeepSide,
+  category: Troops["category"],
+  count: number,
+  share: number,
+  cap = 9_000,
+): DeepGarrisonSlot => ({
+  slot,
+  owner,
+  aspectId,
+  side,
+  troops: { category, tier: "T1" },
+  count,
+  cap,
+  share,
+  timeLeft: formatDuration(Math.ceil(count / LOSS_PER_TICK) * TICK_SECONDS, { days: false }),
+});
 
 const noop = () => {};
-const base = { onClose: noop, pickBase: { deepLossPerTick: LOSS_PER_TICK }, ring: 0, opening: null };
+const knights = { category: "Knight", tier: "T1" } as const;
+const base = { onClose: noop, ring: 0, opening: null };
 const rates = {
   tickSeconds: TICK_SECONDS,
   glory: 6,
@@ -41,6 +39,10 @@ const rates = {
   bar: null,
   drain: LOSS_PER_TICK,
 };
+const altarRates = { ...rates, bar: { perTick: 4, charge: 48, threshold: 120 }, glory: 4 };
+
+const ownAndAlly = [slot(0, "Kael", 2, "own", "Knight", 1_498, 65), slot(1, "Mira", 2, "ally", "Crossbowman", 800, 35)];
+const rivals = [slot(1, "Vex", 1, "rival", "Paladin", 1_200, 60), slot(0, "Taro", 1, "rival", "Knight", 800, 40)];
 
 /** The card's states on fixtures of its props: what the lab draws and the test asserts. */
 export const DEEP_SITE_CASES = {
@@ -49,20 +51,130 @@ export const DEEP_SITE_CASES = {
     site: "foundation",
     rates: { ...rates, height: 6 },
     guard: { kind: "beast", category: "Knight", troops: 15_000 },
-    order: { kind: "act", verb: "attack", stamina: 30, onAct: noop },
+    order: { kind: "attack", verb: "attack", stamina: 30, onAct: noop },
   },
-  "Ethereal mine held by the player's Aspect, slots to join": {
+  "Hyperstructure archive held by the player and an ally, army beside": {
+    ...base,
+    site: "foundation",
+    rates: { ...rates, height: 6 },
+    guard: {
+      kind: "taken",
+      owner: "Kael",
+      aspectId: 2,
+      side: "own",
+      slots: ownAndAlly,
+      mayAdd: true,
+      alliesMayGuard: true,
+      gloryWon: 148,
+    },
+    order: {
+      kind: "guard",
+      troops: knights,
+      armyTroops: 1_200,
+      guard: { most: 1_200, onSend: noop },
+      withdraw: { most: 1_498, onSend: noop },
+    },
+  },
+  "Altar of banes held by a rival Aspect, attack ready": {
+    ...base,
+    site: "altar",
+    rates: altarRates,
+    guard: {
+      kind: "taken",
+      owner: "Vex",
+      aspectId: 1,
+      side: "rival",
+      slots: rivals,
+      mayAdd: true,
+      alliesMayGuard: true,
+      gloryWon: undefined,
+    },
+    order: { kind: "attack", verb: "attack", stamina: 30, onAct: noop },
+  },
+  "Hyperstructure archive held and undefended": {
+    ...base,
+    site: "foundation",
+    rates: { ...rates, height: 6 },
+    guard: {
+      kind: "taken",
+      owner: "Kael",
+      aspectId: 2,
+      side: "own",
+      slots: [],
+      mayAdd: true,
+      alliesMayGuard: true,
+      gloryWon: 148,
+    },
+    order: { kind: "guard", troops: knights, armyTroops: 1_200, guard: { most: 1_200, onSend: noop } },
+  },
+  "Ethereal mine held by an ally, where only its owner guards": {
     ...base,
     site: "mine",
     rates: { ...rates, glory: 0, labor: 300 },
     guard: {
-      kind: "held",
+      kind: "taken",
+      owner: "Mira",
       aspectId: 2,
-      ally: true,
-      next: 103,
-      slots: withShares([slot(3, "Aldor", 6_000), slot(2, "Brek", 4_000, true)]),
+      side: "ally",
+      slots: [slot(0, "Mira", 2, "ally", "Crossbowman", 4_000, 100)],
+      mayAdd: false,
+      alliesMayGuard: false,
+      gloryWon: undefined,
     },
-    order: { kind: "act", verb: "join", onAct: noop },
+    order: "ownerOnly",
+  },
+  "Bane altar held by the player's Aspect, no army beside": {
+    ...base,
+    site: "altar",
+    rates: altarRates,
+    guard: {
+      kind: "taken",
+      owner: "Mira",
+      aspectId: 2,
+      side: "ally",
+      slots: [slot(0, "Mira", 2, "ally", "Crossbowman", 4_000, 100)],
+      mayAdd: true,
+      alliesMayGuard: true,
+      gloryWon: undefined,
+    },
+    order: "noAdjacent",
+  },
+  "Hyperstructure archive, every guard slot full": {
+    ...base,
+    site: "foundation",
+    rates: { ...rates, height: 6 },
+    guard: {
+      kind: "taken",
+      owner: "Kael",
+      aspectId: 2,
+      side: "ally",
+      slots: [
+        slot(3, "Arn", 2, "ally", "Knight", 2_000, 25),
+        slot(2, "Bel", 2, "ally", "Crossbowman", 2_000, 25),
+        slot(1, "Mira", 2, "ally", "Paladin", 2_000, 25),
+        slot(0, "Kael", 2, "ally", "Knight", 2_000, 25),
+      ],
+      mayAdd: true,
+      alliesMayGuard: true,
+      gloryWon: undefined,
+    },
+    order: "slotsFull",
+  },
+  "Essence core held, seen by a spectator": {
+    ...base,
+    site: "core",
+    rates: { ...rates, glory: 0, essence: 300 },
+    guard: {
+      kind: "taken",
+      owner: "Vex",
+      aspectId: 1,
+      side: "held",
+      slots: rivals,
+      mayAdd: false,
+      alliesMayGuard: false,
+      gloryWon: undefined,
+    },
+    order: "pickArmy",
   },
   "Bane altar, locked until more Realms enter": {
     ...base,
@@ -72,19 +184,6 @@ export const DEEP_SITE_CASES = {
     opening: { entered: 12, realms: 50, pays: ["glory", "bar"] },
     guard: { kind: "beast", category: "Crossbowman", troops: 15_000 },
     order: { kind: "closed" },
-  },
-  "Essence core held by a rival Aspect": {
-    ...base,
-    site: "core",
-    rates: { ...rates, glory: 0, essence: 300 },
-    guard: {
-      kind: "held",
-      aspectId: 3,
-      ally: false,
-      next: 103,
-      slots: withShares([slot(3, "Havoc Guard", 6_200)]),
-    },
-    order: { kind: "act", verb: "attack", stamina: 30, onAct: noop },
   },
   "Hyperstructure archive, the beast's fight forecast": {
     ...base,
@@ -98,40 +197,43 @@ export const DEEP_SITE_CASES = {
       defenderTroops: { category: "Knight", tier: "T1" },
       result: { troopsLost: 4_580, guardLeft: 0 },
     },
-    order: { kind: "act", verb: "attack", stamina: 30, onAct: noop },
+    order: { kind: "attack", verb: "attack", stamina: 30, onAct: noop },
   },
-  "Essence core, the rival guard's fight forecast": {
+  "Altar of banes, the rival guard's fight forecast": {
     ...base,
-    site: "core",
-    rates: { ...rates, glory: 0, essence: 300 },
+    site: "altar",
+    rates: altarRates,
     guard: {
-      kind: "held",
-      aspectId: 3,
-      ally: false,
-      next: 103,
-      slots: withShares([slot(3, "Havoc Guard", 6_200)]),
+      kind: "taken",
+      owner: "Vex",
+      aspectId: 1,
+      side: "rival",
+      slots: rivals,
+      mayAdd: true,
+      alliesMayGuard: true,
+      gloryWon: undefined,
     },
     fight: {
       army: 12_400,
-      defender: 6_200,
+      defender: 1_200,
       attackerTroops: { category: "Crossbowman", tier: "T1" },
-      defenderTroops: { category: "Knight", tier: "T1" },
-      result: { troopsLost: 2_550, guardLeft: 0 },
+      defenderTroops: { category: "Paladin", tier: "T1" },
+      result: { troopsLost: 550, guardLeft: 0 },
     },
-    order: { kind: "act", verb: "attack", stamina: 30, onAct: noop },
+    order: { kind: "attack", verb: "attack", stamina: 30, onAct: noop },
   },
   "Ethereal mine, its beast, army short of stamina": {
     ...base,
     site: "mine",
     rates: { ...rates, glory: 0, labor: 300 },
     guard: { kind: "beast", category: "Knight", troops: 10_000 },
-    order: { kind: "short", verb: "attack", line: "Needs 30 stamina, holds 12" },
+    order: { kind: "short", line: "Needs 30 stamina, holds 12" },
   },
-  "Bane altar, open, no guard, army away": {
+  "Bane altar, its beast, army away": {
     ...base,
     site: "altar",
-    rates: { ...rates, bar: { perTick: 6, charge: 300, threshold: 1_500 } },
-    guard: { kind: "open" },
+    rates: altarRates,
+    guard: { kind: "beast", category: "Crossbowman", troops: 15_000 },
     order: {
       kind: "move",
       prices: [

@@ -34,8 +34,7 @@ export function scopeInputInterest(scope: GameSyncScope): Set<string> {
       scopeLookup.structure(entity),
       scopeLookup.army(entity),
       scopeLookup.occupancyOf(entity),
-      scopeLookup.guard(entity),
-      scopeLookup.guardsAt(entity),
+      scopeLookup.garrisonsAt(entity),
       scopeLookup.armyDay(entity),
     ]),
   ]);

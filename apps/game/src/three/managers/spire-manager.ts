@@ -215,6 +215,12 @@ export class SpireManager {
     return placePositionOnTerrain(position, this.terrain);
   }
 
+  public async prewarmExploreModel(): Promise<void> {
+    if (this.destroyed || this.model) return;
+    if (!this.loading) this.startModelLoad(Math.max(this.capacity, 1));
+    await this.loading;
+  }
+
   private startModelLoad(capacity: number): void {
     this.loading = this.loadModel(capacity).then((loaded) => {
       this.loading = null;
@@ -229,9 +235,21 @@ export class SpireManager {
         import("../structures/spire-model"),
       ]);
       if (this.destroyed) return false;
+      const nextCapacity = Math.max(capacity, this.getSpireHexes().length);
+      const nextModel = new SpireModel(gltf, nextCapacity);
+      try {
+        await this.compilePipelines(nextModel.group, this.scene);
+      } catch (error) {
+        nextModel.dispose();
+        throw error;
+      }
+      if (this.destroyed) {
+        nextModel.dispose();
+        return false;
+      }
       this.model?.dispose();
-      this.capacity = Math.max(capacity, this.getSpireHexes().length);
-      this.model = new SpireModel(gltf, this.capacity);
+      this.capacity = nextCapacity;
+      this.model = nextModel;
       this.model.group.visible = this.modelVisible;
       this.scene.add(this.model.group);
       this.refresh();

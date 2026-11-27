@@ -17,6 +17,15 @@ pub fn home_aspect(key: ResourceKey) -> u8 {
     aspect
 }
 
+pub fn shares_aspect(home: ResourceKey, aspect: u8) -> bool {
+    aspect != 0 && crate::state::read().settlements.home_aspects.read((home.game_id, home.entity_id)) == aspect
+}
+
+pub fn same_aspect(game_id: u32, first: u64, second: u64) -> bool {
+    let aspect = crate::state::read().settlements.home_aspects.read((game_id, second));
+    shares_aspect(ResourceKey { game_id, entity_id: first }, aspect)
+}
+
 #[starknet::component]
 pub mod AspectState {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};

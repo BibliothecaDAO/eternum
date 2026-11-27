@@ -10,7 +10,6 @@ import {
   ResourcesIds,
   RESOURCE_PRECISION,
 } from "@bibliothecadao/types";
-import iconMeanings from "../../asset-sources/facets/semantic-map.json" with { type: "json" };
 import release from "../../../../contracts/l3/world-native/schema/release-definition.json" with { type: "json" };
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import sharp from "sharp";
@@ -35,6 +34,7 @@ import { watchReleaseMove } from "./stale-release.mjs";
 import { wordAt } from "../words-table.mjs";
 import {
   nativeOathConstants as oathRules,
+  nativeResearchConstants as researchRules,
   nativeRuleConstants as rules,
 } from "../../../../contracts/l3/world-native/schema/balance.gen.ts";
 import { openOrderSendGate, touchAt, VIEWPORT } from "./browser-session.mjs";
@@ -53,6 +53,10 @@ import { DESKTOP_MIN_WIDTH, judgeHudLayout, MAP_LEAST_SHARE } from "./hud-layout
  */
 
 const T2_KNIGHT_STAMINA_MAX = release.definition.rules.troop_stamina_config.stamina_knight_max * 1.2;
+const KNIGHT_OATH_TIER_ONE_PRICE = release.definition.structures.research.find(
+  ({ row, tier }) => row === researchRules.ROW_KNIGHT_OATHS && tier === 1,
+)?.price;
+if (!KNIGHT_OATH_TIER_ONE_PRICE) throw new Error("Release definition missing Knight Oath tier-1 price");
 const SCENE_WAIT_MS = 15_000;
 const SCENE_HOLD_MS = 3_000;
 const PLACE_PRESSES = 2;
@@ -447,8 +451,15 @@ const RELIC_FORECAST_STEPS = [
  */
 const BATTLE_TARGET_STEPS = battleTargetSteps(attackFromTheSiteCard, "Map");
 const DEEP_BATTLE_TARGET_STEPS = battleTargetSteps(attackFromTheDeepCard, "Deep");
+const DEEP_ARMY_BATTLE_STEPS = battleTargetSteps(
+  (context) => attackFromTheSiteCard(context, "Battle"),
+  "Deep",
+  false,
+  "Battle",
+  0,
+);
 
-function battleTargetSteps(attack, place, withOaths = false) {
+function battleTargetSteps(attack, place, withOaths = false, kind = "BattleGuard", offset = place === "Deep" ? 8 : 0) {
   const fields = readFileSync(
     resolve(
       dirname(fileURLToPath(import.meta.url)),
@@ -460,7 +471,6 @@ function battleTargetSteps(attack, place, withOaths = false) {
     .split(/\s+/)
     .map(Number);
   const values = fields.filter((_, index) => !withOaths || index % 10 >= 6);
-  const offset = place === "Deep" ? 8 : 0;
   return [
     { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", place) },
     { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
@@ -468,8 +478,8 @@ function battleTargetSteps(attack, place, withOaths = false) {
       ["first-attack", values[offset + 2], values[offset + 3]],
       ["same-fight", values[offset + 6], values[offset + 7]],
     ].map(([name, attacker, defender]) =>
-      clickToResultStep(name, "BattleGuard", attack, ({ played, actionLatency }) => {
-        const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "BattleGuard").at(-1);
+      clickToResultStep(name, kind, attack, ({ played, actionLatency }) => {
+        const answer = (actionLatency.chainAnswers ?? []).filter((entry) => entry.kind === kind).at(-1);
         const rows = answer?.answered ?? [];
         const army = rows.find(({ model }) => model === "ExplorerTroops")?.value;
         const guard =
@@ -484,7 +494,6 @@ function battleTargetSteps(attack, place, withOaths = false) {
           army &&
           guard &&
           openingRecorded &&
-          (!withOaths || place !== "Deep" || played.guardOaths?.includes(fields[23])) &&
           BigInt(army.troops.count) === BigInt(attacker) * 1_000_000_000n &&
           BigInt(guard.troops.count) === BigInt(defender) * 1_000_000_000n &&
           played.forecast?.length === 2 &&
@@ -497,12 +506,6 @@ function battleTargetSteps(attack, place, withOaths = false) {
     ),
   ];
 }
-
-const ORDER_MEANING = Object.fromEntries(
-  Object.entries(iconMeanings).flatMap(([name, meaning]) =>
-    meaning.orderId === undefined ? [] : [[meaning.orderId, name]],
-  ),
-);
 
 const FIGHT_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -564,7 +567,7 @@ function lossClosed({ played }) {
     : failed(`expected no army selected after its loss, saw ${JSON.stringify(played.selected)}`);
 }
 
-async function attackFromTheSiteCard({ browser }) {
+async function attackFromTheSiteCard({ browser }, kind = "BattleGuard") {
   const army = browser.observe().selection?.army?.id;
   const armyAt = armyOnScreen(browser, army);
   if (!army || !armyAt) return { army, offered: [] };
@@ -582,7 +585,7 @@ async function attackFromTheSiteCard({ browser }) {
   const forecast = browser.read(
     `Array.from(document.querySelectorAll('[data-kit-sheet] [data-fight-side]'), node => node.getAttribute('aria-label'))`,
   );
-  watchFor(browser, "fought", tokensShowTheChainsCounts(browser, "BattleGuard"));
+  watchFor(browser, "fought", tokensShowTheChainsCounts(browser, kind));
   browser.click("Attack");
   return { army, offered: target.offered, target: target.offset, forecast, watching: true, region: token?.region };
 }
@@ -1375,7 +1378,10 @@ const OATH_SLOTS_STEPS = [
         essence: balanceChange(answer, ResourcesIds.Essence),
         labor: balanceChange(answer, ResourcesIds.Labor),
       };
-      if (paid.essence !== -5000n * BigInt(RESOURCE_PRECISION) || paid.labor !== -1000n * BigInt(RESOURCE_PRECISION))
+      if (
+        paid.essence !== -BigInt(KNIGHT_OATH_TIER_ONE_PRICE.essence) ||
+        paid.labor !== -BigInt(KNIGHT_OATH_TIER_ONE_PRICE.labor)
+      )
         return failed("Oath research charged the wrong price", {
           paid: { essence: String(paid.essence), labor: String(paid.labor) },
         });
@@ -2443,12 +2449,11 @@ async function focusTheArmyFromItsDock(browser) {
  * screen (its token; the camera is left where it is: picking an army does not always centre it), and names the region
  * its result shows in: the explored tile, or the army's figure, which a move sets off.
  */
-async function orderBesideArmy({ browser, extraScreenshot }, verb, heldBack = null) {
+async function orderBesideArmy({ browser, extraScreenshot }, verb) {
   const armyName = await focusTheArmyFromItsDock(browser);
   if (!armyName) return { offered: [], army: armyName };
   const selection = browser.observe().selection;
   const armyId = selection?.army?.id ?? null;
-  if (heldBack !== null && armyId === heldBack) return { army: armyName, armyId, offered: [], heldBack: true };
   const armyAt = armyOnScreen(browser, armyId);
   if (!armyAt)
     return { army: armyName, armyId, offered: [], aimed: "the army is not within reach of the view's centre" };
@@ -3662,6 +3667,86 @@ function labReenterSteps() {
   ];
 }
 
+function labCosmeticsSteps() {
+  return [
+    { name: "enter", ...resumeWithSkin("wonder", "wonder") },
+    {
+      name: "equip-base",
+      play: equipOnTheCosmeticsPage("base", "COSMETICS_WORDS.equip", '[data-skin="base"]'),
+      settleMs: 0,
+      verify: wornOnTheCosmeticsPage,
+    },
+    { name: "resume-wearing-base", ...resumeWithSkin("base", "realm") },
+    {
+      name: "use-default-order",
+      play: equipOnTheCosmeticsPage("base", "COSMETICS_WORDS.useDefaultOrder", '[data-skin^="wonder-"]'),
+      settleMs: 0,
+      verify: wornOnTheCosmeticsPage,
+    },
+    { name: "resume-wearing-the-wonder", ...resumeWithSkin("wonder", "wonder") },
+  ];
+}
+
+const SKIN_WAIT_MS = 30_000;
+const REALM_APPEARANCE = `JSON.stringify({
+  model: window.__eternumMapSelection?.drawnRealmSkin?.(${LAB_HOME_REALM}) ?? null,
+  mark: document.querySelector(".frontier-place-switch__realm [data-icon]")?.getAttribute("data-icon") ?? null,
+})`;
+const wornSkin = (cards) =>
+  `JSON.stringify(document.querySelector(${JSON.stringify(`${cards} [data-standing="equipped"]`)}) !== null)`;
+
+const resumeWithSkin = (family, icon) => {
+  const matches = (appearance) => appearance?.model === family && appearance.mark?.startsWith(`${icon}-`);
+  return {
+    play: async (context) => ({
+      ...(await resumeFromTheHomeCard(context)),
+      appearance: await readUntil(() => context.browser.read(REALM_APPEARANCE), matches, SKIN_WAIT_MS),
+    }),
+    settleMs: 0,
+    verify: ({ played }) =>
+      played.onMap && matches(played.appearance)
+        ? completed(played.appearance)
+        : failed(`the game did not draw the ${family} realm model and mark`, played),
+  };
+};
+
+const openTheCosmeticsPage = async (browser) => {
+  if (onADesktop()) {
+    browser.run(["find", "role", "link", "click", "--name", wordAt("COSMETICS_WORDS.title"), "--exact"]);
+    return;
+  }
+  browser.run(["find", "role", "link", "click", "--name", wordAt("WORDS.you"), "--exact"]);
+  const open = await readUntil(() => browser.read(buttonNamed(wordAt("COSMETICS_WORDS.open"))), Boolean, SHEET_WAIT_MS);
+  if (open) browser.click(wordAt("COSMETICS_WORDS.open"));
+};
+
+const equipOnTheCosmeticsPage =
+  (skin, wordPath, wornCards) =>
+  async ({ browser, owner }) => {
+    const word = wordAt(wordPath);
+    const left = await leaveByBack({ browser, owner });
+    await openTheCosmeticsPage(browser);
+    const card = await readUntil(
+      () => browser.read(`JSON.stringify(document.querySelector('[data-skin="${skin}"]') !== null)`),
+      Boolean,
+      SKIN_WAIT_MS,
+    );
+    if (!card) return { left, missing: `the Cosmetics page shows no ${skin} skin` };
+    browser.run(["click", `[data-skin="${skin}"]`]);
+    const offered = await readUntil(() => browser.read(buttonNamed(word)), Boolean, SHEET_WAIT_MS);
+    if (!offered) return { left, missing: `the ${skin} skin offers no ${word}` };
+    browser.click(word);
+    const worn = await readUntil(() => browser.read(wornSkin(wornCards)), Boolean, SKIN_WAIT_MS);
+    browser.run(["find", "role", "link", "click", "--name", wordAt("WORDS.play"), "--exact"]);
+    return { left, pressed: word, wornCards, worn };
+  };
+
+function wornOnTheCosmeticsPage({ played }) {
+  if (played.missing) return failed(played.missing, played);
+  if (!played.worn) return failed(`no ${played.wornCards} card shows equipped after ${played.pressed}`, played);
+  return completed({ pressed: played.pressed, worn: played.wornCards });
+}
+
 const LABELS_WAIT_MS = 15_000;
 const EXIT_WAIT_MS = 10_000;
 /**
@@ -3992,25 +4077,23 @@ const POINTER_PARKED = [0, -300];
 /** An army's tile below its token at the map's default zoom (a player run never zooms): its label point's height. */
 const TOKEN_ABOVE_TILE_PX = 100;
 
-const DEEP_SITE_ICONS = { foundation: "hyperstructure", core: "essence", mine: "pickaxe", altar: "flame" };
 const DEEP_SITE_NAMES = deepSites.map(({ key, name }) => ({
   name,
   key: `deep:${key}`,
-  icon: DEEP_SITE_ICONS[key],
   beast: DEEP_BEASTS[key].name,
 }));
-const JOINED_SITE = DEEP_SITE_NAMES.find(({ key }) => key === "deep:mine");
+const HELD_SITE = DEEP_SITE_NAMES.find(({ key }) => key === "deep:altar");
 const everyRingSiteDrawn = (drawn) =>
   DEEP_SITE_NAMES.every((site) => drawn[site.key] > 0) &&
   DEEP_SITE_NAMES.reduce((total, site) => total + (drawn[site.key] ?? 0), 0) === rules.DEEP_RING_SITES;
 
 /** One Deep site's plate, found by its name: where a press on its model lands (page px from the centre), whether its plate stands wholly in the frame, and the card open now. */
-const siteState = ({ name, icon }) => `JSON.stringify((() => {
+const siteState = ({ key }) => `JSON.stringify((() => {
   const sheet = document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
   const guard = document.querySelector('[data-kit-sheet] [data-deep-guard="beast"]');
-  const found = guard?.querySelector("[data-deep-beast] .deep-beast__name, [data-fight-side='theirs']");
+  const found = guard?.querySelector("[data-deep-beast] .deep-tile__owner, [data-fight-side='theirs']");
   const beast = found ? found.getAttribute("aria-label") ?? found.textContent : null;
-  const slot = document.querySelector('.mp-at:has([data-icon="${icon}"])');
+  const slot = ${sitePlateSlot(JSON.stringify(key))};
   if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return { sheet, beast, token: null, inView: false };
   const box = slot.firstElementChild.getBoundingClientRect();
   return {
@@ -4024,28 +4107,19 @@ const siteState = ({ name, icon }) => `JSON.stringify((() => {
 
 const SITE_MODEL_BELOW_PLATE = 65;
 
+const DEEP_SITE_SLOTS = `[...document.querySelectorAll('.mp-at[data-key^="deep-site:"]')]`;
+const sitePlateSlot = (key) =>
+  `document.querySelector('.mp-at[data-key="deep-site:' + window.__eternumMapSelection?.siteHexes?.[${key}]?.entity + '"]')`;
+
 const namesItsBeast = (line, beast) =>
   beast === null ? line === null : typeof line === "string" && line.startsWith(beast);
 
-const DEEP_JOIN_STATE = `JSON.stringify({
+const DEEP_HELD_SITE_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
-  text: document.querySelector("[data-kit-sheet]")?.textContent ?? "",
-  slots: [
-    document.querySelector("[data-deep-slots]")?.textContent ?? "",
-    ...[...document.querySelectorAll("[data-deep-slots] [data-deep-slot]")].map((slot) => slot.getAttribute("aria-label") ?? ""),
-  ].join(" "),
-  pay: (() => {
-    const node = document.querySelector('[data-deep-pay]');
-    const rect = node?.getBoundingClientRect();
-    return { labor: Boolean(node?.querySelector('[data-rate="labor"]')), visible: Boolean(rect && rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight) };
-  })(),
-  joined: (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "InteractSite"),
-  joinSite: (() => {
-    const slot = [...document.querySelectorAll('.mp-at')].find((node) =>
-      node.querySelector('[data-icon="pickaxe"]') || node.querySelector('.mp-word')?.textContent === "${JOINED_SITE.name}");
+  site: (() => {
+    const slot = ${sitePlateSlot(JSON.stringify(HELD_SITE.key))};
     if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return null;
     const token = slot.firstElementChild.getBoundingClientRect();
-    // The plate floats over the site's model: the press goes to the model under it, not to the hex behind the plate.
     return [Math.round(token.left + token.width / 2 - innerWidth / 2), Math.round(token.bottom + ${SITE_MODEL_BELOW_PLATE} - innerHeight / 2)];
   })(),
 })`;
@@ -4239,12 +4313,12 @@ function raceBoardSteps(result) {
   ];
 }
 
-/** The drain chip of the open army panel, and every drain chip on the page (a dock token's, a row's). */
-const DEEP_DRAIN_STATE = `JSON.stringify((() => {
-  const read = (node) => ({ loss: Number(node.dataset.deepDrain), ticksLeft: Number(node.dataset.ticksLeft) });
-  const panel = document.querySelector("[data-kit-sheet] [data-deep-drain]");
-  return { panel: panel ? read(panel) : null, all: [...document.querySelectorAll("[data-deep-drain]")].map(read) };
-})())`;
+const DEEP_DRAIN_STATE = `JSON.stringify({
+  all: [...document.querySelectorAll("[data-deep-drain]")].map((node) => ({
+    loss: Number(node.dataset.deepDrain),
+    ticksLeft: Number(node.dataset.ticksLeft),
+  })),
+})`;
 
 /** The side colour of a map label (`--mp-side`, map-plates.css): an ally's army is drawn in another colour than the player's own. */
 const ARMY_SIDES = `JSON.stringify(Object.fromEntries([...document.querySelectorAll('.mp-at[data-key^="army:"]')].map((slot) => [
@@ -4258,57 +4332,34 @@ const ARMY_SIDES = `JSON.stringify(Object.fromEntries([...document.querySelector
  */
 const DRAWN_SITES = `JSON.stringify({
   drawn: window.__eternumMapSelection?.drawnSites ?? {},
-  plates: ${JSON.stringify(DEEP_SITE_NAMES.map((site) => site.icon))}.flatMap((icon) => {
-    const slot = document.querySelector('.mp-at:has([data-icon="' + icon + '"])');
+  plates: ${JSON.stringify(DEEP_SITE_NAMES.map((site) => site.key))}.flatMap((key) => {
+    const slot = ${sitePlateSlot("key")};
     if (!slot || getComputedStyle(slot).display === "none" || !slot.firstElementChild) return [];
     const box = slot.firstElementChild.getBoundingClientRect();
-    return [{ icon, inView: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight }];
+    return [{ key, inView: box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight }];
   }),
 })`;
 
 async function attackFromTheDeepCard({ browser, extraScreenshot }) {
   browser.hover(POINTER_PARKED);
   await sleep(HOVER_SETTLE_MS);
-  const before = browser.read(DEEP_JOIN_STATE);
-  if (!before.joinSite) return { before };
-  if (before.sheet !== JOINED_SITE.name) {
-    if (onADesktop()) browser.rightClick(before.joinSite);
-    else browser.tap(before.joinSite);
+  const before = browser.read(DEEP_HELD_SITE_STATE);
+  if (!before.site) return { before };
+  if (before.sheet !== HELD_SITE.name) {
+    if (onADesktop()) browser.rightClick(before.site);
+    else browser.tap(before.site);
   }
   const opened = await readUntil(
     () => browser.read(MERGE_STATE),
-    (state) => state.buttons.includes("Attack"),
+    (state) => state.buttons.some((label) => label.startsWith("Attack")),
     SHEET_WAIT_MS,
   );
-  if (!opened.buttons.includes("Attack")) return { before, opened };
+  const attackLabel = opened.buttons.find((label) => label.startsWith("Attack"));
+  if (!attackLabel) return { before, opened };
   const forecast = browser.read(
     `Array.from(document.querySelectorAll('[data-kit-sheet] [data-fight-side]'), node => node.getAttribute('aria-label'))`,
   );
-  const guardOaths = browser.read(
-    `Array.from(document.querySelectorAll("[data-guard-oaths]"), node => {
-      const meanings = ${JSON.stringify(ORDER_MEANING)};
-      const visible = Array.from(node.querySelectorAll("[data-oath] img")).filter(image => {
-        const box = image.getBoundingClientRect();
-        const shown = image.checkVisibility({ opacityProperty: true, visibilityProperty: true });
-        return shown && box.width > 0 && box.height > 0;
-      });
-      const painted = visible.filter(image =>
-        image.dataset.icon === meanings[image.closest("[data-oath]").dataset.oath],
-      );
-      const mask = Number(node.dataset.guardOaths);
-      const shownMask = painted.reduce((bits, image) => bits | (1 << (Number(image.closest("[data-oath]").dataset.oath) - 1)), 0);
-      const held = mask.toString(2).split("").filter(bit => bit === "1").length;
-      return visible.length === held && painted.length === held && shownMask === mask ? mask : 0;
-    })`,
-  );
   extraScreenshot("deep-forecast-before-attack");
-  if (guardOaths.some(Boolean)) {
-    browser.read(
-      `(() => { document.querySelector('[data-guard-oaths]')?.scrollIntoView({ block: "nearest" }); return true; })()`,
-    );
-    await sleep(HOVER_SETTLE_MS);
-    extraScreenshot("guard-oaths");
-  }
   const after = browser.read("window.__labChain?.sent.length ?? 0");
   const armyId = browser.observe().selection?.army?.id;
   watchFor(
@@ -4316,15 +4367,15 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
     "fought",
     `(() => {
     const answer = (window.__labChain?.sent ?? []).slice(${after}).filter(({ command }) => command.kind === "BattleGuard").at(-1);
-    const rows = (answer?.answered ?? []).filter(({ model, value }) => model === "ExplorerTroops" && value !== null);
-    const ours = rows.find(({ value }) => Number(value.explorer_id) === ${armyId});
-    const theirs = rows.find(({ value }) => Number(value.explorer_id) !== ${armyId});
-    const count = (row) => (BigInt(row.value.troops.count) / 1000000000n).toLocaleString("en-US");
+    const rows = (answer?.answered ?? []).filter(({ value }) => value !== null);
+    const ours = rows.find(({ model, value }) => model === "ExplorerTroops" && Number(value.explorer_id) === ${armyId});
+    const theirs = rows.find(({ model, value }) => model === "Guard" && Number(value.structure_id) === Number(answer.command.fields.defender_id));
+    const count = (row) => (BigInt(row.value.troops.count) / ${RESOURCE_PRECISION}n).toLocaleString("en-US");
     return ours && theirs && document.querySelector('.mp-at[data-key="army:${armyId}"] .mp-count')?.textContent === count(ours)
-      && [...document.querySelectorAll('[data-deep-slots] [data-deep-slot="filled"]')].some((slot) => (slot.getAttribute('aria-label') ?? '').includes(count(theirs)));
+      && [...document.querySelectorAll('[data-deep-guards] [data-guard-slot] .deep-tile__count')].some((tile) => tile.textContent === count(theirs));
   })()`,
   );
-  browser.click("Attack");
+  browser.click(attackLabel);
   await readUntil(
     () =>
       browser.read(
@@ -4333,14 +4384,14 @@ async function attackFromTheDeepCard({ browser, extraScreenshot }) {
     Boolean,
     MERGE_WAIT_MS,
   );
-  if (onADesktop()) browser.rightClick(before.joinSite);
-  else browser.tap(before.joinSite);
+  if (onADesktop()) browser.rightClick(before.site);
+  else browser.tap(before.site);
   await readUntil(
-    () => browser.read(DEEP_JOIN_STATE),
-    (state) => state.sheet === JOINED_SITE.name,
+    () => browser.read(DEEP_HELD_SITE_STATE),
+    (state) => state.sheet === HELD_SITE.name,
     SHEET_WAIT_MS,
   );
-  return { forecast, guardOaths, watching: true };
+  return { forecast, watching: true };
 }
 
 const deepLossVectors = readFileSync(
@@ -4353,7 +4404,7 @@ const deepLossVectors = readFileSync(
   .trim()
   .split(/\s+/)
   .map(Number);
-const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, minimumStamina = 60) => [
+const deepSitesSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION) => [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", "Deep") },
   {
     name: "ally-is-marked",
@@ -4397,59 +4448,13 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
           ),
   },
   {
-    name: "join-the-mine",
-    settleMs: 0,
-    play: async ({ browser, extraScreenshot }) => {
-      const before = browser.read(DEEP_JOIN_STATE);
-      if (!before.joinSite) return { before, after: before };
-      if (onADesktop()) browser.rightClick(before.joinSite);
-      else browser.tap(before.joinSite);
-      const opened = await readUntil(
-        () => browser.read(DEEP_JOIN_STATE),
-        (state) => state.sheet === JOINED_SITE.name,
-        MERGE_WAIT_MS,
-      );
-      extraScreenshot("mine-before-join");
-      if (!opened.text.includes("Join")) return { before, after: opened };
-      browser.click(REHEARSAL_WORDS.joinGuard);
-      const confirmed = await readUntil(
-        () => browser.read(DEEP_JOIN_STATE),
-        (state) => state.joined.length === 1 && state.joinSite !== null,
-        MERGE_WAIT_MS,
-      );
-      if (confirmed.joinSite) browser.tap(confirmed.joinSite);
-      const after = await readUntil(
-        () => browser.read(DEEP_JOIN_STATE),
-        (state) => state.sheet === JOINED_SITE.name && (state.slots.match(/Free slot/g) ?? []).length === 2,
-        MERGE_WAIT_MS,
-      );
-      extraScreenshot("mine-joined");
-      return { before, opened, confirmed, after };
-    },
-    verify: ({ played }) => {
-      const joined = played.after.joined;
-      const facts = joined.flatMap((row) => row.answered ?? []);
-      const guard = facts.find((fact) => fact.model === "DeepGuard" && Number(fact.value?.explorer_id) === PICKED_ARMY);
-      const leftField = facts.some((fact) => fact.model === "TileOccupancy" && fact.value === null);
-      return joined.length === 1 &&
-        guard?.value.slot === 1 &&
-        leftField &&
-        played.opened.pay.visible &&
-        played.opened.pay.labor &&
-        played.after.sheet === JOINED_SITE.name &&
-        (played.after.slots.match(/Free slot/g) ?? []).length === 2
-        ? completed(played)
-        : failed("Join must submit InteractSite once, leave the field and show the second allied guard slot", played);
-    },
-  },
-  {
     name: "deep-sites-each-selected",
     settleMs: 0,
     play: async ({ browser, extraScreenshot }) => {
       // With the field army still picked, each site is visited and pressed as a player does: the camera brought to it,
       // its plate and model in the frame, then a click (desktop) or tap (phone) on the model selects its hex and opens its card.
       const visits = [];
-      for (const site of [...DEEP_SITE_NAMES.filter((each) => each !== JOINED_SITE), JOINED_SITE]) {
+      for (const site of [...DEEP_SITE_NAMES.filter((each) => each !== HELD_SITE), HELD_SITE]) {
         const { name, key } = site;
         await panToHex(browser, browser.read(`window.__eternumMapSelection?.siteHexes?.["${key}"] ?? null`));
         // The camera's hex stands at the frame's middle, which a phone's open card covers: a player drags the site up
@@ -4469,7 +4474,7 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
           inView: before.inView,
           sheet: opened.sheet,
           beast: opened.beast,
-          expectedBeast: site === JOINED_SITE ? null : site.beast,
+          expectedBeast: site === HELD_SITE ? null : site.beast,
         });
       }
       return { visits };
@@ -4486,50 +4491,11 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
           ),
   },
   {
-    name: "reselect-guard-from-dock",
-    settleMs: 0,
-    play: async ({ browser, extraScreenshot }) => {
-      browser.press("Escape");
-      const panel = await openTheArmyPanel(browser);
-      const reading = await readUntil(
-        () => readArmyStamina(browser),
-        (state) => state.visible,
-        SHEET_WAIT_MS,
-      );
-      extraScreenshot("joined-guard-stamina");
-      return { panel, reading };
-    },
-    verify: ({ played }) =>
-      played.panel.army &&
-      played.panel.sheet === played.panel.army &&
-      played.reading.visible &&
-      played.reading.current >= minimumStamina &&
-      played.reading.current <= T2_KNIGHT_STAMINA_MAX &&
-      played.reading.maximum === T2_KNIGHT_STAMINA_MAX
-        ? completed(played)
-        : failed("The joined slot army must reopen from the dock with its refilled stamina visible", played),
-  },
-  {
-    name: "guard-shows-its-drain",
-    settleMs: 0,
-    play: async ({ browser, extraScreenshot }) => {
-      const drain = await readUntil(
-        () => browser.read(DEEP_DRAIN_STATE),
-        (state) => state.panel !== null,
-        SHEET_WAIT_MS,
-      );
-      extraScreenshot("guard-drain");
-      return { drain };
-    },
-    verify: ({ played }) =>
-      played.drain.panel?.loss === lossPerTick && played.drain.panel.ticksLeft > 0
-        ? completed(played)
-        : failed("A guard's panel must say its troop loss each tick and the ticks left", played),
-  },
-  {
     name: "deep-sites-framed",
     settleMs: 0,
     play: async ({ browser, extraScreenshot }) => {
+      browser.hover(POINTER_PARKED);
+      await sleep(HOVER_SETTLE_MS);
       // Zoomed all the way out, as a player does with the wheel, the camera frames the whole Deep strip: the three sites.
       browser.run(["eval", `void window.__playtest.wheel(100, ${ZOOM_IN_NOTCHES})`]);
       await sleep(ZOOM_SETTLE_MS);
@@ -4551,10 +4517,10 @@ const deepJoinSteps = (lossPerTick = deepLossVectors[1] / RESOURCE_PRECISION, mi
   },
 ];
 
-const SITE_TOKENS = `JSON.stringify([...document.querySelectorAll(".mp-at")].flatMap((slot) => {
+const SITE_TOKENS = `JSON.stringify(${DEEP_SITE_SLOTS}.flatMap((slot) => {
   if (getComputedStyle(slot).display === "none") return [];
   const icon = slot.querySelector("[data-icon]")?.getAttribute("data-icon");
-  return icon && ${JSON.stringify([...DEEP_SITE_NAMES.map((site) => site.icon), "lock"])}.includes(icon) ? [icon] : [];
+  return icon ? [icon] : [];
 }))`;
 
 const deepClosedSteps = () => [
@@ -5955,12 +5921,17 @@ const DISMISSED_AT_EXPRESSION = `JSON.stringify(
  * fails a command that is neither.
  */
 export const UNMEASURED_COMMANDS = {
-  InteractSite: "lab-deep-join checks joining on desktop and phone; click timing baselines are not recorded",
+  Battle:
+    "lab-deep-army-battle checks army-vs-army attacks in the Deep on desktop and phone; click timing baselines are not recorded",
+  InteractSite:
+    "lab-map-sites checks a Well and a Shrine on desktop and phone; click timing baselines are not recorded",
   ClaimDailyQuest: "lab-daily-quest checks collection on desktop and phone; click timing baselines are not recorded",
   ApplyRelic: "army relic activation has a control, but its desktop and phone timing baselines are not recorded",
   MarkGameSettled:
     "sent by the value relay's operator once a season's game has ended (apps/value-relay), never by a player",
   SetEntityName: "no control in the game sends it: only the provider's set_entity_name, which nothing calls",
+  SetRealmSkin:
+    "sent from the app's Cosmetics page outside a match (shell/cosmetics/realm-skin-equip.ts); the lab-actions lists time presses on the lab game's map, and no list drives an app page yet",
 };
 
 /**
@@ -6098,133 +6069,31 @@ export const REHEARSAL_WORDS = {
     victory: "Victory",
   },
   take: "Take",
-  joinGuard: "Join guard",
-  lasts: (ticks, time) => `${ticks} ticks left (${time})`,
-  share: (percent) => `${percent}% of each tick`,
 };
 const INVITE_PREFIX = REHEARSAL_WORDS.inviteTo("");
 const JOIN_PREFIX = REHEARSAL_WORDS.join("");
 
-const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const wordPattern = (word, ...parts) => {
-  const marks = parts.map((_, index) => `§${index}§`);
-  return new RegExp(
-    parts.reduce(
-      (source, part, index) => source.replace(marks[index], part === "n" ? "([\\d,]+)" : "(?:.*?)"),
-      escapeRegExp(word(...marks)),
-    ),
-  );
-};
-const numberIn = (text, pattern) => {
-  const match = pattern.exec(text ?? "");
-  return match ? Number(match[1].replace(/,/g, "")) : null;
-};
-const SLOT_PATTERNS = {
-  ticks: wordPattern(REHEARSAL_WORDS.lasts, "n", "any"),
-  share: wordPattern(REHEARSAL_WORDS.share, "n"),
-  troops: /(?:^| · )([\d,]+)(?: · |$)/,
-};
+const DEEP_SITE_KEYS = new Set(DEEP_SITE_NAMES.map(({ name }) => name));
 
-export function readTickPay(rates) {
-  const pay = {};
-  for (const { rate, value } of rates) {
-    if (rate === "drain") continue;
-    pay[rate] = Number(value.replace(/[^\d]/g, ""));
-  }
-  return pay;
-}
-
-export function readHeldSlot(text) {
-  if (!text) return null;
-  return {
-    ticks: numberIn(text, SLOT_PATTERNS.ticks),
-    share: numberIn(text, SLOT_PATTERNS.share),
-    troops: numberIn(text, SLOT_PATTERNS.troops),
-  };
-}
-
-export function readAspectTally(read) {
-  const figure = (value) => (value === null || value === undefined || value === "" ? null : Number(value));
-  return { height: figure(read.height), glory: figure(read.glory), bar: figure(read.bar) };
-}
-
-export function judgeTickPaid(before, after) {
-  const { pay, slot, tally } = before;
-  if (!(after.slot?.troops < slot.troops)) return { failed: "the guard lost no troops: no tick was settled" };
-  const ticks = [];
-  const gains = {};
-  for (const part of ["glory", "height", "bar"]) {
-    if (!pay[part]) continue;
-    if (tally[part] === null || after.tally[part] === null)
-      return { gains, failed: `the Season board shows no exact ${part}` };
-    const gained = after.tally[part] - tally[part];
-    gains[part] = gained;
-    if (!(gained > 0)) return { gains, failed: `the tick paid no ${part}` };
-    if (slot.share === 100) ticks.push(gained / pay[part]);
-  }
-  if (ticks.some((count) => !Number.isInteger(count) || count !== ticks[0]))
-    return { gains, ticks, failed: "the gains are not one whole number of ticks of the card's pay" };
-  return { gains, ticks: ticks[0] ?? null };
-}
-
-const DEEP_SITE_PLATES = `JSON.stringify(${JSON.stringify(DEEP_SITE_NAMES.map(({ icon }) => icon))}.flatMap((icon) =>
-  [...document.querySelectorAll('.mp-at:has([data-icon="' + icon + '"])')].flatMap((slot) => {
+const DEEP_SITE_PLATES = `JSON.stringify(${DEEP_SITE_SLOTS}.flatMap((slot) => {
     if (getComputedStyle(slot).display === "none" || !slot.firstElementChild) return [];
     const box = slot.firstElementChild.getBoundingClientRect();
     if (box.left < 0 || box.right > innerWidth || box.top < 0 || box.bottom > innerHeight) return [];
     return [{ key: slot.getAttribute("data-key"),
       token: [Math.round(box.left + box.width / 2 - innerWidth / 2), Math.round(box.bottom + ${SITE_MODEL_BELOW_PLATE} - innerHeight / 2)] }];
-  })))`;
+  }))`;
 
 const DEEP_SITE_CARD = `JSON.stringify((() => {
   const sheet = document.querySelector("[data-kit-sheet]");
   return {
     name: sheet?.getAttribute("aria-label") ?? null,
     text: sheet?.textContent ?? "",
-    holder: sheet?.querySelector("[data-aspect-holder]")?.dataset.side ?? null,
+    holder: sheet?.querySelector("[data-deep-tag]")?.dataset.deepTag ?? null,
     guard: sheet?.querySelector("[data-deep-guard]")?.dataset.deepGuard ?? null,
-    pay: [...(sheet?.querySelectorAll("[data-deep-pay] [data-rate]") ?? [])].map((rate) => ({ rate: rate.dataset.rate, value: rate.querySelector("b")?.textContent ?? "" })),
-    mine: sheet?.querySelector("[data-deep-slots] [data-deep-slot][data-mine]")?.getAttribute("aria-label") ?? null,
+    occupiedSlots: sheet?.querySelectorAll("[data-deep-guards] [data-guard-slot]").length ?? null,
     buttons: [...(sheet?.querySelectorAll("button:not([disabled])") ?? [])].map((button) => button.getAttribute("aria-label") || button.textContent.trim()),
   };
 })())`;
-
-const ASPECT_TALLY = `JSON.stringify({
-  height: document.querySelector("[data-season-board] .season-aspect[data-own]")?.dataset.height ?? null,
-  glory: document.querySelector("[data-season-standing]")?.dataset.glory ?? null,
-  bar: document.querySelector("[data-season-standing] [data-charge]")?.dataset.charge ?? null,
-})`;
-
-const DEEP_SITE_KEYS = new Set(DEEP_SITE_NAMES.map(({ name }) => name));
-const DEEP_TICK_WAIT_MS = 300_000;
-const CATCH_UP_TICKS = 4;
-const IDLE_PLAYS = 3;
-const CATCH_UP_EVENTS_AT_MOST = 8;
-
-export const idlePlayOf = (plays) =>
-  plays
-    .slice(1)
-    .reduce((least, play) =>
-      play.events < least.events || (play.events === least.events && play.l2Gas < least.l2Gas) ? play : least,
-    );
-
-export function judgeCatchUp(t0, t1, ticks) {
-  const measured = {
-    ticks,
-    l2Gas: t1.l2Gas - t0.l2Gas,
-    events: t1.events - t0.events,
-    t1: { l2Gas: t1.l2Gas, events: t1.events },
-  };
-  if (measured.events <= 0)
-    return { ...measured, failed: "the catch-up play settled nothing: another command settled the ticks first" };
-  if (measured.events > CATCH_UP_EVENTS_AT_MOST)
-    return {
-      ...measured,
-      failed: `the catch-up play emitted ${measured.events} more events than the idle one: rows once per tick, not once each`,
-    };
-  return measured;
-}
-const TICK_SETTLED_WAIT_MS = 60_000;
 
 async function selectArmy(browser, army) {
   for (const { label } of browser.armies()) {
@@ -6241,10 +6110,6 @@ function s1RehearsalSteps() {
     link: null,
     deepArmy: null,
     allyDeepArmy: null,
-    held: null,
-    tick: null,
-    t0: null,
-    t1: null,
   };
   return [
     rehearsalStep({ name: "found-the-host-realm", play: (context) => foundHostRealm(context, shared) }),
@@ -6287,10 +6152,6 @@ function s1RehearsalSteps() {
       name: "fight-a-beast",
       play: (context) => actAtADeepSite(context, shared, "deepArmy", BEAST_SITE),
     }),
-    rehearsalStep({ name: "catch-up-t0", play: (context) => measureTheIdlePlay(context, shared), sends: 0 }),
-    rehearsalStep({ name: "read-the-tick-pay", play: (context) => readTheTickPay(context, shared), sends: 0 }),
-    rehearsalStep({ name: "catch-up-t1", play: (context) => measureTheCatchUpPlay(context, shared), sends: 0 }),
-    rehearsalStep({ name: "the-tick-paid", play: (context) => judgeTheTick(context, shared), sends: 0 }),
     rehearsalStep({
       name: "ally-enters-the-deep",
       as: "ally",
@@ -6493,12 +6354,12 @@ const BEAST_SITE = {
 };
 const RIVAL_SITE = {
   verb: REHEARSAL_WORDS.attack,
-  matches: (card) => card.holder === "rival",
+  matches: (card) => card.holder === "rival" && card.occupiedSlots > 0,
   missing: `no rival Aspect holds a ${DEEP_LAYER} site in view`,
 };
 const EMPTY_SITE = {
   verb: REHEARSAL_WORDS.take,
-  matches: (card) => card.guard === "open",
+  matches: (card) => card.guard === "open" || (card.holder === "rival" && card.occupiedSlots === 0),
   missing: `no ${DEEP_LAYER} site in view stands empty: each holds today's beast or a guard`,
 };
 
@@ -6519,13 +6380,6 @@ async function openDeepSite(browser, plate) {
   );
 }
 
-async function openHeldSite(browser, held) {
-  const plate = browser.read(DEEP_SITE_PLATES).find(({ key }) => key === held.key);
-  if (!plate) return null;
-  const card = await openDeepSite(browser, plate);
-  return card.name === held.name ? card : null;
-}
-
 async function actAtADeepSite({ browser, extraScreenshot }, shared, slot, want) {
   const army = shared[slot];
   if (army === null) return { blocked: `no army entered the ${DEEP_LAYER}` };
@@ -6534,13 +6388,13 @@ async function actAtADeepSite({ browser, extraScreenshot }, shared, slot, want) 
   for (const plate of browser.read(DEEP_SITE_PLATES)) {
     const card = await openDeepSite(browser, plate);
     seen.push({ name: card.name, buttons: card.buttons });
-    if (want.matches(card)) return actOnTheSite({ browser, extraScreenshot }, shared, slot, plate, want);
+    if (want.matches(card)) return actOnTheSite({ browser, extraScreenshot }, want);
   }
   return { army, seen, blocked: want.missing };
 }
 
-async function actOnTheSite({ browser, extraScreenshot }, shared, slot, plate, want) {
-  const sheetButton = (label) => browser.read(buttonIn("[data-kit-sheet]", `^${label}$`));
+async function actOnTheSite({ browser, extraScreenshot }, want) {
+  const sheetButton = (label) => browser.read(buttonIn("[data-kit-sheet]", `^${label}(?:\\s|$)`));
   const move = sheetButton(REHEARSAL_WORDS.move);
   if (move) browser.tap(move.offset);
   const verb = await readUntil(() => sheetButton(want.verb), Boolean, ORDER_OUTCOME_WAIT_MS);
@@ -6549,63 +6403,12 @@ async function actOnTheSite({ browser, extraScreenshot }, shared, slot, plate, w
   if (!verb)
     return { card, moved: Boolean(move), blocked: `the ${card.name} never offered ${want.verb}: ${card.text}` };
   browser.tap(verb.offset);
-  const after = await readUntil(
-    () => browser.read(DEEP_SITE_CARD),
-    (now) => now.mine !== null,
-    ORDER_OUTCOME_WAIT_MS,
-  );
+  const claimed = (now) => now.name === card.name && now.holder === "own" && now.occupiedSlots === 0;
+  const after = await readUntil(() => browser.read(DEEP_SITE_CARD), claimed, ORDER_OUTCOME_WAIT_MS);
   extraScreenshot(`after-${want.verb.toLowerCase()}`);
-  if (after.mine === null)
-    return { card, after, failed: `the army does not guard the ${card.name} after ${want.verb}` };
-  if (slot === "deepArmy") shared.held = { key: plate.key, name: card.name };
+  if (!claimed(after))
+    return { card, after, failed: `the ${card.name} was not claimed with empty slots after ${want.verb}` };
   return { site: card.name, moved: Boolean(move), card, after };
-}
-
-const minutesOf = (time) => {
-  const [, days = 0, hours = 0, minutes = 0] = /^(?:(\d+)d)?\s*(?:(\d+)h)?\s*(?:(\d+)m)?$/.exec(time ?? "") ?? [];
-  return (Number(days) * 24 + Number(hours)) * 60 + Number(minutes);
-};
-const SLOT_TIME = new RegExp(
-  escapeRegExp(REHEARSAL_WORDS.lasts("§0§", "§1§")).replace("§0§", "[\\d,]+").replace("§1§", "([^)]*)"),
-);
-const slotMinutes = (card) => {
-  const match = SLOT_TIME.exec(card.mine ?? "");
-  return match ? minutesOf(match[1]) : null;
-};
-
-async function readTheTickPay({ browser, extraScreenshot }, shared) {
-  if (!shared.held) return { blocked: `the host's army guards no ${DEEP_LAYER} site` };
-  await openTheSeason(browser);
-  const tally = readAspectTally(browser.read(ASPECT_TALLY));
-  extraScreenshot("tally-before-the-tick");
-  browser.press("Escape");
-  const card = await openHeldSite(browser, shared.held);
-  if (!card) return { tally, failed: `the ${shared.held.name}'s card did not open` };
-  const pay = readTickPay(card.pay);
-  const slot = readHeldSlot(card.mine);
-  extraScreenshot("tick-pay");
-  let last = slotMinutes(card);
-  let crossed = 0;
-  await readUntil(
-    () => {
-      const now = slotMinutes(browser.read(DEEP_SITE_CARD));
-      if (now !== null && last !== null && now > last) crossed += 1;
-      last = now ?? last;
-      return crossed >= CATCH_UP_TICKS;
-    },
-    Boolean,
-    DEEP_TICK_WAIT_MS * CATCH_UP_TICKS,
-  );
-  if (crossed < CATCH_UP_TICKS)
-    return {
-      pay,
-      slot,
-      tally,
-      crossed,
-      blocked: `the guard's time left moved at ${crossed} ticks, not ${CATCH_UP_TICKS}`,
-    };
-  shared.tick = { pay, slot, tally };
-  return { pay, slot, tally, crossed };
 }
 
 async function receiptOfTheNextAction({ browser, owner }, before) {
@@ -6618,13 +6421,12 @@ async function receiptOfTheNextAction({ browser, owner }, before) {
   return receipt ?? null;
 }
 
-async function sendOneOrder(context, verb, heldBack = null) {
+async function sendOneOrder(context, verb) {
   const deployed = await deployWhenTheDockIsEmpty(context);
   if (deployed?.blocked || deployed?.failed) return deployed;
   const before = context.browser.read(SENT_ACTIONS);
-  const order = await orderBesideArmy(context, verb, heldBack);
+  const order = await orderBesideArmy(context, verb);
   if (!order.army) return { deployed, order, blocked: "the dock holds no army to send" };
-  if (order.heldBack) return { deployed, order, blocked: "the readiest army is the Deep guard, not a surface army" };
   if (!order.target) return { deployed, order, blocked: `nothing beside the readiest army offers ${verb}` };
   const receipt = await receiptOfTheNextAction(context, before);
   if (!receipt?.applied) return { deployed, order, receipt, failed: `the chain did not apply the ${verb}` };
@@ -6653,8 +6455,6 @@ async function deployAnArmy(context, atMost) {
   const arrived = await readUntil(() => browser.armies().length > docked, Boolean, ORDER_OUTCOME_WAIT_MS);
   return arrived ? { receipt } : { receipt, failed: "the deployed army did not reach the dock" };
 }
-
-const sendOneMove = (context, shared) => sendOneOrder(context, REHEARSAL_WORDS.move, shared.deepArmy);
 
 const SITE_SEARCH_REVEALS = 6;
 
@@ -6794,48 +6594,6 @@ async function attackBesideAnArmy(context) {
   return { offered, declined };
 }
 
-async function measureTheIdlePlay(context, shared) {
-  if (!shared.held) return { blocked: `the host's army guards no ${DEEP_LAYER} site` };
-  const plays = [];
-  for (let index = 0; index < IDLE_PLAYS; index += 1) {
-    const play = await sendOneMove(context, shared);
-    if (play.blocked || play.failed) return { plays, ...play };
-    plays.push(play.receipt);
-  }
-  shared.t0 = idlePlayOf(plays);
-  return { plays, t0: shared.t0 };
-}
-
-async function measureTheCatchUpPlay(context, shared) {
-  if (!shared.t0 || !shared.tick) return { blocked: "no idle play and no tick pay were read before the catch-up" };
-  const play = await sendOneMove(context, shared);
-  if (play.blocked || play.failed) return play;
-  shared.t1 = play.receipt;
-  return { t1: shared.t1 };
-}
-
-async function judgeTheTick({ browser, extraScreenshot }, shared) {
-  if (!shared.tick || !shared.t1) return { blocked: "no catch-up play was sent after the ticks" };
-  const card = await openHeldSite(browser, shared.held);
-  if (!card) return { failed: `the ${shared.held.name}'s card did not open` };
-  const slot = await readUntil(
-    () => readHeldSlot(browser.read(DEEP_SITE_CARD).mine),
-    (now) => now === null || now.troops < shared.tick.slot.troops,
-    TICK_SETTLED_WAIT_MS,
-  );
-  extraScreenshot("site-after-the-tick");
-  browser.press("Escape");
-  if (slot === null) return { blocked: "the guard died at the tick, so it earned nothing" };
-  await openTheSeason(browser);
-  const tally = readAspectTally(browser.read(ASPECT_TALLY));
-  extraScreenshot("tally-after-the-tick");
-  browser.press("Escape");
-  const after = { slot, tally };
-  const paid = judgeTickPaid(shared.tick, after);
-  const catchUp = judgeCatchUp(shared.t0, shared.t1, paid.ticks);
-  return { before: shared.tick, after, ...paid, catchUp, failed: paid.failed ?? catchUp.failed };
-}
-
 export const STEP_SETS = {
   "army-stock": {
     game: FRONTIER,
@@ -6928,13 +6686,10 @@ export const STEP_SETS = {
   "lab-actions-transfer": { game: labSpireGame("merge-loses-training"), steps: transferActionSteps() },
   "lab-battle-target": { game: labSpireGame("battle-target"), steps: BATTLE_TARGET_STEPS },
   "lab-deep-battle-target": { game: labSpireGame("deep-battle-target"), steps: DEEP_BATTLE_TARGET_STEPS },
+  "lab-deep-army-battle": { game: labSpireGame("deep-army-battle"), steps: DEEP_ARMY_BATTLE_STEPS },
   "lab-oath-battle-target": {
     game: labSpireGame("oath-battle-target"),
     steps: battleTargetSteps(attackFromTheSiteCard, "Map", true),
-  },
-  "lab-oath-deep-battle-target": {
-    game: labSpireGame("oath-deep-battle-target"),
-    steps: battleTargetSteps(attackFromTheDeepCard, "Deep", true),
   },
   "lab-actions-oath-pick": { game: labSpireGame("oath-pick"), steps: oathPickSteps(false) },
   "lab-actions-oath-replace": { game: labSpireGame("oath-replace"), steps: oathPickSteps(true) },
@@ -7335,10 +7090,10 @@ export const STEP_SETS = {
     game: labSpireGame("oath-vitriol"),
     steps: [
       ...oathPickSteps(false, "Deep").slice(0, -1),
-      ...deepJoinSteps(deepLossVectors[10] / RESOURCE_PRECISION, 40).slice(3),
+      ...deepSitesSteps(deepLossVectors[10] / RESOURCE_PRECISION).slice(3),
     ],
   },
-  "lab-deep-join": { game: labSpireGame("deep"), steps: deepJoinSteps() },
+  "lab-deep": { game: labSpireGame("deep"), steps: deepSitesSteps() },
   "lab-deep-closed": { game: labSpireGame("deep-closed"), steps: deepClosedSteps() },
   "lab-no-lords": {
     game: labSpireGame("upkeep"),
@@ -7374,6 +7129,7 @@ export const STEP_SETS = {
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
   "lab-visit": { game: labSpireGame("visit"), steps: LAB_VISIT_STEPS, devOverlays: true },
   "lab-reenter": { game: LAB_FROM_HOME, steps: labReenterSteps() },
+  "lab-cosmetics": { game: { ...labSpireGame("wonder-skin"), entersFromHome: true }, steps: labCosmeticsSteps() },
   "lab-ruin-fight": { game: labSpireGame("ruin-fight"), steps: LAB_RUIN_FIGHT_STEPS },
   "lab-ruin-far": { game: labSpireGame("ruin-far"), steps: LAB_RUIN_FAR_STEPS },
   "lab-hover-zoom": { game: labSpireGame("after-battle"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },

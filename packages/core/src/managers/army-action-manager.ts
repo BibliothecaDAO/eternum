@@ -328,8 +328,6 @@ export class ArmyActionManager {
     const startPos = this._getCurrentPosition();
 
     const actionPaths = new ActionPaths();
-    if (this.store.get("DeepGuard", { game_id: configManager.getActiveGameId(), explorer_id: this.entityId }))
-      return actionPaths;
     const lowestStaminaUse = new Map<string, number>();
     const armiesBlock = armiesBlockTile(this.store, configManager.getActiveGameId(), startPos);
     const priorityQueue: Array<{

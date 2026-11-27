@@ -436,6 +436,29 @@ pub mod GamesFixture {
                 context,
             )
         }
+        fn realm_skin(self: @TContractState, key: crate::resources::ResourceKey) -> crate::names::RealmSkin {
+            crate::names::INamesDispatcherTrait::realm_skin(
+                crate::names::INamesLibraryDispatcher {
+                    class_hash: fixture_class(key.game_id, crate::slots::STRUCTURES),
+                },
+                key,
+            )
+        }
+        fn set_realm_skin(
+            ref self: TContractState,
+            game_id: u32,
+            actor: starknet::ContractAddress,
+            command: crate::names::SetRealmSkin,
+            context: crate::commands::ActionContext,
+        ) {
+            crate::names::INamesDispatcherTrait::set_realm_skin(
+                crate::names::INamesLibraryDispatcher { class_hash: fixture_class(game_id, crate::slots::STRUCTURES) },
+                game_id,
+                actor,
+                command,
+                context,
+            )
+        }
     }
     #[starknet::embeddable]
     pub impl SeasonRealmsFixture<

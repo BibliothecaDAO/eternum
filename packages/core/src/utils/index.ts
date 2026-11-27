@@ -11,7 +11,7 @@ export * from "./canonical-realm";
 export * from "./castle-reach";
 export * from "./attack-forecast";
 export * from "./combat-exchange";
-export * from "./reveal-yield";
+export * from "./realm-skin";
 export * from "./combat-simulator";
 export * from "./entities";
 export * from "./mode-rules";
@@ -36,6 +36,7 @@ export * from "./utils";
 
 export * from "./realm-research";
 export * from "./map-center";
+export { DEEP_PAYOUT_MODELS } from "./deep";
 
 export * from "./production-output";
 

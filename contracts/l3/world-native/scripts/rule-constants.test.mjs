@@ -53,6 +53,8 @@ const HASHED_QUANTITIES = [
   "research.RATIONS_DEPOT_LEVEL",
   "research.SUPPLY_YARD_LEVEL",
   "research.SCOUTS_LODGE_LEVEL",
+  "research.SHRINE_LORE_LEVEL",
+  "research.SPIRE_LORE_LEVEL",
 ];
 
 test("every constant is either a hashed identifier or a tunable number, and a quantity-named identifier is named here", async () => {
@@ -67,8 +69,8 @@ test("every constant is either a hashed identifier or a tunable number, and a qu
   assert.equal(hashed.length + tunable.length, Object.values(balance).flatMap(Object.keys).length);
   for (const name of tunable) assert.match(name, QUANTITY, `${name} is tunable without a unit`);
   assert.deepEqual(
-    hashed.filter((name) => QUANTITY.test(name.split(".")[1])),
-    HASHED_QUANTITIES,
+    hashed.filter((name) => QUANTITY.test(name.split(".")[1])).toSorted(),
+    HASHED_QUANTITIES.toSorted(),
     "a constant named like a quantity is hashed: rename it with a unit to make it tunable, or list it as an identifier",
   );
 });

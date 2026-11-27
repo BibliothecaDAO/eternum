@@ -1,8 +1,14 @@
 import { type Call, hash, num, type ProviderInterface } from "starknet";
 
-import { decodeFrontierSeason, decodeWithdrawalPayment } from "@realms-world/value-ledger/codecs";
+import { raceCalldata } from "@realms-world/value-ledger";
+import {
+  decodeFrontierSeason,
+  decodeRaceReward,
+  decodeRaceSeason,
+  decodeWithdrawalPayment,
+} from "@realms-world/value-ledger/codecs";
 
-import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
+import { L2_LEDGER, L2_RACE_REWARDS, l2Provider } from "@/runtime/l2-rpc";
 
 /**
  * The client's side of GameLedger on Starknet: the reads the value screens show and the calls a player's own wallet
@@ -41,6 +47,7 @@ export const lordsCentsTextOf = (wei: bigint, rounding: "up" | "down"): string =
 export const lordsDownToCents = (wei: bigint): bigint => wei - (wei % (LORDS_UNIT / 100n));
 
 const WITHDRAWAL_PAID = hash.getSelectorFromName("WithdrawalPaid");
+const RACE_PAID = hash.getSelectorFromName("RacePaid");
 
 const u256 = (value: bigint) => [String(value & ((1n << 128n) - 1n)), String(value >> 128n)];
 
@@ -99,3 +106,34 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
  */
 export const environmentLedger = () =>
   L2_LEDGER === null ? null : { address: L2_LEDGER, ...ledgerReader(l2Provider(), L2_LEDGER) };
+
+const raceRewardsReader = (provider: ProviderInterface, raceRewards: string) => {
+  const view = (entrypoint: string, calldata: string[]) =>
+    provider.callContract({ contractAddress: raceRewards, entrypoint, calldata });
+  return {
+    raceSeason: async (shard: string, seasonId: number) =>
+      decodeRaceSeason(await view("get_race", raceCalldata("get_race", { shard, season_id: seasonId }))),
+    raceReward: async (shard: string, seasonId: number, home: number) =>
+      decodeRaceReward(
+        await view("get_race_reward", raceCalldata("get_race_reward", { shard, season_id: seasonId, home })),
+      ),
+    racePaymentTransaction: async (
+      shard: string,
+      seasonId: number,
+      home: number,
+      fromBlock: number,
+    ): Promise<string | null> => {
+      const { events } = await provider.getEvents({
+        address: raceRewards,
+        from_block: { block_number: fromBlock },
+        to_block: "latest",
+        keys: [[RACE_PAID], [num.toHex(shard)], [num.toHex(seasonId)], [num.toHex(home)]],
+        chunk_size: 10,
+      });
+      return events[0]?.transaction_hash ?? null;
+    },
+  };
+};
+
+export const environmentRaceRewards = () =>
+  L2_RACE_REWARDS === null ? null : { address: L2_RACE_REWARDS, ...raceRewardsReader(l2Provider(), L2_RACE_REWARDS) };

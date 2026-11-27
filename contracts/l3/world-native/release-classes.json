@@ -1,21 +1,21 @@
 {
-  "release": 24,
+  "release": 26,
   "logic": {
-    "season": "0x236ea032e700ea8e5f495d18fdf0bfa490f1bd9d293bc2705a198c58cf64fca",
-    "map": "0x419f7f1db3c2436ea3f533dad114db6defdf2f5722d76efe43d611d2e4622c8",
-    "placement": "0x5149426cc88174e82f7dd04e78d7e4c3d31f1d1b919e849353496c9846f38b6",
-    "construction": "0x637907b65ba1d71e95dad539d24a41894fcd7b6015e9d03d7865ebfd78ac806",
-    "production": "0x208c94e6ad331c4aac157d5f32f2f6c4e263621edd4c5cd28af7b5fc9ee4c21",
-    "structures": "0x68cbf6565a53b4224ecf8cc6d3c336a08a3dac4e38179aca7c000b2bf85cff3",
-    "troops": "0x7da528ff3c1c1a40839cbfe167be7c1b1a0f0d84a3a16eaccd4a8813a9af34b",
-    "settlement": "0x3cea460ee9cda250624a7d8bffb42177fff971f91d203d6a71010b4b7ea37b2",
-    "resources": "0x40c3ed2d65cb7a85f2d288d1e93ea121a18cc6147955d89221084b85019469b",
-    "economy": "0x1dd0b3f82fe67354e7f786d70712254ae1f3b2c1f130c54bc78c250136a38ca",
-    "prizes": "0x42ece931444ef3be568237ba6d1b41b2eb634c4d4f1e027167500e4beeb4bc6",
-    "registry": "0x59caa0c04e247f206cd1536a01d33df3903044b5fae5282c48cb0de48e3f00a",
-    "combat": "0x673afe12fb2c66ad92d36a095ff4adc1a916cd9db0c301ad8c123ed8f598a19",
-    "bridge": "0x20cef58a2df2ab88a57cee35ec51369c76dbf673671c100cd3aa040cc08f914",
-    "relics": "0x5bd96e2ed2fcc494d616d1a64fc2ccdf784babee3fd8f3f907303641fa065f8",
-    "movement": "0x1cdc408a9a9978f4adfe9b9dbd25068b6896072c57ac93363a58406140f064"
+    "season": "0x3b81bad93dac5245802a7a952f6c4accc3539945987e6dc14e0d49998c42c38",
+    "map": "0x155d9d8c09fcfc0bbc9451d1ceee416dca721a81c5333805d98496fb510bf6e",
+    "placement": "0x5089ae945c09a8309d5159917ee0fb82bc0f6a65b944a65a520a7f9365ed766",
+    "construction": "0x1d086d46a4ab343699c785c137d9c07f34ff07f6f1f4995dfc5e652220c65e6",
+    "production": "0x71e6bffe3a411f43b4a259a1309cffc51ab318e228e23b825f54ca8e732678",
+    "structures": "0x680c17396ff0a92c7abc5ca9c4c8bcebaed7b3fed1143d8bfd6f4b47282bf86",
+    "troops": "0x73e7cb7968d9fae75fa163dffa47e4a9dada8e11d38cd1fd7b0ff2f52225ed7",
+    "settlement": "0x7e5f2fa92434e5c3b4f7594d398d770c43879610b43983754aa945e52e93a58",
+    "resources": "0xec6b8e3ee3bcbaae3e070ee48a20f4edece18eafc71b89327ebadb0d8ea886",
+    "economy": "0x61cf1cc2277b6cc8ee780c9e8a9cc2e34c243670364175cb3fd72d8877d4948",
+    "prizes": "0x7483aacf6117febf4ad69867d37688bcc035d87a07baffcaa3b513587117b3a",
+    "registry": "0x4c482a8f78e2f4526fc876e0acaaf459ca3d2c8f0ec20d424b8dce55eb4f3bb",
+    "combat": "0x169b6a08924ab02571ecadd82dcff64169fe622f16ce2731c57456ed6e965f6",
+    "bridge": "0x48ddb0e7a37b22f2bbaec69e3d5757f7a6c451124c2addef9efc5c5b4dc3a2e",
+    "relics": "0x4be50ed0cc0c01c9d3b8332721f4a5f6a04d3a58a3bd6bcbafd66df8669ec97",
+    "movement": "0x78e663141b7f76fa12e54d0ed58cd7b85b4c7976613c131845acd38cd6ac3a4"
   }
 }

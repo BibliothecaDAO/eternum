@@ -65,17 +65,12 @@ pub trait IRace<T> {
 }
 
 
-// Largest remainders allocate the indivisible units; home identity breaks an exact tie.
 pub fn split_payment(amount: u128, shares: Span<crate::deep::DeepShare>) -> Span<u128> {
     assert!(!shares.is_empty() && shares.len() <= crate::rules::DEEP_GUARD_SLOTS.into(), "invalid reward guard count");
     let mut total = 0_u128;
-    for index in 0..shares.len() {
-        let share = *shares.at(index);
-        assert!(share.home != 0 && share.troops != 0, "empty reward guard");
-        for previous in 0..index {
-            assert!(*shares.at(previous).home != share.home, "duplicate reward home");
-        }
-        total += share.troops;
+    for share in shares {
+        assert!(*share.home != 0 && *share.troops != 0, "empty reward guard");
+        total += *share.troops;
     }
     let mut allocated = 0_u128;
     let mut bases = array![];
@@ -96,7 +91,8 @@ pub fn split_payment(amount: u128, shares: Span<crate::deep::DeepShare>) -> Span
         for other in 0..shares.len() {
             let other_remainder = *remainders.at(other);
             let other_home = *shares.at(other).home;
-            if other_remainder > remainder || (other_remainder == remainder && other_home < home) {
+            let wins_tie = other_home < home || (other_home == home && other < index);
+            if other_remainder > remainder || (other_remainder == remainder && wins_tie) {
                 ahead += 1;
             }
         }

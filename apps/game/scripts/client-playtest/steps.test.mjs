@@ -35,12 +35,6 @@ import {
   HUD_WORDS,
   leftForHome,
   openedTheFarPlace,
-  idlePlayOf,
-  judgeCatchUp,
-  judgeTickPaid,
-  readAspectTally,
-  readHeldSlot,
-  readTickPay,
   REHEARSAL_WORDS,
   SPECTATOR_STEPS,
   STEP_SETS,
@@ -1062,10 +1056,14 @@ it("requires the selected Aspect in both the founding command and its membership
   const choice = { sent: 0, cards: ["Join Prowess", "Join Luminary", "Join Havoc", "Join Insight"] };
   const seen = { scene: "hex", rendered: "hex", place: "Realm", playable: true };
   const orders = [{ label: "Play as the Order shown first", order: "3" }];
+  const release = JSON.parse(
+    readFileSync(
+      new URL("../../../../contracts/l3/world-native/schema/release-definition.json", import.meta.url),
+      "utf8",
+    ),
+  );
   const startRows = [
-    [26, "2000000000000"],
-    [35, "6000000000000"],
-    [23, "2000000000000"],
+    ...release.definition.settlement.realms.resources.map(({ resource_type, amount }) => [resource_type, amount]),
     [38, "0"],
   ].map(([resource_type, balance]) => ({ model: "ResourceBalance", value: { resource_type, balance } }));
   const founded = {
@@ -1330,9 +1328,6 @@ describe("the Season 1 rehearsal", () => {
       `forecasts a win ("${REHEARSAL_WORDS.forecasts.victory}")`,
     );
     expect(REHEARSAL_WORDS.take).toBe(DEEP_WORDS.take);
-    expect(REHEARSAL_WORDS.joinGuard).toBe(DEEP_WORDS.join);
-    expect(REHEARSAL_WORDS.lasts(14, "28m")).toBe(DEEP_WORDS.lasts(14, "28m"));
-    expect(REHEARSAL_WORDS.share(40)).toBe(DEEP_WORDS.share(40));
   });
 
   it("plays the friend's founding and Deep turns in the second account's page and everything else in the host's", () => {
@@ -1356,10 +1351,6 @@ describe("the Season 1 rehearsal", () => {
       "fight-on-the-surface",
       "enter-the-deep",
       "fight-a-beast",
-      "catch-up-t0",
-      "read-the-tick-pay",
-      "catch-up-t1",
-      "the-tick-paid",
       "ally:ally-enters-the-deep",
       "ally:ally-fights-a-guard",
       "ally:ally-takes-an-empty-site",
@@ -1384,76 +1375,6 @@ describe("the Season 1 rehearsal", () => {
     expect(
       step("found-the-host-realm").verify({ played: { already: "the host founded in this game earlier" } }).status,
     ).toBe("completed");
-  });
-
-  it("reads a held site's pay, slot and the Season board in the app's own words", () => {
-    expect(
-      readTickPay([
-        { rate: "glory", value: "+6" },
-        { rate: "height", value: "+3" },
-        { rate: "essence", value: "+1,500" },
-        { rate: "bar", value: "+2" },
-        { rate: "drain", value: "−200" },
-      ]),
-    ).toEqual({ glory: 6, height: 3, essence: 1500, bar: 2 });
-    expect(
-      readHeldSlot(
-        `Ashfall · ${DEEP_WORDS.facesNext} · 2,800 · ${DEEP_WORDS.drainTick(70)} · ${DEEP_WORDS.lasts(14, "28m")} · ${DEEP_WORDS.share(100)}`,
-      ),
-    ).toEqual({ ticks: 14, share: 100, troops: 2800 });
-    expect(readAspectTally({ height: "1240", glory: "42.5", bar: "30" })).toEqual({
-      height: 1240,
-      glory: 42.5,
-      bar: 30,
-    });
-    expect(readAspectTally({ height: null, glory: "", bar: undefined })).toEqual({
-      height: null,
-      glory: null,
-      bar: null,
-    });
-  });
-
-  it("judges a tick paid only when the guard drained and each tally rose by whole ticks of the card's pay", () => {
-    const before = {
-      pay: { glory: 6, bar: 2 },
-      slot: { share: 100, troops: 2800 },
-      tally: { glory: 10, height: 0, bar: 30 },
-    };
-    const after = (glory, bar, troops = 2600) => ({ slot: { troops }, tally: { glory, height: 0, bar } });
-    expect(judgeTickPaid(before, after(16, 32))).toEqual({ gains: { glory: 6, bar: 2 }, ticks: 1 });
-    expect(judgeTickPaid(before, after(22, 34))).toEqual({ gains: { glory: 12, bar: 4 }, ticks: 2 });
-    expect(judgeTickPaid(before, after(16, 34)).failed).toBe(
-      "the gains are not one whole number of ticks of the card's pay",
-    );
-    expect(judgeTickPaid(before, after(10, 32)).failed).toBe("the tick paid no glory");
-    expect(judgeTickPaid(before, after(16, 32, 2800)).failed).toBe("the guard lost no troops: no tick was settled");
-    expect(judgeTickPaid(before, { slot: { troops: 2600 }, tally: { glory: null, height: 0, bar: 32 } }).failed).toBe(
-      "the Season board shows no exact glory",
-    );
-  });
-  it("measures the idle play as the cheaper of the plays sent after the first, which settled what was due", () => {
-    const plays = [
-      { hash: "0x1", events: 40, l2Gas: 90_000_000 },
-      { hash: "0x2", events: 34, l2Gas: 50_000_000 },
-      { hash: "0x3", events: 39, l2Gas: 80_000_000 },
-    ];
-    expect(idlePlayOf(plays).hash).toBe("0x2");
-  });
-
-  it("judges a catch-up play by its rows emitted once each, not once per tick, and by having settled something", () => {
-    const t0 = { events: 34, l2Gas: 50_000_000 };
-    expect(judgeCatchUp(t0, { events: 40, l2Gas: 102_000_000 }, 4)).toEqual({
-      ticks: 4,
-      l2Gas: 52_000_000,
-      events: 6,
-      t1: { l2Gas: 102_000_000, events: 40 },
-    });
-    expect(judgeCatchUp(t0, { events: 58, l2Gas: 102_000_000 }, 4).failed).toBe(
-      "the catch-up play emitted 24 more events than the idle one: rows once per tick, not once each",
-    );
-    expect(judgeCatchUp(t0, { events: 34, l2Gas: 50_000_000 }, 4).failed).toBe(
-      "the catch-up play settled nothing: another command settled the ticks first",
-    );
   });
 });
 

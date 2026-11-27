@@ -18,9 +18,16 @@ export interface DeepArmyLife {
 }
 
 export function deepArmyLife(store: NativeFactStore, army: NativeRows["ExplorerTroops"], now: number): DeepArmyLife {
-  const { game_id } = army;
-  const troops = army.troops.count;
-  const lossPerTick = armyDeepLossPerTick(store, army);
+  return deepTroopsLife(store, army.game_id, army.troops.count, armyDeepLossPerTick(store, army), now);
+}
+
+export function deepTroopsLife(
+  store: NativeFactStore,
+  game_id: number,
+  troops: bigint,
+  lossPerTick: bigint,
+  now: number,
+): DeepArmyLife {
   const interval = Number(store.require("SliceRules", { game_id }).tick_config.armies_tick_in_seconds);
   const calendar = readExpeditionRules(store, game_id);
   if (!calendar) throw new Error("Deep guards require expedition days");
@@ -39,16 +46,12 @@ export function deepArmyLife(store: NativeFactStore, army: NativeRows["ExplorerT
   };
 }
 
-/**
- * What an army's place in the Deep costs it: its life at the tick's loss, from the troops it has now. Every army in the
- * Deep drains, whether it holds a site (DeepGuard) or waits in the field (DeepArmy); an army above the Deep has none.
- */
 export function armyDrain(
   store: NativeFactStore,
   army: NativeRows["ExplorerTroops"],
   now: number,
 ): DeepArmyLife | undefined {
   const key = { game_id: army.game_id, explorer_id: army.explorer_id };
-  if (!store.get("DeepArmy", key) && !store.get("DeepGuard", key)) return undefined;
+  if (!store.get("DeepArmy", key)) return undefined;
   return deepArmyLife(store, currentArmy(store, army, now), now);
 }

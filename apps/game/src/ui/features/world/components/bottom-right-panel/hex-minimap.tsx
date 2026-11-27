@@ -33,6 +33,7 @@ import {
   useRef,
   useState,
   type PointerEvent,
+  type ReactElement,
   type WheelEvent,
 } from "react";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
@@ -254,6 +255,16 @@ const resolveTileMarker = (
   return null;
 };
 
+const MinimapHexMarker = ({
+  marker: { scale = 1, ...marker },
+  x,
+  y,
+}: {
+  marker: MinimapMarker;
+  x: number;
+  y: number;
+}) => <HexMarker {...marker} x={x} y={y} radius={HEX_SIZE * scale} />;
+
 /**
  * How the minimap draws. "classic" is the shipped look. "badges" (the HUD rework's) draws the hexes larger, so each
  * occupant's painted badge fills its hex at a readable size, over terrain dimmed behind them.
@@ -467,31 +478,39 @@ export const HexMinimap = ({ tiles, selectedHex, cameraTargetHex, look = "classi
     [markers, mode.id],
   );
 
-  const tileElements = useMemo(
-    () =>
-      visibleTiles.map(({ tile, points, pixel }) => {
-        const marker = getTileMarker(tile);
-        const fill = getBiomeColor(tile.biome);
+  const tileElements = useMemo(() => {
+    const terrain: ReactElement[] = [];
+    const overlays: ReactElement[] = [];
+    for (const { tile, points, pixel } of visibleTiles) {
+      const key = `${tile.col}:${tile.row}`;
+      const fill = getBiomeColor(tile.biome);
+      terrain.push(
+        <g key={key}>
+          <polygon points={points} fill={fill} stroke="#1f130a" strokeWidth={0.6} fillOpacity={terrainOpacity} />
+        </g>,
+      );
+      const marker = getTileMarker(tile);
+      if (marker) {
+        overlays.push(<MinimapHexMarker key={`m:${key}`} marker={marker} x={pixel.x} y={pixel.y} />);
+      } else {
         const occupierColor = getOccupierColor(tile);
-        return (
-          <g key={`${tile.col}:${tile.row}`}>
-            <polygon points={points} fill={fill} stroke="#1f130a" strokeWidth={0.6} fillOpacity={terrainOpacity} />
-            {occupierColor && !marker && (
-              <circle
-                cx={pixel.x}
-                cy={pixel.y}
-                r={HEX_SIZE * 0.45}
-                fill={occupierColor}
-                stroke="#0f0a07"
-                strokeWidth={0.8}
-              />
-            )}
-            {marker && <HexMarker {...marker} x={pixel.x} y={pixel.y} radius={HEX_SIZE} />}
-          </g>
-        );
-      }),
-    [visibleTiles, getTileMarker, terrainOpacity],
-  );
+        if (occupierColor) {
+          overlays.push(
+            <circle
+              key={`o:${key}`}
+              cx={pixel.x}
+              cy={pixel.y}
+              r={HEX_SIZE * 0.45}
+              fill={occupierColor}
+              stroke="#0f0a07"
+              strokeWidth={0.8}
+            />,
+          );
+        }
+      }
+    }
+    return [...terrain, ...overlays];
+  }, [visibleTiles, getTileMarker, terrainOpacity]);
 
   /** A drag moves the camera's target with the pointer; the minimap follows the camera as it moves. */
   const dragRef = useRef<{

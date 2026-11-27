@@ -376,106 +376,115 @@ fn clear_mist_root(game_id: u32, rules: crate::expeditions::FrontierDiscoveryRul
     panic!("missing Clear Mist reveal root")
 }
 
-#[test]
-fn blood_and_pale_moons_project_each_battle_and_preserve_base_losses() {
-    for (blood, pale) in array![(true, false), (false, true), (true, true)] {
-        let (d, game_id) = setup();
-        let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
-        super::banes::train(d, home, FIXTURE_START);
-        if pale {
-            for tick in 1_u64..4 {
-                pay(
-                    d,
-                    game_id,
-                    DEEP_FOUNDATION,
-                    1,
-                    array![DeepShare { home: home.entity_id, troops: 1 }].span(),
-                    stage(),
-                    FIXTURE_START + tick * 120,
-                );
-            }
-        }
-        let now = world_test_support::tests::registrar::day_start(d, game_id, 1);
-        world_test_support::tests::resource_commands::grant(
-            d, home, crate::resources::WHEAT, 10000 * RESOURCE_PRECISION,
-        );
-        if blood {
-            super::banes::given_world_bane(d, game_id, 1, crate::banes::BLOOD_MOON);
-        }
-        assert!(execute_in_game(d, game_id, super::army_activity::muster(home.entity_id, 0, 0, 40), now));
-        let key = crate::troops::ExplorerKey {
-            game_id,
-            explorer_id: super::army_activity::slot_army(
-                d, crate::troops::ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 1, slot: 0 },
-            ),
-        };
-        let discovery = home_discovery(d, home);
-        let destination = crate::geometry::neighbor(super::army_activity::army(d, key).coord, 0);
-        let root = world_test_support::tests::registrar::discovery_root(
-            game_id,
-            discovery,
-            if pale {
-                200
-            } else {
-                100
-            },
-            0,
-            Some(world_test_support::tests::registrar::any_relic()),
-            crate::discovery::Discovery::Beasts,
-        );
-        assert!(world_test_support::tests::registrar::explore_with_root(d, game_id, key.explorer_id, root, now));
-        let site = interact_with_state(
-            d.games,
-            || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, destination)).unwrap().entity_id,
-        );
-        let guard = crate::guards::GuardKey { game_id, structure_id: site, slot: 0 };
-        world_test_support::tests::registrar::strong_frontier_army(d, game_id, key);
-        let bps: u128 = if pale {
-            if blood {
-                7500
-            } else {
-                5000
-            }
-        } else {
-            15000
-        };
-        for attempt in 0_u64..2 {
-            let base = interact_with_state(d.games, || crate::logic::guards::guard(guard).troops.count);
-            assert!(base > 0);
-            let mut events = spy_events();
-            assert!(
-                execute_in_game(
-                    d,
-                    game_id,
-                    Command::BattleGuard(
-                        crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site, relic_slot: None },
-                    ),
-                    now + 60 + attempt * 120,
-                ),
+fn moons_project_each_battle_and_preserve_base_losses(blood: bool, pale: bool) {
+    let (d, game_id) = setup();
+    let home = ResourceKey { game_id, entity_id: found(d, game_id, 1) };
+    super::banes::train(d, home, FIXTURE_START);
+    if pale {
+        for tick in 1_u64..4 {
+            pay(
+                d,
+                game_id,
+                DEEP_FOUNDATION,
+                1,
+                array![DeepShare { home: home.entity_id, troops: 1 }].span(),
+                stage(),
+                FIXTURE_START + tick * 120,
             );
-            let battle = recorded_site_battle(ref events, d, site);
-            assert_eq!(battle.defender.before, (base * bps + 9999) / 10000);
-            assert!(battle.defender.after < battle.defender.before);
-            let stored = interact_with_state(d.games, || crate::logic::guards::guard(guard).troops.count);
-            assert_eq!(stored, (battle.defender.after * 10000 + bps - 1) / bps);
-            assert!(stored < base);
-            if battle.attacker.after == 0 || stored == 0 {
-                break;
-            }
         }
-        let retained = interact_with_state(d.games, || crate::logic::guards::guard(guard).troops.count);
-        let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 2);
+    }
+    let now = world_test_support::tests::registrar::day_start(d, game_id, 1);
+    world_test_support::tests::resource_commands::grant(d, home, crate::resources::WHEAT, 10000 * RESOURCE_PRECISION);
+    if blood {
+        super::banes::given_world_bane(d, game_id, 1, crate::banes::BLOOD_MOON);
+    }
+    assert!(execute_in_game(d, game_id, super::army_activity::muster(home.entity_id, 0, 0, 40), now));
+    let key = crate::troops::ExplorerKey {
+        game_id,
+        explorer_id: super::army_activity::slot_army(
+            d, crate::troops::ArmySlotKey { game_id, structure_id: home.entity_id, epoch: 1, slot: 0 },
+        ),
+    };
+    let discovery = home_discovery(d, home);
+    let destination = crate::geometry::neighbor(super::army_activity::army(d, key).coord, 0);
+    let root = world_test_support::tests::registrar::discovery_root(
+        game_id,
+        discovery,
+        if pale {
+            200
+        } else {
+            100
+        },
+        0,
+        Some(world_test_support::tests::registrar::any_relic()),
+        crate::discovery::Discovery::Beasts,
+    );
+    assert!(world_test_support::tests::registrar::explore_with_root(d, game_id, key.explorer_id, root, now));
+    let site = interact_with_state(
+        d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, destination)).unwrap().entity_id,
+    );
+    let guard = crate::guards::GuardKey { game_id, structure_id: site, slot: 0 };
+    world_test_support::tests::registrar::strong_frontier_army(d, game_id, key);
+    let bps: u128 = if pale {
+        if blood {
+            7500
+        } else {
+            5000
+        }
+    } else {
+        15000
+    };
+    for attempt in 0_u64..2 {
+        let base = interact_with_state(d.games, || crate::logic::guards::guard(guard).troops.count);
+        assert!(base > 0);
+        let mut events = spy_events();
         assert!(
             execute_in_game(
                 d,
                 game_id,
-                Command::SetEntityName(crate::names::SetEntityName { entity_id: home.entity_id, name: 'after moons' }),
-                tomorrow,
+                Command::BattleGuard(
+                    crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site, relic_slot: None },
+                ),
+                now + 60 + attempt * 120,
             ),
         );
-        assert_eq!(interact_with_state(d.games, || crate::logic::guards::guard(guard).troops.count), retained);
-        assert_eq!(interact_with_state(d.games, || crate::logic::triumphs::effects(home, tomorrow).beast_bps), 10000);
+        let battle = recorded_site_battle(ref events, d, site);
+        assert_eq!(battle.defender.before, (base * bps + 9999) / 10000);
+        assert!(battle.defender.after < battle.defender.before);
+        let stored = interact_with_state(d.games, || crate::logic::guards::guard(guard).troops.count);
+        assert_eq!(stored, (battle.defender.after * 10000 + bps - 1) / bps);
+        assert!(stored < base);
+        if battle.attacker.after == 0 || stored == 0 {
+            break;
+        }
     }
+    let retained = interact_with_state(d.games, || crate::logic::guards::guard(guard).troops.count);
+    let tomorrow = world_test_support::tests::registrar::day_start(d, game_id, 2);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            Command::SetEntityName(crate::names::SetEntityName { entity_id: home.entity_id, name: 'after moons' }),
+            tomorrow,
+        ),
+    );
+    assert_eq!(interact_with_state(d.games, || crate::logic::guards::guard(guard).troops.count), retained);
+    assert_eq!(interact_with_state(d.games, || crate::logic::triumphs::effects(home, tomorrow).beast_bps), 10000);
+}
+
+#[test]
+fn a_blood_moon_projects_each_battle_and_preserves_base_losses() {
+    moons_project_each_battle_and_preserve_base_losses(true, false);
+}
+
+#[test]
+fn a_pale_moon_projects_each_battle_and_preserves_base_losses() {
+    moons_project_each_battle_and_preserve_base_losses(false, true);
+}
+
+#[test]
+fn blood_and_pale_moons_together_project_each_battle_and_preserve_base_losses() {
+    moons_project_each_battle_and_preserve_base_losses(true, true);
 }
 
 fn recorded_site_battle(ref events: snforge_std::EventSpy, d: Deployment, site: u64) -> crate::troops::BattleEvent {
@@ -553,6 +562,11 @@ fn spoils_clear(category: u8) {
     );
     let site = interact_with_state(d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap());
     let discovered_relic = interact_with_state(d.games, || crate::logic::army_relics::ruin(site_key));
+    world_test_support::tests::frontier_economy::settle(d, home, crate::resources::LABOR, now + 60);
+    let held_labor = interact_with_state(d.games, || crate::logic::resources::balance(home, crate::resources::LABOR));
+    if held_labor > 0 {
+        world_test_support::tests::frontier_economy::spend(d, home, crate::resources::LABOR, held_labor, now + 60);
+    }
     assert!(
         execute_in_game(
             d,
@@ -569,14 +583,15 @@ fn spoils_clear(category: u8) {
         d.games,
         || {
             let receipt = crate::logic::expeditions::expedition_site(site_key).unwrap().clear.unwrap();
-            let band = crate::expeditions::is_band(site, crate::logic::expeditions::depth_rules(0));
+            let rules = crate::logic::expeditions::depth_rules(0);
+            let band = crate::expeditions::is_band(site, rules);
             assert_eq!(crate::logic::progression::require(key).oath_pick != 0, band);
             if category == crate::taxonomy::RUIN_CATEGORY {
                 assert_eq!(receipt.reward, None);
                 assert!(discovered_relic.is_some());
                 assert_eq!(crate::logic::army_relics::read(key).first, discovered_relic);
             } else {
-                let base = crate::expeditions::site_reward(category, site, 0, band);
+                let base = crate::expeditions::site_reward(category, site, 0, band, rules);
                 assert_eq!(
                     receipt.reward,
                     base.map(|reward| crate::resources::ResourceAmount { amount: reward.amount * 2, ..reward }),

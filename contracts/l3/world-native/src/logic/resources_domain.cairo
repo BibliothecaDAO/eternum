@@ -62,9 +62,9 @@ pub mod ResourcesLogic {
             let depth = crate::logic::expeditions::depth_at(
                 key.game_id, crate::troops::Coord { alt: site.alt, x: site.col, y: site.row },
             );
-            let band = category == crate::taxonomy::BEASTS_CATEGORY
-                && crate::expeditions::is_band(site, crate::logic::expeditions::depth_rules(depth));
-            let reward = crate::expeditions::site_reward(category, site, depth, band);
+            let rules = crate::logic::expeditions::depth_rules(depth);
+            let band = category == crate::taxonomy::BEASTS_CATEGORY && crate::expeditions::is_band(site, rules);
+            let reward = crate::expeditions::site_reward(category, site, depth, band, rules);
             let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
             let spoils: u128 = if depth < 3 {
                 crate::logic::triumphs::effects(home, context.timestamp).spoils_percent.into()

@@ -27,6 +27,7 @@ export function HexMarker({
   name,
   owner,
   value,
+  undefended = false,
   x = 0,
   y = 0,
   radius = 15,
@@ -34,6 +35,7 @@ export function HexMarker({
   name: IconMeaning;
   owner: MarkerOwner;
   value?: string;
+  undefended?: boolean;
   x?: number;
   y?: number;
   radius?: number;
@@ -46,6 +48,7 @@ export function HexMarker({
         points={hexMarkerPoints(14)}
         style={{ fill: "var(--hud-surface-to)", stroke: color }}
         strokeWidth={1.4}
+        strokeDasharray={undefended ? "3.4 2.2" : undefined}
       />
       <SvgIcon name={name} x={-emblem.size / 2} y={emblem.y} size={emblem.size} />
       <g transform="translate(-7 8)" style={{ fill: color, stroke: "var(--hud-surface-to)" }} strokeWidth={0.5}>

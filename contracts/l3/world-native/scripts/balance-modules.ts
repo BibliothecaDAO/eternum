@@ -7,11 +7,11 @@ import {
   type buildNativePreset,
   seasonOneReleaseDefinition,
 } from "../../../../config/deployer/clean/config/native-preset";
-import { blitzExplorationRewards } from "../../../../config/source/blitz/balance";
+import { BLITZ_EXPLORATION_STRENGTH_CAP, blitzExplorationRewards } from "../../../../config/source/blitz/balance";
 import { blitzPendingCommandMask } from "../../../../config/source/common/native-commands";
 import { FRONTIER_S1_PRESET_ID } from "../../../../config/source/common/native-preset-modes";
 import { nativePresetForId } from "../../../../config/source/native";
-import { releaseDefinitionText } from "../../../../apps/herald/src/native/release-definition";
+import { archiveOutgoingRelease, releaseDefinitionText } from "../../../../apps/herald/src/native/release-definition";
 import { NATIVE_RELEASES } from "../../../../deploy/release/native-release";
 import wireIds from "../schema/wire-ids.json";
 
@@ -69,10 +69,19 @@ export function blitzBalanceModules(definition: PresetDefinition): Record<string
 
 export function writeRelease(frontier: PresetDefinition, blitz: PresetDefinition): void {
   writeBalanceModules(balanceModules(frontier), blitzBalanceModules(blitz));
+  archiveCurrentRelease(NATIVE_RELEASES.frontier.release);
   writeFileSync(
     new URL("schema/release-definition.json", world),
     releaseDefinitionText(NATIVE_RELEASES.frontier.release, frontier),
   );
+}
+
+function archiveCurrentRelease(incoming: number): void {
+  const archivePath = new URL("../../../../apps/herald/src/native/release-definitions.json", import.meta.url);
+  const archive = JSON.parse(readFileSync(archivePath, "utf8"));
+  const outgoing = JSON.parse(readFileSync(new URL("schema/release-definition.json", world), "utf8"));
+  const next = archiveOutgoingRelease(archive, outgoing, incoming);
+  if (next !== archive) writeFileSync(archivePath, `${JSON.stringify(next, null, 2)}\n`);
 }
 
 function writeBalanceModules(frontier: Record<string, string>, blitz: Record<string, string>): void {
@@ -177,6 +186,7 @@ function blitzExplorationModule(rewards: typeof blitzExplorationRewards): string
     throw new Error("A Blitz reveal pays from a pool of weighted rows");
   return [
     "use crate::exploration_rewards::ExplorationReward;",
+    number("EXPLORATION_STRENGTH_CAP", "u32", BLITZ_EXPLORATION_STRENGTH_CAP),
     table("EXPLORATION_REWARDS", "ExplorationReward", rewards),
   ].join("\n\n");
 }
@@ -464,6 +474,8 @@ function assertDepthPlayable(depth: CairoRow, layer: number): void {
   if (chest.some((odds, rank) => odds !== 0 && (rank < layer || rank >= layer + relicsPerLayer)))
     refuse("a layer's ruins hold only its three relics");
   if (n("reveal_percent") === 0 || n("reveal_percent") > 100) refuse("invalid reveal percentage");
+  if (n("reveal_cap") === 0) refuse("invalid reveal cap");
+  if (n("rift_essence_bps") === 0) refuse("invalid rift essence ratio");
   if (n("site_guard_lower") === 0 || n("site_guard_lower") > n("site_guard_upper")) refuse("invalid site guards");
   if (n("rift_guard_lower") === 0 || n("rift_guard_lower") > n("rift_guard_upper")) refuse("invalid rift guards");
   const guardBounds = ["site_guard_lower", "site_guard_upper", "rift_guard_lower", "rift_guard_upper"];

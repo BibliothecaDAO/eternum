@@ -2,7 +2,14 @@ import { usePlayerNames } from "@/hooks/use-player-profile";
 import { inTime } from "@/ui/design-system/kit/words";
 import { knownAmount } from "@/ui/utils/utils";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { configManager, divideByPrecision, getBalance, getRealmInfo, isViewerOwner } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  DEEP_PAYOUT_MODELS,
+  divideByPrecision,
+  getBalance,
+  getRealmInfo,
+  isViewerOwner,
+} from "@bibliothecadao/eternum";
 import { useArrivalsByStructure } from "@/hooks/helpers/use-resource-arrivals";
 import { useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useNativeFacts, useNativeRow } from "@/hooks/helpers/use-native-facts";
@@ -52,7 +59,13 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
   const viewer = useAccountAddress();
   const currentDefaultTick = useCurrentDefaultTick();
   const isUpgradeLocked = useInFlight("castle", structureEntityId) !== undefined;
-  const facts = useNativeFacts(["StructureBuildings", "ResourceWeight", "ResourceBalance", "ResourceProduction"]);
+  const facts = useNativeFacts([
+    ...DEEP_PAYOUT_MODELS,
+    "StructureBuildings",
+    "ResourceWeight",
+    "ResourceBalance",
+    "ResourceProduction",
+  ]);
   const liveStructure = useNativeRow(
     "Structure",
     structureEntityId

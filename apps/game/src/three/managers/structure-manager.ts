@@ -1,12 +1,15 @@
 import { GUARD_MODELS } from "@bibliothecadao/eternum/game-client";
+import { publishMapSelection } from "@/observability/map-selection";
 import { FrontierModel, frontierModelKind, type BeastLayer } from "../structures/frontier-model";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
+import { resolveProceduralRealmKit } from "../structures/realm-kit";
 import { MineKinds, orderAspect, structureName, troopTierIndex } from "@bibliothecadao/types";
 import {
   configManager,
   expeditionDepth,
   readExpeditionRules,
+  realmWornSkinFamily,
   siteDisplayName,
   siteKindOf,
   type SiteKind,
@@ -340,8 +343,8 @@ export class StructureManager {
     this.renderChunkSize = renderChunkSize;
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
-    this.fxManager = fxManager || new FXManager(scene);
-    this.attachmentManager = new CosmeticAttachmentManager(scene);
+    this.fxManager = fxManager || new FXManager(scene, 1.5, { compilePipelines });
+    this.attachmentManager = new CosmeticAttachmentManager(scene, compilePipelines);
     this.store = gameContext?.store as NativeFactStore | undefined;
     this.visibilityManager = visibilityManager;
     this.mode = getGameModeConfig();
@@ -372,6 +375,7 @@ export class StructureManager {
       });
 
     this.plates = plates;
+    publishMapSelection({ drawnRealmSkin: (entityId) => this.drawnRealmSkin(entityId) });
 
     // Arrival countdowns and battle cooldowns tick on the plates once a second.
     this.startTimedLabelUpdates();
@@ -446,10 +450,11 @@ export class StructureManager {
           changes.length === 0 ||
           changes.some(
             (change) =>
-              change.model !== "Guard" &&
-              change.model !== "Structure" &&
-              change.model !== "ExpeditionSite" &&
-              GUARD_MODELS.some((model) => model === change.model),
+              change.model === "Seal" ||
+              (change.model !== "Guard" &&
+                change.model !== "Structure" &&
+                change.model !== "ExpeditionSite" &&
+                GUARD_MODELS.some((model) => model === change.model)),
           );
         for (const change of changes) {
           if (change.model === "Guard") {
@@ -465,7 +470,8 @@ export class StructureManager {
           } else if (
             change.model === "Structure" ||
             change.model === "ExpeditionSite" ||
-            change.model === "StructureBuildings"
+            change.model === "StructureBuildings" ||
+            change.model === "RealmSkin"
           ) {
             const row = change.current ?? change.previous;
             if (row?.game_id === configManager.getActiveGameId()) touched.add(safeInteger(row.entity_id));
@@ -634,6 +640,16 @@ export class StructureManager {
         ? readStandingFrontierBeast(this.store, configManager.getActiveGameId(), renderable.entityId)
         : undefined,
       realmOrder: renderInfo.type === StructureType.Realm ? structureComponent?.metadata.order : undefined,
+      realmSkin:
+        renderInfo.type === StructureType.Realm && this.store
+          ? realmWornSkinFamily(
+              this.store,
+              structureComponent,
+              this.mode.id === "frontier" && structureComponent.metadata.order
+                ? orderAspect(structureComponent.metadata.order)
+                : null,
+            )
+          : undefined,
       cosmeticId: cosmetic.skin.cosmeticId,
       cosmeticAssetPaths: cosmetic.skin.assetPaths,
       usesFallbackCosmeticSkin: cosmetic.skin.isFallback,
@@ -845,6 +861,7 @@ export class StructureManager {
       return;
     }
     this.isDestroyed = true;
+    publishMapSelection({ drawnRealmSkin: null });
     this.unsubscribeProjection();
     this.storeUnsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
 
@@ -902,6 +919,19 @@ export class StructureManager {
       .length;
   }
 
+  private drawnRealmSkin(entityId: ID): "base" | "wonder" | null {
+    for (const { model, instanceIndex } of this.structureInstanceBindings.get(entityId) ?? []) {
+      if (
+        model instanceof SettlementModel &&
+        model.kind === "realm" &&
+        model.group.visible &&
+        instanceIndex < (this.structureModelDrawCounts.get(model) ?? 0)
+      )
+        return model.wonder ? "wonder" : "base";
+    }
+    return null;
+  }
+
   public prewarmChunkAssets(chunkKey: string): Promise<void> {
     const existing = this.chunkAssetPrewarmPromises.get(chunkKey);
     if (existing) {
@@ -922,6 +952,22 @@ export class StructureManager {
 
     this.chunkAssetPrewarmPromises.set(chunkKey, prewarmPromise);
     return prewarmPromise;
+  }
+
+  public async prewarmExploreModels(): Promise<void> {
+    if (this.isDestroyed) return;
+    for (const [structureTypeKey, paths] of Object.entries(this.structureModelPaths)) {
+      if (this.isDestroyed) return;
+      const structureType = Number(structureTypeKey) as StructureType;
+      const basePath = paths[0];
+      const isExploreShell =
+        structureType === StructureType.Camp ||
+        structureType === StructureType.Rift ||
+        Boolean(basePath && frontierModelKind(basePath));
+      if (!Number.isFinite(structureType) || !basePath || !isExploreShell) continue;
+      if (this.structureModels.get(structureType)?.has(0)) continue;
+      await this.ensureStructureModel(structureType, 0);
+    }
   }
 
   private async ensureStructureModel(structureType: StructureType, modelIndex: number): Promise<StructureModel> {
@@ -960,7 +1006,7 @@ export class StructureManager {
   private async loadStructureModel(structureType: StructureType, modelPath: string): Promise<StructureModel> {
     if (structureType === StructureType.Hyperstructure) return new HyperstructureModel(STRUCTURE_INSTANCE_CAPACITY);
     const startedAt = performance.now();
-    const gltf = await gltfLoader.loadAsync(modelPath);
+    const gltf = resolveProceduralRealmKit(modelPath) ?? (await gltfLoader.loadAsync(modelPath));
     recordWorldmapRenderDuration("structureModelLoadMs", performance.now() - startedAt);
     recordGameEntryDuration(`structure-model-load:${modelPath}`, performance.now() - startedAt);
     const model = this.createStructureModel(gltf, structureType, modelPath);
@@ -1313,6 +1359,7 @@ export class StructureManager {
           structure.hasWonder,
           structure.entityId,
           this.mode.id === "frontier" && structure.realmOrder ? orderAspect(structure.realmOrder) : null,
+          structure.realmSkin,
         )
       : structure.stage;
   }
@@ -1821,7 +1868,7 @@ export class StructureManager {
   }
 
   private updateStructureCompactLabel(structure: StructureInfo, position: Vector3): void {
-    if (!this.contentLadder.labels || structure.supplyPost) {
+    if (!this.contentLadder.labels || structure.supplyPost || structure.structureType === StructureType.DeepSite) {
       this.removeStructureCompactLabel(structure.entityId);
       return;
     }

@@ -1,23 +1,22 @@
 import "./deep-site.css";
 
-import { heldOaths } from "@bibliothecadao/eternum";
 import { AspectMark } from "@/ui/design-system/aspect-mark";
-import { orderMeaning } from "@/ui/design-system/icon-meaning";
-import { oathEffectDescription, oathName } from "../army/oath-details";
-import type { PickEffectBase } from "../pick-effect-format";
 import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { type Price } from "@/ui/design-system/kit/price-faces";
 import {
+  AmountInput,
   HudButton,
   HudMeter,
   HudPrice,
   HudNotice,
-  HudRow,
   HudSheet,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
-import { ARMY, DEEP_WORDS, MOVE, TROOPS } from "@/ui/design-system/kit/words";
+import { AmountRange } from "../amount-range";
+import { ARMY, DEEP_WORDS, MOVE, SLOT_ADD, SLOT_EMPTY, UNDEFENDED, YOU } from "@/ui/design-system/kit/words";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { Fragment, useState, type ReactNode } from "react";
 import {
   aspectName,
   type AspectId,
@@ -26,17 +25,17 @@ import {
   beastModel,
   deepSites,
   formatExact,
-  formatRate,
   formatShortDuration,
+  frontierTroopName,
 } from "@bibliothecadao/types";
 import { beastMeaning, troopMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/balance.gen";
+import { nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
 
 import { AttackStamina, FightArena } from "../sites/fight-side";
-import { CombatBadge, combatMarkOf } from "../sites/combat-mark";
+import { BeastMarkBadge, combatMarkOf } from "../sites/combat-mark";
 import type { DeepSiteFight } from "../sites/site-card-plan";
 
-import { DEEP_SITE_FACES } from "./deep-site-faces";
+import { DEEP_SITE_FACES, type DeepPay } from "./deep-site-faces";
 
 export interface DeepRates {
   tickSeconds: number;
@@ -48,44 +47,55 @@ export interface DeepRates {
   drain: number;
 }
 
-export type DeepPay = keyof typeof DEEP_WORDS.kinds;
-
 export interface DeepOpening {
   entered: number;
   realms: number;
   pays: readonly DeepPay[];
 }
 
-export interface DeepSlot {
+export type DeepSide = "own" | "ally" | "rival" | "held";
+
+export interface DeepGarrisonSlot {
   slot: number;
-  armyId: number;
-  oaths: number;
-  category: Troops["category"];
-  tier: Troops["tier"];
-  realm: string;
-  troops: number;
-  lossPerTick: number;
-  ticks: { left: number; time: string };
+  owner: string;
+  aspectId: AspectId;
+  side: DeepSide;
+  troops: Pick<Troops, "category" | "tier">;
+  count: number;
+  cap: number;
   share: number;
-  mine: boolean;
+  timeLeft: string;
 }
 
 export type DeepGuard =
   | { kind: "beast"; troops: number; category: Troops["category"] }
+  | { kind: "open" }
   | {
-      kind: "held";
+      kind: "taken";
+      owner: string;
       aspectId: AspectId;
-      ally: boolean;
-      slots: readonly DeepSlot[];
-      next: number;
-    }
-  | { kind: "open" };
+      side: DeepSide;
+      slots: readonly DeepGarrisonSlot[];
+      mayAdd: boolean;
+      alliesMayGuard: boolean;
+      gloryWon: number | undefined;
+    };
 
-export type DeepBlock = "pickArmy" | "guarding" | "full" | "rival" | "otherDay" | "noTroops";
+export type DeepBlock = "pickArmy" | "otherDay" | "noTroops" | "noAdjacent" | "slotsFull" | "ownerOnly";
+
+export type DeepTransfer = { most: number; onSend: (amount: number, targetSlot?: number) => void };
 
 export type DeepOrder =
-  | { kind: "act"; verb: "attack" | "take" | "join"; stamina?: number; busy?: string; onAct: () => void }
-  | { kind: "short"; verb: "attack"; line: string }
+  | { kind: "attack"; verb: "attack" | "take"; stamina?: number; busy?: string; onAct: () => void }
+  | { kind: "short"; line: string }
+  | {
+      kind: "guard";
+      troops: Pick<Troops, "category" | "tier">;
+      armyTroops: number;
+      busy?: string;
+      guard?: DeepTransfer;
+      withdraw?: DeepTransfer;
+    }
   | { kind: "move"; prices: readonly Price[]; onMove: () => void }
   | { kind: "closed" };
 
@@ -96,96 +106,126 @@ export interface DeepSiteProps {
   opening: DeepOpening | null;
   guard: DeepGuard;
   fight?: DeepSiteFight;
-  pickBase: PickEffectBase;
   order: DeepOrder | DeepBlock;
   onClose: () => void;
 }
 
-const FIGHT_ORDER = Array.from(
-  { length: nativeRuleConstants.DEEP_GUARD_SLOTS },
-  (_, index) => nativeRuleConstants.DEEP_GUARD_SLOTS - 1 - index,
-);
+type Taken = Extract<DeepGuard, { kind: "taken" }>;
+type Picking = { kind: "guard" | "withdraw"; targetSlot?: number };
+
+const SLOTS = nativeRuleConstants.DEEP_GUARD_SLOTS;
+const FIGHT_SLOTS = Array.from({ length: SLOTS }, (_, index) => SLOTS - 1 - index);
 
 const siteName = (key: DeepSiteProps["site"]) => deepSites.find((each) => each.key === key)!.name;
 
-export const DeepSiteView = ({ site, ring, rates, opening, guard, fight, pickBase, order, onClose }: DeepSiteProps) => {
+export const DeepSiteView = ({ site, ring, rates, opening, guard, fight, order, onClose }: DeepSiteProps) => {
   const name = siteName(site);
-  const secondary = rates && secondaryRate(rates);
+  const [picking, setPicking] = useState<Picking | null>(null);
+  const orders = typeof order === "object" && order.kind === "guard" ? order : undefined;
+  const pick = (want: Picking["kind"], targetSlot?: number) => {
+    const chosen =
+      want === "withdraw" ? (orders?.withdraw ? "withdraw" : "guard") : orders?.guard ? "guard" : "withdraw";
+    const available = chosen === "withdraw" ? orders?.withdraw : orders?.guard;
+    if (!available) return;
+    setPicking({ kind: chosen, targetSlot });
+  };
+  const activeTransfer = picking ? (picking.kind === "withdraw" ? orders?.withdraw : orders?.guard) : undefined;
   return (
     <HudSheet
       label={name}
-      title={<DeepTitle site={site} name={name} tag={siteTag(ring, opening, guard)} />}
+      title={<DeepTitle site={site} name={name} tag={siteTag(ring, opening, guard)} guard={guard} />}
       onClose={onClose}
     >
       <div data-deep-site={site} data-deep-guard={guard.kind} className="deep-site">
-        {rates ? <RateStrip rates={rates} /> : opening && <LockedKinds pays={opening.pays} />}
-        {fight ? (
-          <FightPreview site={site} fight={fight} guard={guard} />
+        <div className="deep-yield">
+          {rates ? <RateStrip rates={rates} guard={guard} /> : opening && <LockedKinds pays={opening.pays} />}
+          <p className="deep-purpose">{DEEP_SITE_FACES[site].purpose}</p>
+        </div>
+        {fight && <FightPreview site={site} fight={fight} guard={guard} />}
+        {opening ? (
+          <OpeningBar opening={opening} />
         ) : (
-          <GuardStrip site={site} guard={guard} pickBase={pickBase} />
+          <GuardRow site={site} guard={guard} rates={rates} orders={orders} onPick={orders ? pick : undefined} />
         )}
-        {fight && guard.kind === "held" && <GuardStrip site={site} guard={guard} pickBase={pickBase} />}
-        {rates && secondary?.kind !== "drain" && <PoisonStrip rates={rates} />}
-        {opening && <OpeningBar opening={opening} />}
+        {orders && picking && activeTransfer && (
+          <TransferPicker
+            key={`${picking.kind}:${picking.targetSlot ?? "auto"}:${activeTransfer.most}`}
+            orders={orders}
+            picking={picking}
+            transfer={activeTransfer}
+            onDone={() => setPicking(null)}
+          />
+        )}
+        {rates && guard.kind === "taken" && (
+          <p data-deep-day-end className="deep-day-end-warn">
+            {DEEP_WORDS.dayEndPoison(rates.drain, cadenceOf(rates))} · <b>{DEEP_WORDS.dayEndLost}</b>
+          </p>
+        )}
       </div>
-      <OrderFoot order={order} />
+      <OrderFoot order={order} guard={guard} site={site} onPick={pick} />
       {typeof order === "object" && order.kind === "short" && <HudNotice tone="bad" line={order.line} />}
     </HudSheet>
   );
 };
 
-type SiteTag = { state: "open" | "held" | "locked" | "rival"; line: string; aspectId?: AspectId };
+type SiteTag = { state: DeepSide | "open" | "locked"; line: string };
 
 const siteTag = (ring: number, opening: DeepSiteProps["opening"], guard: DeepGuard): SiteTag => {
   const shownRing = ring + 1;
   if (opening) return { state: "locked", line: DEEP_WORDS.tag.locked(shownRing) };
-  if (guard.kind !== "held") return { state: "open", line: DEEP_WORDS.tag.open(shownRing) };
-  const aspect = aspectName(guard.aspectId);
-  return guard.ally
-    ? { state: "held", line: DEEP_WORDS.tag.held(aspect), aspectId: guard.aspectId }
-    : {
-        state: "rival",
-        line: DEEP_WORDS.tag.rival(aspect, guard.slots.length, nativeRuleConstants.DEEP_GUARD_SLOTS),
-        aspectId: guard.aspectId,
-      };
+  if (guard.kind !== "taken") return { state: "open", line: DEEP_WORDS.tag.open(shownRing) };
+  return {
+    state: guard.side,
+    line: DEEP_WORDS.tag[guard.side](aspectName(guard.aspectId), guard.slots.length, SLOTS),
+  };
 };
 
-const DeepTitle = ({ site, name, tag }: { site: DeepSiteProps["site"]; name: string; tag: SiteTag }) => (
+const DeepTitle = ({
+  site,
+  name,
+  tag,
+  guard,
+}: {
+  site: DeepSiteProps["site"];
+  name: string;
+  tag: SiteTag;
+  guard: DeepGuard;
+}) => (
   <span className="deep-title">
     <span className="deep-title__emblem">
-      <Icon name={DEEP_SITE_FACES[site].icon} size={26} />
+      <Icon name={DEEP_SITE_FACES[site].icon} size={24} />
     </span>
     <span className="deep-title__words">
-      <span data-deep-tag={tag.state} data-aspect-id={tag.aspectId} className="deep-tag">
+      <span data-deep-tag={tag.state} className="deep-tag">
         {tag.line}
       </span>
       <span className="deep-title__name">{name}</span>
-      <span className="deep-title__purpose">{DEEP_SITE_FACES[site].purpose}</span>
+      {guard.kind === "taken" && (
+        <span data-deep-holder className="deep-title__holder">
+          <AspectMark aspect={guard.aspectId} size={13} decorative />
+          <span>
+            {DEEP_WORDS.heldBy} <b>{guard.owner}</b> · {aspectName(guard.aspectId)}
+          </span>
+        </span>
+      )}
     </span>
   </span>
 );
 
-type Rate = { kind: "glory" | "height" | "essence" | "labor" | "bar" | "drain"; amount: number; sub: string };
+type Rate = { kind: "glory" | "height" | "essence" | "labor" | "bar"; amount: number };
 
 const cadenceOf = (rates: DeepRates) => formatShortDuration(rates.tickSeconds);
 
-const resourceSub = (rates: DeepRates, amount: number) => DEEP_WORDS.splitCell(formatRate(amount / rates.tickSeconds));
-
-const primaryRate = (rates: DeepRates): Rate | null =>
-  rates.glory > 0
-    ? { kind: "glory", amount: rates.glory, sub: DEEP_WORDS.splitCell(DEEP_WORDS.kinds.glory) }
-    : rates.essence > 0
-      ? { kind: "essence", amount: rates.essence, sub: resourceSub(rates, rates.essence) }
-      : rates.labor > 0
-        ? { kind: "labor", amount: rates.labor, sub: resourceSub(rates, rates.labor) }
-        : null;
-
-const secondaryRate = (rates: DeepRates): Rate =>
-  rates.height > 0
-    ? { kind: "height", amount: rates.height, sub: DEEP_WORDS.kinds.height }
-    : rates.bar
-      ? { kind: "bar", amount: rates.bar.perTick, sub: DEEP_WORDS.kinds.bar }
-      : { kind: "drain", amount: rates.drain, sub: DEEP_WORDS.poisonCell };
+const ratesOf = (rates: DeepRates): Rate[] =>
+  (
+    [
+      { kind: "glory", amount: rates.glory },
+      { kind: "essence", amount: rates.essence },
+      { kind: "labor", amount: rates.labor },
+      { kind: "height", amount: rates.height },
+      { kind: "bar", amount: rates.bar?.perTick ?? 0 },
+    ] as const
+  ).filter((rate) => rate.amount > 0);
 
 const RATE_ICONS = {
   glory: "crown",
@@ -193,32 +233,28 @@ const RATE_ICONS = {
   essence: "essence",
   labor: "labor",
   bar: "flame",
-  drain: "poison",
 } as const satisfies Record<Rate["kind"], IconMeaning>;
 
-const RateStrip = ({ rates }: { rates: DeepRates }) => {
-  const cells = [primaryRate(rates), secondaryRate(rates)].flatMap((rate) => (rate ? [rate] : []));
+const RateStrip = ({ rates, guard }: { rates: DeepRates; guard: DeepGuard }) => {
+  const list = ratesOf(rates);
   return (
     <div data-deep-pay className="deep-rates">
-      {cells.map((rate) => (
-        <span
-          key={rate.kind}
-          data-rate={rate.kind}
-          data-tip={
-            rate.kind === "bar" && rates.bar ? DEEP_WORDS.bar(rates.bar.charge, rates.bar.threshold) : undefined
-          }
-          className="deep-rate"
-        >
-          <span className="deep-rate__value">
-            <Icon name={RATE_ICONS[rate.kind]} size={18} />
-            <b data-tone={rate.kind === "drain" ? "poison" : undefined}>
-              {rate.kind === "drain" ? `−${formatExact(rate.amount)}` : `+${formatExact(rate.amount)}`}
-            </b>
+      {list.map((rate, index) => (
+        <Fragment key={rate.kind}>
+          {index > 0 && (
+            <span className="deep-rates__dot" aria-hidden="true">
+              ·
+            </span>
+          )}
+          <span data-rate={rate.kind} data-tip={DEEP_WORDS.kinds[rate.kind]} className="deep-rate">
+            <Icon name={RATE_ICONS[rate.kind]} size={15} />
+            <b>{`+${formatExact(rate.amount)}`}</b>
             <i>{DEEP_WORDS.perTick(cadenceOf(rates))}</i>
+            {rate.kind === "bar" && rates.bar && <i>{`· ${DEEP_WORDS.bar(rates.bar.charge, rates.bar.threshold)}`}</i>}
           </span>
-          <span className="deep-rate__sub">{rate.sub}</span>
-        </span>
+        </Fragment>
       ))}
+      {guard.kind === "taken" && <GloryWon rates={rates} guard={guard} />}
     </div>
   );
 };
@@ -235,11 +271,206 @@ const LockedKinds = ({ pays }: { pays: readonly DeepPay[] }) => (
   </div>
 );
 
-const PoisonStrip = ({ rates }: { rates: DeepRates }) => (
-  <span data-deep-poison className="deep-poison-strip">
-    <Icon name="poison" size={14} />
-    {DEEP_WORDS.poisonStrip(rates.drain, cadenceOf(rates))}
-  </span>
+const viewerShare = (guard: Taken) =>
+  guard.slots.filter((slot) => slot.side === "own").reduce((sum, slot) => sum + slot.share, 0);
+
+const GloryWon = ({ rates, guard }: { rates: DeepRates; guard: Taken }) => {
+  if (rates.glory <= 0 || guard.gloryWon === undefined) return null;
+  if (guard.side !== "own" && guard.side !== "ally") return null;
+  const share = viewerShare(guard);
+  const tip =
+    share > 0
+      ? DEEP_WORDS.gloryTip(Math.round(rates.glory * share) / 100, cadenceOf(rates), share)
+      : DEEP_WORDS.gloryIdleTip;
+  return (
+    <span data-deep-glory-won data-tip={tip} className="deep-glory-won">
+      <Icon name="crown" size={13} />
+      {DEEP_WORDS.glory(guard.gloryWon)}
+    </span>
+  );
+};
+
+const inFightOrder = (slots: readonly DeepGarrisonSlot[]) => [...slots].sort((left, right) => right.slot - left.slot);
+
+const matchesOwnArmy = (slot: DeepGarrisonSlot, troops: Pick<Troops, "category" | "tier">) =>
+  slot.side === "own" && slot.troops.category === troops.category && slot.troops.tier === troops.tier;
+
+const GuardRow = ({
+  site,
+  guard,
+  rates,
+  orders,
+  onPick,
+}: {
+  site: DeepSiteProps["site"];
+  guard: DeepGuard;
+  rates: DeepRates | null;
+  orders: Extract<DeepOrder, { kind: "guard" }> | undefined;
+  onPick: ((want: Picking["kind"], targetSlot?: number) => void) | undefined;
+}) => {
+  const held = guard.kind === "taken" ? inFightOrder(guard.slots) : [];
+  const filled = guard.kind === "beast" ? 1 : held.length;
+  const cue =
+    guard.kind === "taken" && held.length === 0
+      ? UNDEFENDED
+      : guard.kind === "taken" && guard.side === "rival"
+        ? DEEP_WORDS.slotOrder.seize
+        : DEEP_WORDS.slotOrder.cue;
+  const occupied = new Set(held.map((slot) => slot.slot));
+  const emptySlots =
+    guard.kind === "taken"
+      ? FIGHT_SLOTS.filter((slot) => !occupied.has(slot))
+      : Array.from({ length: SLOTS - filled }, (_, index) => index);
+  const hasOwnMatchingSlot = orders !== undefined && held.some((slot) => matchesOwnArmy(slot, orders.troops));
+  const canAdd = Boolean(orders?.guard && onPick && !hasOwnMatchingSlot);
+  const showUndefended =
+    guard.kind === "taken" && held.length === 0 && (guard.side === "own" || (guard.side === "ally" && guard.mayAdd));
+  return (
+    <div data-deep-guards className="deep-guards">
+      <div className="deep-guards__head">
+        <span>{DEEP_WORDS.guardCount(filled, SLOTS)}</span>
+        <span className="deep-guards__cue">{cue}</span>
+      </div>
+      <div className="deep-guards__row">
+        {guard.kind === "beast" && <BeastTile site={site} guard={guard} />}
+        {held.map((slot, index) => {
+          const interactive =
+            orders !== undefined &&
+            matchesOwnArmy(slot, orders.troops) &&
+            Boolean(onPick) &&
+            Boolean(orders.withdraw || orders.guard);
+          return (
+            <GuardTile
+              key={slot.slot}
+              slot={slot}
+              first={index === 0}
+              rates={rates}
+              onOpen={interactive ? () => onPick!(orders?.withdraw ? "withdraw" : "guard", slot.slot) : undefined}
+            />
+          );
+        })}
+        {emptySlots.map((slotNumber) => (
+          <EmptyTile key={slotNumber} guard={guard} onAdd={canAdd ? () => onPick!("guard", slotNumber) : undefined} />
+        ))}
+      </div>
+      {showUndefended && (
+        <p data-deep-undefended className="deep-guards__undefended">
+          {DEEP_WORDS.undefendedLine}
+        </p>
+      )}
+    </div>
+  );
+};
+
+const Tile = ({
+  onPress,
+  tip,
+  className,
+  children,
+  ...data
+}: {
+  onPress: (() => void) | undefined;
+  tip: string;
+  className: string;
+  children: ReactNode;
+} & Record<`data-${string}`, string | number | boolean | undefined>) =>
+  onPress ? (
+    <button
+      type="button"
+      data-tip={tip}
+      aria-label={tip}
+      className={cn("ui-pick", className)}
+      onClick={onPress}
+      {...data}
+    >
+      {children}
+    </button>
+  ) : (
+    <span role="img" data-tip={tip} aria-label={tip} className={className} {...data}>
+      {children}
+    </span>
+  );
+
+const BeastTile = ({ site, guard }: { site: DeepSiteProps["site"]; guard: Extract<DeepGuard, { kind: "beast" }> }) => (
+  <Tile
+    onPress={undefined}
+    tip={DEEP_WORDS.beastTip(DEEP_BEASTS[site].name, combatMarkOf(guard.category).label)}
+    className="deep-tile"
+    data-deep-beast=""
+    data-first=""
+  >
+    <span className="deep-tile__first">{DEEP_WORDS.slotOrder.first}</span>
+    <span className="deep-tile__portrait">
+      <Icon name={beastMeaning(beastModel(DEEP_BEASTS[site]))} size={32} className="size-full" />
+      <BeastMarkBadge category={guard.category} />
+    </span>
+    <b className="deep-tile__count">{formatExact(guard.troops)}</b>
+    <span className="deep-tile__owner">{DEEP_BEASTS[site].name}</span>
+  </Tile>
+);
+
+const GuardTile = ({
+  slot,
+  first,
+  rates,
+  onOpen,
+}: {
+  slot: DeepGarrisonSlot;
+  first: boolean;
+  rates: DeepRates | null;
+  onOpen: (() => void) | undefined;
+}) => {
+  const owner = slot.side === "own" ? YOU : slot.owner;
+  const cadence = rates ? cadenceOf(rates) : "";
+  const drain = rates ? DEEP_WORDS.slotDrain(rates.drain, cadence) : undefined;
+  const gloryRate = rates && rates.glory > 0 && slot.share > 0 ? Math.round(rates.glory * slot.share) / 100 : undefined;
+  return (
+    <Tile
+      onPress={onOpen}
+      tip={DEEP_WORDS.slotTip(
+        owner,
+        frontierTroopName(slot.troops.category) ?? "",
+        slot.count,
+        slot.cap,
+        slot.share,
+        rates?.drain ?? 0,
+        cadence,
+        slot.timeLeft,
+        Boolean(onOpen),
+        gloryRate,
+      )}
+      className="deep-tile"
+      data-guard-slot={slot.slot}
+      data-share={slot.share}
+      data-side={slot.side}
+      data-first={first || undefined}
+    >
+      {first && <span className="deep-tile__first">{DEEP_WORDS.slotOrder.first}</span>}
+      <span className="deep-tile__portrait">
+        <Icon name={troopMeaning(slot.troops)} size={32} className="size-full" />
+        <BeastMarkBadge category={slot.troops.category} />
+      </span>
+      <b className="deep-tile__count">{formatExact(slot.count)}</b>
+      <span className="deep-tile__owner">{owner}</span>
+      {drain && <span className="deep-tile__drain">{drain}</span>}
+    </Tile>
+  );
+};
+
+const emptyTip = (guard: DeepGuard) =>
+  guard.kind !== "taken"
+    ? SLOT_EMPTY
+    : !guard.mayAdd
+      ? DEEP_WORDS.ownerOnly
+      : guard.alliesMayGuard
+        ? DEEP_WORDS.openSlotTip(aspectName(guard.aspectId))
+        : DEEP_WORDS.openOwnerSlotTip;
+
+const EmptyTile = ({ guard, onAdd }: { guard: DeepGuard; onAdd: (() => void) | undefined }) => (
+  <Tile onPress={onAdd} tip={emptyTip(guard)} className="deep-tile" data-empty={onAdd ? "add" : "empty"}>
+    {onAdd && <Icon name="plus" size={14} />}
+    <span className="deep-tile__empty">{onAdd ? SLOT_ADD : SLOT_EMPTY}</span>
+  </Tile>
 );
 
 const OpeningBar = ({ opening }: { opening: DeepOpening }) => (
@@ -266,14 +497,14 @@ const FightPreview = ({
   guard: DeepGuard;
 }) => {
   const result = fight.result && !("refused" in fight.result) ? fight.result : undefined;
-  const frontGuard = guard.kind === "held" ? guard.slots.find((each) => each.armyId === guard.next) : undefined;
-  const defenderLabel = guard.kind === "beast" ? DEEP_BEASTS[site].name : (frontGuard?.realm ?? TROOPS);
+  const front = guard.kind === "taken" ? inFightOrder(guard.slots)[0] : undefined;
+  const defenderLabel = guard.kind === "beast" ? DEEP_BEASTS[site].name : (front?.owner ?? siteName(site));
   const defenderArt =
     guard.kind === "beast" ? beastMeaning(beastModel(DEEP_BEASTS[site])) : troopMeaning(fight.defenderTroops);
   const defenderBadge =
     guard.kind === "beast" ? (
-      <CombatBadge category={guard.category} />
-    ) : guard.kind === "held" ? (
+      <BeastMarkBadge category={guard.category} />
+    ) : guard.kind === "taken" ? (
       <span className="deep-fight__aspect" aria-hidden="true">
         <AspectMark aspect={guard.aspectId} size={14} decorative />
       </span>
@@ -301,157 +532,131 @@ const FightPreview = ({
   );
 };
 
-const slotTip = (slot: DeepSlot, next: boolean, pickBase: PickEffectBase): string => {
-  const oaths = heldOaths(slot.oaths).map((id) => `${oathName(id)} (${oathEffectDescription(id, pickBase)})`);
-  return [
-    next ? `${slot.realm} · ${DEEP_WORDS.facesNext}` : slot.realm,
-    formatExact(slot.troops),
-    DEEP_WORDS.drainTick(slot.lossPerTick),
-    DEEP_WORDS.lasts(slot.ticks.left, slot.ticks.time),
-    DEEP_WORDS.share(slot.share),
-    ...oaths,
-  ].join(" · ");
-};
-
-const BeastRow = ({ site, guard }: { site: DeepSiteProps["site"]; guard: Extract<DeepGuard, { kind: "beast" }> }) => (
-  <div data-deep-beast className="deep-beast">
-    <span className="deep-beast__portrait">
-      <Icon name={beastMeaning(beastModel(DEEP_BEASTS[site]))} size={48} className="size-full" />
-      <CombatBadge category={guard.category} />
-    </span>
-    <span className="deep-beast__words">
-      <span className="deep-beast__name">
-        {DEEP_BEASTS[site].name}
-        <span className="deep-beast__tag">{combatMarkOf(guard.category).label}</span>
-      </span>
-      <b className="deep-beast__troops">{DEEP_WORDS.troops(guard.troops)}</b>
-    </span>
-  </div>
-);
-
-const GuardStrip = ({
-  site,
-  guard,
-  pickBase,
+const TransferPicker = ({
+  orders,
+  picking,
+  transfer,
+  onDone,
 }: {
-  site: DeepSiteProps["site"];
-  guard: DeepGuard;
-  pickBase: PickEffectBase;
+  orders: Extract<DeepOrder, { kind: "guard" }>;
+  picking: Picking;
+  transfer: DeepTransfer;
+  onDone: () => void;
 }) => {
-  if (guard.kind === "beast") return <BeastRow site={site} guard={guard} />;
-  if (guard.kind === "open") return <HudRow lead={<Icon name="flag" size={32} />} title={DEEP_WORDS.open} />;
-  const filled = FIGHT_ORDER.flatMap((slot) => {
-    const held = guard.slots.find((each) => each.slot === slot);
-    return held ? [held] : [];
-  });
-  const free = FIGHT_ORDER.filter((slot) => !guard.slots.some((each) => each.slot === slot));
-  const frontGuard = filled.find((each) => each.armyId === guard.next) ?? filled[0];
+  const [amount, setAmount] = useState(0);
+  const withdrawing = picking.kind === "withdraw";
+  const label = withdrawing ? DEEP_WORDS.withdraw : DEEP_WORDS.guardWith(frontierTroopName(orders.troops.category));
+  const confirm = () => {
+    transfer.onSend(amount, picking.targetSlot);
+    onDone();
+  };
+  const confirmLabel = withdrawing
+    ? amount > 0
+      ? DEEP_WORDS.withdrawAmount(amount)
+      : DEEP_WORDS.withdraw
+    : amount > 0
+      ? DEEP_WORDS.guardAmount(amount)
+      : DEEP_WORDS.guardShort;
   return (
-    <div data-deep-slots className="deep-held">
-      <div
-        className="deep-holder"
-        data-aspect-holder={guard.aspectId}
-        data-aspect-id={guard.aspectId}
-        data-side={guard.ally ? "ally" : "rival"}
-      >
-        <AspectMark aspect={guard.aspectId} size={16} decorative />
-        <span className={guard.ally ? "text-hud-ally" : "text-hud-bad"}>{aspectName(guard.aspectId)}</span>
-        <span>
-          · {DEEP_WORDS.guardsCount(guard.slots.length, nativeRuleConstants.DEEP_GUARD_SLOTS)} ·{" "}
-          {DEEP_WORDS.slotsOpen(free.length)} ·
+    <div data-deep-transfer={picking.kind} className="deep-transfer">
+      <div className="deep-transfer__row">
+        <AmountInput label={label} value={amount} max={transfer.most} onChange={setAmount} />
+        <span className="flex-1">
+          <AmountRange
+            label={label}
+            icon={troopMeaning(orders.troops)}
+            value={amount}
+            max={transfer.most}
+            onChange={setAmount}
+          />
         </span>
-        <span data-deep-poisoned className="deep-poisoned">
-          {DEEP_WORDS.poisoned}
-        </span>
+        <HudButton
+          kind="primary"
+          icon={withdrawing ? "exit" : "transfer"}
+          disabled={amount <= 0 || amount > transfer.most}
+          onClick={confirm}
+        >
+          {confirmLabel}
+        </HudButton>
       </div>
-      <div className="deep-guards">
-        <div className="deep-guards__row">
-          {filled.map((held) => {
-            const isNext = held.armyId === guard.next;
-            const tip = slotTip(held, isNext, pickBase);
-            return (
-              <span
-                key={held.slot}
-                data-deep-slot="filled"
-                data-next={isNext || undefined}
-                data-mine={held.mine || undefined}
-                data-tip={tip}
-                role="img"
-                aria-label={tip}
-                className="deep-guard-portrait"
-              >
-                <Icon
-                  name={troopMeaning({ category: held.category, tier: held.tier })}
-                  size={44}
-                  className="size-full"
-                />
-                <span className="deep-guard-portrait__poison" aria-hidden="true">
-                  <Icon name="poison" size={12} />
-                </span>
-                <span className="deep-guard-portrait__aspect" aria-hidden="true">
-                  <AspectMark aspect={guard.aspectId} size={16} decorative />
-                </span>
-              </span>
-            );
-          })}
-          {free.map((slot) => (
-            <span
-              key={slot}
-              data-deep-slot="empty"
-              aria-label={DEEP_WORDS.freeSlot}
-              data-tip={DEEP_WORDS.freeSlot}
-              className="deep-guard-empty"
-            >
-              <Icon name="plus" size={16} />
-            </span>
-          ))}
-        </div>
-      </div>
-      {frontGuard && (
-        <div data-guard-oaths={frontGuard.oaths} className="flex flex-wrap items-center gap-1.5 empty:hidden">
-          {heldOaths(frontGuard.oaths).map((id) => (
-            <span
-              key={id}
-              data-oath={id}
-              title={oathEffectDescription(id, pickBase)}
-              className="inline-flex items-center gap-1 text-hud-label text-hud-muted"
-            >
-              <Icon name={orderMeaning(id)} size={16} />
-              {oathName(id)}
-            </span>
-          ))}
-        </div>
+      {!withdrawing && amount > 0 && amount === orders.armyTroops && (
+        <HudNotice tone="warn" line={DEEP_WORDS.guardAll} />
       )}
     </div>
   );
 };
 
-const verbWord = (verb: "attack" | "take" | "join", phone: boolean) =>
-  verb === "join" && phone ? DEEP_WORDS.joinShort : DEEP_WORDS[verb];
+const guardWord = (troops: Pick<Troops, "category">, guard: DeepGuard, phone: boolean) => {
+  if (guard.kind === "taken" && guard.slots.length === 0) return DEEP_WORDS.addGuard;
+  return phone ? DEEP_WORDS.guardShort : DEEP_WORDS.guardWith(frontierTroopName(troops.category));
+};
 
-const OrderFoot = ({ order }: { order: DeepOrder | DeepBlock }) => {
+const frontName = (site: DeepSiteProps["site"], guard: DeepGuard) =>
+  guard.kind === "beast"
+    ? DEEP_BEASTS[site].name
+    : guard.kind === "taken"
+      ? inFightOrder(guard.slots)[0]?.owner
+      : undefined;
+
+const OrderFoot = ({
+  order,
+  guard,
+  site,
+  onPick,
+}: {
+  order: DeepOrder | DeepBlock;
+  guard: DeepGuard;
+  site: DeepSiteProps["site"];
+  onPick: (want: Picking["kind"]) => void;
+}) => {
   const phone = useHudLayout() !== "desktop";
-  if (typeof order === "string") return <HudWindowFoot note={DEEP_WORDS[order]} />;
+  if (typeof order === "string")
+    return <HudWindowFoot note={order === "slotsFull" ? DEEP_WORDS.slotsFull(SLOTS) : DEEP_WORDS[order]} />;
   if (order.kind === "closed") return null;
   const footPrices = order.kind === "move" ? order.prices : undefined;
+  const front = frontName(site, guard);
+  const attackWord =
+    order.kind === "attack" && order.verb === "take"
+      ? DEEP_WORDS.take
+      : front && !phone
+        ? DEEP_WORDS.attackOf(front)
+        : DEEP_WORDS.attack;
   return (
     <HudWindowFoot note={footPrices ? <HudPrice prices={footPrices} /> : undefined}>
-      {order.kind === "act" && (
-        <HudButton
-          kind="primary"
-          icon={order.verb === "attack" ? "attack" : undefined}
-          aria-label={order.busy ? undefined : DEEP_WORDS[order.verb]}
-          busy={order.busy}
-          onClick={order.onAct}
-        >
-          {verbWord(order.verb, phone)}
-          {order.stamina !== undefined && order.stamina > 0 && <AttackStamina stamina={order.stamina} />}
-        </HudButton>
+      {order.kind === "guard" && (
+        <span data-deep-foot className="deep-foot__btns">
+          {order.guard && (
+            <HudButton kind="primary" icon="transfer" busy={order.busy} onClick={() => onPick("guard")}>
+              {guardWord(order.troops, guard, phone)}
+            </HudButton>
+          )}
+          {order.withdraw && (
+            <HudButton kind="secondary" icon="exit" onClick={() => onPick("withdraw")}>
+              {DEEP_WORDS.withdraw}
+            </HudButton>
+          )}
+        </span>
+      )}
+      {order.kind === "attack" && (
+        <span data-deep-foot className="deep-foot__btns">
+          <HudButton
+            kind="primary"
+            icon="attack"
+            aria-label={order.busy ? undefined : attackWord}
+            busy={order.busy}
+            onClick={order.onAct}
+          >
+            {attackWord}
+            {order.stamina !== undefined && order.stamina > 0 && <AttackStamina stamina={order.stamina} />}
+          </HudButton>
+        </span>
       )}
       {order.kind === "short" && (
-        <HudButton kind="primary" icon="attack" disabled>
-          {DEEP_WORDS[order.verb]}
-        </HudButton>
+        <span data-deep-foot className="deep-foot__btns">
+          <HudButton kind="primary" icon="attack" disabled>
+            {attackWord}
+          </HudButton>
+        </span>
       )}
       {order.kind === "move" && (
         <HudButton kind="primary" icon="move" onClick={order.onMove}>

@@ -6,6 +6,8 @@ export { nativeModelDefinition } from "./native-models";
 export * from "./submit";
 export * from "./shard";
 export * from "./story-participants";
+export { waitForConfirmedActionReceipt } from "./transaction-outcome";
+export { TransactionNoAnswerError } from "./transaction-answer";
 
 export type { NativeRows, NativeKeys, NativeModelName } from "../../../../contracts/l3/world-native/schema/client.gen";
 export {
@@ -30,22 +32,24 @@ export { safeInteger } from "../utils/safe-integer";
 
 export { armyCombatRefusal, isAspectAlly, viewerAspects } from "../utils/army-opponents";
 export { spendsFragments } from "../utils/mode-rules";
-export { armyDrain, deepArmyLife, type DeepArmyLife } from "../utils/deep-army-life";
+export { armyDrain, deepArmyLife, deepTroopsLife, type DeepArmyLife } from "../utils/deep-army-life";
 export {
   IncompleteDeepSyncError,
   homeAspect,
   isBesideDeepSite,
-  isDeepSiteRival,
   readDeepSite,
   readDeepBeastTroops,
   readDeepRingOpening,
   readDeepSiteDefender,
   readDeepSites,
+  readSyncedDeepSites,
+  type DeepGarrison,
   type DeepSiteView,
 } from "./views/deep-sites";
 export {
   compareAspectMembers,
   gloryAmount,
+  ownRaceGlory,
   raceFinishHeight,
   raceStage,
   raceStageHeight,
@@ -56,7 +60,7 @@ export {
   type RaceMemberRow,
 } from "./views/race";
 export { questBonusPercent, sellsFragments } from "./views/quests";
-export { currentArmy, currentResourceWeight } from "../utils/deep";
+export { activeDeepSitePayPerMinute, currentArmy, currentResourceWeight, deepAlliesGarrison } from "../utils/deep";
 export {
   deepCenter,
   deepGateTiles,

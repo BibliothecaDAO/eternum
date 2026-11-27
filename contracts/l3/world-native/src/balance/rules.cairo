@@ -59,7 +59,6 @@ pub const TROOP_LIMIT_CONFIG: crate::rules::TroopLimitConfig = crate::rules::Tro
     empire_guard_slots: 0,
     starting_guard: 0,
     camp_armies: 0,
-    explore_reward_strength_cap: 10000,
     light_guard_lower_bound: 800,
     light_guard_upper_bound: 1599,
     heavy_guard_lower_bound: 800,
@@ -102,5 +101,5 @@ pub const SPEED_CONFIG: crate::rules::SpeedConfig = crate::rules::SpeedConfig {
 pub const RELIC_SECONDS_PER_RANK: u32 = 1800;
 
 pub const SWITCHES: crate::rules::ReleaseSwitches = crate::rules::ReleaseSwitches {
-    command_mask: 15016514375924666336331, mode_rules: 262305, day_unit_seconds: 14400, entry_rule: 1,
+    command_mask: 619479424183239253689423, mode_rules: 262305, day_unit_seconds: 14400, entry_rule: 1,
 };

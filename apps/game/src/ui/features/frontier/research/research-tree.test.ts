@@ -15,12 +15,16 @@ import {
   type RealmResearchFacts,
 } from "./research-tree";
 import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
+import { rankName } from "@bibliothecadao/types";
 
 const node = (realm: RealmResearchFacts, key: string) => readResearchTree(realm).find((item) => item.key === key)!;
 const why = (realm: RealmResearchFacts, key: string) => {
   const missing = firstMissing(node(realm, key));
   return missing && needLine(missing);
 };
+const outputPercent = (realm: RealmResearchFacts, tier: number) => `${100 + (tier * realm.board.outputStepBps) / 100}%`;
+const troopsPerHour = (realm: RealmResearchFacts, tier: number) =>
+  String((realm.board.troopsPerHour * (10_000 + tier * realm.board.outputStepBps)) / 10_000);
 
 describe("the castle's tree as the contract rules it", () => {
   it("reads the owner's realm: every standing row short of Essence, the rest locked by the step that opens it", () => {
@@ -35,45 +39,58 @@ describe("the castle's tree as the contract rules it", () => {
       ["shrine", "locked"],
       ["spire", "locked"],
     ]);
-    expect(why(EARLY_REALM, "row-0")).toBe("Needs 500 Essence");
+    expect(why(EARLY_REALM, "row-0")).toBe(
+      `Needs ${EARLY_REALM.price(research.ROW_FARM, 1).essence.toLocaleString("en-US")} Essence`,
+    );
     expect(why(EARLY_REALM, "row-1")).toBe("Needs a Workshop");
     expect(why(EARLY_REALM, "row-2")).toBe("Needs City");
     expect(why(EARLY_REALM, "row-4")).toBe("Needs Kingdom");
     expect(why(EARLY_REALM, "row-5")).toBe("Needs Kingdom");
     expect(why({ ...EARLY_REALM, castleLevel: 2 }, "row-5")).toBe("Needs a Supply yard");
-    expect(why(EARLY_REALM, "well")).toBe("Needs 2,500 Essence");
+    expect(why(EARLY_REALM, "well")).toBe(
+      `Needs ${EARLY_REALM.price(research.ROW_LORE, 1).essence.toLocaleString("en-US")} Essence`,
+    );
     expect(why(EARLY_REALM, "shrine")).toBe("Needs Well lore first");
     expect(why(EARLY_REALM, "spire")).toBe("Needs Shrine lore first");
+    const wellLearned = { ...EARLY_REALM, learned: { [research.ROW_LORE]: { tier: research.LORE_WELLS } } };
+    expect(why(wellLearned, "shrine")).toBe(RESEARCH_TREE.needsLevel(rankName(research.SHRINE_LORE_LEVEL)));
+    expect(firstMissing(node({ ...wellLearned, castleLevel: research.SHRINE_LORE_LEVEL }, "shrine"))?.kind).toBe(
+      "essence",
+    );
+    expect(why(MID_REALM, "spire")).toBe(RESEARCH_TREE.needsLevel(rankName(research.SPIRE_LORE_LEVEL)));
     expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(false);
   });
 
   it("prices Logistics from the active preset without a Barracks prerequisite", () => {
     const supplyYard = node(MID_REALM, "row-5");
-    expect([supplyYard.state, supplyYard.price]).toEqual(["ready", { essence: 10_000, labor: 2_500 }]);
+    expect([supplyYard.state, supplyYard.price]).toEqual(["ready", MID_REALM.price(research.ROW_SUPPLY_YARD, 2)]);
     expect([node(MID_REALM, "row-0").state, node(MID_REALM, "row-0").price]).toEqual([
       "ready",
-      { essence: 1_000, labor: 1_000 },
+      MID_REALM.price(research.ROW_FARM, 2),
     ]);
     expect([node(MID_REALM, "well").state, node(MID_REALM, "shrine").state]).toEqual(["done", "done"]);
     expect([node(MID_REALM, "spire").name, node(MID_REALM, "spire").price]).toEqual([
       "Spire lore",
-      { essence: 10_000, labor: 0 },
+      MID_REALM.price(research.ROW_LORE, 3),
     ]);
     expect(canResearchNow(readResearchTree(MID_REALM))).toBe(true);
   });
 
   it("gives a Farm tier its output figure now and with the next tier", () => {
     const farm = node(MID_REALM, "row-0");
-    expect(farm.gives).toEqual({ line: "Farm wheat", now: "120%", next: "140%" });
-    expect(farm.figures).toEqual([{ icon: "fields", name: "Fields", line: "Farm wheat", now: "120%", next: "140%" }]);
-    expect(researchEffectLine(farm)).toBe("120% → 140%");
+    const now = outputPercent(MID_REALM, 1);
+    const next = outputPercent(MID_REALM, 2);
+    expect(farm.gives).toEqual({ line: "Farm wheat", now, next });
+    expect(farm.figures).toEqual([{ icon: "fields", name: "Fields", line: "Farm wheat", now, next }]);
+    expect(researchEffectLine(farm)).toBe(`${now} → ${next}`);
   });
 
   it("says what a finished Farm gives, with nothing left to buy", () => {
     const farm = node({ ...MID_REALM, learned: { ...MID_REALM.learned, 0: { tier: 5 } } }, "row-0");
+    const maxed = outputPercent(MID_REALM, 5);
     expect([farm.state, farm.price, farm.nextTier]).toEqual(["done", undefined, undefined]);
-    expect(farm.gives).toEqual({ line: "Farm wheat", now: "200%", next: undefined });
-    expect(researchEffectLine(farm)).toBe("200%");
+    expect(farm.gives).toEqual({ line: "Farm wheat", now: maxed, next: undefined });
+    expect(researchEffectLine(farm)).toBe(maxed);
   });
 });
 
@@ -107,22 +124,24 @@ it("offers independent Camp and Depot upgrades with their exact next output and 
       [research.ROW_RATIONS]: { tier: 3 },
     },
   };
+  const campNow = troopsPerHour(realm, 1);
+  const campNext = troopsPerHour(realm, 2);
   expect(node(realm, `row-${research.ROW_CONSCRIPTION}`)).toMatchObject({
     name: "Conscription Camp",
     tier: 1,
-    price: { essence: 5000, labor: 1000 },
-    gives: { now: "120 troops an hour", next: "140 troops an hour" },
-    figures: [{ name: "Troops an hour", line: "At each Barracks", now: "120", next: "140" }],
+    price: realm.price(research.ROW_CONSCRIPTION, 2),
+    gives: { now: `${campNow} troops an hour`, next: `${campNext} troops an hour` },
+    figures: [{ name: "Troops an hour", line: "At each Barracks", now: campNow, next: campNext }],
   });
   expect(node(realm, `row-${research.ROW_RATIONS}`)).toMatchObject({
     name: "Rations Depot",
     tier: 3,
-    price: { essence: 25000, labor: 5000 },
+    price: realm.price(research.ROW_RATIONS, 4),
     gives: { now: "1.4 wheat per troop", next: "1.2 wheat per troop", direction: "lower" },
     figures: [{ name: "Wheat per troop", line: "On each deploy", now: "1.4", next: "1.2" }],
   });
   expect(researchEffectLine(node(realm, `row-${research.ROW_CONSCRIPTION}`))).toBe(
-    `${RESEARCH_TREE.effects.troops("120")} → ${RESEARCH_TREE.effects.troops("140")}`,
+    `${RESEARCH_TREE.effects.troops(campNow)} → ${RESEARCH_TREE.effects.troops(campNext)}`,
   );
   expect(researchEffectLine(node(realm, `row-${research.ROW_RATIONS}`))).toBe(
     "1.4 wheat per troop → 1.2 wheat per troop (less)",
@@ -146,11 +165,7 @@ it("shows only Knight slots at Settlement and each troop's three exact purchases
       expect(result.maxTier).toBe(3);
       expect(result.gives.now).toBe(`${tier + 2} Oath slots`);
       expect(result.gives.next).toBe(tier === 3 ? undefined : `${tier + 3} Oath slots`);
-      expect(result.price).toEqual(
-        [{ essence: 5000, labor: 1000 }, { essence: 35000, labor: 7500 }, { essence: 150000, labor: 35000 }, undefined][
-          tier
-        ],
-      );
+      expect(result.price).toEqual(tier === 3 ? undefined : realm.price(row, tier + 1));
       expect(result.state).toBe(tier === 3 ? "done" : "ready");
     }
   }
@@ -179,16 +194,21 @@ it("assigns every node its contract era and derives prerequisite link states fro
   ]);
   expect(readResearchLinks(readResearchTree(MID_REALM))).toEqual([
     { key: "well->shrine", from: "well", to: "shrine", state: "done" },
+    { key: "shrine->spire", from: "shrine", to: "spire", state: "locked" },
+  ]);
+  expect(readResearchLinks(readResearchTree({ ...MID_REALM, castleLevel: research.SPIRE_LORE_LEVEL }))).toEqual([
+    { key: "well->shrine", from: "well", to: "shrine", state: "done" },
     { key: "shrine->spire", from: "shrine", to: "spire", state: "ready" },
   ]);
 });
 
 it("gives every research node a concise shortEffect label from one source that fits phone cards without truncation", () => {
   const early = Object.fromEntries(readResearchTree(EARLY_REALM).map((item) => [item.key, item.shortEffect]));
+  const step0to1 = `${outputPercent(EARLY_REALM, 0)} → ${outputPercent(EARLY_REALM, 1)}`;
   expect(early).toEqual({
-    "row-0": "100% → 120%",
-    "row-1": "100% → 120%",
-    "row-2": "100 → 120/hr",
+    "row-0": step0to1,
+    "row-1": step0to1,
+    "row-2": `${troopsPerHour(EARLY_REALM, 0)} → ${troopsPerHour(EARLY_REALM, 1)}/hr`,
     "row-4": "2 → 1.8 wheat",
     "row-5": "180 → 216 ⚡",
     "row-6": "2 → 3 Oaths",
@@ -199,7 +219,7 @@ it("gives every research node a concise shortEffect label from one source that f
 
   const mid = Object.fromEntries(readResearchTree(MID_REALM).map((item) => [item.key, item.shortEffect]));
   expect(mid).toMatchObject({
-    "row-0": "120% → 140%",
+    "row-0": `${outputPercent(MID_REALM, 1)} → ${outputPercent(MID_REALM, 2)}`,
     "row-6": "2 → 3 Oaths",
     "row-7": "2 → 3 Oaths",
     "row-11": "2 → 3 Oaths",

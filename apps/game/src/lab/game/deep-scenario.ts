@@ -6,10 +6,12 @@ import {
   nativeResearchConstants,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { deepSites, RESOURCE_PRECISION, TileOccupier } from "@bibliothecadao/types";
+import { deepSites, RESOURCE_PRECISION, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
+
+export const HELD_SITE = "altar" satisfies (typeof deepSites)[number]["key"];
 
 export const deepScenario = (closedRing = false): LabScenario => {
   const scenario = spireScenario();
@@ -24,12 +26,12 @@ export const deepScenario = (closedRing = false): LabScenario => {
   const tick = Math.floor(startsAt / tickSeconds);
   const slot = store.require("ArmySlot", { game_id: 1, structure_id: army.owner, epoch: 0n, slot: 0 });
   const at = store.entityOccupancy(1, SPIRE_ARMY)!;
-  const [allyHome, allyArmy, fieldAlly] = [9n, 301n, 399n];
+  const [allyHome, fieldAlly] = [9n, 399n];
   const local = {
     foundation: { x: 18, y: 25 },
     core: { x: 25, y: 18 },
-    mine: { x: 25, y: 25 },
-    altar: { x: 32, y: 25 },
+    mine: { x: 32, y: 25 },
+    altar: { x: 25, y: 25 },
   } satisfies Record<(typeof deepSites)[number]["key"], { x: number; y: number }>;
   const rules = seasonOneDeepRules(closedRing);
   const facts: LabFact[] = [
@@ -51,24 +53,17 @@ export const deepScenario = (closedRing = false): LabScenario => {
     { model: "HomeAspect", key: "0xdee1", value: { game_id: 1, home: String(home.entity_id), aspect: 1 } },
     { model: "HomeAspect", key: "0xdee2", value: { game_id: 1, home: String(allyHome), aspect: 1 } },
     { model: "Structure", key: "0xdee3", value: wire({ ...home, entity_id: allyHome, owner: "0x222" }) },
-    { model: "ExplorerTroops", key: "0xdee4", value: wire({ ...army, explorer_id: allyArmy, owner: allyHome }) },
-    {
-      model: "ArmyCombat",
-      key: "0xded4",
-      value: wire({ game_id: 1, explorer_id: allyArmy, last_target: 0 }),
-    },
-    {
-      model: "ArmyProgress",
-      key: "0xded5",
-      value: wire({ ...store.require("ArmyProgress", { game_id: 1, explorer_id: SPIRE_ARMY }), explorer_id: allyArmy }),
-    },
-    { model: "ArmyDay", key: "0xdee5", value: { game_id: 1, explorer_id: String(allyArmy), day: "0" } },
-    { model: "DeepArmy", key: "0xdee6", value: { game_id: 1, explorer_id: String(allyArmy), last_tick: String(tick) } },
     { model: "DeepArmy", key: "0xdee7", value: { game_id: 1, explorer_id: SPIRE_ARMY, last_tick: String(tick) } },
+    { model: "DeepTick", key: "0xdee4", value: { game_id: 1, paid_tick: String(tick) } },
     {
-      model: "DeepGuard",
+      model: "GarrisonSlot",
       key: "0xdee8",
-      value: { game_id: 1, explorer_id: String(allyArmy), site_id: String(siteId("mine")), slot: 0 },
+      value: { game_id: 1, structure_id: String(siteId(HELD_SITE)), slot: 1, home: String(allyHome) },
+    },
+    {
+      model: "Guard",
+      key: "0xdee5",
+      value: wire({ game_id: 1, structure_id: siteId(HELD_SITE), slot: 1, troops: army.troops, destroyed_tick: 0 }),
     },
     { model: "TileOccupancy", key: store.wireKeyOf("TileOccupancy", at)!, value: null },
     { model: "TileOccupancy", key: "0xdee9", value: wire({ ...at, col: center.col - 1, row: center.row }) },
@@ -98,11 +93,35 @@ export const deepScenario = (closedRing = false): LabScenario => {
   for (const [place, { site, offset }] of ring.entries()) {
     const beast = rules.beasts[site.id]!;
     const entityId = BigInt(800 + place);
+    const held = site.key === HELD_SITE && place < deepSites.length;
     facts.push(
+      {
+        model: "Structure",
+        key: `0xdeed${place}`,
+        value: wire({
+          ...home,
+          entity_id: entityId,
+          owner: held ? home.owner : 0n,
+          base: {
+            ...home.base,
+            category: StructureType.DeepSite,
+            level: 0,
+            troop_max_explorer_count: 0,
+            troop_max_guard_count: nativeRuleConstants.DEEP_GUARD_SLOTS,
+          },
+        }),
+      },
       {
         model: "DeepSite",
         key: `0xdeea${place}`,
-        value: { game_id: 1, entity_id: String(entityId), kind: site.id, ring: 0, day: "0" },
+        value: {
+          game_id: 1,
+          entity_id: String(entityId),
+          kind: site.id,
+          ring: 0,
+          day: "0",
+          aspect: held ? 1 : 0,
+        },
       },
       {
         model: "TileOccupancy",
@@ -114,10 +133,12 @@ export const deepScenario = (closedRing = false): LabScenario => {
           row: center.row + offset.y - half,
           alt: false,
           category: TileOccupier.DeepSite,
-          is_structure: false,
+          is_structure: true,
         },
       },
-      {
+    );
+    if (!held)
+      facts.push({
         model: "Guard",
         key: `0xdeec${place}`,
         value: wire({
@@ -127,12 +148,11 @@ export const deepScenario = (closedRing = false): LabScenario => {
           troops: {
             ...army.troops,
             category: beast.bow ? "Crossbowman" : "Knight",
-            count: site.key === "mine" ? 0n : beast.count,
+            count: beast.count,
           },
           destroyed_tick: 0,
         }),
-      },
-    );
+      });
   }
   const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: army.owner });
   let learned = knowledge.learned;
@@ -147,23 +167,7 @@ export const deepScenario = (closedRing = false): LabScenario => {
   return {
     ...scenario,
     opensOn: center,
-    answer: (command, chain) => {
-      if (command.kind !== "InteractSite") return [];
-      const [rawId, alt, x, y] = command.span.slice(1);
-      if (rawId === undefined || alt === undefined || x === undefined || y === undefined) return [];
-      if (BigInt(alt) !== 0n || BigInt(x) !== BigInt(center.col) || BigInt(y) !== BigInt(center.row)) return [];
-      const explorer_id = BigInt(rawId);
-      const location = chain.entityOccupancy(1, explorer_id);
-      if (!location || explorer_id !== BigInt(SPIRE_ARMY)) return [];
-      return [
-        { model: "TileOccupancy", key: chain.wireKeyOf("TileOccupancy", location)!, value: null },
-        {
-          model: "DeepGuard",
-          key: "0xdeed",
-          value: { game_id: 1, explorer_id: String(explorer_id), site_id: String(siteId("mine")), slot: 1 },
-        },
-      ];
-    },
+    answer: () => [],
   };
 };
 

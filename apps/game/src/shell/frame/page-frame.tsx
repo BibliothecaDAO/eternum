@@ -12,6 +12,7 @@ import { useLayout } from "./layout";
 import { Lockup } from "./lockup";
 import { DesktopBar, TabBar, TopBarEnd, useIsPlace } from "./tabs";
 import { AppChatDock } from "../chat/app-chat";
+import { RewardWaitingBar } from "../value/season-reward-surfaces";
 
 type PageFrameProps = {
   /**
@@ -108,6 +109,9 @@ const PhoneFrame = ({ title, notice, foot, fill = false, painting, stage = false
           {foot}
         </div>
       ) : null}
+      <div className="shrink-0 px-gutter pb-2 empty:hidden">
+        <RewardWaitingBar />
+      </div>
       <div data-band="tabs" data-keyboard-hides className="shrink-0">
         <TabBar />
       </div>

@@ -13,6 +13,7 @@ import { knownAmount } from "@/ui/utils/utils";
 import { getGuardSlotCooldownRemaining, getGuardsByStructure, getTroopResourceId } from "@bibliothecadao/eternum";
 import { DISPLAYED_SLOT_NUMBER_MAP, GuardSlot, TroopTier, TroopType, formatAmount } from "@bibliothecadao/types";
 import { useState } from "react";
+import { SLOT_ADD, SLOT_EMPTY } from "@/ui/design-system/kit/words";
 
 import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
 import { GuardStaminaBar } from "./guard-stamina-bar";
@@ -161,7 +162,7 @@ const EmptySlot = ({ canAdd }: { canAdd: boolean }) => (
         canAdd ? "text-hud-accent" : "text-hud-muted",
       )}
     >
-      {canAdd ? "Add" : "Empty"}
+      {canAdd ? SLOT_ADD : SLOT_EMPTY}
     </span>
   </>
 );

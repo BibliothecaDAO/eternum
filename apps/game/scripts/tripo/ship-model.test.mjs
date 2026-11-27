@@ -18,14 +18,7 @@ import {
   frontierPaintedBuildingPath,
 } from "../../src/three/structures/frontier-painted-buildings";
 import { DEEP_GATE_MODELS, DEEP_SITE_MODELS } from "../../src/three/structures/deep-landmarks";
-import { ASPECT_WONDER_PATHS, BASE_REALM_CANDIDATES, REALM_ASSETS } from "../../src/three/structures/realm-design";
-import {
-  MIN_PLACED_BANNER_WIDTH,
-  MODEL_BUDGETS,
-  assertDeliveredAsset,
-  readHexFit,
-  shipTripoModel,
-} from "./ship-model.mjs";
+import { MODEL_BUDGETS, assertDeliveredAsset, readHexFit, shipTripoModel } from "./ship-model.mjs";
 
 const CLI = fileURLToPath(new URL("./ship-model.mjs", import.meta.url));
 const WELL_MODEL = fileURLToPath(new URL("../../public/models/frontier/painted/well.glb", import.meta.url));
@@ -54,28 +47,6 @@ function makeFitJson(scale, offset, yaw = 0) {
       offset_xyz: offset,
     },
   });
-}
-
-function portraitBannerWidths(node) {
-  const matrix = node.getWorldMatrix();
-  const widths = [];
-  for (const primitive of node.getMesh().listPrimitives()) {
-    const positions = primitive.getAttribute("POSITION");
-    if (positions.getCount() % 4 !== 0 || positions.getCount() > 40) continue;
-    for (let quad = 0; quad < positions.getCount(); quad += 4) {
-      const corners = [0, 1, 2, 3].map((corner) => {
-        const [x, y, z] = positions.getElement(quad + corner, [0, 0, 0]);
-        return [0, 1, 2].map(
-          (axis) => matrix[axis] * x + matrix[4 + axis] * y + matrix[8 + axis] * z + matrix[12 + axis],
-        );
-      });
-      const spread = (axis) =>
-        Math.max(...corners.map((corner) => corner[axis])) - Math.min(...corners.map((corner) => corner[axis]));
-      const width = Math.hypot(spread(0), spread(2));
-      if (spread(1) / width >= 1.5) widths.push(width);
-    }
-  }
-  return widths;
 }
 
 async function createReader() {
@@ -216,6 +187,10 @@ describe("ship-model pipeline", () => {
     const badOffsetFit = join(dir, "bad-offset.json");
     writeFileSync(badOffsetFit, makeFitJson(1, [0, 0]));
     expect(() => readHexFit(badOffsetFit)).toThrow("transform.offset_xyz");
+
+    const flaggedFit = join(dir, "flagged.json");
+    writeFileSync(flaggedFit, JSON.stringify({ ...JSON.parse(makeFitJson(1, [0, 0, 0])), flags: [] }));
+    expect(() => readHexFit(flaggedFit)).toThrow('unsupported key "flags"');
   });
 
   it("refuses a model over its kind triangle, texture, draw or hex footprint budget", async () => {
@@ -260,50 +235,6 @@ describe("ship-model pipeline", () => {
     await expect(
       shipTripoModel({ input: tooTallRaw, fit, kind: "deepGate", out: join(dir, "out6.glb") }),
     ).rejects.toThrow("exceeds height limit");
-  });
-
-  it("refuses a realm model whose fit declares no flags, and bakes the anchors it lists through the fit", async () => {
-    const dir = makeTempDir();
-    const input = join(dir, "realm.glb");
-    await writeSyntheticGlb(input, { width: 0.5, depth: 0.5 });
-    const bare = join(dir, "bare.json");
-    writeFileSync(bare, makeFitJson(1.5, [0, 0, 0], 90));
-    await expect(shipTripoModel({ input, fit: bare, kind: "wonder", out: join(dir, "bare.glb") })).rejects.toThrow(
-      "flag anchors",
-    );
-    const withFlags = (name, flags) => {
-      const path = join(dir, `${name}.json`);
-      writeFileSync(path, JSON.stringify({ ...JSON.parse(makeFitJson(1.5, [0, 0, 0], 90)), flags }));
-      return path;
-    };
-    const out = join(dir, "flagged.glb");
-    await shipTripoModel({
-      input,
-      fit: withFlags("flagged", [{ top: [0.1, 0.2, 0], width: 0.1, facing: 0 }]),
-      kind: "wonder",
-      out,
-    });
-    const meshNode = (await (await createReader()).read(out))
-      .getRoot()
-      .listNodes()
-      .find((node) => node.getMesh());
-    expect(meshNode.getExtras().flagAnchors).toEqual([{ top: [0, 0.3, -0.15], width: 0.15, facing: 90 }]);
-    await expect(
-      shipTripoModel({
-        input,
-        fit: withFlags("narrow", [{ top: [0.1, 0.2, 0], width: 0.07, facing: 0 }]),
-        kind: "wonder",
-        out: join(dir, "narrow.glb"),
-      }),
-    ).rejects.toThrow("at least 0.11 wide");
-    await expect(
-      shipTripoModel({
-        input,
-        fit: withFlags("sized", [{ top: [0.1, 0.2, 0], width: 0.1, size: [0.1, 0.05], facing: 0 }]),
-        kind: "wonder",
-        out: join(dir, "sized.glb"),
-      }),
-    ).rejects.toThrow("flag anchor");
   });
 
   it("bakes hex fit, compresses with repo tools and is safe to run twice via CLI", async () => {
@@ -419,30 +350,6 @@ describe("ship-model pipeline", () => {
     }
   });
 
-  it("keeps every image-to-3D realm model within wonder budget, grounded, normalized, flag-declared and inside the unit hex", async () => {
-    const io = await createReader();
-    expect(ASPECT_WONDER_PATHS.length).toBe(4);
-
-    for (const publicPath of [...ASPECT_WONDER_PATHS, ...BASE_REALM_CANDIDATES.map((asset) => asset.path)]) {
-      const modelPath = fileURLToPath(new URL(`../../public${publicPath}`, import.meta.url));
-      await assertDeliveredAsset(io, modelPath, "wonder", MODEL_BUDGETS.wonder);
-    }
-  });
-
-  it("holds an image-to-3D banner to the narrowest wall banner a scripted City, Kingdom or Empire hangs, rounded down", async () => {
-    const io = await createReader();
-    const widths = [];
-    for (const asset of REALM_ASSETS.filter((entry) => !entry.wonder && entry.level >= 1)) {
-      const doc = await io.read(fileURLToPath(new URL(`../../public${asset.path}`, import.meta.url)));
-      for (const node of doc.getRoot().listNodes()) {
-        if (node.getMesh()?.getExtras().orderCloth !== "banner" && node.getExtras().orderCloth !== "banner") continue;
-        widths.push(...portraitBannerWidths(node));
-      }
-    }
-    expect(widths.length).toBeGreaterThan(0);
-    expect(MIN_PLACED_BANNER_WIDTH).toBe(Math.floor(Math.min(...widths) * 100) / 100);
-  });
-
   it("keeps every Deep building and Deep gate within its budget, grounded, <= 1.42 tall and inside the unit hex", async () => {
     const io = await createReader();
     const entries = [
@@ -480,8 +387,6 @@ describe("ship-model pipeline", () => {
     const expectedStems = [
       ...buildingPaths,
       ...troopPaths,
-      ...ASPECT_WONDER_PATHS,
-      ...BASE_REALM_CANDIDATES.map((asset) => asset.path),
       ...Object.values(DEEP_SITE_MODELS),
       ...Object.values(DEEP_GATE_MODELS),
       ...Object.values(FRONTIER_BEASTS).map((entry) => entry.path),

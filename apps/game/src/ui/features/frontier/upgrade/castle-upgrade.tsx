@@ -1,4 +1,5 @@
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { realmSkinPainting, type HomePaintingKind } from "@/ui/design-system/home-icons";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { type RealmLevelUp, useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
@@ -52,7 +53,7 @@ export const CastleUpgrade = ({
   if (!levelUp) return null;
   return (
     <CastleView
-      now={castleSide(setup.store, realm.game_id, levelUp.currentLevel, realm.metadata.has_wonder)}
+      now={castleSide(setup.store, realm.game_id, levelUp.currentLevel, realmSkinPainting(setup.store, realm))}
       laborRate={formatRate(castleLabor(setup.store, realm, tick))}
       research={
         ordersAllowed &&
@@ -74,7 +75,7 @@ const upgradeOrder = (
   tick: number,
 ): CastleUpgradeOrder => {
   return {
-    next: castleSide(store, realm.game_id, levelUp.nextLevel, realm.metadata.has_wonder),
+    next: castleSide(store, realm.game_id, levelUp.nextLevel, realmSkinPainting(store, realm)),
     prices: levelUp.requirements.map(({ resource, amount }) => ({ of: castlePriceKind(resource), amount })),
     refusal: castleUpgradeRefusal(store, realm, levelUp, tick),
     sending: levelUp.loading,
@@ -89,7 +90,7 @@ export const castleUpgradeRefusal = (
   tick: number,
 ): Refusal | undefined => {
   const realmId = safeInteger(realm.entity_id);
-  const held = (resource: number) => knownAmount(getBalance(realmId, resource, tick, store).balance);
+  const held = (resource: number) => knownAmount(getBalance(realmId, resource, tick, store, realm.game_id).balance);
   const short = levelUp.requirements.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   if (short)
     return {
@@ -104,8 +105,8 @@ export const castleUpgradeRefusal = (
   return levelUp.refusal ? { reason: { kind: "failed", line: `${levelUp.refusal}.` } } : undefined;
 };
 
-const castleSide = (store: NativeFactStore, gameId: number, level: number, hasWonder = false): CastleSide => {
-  const art = realmMeaning(level, hasWonder);
+const castleSide = (store: NativeFactStore, gameId: number, level: number, painting: HomePaintingKind): CastleSide => {
+  const art = realmMeaning(level, false, painting);
   if (!art) throw new Error(`No castle art for level ${level}`);
   return {
     level,

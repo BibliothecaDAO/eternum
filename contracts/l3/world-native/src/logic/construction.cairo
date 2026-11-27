@@ -183,6 +183,12 @@ pub mod ConstructionLogic {
             let before = crate::logic::research::require(key).learned;
             let learned = crate::research::learn(before, command.row);
             self.assert_row_open(key, command.row);
+            if command.row == crate::research::ROW_LORE {
+                assert!(
+                    base.level >= crate::research::lore_opens_at_level(crate::research::tier(learned, command.row)),
+                    "lore tier needs a higher realm level",
+                );
+            }
             self
                 .pay_research(
                     key,

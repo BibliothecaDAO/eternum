@@ -70,10 +70,13 @@ pub fn balance(d: super::Deployment, home: ResourceKey, resource_type: u8) -> u1
     IResourceOperationsDispatcher { contract_address: d.games }
         .resource_balance(ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type })
 }
+pub fn realm_level(d: super::Deployment, home: ResourceKey) -> u8 {
+    IStructureOperationsDispatcher { contract_address: d.games }.structure(home).unwrap().base.level
+}
 pub fn level_up(d: super::Deployment, home: ResourceKey, timestamp: u64) {
     let level = IStructureOperationsDispatcher { contract_address: d.games }.structure(home).unwrap().base.level;
     for cost in crate::logic::upgrades::recipe(level + 1).costs {
         super::resource_commands::grant(d, home, *cost.resource_type, *cost.amount);
     }
-    assert!(execute(d, Command::LevelUp(home.entity_id), timestamp));
+    assert!(super::resource_commands::execute_in_game(d, home.game_id, Command::LevelUp(home.entity_id), timestamp));
 }

@@ -5,7 +5,8 @@ import type { DeepZone } from "@bibliothecadao/eternum/game-client";
 import type { GameModeId } from "@/config/game-modes";
 import { NEUTRAL_BIOME_CLIMATE, type BiomeClimateConfig } from "@bibliothecadao/eternum";
 import { BiomeType, getNeighborHexes, type LayerPlace } from "@bibliothecadao/types";
-import type { Group } from "three";
+import type { Group, Scene } from "three";
+import type { PipelineCompiler } from "../pipeline-compiler";
 
 import { scheduleFrameBudgetWork, type FrameBudgetWorkScheduler } from "../frame-budget-work-queue";
 import {
@@ -256,8 +257,13 @@ export class WorldmapProceduralTerrain {
   private surfacePresentation: "world" | "ethereal" = "world";
   private disposed = false;
 
-  constructor(gameMode: GameModeId = "blitz") {
-    this.terrain = new ProceduralTerrain({ streaming: true, gameMode });
+  constructor(gameMode: GameModeId = "blitz", options?: { compilePipelines?: PipelineCompiler; scene?: Scene }) {
+    this.terrain = new ProceduralTerrain({
+      streaming: true,
+      gameMode,
+      compilePipelines: options?.compilePipelines,
+      scene: options?.scene,
+    });
     this.terrain.setGridAtRest(MAP_MARKS.grid.surfaceAtRest);
     this.object3d = this.terrain.object3d;
     this.object3d.name = "worldmap-procedural-terrain";

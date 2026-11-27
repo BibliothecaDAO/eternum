@@ -2,15 +2,15 @@ use core::dict::Felt252Dict;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::commands::ExecutionContext;
 use crate::deep::{DeepShare, IDeepBanesDispatcherTrait};
+use crate::guards::GuardKey;
 use crate::logic::race::DeepRaceTrait;
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
-use crate::troops::ExplorerKey;
+use crate::stamina::StaminaSourceTrait;
 
 #[derive(Copy, Drop)]
 struct Guard {
-    key: ExplorerKey,
+    key: GuardKey,
     home: u64,
-    loss: u128,
     end: u64,
 }
 
@@ -33,6 +33,7 @@ struct Held {
     glory: Span<u128>,
     contribution: Span<u128>,
     owed: Span<u128>,
+    loss: u128,
     day_end: u64,
 }
 
@@ -41,7 +42,6 @@ struct Payouts {
     race: crate::logic::race::DeepRace,
     altars: Felt252Dict<u32>,
     altar_threshold: u32,
-    deaths: Array<u32>,
 }
 
 pub fn initialize(game_id: u32) {
@@ -88,7 +88,7 @@ pub fn assert_paid_to(game_id: u32, tick: u64) {
 
 fn walk(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 {
     let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
-    let mut held = held(game_id, context);
+    let mut held = held(game_id, cursor, context);
     if held.guards.is_empty() {
         save_cursor(game_id, last);
         return last;
@@ -111,12 +111,11 @@ fn walk(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 
             return last;
         }
         let (drained, deaths) = drain(held, boundary, interval);
-        let cost = alive_count(held.counts) + deaths.len().into() * crate::rules::DEEP_CATCH_UP_DEATH_TICKS;
+        let cost = alive_count(held.counts) + deaths * crate::rules::DEEP_CATCH_UP_DEATH_TICKS;
         if reached > cursor && spent + cost > crate::rules::DEEP_CATCH_UP_GUARD_TICKS {
             break;
         }
         spent += cost;
-        payouts.deaths.append_span(deaths);
         held = drained;
         reached += 1;
         if !alive(held.counts) {
@@ -134,8 +133,7 @@ fn walk(game_id: u32, cursor: u64, last: u64, context: ExecutionContext) -> u64 
     reached
 }
 
-fn held(game_id: u32, context: ExecutionContext) -> Held {
-    let state = crate::state::read();
+fn held(game_id: u32, cursor: u64, context: ExecutionContext) -> Held {
     let rules = crate::logic::deep_sites::rules();
     let unit = crate::clock::day_unit_seconds(context.game.unbox());
     let mut sites = array![];
@@ -152,32 +150,22 @@ fn held(game_id: u32, context: ExecutionContext) -> Held {
         day_end = crate::days::day_at_index(context.game.unbox(), unit, site.day).end;
         let first = guards.len();
         for slot in 0..crate::rules::DEEP_GUARD_SLOTS {
-            let explorer_id = state.deep.slots.read((game_id, site_id, slot));
-            if explorer_id == 0 {
+            let key = GuardKey { game_id, structure_id: site_id, slot };
+            let home = crate::logic::deep_garrisons::home(key);
+            if home == 0 {
                 continue;
             }
-            let key = ExplorerKey { game_id, explorer_id };
-            let army = crate::logic::troops::explorer(key).expect('missing Deep guard');
-            assert!(army.troops.count != 0, "dead guard occupies Deep slot");
-            let oaths = crate::logic::progression::require(key).oaths;
-            guards
-                .append(
-                    Guard {
-                        key,
-                        home: army.owner,
-                        loss: crate::oaths::deep_loss_per_tick(oaths, rules.loss_per_tick),
-                        end: day_end,
-                    },
-                );
-            counts.append(army.troops.count);
-            ticks.append(state.deep.army_ticks.read((game_id, explorer_id)).expect('Deep army has no tick'));
+            let troops = crate::logic::guards::guard(key).troops.count;
+            assert!(troops != 0, "empty garrison holds a Deep slot");
+            guards.append(Guard { key, home, end: day_end });
+            counts.append(troops);
+            ticks.append(cursor);
             zeros.append(0);
         }
         if guards.len() == first {
             continue;
         }
-        let holder: Guard = *guards.at(first);
-        let aspect = crate::logic::aspects::home_aspect(ResourceKey { game_id, entity_id: holder.home });
+        let aspect = site.aspect;
         let (pay, amount) = if site.kind == crate::rules::DEEP_CORE {
             (0, rules.core_per_tick)
         } else if site.kind == crate::rules::DEEP_MINE {
@@ -196,6 +184,7 @@ fn held(game_id: u32, context: ExecutionContext) -> Held {
         glory: zeros,
         contribution: zeros,
         owed: zeros,
+        loss: rules.loss_per_tick,
         day_end,
     }
 }
@@ -206,15 +195,13 @@ fn payouts(game_id: u32, boundary: u64) -> Payouts {
     for aspect in 1_u8..5 {
         altars.insert(aspect.into(), crate::state::read().banes.altar_bars.read((game_id, aspect)));
     }
-    Payouts {
-        race: crate::logic::race::DeepRaceTrait::load(game_id, boundary), altars, altar_threshold, deaths: array![],
-    }
+    Payouts { race: crate::logic::race::DeepRaceTrait::load(game_id, boundary), altars, altar_threshold }
 }
 
-fn drain(held: Held, boundary: u64, interval: u64) -> (Held, Span<u32>) {
+fn drain(held: Held, boundary: u64, interval: u64) -> (Held, u64) {
     let mut counts = array![];
     let mut ticks = array![];
-    let mut deaths = array![];
+    let mut deaths = 0;
     for index in 0..held.guards.len() {
         let guard = *held.guards.at(index);
         let before = *held.counts.at(index);
@@ -225,22 +212,14 @@ fn drain(held: Held, boundary: u64, interval: u64) -> (Held, Span<u32>) {
             ticks.append(last_tick);
             continue;
         }
-        let after = if tick == last_tick + 1 {
-            if before > guard.loss {
-                before - guard.loss
-            } else {
-                0
-            }
-        } else {
-            crate::deep::troops_after_ticks(before, last_tick, tick, guard.loss)
-        };
+        let after = crate::deep::troops_after_ticks(before, last_tick, tick, held.loss);
         if after == 0 {
-            deaths.append(index);
+            deaths += 1;
         }
         counts.append(after);
         ticks.append(tick);
     }
-    (Held { counts: counts.span(), ticks: ticks.span(), ..held }, deaths.span())
+    (Held { counts: counts.span(), ticks: ticks.span(), ..held }, deaths)
 }
 
 fn alive_count(counts: Span<u128>) -> u64 {
@@ -336,7 +315,7 @@ fn write_payouts(game_id: u32, ref payouts: Payouts, held: Held, boundary: u64, 
         }
     }
     grant_resources(game_id, held, boundary, context);
-    settle_guards(@payouts, held, boundary, context);
+    settle_garrisons(held);
 }
 
 fn grant_resources(game_id: u32, held: Held, boundary: u64, context: ExecutionContext) {
@@ -381,32 +360,21 @@ fn grant_resources(game_id: u32, held: Held, boundary: u64, context: ExecutionCo
     }
 }
 
-fn settle_guards(payouts: @Payouts, held: Held, boundary: u64, context: ExecutionContext) {
-    let context = ExecutionContext { timestamp: boundary, ..context };
-    let deaths = payouts.deaths.span();
-    let mut remaining = deaths.len();
-    while remaining != 0 {
-        remaining -= 1;
-        settle_guard(held, *deaths.at(remaining), context);
-    }
+fn settle_garrisons(held: Held) {
     for index in 0..held.guards.len() {
-        if *held.counts.at(index) != 0 {
-            settle_guard(held, index, context);
+        let guard = *held.guards.at(index);
+        let mut row = crate::logic::guards::guard(guard.key);
+        let count = *held.counts.at(index);
+        if row.troops.count == count {
+            continue;
         }
+        row.troops.count = count;
+        if count == 0 {
+            row.troops.stamina.reset();
+        }
+        crate::logic::guards::GuardState::save(guard.key, row);
+        crate::logic::deep_garrisons::record(guard.key, guard.home);
     }
-}
-
-fn settle_guard(held: Held, index: u32, context: ExecutionContext) {
-    let key = (*held.guards.at(index)).key;
-    let army = crate::logic::troops::explorer(key).expect('missing Deep guard');
-    let army = crate::logic::army_slots::resolve(key, army, None);
-    let before = army.troops.count;
-    let count = *held.counts.at(index);
-    if count == before {
-        return;
-    }
-    let army = crate::troops::ExplorerTroops { troops: crate::troops::Troops { count, ..army.troops }, ..army };
-    crate::logic::deep_armies::drained(key, army, before, *held.ticks.at(index), context);
 }
 
 fn roll_over(game_id: u32, context: ExecutionContext) -> bool {

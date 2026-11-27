@@ -219,7 +219,8 @@ function generatedSeasonOne(): Design {
       emptyRevealsBeforeFind: discovery.empty_reveal_limit,
       spireFoundByReveal: rules.SPIRE_REVEAL_LIMIT,
       revealPayPercentByLayer: layers.map((layer) => layer.reveal_percent),
-      revealTroopsCounted: limits.explore_reward_strength_cap,
+      revealCapByLayer: layers.map((layer) => layer.reveal_cap),
+      riftEssencePercentByLayer: layers.map((layer) => percent(layer.rift_essence_bps)),
     },
     beasts: {
       herdByLayer: layers.map((layer) => centre(layer.beast_weak_lower, layer.beast_weak_upper)),
@@ -298,8 +299,37 @@ describe("the Season 1 release against the design of record", () => {
     expect(generated[system]).toEqual(seasonOneDesign[system]);
   });
 
-  test("the starting labor buys exactly a Workshop, a Barracks and a Farm", () => {
+  test("the starting labor covers a Workshop, a Barracks and a Farm", () => {
     const { workshop, barracks, farm } = generated.buildings;
-    expect(workshop.labor + barracks.labor + farm.labor).toBe(generated.start.labor);
+    expect(generated.start.labor).toBeGreaterThanOrEqual(workshop.labor + barracks.labor + farm.labor);
+  });
+
+  test("non-Lore research rows grow with the building copy curve and training buildings keep explicit costs", () => {
+    const growthBps = definition.rules.building_config.base_cost_percent_increase;
+    for (const row of [
+      research.ROW_FARM,
+      research.ROW_WORKSHOP,
+      research.ROW_CONSCRIPTION,
+      research.ROW_RATIONS,
+      research.ROW_SUPPLY_YARD,
+      research.ROW_KNIGHT_OATHS,
+      research.ROW_SCOUT_OATHS,
+      research.ROW_CROSSBOW_OATHS,
+    ]) {
+      const steps = definition.structures.research
+        .filter((step) => step.row === row)
+        .toSorted((a, b) => a.tier - b.tier);
+      const start = steps[0]!;
+      for (const step of steps) {
+        const scaleBps = 10_000n + BigInt((step.tier - 1) ** 2) * BigInt(growthBps);
+        expect(BigInt(step.price.essence)).toBe((BigInt(start.price.essence) * scaleBps) / 10_000n);
+        expect(BigInt(step.price.labor)).toBe((BigInt(start.price.labor) * scaleBps) / 10_000n);
+      }
+    }
+    const costByCategory = (category: number) =>
+      priceOf(definition.structures.buildings.find((row) => row.category === category)!.rule.simple_cost);
+    expect(costByCategory(research.CONSCRIPTION_CAMP)).toEqual(seasonOneDesign.buildings.conscriptionCamp);
+    expect(costByCategory(research.RATIONS_DEPOT)).toEqual(seasonOneDesign.buildings.rationsDepot);
+    expect(costByCategory(research.SUPPLY_YARD)).toEqual(seasonOneDesign.buildings.supplyYard);
   });
 });

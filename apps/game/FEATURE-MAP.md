@@ -220,6 +220,7 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
 | Play: Frontier hero, 4-Aspect Hyperstructures, Today's quest, Aspect invite, and unseen results                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `/`                                                            | Top bar **Play** (see Play below)                                                                                                                                                                                                                                              |
 | Season: Season 1 Aspect race stage, Aspect standings, Triumph milestones, Your Standing, and Past seasons                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `/season`                                                      | Top bar **Season**                                                                                                                                                                                                                                                             |
 | Shop: Spend Fragments (Ancient Seal, seal codes, in-game uses) and Buy Fragments                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | `/shop`                                                        | Top bar **Shop**                                                                                                                                                                                                                                                               |
+| Cosmetics: each realm skin family and what the season realm holds; **Equip** on a held skin the game draws (Base, the realm's Wonder) sends SetRealmSkin, and **Use default order** clears it; the map, the realm view and the HUD draw the worn skin                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | `/cosmetics`                                                   | Top bar **Cosmetics**; phone: **You**, then **Open**. Dev: `/lab/game?scenario=wonder-skin` and the `lab-cosmetics` step list (Equip Base, then Use default order, the realm's mark read in the game after each)                                                               |
 | A player's card and finished games                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `/p/:address`                                                  | A row of Frontier's board (Season or a result); **Season**, lit, returns to it                                                                                                                                                                                                 |
 | You: single-page hub with Overview & Realms, Referrals & Invite, Wallet & Devices, and Settings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `/profile`                                                     | Top bar **You**, the player's name at its end (signed out: **Sign in**)                                                                                                                                                                                                        |
 | Settings: account (name, portrait, sign-in methods), notifications, music, sign out, delete account                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `/profile/settings`                                            | You, **Settings** tab                                                                                                                                                                                                                                                          |
@@ -358,8 +359,8 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
 - **Deep site opportunities**: Settings → Notifications → Important (or All), then enable **This device**. A push opens
   a rival site on the map when the player's largest army outside the Deep can clear its remaining guards, at most once
   per site per game day. A foreground device stays quiet. `build.sh test-deep-alerts` exercises the confirmed watcher,
-  timed wake, retry cancellation and restart through the real notifier. The site card's payment and join path are at
-  `/lab/game?scenario=deep`; `pnpm --dir apps/game playtest:landing lab-deep-join` drives desktop and phone views.
+  timed wake, retry cancellation and restart through the real notifier. The site card's payment is at
+  `/lab/game?scenario=deep`; `pnpm --dir apps/game playtest:landing lab-deep` drives desktop and phone views.
 
 ### Play
 
@@ -725,11 +726,8 @@ Art → **Models** → **Realm ladder** (`/lab/models?family=realms`) shows the 
 empire at true scale. City and kingdom have warm upper glass; empire has four lower oak shutters and six upper warm
 windows. The treatment is baked into the three production models; there is no window-treatment selector. Settlement and
 wonders keep their own materials. The ladder draws each realm without the Order standard the map stands beside it.
-Choose **Age**, **Series**, **Order**, **Ownership** and **Distance**; drag to orbit and scroll to zoom. **Base rank
-candidates** (`base=1`) puts each image-to-3D rank beside the shipped model of its rank, Settlement to Empire, each
-hanging the game's own portrait Order banners on its walls at its flag anchors; the game itself does not load them.
-**Ranks grow** (`grow=1`) draws each candidate at the owner's target height for its rank instead of filling the hex.
-With an external reference directory in the URL, **Revision** offers Before, After and the pair. See
+Choose **Age**, **Series**, **Order**, **Ownership** and **Distance**; drag to orbit and scroll to zoom. With an
+external reference directory in the URL, **Revision** offers Before, After and the pair. See
 [src/lab/README.md](src/lab/README.md#realm-revision-comparison) for the retained capture driver and reference setup.
 
 ### T1 Knight
@@ -1096,7 +1094,8 @@ Presentation: `/lab/app/wallet-ready/doorway/aspect`, `aspect-realm`, `aspect-ke
 `/lab/app/wallet-ready/doorway/` mount the production picker; `build.sh prove-season-one` stills the last two. The full
 founding flow is `/lab/game?scenario=aspect-settle`; the canonical playtest's `--steps lab-aspect-settle` opens Play,
 verifies no automatic founding, taps an Aspect and checks the command plus resulting membership facts, no army, and the
-starting stores (2,000 Knights at home, 6,000 wheat, 2,000 labor, no Essence). The player deploys from the dock.
+starting stores from `contracts/l3/world-native/schema/release-definition.json` (Knights at home, wheat, labor, and no
+Essence). The player deploys from the dock.
 
 ## Daily quest collection
 
@@ -1145,8 +1144,10 @@ finisher. Canonical proof: `playtest --steps lab-race-expired`.
 - An invite's landing (`/s/<code>`): **<name> invites you**, **Join <Aspect>** with its four Orders' crests and members,
   "Members of one Aspect never fight each other." and the Order the sharer kept; before the season **Starts in …** and,
   signed out, **Create your Realm**. Lab: `/lab/app/preseason-invited/s/MRGHT234`; proof: `build.sh prove-season-one`.
-- A Deep guard shows its troop loss each tick and the ticks left on its army row, token and panel; an army of the
-  player's Aspect is drawn as an ally on the map.
+- Select a Deep site to see its garrison slots, troop loss per tick and remaining ticks. An army of the player's Aspect
+  is drawn as an ally on the map.
+- With an army selected beside a claimed Deep site, enter a troop count and press **Guard**. Use **Withdraw** to bring
+  troops of the same type back into that army from a slot supplied by its realm.
 - **Today** shows the week's seven quests with today marked.
 
 The Deep has four gates, one an Aspect (north Prowess, east Luminary, south Havoc, west Insight), each drawn on its tile
@@ -1156,14 +1157,17 @@ Deep in the map's layers, or looking through a spire into the Deep, opens the vi
 (the centre for a spectator; `deepViewFor`, core `deep-geometry.ts`). Its sites stand in four rings of six corner sites
 around the centre, each ring one Hyperstructure archive, one Essence core, one Ethereal mine and one Bane altar and two
 more kinds drawn each day. Ring 1 opens with the day, each later ring when the Realms entered today reach its count; a
-closed site's card says so and refuses Attack and Join; on the map it stands dormant, its building and no beast, pinned
+closed site's card says so and refuses Attack and Guard; on the map it stands dormant, its building and no beast, pinned
 with a lock in place of its kind, its plate reading "Opens at N Realms today" (`/lab/game?scenario=deep-closed`, checked
 by `pnpm --dir apps/game playtest:landing lab-deep-closed`). The map draws the archive as a hyperstructure's bare
 foundation, the core as a rift, the mine as a fragment mine and the altar as a Shrine (`DEEP_SITE_LOOKS`,
 `src/three/managers/map-site-manager.ts`). While an open site's beast guards it, that beast stands alone on the tile at
 its row's size and idle, the building hidden as a camp's is (`DEEP_BEASTS`: the archive's Colossus, the core's Warlock,
-the mine's Balrog, the altar's Basilisk on its own model); the building returns once armies hold the site. Each site's
-plate stays over its model.
+the mine's Balrog, the altar's Basilisk on its own model); the building returns once a player holds the site. Each
+site's plate stays over its model. Its card (select the site) shows who holds it, its yield and its four guard slots in
+fight order, each slot's detail on hover; a player of the holder's Aspect with an army beside it presses Guard (or an
+Add tile) and an amount to move troops into a slot, and Withdraw (or their own tile) to take them back: allies on a
+Hyperstructure archive or a Bane altar, only the owner on an Essence core or an Ethereal mine.
 
 Each Aspect’s tower height appears on **Season, Aspects**. The towers have no map entities.
 

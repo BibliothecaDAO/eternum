@@ -176,23 +176,19 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   an earlier run is answered first). A surface attack is pressed only on a card that forecasts a win ("Victory"); when
   no site beside its armies forecasts a win (a loss, a guard that survives, or no forecast read), the account deploys
   its troops at home once with Max and searches on. Then the host enters the Deep through its Spire once the realm knows
-  Spire lore, attacks an open site's beast and so holds it. The host then measures the Deep's catch-up: three Moves of a
-  surface army, the cheaper of the last two being a play with nothing to settle (T0); the tick's pay read on the site's
-  card and the Season board; four ticks passed on the slot's clock with no command; one more Move (T1), which settles
-  them, since the chain settles the Deep only at the next command. T1 must be applied (the chain refuses a play over its
-  event or gas limit) and emit its rows once each, not once per tick; Glory, height and the bane bar must rise by whole
-  ticks of the card's pay; Essence and labor are read from the card only. The friend then enters the Deep, attacks a
-  rival's guard and takes an empty site, which exist only when another Aspect holds a site or a site's guards died. An
-  account whose dock is empty (a new day ends every army) first deploys an army of at most 500 of its troops at home,
-  keeping the rest for that raise; Max keeps the wheat the army burns revealing its bar, so a raised army explores on.
-  With an army out, the host's page must offer no Refill and no shop, and an Oath pick no Redraw, while the game's rules
-  as the page holds them (`window.__eternumFragmentSpends()`) enable none of BuySeal, BuyStamina and RerollOath: the
-  mask the contract refuses them by ("command disabled"). Without Spire lore the Deep steps are blocked with the Spire's
-  own row. `--steps s1-testnet` plays the host alone in a testnet game entered from its Play card: founding, an army
-  sent, and the same Fragment spends check. An action passes only when its receipt from the chain's node is confirmed,
-  succeeded and not refused by the game (`scripts/client-playtest/chain-receipts.mjs`, which also records each play's l2
-  gas and event count); what the game does not offer yet is blocked with what the page said, and a rerun in the same
-  game passes the foundings already made.
+  Spire lore, attacks an open site's beast, and checks that the site belongs to their Aspect with empty garrison slots.
+  The native lifecycle suite measures garrison catch-up and verifies the settled payouts. The friend then enters the
+  Deep, attacks a rival's guard and takes an empty site, which exist only when another Aspect holds a site or a site's
+  guards died. An account whose dock is empty (a new day ends every army) first deploys an army of at most 500 of its
+  troops at home, keeping the rest for that raise; Max keeps the wheat the army burns revealing its bar, so a raised
+  army explores on. With an army out, the host's page must offer no Refill and no shop, and an Oath pick no Redraw,
+  while the game's rules as the page holds them (`window.__eternumFragmentSpends()`) enable none of BuySeal, BuyStamina
+  and RerollOath: the mask the contract refuses them by ("command disabled"). Without Spire lore the Deep steps are
+  blocked with the Spire's own row. `--steps s1-testnet` plays the host alone in a testnet game entered from its Play
+  card: founding, an army sent, and the same Fragment spends check. An action passes only when its receipt from the
+  chain's node is confirmed, succeeded and not refused by the game (`scripts/client-playtest/chain-receipts.mjs`, which
+  also records each play's l2 gas and event count); what the game does not offer yet is blocked with what the page said,
+  and a rerun in the same game passes the foundings already made.
 - **Signing in.** Each player keeps a profile under `.context/playtest-profiles/<email>`; agent-browser is handed it on
   every command (it relaunches on a temporary profile for a command that omits it). Each run opens the home page first:
   a signed-in player's bar shows them and the run goes on at once; a signed-out one presses Connect and signs in as a
@@ -304,18 +300,21 @@ signed, and home failing on such a card or on no open plot opening Build), `--st
 and then by the HUD's way out (a phone's Menu, Exit; a desktop Back again, as its Leave game loads the page afresh), and
 entered by Resume each time: each leave failing short of the home page or with the game's label layer still mounted,
 each return on the map's labels or plates read on entry missing; play it at `--viewport 390x844` too),
-`--steps lab-hud-devices` (`/lab/game?scenario=sites`, the map's share of the page on a device: at rest, the army
-picked, its panel, a site's card, Chat and the Menu, each read by hit-testing a grid 8 px apart for where the map's
-canvas is the first thing a press reaches and which HUD part takes each other point, with the share above a phone's
-keyboard; run it at each device's size with `--viewport`), `--steps lab-ruin-fight` (`/lab/game?scenario=ruin-fight`,
-the owner's army beside the ruin before its fight: the army picked from the HUD must bring the camera onto it; then, on
-a phone with the ruin first panned under where its card opens, the ruin's card opened from the map (a right-click, a
-tap) and **Attack** pressed must leave the camera where it was, the chain's BattleGuard answered, the ruin gone, the
-army at 4,011; then the Feed, opened from its place, must tell the attack and the clear it won as one row, the clear's;
-play it at `--viewport 390x844` too), `--steps lab-hover-zoom` (the army after its fight, with nothing selected and the
-dev overlays on, at each wheel step from the closest zoom to the farthest: each army's token must stand over its own
-model, and the pointer on its model at its feet, middle and top must open its plate; `--steps lab-hover-zoom-pair` the
-same with the realm's two armies side by side, the merge game's), `--steps lab-high-ground`
+`--steps lab-cosmetics` (`/lab/game?scenario=wonder-skin`, a Wonder realm entered through Resume: leave the map, equip
+the base skin from Cosmetics, resume and see the base realm model and mark, then use the default order and resume to see
+the Wonder model and mark again; `build.sh playtest-cosmetics` plays both desktop and phone), `--steps lab-hud-devices`
+(`/lab/game?scenario=sites`, the map's share of the page on a device: at rest, the army picked, its panel, a site's
+card, Chat and the Menu, each read by hit-testing a grid 8 px apart for where the map's canvas is the first thing a
+press reaches and which HUD part takes each other point, with the share above a phone's keyboard; run it at each
+device's size with `--viewport`), `--steps lab-ruin-fight` (`/lab/game?scenario=ruin-fight`, the owner's army beside the
+ruin before its fight: the army picked from the HUD must bring the camera onto it; then, on a phone with the ruin first
+panned under where its card opens, the ruin's card opened from the map (a right-click, a tap) and **Attack** pressed
+must leave the camera where it was, the chain's BattleGuard answered, the ruin gone, the army at 4,011; then the Feed,
+opened from its place, must tell the attack and the clear it won as one row, the clear's; play it at
+`--viewport 390x844` too), `--steps lab-hover-zoom` (the army after its fight, with nothing selected and the dev
+overlays on, at each wheel step from the closest zoom to the farthest: each army's token must stand over its own model,
+and the pointer on its model at its feet, middle and top must open its plate; `--steps lab-hover-zoom-pair` the same
+with the realm's two armies side by side, the merge game's), `--steps lab-high-ground`
 (`/lab/game?scenario=high-ground`, the spire's game on snow, bare rock and tundra, its army at the edge of the revealed
 land, with the dev overlays on: the army picked, every tile it is lit on, the ones it may explore on the fog's floor
 among them, must lie on its ground, never under it nor 0.06 over it, and the army must stand on its own ground, never
@@ -426,11 +425,11 @@ average over 12 (the machine is shared: such a run is not evidence). A blocked s
 warnings, the reload with its cost.
 
 The shared Deep is reached through the spire's Deep entry or the map layer menu. Select a field army, then a Deep site:
-its card offers Attack against a beast or rival, Join for an allied free slot, or Take for an empty site. A held army
-appears in the site's slots, last filled fought first. `--steps lab-deep-join` opens the real map on an allied Ethereal
-mine, selects the player's army, submits Join, and records the signed InteractSite command and the confirmed guard slot
-with before/after screenshots. The lab snapshot is `/lab/game?scenario=deep`; its current facts also drive the site
-binding's component tests.
+its card offers Attack against a beast or a rival Aspect's garrison, or Take for an empty site; to a player of the
+holder's Aspect beside it, Guard and Withdraw move troops between the army and a slot. A site's garrison slots are
+fought highest first. `--steps lab-deep` opens the real map beside a Bane altar an ally garrisons, visits each site and
+frames the ring. The lab snapshot is `/lab/game?scenario=deep`; its current facts also drive the site binding's
+component tests.
 
 The race board opens from Season, or by selecting a fixed Aspect hyperstructure in the Deep. It reads heights, Glory,
 Triumph days and the winner from native facts; after a finish the same board opens over the map. `--steps lab-race` and
@@ -632,16 +631,17 @@ commands until answered. It waits as a shrine on the army's token (the clear's V
 opens when the army is picked. Choose a card and Swear it with the gold button; with full slots, choose the held Oath it
 replaces, or Pass for the stamina shown on its row, capped at the army's maximum. The open pick cannot be dismissed by
 Escape, Back or an outside press. One Swap a pick replaces the card it is on with an Oath neither held nor shown, for
-the Fragments the head shows (none in the Deep); the swapped card reads New and the head Used. The playtest swaps the
-first card before it chooses. `lab-actions-oath-pick` and `lab-actions-oath-replace` play `/lab/game?scenario=oath-pick`
-and `oath-replace` on desktop and phone, recording the signed choice and resulting held Oath. Each path opens Delete,
-checks the Oath loss warning, cancels to retain the army, then confirms and checks the army and Oath record disappear.
-The freed slot retains its stamina. Native tests cover Shrine uses, persistence, deletion and remustering with an empty
-Oath record; these browser proofs use recorded offers. `lab-oath-decline` and `lab-oath-pass-capped` check the pass
-reward, including overflow at the maximum.
+the Fragments its own button shows (none in the Deep), while the head says the pick has one swap; the swapped card reads
+New, every other Swap goes and the head reads Reroll used. The playtest swaps the first card before it chooses.
+`lab-actions-oath-pick` and `lab-actions-oath-replace` play `/lab/game?scenario=oath-pick` and `oath-replace` on desktop
+and phone, recording the signed choice and resulting held Oath. Each path opens Delete, checks the Oath loss warning,
+cancels to retain the army, then confirms and checks the army and Oath record disappear. The freed slot retains its
+stamina. Native tests cover Shrine uses, persistence, deletion and remustering with an empty Oath record; these browser
+proofs use recorded offers. `lab-oath-decline` and `lab-oath-pass-capped` check the pass reward, including overflow at
+the maximum.
 
-Vitriol changes the Deep's field and guard loss to its generated rule value. `/lab/game?scenario=oath-vitriol` and
-`lab-oath-vitriol` choose it through the Oath panel, read the reduced field drain, and join the Ethereal mine on desktop
+Vitriol changes the Deep's field army loss to its generated rule value. `/lab/game?scenario=oath-vitriol` and
+`lab-oath-vitriol` choose it through the Oath panel, read the reduced field drain, and visit the Deep sites on desktop
 and phone. Native command tests prove the old rate settles before a choice or replacement and the new rate applies only
 to later ticks; shared vectors check exact troop counts in the contract and client.
 

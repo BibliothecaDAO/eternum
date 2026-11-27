@@ -1,6 +1,6 @@
-import { SIDE_HEX } from "@/tokens";
-import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
-import { DEEP_WORDS } from "@/ui/design-system/kit/words";
+import { SIDE_HEX, type Side } from "@/tokens";
+import { DEEP_SITE_FACES, deepSitePlatePay } from "@/ui/features/frontier/deep/deep-site-faces";
+import { DEEP_WORDS, ownerAndAspect } from "@/ui/design-system/kit/words";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import {
   DEEP_DEPTH,
@@ -11,13 +11,11 @@ import {
   readExpeditionRules,
 } from "@bibliothecadao/eternum";
 import {
-  IncompleteDeepSyncError,
   deepGateTiles,
-  isAspectAlly,
   nativeRuleConstants,
   readDeepBeastTroops,
   readDeepRingOpening,
-  readDeepSites,
+  readSyncedDeepSites,
   safeInteger,
   viewerAspects,
   type DeepSiteView,
@@ -34,10 +32,14 @@ import {
   type AspectId,
   deepSites,
   TileOccupier,
+  RESOURCE_PRECISION,
   type BeastModel,
 } from "@bibliothecadao/types";
 import type { MapPlateInput, MapPlateScope } from "../map-plates/map-plate-layer";
-import type { MapPlate } from "../map-plates/map-plate-model";
+import { plateTroopType, plateWatched, type MapPlate, type PlateWatched } from "../map-plates/map-plate-model";
+import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
+import { watchPlayerNames } from "@/hooks/use-player-profile";
 import { PLATE_CLEARANCE } from "./structure-visible-presentation";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { presentResult } from "@/three/presented-results";
@@ -57,6 +59,7 @@ import {
   type TileSpatialRenderable,
 } from "@bibliothecadao/eternum/game-sync";
 import { Box3, Object3D, Scene } from "three";
+import type { PipelineCompiler } from "../pipeline-compiler";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
 import { getWorldPositionForHex } from "../utils";
 import { gltfLoader } from "../utils/utils";
@@ -86,9 +89,10 @@ export class MapSiteManager {
   private readonly unsubscribeRewards: () => void;
   private readonly unsubscribeChainTime: () => void;
   private readonly unsubscribeSides: () => void;
+  private readonly unsubscribeNames: () => void;
   private drawnDay: number | undefined;
   private drawnTick: number | undefined;
-  private readonly guardingExplorers = new Set<bigint>();
+  private garrisoned = false;
   private standards?: OrderStandard;
   private readonly heights = new Map<DrawnSite["key"], number>();
   private modelVisible = true;
@@ -107,7 +111,7 @@ export class MapSiteManager {
       stands: (tile: TileSpatialRenderable) =>
         this.isDeepSiteOf(tile, kind.id) &&
         this.closedRing(tile.occupierId) === undefined &&
-        !this.beastGuards(tile.occupierId),
+        this.beastTroops(tile.occupierId) === 0n,
       model: () => landmarkModel(kind.key, kind.name, ACTIVE),
       scale: 1,
     })),
@@ -138,6 +142,7 @@ export class MapSiteManager {
     private readonly plates: MapPlateScope,
     private readonly gates: MapPlateScope,
     private readonly terrain: TerrainSurface = FLAT_TERRAIN_SURFACE,
+    private readonly compilePipelines: PipelineCompiler = async () => {},
   ) {
     this.unsubscribe = projection.subscribeTiles((changes) => {
       const onLayer = projectionChangesForLayer(changes, activeMapLayer());
@@ -156,22 +161,26 @@ export class MapSiteManager {
       const touched = changes.some(
         (change) =>
           change.model === "DeepSite" ||
-          change.model === "DeepGuard" ||
+          change.model === "GarrisonSlot" ||
+          change.model === "DeepTick" ||
           change.model === "DeepEntries" ||
           change.model === "DeepRules" ||
+          change.model === "RaceRules" ||
+          change.model === "BaneRules" ||
           change.model === "HomeAspect" ||
           change.model === "SliceRules" ||
           (change.model === "Guard" && this.guardsDeepSite(change.current ?? change.previous)) ||
-          this.touchesGuardingArmy(change),
+          (change.model === "Structure" && (this.garrisoned || this.isDeepSite(change.current ?? change.previous))),
       );
       if (touched) this.refresh();
     });
     this.unsubscribeChainTime = useChainTimeStore.subscribe(() => {
-      if (this.deepDay() !== this.drawnDay || (this.guardingExplorers.size > 0 && this.deepTick() !== this.drawnTick)) {
+      if (this.deepDay() !== this.drawnDay || (this.garrisoned && this.deepTick() !== this.drawnTick)) {
         this.refresh();
       }
     });
     this.unsubscribeSides = onSidesChanged(() => this.refresh());
+    this.unsubscribeNames = watchPlayerNames(() => this.refresh());
     try {
       this.refresh();
     } catch (error) {
@@ -215,6 +224,7 @@ export class MapSiteManager {
     this.unsubscribeRewards();
     this.unsubscribeChainTime();
     this.unsubscribeSides();
+    this.unsubscribeNames();
     this.plates.dispose();
     this.gates.dispose();
     this.models.forEach((model) => model.dispose());
@@ -228,10 +238,7 @@ export class MapSiteManager {
     this.drawnDay = this.deepDay();
     this.drawnTick = this.deepTick();
     const sitesById = this.readSitesById();
-    this.guardingExplorers.clear();
-    for (const view of sitesById.values()) {
-      for (const guard of view.guards) this.guardingExplorers.add(guard.army.explorer_id);
-    }
+    this.garrisoned = [...sitesById.values()].some((view) => view.garrisons.length > 0);
     this.refreshPlates();
     const heldSites: Array<{ hex: PlacedSite; site: DeepSiteView }> = [];
     for (const site of this.sites) {
@@ -239,7 +246,7 @@ export class MapSiteManager {
       if (site.key.startsWith("deep:")) {
         for (const hex of hexes) {
           const view = sitesById.get(hex.entityId);
-          if (view && view.guards.length > 0) heldSites.push({ hex, site: view });
+          if (view && view.garrisons.length > 0) heldSites.push({ hex, site: view });
         }
       }
       const model = this.models.get(site.key);
@@ -275,14 +282,16 @@ export class MapSiteManager {
     );
   }
 
-  private kindHexes(): Record<string, { col: number; row: number }> {
+  private kindHexes(): Record<string, { col: number; row: number; entity: number }> {
     const tiles = this.projection.getTiles(activeMapLayer());
     return Object.fromEntries(
       deepSites.flatMap((kind) => {
         const tile = tiles.find(
           (each) => each.occupierType === TileOccupier.DeepSite && this.deepKindOf(each.occupierId) === kind.id,
         );
-        return tile ? [[`deep:${kind.key}`, { col: tile.hexCoords.col, row: tile.hexCoords.row }]] : [];
+        return tile
+          ? [[`deep:${kind.key}`, { col: tile.hexCoords.col, row: tile.hexCoords.row, entity: tile.occupierId }]]
+          : [];
       }),
     );
   }
@@ -296,8 +305,9 @@ export class MapSiteManager {
           .slice(0, SITE_CAPACITY)
       : [];
     const placed: number[] = [];
+    const views = sites.length > 0 ? this.readSitesById() : new Map<number, DeepSiteView>();
     for (const tile of sites) {
-      const plate = this.deepPlate(tile);
+      const plate = this.deepPlate(tile, views.get(tile.occupierId));
       if (!plate) continue;
       this.plates.setLabel(plate);
       placed.push(safeInteger(plate.entityId));
@@ -325,7 +335,7 @@ export class MapSiteManager {
     return deepGateTiles(rules.gate_distance, this.store.require("SettlementRules", { game_id }).spacing);
   }
 
-  private deepPlate(tile: TileSpatialRenderable): MapPlateInput {
+  private deepPlate(tile: TileSpatialRenderable, view: DeepSiteView | undefined): MapPlateInput {
     const site = this.store.require("DeepSite", {
       game_id: configManager.getActiveGameId(),
       entity_id: tile.occupierId,
@@ -337,27 +347,84 @@ export class MapSiteManager {
       row: tile.hexCoords.row - FELT_CENTER(),
     });
     placePositionOnTerrain(position, this.terrain, this.plateHeight(tile.occupierId, kind.key) + PLATE_CLEARANCE);
+    return { entityId: tile.occupierId, position, plate: this.sitePlate(tile.occupierId, kind, view) };
+  }
+
+  private sitePlate(entityId: number, kind: DeepKind, view: DeepSiteView | undefined): MapPlate {
+    const closed = this.closedRing(entityId);
+    if (closed) return plainPlate(kind, "lock", DEEP_WORDS.opensAt(closed.realms));
+    if (view && view.holder !== 0n) return this.claimedPlate(kind, view);
+    const beast = this.beastTroops(entityId);
+    if (beast > 0n)
+      return beastPlate(
+        kind,
+        beast,
+        view,
+        this.ownerSide(0n, 0, ""),
+        view ? deepSitePlatePay(this.store, configManager.getActiveGameId(), view) : undefined,
+      );
+    return plainPlate(kind, DEEP_SITE_FACES[kind.key].icon);
+  }
+
+  private claimedPlate(kind: DeepKind, site: DeepSiteView): MapPlate {
+    const game_id = configManager.getActiveGameId();
+    const owner = site.holder;
+    const realm = [...this.store.structuresOwnedBy(game_id, owner)].find(
+      (structure) => this.store.get("HomeAspect", { game_id, home: structure.entity_id })?.aspect === site.aspect,
+    );
+    const name = getPlayerDisplayName(owner);
     return {
-      entityId: tile.occupierId,
-      position,
-      plate: {
-        kind: "structure",
-        relation: "neutral",
-        name: kind.name,
-        named: false,
-        owner: "",
-        guards: null,
-        arrivals: [],
-        ...this.closedOrOpenLook(tile.occupierId, DEEP_SITE_FACES[kind.key].icon),
-      },
+      kind: "structure",
+      ...this.ownerSide(owner, site.aspect, name),
+      name: kind.name,
+      named: true,
+      owner: site.aspect ? ownerAndAspect(name, aspectName(site.aspect)) : name,
+      icon: DEEP_SITE_FACES[kind.key].icon,
+      crest: realm?.metadata.order,
+      guards: site.garrisons
+        .toSorted((left, right) => left.slot - right.slot)
+        .map(({ troops }) => ({ type: plateTroopType(troops.category), tier: null, count: troopsOf(troops) })),
+      arrivals: [],
     };
+  }
+
+  private ownerSide(owner: bigint, aspect: number, name: string): { relation: Side; watched?: PlateWatched } {
+    const watched = plateWatched(watchedSide(owner), name);
+    const viewer = accountAddress() ?? null;
+    if (watched.watched || viewer === null) return { relation: "neutral", ...watched };
+    return {
+      relation: sideOf({
+        isMine: isViewerOwner(owner, viewer),
+        isAlly: aspect !== 0 && viewerAspects(this.store, configManager.getActiveGameId(), viewer).has(aspect),
+        owner: { address: owner },
+      }),
+    };
+  }
+
+  private isDeepSite(row: { entity_id: bigint } | undefined): boolean {
+    return row !== undefined && this.deepKindOf(safeInteger(row.entity_id)) !== undefined;
+  }
+
+  public async prewarmExploreSites(): Promise<void> {
+    if (this.destroyed) return;
+    const exploreKeys = new Set<string>(MAP_SITES.map((site) => site.kind));
+    const pending: Promise<void>[] = [];
+    for (const site of this.sites) {
+      if (!exploreKeys.has(site.key) || this.models.has(site.key)) continue;
+      this.load(site);
+      const loading = this.loading.get(site.key);
+      if (loading) pending.push(loading);
+    }
+    await Promise.all(pending);
   }
 
   private load(site: DrawnSite): void {
     if (this.loading.has(site.key)) return;
     const loading = site
       .model()
-      .then(({ model, height }) => {
+      .then(async ({ model, height }) => {
+        if (this.destroyed) return model.dispose();
+        await this.compilePipelines(model.group, this.scene);
         if (this.destroyed) return model.dispose();
         this.heights.set(site.key, height * site.scale);
         model.group.visible = this.modelVisible;
@@ -398,20 +465,14 @@ export class MapSiteManager {
     return calendar && now !== undefined ? dayOf(calendar, now)?.index : undefined;
   }
 
-  private beastGuards(entityId: number): boolean {
+  private beastTroops(entityId: number): bigint {
     const now = readDefaultTick();
-    if (now === undefined) return false;
-    const troops = readDeepBeastTroops(this.store, now, BigInt(entityId), configManager.getActiveGameId());
-    return (troops ?? 0n) > 0n;
+    if (now === undefined) return 0n;
+    return readDeepBeastTroops(this.store, now, BigInt(entityId), configManager.getActiveGameId()) ?? 0n;
   }
 
   private beastStands(entityId: number): boolean {
-    return this.beastGuards(entityId) && this.closedRing(entityId) === undefined;
-  }
-
-  private closedOrOpenLook(entityId: number, icon: IconMeaning): { icon: IconMeaning; reward?: string } {
-    const closed = this.closedRing(entityId);
-    return closed ? { icon: "lock", reward: DEEP_WORDS.opensAt(closed.realms) } : { icon };
+    return this.beastTroops(entityId) > 0n && this.closedRing(entityId) === undefined;
   }
 
   private closedRing(entityId: number): { realms: number } | undefined {
@@ -432,30 +493,8 @@ export class MapSiteManager {
   }
 
   private readSitesById(): Map<number, DeepSiteView> {
-    const now = readDefaultTick();
-    if (now === undefined) return new Map();
-    try {
-      const sites = readDeepSites(this.store, now, configManager.getActiveGameId());
-      return new Map(sites.map((site) => [safeInteger(site.id), site]));
-    } catch (error) {
-      if (error instanceof IncompleteDeepSyncError) return new Map();
-      throw error;
-    }
-  }
-
-  private touchesGuardingArmy(change: { model: string; current?: unknown; previous?: unknown }): boolean {
-    if (this.guardingExplorers.size === 0) return false;
-    if (change.model === "Structure") return true;
-    if (
-      change.model !== "ExplorerTroops" &&
-      change.model !== "DeepArmy" &&
-      change.model !== "ArmyDay" &&
-      change.model !== "ArmyProgress"
-    ) {
-      return false;
-    }
-    const row = (change.current ?? change.previous) as { explorer_id?: bigint } | undefined;
-    return row?.explorer_id !== undefined && this.guardingExplorers.has(row.explorer_id);
+    const sites = readSyncedDeepSites(this.store, readDefaultTick(), configManager.getActiveGameId());
+    return new Map(sites.map((site) => [safeInteger(site.id), site]));
   }
 
   private guardsDeepSite(guard: { structure_id: bigint } | undefined): boolean {
@@ -463,20 +502,9 @@ export class MapSiteManager {
   }
 
   private holderColor(site: DeepSiteView | undefined): string | null {
-    const holder = site?.guards[0]?.army;
-    if (!holder) return null;
-    const home = this.store.get("Structure", { game_id: holder.game_id, entity_id: holder.owner });
-    const owner = home?.owner ?? 0n;
-    const watched = watchedSide(owner);
-    if (watched) return watched.colour;
-    const viewer = accountAddress() ?? null;
-    return SIDE_HEX[
-      sideOf({
-        isMine: isViewerOwner(owner, viewer),
-        isAlly: isAspectAlly(this.store, holder.game_id, viewer, holder.owner),
-        owner: { address: owner },
-      })
-    ];
+    if (!site || site.holder === 0n) return null;
+    const side = this.ownerSide(site.holder, site.aspect, "");
+    return side.watched?.colour ?? SIDE_HEX[side.relation];
   }
 
   private refreshStandards(heldSites: readonly { hex: PlacedSite; site: DeepSiteView }[]): void {
@@ -498,10 +526,13 @@ export class MapSiteManager {
     let slot = 0;
     const limit = SITE_CAPACITY * nativeRuleConstants.DEEP_GUARD_SLOTS;
     for (const { hex, site } of heldSites) {
-      const count = site.guards.length;
+      const count = site.garrisons.length;
       for (let index = 0; index < count && slot < limit; index += 1) {
-        const guard = site.guards[index]!;
-        const home = this.store.get("Structure", { game_id: guard.army.game_id, entity_id: guard.army.owner });
+        const garrison = site.garrisons[index]!;
+        const home = this.store.get("Structure", {
+          game_id: configManager.getActiveGameId(),
+          entity_id: garrison.home,
+        });
         const orderId = home?.metadata.order;
         this.standards.setMatrixAt(slot, this.standardPlacement(hex, index, count));
         this.standards.setOrderAt(slot, orderId);
@@ -559,6 +590,52 @@ const paintedSiteModel = async (kind: MapSiteKind) => {
 
 const isMapSite = (occupier: number | undefined): boolean =>
   mapSiteOf(occupier) !== null || occupier === TileOccupier.DeepSite;
+
+type DeepKind = (typeof deepSites)[number];
+
+const troopsOf = (troops: { count: bigint }): number => Math.floor(Number(troops.count) / RESOURCE_PRECISION);
+
+const plainPlate = (kind: DeepKind, icon: IconMeaning, reward?: string): MapPlate => ({
+  kind: "structure",
+  relation: "neutral",
+  name: kind.name,
+  named: false,
+  owner: "",
+  guards: null,
+  arrivals: [],
+  icon,
+  ...(reward ? { reward } : {}),
+});
+
+const beastPlate = (
+  kind: DeepKind,
+  troops: bigint,
+  view: DeepSiteView | undefined,
+  side: { relation: Side; watched?: PlateWatched },
+  reward: string | undefined,
+): MapPlate => {
+  const beast = DEEP_BEASTS[kind.key];
+  const species = beastModel(beast);
+  return {
+    kind: "structure",
+    ...side,
+    name: kind.name,
+    named: false,
+    owner: "",
+    place: kind.name,
+    icon: beastMeaning(species),
+    guards: [
+      {
+        type: plateTroopType(view?.guard?.troops.category),
+        tier: null,
+        count: troopsOf({ count: troops }),
+        beast: species,
+      },
+    ],
+    ...(reward ? { reward } : {}),
+    arrivals: [],
+  };
+};
 
 const gatePlate = (aspect: AspectId, own: boolean): MapPlate => ({
   kind: "structure",

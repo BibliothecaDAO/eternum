@@ -3,22 +3,22 @@
   flex-direction: column;
   gap: theme(spacing.2);
 }
-.deep-title {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: theme(spacing[2.5]);
-}
 .deep-title__emblem {
   display: inline-flex;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   flex: none;
   align-items: center;
   justify-content: center;
   border: 1.5px solid var(--hud-line-strong);
   border-radius: var(--hud-radius-control);
-  background: radial-gradient(circle at 50% 40%, rgb(var(--hud-gold) / 0.18), var(--hud-well) 75%);
+  background: radial-gradient(circle at 50% 40%, rgb(var(--hud-gold) / 0.18), var(--hud-well) 76%);
+}
+.deep-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: theme(spacing[2.5]);
 }
 .deep-title__words {
   display: flex;
@@ -33,74 +33,57 @@
   padding: 1px 6px;
   font-family: var(--hud-font-display);
   font-size: var(--hud-text-badge);
-  line-height: 1.2;
-  letter-spacing: 0.1em;
+  line-height: 1.15;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
+  white-space: nowrap;
   color: rgb(var(--hud-gold));
 }
-.deep-tag[data-deep-tag="held"] {
-  border-color: color-mix(in srgb, var(--hud-good) 60%, transparent);
-  color: var(--hud-good);
+.deep-tag[data-deep-tag="own"] {
+  border-color: color-mix(in srgb, var(--hud-own) 68%, transparent);
+  background: color-mix(in srgb, var(--hud-own) 12%, transparent);
+  color: var(--hud-own);
+}
+.deep-tag[data-deep-tag="ally"] {
+  border-color: color-mix(in srgb, var(--hud-ally) 68%, transparent);
+  background: color-mix(in srgb, var(--hud-ally) 12%, transparent);
+  color: var(--hud-ally);
 }
 .deep-tag[data-deep-tag="rival"] {
-  border-color: color-mix(in srgb, var(--hud-bad) 60%, transparent);
+  border-color: color-mix(in srgb, var(--hud-bad) 68%, transparent);
+  background: color-mix(in srgb, var(--hud-bad) 12%, transparent);
   color: var(--hud-bad);
+}
+.deep-tag[data-deep-tag="held"] {
+  border-color: rgb(var(--hud-gold) / 0.62);
+  background: rgb(var(--hud-gold) / 0.1);
+  color: var(--hud-selected);
 }
 .deep-tag[data-deep-tag="locked"] {
   color: var(--hud-muted);
 }
 .deep-title__name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: var(--hud-font-display);
   font-size: var(--hud-text-display);
   line-height: var(--hud-leading-display);
   color: rgb(var(--hud-ink));
 }
-.deep-title__purpose {
+.deep-title__holder {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.1);
   font-family: var(--hud-font);
   font-weight: normal;
   font-size: var(--hud-text-label);
-  line-height: 1.2;
   color: var(--hud-muted);
 }
-.deep-rates {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  border-top: 1px solid var(--hud-divider);
-  border-bottom: 1px solid var(--hud-divider);
-}
-.deep-rate {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 2px;
-  padding: theme(spacing.2) theme(spacing[2.5]);
-}
-.deep-rate + .deep-rate {
-  border-left: 1px solid var(--hud-divider);
-}
-.deep-rate__value {
-  display: inline-flex;
-  align-items: baseline;
-  gap: theme(spacing.1);
-  white-space: nowrap;
-}
-.deep-rate__value img {
-  align-self: center;
-}
-.deep-rate__value b {
-  font-size: var(--hud-text-strong);
-  font-weight: var(--hud-weight-title);
-  color: var(--hud-good);
-  font-variant-numeric: tabular-nums;
-}
-.deep-rate__value i {
-  font-style: normal;
-  font-size: var(--hud-text-label);
-  color: var(--hud-muted);
-}
-.deep-rate__sub {
-  font-size: var(--hud-text-badge);
-  color: var(--hud-muted);
+.deep-title__holder b {
+  color: rgb(var(--hud-ink));
+  font-weight: var(--hud-weight-strong);
 }
 .deep-kinds {
   display: flex;
@@ -123,54 +106,6 @@
   font-weight: var(--hud-weight-body);
   color: var(--hud-muted);
 }
-.deep-beast {
-  display: flex;
-  align-items: center;
-  gap: theme(spacing.3);
-  padding: theme(spacing.1) theme(spacing[2.5]);
-}
-.deep-beast__portrait {
-  position: relative;
-  display: inline-flex;
-  width: 52px;
-  height: 52px;
-  flex: none;
-  border: 2px solid color-mix(in srgb, var(--hud-bad) 60%, var(--hud-line-strong));
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-well);
-}
-.deep-beast__portrait > img {
-  border-radius: var(--hud-radius-round);
-  object-fit: cover;
-}
-.deep-beast__words {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 1px;
-}
-.deep-beast__name {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing[1.5]);
-  font-family: var(--hud-font-display);
-  font-size: var(--hud-text-strong);
-  color: rgb(var(--hud-ink));
-}
-.deep-beast__tag {
-  border: 1px solid var(--hud-line-strong);
-  border-radius: var(--hud-radius-chip);
-  padding: 0 5px;
-  font-size: var(--hud-text-badge);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgb(var(--hud-gold));
-}
-.deep-beast__troops {
-  font-size: var(--hud-text-body);
-  font-weight: var(--hud-weight-title);
-  font-variant-numeric: tabular-nums;
-}
 .deep-opening {
   display: flex;
   flex-direction: column;
@@ -187,126 +122,6 @@
 .deep-opening__line b {
   font-variant-numeric: tabular-nums;
 }
-.deep-held {
-  display: flex;
-  flex-direction: column;
-  gap: theme(spacing[1.5]);
-  padding: 0 theme(spacing[2.5]);
-}
-.deep-holder {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: theme(spacing.1);
-  font-size: var(--hud-text-label);
-  color: var(--hud-muted);
-}
-@media (orientation: portrait) and (max-width: 1439px) {
-  .ui-sheet:has([data-deep-slots]) {
-    max-height: min(62dvh, calc(100dvh - 10rem));
-  }
-}
-.deep-guards {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: theme(spacing.2);
-}
-.deep-guards__row {
-  display: flex;
-  align-items: center;
-  gap: theme(spacing.2);
-}
-.deep-guard-portrait {
-  position: relative;
-  display: inline-flex;
-  width: 44px;
-  height: 44px;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid var(--hud-line-strong);
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-surface-from);
-}
-.deep-guard-portrait[data-next] {
-  border-color: rgb(var(--hud-gold));
-}
-.deep-guard-portrait[data-mine] {
-  box-shadow: 0 0 0 1.5px var(--hud-own);
-}
-.deep-guard-portrait > img {
-  border-radius: var(--hud-radius-round);
-  object-fit: cover;
-}
-.deep-guard-portrait__aspect {
-  position: absolute;
-  right: -3px;
-  bottom: -3px;
-  display: inline-flex;
-  width: 18px;
-  height: 18px;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-surface-to);
-}
-.deep-guard-empty {
-  display: inline-flex;
-  width: 44px;
-  height: 44px;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  border: 1px dashed var(--hud-line-strong);
-  border-radius: var(--hud-radius-round);
-  background: transparent;
-  color: var(--hud-muted);
-}
-button.deep-guard-empty {
-  cursor: pointer;
-}
-button.deep-guard-empty:hover {
-  border-color: rgb(var(--hud-accent));
-  color: rgb(var(--hud-ink));
-}
-.deep-rate__value b[data-tone="poison"] {
-  color: var(--hud-poison);
-}
-.deep-poison-strip {
-  display: flex;
-  align-items: center;
-  gap: theme(spacing[1.5]);
-  margin: 0 theme(spacing[2.5]);
-  border: 1px solid color-mix(in srgb, var(--hud-poison) 45%, transparent);
-  border-radius: var(--hud-radius-control);
-  background: color-mix(in srgb, var(--hud-poison) 10%, var(--hud-well));
-  padding: theme(spacing[1.5]) theme(spacing[2.5]);
-  font-size: var(--hud-text-label);
-  font-weight: var(--hud-weight-strong);
-  color: var(--hud-poison);
-}
-.deep-poisoned {
-  font-weight: var(--hud-weight-strong);
-  color: var(--hud-poison);
-}
-.deep-guard-portrait {
-  border-color: var(--hud-poison);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--hud-poison) 55%, transparent);
-}
-.deep-guard-portrait__poison {
-  position: absolute;
-  top: -3px;
-  left: -3px;
-  display: inline-flex;
-  width: 16px;
-  height: 16px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--hud-poison);
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-surface-to);
-}
 .deep-fight__aspect {
   position: absolute;
   right: -2px;
@@ -318,4 +133,232 @@ button.deep-guard-empty:hover {
   justify-content: center;
   border-radius: var(--hud-radius-round);
   background: var(--hud-surface-to);
+}
+.deep-yield {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.1);
+  border-bottom: 1px solid var(--hud-divider);
+  padding-bottom: theme(spacing.2);
+}
+.deep-rates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: theme(spacing.1) theme(spacing.2);
+}
+.deep-rates__dot {
+  color: var(--hud-line-strong);
+}
+.deep-rate {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.1);
+  font-size: var(--hud-text-label);
+  white-space: nowrap;
+  color: var(--hud-muted);
+}
+.deep-rate b {
+  font-size: var(--hud-text-strong);
+  font-variant-numeric: tabular-nums;
+  color: var(--hud-good);
+}
+.deep-rate i {
+  font-style: normal;
+}
+.deep-glory-won {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.1);
+  margin-left: auto;
+  border: 1px solid rgb(var(--hud-gold) / 0.5);
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-gold) / 0.14);
+  padding: 2px theme(spacing.2);
+  font-size: var(--hud-text-label);
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--hud-selected);
+}
+.deep-purpose {
+  font-size: var(--hud-text-label);
+  white-space: normal;
+  color: rgb(var(--hud-ink) / 0.85);
+}
+.deep-guards {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing[1.5]);
+}
+.deep-guards__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: theme(spacing.2);
+  font-size: var(--hud-text-badge);
+  font-weight: var(--hud-weight-strong);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hud-muted);
+}
+.deep-guards__cue {
+  font-weight: var(--hud-weight-body);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.deep-guards__row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: theme(spacing[1.5]);
+}
+.deep-guards__undefended {
+  text-align: center;
+  font-size: var(--hud-text-label);
+  font-weight: var(--hud-weight-strong);
+  color: var(--hud-warn);
+}
+.deep-tile {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 86px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  padding: theme(spacing[1.5]) theme(spacing.1);
+}
+.deep-tile[data-side="own"] {
+  border-color: color-mix(in srgb, var(--hud-own) 55%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--hud-own) 10%, transparent), var(--hud-well));
+}
+.deep-tile[data-side="ally"] {
+  border-color: color-mix(in srgb, var(--hud-ally) 50%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--hud-ally) 10%, transparent), var(--hud-well));
+}
+.deep-tile[data-side="rival"],
+.deep-tile[data-deep-beast] {
+  border-color: color-mix(in srgb, var(--hud-bad) 50%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--hud-bad) 10%, transparent), var(--hud-well));
+}
+.deep-tile[data-first] {
+  box-shadow: inset 0 2px 0 var(--hud-selected);
+}
+.deep-tile[data-empty] {
+  border-style: dashed;
+  background: color-mix(in srgb, var(--hud-well) 50%, transparent);
+  color: var(--hud-muted);
+}
+.deep-tile[data-empty="add"] {
+  border-color: rgb(var(--hud-gold) / 0.55);
+  background: rgb(var(--hud-gold) / 0.05);
+  gap: theme(spacing.1);
+  color: var(--hud-selected);
+}
+.deep-tile__first {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  font-size: var(--hud-text-badge);
+  font-weight: var(--hud-weight-strong);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--hud-selected);
+}
+.deep-tile__portrait {
+  position: relative;
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border: 1.5px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-surface-from);
+}
+.deep-tile__portrait > img {
+  border-radius: var(--hud-radius-round);
+  object-fit: cover;
+}
+.deep-tile__count {
+  font-size: var(--hud-text-label);
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: rgb(var(--hud-ink));
+}
+.deep-tile__owner {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--hud-text-badge);
+  font-weight: var(--hud-weight-strong);
+  line-height: 1.1;
+  color: rgb(var(--hud-gold));
+}
+.deep-tile[data-side="own"] .deep-tile__owner {
+  color: var(--hud-own);
+}
+.deep-tile[data-side="ally"] .deep-tile__owner {
+  color: var(--hud-ally);
+}
+.deep-tile[data-side="rival"] .deep-tile__owner,
+.deep-tile[data-deep-beast] .deep-tile__owner {
+  color: var(--hud-bad);
+}
+.deep-tile__drain {
+  font-size: var(--hud-text-badge);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--hud-poison);
+}
+.deep-tile__empty {
+  font-size: var(--hud-text-badge);
+  font-weight: var(--hud-weight-strong);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.deep-day-end-warn {
+  border-top: 1px solid var(--hud-divider);
+  padding-top: theme(spacing[1.5]);
+  text-align: center;
+  font-size: var(--hud-text-label);
+  color: var(--hud-muted);
+}
+.deep-day-end-warn b {
+  font-weight: var(--hud-weight-strong);
+  color: var(--hud-warn);
+}
+.deep-foot__btns {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: theme(spacing.2);
+}
+.deep-foot__btns > [data-kind="primary"] {
+  flex: 1;
+  min-width: 0;
+}
+.deep-foot__btns > [data-kind="secondary"] {
+  flex: 0 0 auto;
+}
+@media (orientation: portrait) and (max-width: 1439px) {
+  .ui-sheet:has([data-deep-guards]) {
+    max-height: min(62dvh, calc(100dvh - 10rem));
+  }
+}
+.deep-transfer {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing[1.5]);
+}
+.deep-transfer__row {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.2);
 }

@@ -1,4 +1,4 @@
-import { triumphPercentsOf } from "@bibliothecadao/eternum/game-client";
+import { questBonusPercent, triumphPercentsOf } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { orderAspect, StructureType } from "@bibliothecadao/types";
 import { LORDS_ADDRESS } from "@realms-world/chain";
@@ -51,6 +51,7 @@ const REALM = {
   resources_packed: "0",
   aspect: null,
   has_wonder: false,
+  realm_skin: 0,
 };
 
 const game = (over: Partial<DirectoryGame>): DirectoryGame => ({
@@ -98,6 +99,8 @@ const owned = {
   today_quest: { quest_id: 2, progress: 0, target: 1, labor: 1_500 },
 };
 
+export const LAB_QUEST_BONUS_PERCENT = questBonusPercent(release.definition.economy.quests.Some);
+
 /** Frontier's season on Day 12, the player's realm in it or not. */
 const frontier = (withRealm: boolean) =>
   game({
@@ -123,7 +126,7 @@ const frontier = (withRealm: boolean) =>
       heights: { 1: 6_400, 2: 7_850, 3: 4_100, 4: 2_900 },
       triumph_percents: triumphPercentsOf(release.definition.economy.race.Some),
     },
-    quest_bonus_percent: 50,
+    quest_bonus_percent: LAB_QUEST_BONUS_PERCENT,
     player_state: withRealm ? owned : null,
   });
 
@@ -145,8 +148,9 @@ const endedFrontier = game({
     season_days: 50,
     heights: { 1: 10_000, 2: 8_420, 3: 6_180, 4: 4_910 },
     triumph_percents: triumphPercentsOf(release.definition.economy.race.Some),
+    winner: 1,
   },
-  quest_bonus_percent: 50,
+  quest_bonus_percent: LAB_QUEST_BONUS_PERCENT,
   player_state: owned,
 });
 
@@ -264,6 +268,10 @@ export const LAB_SCREENS = {
   "realm-vault": { signedIn: true, games: [frontier(false), eternum] },
   // Your shared days on You (/profile): what a player's posted Frontier days brought.
   "shared-days": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "reward-waiting": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
+  "reward-urgent": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
+  "reward-sending": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
+  "reward-paid": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
 } as const;
 
 /** What a screen's account's shared days brought; a screen this names none of has shared no day. */
@@ -322,6 +330,8 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, string
   "season-running": LAB_WALLET,
   "realm-held": LAB_WALLET,
   "realm-vault": LAB_WALLET,
+  "reward-sending": LAB_WALLET,
+  "reward-paid": LAB_WALLET,
 };
 
 /** The lab's emailed code: this one is right, any other is refused as the identity service refuses it. */

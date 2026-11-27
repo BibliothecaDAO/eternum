@@ -54,6 +54,7 @@ pub fn requires_answer(game_id: u32, command: Command) -> bool {
         Command::GuardAttack(_) => false,
         Command::ProvisionAndUpgradeRealm(_) => false,
         Command::SetEntityName(value) => waiting(game_id, value.entity_id),
+        Command::SetRealmSkin(_) => false,
         Command::EnterDepth(value) => waiting(game_id, value.explorer_id),
         Command::Research(_) => false,
         Command::InteractSite(value) => waiting(game_id, value.explorer_id),

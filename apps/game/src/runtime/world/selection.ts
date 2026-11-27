@@ -5,10 +5,11 @@ import { buildGameProfile } from "./profile-builder";
 import { setActiveGame } from "./store";
 import type { GameProfile } from "./types";
 
-export const applyGameSelection = async (game: GameRef): Promise<GameProfile> => {
+export const applyGameSelection = async (game: GameRef, assertCurrent?: () => void): Promise<GameProfile> => {
   const selectionStartedAt = performance.now();
   markGameEntryMilestone("world-profile-build-started");
   const profile = await buildGameProfile(game);
+  assertCurrent?.();
   markGameEntryMilestone("world-profile-resolved");
   setActiveGame(profile);
   markGameEntryMilestone("world-selection-state-persisted");

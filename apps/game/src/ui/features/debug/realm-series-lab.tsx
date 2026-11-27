@@ -17,10 +17,9 @@ export function RealmSeriesLab() {
     owned: params.get("owned") !== "0",
     distance: Number(params.get("distance") ?? 20),
     lineup: params.get("lineup") === "1",
-    base: params.get("base") === "1",
-    grow: params.get("base") === "1" && params.get("grow") === "1",
+    s1: params.get("s1") === "1",
     reference:
-      params.get("wonder") === "1" || params.get("base") === "1" ? undefined : (params.get("reference") ?? undefined),
+      params.get("wonder") === "1" || params.get("s1") === "1" ? undefined : (params.get("reference") ?? undefined),
     comparison:
       params.get("comparison") === "before" ? "before" : params.get("comparison") === "pair" ? "pair" : "after",
   };
@@ -81,12 +80,7 @@ export function RealmSeriesLab() {
         )}
         <label>
           Age{" "}
-          <select
-            aria-label="Age"
-            value={settings.level}
-            disabled={settings.base}
-            onChange={(e) => change("level", e.target.value)}
-          >
+          <select aria-label="Age" value={settings.level} onChange={(e) => change("level", e.target.value)}>
             {["Canvas & Thatch", "Terrace Forum", "Twin Ward", "Empire"].map((label, index) => (
               <option key={label} value={index}>
                 {label}
@@ -99,7 +93,6 @@ export function RealmSeriesLab() {
           <select
             aria-label="Series"
             value={Number(settings.wonder)}
-            disabled={settings.base}
             onChange={(e) => change("wonder", e.target.value)}
           >
             <option value="0">Normal</option>
@@ -154,27 +147,14 @@ export function RealmSeriesLab() {
           <input
             type="checkbox"
             checked={settings.lineup}
-            disabled={settings.base || Boolean(settings.reference && settings.comparison !== "after")}
+            disabled={Boolean(settings.reference && settings.comparison !== "after")}
             onChange={(e) => change("lineup", e.target.checked ? "1" : "0")}
           />{" "}
           All ages
         </label>
         <label>
-          <input
-            type="checkbox"
-            checked={settings.base}
-            onChange={(e) => change("base", e.target.checked ? "1" : "0")}
-          />{" "}
-          Base rank candidates
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={settings.grow}
-            disabled={!settings.base}
-            onChange={(e) => change("grow", e.target.checked ? "1" : "0")}
-          />{" "}
-          Ranks grow
+          <input type="checkbox" checked={settings.s1} onChange={(e) => change("s1", e.target.checked ? "1" : "0")} />{" "}
+          Season 1 kits
         </label>
       </header>
       <p role="status" style={{ padding: "0 16px" }}>

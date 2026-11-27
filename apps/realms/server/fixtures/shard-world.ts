@@ -42,7 +42,6 @@ export type ArmyState = {
   settledAt: number;
   day: number;
   mapDay?: number;
-  guard?: boolean;
   deepTick?: number;
 };
 
@@ -211,12 +210,6 @@ export const snapshot = (
         .map(({ id, day }) => ({ key: `0x${id.toString(16)}`, value: { game_id: GAME_ID, explorer_id: id, day } })),
     },
     {
-      model: "DeepGuard",
-      rows: army?.guard
-        ? [{ key: "0xdee1", value: { game_id: GAME_ID, explorer_id: ARMY, site_id: 800, slot: 0 } }]
-        : [],
-    },
-    {
       model: "DeepArmy",
       rows:
         army?.deepTick === undefined
@@ -366,13 +359,17 @@ export function siteSnapshot(
       at: place < deepSites.length ? offsets[kind.key] : { x: 10 + 30 * (place - deepSites.length), y: 10 },
     })),
   );
+  const mine = deepSites.find((kind) => kind.key === "mine")!;
+  const held = 800 + mine.id;
   put(
     "DeepSite",
-    sites.map(({ ring, kind, id }) => row(id, { entity_id: id, kind: kind.id, ring, day: TODAY })),
+    sites.map(({ ring, kind, id }) =>
+      row(id, { entity_id: id, kind: kind.id, ring, day: TODAY, aspect: id === held ? site.aspect : 0 }),
+    ),
   );
   put("DeepEntries", site.entered === undefined ? [] : [row(2, { day: TODAY, count: site.entered })]);
-  const mine = deepSites.find((kind) => kind.key === "mine")!;
-  put("DeepGuard", [row(NEIGHBOUR_ARMY, { explorer_id: NEIGHBOUR_ARMY, site_id: 800 + mine.id, slot: 0 })]);
+  put("GarrisonSlot", [row(held, { structure_id: held, slot: 1, home: NEIGHBOUR_HOME })]);
+  put("DeepTick", [row(1, { paid_tick: site.lastTick })]);
   put("DeepArmy", [row(NEIGHBOUR_ARMY, { explorer_id: NEIGHBOUR_ARMY, last_tick: site.lastTick })]);
   put("TileOccupancy", [
     armyPosition(ARMY, HOME, bar),
@@ -387,21 +384,21 @@ export function siteSnapshot(
       }),
     ),
   ]);
-  put(
-    "Guard",
-    sites.map(({ id }) =>
-      row(id, {
-        structure_id: id,
-        slot: 0,
-        destroyed_tick: 0,
-        troops: {
-          ...explorerFixture.expected.value.troops,
-          stamina: { Inline: { amount: 120, settled_at: bar.settledAt, remainder: 0 } },
-          count: id === 800 + mine.id ? 0 : 10000 * RESOURCE_PRECISION,
-        },
-      }),
-    ),
-  );
+  const guard = (id: number, slot: number, count: number) =>
+    row(id * 4 + slot, {
+      structure_id: id,
+      slot,
+      destroyed_tick: 0,
+      troops: {
+        ...explorerFixture.expected.value.troops,
+        stamina: { Inline: { amount: 120, settled_at: bar.settledAt, remainder: 0 } },
+        count,
+      },
+    });
+  put("Guard", [
+    ...sites.map(({ id }) => guard(id, 0, id === held ? 0 : 10000 * RESOURCE_PRECISION)),
+    guard(held, 1, site.troops * RESOURCE_PRECISION),
+  ]);
   const rules = base.models.find(({ model }) => model === "SliceRules")!.rows[0]!.value;
   rules.battle_config = { ...release.definition.rules.battle_config, cooldown_seconds: 0 };
   if (!owner) return base;

@@ -21,8 +21,16 @@ pub fn active_explorer(
 
 pub fn owned_structure(game_id: u32, entity_id: u64, actor: ContractAddress) -> Structure {
     let home = crate::logic::structures::structure(ResourceKey { game_id, entity_id }).expect('missing home structure');
+    assert!(home.base.category != crate::taxonomy::DEEP_SITE_CATEGORY, "a Deep site is garrisoned by Transfer");
     assert!(home.owner == actor, "actor does not own structure");
     home
+}
+
+pub fn guarded_structure(game_id: u32, entity_id: u64, actor: ContractAddress) -> Structure {
+    if crate::logic::deep_garrisons::is_site(game_id, entity_id) {
+        return crate::logic::structures::structure(ResourceKey { game_id, entity_id }).expect('missing Deep site');
+    }
+    owned_structure(game_id, entity_id, actor)
 }
 
 pub fn authorized_explorer(
@@ -31,12 +39,6 @@ pub fn authorized_explorer(
     let explorer = active_explorer(key, timestamp, game_context);
     owned_structure(key.game_id, explorer.owner, actor);
     explorer
-}
-pub fn field_explorer(
-    key: ExplorerKey, actor: ContractAddress, timestamp: u64, context: crate::commands::ExecutionContext,
-) -> ExplorerTroops {
-    crate::logic::deep_guards::assert_field(key);
-    command_explorer(key, Some(actor), timestamp, context)
 }
 use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::troops::{ExplorerKey, ExplorerTroops};
@@ -145,7 +147,6 @@ pub mod TroopState {
         let previous = state.troops.explorers.entry((key.game_id, key.explorer_id)).owner.read();
         assert!(previous != 0, "missing explorer");
         write_home_membership(key, previous, 0);
-        crate::logic::deep_guards::remove(key);
         crate::logic::deep_armies::remove(key);
         crate::logic::army_days::remove(key);
         crate::logic::army_combat::remove(key);
@@ -468,7 +469,7 @@ pub mod TroopsLogic {
                     }
                 },
                 crate::troop_management::Army::Guard(slot) => {
-                    let home = crate::logic::troops::owned_structure(game_id, slot.structure_id, actor);
+                    let home = crate::logic::troops::guarded_structure(game_id, slot.structure_id, actor);
                     assert!(slot.slot < home.base.troop_max_guard_count, "invalid guard slot");
                     let guard = crate::logic::guards::guard(
                         crate::guards::GuardKey { game_id, structure_id: slot.structure_id, slot: slot.slot },
@@ -514,6 +515,7 @@ pub mod TroopsLogic {
                     false
                 },
             };
+            self.assert_deep_transfer(game_id, command, source.home, source.troops, target.home, game_context);
             if target.troops.count != 0 {
                 crate::troop_management::assert_matching(source.troops, target.troops);
             }
@@ -542,10 +544,55 @@ pub mod TroopsLogic {
                 crate::troop_management::Army::Guard(slot) => {
                     let key = crate::guards::GuardKey { game_id, structure_id: slot.structure_id, slot: slot.slot };
                     let mut guard = crate::guards::Guard { troops: target.troops, ..crate::logic::guards::guard(key) };
-                    let home = crate::logic::troops::owned_structure(game_id, slot.structure_id, actor);
+                    let mut home = crate::logic::troops::guarded_structure(game_id, slot.structure_id, actor);
+                    let site = crate::logic::deep_garrisons::is_site(game_id, slot.structure_id);
+                    if site {
+                        home.base.level = source.level;
+                        guard.destroyed_tick = 0;
+                    }
                     self.add_guard_troops(key, ref guard, source.troops, command.amount, home, rules, timestamp, false);
                     crate::logic::guards::GuardState::save(key, guard);
+                    if site {
+                        crate::logic::deep_garrisons::record(key, source.home);
+                    }
                 },
+            }
+            if let crate::troop_management::Army::Guard(slot) = command.source {
+                if crate::logic::deep_garrisons::is_site(game_id, slot.structure_id) {
+                    crate::logic::deep_garrisons::record(
+                        crate::guards::GuardKey { game_id, structure_id: slot.structure_id, slot: slot.slot },
+                        target.home,
+                    );
+                }
+            }
+        }
+        fn assert_deep_transfer(
+            self: @ContractState,
+            game_id: u32,
+            command: crate::troop_management::TransferTroops,
+            source_home: u64,
+            source_troops: Troops,
+            target_home: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) {
+            if let crate::troop_management::Army::Guard(slot) = command.target {
+                if crate::logic::deep_garrisons::is_site(game_id, slot.structure_id) {
+                    crate::logic::deep_garrisons::assert_garrison(
+                        crate::guards::GuardKey { game_id, structure_id: slot.structure_id, slot: slot.slot },
+                        source_home,
+                        source_troops,
+                        game_context,
+                    );
+                }
+            }
+            if let crate::troop_management::Army::Guard(slot) = command.source {
+                if crate::logic::deep_garrisons::is_site(game_id, slot.structure_id) {
+                    crate::logic::deep_garrisons::assert_withdraw(
+                        crate::guards::GuardKey { game_id, structure_id: slot.structure_id, slot: slot.slot },
+                        target_home,
+                        game_context,
+                    );
+                }
             }
         }
         fn apply_transfer_source(
@@ -1069,9 +1116,7 @@ fn destroy_explorer(key: ExplorerKey, explorer: ExplorerTroops) {
         class_hash: crate::logic::release::class_of(key.game_id, crate::slots::RESOURCES),
     }
         .destroy_resources(ResourceKey { game_id: key.game_id, entity_id: key.explorer_id });
-    if crate::logic::deep_guards::entry(key).is_none() {
-        crate::logic::map::MapState::vacate(crate::geometry::tile_key(key.game_id, explorer.coord), key.explorer_id);
-    }
+    crate::logic::map::MapState::vacate(crate::geometry::tile_key(key.game_id, explorer.coord), key.explorer_id);
     crate::logic::troops::TroopState::destroy(key);
 }
 

@@ -9,6 +9,7 @@ pub struct StructureStateStorage<TStructureRecord, TExpeditionSite> {
 #[starknet::storage_node]
 pub struct StructuresDomainStorage {
     pub entity_names: Map<(u32, u64), felt252>,
+    pub realm_skins: Map<(u32, u64), u8>,
 }
 
 #[starknet::storage_node]

@@ -17,6 +17,8 @@ const depthRules = (depth: number) => ({
     game_id: 1,
     depth,
     reveal_percent: 100,
+    reveal_cap: 1000,
+    rift_essence_bps: 15000,
     site_guard_lower: 1,
     site_guard_upper: 2,
     rift_guard_lower: 1,

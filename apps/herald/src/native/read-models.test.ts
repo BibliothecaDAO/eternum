@@ -6,7 +6,7 @@ import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import { createHeraldRequestHandler } from "../http";
 import { WorldFold } from "../world-fold";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DAILY_QUEST_MODELS, dayAtIndex, readDailyQuest } from "@bibliothecadao/eternum";
+import { DAILY_QUEST_MODELS, dayAtIndex, readDailyQuest, REALM_SKIN_FAMILIES } from "@bibliothecadao/eternum";
 import { frontierSeasonOnePreset } from "../../../../config/source/frontier/season-one";
 import { NativeFactStore, questWeek } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, worldBanes } from "@bibliothecadao/types";
@@ -209,8 +209,9 @@ it("projects a late campaign source without marking any NFT as taken", () => {
 });
 
 describe("native directory", () => {
-  it("names each held realm's Aspect and whether it holds a Wonder, as the facts record them", () => {
+  it("names each held realm's Aspect, whether it holds a Wonder and the skin family its owner equipped, as the facts record them", () => {
     const { fold, native } = world();
+    const { BASE_REALM_SKIN, DEFAULT_REALM_SKIN } = REALM_SKIN_FAMILIES;
     native.applyReceipt(
       fold,
       receipt([
@@ -222,15 +223,31 @@ describe("native directory", () => {
         }),
         structure("8", "1", "0x111"),
         rowEvent("HomeAspect", ["1", "7"], { aspect: 3n }),
+        rowEvent("RealmSkin", ["1", "8"], { family: BASE_REALM_SKIN }),
       ]),
       11,
       0,
     );
     const input = { chain: "madara", confirmedBlock: 11, timestamp: 30, fold, playerAddress: "0x111" };
     const held = buildNativeDirectory(input).games.find((game) => game.game_id === 1)!.player_state!.structures;
-    expect(held.map(({ entity_id, aspect, has_wonder }) => ({ entity_id, aspect, has_wonder }))).toEqual([
-      { entity_id: 7, aspect: 3, has_wonder: true },
-      { entity_id: 8, aspect: null, has_wonder: false },
+    expect(
+      held.map(({ entity_id, aspect, has_wonder, realm_skin }) => ({ entity_id, aspect, has_wonder, realm_skin })),
+    ).toEqual([
+      { entity_id: 7, aspect: 3, has_wonder: true, realm_skin: DEFAULT_REALM_SKIN },
+      { entity_id: 8, aspect: null, has_wonder: false, realm_skin: BASE_REALM_SKIN },
+    ]);
+
+    const revision = fold.directoryRevision();
+    native.applyReceipt(fold, receipt([rowEvent("RealmSkin", ["1", "7"], { family: BASE_REALM_SKIN })]), 12, 0);
+    expect(fold.directoryRevision()).toBe(revision + 1);
+
+    native.applyReceipt(fold, receipt([gameEvent("1", "1")]), 13, 0);
+    expect(fold.finalizedGameIds()).toContain("1");
+    fold.evictFinalizedGames();
+    const closed = buildNativeDirectory({ ...input, confirmedBlock: 13 }).games.find((game) => game.game_id === 1)!;
+    expect(closed.player_state!.structures.map(({ realm_skin }) => realm_skin)).toEqual([
+      BASE_REALM_SKIN,
+      BASE_REALM_SKIN,
     ]);
   });
 
@@ -484,6 +501,7 @@ describe("native directory", () => {
       season_days: 30,
       heights: { 1: 6400, 2: 7850, 3: 0, 4: 0 },
       triumph_percents: { 1: 120, 2: 120, 3: 80, 4: 120 },
+      winner: null,
     });
     expect(race(2)).toBeNull();
 
@@ -495,7 +513,24 @@ describe("native directory", () => {
       season_days: 30,
       heights: { 1: 6400, 2: 7850, 3: 4100, 4: 0 },
       triumph_percents: { 1: 120, 2: 120, 3: 80, 4: 120 },
+      winner: null,
     });
+
+    const resultRevision = fold.directoryRevision();
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("RaceResult", ["1"], {
+          winner: new CairoOption(CairoOptionVariant.Some, 2n),
+          ended_at: 200n,
+          scheduled_end_at: 500n,
+        }),
+      ]),
+      13,
+      0,
+    );
+    expect(fold.directoryRevision()).not.toBe(resultRevision);
+    expect(race(1)?.winner).toBe(2);
 
     const raceRevision = fold.directoryRevision();
     seedDerivedRows(fold, decoder, [

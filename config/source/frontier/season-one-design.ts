@@ -1,7 +1,20 @@
 const price = (essence: number, labor: number) => ({ essence, labor });
-const fieldsAndTools = [price(500, 500), price(1000, 1000), price(2500, 2500), price(5000, 5000), price(10000, 10000)];
-const campAndDepot = [price(2500, 500), price(5000, 1000), price(12500, 2500), price(25000, 5000), price(50000, 12500)];
-const oathSlots = [price(5000, 1000), price(35000, 7500), price(150000, 35000)];
+const fieldsAndTools = [price(1000, 500), price(2000, 1000), price(5000, 2500), price(10000, 5000), price(17000, 8500)];
+const conscription = [
+  price(2500, 1000),
+  price(5000, 2000),
+  price(12500, 5000),
+  price(25000, 10000),
+  price(42500, 17000),
+];
+const kingdomRow = [
+  price(5000, 2500),
+  price(10000, 5000),
+  price(25000, 12500),
+  price(50000, 25000),
+  price(85000, 42500),
+];
+const oathSlots = [price(10000, 5000), price(20000, 10000), price(50000, 25000)];
 
 export const seasonOneDesign = {
   clock: {
@@ -15,33 +28,33 @@ export const seasonOneDesign = {
     speed: 1,
   },
   realm: {
-    upgradeLabor: [2500, 15000, 50000],
+    upgradeLabor: [4000, 12000, 40000],
     laborStore: [5000, 15000, 50000, 100000],
-    castleLaborPerHour: 100,
+    castleLaborPerHour: 120,
     storeroomStorePercent: 100,
     population: false,
   },
-  start: { knights: 2000, wheat: 6000, labor: 2000 },
+  start: { knights: 2000, wheat: 5000, labor: 3000 },
   buildings: {
     farm: price(0, 500),
     workshop: price(0, 1000),
     storeroom: price(0, 10000),
-    barracks: price(0, 500),
-    range: price(0, 500),
-    scoutsLodge: price(0, 500),
+    barracks: price(0, 1000),
+    range: price(0, 1000),
+    scoutsLodge: price(0, 1000),
     conscriptionCamp: price(2500, 500),
-    rationsDepot: price(2500, 500),
+    rationsDepot: price(5000, 1000),
     supplyYard: price(5000, 1000),
     copySurchargePercent: 100,
     demolitionRefundPercent: 50,
   },
   ratesPerHour: {
-    farmWheat: 300,
-    workshopLabor: 200,
-    barracksKnights: 100,
-    rangeCrossbows: 100,
-    lodgeScouts: 100,
-    researchStepPercent: 20,
+    farmWheat: 240,
+    workshopLabor: 120,
+    barracksKnights: 120,
+    rangeCrossbows: 120,
+    lodgeScouts: 120,
+    researchStepPercent: 50,
     rationStepWheat: 0.2,
     wheatPerTroopMade: 2,
   },
@@ -49,9 +62,9 @@ export const seasonOneDesign = {
   research: {
     fields: fieldsAndTools,
     tools: fieldsAndTools,
-    conscription: campAndDepot,
-    rations: campAndDepot,
-    logistics: [price(5000, 1000), price(10000, 2500), price(25000, 5000), price(50000, 10000), price(100000, 25000)],
+    conscription,
+    rations: kingdomRow,
+    logistics: kingdomRow,
     knightOaths: oathSlots,
     scoutOaths: oathSlots,
     crossbowOaths: oathSlots,
@@ -76,7 +89,7 @@ export const seasonOneDesign = {
   stamina: { reveal: 20, move: 10, attack: 30, defence: 0, wellPercent: 40, perFragment: 2, logisticsStepPercent: 20 },
   oaths: {
     count: 16,
-    passStamina: 60,
+    passStamina: 40,
     powerDamagePercent: 20,
     skillDamagePercent: 30,
     skillBelowStamina: 10,
@@ -119,8 +132,9 @@ export const seasonOneDesign = {
     wellPercent: 3,
     emptyRevealsBeforeFind: 7,
     spireFoundByReveal: 10,
-    revealPayPercentByLayer: [10, 15, 20],
-    revealTroopsCounted: 10000,
+    revealPayPercentByLayer: [10, 10, 10],
+    revealCapByLayer: [1000, 1500, 2000],
+    riftEssencePercentByLayer: [150, 150, 150],
   },
   beasts: {
     herdByLayer: [350, 700, 1400],

@@ -26,11 +26,7 @@ export function deriveGameSyncScope(
 ): GameSyncScope {
   const position = (entity: unknown) => {
     if (!expedition) throw new Error("Position requires expedition rules");
-    const guards = read("DeepGuard", expedition.spacing, [scopeLookup.guard(entity)]);
-    if (guards.length > 1) throw new Error("Multiple Deep memberships for army");
-    const positions = read("TileOccupancy", expedition.spacing, [
-      scopeLookup.occupancyOf(guards[0]?.value.site_id ?? entity),
-    ]);
+    const positions = read("TileOccupancy", expedition.spacing, [scopeLookup.occupancyOf(entity)]);
     if (positions.length !== 1) throw new Error(`Expected one position for scope entity ${syncScalar(entity)}`);
     const row = positions[0].value;
     return { x: Number(row.col), y: Number(row.row), alt: row.alt === true };
@@ -90,8 +86,8 @@ export function deriveGameSyncScope(
     if (hasSingleTilePosition({ entity_id: syncScalar(value.entity_id), category: syncScalar(value.category) }))
       entities.add(syncScalar(value.entity_id));
   }
-  for (const { value } of read("DeepGuard", spacing, [...entities].map(scopeLookup.guardsAt))) {
-    entities.add(syncScalar(value.explorer_id));
+  for (const { value } of read("GarrisonSlot", spacing, [...entities].map(scopeLookup.garrisonsAt))) {
+    entities.add(syncScalar(value.home));
   }
   for (const { value } of read("ExplorerTroops", spacing, [...entities].map(scopeLookup.army))) {
     entities.add(syncScalar(value.owner));
@@ -124,8 +120,7 @@ export const scopeLookup = {
   deepSites: "DeepSite.all",
   homeAspect: (home: unknown) => `HomeAspect.home:${syncScalar(home)}`,
   aspectHomes: (aspect: unknown) => `HomeAspect.aspect:${syncScalar(aspect)}`,
-  guard: (entity: unknown) => `DeepGuard.entity:${syncScalar(entity)}`,
-  guardsAt: (entity: unknown) => `DeepGuard.site:${syncScalar(entity)}`,
+  garrisonsAt: (entity: unknown) => `GarrisonSlot.site:${syncScalar(entity)}`,
   entryOf: (player: unknown) => `PlayerEntry.player:${syncScalar(player)}`,
   structuresOf: (owner: unknown) => `Structure.owner:${syncScalar(owner)}`,
   structure: (entity: unknown) => `Structure.entity:${syncScalar(entity)}`,
@@ -141,7 +136,7 @@ export const scopeLookup = {
 export function scopeInputKeys(model: string, row: Record<string, unknown>, spacing: number | undefined): string[] {
   if (model === "DeepSite") return [scopeLookup.deepSites];
   if (model === "HomeAspect") return [scopeLookup.homeAspect(row.home), scopeLookup.aspectHomes(row.aspect)];
-  if (model === "DeepGuard") return [scopeLookup.guard(row.explorer_id), scopeLookup.guardsAt(row.site_id)];
+  if (model === "GarrisonSlot") return [scopeLookup.garrisonsAt(row.structure_id)];
   if (model === "ArmyDay") return [scopeLookup.armyDay(row.explorer_id)];
   if (model === "PlayerEntry") return [scopeLookup.entryOf(row.player)];
   if (model === "ExplorerTroops") return [scopeLookup.armiesOf(row.owner), scopeLookup.army(row.explorer_id)];

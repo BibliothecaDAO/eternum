@@ -20,6 +20,7 @@ export const STRUCTURE_GROUND_LIGHTS: Record<StructureType, GroundLight | null> 
   [StructureType.Mine]: null,
   [StructureType.Ruin]: null,
   [StructureType.Beasts]: null,
+  [StructureType.DeepSite]: null,
 };
 
 export const SPIRE_GROUND_LIGHT = glow(0xff4fb0, 3.5, 3);

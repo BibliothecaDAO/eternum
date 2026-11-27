@@ -527,6 +527,11 @@ a.ui-button {
   background: color-mix(in srgb, var(--hud-warn) 14%, transparent);
   color: var(--hud-warn);
 }
+.ui-chip[data-tone="gold"] {
+  border-color: color-mix(in srgb, var(--hud-selected) 45%, transparent);
+  background: color-mix(in srgb, var(--hud-selected) 14%, transparent);
+  color: var(--hud-selected);
+}
 /* A chip that acts: a chip's size, so it stands level with the tags beside it, with a secondary button's frame and
    no fill, so it reads as a press among them. */
 button.ui-chip {
@@ -1141,6 +1146,17 @@ span.ui-row__choose {
 }
 .ui-frame__head .ui-panel__title {
   font-family: var(--hud-font-display);
+}
+.ui-frame__head > .ui-panel__head {
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+.ui-frame__head > .ui-panel__head > :not(.ui-panel__cue) {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.ui-frame__head > .ui-panel__head > .ui-panel__cue {
+  flex: none;
 }
 .ui-window__bar {
   display: flex;
@@ -2048,6 +2064,19 @@ button.ui-relic:focus-visible {
 .ui-meter[data-tone="bad"] > i {
   background: var(--hud-bad);
 }
+.ui-meter[data-gain] {
+  display: flex;
+}
+.ui-meter[data-gain] > i {
+  flex: none;
+}
+.ui-meter[data-gain] > i:first-child {
+  border-radius: var(--hud-radius-round) 0 0 var(--hud-radius-round);
+}
+.ui-meter > i[data-gain] {
+  border-radius: 0 var(--hud-radius-round) var(--hud-radius-round) 0;
+  background: rgb(var(--hud-gold));
+}
 /* Filling (stamina refilling): a light sweeps across the fill, on its own tone; still, a brighter leading edge. */
 .ui-meter[data-filling] > i {
   position: relative;
@@ -2489,6 +2518,67 @@ button.ui-card__choose:disabled {
 }
 .ui-banner__line {
   color: var(--hud-muted);
+}
+.ui-banner[data-size="ceremony"] {
+  position: relative;
+  width: 40rem;
+  overflow: hidden;
+  gap: theme(spacing.4);
+  border-color: color-mix(in srgb, var(--banner-tone) 55%, transparent);
+  border-left-width: 1px;
+  background:
+    radial-gradient(ellipse at 10% 0%, color-mix(in srgb, var(--banner-tone) 18%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  padding: theme(spacing.4) theme(spacing.5);
+}
+.ui-banner[data-size="ceremony"]::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--banner-tone), transparent);
+}
+.ui-banner[data-size="ceremony"] .ui-banner__mark {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-width: 2px;
+}
+.ui-banner__pip {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: grid;
+}
+.ui-banner[data-size="ceremony"] .ui-banner__eyebrow {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.ui-banner[data-size="ceremony"] .ui-banner__title {
+  font-family: var(--hud-font-display);
+  font-size: var(--hud-text-display);
+  line-height: 1.1;
+}
+.ui-banner[data-size="ceremony"] .ui-banner__line {
+  color: rgb(var(--hud-ink));
+}
+.ui-banner__timer {
+  position: absolute;
+  inset: auto 0 0;
+  height: 2px;
+  background: var(--banner-tone);
+  transform-origin: left;
+  animation: ui-banner-lasts var(--banner-lasts) linear forwards;
+}
+@keyframes ui-banner-lasts {
+  to {
+    transform: scaleX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-banner__timer {
+    animation: none;
+  }
 }
 
 /* ── Loading backdrop: the contour lines behind the loading panel, in the age's accent on the dark ground. ── */

@@ -1,13 +1,13 @@
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
-import { StructureType } from "@bibliothecadao/types";
+import { deepSites, StructureType, TileOccupier } from "@bibliothecadao/types";
 import {
-  nativeRuleConstants,
+  deepCenter,
   readDeepSites,
   nativeOathConstants as oaths,
   type NativeFactStore,
 } from "@bibliothecadao/eternum/game-client";
-import { deepScenario } from "./deep-scenario";
+import { deepScenario, HELD_SITE } from "./deep-scenario";
 import { siteAt } from "./after-battle-scenario";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { besideOnOpenLand, spireScenario } from "./spire-scenario";
@@ -25,7 +25,7 @@ const OATH_EXCHANGES = oathDamage
 export function battleTargetScenario(withOaths = false): LabScenario {
   const game = spireScenario();
   const troops = prepareBattleArmy(game);
-  if (withOaths) holdDamageOaths(game.store, BigInt(SPIRE_ARMY), false);
+  if (withOaths) holdDamageOaths(game.store, BigInt(SPIRE_ARMY));
   const tile = besideOnOpenLand(game.store, game.store.entityOccupancy(1, SPIRE_ARMY)!);
   game.store.applyFacts(
     siteAt(game.store, tile, { ...troops, category: "Knight" }, StructureType.Camp).map((fact) => ({
@@ -42,48 +42,133 @@ export function battleTargetScenario(withOaths = false): LabScenario {
   };
 }
 
-export function deepBattleTargetScenario(withOaths = false): LabScenario {
+export function deepBattleTargetScenario(): LabScenario {
   const game = deepScenario();
   const troops = prepareBattleArmy(game);
-  if (withOaths) holdDamageOaths(game.store, BigInt(SPIRE_ARMY), false);
   const { store } = game;
-  const site = readDeepSites(store, game.startsAt, 1).find(({ kind }) => kind === nativeRuleConstants.DEEP_MINE)!;
-  const guard = site.guards[0]!.army;
-  if (withOaths) holdDamageOaths(store, guard.explorer_id, true);
-  const aspect = store.require("HomeAspect", { game_id: 1, home: guard.owner });
+  const heldKind = deepSites.find(({ key }) => key === HELD_SITE)!.id;
+  const site = readDeepSites(store, game.startsAt, 1).find(({ kind }) => kind === heldKind)!;
+  const garrison = site.garrisons[0]!;
+  const guard = store.require("Guard", { game_id: 1, structure_id: site.id, slot: garrison.slot });
+  const aspect = store.require("HomeAspect", { game_id: 1, home: garrison.home });
+  const held = store.require("DeepSite", { game_id: 1, entity_id: site.id });
+  const structure = store.require("Structure", { game_id: 1, entity_id: site.id });
+  const holder = store.require("Structure", { game_id: 1, entity_id: garrison.home });
   const rules = store.require("SliceRules", { game_id: 1 });
   const tickSeconds = 3600;
+  const tick = Math.floor(game.startsAt / tickSeconds);
+  const army = store.require("DeepArmy", { game_id: 1, explorer_id: SPIRE_ARMY });
   store.applyFacts([
     {
-      model: "ExplorerTroops",
-      key: store.wireKeyOf("ExplorerTroops", guard)!,
+      model: "Guard",
+      key: store.wireKeyOf("Guard", guard)!,
       value: wire({ ...guard, troops: { ...troops, category: "Knight" } }),
     },
     { model: "HomeAspect", key: store.wireKeyOf("HomeAspect", aspect)!, value: wire({ ...aspect, aspect: 2 }) },
+    { model: "DeepSite", key: store.wireKeyOf("DeepSite", held)!, value: wire({ ...held, aspect: 2 }) },
+    {
+      model: "Structure",
+      key: store.wireKeyOf("Structure", structure)!,
+      value: wire({ ...structure, owner: holder.owner }),
+    },
     {
       model: "SliceRules",
       key: store.wireKeyOf("SliceRules", rules)!,
       value: wire({ ...rules, tick_config: { ...rules.tick_config, armies_tick_in_seconds: tickSeconds } }),
     },
-    ...[SPIRE_ARMY, Number(guard.explorer_id)].map((id) => {
-      const row = store.require("DeepArmy", { game_id: 1, explorer_id: id });
-      return {
-        model: "DeepArmy",
-        key: store.wireKeyOf("DeepArmy", row)!,
-        value: wire({ ...row, last_tick: Math.floor(game.startsAt / tickSeconds) }),
-      };
-    }),
+    { model: "DeepArmy", key: store.wireKeyOf("DeepArmy", army)!, value: wire({ ...army, last_tick: tick }) },
+    {
+      model: "DeepTick",
+      key: store.wireKeyOf("DeepTick", { game_id: 1 })!,
+      value: wire({ game_id: 1, paid_tick: tick }),
+    },
   ]);
   return {
     ...game,
     answer: (command, chain, now) =>
       command.kind === "BattleGuard" && BigInt(command.fields.defender_id) === site.id
-        ? exchange(chain, BigInt(command.fields.attacker_id), now, site.id, withOaths, guard.explorer_id)
+        ? exchange(chain, BigInt(command.fields.attacker_id), now, site.id, false, garrison.slot)
         : game.answer(command, chain, now),
   };
 }
 
-function holdDamageOaths(store: NativeFactStore, explorer_id: bigint, guarding: boolean) {
+export const RIVAL_DEEP_ARMY = 401n;
+
+export function deepArmyBattleScenario(): LabScenario {
+  const game = deepScenario();
+  const troops = prepareBattleArmy(game);
+  const { store } = game;
+  const rules = store.require("SliceRules", { game_id: 1 });
+  const tickSeconds = 3600;
+  const tick = Math.floor(game.startsAt / tickSeconds);
+  const spacing = store.require("SettlementRules", { game_id: 1 }).spacing;
+  const center = deepCenter(spacing);
+  const ownArmy = store.require("ExplorerTroops", { game_id: 1, explorer_id: SPIRE_ARMY });
+  const ownHome = store.require("Structure", { game_id: 1, entity_id: ownArmy.owner });
+  const ownDeep = store.require("DeepArmy", { game_id: 1, explorer_id: SPIRE_ARMY });
+  const rivalHome = 11n;
+  store.applyFacts([
+    {
+      model: "SliceRules",
+      key: store.wireKeyOf("SliceRules", rules)!,
+      value: wire({ ...rules, tick_config: { ...rules.tick_config, armies_tick_in_seconds: tickSeconds } }),
+    },
+    { model: "DeepArmy", key: store.wireKeyOf("DeepArmy", ownDeep)!, value: wire({ ...ownDeep, last_tick: tick }) },
+    {
+      model: "DeepTick",
+      key: store.wireKeyOf("DeepTick", { game_id: 1 })!,
+      value: wire({ game_id: 1, paid_tick: tick }),
+    },
+    { model: "Structure", key: "0xdab1", value: wire({ ...ownHome, entity_id: rivalHome, owner: "0x333" }) },
+    { model: "HomeAspect", key: "0xdab2", value: { game_id: 1, home: String(rivalHome), aspect: 2 } },
+    {
+      model: "ExplorerTroops",
+      key: "0xdab3",
+      value: wire({
+        ...ownArmy,
+        explorer_id: RIVAL_DEEP_ARMY,
+        owner: rivalHome,
+        troops: { ...troops, category: "Knight" },
+      }),
+    },
+    { model: "ArmyDay", key: "0xdab4", value: { game_id: 1, explorer_id: String(RIVAL_DEEP_ARMY), day: "0" } },
+    {
+      model: "ArmyProgress",
+      key: "0xdab5",
+      value: wire({
+        ...store.require("ArmyProgress", { game_id: 1, explorer_id: SPIRE_ARMY }),
+        explorer_id: RIVAL_DEEP_ARMY,
+      }),
+    },
+    {
+      model: "DeepArmy",
+      key: "0xdab6",
+      value: { game_id: 1, explorer_id: String(RIVAL_DEEP_ARMY), last_tick: String(tick) },
+    },
+    {
+      model: "TileOccupancy",
+      key: "0xdab7",
+      value: {
+        game_id: 1,
+        alt: false,
+        col: center.col - 2,
+        row: center.row,
+        entity_id: String(RIVAL_DEEP_ARMY),
+        category: TileOccupier.ExplorerKnightT1,
+        is_structure: false,
+      },
+    },
+  ]);
+  return {
+    ...game,
+    answer: (command, chain, now) =>
+      command.kind === "Battle" && BigInt(command.fields.defender_id) === RIVAL_DEEP_ARMY
+        ? armyExchange(chain, BigInt(command.fields.attacker_id), now, RIVAL_DEEP_ARMY)
+        : game.answer(command, chain, now),
+  };
+}
+
+function holdDamageOaths(store: NativeFactStore, explorer_id: bigint) {
   const key = { game_id: 1, explorer_id };
   const progress = store.require("ArmyProgress", key);
   store.applyFacts([
@@ -93,7 +178,7 @@ function holdDamageOaths(store: NativeFactStore, explorer_id: bigint, guarding: 
       value: wire({
         ...progress,
         oath_slots: 4,
-        oaths: (1 << (oaths.POWER - 1)) | (1 << (oaths.GIANTS - 1)) | (guarding ? 1 << (oaths.PROTECTION - 1) : 0),
+        oaths: (1 << (oaths.POWER - 1)) | (1 << (oaths.GIANTS - 1)),
       }),
     },
   ]);
@@ -148,18 +233,14 @@ function exchange(
   now: number,
   siteId: bigint,
   withOaths: boolean,
-  guardId?: bigint,
+  garrisonSlot?: number,
 ): LabFact[] {
   const key = { game_id: 1, explorer_id: explorerId };
   const army = store.require("ExplorerTroops", key);
   const combat = store.require("ArmyCombat", key);
-  const guard =
-    guardId === undefined
-      ? store.require("Guard", { game_id: 1, structure_id: siteId, slot: 0 })
-      : store.require("ExplorerTroops", { game_id: 1, explorer_id: guardId });
-  const guardModel = guardId === undefined ? "Guard" : "ExplorerTroops";
-  const target = guardId ?? siteId;
-  const offset = (guardId === undefined ? 0 : 8) + (combat.last_target === target ? 4 : 0);
+  const guard = store.require("Guard", { game_id: 1, structure_id: siteId, slot: garrisonSlot ?? 0 });
+  const target = siteId;
+  const offset = (garrisonSlot === undefined ? 0 : 8) + (combat.last_target === target ? 4 : 0);
   const [before, guardBefore, attackerAfter, defenderAfter] = (withOaths ? OATH_EXCHANGES : EXCHANGES).slice(
     offset,
     offset + 4,
@@ -184,8 +265,8 @@ function exchange(
       }),
     },
     {
-      model: guardModel,
-      key: store.wireKeyOf(guardModel, guard)!,
+      model: "Guard",
+      key: store.wireKeyOf("Guard", guard)!,
       value: wire({ ...guard, troops: { ...guard.troops, count: defenderAfter! * PRECISION } }),
     },
     ...(combat.last_target === target
@@ -195,6 +276,50 @@ function exchange(
             model: "ArmyCombat",
             key: store.wireKeyOf("ArmyCombat", key)!,
             value: wire({ ...combat, last_target: target }),
+          },
+        ]),
+  ];
+}
+
+function armyExchange(store: NativeFactStore, explorerId: bigint, now: number, defenderId: bigint): LabFact[] {
+  const key = { game_id: 1, explorer_id: explorerId };
+  const defenderKey = { game_id: 1, explorer_id: defenderId };
+  const army = store.require("ExplorerTroops", key);
+  const defender = store.require("ExplorerTroops", defenderKey);
+  const combat = store.require("ArmyCombat", key);
+  const offset = combat.last_target === defenderId ? 4 : 0;
+  const [before, defenderBefore, attackerAfter, defenderAfter] = EXCHANGES.slice(offset, offset + 4);
+  if (
+    army.troops.count !== before! * PRECISION ||
+    defender.troops.count !== defenderBefore! * PRECISION ||
+    !("Inline" in army.troops.stamina)
+  )
+    throw new Error("Army battle proof has no matching exchange");
+  return [
+    {
+      model: "ExplorerTroops",
+      key: store.wireKeyOf("ExplorerTroops", key)!,
+      value: wire({
+        ...army,
+        troops: {
+          ...army.troops,
+          count: attackerAfter! * PRECISION,
+          stamina: { Inline: { amount: army.troops.stamina.Inline.amount - 10n, settled_at: now, remainder: 0 } },
+        },
+      }),
+    },
+    {
+      model: "ExplorerTroops",
+      key: store.wireKeyOf("ExplorerTroops", defenderKey)!,
+      value: wire({ ...defender, troops: { ...defender.troops, count: defenderAfter! * PRECISION } }),
+    },
+    ...(combat.last_target === defenderId
+      ? []
+      : [
+          {
+            model: "ArmyCombat",
+            key: store.wireKeyOf("ArmyCombat", key)!,
+            value: wire({ ...combat, last_target: defenderId }),
           },
         ]),
   ];

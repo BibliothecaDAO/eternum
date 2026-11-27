@@ -19,6 +19,7 @@ import { configManager } from "./config-manager";
 import { StaminaManager } from "./stamina-manager";
 import { ActionPaths, ActionType } from "../utils/action-paths";
 import { deepCenter } from "../utils/deep-geometry";
+import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 
 const TEST_ENTITY_ID = 1;
 const TEST_FELT_CENTER = 100;
@@ -393,6 +394,58 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     expect(actionPaths.get(ActionPaths.posKey(adjacentArmy))).toBeUndefined();
     expect(actionPaths.getRefusals().get(ActionPaths.posKey(adjacentArmy))).toEqual({ reason: "no-attack" });
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(site))!)).toBe(ActionType.Attack);
+  });
+
+  it("offers an attack on an adjacent rival army and refuses a same-Aspect ally", () => {
+    const commandMask = BigInt(nativeCommandBits.Battle) | BigInt(nativeCommandBits.BattleGuard);
+    const aspects = new Map<number, number>([
+      [77, 1],
+      [88, 2],
+      [99, 1],
+    ]);
+    const { manager, components, structureHexes, armyHexes, exploredHexes, oldFeltStart } = createTestSetup(
+      {},
+      { Battle: true, BattleGuard: true },
+      { SliceRules: { day_unit_seconds: 0, command_mask: commandMask } },
+    );
+    components.ExplorerTroops.set("55", {
+      owner: 88,
+      troops: { category: TroopType.Knight, count: BigInt(RESOURCE_PRECISION) },
+    });
+    components.ExplorerTroops.set("56", {
+      owner: 99,
+      troops: { category: TroopType.Knight, count: BigInt(RESOURCE_PRECISION) },
+    });
+    const store = (manager as any).store;
+    const baseGet = store.get;
+    const readWithAspects = (model: string, keys: { home?: number | bigint }) =>
+      model === "HomeAspect"
+        ? aspects.has(Number(keys.home))
+          ? { aspect: aspects.get(Number(keys.home)) }
+          : undefined
+        : baseGet(model, keys);
+    store.get = readWithAspects;
+    store.require = readWithAspects;
+    const [rivalHex, allyHex] = getNeighborHexes(oldFeltStart.col, oldFeltStart.row);
+    setNestedMapValue(armyHexes, rivalHex.col - TEST_FELT_CENTER, rivalHex.row - TEST_FELT_CENTER, {
+      id: 55,
+      owner: 0x888n,
+    } as HexEntityInfo);
+    setNestedMapValue(armyHexes, allyHex.col - TEST_FELT_CENTER, allyHex.row - TEST_FELT_CENTER, {
+      id: 56,
+      owner: 0x999n,
+    } as HexEntityInfo);
+    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({
+      amount: 150n,
+      settled_at: 0,
+      remainder: 0,
+    } as any);
+
+    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, 0, 0x123n as any);
+
+    expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(rivalHex))!)).toBe(ActionType.Attack);
+    expect(actionPaths.get(ActionPaths.posKey(allyHex))).toBeUndefined();
+    expect(actionPaths.getRefusals().get(ActionPaths.posKey(allyHex))).toEqual({ reason: "allied" });
   });
 
   it.each([

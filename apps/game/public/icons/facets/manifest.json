@@ -1659,6 +1659,86 @@
       "art": "poison",
       "label": "Deep poison",
       "family": "Statuses"
+    },
+    "season-1-prowess-realm-0": {
+      "art": "season-1-prowess-realm-0",
+      "label": "Season 1 · Prowess · Settlement",
+      "family": "Structures"
+    },
+    "season-1-prowess-realm-1": {
+      "art": "season-1-prowess-realm-1",
+      "label": "Season 1 · Prowess · City",
+      "family": "Structures"
+    },
+    "season-1-prowess-realm-2": {
+      "art": "season-1-prowess-realm-2",
+      "label": "Season 1 · Prowess · Kingdom",
+      "family": "Structures"
+    },
+    "season-1-prowess-realm-3": {
+      "art": "season-1-prowess-realm-3",
+      "label": "Season 1 · Prowess · Empire",
+      "family": "Structures"
+    },
+    "season-1-luminary-realm-0": {
+      "art": "season-1-luminary-realm-0",
+      "label": "Season 1 · Luminary · Settlement",
+      "family": "Structures"
+    },
+    "season-1-luminary-realm-1": {
+      "art": "season-1-luminary-realm-1",
+      "label": "Season 1 · Luminary · City",
+      "family": "Structures"
+    },
+    "season-1-luminary-realm-2": {
+      "art": "season-1-luminary-realm-2",
+      "label": "Season 1 · Luminary · Kingdom",
+      "family": "Structures"
+    },
+    "season-1-luminary-realm-3": {
+      "art": "season-1-luminary-realm-3",
+      "label": "Season 1 · Luminary · Empire",
+      "family": "Structures"
+    },
+    "season-1-havoc-realm-0": {
+      "art": "season-1-havoc-realm-0",
+      "label": "Season 1 · Havoc · Settlement",
+      "family": "Structures"
+    },
+    "season-1-havoc-realm-1": {
+      "art": "season-1-havoc-realm-1",
+      "label": "Season 1 · Havoc · City",
+      "family": "Structures"
+    },
+    "season-1-havoc-realm-2": {
+      "art": "season-1-havoc-realm-2",
+      "label": "Season 1 · Havoc · Kingdom",
+      "family": "Structures"
+    },
+    "season-1-havoc-realm-3": {
+      "art": "season-1-havoc-realm-3",
+      "label": "Season 1 · Havoc · Empire",
+      "family": "Structures"
+    },
+    "season-1-insight-realm-0": {
+      "art": "season-1-insight-realm-0",
+      "label": "Season 1 · Insight · Settlement",
+      "family": "Structures"
+    },
+    "season-1-insight-realm-1": {
+      "art": "season-1-insight-realm-1",
+      "label": "Season 1 · Insight · City",
+      "family": "Structures"
+    },
+    "season-1-insight-realm-2": {
+      "art": "season-1-insight-realm-2",
+      "label": "Season 1 · Insight · Kingdom",
+      "family": "Structures"
+    },
+    "season-1-insight-realm-3": {
+      "art": "season-1-insight-realm-3",
+      "label": "Season 1 · Insight · Empire",
+      "family": "Structures"
     }
   },
   "resources": {

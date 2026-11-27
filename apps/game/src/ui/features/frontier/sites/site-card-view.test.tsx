@@ -9,7 +9,7 @@ import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { TARGET_MARKS, type AttackTargetKind } from "./site-marks";
 import { plateRows } from "@/three/map-plates/map-plate-rows";
 import { frontierSiteName, StructureType, ResourcesIds } from "@bibliothecadao/types";
-import { FIGHT_RESULT, FIGHT_WORDS, tooFarFrom } from "@/ui/design-system/kit/words";
+import { BEAST_MARK_TIPS, FIGHT_RESULT, FIGHT_WORDS, tooFarFrom } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -387,7 +387,7 @@ describe("a guarded site's card with no army chosen", () => {
     );
     const card = document.querySelector("section[data-kit-sheet]")!;
     expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Fairy+3.3K");
-    expect(card.querySelector<HTMLElement>("header [data-combat-mark]")?.dataset.tip).toBe("Bow");
+    expect(card.querySelector<HTMLElement>("header [data-combat-mark]")?.dataset.tip).toBe(BEAST_MARK_TIPS.bow);
     expect(card.querySelectorAll(".ui-row")).toHaveLength(0);
     expect(card.querySelectorAll("button")).toHaveLength(1);
     expect(card.textContent).not.toContain("Pick an army");

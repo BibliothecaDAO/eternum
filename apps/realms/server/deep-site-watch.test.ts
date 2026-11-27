@@ -69,11 +69,9 @@ it.each([0, -1, undefined])("plans an exact Deep opportunity independently of la
   ]);
 });
 
-it.each([false, true])("uses held damage Oaths when planning a Deep alert, defending %s", (defending) => {
-  const { store, timestamp } = equalArmies(0, defending ? siteGuardTroops(1, 600) : siteGuardTroops(1, 800));
-  const army = [...store.inGame("ExplorerTroops", GAME_ID)].find(({ explorer_id }) =>
-    defending ? explorer_id !== BigInt(ARMY) : explorer_id === BigInt(ARMY),
-  )!;
+it("uses the attacker's held damage Oaths when planning a Deep alert", () => {
+  const { store, timestamp } = equalArmies(0, siteGuardTroops(1, 800));
+  const army = [...store.inGame("ExplorerTroops", GAME_ID)].find(({ explorer_id }) => explorer_id === BigInt(ARMY))!;
   const progress = store.require("ArmyProgress", army);
   store.applyFacts([
     {
@@ -82,10 +80,9 @@ it.each([false, true])("uses held damage Oaths when planning a Deep alert, defen
       value: {
         ...progress,
         oath_slots: 4,
-        oaths: (1 << (oaths.POWER - 1)) | (1 << (oaths.GIANTS - 1)) | (defending ? 1 << (oaths.PROTECTION - 1) : 0),
+        oaths: (1 << (oaths.POWER - 1)) | (1 << (oaths.GIANTS - 1)),
       },
     },
   ]);
-  const due = defending ? (Math.floor(timestamp / ARMIES_TICK_SECONDS) + 1) * ARMIES_TICK_SECONDS : timestamp;
-  expect(planDeepSiteWatches(store, player, timestamp * 1000).map(({ dueAt }) => dueAt)).toEqual([due * 1000]);
+  expect(planDeepSiteWatches(store, player, timestamp * 1000).map(({ dueAt }) => dueAt)).toEqual([timestamp * 1000]);
 });

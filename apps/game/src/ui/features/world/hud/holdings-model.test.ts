@@ -9,6 +9,7 @@ const holding = (category: StructureType, mineKind = 0) =>
     displayName: "",
     isFavorite: false,
     realmLevel: 0,
+    showsWonder: false,
     structure: { base: { category }, metadata: { mine_kind: mineKind } },
   }) as never;
 const ESSENCE_RIFT = 1;

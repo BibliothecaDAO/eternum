@@ -41,6 +41,7 @@ export interface HeraldPlayerStructure {
   resources_packed: string;
   aspect: AspectId | null;
   has_wonder: boolean;
+  realm_skin: number;
 }
 
 export interface HeraldPlayerQuest {
@@ -55,6 +56,7 @@ export interface HeraldAspectRace {
   season_days: number;
   heights: Record<AspectId, number>;
   triumph_percents: Record<TriumphStage, number>;
+  winner?: AspectId | null;
 }
 
 /** The requesting player's standing in one game: everything the entry screens read before the player joins. */
@@ -91,6 +93,7 @@ export interface HeraldGameDirectoryEntry {
   aspect_race?: HeraldAspectRace | null;
   quest_bonus_percent?: number | null;
   player_state: HeraldPlayerGameState | null;
+  realm_skin_enabled?: boolean;
   registration: HeraldGameRegistration | null;
   settled_realms_count: number;
   settled_villages_count: number;
@@ -159,6 +162,8 @@ export interface HeraldHistoryPage {
 export interface HeraldFrontierLeaderboardEntry {
   /** Native founding trait; absent only in historical boards recorded before home identity was included. */
   has_wonder?: boolean;
+  realm_skin?: number;
+  ancient_seal?: boolean;
   address: string;
   structure_id: string;
   /** Immutable founding identity from the complete game; null explicitly identifies an ordinary home. */

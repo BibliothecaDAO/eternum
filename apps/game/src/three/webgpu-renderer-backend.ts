@@ -68,7 +68,7 @@ interface WebGPURendererBackendDependencies {
   now(): number;
 }
 
-type SceneFinish = Pick<MapFinish, "render" | "dispose">;
+type SceneFinish = Pick<MapFinish, "compileObjectAsync" | "render" | "dispose">;
 
 interface WebGpuRendererModules {
   threeWebGPUModule: typeof import("three/webgpu");
@@ -220,6 +220,9 @@ function resolveWebGpuRendererDevice(renderer: WebGPURendererSurface): WebGPURen
 }
 
 const drawsPlain = (renderer: RendererSurfaceLike): SceneFinish => ({
+  compileObjectAsync: async (object, camera, targetScene) => {
+    await renderer.compileAsync?.(object, camera, targetScene);
+  },
   render: (scene, camera) => renderer.render(scene, camera),
   dispose: () => {},
 });
@@ -524,6 +527,12 @@ export function createWebGPURendererBackend(
       renderer.shadowMap.enabled = input.shadows;
       sizeRenderer(input.width, input.height);
     },
+    async compileObjectAsync(object, camera, targetScene) {
+      if (!finish) {
+        return;
+      }
+      await finish.compileObjectAsync(object, camera, targetScene);
+    },
     dispose() {
       cleanupDeviceDiagnostics?.();
       cleanupDeviceDiagnostics = undefined;
@@ -559,10 +568,19 @@ export function createWebGPURendererBackend(
     },
     renderFrame(pipeline: RendererFramePipeline) {
       if (!renderer || !finish) return;
-      renderMainFrameWithRecovery(renderer, finish, pipeline, () =>
-        sizeRenderer(window.innerWidth, window.innerHeight),
-      );
-      renderRendererOverlayPasses(renderer, pipeline);
+      const previousTarget = renderer.getRenderTarget?.();
+      const previousMRT = renderer.getMRT?.();
+      renderer.setRenderTarget?.(null);
+      renderer.setMRT?.(null);
+      try {
+        renderMainFrameWithRecovery(renderer, finish, pipeline, () =>
+          sizeRenderer(window.innerWidth, window.innerHeight),
+        );
+        renderRendererOverlayPasses(renderer, pipeline);
+      } finally {
+        renderer.setRenderTarget?.(previousTarget ?? null);
+        renderer.setMRT?.(previousMRT ?? null);
+      }
     },
     resize(width: number, height: number) {
       sizeRenderer(width, height);

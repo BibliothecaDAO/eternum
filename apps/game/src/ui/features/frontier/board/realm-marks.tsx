@@ -4,7 +4,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
 import { HudPortrait } from "@/ui/design-system/kit/hud-elements";
 import { YOU } from "@/ui/design-system/kit/words";
-import { HOME_KINDS, homeKind } from "@/ui/design-system/home-icons";
+import { HOME_KINDS, homeKind, type HomePaintingKind } from "@/ui/design-system/home-icons";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { layerName, rankName } from "@bibliothecadao/types";
 
@@ -20,10 +20,12 @@ export const RealmBadge = ({
   level,
   depth,
   hasWonder = false,
+  painting,
 }: {
   level: number;
   depth: number;
   hasWonder?: boolean;
+  painting?: HomePaintingKind;
 }) => {
   const step = Math.min(depth, 3);
   const kind = homeKind(hasWonder);
@@ -31,7 +33,7 @@ export const RealmBadge = ({
   const line = step === 0 ? name : `${name} · ${layerName(step)}`;
   return (
     <span role="img" aria-label={line} data-tip={line} className="relative inline-flex size-7 shrink-0">
-      <Icon name={realmMeaning(level, hasWonder)} size={28} />
+      <Icon name={realmMeaning(level, hasWonder, painting)} size={28} />
       {step > 0 && (
         <span
           aria-hidden

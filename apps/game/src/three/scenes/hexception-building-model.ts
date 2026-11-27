@@ -57,6 +57,7 @@ const KEEP_NAMES: Record<StructureType, string> = {
   [StructureType.Rift]: "Rift",
   [StructureType.Ruin]: "Ruin",
   [StructureType.Beasts]: "Beasts",
+  [StructureType.DeepSite]: "Hyperstructure",
 };
 
 export function getBuildingDisplayName(
@@ -96,6 +97,7 @@ export function resolveBuildingModelSelection(
     wonder: boolean;
     aspect?: AspectId | null;
     frontier?: boolean;
+    realmSkin?: number | null;
   },
 ): BuildingModelSelection {
   const { stage, structureId, mainStructureType, wonder } = context;
@@ -126,9 +128,19 @@ export function resolveBuildingModelSelection(
     type = hyperstructureStageToModel[stage as StructureProgress];
   }
 
+  const resolvedRealmIndex =
+    group === BUILDINGS_GROUPS.REALMS
+      ? realmModelIndex(
+          stage,
+          wonder,
+          structureId,
+          context.frontier ? context.aspect : null,
+          context.frontier ? context.realmSkin : null,
+        )
+      : -1;
   const tierPath =
-    group === BUILDINGS_GROUPS.REALMS && wonder
-      ? REALM_PATHS[realmModelIndex(stage, true, structureId, context.frontier ? context.aspect : null)]
+    group === BUILDINGS_GROUPS.REALMS && resolvedRealmIndex !== stage
+      ? REALM_PATHS[resolvedRealmIndex]
       : group === BUILDINGS_GROUPS.BUILDINGS
         ? context.frontier
           ? (building.tier ?? 1) > 1

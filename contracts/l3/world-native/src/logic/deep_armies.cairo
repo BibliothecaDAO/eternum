@@ -31,9 +31,6 @@ pub fn settle(key: ExplorerKey, mut army: ExplorerTroops, context: ExecutionCont
         crate::logic::army_days::require(key),
     );
     let tick = core::cmp::min(context.timestamp, day.end) / context.rules.unbox().tick_config.armies_tick_in_seconds;
-    if crate::logic::deep_guards::entry(key).is_some() {
-        crate::logic::deep_ticks::assert_paid_to(key.game_id, tick);
-    }
     if tick <= last_tick {
         return army;
     }

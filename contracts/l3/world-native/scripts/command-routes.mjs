@@ -1,5 +1,5 @@
 import { blitzCommandRoutes, commandRoutes } from "../schema/command-routes.mjs";
-import { assignWireIds, familyWireIds, renderWireSerde } from "./wire-ids.mjs";
+import { assignWireIds, familyWireIds, renderWireSerde, wireIds } from "./wire-ids.mjs";
 
 // Replaces separately maintained command payload types, discriminants and the dispatch match.
 export function compileCommandRoutes(artifacts, types, feltLength, logicClasses) {
@@ -12,17 +12,19 @@ export function compileCommandRoutes(artifacts, types, feltLength, logicClasses)
     name: "world_native::commands::Command",
     variants: routes.map(({ name, payload, wireId }) => ({ name, type: payload, wireId })),
   };
-  return { command, cairo: renderRoutes(routes, "frontier") };
+  return { command, cairo: renderRoutes(routes) };
 }
 
 export function compileBlitzCommandRoutes(frontier, blitz, logicClasses) {
   const logic = logicClasses.map(({ name }) => name);
   const blitzNames = new Set(blitzCommandRoutes.map(({ name }) => name));
-  const routes = assignWireIds("commands", [...commandRoutes, ...blitzCommandRoutes], "blitz").map((route) => {
+  const blitzWireNames = new Set(familyWireIds("commands", "blitz").map(({ name }) => name));
+  const sharedRoutes = commandRoutes.filter(({ name }) => blitzWireNames.has(name));
+  const routes = assignWireIds("commands", [...sharedRoutes, ...blitzCommandRoutes], "blitz").map((route) => {
     const build = blitzNames.has(route.name) ? blitz : frontier;
     return compileRoute(route, build.artifacts, build.types, logic, build.feltLength);
   });
-  return renderRoutes(routes, "blitz");
+  return renderRoutes(routes);
 }
 
 function compileRoute(route, artifacts, types, logic, feltLength) {
@@ -69,8 +71,8 @@ function itemOffset(route, payload, types, feltLength) {
 
 const isSpan = (type) => /^core::array::(?:Span|Array)::</.test(type);
 
-function renderRoutes(routes, family) {
-  const definitions = familyWireIds("commands", family).map(({ id }) => {
+function renderRoutes(routes) {
+  const definitions = wireIds.commands.map(({ id }) => {
     const route = routes.find(({ wireId }) => wireId === id);
     if (!route) return "    None,";
     const { classIndex, entrypoint, itemsOffset, batch } = route;

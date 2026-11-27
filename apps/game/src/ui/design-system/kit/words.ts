@@ -329,7 +329,7 @@ import {
   type SocialProvider,
 } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
-import type { AttackRefusal } from "@bibliothecadao/eternum";
+import type { AttackRefusal, CombatMark } from "@bibliothecadao/eternum";
 import {
   aspectName,
   type AspectId,
@@ -362,6 +362,8 @@ import {
   type QuestUnit,
   ASPECT_REWARD,
   formatOrdinal,
+  FRONTIER_TROOP_NAMES,
+  TroopType,
 } from "@bibliothecadao/types";
 
 /** A step on that scale, common (1) to legendary (5). */
@@ -567,8 +569,16 @@ export const COSMETICS_WORDS = {
   yourRank: (rank: string) => `Your rank: ${rank}`,
   matchingIcon: "Matching Realm Icon",
   matchingIconWhere: "HUD badge, minimap, map plates & app",
-  previewSoon: "Preview soon",
+  equip: "Equip",
+  equipped: "Equipped",
+  useDefaultOrder: "Use default order",
+  connectToEquip: "Connect to equip",
   standing: { owned: "Owned", pass: "Pass", event: "Event", wonder: "Wonder" },
+  otherAspect: "Other Aspect",
+  notWearableOnRealm: "Not wearable on this Realm",
+  otherAspectNote: (skinAspect: string, realmAspect: string) =>
+    `Owned with Season 1 Pass · your Realm is ${realmAspect}, so only ${skinAspect} Realms can wear this.`,
+  noRealmAspectNote: (skinAspect: string) => `Owned with Season 1 Pass · create a ${skinAspect} Realm to wear this.`,
   unlockInPass: "Unlock in Season 1 Pass",
   eventExclusive: "Event exclusive",
   eventGone: "Event exclusive · no longer available",
@@ -639,9 +649,11 @@ export const OATH_PICK = {
   another: "Choose another",
   swap: "Swap",
   swapFor: (oath: string, price: string) => `Swap ${oath} for ${price}`,
-  redrawPrice: "One reroll",
-  used: "Used",
+  swapsPerPick: "1 swap per pick",
+  swapsShort: "1 swap",
+  rerollUsed: "Reroll used",
   fresh: "New",
+  selected: "Selected",
   pass: "Pass",
   notChosen: "Could not choose Oath.",
   notRedrawn: "Could not reroll Oath.",
@@ -771,10 +783,13 @@ export const startsNewArmies = (attribute: string, tier: number): RankedWords =>
 
 /** A map plate's words: a thing with no guard, the troops on their way to one. */
 export const UNDEFENDED = "Undefended";
+export const SLOT_ADD = "Add";
+export const SLOT_EMPTY = "Empty";
 /**
  * A site as its map hover and its card both name it: its own name, then its kind ("Brimdeep Rift"); the kind alone
  * where it has no name. A kind that is its guard (a camp's Troll) is said once, as the guard, so it is left out here.
  */
+export const ownerAndAspect = (owner: string, aspect: string) => `${owner} · ${aspect}`;
 export const siteTitle = (place: string | undefined, kind: string, guard: string | undefined): string =>
   [place, kind === guard ? undefined : kind].filter(Boolean).join(" ");
 export const ARRIVING = "Arriving";
@@ -785,7 +800,6 @@ export const SHRINE = "Shrine";
 export const WELL = "Well";
 export const USE = "Use";
 export const USING = "Using…";
-export const exploresBought = (count: number) => `+${count} ${count === 1 ? "explore" : "explores"}`;
 export const wellRefillShare = (percent: number): string => `${formatPercent(percent / 100)} max`;
 export const SITE_USE_WORDS = {
   verb: (site: string) => `${USE} ${site}`,
@@ -827,7 +841,7 @@ export const FIGHT_WORDS = {
 } as const;
 export const FIGHT_RESULT = {
   victory: "Victory",
-  cleared: (site: string) => `${site} cleared`,
+  cleared: "cleared",
 } as const;
 export const fightLost = (lost: string, share: string) => `−${lost} · ${share}% lost`;
 export const NONE_LOST = "None lost";
@@ -863,8 +877,6 @@ export const ATTACK_REFUSAL_WORDS = {
   "answer-oath-first": "Choose an Oath first",
   "game-not-started": "The season has not started",
   "game-ended": "The season has ended",
-  "guarding-deep-site": `This army guards a ${DEEP} site`,
-  "target-guards-deep-site": `Attack the ${DEEP} site it guards`,
   "expired-army": "An army from an earlier day",
   "deep-ring-closed": "Ring not open yet",
   "target-must-be-unowned": "Only neutral structures can be attacked",
@@ -880,63 +892,91 @@ export const ATTACK_REFUSAL_WORDS = {
   "insufficient-stamina": "Not enough stamina",
 } as const satisfies Record<AttackRefusal, string>;
 
+const slotFill = (filled: number, total: number) => `${formatExact(filled)}/${formatExact(total)}`;
+
 export const DEEP_WORDS = {
   title: DEEP,
   gate: "Gate",
   orderFailed: `Could not send ${DEEP} order.`,
   purpose: {
-    foundation: "Holding raises your Aspect's hyperstructure and earns Glory",
-    core: "Essence for you",
-    mine: "Labor for you",
-    altar: "Bane on a rival",
+    foundation: "Raises Aspect height & pays Glory by guards.",
+    core: "Pays Essence by guards.",
+    mine: "Pays Labor by guards.",
+    altar: "Charges Aspect Bane bar & pays Glory by guards.",
   },
   tag: {
     open: (ring: number) => `Open · Ring ${formatExact(ring)}`,
-    held: (aspect: string) => `Held · ${aspect}`,
     locked: (ring: number) => `Locked · Ring ${formatExact(ring)}`,
-    rival: (aspect: string, filled: number, total: number) =>
-      `Rival · ${aspect} · ${formatExact(filled)}/${formatExact(total)}`,
+    own: (aspect: string, filled: number, total: number) => `Own · ${aspect} · ${slotFill(filled, total)}`,
+    ally: (aspect: string, filled: number, total: number) => `Ally · ${aspect} · ${slotFill(filled, total)}`,
+    rival: (aspect: string, filled: number, total: number) => `Rival · ${aspect} · ${slotFill(filled, total)}`,
+    held: (aspect: string, filled: number, total: number) => `Held · ${aspect} · ${slotFill(filled, total)}`,
   },
+  heldBy: "Held by",
   perTick: (cadence: string) => `/ ${cadence}`,
-  splitCell: (what: string) => `${what} · split by troops`,
-  poisonCell: `${DEEP} poison per guard`,
-  poisonStrip: (troops: number, cadence: string) =>
-    `${DEEP} poison · drains ${formatExact(troops)} troops every ${cadence}`,
   poisonPanel: (troops: number, cadence: string, ticks: number, time: string) =>
     `${DEEP} poison · −${formatExact(troops)} every ${cadence} · ${formatExact(ticks)} ticks · ${time} left`,
   poisonCompact: (troops: number, cadence: string, time: string) =>
     `−${formatExact(troops)} / ${cadence} · ${time} left`,
   poisonToken: (troops: number) => `−${formatExact(troops)}`,
-  poisoned: "Poisoned",
   ratesWhenOpen: "Rates set when open",
   kinds: { glory: "Glory", height: "Aspect height", essence: ESSENCE, labor: LABOR, bar: "Bane bar" },
-  troops: (troops: number) => `${formatExact(troops)} troops`,
-  slotsOpen: (free: number) => `${formatExact(free)} slots open`,
   entered: (entered: number, realms: number) => `${formatExact(entered)} / ${formatExact(realms)}`,
   /** A Deep site's plate on the map: nobody holds it, and what a tick held pays. */
   shared: "Every Aspect fights for it",
-  foundationPlate: (height: number) => `+${formatExact(height)} height a tick to the holder's hyperstructure`,
-  altarPlate: "Fills the holder's bane bar",
+  foundationPlate: (height: number) => `+${formatExact(height)} height a tick when guarded`,
+  altarPlate: "Charges Aspect Bane bar when guarded",
   glory: (amount: number) => `${formatExact(amount)} Glory`,
   bar: (charge: number, threshold: number) => `${formatExact(charge)} of ${formatExact(threshold)}`,
-  open: "Unguarded: next army takes it",
-  guardsCount: (filled: number, total: number) => `${formatExact(filled)} / ${formatExact(total)} Guards`,
-  drainTick: (troops: number) => `−${formatExact(troops)} / tick`,
-  freeSlot: "Free slot",
-  facesNext: "fought next",
-  /** How long a guard's troops last: its army ticks, and the time until the last of them. */
-  lasts: (ticks: number, time: string) => `${formatExact(ticks)} ticks left (${time})`,
+  gloryTip: (rate: number, cadence: string, share: number) =>
+    `Your Glory from every site · +${formatExact(rate)} / ${cadence} from your guards here, ${share}% of its pay`,
+  gloryIdleTip: "Your Glory from every site · place a guard here to earn",
+  guardCount: (filled: number, total: number) => `Guards · ${formatExact(filled)} / ${formatExact(total)}`,
+  slotOrder: { cue: "Leftmost fought first", first: "1st", seize: "Clear all to seize" },
+  slotTip: (
+    owner: string,
+    troop: string,
+    count: number,
+    cap: number,
+    share: number,
+    drain: number,
+    cadence: string,
+    left: string,
+    interactive: boolean,
+    gloryRate?: number,
+  ) =>
+    [
+      `${owner} · ${troop} · ${formatExact(count)} / ${formatExact(cap)}`,
+      gloryRate && gloryRate > 0 ? `${share}% share (+${formatExact(gloryRate)} Glory/${cadence})` : `${share}% share`,
+      drain > 0 && cadence ? `−${formatExact(drain)}/${cadence} poison` : undefined,
+      `${left} left`,
+      interactive ? "Click to Guard or Withdraw" : undefined,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+  beastTip: (beast: string, mark: string) => `${beast} · ${mark}`,
+  slotDrain: (drain: number, cadence: string) => `−${formatExact(drain)}/${cadence}`,
+  openSlotTip: (aspect: string) => `Open slot · Owner & ${aspect} allies may guard (one slot per player & troop type)`,
+  openOwnerSlotTip: "Open slot · Owner may guard (one slot per troop type)",
+  guardAmount: (count: number) => `Guard ${formatExact(count)}`,
+  withdrawAmount: (count: number) => `Withdraw ${formatExact(count)}`,
+  guardAll: "Sending every troop removes this army and its Oaths.",
+  undefendedLine: "Place a guard to earn & defend.",
+  dayEndPoison: (drain: number, cadence: string) => `−${formatExact(drain)}/${cadence} poison per slot`,
+  dayEndLost: "lost at day's end",
+  addGuard: "Add guard",
+  guardWith: (troop: string | undefined) => (troop ? `Guard with ${troop}` : "Add guard"),
+  guardShort: "Guard",
+  withdraw: "Withdraw",
+  attackOf: (defender: string) => `Attack ${defender}`,
+  noAdjacent: "Move an army beside to guard.",
+  slotsFull: (total: number) => `All ${formatExact(total)} guard slots are full.`,
   /** What the army panel's chip of those ticks counts. */
   inTheDeep: `In the ${DEEP}`,
-  share: (percent: number) => `${percent}% of each tick`,
   attack: "Attack",
   take: "Take",
-  join: "Join guard",
-  joinShort: "Join",
+  ownerOnly: "Only the site's owner may guard here",
   pickArmy: `Select an army in the ${DEEP}`,
-  guarding: "Already guarding",
-  full: "All 4 slots are taken",
-  rival: "Held by a rival Aspect",
   otherDay: "Only today's armies can fight here",
   opensAt: (realms: number) => `Opens at ${formatExact(realms)} Realms today`,
   noTroops: "Army has no troops left",
@@ -1143,9 +1183,15 @@ export const ASPECT_PAGE_WORDS = {
   triumph: { 1: "Clear Mist", 2: "Second Wind", 3: "Pale Moon", 4: "Spoils" },
   glory: "Glory",
 } as const;
+export const HUD_GLORY_WORDS = {
+  tip: (glory: number) => DEEP_WORDS.glory(glory),
+  earningTip: (glory: number, perMin: number) =>
+    `${DEEP_WORDS.glory(glory)} · ${formatFigure(perMin, { signed: true })} ${ASPECT_PAGE_WORDS.glory}/m`,
+} as const;
 export const SEASON_BOARD_WORDS = {
   title: `${COUNTDOWN_WORDS.title} Leaderboard`,
   phoneTitle: COUNTDOWN_WORDS.title,
+  noRace: "No Season race in this world.",
   day: (day: number, lastDay: number) => `Day ${formatExact(day)} of ${formatExact(lastDay)}`,
   poolRule: `${formatExact(ASPECT_REWARD.lordsPerHeight)} LORDS per height · +${formatShort(ASPECT_REWARD.finishBonus)} for 1st`,
   pool: (lords: number) => `${formatShort(lords)} LORDS`,
@@ -1201,6 +1247,14 @@ export const HEADLINE_EYEBROWS = {
   "five-min-warning": "Timer Warning",
   "t3-building": "Military Milestone",
 } as const;
+export const DEEP_CAPTURE_WORDS = {
+  eyebrow: (aspect: string) => `${DEEP} Capture · ${aspect}`,
+  siteLost: `${DEEP} Capture · Site Lost`,
+  taken: (site: string) => `${site} taken`,
+  seized: (site: string) => `${site} seized`,
+  lost: (site: string) => `${site} lost`,
+  sentence: (line: string) => ` ${line}.`,
+};
 /** A field army about to be raised, before it has a number (the Military window's Deploy). */
 export const NEW_ARMY = "The new army";
 
@@ -1222,6 +1276,62 @@ export const DEPLOY_WORDS = {
   howMany: (troop: string) => `${troop} to deploy`,
   deployCount: (count: number) => `${DEPLOY} ${formatExact(count)}`,
 } as const;
+export const COMBAT_MARK_WORDS = { blade: "Blade", bow: "Bow" } as const satisfies Record<CombatMark, string>;
+const lessBy = (cut: number) => formatPercent(-cut / 100, { signed: true });
+const told = (...parts: (string | false)[]) => parts.filter((part): part is string => part !== false).join(" · ");
+const STRIKE_ORDER_WORDS = {
+  card: { blade: false, bow: "1st strike" },
+  summary: { blade: false, bow: `Strikes first vs blades` },
+  tip: {
+    blade: `Hits together vs ${COMBAT_MARK_WORDS.blade}, after ${COMBAT_MARK_WORDS.bow}`,
+    bow: `Strikes first vs ${COMBAT_MARK_WORDS.blade}, together vs ${COMBAT_MARK_WORDS.bow}`,
+  },
+} as const satisfies Record<"card" | "summary" | "tip", Record<CombatMark, string | false>>;
+export interface TroopFigures {
+  lightCut: number;
+  guardCut: number;
+  scoutReveal: number;
+  baseReveal: number;
+}
+export interface TroopTraits {
+  mark: CombatMark;
+  light: boolean;
+  guard: boolean;
+  scout: boolean;
+}
+const LIGHT_AGAINST = FRONTIER_TROOP_NAMES[TroopType.Knight].many;
+export const TROOP_TRAIT_WORDS = {
+  card: ({ mark, light, guard, scout }: TroopTraits, figures: TroopFigures) =>
+    told(
+      !light && "Full dmg",
+      STRIKE_ORDER_WORDS.card[mark],
+      guard && "Guard",
+      scout && formatExact(figures.scoutReveal),
+      light && lessBy(figures.lightCut),
+    ),
+  summary: ({ mark, light, guard, scout }: TroopTraits, figures: TroopFigures) =>
+    told(
+      COMBAT_MARK_WORDS[mark],
+      !light && "Full damage",
+      STRIKE_ORDER_WORDS.summary[mark],
+      scout && `Reveals for ${formatExact(figures.scoutReveal)} stamina (not ${formatExact(figures.baseReveal)})`,
+      light && `${lessBy(figures.lightCut)} damage vs ${LIGHT_AGAINST}`,
+      guard && `${lessBy(figures.guardCut)} damage taken guarding in the ${DEEP}`,
+    ),
+  tip: ({ mark, light, guard, scout }: TroopTraits, figures: TroopFigures) =>
+    told(
+      COMBAT_MARK_WORDS[mark],
+      !light && "Full damage",
+      STRIKE_ORDER_WORDS.tip[mark],
+      light && `${lessBy(figures.lightCut)} damage vs ${LIGHT_AGAINST}`,
+      guard && `${lessBy(figures.guardCut)} damage taken in the ${DEEP}`,
+      scout && `Reveals tiles for ${formatExact(figures.scoutReveal)} stamina`,
+    ),
+} as const;
+export const BEAST_MARK_TIPS = {
+  blade: `${COMBAT_MARK_WORDS.blade} · Hits together vs ${COMBAT_MARK_WORDS.blade} · ${COMBAT_MARK_WORDS.bow} strikes first against it`,
+  bow: `${COMBAT_MARK_WORDS.bow} · Strikes first against ${COMBAT_MARK_WORDS.blade} · Hits together vs ${COMBAT_MARK_WORDS.bow}`,
+} as const satisfies Record<CombatMark, string>;
 export const SIZE_ROW = { fewer: "One fewer", more: "One more", max: "Max" } as const;
 export const BUILD = "Build";
 export const BUILT = "Built";
@@ -1290,6 +1400,7 @@ export const ORDER_REFUSAL_WORDS = {
   food: `Not enough ${WHEAT}`,
   "off-limits": ATTACK_REFUSAL_WORDS["target-must-be-unowned"],
   "no-attack": ATTACK_REFUSAL_WORDS["no-attack"],
+  allied: ATTACK_REFUSAL_WORDS.allied,
   "no-transfer": "Cannot transfer here",
   occupied: "Tile occupied",
   "too-far": "Too far · move closer",
@@ -1465,7 +1576,7 @@ export const FRAGMENTS_PAGE_WORDS = {
   inGameUsesTitle: `In-game ${FRAGMENTS} uses`,
   inGameStamina: (points: number) =>
     `Refill stamina above the ${DEEP} (+${formatExact(points)} stamina per ${FRAGMENT})`,
-  inGameOath: (cost: number) => `Reroll Oath choices (${formatExact(cost)} ${FRAGMENTS})`,
+  inGameOath: (cost: number) => `Swap one Oath card (${formatCount(cost, FRAGMENT, FRAGMENTS)})`,
   closedTitle: `${FRAGMENTS} shop closed`,
   closedLine: `${FRAGMENTS} purchases and spends are closed right now. You can still use an ${ANCIENT_SEAL} code below.`,
   noLiveSeason: "No live Frontier season right now. Check back when the season opens.",
@@ -2007,6 +2118,33 @@ export const REWARD_WORDS = {
   /** Under an opened chest's multiple: "4×" of the entry. */
   theEntry: "the entry",
   noLords: "No LORDS now",
+} as const;
+
+export const SEASON_REWARD_WORDS = {
+  title: (lords: string) => `You earned ${lords} LORDS`,
+  endedEyebrow: (season: string, aspect: string) => `${season} ended · ${aspect}`,
+  gloryReward: "Glory reward",
+  automaticLine: "Link a wallet and your LORDS send automatically.",
+  noFeeLine: "No manual transaction or network fee needed.",
+  timeLeftToLink: (left: string) => `${left} left to link a wallet`,
+  closesAt: (date: string) => `Closes ${date}`,
+  urgentTitle: (left: string, lords: string) => `${left} left — link a wallet today to receive ${lords} LORDS`,
+  urgentSub: "Unpaid LORDS return to the treasury when the window closes.",
+  waitingBadge: (lords: string) => `${lords} LORDS waiting`,
+  waitingCompact: (lords: string, left: string) => `${lords} LORDS · ${left}`,
+  waitingSeason: (season: string) => `${season} reward · Unpaid`,
+  waitingPanelNote: (lords: string, date: string) =>
+    `Link a wallet below and your ${lords} LORDS send automatically on the next payout tick. Closes ${date}.`,
+  firstWalletZeroHold: "First wallet linked receives at once.",
+  sendingTitle: "Sending payout automatically",
+  sendingBody: (lords: string, address: string) =>
+    `Sending ${lords} LORDS to ${address} on the next payout tick. Nothing else to sign.`,
+  paidTitle: (lords: string) => `${lords} LORDS paid`,
+  paidSub: (season: string, address: string) => `${season} reward received in ${address}`,
+  paidChip: "Paid",
+  linkAction: "Link",
+  linkWalletNow: "Link wallet now",
+  windowLabel: "Season reward",
 } as const;
 
 /** The three alert levels (ruled). */

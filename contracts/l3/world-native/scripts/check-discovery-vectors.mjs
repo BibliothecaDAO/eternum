@@ -3,8 +3,8 @@ import { fileURLToPath } from "node:url";
 import { commandRoutes } from "../schema/command-routes.mjs";
 import { assignWireIds } from "./wire-ids.mjs";
 
-export function checkDiscoveryVectors(vectors, cases) {
-  const body = vectors.split("pub fn typed_commands()")[1]?.split("pub fn fresh_world(")[0] ?? "";
+export function checkDiscoveryVectors(vectors, cases = vectors) {
+  const body = vectors.split("fn typed_commands()")[1]?.split("#[test_case")[0] ?? "";
   const names = [...body.matchAll(/Command::(\w+)/g)].map((match) => match[1]);
   const live = assignWireIds("commands", commandRoutes);
   if (names.length !== live.length || live.some(({ name }, index) => names[index] !== name))
@@ -39,14 +39,11 @@ function checkRootGroups(attributes, commands) {
     throw new Error("Add all four root groups for each command to both discovery refusal tests");
 }
 
-export function discoveryVectorSources() {
-  return [
-    readFileSync(new URL("../tests/support/src/tests/roll_independence.cairo", import.meta.url), "utf8"),
-    readFileSync(new URL("../tests/discovery-roots/src/tests/roll_independence.cairo", import.meta.url), "utf8"),
-  ];
+export function discoveryVectorSource() {
+  return readFileSync(new URL("../tests/discovery-roots/src/tests/roll_independence.cairo", import.meta.url), "utf8");
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  checkDiscoveryVectors(...discoveryVectorSources());
+  checkDiscoveryVectors(discoveryVectorSource());
   console.log("Every live command has typed discovery vectors and all 32 roots in both refusal tests");
 }

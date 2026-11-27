@@ -154,7 +154,7 @@ export const SCOPE_INPUT_MODELS = [
   "DeepSite",
   "AspectHyperstructure",
   "HomeAspect",
-  "DeepGuard",
+  "GarrisonSlot",
   "ArmyDay",
   "PlayerEntry",
   "Structure",

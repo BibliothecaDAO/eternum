@@ -87,6 +87,8 @@
       "LORE_WELLS": 1,
       "LORE_SHRINES": 2,
       "LORE_SPIRES": 3,
+      "SHRINE_LORE_LEVEL": 1,
+      "SPIRE_LORE_LEVEL": 2,
       "STOREROOM": 2,
       "STOREROOM_LEVEL": 1,
       "WORKSHOP": 25,
@@ -106,6 +108,12 @@
     "family": {
       "FRONTIER": 1,
       "BLITZ": 2
+    },
+    "realmSkin": {
+      "DEFAULT_REALM_SKIN": 0,
+      "BASE_REALM_SKIN": 1,
+      "SEASON_ONE_REALM_SKIN": 2,
+      "WONDER_REALM_SKIN": 3
     }
   },
   "tilePackingConstants": {
@@ -4483,10 +4491,16 @@
           "type": "core::integer::u64",
           "id": "0x646179",
           "feltLength": 1
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8",
+          "id": "0x617370656374",
+          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 3
+      "valueLength": 4
     },
     {
       "name": "DeepEntries",
@@ -4524,8 +4538,8 @@
       }
     },
     {
-      "name": "DeepGuard",
-      "identity": "0x446565704775617264",
+      "name": "GarrisonSlot",
+      "identity": "0x4761727269736f6e536c6f74",
       "scope": "game",
       "keys": [
         {
@@ -4534,27 +4548,26 @@
           "feltLength": 1
         },
         {
-          "name": "explorer_id",
+          "name": "structure_id",
           "type": "core::integer::u64",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "site_id",
-          "type": "core::integer::u64",
-          "id": "0x736974655f6964",
           "feltLength": 1
         },
         {
           "name": "slot",
           "type": "core::integer::u8",
-          "id": "0x736c6f74",
           "feltLength": 1
         }
       ],
-      "keyLength": 2,
-      "valueLength": 2
+      "members": [
+        {
+          "name": "home",
+          "type": "core::integer::u64",
+          "id": "0x686f6d65",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 3,
+      "valueLength": 1
     },
     {
       "name": "DeepArmy",
@@ -5424,6 +5437,33 @@
       "valueLength": 1
     },
     {
+      "name": "RealmSkin",
+      "identity": "0x5265616c6d536b696e",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "family",
+          "type": "core::integer::u8",
+          "id": "0x66616d696c79",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
+    },
+    {
       "name": "ResourceRule",
       "identity": "0x5265736f7572636552756c65",
       "scope": "game",
@@ -5557,6 +5597,18 @@
           "feltLength": 1
         },
         {
+          "name": "reveal_cap",
+          "type": "core::integer::u32",
+          "id": "0x72657665616c5f636170",
+          "feltLength": 1
+        },
+        {
+          "name": "rift_essence_bps",
+          "type": "core::integer::u16",
+          "id": "0x726966745f657373656e63655f627073",
+          "feltLength": 1
+        },
+        {
           "name": "site_guard_lower",
           "type": "core::integer::u16",
           "id": "0x736974655f67756172645f6c6f776572",
@@ -5624,11 +5676,13 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 16,
+      "valueLength": 18,
       "observation": {
         "domain": "expedition",
         "fields": {
           "revealPercent": "reveal_percent",
+          "revealCap": "reveal_cap",
+          "riftEssenceBps": "rift_essence_bps",
           "siteGuardLower": "site_guard_lower",
           "siteGuardUpper": "site_guard_upper",
           "riftGuardLower": "rift_guard_lower",
@@ -5840,7 +5894,7 @@
           "name": "troop_limit_config",
           "type": "world_native::rules::TroopLimitConfig",
           "id": "0x74726f6f705f6c696d69745f636f6e666967",
-          "feltLength": 26
+          "feltLength": 25
         },
         {
           "name": "capacity_config",
@@ -5910,7 +5964,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 88,
+      "valueLength": 87,
       "derivedFrom": "preset"
     }
   ],
@@ -7169,6 +7223,11 @@
           "name": "InteractSite",
           "type": "world_native::relics::InteractSite",
           "wireId": 69
+        },
+        {
+          "name": "SetRealmSkin",
+          "type": "world_native::names::SetRealmSkin",
+          "wireId": 79
         }
       ]
     },
@@ -7292,20 +7351,6 @@
         }
       ]
     },
-    "world_native::deep::DeepGuard": {
-      "type": "struct",
-      "name": "world_native::deep::DeepGuard",
-      "members": [
-        {
-          "name": "site_id",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "slot",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
     "world_native::deep::DeepPay": {
       "type": "struct",
       "name": "world_native::deep::DeepPay",
@@ -7390,6 +7435,20 @@
         },
         {
           "name": "day",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "aspect",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::deep::GarrisonSlot": {
+      "type": "struct",
+      "name": "world_native::deep::GarrisonSlot",
+      "members": [
+        {
+          "name": "home",
           "type": "core::integer::u64"
         }
       ]
@@ -7568,6 +7627,14 @@
       "members": [
         {
           "name": "reveal_percent",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "reveal_cap",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "rift_essence_bps",
           "type": "core::integer::u16"
         },
         {
@@ -8144,6 +8211,16 @@
         }
       ]
     },
+    "world_native::names::RealmSkin": {
+      "type": "struct",
+      "name": "world_native::names::RealmSkin",
+      "members": [
+        {
+          "name": "family",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
     "world_native::names::SetEntityName": {
       "type": "struct",
       "name": "world_native::names::SetEntityName",
@@ -8155,6 +8232,20 @@
         {
           "name": "name",
           "type": "core::felt252"
+        }
+      ]
+    },
+    "world_native::names::SetRealmSkin": {
+      "type": "struct",
+      "name": "world_native::names::SetRealmSkin",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "family",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -9590,10 +9681,6 @@
         {
           "name": "camp_armies",
           "type": "core::integer::u16"
-        },
-        {
-          "name": "explore_reward_strength_cap",
-          "type": "core::integer::u16"
         }
       ]
     },
@@ -10410,5 +10497,5 @@
       ]
     }
   },
-  "identity": "64c67a91b300fa96401b463c69edaad9840273f73bb1217f1d9da43ebe9c828b"
+  "identity": "b9a4507c091cb37a98df851b4949e4c58824e123697365b53c16cc6a317bb57a"
 }

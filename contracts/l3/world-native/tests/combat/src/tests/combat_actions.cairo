@@ -114,17 +114,86 @@ fn season_one_refuses_an_owned_target_without_spending() {
 }
 
 #[test]
-fn season_one_turns_off_army_battles_so_an_army_in_the_open_cannot_be_attacked() {
+fn surface_rival_army_battle_applies_first_strike_by_mark() {
+    let (d, home, target, attacker, defender) = setup_with_counts((1000, 1000));
+    set_aspect(d, target, rival_aspect_of(d, home));
+    set_troop_category(d, attacker, crate::troops::TroopType::Crossbowman);
+    set_troop_category(d, defender, crate::troops::TroopType::Knight);
+    let expected = expected_exchange(d, attacker, defender, false);
+    assert!(execute(d, battle_command(attacker, defender), NOW));
+    let (after_attacker, after_defender) = (
+        troop(d, attacker).unwrap().troops.count, troop(d, defender).unwrap().troops.count,
+    );
+    assert_eq!((after_attacker, after_defender), expected);
+    assert!(after_attacker > after_defender);
+}
+
+#[test]
+fn deep_rival_army_battle_skips_guard_protection_and_applies_first_strike() {
     let (d, home, target, attacker, defender) = setup_with_counts((1000, 1000));
     into_deep(d, home, target, attacker, defender);
-    let (before_attacker, before_defender) = (troop(d, attacker), troop(d, defender));
-    assert_terminal_rejection(
-        d,
-        Command::Battle(
-            AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
-        ),
-        NOW,
+    set_troop_category(d, attacker, crate::troops::TroopType::Crossbowman);
+    set_troop_category(d, defender, crate::troops::TroopType::Knight);
+    let expected_field = expected_exchange(d, attacker, defender, false);
+    let (_, guarded_defender) = expected_exchange(d, attacker, defender, true);
+    assert!(execute(d, battle_command(attacker, defender), NOW));
+    let (after_attacker, after_defender) = (
+        troop(d, attacker).unwrap().troops.count, troop(d, defender).unwrap().troops.count,
     );
+    assert_eq!((after_attacker, after_defender), expected_field);
+    assert!(after_defender < guarded_defender);
+    assert!(after_attacker > after_defender);
+}
+
+#[test]
+fn allied_armies_of_the_same_aspect_cannot_fight_on_surface_or_in_the_deep() {
+    let (d, home, target, attacker, defender) = setup_with_counts((1000, 1000));
+    let own = home_aspect_of(d, home);
+    set_aspect(d, target, own);
+    let (before_attacker, before_defender) = (troop(d, attacker), troop(d, defender));
+    assert_terminal_rejection(d, battle_command(attacker, defender), NOW);
+    assert_eq!(troop(d, attacker), before_attacker);
+    assert_eq!(troop(d, defender), before_defender);
+
+    let (d, home, target, attacker, defender) = setup_with_counts((1000, 1000));
+    into_deep(d, home, target, attacker, defender);
+    set_aspect(d, target, home_aspect_of(d, home));
+    let (before_attacker, before_defender) = (troop(d, attacker), troop(d, defender));
+    assert_terminal_rejection(d, battle_command(attacker, defender), NOW);
+    assert_eq!(troop(d, attacker), before_attacker);
+    assert_eq!(troop(d, defender), before_defender);
+}
+
+#[test]
+fn an_army_cannot_attack_an_army_from_its_own_account() {
+    let (d, home, target, attacker, defender) = setup_with_counts((1000, 1000));
+    set_aspect(d, target, rival_aspect_of(d, home));
+    let original = IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap();
+    set_fixture(
+        d.games,
+        selector!("structures"),
+        selector!("structures"),
+        array![3, target.entity_id.into()].span(),
+        StructureRecord {
+            owner: d.actor,
+            base: original.base,
+            resources_packed: original.resources_packed,
+            metadata: original.metadata,
+        },
+    );
+    let (before_attacker, before_defender) = (troop(d, attacker), troop(d, defender));
+    assert_terminal_rejection(d, battle_command(attacker, defender), NOW);
+    assert_eq!(troop(d, attacker), before_attacker);
+    assert_eq!(troop(d, defender), before_defender);
+}
+
+#[test]
+fn an_army_cannot_attack_another_army_out_of_range() {
+    let (d, home, target, attacker, defender) = setup_with_counts((1000, 1000));
+    set_aspect(d, target, rival_aspect_of(d, home));
+    move_fixture(d, defender, 2000006);
+    let (before_attacker, before_defender) = (troop(d, attacker), troop(d, defender));
+    assert_terminal_rejection(d, battle_command(attacker, defender), NOW);
     assert_eq!(troop(d, attacker), before_attacker);
     assert_eq!(troop(d, defender), before_defender);
 }
@@ -191,4 +260,70 @@ fn camp(d: super::Deployment, attacker: u64) -> ResourceKey {
 
 fn resolved(d: super::Deployment, id: u64) -> Option<ExplorerTroops> {
     GameState { contract_address: d.games }.resolved_explorer(ExplorerKey { game_id: 3, explorer_id: id })
+}
+
+fn battle_command(attacker_id: u64, defender_id: u64) -> Command {
+    Command::Battle(AttackExplorer { attacker_id, defender_id, steal_resources: array![].span() })
+}
+
+fn home_aspect_of(d: super::Deployment, home: ResourceKey) -> u8 {
+    snforge_std::interact_with_state(d.games, || crate::logic::aspects::home_aspect(home))
+}
+
+fn rival_aspect_of(d: super::Deployment, home: ResourceKey) -> u8 {
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let own = crate::logic::aspects::home_aspect(home);
+            let packed = crate::logic::aspects::rules();
+            let mut order = 1;
+            while crate::aspects::order_aspect(packed, order) == own {
+                order += 1;
+            }
+            crate::aspects::order_aspect(packed, order)
+        },
+    )
+}
+
+fn set_aspect(d: super::Deployment, home: ResourceKey, aspect: u8) {
+    snforge_std::interact_with_state(
+        d.games,
+        || starknet::storage::StorageMapWriteAccess::write(
+            crate::state::write().settlements.home_aspects, (home.game_id, home.entity_id), aspect,
+        ),
+    );
+}
+
+fn set_troop_category(d: super::Deployment, id: u64, category: crate::troops::TroopType) {
+    let mut explorer = troop(d, id).unwrap();
+    explorer.troops = Troops { category, ..explorer.troops };
+    super::resource_commands::set_explorer_fixture(d.games, ExplorerKey { game_id: 3, explorer_id: id }, explorer);
+}
+
+fn expected_exchange(
+    d: super::Deployment, attacker_id: u64, defender_id: u64, defender_is_guard: bool,
+) -> (u128, u128) {
+    let attacker = resolved(d, attacker_id).unwrap();
+    let defender = resolved(d, defender_id).unwrap();
+    let context = snforge_std::interact_with_state(
+        d.games,
+        || {
+            let execution = crate::commands::load_context(3, 123_u256, NOW);
+            let base = crate::logic::combat::combat_context(3, attacker, defender, execution);
+            crate::combat::CombatContext { defender_is_structure_guard: defender_is_guard, ..base }
+        },
+    );
+    let rules = crate::game::IGameDispatcherTrait::rules(crate::game::IGameDispatcher { contract_address: d.games }, 3);
+    let mut alpha = attacker.troops;
+    let mut bravo = defender.troops;
+    alpha
+        .attack_with_context(
+            ref bravo,
+            context,
+            rules.troop_stamina_config,
+            rules.troop_damage_config,
+            rules.tick_config.armies_tick_in_seconds,
+            rules.battle_config.cooldown_seconds,
+        );
+    (alpha.count, bravo.count)
 }

@@ -12,8 +12,15 @@ import { messageWords, placeOf, type SharedPlace } from "../model/place";
 import type { RealtimeConnectionStatus } from "../model/types";
 
 type HistoryState = "loading" | "answered" | "failed";
-const historyState = (zone: { historyError?: string; lastFetchedCursor?: string | null } | undefined): HistoryState =>
-  zone?.historyError ? "failed" : zone?.lastFetchedCursor !== undefined ? "answered" : "loading";
+const historyState = (
+  zone: { historyError?: string; lastFetchedCursor?: string | null; messages?: readonly unknown[] } | undefined,
+  blockListReady: boolean,
+): HistoryState =>
+  zone?.historyError
+    ? "failed"
+    : zone?.lastFetchedCursor !== undefined && (blockListReady || !zone.messages?.length)
+      ? "answered"
+      : "loading";
 
 const CHAT_UNAVAILABLE = "Chat unavailable";
 
@@ -34,7 +41,7 @@ const chatStripLine = ({
   if (connection === "connected" && !joined) return CHAT_UNAVAILABLE;
   if (last) return last;
   if (connection === "error" || history === "failed") return CHAT_UNAVAILABLE;
-  return history === "answered" ? "No messages yet" : "Loading chat…";
+  return history === "answered" ? CHAT_WORDS.noMessages : "Loading chat…";
 };
 
 export const useChatStrip = ({
@@ -53,7 +60,7 @@ export const useChatStrip = ({
       (message) => state.blockList !== null && !state.blockList.blocked.includes(message.sender.playerId),
     ),
   );
-  const history = useRealtimeChatSelector((state) => historyState(state.worldZones[zoneId]));
+  const history = useRealtimeChatSelector((state) => historyState(state.worldZones[zoneId], state.blockList !== null));
   const unread = useRealtimeChatSelector(chatUnread);
   const people = useChatPeople();
   const lastPlace = lastMessage ? placeOf(lastMessage.metadata) : null;

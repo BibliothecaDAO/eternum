@@ -1,15 +1,20 @@
 import "./cosmetics-page.css";
 
-import { RealmLevels, rankName } from "@bibliothecadao/types";
+import { aspectName, RealmLevels, rankName } from "@bibliothecadao/types";
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 
 import {
+  BASE_REALM_SKIN,
   REALM_RANKS,
   REALM_SKIN_DEFAULT_ORDER,
-  REALM_SKINS,
   realmSkinIcon,
+  REALM_SKIN_CODES,
+  realmSkinsFor,
   realmSkinStanding,
+  realmSkinWearableOnRealm,
+  wearsDefaultSkin,
+  wornRealmSkin,
   type RealmSkin,
   type RealmSkinFacts,
   type RealmSkinFamily,
@@ -18,26 +23,31 @@ import {
 import { AspectMark } from "@/ui/design-system/aspect-mark";
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppChip, AppPanel } from "@/ui/design-system/kit/app-elements";
-import { COSMETICS_WORDS } from "@/ui/design-system/kit/words";
+import { COSMETICS_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
+import { REALM_SKIN_FAMILIES } from "@bibliothecadao/eternum";
+import { useIdentitySession } from "@/hooks/context/identity-session";
+import { DEVICE_LIMIT_REACHED, isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 
+import { AccountStatePrompt } from "../account-state";
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { PROFILE_PATH } from "../profile/settings-route";
 import { FRAGMENTS_PATH } from "../shop/fragments-route";
+import { useRequestSignIn } from "../sign-in/connect";
 import { useCosmeticStanding } from "./cosmetic-facts";
 import { COSMETICS_HASH } from "./cosmetics-route";
+import { useRealmSkinEquip } from "./realm-skin-equip";
 
 const FAMILY_ROWS: readonly (readonly RealmSkinFamily[])[] = [["season-1"], ["devcon", "base", "wonder"]];
 
-const skinsOf = (family: RealmSkinFamily) => REALM_SKINS.filter((skin) => skin.family === family);
 const isRank = (level: number | null): level is RealmLevels => REALM_RANKS.some((rank) => rank === level);
 
 const ownedCountOf = (facts: RealmSkinFacts) =>
-  REALM_SKINS.filter((skin) => realmSkinStanding(skin, facts) === "owned").length;
+  realmSkinsFor(facts).filter((skin) => realmSkinStanding(skin, facts) === "owned").length;
 
-const firstOwned = (facts: RealmSkinFacts) =>
-  REALM_SKIN_DEFAULT_ORDER.flatMap(skinsOf).find((skin) => realmSkinStanding(skin, facts) === "owned") ??
-  REALM_SKINS[0];
+const isOtherAspectSkin = (standing: RealmSkinStanding, wearable: boolean, facts: RealmSkinFacts) =>
+  standing === "owned" && !wearable && facts.aspect !== null;
 
 export const CosmeticsPage = () => {
   if (useLayout() !== "desktop") return <Navigate to={{ pathname: PROFILE_PATH, hash: COSMETICS_HASH }} replace />;
@@ -52,9 +62,11 @@ const defaultOrderLine = () =>
   COSMETICS_WORDS.defaultOrder(REALM_SKIN_DEFAULT_ORDER.map((family) => COSMETICS_WORDS.families[family]));
 
 export const CosmeticsWorkspace = () => {
-  const { facts, rank } = useCosmeticStanding();
+  const { facts, rank, game, realm } = useCosmeticStanding();
   const [chosen, pick] = useState<RealmSkin | null>(null);
-  const picked = chosen ?? firstOwned(facts);
+  const worn = realm ? wornRealmSkin(facts) : undefined;
+  const picked = chosen ?? worn ?? BASE_REALM_SKIN;
+  const equipping = useRealmSkinEquip(game, realm);
   const ownedCount = ownedCountOf(facts);
   return (
     <div className="cosmetics" data-cosmetics>
@@ -67,12 +79,18 @@ export const CosmeticsWorkspace = () => {
         <span className="cosmetics__owned">{COSMETICS_WORDS.ownedCount(ownedCount)}</span>
       </div>
       <div className="cosmetics__workspace">
-        <SkinPreview skin={picked} facts={facts} rank={isRank(rank) ? rank : null} />
+        <SkinPreview
+          skin={picked}
+          facts={facts}
+          worn={picked === worn}
+          rank={isRank(rank) ? rank : null}
+          equipping={equipping}
+        />
         <div className="cosmetics__families">
           {FAMILY_ROWS.map((row) => (
             <div key={row.join()} className="cosmetics__row" data-families={row.length}>
               {row.map((family) => (
-                <FamilyPanel key={family} family={family} facts={facts} picked={picked} onPick={pick} />
+                <FamilyPanel key={family} family={family} facts={facts} worn={worn} picked={picked} onPick={pick} />
               ))}
             </div>
           ))}
@@ -85,23 +103,38 @@ export const CosmeticsWorkspace = () => {
 const FamilyPanel = ({
   family,
   facts,
+  worn,
   picked,
   onPick,
 }: {
   family: RealmSkinFamily;
   facts: RealmSkinFacts;
+  worn: RealmSkin | undefined;
   picked: RealmSkin;
   onPick: (skin: RealmSkin) => void;
 }) => {
-  const skins = skinsOf(family);
+  const skins = realmSkinsFor(facts).filter((skin) => skin.family === family);
   return (
     <AppPanel title={COSMETICS_WORDS.families[family]} cue={familyCue(family, skins, facts)}>
       <ul className="cosmetics__cards" data-family={family}>
-        {skins.map((skin) => (
-          <li key={skin.id}>
-            <SkinCard skin={skin} standing={realmSkinStanding(skin, facts)} picked={skin === picked} onPick={onPick} />
-          </li>
-        ))}
+        {skins.map((skin) => {
+          const standing = realmSkinStanding(skin, facts);
+          const wearable = realmSkinWearableOnRealm(skin, facts);
+          const otherAspect = isOtherAspectSkin(standing, wearable, facts);
+          return (
+            <li key={skin.id}>
+              <SkinCard
+                skin={skin}
+                standing={standing}
+                wearable={wearable}
+                otherAspect={otherAspect}
+                worn={skin === worn}
+                picked={skin === picked}
+                onPick={onPick}
+              />
+            </li>
+          );
+        })}
       </ul>
     </AppPanel>
   );
@@ -119,11 +152,17 @@ const familyCue = (family: RealmSkinFamily, skins: readonly RealmSkin[], facts: 
 const SkinCard = ({
   skin,
   standing,
+  wearable,
+  otherAspect,
+  worn,
   picked,
   onPick,
 }: {
   skin: RealmSkin;
   standing: RealmSkinStanding;
+  wearable: boolean;
+  otherAspect: boolean;
+  worn: boolean;
   picked: boolean;
   onPick: (skin: RealmSkin) => void;
 }) => (
@@ -132,48 +171,74 @@ const SkinCard = ({
     className="app-choice cosmetics__card"
     data-skin={skin.id}
     data-standing={standing}
+    data-wearable={standing === "owned" ? String(wearable) : undefined}
+    data-other-aspect={otherAspect ? "true" : undefined}
     aria-pressed={picked}
     onClick={() => onPick(skin)}
   >
     <span className="cosmetics__art">
       <SkinArt skin={skin} rank={RealmLevels.Kingdom} size={112} />
-      <StandingBadge standing={standing} />
+      <StandingBadge standing={standing} worn={worn} otherAspect={otherAspect} />
     </span>
     <span className="cosmetics__name">
       {skin.aspect !== undefined && <AspectMark aspect={skin.aspect} size={18} decorative />}
       {skin.name}
     </span>
+    {otherAspect && <span className="cosmetics__card-note">{COSMETICS_WORDS.otherAspect}</span>}
   </button>
 );
 
-const StandingBadge = ({ standing }: { standing: RealmSkinStanding }) => (
-  <span className="cosmetics__badge" data-standing={standing}>
+const StandingBadge = ({
+  standing,
+  worn,
+  otherAspect = false,
+}: {
+  standing: RealmSkinStanding;
+  worn: boolean;
+  otherAspect?: boolean;
+}) => (
+  <span
+    className="cosmetics__badge"
+    data-standing={worn ? "equipped" : standing}
+    data-other-aspect={otherAspect ? "true" : undefined}
+  >
     {standing !== "owned" && standing !== "wonder" && <Icon name="lock" size={14} />}
-    {COSMETICS_WORDS.standing[standing]}
+    {worn ? COSMETICS_WORDS.equipped : COSMETICS_WORDS.standing[standing]}
   </span>
 );
 
-const SkinArt = ({ skin, rank, size }: { skin: RealmSkin; rank: RealmLevels; size: number }) => {
-  const icon = realmSkinIcon(skin, rank);
-  if (icon) return <Icon name={icon} size={size} />;
-  return skin.aspect !== undefined ? <AspectMark aspect={skin.aspect} size={size} decorative /> : null;
-};
+const SkinArt = ({ skin, rank, size }: { skin: RealmSkin; rank: RealmLevels; size: number }) => (
+  <Icon name={realmSkinIcon(skin, rank)} size={size} />
+);
 
-const SkinPreview = ({ skin, facts, rank }: { skin: RealmSkin; facts: RealmSkinFacts; rank: RealmLevels | null }) => {
+const SkinPreview = ({
+  skin,
+  facts,
+  worn,
+  rank,
+  equipping,
+}: {
+  skin: RealmSkin;
+  facts: RealmSkinFacts;
+  worn: boolean;
+  rank: RealmLevels | null;
+  equipping: ReturnType<typeof useRealmSkinEquip>;
+}) => {
   const [chosenRank, show] = useState<RealmLevels | null>(null);
   const shown = chosenRank ?? rank ?? RealmLevels.Kingdom;
   const standing = realmSkinStanding(skin, facts);
+  const wearable = realmSkinWearableOnRealm(skin, facts);
+  const otherAspect = isOtherAspectSkin(standing, wearable, facts);
   const icon = realmSkinIcon(skin, shown);
   return (
     <AppPanel
       title={COSMETICS_WORDS.familySkin(COSMETICS_WORDS.families[skin.family], skin.name)}
-      cue={<StandingBadge standing={standing} />}
+      cue={<StandingBadge standing={standing} worn={worn} otherAspect={otherAspect} />}
       className="cosmetics__preview"
     >
       <div className="cosmetics__stage" data-preview={skin.id} data-rank={shown}>
         {rank !== null && <AppChip>{COSMETICS_WORDS.yourRank(rankName(rank))}</AppChip>}
         <SkinArt skin={skin} rank={shown} size={200} />
-        {!icon && <span className="cosmetics__soon-line">{COSMETICS_WORDS.previewSoon}</span>}
       </div>
       <div className="cosmetics__ranks">
         {REALM_RANKS.map((each) => (
@@ -189,23 +254,33 @@ const SkinPreview = ({ skin, facts, rank }: { skin: RealmSkin; facts: RealmSkinF
           </button>
         ))}
       </div>
-      {icon && (
-        <div className="cosmetics__matching">
-          <span>
-            <strong>{COSMETICS_WORDS.matchingIcon}</strong>
-            <span>{COSMETICS_WORDS.matchingIconWhere}</span>
-          </span>
-          <Icon name={icon} size={38} />
-          <Icon name={icon} size={22} />
-        </div>
-      )}
-      <StandingAction standing={standing} />
+      <div className="cosmetics__matching">
+        <span>
+          <strong>{COSMETICS_WORDS.matchingIcon}</strong>
+          <span>{COSMETICS_WORDS.matchingIconWhere}</span>
+        </span>
+        <Icon name={icon} size={38} />
+        <Icon name={icon} size={22} />
+      </div>
+      <StandingAction skin={skin} standing={standing} worn={worn} facts={facts} equipping={equipping} />
     </AppPanel>
   );
 };
 
-const StandingAction = ({ standing }: { standing: RealmSkinStanding }) => {
-  if (standing === "owned") return <p className="cosmetics__note">{defaultOrderLine()}</p>;
+const StandingAction = ({
+  skin,
+  standing,
+  worn,
+  facts,
+  equipping,
+}: {
+  skin: RealmSkin;
+  standing: RealmSkinStanding;
+  worn: boolean;
+  facts: RealmSkinFacts;
+  equipping: ReturnType<typeof useRealmSkinEquip>;
+}) => {
+  if (standing === "owned") return <OwnedAction skin={skin} worn={worn} facts={facts} equipping={equipping} />;
   if (standing === "pass")
     return (
       <AppButton kind="secondary" icon="fragment" to={FRAGMENTS_PATH}>
@@ -228,12 +303,81 @@ const StandingAction = ({ standing }: { standing: RealmSkinStanding }) => {
   );
 };
 
+const OwnedAction = ({
+  skin,
+  worn,
+  facts,
+  equipping,
+}: {
+  skin: RealmSkin;
+  worn: boolean;
+  facts: RealmSkinFacts;
+  equipping: ReturnType<typeof useRealmSkinEquip>;
+}) => {
+  const { session } = useIdentitySession();
+  const requestSignIn = useRequestSignIn();
+  const accountState = useAccountStore((state) => state.provisioningError);
+  const { equip, sending, failed } = equipping;
+  if (!realmSkinWearableOnRealm(skin, facts)) {
+    return facts.aspect !== null ? (
+      <div className="cosmetics__wearable" data-not-wearable="">
+        <AppButton kind="secondary" disabled>
+          {COSMETICS_WORDS.notWearableOnRealm}
+        </AppButton>
+        <p className="cosmetics__note">{COSMETICS_WORDS.otherAspectNote(skin.name, aspectName(facts.aspect))}</p>
+      </div>
+    ) : (
+      <p className="cosmetics__note" data-not-wearable="">
+        {COSMETICS_WORDS.noRealmAspectNote(skin.name)}
+      </p>
+    );
+  }
+  if (!session)
+    return (
+      <AppButton kind="primary" onClick={() => requestSignIn()}>
+        {COSMETICS_WORDS.connectToEquip}
+      </AppButton>
+    );
+  if (isAccountStatePrompt(accountState)) return <AccountStatePrompt />;
+  const family = REALM_SKIN_CODES[skin.family]!;
+  const backToDefault = REALM_SKIN_FAMILIES.DEFAULT_REALM_SKIN;
+  if (accountState === DEVICE_LIMIT_REACHED) {
+    const action = worn ? backToDefault : family;
+    const canRetry = equip && sending === null && failed === action;
+    return <AccountStatePrompt onRetry={canRetry ? () => void equip(action) : undefined} />;
+  }
+  if (!equip) return <p className="cosmetics__note">{defaultOrderLine()}</p>;
+  const busyFor = (code: number) => (sending === code ? COSMETICS_WORDS.equip : undefined);
+  const wordFor = (code: number, word: string) => (failed === code ? TRY_AGAIN : word);
+  if (!worn)
+    return (
+      <AppButton kind="primary" busy={busyFor(family)} disabled={sending !== null} onClick={() => void equip(family)}>
+        {wordFor(family, COSMETICS_WORDS.equip)}
+      </AppButton>
+    );
+  return (
+    <>
+      <AppChip tone="good">{COSMETICS_WORDS.equipped}</AppChip>
+      {!wearsDefaultSkin(facts) && (
+        <AppButton
+          kind="quiet"
+          busy={busyFor(backToDefault)}
+          disabled={sending !== null}
+          onClick={() => void equip(backToDefault)}
+        >
+          {wordFor(backToDefault, COSMETICS_WORDS.useDefaultOrder)}
+        </AppButton>
+      )}
+    </>
+  );
+};
+
 export const RealmCosmeticsShortcut = ({ onOpen }: { onOpen: () => void }) => {
   const { facts, rank } = useCosmeticStanding();
   return (
     <AppPanel>
       <div className="cosmetics-shortcut" data-cosmetics-shortcut>
-        <SkinArt skin={firstOwned(facts)} rank={isRank(rank) ? rank : RealmLevels.Kingdom} size={56} />
+        <SkinArt skin={wornRealmSkin(facts)} rank={isRank(rank) ? rank : RealmLevels.Kingdom} size={56} />
         <span>
           <strong>{COSMETICS_WORDS.shortcutTitle}</strong>
           <span>{COSMETICS_WORDS.shortcutLine(ownedCountOf(facts))}</span>

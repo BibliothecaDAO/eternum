@@ -11,11 +11,11 @@ import {
 import { type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeOathConstants as oathRules } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { readDeepSite, readDeepSiteDefender } from "../client/views/deep-sites";
-import { resolveExplorerCombatTroops, resolveExplorerTroops, staminaAt } from "../managers/troop-stamina";
+import { readDeepSite, readDeepSiteDefender, type DeepGarrison } from "../client/views/deep-sites";
+import { inlineTroops, resolveExplorerCombatTroops, resolveExplorerTroops, staminaAt } from "../managers/troop-stamina";
 import { STAMINA_MODELS } from "../client/views/stamina";
 import { getDefendingGuards, getGuardsByStructure, GUARD_MODELS } from "./army";
-import { commandRefusal, rivalGuardRefusal } from "./army-opponents";
+import { armyCombatRefusal, commandRefusal, sharesAspect } from "./army-opponents";
 import {
   forecastFight,
   isCombatGuard,
@@ -34,10 +34,12 @@ export const ATTACK_FORECAST_MODELS = [
   ...STAMINA_MODELS,
   ...GUARD_MODELS,
   "ArmyRelicEffect",
-  "DeepGuard",
+  "GarrisonSlot",
+  "DeepTick",
   "DeepSite",
   "DeepEntries",
   "DeepRules",
+  "HomeAspect",
   "ExpeditionSite",
   "TileOpt",
 ] as const;
@@ -46,8 +48,6 @@ export type AttackRefusal =
   | "answer-oath-first"
   | "game-not-started"
   | "game-ended"
-  | "guarding-deep-site"
-  | "target-guards-deep-site"
   | "expired-army"
   | "deep-ring-closed"
   | "target-must-be-unowned"
@@ -242,14 +242,12 @@ function commandingArmyRefusal(scene: Scene, explorerId: bigint): AttackRefusal 
   if (hasOpenOathPick(scene, explorerId)) return "answer-oath-first";
   return (
     playingRefusal(scene) ??
-    (isDeepGuard(scene, explorerId) ? "guarding-deep-site" : undefined) ??
     (isArmyCurrent(scene.store, scene.gameId, explorerId, scene.chainSecond) ? undefined : "expired-army")
   );
 }
 
 const defendingArmyRefusal = (scene: Scene, explorerId: bigint): AttackRefusal | undefined =>
-  (isDeepGuard(scene, explorerId) ? "target-guards-deep-site" : undefined) ??
-  (isArmyCurrent(scene.store, scene.gameId, explorerId, scene.chainSecond) ? undefined : "expired-army");
+  isArmyCurrent(scene.store, scene.gameId, explorerId, scene.chainSecond) ? undefined : "expired-army";
 
 function armyTargetDefence(
   scene: Scene,
@@ -264,7 +262,7 @@ function armyTargetDefence(
   if (store.get("DeepSite", { game_id: gameId, entity_id: targetId }))
     return deepSiteDefence(scene, attacker, targetId);
   const army = store.get("ExplorerTroops", { game_id: gameId, explorer_id: targetId });
-  if (army) return armyDefence(scene, attacker, army);
+  if (army) return armyDefence(scene, explorer.explorer_id, attacker, army);
   const structure = store.get("Structure", { game_id: gameId, entity_id: targetId });
   return structure && structureDefence(scene, attacker, structure);
 }
@@ -290,14 +288,25 @@ const besideTile = (target: Tile): Tile => {
   return { col: first!.col, row: first!.row, alt: target.alt };
 };
 
-function armyDefence(scene: Scene, attacker: Combatant, army: NativeRows["ExplorerTroops"]): Defence | undefined {
+function armyDefence(
+  scene: Scene,
+  attackerId: bigint,
+  attacker: Combatant,
+  army: NativeRows["ExplorerTroops"],
+): Defence | undefined {
   const defender = armyCombatant(scene, army);
   if (!defender) return undefined;
   const sides = { attacker, defender, queued: [] };
+  const combat = armyCombatRefusal(
+    scene.store,
+    { game_id: scene.gameId, explorer_id: attackerId },
+    { game_id: scene.gameId, explorer_id: army.explorer_id },
+  );
   const refusal =
     defendingArmyRefusal(scene, army.explorer_id) ??
-    commandRefusal(scene.store, scene.gameId, "Battle") ??
+    (combat === "no-attack" ? combat : undefined) ??
     ownTargetRefusal(scene, attacker.home, homeOwner(scene, defender.home)) ??
+    combat ??
     immunityRefusal(scene, attacker.home) ??
     immunityRefusal(scene, defender.home) ??
     (attacker.troops.count === 0n || defender.troops.count === 0n ? "no-troops" : undefined) ??
@@ -314,21 +323,15 @@ function deepSiteDefence(scene: Scene, attacker: Combatant, siteId: bigint): Def
   if (!isAdjacent(attacker.tile, tile)) return refused("out-of-range", alone);
   const aggressor = aggressorRefusal(scene, attacker);
   if (aggressor) return refused(aggressor, alone);
-  const guard = site.guards[0]?.army;
-  const defence = readDeepSiteDefender(scene.store, site, scene.chainSecond);
-  if (!guard && !defence) return { claims: attacker };
-  const queued = site.guards.slice(1).map(({ army }) => deepGuardCombatant(scene, army, tile));
-  if (!defence || queued.some((next) => next === undefined)) return undefined;
-  const defender = { ...defence, exact: true, tile, home: guard?.owner ?? 0n };
-  const sides = { attacker, defender, queued: queued.filter((next) => next !== undefined) };
-  if (!guard) return { sides };
-  if (!isArmyCurrent(scene.store, scene.gameId, guard.explorer_id, scene.chainSecond))
-    return refused("expired-army", sides);
-  const refusal =
-    rivalGuardRefusal(scene.store, scene.gameId, attacker, sides.defender) ??
-    ownTargetRefusal(scene, attacker.home, homeOwner(scene, guard.owner)) ??
-    immunityRefusal(scene, guard.owner);
-  return refusal ? refused(refusal, sides) : { sides };
+  const allied = sharesAspect(scene.store, scene.gameId, attacker.home, site.aspect);
+  const defence = readDeepSiteDefender(scene.store, site);
+  if (!defence && site.beastTroops > 0n) return undefined;
+  if (!defence) return allied ? refused("allied", alone) : { claims: attacker };
+  const rules = scene.store.require("SliceRules", { game_id: scene.gameId });
+  const queued = site.garrisons.slice(1).map((next) => garrisonCombatant(next, tile, rules));
+  const defender = { ...defence, exact: true, tile, home: site.garrisons[0]?.home ?? 0n };
+  const sides = { attacker, defender, queued };
+  return allied ? refused("allied", sides) : { sides };
 }
 
 function structureDefence(scene: Scene, attacker: Combatant, structure: NativeRows["Structure"]): Defence | undefined {
@@ -405,9 +408,15 @@ function armyCombatant(scene: Scene, army: NativeRows["ExplorerTroops"]): Combat
   };
 }
 
-function deepGuardCombatant(scene: Scene, army: NativeRows["ExplorerTroops"], tile: Tile): Combatant | undefined {
-  const troops = resolveExplorerCombatTroops(scene.store, army, scene.chainSecond);
-  return troops && { troops, exact: true, oaths: armyOaths(scene.store, army), guarding: true, tile, home: army.owner };
+function garrisonCombatant(garrison: DeepGarrison, tile: Tile, rules: NativeRows["SliceRules"]): Combatant {
+  return {
+    troops: inlineTroops(garrison.troops, rules),
+    exact: true,
+    oaths: 0,
+    guarding: true,
+    tile,
+    home: garrison.home,
+  };
 }
 
 function hasOpenOathPick(scene: Scene, explorerId: bigint): boolean {
@@ -420,9 +429,6 @@ function playingRefusal(scene: Scene): AttackRefusal | undefined {
   if (!game.dev_mode_on && (now < game.start_main_at || now < game.start_settling_at)) return "game-not-started";
   return game.end_at !== 0n && now >= game.end_at ? "game-ended" : undefined;
 }
-
-const isDeepGuard = (scene: Scene, explorerId: bigint): boolean =>
-  scene.store.get("DeepGuard", { game_id: scene.gameId, explorer_id: explorerId }) !== undefined;
 
 const homeOwner = (scene: Scene, home: bigint): bigint =>
   scene.store.require("Structure", { game_id: scene.gameId, entity_id: home }).owner;

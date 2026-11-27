@@ -4,6 +4,17 @@ fn stepped(rate: u64, steps: u64) -> u64 {
     rate * (10000 + steps * crate::balance::structures::BOARD.output_step_bps.into()) / 10000
 }
 
+fn building_cost(category: u8, resource_type: u8) -> u128 {
+    let building = *crate::balance::structures::BUILDINGS.span().at(category.into() - 1);
+    let mut amount = 0_u128;
+    for cost in crate::balance::structures::BUILDING_COSTS.span().slice(building.first_cost, building.simple_count) {
+        if *cost.resource_type == resource_type {
+            amount = *cost.amount;
+        }
+    }
+    amount
+}
+
 #[test]
 fn building_commands_match_replay_views() {
     replay_buildings(false);
@@ -237,10 +248,7 @@ fn a_row_opens_with_its_first_building_and_sells_each_tier_once_in_order_at_its_
     {
         for tier in 1_u8..6 {
             let price = crate::logic::research::price(crate::research::ROW_FARM, tier);
-            let (e, l) = *array![(500_u128, 500_u128), (1000, 1000), (2500, 2500), (5000, 5000), (10000, 10000)]
-                .at((tier - 1).into());
-            assert_eq!(price.essence, e * crate::rules::RESOURCE_PRECISION);
-            assert_eq!(price.labor, l * crate::rules::RESOURCE_PRECISION);
+            assert!(price.essence > 0 && price.labor > 0);
             let (essence_before, labor_before) = (
                 resources.resource_balance(essence), resources.resource_balance(labor),
             );
@@ -258,6 +266,28 @@ fn a_row_opens_with_its_first_building_and_sells_each_tier_once_in_order_at_its_
     }
     assert_eq!(resources.resource_balance(labor), before);
     assert_terminal_rejection(d, research(home, crate::research::ROW_LORE), FIXTURE_START + 40);
+}
+
+#[test]
+fn well_lore_opens_at_settlement_shrine_lore_at_city_and_spire_lore_at_kingdom() {
+    let (d, home) = building_world();
+    super::resource_commands::grant(d, home, crate::resources::ESSENCE, 10000000 * crate::rules::RESOURCE_PRECISION);
+    assert!(execute(d, research(home, crate::research::ROW_LORE), FIXTURE_START + 40));
+    assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_LORE), crate::research::LORE_WELLS);
+    for (level, tier) in array![
+        (crate::research::SHRINE_LORE_LEVEL, crate::research::LORE_SHRINES),
+        (crate::research::SPIRE_LORE_LEVEL, crate::research::LORE_SPIRES),
+    ] {
+        let mut refused = snforge_std::spy_events();
+        assert!(!execute(d, research(home, crate::research::ROW_LORE), FIXTURE_START + 40));
+        assert_eq!(super::play_fixture::rejection(ref refused, d.games).reason, "lore tier needs a higher realm level");
+        assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_LORE), tier - 1);
+        while realm_level(d, home) < level {
+            level_up(d, home, FIXTURE_START + 40);
+        }
+        assert!(execute(d, research(home, crate::research::ROW_LORE), FIXTURE_START + 40));
+        assert_eq!(crate::research::tier(learned(d, home), crate::research::ROW_LORE), tier);
+    }
 }
 
 #[test]
@@ -452,14 +482,8 @@ fn frontier_storage_grants_clip_at_each_exact_s2_cap_without_changing_troops() {
 
 #[test]
 fn workshop_tiers_follow_their_exact_ladder() {
-    let ladders = array![
-        (
-            crate::research::ROW_WORKSHOP,
-            crate::research::WORKSHOP,
-            array![(500_u128, 500_u128), (1000, 1000), (2500, 2500), (5000, 5000), (10000, 10000)].span(),
-        ),
-    ];
-    for (row, category, prices) in ladders {
+    let ladders = array![(crate::research::ROW_WORKSHOP, crate::research::WORKSHOP)];
+    for (row, category) in ladders {
         let (d, home) = research_world();
         let resources = IResourceOperationsDispatcher { contract_address: d.games };
         let essence = ResourceSlot {
@@ -469,6 +493,9 @@ fn workshop_tiers_follow_their_exact_ladder() {
         assert!(execute(d, build_toward(home, category, 0), FIXTURE_START + 40));
         {
             for at in 0_u32..5 {
+                let tier: u8 = at.try_into().unwrap() + 1_u8;
+                let price = crate::logic::research::price(row, tier);
+                assert!(price.essence > 0 && price.labor > 0);
                 start_cheat_caller_address(d.games, d.games);
                 crate::resources::IResourceOperationsDispatcherTrait::grant_resource(
                     resources,
@@ -482,14 +509,9 @@ fn workshop_tiers_follow_their_exact_ladder() {
                 let before_e = resources.resource_balance(essence);
                 let before_l = resources.resource_balance(labor);
                 assert!(execute(d, research(home, row), FIXTURE_START + 40));
-                let (expected_essence, expected_labor) = *prices.at(at);
-                assert_eq!(
-                    before_e - resources.resource_balance(essence), expected_essence * crate::rules::RESOURCE_PRECISION,
-                );
-                assert_eq!(
-                    before_l - resources.resource_balance(labor), expected_labor * crate::rules::RESOURCE_PRECISION,
-                );
-                assert_eq!(crate::research::tier(learned(d, home), row), at.try_into().unwrap() + 1_u8);
+                assert_eq!(before_e - resources.resource_balance(essence), price.essence);
+                assert_eq!(before_l - resources.resource_balance(labor), price.labor);
+                assert_eq!(crate::research::tier(learned(d, home), row), tier);
             }
             assert_terminal_rejection(d, research(home, row), FIXTURE_START + 40);
         }
@@ -512,14 +534,15 @@ fn construction_grants_common_once_and_the_next_purchase_costs_uncommon(category
     let essence_before = resources.resource_balance(essence);
     let construction_labor_before = resources.resource_balance(labor);
     assert!(execute(d, Command::CreateBuilding(command), FIXTURE_START + 40));
-    assert_eq!(essence_before - resources.resource_balance(essence), 5000 * crate::rules::RESOURCE_PRECISION);
-    assert_eq!(construction_labor_before - resources.resource_balance(labor), 1000 * crate::rules::RESOURCE_PRECISION);
+    assert_eq!(
+        essence_before - resources.resource_balance(essence), building_cost(category, crate::resources::ESSENCE),
+    );
+    assert_eq!(
+        construction_labor_before - resources.resource_balance(labor), building_cost(category, crate::resources::LABOR),
+    );
     assert_eq!(crate::research::tier(learned(d, home), row), 1);
     let price = crate::logic::research::price(row, 2);
-    assert_eq!(
-        (price.essence, price.labor),
-        (10000 * crate::rules::RESOURCE_PRECISION, 2500 * crate::rules::RESOURCE_PRECISION),
-    );
+    assert!(price.essence > 0 && price.labor > 0);
     let essence_before = resources.resource_balance(essence);
     let labor_before = resources.resource_balance(labor);
     assert!(execute(d, research(home, row), FIXTURE_START + 40));
@@ -609,20 +632,25 @@ fn camp_and_depot_charge_their_own_exact_ladder_once_and_preserve_it_after_rebui
             game_id: home.game_id, entity_id: home.entity_id, resource_type: crate::resources::ESSENCE,
         };
         let labor = ResourceSlot { resource_type: crate::resources::LABOR, ..essence };
-        let prices = array![(2500_u128, 500_u128), (5000, 1000), (12500, 2500), (25000, 5000), (50000, 12500)];
         for at in 0_u32..5 {
+            let tier: u8 = at.try_into().unwrap() + 1_u8;
             let before_e = resources.resource_balance(essence);
             let before_l = resources.resource_balance(labor);
-            let command = if at == 0 {
-                build_toward(home, category, 0)
+            let (command, cost_e, cost_l) = if at == 0 {
+                (
+                    build_toward(home, category, 0),
+                    building_cost(category, crate::resources::ESSENCE),
+                    building_cost(category, crate::resources::LABOR),
+                )
             } else {
-                research(home, row)
+                let price = crate::logic::research::price(row, tier);
+                (research(home, row), price.essence, price.labor)
             };
+            assert!(cost_e > 0 && cost_l > 0);
             assert!(execute(d, command, FIXTURE_START + 40));
-            let (cost_e, cost_l) = *prices.at(at);
-            assert_eq!(before_e - resources.resource_balance(essence), cost_e * crate::rules::RESOURCE_PRECISION);
-            assert_eq!(before_l - resources.resource_balance(labor), cost_l * crate::rules::RESOURCE_PRECISION);
-            assert_eq!(crate::research::tier(learned(d, home), row), at.try_into().unwrap() + 1_u8);
+            assert_eq!(before_e - resources.resource_balance(essence), cost_e);
+            assert_eq!(before_l - resources.resource_balance(labor), cost_l);
+            assert_eq!(crate::research::tier(learned(d, home), row), tier);
         }
         assert_terminal_rejection(d, research(home, row), FIXTURE_START + 40);
         assert!(execute(d, Command::DestroyBuilding(change(home)), FIXTURE_START + 40));
@@ -690,15 +718,16 @@ fn buys_three_oath_slots(row: u8, category: u8, troop: crate::troops::TroopType)
     assert_terminal_rejection(d, research(home, row), FIXTURE_START + 40);
     assert!(execute(d, build_toward(home, category, 0), FIXTURE_START + 40));
     assert_eq!(crate::research::oath_slots(learned(d, home), troop), 2);
-    let prices = array![(5000_u128, 1000_u128), (35000, 7500), (150000, 35000)];
     for at in 0_u32..3 {
+        let tier: u8 = at.try_into().unwrap() + 1_u8;
+        let price = crate::logic::research::price(row, tier);
+        assert!(price.essence > 0 && price.labor > 0);
         let before_e = resources.resource_balance(essence);
         let before_l = resources.resource_balance(labor);
         assert!(execute(d, research(home, row), FIXTURE_START + 40));
-        let (cost_e, cost_l) = *prices.at(at);
-        assert_eq!(before_e - resources.resource_balance(essence), cost_e * crate::rules::RESOURCE_PRECISION);
-        assert_eq!(before_l - resources.resource_balance(labor), cost_l * crate::rules::RESOURCE_PRECISION);
-        assert_eq!(crate::research::oath_slots(learned(d, home), troop), at.try_into().unwrap() + 3_u8);
+        assert_eq!(before_e - resources.resource_balance(essence), price.essence);
+        assert_eq!(before_l - resources.resource_balance(labor), price.labor);
+        assert_eq!(crate::research::oath_slots(learned(d, home), troop), tier + 2_u8);
         for other in array![
             crate::troops::TroopType::Knight, crate::troops::TroopType::Paladin, crate::troops::TroopType::Crossbowman,
         ] {

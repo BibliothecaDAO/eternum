@@ -48,12 +48,6 @@
     "value": 4
   },
   {
-    "key": "riftGuardMultiplier",
-    "file": "expeditions.cairo",
-    "source": "Some(ResourceAmount { resource_type: ESSENCE, amount: site.initial_guard_count * 3 })",
-    "value": 3
-  },
-  {
     "key": "oathDrawCount",
     "file": "oaths.cairo",
     "source": "for index in 0_u8..3 {",

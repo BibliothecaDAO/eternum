@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identity-session";
 import { loadOpening, seeLine, useOpeningStore } from "@/ui/features/frontier/opening/opening-store";
 
-export const STANDING_PROMPTS = ["wallet-invitation", "alerts-popup"] as const;
+export const STANDING_PROMPTS = ["alerts-popup"] as const;
 type StandingPrompt = (typeof STANDING_PROMPTS)[number];
 
 const useUnanswered = (prompt: StandingPrompt): boolean => {

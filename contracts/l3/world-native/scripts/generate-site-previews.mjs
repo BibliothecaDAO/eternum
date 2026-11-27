@@ -10,6 +10,9 @@ export function compileSitePreviews(source) {
   const rewards = resourceRewards(source);
   const premium = depthRewardRule(source.expeditions);
   const ruin = ruinStrengthRule(source.army_relics);
+  const ruleFields = [...new Set(rewards.flatMap(({ ruleField }) => (ruleField ? [ruleField] : [])))];
+  const rulesParam =
+    ruleFields.length > 0 ? `, rules?: { ${ruleFields.map((field) => `${field}: number`).join("; ")} }` : "";
   return `// @generated from the site reward and ruin guard formulas in Cairo. Run scripts/generate-site-previews.mjs.
 export const RELICS_PER_LAYER = ${ruin.strengths.length};
 
@@ -22,9 +25,15 @@ export function previewRuinGuardBounds(rank: number, depth: number): [number, nu
   return [strength - spread, strength + spread];
 }
 
-export function previewSiteReward(category: number, initialGuardCount: bigint, depth: number, band: boolean): { resourceType: number; amount: bigint } | null {
+export function previewSiteReward(category: number, initialGuardCount: bigint, depth: number, band: boolean${rulesParam}): { resourceType: number; amount: bigint } | null {
   if (band) return null;
-${rewards.map(({ category, resource, operator, operand }) => `  if (category === ${category}) return { resourceType: ${resource}, amount: depthReward(initialGuardCount ${operator} ${operand}n, depth) };`).join("\n")}
+${rewards
+  .map(({ category, resource, expression, ruleField }) =>
+    ruleField
+      ? `  if (category === ${category}) {\n    if (!rules) throw new Error("DepthRules required for site reward");\n    return { resourceType: ${resource}, amount: depthReward(${expression}, depth) };\n  }`
+      : `  if (category === ${category}) return { resourceType: ${resource}, amount: depthReward(${expression}, depth) };`,
+  )
+  .join("\n")}
   return null;
 }
 
@@ -51,7 +60,7 @@ function resourceRewards(source) {
   let body = functionBody(
     source.expeditions,
     "site_reward",
-    "category:u8,site:ExpeditionSite,depth:u8,band:bool",
+    "category:u8,site:ExpeditionSite,depth:u8,band:bool,rules:DepthRules",
     "Option<crate::resources::ResourceAmount>",
   );
   if (!body.startsWith("ifband{returnNone;}")) throw new Error("Unsupported Band payout rule");
@@ -64,19 +73,33 @@ function resourceRewards(source) {
   const names = imports[1].split(",");
   const rules = [];
   while (body.startsWith(rules.length === 0 ? "if" : "elseif")) {
-    const branch = body.match(
-      /^(?:else)?ifcategory==crate::taxonomy::([A-Z_]+)\{Some\(ResourceAmount\{resource_type:([A-Z_]+),amount:site.initial_guard_count([*/])([0-9_]+),?\}\)\}/,
+    const literalBranch = body.match(
+      /^(?:else)?ifcategory==crate::taxonomy::([A-Z_]+)\{Some\(ResourceAmount\{resource_type:([A-Z_]+),amount:site\.initial_guard_count([*/])([0-9_]+),?\},?\)\}/,
     );
+    const ruleBranch = body.match(
+      /^(?:else)?ifcategory==crate::taxonomy::([A-Z_]+)\{Some\(ResourceAmount\{resource_type:([A-Z_]+),amount:site\.initial_guard_count\*rules\.([a-z_]+)\.into\(\)\/([0-9_]+),?\},?\)\}/,
+    );
+    const branch = literalBranch ?? ruleBranch;
     if (!branch || !names.includes("ResourceAmount") || !names.includes(branch[2]))
       throw new Error("Unsupported site_reward branch; update the preview compiler");
-    const [, category, resource, operator, operand] = branch;
-    const factor = positiveInteger(operand);
-    rules.push({
-      category: constant(source.taxonomy, category),
-      resource: constant(source.resources, resource),
-      operator,
-      operand: factor,
-    });
+    const [, category, resource] = branch;
+    if (literalBranch) {
+      const factor = positiveInteger(literalBranch[4]);
+      rules.push({
+        category: constant(source.taxonomy, category),
+        resource: constant(source.resources, resource),
+        expression: `initialGuardCount ${literalBranch[3]} ${factor}n`,
+      });
+    } else {
+      const ruleField = ruleBranch[3];
+      const divisor = positiveInteger(ruleBranch[4]);
+      rules.push({
+        category: constant(source.taxonomy, category),
+        resource: constant(source.resources, resource),
+        ruleField,
+        expression: `(initialGuardCount * BigInt(rules.${ruleField})) / ${divisor}n`,
+      });
+    }
     body = body.slice(branch[0].length);
   }
   if (

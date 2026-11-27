@@ -42,7 +42,15 @@ const rules = {
   seed: 1n,
 };
 const expeditionRules = {
-  DepthRules: { beast_weak_lower: 300, beast_weak_upper: 395, beast_strong_lower: 400, beast_strong_upper: 500 },
+  DepthRules: {
+    reveal_percent: 10,
+    reveal_cap: 1000,
+    rift_essence_bps: 15000,
+    beast_weak_lower: 300,
+    beast_weak_upper: 395,
+    beast_strong_lower: 400,
+    beast_strong_upper: 500,
+  },
   SliceRules: { day_unit_seconds: rules.dayUnitSeconds },
   SettlementRules: { spacing: rules.spacing },
   GameRegistry: {
@@ -342,7 +350,7 @@ describe("siteReward", () => {
       }),
     ).toEqual({
       resourceType: ResourcesIds.Essence,
-      amount: 3_300n * 1_000_000_000n,
+      amount: (guard * BigInt(expeditionRules.DepthRules.rift_essence_bps)) / 10_000n,
     });
     // An odd scaled count halves as the contract's integer division does.
     expect(
@@ -438,12 +446,7 @@ it("keeps a full-width home namespace distinct from its trait template", () => {
   vi.restoreAllMocks();
 });
 
-it.each([
-  [0, 1, 51],
-  [1, 1.5, 76],
-  [2, 2, 102],
-  [3, 2.5, 127],
-])("previews depth %s resources from the site's day band", (depth, multiplier) => {
+it.each([0, 1, 2, 3])("previews depth %s resources from the site's day band", (depth) => {
   const store = storeWith(expeditionRules) as never;
   const site = {
     game_id: 7,
@@ -452,9 +455,10 @@ it.each([
     initial_guard_count: 430n * 1_000_000_000n,
     clear: null,
   };
+  const base = (site.initial_guard_count * BigInt(expeditionRules.DepthRules.rift_essence_bps)) / 10_000n;
   expect(siteReward(store, site)).toEqual({
     resourceType: ResourcesIds.Essence,
-    amount: BigInt(1290 * multiplier) * 1_000_000_000n,
+    amount: (base * BigInt(2 + depth)) / 2n,
   });
 });
 

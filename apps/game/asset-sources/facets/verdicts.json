@@ -1163,5 +1163,69 @@
   "faceted/poison": {
     "verdict": "beats shipped",
     "reason": "Owner-picked Season 1 Deep poison mark (drop with a skull cut in it, ivory relief in the poison green, 25 Nov), beside shipped flame in pass3/art/poison-sheet.png."
+  },
+  "faceted/season-1-prowess-realm-0": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Season 1 Prowess Settlement Facets icon matching Devcon/Base art direction (s1-icons-painted pick)."
+  },
+  "faceted/season-1-prowess-realm-1": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Season 1 Prowess City Facets icon matching Devcon/Base art direction (s1-icons-painted pick)."
+  },
+  "faceted/season-1-prowess-realm-2": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Season 1 Prowess Kingdom Facets icon matching Devcon/Base art direction (s1-icons-painted pick)."
+  },
+  "faceted/season-1-prowess-realm-3": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Season 1 Prowess Empire Facets icon matching Devcon/Base art direction (s1-icons-painted pick)."
+  },
+  "faceted/season-1-luminary-realm-0": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Season 1 Luminary Settlement Facets icon matching Devcon/Base art direction (s1-icons-painted pick)."
+  },
+  "faceted/season-1-luminary-realm-1": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Season 1 Luminary City Facets icon matching Devcon/Base art direction (s1-icons-painted pick)."
+  },
+  "faceted/season-1-luminary-realm-2": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Season 1 Luminary Kingdom Facets icon matching Devcon/Base art direction (s1-icons-painted pick)."
+  },
+  "faceted/season-1-luminary-realm-3": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Season 1 Luminary Empire Facets icon matching Devcon/Base art direction (s1-icons-painted pick)."
+  },
+  "faceted/season-1-havoc-realm-0": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Season 1 Havoc Settlement Facets icon matching Devcon/Base art direction (s1-icons-painted pick)."
+  },
+  "faceted/season-1-havoc-realm-1": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Season 1 Havoc City Facets icon matching Devcon/Base art direction (s1-icons-painted pick)."
+  },
+  "faceted/season-1-havoc-realm-2": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Season 1 Havoc Kingdom Facets icon matching Devcon/Base art direction (s1-icons-painted pick)."
+  },
+  "faceted/season-1-havoc-realm-3": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Season 1 Havoc Empire Facets icon matching Devcon/Base art direction (s1-icons-painted pick)."
+  },
+  "faceted/season-1-insight-realm-0": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Season 1 Insight Settlement Facets icon matching Devcon/Base art direction (s1-icons-painted pick)."
+  },
+  "faceted/season-1-insight-realm-1": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Season 1 Insight City Facets icon matching Devcon/Base art direction (s1-icons-painted pick)."
+  },
+  "faceted/season-1-insight-realm-2": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Season 1 Insight Kingdom Facets icon matching Devcon/Base art direction (s1-icons-painted pick)."
+  },
+  "faceted/season-1-insight-realm-3": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Season 1 Insight Empire Facets icon matching Devcon/Base art direction (s1-icons-painted pick)."
   }
 }

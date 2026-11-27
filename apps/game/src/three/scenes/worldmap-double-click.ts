@@ -20,6 +20,7 @@ const STRUCTURE_DOUBLE_CLICK = {
   [StructureType.Rift]: "none",
   [StructureType.Ruin]: "none",
   [StructureType.Beasts]: "none",
+  [StructureType.DeepSite]: "none",
 } satisfies Record<StructureType, "enter" | "none">;
 
 /** What a double-click can do, as the scene does it. */

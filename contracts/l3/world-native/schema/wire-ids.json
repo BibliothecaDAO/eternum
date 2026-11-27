@@ -396,6 +396,12 @@
       "name": "RaiseHyperstructure",
       "retired": false,
       "family": "blitz"
+    },
+    {
+      "id": 79,
+      "name": "SetRealmSkin",
+      "retired": false,
+      "family": "frontier"
     }
   ],
   "stories": [

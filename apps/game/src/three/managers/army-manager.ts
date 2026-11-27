@@ -39,6 +39,7 @@ import {
   ARMY_MODEL_SCALE,
   ARMY_PLATE_HEIGHT,
   isShipModel,
+  TROOP_TO_MODEL,
   TROOP_TO_SHIP_MODEL,
 } from "@/three/constants/army-constants";
 import { type ArmyPace, ModelType } from "@/three/types/army";
@@ -291,15 +292,15 @@ export class ArmyManager {
     this.contentLadder = resolveWorldmapContentLadder(this.currentCameraView);
     this.armyModel = new ArmyModel(scene, (col, row) => this.groundBiomeOrLand(col, row), compilePipelines);
     this.armyModel.setModelsVisible(this.contentLadder.armyModels);
-    this.proceduralArmyCharacterLayer = new ProceduralArmyCharacterLayer(scene);
+    this.proceduralArmyCharacterLayer = new ProceduralArmyCharacterLayer(scene, compilePipelines);
     this.scale = new Vector3().setScalar(ARMY_MODEL_SCALE);
     this.renderChunkSize = renderChunkSize;
     // Keep chunk stride aligned with world chunk size so visibility/fetch math matches.
     this.chunkStride = Math.max(1, chunkStride ?? Math.floor(this.renderChunkSize.width / 2));
     this.visibilityManager = visibilityManager;
     this.hexagonScene = hexagonScene;
-    this.fxManager = new FXManager(scene, 1);
-    this.attachmentManager = new CosmeticAttachmentManager(scene);
+    this.fxManager = new FXManager(scene, 1, { compilePipelines });
+    this.attachmentManager = new CosmeticAttachmentManager(scene, compilePipelines);
     this.store = gameContext?.store as NativeFactStore | undefined;
     this.unsubscribeArmyProjection = worldSpatialProjection.subscribeArmies((changes) => {
       this.handleArmyProjectionChanges(projectionChangesForLayer(changes, activeMapLayer()));
@@ -948,6 +949,15 @@ export class ArmyManager {
     const [startRow, startCol] = chunkKey.split(",").map(Number);
     if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) return;
     await this.preloadMissingProjectedArmyModels(this.getProjectedArmiesForChunk(startRow, startCol));
+  }
+
+  public async prewarmExploreModels(): Promise<void> {
+    if (this.isDestroyed) return;
+    const exploreModels = Object.values(TROOP_TO_MODEL).map((byTier) => byTier[TroopTier.T1]);
+    for (const modelType of exploreModels) {
+      if (this.isDestroyed) return;
+      await this.armyModel.preloadModels([modelType]);
+    }
   }
 
   recoverChunkUpdateAfterStall(input: RecoverManagerChunkRuntimeAfterStallInput): void {

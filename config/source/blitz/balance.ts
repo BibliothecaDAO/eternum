@@ -115,6 +115,8 @@ const blitzVictoryPointConfig = {
   pointsForHyperstructureClaimAgainstBandits: 1_000n * BigInt(VICTORY_POINTS_MULTIPLIER),
 };
 
+export const BLITZ_EXPLORATION_STRENGTH_CAP = 3_000;
+
 export const blitzBalance: ConfigPatch = {
   mines: {
     kinds: { 1: { productionRate: 10 } },
@@ -128,9 +130,7 @@ export const blitzBalance: ConfigPatch = {
   },
   troop: {
     stamina: blitzStaminaConfig,
-    // A reveal pays on at most 3,000 strength: explore with small armies, fight with big ones.
     limit: {
-      exploreRewardStrengthCap: 3_000,
       lightGuardLowerBound: 999,
       lightGuardUpperBound: 1_499,
       heavyGuardLowerBound: 1_499,

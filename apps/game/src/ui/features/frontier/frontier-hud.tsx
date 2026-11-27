@@ -14,7 +14,7 @@ import { IdentityChip } from "@/ui/features/world/containers/top-header/identity
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, REALM_SKIN_MODELS } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { catalogAspectId, rankName } from "@bibliothecadao/types";
 import { useHudLayout, useHudTablet } from "@/hooks/helpers/use-compact-hud";
@@ -41,6 +41,7 @@ import { BaneDayProvider } from "./day/bane-mark";
 import { closeQuestDock, QuestDock, useQuestDockOpen } from "./day/quest-dock";
 import { FrontierDesktop, FrontierPlaces } from "./hud/frontier-desktop";
 import { FrontierFeed } from "./hud/frontier-feed";
+import { showHudGlory, useHudGlory } from "./hud/hud-glory";
 import { RealmCard } from "./hud/realm-card";
 import { useResearchTree } from "./research/research-facts";
 import { canResearchNow } from "./research/research-tree";
@@ -61,7 +62,7 @@ import { MenuPage } from "./hud/menu-page";
 import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { useFragmentsHeld } from "./value/fragments";
 import { ShopSheet, useReturnToShop } from "./shop/shop-sheet";
-import { homeIcon, homeKind } from "@/ui/design-system/home-icons";
+import { homeIcon, homeKind, realmSkinPainting } from "@/ui/design-system/home-icons";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { PickedArmy } from "./hud/picked-army";
@@ -176,6 +177,7 @@ const FrontierHudBody = ({
   const openArmy = armyPanel.pick;
   const pickArmy = usePickArmy();
   const seasonRank = useSeasonRank();
+  const hudGlory = useHudGlory();
   const fragmentsHeld = useFragmentsHeld();
   const layers = useMapLayers(rules, shown, visit ? null : realm);
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
@@ -235,7 +237,7 @@ const FrontierHudBody = ({
   const placeSwitch = (
     <PlaceSwitch
       {...placeChoices}
-      realm={shown ? { mark: homeIcon(homeKind(shown.metadata.has_wonder), shown.base.level) } : undefined}
+      realm={shown ? { mark: homeIcon(realmSkinPainting(headerFacts.store, shown), shown.base.level) } : undefined}
       lines={own ? placeLines(ownArmies) : undefined}
     />
   );
@@ -312,6 +314,15 @@ const FrontierHudBody = ({
         realmOpen: realmVisible,
         onOpenRealm: () => setSurface(surface === "realm" ? null : "realm"),
       }}
+      season={
+        showHudGlory(hudGlory)
+          ? {
+              glory: hudGlory,
+              open: surface === "season",
+              onOpen: () => setSurface(surface === "season" ? null : "season"),
+            }
+          : undefined
+      }
       placeSwitch={placeSwitch}
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
       questCard={noticeAtFoot ? undefined : questDock || undefined}
@@ -391,6 +402,7 @@ const FrontierHudBody = ({
           surface={surface}
           onSurface={setSurface}
           research={own ? canResearchNow(research?.nodes) : undefined}
+          glory={hudGlory}
           lead={
             spectating ? (
               <IdentityChip compact season={{ rank: seasonRank, onOpen: () => setSurface("season") }} />
@@ -420,7 +432,7 @@ const FrontierHudBody = ({
   return <BaneDayProvider realm={shown}>{layout}</BaneDayProvider>;
 };
 
-const REALM_HEADER_MODELS = ["RaceRules"] as const;
+const REALM_HEADER_MODELS = ["RaceRules", ...REALM_SKIN_MODELS] as const;
 
 /**
  * A phone's action row, the one row over the place bar that says what the pick lets the player do now (owner, 22 October
@@ -520,14 +532,16 @@ const HudMenu = ({
   );
 };
 
-const REALM_PANEL_MODELS = ["HomeAspect"] as const;
+const REALM_PANEL_MODELS = ["HomeAspect", ...REALM_SKIN_MODELS] as const;
 
 const useRealmFace = (realm: NativeRows["Structure"]) => {
   const facts = useNativeFacts(REALM_PANEL_MODELS);
   const aspectId = facts.store.get("HomeAspect", { game_id: realm.game_id, home: realm.entity_id })?.aspect;
+  const painting = realmSkinPainting(facts.store, realm);
   return {
     name: useGameModeConfig().structure.getName(realm).name,
-    kind: homeKind(realm.metadata.has_wonder),
+    kind: homeKind(painting === "wonder"),
+    painting,
     aspect: aspectId !== undefined ? catalogAspectId(aspectId) : undefined,
   };
 };
@@ -556,7 +570,7 @@ const FrontierRealmCard = ({
   onShop?: () => void;
   onClose?: () => void;
 }) => {
-  const { name, kind, aspect } = useRealmFace(realm);
+  const { name, kind, painting, aspect } = useRealmFace(realm);
   const stores = useStoreReadings(realm, rules, STORE_KINDS);
   const goToPlace = useGoToFrontierPlace(realm);
   const lords = useWalletLords();
@@ -565,6 +579,7 @@ const FrontierRealmCard = ({
     <RealmCard
       name={name}
       kind={kind}
+      painting={painting}
       level={realm.base.level}
       rankUp={rankUp}
       aspect={aspect}

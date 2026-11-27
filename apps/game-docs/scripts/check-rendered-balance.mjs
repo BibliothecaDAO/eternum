@@ -250,15 +250,21 @@ export const frontierPhrases = (
     },
     {
       page: "frontier/expedition",
-      phrases: [
-        ...preset.depths.map((depth, index) => `${LAYER_NAMES[index]} ${depth.revealPercent}%`),
-        `${n(contract.herdGuardMultiplier)}x its starting guard on the ${LAYER_NAMES[0]}`,
-        `${n(100 / contract.campGuardDivisor)}% of its starting guard on the ${LAYER_NAMES[0]}, ${n(depthRewardPercent(1))}% of that in the ${LAYER_NAMES[1]}, ${n(depthRewardPercent(2))}% in the ${LAYER_NAMES[2]}`,
-        `${n(100 * contract.riftGuardMultiplier)}% of its starting guard on the ${LAYER_NAMES[0]}`,
-        `Appears on the tile until any adjacent army presses Use, opening a pick of ${n(contract.oathDrawCount)} Oaths (or pass for +${n(nativeOaths.PASS_STAMINA)} stamina) and removing the Shrine.`,
-        `Each ruin holds either a relic or a Fragment cache, never both.`,
-        `${nativeFragments.SURFACE_CACHE_PERCENT}% on the ${LAYER_NAMES[0]}`,
-      ],
+      phrases: (() => {
+        const riftBps = preset.depths[0].riftEssenceBps;
+        if (preset.depths.some((depth) => depth.riftEssenceBps !== riftBps)) {
+          throw new Error("Rift Essence ratio differs across layers; update expedition balance check");
+        }
+        return [
+          ...preset.depths.map((depth, index) => `${LAYER_NAMES[index]} ${depth.revealPercent}% ${n(depth.revealCap)}`),
+          `${n(contract.herdGuardMultiplier)}x its starting guard on the ${LAYER_NAMES[0]}`,
+          `${n(100 / contract.campGuardDivisor)}% of its starting guard on the ${LAYER_NAMES[0]}, ${n(depthRewardPercent(1))}% of that in the ${LAYER_NAMES[1]}, ${n(depthRewardPercent(2))}% in the ${LAYER_NAMES[2]}`,
+          `${n(riftBps / 100)}% of its starting guard on the ${LAYER_NAMES[0]}`,
+          `Appears on the tile until any adjacent army presses Use, opening a pick of ${n(contract.oathDrawCount)} Oaths (or pass for +${n(nativeOaths.PASS_STAMINA)} stamina) and removing the Shrine.`,
+          `Each ruin holds either a relic or a Fragment cache, never both.`,
+          `${nativeFragments.SURFACE_CACHE_PERCENT}% on the ${LAYER_NAMES[0]}`,
+        ];
+      })(),
     },
     {
       page: "frontier/beasts",
@@ -337,9 +343,9 @@ export const frontierPhrases = (
         `once enough realms have sent an army into the Deep that day:`,
         ...preset.deep.rings.map((ring, index) => `Ring ${index + 1} ${n(ring.radius)} tiles ${n(ring.realms)}`),
         `The ${deepSites.length} site kinds and their beasts`,
-        `The army that clears a Deep site's beast or last rival guard moves onto the site and becomes its guard`,
+        `Clearing the last defender claims the site for your player. Your army stays beside the site`,
         ...deepSites.map((site) => site.name),
-        `has ${n(nativeRules.DEEP_GUARD_SLOTS)} guard slots for up to ${n(nativeRules.DEEP_GUARD_SLOTS)} different players of the same Aspect (1 army per player).`,
+        `a claimed Deep site has ${n(nativeRules.DEEP_GUARD_SLOTS)} guard slots.`,
         `including an Essence core's ${n(preset.deep.corePerTick)} Essence and an Ethereal mine's ${n(preset.deep.minePerTick)} labor — is one pool for the whole site, split among its surviving guards by troop count.`,
         `counting open Archives across the Deep, not rings unlocked. That Glory goes only to the guards holding that Archive (split by troop count), while the whole Aspect gains the same amount of hyperstructure height.`,
         `loses ${n(preset.deep.lossPerTick)} troops`,

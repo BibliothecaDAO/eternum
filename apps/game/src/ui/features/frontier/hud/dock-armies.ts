@@ -29,7 +29,6 @@ import { TROOPS } from "@/ui/design-system/kit/words";
 
 const ARMY_MODELS = [
   ...STAMINA_MODELS,
-  "DeepGuard",
   "DeepArmy",
   "ArmyDay",
   "DeepRules",

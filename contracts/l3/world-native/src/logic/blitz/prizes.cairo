@@ -65,6 +65,7 @@ pub mod PrizesLogic {
                 crate::balance::exploration::EXPLORATION_REWARDS.span(),
                 explorer.troops,
                 context.rules.unbox().troop_limit_config,
+                crate::balance::exploration::EXPLORATION_STRENGTH_CAP,
                 context.timestamp,
                 seed,
             );

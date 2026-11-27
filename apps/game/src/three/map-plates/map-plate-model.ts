@@ -1,5 +1,6 @@
 import type { RankedWords } from "@bibliothecadao/types";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { realmPaintingKind } from "@/ui/design-system/home-icons";
 
 import type { CSSProperties } from "react";
 import type { FrontierSpecies } from "../structures/frontier-beast";
@@ -10,6 +11,7 @@ import {
   NEUTRAL_OWNER_NAME,
   StructureType,
   TROOP_TYPES,
+  orderAspect,
   structureName,
   frontierSiteName,
   formatExact,
@@ -126,7 +128,7 @@ const ownerOf = (owner: { address: bigint; ownerName: string }) =>
   owner.address === 0n ? NEUTRAL_OWNER_NAME : owner.ownerName.trim();
 
 /** A watched side as the plate draws it: the seat's colour, and its player's initial where the seat and a name are known. */
-const watchedOf = (side: SeatSide | null | undefined, owner: string): { watched?: PlateWatched } => {
+export const plateWatched = (side: SeatSide | null | undefined, owner: string): { watched?: PlateWatched } => {
   if (!side) return {};
   const letter = owner.trim().charAt(0).toUpperCase();
   return {
@@ -138,7 +140,7 @@ const watchedOf = (side: SeatSide | null | undefined, owner: string): { watched?
   };
 };
 
-const troopType = (category: string | null | undefined): PlateTroops["type"] => {
+export const plateTroopType = (category: string | null | undefined): PlateTroops["type"] => {
   switch (category) {
     case "Crossbowman":
       return "crossbowman";
@@ -191,6 +193,8 @@ export const buildStructurePlate = (
     | "frontierBeast"
     | "level"
     | "hasWonder"
+    | "realmOrder"
+    | "realmSkin"
     | "battleTimerLeft"
   > & { watched?: SeatSide | null; frontier: boolean },
   nowSeconds = 0,
@@ -202,7 +206,7 @@ export const buildStructurePlate = (
       ?.filter((guard) => guard.count > 0)
       .toSorted((a, b) => a.slot - b.slot)
       .map((guard) => ({
-        type: troopType(guard.category),
+        type: plateTroopType(guard.category),
         tier: tierOf(guard.tier, structure.frontier),
         count: guard.count,
         ...(structure.frontierBeast ? { beast: structure.frontierBeast.beast } : {}),
@@ -228,15 +232,24 @@ export const buildStructurePlate = (
       : structure.structureType === StructureType.Mine && structure.mineKind !== undefined
         ? mineMeaning(structure.mineKind)
         : structure.structureType === StructureType.Realm
-          ? realmMeaning(structure.level, structure.hasWonder)
+          ? realmMeaning(
+              structure.level,
+              structure.hasWonder,
+              structure.realmSkin !== undefined
+                ? realmPaintingKind(
+                    structure.realmSkin,
+                    structure.realmOrder ? (orderAspect(structure.realmOrder) ?? null) : null,
+                  )
+                : undefined,
+            )
           : structureMeaning(structure.structureType),
     guards,
     ...(inBattle(structure.battleTimerLeft) ? { inBattle: true } : {}),
-    ...watchedOf(structure.watched, ownerOf(structure.owner)),
+    ...plateWatched(structure.watched, ownerOf(structure.owner)),
     arrivals: (structure.incomingTroopArrivals ?? [])
       .map((arrival) => ({
         troops: {
-          type: troopType(arrival.troopType),
+          type: plateTroopType(arrival.troopType),
           tier: tierOf(arrival.troopTier, structure.frontier),
           count: arrival.count,
         },
@@ -268,7 +281,7 @@ export const buildArmyPlate = (
   relation: sideOf(army),
   owner: ownerOf(army.owner),
   homeName,
-  troops: { type: troopType(army.category), tier: tierOf(army.tier, army.frontier), count: army.troopCount },
+  troops: { type: plateTroopType(army.category), tier: tierOf(army.tier, army.frontier), count: army.troopCount },
   stamina:
     army.currentStamina === undefined || army.maxStamina <= 0
       ? undefined
@@ -278,7 +291,7 @@ export const buildArmyPlate = (
           perExplore,
         },
   ...(inBattle(army.battleTimerLeft) ? { inBattle: true } : {}),
-  ...watchedOf(army.watched, ownerOf(army.owner)),
+  ...plateWatched(army.watched, ownerOf(army.owner)),
 });
 
 /**

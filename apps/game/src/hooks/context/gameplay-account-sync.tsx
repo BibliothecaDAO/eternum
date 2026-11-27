@@ -41,6 +41,17 @@ const useGameplayShard = (onError: (message: string) => void): Shard | null => {
   return shard;
 };
 
+export const joinGameplayAccount = async (shard: Shard, realmsId: string) => {
+  const account = await joinRealmsAccount({
+    provider: getShardRpcProvider(shard.rpcUrl),
+    shard,
+    realmsId,
+    device: getOrCreateDeviceKey(localStorage),
+    approve: identityClient.approveDeviceChange,
+  });
+  return configureGameplayAccountSubmits(account, shard);
+};
+
 /**
  * Makes this browser's device key a signer of the signed-in player's Realms account on the current shard: the
  * account is deployed on first play, or this device is added to it, each with the guardian's approval.
@@ -67,21 +78,15 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
     if (!shard) return;
     let active = true;
     setGameplayAccount(null, null);
-    joinRealmsAccount({
-      provider: getShardRpcProvider(shard.rpcUrl),
-      shard,
-      realmsId,
-      device: getOrCreateDeviceKey(localStorage),
-      approve: identityClient.approveDeviceChange,
-    }).then(
-      (account) => active && setGameplayAccount(configureGameplayAccountSubmits(account, shard), realmsId),
+    joinGameplayAccount(shard, realmsId).then(
+      (account) => active && setGameplayAccount(account, realmsId),
       (error: unknown) => {
         const state = accountStateOf(error);
         if (!state) {
           const message = error instanceof Error ? error.message : "Gameplay account provisioning failed";
           console.error("gameplay_account_sync_failed", { error: message });
         }
-        if (active) setGameplayAccount(null, null, state ?? ACCOUNT_SETUP_FAILED);
+        if (active) markGameplayAccountUnavailable(error);
       },
     );
     return () => {
@@ -122,3 +127,6 @@ const accountStateOf = (error: unknown): string | null => {
           : undefined;
   return code ? (ACCOUNT_REFUSALS[code] ?? null) : null;
 };
+
+export const markGameplayAccountUnavailable = (error: unknown) =>
+  useAccountStore.getState().setGameplayAccount(null, null, accountStateOf(error) ?? ACCOUNT_SETUP_FAILED);

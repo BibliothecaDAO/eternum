@@ -1,6 +1,6 @@
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import { encodeMembers } from "./native/serde";
-import { buildFrontierLeaderboard } from "./native/frontier-leaderboard";
+import { prepareFrontierLeaderboard } from "./native/frontier-leaderboard";
 import { manifest, receipt } from "./native/fixtures";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
@@ -262,7 +262,7 @@ describe("Frontier confirmed season history", () => {
         },
       };
       const read = (model: string) => (values[model] ? [{ key: "1", value: { game_id: "1", ...values[model] } }] : []);
-      const board = buildFrontierLeaderboard(read, "1", history);
+      const board = prepareFrontierLeaderboard(read, "1")(history);
       expect(board.entries[0]).toMatchObject({
         chests_earned: 4,
         sites_cleared: { total: 5, camps: 1, ruins: 4 },
@@ -272,7 +272,7 @@ describe("Frontier confirmed season history", () => {
       store = open();
       await store.initialize();
       await store.appendEvents(result.events, 10);
-      expect(buildFrontierLeaderboard(read, "1", await store.frontierHistory("1", 10))).toEqual(board);
+      expect(prepareFrontierLeaderboard(read, "1")(await store.frontierHistory("1", 10))).toEqual(board);
     } finally {
       await store.close();
       await admin.query(`DROP SCHEMA ${namespace} CASCADE`);

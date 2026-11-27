@@ -65,6 +65,8 @@ describe("rowInGameSyncScope", () => {
     expect(
       gameSyncRowKeys("ExplorerTroops", { explorer_id: "0x1", story: { SitePayout: { category: 10 } } }, SPACING),
     ).toEqual(["*", "entities:1"]);
+    expect(gameSyncRowKeys("Seal", { game_id: 1, account: "0x1", granted_at: 10n }, SPACING)).toBe("shared");
+    expect(rowInGameSyncScope("Seal", { game_id: 1, account: "0x1", granted_at: 10n }, peer)).toBe(true);
   });
 
   it("admits non-chest rows according to the declared scope rule, for every model in the schema", () => {

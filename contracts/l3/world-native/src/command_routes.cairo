@@ -8,11 +8,11 @@ pub struct CommandRoute {
     pub batch: bool,
 }
 
-pub const COMMAND_IDS: [u32; 40] = [
+pub const COMMAND_IDS: [u32; 41] = [
     74, 75, 73, 76, 72, 0, 1, 2, 3, 4, 6, 8, 10, 11, 12, 13, 14, 16, 17, 18, 20, 21, 22, 23, 24, 29, 43, 53, 54, 55, 56,
-    57, 58, 59, 60, 64, 65, 66, 67, 69,
+    57, 58, 59, 60, 64, 65, 66, 67, 69, 79,
 ];
-pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
+pub const COMMAND_ROUTES: [Option<CommandRoute>; 80] = [
     Some(CommandRoute { logic: 6, selector: selector!("create_explorer"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 15, selector: selector!("explore"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 12, selector: selector!("battle"), items_offset: Some(2), batch: false }),
@@ -78,7 +78,8 @@ pub const COMMAND_ROUTES: [Option<CommandRoute>; 77] = [
     Some(CommandRoute { logic: 14, selector: selector!("choose_oath"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 13, selector: selector!("buy_seal"), items_offset: None, batch: false }),
     Some(CommandRoute { logic: 14, selector: selector!("buy_stamina"), items_offset: None, batch: false }),
-    Some(CommandRoute { logic: 14, selector: selector!("reroll_oath"), items_offset: None, batch: false }),
+    Some(CommandRoute { logic: 14, selector: selector!("reroll_oath"), items_offset: None, batch: false }), None, None,
+    Some(CommandRoute { logic: 5, selector: selector!("set_realm_skin"), items_offset: None, batch: false }),
 ];
 
 #[derive(Copy, Drop, Debug, PartialEq)]
@@ -123,6 +124,7 @@ pub enum Command {
     EnterDepth: crate::commands::EnterDepth,
     Research: crate::research::Research,
     InteractSite: crate::relics::InteractSite,
+    SetRealmSkin: crate::names::SetRealmSkin,
 }
 
 pub impl CommandSerde of Serde<Command> {
@@ -279,6 +281,10 @@ pub impl CommandSerde of Serde<Command> {
                 output.append(69);
                 Serde::serialize(value, ref output);
             },
+            Command::SetRealmSkin(value) => {
+                output.append(79);
+                Serde::serialize(value, ref output);
+            },
         }
     }
 
@@ -362,6 +368,9 @@ pub impl CommandSerde of Serde<Command> {
             74 => Some(Command::BuySeal(())),
             75 => Some(Command::BuyStamina(Serde::deserialize(ref serialized)?)),
             76 => Some(Command::RerollOath(Serde::deserialize(ref serialized)?)),
+            77 => None,
+            78 => None,
+            79 => Some(Command::SetRealmSkin(Serde::deserialize(ref serialized)?)),
             _ => None,
         }
     }

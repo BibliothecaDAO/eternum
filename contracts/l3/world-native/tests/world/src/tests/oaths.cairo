@@ -819,6 +819,10 @@ fn detection_leaves_the_spire_chance_of_a_reveal_unchanged() {
             },
         );
         world_test_support::tests::registrar::learn_spire_lore(d, home, FIXTURE_START);
+        let explore_wheat = army.troops.count
+            / crate::rules::RESOURCE_PRECISION
+            * crate::balance::rules::TROOP_STAMINA_CONFIG.stamina_explore_wheat_cost.into();
+        super::resource_commands::grant(d, home, crate::resources::WHEAT, explore_wheat);
         let root = root_with_spire_draw_from(game_id, 10000 / crate::rules::SPIRE_REVEAL_LIMIT.into());
         assert!(super::registrar::explore_with_root(d, game_id, key.explorer_id, root, FIXTURE_START + 10));
         let spire = snforge_std::interact_with_state(

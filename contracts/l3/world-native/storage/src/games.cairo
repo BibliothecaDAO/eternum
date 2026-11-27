@@ -25,7 +25,6 @@ pub struct GamesStorage<
     TArmyCombat,
     TVillagePass,
     TDeepSite,
-    TDeepGuard,
 > {
     pub authority: ContractAddress,
     pub launcher: ContractAddress,
@@ -38,7 +37,7 @@ pub struct GamesStorage<
     pub arrivals: crate::arrivals::ArrivalStateStorage<TResourceAmount>,
     pub buildings: crate::buildings::BuildingStateStorage<TBuilding, TStructureBuildings>,
     pub combat_domain: crate::combat_domain::CombatDomainStorage,
-    pub deep: crate::deep::DeepStorage<TDeepSite, TDeepGuard>,
+    pub deep: crate::deep::DeepStorage<TDeepSite>,
     pub entry: crate::entry::EntryAdministrationStorage,
     pub quests: crate::quests::QuestStateStorage,
     pub banes: crate::banes::BaneStorage,

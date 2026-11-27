@@ -40,6 +40,8 @@ function encounter(kind: SiteKind) {
           reveal_site_neighbors: false,
           chest: { common: 1, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
           reveal_percent: 1,
+          reveal_cap: 1000,
+          rift_essence_bps: 15000,
           guard_step: 1,
         },
       },

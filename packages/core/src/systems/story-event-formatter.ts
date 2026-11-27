@@ -1,4 +1,12 @@
-import { type RankedWords, rankedText } from "@bibliothecadao/types";
+import {
+  aspectName,
+  DEEP_BEASTS,
+  DEEP_CAPTURE_LINES,
+  deepSites,
+  type RankedWords,
+  rankedText,
+} from "@bibliothecadao/types";
+import { accountAspect } from "../utils/army-opponents";
 import {
   SHRINE_USED,
   SHRINE_USED_LINE,
@@ -19,6 +27,7 @@ import {
   RealmLevels,
   resourceName,
   scaledToUnits,
+  StructureType,
   troopName,
   troopPlural,
   TroopTier,
@@ -208,19 +217,25 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
     ]),
     icon: "prize",
   }),
-  StructureCapturedStory: (event, payload, components, resolvePlayerName) => ({
-    title: [
-      `${nameOwner(payload.new_owner, components, resolvePlayerName) ?? "Someone"} took ${subjectOf(event.entityId, components)} from ${
-        isViewer(payload.previous_owner, event.viewerAddress)
-          ? "you"
-          : (nameOwner(payload.previous_owner, components, resolvePlayerName) ?? "its holder")
-      }`,
-      toBigIntSafe(payload.previous_owner) ? CAPTURE_AFTERMATH : null,
-    ]
-      .filter(Boolean)
-      .join(". "),
-    icon: "battle",
-  }),
+  StructureCapturedStory: (event, payload, components, resolvePlayerName) => {
+    const category = readStructure(event.entityId, components)?.base.category;
+    const carriesAssets = category !== undefined && category !== StructureType.DeepSite;
+    return {
+      title:
+        deepCaptureLine(event.entityId, payload, components, resolvePlayerName) ??
+        [
+          `${nameOwner(payload.new_owner, components, resolvePlayerName) ?? "Someone"} took ${subjectOf(event.entityId, components)} from ${
+            isViewer(payload.previous_owner, event.viewerAddress)
+              ? "you"
+              : (nameOwner(payload.previous_owner, components, resolvePlayerName) ?? "its holder")
+          }`,
+          carriesAssets && toBigIntSafe(payload.previous_owner) ? CAPTURE_AFTERMATH : null,
+        ]
+          .filter(Boolean)
+          .join(". "),
+      icon: "battle",
+    };
+  },
   BlitzFinalized: () => ({ title: "Blitz finalized", icon: "scroll" }),
   SitePayout: (event, payload, components, resolvePlayerName) => {
     const category = toNumber(payload.category);
@@ -925,6 +940,29 @@ function nameOwner(
   if (owner === undefined || owner === null) return undefined;
   if (typeof owner === "string" && owner.startsWith("0x")) return displayPlayerName(owner, resolvePlayerName?.(owner));
   return components ? (describeStructureName(owner, components) ?? undefined) : undefined;
+}
+
+function deepCaptureLine(
+  siteId: unknown,
+  payload: Record<string, unknown>,
+  components?: NativeFactStore,
+  resolvePlayerName?: PlayerNameResolver,
+): string | undefined {
+  const id = toBigIntSafe(siteId);
+  const game_id = configManager.getActiveGameId();
+  const site = components && id !== null ? components.get("DeepSite", { game_id, entity_id: id }) : undefined;
+  const kind = site && deepSites.find((candidate) => candidate.id === site.kind);
+  if (!components || !kind) return undefined;
+  const taker = accountAspect(components, game_id, toBigIntSafe(payload.new_owner));
+  const fromBeast = !toBigIntSafe(payload.previous_owner);
+  const holder = fromBeast ? undefined : accountAspect(components, game_id, toBigIntSafe(payload.previous_owner));
+  if (taker === undefined || (!fromBeast && holder === undefined)) return undefined;
+  const player = nameOwner(payload.new_owner, components, resolvePlayerName) ?? "";
+  const line =
+    holder === undefined
+      ? DEEP_CAPTURE_LINES.slew(aspectName(taker), DEEP_BEASTS[kind.key].name, kind.name)
+      : DEEP_CAPTURE_LINES.seized(aspectName(taker), kind.name, aspectName(holder));
+  return `${player} ${line}`;
 }
 
 /** Encounter identity survives cleared guards and removed occupancy. */

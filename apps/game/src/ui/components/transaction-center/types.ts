@@ -1,5 +1,6 @@
 import { TransactionType } from "@bibliothecadao/provider";
 import { ANCIENT_SEAL } from "@bibliothecadao/types";
+import { COSMETICS_WORDS } from "@/ui/design-system/kit/words";
 
 /**
  * What each command reads as in the feed and its notices, in the player's words. Every command has its line: a new one
@@ -52,6 +53,7 @@ const TX_MESSAGES: Record<TransactionType, string> = {
   [TransactionType.UPDATE_WHITELIST]: "Tribe invitations updated",
   [TransactionType.REMOVE_GUILD_MEMBER]: "Member removed from the tribe",
   [TransactionType.SET_ENTITY_NAME]: "Renamed",
+  [TransactionType.SET_REALM_SKIN]: COSMETICS_WORDS.equipped,
   [TransactionType.TRANSFER_STRUCTURE_OWNERSHIP]: "Structure ownership transferred",
   [TransactionType.CLAIM_WONDER_POINTS]: "Wonder points earned",
   [TransactionType.CLAIM_PLAYER_FAITH_POINTS]: "Faith points earned",

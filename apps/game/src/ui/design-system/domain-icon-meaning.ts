@@ -1,7 +1,8 @@
-import { homeIcon, homeKind } from "./home-icons";
+import { homeIcon, homeKind, realmSkinPainting, type HomePaintingKind } from "./home-icons";
 import {
   aspectName,
   BuildingType,
+  deepSites,
   getProducedResource,
   StructureType,
   type AspectId,
@@ -80,7 +81,21 @@ const structureMeanings = {
   [StructureType.Rift]: "rift",
   [StructureType.Ruin]: "ruin",
   [StructureType.Beasts]: "beasts",
+  [StructureType.DeepSite]: "deep-crystal",
 } satisfies Record<StructureType, IconMeaning>;
+export const DEEP_SITE_MEANINGS = {
+  foundation: "hyperstructure",
+  core: "essence",
+  mine: "pickaxe",
+  altar: "flame",
+} as const satisfies Record<(typeof deepSites)[number]["key"], IconMeaning>;
+
+export function deepSiteMeaning(kind: number): IconMeaning {
+  const site = deepSites.find(({ id }) => id === kind);
+  if (!site) throw new Error(`Unknown Deep site kind ${kind}`);
+  return DEEP_SITE_MEANINGS[site.key];
+}
+
 export function structureMeaning(
   category: StructureType,
   mode?: StructureNamingMode,
@@ -101,7 +116,11 @@ export function readStructureMeaning(
   structure: NativeRows["Structure"],
 ): IconMeaning {
   const category = structure.base.category;
-  if (category === StructureType.Realm) return realmMeaning(structure.base.level, structure.metadata.has_wonder);
+  if (category === StructureType.Realm) return homeIcon(realmSkinPainting(store, structure), structure.base.level);
+  if (category === StructureType.DeepSite)
+    return deepSiteMeaning(
+      store.require("DeepSite", { game_id: structure.game_id, entity_id: structure.entity_id }).kind,
+    );
   if (!isGuardedSite(category)) return structureMeaning(category);
   const mode = nativeGameModeOfFamily(store.require("GameRegistry", { game_id: structure.game_id }).family);
   const guard =
@@ -116,12 +135,13 @@ export function mineMeaning(kind: number): IconMeaning {
   if (kind === 2) return "mine";
   throw new Error(`Unknown mine icon: ${kind}`);
 }
-export function realmMeaning(level: number, hasWonder = false): IconMeaning {
-  return homeIcon(homeKind(hasWonder), level);
+export function realmMeaning(level: number, hasWonder = false, painting?: HomePaintingKind): IconMeaning {
+  return homeIcon(painting ?? homeKind(hasWonder), level);
 }
 
-export function realmMarkerMeaning(level: number, hasWonder = false): IconMeaning {
-  if (hasWonder) return realmMeaning(level, hasWonder);
+export function realmMarkerMeaning(level: number, hasWonder = false, painting?: HomePaintingKind): IconMeaning {
+  const kind = painting ?? homeKind(hasWonder);
+  if (kind !== "realm") return homeIcon(kind, level);
   return `map-${realmMeaning(level)}` as IconMeaning;
 }
 

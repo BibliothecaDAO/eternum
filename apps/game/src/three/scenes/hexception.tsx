@@ -8,8 +8,9 @@ import { markShadowCastersChanged } from "@/three/shadow-refresh-policy";
 import { presentResult } from "@/three/presented-results";
 import { holdPartHeadings } from "../structures/held-heading";
 import { frontierPaintedBuildingPath } from "../structures/frontier-painted-buildings";
-import { buildingTypeTier } from "@bibliothecadao/eternum";
+import { buildingTypeTier, realmWornSkinFamily } from "@bibliothecadao/eternum";
 import { isWonderModelPath } from "../structures/realm-design";
+import { resolveProceduralRealmKit } from "../structures/realm-kit";
 import { RealmLivingAura } from "../structures/realm-living-aura";
 import { HexceptionModels, disposeBuildingModel, prepareBuildingModel } from "./hexception-models";
 import { SettlementAnimation } from "../structures/settlement-animation";
@@ -364,7 +365,10 @@ export default class HexceptionScene extends HexagonScene {
   ) {
     super(SceneName.Hexception, controls, game, mouse, raycaster, sceneManager);
 
-    this.proceduralTerrain = new ProceduralTerrain();
+    this.proceduralTerrain = new ProceduralTerrain({
+      compilePipelines: this.compilePipelines,
+      scene: this.scene,
+    });
     this.scene.add(this.proceduralTerrain.object3d);
     this.mode = getGameModeConfig();
     this.hoverLabelManager = new HexHoverLabel(this.scene);
@@ -629,7 +633,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private async loadBuildingModel(path: string): Promise<{ model: Group; animations: AnimationClip[] }> {
-    const gltf = await loader.loadAsync(path);
+    const gltf = resolveProceduralRealmKit(path) ?? (await loader.loadAsync(path));
     if (isRealmModelPath(path)) withFlagCloth(gltf);
     const model = prepareBuildingModel(gltf.scene as Group);
     if (this.destroyed) {
@@ -1633,13 +1637,16 @@ export default class HexceptionScene extends HexagonScene {
       entity_id: realm.realmId,
     });
     const orderId = structure?.metadata.order;
+    const aspect = this.mode.id === "frontier" && orderId ? orderAspect(orderId) : null;
+    const realmSkin = structure ? realmWornSkinFamily(this.game.store, structure, aspect) : undefined;
     return resolveBuildingModelSelection(building, {
       stage: realm.stage,
       structureId: realm.realmId,
       mainStructureType: realm.mainStructureType,
-      wonder: !!realm.tiles.getWonder(realm.realmId),
-      aspect: this.mode.id === "frontier" && orderId ? orderAspect(orderId) : null,
+      wonder: realm.tiles.showsWonder(realm.realmId),
+      aspect,
       frontier: this.mode.id === "frontier",
+      realmSkin,
     });
   }
 
@@ -1938,11 +1945,29 @@ export default class HexceptionScene extends HexagonScene {
    */
   private answerFactChanges(changes: readonly NativeFactChange[]): void {
     const level = changes.map((change) => this.changedCastleLevel(change)).find((value) => value !== undefined);
+    const castleChanged = level !== undefined || changes.some((change) => this.changesShownRealmSkin(change));
     if (level !== undefined) {
       if (level > this.structureStage) this.newRingRadius = buildableRadius(level);
       this.removeCastleFromScene();
     }
-    if (level !== undefined || changes.some((change) => this.changesShownGround(change))) this.redrawStaleGrid();
+    if (castleChanged || changes.some((change) => this.changesShownGround(change))) this.redrawStaleGrid();
+  }
+
+  private changesShownRealmSkin(change: NativeFactChange): boolean {
+    const gameId = configManager.getActiveGameId();
+    if (change.model === "RealmSkin") {
+      if (change.previous?.family === change.current?.family) return false;
+      const row = change.current ?? change.previous;
+      return row?.game_id === gameId && row.entity_id === BigInt(this.shownRealmId);
+    }
+    if (change.model === "Seal") {
+      if (Boolean(change.previous) === Boolean(change.current)) return false;
+      const row = change.current ?? change.previous;
+      if (row?.game_id !== gameId) return false;
+      const shown = this.game.store.get("Structure", { game_id: gameId, entity_id: BigInt(this.shownRealmId) });
+      return shown?.owner === row.account;
+    }
+    return false;
   }
 
   /** The shown structure's new level, when the change is one to its level. */

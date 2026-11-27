@@ -107,11 +107,17 @@ test("Band and Herd rewards follow the executable Cairo rules", async () => {
       `data:text/javascript;base64,${Buffer.from(ts.transpileModule(compileSitePreviews({ ...source, expeditions }), { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.ESNext } }).outputText).toString("base64")}`
     );
   const preview = await load(source.expeditions);
-  assert.equal(preview.previewSiteReward(11, 450000000000n, 0, true), null);
-  assert.deepEqual(preview.previewSiteReward(11, 350000000000n, 0, false), {
+  const rules = { rift_essence_bps: 15000 };
+  assert.equal(preview.previewSiteReward(11, 450000000000n, 0, true, rules), null);
+  assert.deepEqual(preview.previewSiteReward(11, 350000000000n, 0, false, rules), {
     resourceType: 35,
     amount: 1400000000000n,
   });
+  assert.deepEqual(preview.previewSiteReward(9, 100000000000n, 0, false, rules), {
+    resourceType: 38,
+    amount: 150000000000n,
+  });
+  assert.throws(() => preview.previewSiteReward(9, 100000000000n, 0, false), /DepthRules required/);
   assert.throws(
     () =>
       compileSitePreviews({

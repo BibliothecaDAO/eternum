@@ -3,6 +3,125 @@ pub use world_test_support::tests::roll_independence::*;
 const NO_GAME: u32 = 99;
 const FRESH_WORLD_ROOTS: u64 = 2;
 
+fn typed_commands() -> Array<Command> {
+    array![
+        Command::BuySeal(()), Command::BuyStamina(crate::fragments::BuyStamina { explorer_id: 999999, fragments: 1 }),
+        Command::ChooseOath(
+            crate::oaths::ChooseOath { explorer_id: 999999, expected_pick: 571, oath: None, replace: None },
+        ),
+        Command::RerollOath(crate::oaths::RerollOath { explorer_id: 999999, expected_pick: 571, index: 0 }),
+        Command::ClaimDailyQuest(crate::quests::ClaimDailyQuest { home: 999999, day: 0 }),
+        Command::CreateExplorer(
+            crate::commands::CreateExplorer {
+                slot: 0, structure_id: 999999, category: 0, tier: 0, amount: 1, direction: 0,
+            },
+        ),
+        Command::Explore(crate::commands::Explore { explorer_id: 999999, direction: 0 }),
+        Command::Battle(
+            crate::combat_actions::AttackExplorer {
+                attacker_id: 999999,
+                defender_id: 999999,
+                steal_resources: array![crate::resources::ResourceAmount { resource_type: 1, amount: 1 }].span(),
+            },
+        ),
+        Command::Move(crate::commands::Move { explorer_id: 999999, directions: array![0_u8].span() }),
+        Command::ToggleAlternate(crate::commands::ToggleAlternate { explorer_id: 999999, spire_direction: 0 }),
+        Command::LevelUp(999999), Command::ProvisionRealm(999999),
+        Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None, order: None }),
+        Command::SettleVillage(crate::village::SettleVillage { pass_id: 1, connected_realm_entity_id: 999999 }),
+        Command::ReceiveVillageArmy(999999),
+        Command::BurnStructureResources(
+            crate::resources::ResourceBurn {
+                entity_id: 999999,
+                resources: array![crate::resources::ResourceAmount { resource_type: 1, amount: 1 }].span(),
+            },
+        ),
+        Command::TransferExplorerResources(
+            crate::resources::ResourceTransfer {
+                from_entity_id: 999999,
+                to_entity_id: 999999,
+                resources: array![crate::resources::ResourceAmount { resource_type: 1, amount: 1 }].span(),
+            },
+        ),
+        Command::OffloadArrival(
+            crate::arrivals::OffloadArrival { entity_id: 999999, day: 0, slot: 0, resource_count: 1 },
+        ),
+        Command::SendResources(
+            crate::resources::ResourceTransfer {
+                from_entity_id: 999999,
+                to_entity_id: 999999,
+                resources: array![crate::resources::ResourceAmount { resource_type: 1, amount: 1 }].span(),
+            },
+        ),
+        Command::TransferExplorerResourcesToStructure(
+            crate::resources::ResourceTransfer {
+                from_entity_id: 999999,
+                to_entity_id: 999999,
+                resources: array![crate::resources::ResourceAmount { resource_type: 1, amount: 1 }].span(),
+            },
+        ),
+        Command::BurnResourceForResourceProduction(
+            crate::production::RefillProduction {
+                structure_id: 999999, resource_types: array![1_u8].span(), amounts: array![1_u128].span(),
+            },
+        ),
+        Command::CreateBuilding(
+            crate::buildings::CreateBuilding {
+                structure_id: 999999, directions: array![0_u8].span(), category: 0, use_simple: false,
+            },
+        ),
+        Command::DestroyBuilding(
+            crate::buildings::ChangeBuilding {
+                structure_id: 999999, coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },
+            },
+        ),
+        Command::PauseBuildingProduction(
+            crate::buildings::ChangeBuilding {
+                structure_id: 999999, coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },
+            },
+        ),
+        Command::ResumeBuildingProduction(
+            crate::buildings::ChangeBuilding {
+                structure_id: 999999, coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },
+            },
+        ),
+        Command::BattleGuard(crate::commands::Battle { attacker_id: 999999, defender_id: 999999, relic_slot: None }),
+        Command::ApplyRelic(crate::relics::ApplyRelic { entity_id: 999999, relic_id: 39, slot: 0 }),
+        Command::CreateGuild(crate::guilds::CreateGuild { owned_structure_id: 999999, public: false, name: 'route' }),
+        Command::JoinGuild(crate::guilds::JoinGuild { owned_structure_id: 999999, guild_id: 999.try_into().unwrap() }),
+        Command::LeaveGuild,
+        Command::SetGuildWhitelist(
+            crate::guilds::SetWhitelist { player: 999.try_into().unwrap(), owned_structure_id: 999999, allowed: false },
+        ),
+        Command::RemoveGuildMember(999.try_into().unwrap()), Command::MarkGameSettled,
+        Command::ManageTroops(
+            crate::troop_management::ManageTroops::RecruitGuard(
+                crate::troop_management::RecruitGuard {
+                    guard: crate::troop_management::GuardSlot { structure_id: 999999, slot: 0 },
+                    category: crate::troops::TroopType::Knight,
+                    tier: crate::troops::TroopTier::T1,
+                    amount: 1,
+                },
+            ),
+        ),
+        Command::GuardAttack(
+            crate::combat_actions::GuardAttack {
+                guard: crate::troop_management::GuardSlot { structure_id: 999999, slot: 0 }, explorer_id: 999999,
+            },
+        ),
+        Command::ProvisionAndUpgradeRealm(999999),
+        Command::SetEntityName(crate::names::SetEntityName { entity_id: 999999, name: 'route' }),
+        Command::EnterDepth(crate::commands::EnterDepth { explorer_id: 999999, depth: 0 }),
+        Command::Research(crate::research::Research { structure_id: 999999, row: 0 }),
+        Command::InteractSite(
+            crate::relics::InteractSite {
+                explorer_id: 999999, coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },
+            },
+        ),
+        Command::SetRealmSkin(crate::names::SetRealmSkin { entity_id: 999999, family: crate::names::BASE_REALM_SKIN }),
+    ]
+}
+
 #[test_case(name: "route_00_roots_00_07", 0, 0)]
 #[test_case(name: "route_00_roots_08_15", 0, 8)]
 #[test_case(name: "route_00_roots_16_23", 0, 16)]
@@ -163,6 +282,10 @@ const FRESH_WORLD_ROOTS: u64 = 2;
 #[test_case(name: "route_39_roots_08_15", 39, 8)]
 #[test_case(name: "route_39_roots_16_23", 39, 16)]
 #[test_case(name: "route_39_roots_24_31", 39, 24)]
+#[test_case(name: "route_40_roots_00_07", 40, 0)]
+#[test_case(name: "route_40_roots_08_15", 40, 8)]
+#[test_case(name: "route_40_roots_16_23", 40, 16)]
+#[test_case(name: "route_40_roots_24_31", 40, 24)]
 #[feature("safe_dispatcher")]
 fn all_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
     let commands = typed_commands();
@@ -354,6 +477,10 @@ fn all_typed_entry_refusals_are_root_independent(index: u32, start: u64) {
 #[test_case(name: "route_39_roots_08_15", 39, 8)]
 #[test_case(name: "route_39_roots_16_23", 39, 16)]
 #[test_case(name: "route_39_roots_24_31", 39, 24)]
+#[test_case(name: "route_40_roots_00_07", 40, 0)]
+#[test_case(name: "route_40_roots_08_15", 40, 8)]
+#[test_case(name: "route_40_roots_16_23", 40, 16)]
+#[test_case(name: "route_40_roots_24_31", 40, 24)]
 fn all_real_domain_verdicts_are_root_independent(index: u32, start: u64) {
     let commands = typed_commands();
     assert_eq!(commands.len(), routes());

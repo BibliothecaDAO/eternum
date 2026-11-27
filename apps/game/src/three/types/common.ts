@@ -35,6 +35,7 @@ export interface StructureInfo {
   /** The standing site's beast identity shared by its model and plate. */
   frontierBeast?: FrontierBeast;
   realmOrder?: number;
+  realmSkin?: number;
   cosmeticId?: string;
   cosmeticAssetPaths?: string[];
   usesFallbackCosmeticSkin?: boolean;

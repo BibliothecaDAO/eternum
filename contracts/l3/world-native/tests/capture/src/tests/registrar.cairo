@@ -166,14 +166,16 @@ fn surface_sites_pay_initial_guards_once_without_rift_production() {
 
 #[test]
 fn frontier_reveal_pays_equal_strength_on_surface() {
-    assert_capture_with_reveal(0, 1500 * RESOURCE_PRECISION, crate::troops::TroopTier::T1, 150 * RESOURCE_PRECISION);
-    assert_capture_with_reveal(0, 500 * RESOURCE_PRECISION, crate::troops::TroopTier::T2, 150 * RESOURCE_PRECISION);
+    let expected = 1500 * RESOURCE_PRECISION * crate::logic::expeditions::depth_rules(0).reveal_percent.into() / 100;
+    assert_capture_with_reveal(0, 1500 * RESOURCE_PRECISION, crate::troops::TroopTier::T1, expected);
+    assert_capture_with_reveal(0, 500 * RESOURCE_PRECISION, crate::troops::TroopTier::T2, expected);
 }
 
 #[test]
 fn frontier_reveal_pays_equal_strength_on_ethereal_one() {
-    assert_capture_with_reveal(1, 1500 * RESOURCE_PRECISION, crate::troops::TroopTier::T1, 225 * RESOURCE_PRECISION);
-    assert_capture_with_reveal(1, 500 * RESOURCE_PRECISION, crate::troops::TroopTier::T2, 225 * RESOURCE_PRECISION);
+    let expected = 1500 * RESOURCE_PRECISION * crate::logic::expeditions::depth_rules(1).reveal_percent.into() / 100;
+    assert_capture_with_reveal(1, 1500 * RESOURCE_PRECISION, crate::troops::TroopTier::T1, expected);
+    assert_capture_with_reveal(1, 500 * RESOURCE_PRECISION, crate::troops::TroopTier::T2, expected);
 }
 
 #[test]

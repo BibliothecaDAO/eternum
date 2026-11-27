@@ -15,11 +15,18 @@ export function previewSiteReward(
   initialGuardCount: bigint,
   depth: number,
   band: boolean,
+  rules?: { rift_essence_bps: number },
 ): { resourceType: number; amount: bigint } | null {
   if (band) return null;
   if (category === 7) return { resourceType: 23, amount: depthReward(initialGuardCount / 2n, depth) };
   if (category === 11) return { resourceType: 35, amount: depthReward(initialGuardCount * 4n, depth) };
-  if (category === 9) return { resourceType: 38, amount: depthReward(initialGuardCount * 3n, depth) };
+  if (category === 9) {
+    if (!rules) throw new Error("DepthRules required for site reward");
+    return {
+      resourceType: 38,
+      amount: depthReward((initialGuardCount * BigInt(rules.rift_essence_bps)) / 10000n, depth),
+    };
+  }
   return null;
 }
 

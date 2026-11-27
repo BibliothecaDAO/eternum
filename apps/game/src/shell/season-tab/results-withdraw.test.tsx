@@ -199,6 +199,7 @@ it("offers Withdraw on an ended Aspect season when the player holds a realm ther
           resources_packed: "0",
           aspect: null,
           has_wonder: false,
+          realm_skin: 0,
         },
       ],
     },

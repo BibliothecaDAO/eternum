@@ -20,6 +20,7 @@ import { secondsUntilHeld } from "../hud/army-order";
 import { armyArt } from "../hud/dock-armies";
 import { deployArmy, deployDirection, deployRange, marchOn, previewDeploy, wheatStopsAt } from "./deploy-plan";
 import { DeployView, type DeployTroopChoiceView } from "./deploy-view";
+import { troopFigures } from "./troop-figures";
 import { useDeployPlan } from "./use-deploy-plan";
 
 /**
@@ -114,6 +115,7 @@ export const DeploySheet = ({
           setTroopType(type);
           setCount("max");
         },
+        figures: troopFigures(setup.store, realm.game_id),
       }}
       art={plan?.troops ? armyArt({ category: plan.troops.type, tier: plan.troops.tier }) : undefined}
       troopsAtHome={plan ? (plan.troops?.atHome ?? 0) : undefined}

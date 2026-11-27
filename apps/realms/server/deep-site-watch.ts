@@ -75,10 +75,10 @@ export function planDeepSiteWatches(store: NativeFactStore, player: Player, now:
   const watches: DeepSiteWatch[] = [];
   for (const site of reach.sites) {
     if (site.beastTroops > 0n) continue;
-    const defender = site.guards[0];
-    if (defender && store.require("HomeAspect", { game_id: gameId, home: defender.army.owner }).aspect === aspect)
-      continue;
-    const due = defender ? firstTakeableTick(store, army, site.id, timestamp, day.end, tickSeconds) : timestamp;
+    if (site.aspect === aspect) continue;
+    const due = site.garrisons.length
+      ? firstTakeableTick(store, army, site.id, timestamp, day.end, tickSeconds)
+      : timestamp;
     if (due === null) continue;
     watches.push({
       ...player,
@@ -123,7 +123,7 @@ function largestOutsideArmy(store: NativeFactStore, gameId: number, actor: bigin
     if (army.troops.count === 0n) continue;
     if (store.require("Structure", { game_id: gameId, entity_id: army.owner }).owner !== actor) continue;
     const key = { game_id: gameId, explorer_id: army.explorer_id };
-    if (store.get("DeepArmy", key) || store.get("DeepGuard", key)) continue;
+    if (store.get("DeepArmy", key)) continue;
     if (store.require("ArmyDay", key).day !== BigInt(day)) continue;
     if (
       !largest ||
@@ -148,7 +148,7 @@ function firstTakeableTick(
   for (let at = now; at < end; at = (Math.floor(at / tickSeconds) + 1) * tickSeconds) {
     const site = readDeepSites(store, at, army.game_id).find((candidate) => candidate.id === siteId);
     if (!site) return null;
-    if (!site.guards.length) return site.beastTroops > 0n ? null : at;
+    if (!site.garrisons.length) return site.beastTroops > 0n ? null : at;
     const clears = clearsEveryDefender(store, attacker, target, at, { besideTarget: true });
     if (clears === undefined) throw new Error("Deep alert is missing the fight's combat facts");
     if (clears) return at;
@@ -166,7 +166,17 @@ export async function readDeepAlerts(
   const store = await readGameFacts(
     shardUrl,
     player.gameId,
-    [...STAMINA_MODELS, "PlayerEntry", "RealmKnowledge", "ArmyRelicEffect", "DeepSite", "DeepEntries", "Guard"],
+    [
+      ...STAMINA_MODELS,
+      "PlayerEntry",
+      "RealmKnowledge",
+      "ArmyRelicEffect",
+      "DeepSite",
+      "DeepEntries",
+      "DeepTick",
+      "GarrisonSlot",
+      "Guard",
+    ],
     now,
     { actor: player.actor },
     catalogue,

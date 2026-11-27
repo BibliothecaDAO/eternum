@@ -1,4 +1,10 @@
-import { safeInteger, getScopedGameId } from "@bibliothecadao/eternum/game-client";
+import {
+  safeInteger,
+  getScopedGameId,
+  viewerAspects,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { useFactView } from "@/hooks/use-fact-view";
 import { seasonClockView } from "@/sync/fact-views";
 import { createBuildingMilestones } from "./building-milestones";
@@ -9,14 +15,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { structureMapPosition } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
-import { StructureType } from "@bibliothecadao/types";
+import { DEEP_BEASTS, deepSites, StructureType } from "@bibliothecadao/types";
 import { useGame } from "@/hooks/context/game-context";
 
 import { AudioManager } from "@/audio/core/AudioManager";
 
-import { type Headline, HEADLINE_DISPLAY_MS } from "./headline-types";
+import { type Headline, HEADLINE_DISPLAY_MS, type ThemedHeadline } from "./headline-types";
 import { NewsHeadlineBanner } from "./news-headline-banner";
-import { buildCaptureHeadline, NEWSWORTHY_CAPTURES } from "./capture-headline";
+import { buildCaptureHeadline, buildDeepCaptureHeadline, NEWSWORTHY_CAPTURES } from "./capture-headline";
+import { DEEP_SITE_FACES } from "@/ui/features/frontier/deep/deep-site-faces";
 import { createWorldEventEntityReader } from "../story-events/world-event-entity-reader";
 import { usePlayerNames } from "@/hooks/use-player-profile";
 
@@ -52,7 +59,7 @@ export function NewsHeadlineBridge() {
     }
   }, []);
   const enqueue = useCallback(
-    (headline: Headline) => {
+    (headline: ThemedHeadline) => {
       announce(headline);
       useHeadlineFeedStore.getState().publish(headline);
     },
@@ -75,14 +82,19 @@ export function NewsHeadlineBridge() {
   useEffect(() => {
     return setup.store.subscribe((changes) => {
       for (const change of changes) {
+        if (change.model === "DeepSite") {
+          const deep = deepCapture(setup.store, change.current, change.previous, address);
+          if (deep) announce(deep);
+          continue;
+        }
         if (change.model !== "Structure") continue;
         const { current, previous } = change;
         if (!current || !previous || current.game_id !== getScopedGameId() || current.owner === previous.owner)
           continue;
         if (!NEWSWORTHY_CAPTURES.has(current.base.category as StructureType)) continue;
-        if (!entityReader) continue;
         const structureId = safeInteger(current.entity_id);
         const site = structureMapPosition(setup.store, current);
+        if (!entityReader) continue;
         announce(
           buildCaptureHeadline({
             structureId,
@@ -149,7 +161,7 @@ export function NewsHeadlineBridge() {
   return <NewsHeadlineBanner headline={currentHeadline} />;
 }
 
-export const gameStartHeadline = (startAt: number): Headline => ({
+export const gameStartHeadline = (startAt: number): ThemedHeadline => ({
   id: `game-start:${startAt}`,
   type: "game-start",
   icon: "game-start",
@@ -157,3 +169,30 @@ export const gameStartHeadline = (startAt: number): Headline => ({
   description: [],
   timestamp: Date.now(),
 });
+
+const deepCapture = (
+  store: NativeFactStore,
+  current: NativeRows["DeepSite"] | undefined,
+  previous: NativeRows["DeepSite"] | undefined,
+  viewer: string | undefined,
+): Headline | null => {
+  if (!current || !previous || current.game_id !== getScopedGameId()) return null;
+  if (current.aspect === 0 || current.aspect === previous.aspect) return null;
+  const kind = deepSites.find(({ id }) => id === current.kind);
+  const structure = store.get("Structure", { game_id: current.game_id, entity_id: current.entity_id });
+  if (!kind || !structure || structure.owner === 0n) return null;
+  return buildDeepCaptureHeadline({
+    structureId: safeInteger(current.entity_id),
+    site: {
+      name: kind.name,
+      icon: DEEP_SITE_FACES[kind.key].icon,
+      beast: DEEP_BEASTS[kind.key].name,
+      at: structureMapPosition(store, structure),
+    },
+    newOwner: BigInt(structure.owner),
+    takerAspect: current.aspect,
+    holderAspect: previous.aspect === 0 ? undefined : previous.aspect,
+    viewerAspects: viewerAspects(store, current.game_id, viewer ? BigInt(viewer) : null),
+    at: Date.now(),
+  });
+};

@@ -13,6 +13,7 @@ export const StructureTypeToNameMapping: Record<StructureType, string> = {
   [StructureType.Rift]: "Rift",
   [StructureType.Ruin]: "Ruin",
   [StructureType.Beasts]: "Beasts",
+  [StructureType.DeepSite]: "Deep Site",
 };
 
 export const MineKinds = {

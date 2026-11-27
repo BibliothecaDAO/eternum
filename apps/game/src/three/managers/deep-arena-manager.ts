@@ -34,6 +34,7 @@ import { placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-
 import { getWorldPositionForHex } from "../utils";
 import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "../utils/hex-lattice";
 import { gltfLoader } from "../utils/utils";
+import type { PipelineCompiler } from "../pipeline-compiler";
 import { subscribeWorldOrigin } from "../world-origin";
 
 const GATE_HEIGHT = 1.4;
@@ -55,6 +56,7 @@ export class DeepArenaManager {
     private readonly scene: Scene,
     private readonly store: NativeFactStore,
     private readonly terrain: TerrainSurface,
+    private readonly compilePipelines: PipelineCompiler = async () => {},
   ) {
     this.group.name = "deep-arena";
     this.gates = Object.fromEntries(aspects.map(({ id }) => [id, gateSlot(id)])) as Record<AspectId, Group>;
@@ -84,10 +86,15 @@ export class DeepArenaManager {
   private loadGate(aspect: AspectId): void {
     void gltfLoader
       .loadAsync(DEEP_GATE_MODELS[aspect])
-      .then((gltf) => {
+      .then(async (gltf) => {
         if (this.destroyed) return;
         const model = gltf.scene.clone(true);
         applyTripoMaterials(model);
+        await this.compilePipelines(model, this.scene);
+        if (this.destroyed) {
+          disposeObjectTree(model);
+          return;
+        }
         this.gates[aspect].add(model);
       })
       .catch((error) => {

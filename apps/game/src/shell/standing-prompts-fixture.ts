@@ -1,4 +1,4 @@
-import { loadOpening, openingCacheKey } from "@/ui/features/frontier/opening/opening-store";
+import { loadOpening } from "@/ui/features/frontier/opening/opening-store";
 
 export const accountAnswers = () => {
   const account = {
@@ -18,9 +18,3 @@ export const leaveThePage = async (device: "same" | "another" = "same") => {
   if (device === "same") return;
   window.localStorage.clear();
 };
-
-export const deviceLastPlayedBeforeTheAnswer = (owner: string) =>
-  window.localStorage.setItem(
-    openingCacheKey(owner),
-    JSON.stringify({ reached: [], seen: [], unsent: { reached: [], seen: [] }, complete: true }),
-  );

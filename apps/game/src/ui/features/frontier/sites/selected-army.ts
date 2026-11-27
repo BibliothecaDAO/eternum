@@ -6,7 +6,7 @@ import { canIssueOrders } from "@/utils/can-issue-orders";
 import { configManager, entityMapPosition, isViewerOwner } from "@bibliothecadao/eternum";
 import { currentArmy, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
-const ARMY_MODELS = ["ExplorerTroops", "Structure", "TileOccupancy", "DeepGuard", "DeepArmy", "ArmyDay"] as const;
+const ARMY_MODELS = ["ExplorerTroops", "Structure", "TileOccupancy", "DeepArmy", "ArmyDay"] as const;
 
 /** The army the player has selected, where it stands, when it is theirs and orders are allowed: a site's actor. */
 export const useSelectedOwnArmy = (): {

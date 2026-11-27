@@ -49,8 +49,8 @@ vi.mock("./selected-world-entity-wait", () => ({
   },
   isSelectedWorldEntityWaitAborted: () => false,
 }));
-vi.mock("@/services/settlement", () => ({
-  submitSettlement: async (
+vi.mock("@/services/game-command", () => ({
+  submitGameCommand: async (
     _context: unknown,
     submit: (client: { setup: { systemCalls: { settle_season: (props: never) => Promise<void> } } }) => Promise<void>,
   ) => {

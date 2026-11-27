@@ -37,6 +37,7 @@ const STRUCTURE_INFLUENCE: Record<StructureType, StructureInfluence> = {
   [StructureType.Rift]: MINE_INFLUENCE,
   [StructureType.Ruin]: { disturbanceStrength: 0.78, levelDisturbance: 0, levelRadius: 0, radiusScale: 1 },
   [StructureType.Beasts]: CAMP_INFLUENCE,
+  [StructureType.DeepSite]: { disturbanceStrength: 1, levelDisturbance: 0, levelRadius: 0.08, radiusScale: 1.4 },
 };
 
 export function resolveTerrainSettlementInfluence(anchor: TerrainSettlementAnchor): TerrainSettlementInfluenceProfile {

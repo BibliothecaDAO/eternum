@@ -71,7 +71,7 @@ const siteRows = (plate: StructurePlate): PlateRow[] => {
   const owner = plate.beast ? siteTitle(plate.place, plate.name, plate.beast) : plate.owner;
   const rows: PlateRow[] = [
     owner ? [{ kind: "owner", text: owner }] : [],
-    !plate.beast && plate.place ? [name, { kind: "word", text: plate.name }] : [name],
+    !plate.beast && plate.place && plate.place !== plate.name ? [name, { kind: "word", text: plate.name }] : [name],
     [...(plate.guards ? guard(plate.guards) : []), ...holds, ...arriving],
   ];
   return rows.filter((row) => row.length > 0);

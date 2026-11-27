@@ -86,7 +86,7 @@ export const nativeOathConstants = {
   "ANGER": 15,
   "ENLIGHTENMENT": 16,
   "VITRIOL_LOSS_PER_TICK": 100,
-  "PASS_STAMINA": 60,
+  "PASS_STAMINA": 40,
   "POWER_DAMAGE_PERCENT": 20,
   "GIANTS_REDUCTION_PERCENT": 15,
   "PROTECTION_REDUCTION_PERCENT": 25,
@@ -121,6 +121,8 @@ export const nativeResearchConstants = {
   "LORE_WELLS": 1,
   "LORE_SHRINES": 2,
   "LORE_SPIRES": 3,
+  "SHRINE_LORE_LEVEL": 1,
+  "SPIRE_LORE_LEVEL": 2,
   "STOREROOM": 2,
   "STOREROOM_LEVEL": 1,
   "WORKSHOP": 25,
@@ -159,4 +161,10 @@ export const nativeStructureConstants = {
     100000
   ]
 } as const;
-export const nativeBalanceIdentity = "bdb74c1f98c624676d301b870f75918fe7c9860f12561df913eb7d2a51afb974";
+export const nativeRealmSkinConstants = {
+  "DEFAULT_REALM_SKIN": 0,
+  "BASE_REALM_SKIN": 1,
+  "SEASON_ONE_REALM_SKIN": 2,
+  "WONDER_REALM_SKIN": 3
+} as const;
+export const nativeBalanceIdentity = "9d0c6c388a03215231499fe96d1b71e8ddf08568c86c8c682e71803af2d17b6a";

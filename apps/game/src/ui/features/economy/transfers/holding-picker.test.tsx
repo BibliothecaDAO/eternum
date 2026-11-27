@@ -26,6 +26,7 @@ const holding = (entityId: number, category: StructureType, displayName: string)
   category,
   displayName,
   realmLevel: 0,
+  showsWonder: false,
   realmLevelLabel: category === StructureType.Realm ? "Settlement" : null,
   isFavorite: false,
   structure: { base: { category }, metadata: { mine_kind: ESSENCE_RIFT } },
