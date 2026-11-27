@@ -1,10 +1,11 @@
 # Painted Frontier buildings
 
-Game-ready versions of the 26 approved painted Frontier building masters: the four realm castles, Farm, Workshop and
-Barracks at tiers I–V, the three remaining training buildings and four map sites (Fallen realm ruins are built
-procedurally at runtime in `src/three/structures/ruin-kit.ts`). They are delivered for integration. The lab draws them
-through `InstancedModel` on game terrain (FEATURE-MAP.md, "Frontier buildings — painted set"), but the board and the
-world map still draw the shipped models.
+Game-ready versions of the remaining approved painted Frontier building masters: the four realm castles and three map
+sites (Farm, Workshop, and Barracks tiers I–V are built procedurally at runtime in
+`src/three/structures/realm-building-kit.ts`; Fallen realm ruins in `src/three/structures/ruin-kit.ts`; Supply Yard,
+Scouts' Lodge, and Camp in `src/three/structures/realm-support-kit.ts`; and the unused Hearth master was retired). They
+are delivered for integration. The lab draws them through `InstancedModel` on game terrain (FEATURE-MAP.md, "Frontier
+buildings — painted set"), but the board and the world map still draw the shipped models.
 
 ## Sources and rebuild
 
@@ -87,10 +88,6 @@ one the game draws today where the painted building would stand.
 | barracks-3   |     8,987 |     3 | 1024² | 360,992 | 63 MB, 52,292, 12              | `frontier/buildings/barracks-3.glb`: 356,704, 9,731, 2 |
 | barracks-4   |     8,987 |     3 | 1024² | 369,240 | 94 MB, 56,802, 14              | none                                                   |
 | barracks-5   |     8,986 |     3 | 1024² | 365,504 | 33 MB, 53,495, 11              | none                                                   |
-| supply-yard  |     8,720 |     2 | 1024² | 338,796 | 30 MB, 46,651, 3               | `new-buildings-opt/market.glb`: 362,040, 7,404, 2      |
-| scouts-lodge |     8,720 |     2 | 1024² | 344,964 | 29 MB, 59,502, 3               | `new-buildings-opt/stable.glb`: 564,940, 7,401, 4      |
-| hearth       |     8,720 |     2 | 1024² | 338,600 | 36 MB, 53,505, 4               | `new-buildings-opt/workers_hut.glb`: 310,936, 5,902, 2 |
-| camp         |     5,000 |     1 |  512² | 192,592 | 32 MB, 54,108, 2               | `outposts/camp.glb`: 91,312, 3,047, 4                  |
 | shrine       |     3,993 |     1 |  512² | 158,276 | 26 MB, 51,169, 3               | `outposts/shrine.glb`: 73,524, 1,816, 3                |
 | well         |     3,999 |     1 |  512² | 178,488 | 33 MB, 44,652, 3               | `outposts/well.glb`: 103,684, 5,068, 3                 |
 | essence-rift |    10,000 |     1 |  512² | 253,364 | 43 MB, 79,063, 2               | `reward-tiles/rift.glb`: 1,120,924, 35,910, 28         |
@@ -113,9 +110,6 @@ Review captures remain outside the repository.
   in its mode's asset map, plus that mode's preload plan.
 - Realm castles face the camera, as realm models do. They carry `orderCloth: "banner"`, which `SettlementModel` reads
   for the order's heraldry, but no other ownership surface.
-- The camp has no `relationshipCloth`, so a swap would lose the ownership colours the shipped camp shows.
 - The shipped essence rift animates; this one is static.
-- `buildingTierModelPath` returns procedural Farm, Workshop and Barracks paths for tiers II–V via
-  `realm-building-kit.ts`, and `/models/frontier/buildings/storehouse-{2,3}.glb` for Storehouse tiers II–III.
-- Under the game's daylight, the pale gravel ground of the Workshop, Barracks and training building plates reads lighter
-  than in the offline renders. It is the masters' own texture.
+- `buildingTierModelPath` returns procedural Farm, Workshop, and Barracks paths for tiers II–V via
+  `realm-building-kit.ts`, and procedural Storehouse paths for tiers II–III via `realm-support-kit.ts`.

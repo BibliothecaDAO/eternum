@@ -6,6 +6,12 @@ import { LoadingManager, type Texture } from "three";
 import { beginModelPreparation } from "../model-preparation";
 import { currentModelUrls, modelUrl, readDeployedModelUrls } from "./model-url";
 
+async function loadProceduralGltf(path: string): Promise<GLTF | null> {
+  if (!path.startsWith("procedural:")) return null;
+  const { resolveProceduralModel } = await import("../structures/procedural-model-resolver");
+  return resolveProceduralModel(path);
+}
+
 type KtxRenderer = Parameters<KTX2Loader["detectSupport"]>[0];
 
 const dracoLoader = new DRACOLoader();
@@ -51,6 +57,20 @@ class DeployedGltfLoader extends GLTFLoader {
     onProgress?: (event: ProgressEvent) => void,
     onError?: (error: unknown) => void,
   ): void {
+    if (url.startsWith("procedural:")) {
+      void loadProceduralGltf(url).then(
+        (procedural) => {
+          if (procedural) onLoad(procedural);
+          else if (onError) onError(new Error(`Unknown procedural model: ${url}`));
+          else console.error(new Error(`Unknown procedural model: ${url}`));
+        },
+        (error) => {
+          if (onError) onError(error);
+          else console.error(error);
+        },
+      );
+      return;
+    }
     // The load counts as model preparation until it hands its model over or fails (model-preparation.ts).
     const endPreparation = beginModelPreparation();
     const loaded = (gltf: GLTF) => {

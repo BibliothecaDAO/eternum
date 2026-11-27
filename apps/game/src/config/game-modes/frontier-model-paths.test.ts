@@ -13,6 +13,7 @@ import { resolveBuildingModelSelection } from "@/three/scenes/hexception-buildin
 import { frontierPaintedBuildingPath, frontierPaintedPath } from "@/three/structures/frontier-painted-buildings";
 import { FALLEN_REALM_RUIN_PATH } from "@/three/structures/frontier-beast";
 import { aspectWonderKitPath } from "@/three/structures/realm-kit";
+import { REALM_SUPPORT_PATHS } from "@/three/structures/realm-support-kit";
 
 it("gives every Frontier building its own distinct model without changing other modes", () => {
   const frontier = getGameModeConfig(GAME_FAMILIES.frontier).assets;
@@ -30,13 +31,13 @@ it("gives every Frontier building its own distinct model without changing other 
   }
 
   expect(frontier.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][BuildingType.Storehouse]).toBe(
-    "/models/frontier/buildings/storeroom.glb",
+    REALM_SUPPORT_PATHS.storeroom,
   );
   expect(frontier.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][BuildingType.RationsDepot]).toBe(
-    "/models/frontier/buildings/rations-depot.glb",
+    REALM_SUPPORT_PATHS["rations-depot"],
   );
   expect(frontier.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][BuildingType.ResourceCrossbowmanT1]).toBe(
-    "/models/frontier/buildings/crossbow-range.glb",
+    REALM_SUPPORT_PATHS["crossbow-range"],
   );
 
   const baseBuildings: Partial<Record<BuildingType, string>> = buildingModelPaths()[BUILDINGS_GROUPS.BUILDINGS];
@@ -49,10 +50,10 @@ it("gives every Frontier building its own distinct model without changing other 
     }
   }
   expect(frontier.structureModelPaths[StructureType.Camp]).toEqual([
-    frontierPaintedPath("camp"),
+    REALM_SUPPORT_PATHS.camp,
     ...getStructureModelPaths()[StructureType.Camp].slice(1),
   ]);
-  expect(frontier.structureModelPaths[StructureType.Camp].at(-2)).toBe(frontierPaintedPath("supply-yard"));
+  expect(frontier.structureModelPaths[StructureType.Camp].at(-2)).toBe(REALM_SUPPORT_PATHS["supply-yard"]);
   expect(frontier.structureModelPaths[StructureType.Rift]).toEqual([
     frontierPaintedPath("essence-rift"),
     ...getStructureModelPaths()[StructureType.Rift].slice(1),
@@ -92,13 +93,13 @@ it("selects all five painted tiers while keeping Storeroom on its own model and 
       { category: BuildingType.Storehouse, col: BUILDINGS_CENTER[0] + 1, row: BUILDINGS_CENTER[1], tier: 3 },
       { stage: 0, structureId: 1, wonder: false, frontier: true },
     ).tierPath,
-  ).toBe("/models/frontier/buildings/storeroom.glb");
+  ).toBe(REALM_SUPPORT_PATHS.storeroom);
   expect(
     resolveBuildingModelSelection(
       { category: BuildingType.Storehouse, col: BUILDINGS_CENTER[0] + 1, row: BUILDINGS_CENTER[1], tier: 3 },
       { stage: 0, structureId: 1, wonder: false, frontier: false },
     ).tierPath,
-  ).toBe("/models/frontier/buildings/storehouse-3.glb");
+  ).toBe(REALM_SUPPORT_PATHS["storehouse-3"]);
   expect(getGameModeConfig(GAME_FAMILIES.frontier).assets.buildingModelPaths[BUILDINGS_GROUPS.REALMS].Kingdom).toBe(
     buildingModelPaths()[BUILDINGS_GROUPS.REALMS].Kingdom,
   );

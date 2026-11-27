@@ -18,6 +18,7 @@ import { createBaseRealmKit, isBaseRealmKitPath, parseBaseRealmKitPath } from ".
 import { PROCGEN_ASPECT_GLOW_STYLES, createProcgenGlowMaterial } from "./procgen-glow-material";
 import { createProcgenMasonryMaterial } from "./procgen-masonry-material";
 import {
+  asProceduralGltf,
   beamBetween,
   combineParts,
   cutStoneBlock,
@@ -261,15 +262,7 @@ function assembleKitGltf(name: string, aspect: AspectId, parts: KitParts, palett
     scene.add(glowMesh);
   }
   scene.userData.flagAnchors = parts.anchors;
-  return {
-    animations: [],
-    scene,
-    scenes: [scene],
-    cameras: [],
-    asset: {},
-    parser: {} as GLTF["parser"],
-    userData: {},
-  };
+  return asProceduralGltf(scene);
 }
 
 function buildProwessSettlement(parts: KitParts, palette: AspectKitPalette): void {

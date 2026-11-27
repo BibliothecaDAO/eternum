@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildingThumbnailModelSha256 } from "./building-thumbnail-hash.mjs";
 import { runProof } from "./prove-run.mjs";
 import sharp from "sharp";
 import { normalizeMaster, assertIconFill } from "../../../scripts/icons/normalize.mjs";
@@ -44,9 +45,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         const destination = resolve(game, `public${image}`);
         mkdirSync(dirname(destination), { recursive: true });
         writeFileSync(destination, png);
-        entry.modelSha256 = createHash("sha256")
-          .update(readFileSync(resolve(game, `public${entry.model}`)))
-          .digest("hex");
+        entry.modelSha256 = buildingThumbnailModelSha256(entry.model, game);
         entry.imageSha256 = createHash("sha256").update(png).digest("hex");
         records.push({ name: image, ready: true, presses: [], model: entry.model });
       }

@@ -17,7 +17,7 @@ import {
 } from "./terrain-lab-buildings";
 import { HyperstructureModel } from "../structures/hyperstructure-model";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
-import { isProceduralModelPath, resolveProceduralModel } from "../structures/procedural-model-resolver";
+import { isProceduralModelPath } from "../structures/procedural-model-resolver";
 import { SpireModel } from "../structures/spire-model";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import type { WeatherState } from "@/three/managers/weather-manager";
@@ -365,8 +365,7 @@ export class TerrainLabInteraction {
     capacity: number,
     name: string,
   ): Promise<InstancedModel | RewardTileModel | null> {
-    const gltf =
-      path === HYPERSTRUCTURE_MODEL_PATH ? null : (resolveProceduralModel(path) ?? (await gltfLoader.loadAsync(path)));
+    const gltf = path === HYPERSTRUCTURE_MODEL_PATH ? null : await gltfLoader.loadAsync(path);
     if (this.disposed) return null;
     const model = gltf ? this.createPreviewModel(gltf, path, capacity, name) : new HyperstructureModel(capacity);
     let retained = false;

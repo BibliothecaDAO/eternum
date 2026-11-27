@@ -9,14 +9,14 @@ import {
   type BeastModel,
 } from "@bibliothecadao/types";
 import type { FrontierSpecies, FrontierBeast } from "@bibliothecadao/eternum";
-import { frontierPaintedPath } from "./frontier-painted-buildings";
+import { REALM_SUPPORT_PATHS } from "./realm-support-kit";
 import { RUIN_KIT_PATHS, RUIN_VARIANTS, ruinKitPath, type RuinVariant } from "./ruin-kit";
 import { modelPath } from "../utils/model-url";
 export { beastBand, frontierBeast, type FrontierSpecies, type FrontierBeast } from "@bibliothecadao/eternum";
 
 export const FALLEN_REALM_RUIN_PATH = ruinKitPath(0);
-export const FRONTIER_CAMP_MODEL_PATH = frontierPaintedPath("camp");
-export const SUPPLY_POST_MODEL_PATH = frontierPaintedPath("supply-yard");
+export const FRONTIER_CAMP_MODEL_PATH = REALM_SUPPORT_PATHS.camp;
+export const SUPPLY_POST_MODEL_PATH = REALM_SUPPORT_PATHS["supply-yard"];
 export const SUPPLY_POST_STANDARD = { scale: 1, x: -0.32, y: 0, z: 0.92 } as const;
 
 export const FRONTIER_BEASTS = {

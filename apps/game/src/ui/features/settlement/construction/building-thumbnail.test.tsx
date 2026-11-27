@@ -6,6 +6,7 @@ import { BuildingType, ResourceMiningTypes, ResourcesIds, getBuildingFromResourc
 import { ResourceIdToMiningType } from "@bibliothecadao/eternum";
 import { buildingModelPaths, BUILDINGS_GROUPS } from "@/three/constants/scene-constants";
 import manifest from "../../../../../asset-sources/building-thumbnails.json";
+import { buildingThumbnailModelSha256 } from "../../../../../scripts/building-thumbnail-hash.mjs";
 import { BuildingThumbnail } from "./building-thumbnail";
 import { BuildingCard } from "./select-preview-building";
 
@@ -50,7 +51,10 @@ describe("construction model thumbnails", () => {
 
   it("ships the recorded current model and rendered PNG bytes", () => {
     for (const [image, entry] of Object.entries(entries)) {
-      expect(sha256(entry.model), `${entry.model}: regenerate construction thumbnails`).toBe(entry.modelSha256);
+      expect(
+        buildingThumbnailModelSha256(entry.model, process.cwd()),
+        `${entry.model}: regenerate construction thumbnails`,
+      ).toBe(entry.modelSha256);
       expect(sha256(image), image).toBe(entry.imageSha256);
       const png = readFileSync(`public${image}`);
       expect(png.subarray(1, 4).toString()).toBe("PNG");

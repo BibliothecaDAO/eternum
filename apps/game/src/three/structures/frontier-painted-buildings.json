@@ -152,38 +152,6 @@
     "atlasSize": 0
   },
   {
-    "id": "supply-yard",
-    "label": "Supply yard",
-    "group": "training",
-    "path": "/models/frontier/painted/supply-yard.glb",
-    "architectureTriangles": 8000,
-    "atlasSize": 1024
-  },
-  {
-    "id": "scouts-lodge",
-    "label": "Scouts' lodge",
-    "group": "training",
-    "path": "/models/frontier/painted/scouts-lodge.glb",
-    "architectureTriangles": 8000,
-    "atlasSize": 1024
-  },
-  {
-    "id": "hearth",
-    "label": "Hearth",
-    "group": "training",
-    "path": "/models/frontier/painted/hearth.glb",
-    "architectureTriangles": 8000,
-    "atlasSize": 1024
-  },
-  {
-    "id": "camp",
-    "label": "Camp",
-    "group": "sites",
-    "path": "/models/frontier/painted/camp.glb",
-    "architectureTriangles": 5000,
-    "atlasSize": 512
-  },
-  {
     "id": "shrine",
     "label": "Shrine",
     "group": "sites",

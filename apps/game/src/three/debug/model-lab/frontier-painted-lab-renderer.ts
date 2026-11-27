@@ -8,11 +8,8 @@ import {
 } from "../../constants/scene-constants";
 import { modelPath } from "../../utils/model-url";
 import { buildingTierModelPath } from "../../structures/building-tiers";
-import {
-  FRONTIER_PAINTED_BUILDINGS,
-  type FrontierPaintedBuilding,
-  type FrontierPaintedGroup,
-} from "../../structures/frontier-painted-buildings";
+import { FRONTIER_PAINTED_BUILDINGS, type FrontierPaintedGroup } from "../../structures/frontier-painted-buildings";
+import { realmSupportLabEntries } from "../../structures/realm-support-kit";
 import { mountStaticLineup, type LineupAsset, type LineupSettings } from "./static-model-lineup";
 
 export interface FrontierPaintedLabSettings {
@@ -43,13 +40,21 @@ const SHIPPED_SITES: Partial<Record<string, string>> = {
   "essence-rift": RiftModelPath,
 };
 
+interface LabBuildingEntry {
+  readonly id: string;
+  readonly label: string;
+  readonly group: FrontierPaintedGroup;
+  readonly path: string;
+}
+
 /** One painted set at game scale, optionally with the shipped models it would replace in a row behind it. */
 export async function mountFrontierPaintedLab(
   container: HTMLElement,
   settings: FrontierPaintedLabSettings,
   signal: AbortSignal,
 ) {
-  const set = FRONTIER_PAINTED_BUILDINGS.filter((building) => building.group === settings.group);
+  const allBuildings: readonly LabBuildingEntry[] = [...FRONTIER_PAINTED_BUILDINGS, ...realmSupportLabEntries()];
+  const set = allBuildings.filter((building) => building.group === settings.group);
   const lineup = settings.shipped
     ? placeShippedRow(set, 0)
     : settings.compare
@@ -70,7 +75,7 @@ export async function mountFrontierPaintedLab(
   };
 }
 
-function placeRow(buildings: readonly FrontierPaintedBuilding[], z: number): LineupAsset[] {
+function placeRow(buildings: readonly LabBuildingEntry[], z: number): LineupAsset[] {
   return buildings.map((building, slot) => ({
     label: building.label,
     position: { x: slotX(slot, buildings.length), z },
@@ -78,7 +83,7 @@ function placeRow(buildings: readonly FrontierPaintedBuilding[], z: number): Lin
   }));
 }
 
-function placeShippedRow(buildings: readonly FrontierPaintedBuilding[], z = SHIPPED_ROW_Z): LineupAsset[] {
+function placeShippedRow(buildings: readonly LabBuildingEntry[], z = SHIPPED_ROW_Z): LineupAsset[] {
   return buildings.map((building, slot) => {
     const path = resolveShippedPath(building);
     return {
@@ -94,7 +99,7 @@ function slotX(slot: number, count: number): number {
 }
 
 /** The model the game draws today where this painted building would stand. */
-function resolveShippedPath(building: FrontierPaintedBuilding): string | undefined {
+function resolveShippedPath(building: LabBuildingEntry): string | undefined {
   if (building.group === "realms") return REALM_MODEL_PATHS[realmLevelName(building.id)];
   if (building.group === "sites") return SHIPPED_SITES[building.id];
   const [kind, tier] = splitTier(building.id);

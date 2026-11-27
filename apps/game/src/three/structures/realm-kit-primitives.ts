@@ -5,12 +5,18 @@ import {
   Color,
   ExtrudeGeometry,
   Float32BufferAttribute,
+  Group,
+  Mesh,
   Quaternion,
   Shape,
   Vector3,
 } from "three";
+import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { mergeGeometries, mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
+import MeshStandardNodeMaterial from "three/src/materials/nodes/MeshStandardNodeMaterial.js";
+import { attribute, varying } from "three/tsl";
 import type { FlagAnchor } from "./flag-anchors";
+import { createProcgenMasonryMaterial } from "./procgen-masonry-material";
 
 export interface KitPart {
   readonly geometry: BufferGeometry;
@@ -107,4 +113,59 @@ export function combineParts(parts: KitPart[]): BufferGeometry {
   indexed.computeBoundingBox();
   indexed.computeBoundingSphere();
   return indexed;
+}
+
+const KIT_GLOW_KEY = "eternum-kit-glow-v1";
+const KIT_GLOW_INTENSITY = 1.35;
+
+class KitGlowNodeMaterial extends MeshStandardNodeMaterial {
+  constructor() {
+    super();
+    this.name = "Kit glow";
+    this.roughness = 0.28;
+    this.metalness = 0.1;
+    this.flatShading = false;
+    const glow = varying(attribute("color", "vec3"), "vKitGlow");
+    this.colorNode = glow;
+    this.emissiveNode = glow.mul(KIT_GLOW_INTENSITY);
+  }
+
+  override customProgramCacheKey(): string {
+    return KIT_GLOW_KEY;
+  }
+}
+
+export function assembleKitGltf(
+  name: string,
+  parts: { readonly masonry: KitPart[]; readonly glow: KitPart[]; readonly anchors?: FlagAnchor[] },
+  rotateY = 0,
+): GLTF {
+  const scene = new Group();
+  scene.name = name;
+  const masonryGeometry = combineParts(parts.masonry);
+  if (rotateY !== 0) masonryGeometry.rotateY(rotateY);
+  const masonryMesh = new Mesh(masonryGeometry, createProcgenMasonryMaterial());
+  masonryMesh.name = `${name}:masonry`;
+  scene.add(masonryMesh);
+  if (parts.glow.length > 0) {
+    const glowGeometry = combineParts(parts.glow);
+    if (rotateY !== 0) glowGeometry.rotateY(rotateY);
+    const glowMesh = new Mesh(glowGeometry, new KitGlowNodeMaterial());
+    glowMesh.name = `${name}:glow`;
+    scene.add(glowMesh);
+  }
+  if (parts.anchors) scene.userData.flagAnchors = parts.anchors;
+  return asProceduralGltf(scene);
+}
+
+export function asProceduralGltf(scene: Group): GLTF {
+  return {
+    animations: [],
+    scene,
+    scenes: [scene],
+    cameras: [],
+    asset: {},
+    parser: {} as GLTF["parser"],
+    userData: {},
+  };
 }

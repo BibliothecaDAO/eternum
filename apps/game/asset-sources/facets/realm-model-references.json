@@ -2,28 +2,28 @@
   {
     "level": 0,
     "model": "procedural:base-realm:0",
-    "modelSha256": "5720a207174557be0c3041e1454e77008dec3052ed35fb254e605c07a20c958f",
+    "modelSha256": "686e62ab4e08f2d7b903ae319c4bfb50eb8d568b065f749ff5cc319d503f7d3d",
     "render": "/lab/realm-level-icons/settlement-model.png",
     "renderSha256": "7f9f17138579281117a9bd815c5936d7ea70c547f9e58ad4a329ae9edc31f545"
   },
   {
     "level": 1,
     "model": "procedural:base-realm:1",
-    "modelSha256": "5720a207174557be0c3041e1454e77008dec3052ed35fb254e605c07a20c958f",
+    "modelSha256": "686e62ab4e08f2d7b903ae319c4bfb50eb8d568b065f749ff5cc319d503f7d3d",
     "render": "/lab/realm-level-icons/city-model.png",
     "renderSha256": "0d5d8200e6e85cdedbd88dfa8e3ee316a626b6aa7a5bd07085ffc1dc18efa64c"
   },
   {
     "level": 2,
     "model": "procedural:base-realm:2",
-    "modelSha256": "5720a207174557be0c3041e1454e77008dec3052ed35fb254e605c07a20c958f",
+    "modelSha256": "686e62ab4e08f2d7b903ae319c4bfb50eb8d568b065f749ff5cc319d503f7d3d",
     "render": "/lab/realm-level-icons/kingdom-model.png",
     "renderSha256": "604001cbad1c781f4b0875f0ef68a75ed8a1dd437b7a0fdc8e3a173c62ea5f76"
   },
   {
     "level": 3,
     "model": "procedural:base-realm:3",
-    "modelSha256": "5720a207174557be0c3041e1454e77008dec3052ed35fb254e605c07a20c958f",
+    "modelSha256": "686e62ab4e08f2d7b903ae319c4bfb50eb8d568b065f749ff5cc319d503f7d3d",
     "render": "/lab/realm-level-icons/empire-model.png",
     "renderSha256": "47b40a140d7510e1707797f61ed61d03c8c80c4f52c91a85201dd802a5195b77"
   }

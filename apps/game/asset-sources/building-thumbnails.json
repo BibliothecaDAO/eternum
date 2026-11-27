@@ -75,8 +75,8 @@
     "imageSha256": "b679ff9fd38dc39c4258892871e5eb84dd5eaed80c3a127028f214a122434d88"
   },
   "/images/buildings/construction/rations-depot.png": {
-    "model": "/models/frontier/buildings/rations-depot.glb",
-    "imageSha256": "1889cbaedb87c26d70ac3aff38cf30a386e9b11b6ceb21cd065428ed8f2a554d",
-    "modelSha256": "91c313c927d96d092e84a9c8236ec26fe5492ca17c0bb55a46f3f5833e2e06ef"
+    "model": "procedural:realm-support:rations-depot",
+    "imageSha256": "aa337a4563b7b3bb9abcb510548a92087b2e74277f3c1640cd1db3e26754e94a",
+    "modelSha256": "17267ee4ac28c762fd3d3dd4fafdd89a42b639a439366d88b8c902c7de9b1703"
   }
 }

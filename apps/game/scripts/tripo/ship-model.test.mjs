@@ -305,24 +305,6 @@ describe("ship-model pipeline", () => {
     expect(glbJson.images[0].extras?.eternumContentHash).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it("keeps every standalone Frontier building model within building budget, grounded, normalized and inside the unit hex", async () => {
-    const io = await createReader();
-    const paintedPaths = new Set(FRONTIER_PAINTED_BUILDINGS.map((entry) => entry.path));
-    const shippedPaths = [
-      ...new Set(
-        FRONTIER_BUILDING_TYPES.map((type) => frontierPaintedBuildingPath(type)).filter(
-          (path) => path && !paintedPaths.has(path),
-        ),
-      ),
-    ];
-    expect(shippedPaths.length).toBeGreaterThanOrEqual(3);
-
-    for (const publicPath of shippedPaths) {
-      const modelPath = fileURLToPath(new URL(`../../public${publicPath}`, import.meta.url));
-      await assertDeliveredAsset(io, modelPath, "building", MODEL_BUDGETS.building);
-    }
-  });
-
   it("keeps every shipped Tripo troop model within troop budget, grounded, ownership-clothed and inside the unit hex", async () => {
     const io = await createReader();
     const candidateFiles = [...new Set(Object.values(MODEL_TYPE_TO_FILE))];
@@ -355,7 +337,7 @@ describe("ship-model pipeline", () => {
     const buildingPaths = [
       ...new Set(
         FRONTIER_BUILDING_TYPES.map((type) => frontierPaintedBuildingPath(type)).filter(
-          (path) => path && !paintedPaths.has(path),
+          (path) => path && !path.startsWith("procedural:") && !paintedPaths.has(path),
         ),
       ),
     ];

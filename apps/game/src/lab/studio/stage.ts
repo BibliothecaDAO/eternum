@@ -11,7 +11,6 @@ import { HYPERSTRUCTURE_MODEL_PATH } from "@/three/structures/hyperstructure-des
 import { HyperstructureModel } from "@/three/structures/hyperstructure-model";
 import { resolveStructureRotationY } from "@/three/structures/structure-orientation";
 import { REALM_ASSETS } from "@/three/structures/realm-design";
-import { resolveProceduralModel } from "@/three/structures/procedural-model-resolver";
 import { SettlementModel } from "@/three/structures/settlement-model";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import type { PreparedTerrainPage } from "@/three/terrain/terrain-types";
@@ -84,7 +83,7 @@ export class StudioStage implements LabStage {
     for (const asset of REALM_ASSETS.filter((entry) => !entry.wonder && !entry.skin).toSorted(
       (a, b) => a.level - b.level,
     )) {
-      const gltf = resolveProceduralModel(asset.path) ?? (await gltfLoader.loadAsync(asset.path));
+      const gltf = await gltfLoader.loadAsync(asset.path);
       const realm = new SettlementModel(gltf, 1, "realm");
       realm.setCount(1);
       realm.setMatrixAt(0, this.placementMatrix("realm", facingTheMapCamera(asset.path)));

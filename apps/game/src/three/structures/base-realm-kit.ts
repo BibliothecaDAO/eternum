@@ -4,22 +4,17 @@ import {
   BufferGeometry,
   ConeGeometry,
   CylinderGeometry,
-  Group,
   LatheGeometry,
-  Mesh,
   OctahedronGeometry,
   SphereGeometry,
   TorusGeometry,
   Vector2,
   Vector3,
 } from "three";
-import MeshStandardNodeMaterial from "three/src/materials/nodes/MeshStandardNodeMaterial.js";
-import { attribute, varying } from "three/tsl";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
-import { createProcgenMasonryMaterial } from "./procgen-masonry-material";
 import {
+  assembleKitGltf,
   beamBetween,
-  combineParts,
   cutStoneBlock,
   extrudedGable,
   type KitPart,
@@ -30,8 +25,6 @@ import {
 } from "./realm-kit-primitives";
 
 const BASE_REALM_KIT_PREFIX = "procedural:base-realm:";
-const BASE_REALM_GLOW_KEY = "eternum-base-realm-glow-v1";
-const BASE_REALM_GLOW_INTENSITY = 1.35;
 
 interface BaseRealmAssetMeta {
   readonly id: string;
@@ -135,47 +128,7 @@ export function isBaseRealmKitPath(path: string): boolean {
 export function createBaseRealmKit(level: RealmLevels): GLTF {
   const parts: KitParts = { masonry: [], glow: [], anchors: [] };
   BASE_REALM_BUILDERS[level](parts);
-  return assembleBaseRealmGltf(`base-realm-${BASE_REALM_META[level].id}`, parts);
-}
-
-class BaseRealmGlowNodeMaterial extends MeshStandardNodeMaterial {
-  constructor() {
-    super();
-    this.name = "Base realm glow";
-    this.roughness = 0.28;
-    this.metalness = 0.1;
-    this.flatShading = false;
-    const glow = varying(attribute("color", "vec3"), "vBaseRealmGlow");
-    this.colorNode = glow;
-    this.emissiveNode = glow.mul(BASE_REALM_GLOW_INTENSITY);
-  }
-
-  override customProgramCacheKey(): string {
-    return BASE_REALM_GLOW_KEY;
-  }
-}
-
-function assembleBaseRealmGltf(name: string, parts: KitParts): GLTF {
-  const scene = new Group();
-  scene.name = name;
-  const masonryMesh = new Mesh(combineParts(parts.masonry), createProcgenMasonryMaterial());
-  masonryMesh.name = `${name}:masonry`;
-  scene.add(masonryMesh);
-  if (parts.glow.length > 0) {
-    const glowMesh = new Mesh(combineParts(parts.glow), new BaseRealmGlowNodeMaterial());
-    glowMesh.name = `${name}:glow`;
-    scene.add(glowMesh);
-  }
-  scene.userData.flagAnchors = parts.anchors;
-  return {
-    animations: [],
-    scene,
-    scenes: [scene],
-    cameras: [],
-    asset: {},
-    parser: {} as GLTF["parser"],
-    userData: {},
-  };
+  return assembleKitGltf(`base-realm-${BASE_REALM_META[level].id}`, parts);
 }
 
 function buildSettlement(parts: KitParts): void {
