@@ -1,12 +1,9 @@
-import floraManifest from "../../../public/models/terrain-flora/manifest.json";
-import { modelPath } from "../utils/model-url";
+import { getFloraSpeciesMetadata } from "./flora-kit";
 
 export type TerrainPropLod = "near" | "far";
 export type TerrainPropRole = "canopy" | "groundcover" | "rigid" | "understory";
 export type TerrainPropPlacementLayer = "canopy" | "debris" | "groundcover" | "understory";
 type LayerPropAnchor = "scatter" | "edge" | "corner";
-
-export const TERRAIN_FLORA_MANIFEST_PATH = modelPath("terrain-flora/manifest.json");
 
 export const SURFACE_PROP_IDS = Object.freeze([
   "broadleaf",
@@ -277,11 +274,7 @@ export const TERRAIN_PROP_PALETTE_SHIFT: Readonly<Record<SurfacePropId, number>>
 );
 
 const FLORA_FOOTPRINT_RADIUS = Object.fromEntries(
-  TERRAIN_PROP_ARCHETYPE_IDS.map((archetype) => {
-    const row = floraManifest.species.find(({ id }) => id === archetype);
-    if (!row) throw new Error(`The flora manifest has no species for terrain prop ${archetype}`);
-    return [archetype, row.radius];
-  }),
+  TERRAIN_PROP_ARCHETYPE_IDS.map((archetype) => [archetype, getFloraSpeciesMetadata(archetype).radius]),
 ) as Record<TerrainPropArchetypeId, number>;
 
 const SPACING_SHARE: Readonly<Record<TerrainPropPlacementLayer, number>> = Object.freeze({

@@ -11,7 +11,6 @@
     "benchmark:procedural-characters": "node ./scripts/run-procedural-character-performance-benchmark.mjs",
     "capture:character-animation": "node ./scripts/run-character-animation-capture.mjs",
     "build:biome-creatures": "node ./scripts/biome-creatures/build-creatures.mjs",
-    "build:terrain-flora": "node ./scripts/terrain-flora/build-flora.mjs",
     "benchmark:terrain": "node ./scripts/terrain-verification/run-terrain-performance-benchmark.mjs",
     "benchmark:terrain:quick": "node ./scripts/terrain-verification/run-terrain-performance-benchmark.mjs --run-mode quick",
     "benchmark:terrain:compare": "node ./scripts/terrain-verification/compare-terrain-performance-benchmarks.mjs",
