@@ -4,9 +4,11 @@ import { Box3, Color, Mesh, MeshStandardMaterial, Triangle, Vector3 } from "thre
 import { describe, expect, it } from "vitest";
 import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
 import {
+  createDeepArchiveKit,
   createDeepGateKit,
   createDeepGateVeilGeometry,
   createDeepGateVeilMaterial,
+  DEEP_ARCHIVE_HEIGHT,
   DEEP_GATE_HEIGHT,
 } from "./deep-site-kit";
 import { createProcgenMasonryMaterial, isProcgenMasonryMaterial } from "./procgen-masonry-material";
@@ -14,6 +16,8 @@ import { createProcgenMasonryMaterial, isProcgenMasonryMaterial } from "./procge
 const HEX_APOTHEM = Math.sqrt(3) / 2;
 const MAX_GATE_TRIANGLES = 3_500;
 const MAX_GATE_HEIGHT_TO_WIDTH = 1.2;
+const MAX_ARCHIVE_TRIANGLES = 4_500;
+const MAX_ARCHIVE_HEIGHT_TO_WIDTH = 1.15;
 
 function countTriangles(mesh: Mesh): number {
   const index = mesh.geometry.getIndex();
@@ -115,6 +119,83 @@ describe("procedural Deep site kits", () => {
     veilMaterial.dispose();
 
     expect(aspectSignatures.size).toBe(aspects.length);
+    sharedMasonry.dispose();
+  });
+
+  it("builds a grounded, floorless, hex-fit Hyperstructure Archive with shared ProcgenMasonryNodeMaterial and deep_gem holder socket", () => {
+    const sharedMasonry = createProcgenMasonryMaterial();
+    const sharedKey = sharedMasonry.customProgramCacheKey();
+    const triangle = new Triangle();
+    const normal = new Vector3();
+
+    const kit = createDeepArchiveKit();
+    const meshes: Mesh[] = [];
+    let totalTriangles = 0;
+    const bounds = new Box3();
+
+    kit.scene.traverse((node) => {
+      if (!(node instanceof Mesh)) return;
+      meshes.push(node);
+      expect(node.scale.x).toBe(1);
+      expect(node.scale.y).toBe(1);
+      expect(node.scale.z).toBe(1);
+
+      const geometry = node.geometry;
+      for (const attr of ["position", "normal", "uv"]) {
+        const buffer = geometry.getAttribute(attr);
+        expect(buffer, `${node.name} ${attr}`).toBeDefined();
+        expect(Array.from(buffer.array).every(Number.isFinite), `${node.name} ${attr}`).toBe(true);
+      }
+      const positions = geometry.getAttribute("position");
+      const index = geometry.getIndex();
+      const count = index?.count ?? positions.count;
+      for (let face = 0; face < count; face += 3) {
+        triangle.a.fromBufferAttribute(positions, index ? index.getX(face) : face);
+        triangle.b.fromBufferAttribute(positions, index ? index.getX(face + 1) : face + 1);
+        triangle.c.fromBufferAttribute(positions, index ? index.getX(face + 2) : face + 2);
+        expect(triangle.getArea(), `${node.name} face ${face / 3}`).toBeGreaterThan(1e-12);
+        expect(triangle.getNormal(normal).length(), `${node.name}`).toBeCloseTo(1, 5);
+      }
+
+      totalTriangles += countTriangles(node);
+      geometry.computeBoundingBox();
+      bounds.union(geometry.boundingBox!);
+    });
+
+    expect(meshes.length).toBe(2);
+    const [masonry, socket] = meshes;
+    expect(isProcgenMasonryMaterial(masonry!.material as MeshStandardMaterial)).toBe(true);
+    expect(masonry!.material).toBeInstanceOf(FrostedStandardNodeMaterial);
+    const masonryMat = masonry!.material as FrostedStandardNodeMaterial;
+    expect(masonryMat.customProgramCacheKey()).toBe(sharedKey);
+    expect(masonryMat.map).toBeNull();
+    expect(masonryMat.bumpMap).toBeNull();
+    expect(masonryMat.roughnessMap).toBeNull();
+    expect(masonry!.geometry.getAttribute("color")).toBeDefined();
+
+    expect(socket!.name).toContain("deep_gem");
+    socket!.geometry.computeBoundingBox();
+    expect(socket!.geometry.boundingBox!.min.y).toBeGreaterThan(0.8);
+
+    expect(totalTriangles).toBeGreaterThan(400);
+    expect(totalTriangles).toBeLessThanOrEqual(MAX_ARCHIVE_TRIANGLES);
+    expect(bounds.min.y).toBeGreaterThanOrEqual(-0.002);
+    expect(bounds.min.y).toBeLessThanOrEqual(0.005);
+    expect(bounds.max.y).toBeCloseTo(DEEP_ARCHIVE_HEIGHT, 2);
+    expect(bounds.max.y).toBeLessThanOrEqual(1.4);
+
+    const width = bounds.max.x - bounds.min.x;
+    expect(bounds.max.y / width, "archive H/W").toBeLessThanOrEqual(MAX_ARCHIVE_HEIGHT_TO_WIDTH);
+
+    const maxX = Math.max(Math.abs(bounds.min.x), Math.abs(bounds.max.x));
+    const maxZ = Math.max(Math.abs(bounds.min.z), Math.abs(bounds.max.z));
+    expect(maxX).toBeLessThanOrEqual(HEX_APOTHEM - 0.12);
+    expect(maxX + Math.sqrt(3) * maxZ).toBeLessThanOrEqual(2 * HEX_APOTHEM);
+
+    for (const mesh of meshes) {
+      mesh.geometry.dispose();
+      (mesh.material as MeshStandardMaterial).dispose();
+    }
     sharedMasonry.dispose();
   });
 });

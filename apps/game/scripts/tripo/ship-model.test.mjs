@@ -17,7 +17,7 @@ import {
   FRONTIER_PAINTED_BUILDINGS,
   frontierPaintedBuildingPath,
 } from "../../src/three/structures/frontier-painted-buildings";
-import { DEEP_SITE_MODELS } from "../../src/three/structures/deep-landmarks";
+import { DEEP_SITE_GLB_PATHS } from "../../src/three/structures/deep-landmarks";
 import { MODEL_BUDGETS, assertDeliveredAsset, readHexFit, shipTripoModel } from "./ship-model.mjs";
 
 const CLI = fileURLToPath(new URL("./ship-model.mjs", import.meta.url));
@@ -350,10 +350,10 @@ describe("ship-model pipeline", () => {
     }
   });
 
-  it("keeps every Deep building within its budget, grounded, <= 1.42 tall and inside the unit hex", async () => {
+  it("keeps every remaining Tripo Deep building within its budget, grounded, <= 1.42 tall and inside the unit hex", async () => {
     const io = await createReader();
-    const entries = Object.values(DEEP_SITE_MODELS).map((publicPath) => ({ publicPath, kind: "deepBuilding" }));
-    expect(entries.length).toBe(4);
+    const entries = DEEP_SITE_GLB_PATHS.map((publicPath) => ({ publicPath, kind: "deepBuilding" }));
+    expect(entries.length).toBe(3);
 
     for (const { publicPath, kind } of entries) {
       const modelPath = fileURLToPath(new URL(`../../public${publicPath}`, import.meta.url));
@@ -384,7 +384,7 @@ describe("ship-model pipeline", () => {
     const expectedStems = [
       ...buildingPaths,
       ...troopPaths,
-      ...Object.values(DEEP_SITE_MODELS),
+      ...DEEP_SITE_GLB_PATHS,
       ...Object.values(FRONTIER_BEASTS).map((entry) => entry.path),
     ]
       .map((publicPath) => publicPath.replace(/^\/models\//, "").replace(/\.glb$/, ""))

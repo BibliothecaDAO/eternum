@@ -5,12 +5,15 @@ import {
   BoxGeometry,
   BufferGeometry,
   Color,
+  CylinderGeometry,
   DoubleSide,
   ExtrudeGeometry,
   Float32BufferAttribute,
   Group,
+  IcosahedronGeometry,
   Mesh,
   MeshStandardMaterial,
+  Path,
   Shape,
   Vector3,
 } from "three";
@@ -18,9 +21,11 @@ import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { mergeGeometries, mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 import { positionGeometry, smoothstep } from "three/tsl";
 import { MeshBasicNodeMaterial } from "three/webgpu";
+import { DEEP_PALETTE } from "../terrain/deep-floor-material";
 import { createProcgenMasonryMaterial } from "./procgen-masonry-material";
 
 export const DEEP_GATE_HEIGHT = 1.34;
+export const DEEP_ARCHIVE_HEIGHT = 1.18;
 
 interface KitPart {
   readonly geometry: BufferGeometry;
@@ -33,6 +38,13 @@ const OBSIDIAN_CROWN = "#424c5c";
 const BRONZE_MAIN = "#c89644";
 const BRONZE_LIGHT = "#d8a852";
 const BRONZE_SHADE = "#9b7030";
+
+const BASALT_MAIN = "#353940";
+const BASALT_SHADE = "#22262c";
+const BASALT_EDGE = "#464c55";
+const GOLD_MAIN = "#d4a644";
+const GOLD_LIGHT = "#e8bc58";
+const GOLD_SHADE = "#a87d2e";
 
 const PYLON_X = 0.42;
 const PYLON_BASE_W = 0.28;
@@ -71,6 +83,265 @@ export function createDeepGateKit(aspect: AspectId): Pick<GLTF, "scene" | "anima
 
   root.add(masonryMesh, accentMesh);
   return { scene: root, animations: [] };
+}
+
+export function createDeepArchiveKit(): Pick<GLTF, "scene" | "animations"> {
+  const masonryParts: KitPart[] = [];
+  const socketParts: KitPart[] = [];
+
+  addArchiveArcadeBase(masonryParts);
+  addArchiveGoldCollar(masonryParts);
+  addArchiveTabletDrum(masonryParts);
+  addArchiveOculusCrown(masonryParts, socketParts);
+
+  const root = new Group();
+  root.name = "deep-site-kit-foundation";
+
+  const masonryMesh = buildMasonryMesh(masonryParts, "deep-archive-masonry");
+  const socketMesh = buildSocketGemMesh(socketParts, "deep_gem_archive");
+
+  root.add(masonryMesh, socketMesh);
+  return { scene: root, animations: [] };
+}
+
+function addArchiveArcadeBase(parts: KitPart[]): void {
+  const pierCount = 8;
+  for (let i = 0; i < pierCount; i++) {
+    const angle = (i * Math.PI * 2) / pierCount + Math.PI / 8;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const yaw = -angle;
+
+    addRotatedBox(parts, cos * 0.525, 0.03, sin * 0.525, 0.2, 0.06, 0.16, yaw, BASALT_EDGE);
+    addRotatedBox(parts, cos * 0.51, 0.145, sin * 0.51, 0.175, 0.17, 0.142, yaw, BASALT_MAIN);
+    addRotatedBox(parts, cos * 0.498, 0.245, sin * 0.498, 0.185, 0.036, 0.15, yaw, BASALT_EDGE);
+    addRotatedBox(parts, cos * 0.486, 0.35, sin * 0.486, 0.16, 0.18, 0.134, yaw, BASALT_MAIN);
+
+    const midAngle = angle + Math.PI / 8;
+    const mCos = Math.cos(midAngle);
+    const mSin = Math.sin(midAngle);
+    addVaultArchBridge(parts, mCos * 0.445, 0.22, mSin * 0.445, -midAngle + Math.PI / 2);
+  }
+
+  addHollowRing(parts, 0.31, 0.455, 0.425, 0.34, 16, BASALT_SHADE);
+}
+
+function addVaultArchBridge(parts: KitPart[], x: number, y: number, z: number, yaw: number): void {
+  const halfSpan = 0.16;
+  const height = 0.22;
+  const archR = 0.105;
+  const springY = 0.025;
+  const shape = new Shape();
+  shape.moveTo(-halfSpan, 0);
+  shape.lineTo(-archR, 0);
+  shape.lineTo(-archR, springY);
+  const steps = 8;
+  for (let s = 0; s <= steps; s++) {
+    const a = Math.PI - (s / steps) * Math.PI;
+    shape.lineTo(Math.cos(a) * archR, springY + Math.sin(a) * archR);
+  }
+  shape.lineTo(archR, 0);
+  shape.lineTo(halfSpan, 0);
+  shape.lineTo(halfSpan, height);
+  shape.lineTo(-halfSpan, height);
+  shape.closePath();
+
+  const geometry = new ExtrudeGeometry(shape, { depth: 0.125, bevelEnabled: false });
+  geometry.translate(0, 0, -0.0625);
+  geometry.rotateY(yaw);
+  geometry.translate(x, y, z);
+  parts.push({ geometry, color: BASALT_MAIN });
+}
+
+function addArchiveGoldCollar(parts: KitPart[]): void {
+  addHollowRing(parts, 0.415, 0.455, 0.548, 0.44, 24, GOLD_SHADE);
+  addHollowRing(parts, 0.45, 0.54, 0.568, 0.445, 24, GOLD_MAIN);
+  addHollowRing(parts, 0.535, 0.556, 0.556, 0.458, 24, GOLD_LIGHT);
+
+  const cleatCount = 8;
+  for (let i = 0; i < cleatCount; i++) {
+    const angle = (i * Math.PI * 2) / cleatCount + Math.PI / 8;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const yaw = -angle;
+    addRotatedBox(parts, cos * 0.528, 0.495, sin * 0.528, 0.125, 0.115, 0.105, yaw, GOLD_LIGHT);
+    addRotatedBox(parts, cos * 0.585, 0.525, sin * 0.585, 0.018, 0.02, 0.022, yaw, GOLD_SHADE);
+    addRotatedBox(parts, cos * 0.585, 0.465, sin * 0.585, 0.018, 0.02, 0.022, yaw, GOLD_SHADE);
+  }
+}
+
+function addArchiveTabletDrum(parts: KitPart[]): void {
+  const drum = new CylinderGeometry(0.425, 0.44, 0.3, 8);
+  drum.rotateY(Math.PI / 8);
+  drum.translate(0, 0.67, 0);
+  parts.push({ geometry: drum, color: BASALT_MAIN });
+
+  const parapet = new CylinderGeometry(0.405, 0.432, 0.06, 8);
+  parapet.rotateY(Math.PI / 8);
+  parapet.translate(0, 0.84, 0);
+  parts.push({ geometry: parapet, color: BASALT_EDGE });
+
+  const sides = 8;
+  for (let i = 0; i < sides; i++) {
+    const cornerAngle = (i * Math.PI * 2) / sides + Math.PI / 8;
+    addRotatedBox(
+      parts,
+      Math.cos(cornerAngle) * 0.418,
+      0.685,
+      Math.sin(cornerAngle) * 0.418,
+      0.075,
+      0.32,
+      0.075,
+      -cornerAngle,
+      BASALT_EDGE,
+    );
+
+    const faceAngle = cornerAngle + Math.PI / 8;
+    const fCos = Math.cos(faceAngle);
+    const fSin = Math.sin(faceAngle);
+    const fYaw = -faceAngle;
+    addRotatedBox(parts, fCos * 0.398, 0.665, fSin * 0.398, 0.042, 0.19, 0.155, fYaw, BASALT_EDGE);
+    addRotatedBox(parts, fCos * 0.408, 0.66, fSin * 0.408, 0.032, 0.15, 0.115, fYaw, BASALT_SHADE);
+    addRotatedBox(parts, fCos * 0.402, 0.765, fSin * 0.402, 0.048, 0.032, 0.165, fYaw, BASALT_EDGE);
+  }
+}
+
+function addArchiveOculusCrown(masonryParts: KitPart[], socketParts: KitPart[]): void {
+  const core = new CylinderGeometry(0.23, 0.24, 0.16, 8);
+  core.rotateY(Math.PI / 8);
+  core.translate(0, 0.92, 0);
+  masonryParts.push({ geometry: core, color: BASALT_SHADE });
+
+  addHollowRing(masonryParts, 0.845, 0.88, 0.278, 0.22, 16, GOLD_MAIN);
+  addHollowRing(masonryParts, 0.965, 1.01, 0.282, 0.215, 16, GOLD_MAIN);
+  addHollowRing(masonryParts, 1.005, 1.028, 0.272, 0.222, 16, GOLD_LIGHT);
+
+  const mullions = 8;
+  for (let i = 0; i < mullions; i++) {
+    const angle = (i * Math.PI * 2) / mullions + Math.PI / 8;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const yaw = -angle;
+    addRotatedBox(masonryParts, cos * 0.258, 0.925, sin * 0.258, 0.042, 0.11, 0.038, yaw, GOLD_LIGHT);
+    addRotatedBox(masonryParts, cos * 0.268, 1.018, sin * 0.268, 0.048, 0.032, 0.042, yaw, GOLD_LIGHT);
+
+    const paneAngle = angle + Math.PI / 8;
+    addRotatedBox(
+      socketParts,
+      Math.cos(paneAngle) * 0.242,
+      0.922,
+      Math.sin(paneAngle) * 0.242,
+      0.022,
+      0.082,
+      0.11,
+      -paneAngle,
+      DEEP_PALETTE.gold,
+    );
+  }
+
+  masonryParts.push({ geometry: createFacetedDomeGeometry(0.222, 0.175, 0.992), color: GOLD_LIGHT });
+
+  const keystone = new CylinderGeometry(0.022, 0.052, 0.026, 6);
+  keystone.translate(0, 1.167, 0);
+  socketParts.push({ geometry: keystone, color: DEEP_PALETTE.gold });
+}
+
+function createFacetedDomeGeometry(radius: number, height: number, baseY: number): BufferGeometry {
+  const sphere = new IcosahedronGeometry(radius, 1);
+  const nonIndexed = sphere.index ? sphere.toNonIndexed() : sphere;
+  const pos = nonIndexed.getAttribute("position");
+  const kept: number[] = [];
+  const scaleY = height / radius;
+  const a = new Vector3();
+  const b = new Vector3();
+  const c = new Vector3();
+  for (let i = 0; i < pos.count; i += 3) {
+    a.fromBufferAttribute(pos, i);
+    b.fromBufferAttribute(pos, i + 1);
+    c.fromBufferAttribute(pos, i + 2);
+    if (a.y + b.y + c.y < 0) continue;
+    for (const v of [a, b, c]) {
+      const clampedY = Math.max(0, v.y);
+      kept.push(v.x, baseY + clampedY * scaleY, v.z);
+    }
+  }
+  if (nonIndexed !== sphere) nonIndexed.dispose();
+  sphere.dispose();
+
+  const dome = new BufferGeometry();
+  dome.setAttribute("position", new Float32BufferAttribute(kept, 3));
+  dome.computeVertexNormals();
+  return dome;
+}
+
+function addHollowRing(
+  parts: KitPart[],
+  yBottom: number,
+  yTop: number,
+  outerRadius: number,
+  innerRadius: number,
+  segments: number,
+  color: string,
+): void {
+  const outer = new Shape();
+  for (let i = 0; i < segments; i++) {
+    const a = (i / segments) * Math.PI * 2;
+    const x = Math.cos(a) * outerRadius;
+    const y = Math.sin(a) * outerRadius;
+    if (i === 0) outer.moveTo(x, y);
+    else outer.lineTo(x, y);
+  }
+  outer.closePath();
+
+  const hole = new Path();
+  for (let i = 0; i < segments; i++) {
+    const a = -(i / segments) * Math.PI * 2;
+    const x = Math.cos(a) * innerRadius;
+    const y = Math.sin(a) * innerRadius;
+    if (i === 0) hole.moveTo(x, y);
+    else hole.lineTo(x, y);
+  }
+  hole.closePath();
+  outer.holes.push(hole);
+
+  const geometry = new ExtrudeGeometry(outer, { depth: yTop - yBottom, bevelEnabled: false });
+  geometry.rotateX(-Math.PI / 2);
+  geometry.translate(0, yBottom, 0);
+  parts.push({ geometry, color });
+}
+
+function addRotatedBox(
+  parts: KitPart[],
+  x: number,
+  y: number,
+  z: number,
+  width: number,
+  height: number,
+  depth: number,
+  yaw: number,
+  color: string,
+): void {
+  const geometry = new BoxGeometry(width, height, depth);
+  geometry.rotateY(yaw);
+  geometry.translate(x, y, z);
+  parts.push({ geometry, color });
+}
+
+function buildSocketGemMesh(parts: readonly KitPart[], name: string): Mesh {
+  const geometry = combineParts(parts, false);
+  const material = new MeshStandardMaterial({
+    name,
+    color: new Color(DEEP_PALETTE.gold),
+    emissive: new Color(DEEP_PALETTE.gold),
+    emissiveIntensity: 1.2,
+    roughness: 0.22,
+    metalness: 0.35,
+  });
+  const mesh = new Mesh(geometry, material);
+  mesh.name = name;
+  mesh.castShadow = false;
+  mesh.receiveShadow = false;
+  return mesh;
 }
 
 export function createDeepGateVeilGeometry(): BufferGeometry {

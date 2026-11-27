@@ -10,6 +10,7 @@ import {
   MeshStandardMaterial,
   type Object3D,
 } from "three";
+import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { attribute, varying } from "three/tsl";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 import InstancedModel from "../managers/instanced-model";
@@ -17,15 +18,22 @@ import { DEEP_PALETTE } from "../terrain/deep-floor-material";
 import { MaterialPool } from "../utils/material-pool";
 import { modelPath } from "../utils/model-url";
 import { gltfLoader } from "../utils/utils";
+import { createDeepArchiveKit } from "./deep-site-kit";
+import { isProcgenMasonryMaterial } from "./procgen-masonry-material";
 
 type DeepSiteKey = (typeof deepSites)[number]["key"];
+type DeepSiteSource = { readonly kit: () => Pick<GLTF, "scene" | "animations"> } | { readonly glb: string };
 
-export const DEEP_SITE_MODELS = {
-  foundation: modelPath("frontier/deep/archive.glb"),
-  core: modelPath("frontier/deep/core.glb"),
-  mine: modelPath("frontier/deep/mine.glb"),
-  altar: modelPath("frontier/deep/altar.glb"),
-} as const satisfies Record<DeepSiteKey, string>;
+export const DEEP_SITE_SOURCES = {
+  foundation: { kit: createDeepArchiveKit },
+  core: { glb: modelPath("frontier/deep/core.glb") },
+  mine: { glb: modelPath("frontier/deep/mine.glb") },
+  altar: { glb: modelPath("frontier/deep/altar.glb") },
+} as const satisfies Record<DeepSiteKey, DeepSiteSource>;
+
+export const DEEP_SITE_GLB_PATHS: readonly string[] = Object.values(DEEP_SITE_SOURCES)
+  .filter((source): source is { readonly glb: string } => "glb" in source)
+  .map((source) => source.glb);
 
 export const DEEP_EMPTY_GEM = "#121828";
 const ACTIVE_GEM_INTENSITY = 1.6;
@@ -35,11 +43,18 @@ export async function loadDeepLandmark(
   key: DeepSiteKey,
   activation: number,
 ): Promise<{ scene: Group; animations: [] }> {
-  const gltf = await gltfLoader.loadAsync(DEEP_SITE_MODELS[key]);
+  const source = DEEP_SITE_SOURCES[key];
   const root = new Group();
   root.name = activation < 1 ? `deep-landmark-${key}-dormant` : `deep-landmark-${key}`;
+  if ("kit" in source) {
+    const procedural = source.kit();
+    applyLandmarkActivation(procedural.scene, activation, false);
+    root.add(procedural.scene);
+    return { scene: root, animations: [] };
+  }
+  const gltf = await gltfLoader.loadAsync(source.glb);
   const clone = gltf.scene.clone(true);
-  applyLandmarkActivation(clone, activation);
+  applyLandmarkActivation(clone, activation, true);
   root.add(clone);
   return { scene: root, animations: [] };
 }
@@ -112,7 +127,7 @@ function holderGlowMaterial(source: MeshStandardMaterial): MeshStandardNodeMater
   return material;
 }
 
-function applyLandmarkActivation(root: Object3D, activation: number): void {
+function applyLandmarkActivation(root: Object3D, activation: number, cloneMaterials: boolean): void {
   const active = activation >= 1;
   root.traverse((object) => {
     if (!(object instanceof Mesh)) return;
@@ -120,35 +135,44 @@ function applyLandmarkActivation(root: Object3D, activation: number): void {
       if (active && object.material.some((material) => isSocketGem(object.name, material.name))) {
         object.userData.holderGlow = true;
       }
-      object.material = object.material.map((material) => cloneForActivation(object.name, material, active));
+      object.material = object.material.map((material) =>
+        prepareForActivation(object.name, material, active, cloneMaterials),
+      );
     } else if (object.material) {
       if (active && isSocketGem(object.name, object.material.name)) {
         object.userData.holderGlow = true;
       }
-      object.material = cloneForActivation(object.name, object.material, active);
+      object.material = prepareForActivation(object.name, object.material, active, cloneMaterials);
     }
   });
 }
 
-function cloneForActivation(meshName: string, material: Material, active: boolean): Material {
-  const cloned = material.clone();
-  if (!(cloned instanceof MeshStandardMaterial)) return cloned;
-  if (isSocketGem(meshName, cloned.name)) {
-    if (active) {
-      cloned.color.set(DEEP_PALETTE.gold);
-      cloned.emissive.set(DEEP_PALETTE.gold);
-      cloned.emissiveIntensity = ACTIVE_GEM_INTENSITY;
-    } else {
-      cloned.color.set(DEEP_EMPTY_GEM);
-      cloned.emissive.setHex(0x000000);
-      cloned.emissiveIntensity = 0;
+function prepareForActivation(meshName: string, material: Material, active: boolean, cloneMaterial: boolean): Material {
+  const target = cloneMaterial ? material.clone() : material;
+  if (isProcgenMasonryMaterial(target)) {
+    const tinted = target as Material & { color?: Color };
+    if (!active && tinted.color) {
+      tinted.color.multiplyScalar(DORMANT_TINT_FACTOR);
     }
-    return cloned;
+    return target;
+  }
+  if (!(target instanceof MeshStandardMaterial)) return target;
+  if (isSocketGem(meshName, target.name)) {
+    if (active) {
+      target.color.set(DEEP_PALETTE.gold);
+      target.emissive.set(DEEP_PALETTE.gold);
+      target.emissiveIntensity = ACTIVE_GEM_INTENSITY;
+    } else {
+      target.color.set(DEEP_EMPTY_GEM);
+      target.emissive.setHex(0x000000);
+      target.emissiveIntensity = 0;
+    }
+    return target;
   }
   if (!active) {
-    cloned.color.multiply(new Color().setScalar(DORMANT_TINT_FACTOR));
+    target.color.multiply(new Color().setScalar(DORMANT_TINT_FACTOR));
   }
-  return cloned;
+  return target;
 }
 
 function isSocketGem(meshName: string, materialName: string): boolean {

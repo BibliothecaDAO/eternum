@@ -595,7 +595,7 @@ type DeepKind = (typeof deepSites)[number];
 
 const troopsOf = (troops: { count: bigint }): number => Math.floor(Number(troops.count) / RESOURCE_PRECISION);
 
-const plainPlate = (kind: DeepKind, icon: IconMeaning, reward?: string): MapPlate => ({
+export const plainPlate = (kind: DeepKind, icon: IconMeaning, reward?: string): MapPlate => ({
   kind: "structure",
   relation: "neutral",
   name: kind.name,
@@ -637,7 +637,7 @@ const beastPlate = (
   };
 };
 
-const gatePlate = (aspect: AspectId, own: boolean): MapPlate => ({
+export const gatePlate = (aspect: AspectId, own: boolean): MapPlate => ({
   kind: "structure",
   relation: own ? "own" : "neutral",
   name: aspectName(aspect),
