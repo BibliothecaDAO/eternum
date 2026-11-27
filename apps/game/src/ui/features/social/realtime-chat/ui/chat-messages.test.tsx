@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -109,9 +111,11 @@ const install = () => {
 };
 
 let host: HTMLDivElement;
+let styleEl: HTMLStyleElement;
 let root: Root;
 let undoLayout: () => void;
 const opened = vi.fn();
+const MESSAGE_ROW_CSS = readFileSync(join(__dirname, "./shared/message-row.css"), "utf8");
 
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -124,6 +128,9 @@ beforeEach(() => {
   Element.prototype.scrollIntoView = function (this: Element) {
     scrolledTo.push(this.getAttribute("data-message-id") ?? "");
   };
+  styleEl = document.createElement("style");
+  styleEl.textContent = MESSAGE_ROW_CSS;
+  document.head.append(styleEl);
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -134,6 +141,7 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
+  styleEl.remove();
   undoLayout();
   vi.unstubAllGlobals();
 });
@@ -144,6 +152,12 @@ const runName = (id: string) => row(id).querySelector("p button")?.textContent ?
 const words = (id: string) => row(id).querySelector("[data-message-words]")?.textContent;
 const buttonIn = (element: Element, text: string) =>
   [...element.querySelectorAll("button")].find((button) => button.textContent === text);
+const replyButtonIn = (element: Element) => buttonIn(element, CHAT_WORDS.reply);
+const pointer = (type: string, pointerType: string, x: number, y = 100) => {
+  const event = new MouseEvent(type, { bubbles: true, clientX: x, clientY: y });
+  Object.defineProperty(event, "pointerType", { value: pointerType });
+  return event;
+};
 const field = () => host.querySelector<HTMLInputElement>('input[aria-label="Message"]')!;
 const type = (text: string) =>
   act(() => {
@@ -193,7 +207,12 @@ describe("a room's messages", () => {
   });
 
   it("answers a message: its sender and words over the field, then sent with the reply, the field free again", async () => {
-    act(() => buttonIn(row("m2"), "Reply")!.click());
+    const reply = replyButtonIn(row("m2"))!;
+    const overlayStyle = getComputedStyle(reply.parentElement!);
+    expect(overlayStyle.position).toBe("absolute");
+    expect(overlayStyle.opacity).toBe("0");
+    expect(getComputedStyle(reply).pointerEvents).toBe("none");
+    act(() => reply.click());
     const bar = host.querySelector("form")!.firstElementChild!;
     expect(bar.textContent).toContain("Aldric");
     expect(bar.textContent).toContain("or only the camps?");
@@ -208,8 +227,8 @@ describe("a room's messages", () => {
   });
 
   it("puts a reply away with its cross, and sends what follows as a plain message", async () => {
-    act(() => buttonIn(row("m2"), "Reply")!.click());
-    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Cancel reply"]')!.click());
+    act(() => replyButtonIn(row("m2"))!.click());
+    act(() => host.querySelector<HTMLButtonElement>(`button[aria-label="${CHAT_WORDS.cancelReply}"]`)!.click());
     type("hello");
     await send();
     expect(sendWorldMessage).toHaveBeenCalledWith(GLOBAL_CHAT_CHANNEL_ID, {
@@ -218,41 +237,62 @@ describe("a room's messages", () => {
     });
   });
 
-  it("shows a message's Reply on a click or a tap, and puts it away on the next; a mouse never swipes", () => {
+  it("never inserts an in-flow Reply row or jumps scroll on click or tap, and a mouse never swipes", () => {
     const press = (pointerType: string, from: number, to = from) =>
       act(() => {
-        for (const [type, x] of [
-          ["pointerdown", from],
-          ["pointerup", to],
-        ] as const) {
-          const event = new MouseEvent(type, { bubbles: true, clientX: x, clientY: 100 });
-          Object.defineProperty(event, "pointerType", { value: pointerType });
-          row("m3").dispatchEvent(event);
-        }
+        row("m3").dispatchEvent(pointer("pointerdown", pointerType, from));
+        row("m3").dispatchEvent(pointer("pointerup", pointerType, to));
       });
-    const reply = () => buttonIn(row("m3"), "Reply")!.parentElement!.classList;
-    expect(reply().contains("hidden")).toBe(true);
+    const beforeChildren = row("m3").childElementCount;
     press("mouse", 20);
-    expect(reply().contains("flex")).toBe(true);
-    press("mouse", 20);
-    expect(reply().contains("hidden")).toBe(true);
     press("touch", 20);
-    expect(reply().contains("flex")).toBe(true);
     press("mouse", 20, 100);
+    expect(row("m3").childElementCount).toBe(beforeChildren);
+    expect(getComputedStyle(replyButtonIn(row("m3"))!.parentElement!).position).toBe("absolute");
+    expect(scrolledTo).toEqual([]);
     expect(host.querySelector("form")!.textContent).not.toContain("sent 1,200 knights");
   });
 
   it("answers a message swiped right on a phone", () => {
-    const at = (type: string, x: number) => {
-      const event = new MouseEvent(type, { bubbles: true, clientX: x, clientY: 100 });
-      Object.defineProperty(event, "pointerType", { value: "touch" });
-      return event;
-    };
     act(() => {
-      row("m3").dispatchEvent(at("pointerdown", 20));
-      row("m3").dispatchEvent(at("pointerup", 100));
+      row("m3").dispatchEvent(pointer("pointerdown", "touch", 20));
+      row("m3").dispatchEvent(pointer("pointerup", "touch", 100));
     });
     expect(host.querySelector("form")!.textContent).toContain("sent 1,200 knights");
+  });
+
+  it("answers a message on a 450ms touch long-press, suppresses context menu, and cancels when moved or released early", () => {
+    vi.useFakeTimers();
+    try {
+      act(() => {
+        row("m3").dispatchEvent(pointer("pointerdown", "touch", 20, 100));
+        vi.advanceTimersByTime(449);
+        row("m3").dispatchEvent(pointer("pointerup", "touch", 20, 100));
+      });
+      expect(host.querySelector("form")!.textContent).not.toContain("sent 1,200 knights");
+
+      act(() => {
+        row("m3").dispatchEvent(pointer("pointerdown", "touch", 20, 100));
+        row("m3").dispatchEvent(pointer("pointermove", "touch", 29, 100));
+        vi.advanceTimersByTime(500);
+        row("m3").dispatchEvent(pointer("pointerup", "touch", 29, 100));
+      });
+      expect(host.querySelector("form")!.textContent).not.toContain("sent 1,200 knights");
+
+      act(() => {
+        row("m3").dispatchEvent(pointer("pointerdown", "touch", 20, 100));
+        vi.advanceTimersByTime(450);
+      });
+      expect(host.querySelector("form")!.textContent).toContain("sent 1,200 knights");
+      const menu = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
+      act(() => {
+        row("m3").dispatchEvent(menu);
+        row("m3").dispatchEvent(pointer("pointerup", "touch", 20, 100));
+      });
+      expect(menu.defaultPrevented).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -283,13 +323,27 @@ describe("links", () => {
 });
 
 describe("a conversation's messages", () => {
-  it("answers a private message with the reply, through the private channel", async () => {
+  it("answers a private message with the floating reply button and touch long-press", async () => {
     act(() => useRealtimeChatStore.getState().actions.openConversation(ALDRIC));
-    act(() => buttonIn(row("d1"), "Reply")!.click());
+    act(() => replyButtonIn(row("d1"))!.click());
     type("yes, at dawn");
     await send();
     expect(sendDirectMessage).toHaveBeenCalledWith(THREAD, ALDRIC, "yes, at dawn", {
       replyTo: { id: "d1", playerId: ALDRIC, excerpt: "merge armies tomorrow?" },
     });
+
+    vi.useFakeTimers();
+    try {
+      act(() => {
+        row("d1").dispatchEvent(pointer("pointerdown", "touch", 20, 100));
+        vi.advanceTimersByTime(450);
+      });
+      expect(host.querySelector("form")!.textContent).toContain("merge armies tomorrow?");
+      act(() => {
+        row("d1").dispatchEvent(pointer("pointerup", "touch", 20, 100));
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
