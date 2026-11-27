@@ -1,12 +1,6 @@
 import { REALM_SKIN_FAMILIES } from "@bibliothecadao/eternum";
 import { rankName, type AspectId } from "@bibliothecadao/types";
-import { modelPath } from "../utils/model-url";
-import {
-  ASPECT_WONDER_KIT_LEVELS,
-  SEASON_ONE_REALM_KIT_LEVELS,
-  aspectWonderKitPath,
-  seasonOneRealmKitPath,
-} from "./realm-kit";
+import { SEASON_ONE_REALM_KIT_LEVELS, aspectWonderKitPath, seasonOneRealmKitPath } from "./realm-kit";
 import { resolveAgeWonderDesign } from "./wonder-design.mjs";
 import assets from "./realm-assets.json";
 
@@ -31,23 +25,7 @@ const ASPECT_SLUGS = {
 
 const aspectTitle = (slug: string) => `${slug[0]!.toUpperCase()}${slug.slice(1)}`;
 
-const ASPECT_WONDER_LIST: readonly RealmAssetEntry[] = (Object.entries(ASPECT_SLUGS) as [string, string][]).map(
-  ([key, slug]) => {
-    const aspect = Number(key) as AspectId;
-    return {
-      id: `wonder-${slug}`,
-      label: `Aspect Wonder · ${aspectTitle(slug)}`,
-      level: 3,
-      wonder: true,
-      aspect,
-      path: modelPath(`realms/wonder-${slug}.glb`),
-    };
-  },
-);
-
-export const ASPECT_WONDER_PATHS = ASPECT_WONDER_LIST.map((asset) => asset.path);
-
-export const ASPECT_WONDER_KIT_ASSETS: readonly RealmAssetEntry[] = ASPECT_WONDER_KIT_LEVELS.flatMap((level) =>
+export const ASPECT_WONDER_KIT_ASSETS: readonly RealmAssetEntry[] = SEASON_ONE_REALM_KIT_LEVELS.flatMap((level) =>
   (Object.entries(ASPECT_SLUGS) as [string, string][]).map(([key, slug]) => {
     const aspect = Number(key) as AspectId;
     return {
@@ -78,7 +56,6 @@ export const SEASON_ONE_REALM_ASSETS: readonly RealmAssetEntry[] = SEASON_ONE_RE
 
 export const REALM_ASSETS: readonly RealmAssetEntry[] = [
   ...assets,
-  ...ASPECT_WONDER_LIST,
   ...ASPECT_WONDER_KIT_ASSETS,
   ...SEASON_ONE_REALM_ASSETS,
 ];
@@ -105,11 +82,8 @@ export function realmModelIndex(
   if (aspect != null) {
     const kitId = `wonder-${ASPECT_SLUGS[aspect]}-${level}`;
     const kitIndex = REALM_ASSETS.findIndex((asset) => asset.id === kitId);
-    if (kitIndex >= 0) return kitIndex;
-    const id = `wonder-${ASPECT_SLUGS[aspect]}`;
-    const index = REALM_ASSETS.findIndex((asset) => asset.id === id);
-    if (index < 0) throw new Error(`Missing aspect wonder asset for aspect ${aspect}`);
-    return index;
+    if (kitIndex < 0) throw new Error(`Missing aspect wonder kit ${kitId}`);
+    return kitIndex;
   }
   const age = ["settlement", "city", "kingdom", "empire"][level];
   const design = resolveAgeWonderDesign(age, entityId);

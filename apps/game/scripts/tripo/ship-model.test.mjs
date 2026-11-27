@@ -18,7 +18,6 @@ import {
   frontierPaintedBuildingPath,
 } from "../../src/three/structures/frontier-painted-buildings";
 import { DEEP_GATE_MODELS, DEEP_SITE_MODELS } from "../../src/three/structures/deep-landmarks";
-import { ASPECT_WONDER_PATHS } from "../../src/three/structures/realm-design";
 import { MODEL_BUDGETS, assertDeliveredAsset, readHexFit, shipTripoModel } from "./ship-model.mjs";
 
 const CLI = fileURLToPath(new URL("./ship-model.mjs", import.meta.url));
@@ -351,16 +350,6 @@ describe("ship-model pipeline", () => {
     }
   });
 
-  it("keeps every image-to-3D realm model within wonder budget, grounded, normalized and inside the unit hex", async () => {
-    const io = await createReader();
-    expect(ASPECT_WONDER_PATHS.length).toBe(4);
-
-    for (const publicPath of ASPECT_WONDER_PATHS) {
-      const modelPath = fileURLToPath(new URL(`../../public${publicPath}`, import.meta.url));
-      await assertDeliveredAsset(io, modelPath, "wonder", MODEL_BUDGETS.wonder);
-    }
-  });
-
   it("keeps every Deep building and Deep gate within its budget, grounded, <= 1.42 tall and inside the unit hex", async () => {
     const io = await createReader();
     const entries = [
@@ -398,7 +387,6 @@ describe("ship-model pipeline", () => {
     const expectedStems = [
       ...buildingPaths,
       ...troopPaths,
-      ...ASPECT_WONDER_PATHS,
       ...Object.values(DEEP_SITE_MODELS),
       ...Object.values(DEEP_GATE_MODELS),
       ...Object.values(FRONTIER_BEASTS).map((entry) => entry.path),

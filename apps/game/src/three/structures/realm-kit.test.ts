@@ -23,7 +23,6 @@ import {
   realmModelIndex,
 } from "./realm-design";
 import {
-  ASPECT_WONDER_KIT_LEVELS,
   SEASON_ONE_REALM_KIT_LEVELS,
   aspectWonderKitPath,
   createAspectWonderKit,
@@ -61,15 +60,15 @@ const WONDER_HEIGHT_BAND_BY_LEVEL = {
   0: { min: 0.7, max: 0.92 },
   1: { min: 1.15, max: 1.38 },
   2: { min: 1.85, max: 2.5 },
-  3: null,
-} as const satisfies Record<RealmLevels, { min: number; max: number } | null>;
+  3: { min: 2.9, max: 3.5 },
+} as const satisfies Record<RealmLevels, { min: number; max: number }>;
 
 const MAX_WONDER_HEIGHT_TO_WIDTH_BY_LEVEL = {
   0: 0.56,
   1: 0.8,
   2: 1.48,
-  3: null,
-} as const satisfies Record<RealmLevels, number | null>;
+  3: 2.05,
+} as const satisfies Record<RealmLevels, number>;
 
 function countTriangles(mesh: Mesh): number {
   const index = mesh.geometry.getIndex();
@@ -199,7 +198,7 @@ describe("Season 1 procedural Aspect Realm kit", () => {
         if (node instanceof Mesh) node.geometry.dispose();
       });
     }
-    for (const level of ASPECT_WONDER_KIT_LEVELS) {
+    for (const level of SEASON_ONE_REALM_KIT_LEVELS) {
       const direct = createAspectWonderKit(1, level);
       expect(direct.scene.children.length).toBeGreaterThanOrEqual(2);
       direct.scene.traverse((node) => {
@@ -213,14 +212,14 @@ describe("Season 1 procedural Aspect Realm kit", () => {
     const normal = new Vector3();
     const wonderHeightsByAspect = new Map<number, number[]>();
 
-    expect(ASPECT_WONDER_KIT_ASSETS).toHaveLength(aspects.length * ASPECT_WONDER_KIT_LEVELS.length);
+    expect(ASPECT_WONDER_KIT_ASSETS).toHaveLength(aspects.length * SEASON_ONE_REALM_KIT_LEVELS.length);
     const allRealmLabels = REALM_ASSETS.map((asset) => asset.label);
     expect(new Set(allRealmLabels).size).toBe(allRealmLabels.length);
     for (const asset of ASPECT_WONDER_KIT_ASSETS) {
       expect(asset.label).toBe(`Aspect Wonder · ${aspectName(asset.aspect!)} · ${rankName(asset.level)}`);
     }
 
-    for (const level of ASPECT_WONDER_KIT_LEVELS) {
+    for (const level of SEASON_ONE_REALM_KIT_LEVELS) {
       const signatures = new Set<string>();
       const heightBand = WONDER_HEIGHT_BAND_BY_LEVEL[level]!;
       const maxHeightToWidth = MAX_WONDER_HEIGHT_TO_WIDTH_BY_LEVEL[level]!;
@@ -314,7 +313,7 @@ describe("Season 1 procedural Aspect Realm kit", () => {
 
     for (const { id: aspect } of aspects) {
       const heights = wonderHeightsByAspect.get(aspect)!;
-      expect(heights).toHaveLength(ASPECT_WONDER_KIT_LEVELS.length);
+      expect(heights).toHaveLength(SEASON_ONE_REALM_KIT_LEVELS.length);
       for (let index = 1; index < heights.length; index++) {
         expect(heights[index]!).toBeGreaterThan(heights[index - 1]! + 0.25);
       }
@@ -369,9 +368,7 @@ describe("Season 1 procedural Aspect Realm kit", () => {
               } else if (showsWonder) {
                 expect(mapAsset.wonder).toBe(true);
                 expect(hexSelection.tierPath).toBe(mapAsset.path);
-                if (ASPECT_WONDER_KIT_LEVELS.some((wonderLevel) => wonderLevel === level)) {
-                  expect(mapAsset.path).toBe(aspectWonderKitPath(aspect, level));
-                }
+                expect(mapAsset.path).toBe(aspectWonderKitPath(aspect, level));
               } else {
                 expect(mapIndex).toBe(level);
                 expect(hexSelection.tierPath).toBeUndefined();

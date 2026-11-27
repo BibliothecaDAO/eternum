@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { REALM_ASSETS, REALM_PATHS, realmModelIndex, isWonderModelPath } from "./realm-design";
-import { ASPECT_WONDER_KIT_LEVELS, aspectWonderKitPath } from "./realm-kit";
+import { SEASON_ONE_REALM_KIT_LEVELS, aspectWonderKitPath } from "./realm-kit";
 import { getStructureModelPaths, isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
 import { aspects, rankName, RealmLevels, StructureType } from "@bibliothecadao/types";
 
@@ -35,10 +35,10 @@ describe("picked realm series", () => {
     for (const level of [-1, 4, 1.5, NaN]) expect(() => realmModelIndex(level, false, 1)).toThrow();
   });
 
-  it("maps every catalog Aspect to its procedural Wonder kit at Settlement, City and Kingdom and its Aspect Wonder model at Empire", () => {
+  it("maps every catalog Aspect to its procedural Wonder kit across all four realm levels and preserves unaligned fallbacks", () => {
     const seenIds = new Set<string>();
     for (const { id: aspect, name } of aspects) {
-      for (const level of ASPECT_WONDER_KIT_LEVELS) {
+      for (const level of SEASON_ONE_REALM_KIT_LEVELS) {
         const kitIndex = realmModelIndex(level, true, 1003, aspect);
         const kitAsset = REALM_ASSETS[kitIndex];
         expect(kitAsset.wonder).toBe(true);
@@ -51,17 +51,8 @@ describe("picked realm series", () => {
         expect(isRealmModelPath(kitAsset.path) && isSettlementModelPath(kitAsset.path)).toBe(true);
         seenIds.add(kitAsset.id);
       }
-
-      const empireIndex = realmModelIndex(RealmLevels.Empire, true, 1003, aspect);
-      const empireAsset = REALM_ASSETS[empireIndex];
-      expect(empireAsset.wonder).toBe(true);
-      expect(empireAsset.aspect).toBe(aspect);
-      expect(empireAsset.id).toBe(`wonder-${name.toLowerCase()}`);
-      expect(empireAsset.label).toBe(`Aspect Wonder · ${name}`);
-      expect(isWonderModelPath(empireAsset.path)).toBe(true);
-      expect(isRealmModelPath(empireAsset.path) && isSettlementModelPath(empireAsset.path)).toBe(true);
     }
-    expect(seenIds.size).toBe(aspects.length * ASPECT_WONDER_KIT_LEVELS.length);
+    expect(seenIds.size).toBe(aspects.length * SEASON_ONE_REALM_KIT_LEVELS.length);
 
     const unalignedSettlement = REALM_ASSETS[realmModelIndex(RealmLevels.Settlement, true, 1003, null)];
     expect(unalignedSettlement.id).toBe("standing-stones");
@@ -72,5 +63,8 @@ describe("picked realm series", () => {
     const unalignedKingdom = REALM_ASSETS[realmModelIndex(RealmLevels.Kingdom, true, 1003, null)];
     expect(unalignedKingdom.id).toBe("twin-guardians");
     expect(unalignedKingdom.aspect).toBeUndefined();
+    const unalignedEmpire = REALM_ASSETS[realmModelIndex(RealmLevels.Empire, true, 1003, null)];
+    expect(unalignedEmpire.id).toBe("sanctum-aureole");
+    expect(unalignedEmpire.aspect).toBeUndefined();
   });
 });

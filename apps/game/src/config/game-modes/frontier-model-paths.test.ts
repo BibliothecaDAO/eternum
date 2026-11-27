@@ -112,7 +112,7 @@ it("selects all five painted tiers while keeping Storeroom on its own model and 
     { category: BuildingType.ResourceLabor, col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], tier: 1 },
     { stage: 3, structureId: 1003, wonder: true, aspect: 1, frontier: true },
   );
-  expect(frontierEmpireWonder.tierPath).toBe("/models/realms/wonder-prowess.glb");
+  expect(frontierEmpireWonder.tierPath).toBe(aspectWonderKitPath(1, RealmLevels.Empire));
   const blitzWonder = resolveBuildingModelSelection(
     { category: BuildingType.ResourceLabor, col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], tier: 1 },
     { stage: 2, structureId: 1003, wonder: true, aspect: 1, frontier: false },
