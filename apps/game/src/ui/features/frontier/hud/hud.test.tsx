@@ -151,7 +151,7 @@ describe("the status strip", () => {
     expect(lastHour).toContain('data-tone="ember"');
   });
 
-  it("draws the phone's day as a short pill: D and the day, the time left under it, the ember tone in the last hour", () => {
+  it("draws the phone and tablet day pill inline with the sun progress ring, Day numeral, time left, and ember tone in the last hour", () => {
     const day = dayClock(
       {
         dayUnitSeconds: 4 * 3_600,
@@ -165,9 +165,10 @@ describe("the status strip", () => {
     act(() => root.render(<DayPill clock={{ ...day, secondsLeft: 900, shareLeft: -0.2, tone: "ember" }} compact />));
     const timer = host.querySelector('[role="timer"]')!;
     expect(timer.getAttribute("data-tone")).toBe("ember");
-    expect(timer.querySelector(".frontier-day-pill__day")?.textContent).toBe(`D${day.day}`);
+    expect(timer.getAttribute("data-compact")).toBe("true");
+    expect(timer.querySelector(".frontier-day-pill__day")?.textContent).toBe(`Day ${day.day}`);
     expect(timer.querySelector(".frontier-day-pill__left")?.textContent).toBe("15m");
-    expect(timer.querySelector(".frontier-progress-ring")).toBeNull();
+    expect(timer.querySelector(".frontier-progress-ring")).not.toBeNull();
     expect(timer.querySelector<HTMLElement>(".frontier-day-pill__share")?.style.width).toBe("100%");
     expect(timer.getAttribute("aria-label")).toContain(`Day ${day.day} · 15m left`);
     expect(timer.getAttribute("data-tip")).toContain("15m left");
@@ -206,7 +207,7 @@ describe("the status strip", () => {
       ),
     );
     const bar = host.querySelector(".frontier-bar")!;
-    expect([...bar.children].map((part) => part.textContent)).toEqual(["Places", "125K9K3K", "D111h"]);
+    expect([...bar.children].map((part) => part.textContent)).toEqual(["Places", "125K9K3K", "Day 111h"]);
     const realm = bar.querySelector<HTMLButtonElement>('button[aria-label="Duskbite"]')!;
     expect([...realm.querySelectorAll(".frontier-stock-chip")].map((chip) => chip.getAttribute("data-store"))).toEqual([
       "essence",

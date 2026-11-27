@@ -8,6 +8,7 @@
 // @vitest-environment jsdom
 import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 import { HUD_QUERIES } from "@/tokens";
+import { rankName } from "@bibliothecadao/types";
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -158,11 +159,11 @@ it("states why each locked or short row is held back in plain words without repe
     ),
   );
   const campRow = host.querySelector(`[data-node='row-${research.ROW_CONSCRIPTION}']`)!;
-  expect(campRow.querySelector("[data-lock-reason]")?.textContent).toBe("Needs City");
+  expect(campRow.querySelector("[data-lock-reason]")?.textContent).toBe(RESEARCH_TREE.needsLevel(rankName(1)));
   const campChoice = host.querySelector("[data-lab='node-choice']")!;
   const campReason = campChoice.querySelector("[data-lock-reason]")!.textContent;
   const campButton = campChoice.querySelector<HTMLButtonElement>("[data-research-footer] button")!.textContent;
-  expect(campReason).toBe("Needs City");
+  expect(campReason).toBe(RESEARCH_TREE.needsLevel(rankName(1)));
   expect(campButton).toBe(RESEARCH_TREE.levelUpCastle);
   expect(campReason).not.toBe(campButton);
 
@@ -212,7 +213,10 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
 
   it("keeps what a finished node gives: the Shrine researched, a Farm at Legendary", () => {
     draw("shrine");
-    expect(choice()!.textContent).toContain("Shrine lore · Open");
+    expect(choice()!.textContent).toContain(`Shrine lore · ${RESEARCH_TREE.loreEffects.shrine}`);
+    expect(choice()!.querySelector("[data-choice-description]")?.textContent).toBe(
+      RESEARCH_TREE.loreDescriptions.shrine,
+    );
     const legendaryFarm = readResearchTree({
       ...MID_REALM,
       learned: { ...MID_REALM.learned, 0: { tier: 5 } },
@@ -641,4 +645,91 @@ it("wears a node's tier as the kit's gem and its price as the kit's price, short
       node.key,
       [...card(node).querySelectorAll(".ui-price > span")].map((price) => price.hasAttribute("data-short")),
     ]).toEqual([node.key, owed(node).map((need) => !need.met)]);
+});
+
+it("shows release-aware Spire rank requirements and real lore descriptions without hiding rank behind Shrine lore", () => {
+  const early = readResearchTree(EARLY_REALM);
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={early}
+        picked="spire"
+        onPick={vi.fn()}
+        sending={new Set()}
+        fixFor={() => undefined}
+        onResearch={vi.fn()}
+        onClose={vi.fn()}
+        castleLevel={EARLY_REALM.castleLevel}
+      />,
+    ),
+  );
+  const choice = host.querySelector("[data-lab='node-choice']")!;
+  expect(choice.querySelector("[data-choice-summary]")?.textContent).toBe(
+    `Spire lore · ${RESEARCH_TREE.loreEffects.spire}`,
+  );
+  expect(choice.querySelector("[data-choice-description]")?.textContent).toBe(RESEARCH_TREE.loreDescriptions.spire);
+  expect(choice.textContent).not.toContain("Closed");
+  const unmet = [...choice.querySelectorAll("[data-lock-reason]")].map((el) => el.textContent);
+  expect(unmet).toContain(RESEARCH_TREE.needsFirst("Shrine lore"));
+  expect(unmet).toContain(RESEARCH_TREE.needsLevel(rankName(research.SPIRE_LORE_LEVEL)));
+
+  const kingdomWithoutShrine = readResearchTree({ ...EARLY_REALM, castleLevel: research.SPIRE_LORE_LEVEL });
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={kingdomWithoutShrine}
+        picked="spire"
+        onPick={vi.fn()}
+        sending={new Set()}
+        fixFor={() => undefined}
+        onResearch={vi.fn()}
+        onClose={vi.fn()}
+        castleLevel={research.SPIRE_LORE_LEVEL}
+      />,
+    ),
+  );
+  expect(host.querySelector("[data-lab='node-choice'] [data-met-requirement]")?.textContent).toBe(
+    RESEARCH_TREE.rankMet(rankName(research.SPIRE_LORE_LEVEL)),
+  );
+
+  const release24Spire = kingdomWithoutShrine.map((item) =>
+    item.key === "spire" ? { ...item, needs: item.needs.filter((need) => need.kind !== "level") } : item,
+  );
+  act(() =>
+    root.render(
+      <ResearchPanel
+        nodes={release24Spire}
+        picked="spire"
+        onPick={vi.fn()}
+        sending={new Set()}
+        fixFor={() => undefined}
+        onResearch={vi.fn()}
+        onClose={vi.fn()}
+        castleLevel={EARLY_REALM.castleLevel}
+      />,
+    ),
+  );
+  expect(host.querySelector("[data-lab='node-choice'] [data-met-requirement]")).toBeNull();
+  expect(host.querySelector("[data-lab='node-choice']")?.textContent).not.toContain(
+    rankName(research.SPIRE_LORE_LEVEL),
+  );
+});
+
+it("toggles the mobile scroll-fade indicator based on remaining scroll distance", () => {
+  layoutAt(false);
+  draw(null);
+  const viewport = host.querySelector<HTMLElement>(".research-tree-viewport")!;
+  const scroller = host.querySelector<HTMLElement>(".research-tree-scroll")!;
+  Object.defineProperty(scroller, "scrollHeight", { configurable: true, value: 640 });
+  Object.defineProperty(scroller, "clientHeight", { configurable: true, value: 420 });
+  Object.defineProperty(scroller, "scrollTop", { configurable: true, writable: true, value: 0 });
+  act(() => {
+    scroller.dispatchEvent(new Event("scroll"));
+  });
+  expect(viewport.hasAttribute("data-scroll-more")).toBe(true);
+  scroller.scrollTop = 220;
+  act(() => {
+    scroller.dispatchEvent(new Event("scroll"));
+  });
+  expect(viewport.hasAttribute("data-scroll-more")).toBe(false);
 });

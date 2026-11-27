@@ -4,16 +4,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
 import { SheetDock } from "@/ui/design-system/kit/hud-elements";
 import type { ReactNode } from "react";
-import {
-  DAY,
-  dayEnds,
-  dayShort,
-  dayLeft,
-  dayLeftCompact,
-  phraseText,
-  TODAY,
-  tomorrowLasts,
-} from "@/ui/design-system/kit/words";
+import { DAY, dayEnds, dayLeft, dayLeftCompact, phraseText, TODAY, tomorrowLasts } from "@/ui/design-system/kit/words";
 import { useGameFinished } from "@/ui/features/world/containers/top-header/game-clock";
 import { GameFinishedPill } from "@/ui/features/world/containers/top-header/game-finished-pill";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
@@ -77,19 +68,11 @@ export const DayPill = ({ clock, compact = false }: { clock: DayClock; compact?:
       data-compact={compact || undefined}
       className={cn("ui-popover frontier-day-pill tabular-nums", STORE_TONES[clock.tone].text)}
     >
-      {!compact && (
-        <ProgressRing size="sm" share={elapsed} tone={clock.tone} className="frontier-day-pill__ring">
-          <Icon name="sun" size={12} />
-        </ProgressRing>
-      )}
+      <ProgressRing size="sm" share={elapsed} tone={clock.tone} className="frontier-day-pill__ring">
+        <Icon name="sun" size={12} />
+      </ProgressRing>
       <span className="frontier-day-pill__day">
-        {compact ? (
-          dayShort(day)
-        ) : (
-          <>
-            {DAY} <span className="frontier-day-pill__numeral">{day}</span>
-          </>
-        )}
+        {DAY} <span className="frontier-day-pill__numeral">{day}</span>
       </span>
       {left && <span className="frontier-day-pill__left">{left}</span>}
       {elapsed !== undefined && (

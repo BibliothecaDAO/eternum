@@ -98,6 +98,7 @@
   font-size: var(--hud-text-label);
   font-weight: var(--hud-weight-strong);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .season-aspect__members {
   margin-left: auto;
