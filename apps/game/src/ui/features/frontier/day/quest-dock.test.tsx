@@ -291,45 +291,69 @@ describe("bane collection", () => {
     expect(reward("Essence")).toBe("<1 Essence");
   });
 
-  it("shows the Aspect in the orb's ring, counts the quest on a phone while it runs and wears the golden check once cleared, and puts no badge on a desktop's pill", () => {
-    const game = fixture();
-    const badges = () =>
-      [...host.querySelectorAll("[data-daily-quest-chip] .frontier-quest-orb__count")].map((badge) =>
-        badge.hasAttribute("data-cleared")
-          ? badge.querySelector("[data-icon]")?.getAttribute("data-icon")
-          : badge.textContent,
-      );
-    const today = () => readDailyQuest(game.store, 1, safeInteger(game.realm().entity_id), clock.now)!;
-    game.drawWith(<DailyQuestChip realm={game.realm()} />);
-    expect(today().reading.known!.state).toBe("done");
-    expect(host.querySelector("[data-daily-quest-chip] [data-icon]")?.getAttribute("data-icon")).toBe(
-      resolveAspectEmissary(questSpeaker(today().reading.known)).portrait,
-    );
-    expect(badges()).toEqual(["check"]);
+  it("shows the Aspect in the orb's ring, counts the quest while running, and wears the golden check and data-cleared once completed on both phone and desktop", () => {
+    const readState = (desktop: boolean) => {
+      vi.stubGlobal("matchMedia", (query: string) => ({
+        matches: desktop && query === HUD_QUERIES.desktop,
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }));
+      try {
+        const game = fixture();
+        const chip = () => host.querySelector("[data-daily-quest-chip]");
+        const badges = () =>
+          [...host.querySelectorAll("[data-daily-quest-chip] .frontier-quest-orb__count")].map((badge) =>
+            badge.hasAttribute("data-cleared")
+              ? badge.querySelector("[data-icon]")?.getAttribute("data-icon")
+              : badge.textContent,
+          );
+        const today = () => readDailyQuest(game.store, 1, safeInteger(game.realm().entity_id), clock.now)!;
+        game.drawWith(<DailyQuestChip realm={game.realm()} />);
+        expect(today().reading.known!.state).toBe("done");
+        expect(host.querySelector("[data-daily-quest-chip] [data-icon]")?.getAttribute("data-icon")).toBe(
+          resolveAspectEmissary(questSpeaker(today().reading.known)).portrait,
+        );
+        expect(chip()?.hasAttribute("data-cleared")).toBe(true);
+        expect(chip()?.hasAttribute("data-ready")).toBe(true);
+        expect(badges()).toEqual(["check"]);
 
-    const [key, progress] = [...game.store.entries("QuestProgress")].find(
-      ([, row]) => Number(row.day) === today().day,
-    )!;
-    act(() =>
-      game.store.applyFacts([
-        { model: "QuestProgress", key, value: { ...progress, progress: 0, completed_level: 0 } },
-      ] as never),
-    );
-    const running = today().reading.known!;
-    expect(running.state).toBe("running");
-    expect(badges()).toEqual([DAY_BANNER_WORDS.fraction(0, safeInteger(running.target))]);
+        const [key, progress] = [...game.store.entries("QuestProgress")].find(
+          ([, row]) => Number(row.day) === today().day,
+        )!;
+        act(() =>
+          game.store.applyFacts([
+            { model: "QuestProgress", key, value: { ...progress, progress: 0, completed_level: 0 } },
+          ] as never),
+        );
+        const running = today().reading.known!;
+        expect(running.state).toBe("running");
+        expect(chip()?.hasAttribute("data-cleared")).toBe(false);
+        expect(chip()?.hasAttribute("data-ready")).toBe(false);
+        expect(badges()).toEqual([DAY_BANNER_WORDS.fraction(0, safeInteger(running.target))]);
 
-    vi.stubGlobal("matchMedia", (query: string) => ({
-      matches: query === HUD_QUERIES.desktop,
-      media: query,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-    }));
-    try {
-      game.drawWith(<DailyQuestChip realm={game.realm()} />);
-      expect(badges()).toEqual([]);
-    } finally {
-      vi.unstubAllGlobals();
-    }
+        act(() => game.store.applyFacts([{ model: "QuestProgress", key, value: progress }] as never));
+        act(() =>
+          game.store.applyFacts(
+            game.scenario.answer(
+              { kind: "ClaimDailyQuest", fields: { home: "7", day: String(today().day) }, span: [] },
+              game.store,
+              clock.now,
+            ) as never,
+          ),
+        );
+        expect(today().reading.known!.state).toBe("collected");
+        expect(chip()?.hasAttribute("data-cleared")).toBe(true);
+        expect(chip()?.hasAttribute("data-ready")).toBe(false);
+        expect(badges()).toEqual(["check"]);
+        act(() => root?.unmount());
+        host.remove();
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    };
+
+    readState(false);
+    readState(true);
   });
 });
