@@ -8,8 +8,14 @@ import { campBeside, placeSite } from "./site-fixture";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { TARGET_MARKS, type AttackTargetKind } from "./site-marks";
 import { plateRows } from "@/three/map-plates/map-plate-rows";
-import { frontierSiteName, StructureType, ResourcesIds } from "@bibliothecadao/types";
-import { BEAST_MARK_TIPS, FIGHT_RESULT, FIGHT_WORDS, tooFarFrom } from "@/ui/design-system/kit/words";
+import { frontierSiteName, StructureType, ResourcesIds, TroopType } from "@bibliothecadao/types";
+import {
+  BEAST_MARK_TIPS,
+  COMBAT_MARK_WORDS,
+  FIGHT_RESULT,
+  FIGHT_WORDS,
+  tooFarFrom,
+} from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -494,7 +500,55 @@ it("titles a single roaming Wraith by its species", () => {
   );
   expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Wraith");
   const badge = host.querySelector<HTMLElement>('[role="img"][aria-label="Wraith 314"] [data-combat-mark]');
-  expect(badge?.dataset.combatMark).toBe("Bow");
+  expect(badge?.dataset.combatMark).toBe(COMBAT_MARK_WORDS.bow);
+});
+
+it("shows Melee and Ranged marks on both attacker and defender portraits without a strike-order banner while keeping empty forecast placeholder", () => {
+  const cases = [
+    {
+      attacker: TroopType.Crossbowman,
+      defender: TroopType.Knight,
+      oursMark: COMBAT_MARK_WORDS.bow,
+      theirsMark: COMBAT_MARK_WORDS.blade,
+    },
+    {
+      attacker: TroopType.Knight,
+      defender: TroopType.Crossbowman,
+      oursMark: COMBAT_MARK_WORDS.blade,
+      theirsMark: COMBAT_MARK_WORDS.bow,
+    },
+    {
+      attacker: TroopType.Knight,
+      defender: TroopType.Knight,
+      oursMark: COMBAT_MARK_WORDS.blade,
+      theirsMark: COMBAT_MARK_WORDS.blade,
+    },
+  ];
+  for (const each of cases) {
+    act(() =>
+      root.render(
+        <SiteCardView
+          site="Camp"
+          beast={{ name: "Troll", beast: "troll", combatClass: each.defender }}
+          army={{ art: "knight-t1", troops: 2_000, category: each.attacker }}
+          guard={1_000}
+          fight={undefined}
+          pay={null}
+          verb={{ kind: "far" }}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    expect(document.querySelector<HTMLElement>('[data-fight-side="ours"] [data-combat-mark]')?.dataset.combatMark).toBe(
+      each.oursMark,
+    );
+    expect(
+      document.querySelector<HTMLElement>('[data-fight-side="theirs"] [data-combat-mark]')?.dataset.combatMark,
+    ).toBe(each.theirsMark);
+    expect(document.querySelector("[data-strike-order]")).toBeNull();
+    expect(document.querySelector('[data-fight-side="ours"]')?.getAttribute("aria-label")).toBe("Army 2,000 → —");
+    expect(document.querySelector('[data-fight-side="theirs"]')?.getAttribute("aria-label")).toBe("Troll 1,000 → —");
+  }
 });
 
 it("heads the card with the site's kind, and offers the supply post its clear opens", () => {

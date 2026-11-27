@@ -1,14 +1,16 @@
 // @vitest-environment jsdom
 import { researchRowCategory } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
+import { TroopType } from "@bibliothecadao/types";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { MID_REALM } from "../research/progression-fixture";
+import { troopTraits } from "../deploy/troop-figures";
+import { MID_REALM, PRESET_TROOP_FIGURES } from "../research/progression-fixture";
 import { readResearchTree, type RealmResearchFacts } from "../research/research-tree";
 import { type CardMakes, BuildingCardView } from "./building-card";
-import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
+import { COMBAT_MARK_WORDS, RESEARCH_TREE, TROOP_TRAIT_WORDS, UNIT_DETAILS_WORDS } from "@/ui/design-system/kit/words";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -208,3 +210,32 @@ for (const row of [research.ROW_KNIGHT_OATHS, research.ROW_SCOUT_OATHS, research
     expect(onResearch).toHaveBeenCalledWith();
   });
 }
+
+it("renders clean plain troop traits on troop building cards with zero dot-minus separators or em-dashes", () => {
+  for (const category of [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin]) {
+    act(() =>
+      root.render(
+        <BuildingCardView
+          name="Barracks"
+          icon="barracks"
+          standing={1}
+          makes={{ icon: "troops", rate: "+10/min" }}
+          troop={{ category, figures: PRESET_TROOP_FIGURES }}
+          node={undefined}
+          orders={undefined}
+          onClose={() => undefined}
+        />,
+      ),
+    );
+    const traitCard = card().querySelector(`[data-troop-trait-card="${category}"]`)!;
+    const traits = troopTraits(category);
+    expect(traitCard.textContent).toContain(COMBAT_MARK_WORDS[traits.mark]);
+    for (const line of TROOP_TRAIT_WORDS.lines(traits, PRESET_TROOP_FIGURES)) {
+      expect(traitCard.textContent).toContain(line);
+    }
+    expect(traitCard.textContent).not.toContain(UNIT_DETAILS_WORDS.beastHeadline.bow);
+    expect(traitCard.textContent).not.toContain(UNIT_DETAILS_WORDS.strikeRule[traits.mark]);
+    expect(traitCard.textContent).not.toContain("· -");
+    expect(traitCard.textContent).not.toContain("—");
+  }
+});

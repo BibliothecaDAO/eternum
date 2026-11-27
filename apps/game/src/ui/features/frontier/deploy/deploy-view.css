@@ -3,20 +3,31 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: theme(spacing.1);
 }
+.deploy-troop-trigger {
+  width: 100%;
+  min-width: 0;
+}
 .deploy-troop-card {
   display: flex;
+  width: 100%;
   min-width: 0;
-  min-height: 92px;
+  min-height: 82px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 2px;
   border: 1px solid var(--hud-line-strong);
   border-radius: var(--hud-radius-panel);
   background: var(--hud-well);
-  padding: theme(spacing.1) theme(spacing[0.5]);
+  padding: theme(spacing[1.5]) theme(spacing.1);
   text-align: center;
   cursor: pointer;
+}
+.deploy-troop-card__portrait {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .deploy-troop-card__name {
   max-width: 100%;
@@ -33,25 +44,6 @@
   font-size: var(--hud-text-label);
   line-height: var(--hud-leading-label);
   font-variant-numeric: tabular-nums;
-}
-.deploy-troop-card__trait {
-  display: inline-flex;
-  max-width: 100%;
-  align-items: center;
-  gap: 2px;
-  overflow: hidden;
-  color: var(--hud-muted);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  font-variant-numeric: tabular-nums;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.deploy-troop-summary {
-  color: var(--hud-muted);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  text-align: center;
 }
 .deploy-size {
   border: 1px solid var(--hud-line);

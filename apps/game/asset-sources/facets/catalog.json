@@ -3532,13 +3532,13 @@
     },
     {
       "id": "combat-blade",
-      "label": "Blade",
+      "label": "Melee",
       "family": "Combat",
       "prompt": "prompts/combat-blade.txt"
     },
     {
       "id": "combat-bow",
-      "label": "Bow",
+      "label": "Ranged",
       "family": "Combat",
       "prompt": "prompts/combat-bow.txt"
     },

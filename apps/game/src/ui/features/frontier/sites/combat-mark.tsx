@@ -15,12 +15,12 @@ const MARK_LOOKS = {
 
 export const combatMarkOf = (category: TroopType): CombatMarkLook => MARK_LOOKS[troopMark(category)];
 
-export const BeastMarkBadge = ({ category }: { category: TroopType }) => {
+export const CombatMarkBadge = ({ category, tip }: { category: TroopType; tip?: string }) => {
   const { label, icon } = combatMarkOf(category);
   return (
     <span
       aria-hidden="true"
-      data-tip={BEAST_MARK_TIPS[troopMark(category)]}
+      data-tip={tip}
       data-combat-mark={label}
       className="absolute -bottom-1 -right-1 flex size-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark"
     >
@@ -28,3 +28,7 @@ export const BeastMarkBadge = ({ category }: { category: TroopType }) => {
     </span>
   );
 };
+
+export const BeastMarkBadge = ({ category }: { category: TroopType }) => (
+  <CombatMarkBadge category={category} tip={BEAST_MARK_TIPS[troopMark(category)]} />
+);

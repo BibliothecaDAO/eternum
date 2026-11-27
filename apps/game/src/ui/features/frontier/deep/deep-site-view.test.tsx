@@ -3,8 +3,10 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEEP_BEASTS } from "@bibliothecadao/types";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
+import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 
-import { ARMY, DEEP_WORDS } from "@/ui/design-system/kit/words";
+import { ARMY, COMBAT_MARK_WORDS, DEEP_WORDS } from "@/ui/design-system/kit/words";
 import { DEEP_SITE_CASES } from "./deep-site-fixtures";
 import { DeepSiteView, type DeepSiteProps } from "./deep-site-view";
 
@@ -19,6 +21,7 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
+  useTooltipStore.setState({ tooltip: null });
 });
 
 const draw = (props: DeepSiteProps) => act(() => root.render(<DeepSiteView {...props} />));
@@ -28,7 +31,7 @@ const labels = (names: string[]) =>
   buttons().filter((button) => names.some((name) => button.textContent?.startsWith(name)));
 
 describe("a Deep site's card", () => {
-  it("names the site, its state and ring, pays per army tick, and draws its fixed beast with its Blade or Bow on the portrait", () => {
+  it("names the site, its state and ring, pays per army tick, and draws its fixed beast with its Melee or Ranged mark on the portrait", () => {
     const onAct = vi.fn();
     const props = DEEP_SITE_CASES["Hyperstructure archive, open, its beast, army in reach"];
     draw({ ...props, order: { kind: "act", verb: "attack", stamina: 30, onAct } });
@@ -44,8 +47,10 @@ describe("a Deep site's card", () => {
       ["height", "+6/ 2mAspect height"],
     ]);
     const beast = document.querySelector("[data-deep-beast]")!;
-    expect(beast.querySelector(".deep-beast__name")?.textContent).toBe(`${DEEP_BEASTS.foundation.name}Blade`);
-    expect(beast.querySelector(".deep-beast__portrait [data-combat-mark='Blade']")).not.toBeNull();
+    expect(beast.querySelector(".deep-beast__name")?.textContent).toBe(
+      `${DEEP_BEASTS.foundation.name}${COMBAT_MARK_WORDS.blade}`,
+    );
+    expect(beast.querySelector(`.deep-beast__portrait [data-combat-mark='${COMBAT_MARK_WORDS.blade}']`)).not.toBeNull();
     expect(beast.textContent).toContain("15,000 troops");
     expect(document.querySelector("[data-deep-poison]")?.textContent).toBe(DEEP_WORDS.poisonStrip(200, "2m"));
     expect(text()).not.toContain("Today's beast");
@@ -75,7 +80,7 @@ describe("a Deep site's card", () => {
     expect(document.querySelector("[data-deep-pay]")).toBeNull();
     expect(document.querySelector("[data-deep-kinds]")?.textContent).toBe("GloryBane barRates set when open");
     expect(document.querySelector("[data-deep-opening]")?.textContent).toBe("Opens at 50 Realms today12 / 50");
-    expect(document.querySelector("[data-deep-beast] [data-combat-mark='Bow']")).not.toBeNull();
+    expect(document.querySelector(`[data-deep-beast] [data-combat-mark='${COMBAT_MARK_WORDS.bow}']`)).not.toBeNull();
     expect(document.querySelector("[data-deep-poison]")).toBeNull();
     expect(labels(["Attack"])).toHaveLength(0);
   });
@@ -128,7 +133,7 @@ describe("a Deep site's card", () => {
     expect(document.querySelector("[data-deep-poison]")?.textContent).toBe(DEEP_WORDS.poisonStrip(200, "2m"));
   });
 
-  it("renders facing portraits named by their sides, each before → after, and stamina cost on Attack", () => {
+  it("renders facing portraits named by their sides, combat marks on both sides, and stamina cost on Attack", () => {
     const fixture = DEEP_SITE_CASES["Essence core held by a rival Aspect"];
     draw({
       ...fixture,
@@ -144,11 +149,14 @@ describe("a Deep site's card", () => {
     expect(sides).toHaveLength(2);
     expect(sides[0]!.getAttribute("aria-label")?.startsWith(`${ARMY} 1,000 → 670`)).toBe(true);
     expect(sides[1]!.getAttribute("aria-label")).toContain("Havoc Guard 6,200 → 5,446");
+    expect(sides[0]!.querySelector(`[data-combat-mark='${COMBAT_MARK_WORDS.bow}']`)).not.toBeNull();
+    expect(sides[1]!.querySelector(`[data-combat-mark='${COMBAT_MARK_WORDS.blade}']`)).not.toBeNull();
+    expect(document.querySelector("[data-strike-order]")).toBeNull();
     expect(document.querySelector("[data-attack-stamina='30']")).not.toBeNull();
     expect(sides[1]!.querySelector("[data-aspect-mark='3']")).not.toBeNull();
   });
 
-  it("shows the beast's fight in place of its row, the Blade or Bow on the beast's portrait", () => {
+  it("shows the beast's fight in place of its row, with Melee or Ranged marks on both portraits", () => {
     const fixture = DEEP_SITE_CASES["Hyperstructure archive, open, its beast, army in reach"];
     draw({
       ...fixture,
@@ -161,9 +169,31 @@ describe("a Deep site's card", () => {
       },
     });
     expect(document.querySelector("[data-deep-beast]")).toBeNull();
+    const ours = document.querySelector("[data-fight-side='ours']")!;
     const theirs = document.querySelector("[data-fight-side='theirs']")!;
-    expect(theirs.querySelector("[data-combat-mark='Blade']")).not.toBeNull();
+    expect(ours.querySelector(`[data-combat-mark='${COMBAT_MARK_WORDS.blade}']`)).not.toBeNull();
+    expect(theirs.querySelector(`[data-combat-mark='${COMBAT_MARK_WORDS.blade}']`)).not.toBeNull();
     expect(theirs.textContent).toContain("Defeated");
+    expect(document.querySelector("[data-strike-order]")).toBeNull();
+  });
+
+  it("opens unit details when hovering the Deep beast portrait", () => {
+    const fixture = DEEP_SITE_CASES["Hyperstructure archive, open, its beast, army in reach"];
+    act(() =>
+      root.render(
+        <>
+          <Tooltip />
+          <DeepSiteView {...fixture} />
+        </>,
+      ),
+    );
+    const trigger = document.querySelector<HTMLElement>("[data-deep-beast] [data-unit-details-trigger]")!;
+    const event = new MouseEvent("pointerover", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "pointerType", { value: "mouse" });
+    act(() => {
+      trigger.dispatchEvent(event);
+    });
+    expect(document.querySelector("[data-unit-details-popover]")?.textContent).toContain(COMBAT_MARK_WORDS.blade);
   });
 });
 

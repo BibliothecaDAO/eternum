@@ -1,6 +1,6 @@
 ---
 title: Combat
-description: The combat formula, blade vs bow first strike, worked fight examples, and troop against mark
+description: The combat formula, melee vs ranged first strike, worked fight examples, and troop against mark
 ---
 
 import { FRONTIER } from "@/utils/frontier";
@@ -17,7 +17,7 @@ only in [the Deep](/frontier/deep), and allies of the same Aspect can never atta
 
 <Shot
   name="frontier/fight-card"
-  caption="Select an adjacent guard or site to open the fight preview. It shows each side's blade or bow badge, exact troops before and after the attack, the outcome (such as Victory), the site reward, and the Attack button."
+  caption="Select an adjacent guard or site to open the fight preview. It shows each side's melee or ranged badge, exact troops before and after the attack, the outcome (such as Victory), the site reward, and the Attack button."
 />
 
 ## The combat formula
@@ -45,46 +45,46 @@ Then four modifiers apply:
    {FRONTIER.oaths.twinsPercent} of the largest adjacent own army's damage against the target
    ([Oaths](/frontier/oaths#how-key-oaths-work)).
 
-## Blade vs bow
+## Melee vs ranged
 
-Every troop and every guard carries a **mark** on its map token and portrait: either **blade** or **bow**.
+Every troop and every guard carries a **mark** on its map token and portrait: either **melee** or **ranged**.
 
-| Troop                             | Mark  | Damage dealt                                                                      | Special                                                                                           |
-| --------------------------------- | ----- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| **{FRONTIER.troops.knight}**      | Blade | **Full damage**                                                                   | Takes **{FRONTIER.attributes.knightGuardReduction} less damage** while guarding a Deep site       |
-| **{FRONTIER.troops.crossbowman}** | Bow   | **{FRONTIER.attributes.lightDamageReduction} less** than {FRONTIER.troops.knight} | **Strikes first** against Blade enemies                                                           |
-| **{FRONTIER.troops.scout}**       | Blade | **{FRONTIER.attributes.lightDamageReduction} less** than {FRONTIER.troops.knight} | Reveals tiles for **{FRONTIER.stamina.scoutReveal}** stamina instead of {FRONTIER.stamina.reveal} |
+| Troop                             | Mark   | Damage dealt                                                                      | Special                                                                                           |
+| --------------------------------- | ------ | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **{FRONTIER.troops.knight}**      | Melee  | **Full damage**                                                                   | Takes **{FRONTIER.attributes.knightGuardReduction} less damage** while guarding a Deep site       |
+| **{FRONTIER.troops.crossbowman}** | Ranged | **{FRONTIER.attributes.lightDamageReduction} less** than {FRONTIER.troops.knight} | **Strikes first** against Melee enemies                                                           |
+| **{FRONTIER.troops.scout}**       | Melee  | **{FRONTIER.attributes.lightDamageReduction} less** than {FRONTIER.troops.knight} | Reveals tiles for **{FRONTIER.stamina.scoutReveal}** stamina instead of {FRONTIER.stamina.reveal} |
 
-| Attacker | Defender | Who strikes first                                           |
-| -------- | -------- | ----------------------------------------------------------- |
-| Bow      | Blade    | **Attacker (bow)** — defender hits back only with survivors |
-| Blade    | Bow      | **Defender (bow)** — attacker hits back only with survivors |
-| Bow      | Bow      | **Simultaneous** — both sides hit at the same time          |
-| Blade    | Blade    | **Simultaneous** — both sides hit at the same time          |
+| Attacker | Defender | Who strikes first                                              |
+| -------- | -------- | -------------------------------------------------------------- |
+| Ranged   | Melee    | **Attacker (ranged)** — defender hits back only with survivors |
+| Melee    | Ranged   | **Defender (ranged)** — attacker hits back only with survivors |
+| Ranged   | Ranged   | **Simultaneous** — both sides hit at the same time             |
+| Melee    | Melee    | **Simultaneous** — both sides hit at the same time             |
 
-**{FRONTIER.troops.crossbowman}** (bow) are the best general-purpose attackers against almost everything: they strike
-first against blade enemies (herds, camps, ruins, {FRONTIER.combat.bladeDeepBeasts}) to clear with far fewer losses
+**{FRONTIER.troops.crossbowman}** (ranged) are the best general-purpose attackers against almost everything: they strike
+first against melee enemies (herds, camps, ruins, {FRONTIER.combat.bladeDeepBeasts}) to clear with far fewer losses
 despite dealing {FRONTIER.attributes.lightDamageReduction} less damage than {FRONTIER.troops.knight}, and they hit at
-the same time against bow enemies (bands, rifts, {FRONTIER.combat.bowDeepBeasts}) so they never take a free first
-strike, even in even-numbered fights. **{FRONTIER.troops.knight}** (blade) deal full damage and are built for holding
+the same time against ranged enemies (bands, rifts, {FRONTIER.combat.bowDeepBeasts}) so they never take a free first
+strike, even in even-numbered fights. **{FRONTIER.troops.knight}** (melee) deal full damage and are built for holding
 Deep sites (taking {FRONTIER.attributes.knightGuardReduction} less damage from every attack while guarding). Sending
-{FRONTIER.troops.knight} against bow enemies means eating the defender's first strike first — blade gets wrecked against
-bow in even-sized fights, and {FRONTIER.troops.knight} only edge ahead of {FRONTIER.troops.crossbowman} against bow
-defenders when you bring a clear numbers advantage (like the {FRONTIER.combat.exampleRatio} winning fights shown in the
-table below, where full damage finally outpaces the bow's first strike). **{FRONTIER.troops.scout}** (blade) also deal
-{FRONTIER.attributes.lightDamageReduction} less damage with no first strike — use them to reveal mist cheaply
-({FRONTIER.stamina.scoutReveal} stamina), not for heavy fights. As a rule of thumb, bringing about
-{FRONTIER.combat.exampleRatio} the guard's troops clears a site cleanly with no Oaths or relics.
+{FRONTIER.troops.knight} against ranged enemies means eating the defender's first strike first — melee gets wrecked
+against ranged in even-sized fights, and {FRONTIER.troops.knight} only edge ahead of {FRONTIER.troops.crossbowman}
+against ranged defenders when you bring a clear numbers advantage (like the {FRONTIER.combat.exampleRatio} winning
+fights shown in the table below, where full damage finally outpaces the ranged first strike).
+**{FRONTIER.troops.scout}** (melee) also deal {FRONTIER.attributes.lightDamageReduction} less damage with no first
+strike — use them to reveal mist cheaply ({FRONTIER.stamina.scoutReveal} stamina), not for heavy fights. As a rule of
+thumb, bringing about {FRONTIER.combat.exampleRatio} the guard's troops clears a site cleanly with no Oaths or relics.
 
 ## Worked example
 
-Suppose you attack a {FRONTIER.combat.exampleLabel} ({FRONTIER.combat.exampleGuard} blade troops) with a
+Suppose you attack a {FRONTIER.combat.exampleLabel} ({FRONTIER.combat.exampleGuard} melee troops) with a
 {FRONTIER.combat.exampleRatio} army ({FRONTIER.combat.exampleSent} troops) and no Oaths or relics:
 
-- **{FRONTIER.combat.exampleSent} {FRONTIER.troops.crossbowman} (bow vs blade):** they shoot first on each attack, clear
-  the camp in {FRONTIER.combat.exampleCrossbowsExchanges} attacks, lose {FRONTIER.combat.exampleCrossbowsLost} troops,
-  and keep **{FRONTIER.combat.exampleCrossbowsKept}**.
-- **{FRONTIER.combat.exampleSent} {FRONTIER.troops.knight} (blade vs blade):** both sides hit together on each attack,
+- **{FRONTIER.combat.exampleSent} {FRONTIER.troops.crossbowman} (ranged vs melee):** they shoot first on each attack,
+  clear the camp in {FRONTIER.combat.exampleCrossbowsExchanges} attacks, lose {FRONTIER.combat.exampleCrossbowsLost}
+  troops, and keep **{FRONTIER.combat.exampleCrossbowsKept}**.
+- **{FRONTIER.combat.exampleSent} {FRONTIER.troops.knight} (melee vs melee):** both sides hit together on each attack,
   clearing the camp in {FRONTIER.combat.exampleKnightsExchanges} attacks, losing {FRONTIER.combat.exampleKnightsLost}
   troops, and keeping **{FRONTIER.combat.exampleKnightsKept}**.
 

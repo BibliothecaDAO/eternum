@@ -52,6 +52,7 @@ import {
   ASPECT_REWARD,
   BiomeType,
   BuildingType,
+  COMBAT_CLASS_WORDS,
   DEEP_BEASTS,
   FRAGMENT_CENTS,
   FRAGMENT_SPEND_COMMANDS,
@@ -425,7 +426,7 @@ const markRow = (guardCount: number, bow: boolean) => {
   const send = Math.round(guardCount * exampleMultiplier);
   const defender: ExchangeTroops["category"] = bow ? "Crossbowman" : "Knight";
   return {
-    target: `${n(guardCount)}, ${bow ? "Bow" : "Blade"}`,
+    target: `${n(guardCount)}, ${bow ? COMBAT_CLASS_WORDS.bow : COMBAT_CLASS_WORDS.blade}`,
     sent: n(send),
     knights: formatKept(runFight("Knight", send, defender, guardCount)),
     crossbows: formatKept(runFight("Crossbowman", send, defender, guardCount)),
@@ -518,10 +519,10 @@ const bowDeepBeasts = deepSites
 const guardMark = (bow: boolean) =>
   bow
     ? {
-        weapon: "Bow",
+        weapon: COMBAT_CLASS_WORDS.bow,
         bring: `${FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many} (${FRONTIER_TROOP_NAMES[TroopType.Knight].many} at ${exampleMultiplier}x+)`,
       }
-    : { weapon: "Blade", bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many };
+    : { weapon: COMBAT_CLASS_WORDS.blade, bring: FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many };
 
 const ruinFamilyRange = (depth: number) =>
   `${beastOf("ruin", depth).name} (${range(...previewRuinGuardBounds(depth + 1, depth))} to ${range(...previewRuinGuardBounds(depth + RELICS_PER_LAYER, depth))})`;
