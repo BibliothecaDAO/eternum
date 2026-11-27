@@ -8,7 +8,8 @@ import { useParams } from "react-router-dom";
 
 import { useHeldRealms } from "@/hooks/use-holdings";
 import { Pill } from "@/ui/design-system/kit/pill";
-import { DoorwayScreen } from "@/ui/features/game-entry/doorway/doorway-screen";
+import { doorwayRealmFromId } from "@/ui/features/game-entry/doorway/doorway-realm";
+import { DoorwayScreen, RealmRising } from "@/ui/features/game-entry/doorway/doorway-screen";
 import { FoundButton } from "@/ui/features/game-entry/game-entry-modal";
 import { EntryModeSwitch, HomeSourcePicker } from "@/ui/features/game-entry/home-source-picker";
 import { RealmSideWarning } from "@/ui/features/game-entry/realm-side-warning";
@@ -30,6 +31,7 @@ import {
   LAB_INVITE,
   LAB_NEW_ACCOUNTS,
   LAB_PLAYER,
+  LAB_QUEST_BONUS_PERCENT,
   LAB_SIGN_IN_EMAIL,
   LAB_SEASON_WAIT,
   labCodeExpiry,
@@ -210,18 +212,22 @@ const LabHomeStep = () => {
   const [playingFree, setPlayingFree] = useState(false);
   const { held } = useHeldRealms();
   const heldCount = held.data?.length ?? 0;
+  const realm = !playingFree && value !== "" ? doorwayRealmFromId(Number(value)) : null;
   return (
     <>
       <EntryModeSwitch
         heldCount={heldCount}
         playingFree={playingFree}
+        questBonusPercent={LAB_QUEST_BONUS_PERCENT}
         onChange={(mode) => setPlayingFree(mode === "free")}
       />
+      {realm && <RealmRising realm={realm} />}
       {playingFree ? (
         <LabAspectStep />
       ) : (
         <HomeSourcePicker
           registered={null}
+          questBonusPercent={LAB_QUEST_BONUS_PERCENT}
           value={value}
           onChange={setValue}
           onSettled={noop}
