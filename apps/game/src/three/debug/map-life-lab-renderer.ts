@@ -33,8 +33,8 @@ import {
 import { findNearestTerrainHex, terrainCellKey, terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import { TERRAIN_BIOME_DESCRIPTORS, TERRAIN_BIOME_ORDER } from "@/three/terrain/terrain-palette";
 import { LAYER_BIOME_LOOKS } from "@/three/terrain/layer-biomes";
+import { getFloraSpeciesMetadata } from "@/three/terrain/flora-kit";
 import {
-  TERRAIN_FLORA_MANIFEST_PATH,
   TERRAIN_PROP_ARCHETYPE_IDS,
   getTerrainPropRole,
   isLayerPropId,
@@ -135,10 +135,6 @@ interface LabArmy {
   marker: Group;
   heading: number;
   remaining: number;
-}
-
-interface FloraManifest {
-  species: { id: string; bytes: number; height: number; triangles: number[] }[];
 }
 
 interface CreatureManifest {
@@ -338,20 +334,19 @@ async function addFloraRow(runtime: GalleryRuntime, input: MountMapLifeLabInput,
   const pools = await TerrainPropPools.load();
   runtime.pools = pools;
   runtime.scene.add(pools.object3d);
-  const manifest = (await fetchJson(TERRAIN_FLORA_MANIFEST_PATH)) as FloraManifest;
   pools.writePage(
     GALLERY_PAGE,
     TERRAIN_PROP_ARCHETYPE_IDS.map((archetype, index) => galleryInstance(archetype, index * FLORA_SLOT)),
   );
   TERRAIN_PROP_ARCHETYPE_IDS.forEach((archetype, index) => {
     const x = index * FLORA_SLOT;
-    const row = manifest.species.find(({ id }) => id === archetype)!;
+    const row = getFloraSpeciesMetadata(archetype);
     const draws = getTerrainPropRole(archetype) === "canopy" ? "1 draw per kind, +1 shadow" : "1 draw per kind";
     runtime.scene.add(createGalleryGround(x, 0, FLORA_SLOT * 0.48, floraGroundColour(input.ground, archetype)));
     const anchor = new Object3D();
     anchor.position.set(x, 0, 0);
     runtime.scene.add(anchor);
-    labelTile(anchor, row.height, archetype, PROCEDURAL, row.triangles[0], `${Math.round(row.bytes / 1024)} KB`, draws);
+    labelTile(anchor, row.height, archetype, PROCEDURAL, row.triangles[0], "0 KB", draws);
     runtime.scene.add(placeKnight(knight, x + 0.9, 0.9));
   });
   return TERRAIN_PROP_ARCHETYPE_IDS.length;

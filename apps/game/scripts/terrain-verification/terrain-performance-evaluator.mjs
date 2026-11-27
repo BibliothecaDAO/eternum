@@ -77,7 +77,6 @@ function evaluateScenario(result, requireLifecycle, enforceTiming, reasons, inco
   if (!(snapshot.render?.textures >= 0 && snapshot.render.textures <= 32)) {
     reasons.push(`${label}: renderer texture count exceeded 32 or was unavailable`);
   }
-  evaluateAssetRequests(label, result.variant, snapshot.assets, reasons);
   if ((result.variant === "props" || result.variant === "production") && !(snapshot.render?.propInstances > 0)) {
     reasons.push(`${label}: expected rendered prop instances`);
   }
@@ -137,13 +136,6 @@ function evaluateFrameStats(label, phase, stats, p95BudgetMs, reasons) {
   }
   if (!(stats?.p99Ms > 0 && stats.p99Ms <= 33.3)) reasons.push(`${label}: ${phase} frame p99 exceeded 33.3 ms`);
   if (stats?.above50Ms > 0) reasons.push(`${label}: ${phase} trace contained a frame at or above 50 ms`);
-}
-
-function evaluateAssetRequests(label, variant, assets, reasons) {
-  const expectsProps = variant === "props" || variant === "production";
-  if (assets?.propCatalogRequests !== (expectsProps ? 1 : 0)) {
-    reasons.push(`${label}: prop catalog request count did not match the variant`);
-  }
 }
 
 function evaluateBackendParity(results, reasons) {

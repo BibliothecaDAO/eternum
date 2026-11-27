@@ -20,6 +20,7 @@ import { isTerrainPropFootprintClear } from "./terrain-prop-footprint";
 import { TERRAIN_BIOME_ART_DIRECTIONS } from "./terrain-biome-art-direction";
 import { TerrainField, type TerrainPropDensityContext } from "./terrain-field";
 import { hashTerrainCoordinates, terrainHashToUnitFloat } from "./terrain-hash";
+import { linearColour } from "./flora-geometry";
 import { TERRAIN_BIOME_DESCRIPTORS } from "./terrain-palette";
 import {
   getLayerPropAnchor,
@@ -216,7 +217,7 @@ const LAYER_BIOME_PROP_PROFILES: Readonly<Record<LayerBiome, PropProfile<LayerPr
 const LAYER_WIND_AMPLITUDE: Readonly<Record<PersonalLayer, number>> = { 1: 0.12, 2: 0 };
 const NO_GLOW = [0, 0, 0] as const;
 const LAYER_BIOME_GLOW = Object.fromEntries(
-  EVERY_LAYER_BIOME.map((biome) => [biome, hexToLinear(LAYER_BIOME_LOOKS[biome].glow)]),
+  EVERY_LAYER_BIOME.map((biome) => [biome, linearColour(LAYER_BIOME_LOOKS[biome].glow)]),
 ) as Record<LayerBiome, readonly [number, number, number]>;
 const LUSH_GROUND_FOLIAGE = 0.7;
 const DUSTY_LEAF = [1.12, 0.95, 1.3] as const;
@@ -910,14 +911,9 @@ function resolvePalettePropTint(
 }
 
 function resolvePaletteGroundLean(biome: BiomeType): readonly [number, number, number] {
-  const linear = hexToLinear(TERRAIN_BIOME_DESCRIPTORS[biome].primary);
+  const linear = linearColour(TERRAIN_BIOME_DESCRIPTORS[biome].primary);
   const mean = (linear[0] + linear[1] + linear[2]) / 3 || 1;
   const [r, g, b] = linear.map((channel) => channel / mean - 1);
-  return [r, g, b];
-}
-
-function hexToLinear(hex: string): readonly [number, number, number] {
-  const [r, g, b] = [1, 3, 5].map((start) => (parseInt(hex.slice(start, start + 2), 16) / 255) ** 2.2);
   return [r, g, b];
 }
 
