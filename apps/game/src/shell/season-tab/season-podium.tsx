@@ -1,4 +1,4 @@
-import { formatExact } from "@bibliothecadao/types";
+import { formatExact, UNKNOWN } from "@bibliothecadao/types";
 import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -44,7 +44,7 @@ export const SeasonPodium = ({
               <HudPlaceMedal place={place.place} size={place.place === 1 ? 34 : 28} below={`#${place.place}`} />
               <span className="inline-flex items-center gap-1 text-app-strong tabular-nums text-app-gold">
                 <Icon name="lords" size={18} />
-                {Number.isNaN(place.lords) ? "—" : formatExact(place.lords)}
+                {Number.isNaN(place.lords) ? UNKNOWN : formatExact(place.lords)}
               </span>
               {podium !== null && (
                 <span

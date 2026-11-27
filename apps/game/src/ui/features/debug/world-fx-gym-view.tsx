@@ -145,9 +145,9 @@ export const WorldFxGymView = () => {
             value={String(count)}
             onChange={(value) => setOption("count", value)}
           >
-            <option value="1">1 — hero</option>
-            <option value="10">10 — encounter</option>
-            <option value="50">50 — stress</option>
+            <option value="1">1 · hero</option>
+            <option value="10">10 · encounter</option>
+            <option value="50">50 · stress</option>
           </DebugSelect>
 
           <DebugSelect

@@ -7,7 +7,7 @@ import { Icon } from "@/ui/design-system/icon";
 import { DAY_BANNER_WORDS } from "@/ui/design-system/kit/words";
 import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { DAILY_QUEST_MODELS, readDailyQuest, UNROLLED_WORLD_DAY } from "@bibliothecadao/eternum";
-import { questLine } from "@bibliothecadao/types";
+import { questLine, UNKNOWN } from "@bibliothecadao/types";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { baneFace, useBaneToday } from "../day/bane-face";
@@ -31,7 +31,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
   const target = reading ? safeInteger(reading.target) : 0;
   const ready = reading?.state === "done" || reading?.state === "again";
   const cleared = ready || reading?.state === "collected";
-  const count = reading ? DAY_BANNER_WORDS.fraction(progress, target) : "—";
+  const count = reading ? DAY_BANNER_WORDS.fraction(progress, target) : UNKNOWN;
   const bane = reading?.bane ? baneFace(reading.bane, setup.store, realm.game_id) : null;
   const questCleared = cleared && !bane;
   const undrawn = today.reading.unknown === UNROLLED_WORLD_DAY;

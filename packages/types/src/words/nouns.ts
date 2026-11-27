@@ -24,7 +24,7 @@ import { TROOP_TYPES, TroopType } from "../types/common";
 import type { QuestLine } from "../constants/quests";
 import { formatCount, nounFor } from "./count";
 
-const UNKNOWN = "—";
+export const UNKNOWN = "—";
 
 export const LORDS = "LORDS";
 export const FRAGMENT = "Fragment";

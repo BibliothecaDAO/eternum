@@ -1,3 +1,4 @@
+import { UNKNOWN } from "@bibliothecadao/types";
 import { useEffect, useState } from "react";
 
 import {
@@ -90,18 +91,18 @@ const BootTimelineDiagnostics = ({ currentTaskLabel, slowThresholdMs = 1500 }: B
       <div className="flex items-center justify-between gap-3 text-sm">
         <span className="text-kit-muted">debug</span>
         <span className="tabular-nums text-gold/85">
-          {snapshot.elapsedMs === null ? "—" : `${formatMs(snapshot.elapsedMs)} elapsed`}
+          {snapshot.elapsedMs === null ? UNKNOWN : `${formatMs(snapshot.elapsedMs)} elapsed`}
         </span>
       </div>
 
       <div className="mt-1 grid grid-cols-[7rem_1fr] gap-x-3 gap-y-0.5">
         <span className="text-kit-muted">phase</span>
-        <span className="truncate text-gold/85">{currentTaskLabel ?? "—"}</span>
+        <span className="truncate text-gold/85">{currentTaskLabel ?? UNKNOWN}</span>
 
         <span className="text-kit-muted">last milestone</span>
         <span className="truncate text-gold/85">
           {lastMilestone === null
-            ? "—"
+            ? UNKNOWN
             : `${lastMilestone.name} (+${formatMs(lastMilestone.deltaMs)}, ${formatMs(lastMilestone.elapsedMs)} total)`}
         </span>
 
@@ -111,12 +112,12 @@ const BootTimelineDiagnostics = ({ currentTaskLabel, slowThresholdMs = 1500 }: B
             sinceLastMilestoneMs !== null && sinceLastMilestoneMs > slowThresholdMs ? "text-red-300" : "text-gold/85"
           }
         >
-          {sinceLastMilestoneMs === null ? "—" : `${formatMs(sinceLastMilestoneMs)} idle`}
+          {sinceLastMilestoneMs === null ? UNKNOWN : `${formatMs(sinceLastMilestoneMs)} idle`}
         </span>
 
         <span className="text-kit-muted">slowest step</span>
         <span className="truncate text-gold/85">
-          {slowestStep === null ? "—" : `${slowestStep.name} (+${formatMs(slowestStep.deltaMs)})`}
+          {slowestStep === null ? UNKNOWN : `${slowestStep.name} (+${formatMs(slowestStep.deltaMs)})`}
         </span>
       </div>
 

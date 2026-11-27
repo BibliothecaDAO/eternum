@@ -43,7 +43,7 @@ export function RealmLevelIcons() {
         return (
           <article key={level} data-realm-level={level} className="rounded border border-white/15 p-3">
             <h3 className="!mt-0">
-              {level} · {model.id[0].toUpperCase() + model.id.slice(1)} — {model.label}
+              {level} · {model.id[0].toUpperCase() + model.id.slice(1)} · {model.label}
             </h3>
             <div className="grid grid-cols-2 items-center gap-4 md:grid-cols-4">
               <figure>

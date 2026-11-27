@@ -43,7 +43,7 @@ export const SuggestionChip = memo(({ suggestion, onClick, isPending, refusal, s
       disabled={isPending || refusal !== null}
       data-selected={selected || undefined}
       title={
-        refusal ?? `${suggestion.realmName} · ${suggestion.label}${suggestion.reason ? ` — ${suggestion.reason}` : ""}`
+        refusal ?? `${suggestion.realmName} · ${suggestion.label}${suggestion.reason ? `: ${suggestion.reason}` : ""}`
       }
       className={cn(
         "ui-pick flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition",

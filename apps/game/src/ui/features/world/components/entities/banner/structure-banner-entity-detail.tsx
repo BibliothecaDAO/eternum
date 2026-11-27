@@ -12,7 +12,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
-import { ID, StructureType, formatWait } from "@bibliothecadao/types";
+import { ID, StructureType, formatWait, UNKNOWN } from "@bibliothecadao/types";
 import { configManager, toHexString } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
@@ -103,7 +103,7 @@ export const StructureBannerEntityDetail = memo(
       ? villageTimerSummary.militiaUnlockRemainingSeconds > 0
         ? formatWait(villageTimerSummary.militiaUnlockRemainingSeconds)
         : "Ready"
-      : "—";
+      : UNKNOWN;
     const canOpenTransferPanel =
       isMine &&
       configManager.isCommandEnabled("SendResources") &&
@@ -111,7 +111,9 @@ export const StructureBannerEntityDetail = memo(
       typeof structure.entity_id !== "undefined";
     const ownerInitial = (ownerDisplayName || "?").charAt(0).toUpperCase();
     const guardCue =
-      guards === undefined ? "—" : `${guards.filter((guard) => guard.troops.count > 0n).length}/${guardSlots.length}`;
+      guards === undefined
+        ? UNKNOWN
+        : `${guards.filter((guard) => guard.troops.count > 0n).length}/${guardSlots.length}`;
 
     return (
       <HudPanel className={cn("min-w-0", className)} divided bodyClassName="flex flex-col">

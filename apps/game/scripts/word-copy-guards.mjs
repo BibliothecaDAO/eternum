@@ -75,6 +75,50 @@ const isInputValue = (ancestor, child) => ancestor.type === "Property" && ancest
 
 const COPY = "copy";
 const STAND_IN = "standIn";
+const EM_DASH_MESSAGE = "emDash";
+const EM_DASH = "\u2014";
+const UNKNOWN_CONSTANT_SUFFIX = "packages/types/src/words/nouns.ts";
+
+const isUnknownConstant = (node, parent, filename) =>
+  filename.replace(/\\/g, "/").endsWith(UNKNOWN_CONSTANT_SUFFIX) &&
+  parent?.type === "VariableDeclarator" &&
+  parent.id?.type === "Identifier" &&
+  parent.id.name === "UNKNOWN" &&
+  node.type === "Literal" &&
+  node.value === EM_DASH;
+
+const noEmDash = {
+  meta: {
+    type: "problem",
+    schema: [],
+    messages: {
+      [EM_DASH_MESSAGE]:
+        "No em-dash (\u2014) in player-facing code: use a colon, middle dot, or period for prose, and read UNKNOWN from @bibliothecadao/types for unknown values.",
+    },
+  },
+  create: (context) => {
+    const filename = context.filename ?? "";
+    const parentOf = (node) => context.sourceCode.getAncestors(node).at(-1);
+    const report = (node) => context.report({ node, messageId: EM_DASH_MESSAGE });
+    return {
+      Literal(node) {
+        if (typeof node.value !== "string" || !node.value.includes(EM_DASH)) return;
+        const parent = parentOf(node);
+        if (!isPhraseSite(node, parent) || isUnknownConstant(node, parent, filename)) return;
+        report(node);
+      },
+      TemplateLiteral(node) {
+        if (!isPhraseSite(node, parentOf(node))) return;
+        for (const quasi of node.quasis) {
+          if ((quasi.value.cooked ?? "").includes(EM_DASH)) report(quasi);
+        }
+      },
+      JSXText(node) {
+        if (node.value.includes(EM_DASH)) report(node);
+      },
+    };
+  },
+};
 
 const noCopiedPhrase = {
   meta: {
@@ -125,11 +169,33 @@ const WORD_COPY_FILES = [
   "apps/game/scripts/**/*steps*.mjs",
 ];
 
+const NO_EM_DASH_FILES = [
+  "apps/game/src/**/*.{ts,tsx}",
+  "packages/core/src/**/*.{ts,tsx}",
+  "packages/notifications/src/**/*.{ts,tsx}",
+  "packages/identity/src/**/*.{ts,tsx}",
+  "packages/types/src/**/*.{ts,tsx}",
+];
+
+const NO_EM_DASH_IGNORES = [
+  "packages/types/src/words/voice.ts",
+  "apps/game/src/shell/generated/patch-notes.ts",
+  "**/*.gen.{ts,tsx}",
+  "**/*.test.{ts,tsx}",
+  "**/*.spec.{ts,tsx}",
+];
+
 export const wordCopyGuardConfigs = [
   {
     files: WORD_COPY_FILES,
     ignores: ["packages/types/src/words/**"],
     plugins: { words: { rules: { "no-copied-phrase": noCopiedPhrase } } },
     rules: { "words/no-copied-phrase": "error" },
+  },
+  {
+    files: NO_EM_DASH_FILES,
+    ignores: NO_EM_DASH_IGNORES,
+    plugins: { words: { rules: { "no-em-dash": noEmDash } } },
+    rules: { "words/no-em-dash": "error" },
   },
 ];

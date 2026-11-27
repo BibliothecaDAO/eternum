@@ -177,7 +177,7 @@ export const BANNED_WORDS: readonly BannedWord[] = [
   },
   {
     banned: "Far-Eye",
-    use: "(removed — never name it)",
+    use: "(removed: never name it)",
     pattern: /\bfar[- ]?eye\b/i,
     bad: "Use Far-Eye",
     good: "Explore nearby tiles",

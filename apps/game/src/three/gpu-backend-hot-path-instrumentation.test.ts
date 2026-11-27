@@ -209,7 +209,7 @@ describe("GPU backend hot-path instrumentation", () => {
     frame(10_050);
     expect(consoleWarn).toHaveBeenCalledOnce();
     expect(consoleWarn.mock.calls[0][0]).toBe(
-      "[FramePerf] 3 spike frames in 10.0s, worst 60ms — [FramePerf] spike renderer_mode=webgpu duration_ms=60 frame_owner=unattributed gpu_attribution=disabled",
+      "[FramePerf] 3 spike frames in 10.0s, worst 60ms: [FramePerf] spike renderer_mode=webgpu duration_ms=60 frame_owner=unattributed gpu_attribution=disabled",
     );
 
     frame(12_000);

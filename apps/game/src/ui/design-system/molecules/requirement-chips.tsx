@@ -1,7 +1,7 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatIncomingEta } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
-import { ResourcesIds, formatExact } from "@bibliothecadao/types";
+import { ResourcesIds, formatExact, UNKNOWN } from "@bibliothecadao/types";
 import { costLine } from "@/ui/design-system/kit/words";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
 
@@ -23,7 +23,7 @@ export const RequirementChips = ({
   className?: string;
 }) => (
   <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
-    {requirements === undefined && <HudChip>—</HudChip>}
+    {requirements === undefined && <HudChip>{UNKNOWN}</HudChip>}
     {requirements?.map((req) => {
       const isMet = req.current !== undefined && req.current >= req.amount;
       const incomingTitle = req.incoming
