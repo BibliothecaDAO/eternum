@@ -1,5 +1,6 @@
 import type { RankedWords } from "@bibliothecadao/types";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { realmPaintingKind } from "@/ui/design-system/home-icons";
 
 import type { CSSProperties } from "react";
 import type { FrontierSpecies } from "../structures/frontier-beast";
@@ -10,6 +11,7 @@ import {
   NEUTRAL_OWNER_NAME,
   StructureType,
   TROOP_TYPES,
+  orderAspect,
   structureName,
   frontierSiteName,
   formatExact,
@@ -191,6 +193,8 @@ export const buildStructurePlate = (
     | "frontierBeast"
     | "level"
     | "hasWonder"
+    | "realmOrder"
+    | "realmSkin"
     | "battleTimerLeft"
   > & { watched?: SeatSide | null; frontier: boolean },
   nowSeconds = 0,
@@ -228,7 +232,16 @@ export const buildStructurePlate = (
       : structure.structureType === StructureType.Mine && structure.mineKind !== undefined
         ? mineMeaning(structure.mineKind)
         : structure.structureType === StructureType.Realm
-          ? realmMeaning(structure.level, structure.hasWonder)
+          ? realmMeaning(
+              structure.level,
+              structure.hasWonder,
+              structure.realmSkin !== undefined
+                ? realmPaintingKind(
+                    structure.realmSkin,
+                    structure.realmOrder ? (orderAspect(structure.realmOrder) ?? null) : null,
+                  )
+                : undefined,
+            )
           : structureMeaning(structure.structureType),
     guards,
     ...(inBattle(structure.battleTimerLeft) ? { inBattle: true } : {}),

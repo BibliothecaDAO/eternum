@@ -1,20 +1,17 @@
 import { DRAWN_REALM_SKINS, holdsRealmSkin, REALM_SKIN_FAMILIES, wornRealmSkinFamily } from "@bibliothecadao/eternum";
 import { type AspectId, aspectName, aspects, RealmLevels } from "@bibliothecadao/types";
-import paintings from "@/ui/design-system/home-icons.json";
-import { homeIcon } from "@/ui/design-system/home-icons";
+import { homeIcon, seasonOnePainting, type HomePaintingKind } from "@/ui/design-system/home-icons";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { COSMETICS_WORDS } from "@/ui/design-system/kit/words";
 
 export type RealmSkinFamily = keyof typeof COSMETICS_WORDS.families;
-
-const NO_PAINTING_YET = "no painting yet";
 
 export interface RealmSkin {
   readonly id: string;
   readonly family: RealmSkinFamily;
   readonly name: string;
   readonly aspect?: AspectId;
-  readonly paintings: keyof typeof paintings | typeof NO_PAINTING_YET;
+  readonly paintings: HomePaintingKind;
 }
 
 export interface RealmSkinFacts {
@@ -67,7 +64,7 @@ export const REALM_SKINS: readonly RealmSkin[] = [
       family: "season-1",
       name: aspectName(id),
       aspect: id,
-      paintings: NO_PAINTING_YET,
+      paintings: seasonOnePainting(id),
     }),
   ),
   {
@@ -117,5 +114,4 @@ export const wornRealmSkin = (facts: RealmSkinFacts): RealmSkin => {
 export const wearsDefaultSkin = (facts: RealmSkinFacts): boolean =>
   wornRealmSkinFamily(facts, facts.equipped) === wornRealmSkinFamily(facts, REALM_SKIN_FAMILIES.DEFAULT_REALM_SKIN);
 
-export const realmSkinIcon = (skin: RealmSkin, level: RealmLevels): IconMeaning | undefined =>
-  skin.paintings === NO_PAINTING_YET ? undefined : homeIcon(skin.paintings, level);
+export const realmSkinIcon = (skin: RealmSkin, level: RealmLevels): IconMeaning => homeIcon(skin.paintings, level);

@@ -1,4 +1,4 @@
-import { homeIcon, homeKind } from "./home-icons";
+import { homeIcon, homeKind, realmSkinPainting, type HomePaintingKind } from "./home-icons";
 import {
   aspectName,
   BuildingType,
@@ -15,7 +15,6 @@ import {
   readFrontierBeast,
   type ArchivedStoryVariant,
   type FrontierSpecies,
-  realmShowsWonder,
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
@@ -117,7 +116,7 @@ export function readStructureMeaning(
   structure: NativeRows["Structure"],
 ): IconMeaning {
   const category = structure.base.category;
-  if (category === StructureType.Realm) return realmMeaning(structure.base.level, realmShowsWonder(store, structure));
+  if (category === StructureType.Realm) return homeIcon(realmSkinPainting(store, structure), structure.base.level);
   if (category === StructureType.DeepSite)
     return deepSiteMeaning(
       store.require("DeepSite", { game_id: structure.game_id, entity_id: structure.entity_id }).kind,
@@ -136,12 +135,13 @@ export function mineMeaning(kind: number): IconMeaning {
   if (kind === 2) return "mine";
   throw new Error(`Unknown mine icon: ${kind}`);
 }
-export function realmMeaning(level: number, hasWonder = false): IconMeaning {
-  return homeIcon(homeKind(hasWonder), level);
+export function realmMeaning(level: number, hasWonder = false, painting?: HomePaintingKind): IconMeaning {
+  return homeIcon(painting ?? homeKind(hasWonder), level);
 }
 
-export function realmMarkerMeaning(level: number, hasWonder = false): IconMeaning {
-  if (hasWonder) return realmMeaning(level, hasWonder);
+export function realmMarkerMeaning(level: number, hasWonder = false, painting?: HomePaintingKind): IconMeaning {
+  const kind = painting ?? homeKind(hasWonder);
+  if (kind !== "realm") return homeIcon(kind, level);
   return `map-${realmMeaning(level)}` as IconMeaning;
 }
 

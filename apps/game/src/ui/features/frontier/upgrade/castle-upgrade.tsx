@@ -1,4 +1,5 @@
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { realmSkinPainting, type HomePaintingKind } from "@/ui/design-system/home-icons";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { type RealmLevelUp, useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
@@ -9,13 +10,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import { knownAmount } from "@/ui/utils/utils";
-import {
-  buildablePlotCount,
-  configManager,
-  getBalance,
-  realmShowsWonder,
-  ResourceManager,
-} from "@bibliothecadao/eternum";
+import { buildablePlotCount, configManager, getBalance, ResourceManager } from "@bibliothecadao/eternum";
 import { BUILDINGS_CENTER, RESOURCE_PRECISION, ResourcesIds, TroopTier, formatRate } from "@bibliothecadao/types";
 
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
@@ -58,7 +53,7 @@ export const CastleUpgrade = ({
   if (!levelUp) return null;
   return (
     <CastleView
-      now={castleSide(setup.store, realm.game_id, levelUp.currentLevel, realmShowsWonder(setup.store, realm))}
+      now={castleSide(setup.store, realm.game_id, levelUp.currentLevel, realmSkinPainting(setup.store, realm))}
       laborRate={formatRate(castleLabor(setup.store, realm, tick))}
       research={
         ordersAllowed &&
@@ -80,7 +75,7 @@ const upgradeOrder = (
   tick: number,
 ): CastleUpgradeOrder => {
   return {
-    next: castleSide(store, realm.game_id, levelUp.nextLevel, realmShowsWonder(store, realm)),
+    next: castleSide(store, realm.game_id, levelUp.nextLevel, realmSkinPainting(store, realm)),
     prices: levelUp.requirements.map(({ resource, amount }) => ({ of: castlePriceKind(resource), amount })),
     refusal: castleUpgradeRefusal(store, realm, levelUp, tick),
     sending: levelUp.loading,
@@ -110,8 +105,8 @@ export const castleUpgradeRefusal = (
   return levelUp.refusal ? { reason: { kind: "failed", line: `${levelUp.refusal}.` } } : undefined;
 };
 
-const castleSide = (store: NativeFactStore, gameId: number, level: number, hasWonder = false): CastleSide => {
-  const art = realmMeaning(level, hasWonder);
+const castleSide = (store: NativeFactStore, gameId: number, level: number, painting: HomePaintingKind): CastleSide => {
+  const art = realmMeaning(level, false, painting);
   if (!art) throw new Error(`No castle art for level ${level}`);
   return {
     level,

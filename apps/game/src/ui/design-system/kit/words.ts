@@ -569,7 +569,6 @@ export const COSMETICS_WORDS = {
   yourRank: (rank: string) => `Your rank: ${rank}`,
   matchingIcon: "Matching Realm Icon",
   matchingIconWhere: "HUD badge, minimap, map plates & app",
-  previewSoon: "Preview soon",
   equip: "Equip",
   equipped: "Equipped",
   useDefaultOrder: "Use default order",

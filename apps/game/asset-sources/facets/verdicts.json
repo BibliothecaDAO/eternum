@@ -1163,5 +1163,69 @@
   "faceted/poison": {
     "verdict": "beats shipped",
     "reason": "Owner-picked Season 1 Deep poison mark (drop with a skull cut in it, ivory relief in the poison green, 25 Nov), beside shipped flame in pass3/art/poison-sheet.png."
+  },
+  "faceted/season-1-prowess-realm-0": {
+    "verdict": "beats shipped",
+    "reason": "Season 1 Prowess Settlement isometric model render from live procedural realm kit (realm-kit.ts), verified in s1-icons-4x4.png."
+  },
+  "faceted/season-1-prowess-realm-1": {
+    "verdict": "beats shipped",
+    "reason": "Season 1 Prowess City isometric model render from live procedural realm kit (realm-kit.ts), verified in s1-icons-4x4.png."
+  },
+  "faceted/season-1-prowess-realm-2": {
+    "verdict": "beats shipped",
+    "reason": "Season 1 Prowess Kingdom isometric model render from live procedural realm kit (realm-kit.ts), verified in s1-icons-4x4.png."
+  },
+  "faceted/season-1-prowess-realm-3": {
+    "verdict": "beats shipped",
+    "reason": "Season 1 Prowess Empire isometric model render from live procedural realm kit (realm-kit.ts), verified in s1-icons-4x4.png."
+  },
+  "faceted/season-1-luminary-realm-0": {
+    "verdict": "beats shipped",
+    "reason": "Season 1 Luminary Settlement isometric model render from live procedural realm kit (realm-kit.ts), verified in s1-icons-4x4.png."
+  },
+  "faceted/season-1-luminary-realm-1": {
+    "verdict": "beats shipped",
+    "reason": "Season 1 Luminary City isometric model render from live procedural realm kit (realm-kit.ts), verified in s1-icons-4x4.png."
+  },
+  "faceted/season-1-luminary-realm-2": {
+    "verdict": "beats shipped",
+    "reason": "Season 1 Luminary Kingdom isometric model render from live procedural realm kit (realm-kit.ts), verified in s1-icons-4x4.png."
+  },
+  "faceted/season-1-luminary-realm-3": {
+    "verdict": "beats shipped",
+    "reason": "Season 1 Luminary Empire isometric model render from live procedural realm kit (realm-kit.ts), verified in s1-icons-4x4.png."
+  },
+  "faceted/season-1-havoc-realm-0": {
+    "verdict": "beats shipped",
+    "reason": "Season 1 Havoc Settlement isometric model render from live procedural realm kit (realm-kit.ts), verified in s1-icons-4x4.png."
+  },
+  "faceted/season-1-havoc-realm-1": {
+    "verdict": "beats shipped",
+    "reason": "Season 1 Havoc City isometric model render from live procedural realm kit (realm-kit.ts), verified in s1-icons-4x4.png."
+  },
+  "faceted/season-1-havoc-realm-2": {
+    "verdict": "beats shipped",
+    "reason": "Season 1 Havoc Kingdom isometric model render from live procedural realm kit (realm-kit.ts), verified in s1-icons-4x4.png."
+  },
+  "faceted/season-1-havoc-realm-3": {
+    "verdict": "beats shipped",
+    "reason": "Season 1 Havoc Empire isometric model render from live procedural realm kit (realm-kit.ts), verified in s1-icons-4x4.png."
+  },
+  "faceted/season-1-insight-realm-0": {
+    "verdict": "beats shipped",
+    "reason": "Season 1 Insight Settlement isometric model render from live procedural realm kit (realm-kit.ts), verified in s1-icons-4x4.png."
+  },
+  "faceted/season-1-insight-realm-1": {
+    "verdict": "beats shipped",
+    "reason": "Season 1 Insight City isometric model render from live procedural realm kit (realm-kit.ts), verified in s1-icons-4x4.png."
+  },
+  "faceted/season-1-insight-realm-2": {
+    "verdict": "beats shipped",
+    "reason": "Season 1 Insight Kingdom isometric model render from live procedural realm kit (realm-kit.ts), verified in s1-icons-4x4.png."
+  },
+  "faceted/season-1-insight-realm-3": {
+    "verdict": "beats shipped",
+    "reason": "Season 1 Insight Empire isometric model render from live procedural realm kit (realm-kit.ts), verified in s1-icons-4x4.png."
   }
 }

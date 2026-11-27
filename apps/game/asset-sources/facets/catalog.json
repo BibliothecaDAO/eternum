@@ -3595,6 +3595,198 @@
         "kind": "ivory-relief",
         "sha256": "7380031ea4eeda26db3ebbab54feb8e50255b164244981135db9f780cacc53b1"
       }
+    },
+    {
+      "id": "season-1-prowess-realm-0",
+      "label": "Season 1 · Prowess · Settlement",
+      "family": "Structures",
+      "source": {
+        "kind": "model-render",
+        "sha256": "f25b2d302be1c8e5a9c101908556d6cf9fc207f2672e735e6f554b00452e65a5",
+        "inputs": {
+          "apps/game/src/three/structures/realm-kit.ts": "414c5905b3eec9997f7636bd9d75a5d18bab4f8607a413adf60b87218d88a87d"
+        }
+      }
+    },
+    {
+      "id": "season-1-prowess-realm-1",
+      "label": "Season 1 · Prowess · City",
+      "family": "Structures",
+      "source": {
+        "kind": "model-render",
+        "sha256": "970f17c6fc59b51e60513c95cd67180617d426041bc6cdbd498bfb763f171054",
+        "inputs": {
+          "apps/game/src/three/structures/realm-kit.ts": "414c5905b3eec9997f7636bd9d75a5d18bab4f8607a413adf60b87218d88a87d"
+        }
+      }
+    },
+    {
+      "id": "season-1-prowess-realm-2",
+      "label": "Season 1 · Prowess · Kingdom",
+      "family": "Structures",
+      "source": {
+        "kind": "model-render",
+        "sha256": "f078f68a0bc0eae37fde384f71954bf9599463e39c67d469a149dba7fa5d810f",
+        "inputs": {
+          "apps/game/src/three/structures/realm-kit.ts": "414c5905b3eec9997f7636bd9d75a5d18bab4f8607a413adf60b87218d88a87d"
+        }
+      }
+    },
+    {
+      "id": "season-1-prowess-realm-3",
+      "label": "Season 1 · Prowess · Empire",
+      "family": "Structures",
+      "source": {
+        "kind": "model-render",
+        "sha256": "918d6026bb09036956563d68615a087e05edf5a414bf853702eaa78b68dee59f",
+        "inputs": {
+          "apps/game/src/three/structures/realm-kit.ts": "414c5905b3eec9997f7636bd9d75a5d18bab4f8607a413adf60b87218d88a87d"
+        }
+      }
+    },
+    {
+      "id": "season-1-luminary-realm-0",
+      "label": "Season 1 · Luminary · Settlement",
+      "family": "Structures",
+      "source": {
+        "kind": "model-render",
+        "sha256": "e2c774ec33dc5c4d7330ff1048de128665d79245d05458f015abf342ebade25f",
+        "inputs": {
+          "apps/game/src/three/structures/realm-kit.ts": "414c5905b3eec9997f7636bd9d75a5d18bab4f8607a413adf60b87218d88a87d"
+        }
+      }
+    },
+    {
+      "id": "season-1-luminary-realm-1",
+      "label": "Season 1 · Luminary · City",
+      "family": "Structures",
+      "source": {
+        "kind": "model-render",
+        "sha256": "9d460cae0453e69ac8b4c895bf8405f10004df3dd6448dc3e68aaf51d9416620",
+        "inputs": {
+          "apps/game/src/three/structures/realm-kit.ts": "414c5905b3eec9997f7636bd9d75a5d18bab4f8607a413adf60b87218d88a87d"
+        }
+      }
+    },
+    {
+      "id": "season-1-luminary-realm-2",
+      "label": "Season 1 · Luminary · Kingdom",
+      "family": "Structures",
+      "source": {
+        "kind": "model-render",
+        "sha256": "d28be4f288479d05788616cc3e49fadbfdf80bfe967d9c3e9abec4c945cad862",
+        "inputs": {
+          "apps/game/src/three/structures/realm-kit.ts": "414c5905b3eec9997f7636bd9d75a5d18bab4f8607a413adf60b87218d88a87d"
+        }
+      }
+    },
+    {
+      "id": "season-1-luminary-realm-3",
+      "label": "Season 1 · Luminary · Empire",
+      "family": "Structures",
+      "source": {
+        "kind": "model-render",
+        "sha256": "384858f59277f3a8730943f909dd621c0f221512ea29fa3253a61bbc0213d241",
+        "inputs": {
+          "apps/game/src/three/structures/realm-kit.ts": "414c5905b3eec9997f7636bd9d75a5d18bab4f8607a413adf60b87218d88a87d"
+        }
+      }
+    },
+    {
+      "id": "season-1-havoc-realm-0",
+      "label": "Season 1 · Havoc · Settlement",
+      "family": "Structures",
+      "source": {
+        "kind": "model-render",
+        "sha256": "05aeba9bc7a9d49d4f765baa2f51d881ca895f2fb5cd321ad29a89b19ac4fda9",
+        "inputs": {
+          "apps/game/src/three/structures/realm-kit.ts": "414c5905b3eec9997f7636bd9d75a5d18bab4f8607a413adf60b87218d88a87d"
+        }
+      }
+    },
+    {
+      "id": "season-1-havoc-realm-1",
+      "label": "Season 1 · Havoc · City",
+      "family": "Structures",
+      "source": {
+        "kind": "model-render",
+        "sha256": "bac0232c666bc9de9b8d3e9cc587b165f14d185d58e43089bab76217bd1d9e1c",
+        "inputs": {
+          "apps/game/src/three/structures/realm-kit.ts": "414c5905b3eec9997f7636bd9d75a5d18bab4f8607a413adf60b87218d88a87d"
+        }
+      }
+    },
+    {
+      "id": "season-1-havoc-realm-2",
+      "label": "Season 1 · Havoc · Kingdom",
+      "family": "Structures",
+      "source": {
+        "kind": "model-render",
+        "sha256": "a59000e0bbdfb1e4a0c233914007e7368b1e1b30c0c4768509c37fc1dac25a0d",
+        "inputs": {
+          "apps/game/src/three/structures/realm-kit.ts": "414c5905b3eec9997f7636bd9d75a5d18bab4f8607a413adf60b87218d88a87d"
+        }
+      }
+    },
+    {
+      "id": "season-1-havoc-realm-3",
+      "label": "Season 1 · Havoc · Empire",
+      "family": "Structures",
+      "source": {
+        "kind": "model-render",
+        "sha256": "c90bc44aa6e035e4c8836086f3a05cfeed5f5cbcb26661008c8d4b6b0ce9c55c",
+        "inputs": {
+          "apps/game/src/three/structures/realm-kit.ts": "414c5905b3eec9997f7636bd9d75a5d18bab4f8607a413adf60b87218d88a87d"
+        }
+      }
+    },
+    {
+      "id": "season-1-insight-realm-0",
+      "label": "Season 1 · Insight · Settlement",
+      "family": "Structures",
+      "source": {
+        "kind": "model-render",
+        "sha256": "59fbea09ea317bf69af8d1b64524932514a02435d012c5893cc5562f9844914b",
+        "inputs": {
+          "apps/game/src/three/structures/realm-kit.ts": "414c5905b3eec9997f7636bd9d75a5d18bab4f8607a413adf60b87218d88a87d"
+        }
+      }
+    },
+    {
+      "id": "season-1-insight-realm-1",
+      "label": "Season 1 · Insight · City",
+      "family": "Structures",
+      "source": {
+        "kind": "model-render",
+        "sha256": "110f453fe3c7f3dcff8394578c830fd77ea8f59fc84d36c38ee1b39490905b87",
+        "inputs": {
+          "apps/game/src/three/structures/realm-kit.ts": "414c5905b3eec9997f7636bd9d75a5d18bab4f8607a413adf60b87218d88a87d"
+        }
+      }
+    },
+    {
+      "id": "season-1-insight-realm-2",
+      "label": "Season 1 · Insight · Kingdom",
+      "family": "Structures",
+      "source": {
+        "kind": "model-render",
+        "sha256": "26e560795f1237eb269a05563e699869beea49d2655050f454dae69cfaee2975",
+        "inputs": {
+          "apps/game/src/three/structures/realm-kit.ts": "414c5905b3eec9997f7636bd9d75a5d18bab4f8607a413adf60b87218d88a87d"
+        }
+      }
+    },
+    {
+      "id": "season-1-insight-realm-3",
+      "label": "Season 1 · Insight · Empire",
+      "family": "Structures",
+      "source": {
+        "kind": "model-render",
+        "sha256": "525e87ca2d5c4deec203680499af906ffa050ca1afbd5a39c6f574919f8d12dc",
+        "inputs": {
+          "apps/game/src/three/structures/realm-kit.ts": "414c5905b3eec9997f7636bd9d75a5d18bab4f8607a413adf60b87218d88a87d"
+        }
+      }
     }
   ]
 }

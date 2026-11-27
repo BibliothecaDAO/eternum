@@ -1,4 +1,5 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import type { HomePaintingKind } from "@/ui/design-system/home-icons";
 import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 import { describeCastleLevel } from "@/ui/modules/entity-details/realm/castle-level";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
@@ -16,6 +17,7 @@ export type StructureWithMetadata = Structure & {
   originalName: string;
   realmLevel: number;
   showsWonder: boolean;
+  realmPainting?: HomePaintingKind;
   realmLevelLabel: string | null;
   population: number;
   guardCount: number | undefined;

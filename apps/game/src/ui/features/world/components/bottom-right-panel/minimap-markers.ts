@@ -5,7 +5,6 @@ import {
   readDefaultTick,
   readExpeditionRules,
   REALM_SKIN_MODELS,
-  realmShowsWonder,
 } from "@bibliothecadao/eternum";
 import {
   isAspectAlly,
@@ -23,6 +22,7 @@ import {
   readStructureMeaning,
   realmMarkerMeaning,
 } from "@/ui/design-system/domain-icon-meaning";
+import { realmSkinPainting } from "@/ui/design-system/home-icons";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import type { MarkerOwner } from "@/ui/design-system/hex-marker";
 export interface MinimapMarker {
@@ -75,7 +75,7 @@ export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
       if (category === StructureType.DeepSite) continue;
       const name =
         category === StructureType.Realm
-          ? realmMarkerMeaning(row.base.level, realmShowsWonder(store, row))
+          ? realmMarkerMeaning(row.base.level, false, realmSkinPainting(store, row))
           : category === StructureType.Village
             ? "map-village"
             : category === StructureType.Mine

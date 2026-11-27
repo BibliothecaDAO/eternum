@@ -22,5 +22,29 @@
     "1": "devcon-golden-realm-1",
     "2": "devcon-golden-realm-2",
     "3": "devcon-golden-realm-3"
+  },
+  "season-1-prowess": {
+    "0": "season-1-prowess-realm-0",
+    "1": "season-1-prowess-realm-1",
+    "2": "season-1-prowess-realm-2",
+    "3": "season-1-prowess-realm-3"
+  },
+  "season-1-luminary": {
+    "0": "season-1-luminary-realm-0",
+    "1": "season-1-luminary-realm-1",
+    "2": "season-1-luminary-realm-2",
+    "3": "season-1-luminary-realm-3"
+  },
+  "season-1-havoc": {
+    "0": "season-1-havoc-realm-0",
+    "1": "season-1-havoc-realm-1",
+    "2": "season-1-havoc-realm-2",
+    "3": "season-1-havoc-realm-3"
+  },
+  "season-1-insight": {
+    "0": "season-1-insight-realm-0",
+    "1": "season-1-insight-realm-1",
+    "2": "season-1-insight-realm-2",
+    "3": "season-1-insight-realm-3"
   }
 }

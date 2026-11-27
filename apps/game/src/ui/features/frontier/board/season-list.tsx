@@ -2,6 +2,7 @@ import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
 import { formatAmount, formatExact, formatMoment, LORDS, formatShort } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import type { HomePaintingKind } from "@/ui/design-system/home-icons";
 import {
   HudButton,
   HudPlaceMedal,
@@ -39,7 +40,7 @@ export type SeasonListRow = {
   rank: number;
   order: number;
   /** The realm's rank and its depth, as the board's entry gives them. */
-  realm: { level: number; depth: number; hasWonder?: boolean };
+  realm: { level: number; depth: number; hasWonder?: boolean; painting?: HomePaintingKind };
   name: ReactNode;
   label: string;
   sitesCleared: number;
@@ -115,7 +116,12 @@ const COLS = "2.25rem 1.75rem minmax(0, 1fr) 3rem 3.5rem";
 const ListRow = ({ row, onOpen }: { row: SeasonListRow; onOpen: (key: string) => void }) => (
   <HudTableRow cols={COLS} label={`#${row.rank} ${row.label}`} own={row.own} onClick={() => onOpen(row.key)}>
     <RankCell rank={row.rank} />
-    <RealmBadge level={row.realm.level} depth={row.realm.depth} hasWonder={row.realm.hasWonder} />
+    <RealmBadge
+      level={row.realm.level}
+      depth={row.realm.depth}
+      hasWonder={row.realm.hasWonder}
+      painting={row.realm.painting}
+    />
     <span className="min-w-0 truncate">{row.name}</span>
     <span className="text-right tabular-nums">{formatAmount(row.sitesCleared)}</span>
     <span className="text-right tabular-nums">{formatAmount(row.lords)}</span>

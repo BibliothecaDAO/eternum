@@ -62,13 +62,6 @@
   left: theme(spacing.2);
 }
 
-.cosmetics__soon-line {
-  position: absolute;
-  bottom: theme(spacing.2);
-  font-size: var(--app-text-label);
-  color: var(--app-muted);
-}
-
 .cosmetics__ranks {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

@@ -1,4 +1,4 @@
-import { REALM_SKIN_FAMILIES, showsWonder } from "@bibliothecadao/eternum";
+import { DRAWN_REALM_SKINS, REALM_SKIN_FAMILIES, showsWonder } from "@bibliothecadao/eternum";
 import { RealmLevels } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
@@ -6,6 +6,7 @@ import { COSMETICS_WORDS } from "@/ui/design-system/kit/words";
 import {
   BASE_REALM_SKIN,
   REALM_RANKS,
+  REALM_SKIN_CODES,
   REALM_SKINS,
   realmSkinIcon,
   realmSkinStanding,
@@ -27,7 +28,7 @@ describe("the realm skin catalog", () => {
     expect(new Set(REALM_SKINS.map((each) => each.family))).toEqual(new Set(Object.keys(COSMETICS_WORDS.families)));
   });
 
-  it("gives every painted skin a painting at every rank, and none to a skin not painted yet", () => {
+  it("gives every skin in the catalog a painting at every rank and draws every Season 1 Aspect", () => {
     expect(REALM_RANKS.map((rank) => realmSkinIcon(BASE_REALM_SKIN, rank))).toEqual([
       "realm-0",
       "realm-1",
@@ -35,7 +36,19 @@ describe("the realm skin catalog", () => {
       "realm-3",
     ]);
     expect(realmSkinIcon(skin("devcon-golden"), RealmLevels.Empire)).toBe("devcon-golden-realm-3");
-    expect(realmSkinIcon(skin("season-1-havoc"), RealmLevels.City)).toBeUndefined();
+    expect(realmSkinIcon(skin("season-1-havoc"), RealmLevels.City)).toBe("season-1-havoc-realm-1");
+    for (const each of REALM_SKINS) {
+      for (const rank of REALM_RANKS) {
+        expect(realmSkinIcon(each, rank), `${each.id} @ ${rank}`).toBeTruthy();
+      }
+    }
+    const drawnCodes = new Set<number>(DRAWN_REALM_SKINS);
+    for (const each of REALM_SKINS) {
+      const code = REALM_SKIN_CODES[each.family];
+      if (code !== null && drawnCodes.has(code)) {
+        for (const rank of REALM_RANKS) expect(realmSkinIcon(each, rank)).toBeTruthy();
+      }
+    }
   });
 });
 

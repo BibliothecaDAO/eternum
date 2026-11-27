@@ -1,9 +1,9 @@
 import { formatAmount, LORDS, orderAspect } from "@bibliothecadao/types";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
-import { showsWonder } from "@bibliothecadao/eternum";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { AspectMark } from "@/ui/design-system/aspect-mark";
+import { entryRealmPainting } from "@/ui/design-system/home-icons";
 import { AppBoard, type AppBoardEntry, AppRank } from "@/ui/design-system/kit/app-elements";
 import { RealmBadge } from "@/ui/features/frontier/board/realm-marks";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
@@ -47,14 +47,7 @@ const frontierEntry = (entry: HeraldFrontierLeaderboardEntry, own: boolean, onCl
       <>
         <AppRank rank={entry.rank} medal />
         {aspect && <AspectMark aspect={aspect} size={20} decorative />}
-        <RealmBadge
-          level={entry.level}
-          depth={entry.deepest_depth}
-          hasWonder={showsWonder(
-            { hasWonder: entry.has_wonder === true, sealHeld: entry.ancient_seal === true, aspect: aspect ?? null },
-            entry.realm_skin,
-          )}
-        />
+        <RealmBadge level={entry.level} depth={entry.deepest_depth} {...entryRealmPainting(entry)} />
       </>
     ),
     name: <PlayerName account={entry.address} you={own} portrait />,

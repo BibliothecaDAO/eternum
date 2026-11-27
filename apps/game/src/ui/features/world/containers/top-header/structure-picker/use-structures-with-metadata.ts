@@ -14,12 +14,12 @@ import {
   getGuardsByStructure,
   liveHomeArmies,
   REALM_SKIN_MODELS,
-  realmShowsWonder,
 } from "@bibliothecadao/eternum";
 import { BuildingType, RealmLevels, type Structure, StructureType, rankName } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import type { StructureWithMetadata } from "./chip";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
+import { realmSkinPainting } from "@/ui/design-system/home-icons";
 import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
@@ -119,12 +119,14 @@ export const useStructuresWithMetadata = ({
         paladinT1: getBuildingCount(BuildingType.ResourcePaladinT1, packedCounts),
       };
 
+      const realmPainting = realmSkinPainting(facts.store, structure.structure);
       return {
         ...structure,
         displayName: name,
         originalName,
         realmLevel: normalizedLevel,
-        showsWonder: realmShowsWonder(facts.store, structure.structure),
+        showsWonder: realmPainting === "wonder",
+        realmPainting,
         realmLevelLabel,
         population,
         guardCount: getGuardsByStructure(structure.structure, facts.store)?.filter((guard) => guard.troops.count > 0n)

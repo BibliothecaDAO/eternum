@@ -14,7 +14,7 @@ import { IdentityChip } from "@/ui/features/world/containers/top-header/identity
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
-import { configManager, REALM_SKIN_MODELS, realmShowsWonder } from "@bibliothecadao/eternum";
+import { configManager, REALM_SKIN_MODELS } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { catalogAspectId, rankName } from "@bibliothecadao/types";
 import { useHudLayout, useHudTablet } from "@/hooks/helpers/use-compact-hud";
@@ -62,7 +62,7 @@ import { MenuPage } from "./hud/menu-page";
 import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { useFragmentsHeld } from "./value/fragments";
 import { ShopSheet, useReturnToShop } from "./shop/shop-sheet";
-import { homeIcon, homeKind } from "@/ui/design-system/home-icons";
+import { homeIcon, homeKind, realmSkinPainting } from "@/ui/design-system/home-icons";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { PickedArmy } from "./hud/picked-army";
@@ -237,9 +237,7 @@ const FrontierHudBody = ({
   const placeSwitch = (
     <PlaceSwitch
       {...placeChoices}
-      realm={
-        shown ? { mark: homeIcon(homeKind(realmShowsWonder(headerFacts.store, shown)), shown.base.level) } : undefined
-      }
+      realm={shown ? { mark: homeIcon(realmSkinPainting(headerFacts.store, shown), shown.base.level) } : undefined}
       lines={own ? placeLines(ownArmies) : undefined}
     />
   );
@@ -539,9 +537,11 @@ const REALM_PANEL_MODELS = ["HomeAspect", ...REALM_SKIN_MODELS] as const;
 const useRealmFace = (realm: NativeRows["Structure"]) => {
   const facts = useNativeFacts(REALM_PANEL_MODELS);
   const aspectId = facts.store.get("HomeAspect", { game_id: realm.game_id, home: realm.entity_id })?.aspect;
+  const painting = realmSkinPainting(facts.store, realm);
   return {
     name: useGameModeConfig().structure.getName(realm).name,
-    kind: homeKind(realmShowsWonder(facts.store, realm)),
+    kind: homeKind(painting === "wonder"),
+    painting,
     aspect: aspectId !== undefined ? catalogAspectId(aspectId) : undefined,
   };
 };
@@ -570,7 +570,7 @@ const FrontierRealmCard = ({
   onShop?: () => void;
   onClose?: () => void;
 }) => {
-  const { name, kind, aspect } = useRealmFace(realm);
+  const { name, kind, painting, aspect } = useRealmFace(realm);
   const stores = useStoreReadings(realm, rules, STORE_KINDS);
   const goToPlace = useGoToFrontierPlace(realm);
   const lords = useWalletLords();
@@ -579,6 +579,7 @@ const FrontierRealmCard = ({
     <RealmCard
       name={name}
       kind={kind}
+      painting={painting}
       level={realm.base.level}
       rankUp={rankUp}
       aspect={aspect}

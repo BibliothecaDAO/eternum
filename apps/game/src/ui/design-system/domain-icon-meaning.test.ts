@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { BuildingType, deepSites, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { REALM_SKIN_FAMILIES } from "@bibliothecadao/eternum";
+import {
+  aspectName,
+  aspects,
+  BuildingType,
+  deepSites,
+  ordersOfAspect,
+  ResourcesIds,
+  StructureType,
+  RESOURCE_PRECISION,
+} from "@bibliothecadao/types";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
 import { nativeStoryVariants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
@@ -9,9 +19,11 @@ import {
   DEEP_SITE_MEANINGS,
   deepSiteMeaning,
   readStructureMeaning,
+  realmMarkerMeaning,
   storyMeaning,
   structureMeaning,
 } from "./domain-icon-meaning";
+import { realmSkinPainting } from "./home-icons";
 import { iconDefinition, resourceMeaning } from "./icon-meaning";
 
 describe("story icon meanings", () => {
@@ -120,6 +132,49 @@ it("reads native Wonder identity at each level, keeping free and ordinary held R
       );
     }
   }
+});
+
+it("reads Season 1 Aspect paintings at each rank when the owner holds a Seal and respects Base equip overrides", () => {
+  const { store, structure } = campBeside();
+  store.applyFacts([
+    {
+      model: "Seal",
+      key: "0x5ea1",
+      value: { game_id: structure.game_id, account: structure.owner, granted_at: 1n },
+    },
+  ]);
+  for (const aspect of aspects) {
+    const slug = aspectName(aspect.id).toLowerCase();
+    const order = ordersOfAspect(aspect.id)[0]!.orderId;
+    for (const level of [0, 1, 2, 3]) {
+      const home = {
+        ...structure,
+        base: { ...structure.base, category: StructureType.Realm, level },
+        metadata: { ...structure.metadata, order, has_wonder: false },
+      };
+      const expected = `season-1-${slug}-realm-${level}`;
+      expect(readStructureMeaning(store, home)).toBe(expected);
+      expect(realmMarkerMeaning(level, false, realmSkinPainting(store, home))).toBe(expected);
+    }
+  }
+  store.applyFacts([
+    {
+      model: "RealmSkin",
+      key: "0x5a10",
+      value: {
+        game_id: structure.game_id,
+        entity_id: structure.entity_id,
+        family: REALM_SKIN_FAMILIES.BASE_REALM_SKIN,
+      },
+    },
+  ]);
+  const overridden = {
+    ...structure,
+    base: { ...structure.base, category: StructureType.Realm, level: 2 },
+    metadata: { ...structure.metadata, order: ordersOfAspect(aspects[0].id)[0]!.orderId, has_wonder: false },
+  };
+  expect(readStructureMeaning(store, overridden)).toBe("realm-2");
+  expect(realmMarkerMeaning(2, false, realmSkinPainting(store, overridden))).toBe("map-realm-2");
 });
 
 describe("Deep site icon meanings", () => {

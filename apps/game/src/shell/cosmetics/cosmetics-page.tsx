@@ -207,11 +207,9 @@ const StandingBadge = ({
   </span>
 );
 
-const SkinArt = ({ skin, rank, size }: { skin: RealmSkin; rank: RealmLevels; size: number }) => {
-  const icon = realmSkinIcon(skin, rank);
-  if (icon) return <Icon name={icon} size={size} />;
-  return skin.aspect !== undefined ? <AspectMark aspect={skin.aspect} size={size} decorative /> : null;
-};
+const SkinArt = ({ skin, rank, size }: { skin: RealmSkin; rank: RealmLevels; size: number }) => (
+  <Icon name={realmSkinIcon(skin, rank)} size={size} />
+);
 
 const SkinPreview = ({
   skin,
@@ -241,7 +239,6 @@ const SkinPreview = ({
       <div className="cosmetics__stage" data-preview={skin.id} data-rank={shown}>
         {rank !== null && <AppChip>{COSMETICS_WORDS.yourRank(rankName(rank))}</AppChip>}
         <SkinArt skin={skin} rank={shown} size={200} />
-        {!icon && <span className="cosmetics__soon-line">{COSMETICS_WORDS.previewSoon}</span>}
       </div>
       <div className="cosmetics__ranks">
         {REALM_RANKS.map((each) => (
@@ -257,16 +254,14 @@ const SkinPreview = ({
           </button>
         ))}
       </div>
-      {icon && (
-        <div className="cosmetics__matching">
-          <span>
-            <strong>{COSMETICS_WORDS.matchingIcon}</strong>
-            <span>{COSMETICS_WORDS.matchingIconWhere}</span>
-          </span>
-          <Icon name={icon} size={38} />
-          <Icon name={icon} size={22} />
-        </div>
-      )}
+      <div className="cosmetics__matching">
+        <span>
+          <strong>{COSMETICS_WORDS.matchingIcon}</strong>
+          <span>{COSMETICS_WORDS.matchingIconWhere}</span>
+        </span>
+        <Icon name={icon} size={38} />
+        <Icon name={icon} size={22} />
+      </div>
       <StandingAction skin={skin} standing={standing} worn={worn} facts={facts} equipping={equipping} />
     </AppPanel>
   );

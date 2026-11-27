@@ -1,6 +1,6 @@
 import "./realm-card.css";
 
-import { homeIcon, type HomeKind } from "@/ui/design-system/home-icons";
+import { homeIcon, type HomeKind, type HomePaintingKind } from "@/ui/design-system/home-icons";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudIconButton } from "@/ui/design-system/kit/hud-elements";
 import { OrderLine } from "@/ui/design-system/kit/order-emblem";
@@ -37,6 +37,7 @@ export interface RealmRankUp {
 export const RealmCard = ({
   name,
   kind,
+  painting,
   level,
   rankUp,
   aspect,
@@ -52,6 +53,7 @@ export const RealmCard = ({
 }: {
   name: string;
   kind: HomeKind;
+  painting?: HomePaintingKind;
   level: number;
   rankUp?: RealmRankUp;
   aspect?: AspectId;
@@ -80,7 +82,7 @@ export const RealmCard = ({
       >
         <AspectMedallion
           aspect={aspect}
-          fallbackIcon={homeIcon(kind, level)}
+          fallbackIcon={homeIcon(painting ?? kind, level)}
           tip={aspect !== undefined ? aspectName(aspect) : undefined}
           decorative={false}
           size="lg"

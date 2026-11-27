@@ -89,7 +89,7 @@ vi.mock("@/init/bootstrap", () => ({
 import { DeviceLimitError, DeviceRemovedError, REALM_SKIN_FAMILIES } from "@bibliothecadao/eternum";
 import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { REALM_SKINS } from "@/three/cosmetics/realm-skins";
+import { REALM_RANKS, REALM_SKINS } from "@/three/cosmetics/realm-skins";
 import { COSMETICS_WORDS, DOORWAY_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
 
 import { setViewportWidth } from "../frame/test-viewport";
@@ -346,16 +346,31 @@ describe("the Cosmetics page", () => {
     expect(buttonNamed(container, COSMETICS_WORDS.eventExclusive)!.disabled).toBe(true);
   });
 
-  it("says a skin's preview is coming while it has no art yet, and only then", async () => {
+  it("shows every Season 1 skin's own painting and matching realm icon at each rank", async () => {
     directory.games = [];
     const container = await open();
-    const stage = () => container.querySelector<HTMLElement>("[data-preview]")!;
-    expect(stage().textContent).not.toContain(COSMETICS_WORDS.previewSoon);
-    await pick(container, "season-1-luminary");
-    expect(stage().textContent).toContain(COSMETICS_WORDS.previewSoon);
-    expect(
-      container.querySelector('[data-skin="season-1-luminary"]')!.querySelectorAll(".cosmetics__badge"),
-    ).toHaveLength(1);
+    const seasonOne = REALM_SKINS.filter((skin) => skin.family === "season-1");
+    expect(seasonOne).toHaveLength(4);
+    for (const skin of seasonOne) {
+      const slug = aspectName(skin.aspect!).toLowerCase();
+      await pick(container, skin.id);
+      const card = container.querySelector<HTMLElement>(`[data-skin="${skin.id}"]`)!;
+      expect(card.querySelectorAll(".cosmetics__badge")).toHaveLength(1);
+      expect(card.querySelector<HTMLElement>("[data-icon]")?.dataset.icon).toBe(`season-1-${slug}-realm-2`);
+      const rankButtons = [...container.querySelectorAll<HTMLButtonElement>(".cosmetics__rank")];
+      expect(rankButtons.map((button) => button.querySelector<HTMLElement>("[data-icon]")?.dataset.icon)).toEqual(
+        REALM_RANKS.map((rank) => `season-1-${slug}-realm-${rank}`),
+      );
+      for (const [index, rank] of REALM_RANKS.entries()) {
+        await act(async () => rankButtons[index]!.click());
+        const expected = `season-1-${slug}-realm-${rank}`;
+        expect(container.querySelector<HTMLElement>("[data-preview] [data-icon]")?.dataset.icon).toBe(expected);
+        const matchingIcons = [...container.querySelectorAll<HTMLElement>(".cosmetics__matching [data-icon]")].map(
+          (icon) => icon.dataset.icon,
+        );
+        expect(matchingIcons).toEqual([expected, expected]);
+      }
+    }
   });
 
   it("asks a player not signed in to connect before equipping a skin they would own", async () => {

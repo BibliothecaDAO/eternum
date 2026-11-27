@@ -4,10 +4,10 @@ import { type PlayerNames, usePlayerDisplayName, usePlayerNames } from "@/hooks/
 import { startRealmVisit } from "@/sync/active-game-client";
 import { PlayerSeatMark } from "@/hooks/use-watched-side";
 import { LordName } from "./realm-marks";
-import { configManager, showsWonder, type ExpeditionRules } from "@bibliothecadao/eternum";
+import { entryRealmPainting } from "@/ui/design-system/home-icons";
+import { configManager, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboard, HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
-import { orderAspect } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -160,14 +160,7 @@ const listRow = (entry: Entry, own: boolean, names: PlayerNames): SeasonListRow 
   realm: {
     level: entry.level,
     depth: entry.deepest_depth,
-    hasWonder: showsWonder(
-      {
-        hasWonder: entry.has_wonder === true,
-        sealHeld: entry.ancient_seal === true,
-        aspect: entry.order ? orderAspect(entry.order) : null,
-      },
-      entry.realm_skin,
-    ),
+    ...entryRealmPainting(entry),
   },
   name: (
     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
