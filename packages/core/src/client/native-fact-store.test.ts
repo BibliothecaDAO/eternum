@@ -1,7 +1,11 @@
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { nativeOathConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { gameRegistryRow } from "../test-support/game-registry";
 import { StaminaManager } from "../managers/stamina-manager";
 import { configManager } from "../managers/config-manager";
 import { musterStamina, openArmySlots, resolveExplorerTroops, troopStaminaLimits } from "../managers/troop-stamina";
+import { liveHomeArmies } from "../utils/expeditions";
+import { oathBit } from "../utils/oaths";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import rowFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -687,6 +691,102 @@ describe("declared fact absence", () => {
     expect(musterStamina(nextDay, knight, 40, rules, 0, 1).amount).toBe(
       troopStaminaLimits(rules, knight.category, knight.tier).staminaMax,
     );
+  });
+  it("opens a same-day slot whose roaming Deep army has died of poison", () => {
+    const store = new NativeFactStore();
+    const tickSeconds = 10;
+    const vitriolLoss = BigInt(nativeOathConstants.VITRIOL_LOSS_PER_TICK) * BigInt(RESOURCE_PRECISION);
+    const baseLoss = vitriolLoss * 2n;
+    const initialCount = vitriolLoss * 3n;
+    store.applyFacts([
+      set("0x100", "SliceRules", {
+        ...release.definition.rules,
+        game_id: 1,
+        day_unit_seconds: 100,
+        tick_config: { ...release.definition.rules.tick_config, armies_tick_in_seconds: String(tickSeconds) },
+      }),
+    ]);
+    store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
+    setBlockTimestampSource(() => 350);
+    store.applyFacts([
+      set("0x2", "SettlementRules", {
+        game_id: 1,
+        registration_start: 1,
+        registration_limit: 2,
+        spacing: 10,
+        mode: "Single",
+      }),
+      set("0x3", "GameRegistry", gameRegistryRow()),
+      set("0x4", "DeepRules", {
+        game_id: 1,
+        gate_distance: 2,
+        rings: [{ radius: 4, realms: 1 }],
+        beasts: [{ count: "100", bow: false }],
+        loss_per_tick: String(baseLoss),
+        core_per_tick: "300",
+        mine_per_tick: "300",
+        building_pay: { alone: 2, pair: 1, crowd: 1 },
+        altar_threshold: 100,
+      }),
+      set("0x7", "Structure", structure("0x111")),
+      set("0x80", "ArmySlot", {
+        game_id: 1,
+        structure_id: 7,
+        epoch: "0",
+        slot: 0,
+        explorer_id: 70,
+        stamina: { amount: "12", settled_at: "35", remainder: 0 },
+      }),
+      set("0x70", "ExplorerTroops", {
+        ...explorer,
+        explorer_id: 70,
+        owner: 7,
+        troops: { ...explorer.troops, count: String(initialCount), stamina: { Slot: 0 } },
+      }),
+      set("0x71", "ArmyDay", { game_id: 1, explorer_id: 70, day: "0" }),
+      set("0x72", "ArmyProgress", { game_id: 1, explorer_id: 70, logistics: 0, oath_slots: 1, oaths: 0, oath_pick: 0 }),
+      set("0x73", "DeepArmy", { game_id: 1, explorer_id: 70, last_tick: "35" }),
+      set("0x74", "TileOccupancy", {
+        game_id: 1,
+        alt: false,
+        col: 5,
+        row: 5,
+        entity_id: 70,
+        category: 15,
+        is_structure: false,
+      }),
+    ]);
+    const home = { game_id: 1, entity_id: 7, allowedSlots: 2 };
+
+    expect(liveHomeArmies(store, 7, 1, 360).map((army) => army.explorer_id)).toEqual([70n]);
+    expect(openArmySlots(store, home, 360)).toEqual([{ slot: 1, inherited: null }]);
+
+    expect(liveHomeArmies(store, 7, 1, 370)).toEqual([]);
+    expect(openArmySlots(store, home, 370)).toEqual([
+      { slot: 0, inherited: { amount: 12n, settled_at: 35, remainder: 0 }, effects: { until: 400, windows: [] } },
+      { slot: 1, inherited: null },
+    ]);
+
+    store.applyFacts([
+      set("0x72", "ArmyProgress", {
+        game_id: 1,
+        explorer_id: 70,
+        logistics: 0,
+        oath_slots: 1,
+        oaths: oathBit(nativeOathConstants.VITRIOL),
+        oath_pick: 0,
+      }),
+    ]);
+    expect(liveHomeArmies(store, 7, 1, 370).map((army) => army.explorer_id)).toEqual([70n]);
+    expect(openArmySlots(store, home, 370)).toEqual([{ slot: 1, inherited: null }]);
+    expect(liveHomeArmies(store, 7, 1, 380)).toEqual([]);
+    expect(openArmySlots(store, home, 380)).toEqual([
+      { slot: 0, inherited: { amount: 12n, settled_at: 35, remainder: 0 }, effects: { until: 400, windows: [] } },
+      { slot: 1, inherited: null },
+    ]);
+
+    store.applyFacts([remove("0x72", "ArmyProgress")]);
+    expect(openArmySlots(store, home, 380)).toBeUndefined();
   });
   it("keeps incomplete scope invariants out of synchronous listeners", () => {
     const store = new NativeFactStore();

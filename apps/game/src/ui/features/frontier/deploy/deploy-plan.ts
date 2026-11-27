@@ -103,7 +103,11 @@ export const readDeployPlan = (
 ): DeployPlan | undefined => {
   const { defaultTick } = clock;
   const allowed = realm.base.troop_max_explorer_count;
-  const open = openArmySlots(store, { game_id: realm.game_id, entity_id: realm.entity_id, allowedSlots: allowed });
+  const open = openArmySlots(
+    store,
+    { game_id: realm.game_id, entity_id: realm.entity_id, allowedSlots: allowed },
+    defaultTick,
+  );
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
   if (!open || learned === undefined) return undefined;
   const stocks = readTroopsAtHome(store, realm, clock);

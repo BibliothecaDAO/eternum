@@ -923,6 +923,8 @@ pub mod troop_helpers {
                 let explorer = crate::logic::troops::explorer(key).expect('missing home army');
                 if crate::logic::army_days::require(key) != today {
                     super::expire_explorer(key, explorer, game_context);
+                } else if crate::logic::deep_armies::is_dead(key, explorer, game_context) {
+                    super::reap_deep_explorer(key, explorer, game_context);
                 }
             }
         }
@@ -1109,6 +1111,11 @@ fn expire_explorer(key: ExplorerKey, mut explorer: ExplorerTroops, context: crat
     destroy_explorer(key, explorer);
 }
 
+fn reap_deep_explorer(key: ExplorerKey, explorer: ExplorerTroops, context: crate::commands::ExecutionContext) {
+    let resolved = crate::logic::army_slots::resolve(key, explorer, None);
+    let settled = crate::logic::deep_armies::settle(key, resolved, context);
+    assert!(settled.troops.count == 0, "living army cannot be reaped");
+}
 
 fn destroy_explorer(key: ExplorerKey, explorer: ExplorerTroops) {
     crate::logic::army_slots::release(key, explorer);

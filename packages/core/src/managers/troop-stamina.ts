@@ -231,6 +231,7 @@ export interface OpenArmySlot {
 export function openArmySlots(
   store: NativeFactStore,
   home: { game_id: number; entity_id: number | bigint; allowedSlots: number },
+  floorSeconds?: number,
 ): OpenArmySlot[] | undefined {
   const epoch = slotEpoch(store);
   if (epoch === undefined) return undefined;
@@ -245,8 +246,15 @@ export function openArmySlots(
       slot,
     });
     if (result.unknown) return undefined;
-    if (!result.known) open.push({ slot, inherited: null });
-    else if (result.known.explorer_id === 0n) {
+    if (!result.known) {
+      open.push({ slot, inherited: null });
+      continue;
+    }
+    const vacant =
+      result.known.explorer_id === 0n ||
+      isPoisonedDeadDeepArmy(store, home.game_id, result.known.explorer_id, floorSeconds);
+    if (vacant === undefined) return undefined;
+    if (vacant) {
       const effects = readStaminaEffects(
         store,
         home.game_id,
@@ -261,6 +269,27 @@ export function openArmySlots(
     }
   }
   return open;
+}
+
+function isPoisonedDeadDeepArmy(
+  store: NativeFactStore,
+  gameId: number,
+  explorerId: bigint,
+  floorSeconds?: number,
+): boolean | undefined {
+  const key = { game_id: gameId, explorer_id: explorerId };
+  if (!store.get("DeepArmy", key)) return false;
+  const army = store.get("ExplorerTroops", key);
+  if (
+    !army ||
+    !store.get("DeepRules", { game_id: gameId }) ||
+    !store.get("SliceRules", { game_id: gameId }) ||
+    !store.get("ArmyDay", key) ||
+    !store.get("ArmyProgress", key)
+  ) {
+    return undefined;
+  }
+  return currentArmy(store, army, floorSeconds).troops.count === 0n;
 }
 
 /**

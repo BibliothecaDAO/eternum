@@ -377,3 +377,54 @@ fn a_vitriol_army_garrisons_without_its_oath_and_its_slot_loses_the_rule_amount_
         crate::logic::deep_sites::beast(crate::rules::DEEP_ALTAR).count,
     );
 }
+
+#[test]
+fn a_same_day_deep_army_killed_by_poison_frees_its_slot_for_same_day_redeployment() {
+    let (d, game_id) = setup(105);
+    let dead_key = deployed(d, game_id, 1, 10);
+    let home = army(d, dead_key).owner;
+    let slot_zero = crate::troops::ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 0 };
+    let slot_one = crate::troops::ArmySlotKey { game_id, structure_id: home, epoch: 0, slot: 1 };
+    let survivor_id = super::army_activity::slot_army(d, slot_one);
+    let survivor_key = ExplorerKey { game_id, explorer_id: survivor_id };
+    super::deep_sites::descend(d, survivor_key, FIXTURE_START);
+    assert!(
+        execute_in_game(
+            d,
+            game_id,
+            world_test_support::tests::building_commands::create(
+                ResourceKey { game_id, entity_id: home }, crate::research::BARRACKS,
+            ),
+            FIXTURE_START,
+        ),
+    );
+    let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
+    let after_poison = (FIXTURE_START / interval + 2) * interval;
+    let expected_stamina = interact_with_state(
+        d.games,
+        || {
+            let slot = crate::logic::army_slot_storage::read(slot_zero).unwrap();
+            assert_eq!(slot.explorer_id, dead_key.explorer_id);
+            slot.stamina
+        },
+    );
+    let mut events = spy_events();
+    assert!(!execute_in_game(d, game_id, super::army_activity::muster(home, 1, 2, 1), after_poison));
+    assert_eq!(world_test_support::tests::play_fixture::rejection(ref events, d.games).reason, "army slot occupied");
+    applied(d, game_id, super::army_activity::muster(home, 0, 2, 1), after_poison);
+    interact_with_state(
+        d.games,
+        || {
+            assert!(crate::logic::troops::explorer(dead_key).is_none());
+            assert!(crate::state::read().deep.army_ticks.read((game_id, dead_key.explorer_id)).is_none());
+            let reused = crate::logic::army_slot_storage::read(slot_zero).unwrap();
+            assert!(reused.explorer_id != 0 && reused.explorer_id != dead_key.explorer_id);
+            assert_eq!(reused.stamina.amount, expected_stamina.amount);
+            assert_eq!(reused.stamina.settled_at, expected_stamina.settled_at);
+            assert_eq!(reused.stamina.remainder, expected_stamina.remainder);
+            let survivor_slot = crate::logic::army_slot_storage::read(slot_one).unwrap();
+            assert_eq!(survivor_slot.explorer_id, survivor_id);
+            assert!(crate::logic::troops::explorer(survivor_key).is_some());
+        },
+    );
+}

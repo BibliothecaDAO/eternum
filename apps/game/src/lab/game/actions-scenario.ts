@@ -201,11 +201,15 @@ const deployArmy: Answer = (command, chain, now) => {
   const raise = readTroopRaiseCost(chain, 1, Number(structureId), troops, whole, now);
   if (!raise) throw new Error(`The lab's realm ${structureId} holds an unknown balance its raise needs`);
   const realm = chain.require("Structure", { game_id: 1, entity_id: structureId });
-  const slot = openArmySlots(chain, {
-    game_id: 1,
-    entity_id: structureId,
-    allowedSlots: realm.base.troop_max_explorer_count,
-  })?.find((slot) => slot.slot === Number(command.fields.slot));
+  const slot = openArmySlots(
+    chain,
+    {
+      game_id: 1,
+      entity_id: structureId,
+      allowedSlots: realm.base.troop_max_explorer_count,
+    },
+    now,
+  )?.find((slot) => slot.slot === Number(command.fields.slot));
   if (!slot) throw new Error("The lab deployment requires an open army slot");
   const progress = deploymentProgress(chain, structureId, explorerId, category);
   const rules = chain.require("SliceRules", { game_id: 1 });
