@@ -1,5 +1,13 @@
 import { REALM_SKIN_FAMILIES, wornRealmSkinFamily } from "@bibliothecadao/eternum";
-import { aspects, BuildingType, BUILDINGS_CENTER, RealmLevels, StructureType } from "@bibliothecadao/types";
+import {
+  aspectName,
+  aspects,
+  BuildingType,
+  BUILDINGS_CENTER,
+  rankName,
+  RealmLevels,
+  StructureType,
+} from "@bibliothecadao/types";
 import { Box3, Mesh, Triangle, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
@@ -7,7 +15,7 @@ import { REALM_RANKS, wornRealmSkin } from "../cosmetics/realm-skins";
 import { resolveBuildingModelSelection } from "../scenes/hexception-building-model";
 import { requireFlagAnchors } from "./flag-anchors";
 import { withFlagCloth } from "./flag-cloth";
-import { REALM_ASSETS, realmModelIndex } from "./realm-design";
+import { REALM_ASSETS, SEASON_ONE_REALM_ASSETS, realmModelIndex } from "./realm-design";
 import {
   SEASON_ONE_REALM_KIT_LEVELS,
   createSeasonOneRealmKit,
@@ -153,6 +161,15 @@ describe("Season 1 procedural Aspect Realm kit", () => {
       direct.scene.traverse((node) => {
         if (node instanceof Mesh) node.geometry.dispose();
       });
+    }
+  });
+
+  it("gives every Season 1 realm asset a unique label naming its Aspect and rank", () => {
+    expect(SEASON_ONE_REALM_ASSETS).toHaveLength(aspects.length * SEASON_ONE_REALM_KIT_LEVELS.length);
+    const labels = SEASON_ONE_REALM_ASSETS.map((asset) => asset.label);
+    expect(new Set(labels).size).toBe(labels.length);
+    for (const asset of SEASON_ONE_REALM_ASSETS) {
+      expect(asset.label).toBe(`Season 1 · ${aspectName(asset.aspect!)} · ${rankName(asset.level)}`);
     }
   });
 

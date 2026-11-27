@@ -1,5 +1,5 @@
 import { REALM_SKIN_FAMILIES } from "@bibliothecadao/eternum";
-import type { AspectId } from "@bibliothecadao/types";
+import { rankName, type AspectId } from "@bibliothecadao/types";
 import { modelPath } from "../utils/model-url";
 import { SEASON_ONE_REALM_KIT_LEVELS, seasonOneRealmKitPath } from "./realm-kit";
 import { resolveAgeWonderDesign } from "./wonder-design.mjs";
@@ -47,7 +47,7 @@ export const SEASON_ONE_REALM_ASSETS: readonly RealmAssetEntry[] = SEASON_ONE_RE
     const aspect = Number(key) as AspectId;
     return {
       id: `season-1-${slug}-${level}`,
-      label: `Season 1 · ${aspectTitle(slug)}`,
+      label: `Season 1 · ${aspectTitle(slug)} · ${rankName(level)}`,
       level,
       wonder: false,
       aspect,
