@@ -121,12 +121,22 @@ const ResearchTreeCanvas = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [measured, setMeasured] = useState<MeasuredLinks | null>(null);
+  const [scrollMore, setScrollMore] = useState(false);
+
+  const updateScrollCue = () => {
+    const scroll = scrollRef.current;
+    if (!scroll) return;
+    setScrollMore(scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight > 4);
+  };
 
   useLayoutEffect(() => {
     const scroll = scrollRef.current;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const update = () => setMeasured(measureResearchLinks(canvas, links));
+    const update = () => {
+      setMeasured(measureResearchLinks(canvas, links));
+      updateScrollCue();
+    };
     update();
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
     if (scroll) observer?.observe(scroll);
@@ -136,8 +146,8 @@ const ResearchTreeCanvas = ({
   }, [nodes, links, pickedKey]);
 
   return (
-    <div className="research-tree-viewport">
-      <div ref={scrollRef} className="research-tree-scroll overflow-y-auto">
+    <div className="research-tree-viewport" data-scroll-more={scrollMore || undefined}>
+      <div ref={scrollRef} className="research-tree-scroll overflow-y-auto" onScroll={updateScrollCue}>
         <div ref={canvasRef} className="research-tree-canvas" data-research-tree>
           <div className="research-tree__backdrop" aria-hidden="true">
             <div className="research-tree__backdrop-rail" />
@@ -238,6 +248,7 @@ const TreeNodeCard = ({ node, picked, onPick }: { node: TreeNode; picked: boolea
         data-node={node.key}
         data-state={node.state}
         data-selected={picked || undefined}
+        data-tip={node.branch === "castle" ? node.gives.line : undefined}
         aria-pressed={picked}
         className="ui-pick research-node"
         onClick={onPick}
@@ -305,6 +316,7 @@ const ResearchTile = ({ node, picked, onPick }: { node: TreeNode; picked: boolea
       selected={picked}
       data-node={node.key}
       data-state={node.state}
+      data-tip={node.branch === "castle" ? node.gives.line : undefined}
       data-locked={node.state === "short" || node.state === "locked" || undefined}
       onClick={onPick}
     />
@@ -474,6 +486,11 @@ const NodeActionBar = ({
   const missing = firstMissing(node);
   const fixing = missing && fix(missing);
   const price = node.state === "done" ? [] : node.needs.filter(isPrice);
+  const unmetNeeds = node.state === "done" ? [] : node.needs.filter((need) => !need.met && !isPrice(need));
+  const metRankNeeds =
+    node.state === "done" || node.branch !== "castle"
+      ? []
+      : node.needs.filter((need): need is Extract<Need, { kind: "level" }> => need.kind === "level" && need.met);
   return (
     <div data-lab="node-choice" className="research-bar" data-fix={node.state !== "ready" && fixing ? "" : undefined}>
       <span data-choice-summary className="research-bar__name">
@@ -481,18 +498,29 @@ const NodeActionBar = ({
         {" · "}
         <HudRanked words={researchEffectLine(node)} />
       </span>
+      {node.branch === "castle" && (
+        <span data-choice-description className="research-bar__desc">
+          {node.gives.line}
+        </span>
+      )}
       <div data-research-footer className="research-bar__footer">
         <span className="research-bar__meta">
           {price.length > 0 && (
             <HudPrice prices={price.map((need) => ({ of: need.kind, amount: need.need, short: !need.met }))} />
           )}
           {node.state === "done" && <span className="text-hud-good">{RESEARCH_TREE.states.done}</span>}
-          {missing && !isPrice(missing) && (
-            <span data-lock-reason className="research-bar__reason text-hud-bad">
-              <Icon name={needIcon(missing)} size={16} />
-              <span>{needLine(missing)}</span>
+          {unmetNeeds.map((need) => (
+            <span key={needKey(need)} data-lock-reason className="research-bar__reason text-hud-bad">
+              <Icon name={needIcon(need)} size={16} />
+              <span>{needLine(need)}</span>
             </span>
-          )}
+          ))}
+          {metRankNeeds.map((need) => (
+            <span key={needKey(need)} data-met-requirement className="research-bar__reason research-bar__reason--met">
+              <Icon name="check" size={14} />
+              <span>{needLine(need)}</span>
+            </span>
+          ))}
         </span>
         {node.state !== "done" && (
           <HudActions className="research-bar__verbs">
@@ -515,6 +543,22 @@ const NodeActionBar = ({
       </div>
     </div>
   );
+};
+
+const needKey = (need: Need): string => {
+  switch (need.kind) {
+    case "level":
+      return `level:${need.level}`;
+    case "stands":
+      return `stands:${need.building}`;
+    case "tier":
+      return `tier:${need.node}`;
+    case "store":
+      return `store:${need.level}`;
+    case "essence":
+    case "labor":
+      return need.kind;
+  }
 };
 
 const EFFECT_TONE: Record<NodeState, string> = {

@@ -376,7 +376,6 @@ export { type RankedWords, rankedText } from "@bibliothecadao/types";
 
 export const LEFT = "left";
 export const DAY = "Day";
-export const dayShort = (day: number | string) => `D${day}`;
 /** A day of the season against its last: "Day 10 of 14". */
 export const dayOfSeason = (day: string, lastDay: string) => `${DAY} ${day} of ${lastDay}`;
 /** When the season ends, as a local day and clock time: "Season ends 31 Oct 21:40". */
@@ -783,7 +782,6 @@ export const siteTitle = (place: string | undefined, kind: string, guard: string
   [place, kind === guard ? undefined : kind].filter(Boolean).join(" ");
 export const ARRIVING = "Arriving";
 /** A done site, and the chests the clears paid (screen-reader words; the screen shows Fl and Ch). */
-export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
 export const SHRINE = "Shrine";
 export const WELL = "Well";
@@ -2357,8 +2355,6 @@ const RESEARCH_STATES = {
   locked: "Locked",
 } as const;
 
-const RESEARCH_OPEN = "Open";
-
 export const RESEARCH_TREE = {
   /** Said while the realm's knowledge, balances, prices or board rules have not all arrived. */
   onItsWay: "Loading research…",
@@ -2407,21 +2403,26 @@ export const RESEARCH_TREE = {
       next !== undefined ? `${figureStep(now, next)} ${WHEAT.toLowerCase()}` : `${now} ${WHEAT.toLowerCase()}`,
     logistics: (now: string, next?: string) => (next !== undefined ? `${figureStep(now, next)} ⚡` : `${now} ⚡`),
     well: (percent: string) => `+${percent}% ⚡`,
-    open: (done: boolean) => (done ? RESEARCH_OPEN : "Opens"),
+    shrine: `Finds ${SHRINE}s`,
+    spire: `Opens the ${DEEP}`,
   },
   nouns: { essence: ESSENCE, labor: LABOR },
-  wellLore: `Uncover ${WELL}s on the map. Use one to refill ${STAMINA}`,
-  shrineLore: `Uncover ${SHRINE}s on the map. Use one to swear an Oath`,
-  each: (gain: string) => `${gain} each`,
+  loreEffects: {
+    well: (percent: string) => `+${percent}% max ${STAMINA} at ${WELL}s`,
+    shrine: `Reveals ${SHRINE}s on the map`,
+    spire: `Opens the ${DEEP} via map ${SPIRE}s`,
+  },
+  loreDescriptions: {
+    well: (percent: string) => `Reveals ${WELL}s on the map. Visit a ${WELL} to refill ${percent}% max ${STAMINA}.`,
+    shrine: `Reveals ${SHRINE}s on the map. Use a ${SHRINE} to pick a permanent Oath for that army, or pass for ${STAMINA}.`,
+    spire: `Reveals ${SPIRE}s on the map. Descend through a ${SPIRE} to enter the ${DEEP} and earn ${ASPECT_PAGE_WORDS.glory}.`,
+  },
   lore: loreOf,
-  opensLayers: `Opens every layer under the ${layerName(0)}`,
-  opens: RESEARCH_OPEN,
-  closed: "Closed",
-  none: "None",
   build: (building: string) => `Build a ${building}`,
   stands: (building: string) => `${building} built`,
   needsBuilding: (building: string) => `Needs a ${building}`,
-  needsLevel: (level: string) => `Needs ${level}`,
+  needsLevel: (level: string) => `Needs ${level} rank`,
+  rankMet: (level: string) => `${level} rank`,
   needsFirst: (what: string) => `Needs ${what} first`,
   needsResource: (amount: string, noun: string) => `Needs ${amount} ${noun}`,
   store: (limit: string, need: string, level: string) => `Labor storage ${limit} / ${need} · ${level}`,
