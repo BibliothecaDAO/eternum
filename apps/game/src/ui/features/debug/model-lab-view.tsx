@@ -1,4 +1,5 @@
 import { pageNavigation } from "@/utils/page-navigation";
+import { DeepSeriesLab } from "./deep-series-lab";
 import { FrontierBeastLab } from "./frontier-beast-lab";
 import { FrontierPaintedLab } from "./frontier-painted-lab";
 import { WorkshopModelLab } from "./workshop-model-lab";
@@ -44,6 +45,7 @@ const CLASS_ICONS = { knight: 26, crossbowman: 29, paladin: 32 };
 
 export function ModelLabView() {
   const [params] = useSearchParams();
+  if (params.get("family") === "deep") return <DeepSeriesLab />;
   if (params.get("family") === "beasts") return <FrontierBeastLab />;
   if (params.get("family") === "frontier-painted") return <FrontierPaintedLab />;
   if (params.get("family") === "workshops") return <WorkshopModelLab />;
@@ -165,6 +167,7 @@ function UnitModelLabView() {
         <SemanticIcon name="resources" size={25} />
         <Link to="/lab/models?family=beasts">Frontier beasts</Link>
         <Link to="/lab/models?family=realms">Realm ladder</Link>
+        <Link to="/lab/models?family=deep">Deep gates & sites</Link>
         <Link to="/lab/models?family=workshops">Workshop · Craft Yard</Link>
         <Link to="/lab/models?family=frontier-painted">Frontier buildings · painted set</Link>
         <div>

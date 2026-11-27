@@ -1,19 +1,16 @@
-import { Color, BoxGeometry, InstancedMesh, Mesh, MeshBasicMaterial, Scene } from "three";
+import { Color, InstancedMesh, Mesh, type Material, Scene } from "three";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { configManager } from "@bibliothecadao/eternum";
 import { deepGateTiles, deepZoneBounds } from "@bibliothecadao/eternum/game-client";
+import { aspects } from "@bibliothecadao/types";
 import { ASPECT_HEX, SIDE_HEX } from "@/tokens";
 import { frontierSeasonOnePreset } from "../../../../../config/source/frontier/season-one";
-import { DEEP_GATE_MODELS } from "../structures/deep-landmarks";
+import { isProcgenMasonryMaterial } from "../structures/procgen-masonry-material";
 import { DEEP_FLOOR } from "../terrain/deep-floor-material";
 import { FLAT_TERRAIN_SURFACE } from "../terrain/terrain-surface";
 import { DeepArenaManager } from "./deep-arena-manager";
 
-const { loadGate, viewer } = vi.hoisted(() => ({
-  loadGate: vi.fn(async (path: string) => ({
-    path,
-    scene: new Mesh(new BoxGeometry(1, 1.4, 1), new MeshBasicMaterial()),
-  })),
+const { viewer } = vi.hoisted(() => ({
   viewer: { address: null as bigint | null },
 }));
 
@@ -22,14 +19,9 @@ vi.mock("@/ui/config", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/ui/config")>()),
   FELT_CENTER: () => 0,
 }));
-vi.mock("../utils/utils", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../utils/utils")>()),
-  gltfLoader: { loadAsync: loadGate },
-}));
 
 beforeEach(() => {
   viewer.address = null;
-  loadGate.mockClear();
 });
 
 describe("the Deep arena", () => {
@@ -53,7 +45,6 @@ describe("the Deep arena", () => {
       rimBeyond: DEEP_FLOOR.rimBeyond.value,
     }).toEqual(bounds);
     expect(bounds).toEqual({ plazaBelow: 5, ringRadii: [7, 11, 15, 19], rimBeyond: 20 });
-    expect(loadGate.mock.calls.map(([path]) => path).toSorted()).toEqual(Object.values(DEEP_GATE_MODELS).toSorted());
     manager.destroy();
   });
 
@@ -134,11 +125,21 @@ describe("the Deep arena", () => {
     await vi.waitFor(() => expect(compilePipelines).toHaveBeenCalledTimes(4));
 
     const arena = scene.getObjectByName("deep-arena")!;
-    const gateGroups = arena.children.filter((child) => child.name.startsWith("deep-gate:"));
+    const gateGroups = arena.children.filter((child) => child.name.startsWith("deep-gateway-"));
+    expect(gateGroups).toHaveLength(aspects.length);
     expect(gateGroups.every((group) => group.children.length === 0)).toBe(true);
 
     release.splice(0).forEach((resolve) => resolve());
     await vi.waitFor(() => expect(gateGroups.every((group) => group.children.length === 1)).toBe(true));
+    for (const group of gateGroups) {
+      let hasProcgenMasonry = false;
+      group.traverse((node) => {
+        if (node instanceof Mesh && isProcgenMasonryMaterial(node.material as Material)) {
+          hasProcgenMasonry = true;
+        }
+      });
+      expect(hasProcgenMasonry).toBe(true);
+    }
     manager.destroy();
   });
 });

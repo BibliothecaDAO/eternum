@@ -1,0 +1,120 @@
+import { ASPECT_HEX } from "@/tokens";
+import { aspects } from "@bibliothecadao/types";
+import { Box3, Color, Mesh, MeshStandardMaterial, Triangle, Vector3 } from "three";
+import { describe, expect, it } from "vitest";
+import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
+import {
+  createDeepGateKit,
+  createDeepGateVeilGeometry,
+  createDeepGateVeilMaterial,
+  DEEP_GATE_HEIGHT,
+} from "./deep-site-kit";
+import { createProcgenMasonryMaterial, isProcgenMasonryMaterial } from "./procgen-masonry-material";
+
+const HEX_APOTHEM = Math.sqrt(3) / 2;
+const MAX_GATE_TRIANGLES = 3_500;
+const MAX_GATE_HEIGHT_TO_WIDTH = 1.2;
+
+function countTriangles(mesh: Mesh): number {
+  const index = mesh.geometry.getIndex();
+  const count = index?.count ?? mesh.geometry.getAttribute("position").count;
+  return count / 3;
+}
+
+describe("procedural Deep site kits", () => {
+  it("builds grounded, floorless, hex-fit Deep Gates with shared ProcgenMasonryNodeMaterial for all four Aspects", () => {
+    const sharedMasonry = createProcgenMasonryMaterial();
+    const sharedKey = sharedMasonry.customProgramCacheKey();
+    const triangle = new Triangle();
+    const normal = new Vector3();
+    const aspectSignatures = new Set<string>();
+
+    for (const { id: aspect, name } of aspects) {
+      const kit = createDeepGateKit(aspect);
+      const meshes: Mesh[] = [];
+      let totalTriangles = 0;
+      const bounds = new Box3();
+
+      kit.scene.traverse((node) => {
+        if (!(node instanceof Mesh)) return;
+        meshes.push(node);
+        expect(node.scale.x).toBe(1);
+        expect(node.scale.y).toBe(1);
+        expect(node.scale.z).toBe(1);
+
+        const geometry = node.geometry;
+        for (const attr of ["position", "normal", "uv"]) {
+          const buffer = geometry.getAttribute(attr);
+          expect(buffer, `${name} ${node.name} ${attr}`).toBeDefined();
+          expect(Array.from(buffer.array).every(Number.isFinite), `${name} ${node.name} ${attr}`).toBe(true);
+        }
+        const positions = geometry.getAttribute("position");
+        const index = geometry.getIndex();
+        const count = index?.count ?? positions.count;
+        for (let face = 0; face < count; face += 3) {
+          triangle.a.fromBufferAttribute(positions, index ? index.getX(face) : face);
+          triangle.b.fromBufferAttribute(positions, index ? index.getX(face + 1) : face + 1);
+          triangle.c.fromBufferAttribute(positions, index ? index.getX(face + 2) : face + 2);
+          expect(triangle.getArea(), `${name} ${node.name} face ${face / 3}`).toBeGreaterThan(1e-12);
+          expect(triangle.getNormal(normal).length(), `${name} ${node.name}`).toBeCloseTo(1, 5);
+        }
+
+        totalTriangles += countTriangles(node);
+        geometry.computeBoundingBox();
+        bounds.union(geometry.boundingBox!);
+      });
+
+      expect(meshes.length).toBe(2);
+      const [masonry, accent] = meshes;
+      expect(isProcgenMasonryMaterial(masonry!.material as MeshStandardMaterial)).toBe(true);
+      expect(masonry!.material).toBeInstanceOf(FrostedStandardNodeMaterial);
+      const masonryMat = masonry!.material as FrostedStandardNodeMaterial;
+      expect(masonryMat.customProgramCacheKey()).toBe(sharedKey);
+      expect(masonryMat.map).toBeNull();
+      expect(masonryMat.bumpMap).toBeNull();
+      expect(masonryMat.roughnessMap).toBeNull();
+      expect(masonry!.geometry.getAttribute("color")).toBeDefined();
+
+      const accentMat = accent!.material as MeshStandardMaterial;
+      expect(accentMat.color.getHex()).toBe(new Color(ASPECT_HEX[aspect]).getHex());
+      aspectSignatures.add(accentMat.color.getHexString());
+
+      expect(totalTriangles).toBeGreaterThan(300);
+      expect(totalTriangles).toBeLessThanOrEqual(MAX_GATE_TRIANGLES);
+      expect(bounds.min.y).toBeGreaterThanOrEqual(-0.002);
+      expect(bounds.min.y).toBeLessThanOrEqual(0.005);
+      expect(bounds.max.y).toBeCloseTo(DEEP_GATE_HEIGHT, 2);
+      expect(bounds.max.y).toBeLessThanOrEqual(1.4);
+
+      const width = bounds.max.x - bounds.min.x;
+      expect(bounds.max.y / width, `${name} H/W`).toBeLessThanOrEqual(MAX_GATE_HEIGHT_TO_WIDTH);
+
+      const maxX = Math.max(Math.abs(bounds.min.x), Math.abs(bounds.max.x));
+      const maxZ = Math.max(Math.abs(bounds.min.z), Math.abs(bounds.max.z));
+      expect(maxX).toBeLessThanOrEqual(HEX_APOTHEM - 0.1);
+      expect(maxX + Math.sqrt(3) * maxZ).toBeLessThanOrEqual(2 * HEX_APOTHEM);
+
+      for (const mesh of meshes) {
+        mesh.geometry.dispose();
+        (mesh.material as MeshStandardMaterial).dispose();
+      }
+    }
+
+    const veilGeometry = createDeepGateVeilGeometry();
+    veilGeometry.computeBoundingBox();
+    expect(veilGeometry.boundingBox!.min.y).toBeGreaterThanOrEqual(0.1);
+    expect(veilGeometry.boundingBox!.max.y).toBeLessThanOrEqual(1.0);
+    expect(
+      Math.max(Math.abs(veilGeometry.boundingBox!.min.x), Math.abs(veilGeometry.boundingBox!.max.x)),
+    ).toBeLessThanOrEqual(0.29);
+    const veilMaterial = createDeepGateVeilMaterial(ASPECT_HEX[1]);
+    expect(veilMaterial.depthWrite).toBe(false);
+    expect(veilMaterial.transparent).toBe(true);
+    expect(veilMaterial.color.getHex()).toBe(new Color(ASPECT_HEX[1]).getHex());
+    veilGeometry.dispose();
+    veilMaterial.dispose();
+
+    expect(aspectSignatures.size).toBe(aspects.length);
+    sharedMasonry.dispose();
+  });
+});

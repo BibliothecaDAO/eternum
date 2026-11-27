@@ -1,4 +1,4 @@
-import { aspectName, type AspectId, type deepSites } from "@bibliothecadao/types";
+import { type deepSites } from "@bibliothecadao/types";
 import {
   Box3,
   BufferGeometry,
@@ -26,15 +26,6 @@ export const DEEP_SITE_MODELS = {
   mine: modelPath("frontier/deep/mine.glb"),
   altar: modelPath("frontier/deep/altar.glb"),
 } as const satisfies Record<DeepSiteKey, string>;
-
-const deepGateModel = (aspect: AspectId) => modelPath(`frontier/deep/gate-${aspectName(aspect).toLowerCase()}.glb`);
-
-export const DEEP_GATE_MODELS = {
-  1: deepGateModel(1),
-  2: deepGateModel(2),
-  3: deepGateModel(3),
-  4: deepGateModel(4),
-} satisfies Record<AspectId, string>;
 
 export const DEEP_EMPTY_GEM = "#121828";
 const ACTIVE_GEM_INTENSITY = 1.6;

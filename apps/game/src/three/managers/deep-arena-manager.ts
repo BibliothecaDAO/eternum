@@ -11,37 +11,21 @@ import { aspects, type AspectId } from "@bibliothecadao/types";
 import { accountAddress } from "@/hooks/store/use-account-store";
 import { ASPECT_HEX, SIDE_HEX } from "@/tokens";
 import { FELT_CENTER } from "@/ui/config";
+import { Color, Group, InstancedMesh, Mesh, Object3D, type Scene } from "three";
 import {
-  AdditiveBlending,
-  BufferGeometry,
-  Color,
-  DoubleSide,
-  Group,
-  InstancedMesh,
-  type Material,
-  Mesh,
-  MeshStandardMaterial,
-  Object3D,
-  PlaneGeometry,
-  type Scene,
-} from "three";
-import { smoothstep, uv } from "three/tsl";
-import { MeshBasicNodeMaterial } from "three/webgpu";
-import { createTripoModelMaterial, isTripoModelMaterial } from "../materials/tripo-model-material";
-import { DEEP_GATE_MODELS } from "../structures/deep-landmarks";
+  createDeepGateKit,
+  createDeepGateVeilGeometry,
+  createDeepGateVeilMaterial,
+  DEEP_GATE_HEIGHT,
+} from "../structures/deep-site-kit";
 import { DEEP_FLOOR, writeDeepFloorZones } from "../terrain/deep-floor-material";
 import { placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
 import { getWorldPositionForHex } from "../utils";
 import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "../utils/hex-lattice";
-import { gltfLoader } from "../utils/utils";
 import type { PipelineCompiler } from "../pipeline-compiler";
 import { subscribeWorldOrigin } from "../world-origin";
 
-const GATE_HEIGHT = 1.4;
-const VEIL_WIDTH = 0.54;
-const VEIL_HEIGHT = 0.88;
-const VEIL_CENTER_Y = 0.56;
-export const DEEP_GATEWAY_HEIGHT = GATE_HEIGHT + 0.25;
+export const DEEP_GATEWAY_HEIGHT = DEEP_GATE_HEIGHT + 0.25;
 
 export class DeepArenaManager {
   private readonly group = new Group();
@@ -60,12 +44,12 @@ export class DeepArenaManager {
   ) {
     this.group.name = "deep-arena";
     this.gates = Object.fromEntries(aspects.map(({ id }) => [id, gateSlot(id)])) as Record<AspectId, Group>;
-    this.veil = new InstancedMesh(gatewayVeil(), gatewayVeilMaterial(), aspects.length);
+    this.veil = new InstancedMesh(createDeepGateVeilGeometry(), createDeepGateVeilMaterial(), aspects.length);
     this.veil.renderOrder = 2;
     this.group.add(this.veil, ...Object.values(this.gates));
     scene.add(this.group);
     for (const { id } of aspects) {
-      this.loadGate(id);
+      this.buildGate(id);
     }
     this.unsubscribeStore = store.subscribe((changes) => {
       if (changes.some(({ model }) => model === "DeepRules" || model === "SettlementRules" || model === "HomeAspect"))
@@ -83,14 +67,10 @@ export class DeepArenaManager {
     disposeObjectTree(this.group);
   }
 
-  private loadGate(aspect: AspectId): void {
-    void gltfLoader
-      .loadAsync(DEEP_GATE_MODELS[aspect])
-      .then(async (gltf) => {
-        if (this.destroyed) return;
-        const model = gltf.scene.clone(true);
-        applyTripoMaterials(model);
-        await this.compilePipelines(model, this.scene);
+  private buildGate(aspect: AspectId): void {
+    const model = createDeepGateKit(aspect).scene;
+    void this.compilePipelines(model, this.scene)
+      .then(() => {
         if (this.destroyed) {
           disposeObjectTree(model);
           return;
@@ -98,7 +78,8 @@ export class DeepArenaManager {
         this.gates[aspect].add(model);
       })
       .catch((error) => {
-        if (!this.destroyed) console.error(`[DeepArenaManager] Failed to load gate ${aspect}`, error);
+        disposeObjectTree(model);
+        if (!this.destroyed) console.error(`[DeepArenaManager] Failed to warm up gate ${aspect}`, error);
       });
   }
 
@@ -169,25 +150,6 @@ function gateSlot(aspect: AspectId): Group {
   return slot;
 }
 
-function applyTripoMaterials(root: Object3D): void {
-  root.traverse((object) => {
-    if (!(object instanceof Mesh)) return;
-    object.castShadow = true;
-    object.receiveShadow = true;
-    if (Array.isArray(object.material)) {
-      object.material = object.material.map(toTripoMaterial);
-    } else if (object.material) {
-      object.material = toTripoMaterial(object.material);
-    }
-  });
-}
-
-function toTripoMaterial(material: Material): Material {
-  return material instanceof MeshStandardMaterial && isTripoModelMaterial(material)
-    ? createTripoModelMaterial(material)
-    : material;
-}
-
 function disposeObjectTree(root: Object3D): void {
   root.traverse((object) => {
     if (!(object instanceof Mesh)) return;
@@ -211,24 +173,4 @@ function squareBorder(middle: { col: number; row: number }, half: number): { col
     { col: middle.col + step, row: middle.row - half },
     { col: middle.col + step, row: middle.row + half - 1 },
   ]);
-}
-
-function gatewayVeil(): BufferGeometry {
-  return new PlaneGeometry(VEIL_WIDTH, VEIL_HEIGHT).translate(0, VEIL_CENTER_Y, 0);
-}
-
-function gatewayVeilMaterial(): MeshBasicNodeMaterial {
-  const material = new MeshBasicNodeMaterial({
-    transparent: true,
-    blending: AdditiveBlending,
-    depthWrite: false,
-    side: DoubleSide,
-  });
-  const across = uv().x.sub(0.5).abs().mul(2);
-  material.opacityNode = smoothstep(1, 0.2, across)
-    .mul(smoothstep(0, 0.35, uv().y))
-    .mul(smoothstep(1, 0.6, uv().y))
-    .mul(0.5);
-  material.name = "deep-gateway-veil";
-  return material;
 }
