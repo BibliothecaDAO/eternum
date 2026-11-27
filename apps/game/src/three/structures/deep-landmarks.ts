@@ -16,24 +16,18 @@ import { MeshStandardNodeMaterial } from "three/webgpu";
 import InstancedModel from "../managers/instanced-model";
 import { DEEP_PALETTE } from "../terrain/deep-floor-material";
 import { MaterialPool } from "../utils/material-pool";
-import { modelPath } from "../utils/model-url";
-import { gltfLoader } from "../utils/utils";
-import { createDeepArchiveKit, createDeepCoreKit, createDeepMineKit } from "./deep-site-kit";
+import { createDeepAltarKit, createDeepArchiveKit, createDeepCoreKit, createDeepMineKit } from "./deep-site-kit";
 import { isProcgenMasonryMaterial } from "./procgen-masonry-material";
 
 type DeepSiteKey = (typeof deepSites)[number]["key"];
-type DeepSiteSource = { readonly kit: () => Pick<GLTF, "scene" | "animations"> } | { readonly glb: string };
+type DeepSiteKitBuilder = () => Pick<GLTF, "scene" | "animations">;
 
-export const DEEP_SITE_SOURCES = {
-  foundation: { kit: createDeepArchiveKit },
-  core: { kit: createDeepCoreKit },
-  mine: { kit: createDeepMineKit },
-  altar: { glb: modelPath("frontier/deep/altar.glb") },
-} as const satisfies Record<DeepSiteKey, DeepSiteSource>;
-
-export const DEEP_SITE_GLB_PATHS: readonly string[] = Object.values(DEEP_SITE_SOURCES)
-  .filter((source): source is { readonly glb: string } => "glb" in source)
-  .map((source) => source.glb);
+const DEEP_SITE_KITS = {
+  foundation: createDeepArchiveKit,
+  core: createDeepCoreKit,
+  mine: createDeepMineKit,
+  altar: createDeepAltarKit,
+} as const satisfies Record<DeepSiteKey, DeepSiteKitBuilder>;
 
 export const DEEP_EMPTY_GEM = "#121828";
 const ACTIVE_GEM_INTENSITY = 1.6;
@@ -43,19 +37,11 @@ export async function loadDeepLandmark(
   key: DeepSiteKey,
   activation: number,
 ): Promise<{ scene: Group; animations: [] }> {
-  const source = DEEP_SITE_SOURCES[key];
   const root = new Group();
   root.name = activation < 1 ? `deep-landmark-${key}-dormant` : `deep-landmark-${key}`;
-  if ("kit" in source) {
-    const procedural = source.kit();
-    applyLandmarkActivation(procedural.scene, activation, false);
-    root.add(procedural.scene);
-    return { scene: root, animations: [] };
-  }
-  const gltf = await gltfLoader.loadAsync(source.glb);
-  const clone = gltf.scene.clone(true);
-  applyLandmarkActivation(clone, activation, true);
-  root.add(clone);
+  const procedural = DEEP_SITE_KITS[key]();
+  applyLandmarkActivation(procedural.scene, activation);
+  root.add(procedural.scene);
   return { scene: root, animations: [] };
 }
 
@@ -127,7 +113,7 @@ function holderGlowMaterial(source: MeshStandardMaterial): MeshStandardNodeMater
   return material;
 }
 
-function applyLandmarkActivation(root: Object3D, activation: number, cloneMaterials: boolean): void {
+function applyLandmarkActivation(root: Object3D, activation: number): void {
   const active = activation >= 1;
   root.traverse((object) => {
     if (!(object instanceof Mesh)) return;
@@ -135,20 +121,18 @@ function applyLandmarkActivation(root: Object3D, activation: number, cloneMateri
       if (active && object.material.some((material) => isSocketGem(object.name, material.name))) {
         object.userData.holderGlow = true;
       }
-      object.material = object.material.map((material) =>
-        prepareForActivation(object.name, material, active, cloneMaterials),
-      );
+      object.material = object.material.map((material) => prepareForActivation(object.name, material, active));
     } else if (object.material) {
       if (active && isSocketGem(object.name, object.material.name)) {
         object.userData.holderGlow = true;
       }
-      object.material = prepareForActivation(object.name, object.material, active, cloneMaterials);
+      object.material = prepareForActivation(object.name, object.material, active);
     }
   });
 }
 
-function prepareForActivation(meshName: string, material: Material, active: boolean, cloneMaterial: boolean): Material {
-  const target = cloneMaterial ? material.clone() : material;
+function prepareForActivation(meshName: string, material: Material, active: boolean): Material {
+  const target = material;
   if (isProcgenMasonryMaterial(target)) {
     const tinted = target as Material & { color?: Color };
     if (!active && tinted.color) {
