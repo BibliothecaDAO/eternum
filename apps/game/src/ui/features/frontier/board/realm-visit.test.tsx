@@ -20,7 +20,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { disposeGameSyncSession, installActiveGameClient, startRealmVisit } from "@/sync/active-game-client";
 import { configManager, type GameClient } from "@bibliothecadao/eternum";
 import { type GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { RealmVisitFoot, useRealmVisitNavigation } from "./realm-visit";
+import { RealmVisitFoot, SpectatedPlayerChip, useRealmVisitNavigation } from "./realm-visit";
 
 const realmRow = (entityId: number, owner: string) => ({
   model: "Structure",
@@ -110,6 +110,16 @@ const renderFoot = (
   );
 
 describe("a realm visit", () => {
+  it("renders the spectated player's display name in SpectatedPlayerChip and opens on press", () => {
+    const onOpen = vi.fn();
+    act(() => root.render(<SpectatedPlayerChip player="0x222" onOpen={onOpen} />));
+    const button = host.querySelector<HTMLButtonElement>("button")!;
+    expect(button.getAttribute("aria-label")).toBe("Rival");
+    expect(button.querySelector("[data-spectated-player]")?.textContent).toBe("Rival");
+    act(() => button.click());
+    expect(onOpen).toHaveBeenCalledOnce();
+  });
+
   it("streams the visited realm, opens it as a spectator once it arrives, and leaves for home whole", () => {
     renderFoot();
     expect(host.textContent).toBe("");

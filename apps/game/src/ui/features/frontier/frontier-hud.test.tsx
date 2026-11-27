@@ -35,6 +35,13 @@ vi.mock("@bibliothecadao/types", async (original) => ({
 }));
 const identity = vi.hoisted(() => ({ status: "signed-in" as "signed-in" | "signed-out" }));
 const signIn = vi.hoisted(() => ({ request: (() => {}) as () => void }));
+vi.mock("@realms-world/identity", async (original) => ({
+  ...(await original<typeof import("@realms-world/identity")>()),
+  fetchIdentityProfiles: async (_origin: string, accounts: string[]) =>
+    Object.fromEntries(
+      accounts.map((account) => [account, { name: account === "0x222" ? "Hope" : null, portrait: null }]),
+    ),
+}));
 vi.mock("@/hooks/context/identity-session", async (original) => ({
   ...(await original<typeof import("@/hooks/context/identity-session")>()),
   useIdentitySession: () => ({
@@ -272,6 +279,76 @@ it("treats the desktop's Feed as any other panel: closed at start, opened from i
     window.history.replaceState(null, "", route);
     await act(async () => useUIStore.setState({ selectedBuildingHex }));
   }
+});
+
+it("keeps desktop top-bar commands fixed outside the rail without squeezing tabs when wide panels or spectator chips show", async () => {
+  viewport.set(1920);
+  await renderHud();
+  await act(async () =>
+    shownStore.applyFacts([{ model: "RaceRules", key: "0xa500", value: wireFact(raceRules()) }] as never),
+  );
+
+  const topBar = host.querySelector<HTMLElement>(".frontier-top-bar")!;
+  const commands = host.querySelector<HTMLElement>(".frontier-commands")!;
+  const crown = host.querySelector<HTMLElement>(".frontier-crown")!;
+  const rail = host.querySelector<HTMLElement>("[data-frontier-rail]")!;
+  expect(topBar).not.toBeNull();
+  expect(commands).not.toBeNull();
+  expect(crown).not.toBeNull();
+  expect(topBar.closest("[data-frontier-rail]")).toBeNull();
+  expect(commands.closest("[data-frontier-rail]")).toBeNull();
+  expect(crown.closest("[data-frontier-rail]")).toBeNull();
+  expect(commands.parentElement).toBe(topBar);
+  expect(crown.parentElement).toBe(topBar);
+
+  const readTopBarPosition = () => {
+    const style = window.getComputedStyle(topBar);
+    return { position: style.position, top: style.top, left: style.left, right: style.right, height: style.height };
+  };
+  const readRailLayout = () => {
+    const style = window.getComputedStyle(rail);
+    return { top: style.top, left: style.left, right: style.right, maxWidth: style.maxWidth, width: style.width };
+  };
+
+  const baselineTopBar = readTopBarPosition();
+  expect(baselineTopBar.position).toBe("fixed");
+  for (const tab of host.querySelectorAll<HTMLElement>(".frontier-commands .frontier-place")) {
+    expect(window.getComputedStyle(tab).flexShrink).toBe("0");
+  }
+
+  const pressPlace = (name: string) =>
+    act(async () =>
+      host.querySelector<HTMLButtonElement>(`nav[aria-label="Places"] button[aria-label="${name}"]`)!.click(),
+    );
+
+  await pressPlace("Research");
+  expect(rail.getAttribute("data-wide")).toBe("true");
+  expect(host.querySelector("[data-frontier-rail] [data-wide-page]")).not.toBeNull();
+  const researchRailLayout = readRailLayout();
+  expect(readTopBarPosition()).toEqual(baselineTopBar);
+  expect(commands.closest("[data-frontier-rail]")).toBeNull();
+
+  await pressPlace("Season");
+  expect(rail.getAttribute("data-wide")).toBe("true");
+  expect(host.querySelector(`[data-frontier-rail] [data-wide-page] ${SEASON_PAGE}`)).not.toBeNull();
+  expect(readRailLayout()).toEqual(researchRailLayout);
+  expect(readTopBarPosition()).toEqual(baselineTopBar);
+  expect(commands.closest("[data-frontier-rail]")).toBeNull();
+
+  await pressPlace("Feed");
+  expect(rail.getAttribute("data-wide")).toBeNull();
+  expect(readTopBarPosition()).toEqual(baselineTopBar);
+  expect(commands.closest("[data-frontier-rail]")).toBeNull();
+
+  await pressPlace("Settings");
+  expect(host.querySelector('[data-rail-panel] section[aria-label="Settings"]')).not.toBeNull();
+  expect(readTopBarPosition()).toEqual(baselineTopBar);
+  expect(commands.closest("[data-frontier-rail]")).toBeNull();
+
+  await act(async () => host.querySelector<HTMLButtonElement>('.frontier-crown button[aria-label="Today"]')!.click());
+  expect(host.querySelector('section[aria-label="Today"]')).not.toBeNull();
+  expect(readTopBarPosition()).toEqual(baselineTopBar);
+  expect(commands.closest("[data-frontier-rail]")).toBeNull();
 });
 
 it("keeps a refused order in sight on a desktop, over the feed and over a panel the rail holds", async () => {
@@ -979,6 +1056,55 @@ it("shows the visited realm on the desktop top bar without duplicating the playe
     expect(card.querySelector("[data-realm-castle]")).toBeNull();
   } finally {
     visiting.visit = null;
+  }
+});
+
+it("shows the spectated player's name in the top-bar chip rather than the signed-in viewer's identity", async () => {
+  viewport.set(1440);
+  const { isSpectating } = useUIStore.getState();
+  try {
+    await act(async () => useUIStore.setState({ isSpectating: false }));
+    await renderVisit();
+    expect(host.querySelector("[data-spectated-player]")).toBeNull();
+
+    await act(async () => useUIStore.setState({ isSpectating: true }));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    const commands = host.querySelector<HTMLElement>(".frontier-commands")!;
+    const chip = commands.querySelector<HTMLElement>("[data-spectated-player]")!;
+    expect(chip).not.toBeNull();
+    expect(chip.textContent).toBe("Hope");
+    expect(commands.textContent).not.toContain("uxplay");
+
+    await act(async () => chip.closest("button")!.click());
+    expect(host.querySelector('[data-frontier-rail] [data-right-page] section[aria-label="Season"]')).not.toBeNull();
+  } finally {
+    visiting.visit = null;
+    await act(async () => useUIStore.setState({ isSpectating }));
+  }
+});
+
+it("keeps the account sign-in chip beside the spectated player chip for a signed-out spectator", async () => {
+  viewport.set(1440);
+  const { isSpectating } = useUIStore.getState();
+  const previousStatus = identity.status;
+  try {
+    identity.status = "signed-out";
+    await renderVisit();
+    await act(async () => {
+      useUIStore.setState({ isSpectating: true });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    const commands = host.querySelector<HTMLElement>(".frontier-commands")!;
+    expect(commands.querySelector<HTMLElement>("[data-spectated-player]")?.textContent).toBe("Hope");
+    const account = commands.querySelector<HTMLButtonElement>('button[aria-label="Account"]');
+    expect(account).not.toBeNull();
+    expect(account?.textContent).toBe("Sign in");
+  } finally {
+    identity.status = previousStatus;
+    visiting.visit = null;
+    await act(async () => useUIStore.setState({ isSpectating }));
   }
 });
 
