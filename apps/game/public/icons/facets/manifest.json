@@ -1056,8 +1056,8 @@
     },
     "final-seal": {
       "art": "final-seal",
-      "label": "Final seal",
-      "family": "Statuses"
+      "label": "Ancient Seal",
+      "family": "Resources"
     },
     "army-capacity": {
       "art": "army-capacity",

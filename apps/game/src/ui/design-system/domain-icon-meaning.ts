@@ -23,6 +23,7 @@ import {
   type NativeStoryVariant,
 } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { iconDefinition, resourceMeaning, type IconMeaning } from "./icon-meaning";
+import relicMeanings from "../../../asset-sources/facets/relic-meanings.json";
 
 const archivedStoryMeanings = {
   FaithPointsClaimedStory: "shrine",
@@ -183,15 +184,12 @@ export type RelicKind = NativeRows["ArmyRelicEffect"]["kind"];
 
 export const RELIC_KINDS = nativeFactModels.ArmyRelicEffect.fields.kind.enum as readonly RelicKind[];
 
-const RELIC_MEANINGS = {
-  Blade: "damage-relic-2",
-  Ward: "damage-reduction-relic-2",
-  Plunder: "exploration-reward-relic-2",
-  StaminaRegen: "stamina-relic-2",
-} satisfies Record<RelicKind, IconMeaning>;
+const RELIC_MEANINGS = relicMeanings satisfies Record<RelicKind, string>;
 
 export function relicMeaning(kind: RelicKind): IconMeaning {
-  return RELIC_MEANINGS[kind];
+  const meaning = RELIC_MEANINGS[kind] as IconMeaning;
+  iconDefinition(meaning);
+  return meaning;
 }
 
 /** Species identity selects the painting, independent of combat tier and remaining strength. */

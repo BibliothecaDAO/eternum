@@ -131,7 +131,10 @@
       "id": "fragment",
       "label": "Ancient Fragment",
       "family": "Resources",
-      "prompt": "prompts/fragment.txt"
+      "prompt": "prompts/fragment.txt",
+      "source": {
+        "sha256": "ea21c647aaf54aa1386561c29c21fb48f8db78708af84d10d0fd535deb26eec4"
+      }
     },
     {
       "id": "realm",
@@ -654,9 +657,7 @@
       "family": "Relics",
       "prompt": "prompts/stamina-relic-2.txt",
       "source": {
-        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
-        "path": "apps/game/asset-sources/rss-icons/relics/masters/stamina-relic-2.png",
-        "sha256": "07f721d2e5dfbfbe1caf4d366caee5e6f03388b930501ae8883b5e4a55f59500"
+        "sha256": "4f71e61e39e3a0a0078800356e4df7a26342a34edc92286cde1af299ff70b8e6"
       }
     },
     {
@@ -676,9 +677,7 @@
       "family": "Relics",
       "prompt": "prompts/damage-relic-2.txt",
       "source": {
-        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
-        "path": "apps/game/asset-sources/rss-icons/relics/masters/damage-relic-2.png",
-        "sha256": "fcbbdf74d5d87235f1b202231c84506402306184c8064c251ac79e8dfd7c0989"
+        "sha256": "f749c856e91b31c71cf9981199c2b9ec61e785beb7e0bdcaa0120e1da40159db"
       }
     },
     {
@@ -698,9 +697,7 @@
       "family": "Relics",
       "prompt": "prompts/damage-reduction-relic-2.txt",
       "source": {
-        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
-        "path": "apps/game/asset-sources/rss-icons/relics/masters/damage-reduction-relic-2.png",
-        "sha256": "1971cd71c6160e6a97e9efaa535c3e8f9e8f743af284c0eca21199b23318dcc4"
+        "sha256": "462ecb2b12fa0da92c7cc09ac1dc216f080cc7734b11a44c7dd962e8937df1fd"
       }
     },
     {
@@ -742,9 +739,7 @@
       "family": "Relics",
       "prompt": "prompts/exploration-reward-relic-2.txt",
       "source": {
-        "revision": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
-        "path": "apps/game/asset-sources/rss-icons/relics/masters/exploration-reward-relic-2.png",
-        "sha256": "b7c70556e586a545fa9ebc5b848888bc2884bf91c3169ef7abc8878a9beab9f3"
+        "sha256": "25b2cfbc610605fab380abc575c5e398ac0a62071394a401c58180129a0740f7"
       }
     },
     {
@@ -2723,21 +2718,11 @@
     },
     {
       "id": "final-seal",
-      "label": "Final seal",
-      "family": "Statuses",
+      "label": "Ancient Seal",
+      "family": "Resources",
       "prompt": "prompts/final-seal.txt",
       "source": {
-        "kind": "ivory-relief",
-        "revision": "451fc0dbc48cac44ebf3bb973c5d78f14cdaafd1",
-        "path": "apps/game/asset-sources/glyph-style/sheets/relief-5.png",
-        "sheetSha256": "06692c8d539b910a2f759fdf523a21972d2c92001e1c346f9c557d1905a8d05b",
-        "crop": {
-          "left": 0,
-          "top": 385,
-          "width": 373,
-          "height": 335
-        },
-        "sha256": "eecc3790698acf84014e58643bfa5ef6a0bfd1c771feb135bd4cee2f0a1dafee"
+        "sha256": "8f363a13a75c58967661cd2208fc04aa677bf07e6b6bdc1b245179fab360338f"
       }
     },
     {
