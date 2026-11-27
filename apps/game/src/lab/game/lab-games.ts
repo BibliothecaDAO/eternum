@@ -2,7 +2,7 @@ import { nativeBaneConstants, nativeOathConstants as oaths } from "@bibliothecad
 import { TroopType } from "@bibliothecadao/types";
 import { oathPickScenario, oathPassCappedScenario } from "./oath-pick-scenario";
 import { oathSlotsScenario } from "./oath-slots-scenario";
-import { battleTargetScenario, deepBattleTargetScenario } from "./battle-target-scenario";
+import { battleTargetScenario, deepArmyBattleScenario, deepBattleTargetScenario } from "./battle-target-scenario";
 import { townScenario } from "./town-scenario";
 import { scoutsScenario } from "./scouts-scenario";
 import { siteEffectsScenario } from "./site-effects-scenario";
@@ -50,6 +50,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   deep: () => deepScenario(),
   "deep-closed": () => deepScenario(true),
   "deep-battle-target": deepBattleTargetScenario,
+  "deep-army-battle": deepArmyBattleScenario,
   "oath-battle-target": () => battleTargetScenario(true),
   race: raceScenario,
   "race-finished": () => raceScenario(true),

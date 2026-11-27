@@ -94,8 +94,11 @@ const oathDamage = readFileSync(
   .split(/\s+/)
   .map(Number);
 
-it.each([4, 5, 6, 7])("refuses a field fight in the open from Knight exchange %i", async (index) => {
-  const [, , attackerOaths, defenderOaths, , , attackers, defenders] = oathDamage.slice(index * 10, (index + 1) * 10);
+it.each([4, 5, 6, 7])("reports field-fight survivors from Knight exchange %i and refuses allies", async (index) => {
+  const [, , attackerOaths, defenderOaths, , , attackers, defenders, afterA, afterB] = oathDamage.slice(
+    index * 10,
+    (index + 1) * 10,
+  );
   const game = createFakeGame();
   const gameId = game.client.gameId;
   const now = Math.floor(Date.now() / 1000);
@@ -146,5 +149,9 @@ it.each([4, 5, 6, 7])("refuses a field fight in the open from Knight exchange %i
   seedCombatant(102, defenders!, defenderOaths!, 14);
   const simulate = (defenderId: number) =>
     createSimulateTool(game).execute("combat", { kind: "combat", attackerId: 101, defenderId });
-  expect((await simulate(102)).content).toEqual([{ type: "text", text: "Attack refused: no-attack." }]);
+  expect((await simulate(102)).content).toEqual([
+    { type: "text", text: expect.stringContaining(`Survivors: attacker ${afterA}, defender ${afterB}.`) },
+  ]);
+  writeFact(game.store, "HomeAspect", [gameId, 14], { game_id: gameId, home: 14, aspect: 1 });
+  expect((await simulate(102)).content).toEqual([{ type: "text", text: "Attack refused: allied." }]);
 });

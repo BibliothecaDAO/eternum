@@ -81,7 +81,7 @@ describe("what a right-click on a tile does, said before the click", () => {
     const short = { refusal: { reason: "stamina", need: 21 } as const, staminaHeld: 9 };
     expect(line(undefined, { ...short, staminaWait: 130 })).toBe(staminaShortfall(9, 21, 130));
     expect(line(undefined, { refusal: { reason: "stamina", need: 21 } })).toBe(staminaShortfall(undefined, 21));
-    const reasons = ["food", "off-limits", "no-attack", "no-transfer", "occupied", "too-far"] as const;
+    const reasons = ["food", "off-limits", "no-attack", "allied", "no-transfer", "occupied", "too-far"] as const;
     const lines = reasons.map((reason) => line(undefined, { refusal: { reason } }));
     expect(lines).toEqual(reasons.map((reason) => ORDER_REFUSAL_WORDS[reason]));
     expect(lines[0]).toContain(WHEAT);

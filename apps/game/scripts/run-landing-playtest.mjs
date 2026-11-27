@@ -22,6 +22,7 @@ export const LANDING_SCENARIOS = [
   "lab-oath-battle-target",
   "lab-battle-target",
   "lab-deep-battle-target",
+  "lab-deep-army-battle",
   "lab-realm-world",
   "lab-race",
   "lab-panels",

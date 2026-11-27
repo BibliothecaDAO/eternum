@@ -215,18 +215,7 @@ function requireEntered(entered: { known: number } | { unknown: string }): numbe
   return entered.known;
 }
 
-export function homeAspect(store: NativeFactStore, gameId: number, home: bigint): number {
-  return store.require("HomeAspect", { game_id: gameId, home }).aspect;
-}
-
-export function isDeepSiteRival(
-  store: NativeFactStore,
-  site: DeepSiteView,
-  attackerHome: bigint,
-  gameId = configManager.getActiveGameId(),
-): boolean {
-  return site.aspect !== 0 && site.aspect !== homeAspect(store, gameId, attackerHome);
-}
+export { homeAspect } from "../../utils/army-opponents";
 
 export function isBesideDeepSite(tile: { col: number; row: number; alt: boolean }, site: DeepSiteView): boolean {
   return tile.alt === site.position.alt && journeyDistance({ x: tile.col, y: tile.row }, site.position) === 1;

@@ -83,11 +83,9 @@ fn guard_target(
             crate::logic::deep_sites::assert_settled(key.game_id, site, context);
             crate::logic::deep_sites::assert_open(key.game_id, site);
             assert!(
-                site.aspect == 0
-                    || crate::logic::aspects::home_aspect(
-                        ResourceKey { game_id: key.game_id, entity_id: attacker.owner },
-                    ) != site
-                        .aspect,
+                !crate::logic::aspects::shares_aspect(
+                    ResourceKey { game_id: key.game_id, entity_id: attacker.owner }, site.aspect,
+                ),
                 "your Aspect holds this site",
             );
             let coord = crate::logic::map::entity_coord(key).expect('missing Deep site position');
@@ -315,6 +313,7 @@ pub fn battle(
     let mut defender = active_explorer(defender_key, context);
     let defender_owner = explorer_owner(defender_key, defender);
     assert!(defender_owner != actor, "actor owns defender");
+    assert!(!crate::logic::aspects::same_aspect(game_id, attacker.owner, defender.owner), "allied armies cannot fight");
     assert_battle_immunity(game_id, attacker.owner, rules, context.timestamp, context);
     assert_battle_immunity(game_id, defender.owner, rules, context.timestamp, context);
     assert!(attacker.troops.count > 0 && defender.troops.count > 0, "dead combatant");

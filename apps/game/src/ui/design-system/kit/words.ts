@@ -1400,6 +1400,7 @@ export const ORDER_REFUSAL_WORDS = {
   food: `Not enough ${WHEAT}`,
   "off-limits": ATTACK_REFUSAL_WORDS["target-must-be-unowned"],
   "no-attack": ATTACK_REFUSAL_WORDS["no-attack"],
+  allied: ATTACK_REFUSAL_WORDS.allied,
   "no-transfer": "Cannot transfer here",
   occupied: "Tile occupied",
   "too-far": "Too far · move closer",

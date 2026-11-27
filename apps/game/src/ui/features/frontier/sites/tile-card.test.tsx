@@ -251,7 +251,7 @@ describe("the tile card", () => {
     unmount();
   });
 
-  it("is the same card for another player's army, whose Attack is refused since armies in the open cannot be attacked", () => {
+  it("attacks a rival army in the Deep on the same card and blocks a same-Aspect ally", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store } = campBeside();
     store.applyFacts([
@@ -291,26 +291,38 @@ describe("the tile card", () => {
     const host = document.createElement("div");
     document.body.append(host);
     const root = createRoot(host);
-    act(() =>
-      root.render(
-        <GameProvider
-          value={{ store, systemCalls: { attack_explorer_vs_explorer: attack } } as unknown as GameClientSetup}
-          account={{ address: "0x111" } as never}
-        >
-          <TileCard selected={{ kind: "army", army: other, tile }} onClose={() => {}} />
-        </GameProvider>,
-      ),
-    );
-    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
-    expect(host.querySelector('section[aria-label="Army"]')).not.toBeNull();
-    expect(
-      [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Attack"))?.disabled ??
-        true,
-    ).toBe(true);
-    expect(host.textContent).toContain(ATTACK_REFUSAL_WORDS["no-attack"]);
-    expect(attack).not.toHaveBeenCalled();
-    act(() => root.unmount());
-    host.remove();
+    const attackButton = () =>
+      [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Attack"));
+    try {
+      act(() =>
+        root.render(
+          <GameProvider
+            value={{ store, systemCalls: { attack_explorer_vs_explorer: attack } } as unknown as GameClientSetup}
+            account={{ address: "0x111" } as never}
+          >
+            <TileCard selected={{ kind: "army", army: other, tile }} onClose={() => {}} />
+          </GameProvider>,
+        ),
+      );
+      act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
+      expect(host.querySelector('section[aria-label="Army"]')).not.toBeNull();
+      expect(attackButton()?.disabled).toBe(false);
+      await act(async () => attackButton()!.click());
+      expect(attack).toHaveBeenCalledWith(
+        expect.objectContaining({ aggressor_id: 201, defender_id: 301, steal_resources: [] }),
+      );
+
+      attack.mockClear();
+      act(() => {
+        store.applyFacts([{ model: "HomeAspect", key: "0xa901", value: { game_id: 1, home: 9n, aspect: 1 } }]);
+      });
+      expect(attackButton()?.disabled ?? true).toBe(true);
+      expect(host.textContent).toContain(ATTACK_REFUSAL_WORDS.allied);
+      expect(attack).not.toHaveBeenCalled();
+    } finally {
+      act(() => root.unmount());
+      host.remove();
+    }
   });
 });
 

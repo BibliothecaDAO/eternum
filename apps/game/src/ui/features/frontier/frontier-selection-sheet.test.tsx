@@ -215,8 +215,8 @@ describe("Frontier's selection sheet", () => {
           ),
         );
         const sheet = host.querySelector("[data-kit-sheet]")!;
-        expect(sheet.getAttribute("aria-label")).toBe("Supply Post");
-        expect(sheet.querySelector(".ui-frame__head .ui-chip")?.textContent).toBe(expectedName);
+        expect(sheet.getAttribute("aria-label")).toBe(foreign ? "Army" : "Supply Post");
+        if (!foreign) expect(sheet.querySelector(".ui-frame__head .ui-chip")?.textContent).toBe(expectedName);
         expect(sheet.textContent!.split(expectedName).length - 1).toBe(1);
         expect(host.textContent!.includes("Cleared · Golem")).toBe(foreign);
         expect(host.textContent!.includes(SUPPLY_POST.drawsFrom)).toBe(!foreign);
@@ -225,7 +225,9 @@ describe("Frontier's selection sheet", () => {
         await act(async () => close!.click());
         expect(host.querySelector("[data-kit-sheet]")).toBeNull();
         await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE }));
-        expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Supply Post");
+        expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(
+          foreign ? "Army" : "Supply Post",
+        );
         expect(host.querySelector("[data-kit-sheet]")!.textContent).toContain(expectedName);
         if (foreign) expect(host.querySelector("[data-site-rewards]")?.textContent).toBe("550 Labor");
       } finally {

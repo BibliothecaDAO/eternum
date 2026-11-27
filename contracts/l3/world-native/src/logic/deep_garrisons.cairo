@@ -20,7 +20,7 @@ pub fn assert_garrison(key: GuardKey, army_home: u64, troops: Troops, context: E
     crate::logic::deep_sites::assert_settled(key.game_id, site, context);
     assert!(site.aspect != 0, "site is not claimed");
     assert!(
-        crate::logic::aspects::home_aspect(ResourceKey { game_id: key.game_id, entity_id: army_home }) == site.aspect,
+        crate::logic::aspects::shares_aspect(ResourceKey { game_id: key.game_id, entity_id: army_home }, site.aspect),
         "only the owner and his Aspect garrison this site",
     );
     if !crate::rules::deep_allies_garrison(site.kind) {

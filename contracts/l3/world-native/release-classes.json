@@ -1,21 +1,21 @@
 {
-  "release": 25,
+  "release": 26,
   "logic": {
-    "season": "0x5edceb2b1d436d3fff5280ba032fe2f8f74231662b8deb369b6f7238a7ad763",
-    "map": "0x3a2da6fb7ac37f291b78b271281c6ed6f8a8b04e1d5fd38afe85048c2cc20da",
-    "placement": "0x3ec3543c5107f0b61fdab4bbda34d73c0d73f61fad97c1d98bc4f737f23d27f",
+    "season": "0x3b81bad93dac5245802a7a952f6c4accc3539945987e6dc14e0d49998c42c38",
+    "map": "0x155d9d8c09fcfc0bbc9451d1ceee416dca721a81c5333805d98496fb510bf6e",
+    "placement": "0x5089ae945c09a8309d5159917ee0fb82bc0f6a65b944a65a520a7f9365ed766",
     "construction": "0x1d086d46a4ab343699c785c137d9c07f34ff07f6f1f4995dfc5e652220c65e6",
     "production": "0x71e6bffe3a411f43b4a259a1309cffc51ab318e228e23b825f54ca8e732678",
-    "structures": "0x301bf6b96688c93f137f11431d4efd5c5fdeb09f79b8cb601aa12c5bba7e380",
-    "troops": "0x6baec4f95a28856c6ce3facf46d8c5844d72a53fc212736410cc68490202ca0",
-    "settlement": "0x4a4d3084e1cf832bf53413f986788ac3ba3dd989f878642ed00aac40f32ed32",
+    "structures": "0x680c17396ff0a92c7abc5ca9c4c8bcebaed7b3fed1143d8bfd6f4b47282bf86",
+    "troops": "0x73e7cb7968d9fae75fa163dffa47e4a9dada8e11d38cd1fd7b0ff2f52225ed7",
+    "settlement": "0x7e5f2fa92434e5c3b4f7594d398d770c43879610b43983754aa945e52e93a58",
     "resources": "0xec6b8e3ee3bcbaae3e070ee48a20f4edece18eafc71b89327ebadb0d8ea886",
-    "economy": "0x748914a9f57d21bb4f02ae444a5fbc0a612bea4541b00692991606f9d4a31b5",
-    "prizes": "0x1a1bfa89407969b76100455a2d42f86b903ba574c7a257f5ff8300133400d06",
-    "registry": "0x3d77b0b0a2380cd83aed4393722afa67a46726a8eef9dd4b8e72c36e4e4dc3d",
-    "combat": "0xbbe46efc05c78a58dc3db85e6526f71c486617e63b513a240641c39edd93b7",
-    "bridge": "0x7ac40f6b03a9f06cf315249beb912f554ae73e4cab7f519220ace19670322c6",
-    "relics": "0x169db7ff766f15ae54c03c71276303e827c4ef0f01da356e1a715436061fab",
-    "movement": "0x2adc20e37f44c57fa74c6832c917b71385ac37bea6f2ce0ef3031a349642d7f"
+    "economy": "0x61cf1cc2277b6cc8ee780c9e8a9cc2e34c243670364175cb3fd72d8877d4948",
+    "prizes": "0x7483aacf6117febf4ad69867d37688bcc035d87a07baffcaa3b513587117b3a",
+    "registry": "0x4c482a8f78e2f4526fc876e0acaaf459ca3d2c8f0ec20d424b8dce55eb4f3bb",
+    "combat": "0x169b6a08924ab02571ecadd82dcff64169fe622f16ce2731c57456ed6e965f6",
+    "bridge": "0x48ddb0e7a37b22f2bbaec69e3d5757f7a6c451124c2addef9efc5c5b4dc3a2e",
+    "relics": "0x4be50ed0cc0c01c9d3b8332721f4a5f6a04d3a58a3bd6bcbafd66df8669ec97",
+    "movement": "0x78e663141b7f76fa12e54d0ed58cd7b85b4c7976613c131845acd38cd6ac3a4"
   }
 }

@@ -998,9 +998,15 @@ test("preset 7 activates the complete Slice 1 rules while fixtures and historica
     expect(source.deep).toEqual(deepFixture());
     expect(source.race).toEqual(raceFixture());
     expect(built.economy.labor.isNone()).toBe(true);
-    for (const command of ["ClaimDailyQuest", "BattleGuard", "ApplyRelic", "InteractSite", "MarkGameSettled"] as const)
+    for (const command of [
+      "ClaimDailyQuest",
+      "Battle",
+      "BattleGuard",
+      "ApplyRelic",
+      "InteractSite",
+      "MarkGameSettled",
+    ] as const)
       expect(built.rules.command_mask & BigInt(nativeCommandBits[command])).not.toBe(0n);
-    expect(built.rules.command_mask & BigInt(nativeCommandBits.Battle)).toBe(0n);
     expect(built.rules.troop_stamina_config).toMatchObject({
       stamina_initial: 180,
       stamina_knight_max: 180,

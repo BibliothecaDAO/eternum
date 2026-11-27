@@ -270,7 +270,16 @@ function frontier() {
       options,
     );
 
-  return { home, army, deepSite, holdDeepSite, enterDeep, camp, guardedPost, forecast };
+  const terrain = (tile: Tile, biome: BiomeType = BiomeType.Grassland) =>
+    write("TileOpt", {
+      game_id: GAME_ID,
+      alt: tile.alt ?? false,
+      col: tile.col,
+      row: tile.row,
+      data: BigInt(BiomeTypeToId[biome]) * BigInt(nativeTilePackingConstants.BIOME_SCALE),
+    });
+
+  return { home, army, deepSite, holdDeepSite, enterDeep, camp, guardedPost, terrain, write, forecast };
 }
 
 const structureRow = (entity_id: number, owner: bigint, category: number) => ({
@@ -380,16 +389,56 @@ describe("one attack forecast for every combat surface", () => {
     expect(refusalOf(game.forecast(10, 50, tomorrow))).toBe("expired-army");
   });
 
-  it("refuses an army in the open, on a personal map or in the Deep (984d6e)", () => {
+  it("fights rival armies without guard protection and refuses allies, own armies, and out-of-range targets", () => {
     const game = frontier();
     game.home(1, PLAYER, 1);
     game.home(2, RIVAL, 2);
+    game.home(3, 0x999n, 1);
     const field = { col: 100, row: 100 };
-    game.army(10, 1, field);
-    game.army(20, 2, beside(field));
-    expect(refusalOf(game.forecast(10, 20))).toBe("no-attack");
-    game.army(10, 1, beside(DEEP, 3));
-    game.army(20, 2, beside(DEEP, 4));
+    const besideField = beside(field);
+    game.terrain(besideField);
+    game.army(10, 1, field, { category: "Crossbowman" });
+    game.army(20, 2, besideField, { category: "Knight" });
+    game.army(30, 3, beside(field, 2));
+    game.army(11, 1, beside(field, 3));
+
+    const surfaceFight = game.forecast(10, 20);
+    expect(surfaceFight?.outcome).toBe("fights");
+    expect(refusalOf(game.forecast(10, 30))).toBe("allied");
+    expect(refusalOf(game.forecast(10, 11))).toBe("own-target");
+
+    const deepAttacker = beside(DEEP, 3);
+    const deepDefender = { col: deepAttacker.col + 1, row: deepAttacker.row };
+    const deepAlly = { col: deepAttacker.col - 1, row: deepAttacker.row };
+    game.army(10, 1, deepAttacker, { category: "Crossbowman" });
+    game.army(20, 2, deepDefender, { category: "Knight" });
+    game.army(30, 3, deepAlly);
+    const deepFight = game.forecast(10, 20);
+    expect(deepFight?.outcome).toBe("fights");
+    expect(deepFight?.outcome === "fights" ? deepFight.sides.defender.guarding : true).toBe(false);
+    expect(refusalOf(game.forecast(10, 30))).toBe("allied");
+
+    game.army(20, 2, { col: deepAttacker.col + 3, row: deepAttacker.row });
+    expect(refusalOf(game.forecast(10, 20))).toBe("out-of-range");
+
+    game.write("Structure", structureRow(4, 0x444n, StructureType.Realm));
+    game.army(40, 4, { col: deepAttacker.col, row: deepAttacker.row + 1 });
+    expect(() => game.forecast(10, 40)).toThrow("HomeAspect");
+
+    game.write("SliceRules", {
+      ...release.definition.rules,
+      game_id: GAME_ID,
+      day_unit_seconds: DAY,
+      command_mask: "0",
+      battle_config: { ...release.definition.rules.battle_config, regular_immunity_ticks: 0 },
+      troop_stamina_config: {
+        ...release.definition.rules.troop_stamina_config,
+        stamina_attack_req: 10,
+        stamina_defense_req: 0,
+      },
+    });
+    game.army(10, 1, deepAttacker);
+    game.army(20, 2, deepDefender);
     expect(refusalOf(game.forecast(10, 20))).toBe("no-attack");
   });
 

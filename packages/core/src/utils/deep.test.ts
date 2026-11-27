@@ -129,7 +129,7 @@ describe("the shared Deep", () => {
     expect(() => currentArmy(store, army, end)).toThrow("requires its rules and army facts");
   });
 
-  it("refuses an army target where the game leaves the army battle out, while Blitz keeps army fights", () => {
+  it("refuses an army target when Battle is off or same Aspect, and allows rival Aspects", () => {
     const { rows, store, army } = fixture();
     const enemy = { ...army, explorer_id: 12n, owner: 2n };
     rows.ExplorerTroops!.push(enemy);
@@ -137,6 +137,8 @@ describe("the shared Deep", () => {
     rows.SliceRules![0]!.command_mask = 0n;
     expect(armyCombatRefusal(store, army, enemy)).toBe("no-attack");
     rows.SliceRules![0]!.command_mask = BigInt(nativeCommandBits.Battle);
+    expect(armyCombatRefusal(store, army, enemy)).toBe("allied");
+    rows.HomeAspect![1]!.aspect = 2;
     expect(armyCombatRefusal(store, army, enemy)).toBeUndefined();
   });
 

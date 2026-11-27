@@ -11,11 +11,11 @@ import {
 import { type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeOathConstants as oathRules } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { isDeepSiteRival, readDeepSite, readDeepSiteDefender, type DeepGarrison } from "../client/views/deep-sites";
+import { readDeepSite, readDeepSiteDefender, type DeepGarrison } from "../client/views/deep-sites";
 import { inlineTroops, resolveExplorerCombatTroops, resolveExplorerTroops, staminaAt } from "../managers/troop-stamina";
 import { STAMINA_MODELS } from "../client/views/stamina";
 import { getDefendingGuards, getGuardsByStructure, GUARD_MODELS } from "./army";
-import { commandRefusal } from "./army-opponents";
+import { armyCombatRefusal, commandRefusal, sharesAspect } from "./army-opponents";
 import {
   forecastFight,
   isCombatGuard,
@@ -39,6 +39,7 @@ export const ATTACK_FORECAST_MODELS = [
   "DeepSite",
   "DeepEntries",
   "DeepRules",
+  "HomeAspect",
   "ExpeditionSite",
   "TileOpt",
 ] as const;
@@ -261,7 +262,7 @@ function armyTargetDefence(
   if (store.get("DeepSite", { game_id: gameId, entity_id: targetId }))
     return deepSiteDefence(scene, attacker, targetId);
   const army = store.get("ExplorerTroops", { game_id: gameId, explorer_id: targetId });
-  if (army) return armyDefence(scene, attacker, army);
+  if (army) return armyDefence(scene, explorer.explorer_id, attacker, army);
   const structure = store.get("Structure", { game_id: gameId, entity_id: targetId });
   return structure && structureDefence(scene, attacker, structure);
 }
@@ -287,14 +288,25 @@ const besideTile = (target: Tile): Tile => {
   return { col: first!.col, row: first!.row, alt: target.alt };
 };
 
-function armyDefence(scene: Scene, attacker: Combatant, army: NativeRows["ExplorerTroops"]): Defence | undefined {
+function armyDefence(
+  scene: Scene,
+  attackerId: bigint,
+  attacker: Combatant,
+  army: NativeRows["ExplorerTroops"],
+): Defence | undefined {
   const defender = armyCombatant(scene, army);
   if (!defender) return undefined;
   const sides = { attacker, defender, queued: [] };
+  const combat = armyCombatRefusal(
+    scene.store,
+    { game_id: scene.gameId, explorer_id: attackerId },
+    { game_id: scene.gameId, explorer_id: army.explorer_id },
+  );
   const refusal =
     defendingArmyRefusal(scene, army.explorer_id) ??
-    commandRefusal(scene.store, scene.gameId, "Battle") ??
+    (combat === "no-attack" ? combat : undefined) ??
     ownTargetRefusal(scene, attacker.home, homeOwner(scene, defender.home)) ??
+    combat ??
     immunityRefusal(scene, attacker.home) ??
     immunityRefusal(scene, defender.home) ??
     (attacker.troops.count === 0n || defender.troops.count === 0n ? "no-troops" : undefined) ??
@@ -311,7 +323,7 @@ function deepSiteDefence(scene: Scene, attacker: Combatant, siteId: bigint): Def
   if (!isAdjacent(attacker.tile, tile)) return refused("out-of-range", alone);
   const aggressor = aggressorRefusal(scene, attacker);
   if (aggressor) return refused(aggressor, alone);
-  const allied = site.aspect !== 0 && !isDeepSiteRival(scene.store, site, attacker.home, scene.gameId);
+  const allied = sharesAspect(scene.store, scene.gameId, attacker.home, site.aspect);
   const defence = readDeepSiteDefender(scene.store, site);
   if (!defence && site.beastTroops > 0n) return undefined;
   if (!defence) return allied ? refused("allied", alone) : { claims: attacker };

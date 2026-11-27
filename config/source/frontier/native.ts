@@ -73,6 +73,7 @@ export const frontierPreset = {
       "ManageTroops",
       "Explore",
       "Move",
+      "Battle",
       "BattleGuard",
       "CreateBuilding",
       "DestroyBuilding",

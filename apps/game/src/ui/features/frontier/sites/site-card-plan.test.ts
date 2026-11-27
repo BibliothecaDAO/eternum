@@ -1,4 +1,4 @@
-import { deepBattleTargetScenario } from "@/lab/game/battle-target-scenario";
+import { deepArmyBattleScenario, deepBattleTargetScenario, RIVAL_DEEP_ARMY } from "@/lab/game/battle-target-scenario";
 import { HELD_SITE } from "@/lab/game/deep-scenario";
 import {
   nativeOathConstants as oaths,
@@ -8,7 +8,8 @@ import {
 import { resolveExplorerCombatTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { afterEach, describe, expect, it } from "vitest";
 import { armyRelicReward, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { deepSites, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, BiomeTypeToId, deepSites, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import { nativeTilePackingConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 import { readDeepSiteFight, readArmyCard, readSiteCard } from "./site-card-plan";
 import {
@@ -113,18 +114,67 @@ it("shows only the camp reward that fits in the home labor store", () => {
   expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 825, fits: 10 });
 });
 
-it("refuses another player's army in the open, near or far, as the contract does, and shows its troops", () => {
+it("forecasts an attack on a rival army in the open and refuses a same-Aspect ally, near or far", () => {
   const { store, attack } = campBeside();
   const other = otherArmyAt(store, 42, 12);
-  const plan = readArmyCard(store, other, attack({ col: 41, row: 12, alt: false }));
-  expect(plan.kind).toBe("Army");
-  expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 300 });
-  expect(plan.payout).toBeNull();
-  expect(plan).toMatchObject({ fight: { refused: true }, blocked: "no-attack", inReach: true });
+  store.applyFacts([
+    {
+      model: "TileOpt",
+      key: "0x4212",
+      value: {
+        game_id: 1,
+        col: 42,
+        row: 12,
+        alt: false,
+        data: BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE),
+      },
+    },
+    { model: "HomeAspect", key: "0xa701", value: { game_id: 1, home: 7n, aspect: 1 } },
+    { model: "HomeAspect", key: "0xa901", value: { game_id: 1, home: 9n, aspect: 2 } },
+  ]);
+  const rival = readArmyCard(store, other, attack({ col: 41, row: 12, alt: false }));
+  expect(rival.kind).toBe("Army");
+  expect(rival.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 300 });
+  expect(rival.payout).toBeNull();
+  expect(rival.blocked).toBeUndefined();
+  expect(rival.inReach).toBe(true);
+  expect(rival.fight).toMatchObject({ troopsLost: expect.any(Number), guardLeft: expect.any(Number) });
+  expect(readArmyCard(store, other, attack({ col: 44, row: 12, alt: false }))).toMatchObject({
+    blocked: undefined,
+    inReach: false,
+  });
+
+  store.applyFacts([{ model: "HomeAspect", key: "0xa901", value: { game_id: 1, home: 9n, aspect: 1 } }]);
+  expect(readArmyCard(store, other, attack({ col: 41, row: 12, alt: false }))).toMatchObject({
+    fight: { refused: true },
+    blocked: "allied",
+    inReach: true,
+  });
   expect(readArmyCard(store, other, attack({ col: 44, row: 12, alt: false }))).toMatchObject({
     fight: { refused: true },
-    blocked: "no-attack",
+    blocked: "allied",
   });
+});
+
+it("forecasts the deep-army-battle lab scenario through both Battle exchanges without guard protection", () => {
+  const scenario = deepArmyBattleScenario();
+  const { store, startsAt } = scenario;
+  setBlockTimestampSource(() => startsAt);
+  const own = () => store.require("ExplorerTroops", { game_id: 1, explorer_id: 201n });
+  const rival = () => store.require("ExplorerTroops", { game_id: 1, explorer_id: RIVAL_DEEP_ARMY });
+
+  const first = readArmyCard(store, rival(), { army: own(), timestamp: startsAt });
+  expect(first).toMatchObject({ inReach: true, blocked: undefined, fight: { troopsLost: 294, guardLeft: 672 } });
+
+  store.applyFacts(
+    scenario.answer(
+      { kind: "Battle", fields: { attacker_id: "201", defender_id: String(RIVAL_DEEP_ARMY) }, span: [] },
+      store,
+      startsAt,
+    ) as never,
+  );
+  const second = readArmyCard(store, rival(), { army: own(), timestamp: startsAt });
+  expect(second).toMatchObject({ inReach: true, blocked: undefined, fight: { troopsLost: 199, guardLeft: 423 } });
 });
 
 it("says a stronger band holds an Oath, as the contract offers a pick on its clear, and a lowly herd none", () => {

@@ -451,8 +451,15 @@ const RELIC_FORECAST_STEPS = [
  */
 const BATTLE_TARGET_STEPS = battleTargetSteps(attackFromTheSiteCard, "Map");
 const DEEP_BATTLE_TARGET_STEPS = battleTargetSteps(attackFromTheDeepCard, "Deep");
+const DEEP_ARMY_BATTLE_STEPS = battleTargetSteps(
+  (context) => attackFromTheSiteCard(context, "Battle"),
+  "Deep",
+  false,
+  "Battle",
+  0,
+);
 
-function battleTargetSteps(attack, place, withOaths = false) {
+function battleTargetSteps(attack, place, withOaths = false, kind = "BattleGuard", offset = place === "Deep" ? 8 : 0) {
   const fields = readFileSync(
     resolve(
       dirname(fileURLToPath(import.meta.url)),
@@ -464,7 +471,6 @@ function battleTargetSteps(attack, place, withOaths = false) {
     .split(/\s+/)
     .map(Number);
   const values = fields.filter((_, index) => !withOaths || index % 10 >= 6);
-  const offset = place === "Deep" ? 8 : 0;
   return [
     { name: "enter-on-map", settleMs: 3_000, verify: inScene("map", place) },
     { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
@@ -472,8 +478,8 @@ function battleTargetSteps(attack, place, withOaths = false) {
       ["first-attack", values[offset + 2], values[offset + 3]],
       ["same-fight", values[offset + 6], values[offset + 7]],
     ].map(([name, attacker, defender]) =>
-      clickToResultStep(name, "BattleGuard", attack, ({ played, actionLatency }) => {
-        const answer = (actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "BattleGuard").at(-1);
+      clickToResultStep(name, kind, attack, ({ played, actionLatency }) => {
+        const answer = (actionLatency.chainAnswers ?? []).filter((entry) => entry.kind === kind).at(-1);
         const rows = answer?.answered ?? [];
         const army = rows.find(({ model }) => model === "ExplorerTroops")?.value;
         const guard =
@@ -561,7 +567,7 @@ function lossClosed({ played }) {
     : failed(`expected no army selected after its loss, saw ${JSON.stringify(played.selected)}`);
 }
 
-async function attackFromTheSiteCard({ browser }) {
+async function attackFromTheSiteCard({ browser }, kind = "BattleGuard") {
   const army = browser.observe().selection?.army?.id;
   const armyAt = armyOnScreen(browser, army);
   if (!army || !armyAt) return { army, offered: [] };
@@ -579,7 +585,7 @@ async function attackFromTheSiteCard({ browser }) {
   const forecast = browser.read(
     `Array.from(document.querySelectorAll('[data-kit-sheet] [data-fight-side]'), node => node.getAttribute('aria-label'))`,
   );
-  watchFor(browser, "fought", tokensShowTheChainsCounts(browser, "BattleGuard"));
+  watchFor(browser, "fought", tokensShowTheChainsCounts(browser, kind));
   browser.click("Attack");
   return { army, offered: target.offered, target: target.offset, forecast, watching: true, region: token?.region };
 }
@@ -5915,6 +5921,8 @@ const DISMISSED_AT_EXPRESSION = `JSON.stringify(
  * fails a command that is neither.
  */
 export const UNMEASURED_COMMANDS = {
+  Battle:
+    "lab-deep-army-battle checks army-vs-army attacks in the Deep on desktop and phone; click timing baselines are not recorded",
   InteractSite:
     "lab-map-sites checks a Well and a Shrine on desktop and phone; click timing baselines are not recorded",
   ClaimDailyQuest: "lab-daily-quest checks collection on desktop and phone; click timing baselines are not recorded",
@@ -6678,6 +6686,7 @@ export const STEP_SETS = {
   "lab-actions-transfer": { game: labSpireGame("merge-loses-training"), steps: transferActionSteps() },
   "lab-battle-target": { game: labSpireGame("battle-target"), steps: BATTLE_TARGET_STEPS },
   "lab-deep-battle-target": { game: labSpireGame("deep-battle-target"), steps: DEEP_BATTLE_TARGET_STEPS },
+  "lab-deep-army-battle": { game: labSpireGame("deep-army-battle"), steps: DEEP_ARMY_BATTLE_STEPS },
   "lab-oath-battle-target": {
     game: labSpireGame("oath-battle-target"),
     steps: battleTargetSteps(attackFromTheSiteCard, "Map", true),
