@@ -1,4 +1,4 @@
-import { holdsRealmSkin, holdsWonder } from "@bibliothecadao/eternum";
+import { devconHoldingOf, devCosmeticsUnlocked, holdsRealmSkin, holdsWonder } from "@bibliothecadao/eternum";
 
 import { type LabScenario, wire } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
@@ -29,6 +29,8 @@ export const wonderSkinScenario = (): LabScenario => {
         sealHeld: chain.get("Seal", { game_id: 1, account: home.owner }) !== undefined,
         aspect: chain.get("HomeAspect", { game_id: 1, home: home.entity_id })?.aspect ?? null,
         hasWonder: holdsWonder(home),
+        ...devconHoldingOf(home.owner),
+        devUnlocked: devCosmeticsUnlocked(chain.get("GameRegistry", { game_id: 1 })),
       };
       if (!holdsRealmSkin(holding, family)) throw new Error("realm skin not held");
       return [{ model: "RealmSkin", key: "0x5c10", value: wire({ game_id: 1, entity_id, family }) }];

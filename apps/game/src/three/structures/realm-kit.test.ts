@@ -377,5 +377,25 @@ describe("Season 1 procedural Aspect Realm kit", () => {
         }
       }
     }
+
+    for (const family of [REALM_SKIN_FAMILIES.DEVCON_REALM_SKIN, REALM_SKIN_FAMILIES.GOLDEN_DEVCON_REALM_SKIN]) {
+      for (const level of SEASON_ONE_REALM_KIT_LEVELS) {
+        const wornFamily = wornRealmSkinFamily(
+          { sealHeld: false, aspect: 1, hasWonder: false, goldenDevconHeld: true },
+          family,
+        );
+        expect(wornFamily).toBe(family);
+        expect(realmModelIndex(level, false, 1, wornFamily)).toBe(level);
+        const hexSelection = resolveBuildingModelSelection(keepBuilding, {
+          stage: level,
+          mainStructureType: StructureType.Realm,
+          wonder: false,
+          aspect: 1,
+          frontier: true,
+          realmSkin: wornFamily,
+        });
+        expect(hexSelection.tierPath).toBeUndefined();
+      }
+    }
   });
 });

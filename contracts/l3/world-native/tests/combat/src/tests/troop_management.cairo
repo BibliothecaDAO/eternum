@@ -1,5 +1,6 @@
 use snforge_std::fs::{FileTrait, read_txt};
 pub use world_test_support::tests::troop_management::*;
+use crate::names::{INamesSafeDispatcher, INamesSafeDispatcherTrait};
 const NOW: u64 = super::play_fixture::FIXTURE_START + 20;
 
 
@@ -300,7 +301,13 @@ fn realm_skins_take_only_a_family_the_realm_holds() {
     assert_terminal_rejection(
         d, Command::SetRealmSkin(SetRealmSkin { entity_id: realm, family: SEASON_ONE_REALM_SKIN }), NOW,
     );
-    assert_terminal_rejection(d, Command::SetRealmSkin(SetRealmSkin { entity_id: realm, family: 4 }), NOW);
+    assert_terminal_rejection(
+        d, Command::SetRealmSkin(SetRealmSkin { entity_id: realm, family: DEVCON_REALM_SKIN }), NOW,
+    );
+    assert_terminal_rejection(
+        d, Command::SetRealmSkin(SetRealmSkin { entity_id: realm, family: GOLDEN_DEVCON_REALM_SKIN }), NOW,
+    );
+    assert_terminal_rejection(d, Command::SetRealmSkin(SetRealmSkin { entity_id: realm, family: 6 }), NOW);
     record.metadata.has_wonder = false;
     set_realm_fixture(d, keys, record);
     assert_terminal_rejection(
@@ -328,13 +335,99 @@ fn realm_skins_take_only_a_family_the_realm_holds() {
 }
 
 #[test]
+#[feature("safe_dispatcher")]
+fn devcon_holders_can_equip_only_the_devcon_skins_they_hold_on_prod() {
+    let (d, home, _, _) = setup();
+    let names = INamesDispatcher { contract_address: d.games };
+    let safe_names = INamesSafeDispatcher { contract_address: d.games };
+    let realm = home.entity_id;
+    let keys = array![3, realm.into()].span();
+    let action = crate::commands::ActionContext {
+        timestamp: NOW, ..crate::commands::action_context(super::context(d.games, 3)),
+    };
+    let mut record = IStructureOperationsDispatcher { contract_address: d.games }.structure(home).unwrap();
+    let regular: starknet::ContractAddress = (*crate::devcon_holders::REGULAR_DEVCON_HOLDERS.span().at(0))
+        .try_into()
+        .unwrap();
+    let golden: starknet::ContractAddress = (*crate::devcon_holders::GOLDEN_DEVCON_HOLDERS.span().at(0))
+        .try_into()
+        .unwrap();
+
+    record.owner = regular;
+    set_realm_fixture(d, keys, record);
+    names.set_realm_skin(3, regular, SetRealmSkin { entity_id: realm, family: DEVCON_REALM_SKIN }, action);
+    assert_eq!(names.realm_skin(home).family, DEVCON_REALM_SKIN);
+    assert!(
+        safe_names
+            .set_realm_skin(3, regular, SetRealmSkin { entity_id: realm, family: GOLDEN_DEVCON_REALM_SKIN }, action)
+            .is_err(),
+    );
+    assert_eq!(names.realm_skin(home).family, DEVCON_REALM_SKIN);
+
+    record.owner = golden;
+    set_realm_fixture(d, keys, record);
+    names.set_realm_skin(3, golden, SetRealmSkin { entity_id: realm, family: GOLDEN_DEVCON_REALM_SKIN }, action);
+    assert_eq!(names.realm_skin(home).family, GOLDEN_DEVCON_REALM_SKIN);
+    names.set_realm_skin(3, golden, SetRealmSkin { entity_id: realm, family: DEVCON_REALM_SKIN }, action);
+    assert_eq!(names.realm_skin(home).family, DEVCON_REALM_SKIN);
+}
+
+#[test]
+fn dev_mode_game_unlocks_every_known_realm_skin_and_rejects_unknown_families() {
+    let (d, _, _, _) = setup();
+    let mut params = super::play_fixture::fixture_params('dev-skins');
+    params.dev_mode_on = true;
+    let game_id = super::play_fixture::create_game(d.games, params);
+    let home = super::play_fixture::settled_home(d, game_id, d.actor, 1, super::play_fixture::FIXTURE_START);
+    let realm = home.entity_id;
+    let keys = array![game_id.into(), realm.into()].span();
+    let names = INamesDispatcher { contract_address: d.games };
+    let mut record = IStructureOperationsDispatcher { contract_address: d.games }.structure(home).unwrap();
+    record.metadata.has_wonder = false;
+    set_realm_fixture(d, keys, record);
+    let no_seal: Option<u64> = None;
+    set_fixture(
+        d.games, selector!("entry"), selector!("seals"), array![game_id.into(), record.owner.into()].span(), no_seal,
+    );
+    set_fixture(d.games, selector!("settlements"), selector!("home_aspects"), keys, 2_u8);
+    for family in array![
+        BASE_REALM_SKIN, SEASON_ONE_REALM_SKIN, WONDER_REALM_SKIN, DEVCON_REALM_SKIN, GOLDEN_DEVCON_REALM_SKIN,
+        DEFAULT_REALM_SKIN,
+    ] {
+        assert!(
+            super::resource_commands::execute_in_game(
+                d, game_id, Command::SetRealmSkin(SetRealmSkin { entity_id: realm, family }), NOW,
+            ),
+        );
+        assert_eq!(names.realm_skin(home).family, family);
+    }
+    assert!(
+        !super::resource_commands::execute_in_game(
+            d, game_id, Command::SetRealmSkin(SetRealmSkin { entity_id: realm, family: 6 }), NOW,
+        ),
+    );
+    assert_eq!(names.realm_skin(home).family, DEFAULT_REALM_SKIN);
+}
+
+#[test]
 fn realm_skin_holds_match_the_client_vectors() {
     let data = read_txt(@FileTrait::new("../fixtures/realm-skin-holds.txt"));
-    assert_eq!(data.len(), 200);
+    assert_eq!(data.len(), 3584);
     let mut fields = data.span();
     while !fields.is_empty() {
-        let (seal, aspect, wonder, family, held): (u8, u8, u8, u8, u8) = Serde::deserialize(ref fields).unwrap();
-        assert_eq!(crate::names::holds_realm_skin(seal == 1, aspect, wonder == 1, family), held == 1);
+        let (
+            seal, aspect, wonder, devcon, golden_devcon, dev_unlocked, family, held,
+        ): (u8, u8, u8, u8, u8, u8, u8, u8) =
+            Serde::deserialize(
+            ref fields,
+        )
+            .unwrap();
+        assert_eq!(
+            crate::names::holds_realm_skin(
+                seal == 1, aspect, wonder == 1, devcon == 1, golden_devcon == 1, dev_unlocked == 1, family,
+            ),
+            held == 1,
+        );
     }
 }
 

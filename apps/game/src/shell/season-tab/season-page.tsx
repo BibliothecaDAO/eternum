@@ -71,6 +71,7 @@ import {
 import { chooseSeason } from "../season-pick";
 import { useNowSeconds } from "../use-now";
 import { AspectRoster, GlobalGloryRoster } from "./aspect-roster";
+import { devCosmeticsUnlocked } from "@bibliothecadao/eternum";
 import { FrontierRows } from "./frontier-rows";
 import { resultsHref } from "./results-link";
 import { SeasonPodium } from "./season-podium";
@@ -371,7 +372,7 @@ const FrontierBoard = ({ season, rows }: { season: DirectoryGame; rows: number }
           }))}
         />
       </div>
-      <FrontierRows entries={shown} own={own} rows={rows} />
+      <FrontierRows entries={shown} own={own} rows={rows} devUnlocked={devCosmeticsUnlocked(season)} />
     </div>
   );
 };

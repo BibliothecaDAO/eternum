@@ -15,15 +15,34 @@ pub const DEFAULT_REALM_SKIN: u8 = 0;
 pub const BASE_REALM_SKIN: u8 = 1;
 pub const SEASON_ONE_REALM_SKIN: u8 = 2;
 pub const WONDER_REALM_SKIN: u8 = 3;
+pub const DEVCON_REALM_SKIN: u8 = 4;
+pub const GOLDEN_DEVCON_REALM_SKIN: u8 = 5;
 
-pub fn holds_realm_skin(seal_held: bool, aspect: u8, has_wonder: bool, family: u8) -> bool {
+pub fn holds_realm_skin(
+    seal_held: bool,
+    aspect: u8,
+    has_wonder: bool,
+    devcon_held: bool,
+    golden_devcon_held: bool,
+    dev_unlocked: bool,
+    family: u8,
+) -> bool {
     if family == DEFAULT_REALM_SKIN || family == BASE_REALM_SKIN {
         return true;
     }
     if family == WONDER_REALM_SKIN {
-        return has_wonder;
+        return has_wonder || (dev_unlocked && aspect != 0);
     }
-    family == SEASON_ONE_REALM_SKIN && seal_held && aspect != 0
+    if family == SEASON_ONE_REALM_SKIN {
+        return (seal_held || dev_unlocked) && aspect != 0;
+    }
+    if family == DEVCON_REALM_SKIN {
+        return devcon_held || golden_devcon_held || dev_unlocked;
+    }
+    if family == GOLDEN_DEVCON_REALM_SKIN {
+        return golden_devcon_held || dev_unlocked;
+    }
+    false
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

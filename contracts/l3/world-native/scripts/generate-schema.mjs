@@ -7,6 +7,7 @@ import {
   balanceIdentity,
   identifierConstants,
   readBalanceConstants,
+  readDevconHolders,
   readLogicSlots,
   readReleaseConstants,
 } from "./rule-constants.mjs";
@@ -420,6 +421,15 @@ const declarations = [
   `export const nativeSyncScopes = ${JSON.stringify(validatedSyncScopes(), null, 2)} as const;`,
 ];
 await writeText("schema/client.gen.ts", declarations.join("\n") + "\n");
+const devconHolders = await readDevconHolders(root);
+await writeText(
+  "schema/devcon-holders.gen.ts",
+  [
+    ...Object.entries(devconHolders).map(
+      ([name, holders]) => `export const ${name} = ${JSON.stringify(holders, null, 2)} as const;`,
+    ),
+  ].join("\n") + "\n",
+);
 await writeText(
   "schema/balance.gen.ts",
   [

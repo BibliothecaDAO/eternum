@@ -8,6 +8,7 @@ import {
   balanceIdentity,
   identifierConstants,
   readBalanceConstants,
+  readDevconHolders,
   readLogicSlots,
   readRuleConstants,
   readReleaseConstants,
@@ -212,4 +213,36 @@ test("a castle's labor store at each level is read from the release's structures
 
 test("the release in the tree stores 5k, 15k, 50k and 100k labor by castle level", async () => {
   assert.deepEqual((await readStructureConstants(root)).LABOR_STORES, [5000, 15000, 50000, 100000]);
+});
+
+test("devcon holders are read from src/devcon_holders.cairo with strict ordering and no overlap", async () => {
+  const holders = await readDevconHolders(root);
+  assert.equal(holders.GOLDEN_DEVCON_HOLDERS.length, 8);
+  assert.equal(holders.REGULAR_DEVCON_HOLDERS.length, 116);
+  const overlap = holders.GOLDEN_DEVCON_HOLDERS.filter((address) => holders.REGULAR_DEVCON_HOLDERS.includes(address));
+  assert.deepEqual(overlap, []);
+
+  const scratch = await mkdtemp(join(tmpdir(), "devcon-holders-"));
+  try {
+    await mkdir(join(scratch, "src"), { recursive: true });
+    await writeFile(
+      join(scratch, "src/devcon_holders.cairo"),
+      [
+        "pub const GOLDEN_DEVCON_HOLDERS: [felt252; 1] = [0x10];",
+        "pub const REGULAR_DEVCON_HOLDERS: [felt252; 1] = [0x10];",
+      ].join("\n"),
+    );
+    await assert.rejects(readDevconHolders(pathToFileURL(scratch + sep)), /overlap/);
+
+    await writeFile(
+      join(scratch, "src/devcon_holders.cairo"),
+      [
+        "pub const GOLDEN_DEVCON_HOLDERS: [felt252; 2] = [0x20, 0x10];",
+        "pub const REGULAR_DEVCON_HOLDERS: [felt252; 1] = [0x30];",
+      ].join("\n"),
+    );
+    await assert.rejects(readDevconHolders(pathToFileURL(scratch + sep)), /strictly sorted ascending/);
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
 });

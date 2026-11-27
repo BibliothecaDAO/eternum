@@ -35,12 +35,19 @@ pub fn structure(key: ResourceKey) -> Option<Structure> {
     )
 }
 
-pub fn realm_holds_skin(key: ResourceKey, owner: ContractAddress, has_wonder: bool, family: u8) -> bool {
+pub fn realm_holds_skin(
+    key: ResourceKey, owner: ContractAddress, has_wonder: bool, dev_mode_on: bool, family: u8,
+) -> bool {
     let state = crate::state::read();
+    let golden_devcon_held = crate::devcon_holders::holds_golden_devcon(owner);
+    let devcon_held = golden_devcon_held || crate::devcon_holders::holds_regular_devcon(owner);
     crate::names::holds_realm_skin(
         state.entry.seals.read((key.game_id, owner)).is_some(),
         state.settlements.home_aspects.read((key.game_id, key.entity_id)),
         has_wonder,
+        devcon_held,
+        golden_devcon_held,
+        dev_mode_on,
         family,
     )
 }
@@ -486,13 +493,16 @@ pub mod StructuresLogic {
         ) {
             let context = crate::commands::execution_context(game_id, context);
 
-            assert_playing(context.game.unbox(), context.timestamp);
+            let game = context.game.unbox();
+            assert_playing(game, context.timestamp);
             let key = ResourceKey { game_id, entity_id: command.entity_id };
             let record = crate::logic::structures::record(key);
             assert!(record.owner == actor, "actor does not own realm");
             assert!(record.base.category == crate::taxonomy::REALM_CATEGORY, "not a realm");
             assert!(
-                crate::logic::structures::realm_holds_skin(key, actor, record.metadata.has_wonder, command.family),
+                crate::logic::structures::realm_holds_skin(
+                    key, actor, record.metadata.has_wonder, game.dev_mode_on, command.family,
+                ),
                 "realm skin not held",
             );
             self.data.structure_rules.realm_skins.write((game_id, command.entity_id), command.family);

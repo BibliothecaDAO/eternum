@@ -2,11 +2,16 @@ import { DRAWN_REALM_SKINS, REALM_SKIN_FAMILIES, showsWonder } from "@bibliothec
 import { RealmLevels } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
+import {
+  GOLDEN_DEVCON_HOLDERS,
+  REGULAR_DEVCON_HOLDERS,
+} from "../../../../../contracts/l3/world-native/schema/devcon-holders.gen";
+import { entryRealmPainting, realmPaintingKind } from "@/ui/design-system/home-icons";
 import { COSMETICS_WORDS } from "@/ui/design-system/kit/words";
 import {
   BASE_REALM_SKIN,
   REALM_RANKS,
-  REALM_SKIN_CODES,
+  REALM_SKIN_DEFAULT_ORDER,
   REALM_SKINS,
   realmSkinIcon,
   realmSkinStanding,
@@ -48,20 +53,37 @@ describe("the realm skin catalog", () => {
     }
     const drawnCodes = new Set<number>(DRAWN_REALM_SKINS);
     for (const each of REALM_SKINS) {
-      const code = REALM_SKIN_CODES[each.family];
-      if (code !== null && drawnCodes.has(code)) {
+      if (drawnCodes.has(each.code)) {
         for (const rank of REALM_RANKS) expect(realmSkinIcon(each, rank)).toBeTruthy();
       }
     }
+    expect(REALM_SKIN_DEFAULT_ORDER).toEqual([
+      COSMETICS_WORDS.families.wonder,
+      COSMETICS_WORDS.families["season-1"],
+      COSMETICS_WORDS.goldenDevcon,
+      COSMETICS_WORDS.devcon,
+      COSMETICS_WORDS.families.base,
+    ]);
   });
 });
 
 describe("a realm skin's standing, from the facts alone", () => {
-  it("always owns the base skin and never owns an event skin no fact grants", () => {
+  it("always owns the base skin and owns Devcon skins only when held or dev-unlocked", () => {
     expect(realmSkinStanding(BASE_REALM_SKIN, NOTHING)).toBe("owned");
-    const everything: RealmSkinFacts = { ...NOTHING, sealHeld: true, aspect: 1, hasWonder: true };
-    expect(realmSkinStanding(skin("devcon"), everything)).toBe("event");
-    expect(realmSkinStanding(skin("devcon-golden"), everything)).toBe("event");
+    const everythingElse: RealmSkinFacts = { ...NOTHING, sealHeld: true, aspect: 1, hasWonder: true };
+    expect(realmSkinStanding(skin("devcon"), everythingElse)).toBe("event");
+    expect(realmSkinStanding(skin("devcon-golden"), everythingElse)).toBe("event");
+
+    expect(realmSkinStanding(skin("devcon"), { ...NOTHING, devconHeld: true })).toBe("owned");
+    expect(realmSkinStanding(skin("devcon-golden"), { ...NOTHING, devconHeld: true })).toBe("event");
+    expect(realmSkinStanding(skin("devcon"), { ...NOTHING, goldenDevconHeld: true })).toBe("owned");
+    expect(realmSkinStanding(skin("devcon-golden"), { ...NOTHING, goldenDevconHeld: true })).toBe("owned");
+
+    const devUnlocked: RealmSkinFacts = { ...NOTHING, aspect: 2, devUnlocked: true };
+    expect(realmSkinStanding(skin("devcon"), devUnlocked)).toBe("owned");
+    expect(realmSkinStanding(skin("devcon-golden"), devUnlocked)).toBe("owned");
+    expect(realmSkinStanding(skin("season-1-luminary"), devUnlocked)).toBe("owned");
+    expect(realmSkinStanding(skin("wonder-luminary"), devUnlocked)).toBe("owned");
   });
 
   it("owns all four Season 1 Aspect skins once the Seal is held, regardless of realm Aspect", () => {
@@ -112,6 +134,44 @@ describe("the skin a realm wears", () => {
     );
     const lostTheSeal = { ...wonderRealm, sealHeld: false, equipped: REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN };
     expect(wornRealmSkin(lostTheSeal)?.id).toBe("wonder-havoc");
+    expect(wornRealmSkin({ ...NOTHING, devconHeld: true }).id).toBe("devcon");
+    expect(wornRealmSkin({ ...NOTHING, goldenDevconHeld: true }).id).toBe("devcon-golden");
+    expect(
+      wornRealmSkin({
+        ...NOTHING,
+        goldenDevconHeld: true,
+        equipped: REALM_SKIN_FAMILIES.DEVCON_REALM_SKIN,
+      }).id,
+    ).toBe("devcon");
+    expect(wornRealmSkin({ ...NOTHING, aspect: 3, devUnlocked: true }).id).toBe("base");
+    expect(
+      wornRealmSkin({
+        ...NOTHING,
+        aspect: 3,
+        devUnlocked: true,
+        equipped: REALM_SKIN_FAMILIES.GOLDEN_DEVCON_REALM_SKIN,
+      }).id,
+    ).toBe("devcon-golden");
+    expect(
+      wornRealmSkin({
+        ...NOTHING,
+        aspect: 3,
+        devUnlocked: true,
+        equipped: REALM_SKIN_FAMILIES.WONDER_REALM_SKIN,
+      }).id,
+    ).toBe("wonder-havoc");
+    expect(realmPaintingKind(REALM_SKIN_FAMILIES.DEVCON_REALM_SKIN, 1)).toBe("devcon");
+    expect(realmPaintingKind(REALM_SKIN_FAMILIES.GOLDEN_DEVCON_REALM_SKIN, 1)).toBe("devcon-golden");
+    expect(entryRealmPainting({ address: REGULAR_DEVCON_HOLDERS[0], order: 1 }).painting).toBe("devcon");
+    expect(entryRealmPainting({ address: GOLDEN_DEVCON_HOLDERS[0], order: 1 }).painting).toBe("devcon-golden");
+    expect(
+      entryRealmPainting({ address: "0x99", order: 1, realm_skin: REALM_SKIN_FAMILIES.GOLDEN_DEVCON_REALM_SKIN }, false)
+        .painting,
+    ).toBe("realm");
+    expect(
+      entryRealmPainting({ address: "0x99", order: 1, realm_skin: REALM_SKIN_FAMILIES.GOLDEN_DEVCON_REALM_SKIN }, true)
+        .painting,
+    ).toBe("devcon-golden");
   });
 });
 

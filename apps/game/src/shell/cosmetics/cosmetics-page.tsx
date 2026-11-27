@@ -9,7 +9,6 @@ import {
   REALM_RANKS,
   REALM_SKIN_DEFAULT_ORDER,
   realmSkinIcon,
-  REALM_SKIN_CODES,
   REALM_SKINS,
   realmSkinStanding,
   realmSkinWearableOnRealm,
@@ -58,8 +57,7 @@ export const CosmeticsPage = () => {
   );
 };
 
-const defaultOrderLine = () =>
-  COSMETICS_WORDS.defaultOrder(REALM_SKIN_DEFAULT_ORDER.map((family) => COSMETICS_WORDS.families[family]));
+const defaultOrderLine = () => COSMETICS_WORDS.defaultOrder(REALM_SKIN_DEFAULT_ORDER);
 
 export const CosmeticsWorkspace = () => {
   const { facts, rank, game, realm } = useCosmeticStanding();
@@ -339,7 +337,7 @@ const OwnedAction = ({
       </AppButton>
     );
   if (isAccountStatePrompt(accountState)) return <AccountStatePrompt />;
-  const family = REALM_SKIN_CODES[skin.family]!;
+  const family = skin.code;
   const backToDefault = REALM_SKIN_FAMILIES.DEFAULT_REALM_SKIN;
   if (accountState === DEVICE_LIMIT_REACHED) {
     const action = worn ? backToDefault : family;

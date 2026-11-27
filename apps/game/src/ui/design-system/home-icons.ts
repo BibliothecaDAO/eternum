@@ -1,4 +1,5 @@
 import {
+  devconHoldingOf,
   realmAspect,
   realmOrderAspect,
   REALM_SKIN_FAMILIES,
@@ -59,6 +60,8 @@ export const homeKind = (hasWonder = false, aspect: AspectId | null = null): Hom
 export const realmPaintingKind = (family: number, aspect: AspectId | null): HomePaintingKind => {
   if (family === REALM_SKIN_FAMILIES.WONDER_REALM_SKIN && aspect !== null) return wonderPainting(aspect);
   if (family === REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN && aspect !== null) return seasonOnePainting(aspect);
+  if (family === REALM_SKIN_FAMILIES.GOLDEN_DEVCON_REALM_SKIN) return "devcon-golden";
+  if (family === REALM_SKIN_FAMILIES.DEVCON_REALM_SKIN) return "devcon";
   return "realm";
 };
 
@@ -72,15 +75,20 @@ export const realmSkinPainting = (
   return realmPaintingKind(realmWornSkinFamily(store, structure, aspect), aspect);
 };
 
-export const entryRealmPainting = (entry: {
-  readonly order: number;
-  readonly has_wonder?: boolean;
-  readonly ancient_seal?: boolean;
-  readonly realm_skin?: number;
-}): { readonly hasWonder: boolean; readonly painting: HomePaintingKind } => {
+export const entryRealmPainting = (
+  entry: {
+    readonly address?: string;
+    readonly order: number;
+    readonly has_wonder?: boolean;
+    readonly ancient_seal?: boolean;
+    readonly realm_skin?: number;
+  },
+  devUnlocked = false,
+): { readonly hasWonder: boolean; readonly painting: HomePaintingKind } => {
   const aspect = realmOrderAspect(entry.order);
+  const devcon = devconHoldingOf(entry.address);
   const family = wornRealmSkinFamily(
-    { hasWonder: entry.has_wonder === true, sealHeld: entry.ancient_seal === true, aspect },
+    { hasWonder: entry.has_wonder === true, sealHeld: entry.ancient_seal === true, aspect, ...devcon, devUnlocked },
     entry.realm_skin ?? REALM_SKIN_FAMILIES.DEFAULT_REALM_SKIN,
   );
   const painting = realmPaintingKind(family, aspect);
