@@ -64,7 +64,7 @@ const useGameChatRoom = () => {
  * the views, never the connection, so the room, its history and its unread count carry over.
  */
 export function GameChatConnection() {
-  const { initializer, zoneId } = useGameChatRoom();
+  const { initializer } = useGameChatRoom();
   useRealtimeChatInitializer(initializer);
   useSeenRoom(usePushDeviceId(notificationOwnerOf(useIdentitySession().session)));
   // A chat alert pressed brings this game forward: chat opens on what it is about, the game left as it is.
@@ -73,12 +73,6 @@ export function GameChatConnection() {
     const opening = chatAlertOpening(press);
     if (!("page" in opening)) openAlert(opening);
   });
-  const connection = useRealtimeChatSelector((state) => state.connectionStatus);
-  const hasGameChat = useRealtimeChatSelector((state) => state.joinedZoneIds.includes(zoneId));
-  const loadWorldHistory = useRealtimeChatSelector((state) => state.actions.loadWorldHistory);
-  useEffect(() => {
-    if (initializer && connection === "connected" && hasGameChat) void loadWorldHistory({ zoneId, limit: 10 });
-  }, [initializer, connection, hasGameChat, loadWorldHistory, zoneId]);
   return null;
 }
 

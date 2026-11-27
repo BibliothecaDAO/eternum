@@ -1,7 +1,7 @@
 import { useLatest } from "@/hooks/use-latest";
 import { useCallback, useEffect, useMemo } from "react";
 
-import { useRealtimeChatStore } from "../model/store";
+import { useRealtimeChatStore, WORLD_HISTORY_PAGE_LIMIT } from "../model/store";
 import type {
   InitializeRealtimeClientParams,
   RealtimeChatActions,
@@ -42,7 +42,7 @@ export const useWorldChatControls = (zoneId?: string) => {
   const loadHistory = useCallback(
     (cursor?: string) => {
       if (!zoneId) return Promise.resolve();
-      return actions.loadWorldHistory({ zoneId, cursor, limit: 10 });
+      return actions.loadWorldHistory({ zoneId, cursor, limit: WORLD_HISTORY_PAGE_LIMIT });
     },
     [actions, zoneId],
   );
