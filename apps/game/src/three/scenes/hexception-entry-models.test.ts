@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { configManager } from "@bibliothecadao/eternum";
-import { BUILDINGS_CENTER, BuildingType, StructureType } from "@bibliothecadao/types";
+import { BUILDINGS_CENTER, BuildingType, RealmLevels, StructureType } from "@bibliothecadao/types";
 import { Box3, Group, Mesh, MeshStandardMaterial, BoxGeometry } from "three";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
+import { baseRealmKitPath } from "@/three/structures/base-realm-kit";
 
 // A model as the loader hands it over: one mesh, standing for a building's file.
 const loaded = vi.hoisted(() => ({ scene: null as unknown }));
@@ -68,7 +69,7 @@ it("loads the models a realm's keep and buildings draw, each once and at its tie
     "/models/frontier/painted/barracks-1.glb",
     "/models/frontier/painted/farm-1.glb",
     "/models/frontier/painted/farm-3.glb",
-    "/models/realms/settlement.glb",
+    baseRealmKitPath(RealmLevels.Settlement),
   ]);
 });
 
@@ -123,7 +124,7 @@ it("asks for the route realm's models while the camera flies to it, the same one
   expect(board.requested.toSorted()).toEqual([
     "/models/frontier/painted/barracks-1.glb",
     "/models/frontier/painted/farm-3.glb",
-    "/models/realms/settlement.glb",
+    baseRealmKitPath(RealmLevels.Settlement),
   ]);
 });
 

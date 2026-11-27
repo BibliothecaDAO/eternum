@@ -10,6 +10,7 @@ import { getGameModeConfig } from "@/config/game-modes";
 import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
 import { BUILDINGS_GROUPS } from "../constants/scene-constants";
 import { FRONTIER_PAINTED_BUILDINGS } from "../structures/frontier-painted-buildings";
+import { resolveProceduralRealmKit } from "../structures/realm-kit";
 import { prepareBuildingModel } from "./hexception-models";
 import { resolveBuildingModelSelection } from "./hexception-building-model";
 
@@ -50,9 +51,8 @@ it("grounds every buildable kind and tier in each mode, including keeps", async 
     }
   }
   for (const path of paths) {
-    const document = await io.read(new URL(`../../../public${path}`, import.meta.url).pathname);
-    const source = new Group();
-    for (const node of document.getRoot().listScenes()[0].listChildren()) source.add(sceneNode(node));
+    const procedural = resolveProceduralRealmKit(path);
+    const source = procedural ? procedural.scene : await readGlbScene(io, path);
     const model = prepareBuildingModel(source);
     model.position.set(3, 0.47, -2);
     model.rotation.y = 2.1;
@@ -65,6 +65,13 @@ it("grounds every buildable kind and tier in each mode, including keeps", async 
     });
   }
 });
+
+async function readGlbScene(io: NodeIO, path: string): Promise<Group> {
+  const document = await io.read(new URL(`../../../public${path}`, import.meta.url).pathname);
+  const source = new Group();
+  for (const node of document.getRoot().listScenes()[0].listChildren()) source.add(sceneNode(node));
+  return source;
+}
 
 /** Decode the file's actual vertex positions and complete node hierarchy; textures do not affect contact. */
 function sceneNode(node: Node): Group {

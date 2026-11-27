@@ -1,30 +1,30 @@
 [
   {
     "level": 0,
-    "model": "/models/realms/settlement.glb",
-    "modelSha256": "0f91c75185f25e02127a03e82968b3b03f65b929684bf6e68a4b0117b3c08c6f",
+    "model": "procedural:base-realm:0",
+    "modelSha256": "5720a207174557be0c3041e1454e77008dec3052ed35fb254e605c07a20c958f",
     "render": "/lab/realm-level-icons/settlement-model.png",
-    "renderSha256": "280d21018c70bfb8a6efb31117772f0b60a673e73b2f9dedfcad58b690eb8c1c"
+    "renderSha256": "7f9f17138579281117a9bd815c5936d7ea70c547f9e58ad4a329ae9edc31f545"
   },
   {
     "level": 1,
-    "model": "/models/realms/city.glb",
-    "modelSha256": "4454ee8824f788dfb47aea9b58a1e2e2f643636b7a440774085ce66b1905af67",
+    "model": "procedural:base-realm:1",
+    "modelSha256": "5720a207174557be0c3041e1454e77008dec3052ed35fb254e605c07a20c958f",
     "render": "/lab/realm-level-icons/city-model.png",
-    "renderSha256": "f50c60ddeb390788e81140c7275010782a77cac53b930dd6ac9ea11c01a8b45a"
+    "renderSha256": "0d5d8200e6e85cdedbd88dfa8e3ee316a626b6aa7a5bd07085ffc1dc18efa64c"
   },
   {
     "level": 2,
-    "model": "/models/realms/kingdom.glb",
-    "modelSha256": "c1922da5cbbdb76f08ac3214acfb8071e979df37c35b1964ce14660c40d4345c",
+    "model": "procedural:base-realm:2",
+    "modelSha256": "5720a207174557be0c3041e1454e77008dec3052ed35fb254e605c07a20c958f",
     "render": "/lab/realm-level-icons/kingdom-model.png",
-    "renderSha256": "1aeb16cf0d4b62c12f545eae1fb666439479d7dec208d40ed9a8e80199adb827"
+    "renderSha256": "604001cbad1c781f4b0875f0ef68a75ed8a1dd437b7a0fdc8e3a173c62ea5f76"
   },
   {
     "level": 3,
-    "model": "/models/realms/empire.glb",
-    "modelSha256": "6fca354317a3d7a9fe173ef2999ccc37178976be963fbf2d5d291c1971ce6a79",
+    "model": "procedural:base-realm:3",
+    "modelSha256": "5720a207174557be0c3041e1454e77008dec3052ed35fb254e605c07a20c958f",
     "render": "/lab/realm-level-icons/empire-model.png",
-    "renderSha256": "70b886d3006ced27cb5c5176df25b395197a64fd1b97be0bae84ad6e59569b96"
+    "renderSha256": "47b40a140d7510e1707797f61ed61d03c8c80c4f52c91a85201dd802a5195b77"
   }
 ]

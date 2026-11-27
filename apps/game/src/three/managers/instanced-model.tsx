@@ -22,6 +22,7 @@ import {
   Sphere,
   Vector3,
 } from "three";
+import MeshStandardNodeMaterial from "three/src/materials/nodes/MeshStandardNodeMaterial.js";
 import { AnimationVisibilityContext } from "../types/animation";
 import { getContactShadowResources } from "../utils/contact-shadow";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
@@ -175,7 +176,7 @@ export default class InstancedModel {
           return;
         }
         let material: Material = child.material as MeshStandardMaterial;
-        if (isProcgenMasonryMaterial(material)) {
+        if (isProcgenMasonryMaterial(material) || material instanceof MeshStandardNodeMaterial) {
           material = child.material as Material;
         } else if (isTripoModelMesh(child) && material instanceof MeshStandardMaterial) {
           material = createTripoModelMaterial(material);

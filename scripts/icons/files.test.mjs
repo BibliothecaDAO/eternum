@@ -13,22 +13,32 @@ test("realm icon comparisons show renders of the current level models", async ()
   const references = JSON.parse(
     await readFile(new URL("asset-sources/facets/realm-model-references.json", game), "utf8"),
   );
-  const assets = JSON.parse(await readFile(new URL("src/three/structures/realm-assets.json", game), "utf8"));
+  const kitSource = Buffer.concat([
+    await readFile(new URL("src/three/structures/base-realm-kit.ts", game)),
+    await readFile(new URL("src/three/structures/realm-kit-primitives.ts", game)),
+  ]);
+  const kitSha256 = createHash("sha256").update(kitSource).digest("hex");
   assert.deepEqual(
     references.map(({ level }) => level),
     [0, 1, 2, 3],
   );
   for (const reference of references) {
-    assert.equal(reference.model, assets.find((asset) => asset.level === reference.level && !asset.wonder).path);
-    for (const kind of ["model", "render"]) {
-      const directory = kind === "model" ? "public" : "asset-sources";
-      const bytes = await readFile(new URL(`${directory}${reference[kind]}`, game));
-      assert.equal(
-        createHash("sha256").update(bytes).digest("hex"),
-        reference[`${kind}Sha256`],
-        `Refresh realm ${reference.level} ${kind} reference`,
-      );
-    }
+    assert.equal(reference.model, `procedural:base-realm:${reference.level}`);
+    assert.equal(kitSha256, reference.modelSha256, `Refresh realm ${reference.level} model reference`);
+    const promptText = await readFile(
+      new URL(`asset-sources/facets/prompts/realm-${reference.level}.txt`, game),
+      "utf8",
+    );
+    assert.ok(
+      promptText.includes(`Model reference: ${reference.model}.`),
+      `Refresh realm ${reference.level} prompt model reference`,
+    );
+    const renderBytes = await readFile(new URL(`asset-sources${reference.render}`, game));
+    assert.equal(
+      createHash("sha256").update(renderBytes).digest("hex"),
+      reference.renderSha256,
+      `Refresh realm ${reference.level} render reference`,
+    );
   }
 });
 

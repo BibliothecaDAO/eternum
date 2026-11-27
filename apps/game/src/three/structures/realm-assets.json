@@ -1,37 +1,5 @@
 [
   {
-    "id": "settlement",
-    "label": "Canvas & Thatch",
-    "level": 0,
-    "wonder": false,
-    "source": "../outposts/village-canvas-thatch.blend",
-    "path": "/models/realms/settlement.glb"
-  },
-  {
-    "id": "city",
-    "label": "Terrace Forum",
-    "level": 1,
-    "wonder": false,
-    "source": "options/citadel-terraced-forum.blend",
-    "path": "/models/realms/city.glb"
-  },
-  {
-    "id": "kingdom",
-    "label": "Twin Ward",
-    "level": 2,
-    "wonder": false,
-    "source": "options/citadel-twin-ward.blend",
-    "path": "/models/realms/kingdom.glb"
-  },
-  {
-    "id": "empire",
-    "label": "Empire",
-    "level": 3,
-    "wonder": false,
-    "source": "citadel-empire-mix.blend",
-    "path": "/models/realms/empire.glb"
-  },
-  {
     "id": "standing-stones",
     "label": "Standing Stones",
     "level": 0,
