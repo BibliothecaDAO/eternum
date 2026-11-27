@@ -13,9 +13,10 @@ const MAX_BYTES = 600_000;
 const MAX_DRAWS = 5;
 const APOTHEM = Math.sqrt(3) / 2;
 const TIERED_GROUPS = new Set(["farm", "workshop", "barracks"]);
+const glbCatalogue = catalogue.filter((building) => !building.path.startsWith("procedural:"));
 
 it("keeps one delivery and one editable source per catalogued building", () => {
-  const ids = catalogue.map((building) => `${building.id}.glb`).sort();
+  const ids = glbCatalogue.map((building) => `${building.id}.glb`).sort();
   expect(
     readdirSync(DELIVERIES)
       .filter((file) => file.endsWith(".glb"))
@@ -26,10 +27,10 @@ it("keeps one delivery and one editable source per catalogued building", () => {
       .filter((file) => file.endsWith(".glb"))
       .sort(),
   ).toEqual(ids);
-  for (const building of catalogue) expect(building.path).toBe(`/models/frontier/painted/${building.id}.glb`);
+  for (const building of glbCatalogue) expect(building.path).toBe(`/models/frontier/painted/${building.id}.glb`);
 });
 
-for (const building of catalogue) {
+for (const building of glbCatalogue) {
   it(`${building.id}: compressed, inside its hex and grounded, with the parts the runtime drives`, async () => {
     const path = new URL(`${building.id}.glb`, DELIVERIES);
     const bytes = readFileSync(path);

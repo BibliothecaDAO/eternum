@@ -10,7 +10,7 @@ const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies(
   "draco3d.decoder": await draco.createDecoderModule(),
 });
 const models = new URL("../../public/models/", import.meta.url);
-for (const family of ["farm", "barracks", "storehouse"]) await verifyFamily(family);
+for (const family of ["storehouse"]) await verifyFamily(family);
 
 async function verifyFamily(family) {
   const source = await readModel(`new-buildings-opt/${family.replace("-", "_")}.glb`);

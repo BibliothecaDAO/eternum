@@ -115,7 +115,7 @@ Review captures remain outside the repository.
   for the order's heraldry, but no other ownership surface.
 - The camp has no `relationshipCloth`, so a swap would lose the ownership colours the shipped camp shows.
 - The shipped essence rift animates; this one is static.
-- `buildingTierModelPath` has no Workshop entry, and the game ships tier models only for tiers II and III. The set
-  covers tiers I to V.
+- `buildingTierModelPath` returns procedural Farm, Workshop and Barracks paths for tiers II–V via
+  `realm-building-kit.ts`, and `/models/frontier/buildings/storehouse-{2,3}.glb` for Storehouse tiers II–III.
 - Under the game's daylight, the pale gravel ground of the Workshop, Barracks and training building plates reads lighter
   than in the offline renders. It is the masters' own texture.

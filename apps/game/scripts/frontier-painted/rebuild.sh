@@ -14,7 +14,7 @@ if [[ -e "$output" ]]; then echo 'Choose a fresh output directory'; exit 1; fi
 mkdir -p "$output/sources"
 cd "$root"
 scripts=apps/game/scripts/frontier-painted
-names=$(node -e 'for (const building of require("./apps/game/src/three/structures/frontier-painted-buildings.json")) console.log(building.id)')
+names=$(node -e 'for (const building of require("./apps/game/src/three/structures/frontier-painted-buildings.json")) if (!building.path.startsWith("procedural:")) console.log(building.id)')
 for name in $names; do
   if [[ -n "$masters" ]]; then
     "${FRONTIER_PAINTED_BLENDER:-blender}" --background --threads 2 --python-exit-code 1 \

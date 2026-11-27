@@ -14,64 +14,6 @@ import { BoxGeometry, BufferGeometry, Color, Float32BufferAttribute, Matrix4, Qu
 const sourceDirectory = new URL("../../public/models/new-buildings-opt/", import.meta.url);
 const outputDirectory = new URL("../../public/models/frontier/buildings/", import.meta.url);
 const families = {
-  farm: {
-    source: "farm",
-    roof: [
-      [
-        [0.5022, 1.4848, -0.2327],
-        [0.6066, 1.2706, -0.2918],
-      ],
-      [
-        [0.4533, 1.4848, -0.2324],
-        [0.3482, 1.2706, -0.2903],
-      ],
-      [
-        [0.4912, 1.4848, -0.239],
-        [0.4887, 1.2706, -0.3589],
-      ],
-      [
-        [0.4647, 1.4848, -0.1668],
-        [0.467, 1.2706, -0.0469],
-      ],
-      [
-        [0.4399, 1.4848, -0.2091],
-        [0.3366, 1.2706, -0.2699],
-      ],
-      [
-        [0.5159, 1.4848, -0.1968],
-        [0.6192, 1.2706, -0.1359],
-      ],
-    ],
-  },
-  barracks: {
-    source: "barracks",
-    roof: [
-      [
-        [0.3409, 0.6567, -0.5757],
-        [0.3411, 0.6496, 0.0781],
-      ],
-      [
-        [0.705, 0.6496, 0.0781],
-        [0.7052, 0.6567, -0.5707],
-      ],
-      [
-        [0.528, 0.842, -0.5445],
-        [0.528, 0.837, 0.0498],
-      ],
-      [
-        [0.0694, 0.7794, 0.0674],
-        [0.0694, 0.7794, 0.6364],
-      ],
-      [
-        [-0.3746, 0.7794, 0.2613],
-        [-0.3746, 0.7794, 0.6364],
-      ],
-      [
-        [-0.152, 0.978, 0.2613],
-        [-0.152, 0.978, 0.6066],
-      ],
-    ],
-  },
   storehouse: {
     source: "storehouse",
     roof: [
@@ -151,13 +93,7 @@ function addHexFacing(parts, style) {
 }
 
 function addExtension(parts, name, tier) {
-  if (name === "farm") {
-    addGabledRoom(parts, [-0.37, 0.1, 0.39], [0.43, 0.46, 0.4], tier === 2);
-    if (tier === 3) addGabledRoom(parts, [-0.37, 0.56, 0.39], [0.36, 0.43, 0.34]);
-  } else if (name === "barracks") {
-    addWatchtower(parts, [-0.49, 0.12, -0.3], 1.15);
-    if (tier === 3) addWatchtower(parts, [0.53, 0.65, -0.28], 1.48);
-  } else if (name === "storehouse") {
+  if (name === "storehouse") {
     addGabledRoom(parts, [-0.44, 0.1, -0.39], [0.38, 0.47, 0.39]);
     if (tier === 3) addGabledRoom(parts, [-0.18, 0.69, 0.44], [0.36, 0.42, 0.34]);
   }
@@ -183,20 +119,8 @@ function addGabledRoom(parts, [x, base, z], [width, height, depth], includeRoof 
   });
 }
 
-function addWatchtower(parts, [x, base, z], top) {
-  addBox(parts, [x, (base + top) / 2, z], [0.32, top - base, 0.32], { surface: "stone" });
-  addBox(parts, [x, top, z], [0.41, 0.065, 0.41], { surface: "stone" });
-  for (const dx of [-0.15, 0.15]) {
-    for (const dz of [-0.15, 0.15])
-      addBox(parts, [x + dx, top + 0.09, z + dz], [0.11, 0.15, 0.11], { surface: "stone" });
-  }
-  for (const dz of [-0.165, 0.165]) addBox(parts, [x, top - 0.2, z + dz], [0.065, 0.15, 0.012], { color: "#1b1207" });
-}
-
 function addRoofBanner(parts, name, tier, trim) {
   const anchors = {
-    farm: [0.478, 1.52, -0.203],
-    barracks: [-0.15, 1.0, 0.43],
     storehouse: [-0.15, 0.78, 0.48],
   };
   if (name === "storehouse" && tier === 3) anchors[name] = [-0.18, 1.32, 0.44];
@@ -283,13 +207,11 @@ function beam(start, end, width) {
 
 function mergeIntoBuilding(document, family, parts, tier, glowMask) {
   const root = document.getRoot();
-  const node = root
-    .listNodes()
-    .find((item) => item.getName() === (family === "farm" ? "grass.001" : family.replace("-", "_")));
+  const node = root.listNodes().find((item) => item.getName() === family.replace("-", "_"));
   const primitive = node
     .getMesh()
     .listPrimitives()
-    .find((item) => item.getMaterial().getName() === (family === "farm" ? "building" : family.replace("-", ".")));
+    .find((item) => item.getMaterial().getName() === family.replace("-", "."));
   const material = primitive.getMaterial();
   const sourceCount = primitive.getAttribute("POSITION").getCount();
   const arrays = readPrimitive(primitive);

@@ -9,7 +9,8 @@ import {
   SEASON_ONE_REALM_ASSETS,
   realmModelIndex,
 } from "../../structures/realm-design";
-import { SEASON_ONE_REALM_KIT_LEVELS, resolveProceduralRealmKit } from "../../structures/realm-kit";
+import { resolveProceduralModel } from "../../structures/procedural-model-resolver";
+import { SEASON_ONE_REALM_KIT_LEVELS } from "../../structures/realm-kit";
 import { gltfLoader } from "../../utils/utils";
 import { configureRendererColorOutput } from "../../renderer-color-output";
 import { ModelLabEnvironment } from "./model-lab-environment";
@@ -81,7 +82,7 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
     let height = 0;
     for (const [slot, { asset, before }] of series.entries()) {
       const modelPath = before ? `${settings.reference!.replace(/\/$/, "")}/${asset.id}.glb` : asset.path;
-      const gltf = resolveProceduralRealmKit(modelPath) ?? (await gltfLoader.loadAsync(modelPath));
+      const gltf = resolveProceduralModel(modelPath) ?? (await gltfLoader.loadAsync(modelPath));
       const modelHeight = new Box3().setFromObject(gltf.scene).max.y;
       height = Math.max(height, modelHeight);
       const model = new SettlementModel(gltf, 1, "realm", asset.wonder);

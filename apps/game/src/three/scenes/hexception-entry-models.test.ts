@@ -7,6 +7,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
 import { baseRealmKitPath } from "@/three/structures/base-realm-kit";
+import { realmBuildingKitPath } from "@/three/structures/realm-building-kit";
 
 // A model as the loader hands it over: one mesh, standing for a building's file.
 const loaded = vi.hoisted(() => ({ scene: null as unknown }));
@@ -66,10 +67,10 @@ it("loads the models a realm's keep and buildings draw, each once and at its tie
   await board.scene.loadLaidOutModels(StructureType.Realm);
 
   expect(board.requested.toSorted()).toEqual([
-    "/models/frontier/painted/barracks-1.glb",
-    "/models/frontier/painted/farm-1.glb",
-    "/models/frontier/painted/farm-3.glb",
     baseRealmKitPath(RealmLevels.Settlement),
+    realmBuildingKitPath("barracks", 1),
+    realmBuildingKitPath("farm", 1),
+    realmBuildingKitPath("farm", 3),
   ]);
 });
 
@@ -89,10 +90,12 @@ it("compiles a loaded model's pipelines against the realm scene before it hands 
   });
 
   let handedToBoard = false;
-  const loading = scene.loadBuildingModel("/models/frontier/painted/farm-1.glb").then((building: { model: Group }) => {
-    handedToBoard = true;
-    return building;
-  });
+  const loading = scene
+    .loadBuildingModel("/models/frontier/buildings/storeroom.glb")
+    .then((building: { model: Group }) => {
+      handedToBoard = true;
+      return building;
+    });
   await vi.waitFor(() => expect(compilePipelines).toHaveBeenCalledTimes(1));
   expect(handedToBoard).toBe(false);
   finishCompile();
@@ -122,9 +125,9 @@ it("asks for the route realm's models while the camera flies to it, the same one
   board.scene.prepareWhileFlying();
 
   expect(board.requested.toSorted()).toEqual([
-    "/models/frontier/painted/barracks-1.glb",
-    "/models/frontier/painted/farm-3.glb",
     baseRealmKitPath(RealmLevels.Settlement),
+    realmBuildingKitPath("barracks", 1),
+    realmBuildingKitPath("farm", 3),
   ]);
 });
 

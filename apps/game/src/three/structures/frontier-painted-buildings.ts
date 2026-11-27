@@ -1,6 +1,7 @@
 import catalogue from "./frontier-painted-buildings.json";
 import { BuildingType } from "@bibliothecadao/types";
 import { modelPath } from "../utils/model-url";
+import type { RealmBuildingFamily } from "./realm-building-kit";
 
 export type FrontierPaintedGroup = "realms" | "farm" | "workshop" | "barracks" | "training" | "sites";
 
@@ -14,7 +15,7 @@ export interface FrontierPaintedBuilding {
 }
 
 type FrontierBuildingModelSpec =
-  | { readonly kind: "tiered"; readonly family: string }
+  | { readonly kind: "tiered"; readonly family: RealmBuildingFamily }
   | { readonly kind: "painted"; readonly id: string }
   | { readonly kind: "model"; readonly path: string };
 
@@ -82,6 +83,11 @@ export function frontierPaintedBuildingPath(type: BuildingType, tier = 1): strin
   if (spec.kind === "model") return spec.path;
   if (spec.kind === "painted") return frontierPaintedPath(spec.id);
   return frontierPaintedPath(`${spec.family}-${tier}`);
+}
+
+export function tieredBuildingFamily(type: BuildingType): RealmBuildingFamily | undefined {
+  const spec = FRONTIER_BUILDING_MODELS[type];
+  return spec?.kind === "tiered" ? spec.family : undefined;
 }
 
 export const FRONTIER_PAINTED_GROUPS: readonly { group: FrontierPaintedGroup; label: string }[] = [

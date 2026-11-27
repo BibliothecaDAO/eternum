@@ -29,7 +29,6 @@ export interface FrontierPaintedLabSettings {
 
 const SLOT_SPACING = Math.sqrt(3) * 1.5;
 const SHIPPED_ROW_Z = -2.8;
-const SHIPPED_TIER_LIMIT = 3;
 const BOARD_TYPES: Partial<Record<string, BuildingType>> = {
   farm: BuildingType.ResourceWheat,
   workshop: BuildingType.ResourceLabor,
@@ -102,8 +101,7 @@ function resolveShippedPath(building: FrontierPaintedBuilding): string | undefin
   const type = BOARD_TYPES[kind];
   if (type === undefined) return undefined;
   const tiered = buildingTierModelPath(type, tier);
-  // models/frontier/buildings ships tiers II and III only; higher tiers have no model to compare with yet.
-  if (tiered) return tier <= SHIPPED_TIER_LIMIT ? tiered : undefined;
+  if (tiered) return tiered;
   const boardPaths: Partial<Record<BuildingType, string>> = buildingModelPaths()[BUILDINGS_GROUPS.BUILDINGS];
   return boardPaths[type];
 }

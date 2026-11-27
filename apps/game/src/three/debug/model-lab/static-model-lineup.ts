@@ -10,7 +10,7 @@ import { gltfLoader } from "../../utils/utils";
 import { ModelLabEnvironment } from "./model-lab-environment";
 import { readModelLabSettings } from "./model-lab-settings";
 import { FrontierModel, frontierModelKind } from "../../structures/frontier-model";
-import { resolveProceduralRuinKit } from "../../structures/ruin-kit";
+import { resolveProceduralModel } from "../../structures/procedural-model-resolver";
 import { RewardTileModel } from "../../rewards/reward-tile-model";
 import { SettlementModel } from "../../structures/settlement-model";
 import { HEX_SIZE, RiftModelPath, isRealmModelPath, isSettlementModelPath } from "../../constants/scene-constants";
@@ -165,7 +165,7 @@ export async function mountStaticLineup(
       for (const part of asset.parts) {
         let batch = batches.get(part.path);
         if (!batch) {
-          const gltf = resolveProceduralRuinKit(part.path) ?? (await gltfLoader.loadAsync(part.path));
+          const gltf = resolveProceduralModel(part.path) ?? (await gltfLoader.loadAsync(part.path));
           signal.throwIfAborted();
           bakeLineupTransforms(gltf.scene);
           const capacity = lineup.flatMap((entry) => entry.parts).filter((entry) => entry.path === part.path).length;

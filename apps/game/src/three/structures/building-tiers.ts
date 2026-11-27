@@ -1,11 +1,7 @@
 import { BuildingType } from "@bibliothecadao/types";
 import { modelPath } from "../utils/model-url";
-
-const TIERED_MODELS: Partial<Record<BuildingType, string>> = {
-  [BuildingType.ResourceWheat]: "farm",
-  [BuildingType.ResourceKnightT1]: "barracks",
-  [BuildingType.Storehouse]: "storehouse",
-};
+import { tieredBuildingFamily } from "./frontier-painted-buildings";
+import { realmBuildingKitPath } from "./realm-building-kit";
 
 /**
  * The realm-board model of a building upgraded past tier I (models/frontier/buildings/SOURCE.md); none for tier I, which
@@ -13,6 +9,8 @@ const TIERED_MODELS: Partial<Record<BuildingType, string>> = {
  * always has.
  */
 export const buildingTierModelPath = (category: BuildingType, tier: number | undefined): string | undefined => {
-  const name = TIERED_MODELS[category];
-  return name && tier !== undefined && tier > 1 ? modelPath(`frontier/buildings/${name}-${tier}.glb`) : undefined;
+  if (tier === undefined || tier <= 1) return undefined;
+  const family = tieredBuildingFamily(category);
+  if (family) return realmBuildingKitPath(family, tier);
+  return category === BuildingType.Storehouse ? modelPath(`frontier/buildings/storehouse-${tier}.glb`) : undefined;
 };

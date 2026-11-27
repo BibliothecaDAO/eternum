@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BUILDINGS_CENTER, BuildingType, RealmLevels, StructureType } from "@bibliothecadao/types";
 import { buildingModelPaths, BUILDINGS_GROUPS, castleLevelToRealmCastle } from "../constants/scene-constants";
+import { realmBuildingKitPath } from "../structures/realm-building-kit";
 import { getBuildingDisplayName, resolveBuildingModelSelection } from "./hexception-building-model";
 
 const context = {
@@ -25,7 +26,7 @@ describe("Workshops and central keeps share Labor but keep their own identity", 
       expect(modelPath(labor, stage)).toBe("/models/new-buildings-opt/workshop.glb");
       expect(getBuildingDisplayName(labor, stage, "Village", false)).toBe("Workshop");
       for (const tier of [2, 3])
-        expect(modelPath({ ...labor, tier }, stage)).toBe("/models/new-buildings-opt/workshop.glb");
+        expect(modelPath({ ...labor, tier }, stage)).toBe(realmBuildingKitPath("workshop", tier));
     },
   );
 

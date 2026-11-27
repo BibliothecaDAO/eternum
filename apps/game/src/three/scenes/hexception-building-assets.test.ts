@@ -10,7 +10,7 @@ import { getGameModeConfig } from "@/config/game-modes";
 import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
 import { BUILDINGS_GROUPS } from "../constants/scene-constants";
 import { FRONTIER_PAINTED_BUILDINGS } from "../structures/frontier-painted-buildings";
-import { resolveProceduralRealmKit } from "../structures/realm-kit";
+import { resolveProceduralModel } from "../structures/procedural-model-resolver";
 import { prepareBuildingModel } from "./hexception-models";
 import { resolveBuildingModelSelection } from "./hexception-building-model";
 
@@ -51,7 +51,7 @@ it("grounds every buildable kind and tier in each mode, including keeps", async 
     }
   }
   for (const path of paths) {
-    const procedural = resolveProceduralRealmKit(path);
+    const procedural = resolveProceduralModel(path);
     const source = procedural ? procedural.scene : await readGlbScene(io, path);
     const model = prepareBuildingModel(source);
     model.position.set(3, 0.47, -2);
