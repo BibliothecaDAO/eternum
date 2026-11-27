@@ -38,18 +38,25 @@ test("lab comparisons and historical masters stay outside the deployable public 
     assert.ok(icon.source.committedPath.startsWith("apps/game/asset-sources/"), icon.source.committedPath);
 });
 
-test("all 18 production relics use the approved Facets masters through their semantic meanings", async () => {
+test("all 18 production relics and Season 1 item paintings use their pinned approved Facets masters", async () => {
   const repo = fileURLToPath(new URL("../../", import.meta.url));
   const source = `${repo}/apps/game/asset-sources`;
   const { icons } = JSON.parse(await readFile(`${source}/facets/catalog.json`, "utf8"));
   const meanings = JSON.parse(await readFile(`${source}/facets/semantic-map.json`, "utf8"));
   const history = JSON.parse(await readFile(`${source}/rss-icons/history.json`, "utf8"));
+  const relicMeanings = JSON.parse(await readFile(`${source}/facets/relic-meanings.json`, "utf8"));
+  const seasonOneRelicIds = new Set(Object.values(relicMeanings));
   const relics = icons.filter(({ id }) => id.includes("-relic-"));
   assert.equal(relics.length, 18);
   for (const icon of relics) {
     assert.equal(meanings[icon.id].art, icon.id);
-    assert.equal(icon.source.revision, "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89");
-    assert.equal(icon.source.path, `apps/game/asset-sources/rss-icons/relics/masters/${icon.id}.png`);
+    if (seasonOneRelicIds.has(icon.id)) {
+      assert.equal(icon.source.revision, undefined);
+      assert.equal(icon.source.path, undefined);
+    } else {
+      assert.equal(icon.source.revision, "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89");
+      assert.equal(icon.source.path, `apps/game/asset-sources/rss-icons/relics/masters/${icon.id}.png`);
+    }
     assert.equal(icon.source.committedPath, undefined, "Do not restore the retired relic selection");
     const master = await readFile(`${source}/facets/masters/${icon.id}.png`);
     assert.equal(hash(master), icon.source.sha256);
@@ -58,6 +65,16 @@ test("all 18 production relics use the approved Facets masters through their sem
       await assert.rejects(readFile(`${repo}/apps/game/asset-sources/lab/rss-icons/relics/${size}/${icon.id}.webp`), {
         code: "ENOENT",
       });
+  }
+  for (const id of ["final-seal", "fragment"]) {
+    const icon = icons.find((entry) => entry.id === id);
+    assert.ok(icon, `Missing Season 1 Facets entry: ${id}`);
+    assert.equal(meanings[id].art, id);
+    assert.equal(meanings[id].family, "Resources");
+    assert.equal(icon.source.kind, undefined);
+    assert.equal(icon.source.committedPath, undefined);
+    const master = await readFile(`${source}/facets/masters/${id}.png`);
+    assert.equal(hash(master), icon.source.sha256);
   }
 });
 

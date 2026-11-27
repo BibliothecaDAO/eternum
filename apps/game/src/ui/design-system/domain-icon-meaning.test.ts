@@ -20,8 +20,11 @@ import {
   deepSiteMeaning,
   readStructureMeaning,
   realmMarkerMeaning,
+  RELIC_KINDS,
+  relicMeaning,
   storyMeaning,
   structureMeaning,
+  type RelicKind,
 } from "./domain-icon-meaning";
 import { realmSkinPainting } from "./home-icons";
 import { iconDefinition, resourceMeaning } from "./icon-meaning";
@@ -217,5 +220,20 @@ describe("Deep site icon meanings", () => {
       ).toBe(DEEP_SITE_MEANINGS[site.key]);
     }
     expect(() => deepSiteMeaning(99)).toThrow("Unknown Deep site kind 99");
+  });
+});
+
+describe("Season 1 relic and item icon meanings", () => {
+  it("maps every army relic kind to a distinct Relics painting and places Ancient Seal beside Ancient Fragment in Resources", () => {
+    expect(RELIC_KINDS.length).toBeGreaterThan(0);
+    const resolved = RELIC_KINDS.map((kind) => relicMeaning(kind));
+    expect(new Set(resolved).size).toBe(RELIC_KINDS.length);
+    for (const meaning of resolved) expect(iconDefinition(meaning).family).toBe("Relics");
+    expect(() => relicMeaning("Invalid" as RelicKind)).toThrow("Unknown icon meaning");
+    expect(iconDefinition("final-seal")).toMatchObject({ art: "final-seal", family: "Resources" });
+    expect(iconDefinition(resourceMeaning(ResourcesIds.AncientFragment))).toMatchObject({
+      art: "fragment",
+      family: "Resources",
+    });
   });
 });
