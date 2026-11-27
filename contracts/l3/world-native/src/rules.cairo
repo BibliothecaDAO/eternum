@@ -1,15 +1,16 @@
 pub const RELIC_BLADE_BPS: u32 = 1000;
 pub const RELIC_WARD_BPS: u32 = 500;
 pub const RELIC_PLUNDER_BPS: u32 = 2000;
+pub const RELIC_ANTIDOTE_BPS: u32 = 500;
 pub const STAMINA_REGEN_RELIC_STEP_PERCENT: u32 = 20;
 pub const ATTRIBUTE_CAP: u8 = 5;
 pub const SCOUT_EXPLORE_STAMINA: u8 = 10;
 pub const FRONTIER_LIGHT_DAMAGE_PERCENT: u8 = 75;
 pub const FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT: u8 = 75;
-pub const LOGISTICS_STEP_PERCENT: u8 = 20;
+pub const LOGISTICS_STEP_STAMINA: u8 = 30;
 
-pub fn logistics_stamina(bar: u64, tier: u8) -> u64 {
-    bar * LOGISTICS_STEP_PERCENT.into() * tier.into() / 100
+pub fn logistics_stamina(tier: u8) -> u64 {
+    LOGISTICS_STEP_STAMINA.into() * tier.into()
 }
 
 pub const RESOURCE_PRECISION: u128 = 1000000000;

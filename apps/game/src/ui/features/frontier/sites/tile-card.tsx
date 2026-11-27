@@ -42,7 +42,7 @@ import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan } from "
 import { SiteCardView, type SiteVerb } from "./site-card-view";
 import { usePickEffectBase } from "../pick-effect-text";
 import { useRuinRelicChoice } from "../relics/ruin-relic-choice";
-import { RelicPay, RelicReplacement } from "../relics/relic-replacement";
+import { RelicOutcomeNote, RelicPay } from "../relics/relic-replacement";
 
 const SITE_MODELS = [
   ...ATTACK_FORECAST_MODELS,
@@ -148,14 +148,12 @@ export const TileCard = ({
     const signer = account.account;
     let sent = false;
     try {
-      // The relic slot read from the facts as Attack goes: a choice the slot no longer bears, or relics not yet known,
-      // keep the order home with the card's own reason.
-      const relicSlot = relics?.dispatchSlot();
+      relics?.ensureReady();
       await sendOnce("army", armyId, { order: "attack" }, () => {
         sent = true;
         fightIsSent();
         playUnitCommandSound("attack");
-        return sendAttack(setup.systemCalls, signer, armyId, selected, relicSlot);
+        return sendAttack(setup.systemCalls, signer, armyId, selected);
       });
     } catch (error) {
       fightWasNotSent({
@@ -205,12 +203,12 @@ export const TileCard = ({
       relic={relic && <RelicPay relic={relic} pickBase={pickBase} />}
       cache={relics?.state.kind === "cache" ? relics.state.fragments : undefined}
       replacement={
-        relics?.state.kind === "full" && (
-          <RelicReplacement
-            carried={relics.state.carried}
-            chosen={relics.state.chosen}
-            pickBase={pickBase}
-            onChoose={relics.replace}
+        relics?.state.kind === "outcome" && (
+          <RelicOutcomeNote
+            relic={relics.state.relic}
+            outcome={relics.state.outcome}
+            previousRank={relics.state.previousRank}
+            resultRank={relics.state.resultRank}
           />
         )
       }
@@ -224,20 +222,17 @@ export const TileCard = ({
   );
 };
 
-/** The attack the contract takes for the target: on a site's guard, or on another army (taking nothing from it). */
 const sendAttack = (
   systemCalls: GameClientSetup["systemCalls"],
   signer: NonNullable<ReturnType<typeof useGame>["account"]["account"]>,
   explorerId: number,
   target: AttackTarget,
-  relicSlot: 0 | 1 | 2 | undefined,
 ) =>
   target.kind === "site"
     ? systemCalls.attack_explorer_vs_guard({
         signer,
         explorer_id: explorerId,
         structure_id: targetId(target),
-        relic_slot: relicSlot,
       })
     : systemCalls.attack_explorer_vs_explorer({
         signer,

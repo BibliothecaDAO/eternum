@@ -1799,6 +1799,11 @@
       "art": "wonder-insight-realm-3",
       "label": "Wonder · Insight · Empire",
       "family": "Structures"
+    },
+    "relic-antidote": {
+      "art": "relic-antidote",
+      "label": "Antidote Relic",
+      "family": "Relics"
     }
   },
   "resources": {

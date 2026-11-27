@@ -113,6 +113,7 @@ pub fn set_guard(d: super::Deployment, key: ResourceKey, slot: u8, count: u128) 
                 ..Default::default(),
             },
             destroyed_tick: 0,
+            oaths: 0,
         },
     );
 }

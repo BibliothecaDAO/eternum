@@ -32,6 +32,7 @@ const mount = (id: string) => {
         slot: 0,
         troops: { ...rowFixture.expected.value.troops, count: String(300n * 1_000_000_000n) },
         destroyed_tick: 0,
+        oaths: 0,
       },
     },
   ] as never);

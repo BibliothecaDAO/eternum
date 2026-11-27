@@ -49,9 +49,7 @@ fn a_site_clear_ignores_guards_outside_the_slot_limit() {
     assert!(
         execute(
             d,
-            Command::BattleGuard(
-                crate::commands::Battle { attacker_id: attacker, defender_id: site.entity_id, relic_slot: None },
-            ),
+            Command::BattleGuard(crate::commands::Battle { attacker_id: attacker, defender_id: site.entity_id }),
             NOW,
         ),
     );
@@ -65,11 +63,7 @@ fn an_army_that_did_not_beat_a_sites_guard_cannot_claim_it() {
     let site = camp(d, attacker);
     let before = troop(d, attacker);
     assert_terminal_rejection(
-        d,
-        Command::BattleGuard(
-            crate::commands::Battle { attacker_id: attacker, defender_id: site.entity_id, relic_slot: None },
-        ),
-        NOW,
+        d, Command::BattleGuard(crate::commands::Battle { attacker_id: attacker, defender_id: site.entity_id }), NOW,
     );
     assert_eq!(troop(d, attacker), before);
     assert!(IStructureOperationsDispatcher { contract_address: d.games }.structure(site).is_some());
@@ -86,9 +80,7 @@ fn guard_targeting_preserves_highest_occupied_functional_slot_first() {
     assert!(
         execute(
             d,
-            Command::BattleGuard(
-                crate::commands::Battle { attacker_id: attacker, defender_id: site.entity_id, relic_slot: None },
-            ),
+            Command::BattleGuard(crate::commands::Battle { attacker_id: attacker, defender_id: site.entity_id }),
             NOW,
         ),
     );
@@ -102,7 +94,7 @@ fn season_one_refuses_an_owned_target_without_spending() {
     assert!(crate::balance::rules::SWITCHES.mode_rules & crate::rules::UNOWNED_TARGETS != 0);
     let (d, _, target, attacker, _) = setup();
     let command = Command::BattleGuard(
-        crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id, relic_slot: None },
+        crate::commands::Battle { attacker_id: attacker, defender_id: target.entity_id },
     );
     let before = troop(d, attacker);
     assert_terminal_rejection(d, command, NOW);
@@ -207,9 +199,7 @@ fn a_last_hit_that_kills_both_sides_clears_the_site_for_nobody() {
     assert!(
         execute(
             d,
-            Command::BattleGuard(
-                crate::commands::Battle { attacker_id: attacker, defender_id: site.entity_id, relic_slot: None },
-            ),
+            Command::BattleGuard(crate::commands::Battle { attacker_id: attacker, defender_id: site.entity_id }),
             NOW,
         ),
     );
@@ -227,9 +217,7 @@ fn season_one_allows_back_to_back_attacks_without_a_cooldown() {
     let (d, _, _, attacker, _) = setup_with_counts((1000, 1));
     let site = camp(d, attacker);
     set_guard(d, site, 0, 1000);
-    let attack = Command::BattleGuard(
-        crate::commands::Battle { attacker_id: attacker, defender_id: site.entity_id, relic_slot: None },
-    );
+    let attack = Command::BattleGuard(crate::commands::Battle { attacker_id: attacker, defender_id: site.entity_id });
     super::resource_commands::assert_executes(d, 3, attack, NOW);
     assert!(troop(d, attacker).is_some() && guard(d, site, 0).troops.count != 0);
     assert_eq!(troop(d, attacker).unwrap().troops.battle_cooldown_end, NOW.try_into().unwrap());

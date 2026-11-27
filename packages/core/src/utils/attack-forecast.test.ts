@@ -201,6 +201,7 @@ function frontier() {
       battle_cooldown_end: 0,
     },
     destroyed_tick: 0,
+    oaths: 0,
   });
 
   const deepSite = (entity_id: number, tile: Tile, beast: number, ring = 0, aspect = 0) => {
@@ -528,7 +529,7 @@ describe("one attack forecast for every combat surface", () => {
     game.home(1, PLAYER, 1);
     game.deepSite(50, DEEP, 300);
     const base = release.definition.rules.troop_stamina_config.stamina_knight_max;
-    const maximum = base + logisticsStamina(base, 5);
+    const maximum = base + logisticsStamina(5);
     game.army(10, 1, beside(DEEP), { logistics: 5, stamina: BigInt(maximum) });
     const forecast = game.forecast(10, 50);
     expect(forecast?.sides?.attacker.troops.staminaMax).toBe(maximum);

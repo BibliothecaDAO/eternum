@@ -15,7 +15,6 @@ pub fn capture(
     explorer: ExplorerTroops,
     key: ResourceKey,
     target: Structure,
-    _relic_slot: Option<u8>,
     _clean: bool,
     context: ExecutionContext,
 ) {

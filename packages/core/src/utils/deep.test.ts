@@ -411,6 +411,39 @@ it("projects Vitriol's exact native troop vectors and refuses a missing progress
   }
 });
 
+it("matches the shared Vitriol and Antidote Deep loss vectors including expiry splits", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { deepLossForArmy } = await import("./army-relics");
+  const fields = readFileSync(
+    new URL("../../../../contracts/l3/world-native/tests/fixtures/antidote-deep-loss.txt", import.meta.url),
+    "utf8",
+  )
+    .trim()
+    .split(/\s+/)
+    .map(BigInt);
+  expect(fields.length).toBe(81);
+  while (fields.length) {
+    const [held, base, rank, troops, lastTick, expiryTick, endTick, expectedLoss, expectedTroops] = fields.splice(
+      0,
+      9,
+    ) as [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint];
+    expect(deepLossForArmy(Number(held), base, Number(rank))).toBe(expectedLoss);
+    const { rows, store } = fixture();
+    rows.ArmyProgress![0]!.oaths = Number(held);
+    rows.DeepRules![0]!.loss_per_tick = base;
+    rows.DeepArmy![0]!.last_tick = lastTick;
+    rows.ExplorerTroops![0]!.troops = { count: troops };
+    if (rank > 0n) {
+      rows.ArmyRelicEffect = [
+        { game_id: 7, explorer_id: 11n, kind: "Antidote", rank: Number(rank), expires_at: expiryTick * 60n },
+      ];
+    }
+    const source = store.require("ExplorerTroops", { game_id: 7, explorer_id: 11n });
+    const now = Number(endTick) * 60;
+    expect(currentArmy(store, source, now).troops.count).toBe(expectedTroops);
+  }
+});
+
 it("pays a Foundation or Altar by the native building-pay vectors for each count of open sites of its kind", async () => {
   const { readFileSync } = await import("node:fs");
   const fields = readFileSync(
@@ -566,6 +599,7 @@ describe("unsettled Deep Essence and Labor projection", () => {
       battle_cooldown_end: 0,
     },
     destroyed_tick: 0,
+    oaths: 0,
   });
 
   it("projects unsettled Core Essence and Mine Labor ticks, stops when garrisons drain to zero, and ignores other site kinds and resources", () => {

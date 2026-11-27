@@ -15,7 +15,6 @@ pub fn capture(
     _explorer: ExplorerTroops,
     key: ResourceKey,
     _target: Structure,
-    relic_slot: Option<u8>,
     clean: bool,
     context: ExecutionContext,
 ) {
@@ -25,7 +24,6 @@ pub fn capture(
         },
         key,
         explorer_key.explorer_id,
-        relic_slot,
         clean,
         crate::commands::action_context(context),
     );

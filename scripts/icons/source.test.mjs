@@ -66,6 +66,17 @@ test("all 18 production relics and Season 1 item paintings use their pinned appr
         code: "ENOENT",
       });
   }
+  for (const id of seasonOneRelicIds) {
+    if (id.includes("-relic-")) continue;
+    const icon = icons.find((entry) => entry.id === id);
+    assert.ok(icon, `Missing Season 1 relic Facets entry: ${id}`);
+    assert.equal(meanings[id].art, id);
+    assert.equal(meanings[id].family, "Relics");
+    assert.equal(icon.source.kind, undefined);
+    assert.equal(icon.source.committedPath, undefined);
+    const master = await readFile(`${source}/facets/masters/${id}.png`);
+    assert.equal(hash(master), icon.source.sha256);
+  }
   for (const id of ["final-seal", "fragment"]) {
     const icon = icons.find((entry) => entry.id === id);
     assert.ok(icon, `Missing Season 1 Facets entry: ${id}`);

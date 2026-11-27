@@ -28,17 +28,18 @@ fn relic_game() -> (
 }
 
 #[test]
-fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
+fn ruins_fill_merge_and_activate_per_kind_relics_through_commands() {
     let (d, game_id, home_id, explorer_id, key, discovery, chest) = relic_game();
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let lords = ResourceSlot { game_id, entity_id: home_id, resource_type: crate::resources::LORDS };
-    for index in 0_u8..4 {
+    for index in 0_u8..5 {
         let timestamp = START + 280 + Into::<u8, u64>::into(index) * 30;
         let kind = match index {
             0 => RelicKind::Blade,
-            1 => RelicKind::StaminaRegen,
+            1 => RelicKind::Blade,
             2 => RelicKind::Ward,
-            _ => RelicKind::Plunder,
+            3 => RelicKind::Plunder,
+            _ => RelicKind::Antidote,
         };
         let reward = ArmyRelic { kind, rank: 1 };
         let site = discover_relic(d, key, discovery, chest, reward, false, timestamp);
@@ -51,30 +52,9 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
         );
         assert!(count >= 900 * RESOURCE_PRECISION && count <= 1100 * RESOURCE_PRECISION);
         let clear = Command::BattleGuard(
-            crate::commands::Battle { attacker_id: explorer_id, defender_id: site.entity_id, relic_slot: None },
+            crate::commands::Battle { attacker_id: explorer_id, defender_id: site.entity_id },
         );
-        if index == 3 {
-            let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-            let inventory = read_loadout(d, key);
-            assert!(!execute_in_game(d, game_id, clear, timestamp + 1));
-            assert_eq!(read_loadout(d, key), inventory);
-            assert_eq!(GameState { contract_address: d.games }.resolved_explorer(key).unwrap(), army);
-            assert_eq!(read_ruin(d, site), Some(reward));
-            assert!(
-                execute_in_game(
-                    d,
-                    game_id,
-                    Command::BattleGuard(
-                        crate::commands::Battle {
-                            attacker_id: explorer_id, defender_id: site.entity_id, relic_slot: Some(1),
-                        },
-                    ),
-                    timestamp + 1,
-                ),
-            );
-        } else {
-            assert!(execute_in_game(d, game_id, clear, timestamp + 1));
-        }
+        assert!(execute_in_game(d, game_id, clear, timestamp + 1));
         assert_eq!(read_ruin(d, site), None);
         assert_eq!(resources.resource_balance(lords), 0);
         assert!(
@@ -87,16 +67,18 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
         );
     }
     let inventory = read_loadout(d, key);
-    assert_eq!(inventory.first, Some(ArmyRelic { kind: RelicKind::Blade, rank: 1 }));
-    assert_eq!(inventory.second, Some(ArmyRelic { kind: RelicKind::Plunder, rank: 1 }));
-    assert_eq!(inventory.third, Some(ArmyRelic { kind: RelicKind::Ward, rank: 1 }));
+    assert_eq!(
+        inventory, crate::army_relics::ArmyRelics { blade: 2, ward: 1, plunder: 1, stamina_regen: 0, antidote: 1 },
+    );
     let essence = ResourceSlot { game_id, entity_id: home_id, resource_type: crate::resources::ESSENCE };
     let essence_before = resources.resource_balance(essence);
-    let activate = Command::ApplyRelic(crate::relics::ApplyRelic { entity_id: explorer_id, relic_id: 1, slot: 0 });
-    assert!(execute_in_game(d, game_id, activate, START + 400));
-    assert!(!execute_in_game(d, game_id, activate, START + 400));
+    let activate = Command::ApplyRelic(
+        crate::relics::ApplyRelic { entity_id: explorer_id, kind: RelicKind::Blade, expected_rank: 2 },
+    );
+    assert!(execute_in_game(d, game_id, activate, START + 450));
+    assert!(!execute_in_game(d, game_id, activate, START + 450));
     assert_eq!(resources.resource_balance(essence), essence_before);
-    assert_eq!(read_loadout(d, key).first, None);
+    assert_eq!(read_loadout(d, key).blade, 0);
     assert_eq!(
         snforge_std::interact_with_state(
             d.games,
@@ -106,7 +88,8 @@ fn ruins_fill_replace_and_activate_an_armys_relics_through_commands() {
         ),
         Some(
             crate::army_relics::ArmyRelicEffect {
-                rank: 1, expires_at: START + 400 + crate::balance::rules::RELIC_SECONDS_PER_RANK.into(),
+                rank: 2,
+                expires_at: START + 450 + Into::<u32, u64>::into(crate::balance::rules::RELIC_SECONDS_PER_RANK) * 2,
             },
         ),
     );
@@ -123,9 +106,7 @@ fn a_ruin_cache_pays_its_fragments_to_the_army_owner_and_leaves_the_relics() {
         execute_in_game(
             d,
             game_id,
-            Command::BattleGuard(
-                crate::commands::Battle { attacker_id: explorer_id, defender_id: site.entity_id, relic_slot: None },
-            ),
+            Command::BattleGuard(crate::commands::Battle { attacker_id: explorer_id, defender_id: site.entity_id }),
             START + 441,
         ),
     );
@@ -178,7 +159,7 @@ fn the_army_that_lands_the_last_hit_takes_the_ruin_and_an_army_stepping_in_after
     );
     let loadout = read_loadout(d, second);
     assert!(execute_in_game(d, game_id, attack(explorer_id, site), START + 281));
-    assert_eq!(read_loadout(d, key).first, Some(reward));
+    assert_eq!(read_loadout(d, key).blade, reward.rank);
     assert_eq!(read_ruin(d, site), None);
     let before = GameState { contract_address: d.games }.resolved_explorer(second).unwrap();
     assert!(!execute_in_game(d, game_id, attack(second.explorer_id, site), START + 282));
@@ -187,9 +168,7 @@ fn the_army_that_lands_the_last_hit_takes_the_ruin_and_an_army_stepping_in_after
 }
 
 fn attack(explorer_id: u64, site: ResourceKey) -> Command {
-    Command::BattleGuard(
-        crate::commands::Battle { attacker_id: explorer_id, defender_id: site.entity_id, relic_slot: None },
-    )
+    Command::BattleGuard(crate::commands::Battle { attacker_id: explorer_id, defender_id: site.entity_id })
 }
 
 fn discover_relic(
@@ -272,11 +251,11 @@ fn stamina_regen_army(oaths: u16) -> (super::Deployment, ExplorerKey) {
                 );
             let ruin = ResourceKey { game_id, entity_id: 990001 };
             crate::logic::army_relics::store_ruin(ruin, relic);
-            crate::logic::army_relics::award(key, ruin, None);
+            crate::logic::army_relics::award(key, ruin, regen_start());
         },
     );
     let activate = Command::ApplyRelic(
-        crate::relics::ApplyRelic { entity_id: explorer_id, relic_id: crate::army_relics::encode(relic), slot: 0 },
+        crate::relics::ApplyRelic { entity_id: explorer_id, kind: RelicKind::StaminaRegen, expected_rank: 3 },
     );
     assert!(execute_in_game(d, game_id, activate, regen_start()));
     snforge_std::interact_with_state(
@@ -323,9 +302,9 @@ fn a_level_three_stamina_relic_regenerates_its_step_times_three_faster_for_its_d
 fn a_stamina_relic_multiplies_the_enlightened_regen_rate() {
     let (d, key) = stamina_regen_army(crate::oaths::bit(crate::oaths::ENLIGHTENMENT));
     let duration: u64 = (crate::balance::rules::RELIC_SECONDS_PER_RANK * 3).into();
-    let enlightened: u64 = crate::oaths::ENLIGHTENMENT_REGEN_BPS.into();
+    let per_hour: u64 = 3600 / regen_tick() + crate::oaths::ENLIGHTENMENT_REGEN_STAMINA.into();
     let during = stamina_at(d, key, regen_start() + duration);
-    assert_eq!(during, duration * enlightened * level_three_regen_percent() / 100 / (regen_tick() * 10000));
+    assert_eq!(during, duration * per_hour * level_three_regen_percent() / (3600 * 100));
 }
 
 #[test]
@@ -341,5 +320,5 @@ fn a_switched_on_stamina_relic_leaves_its_effect_for_its_duration() {
     );
     let duration: u64 = (crate::balance::rules::RELIC_SECONDS_PER_RANK * 3).into();
     assert_eq!(effect, Some(crate::army_relics::ArmyRelicEffect { rank: 3, expires_at: regen_start() + duration }));
-    assert_eq!(read_loadout(d, key).first, None);
+    assert_eq!(read_loadout(d, key).stamina_regen, 0);
 }

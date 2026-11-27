@@ -86,7 +86,7 @@ export const seasonOneDesign = {
     knightGuardDamageTakenPercent: 75,
     scoutRevealStamina: 10,
   },
-  stamina: { reveal: 20, move: 10, attack: 30, defence: 0, wellPercent: 40, perFragment: 2, logisticsStepPercent: 20 },
+  stamina: { reveal: 20, move: 10, attack: 30, defence: 0, wellPercent: 40, perFragment: 2, logisticsStepStamina: 30 },
   oaths: {
     count: 16,
     passStamina: 40,
@@ -96,7 +96,7 @@ export const seasonOneDesign = {
     twinsDamagePercent: 30,
     giantsReductionPercent: 15,
     protectionReductionPercent: 25,
-    vitriolLossPerTick: 100,
+    vitriolReductionPercent: 50,
     angerAttackStamina: 20,
     furyRefundPercent: 50,
     titansStamina: 60,
@@ -114,6 +114,7 @@ export const seasonOneDesign = {
     wardPercentPerTier: 5,
     plunderPercentPerTier: 20,
     staminaRegenPercentPerTier: 20,
+    antidotePercentPerTier: 5,
     secondsPerTier: 1800,
     tiers: 5,
     oddsPercentByLayer: [

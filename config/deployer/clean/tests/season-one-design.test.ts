@@ -171,7 +171,7 @@ function generatedSeasonOne(): Design {
       defence: stamina.stamina_defense_req,
       wellPercent: rules.WELL_REFILL_PERCENT,
       perFragment: fragments.STAMINA_PER_FRAGMENT,
-      logisticsStepPercent: rules.LOGISTICS_STEP_PERCENT,
+      logisticsStepStamina: rules.LOGISTICS_STEP_STAMINA,
     },
     oaths: {
       count: definition.settlement.order_aspects.length,
@@ -182,13 +182,12 @@ function generatedSeasonOne(): Design {
       twinsDamagePercent: oaths.TWINS_DAMAGE_PERCENT,
       giantsReductionPercent: oaths.GIANTS_REDUCTION_PERCENT,
       protectionReductionPercent: oaths.PROTECTION_REDUCTION_PERCENT,
-      vitriolLossPerTick: oaths.VITRIOL_LOSS_PER_TICK,
+      vitriolReductionPercent: oaths.VITRIOL_REDUCTION_PERCENT,
       angerAttackStamina: oaths.ANGER_ATTACK_STAMINA,
       furyRefundPercent: oaths.FURY_REFUND_PERCENT,
       titansStamina: oaths.TITANS_STAMINA,
-      enlightenmentStaminaPerHour: Math.round(
-        (stamina.stamina_gain_per_tick * STAMINA_TICKS_PER_HOUR * oaths.ENLIGHTENMENT_REGEN_BPS) / 10000,
-      ),
+      enlightenmentStaminaPerHour:
+        stamina.stamina_gain_per_tick * STAMINA_TICKS_PER_HOUR + oaths.ENLIGHTENMENT_REGEN_STAMINA,
       foxRevealDiscountPercent: oaths.FOX_REVEAL_DISCOUNT_PERCENT,
       reflectionWellPercent: oaths.REFLECTION_WELL_PERCENT,
       detectionEmptyRevealLimit: oaths.DETECTION_EMPTY_REVEAL_LIMIT,
@@ -202,6 +201,7 @@ function generatedSeasonOne(): Design {
       wardPercentPerTier: percent(rules.RELIC_WARD_BPS),
       plunderPercentPerTier: percent(rules.RELIC_PLUNDER_BPS),
       staminaRegenPercentPerTier: rules.STAMINA_REGEN_RELIC_STEP_PERCENT,
+      antidotePercentPerTier: percent(rules.RELIC_ANTIDOTE_BPS),
       secondsPerTier: definition.rules.relic_seconds_per_rank,
       tiers: rules.ATTRIBUTE_CAP,
       oddsPercentByLayer: layers.map(({ chest }) =>

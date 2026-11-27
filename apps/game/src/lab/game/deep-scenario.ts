@@ -63,7 +63,14 @@ export const deepScenario = (closedRing = false): LabScenario => {
     {
       model: "Guard",
       key: "0xdee5",
-      value: wire({ game_id: 1, structure_id: siteId(HELD_SITE), slot: 1, troops: army.troops, destroyed_tick: 0 }),
+      value: wire({
+        game_id: 1,
+        structure_id: siteId(HELD_SITE),
+        slot: 1,
+        troops: army.troops,
+        destroyed_tick: 0,
+        oaths: 0,
+      }),
     },
     { model: "TileOccupancy", key: store.wireKeyOf("TileOccupancy", at)!, value: null },
     { model: "TileOccupancy", key: "0xdee9", value: wire({ ...at, col: center.col - 1, row: center.row }) },
@@ -151,6 +158,7 @@ export const deepScenario = (closedRing = false): LabScenario => {
             count: beast.count,
           },
           destroyed_tick: 0,
+          oaths: 0,
         }),
       });
   }

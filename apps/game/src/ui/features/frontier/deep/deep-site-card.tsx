@@ -124,7 +124,6 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
         signer: account.account!,
         explorer_id: userId!,
         structure_id: safeInteger(site.id),
-        relic_slot: undefined,
       }),
     );
   const move: DeepOrder | undefined = approach

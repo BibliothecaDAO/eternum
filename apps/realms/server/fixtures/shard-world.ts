@@ -389,6 +389,7 @@ export function siteSnapshot(
       structure_id: id,
       slot,
       destroyed_tick: 0,
+      oaths: 0,
       troops: {
         ...explorerFixture.expected.value.troops,
         stamina: { Inline: { amount: 120, settled_at: bar.settledAt, remainder: 0 } },

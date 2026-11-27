@@ -355,9 +355,16 @@ function structureDefence(scene: Scene, attacker: Combatant, structure: NativeRo
       ? refused("unguarded-site", alone)
       : { claims: attacker };
   const guarding = isCombatGuard(structure.owner);
-  const standing = (troops: Troops) => ({ troops, exact: true, oaths: 0, guarding, tile, home: structure.entity_id });
+  const standing = (guard: { troops: Troops; oaths: number }) => ({
+    troops: guard.troops,
+    exact: true,
+    oaths: guard.oaths,
+    guarding,
+    tile,
+    home: structure.entity_id,
+  });
   return {
-    sides: { attacker, defender: standing(first.troops), queued: queued.map((guard) => standing(guard.troops)) },
+    sides: { attacker, defender: standing(first), queued: queued.map(standing) },
   };
 }
 
@@ -377,7 +384,7 @@ function guardAttack(scene: Scene, structureId: bigint, targetId: bigint): Defen
   const attacker = {
     troops: guard.troops,
     exact: true,
-    oaths: 0,
+    oaths: guard.oaths,
     guarding: true,
     tile,
     home: structureId,
@@ -412,7 +419,7 @@ function garrisonCombatant(garrison: DeepGarrison, tile: Tile, rules: NativeRows
   return {
     troops: inlineTroops(garrison.troops, rules),
     exact: true,
-    oaths: 0,
+    oaths: garrison.oaths,
     guarding: true,
     tile,
     home: garrison.home,

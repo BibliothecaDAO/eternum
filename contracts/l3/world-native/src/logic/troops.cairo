@@ -519,6 +519,23 @@ pub mod TroopsLogic {
             if target.troops.count != 0 {
                 crate::troop_management::assert_matching(source.troops, target.troops);
             }
+            let (source_oaths, source_blade, source_ward) = match (command.source, command.target) {
+                (
+                    crate::troop_management::Army::Explorer(source_id), crate::troop_management::Army::Guard(_),
+                ) => {
+                    let source_key = ExplorerKey { game_id, explorer_id: source_id };
+                    (
+                        crate::logic::progression::held_oaths(source_key, game_context),
+                        crate::logic::army_relics::active_boost(
+                            source_key, crate::army_relics::RelicKind::Blade, timestamp,
+                        ),
+                        crate::logic::army_relics::active_boost(
+                            source_key, crate::army_relics::RelicKind::Ward, timestamp,
+                        ),
+                    )
+                },
+                _ => (0_u16, (0_u16, 0_u32), (0_u16, 0_u32)),
+            };
             source.troops.count -= command.amount;
             crate::troop_management::merge_timers(ref source.troops, ref target.troops, rules, timestamp);
             self
@@ -544,6 +561,7 @@ pub mod TroopsLogic {
                 crate::troop_management::Army::Guard(slot) => {
                     let key = crate::guards::GuardKey { game_id, structure_id: slot.structure_id, slot: slot.slot };
                     let mut guard = crate::guards::Guard { troops: target.troops, ..crate::logic::guards::guard(key) };
+                    let empty = guard.troops.count == 0;
                     let mut home = crate::logic::troops::guarded_structure(game_id, slot.structure_id, actor);
                     let site = crate::logic::deep_garrisons::is_site(game_id, slot.structure_id);
                     if site {
@@ -551,6 +569,11 @@ pub mod TroopsLogic {
                         guard.destroyed_tick = 0;
                     }
                     self.add_guard_troops(key, ref guard, source.troops, command.amount, home, rules, timestamp, false);
+                    if empty {
+                        guard.oaths = source_oaths;
+                        guard.troops.boosts = Default::default();
+                    }
+                    merge_guard_boosts(ref guard.troops.boosts, source_blade, source_ward, timestamp);
                     crate::logic::guards::GuardState::save(key, guard);
                     if site {
                         crate::logic::deep_garrisons::record(key, source.home);
@@ -627,12 +650,13 @@ pub mod TroopsLogic {
                 },
                 crate::troop_management::Army::Guard(slot) => {
                     let key = crate::guards::GuardKey { game_id, structure_id: slot.structure_id, slot: slot.slot };
-                    if troops.count == 0 {
-                        troops.stamina.reset();
+                    let mut guard = crate::guards::Guard { troops, ..crate::logic::guards::guard(key) };
+                    if guard.troops.count == 0 {
+                        guard.troops.stamina.reset();
+                        guard.troops.boosts = Default::default();
+                        guard.oaths = 0;
                     }
-                    crate::logic::guards::GuardState::save(
-                        key, crate::guards::Guard { troops, ..crate::logic::guards::guard(key) },
-                    );
+                    crate::logic::guards::GuardState::save(key, guard);
                 },
             }
         }
@@ -675,6 +699,35 @@ pub mod TroopsLogic {
             }
             guard.troops.count += amount;
             crate::troop_management::assert_size(guard.troops, home.base.level, rules);
+        }
+    }
+
+    fn merge_guard_boosts(ref boosts: crate::troops::TroopBoosts, blade: (u16, u32), ward: (u16, u32), timestamp: u64) {
+        let (blade_bps, blade_end) = blade;
+        let (ward_bps, ward_end) = ward;
+        if boosts.incr_damage_dealt_end_at != 0
+            && !crate::relics::bonus_active(boosts.incr_damage_dealt_end_at, timestamp) {
+            boosts.incr_damage_dealt_percent_num = 0;
+            boosts.incr_damage_dealt_end_at = 0;
+        }
+        if blade_bps > boosts.incr_damage_dealt_percent_num
+            || (blade_bps != 0
+                && blade_bps == boosts.incr_damage_dealt_percent_num
+                && blade_end > boosts.incr_damage_dealt_end_at) {
+            boosts.incr_damage_dealt_percent_num = blade_bps;
+            boosts.incr_damage_dealt_end_at = blade_end;
+        }
+        if boosts.decr_damage_gotten_end_at != 0
+            && !crate::relics::bonus_active(boosts.decr_damage_gotten_end_at, timestamp) {
+            boosts.decr_damage_gotten_percent_num = 0;
+            boosts.decr_damage_gotten_end_at = 0;
+        }
+        if ward_bps > boosts.decr_damage_gotten_percent_num
+            || (ward_bps != 0
+                && ward_bps == boosts.decr_damage_gotten_percent_num
+                && ward_end > boosts.decr_damage_gotten_end_at) {
+            boosts.decr_damage_gotten_percent_num = ward_bps;
+            boosts.decr_damage_gotten_end_at = ward_end;
         }
     }
 

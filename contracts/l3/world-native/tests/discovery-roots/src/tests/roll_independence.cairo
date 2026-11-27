@@ -85,8 +85,12 @@ fn typed_commands() -> Array<Command> {
                 structure_id: 999999, coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },
             },
         ),
-        Command::BattleGuard(crate::commands::Battle { attacker_id: 999999, defender_id: 999999, relic_slot: None }),
-        Command::ApplyRelic(crate::relics::ApplyRelic { entity_id: 999999, relic_id: 39, slot: 0 }),
+        Command::BattleGuard(crate::commands::Battle { attacker_id: 999999, defender_id: 999999 }),
+        Command::ApplyRelic(
+            crate::relics::ApplyRelic {
+                entity_id: 999999, kind: crate::army_relics::RelicKind::Blade, expected_rank: 1,
+            },
+        ),
         Command::CreateGuild(crate::guilds::CreateGuild { owned_structure_id: 999999, public: false, name: 'route' }),
         Command::JoinGuild(crate::guilds::JoinGuild { owned_structure_id: 999999, guild_id: 999.try_into().unwrap() }),
         Command::LeaveGuild,

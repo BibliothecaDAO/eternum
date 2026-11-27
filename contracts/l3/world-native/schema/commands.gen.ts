@@ -93,8 +93,8 @@ export interface NativeCommandPayloads {
   DestroyBuilding: { readonly structure_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
   PauseBuildingProduction: { readonly structure_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
   ResumeBuildingProduction: { readonly structure_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
-  BattleGuard: { readonly attacker_id: BigNumberish; readonly defender_id: BigNumberish; readonly relic_slot: { readonly kind: "Some"; readonly value: BigNumberish } | { readonly kind: "None"; readonly value: undefined } };
-  ApplyRelic: { readonly entity_id: BigNumberish; readonly relic_id: BigNumberish; readonly slot: BigNumberish };
+  BattleGuard: { readonly attacker_id: BigNumberish; readonly defender_id: BigNumberish };
+  ApplyRelic: { readonly entity_id: BigNumberish; readonly kind: { readonly kind: "Blade"; readonly value: undefined } | { readonly kind: "Ward"; readonly value: undefined } | { readonly kind: "Plunder"; readonly value: undefined } | { readonly kind: "StaminaRegen"; readonly value: undefined } | { readonly kind: "Antidote"; readonly value: undefined }; readonly expected_rank: BigNumberish };
   CreateGuild: { readonly owned_structure_id: BigNumberish; readonly public: boolean; readonly name: BigNumberish };
   JoinGuild: { readonly owned_structure_id: BigNumberish; readonly guild_id: BigNumberish };
   LeaveGuild: undefined;

@@ -564,7 +564,7 @@ describe("declared fact absence", () => {
     ]);
     expect(resolveExplorerTroops(store, army)?.stamina).toEqual({ amount: 7n, settled_at: 17, remainder: 0 });
     expect(resolveExplorerTroops(store, army)?.staminaMax).toBe(
-      Number(release.definition.rules.troop_stamina_config.stamina_knight_max) * 1.6,
+      Number(release.definition.rules.troop_stamina_config.stamina_knight_max) + 90,
     );
     expect(resolveExplorerTroops(store, army)?.boosts).toEqual(army.troops.boosts);
     store.applyFacts([set("0x70", "ArmySlot", { ...occupied, explorer_id: army.explorer_id + 1n })]);
@@ -695,8 +695,8 @@ describe("declared fact absence", () => {
   it("opens a same-day slot whose roaming Deep army has died of poison", () => {
     const store = new NativeFactStore();
     const tickSeconds = 10;
-    const vitriolLoss = BigInt(nativeOathConstants.VITRIOL_LOSS_PER_TICK) * BigInt(RESOURCE_PRECISION);
-    const baseLoss = vitriolLoss * 2n;
+    const baseLoss = 200n * BigInt(RESOURCE_PRECISION);
+    const vitriolLoss = (baseLoss * BigInt(100 - nativeOathConstants.VITRIOL_REDUCTION_PERCENT)) / 100n;
     const initialCount = vitriolLoss * 3n;
     store.applyFacts([
       set("0x100", "SliceRules", {

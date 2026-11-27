@@ -324,12 +324,12 @@ it("keeps the chosen Research action outside the tree scroll on every pick, incl
 });
 
 it.each([
-  [0, "180 max stamina → 216 max stamina"],
-  [1, "216 max stamina → 252 max stamina"],
-  [2, "252 max stamina → 288 max stamina"],
-  [3, "288 max stamina → 324 max stamina"],
-  [4, "324 max stamina → 360 max stamina"],
-  [5, "360 max stamina"],
+  [0, "180 max stamina → 210 max stamina"],
+  [1, "210 max stamina → 240 max stamina"],
+  [2, "240 max stamina → 270 max stamina"],
+  [3, "270 max stamina → 300 max stamina"],
+  [4, "300 max stamina → 330 max stamina"],
+  [5, "330 max stamina"],
 ] as const)("shows the Supply yard's exact stamina gain at rank %s", (tier, label) => {
   const ranked = readResearchTree({
     ...MID_REALM,

@@ -63,6 +63,7 @@ const realmWithGuard = (tier: "T2" | "T3", stamina: { amount: number; settledAt:
           stamina: { Inline: { amount: String(stamina.amount), settled_at: String(stamina.settledAt), remainder: 0 } },
         },
         destroyed_tick: 0,
+        oaths: 0,
       },
     },
   ] as never);

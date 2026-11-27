@@ -6,9 +6,10 @@ pub enum RelicKind {
     Ward,
     Plunder,
     StaminaRegen,
+    Antidote,
 }
 
-pub const RELIC_KIND_COUNT: u8 = 4;
+pub const RELIC_KIND_COUNT: u8 = 5;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ArmyRelic {
@@ -16,11 +17,32 @@ pub struct ArmyRelic {
     pub rank: u8,
 }
 
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub enum RelicCollectOutcome {
+    Collected,
+    Replaced,
+    Merged,
+    Discarded,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct RelicCollected {
+    pub explorer_id: u64,
+    pub site_id: u64,
+    pub kind: RelicKind,
+    pub found_rank: u8,
+    pub previous_rank: u8,
+    pub result_rank: u8,
+    pub outcome: RelicCollectOutcome,
+}
+
 #[derive(Copy, Drop, Serde, Debug, PartialEq, Default)]
 pub struct ArmyRelics {
-    pub first: Option<ArmyRelic>,
-    pub second: Option<ArmyRelic>,
-    pub third: Option<ArmyRelic>,
+    pub blade: u8,
+    pub ward: u8,
+    pub plunder: u8,
+    pub stamina_regen: u8,
+    pub antidote: u8,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -50,6 +72,7 @@ pub fn kind_id(kind: RelicKind) -> u8 {
         RelicKind::Ward => 1,
         RelicKind::Plunder => 2,
         RelicKind::StaminaRegen => 3,
+        RelicKind::Antidote => 4,
     }
 }
 
@@ -59,62 +82,101 @@ pub fn kind_at(id: u8) -> RelicKind {
         1 => RelicKind::Ward,
         2 => RelicKind::Plunder,
         3 => RelicKind::StaminaRegen,
+        4 => RelicKind::Antidote,
         _ => panic!("invalid relic kind"),
     }
 }
 
 pub fn encode(relic: ArmyRelic) -> u8 {
-    assert!(relic.rank > 0 && relic.rank <= 5, "invalid relic rank");
-    kind_id(relic.kind) * 5 + relic.rank
+    let cap = crate::rules::ATTRIBUTE_CAP;
+    assert!(relic.rank > 0 && relic.rank <= cap, "invalid relic rank");
+    kind_id(relic.kind) * cap + relic.rank
 }
 
 pub fn decode(value: u8) -> ArmyRelic {
-    assert!(value > 0 && value <= RELIC_KIND_COUNT * 5, "invalid army relic");
-    ArmyRelic { kind: kind_at((value - 1) / 5), rank: (value - 1) % 5 + 1 }
+    let cap = crate::rules::ATTRIBUTE_CAP;
+    assert!(value > 0 && value <= RELIC_KIND_COUNT * cap, "invalid army relic");
+    ArmyRelic { kind: kind_at((value - 1) / cap), rank: (value - 1) % cap + 1 }
 }
 
-pub fn slot(loadout: ArmyRelics, index: u8) -> Option<ArmyRelic> {
-    match index {
-        0 => loadout.first,
-        1 => loadout.second,
-        2 => loadout.third,
-        _ => panic!("invalid relic slot"),
+pub fn rank_of(loadout: ArmyRelics, kind: RelicKind) -> u8 {
+    match kind {
+        RelicKind::Blade => loadout.blade,
+        RelicKind::Ward => loadout.ward,
+        RelicKind::Plunder => loadout.plunder,
+        RelicKind::StaminaRegen => loadout.stamina_regen,
+        RelicKind::Antidote => loadout.antidote,
     }
 }
 
-pub fn set_slot(ref loadout: ArmyRelics, index: u8, relic: Option<ArmyRelic>) {
-    match index {
-        0 => loadout.first = relic,
-        1 => loadout.second = relic,
-        2 => loadout.third = relic,
-        _ => panic!("invalid relic slot"),
+pub fn set_rank(ref loadout: ArmyRelics, kind: RelicKind, rank: u8) {
+    assert!(rank <= crate::rules::ATTRIBUTE_CAP, "invalid relic rank");
+    match kind {
+        RelicKind::Blade => loadout.blade = rank,
+        RelicKind::Ward => loadout.ward = rank,
+        RelicKind::Plunder => loadout.plunder = rank,
+        RelicKind::StaminaRegen => loadout.stamina_regen = rank,
+        RelicKind::Antidote => loadout.antidote = rank,
     }
 }
 
-pub fn receive(ref loadout: ArmyRelics, relic: ArmyRelic, replace: Option<u8>) {
+pub fn collect(ref loadout: ArmyRelics, relic: ArmyRelic) -> (u8, u8, RelicCollectOutcome) {
     encode(relic);
-    if let Some(index) = replace {
-        set_slot(ref loadout, index, Some(relic));
-        return;
+    let previous = rank_of(loadout, relic.kind);
+    if previous == 0 {
+        set_rank(ref loadout, relic.kind, relic.rank);
+        return (previous, relic.rank, RelicCollectOutcome::Collected);
     }
-    for index in 0_u8..3 {
-        if slot(loadout, index).is_none() {
-            set_slot(ref loadout, index, Some(relic));
-            return;
-        }
+    if previous == relic.rank && previous < crate::rules::ATTRIBUTE_CAP {
+        let merged = previous + 1;
+        set_rank(ref loadout, relic.kind, merged);
+        return (previous, merged, RelicCollectOutcome::Merged);
     }
-    panic!("choose a relic to replace")
+    if relic.rank > previous {
+        set_rank(ref loadout, relic.kind, relic.rank);
+        return (previous, relic.rank, RelicCollectOutcome::Replaced);
+    }
+    (previous, previous, RelicCollectOutcome::Discarded)
 }
 
 pub fn bonus_bps(kind: RelicKind, rank: u8) -> u32 {
-    assert!(rank <= 5, "invalid relic rank");
+    assert!(rank <= crate::rules::ATTRIBUTE_CAP, "invalid relic rank");
     let per_rank = match kind {
         RelicKind::Blade => crate::rules::RELIC_BLADE_BPS,
         RelicKind::Ward => crate::rules::RELIC_WARD_BPS,
         RelicKind::Plunder => crate::rules::RELIC_PLUNDER_BPS,
         RelicKind::StaminaRegen => crate::rules::STAMINA_REGEN_RELIC_STEP_PERCENT * 100,
+        RelicKind::Antidote => crate::rules::RELIC_ANTIDOTE_BPS,
     };
     per_rank * rank.into()
+}
+
+pub fn deep_loss_for_army(oaths: u16, base_loss: u128, antidote_rank: u8) -> u128 {
+    let vitriol_bps: u32 = if crate::oaths::held(oaths, crate::oaths::VITRIOL) {
+        Into::<u16, u32>::into(crate::oaths::VITRIOL_REDUCTION_PERCENT) * 100
+    } else {
+        0
+    };
+    let antidote_bps = bonus_bps(RelicKind::Antidote, antidote_rank);
+    let reduction_bps = core::cmp::min(vitriol_bps + antidote_bps, 10_000);
+    base_loss * (10_000 - reduction_bps).into() / 10_000
+}
+
+pub fn deep_troops_after_ticks(
+    count: u128, oaths: u16, base_loss: u128, antidote_rank: u8, last_tick: u64, expiry_tick: u64, tick: u64,
+) -> u128 {
+    let oath_loss = crate::oaths::deep_loss_per_tick(oaths, base_loss);
+    if antidote_rank == 0 {
+        return crate::deep::troops_after_ticks(count, last_tick, tick, oath_loss);
+    }
+    let covered = core::cmp::min(tick, expiry_tick);
+    if covered > last_tick {
+        let reduced = deep_loss_for_army(oaths, base_loss, antidote_rank);
+        let mid = crate::deep::troops_after_ticks(count, last_tick, covered, reduced);
+        crate::deep::troops_after_ticks(mid, covered, tick, oath_loss)
+    } else {
+        crate::deep::troops_after_ticks(count, last_tick, tick, oath_loss)
+    }
 }
 
 pub fn draw(odds: crate::relics::ChestTiers, seed: u256) -> ArmyRelic {

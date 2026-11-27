@@ -241,6 +241,7 @@ fn reset_beast(key: ResourceKey, value: DeepSite, timestamp: u64) {
                 ..Default::default(),
             },
             destroyed_tick: 0,
+            oaths: 0,
         },
     );
 }

@@ -63,9 +63,11 @@ const ruinScenario = (
       value: wire({
         game_id: 1,
         explorer_id: BigInt(SPIRE_ARMY),
-        first: null,
-        second: null,
-        third: null,
+        blade: 0,
+        ward: 0,
+        plunder: 0,
+        stamina_regen: 0,
+        antidote: 0,
       } satisfies NativeRows["ArmyRelics"]),
     },
   ] as never);
@@ -140,9 +142,11 @@ const clearTheRuin = (chain: NativeFactStore, explorerId: bigint, player: string
       value: wire({
         game_id: 1,
         explorer_id: explorerId,
-        first: { kind: relic.kind, rank: relic.rank },
-        second: null,
-        third: null,
+        blade: relic.kind === "Blade" ? relic.rank : 0,
+        ward: relic.kind === "Ward" ? relic.rank : 0,
+        plunder: relic.kind === "Plunder" ? relic.rank : 0,
+        stamina_regen: relic.kind === "StaminaRegen" ? relic.rank : 0,
+        antidote: relic.kind === "Antidote" ? relic.rank : 0,
       }),
     },
     {

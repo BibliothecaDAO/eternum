@@ -60,6 +60,7 @@ const STORY_RULES = {
 
   LordsWithdrawn: { excluded: "The player's own withdrawal needs no notification" },
   SiteUsed: { excluded: "Site use is recorded in Today and the Log" },
+  RelicCollected: { excluded: OWN_ACTION },
 } satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent", StoryRule>;
 
 export function storyNotificationRule(story: string): StoryRule {

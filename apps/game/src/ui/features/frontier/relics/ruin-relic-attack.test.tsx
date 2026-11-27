@@ -38,12 +38,9 @@ afterEach(() => {
 });
 
 const EPIC_BLADE = { model: "RuinRelic", key: "0xb1", value: { game_id: 1, entity_id: SITE, kind: "Blade", rank: 4 } };
+const EMPTY_RELICS = { blade: 0, ward: 0, plunder: 0, stamina_regen: 0, antidote: 0 };
 
-/**
- * The fixture's ruin, in a Season 1 day (no chest rules), guarding an Epic Blade (`rewardDelivered` false: its RuinRelic
- * row not received yet), army 201 beside it carrying the relics given (null: an empty slot).
- */
-const ruinCard = (carried: [unknown, unknown, unknown], rewardDelivered = true) => {
+const ruinCard = (carried: Partial<typeof EMPTY_RELICS> = {}, rewardDelivered = true) => {
   const { store, site, structure } = campBeside("Ruin");
   placeSite(store);
   store.applyFacts([
@@ -51,7 +48,7 @@ const ruinCard = (carried: [unknown, unknown, unknown], rewardDelivered = true) 
     {
       model: "ArmyRelics",
       key: "0xb2",
-      value: { game_id: 1, explorer_id: 201, first: carried[0], second: carried[1], third: carried[2] },
+      value: { game_id: 1, explorer_id: 201, ...EMPTY_RELICS, ...carried },
     },
   ] as never);
   useAccountStore.setState({ account: { address: "0x111" } as never });
@@ -79,20 +76,19 @@ const ruinCard = (carried: [unknown, unknown, unknown], rewardDelivered = true) 
   return { host, attack, button, store };
 };
 
-const FULL = [
-  { kind: "Ward", rank: 1 },
-  { kind: "Plunder", rank: 2 },
-  { kind: "Plunder", rank: 1 },
-] as [unknown, unknown, unknown];
-
-it("names the relic the ruin guards in what its clear pays, and what that relic does", () => {
-  const { host } = ruinCard([null, null, null]);
+it("names the relic the ruin guards in what its clear pays, and previews filling the kind slot", async () => {
+  const { host, attack, button } = ruinCard();
   expect(host.querySelector("[data-ruin-relic]")?.getAttribute("aria-label")).toBe("Reward: Epic Blade");
   expect(host.querySelector("[data-relic-effect]")?.textContent).toBe("Damage dealt: 100% → 140%");
+  expect(host.querySelector('[data-relic-outcome="Collected"]')?.textContent).toContain(
+    RELIC_WORDS.previewCollected(RELIC_WORDS.kinds.Blade),
+  );
+  await act(async () => button("Attack")!.click());
+  expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE }));
 });
 
-it("names a ruin's Ancient cache in place of its relic, and sends a full army's attack without a replacement", async () => {
-  const { host, attack, button, store } = ruinCard(FULL);
+it("names a ruin's Ancient cache in place of its relic", async () => {
+  const { host, attack, button, store } = ruinCard({ blade: 4, ward: 3, plunder: 2, stamina_regen: 1, antidote: 1 });
   act(() =>
     store.applyFacts([
       { model: "RuinCache", key: "0xbc", value: { game_id: 1, entity_id: SITE, fragments: 12 } },
@@ -100,142 +96,52 @@ it("names a ruin's Ancient cache in place of its relic, and sends a full army's 
   );
   expect(host.querySelector("[data-ruin-cache]")?.textContent).toBe(RELIC_WORDS.cache(12));
   expect(host.querySelector("[data-ruin-relic]")).toBeNull();
-  expect(host.querySelector("[data-relic-replacement]")).toBeNull();
+  expect(host.querySelector("[data-relic-outcome]")).toBeNull();
   await act(async () => button("Attack")!.click());
-  expect(attack).toHaveBeenCalledWith(
-    expect.objectContaining({ explorer_id: 201, structure_id: SITE, relic_slot: undefined }),
+  expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE }));
+});
+
+it("previews automatic merge, replace, and discard outcomes without blocking the attack", async () => {
+  const { host, attack, button, store } = ruinCard({ blade: 4 });
+  expect(host.querySelector('[data-relic-outcome="Merged"]')?.textContent).toContain(
+    RELIC_WORDS.previewMerged("IV", "V"),
   );
-});
-
-it("attacks with no slot named while the army has room: the contract fills a free one", async () => {
-  const { host, attack, button } = ruinCard([{ kind: "Ward", rank: 1 }, null, null]);
-  expect(host.querySelector("[data-relic-replacement]")).toBeNull();
-  await act(async () => button("Attack")!.click());
-  expect(attack).toHaveBeenCalledWith(
-    expect.objectContaining({ explorer_id: 201, structure_id: SITE, relic_slot: undefined }),
-  );
-});
-
-it("holds a full army's attack until the player picks the relic it replaces, then sends that slot", async () => {
-  const { host, attack, button } = ruinCard(FULL);
-  expect(host.querySelector("[data-relic-replacement]")).not.toBeNull();
-  // The choice said once, above it; the held step says what is left to do.
-  expect(host.textContent?.split(RELIC_WORDS.full)).toHaveLength(2);
-  expect(host.textContent).toContain(RELIC_WORDS.chooseFirst);
-  // No Attack can leave before the choice: the card's step says why instead.
-  expect(button("Attack")?.disabled ?? true).toBe(true);
-  const replacePlunder = host.querySelector<HTMLButtonElement>(
-    '[data-relic-replacement] button[aria-label="Replace Uncommon Plunder"]',
-  )!;
-  act(() => replacePlunder.click());
-  await act(async () => button("Attack")!.click());
-  expect(attack).toHaveBeenCalledTimes(1);
-  expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE, relic_slot: 1 }));
-});
-
-it("asks again when the chosen slot's relic changes, and sends only the fresh choice", async () => {
-  const { host, attack, button, store } = ruinCard(FULL);
-  act(() => host.querySelector<HTMLButtonElement>('[aria-label="Replace Uncommon Plunder"]')!.click());
-  // The chain moves a Legendary Ward into that slot: the choice named the Plunder, so it no longer stands.
   act(() =>
     store.applyFacts([
-      {
-        model: "ArmyRelics",
-        key: "0xb2",
-        value: { game_id: 1, explorer_id: 201, first: FULL[0], second: { kind: "Ward", rank: 5 }, third: FULL[2] },
-      },
+      { model: "ArmyRelics", key: "0xb2", value: { game_id: 1, explorer_id: 201, ...EMPTY_RELICS, blade: 2 } },
     ] as never),
   );
-  expect(host.textContent).toContain("Legendary Ward");
-  expect(host.textContent).toContain(RELIC_WORDS.chooseFirst);
-  expect(host.querySelector('[data-relic-replacement] [aria-selected="true"]')).toBeNull();
-  await act(async () => button("Attack")?.click());
-  expect(attack).not.toHaveBeenCalled();
-  // A fresh choice of that same slot, now holding the Ward, goes.
-  act(() => host.querySelector<HTMLButtonElement>('[aria-label="Replace Legendary Ward"]')!.click());
-  await act(async () => button("Attack")!.click());
-  expect(attack).toHaveBeenCalledTimes(1);
-  expect(attack).toHaveBeenCalledWith(expect.objectContaining({ structure_id: SITE, relic_slot: 1 }));
-});
-
-it("keeps a standing choice while unrelated facts change", async () => {
-  const { host, attack, button, store } = ruinCard(FULL);
-  act(() => host.querySelector<HTMLButtonElement>('[aria-label="Replace Common Plunder"]')!.click());
-  // Another kind's effect starts running: the carried relics are the same, so the choice stands.
+  expect(host.querySelector('[data-relic-outcome="Replaced"]')?.textContent).toContain(
+    RELIC_WORDS.previewReplaced("II", "IV"),
+  );
   act(() =>
     store.applyFacts([
-      {
-        model: "ArmyRelicEffect",
-        key: "0xb3",
-        value: { game_id: 1, explorer_id: 201, kind: "Blade", rank: 2, expires_at: 9_000 },
-      },
+      { model: "ArmyRelics", key: "0xb2", value: { game_id: 1, explorer_id: 201, ...EMPTY_RELICS, blade: 5 } },
     ] as never),
   );
+  expect(host.querySelector('[data-relic-outcome="Discarded"]')?.textContent).toContain(
+    RELIC_WORDS.previewDiscarded("V"),
+  );
   await act(async () => button("Attack")!.click());
-  expect(attack).toHaveBeenCalledWith(expect.objectContaining({ relic_slot: 2 }));
+  expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE }));
 });
 
-it("withholds the attack while the army's relics are not known, saying it reads them", async () => {
-  const { host, attack, button, store } = ruinCard(FULL);
-  // A snapshot not yet complete: the effects the army has none of cannot be told apart from ones not yet delivered.
-  act(() => store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 }));
-  expect(host.querySelector("[data-relic-replacement]")).toBeNull();
-  expect(host.textContent).toContain(RELIC_WORDS.reading);
-  expect(button("Attack")?.disabled ?? true).toBe(true);
-  await act(async () => button("Attack")?.click());
-  expect(attack).not.toHaveBeenCalled();
-});
-
-it("holds a choice only for the army and the ruin it was made for", () => {
-  const { store } = ruinCard(FULL);
-  const site = store.require("ExpeditionSite", { game_id: 1, entity_id: SITE });
-  const choice = { armyId: 201, ruinId: SITE, slot: 1 as const, held: { kind: "Plunder" as const, rank: 2 } };
-  const chosen = (ruinId: number, armyId: number) => {
-    const state = ruinRelicState(store, { ...site, entity_id: BigInt(ruinId) }, armyId, 350, choice);
-    return state.kind === "full" ? state.chosen : state.kind;
-  };
-  expect(chosen(SITE, 201)).toBe(1);
-  // Another ruin guarding a relic: the choice was made against this one, so it stands for no other.
-  store.applyFacts([
-    { model: "RuinRelic", key: "0xb9", value: { game_id: 1, entity_id: 999, kind: "Ward", rank: 1 } },
-  ] as never);
-  expect(chosen(999, 201)).toBeNull();
-  // Another army carrying the very same relics: the choice was 201's, so it stands for no other army.
-  const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
-  store.applyFacts([
-    { model: "ExplorerTroops", key: "0xba", value: { ...army, explorer_id: 202 } },
-    {
-      model: "ArmyRelics",
-      key: "0xbb",
-      value: { game_id: 1, explorer_id: 202, first: FULL[0], second: FULL[1], third: FULL[2] },
-    },
-  ] as never);
-  // (Its effects lie outside this store's scope, so they read unknown: either way it inherits no choice.)
-  expect(chosen(SITE, 202)).not.toBe(1);
-});
-
-it("withholds the attack while what the ruin pays is still arriving, then asks a full army to choose", async () => {
-  // A snapshot in pieces: the ruin and the army are in, the ruin's reward and the army's effects not yet.
-  const { host, attack, button, store } = ruinCard(FULL, false);
+it("withholds the attack while the ruin's reward or the army's relics are still arriving", async () => {
+  const { host, attack, button, store } = ruinCard({ blade: 2 }, false);
   act(() => store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 }));
   expect(host.querySelector("[data-ruin-relic]")).toBeNull();
-  expect(host.querySelector("[data-relic-replacement]")).toBeNull();
   expect(host.textContent).toContain(RELIC_WORDS.readingRuin);
   expect(button("Attack")?.disabled ?? true).toBe(true);
   await act(async () => button("Attack")?.click());
   expect(attack).not.toHaveBeenCalled();
-  // The reward arrives while the snapshot is still partial: the army's relics are what is left to read.
   act(() => store.applyFacts([EPIC_BLADE] as never));
   expect(host.querySelector("[data-ruin-relic]")?.getAttribute("aria-label")).toBe("Reward: Epic Blade");
   expect(host.textContent).toContain(RELIC_WORDS.reading);
   expect(button("Attack")?.disabled ?? true).toBe(true);
-  // The snapshot completes: the army is full, so it must choose before anything leaves.
   act(() => store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 }));
-  expect(host.querySelector("[data-relic-replacement]")).not.toBeNull();
-  expect(host.textContent).toContain(RELIC_WORDS.chooseFirst);
-  expect(button("Attack")?.disabled ?? true).toBe(true);
-  act(() => host.querySelector<HTMLButtonElement>('[aria-label="Replace Uncommon Plunder"]')!.click());
+  expect(
+    ruinRelicState(store, store.require("ExpeditionSite", { game_id: 1, entity_id: SITE }), 201, 350),
+  ).toMatchObject({ kind: "outcome", outcome: "Replaced", previousRank: 2, resultRank: 4 });
   await act(async () => button("Attack")!.click());
   expect(attack).toHaveBeenCalledTimes(1);
-  expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE, relic_slot: 1 }));
 });

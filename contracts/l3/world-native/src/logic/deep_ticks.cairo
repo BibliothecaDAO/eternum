@@ -371,6 +371,8 @@ fn settle_garrisons(held: Held) {
         row.troops.count = count;
         if count == 0 {
             row.troops.stamina.reset();
+            row.troops.boosts = Default::default();
+            row.oaths = 0;
         }
         crate::logic::guards::GuardState::save(guard.key, row);
         crate::logic::deep_garrisons::record(guard.key, guard.home);

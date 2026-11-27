@@ -36,6 +36,7 @@ struct GuardDefender {
     army: ExplorerTroops,
     actor: ContractAddress,
     home: u64,
+    oaths: u16,
 }
 
 pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, context: ExecutionContext) {
@@ -61,7 +62,7 @@ pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, conte
             .spend_claim(key, attacker, target.coord, crate::commands::action_context(context));
     }
     let clean = crate::oaths::clean_win(attacker_before, attacker.troops.count);
-    complete_guard_capture(key, attacker, target, defender, defender_before, command.relic_slot, clean, context);
+    complete_guard_capture(key, attacker, target, defender, defender_before, clean, context);
     if fought {
         emit_guard_battle(key, actor, attacker, attacker_before, target, defender, defender_before, context);
     }
@@ -115,6 +116,7 @@ fn guard_defender(
             actor: owner,
             army: ExplorerTroops { owner: target.key.entity_id, coord: target.coord, troops: Default::default() },
             home: 0,
+            oaths: 0,
         };
     };
     let home = if target.structure.is_none() {
@@ -122,7 +124,8 @@ fn guard_defender(
     } else {
         0
     };
-    let mut troops = crate::logic::guards::guard(key).troops;
+    let row = crate::logic::guards::guard(key);
+    let mut troops = row.troops;
     if home != 0 {
         let player = crate::logic::structures::owner(ResourceKey { game_id: key.game_id, entity_id: home });
         assert!(player != actor, "actor owns defender");
@@ -131,6 +134,7 @@ fn guard_defender(
             actor: player,
             army: ExplorerTroops { owner: target.key.entity_id, coord: target.coord, troops },
             home,
+            oaths: row.oaths,
         };
     }
     let bps = beast_bps(target, attacker.owner, context.timestamp);
@@ -140,6 +144,7 @@ fn guard_defender(
         actor: owner,
         army: ExplorerTroops { owner: target.key.entity_id, coord: target.coord, troops },
         home: 0,
+        oaths: row.oaths,
     }
 }
 
@@ -166,7 +171,7 @@ fn fight_guard(key: ExplorerKey, ref attacker: ExplorerTroops, ref defender: Gua
     record_target(key, target, context);
     let combat = CombatContext {
         attacker_oaths: crate::logic::progression::held_oaths(key, context),
-        defender_oaths: 0,
+        defender_oaths: defender.oaths,
         defender_is_structure_guard: if crate::rules::ONLY_UNOWNED_TARGETS {
             defender.actor != 0.try_into().unwrap()
         } else {
@@ -204,6 +209,8 @@ fn save_guard_defender(defender: GuardDefender, before: u128, context: Execution
                     );
             if row.troops.count == 0 {
                 row.troops.stamina.reset();
+                row.troops.boosts = Default::default();
+                row.oaths = 0;
                 row
                     .destroyed_tick = (context.timestamp / context.rules.unbox().tick_config.armies_tick_in_seconds)
                     .try_into()
@@ -221,12 +228,11 @@ fn complete_guard_capture(
     target: GuardTarget,
     defender: GuardDefender,
     defender_before: u128,
-    relic_slot: Option<u8>,
     clean: bool,
     context: ExecutionContext,
 ) {
     if let Some(structure) = target.structure {
-        try_capture(key, attacker, target.key, structure, relic_slot, clean, context);
+        try_capture(key, attacker, target.key, structure, clean, context);
         return;
     }
     if defender.army.troops.count != 0 {
@@ -392,6 +398,7 @@ pub fn guard_attack(
     assert_battle_immunity(game_id, defender.owner, rules, context.timestamp, context);
     let attacker = ExplorerTroops { owner: command.guard.structure_id, coord, troops: guard.troops };
     let combat = CombatContext {
+        attacker_oaths: guard.oaths,
         attacker_is_structure_guard: true,
         defender_oaths: crate::logic::progression::held_oaths(defender_key, context),
         ..combat_context(game_id, attacker, defender, context),
@@ -403,17 +410,13 @@ pub fn guard_attack(
     guard.troops = attacker_after;
     if guard.troops.count == 0 {
         guard.troops.stamina.reset();
+        guard.troops.boosts = Default::default();
+        guard.oaths = 0;
         guard.destroyed_tick = (context.timestamp / rules.tick_config.armies_tick_in_seconds).try_into().unwrap();
     }
     crate::logic::guards::GuardState::save(guard_key, guard);
     try_capture(
-        defender_key,
-        defender,
-        ResourceKey { game_id, entity_id: command.guard.structure_id },
-        home,
-        None,
-        false,
-        context,
+        defender_key, defender, ResourceKey { game_id, entity_id: command.guard.structure_id }, home, false, context,
     );
     emit(
         crate::troops::BattleEvent {
@@ -443,7 +446,6 @@ pub fn try_capture(
     explorer: ExplorerTroops,
     key: ResourceKey,
     target: Structure,
-    relic_slot: Option<u8>,
     clean: bool,
     context: ExecutionContext,
 ) {
@@ -459,7 +461,7 @@ pub fn try_capture(
         || crate::logic::guards::GuardState::next(key, target.base.troop_max_guard_count).is_some() {
         return;
     }
-    family::capture(explorer_key, explorer, key, target, relic_slot, clean, context);
+    family::capture(explorer_key, explorer, key, target, clean, context);
 }
 
 fn clear_site_left_unguarded(key: ResourceKey, target: Structure) {

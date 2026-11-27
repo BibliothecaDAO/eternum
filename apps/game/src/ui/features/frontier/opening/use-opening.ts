@@ -311,5 +311,8 @@ function countExploredBeyondHomeRing(
   return count;
 }
 
-const carriesRelic = (relics: Pick<NativeRows["ArmyRelics"], "first" | "second" | "third"> | undefined): boolean =>
-  relics !== undefined && [relics.first, relics.second, relics.third].some((slot) => slot !== null);
+const carriesRelic = (
+  relics: Pick<NativeRows["ArmyRelics"], "blade" | "ward" | "plunder" | "stamina_regen" | "antidote"> | undefined,
+): boolean =>
+  relics !== undefined &&
+  [relics.blade, relics.ward, relics.plunder, relics.stamina_regen, relics.antidote].some((rank) => rank > 0);

@@ -358,9 +358,7 @@ pub fn assert_capture_at(
     let camp_reward = Some(
         crate::resources::ResourceAmount { resource_type: crate::resources::LABOR, amount: camp_credit },
     );
-    let attack = Command::BattleGuard(
-        crate::commands::Battle { attacker_id: explorer_id, defender_id: camp_id, relic_slot: None },
-    );
+    let attack = Command::BattleGuard(crate::commands::Battle { attacker_id: explorer_id, defender_id: camp_id });
     let mut payout_events = snforge_std::spy_events();
     super::resource_commands::assert_executes(d, game_id, attack, capture_at);
     assert_site_removed(d, camp);
@@ -444,9 +442,7 @@ pub fn assert_capture_at(
     super::resource_commands::assert_executes(
         d,
         game_id,
-        Command::BattleGuard(
-            crate::commands::Battle { attacker_id: explorer_id, defender_id: mine_id, relic_slot: None },
-        ),
+        Command::BattleGuard(crate::commands::Battle { attacker_id: explorer_id, defender_id: mine_id }),
         capture_at + 1,
     );
     assert_eq!(

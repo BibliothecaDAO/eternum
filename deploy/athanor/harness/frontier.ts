@@ -945,7 +945,6 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
           value: {
             attacker_id: army.explorer_id,
             defender_id: target.entity_id,
-            relic_slot: { kind: "None", value: undefined },
           },
         },
         TransactionType.ATTACK_EXPLORER_VS_GUARD,

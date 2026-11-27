@@ -589,6 +589,11 @@
       "id": 36,
       "name": "SiteUsed",
       "retired": false
+    },
+    {
+      "id": 37,
+      "name": "RelicCollected",
+      "retired": false
     }
   ]
 }

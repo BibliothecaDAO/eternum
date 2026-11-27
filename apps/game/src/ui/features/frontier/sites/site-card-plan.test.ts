@@ -429,6 +429,7 @@ it("keeps a Knight garrison protected and removes that protection from the beast
         structure_id: site.id,
         slot: 0,
         destroyed_tick: 0,
+        oaths: 0,
         troops: { ...army.troops, category: "Knight" },
       },
     },

@@ -215,8 +215,8 @@ const commandEnabled = (name: keyof typeof nativeCommandBits) =>
 
 const anySpendEnabled = FRAGMENT_SPEND_COMMANDS.some((name) => commandEnabled(name));
 const barFragments = n(Math.ceil(stamina.staminaKnightMax / fragments.STAMINA_PER_FRAGMENT));
-const logisticsStepValue = logisticsStamina(stamina.staminaKnightMax, 1);
-const logisticsBonusValue = logisticsStamina(stamina.staminaKnightMax, rule.ATTRIBUTE_CAP);
+const logisticsStepValue = logisticsStamina(1);
+const logisticsBonusValue = logisticsStamina(rule.ATTRIBUTE_CAP);
 const logisticsMaxValue = stamina.staminaKnightMax + logisticsBonusValue;
 
 const castleLevelLabel = (level: number) => `Level ${level + 1} (${rankName(level)})`;
@@ -650,7 +650,7 @@ export const FRONTIER = {
     wellReflection: n(Math.round((stamina.staminaKnightMax * oaths.REFLECTION_WELL_PERCENT) / 100)),
     wellLogisticsBase: n(Math.round((logisticsMaxValue * rule.WELL_REFILL_PERCENT) / 100)),
     wellLogisticsReflection: n(Math.round((logisticsMaxValue * oaths.REFLECTION_WELL_PERCENT) / 100)),
-    logisticsStep: `${n(rule.LOGISTICS_STEP_PERCENT)}%`,
+    logisticsStep: `+${n(rule.LOGISTICS_STEP_STAMINA)}`,
     logisticsStepAmount: `+${n(logisticsStepValue)}`,
     logisticsBonus: `+${n(logisticsBonusValue)}`,
     logisticsMax: n(logisticsMaxValue),
@@ -920,7 +920,7 @@ export const FRONTIER = {
     passStamina: n(oaths.PASS_STAMINA),
     rerollFragments: n(fragments.OATH_REROLL_FRAGMENTS),
     rerollNote: `Spend ${n(fragments.OATH_REROLL_FRAGMENTS)} Fragments to reroll one offered Oath once per pick on the ${personalLayersAnd}.`,
-    vitriolLoss: n(oaths.VITRIOL_LOSS_PER_TICK),
+    vitriolLoss: n(holdVitriolLoss),
     reflectionWell: `${n(oaths.REFLECTION_WELL_PERCENT)}%`,
     detectionLimit: n(oaths.DETECTION_EMPTY_REVEAL_LIMIT),
     angerAttack: n(angerAttackCost),

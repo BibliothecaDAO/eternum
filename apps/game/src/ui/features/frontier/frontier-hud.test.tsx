@@ -1969,6 +1969,7 @@ it("shows confirmed Season Glory inside the desktop Season button and phone top 
             slot: 0,
             troops: { ...sampleGuard.troops, count: 500n * BigInt(RESOURCE_PRECISION) },
             destroyed_tick: 0,
+            oaths: 0,
           }),
         },
       ] as never),

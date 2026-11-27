@@ -924,10 +924,6 @@ export class EternumProvider extends EventEmitter {
         value: {
           attacker_id: props.explorer_id,
           defender_id: props.structure_id,
-          relic_slot:
-            props.relic_slot === undefined
-              ? { kind: "None", value: undefined }
-              : { kind: "Some", value: props.relic_slot },
         },
       },
       TransactionType.ATTACK_EXPLORER_VS_GUARD,
@@ -1031,8 +1027,8 @@ export class EternumProvider extends EventEmitter {
         kind: "ApplyRelic",
         value: {
           entity_id: props.entity_id,
-          relic_id: props.relic_resource_id,
-          slot: props.relic_slot,
+          kind: { kind: props.kind, value: undefined },
+          expected_rank: props.expected_rank,
         },
       },
       TransactionType.APPLY_RELIC,

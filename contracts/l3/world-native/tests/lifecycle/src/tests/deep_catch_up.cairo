@@ -178,6 +178,7 @@ fn seat_garrison(d: Deployment, key: GuardKey, home: u64, troops: u128) {
                         ..Default::default(),
                     },
                     destroyed_tick: 0,
+                    oaths: 0,
                 },
             );
             crate::state::write().deep.slots.write((key.game_id, key.structure_id, key.slot), home);

@@ -406,6 +406,10 @@ export const factWireTypes = [
         name: "StaminaRegen",
         type: "()",
       },
+      {
+        name: "Antidote",
+        type: "()",
+      },
     ],
   },
   {
@@ -441,16 +445,24 @@ export const factWireTypes = [
     name: "world_native::army_relics::ArmyRelics",
     members: [
       {
-        name: "first",
-        type: "core::option::Option::<world_native::army_relics::ArmyRelic>",
+        name: "blade",
+        type: "core::integer::u8",
       },
       {
-        name: "second",
-        type: "core::option::Option::<world_native::army_relics::ArmyRelic>",
+        name: "ward",
+        type: "core::integer::u8",
       },
       {
-        name: "third",
-        type: "core::option::Option::<world_native::army_relics::ArmyRelic>",
+        name: "plunder",
+        type: "core::integer::u8",
+      },
+      {
+        name: "stamina_regen",
+        type: "core::integer::u8",
+      },
+      {
+        name: "antidote",
+        type: "core::integer::u8",
       },
     ],
   },
@@ -1549,7 +1561,7 @@ export function defineFactModels({ struct, model: declare }) {
 
 // Paths describe observable values, not serialized row positions.
 const behaviouralFacts = {
-  Guard: { domain: "troops", fields: { troops: "troops", destroyedAt: "destroyed_tick" } },
+  Guard: { domain: "troops", fields: { troops: "troops", destroyedAt: "destroyed_tick", oaths: "oaths" } },
   RealmTraits: { domain: "realm/season", fields: { wonder: "wonder", order: "order", resources: "resources" } },
   ResourceBalance: { domain: "resources", fields: { balance: "balance" } },
   ResourceProduction: {

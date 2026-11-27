@@ -63,6 +63,7 @@ describe("the realm's stores", () => {
         battle_cooldown_end: 0,
       },
       destroyed_tick: 0,
+      oaths: 0,
     });
 
     store.applyFacts([

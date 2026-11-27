@@ -357,6 +357,7 @@ describe("native directory", () => {
         rowEvent("Guard", ["1", "6", "0"], {
           troops: explorerValue("6", site.initial_guard_count).troops,
           destroyed_tick: 0,
+          oaths: 0,
         }),
         rowEvent("TileOccupancy", ["1", "0", "1764", "50"], { entity_id: "6", category: "42", is_structure: true }),
       ]),

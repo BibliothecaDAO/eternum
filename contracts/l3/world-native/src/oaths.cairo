@@ -17,7 +17,7 @@ pub const TITANS: u8 = 13;
 pub const VITRIOL: u8 = 14;
 pub const ANGER: u8 = 15;
 pub const ENLIGHTENMENT: u8 = 16;
-pub const VITRIOL_LOSS_PER_TICK: u16 = 100;
+pub const VITRIOL_REDUCTION_PERCENT: u16 = 50;
 pub const PASS_STAMINA: u16 = 40;
 pub const POWER_DAMAGE_PERCENT: u16 = 20;
 pub const GIANTS_REDUCTION_PERCENT: u16 = 15;
@@ -28,7 +28,7 @@ pub const BRILLIANCE_PAY_PERCENT: u16 = 125;
 pub const RAGE_PAY_PERCENT: u16 = 125;
 pub const ANGER_ATTACK_STAMINA: u16 = 20;
 pub const TITANS_STAMINA: u16 = 60;
-pub const ENLIGHTENMENT_REGEN_BPS: u16 = 13334;
+pub const ENLIGHTENMENT_REGEN_STAMINA: u16 = 10;
 pub const FOX_REVEAL_DISCOUNT_PERCENT: u16 = 20;
 pub const SKILL_DAMAGE_PERCENT: u16 = 30;
 pub const SKILL_BELOW_STAMINA: u16 = 10;
@@ -98,7 +98,7 @@ pub fn fury_refund(oaths: u16, cost: u16) -> u64 {
 
 pub fn deep_loss_per_tick(oaths: u16, base: u128) -> u128 {
     if held(oaths, VITRIOL) {
-        VITRIOL_LOSS_PER_TICK.into() * crate::rules::RESOURCE_PRECISION
+        base * (100 - VITRIOL_REDUCTION_PERCENT).into() / 100
     } else {
         base
     }
@@ -164,11 +164,11 @@ pub fn stamina_bonus(oaths: u16) -> u64 {
     }
 }
 
-pub fn regen_bps(oaths: u16) -> u32 {
+pub fn regen_bonus_per_hour(oaths: u16) -> u16 {
     if held(oaths, ENLIGHTENMENT) {
-        ENLIGHTENMENT_REGEN_BPS.into()
+        ENLIGHTENMENT_REGEN_STAMINA
     } else {
-        10000
+        0
     }
 }
 

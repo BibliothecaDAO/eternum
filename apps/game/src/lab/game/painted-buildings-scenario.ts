@@ -161,6 +161,7 @@ export const paintedBuildingsScenario = (): LabScenario => {
           slot: 0,
           troops: { ...army.troops, count },
           destroyed_tick: 0,
+          oaths: 0,
         }),
       },
     );

@@ -20,7 +20,6 @@ pub struct Explore {
 pub struct Battle {
     pub attacker_id: u64,
     pub defender_id: u64,
-    pub relic_slot: Option<u8>,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

@@ -9,6 +9,8 @@ export interface PickEffectBase {
   maxStamina?: number;
   staminaPerSecond?: number;
   deepLossPerTick?: number;
+  deepBaseLossPerTick?: number;
+  oaths?: number;
 }
 
 const fromToEffect = (label: string, from: string, to: string, note?: string): string =>

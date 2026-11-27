@@ -14,10 +14,10 @@ tier, and exact effect before you attack.
 
 ## How relics work
 
-- **Slots:** an army carries up to {FRONTIER.relics.slots} relics at once. When full, winning another relic lets you
-  pick which slot to replace.
-- **Activation:** activating a relic is free and works anywhere, including inside [the Deep](/frontier/deep). An army
-  can have one active effect per relic kind at a time.
+- **Slots:** an army has {FRONTIER.relics.slots} slots, one per relic kind. Winning a matching tier merges both into the
+  next tier (up to {FRONTIER.relics.lastTier}); a higher tier replaces what you hold, and a lower tier is discarded.
+- **Activation:** activating a relic works anywhere, including inside [the Deep](/frontier/deep). An army can run up to
+  {FRONTIER.relics.slots} active effects at once, one per relic kind.
 - **Duration:** an active relic lasts {FRONTIER.relics.minutesPerTier} minutes per tier, from
   {FRONTIER.relics.minutesPerTier} minutes for {FRONTIER.relics.firstTier} (I) up to {FRONTIER.relics.maxMinutes}
   minutes for {FRONTIER.relics.lastTier} (V).
@@ -43,3 +43,4 @@ These are the only {FRONTIER.relics.count} relic kinds in Season 1. No relic or 
 | <GameIcon name={FRONTIER.relics.rows[1].icon} /> **{FRONTIER.relics.rows[1].name}** | {FRONTIER.relics.rows[1].common} | {FRONTIER.relics.rows[1].legendary} |
 | <GameIcon name={FRONTIER.relics.rows[2].icon} /> **{FRONTIER.relics.rows[2].name}** | {FRONTIER.relics.rows[2].common} | {FRONTIER.relics.rows[2].legendary} |
 | <GameIcon name={FRONTIER.relics.rows[3].icon} /> **{FRONTIER.relics.rows[3].name}** | {FRONTIER.relics.rows[3].common} | {FRONTIER.relics.rows[3].legendary} |
+| <GameIcon name={FRONTIER.relics.rows[4].icon} /> **{FRONTIER.relics.rows[4].name}** | {FRONTIER.relics.rows[4].common} | {FRONTIER.relics.rows[4].legendary} |

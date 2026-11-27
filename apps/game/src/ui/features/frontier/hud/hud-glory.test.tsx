@@ -52,6 +52,7 @@ function setGuard(
         slot,
         troops: { ...sample.troops, count: troopsCount },
         destroyed_tick: 0,
+        oaths: 0,
       }),
     },
   ] as never);

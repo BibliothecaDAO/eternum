@@ -306,7 +306,7 @@ export const siteAt = (
   {
     model: "Guard",
     key: "0x73",
-    value: wire({ game_id: 1, structure_id: SITE, slot: 0, troops: guard, destroyed_tick: 0 }),
+    value: wire({ game_id: 1, structure_id: SITE, slot: 0, troops: guard, destroyed_tick: 0, oaths: 0 }),
   },
   {
     model: "TileOccupancy",

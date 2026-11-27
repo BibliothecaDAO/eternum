@@ -292,3 +292,11 @@ export const questObjective = (quest: QuestLine): string => `${quest.verb} ${que
 
 export const questLine = (quest: QuestLine, target: number): string =>
   `${quest.verb} ${formatCount(target, quest.unit.one, quest.unit.many)}`;
+
+export const ARMY_RELIC_KIND_NAMES = {
+  Blade: "Blade",
+  Ward: "Ward",
+  Plunder: "Plunder",
+  StaminaRegen: "Stamina",
+  Antidote: "Antidote",
+} as const;

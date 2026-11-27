@@ -109,6 +109,7 @@ export enum EntityType {
 export type StaminaEffects = {
   readonly until: number;
   readonly windows: readonly { start: number; end: number; rateBps: number }[];
+  readonly bonusPerHour?: number;
 };
 
 export type Troops = Omit<NativeRows["ExplorerTroops"]["troops"], "stamina"> & {

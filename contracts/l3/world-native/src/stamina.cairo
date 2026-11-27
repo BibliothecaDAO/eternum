@@ -2,6 +2,15 @@ use core::num::traits::Zero;
 use crate::math::PercentageValueImpl;
 use crate::rules::TroopStaminaConfig;
 use crate::troops::{Stamina, StaminaSource, TroopBoosts, TroopTier, TroopType};
+fn gcd_u64(mut a: u64, mut b: u64) -> u64 {
+    while b != 0 {
+        let next = a % b;
+        a = b;
+        b = next;
+    }
+    a
+}
+
 #[generate_trait]
 pub impl StaminaImpl of StaminaTrait {
     fn reset(ref self: Stamina) {
@@ -36,6 +45,7 @@ pub impl StaminaImpl of StaminaTrait {
                 tick_seconds,
                 timestamp,
                 10000,
+                0,
             );
     }
 
@@ -47,6 +57,7 @@ pub impl StaminaImpl of StaminaTrait {
         tick_seconds: u64,
         timestamp: u64,
         rate_bps: u32,
+        bonus_per_hour: u16,
     ) {
         let now: u32 = timestamp.try_into().unwrap();
         // Slot resolution already used the army's Logistics maximum at this second.
@@ -59,8 +70,13 @@ pub impl StaminaImpl of StaminaTrait {
         } else {
             let elapsed: u64 = (now - self.settled_at).into();
             let boosted = core::cmp::min(elapsed, troop_boosts.incr_stamina_regen_seconds_left.into());
-            let denominator = tick_seconds * PercentageValueImpl::_100();
-            let gain: u128 = troop_stamina_config.stamina_gain_per_tick.into();
+            let common = gcd_u64(tick_seconds, 3600);
+            let hour_scale: u128 = (3600 / common).into();
+            let tick_scale: u128 = (tick_seconds / common).into();
+            let denominator: u128 = Into::<u64, u128>::into(tick_seconds / common * 3600)
+                * PercentageValueImpl::_100().into();
+            let gain: u128 = Into::<u16, u128>::into(troop_stamina_config.stamina_gain_per_tick) * hour_scale
+                + Into::<u16, u128>::into(bonus_per_hour) * tick_scale;
             let rate: u128 = rate_bps.into();
             let boosted_rate = rate
                 * (10000 + Into::<u16, u128>::into(troop_boosts.incr_stamina_regen_percent_num))
@@ -69,8 +85,8 @@ pub impl StaminaImpl of StaminaTrait {
                 + gain
                     * (Into::<u64, u128>::into(elapsed - boosted) * rate
                         + Into::<u64, u128>::into(boosted) * boosted_rate);
-            self.amount += (numerator / denominator.into()).try_into().unwrap();
-            self.remainder = (numerator % denominator.into()).try_into().unwrap();
+            self.amount += (numerator / denominator).try_into().unwrap();
+            self.remainder = (numerator % denominator).try_into().unwrap();
             troop_boosts.incr_stamina_regen_seconds_left -= boosted.try_into().unwrap();
         }
         self.amount = core::cmp::min(self.amount, maximum);
@@ -114,7 +130,7 @@ pub impl StaminaImpl of StaminaTrait {
         tick_seconds: u64,
         timestamp: u64,
     ) {
-        self.refill_to_max(ref troop_boosts, maximum, troop_stamina_config, tick_seconds, timestamp, 10000);
+        self.refill_to_max(ref troop_boosts, maximum, troop_stamina_config, tick_seconds, timestamp, 10000, 0);
         self.amount = core::cmp::min(self.amount + amount, maximum);
         self.clamp(maximum);
     }

@@ -160,14 +160,15 @@ it("ignores a scheduled Triumph after an early finish without changing its calen
   });
 });
 
-it("runs an Enlightenment army's whole day a third faster, under Mist Tide, Second Wind and in the Deep", () => {
+it("adds Enlightenment's flat hourly bonus across Mist Tide, Second Wind and the Deep", () => {
   const store = fixture();
   const enlightened = 1 << (nativeOathConstants.ENLIGHTENMENT - 1);
+  const bonusPerHour = nativeOathConstants.ENLIGHTENMENT_REGEN_STAMINA;
   expect(readStaminaEffects(store, 1, 7, EPOCH, day.start, 0, enlightened)).toEqual({
-    known: { until: day.end, windows: [{ start: day.start, end: day.end, rateBps: 6_667 }] },
+    known: { until: day.end, windows: [{ start: day.start, end: day.end, rateBps: 5_000 }], bonusPerHour },
   });
   expect(readStaminaEffects(store, 1, 7, EPOCH, day.start, 3, enlightened)).toEqual({
-    known: { until: day.end, windows: [{ start: day.start, end: day.end, rateBps: 13_334 }] },
+    known: { until: day.end, windows: [], bonusPerHour },
   });
   store.applyFacts([
     {
@@ -177,6 +178,6 @@ it("runs an Enlightenment army's whole day a third faster, under Mist Tide, Seco
     },
   ]);
   expect(readStaminaEffects(store, 1, 7, EPOCH, day.start, 0, enlightened)).toEqual({
-    known: { until: day.end, windows: [{ start: day.start, end: day.end, rateBps: 13_334 }] },
+    known: { until: day.end, windows: [], bonusPerHour },
   });
 });

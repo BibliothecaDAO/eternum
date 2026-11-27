@@ -77,9 +77,11 @@ it("answers the attack on the ruin as the chain clears it, and its payout story 
     );
 
   expect(chain.require("ArmyRelics", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) })).toMatchObject({
-    first: { kind: "Blade", rank: 2 },
-    second: null,
-    third: null,
+    blade: 2,
+    ward: 0,
+    plunder: 0,
+    stamina_regen: 0,
+    antidote: 0,
   });
   expect(chain.get("ResourceBalance", { game_id: 1, entity_id: 7n, resource_type: ResourcesIds.Lords })?.balance).toBe(
     lordsBefore,

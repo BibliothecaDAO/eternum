@@ -7,6 +7,7 @@ import {
   rankedText,
 } from "@bibliothecadao/types";
 import { accountAspect } from "../utils/army-opponents";
+import { armyRelicKindName } from "../utils/army-relics";
 import {
   SHRINE_USED,
   SHRINE_USED_LINE,
@@ -274,6 +275,30 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | ArchivedStoryVar
       description: describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
       icon: "scroll",
     };
+  },
+  RelicCollected: (event, payload, components, resolvePlayerName) => {
+    const kind = formatEnum(payload.kind);
+    const outcome = formatEnum(payload.outcome);
+    const found = rankOf(toNumber(payload.found_rank));
+    const previous = rankOf(toNumber(payload.previous_rank));
+    const result = rankOf(toNumber(payload.result_rank));
+    const kindLabel = kind ? armyRelicKindName(kind) : undefined;
+    if (!kindLabel || !outcome || !found || !result) throw new Error("Incomplete relic story");
+    const army = describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName));
+    if (outcome === "Merged" && previous) {
+      return rankedStory(
+        [`${kindLabel} `, result, " forged"],
+        [`${army} · `, previous, " + ", found, " → ", result],
+        "prize",
+      );
+    }
+    if (outcome === "Replaced" && previous) {
+      return rankedStory([`${kindLabel} `, result, " replaced"], [`${army} · `, previous, " → ", result], "prize");
+    }
+    if (outcome === "Discarded") {
+      return rankedStory([`${kindLabel} `, found, " discarded"], [`${army} · kept `, result], "scroll");
+    }
+    return rankedStory([`${kindLabel} `, result, " collected"], [army], "prize");
   },
   LordsWithdrawn: (event, payload, components, resolvePlayerName) => {
     const amount = toNumber(payload.amount);

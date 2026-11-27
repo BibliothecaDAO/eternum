@@ -163,11 +163,11 @@ describe("a release's rule rows", () => {
     expect(affordableAt(empty, 100, stamina, tick, manager.getCombatConfig().stamina_attack_req)).toBe(3700);
     for (const [trained, maximum, explores, attacks] of [
       [0, 120, 6, 4],
-      [1, 144, 7, 4],
-      [2, 168, 8, 5],
-      [3, 192, 9, 6],
-      [4, 216, 10, 7],
-      [5, 240, 12, 8],
+      [1, 150, 7, 5],
+      [2, 180, 9, 6],
+      [3, 210, 10, 7],
+      [4, 240, 12, 8],
+      [5, 270, 13, 9],
     ] as const) {
       const bar = musterStamina({ slot: 0, inherited: null }, troop, 100, stamina, trained, tick);
       expect(bar).toEqual({ amount: maximum, max: maximum });

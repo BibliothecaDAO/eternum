@@ -63,13 +63,25 @@ mod settlement {
             crate::clock::day_unit_seconds(context.game.unbox()),
             crate::logic::army_days::require(key),
         );
-        let tick = core::cmp::min(context.timestamp, day.end)
-            / context.rules.unbox().tick_config.armies_tick_in_seconds;
+        let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
+        let tick = core::cmp::min(context.timestamp, day.end) / interval;
         if tick <= last_tick {
             return None;
         }
-        let loss = crate::oaths::deep_loss_per_tick(crate::logic::progression::require(key).oaths, rules.loss_per_tick);
-        Some((crate::deep::troops_after_ticks(army.troops.count, last_tick, tick, loss), tick))
+        let oaths = crate::logic::progression::require(key).oaths;
+        let (antidote_rank, expiry_tick) =
+            match crate::logic::army_relics::effect(
+                crate::army_relics::ArmyRelicEffectKey {
+                    game_id: key.game_id, explorer_id: key.explorer_id, kind: crate::army_relics::RelicKind::Antidote,
+                },
+            ) {
+            Some(active) => (active.rank, active.expires_at / interval),
+            None => (0, 0),
+        };
+        let after = crate::army_relics::deep_troops_after_ticks(
+            army.troops.count, oaths, rules.loss_per_tick, antidote_rank, last_tick, expiry_tick, tick,
+        );
+        Some((after, tick))
     }
 }
 

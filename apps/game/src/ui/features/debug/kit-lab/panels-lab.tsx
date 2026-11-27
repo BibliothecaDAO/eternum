@@ -142,6 +142,7 @@ const installGuardedRealm = (store: NativeFactStore) => {
           stamina: { Inline: { amount: "100", settled_at: "350000", remainder: "0" } },
         },
         destroyed_tick: 0,
+        oaths: 0,
       },
     },
     ...stores

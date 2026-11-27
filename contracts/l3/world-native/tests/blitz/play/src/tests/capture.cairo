@@ -13,9 +13,7 @@ fn owner(d: super::Deployment, key: ResourceKey) -> starknet::ContractAddress {
 }
 
 fn attack(army: u64, site: ResourceKey) -> super::Command {
-    super::Command::BattleGuard(
-        crate::commands::Battle { attacker_id: army, defender_id: site.entity_id, relic_slot: None },
-    )
+    super::Command::BattleGuard(crate::commands::Battle { attacker_id: army, defender_id: site.entity_id })
 }
 
 fn storm(d: super::Deployment, army: u64, site: ResourceKey, from: u64) {

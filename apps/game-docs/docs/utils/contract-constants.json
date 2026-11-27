@@ -20,8 +20,8 @@
   {
     "key": "armyRelicSlots",
     "file": "army_relics.cairo",
-    "source": "for index in 0_u8..3 {",
-    "value": 3
+    "source": "pub const RELIC_KIND_COUNT: u8 = 5;",
+    "value": 5
   },
   {
     "key": "castleLaborStep",

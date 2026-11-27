@@ -324,8 +324,7 @@ fn waiting_oath(d: Deployment, key: ExplorerKey, offered: u8) -> crate::oaths::C
 fn choosing_and_replacing_vitriol_settles_field_ticks_under_the_previous_oath() {
     let (d, game_id) = setup(103);
     let base = crate::logic::deep_sites::rules().loss_per_tick;
-    let loss: u128 = crate::oaths::VITRIOL_LOSS_PER_TICK.into();
-    let loss = loss * RESOURCE_PRECISION;
+    let loss = crate::oaths::deep_loss_per_tick(crate::oaths::bit(crate::oaths::VITRIOL), base);
     let initial = 1500 * RESOURCE_PRECISION;
     let key = deployed(d, game_id, 1, 1500);
     let choice = waiting_oath(d, key, crate::oaths::VITRIOL);
@@ -376,6 +375,39 @@ fn a_vitriol_army_garrisons_without_its_oath_and_its_slot_loses_the_rule_amount_
         super::deep_sites::beast(d, site(d, game_id, crate::rules::DEEP_ALTAR)),
         crate::logic::deep_sites::beast(crate::rules::DEEP_ALTAR).count,
     );
+}
+
+#[test]
+fn antidote_stacks_additively_with_vitriol_until_expiry_then_resumes_oath_drain() {
+    let (d, game_id) = setup(106);
+    let base = crate::logic::deep_sites::rules().loss_per_tick;
+    let vitriol = crate::oaths::bit(crate::oaths::VITRIOL);
+    let vitriol_loss = crate::oaths::deep_loss_per_tick(vitriol, base);
+    let antidote_loss = crate::army_relics::deep_loss_for_army(vitriol, base, 3);
+    assert_eq!(antidote_loss, 70 * RESOURCE_PRECISION);
+    assert_eq!(crate::army_relics::deep_loss_for_army(vitriol, base, 5), 50 * RESOURCE_PRECISION);
+    let initial = 1500 * RESOURCE_PRECISION;
+    let key = deployed(d, game_id, 1, 1500);
+    let interval = crate::tests::context(d.games, game_id).rules.unbox().tick_config.armies_tick_in_seconds;
+    let start = (FIXTURE_START / interval + 1) * interval;
+    applied(d, game_id, Command::ChooseOath(waiting_oath(d, key, crate::oaths::VITRIOL)), start);
+    let after_first = army(d, key).troops.count;
+    assert_eq!(after_first, initial - base);
+    interact_with_state(
+        d.games,
+        || {
+            let site = crate::resources::ResourceKey { game_id, entity_id: 970001 };
+            crate::logic::army_relics::store_ruin(
+                site, crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::Antidote, rank: 3 },
+            );
+            crate::logic::army_relics::award(key, site, start);
+            crate::logic::army_relics::activate(
+                key, crate::army_relics::RelicKind::Antidote, 3, start, (interval * 2 / 3).try_into().unwrap(),
+            );
+        },
+    );
+    advance(d, key, 0, start + 3 * interval);
+    assert_eq!(army(d, key).troops.count, after_first - 2 * antidote_loss - vitriol_loss);
 }
 
 #[test]

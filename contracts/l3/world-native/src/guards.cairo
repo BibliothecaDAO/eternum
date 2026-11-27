@@ -10,6 +10,7 @@ pub struct GuardKey {
 pub struct Guard {
     pub troops: Troops,
     pub destroyed_tick: u32,
+    pub oaths: u16,
 }
 #[starknet::interface]
 pub trait IGuardCombat<T> {

@@ -1,21 +1,21 @@
 {
-  "release": 27,
+  "release": 28,
   "logic": {
-    "season": "0x3b81bad93dac5245802a7a952f6c4accc3539945987e6dc14e0d49998c42c38",
-    "map": "0x155d9d8c09fcfc0bbc9451d1ceee416dca721a81c5333805d98496fb510bf6e",
-    "placement": "0x5089ae945c09a8309d5159917ee0fb82bc0f6a65b944a65a520a7f9365ed766",
-    "construction": "0x1d086d46a4ab343699c785c137d9c07f34ff07f6f1f4995dfc5e652220c65e6",
-    "production": "0x71e6bffe3a411f43b4a259a1309cffc51ab318e228e23b825f54ca8e732678",
-    "structures": "0x28b40939bd839dd1afb50ff43ffd3d9d171248a3996315fbc80fcd0e8ec233d",
-    "troops": "0x14cca3780f68b18cf6636944180f59709ee1f2b1da2eda7a690dfa226b93ea9",
+    "season": "0x6332f731ec22c1d3bb775ab7039c53de2c0055c25fc4eb1d8e2dd332edbc353",
+    "map": "0x3ff5e87a18ae8dcf66ae7fd32e639adea40f7893226b255c2612f637aebbd2b",
+    "placement": "0x6a72b61735e06b8ed2fb231edc8a2ff9c4111d8df1290bc35f0e792bdc526ba",
+    "construction": "0x2440688837c37ced4581ec15bd069c8ccc31279f0c721e2c10faa9a5021b77",
+    "production": "0x2ac649a665df71c57678dc3265c7beeda122bc51808efa1910991022fb63082",
+    "structures": "0x44748e848ee3b2112ec4b31f1f4e01b1cbfe1af4c2faeec02562e5b34f091f6",
+    "troops": "0x7d224b16f731d335bb2ea7863f03688b94464f31f70e09bea97a693f45cfa46",
     "settlement": "0x7e5f2fa92434e5c3b4f7594d398d770c43879610b43983754aa945e52e93a58",
-    "resources": "0xec6b8e3ee3bcbaae3e070ee48a20f4edece18eafc71b89327ebadb0d8ea886",
+    "resources": "0x2f9ab90856317e28f4dacea6c65539f08782d49920a1ea564a7d97a0a25383",
     "economy": "0x61cf1cc2277b6cc8ee780c9e8a9cc2e34c243670364175cb3fd72d8877d4948",
-    "prizes": "0x7483aacf6117febf4ad69867d37688bcc035d87a07baffcaa3b513587117b3a",
+    "prizes": "0x3f754bed0ce9164d62cf42b2b121e4537740c0c1cb5077a9a683e7fb1695a2",
     "registry": "0x4c482a8f78e2f4526fc876e0acaaf459ca3d2c8f0ec20d424b8dce55eb4f3bb",
-    "combat": "0x169b6a08924ab02571ecadd82dcff64169fe622f16ce2731c57456ed6e965f6",
+    "combat": "0x38427c9d568fd1ef00cb0e225c34f8ff51eb3b1899cfe89deeaaa120634e16b",
     "bridge": "0x48ddb0e7a37b22f2bbaec69e3d5757f7a6c451124c2addef9efc5c5b4dc3a2e",
-    "relics": "0x4be50ed0cc0c01c9d3b8332721f4a5f6a04d3a58a3bd6bcbafd66df8669ec97",
-    "movement": "0x78e663141b7f76fa12e54d0ed58cd7b85b4c7976613c131845acd38cd6ac3a4"
+    "relics": "0x6a8c08e19d90814f57637d8f33d63ce889a507ce76fc39f6b263faffae7e4af",
+    "movement": "0x743a72d15b2c0eaf8cb304ca5e1022e9b642bfa0f0a91ccf77f7ebfc7d01c15"
   }
 }

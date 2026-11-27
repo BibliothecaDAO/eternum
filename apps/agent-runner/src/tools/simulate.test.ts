@@ -78,6 +78,7 @@ it("fights a structure's highest occupied guard slot first, as the contract does
       slot,
       troops: { ...knights, category: guard.category, count: guard.count * BigInt(RESOURCE_PRECISION) },
       destroyed_tick: 0,
+      oaths: 0,
     });
   }
   const result = await createSimulateTool(game).execute("combat", { kind: "combat", attackerId: 101, defenderId: 12 });

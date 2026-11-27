@@ -41,6 +41,7 @@ const mountGuards = ({ owner }: { owner: boolean }) => {
         slot: GuardSlot.Delta,
         troops: { ...rowFixture.expected.value.troops, count: String(1_000n * 1_000_000_000n) },
         destroyed_tick: 0,
+        oaths: 0,
       },
     },
   ] as never);

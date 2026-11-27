@@ -4,11 +4,18 @@ import {
   oathDeepLossPerTick,
   oathExploreStamina,
   oathFuryRefund,
-  oathRegenBps,
+  oathRegenBonusPerHour,
   oathStaminaBonus,
 } from "@bibliothecadao/eternum";
 import { nativeOathConstants as oaths, nativeRuleConstants as rules } from "@bibliothecadao/eternum/game-client";
-import { catalogOrder, formatExact, formatGain, formatPercent, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import {
+  catalogOrder,
+  formatExact,
+  formatGain,
+  formatPercent,
+  formatRate,
+  RESOURCE_PRECISION,
+} from "@bibliothecadao/types";
 import type { IconMeaning } from "../../../design-system/icon-meaning";
 import { PICK_EFFECT_WORDS as WORDS } from "../../../design-system/kit/words";
 
@@ -73,22 +80,35 @@ const titansBadge = (base: PickEffectBase): OathStatBadge => {
   };
 };
 
-const enlightenmentBadge = (): OathStatBadge => {
-  const factor = oathRegenBps(oathBit(oaths.ENLIGHTENMENT)) / 10_000;
+const enlightenmentBadge = (base: PickEffectBase): OathStatBadge => {
+  const bonusPerSecond = oathRegenBonusPerHour(oathBit(oaths.ENLIGHTENMENT)) / 3600;
   return {
-    hero: formatPercent(factor - 1, { signed: true }),
+    hero:
+      base.staminaPerSecond === undefined
+        ? formatRate(bonusPerSecond)
+        : fromTo(formatRate(base.staminaPerSecond), formatRate(base.staminaPerSecond + bonusPerSecond)),
     unit: WORDS.oathStaminaRecovery,
     icon: "stamina",
   };
 };
 
 const vitriolBadge = (base: PickEffectBase): OathStatBadge => {
-  const loss = Number(oathDeepLossPerTick(oathBit(oaths.VITRIOL), 0n)) / RESOURCE_PRECISION;
+  if (base.deepLossPerTick === undefined) {
+    return {
+      hero: signedPercent(-oaths.VITRIOL_REDUCTION_PERCENT),
+      unit: WORDS.deepPoison,
+      icon: "depth-1",
+    };
+  }
+  const reduced =
+    Number(
+      oathDeepLossPerTick(
+        oathBit(oaths.VITRIOL),
+        BigInt(Math.round(base.deepLossPerTick)) * BigInt(RESOURCE_PRECISION),
+      ),
+    ) / RESOURCE_PRECISION;
   return {
-    hero:
-      base.deepLossPerTick === undefined
-        ? formatExact(loss)
-        : fromTo(formatExact(base.deepLossPerTick), formatExact(loss)),
+    hero: fromTo(formatExact(base.deepLossPerTick), formatExact(reduced)),
     unit: WORDS.deepPoison,
     icon: "depth-1",
   };

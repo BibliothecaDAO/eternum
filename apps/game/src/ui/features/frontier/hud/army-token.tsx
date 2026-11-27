@@ -6,16 +6,17 @@ import {
   formatShortDuration,
   layerName,
   RESOURCE_PRECISION,
+  tierNumeral,
 } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { HudMeter, HudStamina, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import { DEEP_WORDS, OATH_WAITING, TROOPS } from "@/ui/design-system/kit/words";
+import { DEEP_WORDS, OATH_WAITING, type Rank, TROOPS } from "@/ui/design-system/kit/words";
 import type { EtherealLayer } from "@bibliothecadao/eternum";
-import type { DeepArmyLife } from "@bibliothecadao/eternum/game-client";
+import { nativeOathConstants, type DeepArmyLife } from "@bibliothecadao/eternum/game-client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { reachMark } from "../depth-art";
 
@@ -216,11 +217,13 @@ export const DeepDrain = ({
   words?: boolean;
   compact?: boolean;
 }) => {
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
   const loss = Number(drain.lossPerTick) / RESOURCE_PRECISION;
   const cadence = formatShortDuration(drain.tickSeconds);
   const time = formatDuration(drain.secondsLeft);
   const line = DEEP_WORDS.poisonPanel(loss, cadence, drain.ticksLeft, time);
   const shown = compact ? DEEP_WORDS.poisonCompact(loss, cadence, time) : words ? line : DEEP_WORDS.poisonToken(loss);
+  const breakdown = words && !compact ? drain.breakdown : undefined;
   return (
     <span
       data-deep-drain={loss}
@@ -231,9 +234,54 @@ export const DeepDrain = ({
       data-tip={words && !compact ? undefined : line}
       className="deep-poison flex min-w-0 shrink-0 flex-col gap-0.5 self-stretch text-hud-label leading-none text-hud-poison tabular-nums"
     >
-      <span className="flex min-w-0 items-center gap-1">
+      <span className="deep-poison__line">
         <SemanticIcon name="poison" size={16} />
         <span className={cn(compact && "truncate whitespace-nowrap")}>{shown}</span>
+        {breakdown && (
+          <span className="deep-poison__info" onMouseLeave={() => setBreakdownOpen(false)}>
+            <button
+              type="button"
+              className="deep-poison__btn"
+              aria-label={DEEP_WORDS.poisonBreakdownLabel}
+              aria-expanded={breakdownOpen}
+              onMouseEnter={() => setBreakdownOpen(true)}
+              onClick={() => setBreakdownOpen((open) => !open)}
+            >
+              i
+            </button>
+            {breakdownOpen && (
+              <span className="deep-poison__popover" role="tooltip" data-deep-poison-breakdown>
+                <span className="deep-poison__row">
+                  <span>{DEEP_WORDS.poisonBase}</span>
+                  <span>{DEEP_WORDS.poisonRate(Number(breakdown.baseLossPerTick) / RESOURCE_PRECISION, cadence)}</span>
+                </span>
+                {breakdown.vitriolActive && (
+                  <span className="deep-poison__row">
+                    <span>{DEEP_WORDS.poisonVitriol(nativeOathConstants.VITRIOL_REDUCTION_PERCENT)}</span>
+                    <span>
+                      {DEEP_WORDS.poisonRate(Number(breakdown.afterVitriolPerTick) / RESOURCE_PRECISION, cadence)}
+                    </span>
+                  </span>
+                )}
+                {breakdown.antidoteRank > 0 && (
+                  <span className="deep-poison__row">
+                    <span>
+                      {DEEP_WORDS.poisonAntidote(
+                        tierNumeral(breakdown.antidoteRank as Rank),
+                        breakdown.antidoteReductionPercent,
+                      )}
+                    </span>
+                    <span>{DEEP_WORDS.poisonRate(Number(breakdown.lossPerTick) / RESOURCE_PRECISION, cadence)}</span>
+                  </span>
+                )}
+                <span className="deep-poison__row" data-total="true">
+                  <span>{DEEP_WORDS.poisonTotal}</span>
+                  <span>{DEEP_WORDS.poisonTotalRate(loss, cadence)}</span>
+                </span>
+              </span>
+            )}
+          </span>
+        )}
       </span>
       <HudMeter label={line} share={drain.ticksInDay === 0 ? 0 : drain.ticksToEmpty / drain.ticksInDay} />
     </span>

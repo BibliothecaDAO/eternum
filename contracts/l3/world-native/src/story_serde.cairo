@@ -88,6 +88,10 @@ pub impl StorySerde of Serde<Story> {
                 output.append(36);
                 Serde::serialize(value, ref output);
             },
+            Story::RelicCollected(value) => {
+                output.append(37);
+                Serde::serialize(value, ref output);
+            },
         }
     }
 
@@ -131,6 +135,7 @@ pub impl StorySerde of Serde<Story> {
             34 => None,
             35 => None,
             36 => Some(Story::SiteUsed(Serde::deserialize(ref serialized)?)),
+            37 => Some(Story::RelicCollected(Serde::deserialize(ref serialized)?)),
             _ => None,
         }
     }

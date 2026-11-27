@@ -436,7 +436,7 @@ const troopsAnHourAt = (rank: number, board: RealmResearchFacts["board"]) =>
 const wheatATroopAt = (rank: number, board: RealmResearchFacts["board"]) =>
   formatFigure(Math.max(0, board.wheatPerTroop - rank * board.rationStep));
 const logisticsStaminaAt = (level: number, board: RealmResearchFacts["board"]) =>
-  formatFigure(board.staminaBar + logisticsStamina(board.staminaBar, level));
+  formatFigure(board.staminaBar + logisticsStamina(level));
 const conscriptionFigure = (tier: number, board: RealmResearchFacts["board"]): Pick<Figure, "now" | "next"> => ({
   now: troopsAnHourAt(tier, board),
   next: tier < 5 ? troopsAnHourAt(tier + 1, board) : undefined,

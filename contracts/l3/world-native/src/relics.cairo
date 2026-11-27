@@ -5,8 +5,8 @@ use crate::troops::Coord;
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ApplyRelic {
     pub entity_id: u64,
-    pub relic_id: u8,
-    pub slot: u8,
+    pub kind: crate::army_relics::RelicKind,
+    pub expected_rank: u8,
 }
 // Five chest tiers, common to legendary: a depth's odds in basis points, or the shares each tier pays.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -58,12 +58,7 @@ pub trait ILords<T> {
 #[starknet::interface]
 pub trait ICaptureRewards<T> {
     fn grant_capture_rewards(
-        ref self: T,
-        site: ResourceKey,
-        explorer_id: u64,
-        relic_slot: Option<u8>,
-        clean: bool,
-        context: crate::commands::ActionContext,
+        ref self: T, site: ResourceKey, explorer_id: u64, clean: bool, context: crate::commands::ActionContext,
     );
 }
 

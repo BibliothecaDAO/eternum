@@ -1,5 +1,11 @@
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
-import { configManager, oathAttackStamina, oathBit, oathDeepLossPerTick, oathRegenBps } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  oathAttackStamina,
+  oathBit,
+  oathDeepLossPerTick,
+  oathRegenBonusPerHour,
+} from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { armyStaminaMax, exploreStaminaCost } from "@bibliothecadao/eternum/troop-stamina";
 import { RESOURCE_PRECISION, TroopType } from "@bibliothecadao/types";
@@ -28,11 +34,13 @@ export function readPickEffectBase(
     maxStamina: slice && armyStaminaMax(slice.troop_stamina_config, army.category, army),
     staminaPerSecond:
       slice && tickSeconds !== undefined
-        ? (slice.troop_stamina_config.stamina_gain_per_tick / tickSeconds) * (oathRegenBps(army.oaths) / 10_000)
+        ? slice.troop_stamina_config.stamina_gain_per_tick / tickSeconds + oathRegenBonusPerHour(army.oaths) / 3600
         : undefined,
     deepLossPerTick: deep
       ? Number(oathDeepLossPerTick(army.oaths, BigInt(deep.loss_per_tick))) / RESOURCE_PRECISION
       : undefined,
+    deepBaseLossPerTick: deep ? Number(deep.loss_per_tick) / RESOURCE_PRECISION : undefined,
+    oaths: army.oaths,
   };
 }
 

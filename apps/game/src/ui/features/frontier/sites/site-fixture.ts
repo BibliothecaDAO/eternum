@@ -110,6 +110,7 @@ export const campBeside = (
             slot: 0,
             troops: { ...troops(guardCount, 0n), category: kind === "Rift" ? "Crossbowman" : "Knight" },
             destroyed_tick: 0,
+            oaths: 0,
           }),
         ]
       : []),
@@ -215,6 +216,7 @@ export const blightglowRift = ({
       slot: 0,
       troops: { ...troops(1_400n, guardStamina), category: "Crossbowman" },
       destroyed_tick: 0,
+      oaths: 0,
     }),
     set("0x74", "ExplorerTroops", {
       ...wire(army),

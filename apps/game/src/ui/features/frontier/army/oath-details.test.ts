@@ -5,7 +5,7 @@ import {
   nativeOathConstants as oaths,
   nativeRuleConstants as rules,
 } from "@bibliothecadao/eternum/game-client";
-import { formatGain, formatPercent, orders, RESOURCE_PRECISION, TroopType } from "@bibliothecadao/types";
+import { formatGain, formatPercent, formatRate, orders, RESOURCE_PRECISION, TroopType } from "@bibliothecadao/types";
 import { PICK_EFFECT_WORDS as WORDS } from "@/ui/design-system/kit/words";
 import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 
@@ -29,6 +29,10 @@ const knightMax = RULES.troop_stamina_config.stamina_knight_max;
 const reveal = RULES.troop_stamina_config.stamina_explore_stamina_cost;
 const attack = RULES.troop_stamina_config.stamina_attack_req;
 const deepLoss = Number(release.definition.economy.deep.Some.loss_per_tick) / RESOURCE_PRECISION;
+const vitriolReduced = Math.floor((deepLoss * (100 - oaths.VITRIOL_REDUCTION_PERCENT)) / 100);
+const baseStaminaPerSecond =
+  RULES.troop_stamina_config.stamina_gain_per_tick / RULES.tick_config.armies_tick_in_seconds;
+const enlightenmentStaminaPerSecond = baseStaminaPerSecond + oaths.ENLIGHTENMENT_REGEN_STAMINA / 3600;
 
 const percent = (value: number) => formatPercent(value / 100);
 const signed = (value: number) => formatPercent(value / 100, { signed: true });
@@ -62,7 +66,7 @@ const CONDITIONS: Record<number, readonly string[]> = {
 };
 
 const FIGURES: Record<number, readonly string[]> = {
-  [oaths.VITRIOL]: [String(deepLoss), String(oaths.VITRIOL_LOSS_PER_TICK)],
+  [oaths.VITRIOL]: [String(deepLoss), String(vitriolReduced)],
   [oaths.POWER]: [signed(oaths.POWER_DAMAGE_PERCENT)],
   [oaths.GIANTS]: [signed(-oaths.GIANTS_REDUCTION_PERCENT)],
   [oaths.PROTECTION]: [signed(-oaths.PROTECTION_REDUCTION_PERCENT)],
@@ -72,7 +76,7 @@ const FIGURES: Record<number, readonly string[]> = {
   [oaths.RAGE]: [signed(oaths.RAGE_PAY_PERCENT - 100)],
   [oaths.ANGER]: [String(attack), String(oaths.ANGER_ATTACK_STAMINA)],
   [oaths.TITANS]: [formatGain(oaths.TITANS_STAMINA), String(knightMax), String(knightMax + oaths.TITANS_STAMINA)],
-  [oaths.ENLIGHTENMENT]: [signed((oaths.ENLIGHTENMENT_REGEN_BPS - 10_000) / 100)],
+  [oaths.ENLIGHTENMENT]: [formatRate(baseStaminaPerSecond), formatRate(enlightenmentStaminaPerSecond)],
   [oaths.FOX]: [String(reveal), String(Math.floor((reveal * (100 - oaths.FOX_REVEAL_DISCOUNT_PERCENT)) / 100))],
   [oaths.SKILL]: [signed(oaths.SKILL_DAMAGE_PERCENT)],
   [oaths.FURY]: [formatGain(Math.floor((attack * oaths.FURY_REFUND_PERCENT) / 100))],
@@ -122,7 +126,10 @@ describe("an Oath's card", () => {
     expect(card(oaths.FURY, TroopType.Knight, oathBit(oaths.ANGER)).hero).toBe(
       `+${Math.floor((oaths.ANGER_ATTACK_STAMINA * oaths.FURY_REFUND_PERCENT) / 100)}`,
     );
-    expect(card(oaths.VITRIOL, TroopType.Knight).hero).toBe(`${deepLoss} → ${oaths.VITRIOL_LOSS_PER_TICK}`);
+    expect(card(oaths.VITRIOL, TroopType.Knight).hero).toBe(`${deepLoss} → ${vitriolReduced}`);
+    expect(card(oaths.ENLIGHTENMENT, TroopType.Knight).hero).toBe(
+      `${formatRate(baseStaminaPerSecond)} → ${formatRate(enlightenmentStaminaPerSecond)}`,
+    );
     expect(card(oaths.ENLIGHTENMENT, TroopType.Knight).unit).toBe(WORDS.oathStaminaRecovery);
     expect(card(oaths.DETECTION, TroopType.Knight).hero).toBe(
       WORDS.detectionHero(String(oaths.DETECTION_EMPTY_REVEAL_LIMIT)),

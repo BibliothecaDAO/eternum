@@ -32,6 +32,7 @@ it("covers every native story and tests every cumulative level", () => {
       "StructureLevelUpStory",
       "LordsWithdrawn",
       "SiteUsed",
+      "RelicCollected",
     ],
   };
   expect([...variants, "BattleEvent", "RaidEvent"].sort()).toEqual(Object.values(nativeLevels).flat().sort());

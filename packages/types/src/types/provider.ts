@@ -1,4 +1,5 @@
 import { Account, AccountInterface, type BigNumberish } from "starknet";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { BuildingType } from "../constants/structures";
 import type { Resource } from "./common";
 
@@ -219,7 +220,6 @@ export interface AttackExplorerVsExplorerProps extends SystemSigner {
  * Properties for explorer vs guard attack
  */
 export interface AttackExplorerVsGuardProps extends SystemSigner {
-  relic_slot?: 0 | 1 | 2;
   /** ID of the attacking explorer */
   explorer_id: number;
   /** ID of the structure with defending guard */
@@ -357,6 +357,6 @@ export interface InteractSiteProps extends SystemSigner {
 
 export interface ApplyRelicProps extends SystemSigner {
   entity_id: BigNumberish;
-  relic_resource_id: BigNumberish;
-  relic_slot: 0 | 1 | 2;
+  kind: NativeRows["ArmyRelicEffect"]["kind"];
+  expected_rank: number;
 }

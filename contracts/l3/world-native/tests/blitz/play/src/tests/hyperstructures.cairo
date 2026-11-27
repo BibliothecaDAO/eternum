@@ -97,9 +97,7 @@ fn player_points(d: super::Deployment, game_id: u32, player: starknet::ContractA
 }
 
 fn attack(army: u64, target: ResourceKey) -> super::Command {
-    super::Command::BattleGuard(
-        crate::commands::Battle { attacker_id: army, defender_id: target.entity_id, relic_slot: None },
-    )
+    super::Command::BattleGuard(crate::commands::Battle { attacker_id: army, defender_id: target.entity_id })
 }
 
 fn west_of(coord: Coord, steps: u32) -> Coord {

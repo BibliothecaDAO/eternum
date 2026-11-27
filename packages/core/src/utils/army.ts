@@ -123,6 +123,7 @@ export const getGuardsByStructure = (
       ? [
           {
             slot: guard.slot,
+            oaths: guard.oaths,
             troops: inlineTroops(
               { ...guard.troops, count: effectiveGuardCount(guard.troops.count, beastBps) },
               store.require("SliceRules", { game_id: structure.game_id }),

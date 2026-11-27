@@ -33,13 +33,13 @@ export const armyStaminaMax = (
   progress: Pick<NativeRows["ArmyProgress"], "logistics" | "oaths">,
 ): number => {
   const base = troopStaminaLimits(rules, category, TroopTier.T1).staminaMax;
-  return base + logisticsStamina(base, progress.logistics) + oathStaminaBonus(progress.oaths);
+  return base + logisticsStamina(progress.logistics) + oathStaminaBonus(progress.oaths);
 };
 
-/** Historical effect windows and boost expiry share one fractional stamina scale. */
 export function staminaAt(troops: Troops, timestamp: number, rules: TroopStaminaRules, tickSeconds: number) {
   const { staminaInitial, staminaMax } = troopStaminaLimits(rules, troops.category, troops.tier);
   const maximum = BigInt(troops.staminaMax ?? staminaMax);
+  const bonusPerHour = troops.staminaEffects?.bonusPerHour ?? 0;
   const until = Math.max(
     troops.stamina.settled_at,
     Math.min(Math.floor(timestamp), troops.staminaEffects?.until ?? Infinity),
@@ -55,6 +55,7 @@ export function staminaAt(troops: Troops, timestamp: number, rules: TroopStamina
       rules.stamina_gain_per_tick,
       tickSeconds,
       rateBps,
+      bonusPerHour,
     );
   };
   if (bar.settled_at !== 0) {
@@ -70,6 +71,15 @@ export function staminaAt(troops: Troops, timestamp: number, rules: TroopStamina
   return bar;
 }
 
+function gcd(a: bigint, b: bigint): bigint {
+  while (b !== 0n) {
+    const remainder = a % b;
+    a = b;
+    b = remainder;
+  }
+  return a;
+}
+
 function refillStamina(
   bar: Troops["stamina"] & { boostSecondsLeft: number },
   boostBps: number,
@@ -79,14 +89,20 @@ function refillStamina(
   gain: number,
   tickSeconds: number,
   rateBps: number,
+  bonusPerHour: number,
 ) {
   const elapsed = bar.settled_at === 0 ? 0 : now - bar.settled_at;
   const boosted = Math.min(elapsed, bar.boostSecondsLeft);
-  const denominator = BigInt(tickSeconds) * 10_000n;
+  const tick = BigInt(tickSeconds);
+  const divisor = gcd(tick, 3600n);
+  const tickScale = 3600n / divisor;
+  const hourScale = tick / divisor;
+  const denominator = tick * tickScale * 10_000n;
+  const gainPerPeriod = BigInt(gain) * tickScale + BigInt(bonusPerHour) * hourScale;
   const rate = BigInt(rateBps);
   const boostedRate = (rate * BigInt(10_000 + boostBps)) / 10_000n;
   const numerator =
-    BigInt(bar.remainder) + BigInt(gain) * (BigInt(elapsed - boosted) * rate + BigInt(boosted) * boostedRate);
+    BigInt(bar.remainder) + gainPerPeriod * (BigInt(elapsed - boosted) * rate + BigInt(boosted) * boostedRate);
   const total = bar.settled_at === 0 ? BigInt(initial) : bar.amount + numerator / denominator;
   return {
     amount: total >= maximum ? maximum : total,
@@ -96,7 +112,6 @@ function refillStamina(
   };
 }
 
-/** The first second an army can afford a cost, or null if it exceeds the cap or regeneration is disabled. */
 export function affordableAt(
   troops: Troops,
   timestamp: number,
@@ -110,12 +125,15 @@ export function affordableAt(
   const canAfford = (second: number) => staminaAt(troops, second, rules, tickSeconds).amount >= BigInt(cost);
   if (canAfford(now)) return now;
   const gain = Number(rules.stamina_gain_per_tick);
-  if (cost > maximum || gain <= 0) return null;
+  const bonusPerHour = troops.staminaEffects?.bonusPerHour ?? 0;
+  if (cost > maximum || (gain <= 0 && bonusPerHour <= 0)) return null;
   let low = now;
+  const uncappedSpan =
+    gain > 0 ? Math.ceil((cost * tickSeconds) / gain) + 1 : Math.ceil((cost * 3600) / bonusPerHour) + 1;
   let high =
     troops.staminaEffects && Number.isFinite(troops.staminaEffects.until)
       ? troops.staminaEffects.until - 1
-      : Math.max(now, troops.stamina.settled_at) + Math.ceil((cost * tickSeconds) / gain) + 1;
+      : Math.max(now, troops.stamina.settled_at) + uncappedSpan;
   if (!canAfford(high)) return null;
   while (high - low > 1) {
     const middle = Math.floor((low + high) / 2);
@@ -313,7 +331,7 @@ export function musterStamina(
   }
   // A new slot occupant starts at its realm's trained Logistics, regardless of its troop tier.
   const base = troopStaminaLimits(rules, troop.category, TroopTier.T1).staminaMax;
-  const staminaMax = base + logisticsStamina(base, trainedLogistics);
+  const staminaMax = base + logisticsStamina(trainedLogistics);
   // A slot's first army of the day starts full at its own maximum.
   if (!slot.inherited) return { amount: staminaMax, max: staminaMax };
   const newArmy: Troops = {

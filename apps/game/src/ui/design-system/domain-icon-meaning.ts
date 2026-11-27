@@ -64,6 +64,7 @@ const storyMeanings = {
   TroopsTransferred: "military",
   LordsWithdrawn: "lords",
   SiteUsed: "claim",
+  RelicCollected: "ruin",
 } satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent" | keyof typeof archivedStoryMeanings, IconMeaning>;
 
 /** A story's painting, by its kind: the one table every Feed, Events and Log row reads. */

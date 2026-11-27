@@ -251,9 +251,7 @@ fn beast_clear_payout(full: bool, band: bool) {
         ),
         Some(cap),
     );
-    let attack = Command::BattleGuard(
-        crate::commands::Battle { attacker_id: key.explorer_id, defender_id: id, relic_slot: None },
-    );
+    let attack = Command::BattleGuard(crate::commands::Battle { attacker_id: key.explorer_id, defender_id: id });
     assert!(execute_in_game(d, game_id, attack, NOW + 1));
     let site = snforge_std::interact_with_state(
         d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap(),
@@ -741,14 +739,17 @@ fn frontier_ruin_clear_awards_its_stored_relic_without_lords() {
     let captured = execute_in_game(
         d,
         game_id,
-        Command::BattleGuard(
-            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site, relic_slot: None },
-        ),
+        Command::BattleGuard(crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site }),
         NOW + 1,
     );
     assert!(captured, "relic capture failed");
     assert_eq!(resources.resource_balance(lords), before);
-    assert_eq!(snforge_std::interact_with_state(d.games, || crate::logic::army_relics::read(key)).first, Some(RELIC));
+    assert_eq!(
+        crate::army_relics::rank_of(
+            snforge_std::interact_with_state(d.games, || crate::logic::army_relics::read(key)), RELIC.kind,
+        ),
+        RELIC.rank,
+    );
     let tile = crate::geometry::tile_key(game_id, coord);
     assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
     assert_site_removed(d, site_key);
@@ -797,9 +798,7 @@ fn two_ruins_at_the_same_depth_award_relics_without_closing_the_other_or_paying_
                 d,
                 game_id,
                 Command::BattleGuard(
-                    crate::commands::Battle {
-                        attacker_id: key.explorer_id, defender_id: target.entity_id, relic_slot: None,
-                    },
+                    crate::commands::Battle { attacker_id: key.explorer_id, defender_id: target.entity_id },
                 ),
                 timestamp,
             ),
@@ -828,9 +827,11 @@ fn two_ruins_at_the_same_depth_award_relics_without_closing_the_other_or_paying_
         d.games,
         || {
             let carried = crate::logic::army_relics::read(key);
-            assert_eq!(carried.first, Some(RELIC));
-            assert_eq!(carried.second, Some(RELIC));
-            assert!(carried.third.is_none());
+            assert_eq!(crate::army_relics::rank_of(carried, RELIC.kind), RELIC.rank + 1);
+            assert_eq!(carried.ward, 0);
+            assert_eq!(carried.plunder, 0);
+            assert_eq!(carried.stamina_regen, 0);
+            assert_eq!(carried.antidote, 0);
             assert_eq!(
                 crate::logic::expeditions::depth_at(game_id, first_coord),
                 crate::logic::expeditions::depth_at(game_id, second_coord),

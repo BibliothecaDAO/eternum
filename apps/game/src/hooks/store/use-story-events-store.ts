@@ -188,6 +188,11 @@ export const acceptGameSyncStoryEvent = (
 
 export const resetGameSyncStoryEvents = (): void => useStoryEventsStore.getState().reset();
 
+export const useStreamedStoryEvents = (story: string): StreamStoryEvent[] => {
+  const streamed = useStoryEventsStore((state) => state.streamed);
+  return useMemo(() => streamed.filter((event) => event.story === story), [streamed, story]);
+};
+
 /**
  * A story the current enum has no line for, such as a variant retired since an older pinned schema wrote it into
  * history, never renders raw. Outside production it is an error; in production that one row is dropped and reported,

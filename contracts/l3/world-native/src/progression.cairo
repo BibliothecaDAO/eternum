@@ -31,7 +31,7 @@ pub fn stamina_max(
     progress: ArmyProgress, category: crate::troops::TroopType, rules: crate::rules::TroopStaminaConfig,
 ) -> u64 {
     let bar = crate::stamina::StaminaImpl::max(category, crate::troops::TroopTier::T1, rules);
-    bar + crate::rules::logistics_stamina(bar, progress.logistics) + crate::oaths::stamina_bonus(progress.oaths)
+    bar + crate::rules::logistics_stamina(progress.logistics) + crate::oaths::stamina_bonus(progress.oaths)
 }
 
 pub impl ArmyProgressPacking of starknet::storage_access::StorePacking<ArmyProgress, u64> {

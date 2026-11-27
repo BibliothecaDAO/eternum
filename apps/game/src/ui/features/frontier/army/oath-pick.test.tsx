@@ -184,7 +184,7 @@ it("tags 7 to 9 character arrow and word hero badges as compact long while keepi
   ]);
   expect(cards().map((card) => card.querySelector(".oath-choice__effect")?.getAttribute("data-long"))).toEqual([
     "compact",
-    null,
+    "wide",
     "compact",
   ]);
   expect(cards().every((card) => card.querySelector(".oath-choice__well") !== null)).toBe(true);

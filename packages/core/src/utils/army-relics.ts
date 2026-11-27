@@ -1,7 +1,8 @@
-import { ResourcesIds } from "@bibliothecadao/types";
+import { ARMY_RELIC_KIND_NAMES, ResourcesIds } from "@bibliothecadao/types";
 import { type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
+import { nativeOathConstants, nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeFactStore } from "../client/native-fact-store";
+import { holdsOath } from "./oaths";
 
 export function armyRelicsEnabled(store: Pick<NativeFactStore, "get">, gameId: number): boolean | undefined {
   const rules = store.get("SliceRules", { game_id: gameId });
@@ -11,12 +12,93 @@ export function armyRelicsEnabled(store: Pick<NativeFactStore, "get">, gameId: n
 type ArmyKey = Pick<NativeRows["ExplorerTroops"], "game_id" | "explorer_id">;
 type RelicKind = NativeRows["ArmyRelicEffect"]["kind"];
 
+const RELIC_KIND_NAMES: Record<RelicKind, string> = ARMY_RELIC_KIND_NAMES;
+
+export function armyRelicKindName(kind: string): string | undefined {
+  return Object.hasOwn(RELIC_KIND_NAMES, kind) ? RELIC_KIND_NAMES[kind as RelicKind] : undefined;
+}
+
 const BONUS_PER_RANK = {
   Blade: nativeRuleConstants.RELIC_BLADE_BPS,
   Ward: nativeRuleConstants.RELIC_WARD_BPS,
   Plunder: nativeRuleConstants.RELIC_PLUNDER_BPS,
   StaminaRegen: nativeRuleConstants.STAMINA_REGEN_RELIC_STEP_PERCENT * 100,
+  Antidote: nativeRuleConstants.RELIC_ANTIDOTE_BPS,
 } satisfies Record<RelicKind, number>;
+
+const SLOT_FIELDS = {
+  Blade: "blade",
+  Ward: "ward",
+  Plunder: "plunder",
+  StaminaRegen: "stamina_regen",
+  Antidote: "antidote",
+} as const satisfies Record<RelicKind, keyof Omit<NativeRows["ArmyRelics"], "game_id" | "explorer_id">>;
+
+export type ArmyRelicLoadout = Pick<
+  NativeRows["ArmyRelics"],
+  "blade" | "ward" | "plunder" | "stamina_regen" | "antidote"
+>;
+
+export type RelicCollectOutcome = "Collected" | "Replaced" | "Merged" | "Discarded";
+
+export function armyRelicRank(loadout: ArmyRelicLoadout | null | undefined, kind: RelicKind): number {
+  return loadout ? loadout[SLOT_FIELDS[kind]] : 0;
+}
+
+export function collectArmyRelic(
+  loadout: ArmyRelicLoadout | null | undefined,
+  found: { kind: RelicKind; rank: number },
+): {
+  loadout: ArmyRelicLoadout;
+  previousRank: number;
+  resultRank: number;
+  outcome: RelicCollectOutcome;
+} {
+  const current: ArmyRelicLoadout = loadout ?? {
+    blade: 0,
+    ward: 0,
+    plunder: 0,
+    stamina_regen: 0,
+    antidote: 0,
+  };
+  const field = SLOT_FIELDS[found.kind];
+  const previousRank = current[field];
+  if (previousRank === 0) {
+    return {
+      loadout: { ...current, [field]: found.rank },
+      previousRank,
+      resultRank: found.rank,
+      outcome: "Collected",
+    };
+  }
+  if (previousRank === found.rank && previousRank < nativeRuleConstants.ATTRIBUTE_CAP) {
+    const resultRank = previousRank + 1;
+    return {
+      loadout: { ...current, [field]: resultRank },
+      previousRank,
+      resultRank,
+      outcome: "Merged",
+    };
+  }
+  if (found.rank > previousRank) {
+    return {
+      loadout: { ...current, [field]: found.rank },
+      previousRank,
+      resultRank: found.rank,
+      outcome: "Replaced",
+    };
+  }
+  return { loadout: current, previousRank, resultRank: previousRank, outcome: "Discarded" };
+}
+
+export function deepLossForArmy(oaths: number, baseLoss: bigint, antidoteRank: number): bigint {
+  const vitriolBps = holdsOath(oaths, nativeOathConstants.VITRIOL)
+    ? nativeOathConstants.VITRIOL_REDUCTION_PERCENT * 100
+    : 0;
+  const antidoteBps = antidoteRank > 0 ? BONUS_PER_RANK.Antidote * antidoteRank : 0;
+  const reductionBps = Math.min(vitriolBps + antidoteBps, 10_000);
+  return (baseLoss * BigInt(10_000 - reductionBps)) / 10_000n;
+}
 
 /** A missing effect is zero only once the army's snapshot proves its absence. */
 export function armyRelicBonus(

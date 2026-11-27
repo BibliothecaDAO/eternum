@@ -1,31 +1,35 @@
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
-use crate::army_relics::{ArmyRelic, ArmyRelicEffect, ArmyRelicEffectKey, ArmyRelics, RelicKind};
+use crate::army_relics::{
+    ArmyRelic, ArmyRelicEffect, ArmyRelicEffectKey, ArmyRelics, RelicCollectOutcome, RelicCollected, RelicKind,
+};
 use crate::resources::ResourceKey;
 use crate::troops::ExplorerKey;
 
 pub fn read(key: ExplorerKey) -> ArmyRelics {
     let packed = crate::state::read().relics.army_relics.read((key.game_id, key.explorer_id));
-    let mut loadout: ArmyRelics = Default::default();
-    let mut remaining = packed;
-    for index in 0_u8..3 {
-        let value: u8 = (remaining % 256).try_into().unwrap();
-        if value != 0 {
-            crate::army_relics::set_slot(ref loadout, index, Some(crate::army_relics::decode(value)));
-        }
-        remaining /= 256;
+    ArmyRelics {
+        blade: (packed % 8).try_into().unwrap(),
+        ward: (packed / 8 % 8).try_into().unwrap(),
+        plunder: (packed / 64 % 8).try_into().unwrap(),
+        stamina_regen: (packed / 512 % 8).try_into().unwrap(),
+        antidote: (packed / 4096 % 8).try_into().unwrap(),
     }
-    loadout
 }
 
 fn write(key: ExplorerKey, loadout: ArmyRelics) {
-    let mut packed = 0_u32;
-    let mut scale = 1;
-    for index in 0_u8..3 {
-        if let Some(relic) = crate::army_relics::slot(loadout, index) {
-            packed += Into::<u8, u32>::into(crate::army_relics::encode(relic)) * scale;
-        }
-        scale *= 256;
-    }
+    assert!(
+        loadout.blade <= 5
+            && loadout.ward <= 5
+            && loadout.plunder <= 5
+            && loadout.stamina_regen <= 5
+            && loadout.antidote <= 5,
+        "invalid relic rank",
+    );
+    let packed: u32 = loadout.blade.into()
+        + Into::<u8, u32>::into(loadout.ward) * 8
+        + Into::<u8, u32>::into(loadout.plunder) * 64
+        + Into::<u8, u32>::into(loadout.stamina_regen) * 512
+        + Into::<u8, u32>::into(loadout.antidote) * 4096;
     crate::state::write().relics.army_relics.write((key.game_id, key.explorer_id), packed);
     emit_row('ArmyRelics', key, loadout);
 }
@@ -67,13 +71,33 @@ pub fn store_ruin(key: ResourceKey, relic: ArmyRelic) {
     emit_row('RuinRelic', key, relic);
 }
 
-pub fn award(key: ExplorerKey, site: ResourceKey, replace: Option<u8>) {
+pub fn award(key: ExplorerKey, site: ResourceKey, timestamp: u64) {
     let relic = ruin(site).expect('missing ruin relic');
     let cache = crate::state::read().relics.ruin_caches.read((site.game_id, site.entity_id));
     if cache == 0 {
         let mut loadout = read(key);
-        crate::army_relics::receive(ref loadout, relic, replace);
-        write(key, loadout);
+        let (previous_rank, result_rank, outcome) = crate::army_relics::collect(ref loadout, relic);
+        if outcome != RelicCollectOutcome::Discarded {
+            write(key, loadout);
+        }
+        let collected = RelicCollected {
+            explorer_id: key.explorer_id,
+            site_id: site.entity_id,
+            kind: relic.kind,
+            found_rank: relic.rank,
+            previous_rank,
+            result_rank,
+            outcome,
+        };
+        if let Some(army) = crate::logic::troops::explorer(key) {
+            let owner = crate::logic::structures::owner(ResourceKey { game_id: key.game_id, entity_id: army.owner });
+            crate::logic::stories::emit_entity_story(
+                ResourceKey { game_id: key.game_id, entity_id: key.explorer_id },
+                owner,
+                crate::ownership::Story::RelicCollected(collected),
+                timestamp,
+            );
+        }
     } else {
         crate::state::write().relics.ruin_caches.write((site.game_id, site.entity_id), 0);
         delete_row('RuinCache', site);
@@ -91,25 +115,36 @@ pub fn store_cache(key: ResourceKey, relic: ArmyRelic, depth: u8) {
     emit_row('RuinCache', key, amount);
 }
 
-pub fn activate(key: ExplorerKey, index: u8, expected: u8, timestamp: u64, seconds_per_rank: u32) -> ArmyRelic {
+pub fn activate(
+    key: ExplorerKey, kind: RelicKind, expected_rank: u8, timestamp: u64, seconds_per_rank: u32,
+) -> ArmyRelic {
     let mut loadout = read(key);
-    let relic = crate::army_relics::slot(loadout, index).expect('empty relic slot');
-    assert!(crate::army_relics::encode(relic) == expected, "relic slot changed");
-    crate::army_relics::set_slot(ref loadout, index, None);
+    let rank = crate::army_relics::rank_of(loadout, kind);
+    assert!(rank != 0, "empty relic slot");
+    assert!(rank == expected_rank, "relic slot changed");
+    crate::army_relics::set_rank(ref loadout, kind, 0);
     write(key, loadout);
-    let effect_key = ArmyRelicEffectKey { game_id: key.game_id, explorer_id: key.explorer_id, kind: relic.kind };
+    let effect_key = ArmyRelicEffectKey { game_id: key.game_id, explorer_id: key.explorer_id, kind };
     let value = ArmyRelicEffect {
-        rank: relic.rank, expires_at: timestamp + Into::<u32, u64>::into(seconds_per_rank) * relic.rank.into(),
+        rank, expires_at: timestamp + Into::<u32, u64>::into(seconds_per_rank) * rank.into(),
     };
     crate::state::write()
         .relics
         .army_relic_effects
-        .write(
-            (key.game_id, key.explorer_id, crate::army_relics::kind_id(relic.kind)),
-            Some((value.rank, value.expires_at)),
-        );
+        .write((key.game_id, key.explorer_id, crate::army_relics::kind_id(kind)), Some((value.rank, value.expires_at)));
     emit_row('ArmyRelicEffect', effect_key, value);
-    relic
+    ArmyRelic { kind, rank }
+}
+
+pub fn active_boost(key: ExplorerKey, kind: RelicKind, timestamp: u64) -> (u16, u32) {
+    match effect(ArmyRelicEffectKey { game_id: key.game_id, explorer_id: key.explorer_id, kind }) {
+        Some(value) => if timestamp < value.expires_at {
+            (crate::army_relics::bonus_bps(kind, value.rank).try_into().unwrap(), value.expires_at.try_into().unwrap())
+        } else {
+            (0, 0)
+        },
+        None => (0, 0),
+    }
 }
 
 pub fn combat_boosts(key: ExplorerKey, ref boosts: crate::troops::TroopBoosts, timestamp: u64) {

@@ -6,7 +6,7 @@ import { readExpeditionRules } from "../../utils/expeditions";
 import { BANE_MODELS, readBaneEffects } from "./banes";
 import { readTriumphPeriod, TRIUMPH_MODELS } from "./triumphs";
 import { readOptionalSeasonRow } from "./season-rows";
-import { oathRegenBps } from "../../utils/oaths";
+import { oathRegenBonusPerHour } from "../../utils/oaths";
 
 export const STAMINA_MODELS = [
   ...BANE_MODELS,
@@ -38,19 +38,17 @@ export function readStaminaEffects(
   if (!calendar) return { known: { until: Infinity, windows: [] } };
   const day = dayAtIndex(calendar, Number(epoch));
   const until = day.end;
-  const regen = { start: from, end: until, rateBps: oathRegenBps(oaths) };
-  if (depth === 3) return { known: { until, windows: combinePeriods([regen], from, until) } };
+  const bonusPerHour = oathRegenBonusPerHour(oaths);
+  const bonus = bonusPerHour > 0 ? { bonusPerHour } : {};
+  if (depth === 3) return { known: { until, windows: [], ...bonus } };
   const bane = readBaneEffects(store, gameId, home, from, until);
   if (!bane.known) return bane;
   const race = readOptionalSeasonRow(store, "RaceRules", { game_id: gameId });
   if (!race.known) return race;
   const { windows, staminaPercent } = bane.known;
-  const periods: { start: number; end: number; rateBps: number }[] = [
-    regen,
-    ...windows
-      .filter((window) => window.kinds.includes(nativeBaneConstants.MIST_TIDE))
-      .map((window) => ({ start: window.start, end: window.end, rateBps: staminaPercent * 100 })),
-  ];
+  const periods: { start: number; end: number; rateBps: number }[] = windows
+    .filter((window) => window.kinds.includes(nativeBaneConstants.MIST_TIDE))
+    .map((window) => ({ start: window.start, end: window.end, rateBps: staminaPercent * 100 }));
   if (race.known.row) {
     const wind = readTriumphPeriod(store, gameId, home, nativeRaceConstants.SECOND_WIND_STAGE, calendar);
     if (!wind.known) return wind;
@@ -58,7 +56,7 @@ export function readStaminaEffects(
       periods.push({ ...wind.known.period, rateBps: race.known.row.second_wind_percent * 100 });
     }
   }
-  return { known: { until, windows: combinePeriods(periods, from, until) } };
+  return { known: { until, windows: combinePeriods(periods, from, until), ...bonus } };
 }
 
 /** The intersection multiplies the rates while each boundary retains the same fractional remainder. */

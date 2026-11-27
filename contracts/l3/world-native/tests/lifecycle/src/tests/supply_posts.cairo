@@ -78,7 +78,7 @@ fn a_cleared_camp_holds_its_hex_and_reinforces_from_home_on_each_layer_above_the
         let size = super::army_activity::army(d, key).troops.count;
         world_test_support::tests::registrar::strong_frontier_army(d, game_id, key);
         let battle = Command::BattleGuard(
-            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site_key.entity_id, relic_slot: None },
+            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site_key.entity_id },
         );
         let mut events = snforge_std::spy_events();
         if !execute_in_game(d, game_id, battle, FIXTURE_START + 2) {

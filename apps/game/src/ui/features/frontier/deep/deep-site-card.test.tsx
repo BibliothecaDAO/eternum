@@ -285,6 +285,7 @@ describe("the Deep site's live native binding", () => {
               structure_id: site().id,
               slot,
               destroyed_tick: 0,
+              oaths: 0,
               troops: { ...existing.troops, count: 100n * BigInt(RESOURCE_PRECISION) },
             },
           },

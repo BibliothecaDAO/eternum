@@ -112,7 +112,7 @@ describe("stamina under one game's rules", () => {
     for (const tier of TROOP_TIERS) {
       const troop = { category: TroopType.Knight, tier };
       expect(musterStamina({ slot: 0, inherited: null }, troop, 101, rules, 0, 60)).toEqual({ amount: 120, max: 120 });
-      expect(musterStamina({ slot: 0, inherited: null }, troop, 101, rules, 2, 60)).toEqual({ amount: 168, max: 168 });
+      expect(musterStamina({ slot: 0, inherited: null }, troop, 101, rules, 2, 60)).toEqual({ amount: 180, max: 180 });
       expect(musterStamina({ slot: 0, inherited: knight(180, 101).stamina }, troop, 102, rules, 0, 60)).toEqual({
         amount: 120,
         max: 120,
@@ -193,7 +193,17 @@ describe("stamina under one game's rules", () => {
     for (let now = 102; now <= 150; now++) repeated = settle(repeated, now);
     expect(repeated.stamina).toEqual(once.stamina);
     expect(repeated.boosts).toEqual(once.boosts);
-    expect(once.stamina).toEqual({ amount: 6n, settled_at: 150, remainder: 459937 });
+    expect(once.stamina).toEqual({ amount: 6n, settled_at: 150, remainder: 27_596_220 });
+  });
+
+  it("multiplies Enlightenment flat hourly bonus with Stamina Regen relic boosts", () => {
+    const seasonRules = { ...rules, stamina_gain_per_tick: 1, stamina_knight_max: 180 };
+    const boosted: Troops = {
+      ...knight(0, 1_000, { percent: 2_000, seconds: 3_600 }),
+      staminaMax: 180,
+      staminaEffects: { until: Infinity, windows: [], bonusPerHour: 10 },
+    };
+    expect(staminaAt(boosted, 4_600, seasonRules, 120).amount).toBe(48n);
   });
 
   it("inherits a vacated slot's effect-adjusted bar without minting stamina", () => {

@@ -18,6 +18,8 @@ describe("an army's effect figures", () => {
       maxStamina: undefined,
       staminaPerSecond: undefined,
       deepLossPerTick: undefined,
+      deepBaseLossPerTick: undefined,
+      oaths: 0,
     });
     store.applyFacts([
       {
@@ -53,6 +55,8 @@ describe("an army's effect figures", () => {
       maxStamina: 200,
       staminaPerSecond: 1 / 60,
       deepLossPerTick: 350,
+      deepBaseLossPerTick: 350,
+      oaths: 0,
     });
     const scouts = { category: TroopType.Paladin, logistics: 0, oaths: 0 };
     expect(readPickEffectBase(store, 1, scouts).revealStamina).toBe(nativeRuleConstants.SCOUT_EXPLORE_STAMINA);
@@ -61,7 +65,10 @@ describe("an army's effect figures", () => {
       Math.floor((nativeRuleConstants.SCOUT_EXPLORE_STAMINA * (100 - oaths.FOX_REVEAL_DISCOUNT_PERCENT)) / 100),
     );
     expect(sworn(oaths.ANGER).attackStamina).toBe(oaths.ANGER_ATTACK_STAMINA);
-    expect(sworn(oaths.VITRIOL).deepLossPerTick).toBe(oaths.VITRIOL_LOSS_PER_TICK);
+    expect(sworn(oaths.VITRIOL).deepLossPerTick).toBe(
+      Math.floor((350 * (100 - oaths.VITRIOL_REDUCTION_PERCENT)) / 100),
+    );
+    expect(sworn(oaths.ENLIGHTENMENT).staminaPerSecond).toBeCloseTo(1 / 60 + oaths.ENLIGHTENMENT_REGEN_STAMINA / 3600);
     expect(sworn(oaths.TITANS).maxStamina! - readPickEffectBase(store, 1, scouts).maxStamina!).toBe(
       oaths.TITANS_STAMINA,
     );

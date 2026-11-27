@@ -66,9 +66,7 @@ export function oathPassStamina(current: number, maximum: number): number {
 }
 
 export function oathDeepLossPerTick(oaths: number, base: bigint): bigint {
-  return holdsOath(oaths, oathRules.VITRIOL)
-    ? BigInt(oathRules.VITRIOL_LOSS_PER_TICK) * BigInt(RESOURCE_PRECISION)
-    : base;
+  return holdsOath(oaths, oathRules.VITRIOL) ? (base * BigInt(100 - oathRules.VITRIOL_REDUCTION_PERCENT)) / 100n : base;
 }
 
 export function oathSkillMultiplier(oaths: number, barAfterCost: bigint): Fixed {
@@ -95,8 +93,8 @@ export function oathStaminaBonus(oaths: number): number {
   return holdsOath(oaths, oathRules.TITANS) ? oathRules.TITANS_STAMINA : 0;
 }
 
-export function oathRegenBps(oaths: number): number {
-  return holdsOath(oaths, oathRules.ENLIGHTENMENT) ? oathRules.ENLIGHTENMENT_REGEN_BPS : 10_000;
+export function oathRegenBonusPerHour(oaths: number): number {
+  return holdsOath(oaths, oathRules.ENLIGHTENMENT) ? oathRules.ENLIGHTENMENT_REGEN_STAMINA : 0;
 }
 
 export function oathWellStamina(oaths: number, maximum: number): number {

@@ -1,5 +1,6 @@
 use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::{EventSpyTrait, EventsFilterTrait};
+use starknet::storage::StorageMapWriteAccess;
 use crate::guards::IGuardsDispatcherTrait;
 use crate::oaths::{ChooseOath, RerollOath, card, draw, held};
 use crate::stamina::{StaminaSourceTrait, StaminaTrait};
@@ -444,10 +445,14 @@ fn assert_army_commands_refused(d: super::Deployment, key: crate::troops::Explor
     for command in array![
         Command::Explore(Explore { explorer_id: key.explorer_id, direction: 0 }),
         Command::Move(Move { explorer_id: key.explorer_id, directions: array![0].span() }),
-        Command::BattleGuard(Battle { attacker_id: key.explorer_id, defender_id: 1, relic_slot: None }),
+        Command::BattleGuard(Battle { attacker_id: key.explorer_id, defender_id: 1 }),
         Command::EnterDepth(EnterDepth { explorer_id: key.explorer_id, depth: 1 }),
         Command::InteractSite(crate::relics::InteractSite { explorer_id: key.explorer_id, coord: before.coord }),
-        Command::ApplyRelic(crate::relics::ApplyRelic { entity_id: key.explorer_id, relic_id: 1, slot: 0 }),
+        Command::ApplyRelic(
+            crate::relics::ApplyRelic {
+                entity_id: key.explorer_id, kind: crate::army_relics::RelicKind::Blade, expected_rank: 1,
+            },
+        ),
         Command::ManageTroops(ManageTroops::RemoveExplorer(key.explorer_id)),
         Command::ManageTroops(
             ManageTroops::RecruitExplorer(
@@ -787,7 +792,7 @@ fn detection_finds_a_camp_brilliance_raises_its_reveal_pay_and_rage_and_perfecti
         );
         super::registrar::strong_frontier_army(d, game_id, key);
         let command = crate::commands::Command::BattleGuard(
-            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site.entity_id, relic_slot: None },
+            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site.entity_id },
         );
         assert!(super::resource_commands::execute_in_game(d, game_id, command, FIXTURE_START + 11));
         let receipt = snforge_std::interact_with_state(
@@ -891,7 +896,7 @@ fn the_twins_add_a_share_of_the_adjacent_own_army_damage_and_a_one_troop_twin_ad
             .unwrap()
             .entity_id;
         let guard = crate::guards::Guard {
-            troops: crate::troops::Troops { count: 1000 * precision, ..army.troops }, destroyed_tick: 0,
+            troops: crate::troops::Troops { count: 1000 * precision, ..army.troops }, destroyed_tick: 0, oaths: 0,
         };
         snforge_std::interact_with_state(
             d.games,
@@ -907,7 +912,7 @@ fn the_twins_add_a_share_of_the_adjacent_own_army_damage_and_a_one_troop_twin_ad
             ..army,
         };
         super::resource_commands::set_explorer_fixture(d.games, twin_key, twin);
-        let battle = crate::commands::Battle { attacker_id: key.explorer_id, defender_id: camp, relic_slot: None };
+        let battle = crate::commands::Battle { attacker_id: key.explorer_id, defender_id: camp };
         assert!(
             super::resource_commands::execute_in_game(
                 d, game_id, crate::commands::Command::BattleGuard(battle), FIXTURE_START + 11,
@@ -1008,8 +1013,8 @@ fn stamina_oaths_match_the_client_vectors() {
     let mut fields = data.span();
     while !fields.is_empty() {
         let (
-            oaths, attack_base, attack, explore_base, explore, bonus, regen, hour,
-        ): (u16, u16, u16, u16, u16, u64, u32, u64) =
+            oaths, attack_base, attack, explore_base, explore, bonus, regen_bonus, hour,
+        ): (u16, u16, u16, u16, u16, u64, u16, u64) =
             Serde::deserialize(
             ref fields,
         )
@@ -1017,10 +1022,10 @@ fn stamina_oaths_match_the_client_vectors() {
         assert_eq!(crate::oaths::attack_stamina(oaths, attack_base), attack);
         assert_eq!(crate::oaths::explore_stamina(oaths, explore_base), explore);
         assert_eq!(crate::oaths::stamina_bonus(oaths), bonus);
-        assert_eq!(crate::oaths::regen_bps(oaths), regen);
+        assert_eq!(crate::oaths::regen_bonus_per_hour(oaths), regen_bonus);
         let mut bar = crate::troops::Stamina { amount: 0, settled_at: 1000, remainder: 0 };
         let mut boosts: crate::troops::TroopBoosts = Default::default();
-        bar.refill_to_max(ref boosts, 1000, config, 120, 4600, regen);
+        bar.refill_to_max(ref boosts, 1000, config, 120, 4600, 10000, regen_bonus);
         assert_eq!(bar.amount, hour);
     }
 }
@@ -1057,7 +1062,7 @@ fn anger_lets_an_army_with_twenty_stamina_attack_where_the_base_cost_refuses_it(
         set_stamina(d, key, oaths, Option::None, Some(20));
         let camp = place_camp(d, game_id, crate::geometry::neighbor(army.coord, 0));
         let command = crate::commands::Command::BattleGuard(
-            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: camp, relic_slot: None },
+            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: camp },
         );
         assert_eq!(super::resource_commands::execute_in_game(d, game_id, command, FIXTURE_START + 10), anger);
     }
@@ -1108,6 +1113,140 @@ fn enlightenment_regains_forty_stamina_an_hour_where_the_army_regains_thirty() {
         );
         assert_eq!(amount, regained);
     }
+}
+
+#[test]
+fn the_fox_reduces_reveal_stamina_by_twenty_percent_for_knights_and_scouts() {
+    let fox = crate::oaths::bit(crate::oaths::FOX);
+    assert_eq!(crate::oaths::explore_stamina(fox, 20), 16);
+    assert_eq!(crate::oaths::explore_stamina(fox, 10), 8);
+    assert_eq!(crate::oaths::explore_stamina(0, 20), 20);
+    assert_eq!(crate::oaths::explore_stamina(0, 10), 10);
+}
+
+#[test]
+fn garrisoning_copies_oaths_and_active_combat_relics_preserves_oaths_on_reinforce_and_clears_on_vacate() {
+    let (d, game_id, key) = super::registrar::setup_frontier_relics();
+    let home = snforge_std::interact_with_state(d.games, || army_home(key));
+    let (_, second) = super::registrar::expedition_armies(d, home);
+    let first_oaths = crate::oaths::bit(crate::oaths::PROTECTION) | crate::oaths::bit(crate::oaths::GIANTS);
+    let second_oaths = crate::oaths::bit(crate::oaths::POWER);
+    set_stamina(d, key, first_oaths, Option::None, Option::None);
+    set_stamina(d, second, second_oaths, Option::None, Option::None);
+    let first_army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    let second_army = GameState { contract_address: d.games }.resolved_explorer(second).unwrap();
+    let home_coord = crate::geometry::neighbor(first_army.coord, 0);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let mut record = crate::logic::structures::record(home);
+            record.base.troop_max_guard_count = 1;
+            crate::state::write().structures.structures.write((game_id, home.entity_id), record);
+            crate::logic::map::MapState::relocate_fixture(home, home_coord, record.base.category, true);
+        },
+    );
+    super::resource_commands::set_explorer_fixture(
+        d.games,
+        key,
+        crate::troops::ExplorerTroops {
+            coord: crate::geometry::neighbor(home_coord, 0),
+            troops: crate::troops::Troops { count: 1000 * crate::rules::RESOURCE_PRECISION, ..first_army.troops },
+            ..first_army,
+        },
+    );
+    super::resource_commands::set_explorer_fixture(
+        d.games,
+        second,
+        crate::troops::ExplorerTroops {
+            coord: crate::geometry::neighbor(home_coord, 1),
+            troops: crate::troops::Troops {
+                category: first_army.troops.category,
+                tier: first_army.troops.tier,
+                count: 500 * crate::rules::RESOURCE_PRECISION,
+                ..second_army.troops,
+            },
+            ..second_army,
+        },
+    );
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let site = crate::resources::ResourceKey { game_id, entity_id: 980001 };
+            crate::logic::army_relics::store_ruin(
+                site, crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::Blade, rank: 2 },
+            );
+            crate::logic::army_relics::award(key, site, FIXTURE_START + 10);
+            crate::logic::army_relics::activate(key, crate::army_relics::RelicKind::Blade, 2, FIXTURE_START + 10, 1800);
+            let ward_site = crate::resources::ResourceKey { game_id, entity_id: 980002 };
+            crate::logic::army_relics::store_ruin(
+                ward_site, crate::army_relics::ArmyRelic { kind: crate::army_relics::RelicKind::Ward, rank: 3 },
+            );
+            crate::logic::army_relics::award(key, ward_site, FIXTURE_START + 10);
+            crate::logic::army_relics::activate(key, crate::army_relics::RelicKind::Ward, 3, FIXTURE_START + 10, 1800);
+        },
+    );
+    let slot = crate::troop_management::GuardSlot { structure_id: home.entity_id, slot: 0 };
+    assert!(
+        super::resource_commands::execute_in_game(
+            d,
+            game_id,
+            crate::commands::Command::ManageTroops(
+                crate::troop_management::ManageTroops::Transfer(
+                    crate::troop_management::TransferTroops {
+                        source: crate::troop_management::Army::Explorer(key.explorer_id),
+                        target: crate::troop_management::Army::Guard(slot),
+                        amount: 1000 * crate::rules::RESOURCE_PRECISION,
+                    },
+                ),
+            ),
+            FIXTURE_START + 20,
+        ),
+    );
+    let guard_key = crate::guards::GuardKey { game_id, structure_id: home.entity_id, slot: 0 };
+    let seated = crate::guards::IGuardsDispatcher { contract_address: d.games }.guard(guard_key);
+    assert_eq!(seated.oaths, first_oaths);
+    assert_eq!(seated.troops.boosts.incr_damage_dealt_percent_num, 2000);
+    assert_eq!(seated.troops.boosts.incr_damage_dealt_end_at, (FIXTURE_START + 10 + 3600).try_into().unwrap());
+    assert_eq!(seated.troops.boosts.decr_damage_gotten_percent_num, 1500);
+    assert_eq!(seated.troops.boosts.decr_damage_gotten_end_at, (FIXTURE_START + 10 + 5400).try_into().unwrap());
+    assert!(
+        super::resource_commands::execute_in_game(
+            d,
+            game_id,
+            crate::commands::Command::ManageTroops(
+                crate::troop_management::ManageTroops::Transfer(
+                    crate::troop_management::TransferTroops {
+                        source: crate::troop_management::Army::Explorer(second.explorer_id),
+                        target: crate::troop_management::Army::Guard(slot),
+                        amount: 200 * crate::rules::RESOURCE_PRECISION,
+                    },
+                ),
+            ),
+            FIXTURE_START + 30,
+        ),
+    );
+    let reinforced = crate::guards::IGuardsDispatcher { contract_address: d.games }.guard(guard_key);
+    assert_eq!(reinforced.oaths, first_oaths);
+    assert_eq!(reinforced.troops.boosts.decr_damage_gotten_percent_num, 1500);
+    assert!(
+        super::resource_commands::execute_in_game(
+            d,
+            game_id,
+            crate::commands::Command::ManageTroops(
+                crate::troop_management::ManageTroops::Transfer(
+                    crate::troop_management::TransferTroops {
+                        source: crate::troop_management::Army::Guard(slot),
+                        target: crate::troop_management::Army::Explorer(second.explorer_id),
+                        amount: 1200 * crate::rules::RESOURCE_PRECISION,
+                    },
+                ),
+            ),
+            FIXTURE_START + 40,
+        ),
+    );
+    let emptied = crate::guards::IGuardsDispatcher { contract_address: d.games }.guard(guard_key);
+    assert_eq!(emptied.oaths, 0);
+    assert_eq!(emptied.troops.boosts, Default::default());
 }
 
 fn set_stamina(

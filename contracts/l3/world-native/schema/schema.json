@@ -3436,6 +3436,12 @@
           "type": "core::integer::u32",
           "id": "0x64657374726f7965645f7469636b",
           "feltLength": 1
+        },
+        {
+          "name": "oaths",
+          "type": "core::integer::u16",
+          "id": "0x6f61746873",
+          "feltLength": 1
         }
       ],
       "keyLength": 3,
@@ -3453,7 +3459,8 @@
         "domain": "troops",
         "fields": {
           "troops": "troops",
-          "destroyedAt": "destroyed_tick"
+          "destroyedAt": "destroyed_tick",
+          "oaths": "oaths"
         }
       }
     },
@@ -4201,26 +4208,38 @@
       ],
       "members": [
         {
-          "name": "first",
-          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>",
-          "id": "0x6669727374",
-          "feltLength": null
+          "name": "blade",
+          "type": "core::integer::u8",
+          "id": "0x626c616465",
+          "feltLength": 1
         },
         {
-          "name": "second",
-          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>",
-          "id": "0x7365636f6e64",
-          "feltLength": null
+          "name": "ward",
+          "type": "core::integer::u8",
+          "id": "0x77617264",
+          "feltLength": 1
         },
         {
-          "name": "third",
-          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>",
-          "id": "0x7468697264",
-          "feltLength": null
+          "name": "plunder",
+          "type": "core::integer::u8",
+          "id": "0x706c756e646572",
+          "feltLength": 1
+        },
+        {
+          "name": "stamina_regen",
+          "type": "core::integer::u8",
+          "id": "0x7374616d696e615f726567656e",
+          "feltLength": 1
+        },
+        {
+          "name": "antidote",
+          "type": "core::integer::u8",
+          "id": "0x616e7469646f7465",
+          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": null,
+      "valueLength": 5,
       "absence": {
         "parent": "ExplorerTroops",
         "value": "zero",
@@ -6372,20 +6391,6 @@
         }
       ]
     },
-    "core::option::Option::<world_native::army_relics::ArmyRelic>": {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::army_relics::ArmyRelic>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::army_relics::ArmyRelic"
-        },
-        {
-          "name": "None",
-          "type": "()"
-        }
-      ]
-    },
     "core::option::Option::<world_native::deposits::DepositReceipt>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::deposits::DepositReceipt>",
@@ -6585,16 +6590,80 @@
       "name": "world_native::army_relics::ArmyRelics",
       "members": [
         {
-          "name": "first",
-          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>"
+          "name": "blade",
+          "type": "core::integer::u8"
         },
         {
-          "name": "second",
-          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>"
+          "name": "ward",
+          "type": "core::integer::u8"
         },
         {
-          "name": "third",
-          "type": "core::option::Option::<world_native::army_relics::ArmyRelic>"
+          "name": "plunder",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "stamina_regen",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "antidote",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::army_relics::RelicCollected": {
+      "type": "struct",
+      "name": "world_native::army_relics::RelicCollected",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "site_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "kind",
+          "type": "world_native::army_relics::RelicKind"
+        },
+        {
+          "name": "found_rank",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "previous_rank",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "result_rank",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "outcome",
+          "type": "world_native::army_relics::RelicCollectOutcome"
+        }
+      ]
+    },
+    "world_native::army_relics::RelicCollectOutcome": {
+      "type": "enum",
+      "name": "world_native::army_relics::RelicCollectOutcome",
+      "variants": [
+        {
+          "name": "Collected",
+          "type": "()"
+        },
+        {
+          "name": "Replaced",
+          "type": "()"
+        },
+        {
+          "name": "Merged",
+          "type": "()"
+        },
+        {
+          "name": "Discarded",
+          "type": "()"
         }
       ]
     },
@@ -6616,6 +6685,10 @@
         },
         {
           "name": "StaminaRegen",
+          "type": "()"
+        },
+        {
+          "name": "Antidote",
           "type": "()"
         }
       ]
@@ -7015,10 +7088,6 @@
         {
           "name": "defender_id",
           "type": "core::integer::u64"
-        },
-        {
-          "name": "relic_slot",
-          "type": "core::option::Option::<core::integer::u8>"
         }
       ]
     },
@@ -7986,6 +8055,10 @@
         {
           "name": "destroyed_tick",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "oaths",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -8559,6 +8632,11 @@
           "name": "SiteUsed",
           "type": "world_native::relics::SiteUsed",
           "wireId": 36
+        },
+        {
+          "name": "RelicCollected",
+          "type": "world_native::army_relics::RelicCollected",
+          "wireId": 37
         }
       ]
     },
@@ -8943,11 +9021,11 @@
           "type": "core::integer::u64"
         },
         {
-          "name": "relic_id",
-          "type": "core::integer::u8"
+          "name": "kind",
+          "type": "world_native::army_relics::RelicKind"
         },
         {
-          "name": "slot",
+          "name": "expected_rank",
           "type": "core::integer::u8"
         }
       ]
@@ -10499,5 +10577,5 @@
       ]
     }
   },
-  "identity": "19bfc9e4978320b11d97813dd5b1e42f64b94925d6a147143b2185f7b85ef741"
+  "identity": "d01a91ffb822c1ab1813950e6713a47eeb92245fe8316b0bcb35d2b83adc2acd"
 }

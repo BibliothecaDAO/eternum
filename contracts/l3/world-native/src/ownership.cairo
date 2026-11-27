@@ -30,6 +30,7 @@ pub enum Story {
     SitePayout: crate::expeditions::SitePayout,
     SpireDiscovered: crate::exploration_rewards::ExtractedReward,
     SiteUsed: crate::relics::SiteUsed,
+    RelicCollected: crate::army_relics::RelicCollected,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

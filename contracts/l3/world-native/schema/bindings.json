@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "19bfc9e4978320b11d97813dd5b1e42f64b94925d6a147143b2185f7b85ef741",
+  "schemaIdentity": "d01a91ffb822c1ab1813950e6713a47eeb92245fe8316b0bcb35d2b83adc2acd",
   "commandAbi": [
     {
       "type": "interface",
@@ -639,10 +639,6 @@
         {
           "name": "defender_id",
           "type": "core::integer::u64"
-        },
-        {
-          "name": "relic_slot",
-          "type": "core::option::Option::<core::integer::u8>"
         }
       ]
     },
@@ -655,12 +651,38 @@
           "type": "core::integer::u64"
         },
         {
-          "name": "relic_id",
-          "type": "core::integer::u8"
+          "name": "kind",
+          "type": "world_native::army_relics::RelicKind"
         },
         {
-          "name": "slot",
+          "name": "expected_rank",
           "type": "core::integer::u8"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "world_native::army_relics::RelicKind",
+      "variants": [
+        {
+          "name": "Blade",
+          "type": "()"
+        },
+        {
+          "name": "Ward",
+          "type": "()"
+        },
+        {
+          "name": "Plunder",
+          "type": "()"
+        },
+        {
+          "name": "StaminaRegen",
+          "type": "()"
+        },
+        {
+          "name": "Antidote",
+          "type": "()"
         }
       ]
     },

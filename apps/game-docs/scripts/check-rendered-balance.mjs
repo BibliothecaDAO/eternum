@@ -147,7 +147,7 @@ export const frontierPhrases = (
   ).join(", ");
   const commandOn = (name) => (preset.commandMask & BigInt(commandBits[name])) !== 0n;
   const anySpendEnabled = FRAGMENT_SPEND_COMMANDS.some((name) => commandOn(name));
-  const logisticsBonus = logisticsStamina(stamina.staminaKnightMax, nativeRules.ATTRIBUTE_CAP);
+  const logisticsBonus = logisticsStamina(nativeRules.ATTRIBUTE_CAP);
   const listAnd = (items) =>
     items.length > 1 ? `${items.slice(0, -1).join(", ")}, and ${items.at(-1)}` : (items[0] ?? "");
   const listOr = (items) =>

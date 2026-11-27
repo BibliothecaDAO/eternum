@@ -1,7 +1,9 @@
 import { expect, it } from "vitest";
+import { nativeOathConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { dayOf } from "./days";
 import { armyDrain, deepArmyLife } from "./deep-army-life";
+import { oathBit } from "./oaths";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 const start = 1_800_000_000;
@@ -77,4 +79,51 @@ it("drains an army waiting in the field of the Deep exactly as its attrition say
 it("drains no army that stands above the Deep", () => {
   const above = armies({ field: [1], count: 100n, lastTick: 0 });
   expect(armyDrain(above, army(3, 100n), start)).toBeUndefined();
+});
+
+it("stacks Vitriol and Antidote additively up to 75% until expiry, then resumes Vitriol drain", () => {
+  const first = Math.floor(start / tick);
+  const vitriol = oathBit(nativeOathConstants.VITRIOL);
+  const localRows: Record<string, unknown> = {
+    ...rows,
+    DeepRules: { loss_per_tick: 200n },
+  };
+  const keyed: Record<string, Record<number, unknown>> = {
+    DeepArmy: { 1: { last_tick: BigInt(first) }, 2: { last_tick: BigInt(first) } },
+    ArmyProgress: { 1: { oaths: vitriol }, 2: { oaths: vitriol } },
+    ArmyDay: { 1: { day: 0n }, 2: { day: 0n } },
+    ExplorerTroops: {
+      1: { game_id: 1, explorer_id: 1n, troops: { count: 340n } },
+      2: { game_id: 1, explorer_id: 2n, troops: { count: 200n } },
+    },
+    ArmyRelicEffect: {
+      1: { rank: 3, expires_at: BigInt((first + 2) * tick) },
+      2: { rank: 5, expires_at: BigInt((first + 4) * tick) },
+    },
+  };
+  const customStore = {
+    get: (model: string, key: { explorer_id?: bigint }) =>
+      key.explorer_id === undefined ? localRows[model] : keyed[model]?.[Number(key.explorer_id)],
+    require: (model: string) => localRows[model],
+  } as unknown as NativeFactStore;
+
+  const atStart = armyDrain(customStore, army(1, 340n), start)!;
+  expect(atStart.lossPerTick).toBe(70n);
+  expect(atStart.ticksToEmpty).toBe(4);
+  expect(atStart.breakdown).toMatchObject({
+    baseLossPerTick: 200n,
+    vitriolActive: true,
+    afterVitriolPerTick: 100n,
+    antidoteRank: 3,
+    antidoteReductionPercent: 15,
+    lossPerTick: 70n,
+  });
+
+  const atMaxStack = armyDrain(customStore, army(2, 200n), start)!;
+  expect(atMaxStack.lossPerTick).toBe(50n);
+  expect(atMaxStack.ticksToEmpty).toBe(4);
+
+  const afterThreeTicks = armyDrain(customStore, army(1, 340n), start + 3 * tick)!;
+  expect(afterThreeTicks.lossPerTick).toBe(100n);
+  expect(afterThreeTicks.ticksToEmpty).toBe(1);
 });

@@ -133,7 +133,6 @@ pub mod RelicState {
             ref self: ComponentState<TContractState>,
             site: ResourceKey,
             explorer_id: u64,
-            relic_slot: Option<u8>,
             clean: bool,
             context: crate::commands::ActionContext,
         ) -> () {
@@ -143,7 +142,7 @@ pub mod RelicState {
             if crate::logic::expeditions::expedition_site(site)
                 .expect('missing expedition site')
                 .category == crate::taxonomy::RUIN_CATEGORY {
-                crate::logic::army_relics::award(explorer_key, site, relic_slot);
+                crate::logic::army_relics::award(explorer_key, site, context.timestamp);
             }
             let captured = crate::logic::expeditions::expedition_site(site).expect('missing expedition site');
             let depth = crate::logic::expeditions::depth_at(site.game_id, explorer.coord);
@@ -181,7 +180,11 @@ pub mod RelicState {
             let key = ExplorerKey { game_id, explorer_id: command.entity_id };
             let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             let relic = crate::logic::army_relics::activate(
-                key, command.slot, command.relic_id, context.timestamp, context.rules.unbox().relic_seconds_per_rank,
+                key,
+                command.kind,
+                command.expected_rank,
+                context.timestamp,
+                context.rules.unbox().relic_seconds_per_rank,
             );
             if relic.kind == crate::army_relics::RelicKind::StaminaRegen {
                 crate::logic::army_relics::start_stamina_regen(key, explorer);

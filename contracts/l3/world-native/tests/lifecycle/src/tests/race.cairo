@@ -122,6 +122,7 @@ fn recorded_second_wind_multiplies_mist_tide_and_changes_real_exploration_refill
                 ref boosts,
                 maximum,
                 10000,
+                0,
                 crate::troops::StaminaRefill {
                     stamina_config: rules.troop_stamina_config,
                     armies_tick_in_seconds: crate::balance::rules::TICK_CONFIG.armies_tick_in_seconds,
@@ -442,9 +443,7 @@ fn moons_project_each_battle_and_preserve_base_losses(blood: bool, pale: bool) {
             execute_in_game(
                 d,
                 game_id,
-                Command::BattleGuard(
-                    crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site, relic_slot: None },
-                ),
+                Command::BattleGuard(crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site }),
                 now + 60 + attempt * 120,
             ),
         );
@@ -572,9 +571,7 @@ fn spoils_clear(category: u8) {
             d,
             game_id,
             Command::BattleGuard(
-                crate::commands::Battle {
-                    attacker_id: key.explorer_id, defender_id: site_key.entity_id, relic_slot: None,
-                },
+                crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site_key.entity_id },
             ),
             now + 60,
         ),
@@ -588,8 +585,8 @@ fn spoils_clear(category: u8) {
             assert_eq!(crate::logic::progression::require(key).oath_pick != 0, band);
             if category == crate::taxonomy::RUIN_CATEGORY {
                 assert_eq!(receipt.reward, None);
-                assert!(discovered_relic.is_some());
-                assert_eq!(crate::logic::army_relics::read(key).first, discovered_relic);
+                let found = discovered_relic.unwrap();
+                assert_eq!(crate::army_relics::rank_of(crate::logic::army_relics::read(key), found.kind), found.rank);
             } else {
                 let base = crate::expeditions::site_reward(category, site, 0, band, rules);
                 assert_eq!(

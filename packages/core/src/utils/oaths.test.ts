@@ -130,7 +130,7 @@ it("matches the native prize vectors for Brilliance and Rage", async () => {
 
 it("matches the native stamina vectors for Anger, Titans, Enlightenment and the Fox", async () => {
   const { readFileSync } = await import("node:fs");
-  const { oathAttackStamina, oathExploreStamina, oathRegenBps, oathStaminaBonus } = await import("./oaths");
+  const { oathAttackStamina, oathExploreStamina, oathRegenBonusPerHour, oathStaminaBonus } = await import("./oaths");
   const { staminaAt } = await import("../managers/troop-stamina");
   const fields = readFileSync(
     new URL("../../../../contracts/l3/world-native/tests/fixtures/oath-stamina.txt", import.meta.url),
@@ -146,7 +146,7 @@ it("matches the native stamina vectors for Anger, Titans, Enlightenment and the 
     expect(oathAttackStamina(held!, attackBase!)).toBe(attack);
     expect(oathExploreStamina(held!, exploreBase!)).toBe(explore);
     expect(oathStaminaBonus(held!)).toBe(bonus);
-    expect(oathRegenBps(held!)).toBe(regen);
+    expect(oathRegenBonusPerHour(held!)).toBe(regen);
     const troops = {
       category: TroopType.Knight,
       tier: TroopTier.T1,
@@ -155,7 +155,7 @@ it("matches the native stamina vectors for Anger, Titans, Enlightenment and the 
       boosts: { incr_stamina_regen_percent_num: 0, incr_stamina_regen_seconds_left: 0 },
       battle_cooldown_end: 0,
       staminaMax: 1_000,
-      staminaEffects: { until: Infinity, windows: [{ start: 1_000, end: 4_600, rateBps: oathRegenBps(held!) }] },
+      staminaEffects: { until: Infinity, windows: [], bonusPerHour: oathRegenBonusPerHour(held!) },
     } as never;
     expect(staminaAt(troops, 4_600, rules, 120).amount).toBe(BigInt(hour!));
   }

@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "19bfc9e4978320b11d97813dd5b1e42f64b94925d6a147143b2185f7b85ef741";
+export const nativeFactSchemaIdentity = "d01a91ffb822c1ab1813950e6713a47eeb92245fe8316b0bcb35d2b83adc2acd";
 export const nativeIdentifiers = {
   "rule": {
     "ENTRY_ENTITLEMENT": 0,
@@ -204,7 +204,8 @@ export const nativeStoryVariants = [
   "LordsWithdrawn",
   "SitePayout",
   "SpireDiscovered",
-  "SiteUsed"
+  "SiteUsed",
+  "RelicCollected"
 ] as const;
 export type NativeStoryVariant = (typeof nativeStoryVariants)[number];
 export interface NativeRows {
@@ -240,7 +241,7 @@ export interface NativeRows {
   ChestRules: { readonly game_id: number; readonly price_ceiling: bigint; readonly shares: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly claim_window_seconds: number; readonly pool_bps: number; readonly top_n: number };
   LordsBudget: { readonly game_id: number; readonly pool: bigint; readonly pool_left: bigint; readonly open: bigint; readonly day: bigint; readonly price: bigint; readonly rolled_shares: bigint; readonly yesterday_shares: bigint; readonly yesterday_ticks: bigint };
   LordsWithdrawal: { readonly game_id: number; readonly claim_id: bigint; readonly account: bigint; readonly amount: bigint; readonly prize_rank: number; readonly prize_count: number };
-  Guard: { readonly game_id: number; readonly structure_id: bigint; readonly slot: number; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly Inline: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } } | { readonly Slot: number }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_at: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_at: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_seconds_left: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_at: number }; readonly battle_cooldown_end: number }; readonly destroyed_tick: number };
+  Guard: { readonly game_id: number; readonly structure_id: bigint; readonly slot: number; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly Inline: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } } | { readonly Slot: number }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_at: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_at: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_seconds_left: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_at: number }; readonly battle_cooldown_end: number }; readonly destroyed_tick: number; readonly oaths: number };
   MineKindConfig: { readonly game_id: number; readonly kind: number; readonly resource_type: number; readonly building_category: number; readonly production_rate: bigint; readonly cap_min: bigint; readonly cap_steps: number };
   MinePool: { readonly game_id: number; readonly weights: readonly ({ readonly kind: number; readonly weight: number })[] };
   RealmTraits: { readonly realm_id: number; readonly wonder: number; readonly order: number; readonly resources: readonly (number)[] };
@@ -259,9 +260,9 @@ export interface NativeRows {
   AspectMembers: { readonly game_id: number; readonly aspect: number; readonly members: number };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly data: bigint };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly entity_id: bigint; readonly category: number; readonly is_structure: boolean };
-  ArmyRelics: { readonly game_id: number; readonly explorer_id: bigint; readonly first: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "StaminaRegen"; readonly rank: number }) | null; readonly second: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "StaminaRegen"; readonly rank: number }) | null; readonly third: ({ readonly kind: "Blade" | "Ward" | "Plunder" | "StaminaRegen"; readonly rank: number }) | null };
-  ArmyRelicEffect: { readonly game_id: number; readonly explorer_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "StaminaRegen"; readonly rank: number; readonly expires_at: bigint };
-  RuinRelic: { readonly game_id: number; readonly entity_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "StaminaRegen"; readonly rank: number };
+  ArmyRelics: { readonly game_id: number; readonly explorer_id: bigint; readonly blade: number; readonly ward: number; readonly plunder: number; readonly stamina_regen: number; readonly antidote: number };
+  ArmyRelicEffect: { readonly game_id: number; readonly explorer_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "StaminaRegen" | "Antidote"; readonly rank: number; readonly expires_at: bigint };
+  RuinRelic: { readonly game_id: number; readonly entity_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "StaminaRegen" | "Antidote"; readonly rank: number };
   RuinCache: { readonly game_id: number; readonly entity_id: bigint; readonly fragments: bigint };
   ArmyCombat: { readonly game_id: number; readonly explorer_id: bigint; readonly last_target: bigint };
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly logistics: number; readonly oath_slots: number; readonly oaths: number; readonly oath_pick: number };
@@ -351,7 +352,7 @@ export interface NativeKeys {
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
   ArmyRelics: { readonly game_id: number; readonly explorer_id: bigint };
-  ArmyRelicEffect: { readonly game_id: number; readonly explorer_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "StaminaRegen" };
+  ArmyRelicEffect: { readonly game_id: number; readonly explorer_id: bigint; readonly kind: "Blade" | "Ward" | "Plunder" | "StaminaRegen" | "Antidote" };
   RuinRelic: { readonly game_id: number; readonly entity_id: bigint };
   RuinCache: { readonly game_id: number; readonly entity_id: bigint };
   ArmyCombat: { readonly game_id: number; readonly explorer_id: bigint };
@@ -969,7 +970,8 @@ export const nativeFactModels = {
         },
         "battle_cooldown_end": "u32"
       },
-      "destroyed_tick": "u32"
+      "destroyed_tick": "u32",
+      "oaths": "u16"
     },
     "absence": {
       "parent": "Structure",
@@ -1294,45 +1296,11 @@ export const nativeFactModels = {
     "fields": {
       "game_id": "u32",
       "explorer_id": "u64",
-      "first": {
-        "option": {
-          "kind": {
-            "enum": [
-              "Blade",
-              "Ward",
-              "Plunder",
-              "StaminaRegen"
-            ]
-          },
-          "rank": "u8"
-        }
-      },
-      "second": {
-        "option": {
-          "kind": {
-            "enum": [
-              "Blade",
-              "Ward",
-              "Plunder",
-              "StaminaRegen"
-            ]
-          },
-          "rank": "u8"
-        }
-      },
-      "third": {
-        "option": {
-          "kind": {
-            "enum": [
-              "Blade",
-              "Ward",
-              "Plunder",
-              "StaminaRegen"
-            ]
-          },
-          "rank": "u8"
-        }
-      }
+      "blade": "u8",
+      "ward": "u8",
+      "plunder": "u8",
+      "stamina_regen": "u8",
+      "antidote": "u8"
     },
     "absence": {
       "parent": "ExplorerTroops",
@@ -1359,7 +1327,8 @@ export const nativeFactModels = {
           "Blade",
           "Ward",
           "Plunder",
-          "StaminaRegen"
+          "StaminaRegen",
+          "Antidote"
         ]
       },
       "rank": "u8",
@@ -1389,7 +1358,8 @@ export const nativeFactModels = {
           "Blade",
           "Ward",
           "Plunder",
-          "StaminaRegen"
+          "StaminaRegen",
+          "Antidote"
         ]
       },
       "rank": "u8"

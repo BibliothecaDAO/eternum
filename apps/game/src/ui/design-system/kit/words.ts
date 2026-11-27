@@ -331,6 +331,7 @@ import {
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import type { AttackRefusal, CombatMark } from "@bibliothecadao/eternum";
 import {
+  ARMY_RELIC_KIND_NAMES,
   aspectName,
   type AspectId,
   FRAGMENT,
@@ -918,6 +919,13 @@ export const DEEP_WORDS = {
   poisonCompact: (troops: number, cadence: string, time: string) =>
     `−${formatExact(troops)} / ${cadence} · ${time} left`,
   poisonToken: (troops: number) => `−${formatExact(troops)}`,
+  poisonBreakdownLabel: `${DEEP} poison breakdown`,
+  poisonBase: `${DEEP} base drain`,
+  poisonVitriol: (percent: number) => `Vitriol Oath (−${formatExact(percent)}%)`,
+  poisonAntidote: (tier: string, percent: number) => `Antidote ${tier} (−${formatExact(percent)}%)`,
+  poisonTotal: "Active total",
+  poisonRate: (troops: number, cadence: string) => `${formatExact(troops)} / ${cadence}`,
+  poisonTotalRate: (troops: number, cadence: string) => `${formatExact(troops)} troops / ${cadence}`,
   ratesWhenOpen: "Rates set when open",
   kinds: { glory: "Glory", height: "Aspect height", essence: ESSENCE, labor: LABOR, bar: "Bane bar" },
   entered: (entered: number, realms: number) => `${formatExact(entered)} / ${formatExact(realms)}`,
@@ -2598,29 +2606,32 @@ export const ARRIVAL_AUTOMATION_WORDS = {
   unavailable: "Automatic arrivals are unavailable.",
 } as const;
 
-const ARMY_RELIC_SLOTS = 3;
+const ARMY_RELIC_SLOTS = Object.keys(ARMY_RELIC_KIND_NAMES).length;
 export const RELIC_WORDS = {
   title: "Relics",
   cache: (fragments: number) => `Ancient cache: ${formatExact(fragments)} ${FRAGMENTS}`,
-  kinds: { Blade: "Blade", Ward: "Ward", Plunder: "Plunder", StaminaRegen: "Stamina" },
-  empty: "Empty slot",
-  switchOn: "Use",
-  switching: "Using…",
-  /** A running relic and its time left: "Rare Ward · 20m left". */
-  runs: (relic: string, left: string) => `${relic} · ${left} left`,
-  /** Switching on a relic whose kind already runs: the new one takes its place. */
+  kinds: ARMY_RELIC_KIND_NAMES,
+  empty: "Empty",
+  switchOn: "Activate",
+  switching: "Activating…",
+  activeCount: (active: number, max: number) =>
+    `${formatExact(active)} active · up to ${formatExact(max)} at once (1 per kind)`,
+  timeLeft: (left: string) => `${left} left`,
   replacesRunning: "Replaces active relic",
-  /** A ruin's relic, before the fight: the beast is as big as the relic is rare. */
   guards: (relic: string) => `Reward: ${relic}`,
-  /** Choosing which of three carried relics the ruin's relic replaces, before the attack. */
-  full: `Army holds ${ARMY_RELIC_SLOTS} relics (max). Pick one to replace.`,
-  replace: (relic: string) => `Replace ${relic}`,
-  /** The held attack's step while the army's relics are not known yet: whether it must choose cannot be told. */
   reading: "Loading relics…",
-  /** The held attack's step while what the ruin pays is not known yet: whether a relic comes cannot be told. */
   readingRuin: "Loading ruin reward…",
-  /** The held attack's step while no relic is chosen: the choice itself is said just above it. */
-  chooseFirst: "Pick a relic to replace first",
+  mergeHint: "Collect a matching tier to merge upward.",
+  tierLadderTitle: (kind: string) => `${kind} tiers`,
+  tierInfoLabel: (kind: string) => `${kind} tier ladder`,
+  outcomeCollected: "Stored in slot",
+  outcomeReplaced: (from: string, to: string) => `${from} → ${to} · Replaced with higher tier`,
+  outcomeDiscarded: "Lower tier discarded",
+  previewCollected: (kind: string) => `Fills your ${kind} slot`,
+  previewMerged: (from: string, to: string) => `Merges ${from} → ${to}`,
+  previewReplaced: (from: string, to: string) => `Replaces ${from} → ${to}`,
+  previewDiscarded: (held: string) => `Lower tier discarded (keeping ${held})`,
+  mergedCallout: (from: string, to: string) => `Merged ${from} → ${to}`,
 } as const;
 
 const STAMINA_TITLE = `${STAMINA[0]!.toUpperCase()}${STAMINA.slice(1)}`;
@@ -2649,6 +2660,7 @@ export const PICK_EFFECT_WORDS = {
   titansMax: (from: string, to: string) => `max ${STAMINA} & now (${from} → ${to})`,
   titansMaxGain: `max ${STAMINA} & now`,
   deepPoison: `${DEEP} poison drain`,
+  deepPoisonTitle: `${DEEP} poison`,
   attackStaminaCost: `attack ${STAMINA}`,
 } as const;
 

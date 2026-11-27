@@ -287,7 +287,7 @@ pub mod MapLogic {
                 };
                 assert!(crate::logic::guards::guard(guard_key) == Default::default(), "guards already initialized");
                 crate::logic::guards::GuardState::save(
-                    guard_key, crate::guards::Guard { troops: *guards.at(slot), destroyed_tick: 0 },
+                    guard_key, crate::guards::Guard { troops: *guards.at(slot), destroyed_tick: 0, oaths: 0 },
                 );
             }
         }
@@ -325,7 +325,9 @@ pub mod MapLogic {
                 let slot: u8 = slot.try_into().unwrap();
                 let guard_key = crate::guards::GuardKey { game_id: key.game_id, structure_id: key.entity_id, slot };
                 assert!(crate::logic::guards::guard(guard_key) == Default::default(), "guards already initialized");
-                crate::logic::guards::GuardState::save(guard_key, crate::guards::Guard { troops, destroyed_tick: 0 });
+                crate::logic::guards::GuardState::save(
+                    guard_key, crate::guards::Guard { troops, destroyed_tick: 0, oaths: 0 },
+                );
             }
             crate::logic::expeditions::create_site(key, guards);
         }

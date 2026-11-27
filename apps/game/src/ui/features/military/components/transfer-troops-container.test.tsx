@@ -64,6 +64,7 @@ const reinforce = (
         slot,
         troops: guards[slot] ?? troops(0n, "Crossbowman", "T2"),
         destroyed_tick: 0,
+        oaths: 0,
       }),
     ),
     set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: EXPLORER, owner: 7, troops: troops(19_145n) }),

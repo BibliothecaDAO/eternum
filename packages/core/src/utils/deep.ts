@@ -1,10 +1,14 @@
-import { oathDeepLossPerTick } from "./oaths";
+import { holdsOath, oathDeepLossPerTick } from "./oaths";
+import { deepLossForArmy } from "./army-relics";
 import { deepCenter, isDeepTile } from "./deep-geometry";
 import { dayAtIndex } from "./days";
 import { readExpeditionRules } from "./expeditions";
 import { getBlockTimestamp } from "./timestamp";
 import { nativeTilePackingConstants, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
+import {
+  nativeOathConstants as oathRules,
+  nativeRuleConstants,
+} from "../../../../contracts/l3/world-native/schema/balance.gen";
 import { BiomeTypeToId, BiomeType, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 
@@ -80,7 +84,28 @@ export function currentArmy(
   const now = timestamp ?? getBlockTimestamp().currentDefaultTick;
   const tick = BigInt(Math.floor(Math.min(now, end) / interval));
   const elapsed = tick > deep.last_tick ? tick - deep.last_tick : 0n;
-  const loss = elapsed * armyDeepLossPerTick(store, key);
+  const progress = store.get("ArmyProgress", key);
+  if (!progress) throw new Error("Deep attrition requires its rules and army progress");
+  const oathLoss = oathDeepLossPerTick(progress.oaths, rules.loss_per_tick);
+  const active = store.get("ArmyRelicEffect", {
+    game_id: key.game_id,
+    explorer_id: key.explorer_id,
+    kind: "Antidote",
+  });
+  const intervalBig = BigInt(interval);
+  let loss: bigint;
+  if (elapsed === 0n) {
+    loss = 0n;
+  } else if (active && active.rank > 0 && active.expires_at > deep.last_tick * intervalBig) {
+    const expiryTick = active.expires_at / intervalBig;
+    const protectedUntil = tick < expiryTick ? tick : expiryTick;
+    const protectedTicks = protectedUntil > deep.last_tick ? protectedUntil - deep.last_tick : 0n;
+    const unprotectedTicks = elapsed - protectedTicks;
+    loss =
+      protectedTicks * deepLossForArmy(progress.oaths, rules.loss_per_tick, active.rank) + unprotectedTicks * oathLoss;
+  } else {
+    loss = elapsed * oathLoss;
+  }
   const count = loss >= source.troops.count ? 0n : source.troops.count - loss;
   return { ...source, troops: { ...source.troops, count } };
 }
@@ -104,14 +129,45 @@ export function currentResourceWeight(
   return { ...source, capacity: source.capacity - loss };
 }
 
-export function armyDeepLossPerTick(
+export interface DeepPoisonBreakdown {
+  baseLossPerTick: bigint;
+  vitriolActive: boolean;
+  afterVitriolPerTick: bigint;
+  antidoteRank: number;
+  antidoteReductionPercent: number;
+  antidoteExpiresAt: number;
+  lossPerTick: bigint;
+}
+
+export function armyDeepPoisonBreakdown(
   store: Pick<NativeFactStore, "get">,
   key: Pick<NativeRows["ArmyProgress"], "game_id" | "explorer_id">,
-): bigint {
+  timestamp?: number,
+): DeepPoisonBreakdown {
   const rules = store.get("DeepRules", { game_id: key.game_id });
   const progress = store.get("ArmyProgress", key);
   if (!rules || !progress) throw new Error("Deep attrition requires its rules and army progress");
-  return oathDeepLossPerTick(progress.oaths, rules.loss_per_tick);
+  const baseLossPerTick = rules.loss_per_tick;
+  const vitriolActive = holdsOath(progress.oaths, oathRules.VITRIOL);
+  const afterVitriolPerTick = oathDeepLossPerTick(progress.oaths, baseLossPerTick);
+  const now = Math.floor(timestamp ?? getBlockTimestamp().currentDefaultTick);
+  const effect = store.get("ArmyRelicEffect", {
+    game_id: key.game_id,
+    explorer_id: key.explorer_id,
+    kind: "Antidote",
+  });
+  const activeRank = effect && effect.rank > 0 && BigInt(now) < effect.expires_at ? effect.rank : 0;
+  const antidoteReductionPercent = (activeRank * nativeRuleConstants.RELIC_ANTIDOTE_BPS) / 100;
+  const lossPerTick = deepLossForArmy(progress.oaths, baseLossPerTick, activeRank);
+  return {
+    baseLossPerTick,
+    vitriolActive,
+    afterVitriolPerTick,
+    antidoteRank: activeRank,
+    antidoteReductionPercent,
+    antidoteExpiresAt: activeRank > 0 ? Number(effect!.expires_at) : 0,
+    lossPerTick,
+  };
 }
 
 type DeepShare = { home: bigint; troops: bigint };

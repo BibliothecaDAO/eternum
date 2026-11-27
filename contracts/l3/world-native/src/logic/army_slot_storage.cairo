@@ -60,7 +60,8 @@ pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, refill: Option<St
                 ref stamina,
                 ref explorer.troops.boosts,
                 maximum,
-                crate::oaths::regen_bps(progress.oaths),
+                10000,
+                crate::oaths::regen_bonus_per_hour(progress.oaths),
                 refill,
             );
             stamina.clamp(maximum);

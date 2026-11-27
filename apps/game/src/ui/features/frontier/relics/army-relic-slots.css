@@ -1,0 +1,359 @@
+.relic-dock {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.2);
+  border-top: 1px solid var(--hud-divider);
+  padding-top: theme(spacing.2);
+}
+
+.relic-dock__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: theme(spacing.2);
+}
+
+.relic-dock__title {
+  font-size: var(--hud-text-label);
+  font-weight: var(--hud-weight-strong);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(var(--hud-ink));
+}
+
+.relic-dock__summary {
+  font-size: var(--hud-text-micro);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--hud-muted);
+  text-align: right;
+}
+
+.relic-dock__grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: theme(spacing[1.5]);
+}
+
+.relic-slot {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: theme(spacing[0.5]);
+  padding: theme(spacing[1.5]) theme(spacing.1);
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  color: rgb(var(--hud-ink));
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.relic-slot[data-empty="true"] {
+  border-style: dashed;
+  border-color: var(--hud-divider);
+  background: transparent;
+  color: var(--hud-muted);
+}
+
+.relic-slot[data-empty="true"] .relic-slot__art {
+  opacity: 0.35;
+}
+
+.relic-slot[data-active="true"] {
+  border-color: var(--hud-good);
+  box-shadow: inset 0 0 0 1px var(--hud-good);
+}
+
+.relic-slot[data-selected="true"] {
+  border-color: rgb(var(--hud-gold));
+  box-shadow: 0 0 0 1px rgb(var(--hud-gold));
+}
+
+.relic-slot__art {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.relic-slot__tier {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  z-index: 2;
+}
+
+.relic-slot__name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--hud-text-micro);
+  line-height: 1.2;
+}
+
+.relic-slot__timer {
+  font-size: var(--hud-text-micro);
+  line-height: 1;
+  font-weight: var(--hud-weight-strong);
+  color: var(--hud-good);
+  font-variant-numeric: tabular-nums;
+}
+
+.relic-slot[data-merge-beat="1"] {
+  border-color: rgb(var(--hud-gold));
+  animation: relic-merge-lock 350ms ease-out;
+}
+
+.relic-slot[data-merge-beat="2"] {
+  border-color: rgb(var(--hud-gold));
+  box-shadow: 0 0 16px rgb(var(--hud-gold) / 0.65);
+  animation: relic-merge-burst 450ms cubic-bezier(0.2, 0.9, 0.25, 1.15);
+}
+
+.relic-slot[data-merge-beat="3"] {
+  border-color: rgb(var(--hud-gold));
+  box-shadow: 0 0 10px rgb(var(--hud-gold) / 0.4);
+  overflow: hidden;
+}
+
+.relic-slot[data-merge-beat="3"]::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: linear-gradient(120deg, transparent 35%, rgb(var(--hud-gold) / 0.35) 50%, transparent 65%);
+  animation: relic-merge-shimmer 500ms ease-out;
+  pointer-events: none;
+}
+
+.relic-slot__burst {
+  position: absolute;
+  inset: -4px;
+  border: 2px solid rgb(var(--hud-gold));
+  border-radius: var(--hud-radius-control);
+  animation: relic-merge-ring 450ms ease-out forwards;
+  pointer-events: none;
+}
+
+.relic-tray {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing[1.5]);
+  padding: theme(spacing.2);
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+}
+
+.relic-tray__main {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.2);
+}
+
+.relic-tray__info {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: theme(spacing[0.5]);
+}
+
+.relic-tray__title {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+  font-size: var(--hud-text-body);
+  font-weight: var(--hud-weight-strong);
+  color: rgb(var(--hud-ink));
+}
+
+.relic-tray__detail {
+  font-size: var(--hud-text-label);
+  color: var(--hud-muted);
+}
+
+.relic-tray__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+}
+
+.relic-tray__ladder-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.relic-tray__ladder-btn {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-round);
+  background: transparent;
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  cursor: pointer;
+}
+
+.relic-tray__ladder-btn:hover,
+.relic-tray__ladder-btn[aria-expanded="true"] {
+  border-color: rgb(var(--hud-gold));
+  color: rgb(var(--hud-gold));
+}
+
+.relic-ladder {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + theme(spacing[1.5]));
+  z-index: 10;
+  display: flex;
+  min-width: 210px;
+  flex-direction: column;
+  gap: theme(spacing.1);
+  padding: theme(spacing.2);
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-control);
+  background: rgb(var(--hud-dark));
+  color: rgb(var(--hud-ink));
+  box-shadow: 0 8px 24px rgb(var(--hud-dark) / 0.7);
+}
+
+.relic-ladder__title {
+  font-size: var(--hud-text-label);
+  font-weight: var(--hud-weight-strong);
+  color: rgb(var(--hud-gold));
+}
+
+.relic-ladder__row {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+  font-size: var(--hud-text-label);
+  color: var(--hud-muted);
+}
+
+.relic-ladder__row[data-current="true"] {
+  color: rgb(var(--hud-ink));
+  font-weight: var(--hud-weight-strong);
+}
+
+.relic-ladder__hint {
+  margin: theme(spacing[0.5]) 0 0;
+  border-top: 1px solid var(--hud-divider);
+  padding-top: theme(spacing.1);
+  font-size: var(--hud-text-micro);
+  color: var(--hud-muted);
+}
+
+.relic-moment {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: theme(spacing.2);
+  padding: theme(spacing.1) theme(spacing.2);
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  font-size: var(--hud-text-label);
+  color: rgb(var(--hud-ink));
+}
+
+.relic-moment[data-relic-collect-badge="Merged"] {
+  border-color: rgb(var(--hud-gold));
+  box-shadow: 0 0 12px rgb(var(--hud-gold) / 0.35);
+}
+
+.relic-moment__body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: theme(spacing[0.5]);
+}
+
+.relic-moment__headline {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.1);
+  font-weight: var(--hud-weight-strong);
+  color: rgb(var(--hud-gold));
+}
+
+.relic-moment__jump {
+  font-size: var(--hud-text-micro);
+  color: var(--hud-good);
+}
+
+.relic-outcome-note {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+  padding: theme(spacing.1) theme(spacing.2);
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  font-size: var(--hud-text-label);
+  color: rgb(var(--hud-ink));
+}
+
+.relic-outcome-note[data-relic-outcome="Merged"] {
+  border-color: rgb(var(--hud-gold));
+  color: rgb(var(--hud-gold));
+}
+
+.relic-outcome-note[data-relic-outcome="Discarded"] {
+  color: var(--hud-muted);
+}
+
+@keyframes relic-merge-lock {
+  0% {
+    transform: scale(0.96);
+  }
+  100% {
+    transform: scale(1.04);
+  }
+}
+
+@keyframes relic-merge-burst {
+  0% {
+    transform: scale(1.04);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes relic-merge-ring {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.22);
+  }
+}
+
+@keyframes relic-merge-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}

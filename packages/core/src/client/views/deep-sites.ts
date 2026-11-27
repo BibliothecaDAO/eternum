@@ -33,6 +33,7 @@ export interface DeepSiteView {
 export interface DeepGarrison {
   slot: number;
   home: bigint;
+  oaths: number;
   troops: NativeRows["Guard"]["troops"];
 }
 
@@ -226,7 +227,7 @@ export function readDeepSiteDefender(store: NativeFactStore, site: DeepSiteView)
   const troops = garrison?.troops ?? (site.beastTroops > 0n ? site.guard?.troops : undefined);
   if (!troops) return undefined;
   const rules = store.require("SliceRules", { game_id: site.gameId });
-  return { troops: inlineTroops(troops, rules), oaths: 0, guarding: garrison !== undefined };
+  return { troops: inlineTroops(troops, rules), oaths: garrison?.oaths ?? 0, guarding: garrison !== undefined };
 }
 
 function readGarrisons(
@@ -243,8 +244,8 @@ function readGarrisons(
     .sort((left, right) => right.slot - left.slot)
     .map(({ slot, home }) => {
       if (slot >= nativeRuleConstants.DEEP_GUARD_SLOTS) throw new Error("Invalid Deep garrison slot");
-      const { troops } = store.require("Guard", { game_id: gameId, structure_id: site.entity_id, slot });
-      return { slot, home, troops: { ...troops, count: troops.count > loss ? troops.count - loss : 0n } };
+      const { troops, oaths } = store.require("Guard", { game_id: gameId, structure_id: site.entity_id, slot });
+      return { slot, home, oaths, troops: { ...troops, count: troops.count > loss ? troops.count - loss : 0n } };
     })
     .filter(({ troops }) => troops.count > 0n);
 }

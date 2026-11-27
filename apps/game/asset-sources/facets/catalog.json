@@ -3835,6 +3835,14 @@
         "kind": "painted",
         "sha256": "0c92f07cfb72e5006b34f3b836a3e65e35298114de219ed32589394ed3cdd30c"
       }
+    },
+    {
+      "id": "relic-antidote",
+      "label": "Antidote Relic",
+      "family": "Relics",
+      "source": {
+        "sha256": "05e35b4965faa7e700c85e3e4e3d47cbd8026367e4c587e6beead7e75c797f1e"
+      }
     }
   ]
 }

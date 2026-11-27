@@ -1,7 +1,8 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/balance.gen";
-import { armyRelicsEnabled, staminaRegenBoost } from "./army-relics";
+import { armyRelicsEnabled, collectArmyRelic, staminaRegenBoost, type RelicCollectOutcome } from "./army-relics";
 import release from "../../../../contracts/l3/world-native/schema/release-definition.json";
 
 const sliceRules = (day_unit_seconds: number) => ({
@@ -57,5 +58,32 @@ describe("the stamina relic's regeneration boost", () => {
 
   it("is not known until the army's relic effect is", () => {
     expect(staminaRegenBoost(facts(43_200, { unknown: "INCOMPLETE_SNAPSHOT" }), army, 400)).toBeUndefined();
+  });
+});
+
+describe("collectArmyRelic", () => {
+  const outcomes: readonly RelicCollectOutcome[] = ["Collected", "Replaced", "Merged", "Discarded"];
+
+  it("matches the shared native pickup vectors for every held and found rank", () => {
+    const fields = readFileSync(
+      new URL("../../../../contracts/l3/world-native/tests/fixtures/relic-collect.txt", import.meta.url),
+      "utf8",
+    )
+      .trim()
+      .split(/\s+/)
+      .map(Number);
+    const cap = nativeRuleConstants.ATTRIBUTE_CAP;
+    expect(fields.length).toBe((cap + 1) * cap * 4);
+    while (fields.length) {
+      const [previous, found, expectedResult, outcomeCode] = fields.splice(0, 4) as [number, number, number, number];
+      const resolution = collectArmyRelic(
+        { blade: 0, ward: 0, plunder: 0, stamina_regen: 0, antidote: previous },
+        { kind: "Antidote", rank: found },
+      );
+      expect(resolution.previousRank).toBe(previous);
+      expect(resolution.resultRank).toBe(expectedResult);
+      expect(resolution.loadout.antidote).toBe(expectedResult);
+      expect(resolution.outcome).toBe(outcomes[outcomeCode]);
+    }
   });
 });

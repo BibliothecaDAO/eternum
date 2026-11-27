@@ -103,9 +103,7 @@ fn a_real_clear_completes_the_daily_hunt_and_two_claims_pay_once() {
     apply(
         d,
         key.game_id,
-        Command::BattleGuard(
-            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site.entity_id, relic_slot: None },
-        ),
+        Command::BattleGuard(crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site.entity_id }),
     );
     let hunts = interact_with_state(d.games, || crate::logic::banes::target(crate::quests::HUNT, 1));
     let labor = crate::balance::quests::LABOR_AMOUNT * crate::rules::RESOURCE_PRECISION;
@@ -151,7 +149,7 @@ fn hunt_camp_and_rift_progress_arrives_only_after_the_guard_is_cleared() {
         assert_eq!(progress(d, home), 0);
         world_test_support::tests::registrar::strong_frontier_army(d, key.game_id, key);
         let clear = Command::BattleGuard(
-            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site.entity_id, relic_slot: None },
+            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site.entity_id },
         );
         apply(d, key.game_id, clear);
         assert_eq!(progress(d, home), 1);
@@ -169,9 +167,7 @@ fn finds_counts_a_discovery_before_its_clear_and_never_counts_the_clear_twice() 
     apply(
         d,
         key.game_id,
-        Command::BattleGuard(
-            crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site.entity_id, relic_slot: None },
-        ),
+        Command::BattleGuard(crate::commands::Battle { attacker_id: key.explorer_id, defender_id: site.entity_id }),
     );
     assert_eq!(progress(d, home), 1);
 }

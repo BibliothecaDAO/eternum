@@ -194,9 +194,7 @@ pub fn beside(d: Deployment, key: ExplorerKey, target: ResourceKey, direction: u
 }
 
 pub fn fight(key: ExplorerKey, target: ResourceKey) -> Command {
-    Command::BattleGuard(
-        crate::commands::Battle { attacker_id: key.explorer_id, defender_id: target.entity_id, relic_slot: None },
-    )
+    Command::BattleGuard(crate::commands::Battle { attacker_id: key.explorer_id, defender_id: target.entity_id })
 }
 
 pub fn slot(target: ResourceKey, slot: u8) -> GuardKey {
