@@ -630,6 +630,14 @@ export class WorldSpatialProjection {
         for (const source of [change.previous, change.current]) {
           if (source && source.entity_id !== 0n) this.applyStructureEntityUpdate(source);
         }
+      } else if (change.model === "Seal") {
+        const row = change.current ?? change.previous;
+        if (!row) continue;
+        for (const [, structure] of this.store.entries("Structure")) {
+          if (structure.game_id === row.game_id && structure.owner === row.account) {
+            this.applyStructureEntityUpdate(structure);
+          }
+        }
       }
     }
   }

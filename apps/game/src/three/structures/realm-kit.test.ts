@@ -1,16 +1,15 @@
-import { REALM_SKIN_FAMILIES, SEASON_ONE_DRAWN_LEVELS, wornRealmSkinFamily } from "@bibliothecadao/eternum";
+import { REALM_SKIN_FAMILIES, wornRealmSkinFamily } from "@bibliothecadao/eternum";
 import { aspects, BuildingType, BUILDINGS_CENTER, RealmLevels, StructureType } from "@bibliothecadao/types";
 import { Box3, Mesh, Triangle, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
-import { wornRealmSkin } from "../cosmetics/realm-skins";
+import { REALM_RANKS, wornRealmSkin } from "../cosmetics/realm-skins";
 import { resolveBuildingModelSelection } from "../scenes/hexception-building-model";
 import { requireFlagAnchors } from "./flag-anchors";
 import { withFlagCloth } from "./flag-cloth";
 import { REALM_ASSETS, realmModelIndex } from "./realm-design";
 import {
   SEASON_ONE_REALM_KIT_LEVELS,
-  type SeasonOneRealmKitLevel,
   createSeasonOneRealmKit,
   isSeasonOneRealmKitPath,
   parseSeasonOneRealmKitPath,
@@ -23,13 +22,15 @@ const MAX_TRIANGLES_BY_LEVEL = {
   0: 8000,
   1: 12000,
   2: 16000,
-} as const satisfies Record<SeasonOneRealmKitLevel, number>;
+  3: 20000,
+} as const satisfies Record<RealmLevels, number>;
 
 const HEIGHT_BAND_BY_LEVEL = {
   0: { min: 0.75, max: 1.05 },
   1: { min: 1.15, max: 1.55 },
   2: { min: 1.8, max: 2.25 },
-} as const satisfies Record<SeasonOneRealmKitLevel, { min: number; max: number }>;
+  3: { min: 2.65, max: 3.15 },
+} as const satisfies Record<RealmLevels, { min: number; max: number }>;
 
 function countTriangles(mesh: Mesh): number {
   const index = mesh.geometry.getIndex();
@@ -143,7 +144,7 @@ describe("Season 1 procedural Aspect Realm kit", () => {
   it("rejects malformed or unsupported procedural realm kit paths", () => {
     expect(parseSeasonOneRealmKitPath("procedural:hyperstructure")).toBeNull();
     expect(parseSeasonOneRealmKitPath("procedural:season-1-realm:99:0")).toBeNull();
-    expect(parseSeasonOneRealmKitPath("procedural:season-1-realm:1:3")).toBeNull();
+    expect(parseSeasonOneRealmKitPath("procedural:season-1-realm:1:4")).toBeNull();
     expect(parseSeasonOneRealmKitPath("procedural:season-1-realm:1:0:extra")).toBeNull();
     expect(resolveSeasonOneRealmKit("procedural:season-1-realm:99:0")).toBeNull();
     for (const level of SEASON_ONE_REALM_KIT_LEVELS) {
@@ -156,7 +157,7 @@ describe("Season 1 procedural Aspect Realm kit", () => {
   });
 
   it("agrees across Cosmetics page, world map, and realm view for every Seal, Aspect, Wonder, equipped skin, and level", () => {
-    expect(SEASON_ONE_REALM_KIT_LEVELS).toEqual(SEASON_ONE_DRAWN_LEVELS);
+    expect(SEASON_ONE_REALM_KIT_LEVELS).toEqual(REALM_RANKS);
     const keepBuilding = {
       category: BuildingType.ResourceLabor,
       col: BUILDINGS_CENTER[0],
@@ -168,9 +169,9 @@ describe("Season 1 procedural Aspect Realm kit", () => {
       for (const { id: aspect } of aspects) {
         for (const hasWonder of [false, true]) {
           for (const equipped of Object.values(REALM_SKIN_FAMILIES)) {
-            for (const level of [RealmLevels.Settlement, RealmLevels.City, RealmLevels.Kingdom, RealmLevels.Empire]) {
-              const wornFamily = wornRealmSkinFamily({ sealHeld, aspect, hasWonder }, equipped, level);
-              const cosmeticsSkin = wornRealmSkin({ sealHeld, aspect, hasWonder, equipped, level });
+            for (const level of SEASON_ONE_REALM_KIT_LEVELS) {
+              const wornFamily = wornRealmSkinFamily({ sealHeld, aspect, hasWonder }, equipped);
+              const cosmeticsSkin = wornRealmSkin({ sealHeld, aspect, hasWonder, equipped });
               const showsWonder = wornFamily === REALM_SKIN_FAMILIES.WONDER_REALM_SKIN;
               const mapIndex = realmModelIndex(level, showsWonder, 1003, aspect, wornFamily);
               const mapAsset = REALM_ASSETS[mapIndex];
@@ -190,7 +191,7 @@ describe("Season 1 procedural Aspect Realm kit", () => {
               if (expectSeasonOne) {
                 expect(mapAsset.aspect).toBe(aspect);
                 expect(mapAsset.level).toBe(level);
-                expect(hexSelection.tierPath).toBe(seasonOneRealmKitPath(aspect, level as SeasonOneRealmKitLevel));
+                expect(hexSelection.tierPath).toBe(seasonOneRealmKitPath(aspect, level));
               } else if (showsWonder) {
                 expect(mapAsset.wonder).toBe(true);
                 expect(hexSelection.tierPath).toBe(mapAsset.path);

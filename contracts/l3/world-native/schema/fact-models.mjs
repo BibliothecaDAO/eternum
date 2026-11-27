@@ -1749,7 +1749,7 @@ export const syncScopes = {
   LaborGrant: { owners: ["account"] },
   FragmentCredit: { owners: ["account"] },
   Fragments: { owners: ["account"] },
-  Seal: { owners: ["account"] },
+  Seal: "shared",
   SpendLords: { owners: ["account"] },
   PrincipalWithdrawal: { owners: ["account"] },
   DepositReceipt: { owners: ["account"] },

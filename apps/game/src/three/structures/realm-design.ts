@@ -1,7 +1,7 @@
 import { REALM_SKIN_FAMILIES } from "@bibliothecadao/eternum";
 import type { AspectId } from "@bibliothecadao/types";
 import { modelPath } from "../utils/model-url";
-import { SEASON_ONE_REALM_KIT_LEVELS, hasSeasonOneRealmKit, seasonOneRealmKitPath } from "./realm-kit";
+import { SEASON_ONE_REALM_KIT_LEVELS, seasonOneRealmKitPath } from "./realm-kit";
 import { resolveAgeWonderDesign } from "./wonder-design.mjs";
 import assets from "./realm-assets.json";
 
@@ -103,7 +103,7 @@ export function realmModelIndex(
 ): number {
   if (!Number.isInteger(level) || level < 0 || level > 3) throw new Error(`Unknown realm level ${level}`);
   if (!wonder) {
-    if (realmSkin === REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN && aspect != null && hasSeasonOneRealmKit(level)) {
+    if (realmSkin === REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN && aspect != null) {
       const index = REALM_ASSETS.findIndex(
         (asset) => asset.skin === "season-1" && asset.aspect === aspect && asset.level === level,
       );

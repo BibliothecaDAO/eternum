@@ -12,12 +12,11 @@ import {
 
 const { DEFAULT_REALM_SKIN, BASE_REALM_SKIN, SEASON_ONE_REALM_SKIN, WONDER_REALM_SKIN } = REALM_SKIN_FAMILIES;
 
-const realm = (hasWonder: boolean, level = 0, order = 1) =>
+const realm = (hasWonder: boolean, order = 1) =>
   ({
     game_id: 1,
     entity_id: 7n,
     owner: 99n,
-    base: { level },
     metadata: { has_wonder: hasWonder, order },
   }) as Parameters<typeof realmShowsWonder>[1];
 const holding = (hasWonder: boolean, sealHeld = false, aspect: number | null = null) => ({
@@ -71,14 +70,9 @@ describe("the family a realm wears, which the game draws", () => {
     ).toEqual([true, false, true]);
   });
 
-  it("resolves Season 1 at Settlement, City, and Kingdom only while the Seal and Aspect are held, falling back at Empire or when the Seal is lost", () => {
-    const settlement = realm(false, 0, 1);
-    const city = realm(false, 1, 1);
-    const kingdom = realm(false, 2, 1);
-    const wonderSettlement = realm(true, 0, 3);
-    const wonderCity = realm(true, 1, 3);
-    const wonderKingdom = realm(true, 2, 3);
-    const wonderEmpire = realm(true, 3, 3);
+  it("resolves Season 1 across all ranks while the Seal and Aspect are held, falling back when the Seal is lost", () => {
+    const ordinary = realm(false, 1);
+    const wonderRealm = realm(true, 3);
     const storeFor = (family: number | undefined, hasSeal: boolean) => ({
       get: (model: string, key: { game_id: number; entity_id?: bigint; account?: bigint }) => {
         if (model === "RealmSkin" && key.game_id === 1 && key.entity_id === 7n && family !== undefined) {
@@ -90,33 +84,17 @@ describe("the family a realm wears, which the game draws", () => {
         return undefined;
       },
     });
-    expect(realmWornSkinFamily(storeFor(SEASON_ONE_REALM_SKIN, true) as never, settlement, 1, 0)).toBe(
+    expect(realmWornSkinFamily(storeFor(DEFAULT_REALM_SKIN, true) as never, ordinary, 1)).toBe(SEASON_ONE_REALM_SKIN);
+    expect(realmWornSkinFamily(storeFor(SEASON_ONE_REALM_SKIN, true) as never, ordinary, 1)).toBe(
       SEASON_ONE_REALM_SKIN,
     );
-    expect(realmWornSkinFamily(storeFor(SEASON_ONE_REALM_SKIN, true) as never, city, 1, 1)).toBe(SEASON_ONE_REALM_SKIN);
-    expect(realmWornSkinFamily(storeFor(SEASON_ONE_REALM_SKIN, true) as never, kingdom, 1, 2)).toBe(
-      SEASON_ONE_REALM_SKIN,
-    );
-    expect(realmWornSkinFamily(storeFor(SEASON_ONE_REALM_SKIN, false) as never, settlement, 1, 0)).toBe(
-      BASE_REALM_SKIN,
-    );
-    expect(realmWornSkinFamily(storeFor(SEASON_ONE_REALM_SKIN, false) as never, city, 1, 1)).toBe(BASE_REALM_SKIN);
-    expect(realmWornSkinFamily(storeFor(SEASON_ONE_REALM_SKIN, false) as never, kingdom, 1, 2)).toBe(BASE_REALM_SKIN);
-    expect(realmWornSkinFamily(storeFor(BASE_REALM_SKIN, true) as never, settlement, 1, 0)).toBe(BASE_REALM_SKIN);
-    expect(realmWornSkinFamily(storeFor(SEASON_ONE_REALM_SKIN, true) as never, settlement, 1, 3)).toBe(BASE_REALM_SKIN);
-    expect(wornRealmSkinFamily(holding(true, true, 3), SEASON_ONE_REALM_SKIN, 0)).toBe(SEASON_ONE_REALM_SKIN);
-    expect(wornRealmSkinFamily(holding(true, true, 3), SEASON_ONE_REALM_SKIN, 1)).toBe(SEASON_ONE_REALM_SKIN);
-    expect(wornRealmSkinFamily(holding(true, true, 3), SEASON_ONE_REALM_SKIN, 2)).toBe(SEASON_ONE_REALM_SKIN);
-    expect(wornRealmSkinFamily(holding(true, false, 3), SEASON_ONE_REALM_SKIN, 2)).toBe(WONDER_REALM_SKIN);
-    expect(showsWonder(holding(true, true, 3), SEASON_ONE_REALM_SKIN, 0)).toBe(false);
-    expect(realmShowsWonder(storeFor(SEASON_ONE_REALM_SKIN, true) as never, wonderSettlement)).toBe(false);
-    expect(showsWonder(holding(true, true, 3), SEASON_ONE_REALM_SKIN, 1)).toBe(false);
-    expect(realmShowsWonder(storeFor(SEASON_ONE_REALM_SKIN, true) as never, wonderCity)).toBe(false);
-    expect(showsWonder(holding(true, true, 3), SEASON_ONE_REALM_SKIN, 2)).toBe(false);
-    expect(realmShowsWonder(storeFor(SEASON_ONE_REALM_SKIN, true) as never, wonderKingdom)).toBe(false);
-    expect(showsWonder(holding(true, false, 3), SEASON_ONE_REALM_SKIN, 2)).toBe(true);
-    expect(realmShowsWonder(storeFor(SEASON_ONE_REALM_SKIN, false) as never, wonderKingdom)).toBe(true);
-    expect(showsWonder(holding(true, true, 3), SEASON_ONE_REALM_SKIN, 3)).toBe(true);
-    expect(realmShowsWonder(storeFor(SEASON_ONE_REALM_SKIN, true) as never, wonderEmpire)).toBe(true);
+    expect(realmWornSkinFamily(storeFor(SEASON_ONE_REALM_SKIN, false) as never, ordinary, 1)).toBe(BASE_REALM_SKIN);
+    expect(realmWornSkinFamily(storeFor(BASE_REALM_SKIN, true) as never, ordinary, 1)).toBe(BASE_REALM_SKIN);
+    expect(wornRealmSkinFamily(holding(true, true, 3), SEASON_ONE_REALM_SKIN)).toBe(SEASON_ONE_REALM_SKIN);
+    expect(wornRealmSkinFamily(holding(true, false, 3), SEASON_ONE_REALM_SKIN)).toBe(WONDER_REALM_SKIN);
+    expect(showsWonder(holding(true, true, 3), SEASON_ONE_REALM_SKIN)).toBe(false);
+    expect(realmShowsWonder(storeFor(SEASON_ONE_REALM_SKIN, true) as never, wonderRealm)).toBe(false);
+    expect(showsWonder(holding(true, false, 3), SEASON_ONE_REALM_SKIN)).toBe(true);
+    expect(realmShowsWonder(storeFor(SEASON_ONE_REALM_SKIN, false) as never, wonderRealm)).toBe(true);
   });
 });

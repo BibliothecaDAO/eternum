@@ -6,10 +6,8 @@ import { COSMETICS_WORDS } from "@/ui/design-system/kit/words";
 import {
   BASE_REALM_SKIN,
   REALM_RANKS,
-  REALM_SKIN_CODES,
   REALM_SKINS,
   realmSkinIcon,
-  realmSkinIsDrawn,
   realmSkinStanding,
   realmSkinWearableOnRealm,
   wornRealmSkin,
@@ -27,13 +25,6 @@ const skin = (id: string) => REALM_SKINS.find((each) => each.id === id)!;
 describe("the realm skin catalog", () => {
   it("lists every family the page names, each with a skin", () => {
     expect(new Set(REALM_SKINS.map((each) => each.family))).toEqual(new Set(Object.keys(COSMETICS_WORDS.families)));
-  });
-
-  it("calls a family drawn by the game exactly when its skins have paintings", () => {
-    const owned = REALM_SKINS.filter((each) => REALM_SKIN_CODES[each.family] !== null);
-    expect(owned.map(realmSkinIsDrawn)).toEqual(
-      owned.map((each) => realmSkinIcon(each, RealmLevels.Kingdom) !== undefined),
-    );
   });
 
   it("gives every painted skin a painting at every rank, and none to a skin not painted yet", () => {
@@ -93,43 +84,15 @@ describe("the skin a realm wears", () => {
 
   it("wears the first family it holds and the game can draw, in the default order, while its owner equips nothing", () => {
     expect(wornRealmSkin(NOTHING)?.id).toBe("base");
-    expect(wornRealmSkin({ ...NOTHING, sealHeld: true, aspect: 3 })?.id).toBe("base");
+    expect(wornRealmSkin({ ...NOTHING, sealHeld: true, aspect: 3 })?.id).toBe("season-1-havoc");
     expect(wornRealmSkin(wonderRealm)?.id).toBe("wonder-havoc");
   });
 
   it("wears the family its owner equipped while the realm holds it and the game can draw it, else the default order", () => {
     expect(wornRealmSkin({ ...wonderRealm, equipped: REALM_SKIN_FAMILIES.BASE_REALM_SKIN })?.id).toBe("base");
     expect(wornRealmSkin({ ...wonderRealm, equipped: REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN })?.id).toBe(
-      "wonder-havoc",
+      "season-1-havoc",
     );
-    expect(
-      wornRealmSkin({
-        ...wonderRealm,
-        equipped: REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN,
-        level: RealmLevels.Settlement,
-      })?.id,
-    ).toBe("season-1-havoc");
-    expect(
-      wornRealmSkin({
-        ...wonderRealm,
-        equipped: REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN,
-        level: RealmLevels.City,
-      })?.id,
-    ).toBe("season-1-havoc");
-    expect(
-      wornRealmSkin({
-        ...wonderRealm,
-        equipped: REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN,
-        level: RealmLevels.Kingdom,
-      })?.id,
-    ).toBe("season-1-havoc");
-    expect(
-      wornRealmSkin({
-        ...wonderRealm,
-        equipped: REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN,
-        level: RealmLevels.Empire,
-      })?.id,
-    ).toBe("wonder-havoc");
     const lostTheSeal = { ...wonderRealm, sealHeld: false, equipped: REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN };
     expect(wornRealmSkin(lostTheSeal)?.id).toBe("wonder-havoc");
   });
@@ -140,13 +103,12 @@ describe("the skin the page shows worn, against how the game draws the realm", (
     for (const sealHeld of [false, true])
       for (const aspect of [1, 2, 3, 4] as const)
         for (const hasWonder of [false, true])
-          for (const equipped of Object.values(REALM_SKIN_FAMILIES))
-            for (const level of REALM_RANKS) {
-              const worn = wornRealmSkin({ sealHeld, aspect, hasWonder, equipped, level });
-              expect(worn?.family === "wonder", `${sealHeld} ${aspect} ${hasWonder} ${equipped} ${level}`).toBe(
-                showsWonder({ hasWonder, sealHeld, aspect }, equipped, level),
-              );
-            }
+          for (const equipped of Object.values(REALM_SKIN_FAMILIES)) {
+            const worn = wornRealmSkin({ sealHeld, aspect, hasWonder, equipped });
+            expect(worn?.family === "wonder", `${sealHeld} ${aspect} ${hasWonder} ${equipped}`).toBe(
+              showsWonder({ hasWonder, sealHeld, aspect }, equipped),
+            );
+          }
   });
 
   it("does not assign an Aspect variant to a Wonder realm without an Aspect", () => {

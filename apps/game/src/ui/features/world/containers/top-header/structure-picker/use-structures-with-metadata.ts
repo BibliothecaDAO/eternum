@@ -13,6 +13,7 @@ import {
   getBuildingCount,
   getGuardsByStructure,
   liveHomeArmies,
+  REALM_SKIN_MODELS,
   realmShowsWonder,
 } from "@bibliothecadao/eternum";
 import { BuildingType, RealmLevels, type Structure, StructureType, rankName } from "@bibliothecadao/types";
@@ -46,7 +47,7 @@ export const useStructuresWithMetadata = ({
   nameUpdateVersion = 0,
 }: UseStructuresWithMetadataArgs): StructureWithMetadata[] => {
   const mode = useGameModeConfig();
-  const facts = useNativeFacts(["StructureBuildings", ...GUARD_MODELS, "ExplorerTroops", "RealmSkin"]);
+  const facts = useNativeFacts(["StructureBuildings", ...GUARD_MODELS, "ExplorerTroops", ...REALM_SKIN_MODELS]);
   // A day's rollover ends yesterday's armies with no row changing, so the live-army count also follows the clock.
   const armiesClock = useCoarseCurrentDefaultTick(10);
   const { favorites } = useFavoriteStructures();

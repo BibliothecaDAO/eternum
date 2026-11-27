@@ -23,7 +23,6 @@ const cosmeticStandingOf = (game: DirectoryGame | undefined): CosmeticStanding =
       aspect: realm?.aspect ?? null,
       hasWonder: realm?.has_wonder ?? false,
       equipped: realm?.realm_skin ?? REALM_SKIN_FAMILIES.DEFAULT_REALM_SKIN,
-      level: realm?.level ?? null,
     },
     rank: realm?.level ?? null,
     game: game ?? null,

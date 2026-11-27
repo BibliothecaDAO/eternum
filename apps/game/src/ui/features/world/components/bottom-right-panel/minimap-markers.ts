@@ -4,6 +4,7 @@ import {
   getExplorerOwner,
   readDefaultTick,
   readExpeditionRules,
+  REALM_SKIN_MODELS,
   realmShowsWonder,
 } from "@bibliothecadao/eternum";
 import {
@@ -36,7 +37,7 @@ const LOCKED_SITE_SCALE = 1.45;
 export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
   models: [
     "Structure",
-    "RealmSkin",
+    ...REALM_SKIN_MODELS,
     "ExplorerTroops",
     "PlayerEntry",
     "GameRegistry",

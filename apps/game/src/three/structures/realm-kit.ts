@@ -1,6 +1,5 @@
 import brandPalette from "@/brand/palette.json";
-import { hasSeasonOneRealmSkinAt, SEASON_ONE_DRAWN_LEVELS } from "@bibliothecadao/eternum";
-import { aspectName, aspects, type AspectId } from "@bibliothecadao/types";
+import { aspectName, aspects, RealmLevels, type AspectId } from "@bibliothecadao/types";
 import {
   BoxGeometry,
   BufferGeometry,
@@ -26,9 +25,9 @@ import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { mergeGeometries, mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 import type { FlagAnchor } from "./flag-anchors";
 
-export const SEASON_ONE_REALM_KIT_LEVELS = SEASON_ONE_DRAWN_LEVELS;
-
-export type SeasonOneRealmKitLevel = (typeof SEASON_ONE_DRAWN_LEVELS)[number];
+export const SEASON_ONE_REALM_KIT_LEVELS: readonly RealmLevels[] = Object.values(RealmLevels).filter(
+  (level): level is RealmLevels => typeof level === "number",
+);
 
 interface AspectKitPalette {
   readonly stone: string;
@@ -133,7 +132,13 @@ const KIT_BUILDERS = {
     3: buildHavocKingdom,
     4: buildInsightKingdom,
   },
-} as const satisfies Record<SeasonOneRealmKitLevel, Record<AspectId, AspectKitBuilder>>;
+  3: {
+    1: buildProwessEmpire,
+    2: buildLuminaryEmpire,
+    3: buildHavocEmpire,
+    4: buildInsightEmpire,
+  },
+} as const satisfies Record<RealmLevels, Record<AspectId, AspectKitBuilder>>;
 
 const SETTLEMENT_BANNER_X = 0.41;
 const SETTLEMENT_BANNER_Y = 0.34;
@@ -147,6 +152,10 @@ const CITY_BANNER_WIDTH = 0.13;
 const KINGDOM_BANNER_X = 0.45;
 const KINGDOM_BANNER_Z = 0.68;
 const KINGDOM_BANNER_WIDTH = 0.135;
+
+const EMPIRE_BANNER_X = 0.46;
+const EMPIRE_BANNER_Z = 0.68;
+const EMPIRE_BANNER_WIDTH = 0.14;
 
 const HEX_PERIMETER_POINTS: readonly (readonly [number, number])[] = [
   [-0.22, 0.62],
@@ -168,11 +177,11 @@ const HEX_WALL_SEGMENTS: readonly WallSegment[] = HEX_PERIMETER_POINTS.slice(0, 
 
 let cachedStoneGrain: DataTexture | null = null;
 
-export function hasSeasonOneRealmKit(level: number): level is SeasonOneRealmKitLevel {
-  return hasSeasonOneRealmSkinAt(level);
+function isCatalogRealmLevel(level: number): level is RealmLevels {
+  return SEASON_ONE_REALM_KIT_LEVELS.some((rank) => rank === level);
 }
 
-export function seasonOneRealmKitPath(aspect: AspectId, level: SeasonOneRealmKitLevel): string {
+export function seasonOneRealmKitPath(aspect: AspectId, level: RealmLevels): string {
   return `${SEASON_ONE_KIT_PREFIX}${aspect}:${level}`;
 }
 
@@ -180,18 +189,18 @@ export function isSeasonOneRealmKitPath(path: string): boolean {
   return parseSeasonOneRealmKitPath(path) !== null;
 }
 
-export function parseSeasonOneRealmKitPath(path: string): { aspect: AspectId; level: SeasonOneRealmKitLevel } | null {
+export function parseSeasonOneRealmKitPath(path: string): { aspect: AspectId; level: RealmLevels } | null {
   if (!path.startsWith(SEASON_ONE_KIT_PREFIX)) return null;
   const [aspectText, levelText, extra] = path.slice(SEASON_ONE_KIT_PREFIX.length).split(":");
   if (extra !== undefined || !aspectText || !levelText) return null;
   const aspectId = Number(aspectText);
   const level = Number(levelText);
   const validAspect = aspects.some(({ id }) => id === aspectId);
-  if (!validAspect || !hasSeasonOneRealmKit(level)) return null;
+  if (!validAspect || !isCatalogRealmLevel(level)) return null;
   return { aspect: aspectId as AspectId, level };
 }
 
-export function createSeasonOneRealmKit(aspect: AspectId, level: SeasonOneRealmKitLevel): GLTF {
+export function createSeasonOneRealmKit(aspect: AspectId, level: RealmLevels): GLTF {
   const palette = ASPECT_PALETTES[aspect];
   const parts: KitParts = { masonry: [], glow: [], anchors: [] };
   KIT_BUILDERS[level][aspect](parts, palette);
@@ -605,6 +614,380 @@ function buildInsightKingdom(parts: KitParts, palette: AspectKitPalette): void {
   addInsightCityGate(parts, palette);
   addWallBannerRails(parts, palette.rail, 0.43, KINGDOM_BANNER_Z, KINGDOM_BANNER_X, KINGDOM_BANNER_WIDTH);
   addInsightTwinTowers(parts, palette);
+}
+
+function buildProwessEmpire(parts: KitParts, palette: AspectKitPalette): void {
+  addHexCurtainWall(parts, {
+    height: 0.56,
+    thickness: 0.115,
+    wallColor: palette.stone,
+    baseColor: palette.trim,
+    trimColor: palette.trim,
+    trimY: 0.54,
+    bandY: 0.29,
+  });
+  addWallCrenelations(parts, 0.56, 0.115, palette.stone, palette.trim, "flat");
+  addPerimeterPilasters(parts, 0.64, 0.165, palette.stone, palette.trim, true);
+  addProwessCityGate(parts, palette);
+  addWallBannerRails(parts, palette.rail, 0.46, EMPIRE_BANNER_Z, EMPIRE_BANNER_X, EMPIRE_BANNER_WIDTH);
+  addProwessEmpireSpire(parts, palette);
+}
+
+function buildLuminaryEmpire(parts: KitParts, palette: AspectKitPalette): void {
+  addHexCurtainWall(parts, {
+    height: 0.54,
+    thickness: 0.11,
+    wallColor: palette.stone,
+    baseColor: palette.stoneShade,
+    trimColor: palette.accent,
+    trimY: 0.52,
+    bandY: 0.16,
+  });
+  addWallArcades(parts, palette.stoneShade, palette.accent);
+  addPerimeterPilasters(parts, 0.6, 0.16, palette.stone, palette.accent, false);
+  addLuminaryCityGate(parts, palette);
+  addWallBannerRails(parts, palette.rail, 0.44, EMPIRE_BANNER_Z, EMPIRE_BANNER_X, EMPIRE_BANNER_WIDTH);
+  addLuminaryEmpireSpire(parts, palette);
+}
+
+function buildHavocEmpire(parts: KitParts, palette: AspectKitPalette): void {
+  addHexCurtainWall(parts, {
+    height: 0.58,
+    thickness: 0.12,
+    wallColor: palette.stone,
+    baseColor: palette.stoneShade,
+    trimColor: palette.accent,
+    trimY: 0.55,
+    bandY: 0.28,
+  });
+  addWallCrenelations(parts, 0.58, 0.12, palette.stoneShade, palette.stone, "jagged");
+  addWallStuds(parts, 0.39, 0.12, palette.trim);
+  for (const [x, z] of HEX_PERIMETER_POINTS) {
+    parts.masonry.push(
+      piece(cutStoneBlock(0.18, 0.68, 0.18), palette.stone, x, 0.34, z),
+      piece(cutStoneBlock(0.2, 0.055, 0.2), palette.stoneShade, x, 0.68, z),
+      piece(new ConeGeometry(0.088, 0.18, 4), palette.stoneShade, x, 0.78, z, Math.PI / 4),
+    );
+  }
+  addHavocCityGate(parts, palette);
+  addWallBannerRails(parts, palette.rail, 0.45, 0.69, EMPIRE_BANNER_X, EMPIRE_BANNER_WIDTH);
+  addHavocEmpireSpire(parts, palette);
+}
+
+function buildInsightEmpire(parts: KitParts, palette: AspectKitPalette): void {
+  addHexCurtainWall(parts, {
+    height: 0.54,
+    thickness: 0.11,
+    wallColor: palette.stone,
+    baseColor: palette.stoneShade,
+    trimColor: palette.trim,
+    trimY: 0.52,
+    bandY: 0.26,
+  });
+  for (const { from, to } of HEX_WALL_SEGMENTS) {
+    const dx = to[0] - from[0];
+    const dz = to[1] - from[1];
+    const length = Math.hypot(dx, dz);
+    const yaw = Math.atan2(dx, dz);
+    parts.masonry.push(
+      piece(
+        cutStoneBlock(0.122, 0.03, length + 0.02),
+        palette.accent,
+        (from[0] + to[0]) / 2,
+        0.4,
+        (from[1] + to[1]) / 2,
+        yaw,
+      ),
+    );
+  }
+  addPerimeterPilasters(parts, 0.6, 0.155, palette.trim, palette.accent, false);
+  addInsightCityGate(parts, palette);
+  addWallBannerRails(parts, palette.rail, 0.44, EMPIRE_BANNER_Z, EMPIRE_BANNER_X, EMPIRE_BANNER_WIDTH);
+  addInsightEmpireSpire(parts, palette);
+}
+
+const EMPIRE_TURRET_SLOTS: readonly (readonly [number, number, number])[] = [
+  [-0.54, -0.24, 1.02],
+  [0.54, -0.24, 1.02],
+  [-0.38, 0.28, 0.94],
+  [0.38, 0.28, 0.94],
+];
+
+function addProwessEmpireSpire(parts: KitParts, palette: AspectKitPalette): void {
+  const cz = -0.08;
+  const shaftHeight = 1.94;
+  parts.masonry.push(
+    piece(new CylinderGeometry(0.25, 0.35, shaftHeight, 8), palette.stone, 0, shaftHeight / 2, cz),
+    piece(new CylinderGeometry(0.37, 0.39, 0.1, 8), palette.trim, 0, 0.05, cz),
+    piece(new CylinderGeometry(0.34, 0.35, 0.055, 8), palette.trim, 0, 0.68, cz),
+    piece(new CylinderGeometry(0.31, 0.32, 0.055, 8), palette.trim, 0, 1.28, cz),
+    piece(new CylinderGeometry(0.32, 0.27, 0.16, 8), palette.trim, 0, shaftHeight + 0.04, cz),
+    piece(new ConeGeometry(0.29, 0.72, 8), palette.roof, 0, shaftHeight + 0.46, cz),
+    piece(new CylinderGeometry(0.06, 0.09, 0.07, 8), palette.trim, 0, shaftHeight + 0.82, cz),
+  );
+  for (let rib = 0; rib < 8; rib++) {
+    const angle = (rib / 8) * Math.PI * 2 + Math.PI / 8;
+    const sin = Math.sin(angle);
+    const cos = Math.cos(angle);
+    parts.masonry.push(
+      piece(
+        beamBetween(
+          new Vector3(sin * 0.35, 0.06, cz + cos * 0.35),
+          new Vector3(sin * 0.26, shaftHeight, cz + cos * 0.26),
+          0.042,
+        ),
+        palette.trim,
+      ),
+      piece(
+        beamBetween(
+          new Vector3(sin * 0.28, shaftHeight + 0.12, cz + cos * 0.28),
+          new Vector3(0, shaftHeight + 0.82, cz),
+          0.032,
+        ),
+        palette.trim,
+      ),
+      piece(
+        new ConeGeometry(0.052, 0.26, 4),
+        palette.trim,
+        sin * 0.31,
+        shaftHeight + 0.23,
+        cz + cos * 0.31,
+        angle + Math.PI / 4,
+      ),
+    );
+  }
+  parts.glow.push(
+    piece(new OctahedronGeometry(0.115, 0).scale(0.84, 1.48, 0.84), palette.gem, 0, shaftHeight + 0.96, cz),
+    piece(new OctahedronGeometry(0.068, 0).scale(0.88, 1.35, 0.72), palette.gem, 0, 1.02, cz + 0.33),
+  );
+
+  for (const [tx, tz, height] of EMPIRE_TURRET_SLOTS) {
+    parts.masonry.push(
+      piece(new CylinderGeometry(0.145, 0.165, height, 8), palette.stone, tx, height / 2, tz),
+      piece(new CylinderGeometry(0.175, 0.18, 0.06, 8), palette.trim, tx, 0.03, tz),
+      piece(new CylinderGeometry(0.17, 0.17, 0.05, 8), palette.trim, tx, height, tz),
+      piece(new ConeGeometry(0.165, 0.38, 8), palette.roof, tx, height + 0.21, tz),
+    );
+    for (let rib = 0; rib < 4; rib++) {
+      const a = (rib / 4) * Math.PI * 2;
+      parts.masonry.push(
+        piece(
+          beamBetween(
+            new Vector3(tx + Math.sin(a) * 0.16, height + 0.02, tz + Math.cos(a) * 0.16),
+            new Vector3(tx, height + 0.4, tz),
+            0.024,
+          ),
+          palette.trim,
+        ),
+      );
+    }
+    parts.glow.push(
+      piece(new OctahedronGeometry(0.042, 0).scale(0.85, 1.35, 0.85), palette.gem, tx, height + 0.45, tz),
+    );
+  }
+}
+
+function addLuminaryEmpireSpire(parts: KitParts, palette: AspectKitPalette): void {
+  const cz = -0.08;
+  const shaftHeight = 1.98;
+  parts.masonry.push(
+    piece(new CylinderGeometry(0.24, 0.32, shaftHeight, 8), palette.stone, 0, shaftHeight / 2, cz),
+    piece(new CylinderGeometry(0.35, 0.38, 0.09, 8), palette.stoneShade, 0, 0.045, cz),
+    piece(new CylinderGeometry(0.33, 0.34, 0.055, 8), palette.accent, 0, 0.72, cz),
+    piece(new CylinderGeometry(0.3, 0.31, 0.055, 8), palette.accent, 0, 1.36, cz),
+    piece(new CylinderGeometry(0.29, 0.27, 0.07, 8), palette.accent, 0, shaftHeight, cz),
+    piece(new ConeGeometry(0.27, 0.46, 8), palette.roof, 0, shaftHeight + 0.26, cz),
+    piece(new TorusGeometry(0.26, 0.042, 6, 18), palette.stone, 0, shaftHeight + 0.68, cz),
+    piece(new TorusGeometry(0.275, 0.018, 5, 18), palette.accent, 0, shaftHeight + 0.68, cz),
+  );
+  for (let fin = 0; fin < 4; fin++) {
+    const angle = (fin / 4) * Math.PI * 2 + Math.PI / 4;
+    const sin = Math.sin(angle);
+    const cos = Math.cos(angle);
+    parts.masonry.push(
+      piece(
+        beamBetween(
+          new Vector3(sin * 0.48, 0.05, cz + cos * 0.48),
+          new Vector3(sin * 0.28, 0.96, cz + cos * 0.28),
+          0.085,
+        ),
+        palette.stone,
+      ),
+    );
+    parts.glow.push(
+      piece(cutStoneBlock(0.055, 0.24, 0.032), palette.gem, sin * 0.28, 1.56, cz + cos * 0.28, angle),
+      piece(cutStoneBlock(0.055, 0.24, 0.032), palette.gem, sin * 0.31, 1.02, cz + cos * 0.31, angle),
+    );
+  }
+  parts.glow.push(piece(new IcosahedronGeometry(0.145, 2), palette.gem, 0, shaftHeight + 0.68, cz));
+
+  for (const [tx, tz, height] of EMPIRE_TURRET_SLOTS) {
+    parts.masonry.push(
+      piece(cutStoneBlock(0.25, height + 0.14, 0.25), palette.stone, tx, (height + 0.14) / 2, tz),
+      piece(cutStoneBlock(0.28, 0.06, 0.28), palette.stoneShade, tx, 0.03, tz),
+      piece(cutStoneBlock(0.29, 0.05, 0.29), palette.accent, tx, height + 0.14, tz),
+      piece(new ConeGeometry(0.18, 0.38, 4), palette.roof, tx, height + 0.35, tz, Math.PI / 4),
+    );
+    parts.glow.push(
+      piece(new IcosahedronGeometry(0.04, 1), palette.gem, tx, height + 0.56, tz),
+      piece(cutStoneBlock(0.055, 0.16, 0.028), palette.gem, tx, height - 0.06, tz + 0.13),
+    );
+  }
+}
+
+function addHavocEmpireSpire(parts: KitParts, palette: AspectKitPalette): void {
+  const cz = -0.08;
+  const shaftHeight = 2.08;
+  parts.masonry.push(
+    piece(new CylinderGeometry(0.2, 0.35, shaftHeight, 6), palette.stone, 0, shaftHeight / 2, cz),
+    piece(new CylinderGeometry(0.38, 0.42, 0.12, 6), palette.stoneShade, 0, 0.06, cz),
+    piece(new CylinderGeometry(0.32, 0.35, 0.07, 6), palette.accent, 0, 0.78, cz),
+    piece(new CylinderGeometry(0.26, 0.28, 0.065, 6), palette.accent, 0, 1.48, cz),
+    piece(new CylinderGeometry(0.26, 0.21, 0.18, 6), palette.stoneShade, 0, shaftHeight + 0.04, cz),
+  );
+  for (let side = 0; side < 4; side++) {
+    const angle = (side / 4) * Math.PI * 2 + Math.PI / 4;
+    const sin = Math.sin(angle);
+    const cos = Math.cos(angle);
+    parts.masonry.push(
+      piece(
+        beamBetween(new Vector3(sin * 0.48, 0.06, cz + cos * 0.48), new Vector3(sin * 0.3, 0.92, cz + cos * 0.3), 0.1),
+        palette.stoneShade,
+      ),
+      piece(
+        beamBetween(
+          new Vector3(sin * 0.22, shaftHeight - 0.04, cz + cos * 0.22),
+          new Vector3(sin * 0.34, shaftHeight + 0.46, cz + cos * 0.34),
+          0.095,
+        ),
+        palette.stone,
+      ),
+      piece(
+        beamBetween(
+          new Vector3(sin * 0.34, shaftHeight + 0.44, cz + cos * 0.34),
+          new Vector3(sin * 0.17, shaftHeight + 0.92, cz + cos * 0.17),
+          0.072,
+        ),
+        palette.stoneShade,
+      ),
+      piece(new OctahedronGeometry(0.052, 0).scale(0.8, 1.4, 0.7), palette.trim, sin * 0.33, 1.16, cz + cos * 0.33),
+    );
+    parts.glow.push(
+      piece(new OctahedronGeometry(0.095, 0).scale(0.75, 2.0, 0.75), palette.gem, sin * 0.34, 0.96, cz + cos * 0.34),
+      piece(
+        new OctahedronGeometry(0.058, 0).scale(0.8, 1.4, 0.8),
+        palette.gem,
+        sin * 0.22,
+        shaftHeight + 0.22,
+        cz + cos * 0.22,
+      ),
+    );
+  }
+  parts.glow.push(
+    piece(new OctahedronGeometry(0.155, 0).scale(0.75, 2.35, 0.75), palette.gem, 0, shaftHeight + 0.56, cz),
+  );
+
+  for (const [tx, tz, height] of EMPIRE_TURRET_SLOTS) {
+    parts.masonry.push(
+      piece(cutStoneBlock(0.28, height, 0.28), palette.stone, tx, height / 2, tz),
+      piece(cutStoneBlock(0.32, 0.065, 0.32), palette.stoneShade, tx, height, tz),
+      piece(new ConeGeometry(0.085, 0.24, 4), palette.stoneShade, tx, height + 0.15, tz, Math.PI / 4),
+      piece(new OctahedronGeometry(0.045, 0).scale(0.8, 1.4, 0.7), palette.trim, tx, height * 0.65, tz + 0.15),
+    );
+  }
+}
+
+function addInsightEmpireSpire(parts: KitParts, palette: AspectKitPalette): void {
+  const cz = -0.08;
+  const shaftHeight = 1.96;
+  parts.masonry.push(
+    piece(new CylinderGeometry(0.25, 0.34, shaftHeight, 8), palette.stone, 0, shaftHeight / 2, cz),
+    piece(new CylinderGeometry(0.37, 0.39, 0.09, 8), palette.stoneShade, 0, 0.045, cz),
+    piece(new CylinderGeometry(0.34, 0.35, 0.05, 8), palette.accent, 0, 0.7, cz),
+    piece(new CylinderGeometry(0.31, 0.32, 0.05, 8), palette.accent, 0, 1.34, cz),
+    piece(new CylinderGeometry(0.32, 0.26, 0.14, 8), palette.trim, 0, shaftHeight + 0.05, cz),
+    piece(new TorusGeometry(0.33, 0.028, 6, 18).rotateX(Math.PI / 2), palette.accent, 0, shaftHeight + 0.14, cz),
+    piece(new TorusGeometry(0.34, 0.03, 6, 18).rotateX(Math.PI / 2 + 0.22), palette.trim, 0, shaftHeight + 0.44, cz),
+    piece(
+      new TorusGeometry(0.27, 0.024, 6, 18).rotateY(Math.PI / 4).rotateX(0.32),
+      palette.accent,
+      0,
+      shaftHeight + 0.62,
+      cz,
+    ),
+    piece(
+      new TorusGeometry(0.27, 0.024, 6, 18).rotateY(-Math.PI / 4).rotateX(-0.28),
+      palette.accent,
+      0,
+      shaftHeight + 0.62,
+      cz,
+    ),
+  );
+  for (const side of [-1, 1]) {
+    parts.masonry.push(
+      piece(
+        beamBetween(
+          new Vector3(side * 0.25, shaftHeight + 0.08, cz),
+          new Vector3(side * 0.34, shaftHeight + 0.56, cz),
+          0.075,
+        ),
+        palette.stone,
+      ),
+      piece(
+        beamBetween(
+          new Vector3(side * 0.34, shaftHeight + 0.54, cz),
+          new Vector3(side * 0.16, shaftHeight + 0.98, cz),
+          0.062,
+        ),
+        palette.trim,
+      ),
+    );
+  }
+  for (let rib = 0; rib < 4; rib++) {
+    const angle = (rib / 4) * Math.PI * 2 + Math.PI / 4;
+    const sin = Math.sin(angle);
+    const cos = Math.cos(angle);
+    parts.masonry.push(
+      piece(
+        beamBetween(
+          new Vector3(sin * 0.34, 0.06, cz + cos * 0.34),
+          new Vector3(sin * 0.26, shaftHeight, cz + cos * 0.26),
+          0.055,
+        ),
+        palette.trim,
+      ),
+    );
+    parts.glow.push(
+      piece(cutStoneBlock(0.06, 0.24, 0.032), palette.gem, sin * 0.29, 1.56, cz + cos * 0.29, angle),
+      piece(cutStoneBlock(0.06, 0.24, 0.032), palette.gem, sin * 0.32, 1.02, cz + cos * 0.32, angle),
+    );
+  }
+  parts.glow.push(
+    piece(new OctahedronGeometry(0.155, 0).scale(0.84, 1.48, 0.84), palette.gem, 0, shaftHeight + 0.62, cz),
+    piece(new OctahedronGeometry(0.072, 0).scale(0.84, 1.35, 0.84), palette.gem, 0, shaftHeight + 0.28, cz),
+  );
+
+  for (const [tx, tz, height] of EMPIRE_TURRET_SLOTS) {
+    parts.masonry.push(
+      piece(new CylinderGeometry(0.155, 0.17, height, 8), palette.stone, tx, height / 2, tz),
+      piece(new CylinderGeometry(0.18, 0.185, 0.055, 8), palette.stoneShade, tx, 0.03, tz),
+      piece(new TorusGeometry(0.165, 0.02, 5, 12).rotateX(Math.PI / 2), palette.accent, tx, height, tz),
+      piece(new SphereGeometry(0.162, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), palette.roof, tx, height, tz),
+    );
+    for (let rib = 0; rib < 4; rib++) {
+      parts.masonry.push(
+        piece(
+          new TorusGeometry(0.166, 0.013, 5, 10, Math.PI),
+          rib % 2 === 0 ? palette.stone : palette.accent,
+          tx,
+          height,
+          tz,
+          (rib * Math.PI) / 4,
+        ),
+      );
+    }
+    parts.glow.push(piece(new OctahedronGeometry(0.038, 0).scale(0.85, 1.35, 0.85), palette.gem, tx, height + 0.2, tz));
+  }
 }
 
 function addTwinTowerSkybridge(

@@ -53,7 +53,6 @@ const frontierEntry = (entry: HeraldFrontierLeaderboardEntry, own: boolean, onCl
           hasWonder={showsWonder(
             { hasWonder: entry.has_wonder === true, sealHeld: entry.ancient_seal === true, aspect: aspect ?? null },
             entry.realm_skin,
-            entry.level,
           )}
         />
       </>

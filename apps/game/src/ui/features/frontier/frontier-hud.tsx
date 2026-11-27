@@ -14,7 +14,7 @@ import { IdentityChip } from "@/ui/features/world/containers/top-header/identity
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
-import { configManager, realmShowsWonder } from "@bibliothecadao/eternum";
+import { configManager, REALM_SKIN_MODELS, realmShowsWonder } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { catalogAspectId, rankName } from "@bibliothecadao/types";
 import { useHudLayout, useHudTablet } from "@/hooks/helpers/use-compact-hud";
@@ -434,7 +434,7 @@ const FrontierHudBody = ({
   return <BaneDayProvider realm={shown}>{layout}</BaneDayProvider>;
 };
 
-const REALM_HEADER_MODELS = ["RaceRules", "RealmSkin"] as const;
+const REALM_HEADER_MODELS = ["RaceRules", ...REALM_SKIN_MODELS] as const;
 
 /**
  * A phone's action row, the one row over the place bar that says what the pick lets the player do now (owner, 22 October
@@ -534,7 +534,7 @@ const HudMenu = ({
   );
 };
 
-const REALM_PANEL_MODELS = ["HomeAspect", "RealmSkin"] as const;
+const REALM_PANEL_MODELS = ["HomeAspect", ...REALM_SKIN_MODELS] as const;
 
 const useRealmFace = (realm: NativeRows["Structure"]) => {
   const facts = useNativeFacts(REALM_PANEL_MODELS);

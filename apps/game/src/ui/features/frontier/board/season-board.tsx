@@ -167,7 +167,6 @@ const listRow = (entry: Entry, own: boolean, names: PlayerNames): SeasonListRow 
         aspect: entry.order ? orderAspect(entry.order) : null,
       },
       entry.realm_skin,
-      entry.level,
     ),
   },
   name: (

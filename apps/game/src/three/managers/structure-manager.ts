@@ -648,7 +648,6 @@ export class StructureManager {
               this.mode.id === "frontier" && structureComponent.metadata.order
                 ? orderAspect(structureComponent.metadata.order)
                 : null,
-              renderInfo.level,
             )
           : undefined,
       cosmeticId: cosmetic.skin.cosmeticId,

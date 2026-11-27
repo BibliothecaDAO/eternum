@@ -2287,11 +2287,7 @@ export const nativeSyncScopes = {
       "account"
     ]
   },
-  "Seal": {
-    "owners": [
-      "account"
-    ]
-  },
+  "Seal": "shared",
   "SpendLords": {
     "owners": [
       "account"

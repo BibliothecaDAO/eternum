@@ -10,6 +10,7 @@ import {
   getGuildFromPlayerAddress,
   structureMapPosition,
   isViewerOwner,
+  REALM_SKIN_MODELS,
 } from "@bibliothecadao/eternum";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
@@ -43,7 +44,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     "Guild",
     ...GUARD_MODELS,
     "Structure",
-    "RealmSkin",
+    ...REALM_SKIN_MODELS,
     "GameRegistry",
     "ExpeditionSite",
     "SliceRules",

@@ -1638,7 +1638,7 @@ export default class HexceptionScene extends HexagonScene {
     });
     const orderId = structure?.metadata.order;
     const aspect = this.mode.id === "frontier" && orderId ? orderAspect(orderId) : null;
-    const realmSkin = structure ? realmWornSkinFamily(this.game.store, structure, aspect, realm.stage) : undefined;
+    const realmSkin = structure ? realmWornSkinFamily(this.game.store, structure, aspect) : undefined;
     return resolveBuildingModelSelection(building, {
       stage: realm.stage,
       structureId: realm.realmId,
@@ -1954,9 +1954,20 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private changesShownRealmSkin(change: NativeFactChange): boolean {
-    if (change.model !== "RealmSkin" || change.previous?.family === change.current?.family) return false;
-    const row = change.current ?? change.previous;
-    return row?.game_id === configManager.getActiveGameId() && row.entity_id === BigInt(this.shownRealmId);
+    const gameId = configManager.getActiveGameId();
+    if (change.model === "RealmSkin") {
+      if (change.previous?.family === change.current?.family) return false;
+      const row = change.current ?? change.previous;
+      return row?.game_id === gameId && row.entity_id === BigInt(this.shownRealmId);
+    }
+    if (change.model === "Seal") {
+      if (Boolean(change.previous) === Boolean(change.current)) return false;
+      const row = change.current ?? change.previous;
+      if (row?.game_id !== gameId) return false;
+      const shown = this.game.store.get("Structure", { game_id: gameId, entity_id: BigInt(this.shownRealmId) });
+      return shown?.owner === row.account;
+    }
+    return false;
   }
 
   /** The shown structure's new level, when the change is one to its level. */
