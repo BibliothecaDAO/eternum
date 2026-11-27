@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
+  FRONTIER_LAB_GROUPS,
+  frontierLabEntries,
   mountFrontierPaintedLab,
+  type FrontierLabGroup,
   type FrontierPaintedLabSettings,
 } from "@/three/debug/model-lab/frontier-painted-lab-renderer";
-import {
-  FRONTIER_PAINTED_BUILDINGS,
-  FRONTIER_PAINTED_GROUPS,
-  type FrontierPaintedGroup,
-} from "@/three/structures/frontier-painted-buildings";
 import "./frontier-painted-lab.css";
 
 const DISTANCES = [4, 10, 14, 20, 28];
@@ -78,7 +76,7 @@ export function FrontierPaintedLab() {
             <label>
               Set{" "}
               <select aria-label="Set" value={settings.group} onChange={(e) => change("group", e.target.value)}>
-                {FRONTIER_PAINTED_GROUPS.map(({ group, label }) => (
+                {FRONTIER_LAB_GROUPS.map(({ group, label }) => (
                   <option key={group} value={group}>
                     {label}
                   </option>
@@ -174,8 +172,7 @@ export function FrontierPaintedLab() {
 
 function readSettings(params: URLSearchParams): FrontierPaintedLabSettings {
   const group =
-    FRONTIER_PAINTED_GROUPS.find(({ group }) => group === params.get("group"))?.group ??
-    FRONTIER_PAINTED_GROUPS[0].group;
+    FRONTIER_LAB_GROUPS.find(({ group }) => group === params.get("group"))?.group ?? FRONTIER_LAB_GROUPS[0].group;
   const distance = Number(params.get("distance") ?? 14);
   const yaw = Number(params.get("yaw") ?? 0);
   const focus = members(group).findIndex((building) => building.id === params.get("focus"));
@@ -191,10 +188,10 @@ function readSettings(params: URLSearchParams): FrontierPaintedLabSettings {
   };
 }
 
-function members(group: FrontierPaintedGroup) {
-  return FRONTIER_PAINTED_BUILDINGS.filter((building) => building.group === group);
+function members(group: FrontierLabGroup) {
+  return frontierLabEntries(group);
 }
 
-function groupLabel(group: FrontierPaintedGroup): string {
-  return FRONTIER_PAINTED_GROUPS.find((entry) => entry.group === group)?.label ?? group;
+function groupLabel(group: FrontierLabGroup): string {
+  return FRONTIER_LAB_GROUPS.find((entry) => entry.group === group)?.label ?? group;
 }
