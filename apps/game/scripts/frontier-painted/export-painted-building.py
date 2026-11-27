@@ -5,8 +5,7 @@
 The master is the approved high-resolution assembly (Y-up, its front turned to the game camera, origin at the tile's
 ground centre). The architecture is decimated to its catalogue budget and repainted into one colour atlas (at its
 catalogue size) and one normal map, baked from the full-resolution parts. Parts the game drives stay separate: the ground plate, the tier
-banner (its numeral composited into a small texture of its own), the castle's ownership cloth (`orderCloth=banner`,
-painted at runtime with the realm's order) and the mill's rotor (a looping quarter turn about its axle). Textures are
+banner (its numeral composited into a small texture of its own), and the mill's rotor (a looping quarter turn about its axle). Textures are
 written at delivery size; `optimize-outpost.mjs` compresses the result.
 """
 
@@ -43,10 +42,6 @@ CLOTH_TRIANGLE_RATIO = 0.3
 BANNER_HEADING = 0.0
 BOARD_HEADINGS = 6
 POLE_CLEARANCE = 0.03
-# The game's banner canvas is 256 by 512 with the order emblem centred 205 px from its top; a flag of this aspect
-# samples the band round the emblem, so the emblem keeps its proportions.
-ORDER_CANVAS = (256, 512)
-ORDER_EMBLEM_CENTRE = 205
 
 
 def export_building(building, master, output):
@@ -62,8 +57,6 @@ def export_building(building, master, output):
         runtime.append(animate_rotor(rotor))
     if parts["banner_cloth"]:
         runtime.append(build_tier_banner(parts, delivery))
-    if parts["order_cloth"]:
-        runtime.append(build_order_cloth(parts))
     if parts["ground"]:
         runtime.append(build_ground(parts))
     write_delivery(runtime, building, master, output)
@@ -87,7 +80,7 @@ def classify_parts():
     material is double-sided)."""
     parts = {
         key: []
-        for key in ("architecture", "leaves", "rotor", "banner_cloth", "banner_pole", "numerals", "order_cloth", "ground")
+        for key in ("architecture", "leaves", "rotor", "banner_cloth", "banner_pole", "numerals", "ground")
     }
     for obj in [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]:
         role = obj.get("frontier_part", "")
@@ -97,8 +90,6 @@ def classify_parts():
             parts["ground"].append(obj)
         elif role == "plant-leaves":
             parts["leaves"].append(obj)
-        elif obj.get("orderCloth"):
-            parts["order_cloth"].append(obj)
         elif role == "tier-flag" and obj.name.endswith("-cloth"):
             parts["banner_cloth"].append(obj)
         elif role == "tier-flag" and "-numeral-" in obj.name:
@@ -235,27 +226,6 @@ def build_tier_banner(parts, architecture):
     keep_only_uv_layer(banner, banner.data.uv_layers.active.name)
     banner["frontierPart"] = "tier-banner"
     return banner
-
-
-def build_order_cloth(parts):
-    """Every castle flag in one ownership cloth: the runtime paints the order's banner onto it. Each flag spans the
-    canvas's width from its pole and the band round the emblem in height; its far side is mirrored."""
-    cloth = join([duplicate(obj) for obj in parts["order_cloth"]], "order-cloth")
-    decimate(cloth, round(triangle_count(cloth) * CLOTH_TRIANGLE_RATIO))
-    aspect = flag_aspect(parts["order_cloth"][0])
-    band = ORDER_CANVAS[0] / aspect / ORDER_CANVAS[1]
-    centre = 1 - ORDER_EMBLEM_CENTRE / ORDER_CANVAS[1]
-    layer = cloth.data.uv_layers.active
-    for loop in layer.data:
-        loop.uv = (loop.uv[0], centre + (loop.uv[1] - 0.5) * band)
-    mirror_far_side(cloth, Vector((0, -1, 0)))
-    cloth.data.materials.clear()
-    cloth.data.materials.append(runtime_material("Order cloth", order_cloth_texture(parts["order_cloth"][0])))
-    keep_only_uv_layer(cloth, layer.name)
-    cloth["orderCloth"] = "banner"
-    cloth["orderUvConvention"] = "Each flag spans u 0..1 from its pole and the emblem band in v; its far side is mirrored"
-    cloth["frontierPart"] = "order-cloth"
-    return cloth
 
 
 def build_ground(parts):
@@ -457,15 +427,6 @@ def front_direction(numerals):
     front = [obj for obj in numerals if obj.name.endswith("-front")]
     normal = sum((face.normal for face in front[0].data.polygons), Vector()) if front else Vector((0, -1, 0))
     return normal.normalized()
-
-
-def flag_aspect(cloth):
-    """Width along the flag's fly over its height."""
-    points = np.array([vertex.co[:] for vertex in cloth.data.vertices])
-    horizontal = points[:, :2] - points[:, :2].mean(axis=0)
-    _, vectors = np.linalg.eigh(np.cov(horizontal.T))
-    width = np.ptp(horizontal @ vectors[:, 1])
-    return width / np.ptp(points[:, 2])
 
 
 def triangle_count(obj):
@@ -712,13 +673,6 @@ def overlay(base, decal, u0, u1, v0, v1):
     region = base[y0:y1, x0:x1]
     region[..., :3] = region[..., :3] * (1 - alpha) + patch[..., :3] * alpha
     return base
-
-
-def order_cloth_texture(cloth):
-    """The cloth as the review saw it (weave times its red), for views without the runtime's order painting."""
-    weave = resample(pixels(first_image(cloth)), 128, 256)
-    weave[..., :3] = linear_to_srgb(srgb_to_linear(weave[..., :3]) * material_factor(cloth))
-    return image_from(weave, "order cloth")
 
 
 def resample(array, width, height):

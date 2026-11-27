@@ -3,7 +3,7 @@ import { BuildingType } from "@bibliothecadao/types";
 import type { RealmBuildingFamily } from "./realm-building-kit";
 import { REALM_SUPPORT_PATHS } from "./realm-support-kit";
 
-export type FrontierPaintedGroup = "realms" | "farm" | "workshop" | "barracks" | "training" | "sites";
+export type FrontierPaintedGroup = "farm" | "workshop" | "barracks" | "training" | "sites";
 
 interface FrontierPaintedBuilding {
   id: string;
@@ -25,8 +25,6 @@ export function frontierPaintedPath(id: string): string {
   if (!building) throw new Error(`Unknown painted Frontier building: ${id}`);
   return building.path;
 }
-
-export const FRONTIER_PAINTED_REALMS = ["settlement", "city", "kingdom", "empire"].map(frontierPaintedPath);
 
 const FRONTIER_BUILDING_MODELS = {
   [BuildingType.None]: null,
@@ -89,7 +87,6 @@ export function tieredBuildingFamily(type: BuildingType): RealmBuildingFamily | 
 }
 
 export const FRONTIER_PAINTED_GROUPS: readonly { group: FrontierPaintedGroup; label: string }[] = [
-  { group: "realms", label: "Realm castles" },
   { group: "farm", label: "Farm I–V" },
   { group: "workshop", label: "Workshop I–V" },
   { group: "barracks", label: "Barracks I–V" },

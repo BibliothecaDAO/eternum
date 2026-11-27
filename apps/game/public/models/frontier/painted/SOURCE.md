@@ -1,12 +1,12 @@
 # Painted Frontier buildings
 
-Game-ready versions of the remaining approved painted Frontier building masters: the four realm castles and the essence
-rift (Farm, Workshop, and Barracks tiers I–V are built procedurally at runtime in
+Game-ready version of the remaining approved painted Frontier building master: the essence rift (Base Realms are built
+procedurally at runtime in `src/three/structures/base-realm-kit.ts`; Farm, Workshop, and Barracks tiers I–V in
 `src/three/structures/realm-building-kit.ts`; Fallen realm ruins in `src/three/structures/ruin-kit.ts`; Supply Yard,
 Scouts' Lodge, and Camp in `src/three/structures/realm-support-kit.ts`; Wells and Shrines in
-`src/three/structures/well-shrine-kit.ts`; and the unused Hearth master was retired). They are delivered for
-integration. The lab draws them through `InstancedModel` on game terrain (FEATURE-MAP.md, "Frontier buildings — painted
-set"), but the board and the world map still draw the shipped models.
+`src/three/structures/well-shrine-kit.ts`; and the unused Hearth master was retired). It is delivered for integration.
+The lab draws it through `InstancedModel` on game terrain (FEATURE-MAP.md, "Frontier buildings — painted set"), while
+retired sets resolve to their runtime procedural kits.
 
 ## Sources and rebuild
 
@@ -44,8 +44,6 @@ The parts the game drives stay separate:
 - `ground`: the master's ground plate, its texture at 512².
 - `tier-banner`: the tier flag, decimated to 30% of its cloth, its numeral composited into a 256² texture. Its far side
   samples the texture mirrored, so the numeral reads correctly from both sides.
-- `order-cloth`: the castle flags, `orderCloth: "banner"`. Each flag spans the order canvas's width from its pole and
-  the 256 × 512 canvas's band around the emblem (centred 205 px from the top). Its far side is mirrored.
 - `rotor`: a farm's sails. They turn a quarter in 2.5 s at one speed, through six 15° morph targets about the hub (clip
   `rotor`, linear keys), and their four equal sails make the loop seamless.
 
@@ -70,10 +68,6 @@ one the game draws today where the painted building would stand.
 
 | Model        | Triangles | Draws | Atlas |   Bytes | Master: size, triangles, draws | Shipped today: bytes, triangles, draws                 |
 | ------------ | --------: | ----: | ----: | ------: | ------------------------------ | ------------------------------------------------------ |
-| settlement   |     8,987 |     3 | 1024² | 362,712 | 36 MB, 49,678, 7               | `realms/settlement.glb`: 253,916, 6,183, 5             |
-| city         |    13,258 |     3 | 1024² | 378,632 | 34 MB, 66,776, 11              | `realms/city.glb`: 375,732, 9,692, 7                   |
-| kingdom      |    17,793 |     3 | 1024² | 411,520 | 36 MB, 66,454, 19              | `realms/kingdom.glb`: 478,512, 15,808, 8               |
-| empire       |    22,870 |     3 | 1024² | 436,892 | 30 MB, 71,544, 38              | `realms/empire.glb`: 466,116, 24,953, 8                |
 | farm-1       |     8,987 |     4 | 1024² | 559,324 | 33 MB, 48,839, 15              | `new-buildings-opt/farm.glb`: 505,660, 5,470, 7        |
 | farm-2       |     8,986 |     4 | 1024² | 514,740 | 63 MB, 53,637, 17              | `frontier/buildings/farm-2.glb`: 508,612, 5,826, 7     |
 | farm-3       |     8,986 |     4 | 1024² | 510,952 | 62 MB, 52,706, 15              | `frontier/buildings/farm-3.glb`: 511,732, 5,982, 7     |
@@ -107,8 +101,6 @@ Review captures remain outside the repository.
 
 - The board, the placement preview and the world map still load the shipped models. Swapping a family is a path change
   in its mode's asset map, plus that mode's preload plan.
-- Realm castles face the camera, as realm models do. They carry `orderCloth: "banner"`, which `SettlementModel` reads
-  for the order's heraldry, but no other ownership surface.
 - The shipped essence rift animates; this one is static.
 - `buildingTierModelPath` returns procedural Farm, Workshop, and Barracks paths for tiers II–V via
   `realm-building-kit.ts`, and procedural Storehouse paths for tiers II–III via `realm-support-kit.ts`.

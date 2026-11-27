@@ -8,7 +8,6 @@ import catalogue from "../../src/three/structures/frontier-painted-buildings.jso
 
 const DELIVERIES = new URL("../../public/models/frontier/painted/", import.meta.url);
 const SOURCES = new URL("../../asset-sources/frontier-painted/", import.meta.url);
-// The shipped realm-board buildings and realm castles are 226 to 565 KB; no delivery of the set passes 600 KB.
 const MAX_BYTES = 600_000;
 const MAX_DRAWS = 5;
 const APOTHEM = Math.sqrt(3) / 2;
@@ -89,13 +88,10 @@ function expectInsideGroundedHex(nodes) {
 }
 
 function expectRuntimeParts(building, parts, animations) {
-  const isRealm = building.group === "realms";
   const isTiered = TIERED_GROUPS.has(building.group);
   expect(parts.has("ground")).toBe(building.group !== "sites");
   expect(parts.has("tier-banner")).toBe(isTiered);
   if (isTiered) expectHeldBanner(parts.get("tier-banner"));
-  expect(parts.has("order-cloth")).toBe(isRealm);
-  if (isRealm) expectOrderCloth(parts.get("order-cloth"));
   const isMill = building.group === "farm";
   const isRift = building.id === "essence-rift";
   expect(parts.has("rotor")).toBe(isMill);
@@ -178,25 +174,6 @@ function insideHex(x, z) {
   return [0, 1, 2, 3, 4, 5].every(
     (side) => x * Math.cos((side * Math.PI) / 3) + z * Math.sin((side * Math.PI) / 3) <= APOTHEM,
   );
-}
-
-/** Ownership cloth the realm's appearance paints with the order's banner; every flag samples inside the canvas. */
-function expectOrderCloth(node) {
-  expect(node.getExtras().orderCloth).toBe("banner");
-  expectClothUvs(node);
-}
-
-function expectClothUvs(node) {
-  for (const primitive of node.getMesh().listPrimitives()) {
-    const uvs = primitive.getAttribute("TEXCOORD_0");
-    for (let index = 0; index < uvs.getCount(); index++) {
-      const [u, v] = uvs.getElement(index, []);
-      expect(u).toBeGreaterThanOrEqual(-0.001);
-      expect(u).toBeLessThanOrEqual(1.001);
-      expect(v).toBeGreaterThanOrEqual(0);
-      expect(v).toBeLessThanOrEqual(1);
-    }
-  }
 }
 
 function triangles(node) {

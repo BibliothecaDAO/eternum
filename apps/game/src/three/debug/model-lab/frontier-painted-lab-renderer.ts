@@ -1,11 +1,5 @@
 import { BuildingType } from "@bibliothecadao/types";
-import {
-  buildingModelPaths,
-  BUILDINGS_GROUPS,
-  CAMP_MODEL_PATH,
-  REALM_MODEL_PATHS,
-  RiftModelPath,
-} from "../../constants/scene-constants";
+import { buildingModelPaths, BUILDINGS_GROUPS, CAMP_MODEL_PATH, RiftModelPath } from "../../constants/scene-constants";
 import { buildingTierModelPath } from "../../structures/building-tiers";
 import { FRONTIER_PAINTED_BUILDINGS, type FrontierPaintedGroup } from "../../structures/frontier-painted-buildings";
 import { realmSupportLabEntries } from "../../structures/realm-support-kit";
@@ -97,7 +91,6 @@ function slotX(slot: number, count: number): number {
 
 /** The model the game draws today where this painted building would stand. */
 function resolveShippedPath(building: LabBuildingEntry): string | undefined {
-  if (building.group === "realms") return REALM_MODEL_PATHS[realmLevelName(building.id)];
   if (building.group === "sites") return SHIPPED_SITES[building.id];
   const [kind, tier] = splitTier(building.id);
   const type = BOARD_TYPES[kind];
@@ -111,10 +104,4 @@ function resolveShippedPath(building: LabBuildingEntry): string | undefined {
 function splitTier(id: string): [string, number] {
   const match = /^(.*)-(\d)$/.exec(id);
   return match ? [match[1], Number(match[2])] : [id, 1];
-}
-
-function realmLevelName(id: string): keyof typeof REALM_MODEL_PATHS {
-  const name = (id.charAt(0).toUpperCase() + id.slice(1)) as keyof typeof REALM_MODEL_PATHS;
-  if (!(name in REALM_MODEL_PATHS)) throw new Error(`No shipped realm model for ${id}`);
-  return name;
 }

@@ -131,13 +131,7 @@ export function FrontierPaintedLab() {
             </label>
             <label>
               Turn{" "}
-              <select
-                aria-label="Turn"
-                value={settings.yaw}
-                disabled={settings.group === "realms"}
-                title={settings.group === "realms" ? "Realm castles face the camera, as in the game" : undefined}
-                onChange={(e) => change("yaw", e.target.value)}
-              >
+              <select aria-label="Turn" value={settings.yaw} onChange={(e) => change("yaw", e.target.value)}>
                 {YAWS.map((yaw) => (
                   <option key={yaw} value={yaw}>
                     {yaw}°
@@ -172,14 +166,16 @@ export function FrontierPaintedLab() {
       <footer>
         {inGame
           ? "Select an empty plot to preview a building · return to Compare models for the full set"
-          : "Drag to orbit · scroll to inspect · a board building turns in steps of 60° while its banner holds its heading · realm castles face the camera"}
+          : "Drag to orbit · scroll to inspect · a board building turns in steps of 60° while its banner holds its heading"}
       </footer>
     </main>
   );
 }
 
 function readSettings(params: URLSearchParams): FrontierPaintedLabSettings {
-  const group = FRONTIER_PAINTED_GROUPS.find(({ group }) => group === params.get("group"))?.group ?? "realms";
+  const group =
+    FRONTIER_PAINTED_GROUPS.find(({ group }) => group === params.get("group"))?.group ??
+    FRONTIER_PAINTED_GROUPS[0].group;
   const distance = Number(params.get("distance") ?? 14);
   const yaw = Number(params.get("yaw") ?? 0);
   const focus = members(group).findIndex((building) => building.id === params.get("focus"));
@@ -190,8 +186,7 @@ function readSettings(params: URLSearchParams): FrontierPaintedLabSettings {
     camera: params.get("camera") === "worldmap" ? "worldmap" : "board",
     focus: focus < 0 ? null : focus,
     distance: DISTANCES.includes(distance) ? distance : 14,
-    // Realm castles face the camera in the game; they do not turn here either.
-    yaw: group !== "realms" && YAWS.includes(yaw) ? yaw : 0,
+    yaw: YAWS.includes(yaw) ? yaw : 0,
     lighting: params.get("lighting") === "sunset" ? "sunset" : "day",
   };
 }
