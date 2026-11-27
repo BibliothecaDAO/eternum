@@ -33,6 +33,7 @@ export const useStickToLatest = ({
   const drawn = useRef({ oldest, newest, height: 0 });
   const currentNewest = useLatest(newest);
   const nearOldest = useLatest(onNearOldest);
+  const hasOlder = onNearOldest !== undefined;
 
   // Before the browser paints, so the list is never seen anywhere else first.
   useLayoutEffect(() => {
@@ -44,15 +45,21 @@ export const useStickToLatest = ({
   }, [scroller, oldest, newest]);
 
   useEffect(() => {
+    if (!scroller || !hasOlder) return;
+    if (needsOlderToFill(scroller)) nearOldest.current?.();
+  }, [scroller, oldest, newest, hasOlder, nearOldest]);
+
+  useEffect(() => {
     if (!scroller) return;
     const onScroll = () => {
       const reading = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight >= AT_LATEST_PX;
       atLatest.current = !reading;
       setNewestWhenLeft((left) => (reading ? (left ?? currentNewest.current) : null));
-      if (scroller.scrollTop < NEAR_OLDEST_PX) nearOldest.current?.();
+      if (needsOlderToFill(scroller)) nearOldest.current?.();
     };
     const onResize = () => {
       if (atLatest.current) showLatest(scroller);
+      if (needsOlderToFill(scroller)) nearOldest.current?.();
     };
     const resizes = new ResizeObserver(onResize);
     resizes.observe(scroller);
@@ -77,6 +84,8 @@ export const useStickToLatest = ({
 const keepReadingAbove = (scroller: HTMLElement, heightBefore: number) => {
   scroller.scrollTop += scroller.scrollHeight - heightBefore;
 };
+
+const needsOlderToFill = (scroller: HTMLElement) => scroller.clientHeight > 0 && scroller.scrollTop < NEAR_OLDEST_PX;
 
 /** At once: a list given smooth scrolling would slide down from its oldest message on every open. */
 const showLatest = (scroller: HTMLElement) => {
