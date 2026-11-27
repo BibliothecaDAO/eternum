@@ -51,7 +51,7 @@ import { FRONTIER_BEASTS } from "../structures/frontier-beast";
 import { FrontierModel } from "../structures/frontier-model";
 import InstancedModel from "@/three/managers/instanced-model";
 import { MAP_SITES, type MapSiteKind, mapSiteOf } from "@/config/map-sites";
-import { frontierPaintedPath } from "../structures/frontier-painted-buildings";
+import { WELL_SHRINE_PATHS } from "../structures/well-shrine-kit";
 import { FELT_CENTER } from "@/ui/config";
 import {
   projectionChangesForLayer,
@@ -102,7 +102,7 @@ export class MapSiteManager {
       key: site.kind,
       name: site.kind,
       stands: (tile: TileSpatialRenderable) => tile.occupierType === site.occupier,
-      model: () => paintedSiteModel(site.kind),
+      model: () => wellShrineSiteModel(site.kind),
       scale: 1,
     })),
     ...deepSites.map((kind) => ({
@@ -580,8 +580,8 @@ const beastModelOf = async (species: BeastModel) => {
   return { model: new FrontierModel(gltf, SITE_CAPACITY, species), height: new Box3().setFromObject(gltf.scene).max.y };
 };
 
-const paintedSiteModel = async (kind: MapSiteKind) => {
-  const gltf = await gltfLoader.loadAsync(frontierPaintedPath(kind.toLowerCase()));
+const wellShrineSiteModel = async (kind: MapSiteKind) => {
+  const gltf = await gltfLoader.loadAsync(WELL_SHRINE_PATHS[kind]);
   return {
     model: new InstancedModel(gltf, SITE_CAPACITY, false, kind),
     height: new Box3().setFromObject(gltf.scene).max.y,

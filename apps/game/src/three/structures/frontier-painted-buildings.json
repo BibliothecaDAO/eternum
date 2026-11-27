@@ -152,22 +152,6 @@
     "atlasSize": 0
   },
   {
-    "id": "shrine",
-    "label": "Shrine",
-    "group": "sites",
-    "path": "/models/frontier/painted/shrine.glb",
-    "architectureTriangles": 4000,
-    "atlasSize": 512
-  },
-  {
-    "id": "well",
-    "label": "Well",
-    "group": "sites",
-    "path": "/models/frontier/painted/well.glb",
-    "architectureTriangles": 4000,
-    "atlasSize": 512
-  },
-  {
     "id": "essence-rift",
     "label": "Essence rift",
     "group": "sites",

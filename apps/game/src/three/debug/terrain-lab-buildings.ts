@@ -8,7 +8,7 @@ import { FALLEN_REALM_RUIN_PATH, FRONTIER_BEAST_PATHS } from "../structures/fron
 import { StructureType } from "@bibliothecadao/types";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
 import { isRuinKitPath } from "../structures/ruin-kit";
-import { modelPath } from "../utils/model-url";
+import { SHRINE_SITE_MODEL_PATH, WELL_SITE_MODEL_PATH } from "../structures/well-shrine-kit";
 
 export interface TerrainLabBuilding {
   col: number;
@@ -40,8 +40,8 @@ export const TERRAIN_LAB_BUILDINGS = [
     ...SHARED_BUILDING_MODEL_PATHS,
     ...FRONTIER_BEAST_PATHS,
     FALLEN_REALM_RUIN_PATH,
-    modelPath("outposts/shrine.glb"),
-    modelPath("outposts/well.glb"),
+    SHRINE_SITE_MODEL_PATH,
+    WELL_SITE_MODEL_PATH,
     SPIRE_MODEL_PATH,
   ]),
 ].map((path) => {
@@ -56,9 +56,13 @@ export const TERRAIN_LAB_BUILDINGS = [
         ? "Hyperstructure · Procedural tower"
         : isRuinKitPath(path)
           ? BUILDING_LABELS.ruin
-          : (REALM_ASSETS.find((asset) => asset.path === path)?.label ??
-            BUILDING_LABELS[filename] ??
-            filename.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase())),
+          : path === WELL_SITE_MODEL_PATH
+            ? "Well · Procedural spring"
+            : path === SHRINE_SITE_MODEL_PATH
+              ? "Shrine · Procedural sanctuary"
+              : (REALM_ASSETS.find((asset) => asset.path === path)?.label ??
+                BUILDING_LABELS[filename] ??
+                filename.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase())),
   };
 });
 

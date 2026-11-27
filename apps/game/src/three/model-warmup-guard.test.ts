@@ -14,6 +14,8 @@ const PURE_ASSET_LOADER_ALLOWLIST = new Set([
   "cosmetics/asset-cache.ts",
   "cosmetics/skin-asset-source.ts",
   "structures/deep-landmarks.ts",
+  "structures/procedural-model-resolver.ts",
+  "structures/well-shrine-kit.ts",
   "terrain/creatures/biome-creature-assets.ts",
   "terrain/terrain-prop-asset-cache.ts",
   "terrain/terrain-prop-pools.ts",
@@ -39,7 +41,7 @@ const REQUIRED_WARMUP_OWNERS = [
 ];
 
 const MODEL_LOADER_SYMBOL =
-  /\b(gltfLoader|loadCosmeticAsset|resolveAllSkinGltfs|resolvePrimarySkinGltf|loadTerrainPropCatalog|loadBiomeCreature|loadDeepLandmark)\b/;
+  /\b(gltfLoader|loadCosmeticAsset|resolveAllSkinGltfs|resolvePrimarySkinGltf|loadTerrainPropCatalog|loadBiomeCreature|loadDeepLandmark|resolveProceduralWellShrineKit|createWellKit|createShrineKit)\b/;
 
 const HAS_WARMUP_INVOCATION =
   /\b(?:this\.)?compilePipelines(?:\?\.)?\s*\(|\bcreatePipelineCompiler\s*\(|\bwarmIconTexture(?:\?\.)?\s*\(/;

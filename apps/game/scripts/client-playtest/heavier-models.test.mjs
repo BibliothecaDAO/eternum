@@ -58,7 +58,7 @@ it("writes a game model with four times its triangles at its path below models, 
   made.push(out);
 
   const { reports } = JSON.parse(
-    execFileSync("node", [GENERATOR, "--triangles", "4", "--out", out, "frontier/painted/well.glb"], {
+    execFileSync("node", [GENERATOR, "--triangles", "4", "--out", out, "outposts/camp.glb"], {
       encoding: "utf8",
     }),
   );
@@ -67,7 +67,7 @@ it("writes a game model with four times its triangles at its path below models, 
   const io = new NodeIO()
     .registerExtensions(ALL_EXTENSIONS)
     .registerDependencies({ "draco3d.decoder": await draco3d.createDecoderModule() });
-  const written = await io.read(join(out, "frontier/painted/well.glb"));
+  const written = await io.read(join(out, "outposts/camp.glb"));
   const triangles = written
     .getRoot()
     .listMeshes()

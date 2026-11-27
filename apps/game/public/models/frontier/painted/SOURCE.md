@@ -1,11 +1,12 @@
 # Painted Frontier buildings
 
-Game-ready versions of the remaining approved painted Frontier building masters: the four realm castles and three map
-sites (Farm, Workshop, and Barracks tiers I–V are built procedurally at runtime in
+Game-ready versions of the remaining approved painted Frontier building masters: the four realm castles and the essence
+rift (Farm, Workshop, and Barracks tiers I–V are built procedurally at runtime in
 `src/three/structures/realm-building-kit.ts`; Fallen realm ruins in `src/three/structures/ruin-kit.ts`; Supply Yard,
-Scouts' Lodge, and Camp in `src/three/structures/realm-support-kit.ts`; and the unused Hearth master was retired). They
-are delivered for integration. The lab draws them through `InstancedModel` on game terrain (FEATURE-MAP.md, "Frontier
-buildings — painted set"), but the board and the world map still draw the shipped models.
+Scouts' Lodge, and Camp in `src/three/structures/realm-support-kit.ts`; Wells and Shrines in
+`src/three/structures/well-shrine-kit.ts`; and the unused Hearth master was retired). They are delivered for
+integration. The lab draws them through `InstancedModel` on game terrain (FEATURE-MAP.md, "Frontier buildings — painted
+set"), but the board and the world map still draw the shipped models.
 
 ## Sources and rebuild
 
@@ -88,8 +89,6 @@ one the game draws today where the painted building would stand.
 | barracks-3   |     8,987 |     3 | 1024² | 360,992 | 63 MB, 52,292, 12              | `frontier/buildings/barracks-3.glb`: 356,704, 9,731, 2 |
 | barracks-4   |     8,987 |     3 | 1024² | 369,240 | 94 MB, 56,802, 14              | none                                                   |
 | barracks-5   |     8,986 |     3 | 1024² | 365,504 | 33 MB, 53,495, 11              | none                                                   |
-| shrine       |     3,993 |     1 |  512² | 158,276 | 26 MB, 51,169, 3               | `outposts/shrine.glb`: 73,524, 1,816, 3                |
-| well         |     3,999 |     1 |  512² | 178,488 | 33 MB, 44,652, 3               | `outposts/well.glb`: 103,684, 5,068, 3                 |
 | essence-rift |    10,000 |     1 |  512² | 253,364 | 43 MB, 79,063, 2               | `reward-tiles/rift.glb`: 1,120,924, 35,910, 28         |
 
 ## Verification and review

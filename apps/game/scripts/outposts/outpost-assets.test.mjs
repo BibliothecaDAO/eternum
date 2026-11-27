@@ -12,6 +12,8 @@ it("keeps shipped outpost deliveries and the runtime proof aligned with outpost-
     expect(deliveries).toContain(`${asset}.glb`);
   }
   expect(deliveries).not.toContain("ruin.glb");
+  expect(deliveries).not.toContain("shrine.glb");
+  expect(deliveries).not.toContain("well.glb");
 
   const proofSource = readFileSync(new URL("prove-runtime.playwright.js", import.meta.url), "utf8");
   const expectedLiteral = JSON.stringify(OUTPOST_ASSETS).replaceAll(",", ", ");

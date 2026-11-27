@@ -6,7 +6,6 @@ import {
   REALM_MODEL_PATHS,
   RiftModelPath,
 } from "../../constants/scene-constants";
-import { modelPath } from "../../utils/model-url";
 import { buildingTierModelPath } from "../../structures/building-tiers";
 import { FRONTIER_PAINTED_BUILDINGS, type FrontierPaintedGroup } from "../../structures/frontier-painted-buildings";
 import { realmSupportLabEntries } from "../../structures/realm-support-kit";
@@ -35,8 +34,6 @@ const BOARD_TYPES: Partial<Record<string, BuildingType>> = {
 };
 const SHIPPED_SITES: Partial<Record<string, string>> = {
   camp: CAMP_MODEL_PATH,
-  shrine: modelPath("outposts/shrine.glb"),
-  well: modelPath("outposts/well.glb"),
   "essence-rift": RiftModelPath,
 };
 

@@ -3,10 +3,15 @@ import { isRealmBuildingKitPath, resolveRealmBuildingKit } from "./realm-buildin
 import { isProceduralRealmKitPath, resolveProceduralRealmKit } from "./realm-kit";
 import { isRealmSupportKitPath, resolveProceduralRealmSupportKit } from "./realm-support-kit";
 import { isRuinKitPath, resolveProceduralRuinKit } from "./ruin-kit";
+import { isWellShrineKitPath, resolveProceduralWellShrineKit } from "./well-shrine-kit";
 
 export function isProceduralModelPath(path: string): boolean {
   return (
-    isProceduralRealmKitPath(path) || isRuinKitPath(path) || isRealmBuildingKitPath(path) || isRealmSupportKitPath(path)
+    isProceduralRealmKitPath(path) ||
+    isRuinKitPath(path) ||
+    isRealmBuildingKitPath(path) ||
+    isRealmSupportKitPath(path) ||
+    isWellShrineKitPath(path)
   );
 }
 
@@ -15,6 +20,7 @@ export function resolveProceduralModel(path: string): GLTF | null {
     resolveProceduralRuinKit(path) ??
     resolveProceduralRealmKit(path) ??
     resolveRealmBuildingKit(path) ??
-    resolveProceduralRealmSupportKit(path)
+    resolveProceduralRealmSupportKit(path) ??
+    resolveProceduralWellShrineKit(path)
   );
 }
