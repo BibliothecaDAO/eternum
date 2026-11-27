@@ -100,8 +100,11 @@ const OPEN = `(() => {
     pane: rect(pane),
     composer: rect(composer),
     scroller: rect(scroller),
-    // The controls drawn: a message's Reply is drawn only once the message is clicked or holds the keyboard.
-    controls: pane ? [...pane.querySelectorAll("button, input, textarea")].filter((c) => c.getClientRects().length > 0).map(rect) : [],
+    controls: pane
+      ? [...pane.querySelectorAll("button, input, textarea")]
+          .filter((c) => c.getClientRects().length > 0 && getComputedStyle(c).pointerEvents !== "none")
+          .map(rect)
+      : [],
     scrollHeight: scroller?.scrollHeight ?? null,
     clientHeight: scroller?.clientHeight ?? null,
   };
