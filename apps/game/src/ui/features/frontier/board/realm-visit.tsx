@@ -4,6 +4,8 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { leaveRealmVisit, type RealmVisit, useRealmVisit, type VisitPlace } from "@/sync/active-game-client";
+import { Icon } from "@/ui/design-system/icon";
+import { HudPill } from "@/ui/design-system/kit/hud-elements";
 import { LordName } from "./realm-marks";
 import { configManager, Position, structureMapPosition } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -96,5 +98,23 @@ export const RealmVisitFoot = ({ home }: { home: NativeRows["Structure"] | null 
       arriving={!visited}
       onLeave={home ? leaveRealmVisit : undefined}
     />
+  );
+};
+
+export const SpectatedPlayerChip = ({ player, onOpen }: { player: string | bigint; onOpen: () => void }) => {
+  const name = usePlayerDisplayName(player) ?? UNKNOWN;
+  return (
+    <HudPill
+      label={name}
+      onPress={onOpen}
+      className="pointer-events-auto min-w-0 shrink-0 gap-1.5 whitespace-nowrap px-2.5"
+    >
+      {[
+        <span key="spectated" data-spectated-player className="flex min-w-0 items-center gap-1.5">
+          <Icon name="eye" size={14} aria-hidden="true" className="shrink-0" />
+          <span className="max-w-32 truncate">{name}</span>
+        </span>,
+      ]}
+    </HudPill>
   );
 };
