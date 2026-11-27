@@ -876,11 +876,13 @@ To regenerate only the Workshop thumbnail with the shared 85% fill normalizer:
 ## Frontier buildings — painted set
 
 Open `/lab/models?family=frontier-painted` (Art → Models → Frontier buildings · painted set). Set shows one group of the
-set at scale one on game terrain through `InstancedModel`: Farm, Workshop or Barracks at tiers I–V, the four training
-buildings, or the map sites (realm castles live in `/lab/models?family=realms` through procedural `base-realm-kit.ts`).
-Compare puts the models the game draws today in a row behind (none yet for the Farm and Barracks at tiers IV and V).
-Focus and View (Detail) inspect one building closely; Turn steps through the board's six headings while each tier banner
-holds its heading, broadside to the camera. A Farm's sails turn.
+set at scale one on game terrain through `InstancedModel`: Farm, Workshop or Barracks at tiers I–V, the training and
+support buildings (`group=training`), map sites (`group=sites`), Shrine & Well (`group=wells-shrines`), all four Fallen
+Realm Ruins (`group=ruins`), Outposts (`group=outposts`), or the Spire (`group=spire`); realm castles live in
+`/lab/models?family=realms` through procedural `base-realm-kit.ts`. Compare puts the models the game draws today in a
+row behind (including the shipped procedural kits for Shrine & Well, Ruins, Outposts, and Spire; none yet for the Farm
+and Barracks at tiers IV and V). Focus and View (Detail) inspect one building closely; Turn steps through the board's
+six headings while each tier banner holds its heading, broadside to the camera. A Farm's sails turn.
 
 In a Frontier game a player meets the set here (the paths are chosen in `src/config/game-modes/index.ts`,
 `src/three/scenes/hexception-building-model.ts` and `src/three/managers/map-site-manager.ts`): on the realm board
