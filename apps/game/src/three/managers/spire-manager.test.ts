@@ -4,11 +4,8 @@ import { Group, PerspectiveCamera, Scene, SphereGeometry } from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { describe, expect, it, vi } from "vitest";
 
-const { placed, loadAsync } = vi.hoisted(() => ({ placed: [] as boolean[], loadAsync: vi.fn(async () => ({})) }));
-vi.mock("../utils/utils", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../utils/utils")>()),
-  gltfLoader: { loadAsync },
-}));
+const { placed, createSpireKit } = vi.hoisted(() => ({ placed: [] as boolean[], createSpireKit: vi.fn(() => ({})) }));
+vi.mock("../structures/spire-kit", () => ({ createSpireKit }));
 vi.mock("@/three/map-layer", () => ({ activeMapLayer: () => false }));
 vi.mock("@/hooks/store/use-ui-store", () => ({ useUIStore: { subscribe: () => () => {} } }));
 vi.mock("@/ui/config", async (importOriginal) => ({
@@ -55,32 +52,32 @@ describe("spires on the map", () => {
   });
 
   it("asks for no spire model in a game with no spire until its end nears, then loads it once", async () => {
-    loadAsync.mockClear();
+    createSpireKit.mockClear();
     const projection = { getTiles: () => [tile(1, TileOccupier.None)], subscribeTiles: () => () => {} };
     const manager = new SpireManager(new Scene(), projection as never, new Group());
     await manager.prepare();
     manager.advanceGameEnd(endgameFrame(null), 0.016, new PerspectiveCamera(), null);
-    expect(loadAsync).not.toHaveBeenCalled();
+    expect(createSpireKit).not.toHaveBeenCalled();
 
     manager.prepareGameEnd();
     manager.prepareGameEnd();
     await manager.prepare();
-    expect(loadAsync).toHaveBeenCalledOnce();
+    expect(createSpireKit).toHaveBeenCalledTimes(2);
     manager.destroy();
   });
 
   it("loads the veil's model when the game has ended, opened late or before its end neared", async () => {
-    loadAsync.mockClear();
+    createSpireKit.mockClear();
     const projection = { getTiles: () => [], subscribeTiles: () => () => {} };
     const manager = new SpireManager(new Scene(), projection as never, new Group());
     manager.advanceGameEnd(endgameFrame(9), 0, new PerspectiveCamera(), null);
     await manager.prepare();
-    expect(loadAsync).toHaveBeenCalledOnce();
+    expect(createSpireKit).toHaveBeenCalledTimes(2);
     manager.destroy();
   });
 
   it("compiles the main spire model through compilePipelines before attaching it to the scene", async () => {
-    loadAsync.mockClear();
+    createSpireKit.mockClear();
     const projection = {
       getTiles: () => [tile(1, TileOccupier.Spire)],
       subscribeTiles: () => () => {},

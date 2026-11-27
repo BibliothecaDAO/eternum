@@ -2,7 +2,6 @@ import type { GroundLights } from "../terrain/ground-lights";
 import { SPIRE_GROUND_LIGHT } from "../structures/structure-ground-lights";
 import { isWithinWorldOriginReach, subscribeWorldOrigin, worldOrigin } from "../world-origin";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { SPIRE_MODEL_PATH } from "@/three/constants/scene-constants";
 import { activeMapLayer } from "@/three/map-layer";
 import { FELT_CENTER } from "@/ui/config";
 import { projectionChangesForLayer, type WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
@@ -16,7 +15,6 @@ import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import type { SpireModel } from "../structures/spire-model";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
 import { getWorldPositionForHex } from "../utils";
-import { gltfLoader } from "../utils/utils";
 import { afterWorldInteractive } from "@/game-entry/world-interactive";
 
 /** A spire's hex; a dormant one, found by a Blitz reveal, stands without its portal or a name over it, as scenery. */
@@ -230,13 +228,13 @@ export class SpireManager {
 
   private async loadModel(capacity: number): Promise<boolean> {
     try {
-      const [gltf, { SpireModel }] = await Promise.all([
-        gltfLoader.loadAsync(SPIRE_MODEL_PATH),
+      const [{ createSpireKit }, { SpireModel }] = await Promise.all([
+        import("../structures/spire-kit"),
         import("../structures/spire-model"),
       ]);
       if (this.destroyed) return false;
       const nextCapacity = Math.max(capacity, this.getSpireHexes().length);
-      const nextModel = new SpireModel(gltf, nextCapacity);
+      const nextModel = new SpireModel(createSpireKit(), nextCapacity);
       try {
         await this.compilePipelines(nextModel.group, this.scene);
       } catch (error) {
@@ -253,7 +251,7 @@ export class SpireManager {
       this.model.group.visible = this.modelVisible;
       this.scene.add(this.model.group);
       this.refresh();
-      if (!this.endgameModel) await this.prepareEndgame(new SpireModel(gltf, 2));
+      if (!this.endgameModel) await this.prepareEndgame(new SpireModel(createSpireKit(), 2));
       return !this.destroyed;
     } catch (error) {
       console.error("[SpireManager] Failed to load spire model", error);

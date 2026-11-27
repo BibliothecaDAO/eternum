@@ -1,6 +1,7 @@
 import * as T from "three";
 import { WebGPURenderer } from "three/webgpu";
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
+import { SPIRE_MODEL_PATH } from "@/three/structures/spire-kit";
 import { gltfLoader, configureGltfTextureSupport } from "@/three/utils/gltf-loader";
 
 export async function renderModel(model: string, pixels = 384) {
@@ -18,7 +19,7 @@ export async function renderModel(model: string, pixels = 384) {
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = T.SRGBColorSpace;
   renderer.toneMapping = T.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = model.endsWith("/spire.glb") ? 3.5 : 1.3;
+  renderer.toneMappingExposure = model === SPIRE_MODEL_PATH ? 1.7 : 1.3;
   await renderer.init();
   configureGltfTextureSupport(renderer);
   let object: T.Group | undefined;

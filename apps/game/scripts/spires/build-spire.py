@@ -1,8 +1,8 @@
 """A stationary stone socket, orbiting obelisks and a spherical essence portal.
 
-Kept as the obelisk spire variant for a later cosmetic. Nothing loads its output yet: the shipped spire is the
-hand-authored `spire.glb` (see public/models/ethereal/SOURCE.md), and the runtime spire model requires that asset's
-portal metadata and animation clip, so wiring this variant means giving it its own model path as well.
+Kept as the obelisk spire variant for a later cosmetic. Nothing loads its output yet: the shipped spire is the runtime
+procedural kit in `apps/game/src/three/structures/spire-kit.ts` (`procedural:spire`, see public/models/ethereal/SOURCE.md),
+so wiring this variant means giving it its own model path as well.
 """
 
 import json

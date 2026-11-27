@@ -4,26 +4,21 @@ import InstancedModel from "../managers/instanced-model";
 import type { AnimationVisibilityContext } from "../types/animation";
 import { queueInstanceUpdate } from "../utils/instance-update-ranges";
 import { placedModelPhase } from "../utils/placed-model-phase";
-import { isPortalSurface, sortSpirePortals, SpirePortalMaterials } from "./spire-portal";
+import { createSpirePortal, isPortalSurface, sortSpirePortals } from "./spire-portal";
 
 interface SpirePlacement {
   matrix: Matrix4;
   phase: number;
   orbScale: number;
-  /** A dormant spire has no portal and holds its first pose. */
-  portal: ReturnType<SpirePortalMaterials["create"]> | null;
+  portal: ReturnType<typeof createSpirePortal> | null;
 }
 
 function prepareSpire(gltf: GLTF) {
-  // The loader cache remains immutable, including its animated transforms.
   const evaluator = gltf.scene.clone(true);
   const solids: Mesh[] = [];
   const portals: Mesh[] = [];
   evaluator.traverse((node) => {
     if (!(node instanceof Mesh)) return;
-    // A multi-material glTF primitive inherits semantic extras from its mesh group.
-    for (let parent = node.parent; !node.userData.spirePart && parent; parent = parent.parent)
-      if (parent.userData.spirePart) node.userData.spirePart = parent.userData.spirePart;
     (isPortalSurface(node) ? portals : solids).push(node);
   });
   const flat = new Group();
@@ -35,12 +30,10 @@ function prepareSpire(gltf: GLTF) {
   return { evaluator, solids, portals, core, flat };
 }
 
-/** Shared stone draws and authored hierarchy motion; translucent portals compose independently per placement. */
 export class SpireModel extends InstancedModel {
   private readonly placements = new Map<number, SpirePlacement>();
   private readonly prepared: ReturnType<typeof prepareSpire>;
   private readonly clipMixer: AnimationMixer;
-  private readonly portalMaterials: SpirePortalMaterials;
   private readonly composed = new Matrix4();
   private readonly orbContraction = new Matrix4();
   private readonly coreInverse = new Matrix4();
@@ -56,15 +49,13 @@ export class SpireModel extends InstancedModel {
     private readonly placementCapacity: number,
   ) {
     const prepared = prepareSpire(gltf);
-    // InstancedModel handles pooled solid materials/buffers. Its morph-only animation path must not bind this clip.
-    super({ scene: prepared.flat, animations: [] }, placementCapacity, false, "Spire", "cache");
+    super({ scene: prepared.flat, animations: [] }, placementCapacity, false, "Spire", "consumer");
     this.prepared = prepared;
     this.setContactShadowsEnabled(false);
     this.clipMixer = new AnimationMixer(prepared.evaluator);
     this.clipMixer.clipAction(gltf.animations[0]).play();
     this.clipDuration = gltf.animations[0].duration;
     this.sweptBounds = this.measureSweptBounds();
-    this.portalMaterials = new SpirePortalMaterials(prepared.core.userData.trueSphereRadius);
     prepared.evaluator.updateMatrixWorld(true);
     this.labelHeight = new Box3().setFromObject(prepared.evaluator).max.y + 0.25;
     this.group.name = "Spires";
@@ -79,7 +70,6 @@ export class SpireModel extends InstancedModel {
     this.placeSpire(index, matrix, false);
   }
 
-  /** Places a working spire, or a dormant one: no portal, held still in its first pose. */
   placeSpire(index: number, matrix: Matrix4, dormant: boolean): void {
     if (index < 0 || index >= this.placementCapacity) return;
     if (matrix.determinant() === 0) {
@@ -93,7 +83,7 @@ export class SpireModel extends InstancedModel {
       placement = undefined;
     }
     if (!placement) {
-      const portal = dormant ? null : this.portalMaterials.create(this.prepared.portals);
+      const portal = dormant ? null : createSpirePortal(this.prepared.portals);
       placement = { matrix: matrix.clone(), phase: 0, orbScale: 1, portal };
       this.placements.set(index, placement);
       if (portal) {
@@ -162,7 +152,13 @@ export class SpireModel extends InstancedModel {
     this.disposed = true;
     this.clipMixer.stopAllAction();
     this.clipMixer.uncacheRoot(this.prepared.evaluator);
-    this.portalMaterials.dispose();
+    for (const index of [...this.placements.keys()]) this.removePlacement(index);
+    const geometries = new Set(this.prepared.portals.map((mesh) => mesh.geometry));
+    for (const geometry of geometries) geometry.dispose();
+    const materials = new Set(
+      this.prepared.portals.flatMap((mesh) => (Array.isArray(mesh.material) ? mesh.material : [mesh.material])),
+    );
+    for (const material of materials) material.dispose();
     this.placements.clear();
     super.dispose();
   }
@@ -224,9 +220,5 @@ export class SpireModel extends InstancedModel {
       if (contracting) mesh.matrix.premultiply(this.orbContraction);
       mesh.matrixWorldNeedsUpdate = true;
     });
-    this.group.updateWorldMatrix(true, false);
-    placement.portal.state.inverseCore.copy(this.group.matrixWorld).multiply(placement.matrix);
-    if (contracting) placement.portal.state.inverseCore.multiply(this.orbContraction);
-    placement.portal.state.inverseCore.multiply(this.prepared.core.matrixWorld).invert();
   }
 }

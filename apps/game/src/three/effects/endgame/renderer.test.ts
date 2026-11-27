@@ -2,17 +2,7 @@ import { gameRegistryRow } from "../../../../../../packages/core/src/test-suppor
 import { GAME_FAMILIES } from "../../../../../../config/source/common/native-preset-modes";
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
-import {
-  AnimationClip,
-  BoxGeometry,
-  Group,
-  InstancedMesh,
-  Mesh,
-  MeshStandardMaterial,
-  PerspectiveCamera,
-  Scene,
-  SphereGeometry,
-} from "three";
+import { Group, InstancedMesh, PerspectiveCamera, Scene } from "three";
 import { ClientConfigManager } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
@@ -30,22 +20,6 @@ markWorldInteractive();
 vi.mock("@/three/map-layer", () => ({ activeMapLayer: () => false }));
 vi.mock("@/ui/config", () => ({ FELT_CENTER: () => 0, IS_FLAT_MODE: false }));
 vi.mock("@/hooks/store/use-ui-store", () => ({ useUIStore: { subscribe: () => () => {} } }));
-vi.mock("../../utils/utils", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../utils/utils")>()),
-  gltfLoader: {
-    loadAsync: async () => {
-      const scene = new Group();
-      const body = new Mesh(new BoxGeometry(), new MeshStandardMaterial());
-      body.userData.spirePart = "spire";
-      scene.add(body);
-      const core = new Mesh(new SphereGeometry(0.3), new MeshStandardMaterial({ transparent: true }));
-      core.userData = { spirePart: "portal", trueSphereRadius: 0.3 };
-      core.position.y = 0.53;
-      scene.add(core);
-      return { scene, animations: [new AnimationClip("Spire_Loop", 8, [])] };
-    },
-  },
-}));
 const owned: Array<() => void> = [];
 afterEach(() => {
   owned.splice(0).forEach((dispose) => dispose());
@@ -204,7 +178,9 @@ it("keeps spires revealed while their pipelines prepare, including a larger nati
   const h = await harness(false, false, true);
   const native = h.scene.getObjectByName("Spires")!;
   expect(
-    native.children.filter((mesh): mesh is InstancedMesh => mesh instanceof InstancedMesh).map((mesh) => mesh.count),
+    native.children
+      .filter((mesh): mesh is InstancedMesh => mesh instanceof InstancedMesh && mesh.visible)
+      .map((mesh) => mesh.count),
   ).toEqual([3, 3]);
   h.render();
   expect(h.manager.getEndgameSnapshot()).toBeNull();

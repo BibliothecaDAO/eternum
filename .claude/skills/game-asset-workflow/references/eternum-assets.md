@@ -102,18 +102,18 @@ replacement; retain its experimental status until validated.
 
 ## Existing pipeline
 
-| Family  | Editable source                                                                                                                                                              | Optimization from repository root                |
-| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| Realms  | `apps/game/scripts/settlements/build-{settlement,city,kingdom,empire}.py` and shared construction helpers                                                                    | `pnpm --dir apps/game run optimize:realms`       |
-| Spire   | `apps/game/asset-sources/ethereal/spire/spire.blend` exported by `apps/game/scripts/spires/export-spire.py` (Blender 5.2.1); `build-spire.py` is the unwired obelisk variant | `pnpm --dir apps/game run optimize:spire`        |
-| Rewards | `apps/game/scripts/reward-tiles/build-reward-tiles.py`                                                                                                                       | `pnpm --dir apps/game run optimize:reward-tiles` |
-| Fleet   | `apps/game/scripts/fleet/build-fleet.py` and `fleet-model.py`                                                                                                                | `pnpm --dir apps/game run optimize:fleet`        |
+| Family  | Editable source                                                                                                                               | Optimization from repository root                |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Realms  | `apps/game/scripts/settlements/build-{settlement,city,kingdom,empire}.py` and shared construction helpers                                     | `pnpm --dir apps/game run optimize:realms`       |
+| Spire   | Runtime procedural kit in `apps/game/src/three/structures/spire-kit.ts` (`procedural:spire`); `build-spire.py` is the unwired obelisk variant | None (built at runtime)                          |
+| Rewards | `apps/game/scripts/reward-tiles/build-reward-tiles.py`                                                                                        | `pnpm --dir apps/game run optimize:reward-tiles` |
+| Fleet   | `apps/game/scripts/fleet/build-fleet.py` and `fleet-model.py`                                                                                 | `pnpm --dir apps/game run optimize:fleet`        |
 
 Inspect each builder's arguments and output paths before running it. Regenerate only the intended assets.
 `stone_textures.py` supplies the shared stone bake; the construction helpers own realm material treatment and roof
 detail. Extend those sources instead of duplicating the stone shader or editing only a binary export.
 
-Realm and spire compression is centralized in `apps/game/scripts/optimize-structure-models.mjs`. The current structure
+Structure GLB compression is centralized in `apps/game/scripts/optimize-structure-models.mjs`. The current structure
 instancing path skips scaled child nodes. Draco preserves the baked transforms used here; Meshopt quantization can
 introduce node scale. The fleet optimizer also uses Draco. Rewards use their own Meshopt-compatible path, including
 welding, bounded simplification, animation resampling, and pruning before compression. Verify this constraint against

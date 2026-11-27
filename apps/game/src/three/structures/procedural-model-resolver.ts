@@ -4,6 +4,7 @@ import { isRealmBuildingKitPath, resolveRealmBuildingKit } from "./realm-buildin
 import { isProceduralRealmKitPath, resolveProceduralRealmKit } from "./realm-kit";
 import { isRealmSupportKitPath, resolveProceduralRealmSupportKit } from "./realm-support-kit";
 import { isRuinKitPath, resolveProceduralRuinKit } from "./ruin-kit";
+import { createSpireKit, SPIRE_MODEL_PATH } from "./spire-kit";
 import { isWellShrineKitPath, resolveProceduralWellShrineKit } from "./well-shrine-kit";
 
 export function isProceduralModelPath(path: string): boolean {
@@ -13,7 +14,8 @@ export function isProceduralModelPath(path: string): boolean {
     isRealmBuildingKitPath(path) ||
     isRealmSupportKitPath(path) ||
     isWellShrineKitPath(path) ||
-    isProceduralOutpostKitPath(path)
+    isProceduralOutpostKitPath(path) ||
+    path === SPIRE_MODEL_PATH
   );
 }
 
@@ -24,6 +26,7 @@ export function resolveProceduralModel(path: string): GLTF | null {
     resolveRealmBuildingKit(path) ??
     resolveProceduralRealmSupportKit(path) ??
     resolveProceduralWellShrineKit(path) ??
-    resolveProceduralOutpostKit(path)
+    resolveProceduralOutpostKit(path) ??
+    (path === SPIRE_MODEL_PATH ? createSpireKit() : null)
   );
 }

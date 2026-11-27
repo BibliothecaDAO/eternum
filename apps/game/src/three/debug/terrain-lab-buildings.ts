@@ -22,6 +22,13 @@ export interface TerrainLabBuilding {
   dormant?: boolean;
 }
 
+const PROCEDURAL_BUILDING_LABELS: Record<string, string> = {
+  [HYPERSTRUCTURE_MODEL_PATH]: "Hyperstructure · Procedural tower",
+  [WELL_SITE_MODEL_PATH]: "Well · Procedural spring",
+  [SHRINE_SITE_MODEL_PATH]: "Shrine · Procedural sanctuary",
+  [SPIRE_MODEL_PATH]: "Spire · Levitating portal",
+};
+
 const BUILDING_LABELS: Record<string, string> = {
   settlement: "Realm · Settlement",
   city: "Realm · City",
@@ -32,9 +39,36 @@ const BUILDING_LABELS: Record<string, string> = {
   archerrange: "Archery range",
   castle1: "Hall / Holy site",
   fishery: "Fishery",
-  ruin: "Ruin · Fallen realm",
-  spire: "Spire · Levitating portal",
 };
+
+function buildingKeyFromPath(path: string): string {
+  const outpostKind = parseOutpostKitPath(path);
+  if (outpostKind) {
+    return outpostKind;
+  }
+  if (path.startsWith("procedural:")) {
+    return path.slice("procedural:".length).split(":").at(-1)!;
+  }
+  return path
+    .split("/")
+    .at(-1)!
+    .replace(/\.glb$/, "");
+}
+
+function resolveTerrainLabBuildingLabel(path: string): string {
+  if (Object.hasOwn(PROCEDURAL_BUILDING_LABELS, path)) {
+    return PROCEDURAL_BUILDING_LABELS[path];
+  }
+  if (isRuinKitPath(path)) {
+    return "Ruin · Fallen realm";
+  }
+  const realmLabel = REALM_ASSETS.find((asset) => asset.path === path)?.label;
+  if (realmLabel) {
+    return realmLabel;
+  }
+  const key = buildingKeyFromPath(path);
+  return BUILDING_LABELS[key] ?? key.replaceAll(/[_-]+/g, " ").replace(/^./, (letter) => letter.toUpperCase());
+}
 
 export const TERRAIN_LAB_BUILDINGS = [
   ...new Set([
@@ -45,29 +79,10 @@ export const TERRAIN_LAB_BUILDINGS = [
     WELL_SITE_MODEL_PATH,
     SPIRE_MODEL_PATH,
   ]),
-].map((path) => {
-  const filename =
-    parseOutpostKitPath(path) ??
-    path
-      .split("/")
-      .at(-1)!
-      .replace(/\.glb$/, "");
-  return {
-    path,
-    label:
-      path === HYPERSTRUCTURE_MODEL_PATH
-        ? "Hyperstructure · Procedural tower"
-        : isRuinKitPath(path)
-          ? BUILDING_LABELS.ruin
-          : path === WELL_SITE_MODEL_PATH
-            ? "Well · Procedural spring"
-            : path === SHRINE_SITE_MODEL_PATH
-              ? "Shrine · Procedural sanctuary"
-              : (REALM_ASSETS.find((asset) => asset.path === path)?.label ??
-                BUILDING_LABELS[filename] ??
-                filename.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase())),
-  };
-});
+].map((path) => ({
+  path,
+  label: resolveTerrainLabBuildingLabel(path),
+}));
 
 const STRUCTURE_TYPE_BY_PATH = new Map(
   Object.entries(getStructureModelPaths()).flatMap(([type, paths]) =>

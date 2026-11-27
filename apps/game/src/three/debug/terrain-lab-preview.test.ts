@@ -1,4 +1,5 @@
 import { SHARED_BUILDING_MODEL_PATHS, SPIRE_MODEL_PATH } from "@/three/constants/scene-constants";
+import { OUTPOST_PATHS } from "@/three/structures/outpost-kit";
 import { describe, expect, it } from "vitest";
 import { TerrainField } from "@/three/terrain/terrain-field";
 import { prepareTerrainPage } from "@/three/terrain/terrain-page-builder";
@@ -7,6 +8,7 @@ import { TERRAIN_GROUND_HEIGHT } from "@/three/terrain/terrain-surface";
 import { createTerrainVerificationRequest } from "@/three/terrain/verification/terrain-verification-fixtures";
 import { BiomeType } from "@bibliothecadao/types";
 import { ModelType } from "@/three/types/army";
+import { TERRAIN_LAB_BUILDINGS } from "./terrain-lab-buildings";
 import { buildTerrainLabRequest, DEFAULT_TERRAIN_LAB_PREVIEW } from "./terrain-lab-preview";
 
 describe("terrain lab previews", () => {
@@ -123,5 +125,15 @@ describe("terrain lab previews", () => {
     );
     expect(occupied.cells).toEqual(source.cells);
     expect(buildTerrainLabRequest(source, DEFAULT_TERRAIN_LAB_PREVIEW, selected).cells).toEqual(source.cells);
+  });
+
+  it("assigns readable labels to procedural building kits instead of raw procedural paths", () => {
+    const labelByPath = new Map(TERRAIN_LAB_BUILDINGS.map((entry) => [entry.path, entry.label]));
+    expect(labelByPath.get(SPIRE_MODEL_PATH)).toBe("Spire · Levitating portal");
+    expect(labelByPath.get(OUTPOST_PATHS.village)).toBe("Village · Canvas & Thatch");
+    expect(labelByPath.get(OUTPOST_PATHS.camp)).toBe("Camp · Canvas and stockade");
+    for (const entry of TERRAIN_LAB_BUILDINGS) {
+      expect(entry.label.toLowerCase()).not.toContain("procedural:");
+    }
   });
 });

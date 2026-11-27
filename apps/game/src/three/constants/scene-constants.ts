@@ -283,4 +283,4 @@ export const MinesMaterialsParams: Record<number, { color: Color; emissive: Colo
   },
 };
 
-export const SPIRE_MODEL_PATH = modelPath("ethereal/spire.glb");
+export { SPIRE_MODEL_PATH } from "../structures/spire-kit";
