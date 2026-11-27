@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import type { RankedWords } from "@bibliothecadao/types";
+import { COMBAT_MARK_WORDS } from "@/ui/design-system/kit/words";
 import { Plate } from "./map-plates";
 
 import { Token, tokenReading, tokenSize } from "./map-plate-token";
@@ -60,7 +61,7 @@ describe("a thing's token, its plate closed (the owner's 2026-10-19 pick: tokens
       strength: { tier: 2, count: 300 },
       beast: null,
       undefended: false,
-      combat: { label: "Blade", icon: "combat-blade" },
+      combat: { label: COMBAT_MARK_WORDS.blade, icon: "combat-blade" },
       stamina: null,
       mark: null,
       crest: null,
@@ -69,16 +70,16 @@ describe("a thing's token, its plate closed (the owner's 2026-10-19 pick: tokens
 
   it("marks on its disk how it fights: an army's troops, a structure's guard that an attacker meets first", () => {
     const mark = (plate: ArmyPlate | StructurePlate) => tokenReading(plate).combat?.label;
-    expect(mark(army)).toBe("Blade");
-    expect(mark({ ...army, troops: { ...army.troops, type: "crossbowman" } })).toBe("Bow");
-    expect(mark({ ...army, troops: { ...army.troops, type: "knight" } })).toBe("Blade");
-    expect(mark(realm)).toBe("Blade");
-    expect(mark({ ...realm, guards: [...realm.guards!].reverse() })).toBe("Bow");
+    expect(mark(army)).toBe(COMBAT_MARK_WORDS.blade);
+    expect(mark({ ...army, troops: { ...army.troops, type: "crossbowman" } })).toBe(COMBAT_MARK_WORDS.bow);
+    expect(mark({ ...army, troops: { ...army.troops, type: "knight" } })).toBe(COMBAT_MARK_WORDS.blade);
+    expect(mark(realm)).toBe(COMBAT_MARK_WORDS.blade);
+    expect(mark({ ...realm, guards: [...realm.guards!].reverse() })).toBe(COMBAT_MARK_WORDS.bow);
     expect(mark({ ...realm, guards: [] })).toBeUndefined();
     expect(mark({ ...realm, guards: null })).toBeUndefined();
     expect(
       renderToStaticMarkup(<Token plate={{ ...rift, guards: [{ type: "crossbowman", tier: 1, count: 9 }] }} />),
-    ).toContain('data-combat-mark="Bow"');
+    ).toContain(`data-combat-mark="${COMBAT_MARK_WORDS.bow}"`);
   });
 
   it("wears the crest its plate names on the disk's corner", () => {
@@ -127,13 +128,17 @@ describe("a thing's token, its plate closed (the owner's 2026-10-19 pick: tokens
         .trim();
     expect(words(renderToStaticMarkup(<Token plate={scouts} />))).toBe("505");
     expect(words(renderToStaticMarkup(<Token plate={camp} />))).toBe("300");
-    expect(renderToStaticMarkup(<Token plate={scouts} />)).toContain('aria-label="Blade, 505, Stamina 25%"');
+    expect(renderToStaticMarkup(<Token plate={scouts} />)).toContain(
+      `aria-label="${COMBAT_MARK_WORDS.blade}, 505, Stamina 25%"`,
+    );
     expect(renderToStaticMarkup(<Token plate={scouts} />)).not.toContain("ui-chip");
   });
 
   it("says its reading in words: how it fights, strength, stamina; undefended", () => {
-    expect(renderToStaticMarkup(<Token plate={army} />)).toContain('aria-label="Blade, T3 1,400, Stamina 25%"');
-    expect(renderToStaticMarkup(<Token plate={rift} />)).toContain('aria-label="Blade, T2 300"');
+    expect(renderToStaticMarkup(<Token plate={army} />)).toContain(
+      `aria-label="${COMBAT_MARK_WORDS.blade}, T3 1,400, Stamina 25%"`,
+    );
+    expect(renderToStaticMarkup(<Token plate={rift} />)).toContain(`aria-label="${COMBAT_MARK_WORDS.blade}, T2 300"`);
     expect(renderToStaticMarkup(<Token plate={{ ...realm, guards: [] }} />)).toContain('aria-label="Undefended"');
   });
 
@@ -147,8 +152,11 @@ describe("a thing's token, its plate closed (the owner's 2026-10-19 pick: tokens
 describe("a plate opened", () => {
   it("marks each troop stack's painting with how it fights, as its token did", () => {
     const marks = (html: string) => [...html.matchAll(/data-combat-mark="(\w+)"/g)].map((match) => match[1]);
-    expect(marks(renderToStaticMarkup(<Plate plate={realm} />))).toEqual(["Blade", "Bow"]);
-    expect(marks(renderToStaticMarkup(<Plate plate={army} />))).toEqual(["Blade"]);
+    expect(marks(renderToStaticMarkup(<Plate plate={realm} />))).toEqual([
+      COMBAT_MARK_WORDS.blade,
+      COMBAT_MARK_WORDS.bow,
+    ]);
+    expect(marks(renderToStaticMarkup(<Plate plate={army} />))).toEqual([COMBAT_MARK_WORDS.blade]);
   });
 });
 

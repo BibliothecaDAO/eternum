@@ -26,25 +26,16 @@
 }
 .army-detail__row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: theme(spacing.2);
-}
-.army-detail__troops {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing.1);
-  border: 1px solid var(--hud-line-strong);
-  border-radius: var(--hud-radius-chip);
-  background: var(--hud-well);
-  padding: 2px theme(spacing.2);
-  font-size: var(--hud-text-strong);
-  font-weight: var(--hud-weight-strong);
-  color: rgb(var(--hud-ink));
+  gap: theme(spacing[1.5]) theme(spacing.2);
 }
 .army-detail__full {
+  margin-left: auto;
   font-size: var(--hud-text-label);
   color: var(--hud-muted);
+  white-space: nowrap;
 }
 .army-detail__stamina {
   display: flex;

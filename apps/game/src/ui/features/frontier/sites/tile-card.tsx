@@ -32,6 +32,7 @@ import { useEffect, useMemo, type ReactNode } from "react";
 import { reachMoments } from "../opening/opening-store";
 
 import { useFrontierRealm, useGoToFrontierPlace } from "../frontier-home";
+import { armyStaminaCosts, troopFigures } from "../deploy/troop-figures";
 import { type ArmyOrder, type Cost, isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
 import { armyArt } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
@@ -190,9 +191,13 @@ export const TileCard = ({
         actor && {
           art: armyArt(actor.army.troops),
           troops: wholeTroops(actor.army),
+          category: actor.army.troops.category,
+          staminaCosts: armyStaminaCosts(setup.store, actor.army),
         }
       }
       guard={plan.guard === undefined ? undefined : (plan.guard?.count ?? null)}
+      defenderCategory={plan.guard?.type}
+      figures={troopFigures(setup.store, configManager.getActiveGameId())}
       fight={plan.fight}
       pay={sitePay(plan)}
       holdsOath={plan.holdsOath}

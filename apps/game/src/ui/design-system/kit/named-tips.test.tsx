@@ -177,6 +177,33 @@ describe("a name on the one tooltip", () => {
     pointer("pointerover", layer, "mouse");
     expect(tip()).toBe("Ruin");
   });
+
+  it("stays shut inside an element that carries its own overlay, on both mouse hover and touch hold", () => {
+    act(() =>
+      root.render(
+        <>
+          <Tooltip />
+          <span data-testid="outer" data-tip="Outer line">
+            <div data-own-overlay="">
+              <span data-testid="inner" data-tip="Inner line">
+                Unit
+              </span>
+            </div>
+          </span>
+        </>,
+      ),
+    );
+    const outer = host.querySelector('[data-testid="outer"]')!;
+    const inner = host.querySelector('[data-testid="inner"]')!;
+    pointer("pointerover", outer, "mouse");
+    expect(tip()).toBe("Outer line");
+    pointer("pointerover", inner, "mouse");
+    expect(tip()).toBeNull();
+    pointer("pointerdown", inner, "touch");
+    act(() => void vi.advanceTimersByTime(500));
+    expect(tip()).toBeNull();
+    pointer("pointerup", inner, "touch");
+  });
 });
 
 // Playtest 10-31: the realm panel's wheat ring named itself over the panel's own header.

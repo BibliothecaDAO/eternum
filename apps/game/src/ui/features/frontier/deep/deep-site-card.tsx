@@ -43,6 +43,7 @@ import {
   type TroopTier,
 } from "@bibliothecadao/types";
 import { isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
+import { armyStaminaCosts, troopFigures } from "../deploy/troop-figures";
 import { useApproachTile } from "../sites/approach";
 import { readDeepSiteFight } from "../sites/site-card-plan";
 import { STAMINA_MODELS } from "@bibliothecadao/eternum/troop-stamina";
@@ -206,6 +207,8 @@ export function DeepSiteCard({ site, onClose }: { site: Site; onClose: () => voi
           ? readDeepSiteFight(setup.store, site, { army: selected.army, timestamp: now })
           : undefined
       }
+      figures={troopFigures(setup.store, game_id)}
+      attackerStamina={selected ? armyStaminaCosts(setup.store, selected.army) : undefined}
       order={order}
       onClose={onClose}
     />

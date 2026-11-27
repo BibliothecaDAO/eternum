@@ -1,6 +1,6 @@
 import "./fight-side.css";
 
-import { formatCharge, formatExact, formatShort } from "@bibliothecadao/types";
+import { formatCharge, formatExact, formatShort, type TroopType } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { FIGHT_WORDS, fightLost, NONE_LOST } from "@/ui/design-system/kit/words";
@@ -9,6 +9,8 @@ import type { ReactNode } from "react";
 
 import type { BaneFigure as BaneKind } from "../day/bane-face";
 import { BaneFigure } from "../day/bane-mark";
+import { UnitDetailsTrigger, type UnitDetailsSubject } from "../troops/unit-details-popover";
+import { BeastMarkBadge, CombatMarkBadge } from "./combat-mark";
 
 export const AttackStamina = ({ stamina }: { stamina: number }) => (
   <span className="fight-attack-cost" data-attack-stamina={stamina}>
@@ -25,6 +27,10 @@ type FightArenaSide = {
   before: number | undefined;
   kept: Kept;
   bane?: BaneKind;
+  combatCategory?: TroopType;
+  beastMark?: boolean;
+  cornerBadge?: ReactNode;
+  details?: UnitDetailsSubject;
 };
 
 export const FightArena = ({ ours, theirs }: { ours?: FightArenaSide; theirs?: FightArenaSide }) => {
@@ -46,18 +52,25 @@ export const FightSide = ({
   before,
   kept,
   bane,
+  combatCategory,
+  beastMark,
+  cornerBadge,
+  details,
   side,
-}: {
-  label: string;
-  mark: ReactNode;
-  before: number | undefined;
-  kept: Kept;
-  bane?: BaneKind;
-  side: "ours" | "theirs";
-}) => {
+}: FightArenaSide & { side: "ours" | "theirs" }) => {
   const figures = fightFigures(before, kept);
   const spoken = [`${label} ${formatExact(before)} → ${formatExact(kept)}`, figures.lost].filter(Boolean).join(", ");
   const defeated = kept === 0;
+  const portrait = mark && (
+    <span className="fight-side__portrait">
+      <span aria-hidden className="fight-side__portrait-frame">
+        {mark}
+      </span>
+      {cornerBadge}
+      {combatCategory &&
+        (beastMark ? <BeastMarkBadge category={combatCategory} /> : <CombatMarkBadge category={combatCategory} />)}
+    </span>
+  );
   return (
     <span
       role="img"
@@ -66,11 +79,14 @@ export const FightSide = ({
       data-tip={spoken}
       className={cn("fight-side", `fight-side--${side}`, defeated && "fight-side--gone")}
     >
-      {mark && (
-        <span aria-hidden className="fight-side__portrait">
-          {mark}
-        </span>
-      )}
+      {portrait &&
+        (details ? (
+          <UnitDetailsTrigger subject={details} openOnClick>
+            {portrait}
+          </UnitDetailsTrigger>
+        ) : (
+          portrait
+        ))}
       <b aria-hidden className="fight-side__nums">
         {bane ? <BaneFigure figure={bane}>{figures.before}</BaneFigure> : figures.before}{" "}
         <span className="fight-side__arrow">→</span> {figures.kept}

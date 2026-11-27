@@ -15,6 +15,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   ASPECT_REWARD,
+  COMBAT_CLASS_WORDS,
   DEEP_BEASTS,
   FRAGMENT_CENTS,
   FRAGMENT_SPEND_COMMANDS,
@@ -219,9 +220,9 @@ export const frontierPhrases = (
     {
       page: "frontier/armies",
       phrases: [
-        `${FRONTIER_TROOP_NAMES[TroopType.Knight].many} ${buildingName(nativeResearch.BARRACKS, true)} Blade`,
-        `${FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many} ${buildingName(nativeResearch.RANGE, true)} (castle level ${nativeResearch.RANGE_LEVEL + 1} (${rankName(nativeResearch.RANGE_LEVEL)})) Bow`,
-        `${FRONTIER_TROOP_NAMES[TroopType.Paladin].many} ${buildingName(nativeResearch.SCOUTS_LODGE, true)} (castle level ${nativeResearch.SCOUTS_LODGE_LEVEL + 1} (${rankName(nativeResearch.SCOUTS_LODGE_LEVEL)})) Blade`,
+        `${FRONTIER_TROOP_NAMES[TroopType.Knight].many} ${buildingName(nativeResearch.BARRACKS, true)} ${COMBAT_CLASS_WORDS.blade}`,
+        `${FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many} ${buildingName(nativeResearch.RANGE, true)} (castle level ${nativeResearch.RANGE_LEVEL + 1} (${rankName(nativeResearch.RANGE_LEVEL)})) ${COMBAT_CLASS_WORDS.bow}`,
+        `${FRONTIER_TROOP_NAMES[TroopType.Paladin].many} ${buildingName(nativeResearch.SCOUTS_LODGE, true)} (castle level ${nativeResearch.SCOUTS_LODGE_LEVEL + 1} (${rankName(nativeResearch.SCOUTS_LODGE_LEVEL)})) ${COMBAT_CLASS_WORDS.blade}`,
         `An army holds ${n(stamina.staminaKnightMax)} stamina and recovers ${stamina.staminaGainPerTick} every ${tick / 60} minutes (${staminaPerMinute}), so an empty bar fills in ${((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tick) / 3600} hours.`,
         `Revealing a tile costs ${stamina.staminaExploreStaminaCost} for ${FRONTIER_TROOP_NAMES[TroopType.Knight].many} and ${FRONTIER_TROOP_NAMES[TroopType.Crossbowman].many}, and ${nativeRules.SCOUT_EXPLORE_STAMINA} for ${FRONTIER_TROOP_NAMES[TroopType.Paladin].many}. A step on an explored tile costs ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
         `adding +${n(logisticsBonus)} bonus stamina at rank V for ${n(stamina.staminaKnightMax + logisticsBonus)} max stamina total.`,

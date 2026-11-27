@@ -1,0 +1,55 @@
+.troop-trait-card {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing[1.5]);
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-panel);
+  background: var(--hud-well);
+  padding: theme(spacing[2.5]) theme(spacing.3);
+}
+.troop-trait-card__head {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-strong);
+  font-weight: var(--hud-weight-strong);
+  line-height: 1.25;
+}
+.troop-trait-card__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+}
+.troop-trait-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+}
+.troop-trait-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.1);
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-chip);
+  background: var(--hud-well);
+  padding: 2px theme(spacing.2);
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-label);
+  font-weight: var(--hud-weight-strong);
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.troop-trait-pill[data-tone="good"] {
+  border-color: color-mix(in srgb, var(--hud-good) 45%, transparent);
+  color: var(--hud-good);
+}
+.troop-trait-pill[data-tone="muted"] {
+  border-color: var(--hud-line);
+  color: var(--hud-muted);
+  font-weight: var(--hud-weight-body);
+}

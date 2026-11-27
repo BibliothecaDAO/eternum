@@ -14,7 +14,16 @@ import {
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
 import { AmountRange } from "../amount-range";
-import { ARMY, DEEP_WORDS, MOVE, SLOT_ADD, SLOT_EMPTY, UNDEFENDED, YOU } from "@/ui/design-system/kit/words";
+import {
+  ARMY,
+  DEEP_WORDS,
+  MOVE,
+  SLOT_ADD,
+  SLOT_EMPTY,
+  UNDEFENDED,
+  YOU,
+  type TroopFigures,
+} from "@/ui/design-system/kit/words";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Fragment, useState, type ReactNode } from "react";
 import {
@@ -34,6 +43,8 @@ import { nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
 import { AttackStamina, FightArena } from "../sites/fight-side";
 import { BeastMarkBadge, combatMarkOf } from "../sites/combat-mark";
 import type { DeepSiteFight } from "../sites/site-card-plan";
+import type { ArmyStaminaCosts } from "../deploy/troop-figures";
+import { UnitDetailsTrigger } from "../troops/unit-details-popover";
 
 import { DEEP_SITE_FACES, type DeepPay } from "./deep-site-faces";
 
@@ -106,6 +117,8 @@ export interface DeepSiteProps {
   opening: DeepOpening | null;
   guard: DeepGuard;
   fight?: DeepSiteFight;
+  figures?: TroopFigures;
+  attackerStamina?: ArmyStaminaCosts;
   order: DeepOrder | DeepBlock;
   onClose: () => void;
 }
@@ -118,7 +131,18 @@ const FIGHT_SLOTS = Array.from({ length: SLOTS }, (_, index) => SLOTS - 1 - inde
 
 const siteName = (key: DeepSiteProps["site"]) => deepSites.find((each) => each.key === key)!.name;
 
-export const DeepSiteView = ({ site, ring, rates, opening, guard, fight, order, onClose }: DeepSiteProps) => {
+export const DeepSiteView = ({
+  site,
+  ring,
+  rates,
+  opening,
+  guard,
+  fight,
+  figures,
+  attackerStamina,
+  order,
+  onClose,
+}: DeepSiteProps) => {
   const name = siteName(site);
   const [picking, setPicking] = useState<Picking | null>(null);
   const orders = typeof order === "object" && order.kind === "guard" ? order : undefined;
@@ -141,11 +165,20 @@ export const DeepSiteView = ({ site, ring, rates, opening, guard, fight, order, 
           {rates ? <RateStrip rates={rates} guard={guard} /> : opening && <LockedKinds pays={opening.pays} />}
           <p className="deep-purpose">{DEEP_SITE_FACES[site].purpose}</p>
         </div>
-        {fight && <FightPreview site={site} fight={fight} guard={guard} />}
+        {fight && (
+          <FightPreview site={site} fight={fight} guard={guard} figures={figures} attackerStamina={attackerStamina} />
+        )}
         {opening ? (
           <OpeningBar opening={opening} />
         ) : (
-          <GuardRow site={site} guard={guard} rates={rates} orders={orders} onPick={orders ? pick : undefined} />
+          <GuardRow
+            site={site}
+            guard={guard}
+            rates={rates}
+            figures={figures}
+            orders={orders}
+            onPick={orders ? pick : undefined}
+          />
         )}
         {orders && picking && activeTransfer && (
           <TransferPicker
@@ -299,12 +332,14 @@ const GuardRow = ({
   site,
   guard,
   rates,
+  figures,
   orders,
   onPick,
 }: {
   site: DeepSiteProps["site"];
   guard: DeepGuard;
   rates: DeepRates | null;
+  figures: TroopFigures | undefined;
   orders: Extract<DeepOrder, { kind: "guard" }> | undefined;
   onPick: ((want: Picking["kind"], targetSlot?: number) => void) | undefined;
 }) => {
@@ -332,7 +367,7 @@ const GuardRow = ({
         <span className="deep-guards__cue">{cue}</span>
       </div>
       <div className="deep-guards__row">
-        {guard.kind === "beast" && <BeastTile site={site} guard={guard} />}
+        {guard.kind === "beast" && <BeastTile site={site} guard={guard} figures={figures} />}
         {held.map((slot, index) => {
           const interactive =
             orders !== undefined &&
@@ -345,6 +380,7 @@ const GuardRow = ({
               slot={slot}
               first={index === 0}
               rates={rates}
+              figures={figures}
               onOpen={interactive ? () => onPick!(orders?.withdraw ? "withdraw" : "guard", slot.slot) : undefined}
             />
           );
@@ -391,39 +427,66 @@ const Tile = ({
     </span>
   );
 
-const BeastTile = ({ site, guard }: { site: DeepSiteProps["site"]; guard: Extract<DeepGuard, { kind: "beast" }> }) => (
-  <Tile
-    onPress={undefined}
-    tip={DEEP_WORDS.beastTip(DEEP_BEASTS[site].name, combatMarkOf(guard.category).label)}
-    className="deep-tile"
-    data-deep-beast=""
-    data-first=""
-  >
-    <span className="deep-tile__first">{DEEP_WORDS.slotOrder.first}</span>
-    <span className="deep-tile__portrait">
-      <Icon name={beastMeaning(beastModel(DEEP_BEASTS[site]))} size={32} className="size-full" />
-      <BeastMarkBadge category={guard.category} />
-    </span>
-    <b className="deep-tile__count">{formatExact(guard.troops)}</b>
-    <span className="deep-tile__owner">{DEEP_BEASTS[site].name}</span>
-  </Tile>
-);
+const BeastTile = ({
+  site,
+  guard,
+  figures,
+}: {
+  site: DeepSiteProps["site"];
+  guard: Extract<DeepGuard, { kind: "beast" }>;
+  figures: TroopFigures | undefined;
+}) => {
+  const art = beastMeaning(beastModel(DEEP_BEASTS[site]));
+  return (
+    <Tile
+      onPress={undefined}
+      tip={DEEP_WORDS.beastTip(DEEP_BEASTS[site].name, combatMarkOf(guard.category).label)}
+      className="deep-tile"
+      data-deep-beast=""
+      data-first=""
+    >
+      <span className="deep-tile__first">{DEEP_WORDS.slotOrder.first}</span>
+      <UnitDetailsTrigger
+        openOnClick
+        subject={{
+          role: "deepBeast",
+          name: DEEP_BEASTS[site].name,
+          art,
+          category: guard.category,
+          strength: guard.troops,
+          figures,
+        }}
+      >
+        <span className="deep-tile__portrait">
+          <Icon name={art} size={32} className="size-full" />
+          <BeastMarkBadge category={guard.category} />
+        </span>
+      </UnitDetailsTrigger>
+      <b className="deep-tile__count">{formatExact(guard.troops)}</b>
+      <span className="deep-tile__owner">{DEEP_BEASTS[site].name}</span>
+    </Tile>
+  );
+};
 
 const GuardTile = ({
   slot,
   first,
   rates,
+  figures,
   onOpen,
 }: {
   slot: DeepGarrisonSlot;
   first: boolean;
   rates: DeepRates | null;
+  figures: TroopFigures | undefined;
   onOpen: (() => void) | undefined;
 }) => {
   const owner = slot.side === "own" ? YOU : slot.owner;
   const cadence = rates ? cadenceOf(rates) : "";
   const drain = rates ? DEEP_WORDS.slotDrain(rates.drain, cadence) : undefined;
   const gloryRate = rates && rates.glory > 0 && slot.share > 0 ? Math.round(rates.glory * slot.share) / 100 : undefined;
+  const art = troopMeaning(slot.troops);
+  const troopName = frontierTroopName(slot.troops.category) ?? owner;
   return (
     <Tile
       onPress={onOpen}
@@ -446,10 +509,22 @@ const GuardTile = ({
       data-first={first || undefined}
     >
       {first && <span className="deep-tile__first">{DEEP_WORDS.slotOrder.first}</span>}
-      <span className="deep-tile__portrait">
-        <Icon name={troopMeaning(slot.troops)} size={32} className="size-full" />
-        <BeastMarkBadge category={slot.troops.category} />
-      </span>
+      <UnitDetailsTrigger
+        openOnClick={!onOpen}
+        subject={{
+          role: slot.side === "own" || slot.side === "ally" ? "player" : "enemyGuard",
+          name: slot.side === "own" ? troopName : owner,
+          art,
+          category: slot.troops.category,
+          strength: slot.count,
+          figures,
+        }}
+      >
+        <span className="deep-tile__portrait">
+          <Icon name={art} size={32} className="size-full" />
+          <BeastMarkBadge category={slot.troops.category} />
+        </span>
+      </UnitDetailsTrigger>
       <b className="deep-tile__count">{formatExact(slot.count)}</b>
       <span className="deep-tile__owner">{owner}</span>
       {drain && <span className="deep-tile__drain">{drain}</span>}
@@ -491,42 +566,63 @@ const FightPreview = ({
   site,
   fight,
   guard,
+  figures,
+  attackerStamina,
 }: {
   site: DeepSiteProps["site"];
   fight: DeepSiteFight;
   guard: DeepGuard;
+  figures: TroopFigures | undefined;
+  attackerStamina: ArmyStaminaCosts | undefined;
 }) => {
   const result = fight.result && !("refused" in fight.result) ? fight.result : undefined;
   const front = guard.kind === "taken" ? inFightOrder(guard.slots)[0] : undefined;
+  const attackerArt = troopMeaning(fight.attackerTroops);
   const defenderLabel = guard.kind === "beast" ? DEEP_BEASTS[site].name : (front?.owner ?? siteName(site));
   const defenderArt =
     guard.kind === "beast" ? beastMeaning(beastModel(DEEP_BEASTS[site])) : troopMeaning(fight.defenderTroops);
-  const defenderBadge =
-    guard.kind === "beast" ? (
-      <BeastMarkBadge category={guard.category} />
-    ) : guard.kind === "taken" ? (
+  const defenderCategory = guard.kind === "beast" ? guard.category : fight.defenderTroops.category;
+  const cornerBadge =
+    guard.kind === "taken" ? (
       <span className="deep-fight__aspect" aria-hidden="true">
         <AspectMark aspect={guard.aspectId} size={14} decorative />
       </span>
-    ) : null;
+    ) : undefined;
   return (
     <FightArena
       ours={{
         label: ARMY,
-        mark: <Icon name={troopMeaning(fight.attackerTroops)} size={96} className="size-full" />,
+        mark: <Icon name={attackerArt} size={96} className="size-full" />,
         before: fight.army,
         kept: result && fight.army - result.troopsLost,
+        combatCategory: fight.attackerTroops.category,
+        details: {
+          role: "player",
+          name: frontierTroopName(fight.attackerTroops.category) ?? ARMY,
+          art: attackerArt,
+          category: fight.attackerTroops.category,
+          strength: fight.army,
+          figures,
+          staminaCosts: attackerStamina,
+        },
       }}
       theirs={{
         label: defenderLabel,
-        mark: (
-          <span className="relative block size-full">
-            <Icon name={defenderArt} size={96} className="size-full" />
-            {defenderBadge}
-          </span>
-        ),
+        mark: <Icon name={defenderArt} size={96} className="size-full" />,
         before: fight.defender,
         kept: result?.guardLeft,
+        combatCategory: defenderCategory,
+        beastMark: guard.kind === "beast",
+        cornerBadge,
+        details: {
+          role: guard.kind === "beast" ? "deepBeast" : "enemyGuard",
+          name: defenderLabel,
+          art: defenderArt,
+          category: defenderCategory,
+          strength: fight.defender,
+          figures,
+          vsCategory: fight.attackerTroops.category,
+        },
       }}
     />
   );
