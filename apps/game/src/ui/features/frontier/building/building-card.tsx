@@ -6,7 +6,13 @@ import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudPrice, HudRanked, HudSheet, HudTier, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { type Price } from "@/ui/design-system/kit/price-faces";
 import type { Fix, Refusal } from "@/ui/design-system/kit/refusal";
-import { BUILDING_FIGURES, RESEARCHING, type Rank, type RankedWords } from "@/ui/design-system/kit/words";
+import {
+  BUILDING_FIGURES,
+  RESEARCHING,
+  type Rank,
+  type RankedWords,
+  type TroopFigures,
+} from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { DestroyBuildingButton } from "@/ui/features/world/components/bottom-right-panel/destroy-building-button";
 import { requireActiveGameClient } from "@/sync/active-game-client";
@@ -20,11 +26,13 @@ import { buildingIcon, buildingName } from "../build/building-names";
 import { buildingsMake, standingBuildings } from "../production/store-makers";
 import { BaneFigure, BaneLine } from "../day/bane-mark";
 import { RefusedVerb } from "../refused-verb";
-import { formatRate } from "@bibliothecadao/types";
+import { formatRate, type TroopType } from "@bibliothecadao/types";
+import { troopFigures } from "../deploy/troop-figures";
 import { useResearchActions } from "../research/research-actions";
 import { useResearchTree } from "../research/research-facts";
 import { firstMissing, type Need, needLine, researchVerb, type TreeNode } from "../research/research-tree";
 import type { TappedBuilding } from "../research/selected-building";
+import { TroopTraitCard, troopForBuilding } from "../troops/troop-traits-card";
 import { CompareRows } from "./compare-rows";
 
 /** What a building's card shows it makes: all of its type together; its research shows as the card's gems. */
@@ -68,12 +76,17 @@ export const BuildingCard = ({
       />
     ),
   };
+  const troopCategory = troopForBuilding(building.category);
+  const troop = troopCategory
+    ? { category: troopCategory, figures: troopFigures(setup.store, realm.game_id) }
+    : undefined;
   return (
     <BuildingCardView
       name={buildingName(building.category)}
       icon={buildingIcon(building.category)}
       standing={standingBuildings(setup.store, safeInteger(realm.entity_id), building.category)}
       makes={cardMakes(buildingsMake(setup.store, realm, building.category, tick))}
+      troop={troop}
       node={node}
       orders={ordersAllowed ? orders : undefined}
       onClose={onClose}
@@ -117,6 +130,7 @@ export const BuildingCardView = ({
   icon,
   standing,
   makes,
+  troop,
   node,
   orders,
   onClose,
@@ -125,6 +139,7 @@ export const BuildingCardView = ({
   icon: IconMeaning;
   standing: number;
   makes: CardMakes | undefined;
+  troop?: { category: TroopType; figures: TroopFigures };
   /** The building's research row; undefined while the realm's research is unknown. */
   node: TreeNode | undefined;
   /** Undefined for a viewer: the card then reads the building as it stands. */
@@ -162,6 +177,7 @@ export const BuildingCardView = ({
           {orders?.demolish}
         </div>
         {makes && <BaneLine figure="production" />}
+        {troop && <TroopTraitCard category={troop.category} figures={troop.figures} />}
         {node && (
           <CompareRows
             now={isOathResearch(node.row) ? <HudRanked words={node.gives.now} /> : <HudTier tier={tierOf(node.tier)} />}

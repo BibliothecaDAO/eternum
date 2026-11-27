@@ -59,7 +59,13 @@ vi.mock("@/hooks/context/game-context", () => ({
             ? game.progress
             : model === "RealmKnowledge"
               ? { learned: game.learned }
-              : game.rules,
+              : model === "ExplorerTroops"
+                ? undefined
+                : game.rules,
+        require: (model: string) =>
+          model === "SliceRules"
+            ? { troop_stamina_config: { stamina_explore_stamina_cost: 20, stamina_attack_req: 30 } }
+            : game.rules,
       },
       systemCalls: { spend_skill_point: game.spendPoint, choose_oath: game.chooseOath, reroll_oath: game.rerollOath },
     },

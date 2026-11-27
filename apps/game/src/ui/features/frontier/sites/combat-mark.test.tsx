@@ -5,7 +5,8 @@ import { TroopType } from "@bibliothecadao/types";
 import { BEAST_MARK_TIPS, COMBAT_MARK_WORDS } from "@/ui/design-system/kit/words";
 import { BeastMarkBadge } from "./combat-mark";
 
-it("marks every beast's class as a blade or bow, its tip telling strike order alone", () => {
+it("marks every beast's class as Melee or Ranged, its tip telling strike order alone", () => {
+  expect(COMBAT_MARK_WORDS).toEqual({ blade: "Melee", bow: "Ranged" });
   const expected = { Knight: "blade", Paladin: "blade", Crossbowman: "bow" } satisfies Record<
     TroopType,
     keyof typeof COMBAT_MARK_WORDS
@@ -20,12 +21,12 @@ it("marks every beast's class as a blade or bow, its tip telling strike order al
   }
 });
 
-it("draws Blade and Bow with their own paintings, never another meaning's", () => {
+it("draws Melee and Ranged with their own paintings, never another meaning's", () => {
   expect(renderToStaticMarkup(<BeastMarkBadge category={TroopType.Knight} />)).toContain('data-icon="combat-blade"');
   expect(renderToStaticMarkup(<BeastMarkBadge category={TroopType.Crossbowman} />)).toContain('data-icon="combat-bow"');
 });
 
-it("marks Bow as hitting first only against Blade through the core rule", () => {
+it("marks Ranged as hitting first only against Melee through the core rule", () => {
   expect(resolveFirstStrike("Crossbowman", "Knight")).toBe("attacker");
   expect(resolveFirstStrike("Knight", "Crossbowman")).toBe("defender");
   expect(resolveFirstStrike("Knight", "Knight")).toBeNull();

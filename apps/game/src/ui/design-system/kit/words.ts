@@ -361,6 +361,7 @@ import {
   type RankedWords,
   type QuestUnit,
   ASPECT_REWARD,
+  COMBAT_CLASS_WORDS,
   formatOrdinal,
   FRONTIER_TROOP_NAMES,
   TroopType,
@@ -1274,22 +1275,22 @@ export const DEPLOY_WORDS = {
   howMany: (troop: string) => `${troop} to deploy`,
   deployCount: (count: number) => `${DEPLOY} ${formatExact(count)}`,
 } as const;
-export const COMBAT_MARK_WORDS = { blade: "Blade", bow: "Bow" } as const satisfies Record<CombatMark, string>;
-const lessBy = (cut: number) => formatPercent(-cut / 100, { signed: true });
-const told = (...parts: (string | false)[]) => parts.filter((part): part is string => part !== false).join(" · ");
-const STRIKE_ORDER_WORDS = {
-  card: { blade: false, bow: "1st strike" },
-  summary: { blade: false, bow: `Strikes first vs blades` },
-  tip: {
-    blade: `Hits together vs ${COMBAT_MARK_WORDS.blade}, after ${COMBAT_MARK_WORDS.bow}`,
-    bow: `Strikes first vs ${COMBAT_MARK_WORDS.blade}, together vs ${COMBAT_MARK_WORDS.bow}`,
-  },
-} as const satisfies Record<"card" | "summary" | "tip", Record<CombatMark, string | false>>;
+export const COMBAT_MARK_WORDS = COMBAT_CLASS_WORDS satisfies Record<CombatMark, string>;
+const lessPercent = (cut: number) => formatPercent(cut / 100);
+const MARK_HEADLINE = {
+  blade: "Full damage",
+  bow: `Strikes first vs ${COMBAT_MARK_WORDS.blade}`,
+} as const satisfies Record<CombatMark, string>;
+const STRIKE_RULE_WORDS = {
+  blade: `Hits together vs ${COMBAT_MARK_WORDS.blade}, after ${COMBAT_MARK_WORDS.bow}`,
+  bow: `Hits together vs ${COMBAT_MARK_WORDS.bow}`,
+} as const satisfies Record<CombatMark, string>;
 export interface TroopFigures {
   lightCut: number;
   guardCut: number;
   scoutReveal: number;
   baseReveal: number;
+  attackStamina: number;
 }
 export interface TroopTraits {
   mark: CombatMark;
@@ -1298,38 +1299,68 @@ export interface TroopTraits {
   scout: boolean;
 }
 const LIGHT_AGAINST = FRONTIER_TROOP_NAMES[TroopType.Knight].many;
+const scoutRevealLine = (figures: TroopFigures) => `${formatExact(figures.scoutReveal)} stamina reveal`;
+const lightDamageLine = (figures: TroopFigures) => `${lessPercent(figures.lightCut)} less damage vs ${LIGHT_AGAINST}`;
+const guardDeepLine = (figures: TroopFigures) =>
+  `${lessPercent(figures.guardCut)} less damage taken guarding in the ${DEEP}`;
+const troopLines = ({ light, guard, scout }: TroopTraits, figures: TroopFigures): readonly string[] => {
+  const result: string[] = [];
+  if (scout) result.push(scoutRevealLine(figures));
+  if (!light) result.push(MARK_HEADLINE.blade);
+  if (light) result.push(lightDamageLine(figures));
+  if (guard) result.push(guardDeepLine(figures));
+  return result;
+};
 export const TROOP_TRAIT_WORDS = {
-  card: ({ mark, light, guard, scout }: TroopTraits, figures: TroopFigures) =>
-    told(
-      !light && "Full dmg",
-      STRIKE_ORDER_WORDS.card[mark],
-      guard && "Guard",
-      scout && formatExact(figures.scoutReveal),
-      light && lessBy(figures.lightCut),
-    ),
-  summary: ({ mark, light, guard, scout }: TroopTraits, figures: TroopFigures) =>
-    told(
-      COMBAT_MARK_WORDS[mark],
-      !light && "Full damage",
-      STRIKE_ORDER_WORDS.summary[mark],
-      scout && `Reveals for ${formatExact(figures.scoutReveal)} stamina (not ${formatExact(figures.baseReveal)})`,
-      light && `${lessBy(figures.lightCut)} damage vs ${LIGHT_AGAINST}`,
-      guard && `${lessBy(figures.guardCut)} damage taken guarding in the ${DEEP}`,
-    ),
-  tip: ({ mark, light, guard, scout }: TroopTraits, figures: TroopFigures) =>
-    told(
-      COMBAT_MARK_WORDS[mark],
-      !light && "Full damage",
-      STRIKE_ORDER_WORDS.tip[mark],
-      light && `${lessBy(figures.lightCut)} damage vs ${LIGHT_AGAINST}`,
-      guard && `${lessBy(figures.guardCut)} damage taken in the ${DEEP}`,
-      scout && `Reveals tiles for ${formatExact(figures.scoutReveal)} stamina`,
-    ),
+  lines: troopLines,
+  pills: ({ light, guard, scout }: TroopTraits, figures: TroopFigures): readonly string[] => {
+    const result: string[] = [];
+    if (scout) result.push(scoutRevealLine(figures));
+    if (!light) result.push(MARK_HEADLINE.blade);
+    if (guard) result.push(`${lessPercent(figures.guardCut)} less guarding`);
+    if (light) result.push(`${lessPercent(figures.lightCut)} less vs ${LIGHT_AGAINST}`);
+    return result;
+  },
+  damageValue: ({ light }: TroopTraits, figures: TroopFigures) =>
+    light ? lightDamageLine(figures) : MARK_HEADLINE.blade,
+  guardValue: guardDeepLine,
 } as const;
 export const BEAST_MARK_TIPS = {
   blade: `${COMBAT_MARK_WORDS.blade} · Hits together vs ${COMBAT_MARK_WORDS.blade} · ${COMBAT_MARK_WORDS.bow} strikes first against it`,
   bow: `${COMBAT_MARK_WORDS.bow} · Strikes first against ${COMBAT_MARK_WORDS.blade} · Hits together vs ${COMBAT_MARK_WORDS.bow}`,
 } as const satisfies Record<CombatMark, string>;
+export const UNIT_DETAILS_WORDS = {
+  role: {
+    player: "Player unit",
+    beast: "Beast",
+    deepBeast: `${DEEP} beast`,
+    enemyGuard: "Enemy guard",
+    enemyArmy: "Enemy army",
+  },
+  classUnit: (mark: CombatMark) => `${COMBAT_MARK_WORDS[mark]} unit`,
+  classGuard: (mark: CombatMark) => `${COMBAT_MARK_WORDS[mark]} guard`,
+  headline: ({ mark, scout }: TroopTraits, figures: TroopFigures): string =>
+    scout ? scoutRevealLine(figures) : MARK_HEADLINE[mark],
+  strikeRule: STRIKE_RULE_WORDS,
+  beastHeadline: MARK_HEADLINE,
+  rows: {
+    damage: "Damage",
+    guardDeep: `Guarding ${DEEP}`,
+    revealStamina: "Reveal stamina",
+    attackStamina: "Attack stamina",
+    trainedAt: "Trained at",
+    strength: "Strength",
+    matchup: "Matchup",
+  },
+  staminaPerTile: (cost: number) => `${formatExact(cost)} stamina per tile`,
+  staminaCost: (cost: number) => `${formatExact(cost)} stamina`,
+  matchup: {
+    attacker: "You strike first",
+    defender: "Enemy strikes first",
+    simultaneous: "Simultaneous strike",
+  },
+  inspectLabel: (name: string) => `${name}: unit details`,
+} as const;
 export const SIZE_ROW = { fewer: "One fewer", more: "One more", max: "Max" } as const;
 export const BUILD = "Build";
 export const BUILT = "Built";
@@ -2510,13 +2541,6 @@ export const RESEARCH_TREE = {
   less: `(${LESS_WORD})`,
   step: figureStep,
   price: (essence: string) => `${essence} ${ESSENCE}`,
-} as const;
-
-/**
- * An army's per-tile resource reward.
- */
-export const ARMY_DETAIL = {
-  troops: (count: number) => formatCount(count, "troop"),
 } as const;
 
 /** Deleting the picked army, for good. */

@@ -87,6 +87,11 @@ export const FRONTIER_TROOP_NAMES = {
   [TroopType.Crossbowman]: { one: "Crossbow", many: "Crossbows" },
 } as const satisfies Record<TroopType, { one: string; many: string }>;
 
+export const COMBAT_CLASS_WORDS = {
+  blade: "Melee",
+  bow: "Ranged",
+} as const;
+
 export const frontierTroopName = (troop: TroopType | string, count?: number): string | undefined => {
   const words = (FRONTIER_TROOP_NAMES as Record<string, { one: string; many: string }>)[troop];
   return words && (count === undefined ? words.many : nounFor(count, words.one, words.many));

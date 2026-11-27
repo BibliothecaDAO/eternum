@@ -1,9 +1,14 @@
 import { frontierSeasonOnePreset as preset } from "../../../../../../../config/source/frontier/season-one";
 
-import { nativeResearchConstants as research, nativeStructureConstants } from "@bibliothecadao/eternum/game-client";
+import {
+  nativeResearchConstants as research,
+  nativeRuleConstants,
+  nativeStructureConstants,
+} from "@bibliothecadao/eternum/game-client";
 
 import { frontierBaseConfig } from "../../../../../../../config/source/frontier/base";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds, TroopType } from "@bibliothecadao/types";
+import type { TroopFigures } from "@/ui/design-system/kit/words";
 import type { ArmyView } from "../army/army-detail";
 import type { RealmResearchFacts } from "./research-tree";
 
@@ -57,9 +62,19 @@ export const MID_REALM = realmOn(
   },
 );
 
+export const PRESET_TROOP_FIGURES: TroopFigures = {
+  lightCut: 100 - nativeRuleConstants.FRONTIER_LIGHT_DAMAGE_PERCENT,
+  guardCut: 100 - nativeRuleConstants.FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT,
+  scoutReveal: nativeRuleConstants.SCOUT_EXPLORE_STAMINA,
+  baseReveal: frontierBaseConfig.troop!.stamina!.staminaExploreStaminaCost!,
+  attackStamina: frontierBaseConfig.troop!.stamina!.staminaAttackReq!,
+};
+
 export const EARLY_ARMY: ArmyView = {
   art: "knight-t1",
   troops: 1_500,
+  category: TroopType.Knight,
+  figures: PRESET_TROOP_FIGURES,
   stamina: { current: 4, max: 120, perExplore: 20 },
   secondsToFull: 4 * 3_600,
 };
@@ -67,6 +82,8 @@ export const EARLY_ARMY: ArmyView = {
 export const VETERAN_ARMY: ArmyView = {
   art: "knight-t1",
   troops: 1_240,
+  category: TroopType.Knight,
+  figures: PRESET_TROOP_FIGURES,
   stamina: { current: 96, max: 120, perExplore: 20 },
   secondsToFull: 2 * 3_600,
 };

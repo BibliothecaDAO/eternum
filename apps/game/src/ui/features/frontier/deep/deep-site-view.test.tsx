@@ -3,8 +3,18 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { aspectName, DEEP_BEASTS, formatDuration, formatExact } from "@bibliothecadao/types";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
+import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 
-import { ARMY, DEEP_WORDS, SLOT_ADD, SLOT_EMPTY, UNDEFENDED, YOU } from "@/ui/design-system/kit/words";
+import {
+  ARMY,
+  COMBAT_MARK_WORDS,
+  DEEP_WORDS,
+  SLOT_ADD,
+  SLOT_EMPTY,
+  UNDEFENDED,
+  YOU,
+} from "@/ui/design-system/kit/words";
 import { DEEP_SITE_CASES } from "./deep-site-fixtures";
 import { DeepSiteView, type DeepSide, type DeepSiteProps } from "./deep-site-view";
 
@@ -19,6 +29,7 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
+  useTooltipStore.setState({ tooltip: null });
 });
 
 const draw = (props: DeepSiteProps) => act(() => root.render(<DeepSiteView {...props} />));
@@ -286,20 +297,53 @@ describe("a Deep site's card", () => {
     expect(onMove).toHaveBeenCalledTimes(1);
   });
 
-  it("faces the rival's first guard in the fight, named by its owner", () => {
+  it("faces the rival's first guard in the fight, named by its owner, with combat marks on both sides", () => {
     draw(DEEP_SITE_CASES["Altar of banes, the rival guard's fight forecast"]);
     const sides = [...document.querySelectorAll(".fight-side")];
     expect(sides).toHaveLength(2);
     expect(sides[0]!.getAttribute("aria-label")?.startsWith(`${ARMY} 12,400 → 11,850`)).toBe(true);
     expect(sides[1]!.getAttribute("aria-label")).toContain("Vex 1,200 → 0");
+    expect(sides[0]!.querySelector(`[data-combat-mark='${COMBAT_MARK_WORDS.bow}']`)).not.toBeNull();
+    expect(sides[1]!.querySelector(`[data-combat-mark='${COMBAT_MARK_WORDS.blade}']`)).not.toBeNull();
     expect(sides[1]!.querySelector("[data-aspect-mark='1']")).not.toBeNull();
+    expect(document.querySelector("[data-strike-order]")).toBeNull();
   });
 
-  it("shows the beast's fight above the guard row, the Blade or Bow on the beast's portrait", () => {
+  it("shows the beast's fight above the guard row, with Melee or Ranged marks on both portraits", () => {
     draw(DEEP_SITE_CASES["Hyperstructure archive, the beast's fight forecast"]);
+    const ours = document.querySelector("[data-fight-side='ours']")!;
     const theirs = document.querySelector("[data-fight-side='theirs']")!;
-    expect(theirs.querySelector("[data-combat-mark='Blade']")).not.toBeNull();
+    expect(ours.querySelector(`[data-combat-mark='${COMBAT_MARK_WORDS.blade}']`)).not.toBeNull();
+    expect(theirs.querySelector(`[data-combat-mark='${COMBAT_MARK_WORDS.blade}']`)).not.toBeNull();
     expect(theirs.textContent).toContain("Defeated");
+    expect(document.querySelector("[data-strike-order]")).toBeNull();
     expect(document.querySelector("[data-deep-beast]")).not.toBeNull();
+  });
+
+  it("keeps the guard slot tooltip on the tile body while opening unit details on the portrait without overlap", () => {
+    const fixture = DEEP_SITE_CASES["Hyperstructure archive held by the player and an ally, army beside"];
+    act(() =>
+      root.render(
+        <>
+          <Tooltip />
+          <DeepSiteView {...fixture} />
+        </>,
+      ),
+    );
+    const hover = (target: Element) => {
+      const event = new MouseEvent("pointerover", { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "pointerType", { value: "mouse" });
+      act(() => {
+        target.dispatchEvent(event);
+      });
+    };
+    const ownTile = document.querySelector<HTMLElement>('[data-guard-slot][data-side="own"]')!;
+    hover(ownTile.querySelector(".deep-tile__count")!);
+    expect(document.querySelector('[role="tooltip"]')?.textContent).toBe(ownTile.getAttribute("data-tip"));
+    expect(document.querySelector("[data-unit-details-popover]")).toBeNull();
+
+    hover(ownTile.querySelector("[data-unit-details-trigger]")!);
+    expect(document.querySelector('[role="tooltip"]')).toBeNull();
+    expect(document.querySelector("[data-unit-details-popover]")?.textContent).toContain(COMBAT_MARK_WORDS.blade);
   });
 });
