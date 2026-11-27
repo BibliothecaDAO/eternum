@@ -95,24 +95,9 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
     }
   }, [isActive, markAsRead, resolvedZoneId]);
 
-  // Initial load of messages
-  useEffect(() => {
-    if (
-      hasChannelAccess &&
-      resolvedZoneId &&
-      zone &&
-      messages.length === 0 &&
-      zone.hasMoreHistory &&
-      !zone.isFetchingHistory &&
-      !zone.historyError
-    ) {
-      loadHistory(undefined);
-    }
-  }, [hasChannelAccess, resolvedZoneId, zone, messages.length, loadHistory]);
-
   const loadOlder = () => {
-    if (zone?.hasMoreHistory && !zone.isFetchingHistory && !zone.historyError) {
-      void loadHistory(zone.lastFetchedCursor ?? undefined);
+    if (zone?.hasMoreHistory && zone.lastFetchedCursor && !zone.isFetchingHistory && !zone.historyError) {
+      void loadHistory(zone.lastFetchedCursor);
     }
   };
   const { scrollerRef, hasNewer, jumpToLatest } = useStickToLatest({

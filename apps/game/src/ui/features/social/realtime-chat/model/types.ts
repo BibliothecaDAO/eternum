@@ -57,6 +57,7 @@ export interface WorldChatZoneState {
 }
 
 export interface DirectMessageThreadState {
+  historyError?: string;
   /** The thread as the server last sent it: its unread count is the only one (directUnread reads it). */
   thread: DirectMessageThread;
   messages: DirectMessage[];
