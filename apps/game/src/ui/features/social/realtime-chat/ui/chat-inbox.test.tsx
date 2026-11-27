@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act } from "react";
+import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -17,9 +17,11 @@ vi.mock("@realms-world/identity", async (original) => ({
 vi.mock("../hooks/use-chat-mentions", () => ({ useChatMentions: () => ({ me: null, choices: [], names: [] }) }));
 
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
-import { layOutChatLists } from "@/hooks/use-stick-to-latest.test-support";
+import { layOutChatLists, scrollTo } from "@/hooks/use-stick-to-latest.test-support";
+import { CHAT_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
 import { GLOBAL_ROOM } from "../model/chat-rooms";
 import { useRealtimeChatStore } from "../model/store";
+import { ChatDock, useChatStrip } from "./chat-dock";
 import { RealtimeChatShell } from "./realtime-chat-shell";
 
 const SELF = "0x7";
@@ -372,5 +374,200 @@ describe("the read reaches the server", () => {
     await back();
     expect(tabs()).toEqual(["Global", "Messages"]);
     expect(rows()[0]!.querySelector(".ui-chip")).toBeNull();
+  });
+});
+
+describe("zone history auto-loads on join while chat is closed", () => {
+  const DockWithClosedPanel = () => {
+    const [open, setOpen] = useState(false);
+    const { stripLine, unread } = useChatStrip({
+      zoneId: GLOBAL_CHAT_CHANNEL_ID,
+      signedIn: true,
+      readPlace: (place) => place.name,
+    });
+    return (
+      <ChatDock
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          useRealtimeChatStore.getState().actions.setShellOpen(next);
+        }}
+        signedIn
+        onSignIn={() => {}}
+        stripLine={stripLine}
+        unread={unread}
+      >
+        <RealtimeChatShell rooms={[GLOBAL_ROOM]} />
+      </ChatDock>
+    );
+  };
+
+  const worldLine = (id: string, content: string, minute: number) => ({
+    id,
+    zoneId: GLOBAL_CHAT_CHANNEL_ID,
+    sender: { playerId: ALDRIC, displayName: "Aldric" },
+    content,
+    createdAt: at(minute),
+  });
+
+  const stripText = () => host.querySelector('[aria-label="Chat strip"] .truncate')?.textContent;
+  const stripButton = () => host.querySelector<HTMLButtonElement>('button[aria-label="Chat strip"]')!;
+  const worldRequests = (fetchSpy: ReturnType<typeof vi.fn>) =>
+    fetchSpy.mock.calls.map(([input]) => new URL(String(input))).filter((url) => url.pathname === "/api/chat/world");
+
+  const startClosedAndJoin = async (onWorldFetch: (url: URL) => Promise<Response> | Response) => {
+    const fetchSpy = vi.fn(async (input: string | URL) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/api/chat/blocks") {
+        return new Response(JSON.stringify({ blocked: [], version: 0 }), { status: 200 });
+      }
+      if (url.pathname === "/api/chat/world") {
+        return onWorldFetch(url);
+      }
+      return new Response("{}", { status: 404 });
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+    useRealtimeChatStore.getState().actions.resetClient();
+    await act(async () =>
+      useRealtimeChatStore.getState().actions.initializeClient({ baseUrl: BASE, rooms: [GLOBAL_CHAT_CHANNEL_ID] }),
+    );
+    await act(async () => root.render(<DockWithClosedPanel />));
+    const inbox = FakeSocket.made.find((socket) => new URL(socket.url).pathname === "/api/chat/inbox")!;
+    await act(async () => {
+      inbox.open();
+      inbox.receive(handshake([]));
+    });
+    const roomSocket = FakeSocket.made.find((socket) => new URL(socket.url).pathname.includes("rooms"))!;
+    await act(async () => {
+      roomSocket.open();
+      roomSocket.receive({ type: "joined:zone", zoneId: GLOBAL_CHAT_CHANNEL_ID, canWrite: true });
+    });
+    return { fetchSpy, roomSocket };
+  };
+
+  it("loads first page once on join with panel closed, shows latest in strip without clicking, does not double-fetch on open, and still pages older messages", async () => {
+    const firstPage = Array.from({ length: 12 }, (_, i) => worldLine(`w-${i}`, `global line ${i}`, i + 10));
+    const olderPage = Array.from({ length: 5 }, (_, i) => worldLine(`old-${i}`, `older line ${i}`, i));
+    const { fetchSpy } = await startClosedAndJoin((url) => {
+      const cursor = url.searchParams.get("cursor");
+      if (cursor === "cursor-older") {
+        return new Response(JSON.stringify({ messages: [...olderPage].reverse(), nextCursor: null }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ messages: [...firstPage].reverse(), nextCursor: "cursor-older" }), {
+        status: 200,
+      });
+    });
+
+    expect(worldRequests(fetchSpy)).toHaveLength(1);
+    expect(worldRequests(fetchSpy)[0]!.searchParams.get("cursor")).toBeNull();
+    expect(stripText()).toBe("Aldric: global line 11");
+    expect(host.querySelector("[data-chat-pane]")).toBeNull();
+
+    await act(async () => stripButton().click());
+    expect(host.querySelector("[data-chat-pane]")).not.toBeNull();
+    expect(worldRequests(fetchSpy)).toHaveLength(1);
+    expect(lineIds()).toContain("w-11");
+
+    const list = [...host.querySelectorAll("ul")].at(-1)!.parentElement!;
+    await act(async () => scrollTo(list, 40));
+    expect(worldRequests(fetchSpy)).toHaveLength(2);
+    expect(worldRequests(fetchSpy)[1]!.searchParams.get("cursor")).toBe("cursor-older");
+    expect(lineIds()[0]).toBe("old-0");
+  });
+
+  it("shows empty copy in the closed strip once an empty zone answers without clicking and does not double-fetch on open", async () => {
+    const { fetchSpy } = await startClosedAndJoin(
+      () => new Response(JSON.stringify({ messages: [], nextCursor: null }), { status: 200 }),
+    );
+
+    expect(worldRequests(fetchSpy)).toHaveLength(1);
+    expect(stripText()).toBe(CHAT_WORDS.noMessages);
+    expect(host.querySelector("[data-chat-pane]")).toBeNull();
+
+    await act(async () => stripButton().click());
+    expect(worldRequests(fetchSpy)).toHaveLength(1);
+    expect(host.textContent).toContain(CHAT_WORDS.noMessages);
+  });
+
+  it("does not duplicate the first-page request when a joined room reconnects", async () => {
+    const { fetchSpy, roomSocket } = await startClosedAndJoin(
+      () =>
+        new Response(JSON.stringify({ messages: [worldLine("w-1", "welcome", 1)], nextCursor: null }), { status: 200 }),
+    );
+
+    expect(worldRequests(fetchSpy)).toHaveLength(1);
+    await act(async () => {
+      roomSocket.receive({ type: "left:zone", zoneId: GLOBAL_CHAT_CHANNEL_ID });
+      roomSocket.receive({ type: "joined:zone", zoneId: GLOBAL_CHAT_CHANNEL_ID, canWrite: true });
+    });
+
+    expect(worldRequests(fetchSpy)).toHaveLength(1);
+    expect(stripText()).toBe("Aldric: welcome");
+  });
+
+  it("shows unavailable in the closed strip when first-page auto-load fails and retries only on explicit retry", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    let attempt = 0;
+    const { fetchSpy } = await startClosedAndJoin(() => {
+      attempt += 1;
+      if (attempt === 1) return new Response("error", { status: 503 });
+      return new Response(JSON.stringify({ messages: [worldLine("w-1", "recovered", 1)], nextCursor: null }), {
+        status: 200,
+      });
+    });
+
+    expect(worldRequests(fetchSpy)).toHaveLength(1);
+    expect(stripText()).toBe("Chat unavailable");
+
+    await act(async () => stripButton().click());
+    expect(worldRequests(fetchSpy)).toHaveLength(1);
+    expect(host.textContent).toContain(CHAT_WORDS.historyUnavailable);
+
+    await press(TRY_AGAIN);
+    expect(worldRequests(fetchSpy)).toHaveLength(2);
+    expect(worldRequests(fetchSpy)[1]!.searchParams.get("cursor")).toBeNull();
+    expect(stripText()).toBe("Aldric: recovered");
+  });
+
+  it("shows unavailable with retry in a direct conversation when its first history fetch fails and recovers on retry", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    let dmAttempt = 0;
+    const fetchSpy = vi.fn(async (input: string | URL) => {
+      const { pathname } = new URL(String(input));
+      if (pathname === `/api/chat/dm/threads/${THREAD}/messages`) {
+        dmAttempt += 1;
+        if (dmAttempt === 1) return new Response("error", { status: 503 });
+        return new Response(JSON.stringify({ messages: [...HISTORY].reverse(), nextCursor: null }), { status: 200 });
+      }
+      if (pathname === "/api/chat/blocks") {
+        return new Response(JSON.stringify({ blocked: [], version: 0 }), { status: 200 });
+      }
+      if (pathname === "/api/chat/world") {
+        return new Response(JSON.stringify({ messages: [], nextCursor: null }), { status: 200 });
+      }
+      return new Response("{}", { status: 404 });
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+    useRealtimeChatStore.getState().actions.resetClient();
+    await act(async () =>
+      useRealtimeChatStore.getState().actions.initializeClient({ baseUrl: BASE, rooms: [GLOBAL_ROOM.zoneId] }),
+    );
+    useRealtimeChatStore.getState().actions.setShellOpen(true);
+    await act(async () => root.render(<RealtimeChatShell rooms={[GLOBAL_ROOM]} />));
+    const inbox = FakeSocket.made.at(-1)!;
+    await act(async () => {
+      inbox.open();
+      inbox.receive(handshake(listing(1)));
+    });
+
+    await openConversation();
+    expect(dmAttempt).toBe(1);
+    expect(host.textContent).toContain(CHAT_WORDS.historyUnavailable);
+    expect(lineIds()).toEqual(["d2"]);
+
+    await press(TRY_AGAIN);
+    expect(dmAttempt).toBe(2);
+    expect(lineIds()).toEqual(["d1", "d2"]);
+    expect(host.textContent).not.toContain(CHAT_WORDS.historyUnavailable);
   });
 });
