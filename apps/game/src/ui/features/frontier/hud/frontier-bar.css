@@ -72,12 +72,15 @@
 .frontier-quest-orb[aria-expanded="true"] .frontier-progress-ring--lg {
   border-color: rgb(var(--hud-gold));
 }
-.frontier-quest-orb[data-ready="true"] .frontier-progress-ring--lg {
+.frontier-quest-orb[data-ready="true"] .frontier-progress-ring--lg,
+.frontier-quest-orb[data-cleared] .frontier-progress-ring--lg {
   border-color: rgb(var(--hud-gold));
   box-shadow: 0 0 14px rgb(var(--hud-gold) / 0.55);
 }
 .frontier-quest-orb__count[data-cleared] {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-color: rgb(var(--hud-gold));
   background: rgb(var(--hud-gold));
   color: rgb(var(--hud-dark));

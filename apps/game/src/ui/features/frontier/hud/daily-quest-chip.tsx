@@ -33,16 +33,11 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
   const cleared = ready || reading?.state === "collected";
   const count = reading ? DAY_BANNER_WORDS.fraction(progress, target) : "—";
   const bane = reading?.bane ? baneFace(reading.bane, setup.store, realm.game_id) : null;
+  const questCleared = cleared && !bane;
   const undrawn = today.reading.unknown === UNROLLED_WORLD_DAY;
   const icon = bane ? bane.icon : undrawn ? "hourglass" : resolveAspectEmissary(questSpeaker(reading)).portrait;
   const share = reading?.bane ? breakShare(reading.bane) : target > 0 ? progress / target : 0;
-  const tag = bane
-    ? DAY_BANNER_WORDS.bane
-    : undrawn
-      ? DAY_BANNER_WORDS.undrawnTag
-      : reading && !desktop && !cleared
-        ? count
-        : null;
+  const tag = bane ? DAY_BANNER_WORDS.bane : undrawn ? DAY_BANNER_WORDS.undrawnTag : reading && !cleared ? count : null;
 
   return (
     <div className="frontier-quest-wrap pointer-events-auto">
@@ -53,6 +48,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
         data-daily-quest-chip=""
         data-hud-part=""
         data-ready={ready || undefined}
+        data-cleared={questCleared || undefined}
         data-tone={bane ? "bane" : undefined}
         data-undrawn={undrawn || undefined}
         data-tip={baneToday?.line ?? (bane ? DAY_BANNER_WORDS.baneBroken : undefined)}
@@ -72,7 +68,7 @@ export const DailyQuestChip = ({ realm }: { realm: NativeRows["Structure"] }) =>
           <Icon name={icon} size={36} />
         </ProgressRing>
         {tag && <span className="frontier-quest-orb__count">{tag}</span>}
-        {cleared && !bane && !desktop && (
+        {questCleared && (
           <span className="frontier-quest-orb__count" data-cleared="">
             <Icon name="check" size={12} />
           </span>
