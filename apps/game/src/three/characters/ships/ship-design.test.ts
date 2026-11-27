@@ -1,72 +1,200 @@
 // @vitest-environment node
-import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
-import { NodeIO, VertexLayout } from "@gltf-transform/core";
-import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
-import {
-  Group,
-  InterleavedBuffer,
-  InterleavedBufferAttribute,
-  Mesh,
-  MeshStandardMaterial,
-  Texture,
-  Vector3,
-} from "three";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { existsSync, readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { Group, Mesh, MeshStandardMaterial, Texture, Vector3, type Material } from "three";
+import { describe, expect, it, vi } from "vitest";
+import { mapAnimationTime } from "../../effects/endgame/state";
+import { isProcgenMasonryMaterial } from "../../structures/procgen-masonry-material";
+import { isProceduralModelPath, resolveProceduralModel } from "../../structures/procedural-model-resolver";
 import { TERRAIN_HEX_HORIZONTAL_SPACING } from "../../terrain/terrain-coordinates";
-import { createShipDesign, type ShipArmyClass, type ShipTier } from "./ship-design";
+import {
+  SHIP_WORLD_SCALE,
+  bakeShipWorldScale,
+  createShipDesign,
+  type ShipArmyClass,
+  type ShipTier,
+} from "./ship-design";
+import {
+  createProceduralShipTemplate,
+  isProceduralShipPath,
+  parseProceduralShipPath,
+  proceduralShipPath,
+  resolveProceduralShipKit,
+} from "./ship-kit";
+import { SHIP_CLOTH_PARAMS, createOwnershipPennantMaterial, createOwnershipSailMaterial } from "./ship-sail-material";
 
 const classes: ShipArmyClass[] = ["knight", "crossbowman", "paladin"];
 const tiers: ShipTier[] = [1, 2, 3];
-const templates = new Map<string, Group>();
 
-async function loadFleetGeometry(io: NodeIO, army: ShipArmyClass, tier: ShipTier) {
-  const bytes = readFileSync(new URL(`../../../../public/models/ships/${army}-t${tier}.glb`, import.meta.url));
-  const document = await io.readBinary(bytes);
-  // Decode the shipped geometry in Node; texture decoding stays in the browser smoke check.
-  document
-    .getRoot()
-    .listTextures()
-    .forEach((texture) => texture.dispose());
-  document
-    .getRoot()
-    .listExtensionsUsed()
-    .find((extension) => extension.extensionName === "KHR_draco_mesh_compression")
-    ?.dispose();
-  const decoded = Uint8Array.from(await io.writeBinary(document));
-  return (await new GLTFLoader().parseAsync(decoded.buffer, "")).scene;
+interface VertexInput {
+  readonly position: readonly [number, number, number];
+  readonly uv: readonly [number, number];
+  readonly mastClearanceZ: number;
 }
 
-beforeAll(async () => {
-  vi.stubGlobal("ProgressEvent", class extends Event {});
-  const { createDecoderModule } = createRequire(import.meta.url)("draco3dgltf");
-  // Match DRACOLoader's separate decoded attributes when handing geometry to GLTFLoader.
-  const io = new NodeIO()
-    .setVertexLayout(VertexLayout.SEPARATE)
-    .registerExtensions(ALL_EXTENSIONS)
-    .registerDependencies({
-      "draco3d.decoder": await createDecoderModule(),
-    });
-  for (const army of classes)
-    for (const tier of tiers) templates.set(`${army}-${tier}`, await loadFleetGeometry(io, army, tier));
-});
+type EvalResult = number | readonly number[];
 
-afterAll(() => vi.unstubAllGlobals());
-
-function template(army: ShipArmyClass, tier: ShipTier) {
-  return templates.get(`${army}-${tier}`)!;
+function asNumber(value: EvalResult): number {
+  if (typeof value !== "number") throw new Error(`Expected scalar TSL value, got vector of length ${value.length}`);
+  return value;
 }
 
-describe("Blender fleet assets", () => {
-  it("keeps every real ship at the same size and inside one hex throughout sailing", () => {
+function evalTslNode(node: unknown, vertex: VertexInput): EvalResult {
+  if (!node || typeof node !== "object") throw new Error("Missing TSL node");
+  const n = node as Record<string, unknown>;
+  if (n.isVarNode) return evalTslNode(n.node, vertex);
+  if (n.isConstNode || n.isUniformNode) return asNumber(n.value as number);
+  if (typeof n._attributeName === "string") {
+    if (n._attributeName === "position") return vertex.position;
+    if (n._attributeName === "uv") return vertex.uv;
+    if (n._attributeName === "aMastClearanceZ") return vertex.mastClearanceZ;
+    throw new Error(`Unsupported TSL attribute: ${n._attributeName}`);
+  }
+  if (n.isSplitNode) {
+    const vec = evalTslNode(n.node, vertex);
+    if (!Array.isArray(vec)) throw new Error("Expected vector for SplitNode");
+    const index = n.components === "x" ? 0 : n.components === "y" ? 1 : n.components === "z" ? 2 : -1;
+    if (index < 0) throw new Error(`Unsupported SplitNode components: ${String(n.components)}`);
+    return vec[index];
+  }
+  if (Array.isArray(n.nodes)) {
+    return n.nodes.map((child) => asNumber(evalTslNode(child, vertex)));
+  }
+  if (n.isOperatorNode) {
+    const a = asNumber(evalTslNode(n.aNode, vertex));
+    const b = asNumber(evalTslNode(n.bNode, vertex));
+    if (n.op === "+") return a + b;
+    if (n.op === "-") return a - b;
+    if (n.op === "*") return a * b;
+    if (n.op === "/") return a / b;
+    throw new Error(`Unsupported TSL operator: ${String(n.op)}`);
+  }
+  if (n.isMathNode) {
+    const a = asNumber(evalTslNode(n.aNode, vertex));
+    if (n.method === "sin") return Math.sin(a);
+    if (n.method === "cos") return Math.cos(a);
+    if (n.method === "abs") return Math.abs(a);
+    if (n.method === "negate") return -a;
+    const b = asNumber(evalTslNode(n.bNode, vertex));
+    if (n.method === "min") return Math.min(a, b);
+    if (n.method === "max") return Math.max(a, b);
+    const c = asNumber(evalTslNode(n.cNode, vertex));
+    if (n.method === "mix") return a + (b - a) * c;
+    throw new Error(`Unsupported TSL math method: ${String(n.method)}`);
+  }
+  throw new Error(`Unsupported TSL node: ${String(n.constructor?.name ?? "unknown")}`);
+}
+
+function evaluatePositionNode(positionNode: unknown, vertex: VertexInput, out: Vector3): Vector3 {
+  const result = evalTslNode(positionNode, vertex);
+  if (!Array.isArray(result) || result.length !== 3) {
+    throw new Error("Expected vec3 result from positionNode");
+  }
+  return out.set(result[0], result[1], result[2]);
+}
+
+function disposeTemplate(template: Group): void {
+  template.traverse((node) => {
+    if (!(node instanceof Mesh)) return;
+    node.geometry.dispose();
+    const materials = Array.isArray(node.material) ? node.material : [node.material];
+    for (const material of materials) material.dispose();
+  });
+}
+
+function findBoundPrintTexture(colorNode: unknown): Texture | null {
+  const visited = new Set<unknown>();
+  const stack: unknown[] = [colorNode];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current || typeof current !== "object" || visited.has(current)) continue;
+    visited.add(current);
+    if ("isTextureNode" in current && "value" in current) {
+      return (current as { value: Texture | null }).value;
+    }
+    if (Array.isArray(current)) {
+      for (const item of current) stack.push(item);
+      continue;
+    }
+    for (const value of Object.values(current as Record<string, unknown>)) {
+      if (value && typeof value === "object") stack.push(value);
+    }
+  }
+  return null;
+}
+
+describe("Procedural naval fleet kit", () => {
+  it("resolves all 9 class and tier procedural ship paths and rejects invalid ones", () => {
+    for (const army of classes) {
+      for (const tier of tiers) {
+        const path = proceduralShipPath(army, tier);
+        expect(isProceduralShipPath(path)).toBe(true);
+        expect(isProceduralModelPath(path)).toBe(true);
+        expect(parseProceduralShipPath(path)).toEqual({ army, tier });
+        const gltf = resolveProceduralModel(path);
+        expect(gltf).not.toBeNull();
+        expect(gltf!.scene.name).toBe(`ship-${army}-t${tier}`);
+        disposeTemplate(gltf!.scene);
+      }
+    }
+    expect(isProceduralShipPath("ships/knight-t1.glb")).toBe(false);
+    expect(isProceduralShipPath("procedural:ship:dragon:t1")).toBe(false);
+    expect(resolveProceduralShipKit("units/default_knight_lvl1.glb")).toBeNull();
+  });
+
+  it("builds 3 draws per ship with distinct tier progression and zero hull textures", () => {
+    const classSignatures = new Set<string>();
+    for (const army of classes) {
+      const tierTriangles: number[] = [];
+      for (const tier of tiers) {
+        const template = createProceduralShipTemplate(army, tier);
+        const meshes: Mesh[] = [];
+        template.traverse((node) => {
+          if (node instanceof Mesh) meshes.push(node);
+        });
+        expect(meshes).toHaveLength(3);
+
+        const hull = template.getObjectByName("FleetHull") as Mesh;
+        const sail = template.getObjectByName("Sail_0") as Mesh;
+        const pennant = template.getObjectByName("Pennant_0") as Mesh;
+        expect(hull).toBeInstanceOf(Mesh);
+        expect(sail).toBeInstanceOf(Mesh);
+        expect(pennant).toBeInstanceOf(Mesh);
+
+        expect(isProcgenMasonryMaterial(hull.material as Material)).toBe(true);
+        expect(hull.geometry.getAttribute("normal")).toBeDefined();
+        expect(hull.geometry.getAttribute("color")).toBeDefined();
+        expect((hull.material as Material & { map?: unknown }).map ?? null).toBeNull();
+
+        expect(sail.geometry.getAttribute("uv")).toBeDefined();
+        expect(sail.geometry.getAttribute("aMastClearanceZ")).toBeDefined();
+        expect(sail.userData.sailCount).toBe(tier === 1 ? 1 : 2);
+        expect(pennant.geometry.getAttribute("uv")).toBeDefined();
+
+        const design = createShipDesign(template, army, tier);
+        tierTriangles.push(design.triangles);
+        expect(design.triangles).toBeGreaterThan(1000);
+        expect(design.triangles).toBeLessThan(15000);
+        if (tier === 3) classSignatures.add(`${army}:${design.triangles}`);
+        design.dispose();
+        disposeTemplate(template);
+      }
+      expect(tierTriangles[0]).toBeLessThan(tierTriangles[1]);
+      expect(tierTriangles[1]).toBeLessThan(tierTriangles[2]);
+    }
+    expect(classSignatures.size).toBe(3);
+  });
+
+  it("keeps every procedural ship and its live GPU cloth shader vertices inside one hex throughout sailing", () => {
     const point = new Vector3();
     const apothem = TERRAIN_HEX_HORIZONTAL_SPACING / 2;
     const lengths = new Set<number>();
     const scales = new Set<number>();
-    for (const army of classes)
+
+    for (const army of classes) {
       for (const tier of tiers) {
-        const design = createShipDesign(template(army, tier), army, tier);
+        const template = createProceduralShipTemplate(army, tier);
+        const design = createShipDesign(template, army, tier);
         lengths.add(design.length);
         scales.add(design.object.scale.x);
         design.setWind(2);
@@ -79,8 +207,24 @@ describe("Blender fleet assets", () => {
           design.object.traverseVisible((object) => {
             if (!(object instanceof Mesh)) return;
             const positions = object.geometry.attributes.position;
+            const uv = object.geometry.attributes.uv;
+            const clearance = object.geometry.attributes.aMastClearanceZ;
+            const positionNode = (object.material as Material & { positionNode?: unknown }).positionNode ?? null;
             for (let i = 0; i < positions.count; i++) {
-              point.fromBufferAttribute(positions, i).applyMatrix4(object.matrixWorld);
+              if (positionNode) {
+                evaluatePositionNode(
+                  positionNode,
+                  {
+                    position: [positions.getX(i), positions.getY(i), positions.getZ(i)],
+                    uv: [uv.getX(i), uv.getY(i)],
+                    mastClearanceZ: clearance ? clearance.getX(i) : 0,
+                  },
+                  point,
+                );
+              } else {
+                point.fromBufferAttribute(positions, i);
+              }
+              point.applyMatrix4(object.matrixWorld);
               finite &&= Number.isFinite(point.lengthSq());
               radius = Math.max(radius, Math.hypot(point.x, point.z));
             }
@@ -88,112 +232,269 @@ describe("Blender fleet assets", () => {
         }
         expect(finite).toBe(true);
         expect(radius).toBeLessThan(apothem);
-        expect(design.triangles).toBeGreaterThan(1000);
-        expect(design.triangles).toBeLessThan(60000);
         design.dispose();
+        disposeTemplate(template);
       }
-    expect([...lengths]).toEqual([1.26]);
-    expect([...scales]).toEqual([0.3]);
+    }
+    expect([...lengths]).toEqual([4.2 * SHIP_WORLD_SCALE]);
+    expect([...scales]).toEqual([SHIP_WORLD_SCALE]);
   });
 
-  it("animates sail cloth and pennants, pins sail heads, and loops without a seam", () => {
-    for (const army of classes)
+  it("evaluates live GPU TSL cloth shaders for billowing, edge pinning, loop continuity, and zero CPU mutation", () => {
+    const out = new Vector3();
+    for (const army of classes) {
       for (const tier of tiers) {
-        const source = template(army, tier);
-        const design = createShipDesign(source, army, tier);
-        const sails: Mesh[] = [];
-        design.object.traverse((node) => {
-          if (node instanceof Mesh && /^Sail_/.test(node.name)) sails.push(node);
-        });
-        expect(sails).toHaveLength(tier === 1 ? 1 : 2);
-        expect(design.object.getObjectByName("BoardingRamp")).toBeUndefined();
-        const sail = sails[0];
-        const rest = (source.getObjectByName(sail.name) as Mesh).geometry.attributes.position;
-        const uv = Array.from(sail.geometry.attributes.uv.array);
+        const template = createProceduralShipTemplate(army, tier);
+        const design = createShipDesign(template, army, tier);
+        const sail = design.object.getObjectByName("Sail_0") as Mesh;
+        const pennant = design.object.getObjectByName("Pennant_0") as Mesh;
+        const sailNode = (sail.material as Material & { positionNode: unknown }).positionNode;
+        const pennantNode = (pennant.material as Material & { positionNode: unknown }).positionNode;
+        expect(sailNode).not.toBeNull();
+        expect(pennantNode).not.toBeNull();
+
+        const sailPos = sail.geometry.attributes.position;
+        const sailUv = sail.geometry.attributes.uv;
+        const sailClearance = sail.geometry.attributes.aMastClearanceZ;
+        const pennantPos = pennant.geometry.attributes.position;
+        const pennantUv = pennant.geometry.attributes.uv;
+        const restPos = Array.from(sailPos.array);
+        const restUv = Array.from(sailUv.array);
+
         design.setWind(0);
         design.animate(2, true);
-        expect(
-          Math.max(
-            ...Array.from(sail.geometry.attributes.position.array, (value, i) => Math.abs(value - rest.array[i])),
-          ),
-        ).toBeLessThan(1e-7);
+        for (let i = 0; i < sailPos.count; i++) {
+          evaluatePositionNode(
+            sailNode,
+            {
+              position: [sailPos.getX(i), sailPos.getY(i), sailPos.getZ(i)],
+              uv: [sailUv.getX(i), sailUv.getY(i)],
+              mastClearanceZ: sailClearance.getX(i),
+            },
+            out,
+          );
+          expect(Math.abs(out.z - sailPos.getZ(i))).toBeLessThan(1e-7);
+        }
+
         design.setWind(1.8);
         design.animate(1.5, true);
-        let displacement = 0;
-        const positions = sail.geometry.attributes.position;
-        for (let i = 0; i < positions.count; i++) {
-          displacement = Math.max(displacement, Math.abs(positions.getZ(i) - rest.getZ(i)));
-          if (
-            sail.geometry.attributes.uv.getY(i) < 1e-5 ||
-            Math.abs(sail.geometry.attributes.uv.getX(i) * 2 - 1) > 0.99999
-          )
-            expect(positions.getZ(i)).toBeCloseTo(rest.getZ(i), 5);
+        expect(Array.from(sailPos.array)).toEqual(restPos);
+        expect(Array.from(sailUv.array)).toEqual(restUv);
+
+        let maxSailDisp = 0;
+        let maxFootDisp = 0;
+        for (let i = 0; i < sailPos.count; i++) {
+          const u = sailUv.getX(i);
+          const v = sailUv.getY(i);
+          evaluatePositionNode(
+            sailNode,
+            {
+              position: [sailPos.getX(i), sailPos.getY(i), sailPos.getZ(i)],
+              uv: [u, v],
+              mastClearanceZ: sailClearance.getX(i),
+            },
+            out,
+          );
+          const delta = Math.abs(out.z - sailPos.getZ(i));
+          maxSailDisp = Math.max(maxSailDisp, delta);
+          if (v < 1e-5 || Math.abs(u * 2 - 1) > 0.99999) {
+            expect(out.z).toBeCloseTo(sailPos.getZ(i), 5);
+          }
+          if (v > 0.99999) {
+            maxFootDisp = Math.max(maxFootDisp, delta);
+          }
         }
-        expect(displacement).toBeGreaterThan(0.08);
-        expect(Array.from(sail.geometry.attributes.uv.array)).toEqual(uv);
+        expect(maxSailDisp).toBeGreaterThan(0.08);
+        expect(maxFootDisp).toBeGreaterThan(0.01);
+
         design.animate(0, true);
-        const start = Array.from(positions.array);
-        design.animate(6, true);
-        Array.from(positions.array).forEach((value, i) => expect(value).toBeCloseTo(start[i], 5));
-        design.dispose();
-      }
-  });
+        const sailStart = Array.from(
+          { length: sailPos.count },
+          (_, i) =>
+            evaluatePositionNode(
+              sailNode,
+              {
+                position: [sailPos.getX(i), sailPos.getY(i), sailPos.getZ(i)],
+                uv: [sailUv.getX(i), sailUv.getY(i)],
+                mastClearanceZ: sailClearance.getX(i),
+              },
+              out,
+            ).z,
+        );
+        const pennantStart = Array.from(
+          { length: pennantPos.count },
+          (_, i) =>
+            evaluatePositionNode(
+              pennantNode,
+              {
+                position: [pennantPos.getX(i), pennantPos.getY(i), pennantPos.getZ(i)],
+                uv: [pennantUv.getX(i), pennantUv.getY(i)],
+                mastClearanceZ: 0,
+              },
+              out,
+            ).z,
+        );
+        const startY = design.object.children[0].position.y;
+        const startRotZ = design.object.children[0].rotation.z;
+        const startRotX = design.object.children[0].rotation.x;
 
-  it("keeps every sail in front of its mast throughout a full cycle at maximum wind", () => {
-    for (const army of classes)
-      for (const tier of tiers) {
-        const design = createShipDesign(template(army, tier), army, tier);
-        design.setWind(2);
-        for (let frame = 0; frame <= 48; frame++) {
-          design.animate(frame / 8, true);
-          design.object.traverse((node) => {
-            if (!(node instanceof Mesh) || !node.name.startsWith("Sail_")) return;
-            const [, , mastZ] = node.userData.clothMastStart;
-            const radius = node.userData.clothMastRadius;
-            const positions = node.geometry.attributes.position;
-            for (let i = 0; i < positions.count; i++) expect(positions.getZ(i)).toBeLessThan(mastZ - radius - 0.014);
-          });
+        design.animate(SHIP_CLOTH_PARAMS.cycleSeconds, true);
+        for (let i = 0; i < sailPos.count; i++) {
+          const endZ = evaluatePositionNode(
+            sailNode,
+            {
+              position: [sailPos.getX(i), sailPos.getY(i), sailPos.getZ(i)],
+              uv: [sailUv.getX(i), sailUv.getY(i)],
+              mastClearanceZ: sailClearance.getX(i),
+            },
+            out,
+          ).z;
+          expect(endZ).toBeCloseTo(sailStart[i], 5);
         }
+        for (let i = 0; i < pennantPos.count; i++) {
+          const endZ = evaluatePositionNode(
+            pennantNode,
+            {
+              position: [pennantPos.getX(i), pennantPos.getY(i), pennantPos.getZ(i)],
+              uv: [pennantUv.getX(i), pennantUv.getY(i)],
+              mastClearanceZ: 0,
+            },
+            out,
+          ).z;
+          expect(endZ).toBeCloseTo(pennantStart[i], 5);
+        }
+        expect(design.object.children[0].position.y).toBeCloseTo(startY, 6);
+        expect(design.object.children[0].rotation.z).toBeCloseTo(startRotZ, 6);
+        expect(design.object.children[0].rotation.x).toBeCloseTo(startRotX, 6);
+
         design.dispose();
+        disposeTemplate(template);
       }
+    }
   });
 
-  it("keeps player sail prints independent while preserving the shared texture owner", () => {
-    const first = createShipDesign(template("knight", 3), "knight", 3);
-    const second = createShipDesign(template("knight", 3), "knight", 3);
-    const print = new Texture(),
-      disposed = vi.fn();
+  it("keeps both lab and worldmap GPU sail shaders strictly forward of their masts", () => {
+    const out = new Vector3();
+    const prevTime = mapAnimationTime.value;
+    try {
+      for (const army of classes) {
+        for (const tier of tiers) {
+          const template = createProceduralShipTemplate(army, tier);
+          const design = createShipDesign(template, army, tier);
+          design.setWind(2);
+          const sail = design.object.getObjectByName("Sail_0") as Mesh;
+          const sailNode = (sail.material as Material & { positionNode: unknown }).positionNode;
+          const pos = sail.geometry.attributes.position;
+          const uv = sail.geometry.attributes.uv;
+          const clearance = sail.geometry.attributes.aMastClearanceZ;
+
+          for (let i = 0; i < pos.count; i++) {
+            expect(pos.getZ(i)).toBeLessThan(clearance.getX(i) - 0.05);
+          }
+
+          for (let frame = 0; frame <= 24; frame++) {
+            design.animate(frame / 4, true);
+            for (let i = 0; i < pos.count; i++) {
+              evaluatePositionNode(
+                sailNode,
+                {
+                  position: [pos.getX(i), pos.getY(i), pos.getZ(i)],
+                  uv: [uv.getX(i), uv.getY(i)],
+                  mastClearanceZ: clearance.getX(i),
+                },
+                out,
+              );
+              expect(out.z).toBeLessThanOrEqual(clearance.getX(i) + 1e-6);
+            }
+          }
+
+          const worldTemplate = createProceduralShipTemplate(army, tier);
+          bakeShipWorldScale(worldTemplate);
+          const worldSail = worldTemplate.getObjectByName("Sail_0") as Mesh;
+          const worldPennant = worldTemplate.getObjectByName("Pennant_0") as Mesh;
+          const worldSailMat = createOwnershipSailMaterial(worldSail.material as MeshStandardMaterial);
+          const worldPennantMat = createOwnershipPennantMaterial(worldPennant.material as MeshStandardMaterial);
+          expect(worldSailMat.positionNode).not.toBeNull();
+          expect(worldPennantMat.positionNode).not.toBeNull();
+
+          const bakedPos = worldSail.geometry.attributes.position;
+          const bakedUv = worldSail.geometry.attributes.uv;
+          const bakedClearance = worldSail.geometry.attributes.aMastClearanceZ;
+
+          mapAnimationTime.value = 1.5;
+          let maxWorldBillow = 0;
+          for (let i = 0; i < bakedPos.count; i++) {
+            const restZ = bakedPos.getZ(i);
+            const worldClearanceZ = -bakedClearance.getX(i) * SHIP_WORLD_SCALE;
+            expect(restZ).toBeGreaterThan(worldClearanceZ + 0.01);
+            evaluatePositionNode(
+              worldSailMat.positionNode,
+              {
+                position: [bakedPos.getX(i), bakedPos.getY(i), restZ],
+                uv: [bakedUv.getX(i), bakedUv.getY(i)],
+                mastClearanceZ: bakedClearance.getX(i),
+              },
+              out,
+            );
+            expect(out.z).toBeGreaterThanOrEqual(restZ - 1e-6);
+            maxWorldBillow = Math.max(maxWorldBillow, out.z - restZ);
+          }
+          expect(maxWorldBillow).toBeGreaterThan(0.02);
+
+          worldSailMat.dispose();
+          worldPennantMat.dispose();
+          disposeTemplate(worldTemplate);
+          design.dispose();
+          disposeTemplate(template);
+        }
+      }
+    } finally {
+      mapAnimationTime.value = prevTime;
+    }
+  });
+
+  it("binds independent player sail prints to the shader colorNode while preserving the shared texture owner", () => {
+    const template = createProceduralShipTemplate("knight", 3);
+    const first = createShipDesign(template, "knight", 3);
+    const second = createShipDesign(template, "knight", 3);
+    const print = new Texture();
+    const disposed = vi.fn();
     print.addEventListener("dispose", disposed);
+
     first.setSailPrint(print, "#123456");
     second.setSailPrint(null, "#abcdef");
-    first.object.traverse((node) => {
-      if (node instanceof Mesh && node.name.startsWith("Sail_"))
-        expect((node.material as MeshStandardMaterial).map).toBe(print);
-    });
-    second.object.traverse((node) => {
-      if (node instanceof Mesh && node.name.startsWith("Sail_"))
-        expect((node.material as MeshStandardMaterial).map).toBeNull();
-    });
+
+    const firstSailMaterial = (first.object.getObjectByName("Sail_0") as Mesh).material as Material & {
+      colorNode: unknown;
+    };
+    const secondSailMaterial = (second.object.getObjectByName("Sail_0") as Mesh).material as Material & {
+      colorNode: unknown;
+    };
+    const firstBound = findBoundPrintTexture(firstSailMaterial.colorNode);
+    const secondBound = findBoundPrintTexture(secondSailMaterial.colorNode);
+
+    expect(firstBound).toBe(print);
+    expect(secondBound).not.toBe(print);
+    expect(secondBound).not.toBeNull();
+    expect((secondBound as Texture & { isDataTexture?: boolean }).isDataTexture).toBe(true);
+
+    first.setSailPrint(null, "#123456");
+    expect(findBoundPrintTexture(firstSailMaterial.colorNode)).toBe(secondBound);
+
     first.dispose();
     second.dispose();
+    disposeTemplate(template);
     expect(disposed).not.toHaveBeenCalled();
   });
 
   it("preserves shared source resources and releases each clone once", () => {
-    const asset = template("paladin", 3);
-    let source: Mesh | undefined;
-    asset.traverse((object) => {
-      if (object instanceof Mesh) source ??= object;
-    });
-    const original = source!;
+    const asset = createProceduralShipTemplate("paladin", 3);
+    const original = asset.getObjectByName("FleetHull") as Mesh;
     const positions = Array.from(original.geometry.attributes.position.array);
-    const sharedTexture = new Texture();
-    (original.material as MeshStandardMaterial).map = sharedTexture;
-    const sourceDisposed = vi.fn(),
-      textureDisposed = vi.fn(),
-      cloneDisposed = vi.fn();
+    const sourceDisposed = vi.fn();
+    const cloneDisposed = vi.fn();
     original.geometry.addEventListener("dispose", sourceDisposed);
-    sharedTexture.addEventListener("dispose", textureDisposed);
+
     const design = createShipDesign(asset, "paladin", 3);
     design.object.traverse((object) => {
       if (object instanceof Mesh) object.geometry.addEventListener("dispose", cloneDisposed);
@@ -203,55 +504,18 @@ describe("Blender fleet assets", () => {
     design.dispose();
     const calls = cloneDisposed.mock.calls.length;
     design.dispose();
-    expect(calls).toBeGreaterThan(0);
+
+    expect(calls).toBe(3);
     expect(cloneDisposed).toHaveBeenCalledTimes(calls);
     expect(Array.from(original.geometry.attributes.position.array)).toEqual(positions);
-    expect((original.material as MeshStandardMaterial).wireframe).toBe(false);
+    expect((original.material as Material & { wireframe: boolean }).wireframe).toBe(false);
     expect(sourceDisposed).not.toHaveBeenCalled();
-    expect(textureDisposed).not.toHaveBeenCalled();
+    disposeTemplate(asset);
   });
-});
 
-it("animates compressed interleaved sails and pennants exactly like separate attributes", () => {
-  const source = template("knight", 1);
-  const packed = source.clone(true);
-  packed.traverse((part) => {
-    if (!(part instanceof Mesh) || (!part.name.startsWith("Sail_") && !part.name.startsWith("Pennant_"))) return;
-    part.geometry = part.geometry.clone();
-    const positions = part.geometry.attributes.position;
-    const uv = part.geometry.attributes.uv;
-    const data = new Float32Array(positions.count * 5);
-    for (let index = 0; index < positions.count; index++) {
-      data.set(
-        [positions.getX(index), positions.getY(index), positions.getZ(index), uv.getX(index), uv.getY(index)],
-        index * 5,
-      );
-    }
-    const buffer = new InterleavedBuffer(data, 5);
-    part.geometry.setAttribute("position", new InterleavedBufferAttribute(buffer, 3, 0));
-    part.geometry.setAttribute("uv", new InterleavedBufferAttribute(buffer, 2, 3));
-  });
-  const expected = createShipDesign(source, "knight", 1);
-  const actual = createShipDesign(packed, "knight", 1);
-  for (const time of [0, 1.7, 4.3]) {
-    expected.animate(time, true);
-    actual.animate(time, true);
-    actual.object.traverse((part) => {
-      if (!(part instanceof Mesh) || (!part.name.startsWith("Sail_") && !part.name.startsWith("Pennant_"))) return;
-      const reference = expected.object.getObjectByName(part.name) as Mesh;
-      const positions = part.geometry.attributes.position;
-      const rest = reference.geometry.attributes.position;
-      for (let index = 0; index < positions.count; index++) {
-        expect(positions.getZ(index)).toBeCloseTo(rest.getZ(index), 6);
-        expect(part.geometry.attributes.uv.getX(index)).toBeCloseTo(reference.geometry.attributes.uv.getX(index), 6);
-        expect(part.geometry.attributes.uv.getY(index)).toBeCloseTo(reference.geometry.attributes.uv.getY(index), 6);
-      }
-    });
-  }
-  expected.dispose();
-  actual.dispose();
-  packed.traverse((part) => {
-    if (part instanceof Mesh && (part.name.startsWith("Sail_") || part.name.startsWith("Pennant_")))
-      part.geometry.dispose();
+  it("retires all shipped fleet GLBs under public/models/ships", () => {
+    const shipsDir = fileURLToPath(new URL("../../../../public/models/ships", import.meta.url));
+    const remaining = existsSync(shipsDir) ? readdirSync(shipsDir).filter((file) => file.endsWith(".glb")) : [];
+    expect(remaining).toEqual([]);
   });
 });

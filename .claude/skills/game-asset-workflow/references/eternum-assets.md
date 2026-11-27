@@ -102,21 +102,21 @@ replacement; retain its experimental status until validated.
 
 ## Existing pipeline
 
-| Family  | Editable source                                                                                                                               | Optimization from repository root         |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| Realms  | Procedural runtime kits in `apps/game/src/three/structures/base-realm-kit.ts` and `realm-kit.ts` (no shipped realm GLBs)                      | None (built at runtime)                   |
-| Spire   | Runtime procedural kit in `apps/game/src/three/structures/spire-kit.ts` (`procedural:spire`); `build-spire.py` is the unwired obelisk variant | None (built at runtime)                   |
-| Rewards | `apps/game/src/three/structures/reward-tile-kit.ts` (runtime procedural Essence Rift & Arcane Chest kits)                                     | None (zero GLBs; built at runtime)        |
-| Fleet   | `apps/game/scripts/fleet/build-fleet.py` and `fleet-model.py`                                                                                 | `pnpm --dir apps/game run optimize:fleet` |
+| Family  | Editable source                                                                                                                               | Optimization from repository root  |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| Realms  | Procedural runtime kits in `apps/game/src/three/structures/base-realm-kit.ts` and `realm-kit.ts` (no shipped realm GLBs)                      | None (built at runtime)            |
+| Spire   | Runtime procedural kit in `apps/game/src/three/structures/spire-kit.ts` (`procedural:spire`); `build-spire.py` is the unwired obelisk variant | None (built at runtime)            |
+| Rewards | `apps/game/src/three/structures/reward-tile-kit.ts` (runtime procedural Essence Rift & Arcane Chest kits)                                     | None (zero GLBs; built at runtime) |
+| Fleet   | `apps/game/src/three/characters/ships/ship-kit.ts`                                                                                            | Runtime procedural (no GLB build)  |
 
 Inspect each builder's arguments and output paths before running it. Regenerate only the intended assets.
 
 Structure GLB compression is centralized in `apps/game/scripts/optimize-structure-models.mjs`. The current structure
 instancing path skips scaled child nodes. Draco preserves the baked transforms used here; Meshopt quantization can
-introduce node scale. The fleet optimizer also uses Draco. Essence Rifts and Arcane Chests are built at runtime by
-`apps/game/src/three/structures/reward-tile-kit.ts` using shared procedural masonry and TSL shaders with zero GLB
-payloads. Verify loader constraints when changing any remaining GLB pipeline, rather than converting every GLB to the
-same codec.
+introduce node scale. Essence Rifts, Arcane Chests, and naval fleet ships are built at runtime by
+`apps/game/src/three/structures/reward-tile-kit.ts` and `apps/game/src/three/characters/ships/ship-kit.ts` using shared
+procedural masonry and TSL shaders with zero GLB payloads. Verify loader constraints when changing any remaining GLB
+pipeline, rather than converting every GLB to the same codec.
 
 Use fresh source exports for optimization. The verification command inspects already compressed assets without
 recompressing them. Preserve texture resolution and normal detail when the existing settings already meet the target; do

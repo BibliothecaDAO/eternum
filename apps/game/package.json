@@ -21,7 +21,6 @@
     "compress:models": "node ./scripts/compress-models.mjs",
     "ship:model": "node ./scripts/tripo/ship-model.mjs",
     "verify:t1-knight-default": "node ./scripts/validate-t1-knight-default-exports.mjs",
-    "optimize:fleet": "node ./scripts/fleet/optimize-fleet.mjs",
     "verify:fallen-realm": "vitest run --config vitest.assets.config.ts scripts/frontier-beasts/fallen-realm.test.mjs",
     "dev": "vite",
     "dev:webgpu": "VITE_PUBLIC_RENDERER_BUILD_MODE=webgpu-auto vite",

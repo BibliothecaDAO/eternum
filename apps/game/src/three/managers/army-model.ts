@@ -1,10 +1,9 @@
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { gltfLoader } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
-import { SHIP_WORLD_SCALE } from "@/three/characters/ships/ship-design";
+import { bakeShipWorldScale } from "@/three/characters/ships/ship-design";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 import {
-  BufferGeometry,
   Color,
   Euler,
   Group,
@@ -66,17 +65,6 @@ const flushArmyModelSlotUploads = (modelData: ModelData): void => {
     ...modelData.instancedMeshes.flatMap((mesh) => [mesh.instanceMatrix, mesh.instanceColor]),
   ]);
 };
-
-/** Bake authored -Z bows into the movement system's +Z forward axis and tile scale. */
-function bakeShipWorldScale(scene: Object3D): void {
-  const scaled = new Set<BufferGeometry>();
-  scene.traverse((child) => {
-    if (!(child instanceof Mesh) || scaled.has(child.geometry)) return;
-    child.geometry.rotateY(Math.PI);
-    child.geometry.scale(SHIP_WORLD_SCALE, SHIP_WORLD_SCALE, SHIP_WORLD_SCALE);
-    scaled.add(child.geometry);
-  });
-}
 
 function isWaterBiome(biome: BiomeType): boolean {
   return biome === BiomeType.Ocean || biome === BiomeType.DeepOcean;

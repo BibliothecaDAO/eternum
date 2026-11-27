@@ -1,4 +1,5 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
+import { isProceduralShipPath, proceduralShipPath } from "../characters/ships/ship-kit";
 import { type ArmyPace, ModelType } from "../types/army";
 import { modelPath } from "../utils/model-url";
 
@@ -71,17 +72,18 @@ export const MODEL_TYPE_TO_FILE: Record<ModelType, string> = {
   [ModelType.Paladin1]: "units/default_paladin_lvl1.glb",
   [ModelType.Paladin2]: "units/default_paladin_lvl2.glb",
   [ModelType.Paladin3]: "units/default_paladin_lvl3.glb",
-  [ModelType.ShipKnight1]: "ships/knight-t1.glb",
-  [ModelType.ShipKnight2]: "ships/knight-t2.glb",
-  [ModelType.ShipKnight3]: "ships/knight-t3.glb",
-  [ModelType.ShipCrossbowman1]: "ships/crossbowman-t1.glb",
-  [ModelType.ShipCrossbowman2]: "ships/crossbowman-t2.glb",
-  [ModelType.ShipCrossbowman3]: "ships/crossbowman-t3.glb",
-  [ModelType.ShipPaladin1]: "ships/paladin-t1.glb",
-  [ModelType.ShipPaladin2]: "ships/paladin-t2.glb",
-  [ModelType.ShipPaladin3]: "ships/paladin-t3.glb",
+  [ModelType.ShipKnight1]: proceduralShipPath("knight", 1),
+  [ModelType.ShipKnight2]: proceduralShipPath("knight", 2),
+  [ModelType.ShipKnight3]: proceduralShipPath("knight", 3),
+  [ModelType.ShipCrossbowman1]: proceduralShipPath("crossbowman", 1),
+  [ModelType.ShipCrossbowman2]: proceduralShipPath("crossbowman", 2),
+  [ModelType.ShipCrossbowman3]: proceduralShipPath("crossbowman", 3),
+  [ModelType.ShipPaladin1]: proceduralShipPath("paladin", 1),
+  [ModelType.ShipPaladin2]: proceduralShipPath("paladin", 2),
+  [ModelType.ShipPaladin3]: proceduralShipPath("paladin", 3),
 };
 
 export const buildArmyModelAssetPath = (modelType: ModelType): string => {
-  return modelPath(MODEL_TYPE_TO_FILE[modelType]);
+  const file = MODEL_TYPE_TO_FILE[modelType];
+  return isProceduralShipPath(file) ? file : modelPath(file);
 };

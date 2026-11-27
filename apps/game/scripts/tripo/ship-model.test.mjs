@@ -311,6 +311,7 @@ describe("ship-model pipeline", () => {
     const shippedTroops = [];
 
     for (const file of candidateFiles) {
+      if (file.startsWith("procedural:")) continue;
       const modelPath = fileURLToPath(new URL(`../../public/models/${file}`, import.meta.url));
       const doc = await io.read(modelPath);
       const meshNode = doc
@@ -343,6 +344,7 @@ describe("ship-model pipeline", () => {
     ];
     const troopPaths = [];
     for (const file of new Set(Object.values(MODEL_TYPE_TO_FILE))) {
+      if (file.startsWith("procedural:")) continue;
       const modelPath = fileURLToPath(new URL(`../../public/models/${file}`, import.meta.url));
       const doc = await io.read(modelPath);
       const meshNode = doc

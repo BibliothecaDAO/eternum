@@ -51,7 +51,6 @@ jobs:
             apps/game/public/models/outposts
             apps/game/public/models/terrain-flora
             apps/game/public/models/realms
-            apps/game/public/models/ships
             apps/game/public/models/units
             apps/game/public/textures/realms
             apps/game/scripts/client-playtest/fixtures
