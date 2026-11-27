@@ -1,3 +1,8 @@
+.chat-message-scroller {
+  padding-top: theme(spacing.2);
+  mask-image: linear-gradient(to bottom, transparent, rgb(var(--hud-ink)) theme(spacing.4));
+}
+
 .chat-message-row__reply {
   position: absolute;
   top: 2px;

@@ -119,10 +119,10 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, className }: D
           <MuteButton playerId={recipientId} />
         </header>
       )}
-      <div className="flex-1 min-h-0 px-3 py-2">
+      <div className="flex-1 min-h-0 px-3 pb-2">
         {thread && (
           <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
-            <div ref={scrollerRef} className="flex-1 min-h-0 overflow-y-auto pr-1">
+            <div ref={scrollerRef} className="chat-message-scroller flex-1 min-h-0 overflow-y-auto pr-1">
               {thread.historyError && (
                 <div className="mb-2">
                   <HudNotice
