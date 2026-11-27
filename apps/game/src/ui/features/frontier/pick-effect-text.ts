@@ -30,7 +30,6 @@ export function readPickEffectBase(
       slice && tickSeconds !== undefined
         ? (slice.troop_stamina_config.stamina_gain_per_tick / tickSeconds) * (oathRegenBps(army.oaths) / 10_000)
         : undefined,
-    tickSeconds,
     deepLossPerTick: deep
       ? Number(oathDeepLossPerTick(army.oaths, BigInt(deep.loss_per_tick))) / RESOURCE_PRECISION
       : undefined,

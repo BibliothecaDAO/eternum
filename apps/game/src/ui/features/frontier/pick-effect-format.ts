@@ -4,7 +4,6 @@ import { PICK_EFFECT_WORDS } from "../../design-system/kit/words";
 
 export interface PickEffectBase {
   combatIcon?: IconMeaning;
-  tickSeconds?: number;
   attackStamina?: number;
   revealStamina?: number;
   maxStamina?: number;

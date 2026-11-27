@@ -8,17 +8,7 @@ import {
   oathStaminaBonus,
 } from "@bibliothecadao/eternum";
 import { nativeOathConstants as oaths, nativeRuleConstants as rules } from "@bibliothecadao/eternum/game-client";
-import {
-  catalogOrder,
-  formatCount,
-  formatDuration,
-  formatExact,
-  formatGain,
-  formatOrdinal,
-  formatPercent,
-  formatRate,
-  RESOURCE_PRECISION,
-} from "@bibliothecadao/types";
+import { catalogOrder, formatExact, formatGain, formatPercent, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { IconMeaning } from "../../../design-system/icon-meaning";
 import { PICK_EFFECT_WORDS as WORDS } from "../../../design-system/kit/words";
 
@@ -64,7 +54,7 @@ const furyBadge = (base: PickEffectBase): OathStatBadge => ({
     base.attackStamina === undefined
       ? formatPercent(oaths.FURY_REFUND_PERCENT / 100)
       : formatGain(oathFuryRefund(oathBit(oaths.FURY), base.attackStamina)),
-  unit: WORDS.furyRefund,
+  unit: base.attackStamina === undefined ? WORDS.furyRefundPercent : WORDS.furyRefund,
   icon: "stamina",
 });
 
@@ -74,24 +64,20 @@ const titansBadge = (base: PickEffectBase): OathStatBadge => {
     hero: gain,
     unit:
       base.maxStamina === undefined
-        ? WORDS.titansMaxGain(gain)
+        ? WORDS.titansMaxGain
         : WORDS.titansMax(
             formatExact(base.maxStamina),
             formatExact(base.maxStamina + oathStaminaBonus(oathBit(oaths.TITANS))),
-            gain,
           ),
     icon: "stamina",
   };
 };
 
-const enlightenmentBadge = (base: PickEffectBase): OathStatBadge => {
+const enlightenmentBadge = (): OathStatBadge => {
   const factor = oathRegenBps(oathBit(oaths.ENLIGHTENMENT)) / 10_000;
   return {
     hero: formatPercent(factor - 1, { signed: true }),
-    unit:
-      base.staminaPerSecond === undefined
-        ? WORDS.staminaRecovery
-        : WORDS.staminaRecoveryFromTo(formatRate(base.staminaPerSecond), formatRate(base.staminaPerSecond * factor)),
+    unit: WORDS.oathStaminaRecovery,
     icon: "stamina",
   };
 };
@@ -103,7 +89,7 @@ const vitriolBadge = (base: PickEffectBase): OathStatBadge => {
       base.deepLossPerTick === undefined
         ? formatExact(loss)
         : fromTo(formatExact(base.deepLossPerTick), formatExact(loss)),
-    unit: base.tickSeconds === undefined ? WORDS.deepPoison : WORDS.deepPoisonEvery(formatDuration(base.tickSeconds)),
+    unit: WORDS.deepPoison,
     icon: "depth-1",
   };
 };
@@ -131,8 +117,8 @@ const OATH_BADGES: Record<number, (base: PickEffectBase) => OathStatBadge> = {
     icon: "well",
   }),
   [oaths.DETECTION]: () => ({
-    hero: WORDS.revealOrdinal(formatOrdinal(oaths.DETECTION_EMPTY_REVEAL_LIMIT + 1)),
-    unit: WORDS.findAfter(formatCount(oaths.DETECTION_EMPTY_REVEAL_LIMIT, "empty reveal")),
+    hero: WORDS.detectionHero(formatExact(oaths.DETECTION_EMPTY_REVEAL_LIMIT)),
+    unit: WORDS.detectionUnit,
     icon: "eye",
   }),
   [oaths.BRILLIANCE]: () => ({

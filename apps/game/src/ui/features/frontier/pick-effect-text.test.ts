@@ -13,7 +13,6 @@ describe("an army's effect figures", () => {
     const store = new NativeFactStore();
     expect(readPickEffectBase(store, 1)).toEqual({
       combatIcon: combatMarkOf(TroopType.Knight).icon,
-      tickSeconds: undefined,
       attackStamina: undefined,
       revealStamina: undefined,
       maxStamina: undefined,
@@ -49,7 +48,6 @@ describe("an army's effect figures", () => {
     ] as never);
     expect(readPickEffectBase(store, 1)).toEqual({
       combatIcon: combatMarkOf(TroopType.Knight).icon,
-      tickSeconds: 60,
       attackStamina: 40,
       revealStamina: 25,
       maxStamina: 200,
