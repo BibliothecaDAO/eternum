@@ -8,10 +8,14 @@ const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies(
 });
 
 /** Read delivered triangles without changing either model. Roaming beasts have no ruin. */
-export async function measureBeastPlacement(species, scale, ruinPath, beastPath) {
+export async function measureBeastPlacement(species, scale, ruinSource, beastPath) {
   if (!Number.isFinite(scale) || scale <= 0) throw new Error("Scale must be positive");
   const assetId = `beast-${species}`;
-  const ruin = ruinPath ? await readGeometry("ruin", ruinPath) : { vertices: [], triangles: [] };
+  const ruin = !ruinSource
+    ? { vertices: [], triangles: [] }
+    : typeof ruinSource === "string"
+      ? await readGeometry("ruin", ruinSource)
+      : ruinSource;
   const beast = await readGeometry(assetId, beastPath);
   return measurePlacement({ assetId, ruin, beast, scale });
 }

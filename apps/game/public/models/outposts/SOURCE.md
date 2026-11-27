@@ -1,7 +1,8 @@
 # Outposts
 
-The approved camp, Canvas & Thatch village, shrine, well and ruin use packed Blender sources in
-[asset-sources/outposts](../../../asset-sources/outposts/SOURCE.md).
+The approved camp, Canvas & Thatch village, shrine and well use packed Blender sources in
+[asset-sources/outposts](../../../asset-sources/outposts/SOURCE.md). Fallen realm ruins are built procedurally at
+runtime in `apps/game/src/three/structures/ruin-kit.ts`.
 
 | Runtime file | Source                      | Triangles | Primitives |   Bytes |
 | ------------ | --------------------------- | --------: | ---------: | ------: |
@@ -9,7 +10,6 @@ The approved camp, Canvas & Thatch village, shrine, well and ruin use packed Ble
 | village.glb  | village-canvas-thatch.blend |     6,149 |          3 | 213,200 |
 | shrine.glb   | shrine.blend                |     1,816 |          3 |  73,524 |
 | well.glb     | well.blend                  |     5,068 |          3 | 103,684 |
-| ruin.glb     | ruin.blend                  |      2908 |          2 |   92208 |
 
 These are decoded asset counts, not frame measurements. The village has a 480² painted color atlas, 240² tangent normal
 atlas and vertex contact shading. The other outposts use 480² contact shading and 128² normal detail. ETC1S color, UASTC
@@ -25,12 +25,12 @@ joins the same ownership surface. Other canvas, timber and roofs retain their au
 realm order assignment, so they do not use the realm-order atlas. Shrine and well use MapSiteManager's ordinary
 InstancedModel path and disappear when their tile occupancy is consumed.
 
-Rebuild fresh exports into an external directory, then copy the five verified deliveries:
+Rebuild fresh exports into an external directory, then copy the four verified deliveries:
 
 ```sh
 export OUTPOST_BUILD_DIR=/absolute/path/outside/the/checkout
 bash apps/game/scripts/outposts/rebuild-outposts.sh "$OUTPOST_BUILD_DIR"
-for asset in camp village shrine well ruin; do
+for asset in camp village shrine well; do
   cp "$OUTPOST_BUILD_DIR/models/$asset.glb" "apps/game/public/models/outposts/$asset.glb"
 done
 pnpm --dir apps/game verify:assets scripts/outposts/outpost-assets.test.mjs
@@ -40,17 +40,6 @@ Set `OUTPOST_BLENDER` to Blender 5.2.1's executable if it is not on PATH. The as
 verifies bounds/codecs/budgets and rejects a merged-away ownership surface. Runtime lab and live-game paths are in
 [FEATURE-MAP.md](../../../FEATURE-MAP.md).
 
-`ruin.glb` uses packed `ruin.blend`: 2908 triangles, two primitives, 92208 bytes. The violet residue surfaces have been
-removed; the court and masonry remain intact. Runtime ground mist now covers the floor. The final beast depth table is
-in the shared Frontier resolver. Run `pnpm --dir apps/game verify:fallen-realm` for the four exact-scale collision
-gates.
-
-The beast courtyard refinement removes the loose central stones and widens the surviving wall plan by 18%, bounded
-inside a 0.85 hex apothem. Beast scales and wall heights are unchanged. `scripts/outposts/widen-ruin-courtyard.py`
-applies that source edit from the prior packed ruin to a separate output source; normal delivery rebuilds read the
-committed `ruin.blend` through the existing exporter. The read-only `verify:fallen-realm` gate checks decoded
-deliveries.
-
-`scripts/outposts/remove-ruin-residue.py` removes only faces assigned to the retired violet material from both editable
-and production meshes, then saves the packed source. It is safe to run twice. Normal rebuilds export that packed source;
-the verifier rejects a reintroduced violet residue material.
+Fallen realm ruins are generated procedurally in `apps/game/src/three/structures/ruin-kit.ts` with seeded per-hex
+variants and runtime ground mist. Run `pnpm --dir apps/game verify:fallen-realm` for the exact-scale beast collision
+gates across all procedural ruin variants.

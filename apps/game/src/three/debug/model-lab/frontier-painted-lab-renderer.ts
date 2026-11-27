@@ -8,7 +8,6 @@ import {
 } from "../../constants/scene-constants";
 import { modelPath } from "../../utils/model-url";
 import { buildingTierModelPath } from "../../structures/building-tiers";
-import { FALLEN_REALM_RUIN_PATH } from "../../structures/frontier-beast";
 import {
   FRONTIER_PAINTED_BUILDINGS,
   type FrontierPaintedBuilding,
@@ -40,7 +39,6 @@ const BOARD_TYPES: Partial<Record<string, BuildingType>> = {
 };
 const SHIPPED_SITES: Partial<Record<string, string>> = {
   camp: CAMP_MODEL_PATH,
-  "fallen-realm-ruin": FALLEN_REALM_RUIN_PATH,
   shrine: modelPath("outposts/shrine.glb"),
   well: modelPath("outposts/well.glb"),
   "essence-rift": RiftModelPath,

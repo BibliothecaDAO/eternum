@@ -10,10 +10,11 @@ import {
 } from "@bibliothecadao/types";
 import type { FrontierSpecies, FrontierBeast } from "@bibliothecadao/eternum";
 import { frontierPaintedPath } from "./frontier-painted-buildings";
+import { RUIN_KIT_PATHS, RUIN_VARIANTS, ruinKitPath, type RuinVariant } from "./ruin-kit";
 import { modelPath } from "../utils/model-url";
 export { beastBand, frontierBeast, type FrontierSpecies, type FrontierBeast } from "@bibliothecadao/eternum";
 
-export const FALLEN_REALM_RUIN_PATH = modelPath("outposts/ruin.glb");
+export const FALLEN_REALM_RUIN_PATH = ruinKitPath(0);
 export const FRONTIER_CAMP_MODEL_PATH = frontierPaintedPath("camp");
 export const SUPPLY_POST_MODEL_PATH = frontierPaintedPath("supply-yard");
 export const SUPPLY_POST_STANDARD = { scale: 1, x: -0.32, y: 0, z: 0.92 } as const;
@@ -52,10 +53,13 @@ export const largestBeastScale = (species: BeastModel): number => {
 };
 const BEAST_ORDER = Object.keys(FRONTIER_BEASTS) as FrontierSpecies[];
 export const FRONTIER_BEAST_PATHS = BEAST_ORDER.map((beast) => FRONTIER_BEASTS[beast].path);
-export const FALLEN_REALM_MODEL_PATHS = [FALLEN_REALM_RUIN_PATH, ...FRONTIER_BEAST_PATHS];
+export const FALLEN_REALM_MODEL_PATHS = [FALLEN_REALM_RUIN_PATH, ...FRONTIER_BEAST_PATHS, ...RUIN_KIT_PATHS.slice(1)];
 export const SITE_LANDMARK_MODEL_INDEX = 0;
 export const SUPPLY_POST_MODEL_INDEX = 1 + FRONTIER_BEAST_PATHS.length;
 export const frontierBeastModelIndex = (beast: FrontierSpecies): number => 1 + BEAST_ORDER.indexOf(beast);
+export const ruinVariantModelIndex = (variant: RuinVariant): number =>
+  variant === 0 ? SITE_LANDMARK_MODEL_INDEX : 1 + FRONTIER_BEAST_PATHS.length + (variant - 1);
+export const FALLEN_REALM_VARIANT_MODEL_INDICES: readonly number[] = RUIN_VARIANTS.map(ruinVariantModelIndex);
 
 /** Standing models disappear after a clear; history can still name the same encounter. */
 export function readStandingFrontierBeast(

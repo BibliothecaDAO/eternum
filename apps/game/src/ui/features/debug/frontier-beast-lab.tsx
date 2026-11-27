@@ -21,6 +21,7 @@ import {
   FALLEN_REALM_RUIN_PATH,
   largestBeastScale,
 } from "@/three/structures/frontier-beast";
+import { RUIN_VARIANT_COUNT, ruinKitPath, type RuinVariant } from "@/three/structures/ruin-kit";
 import { RiftModelPath } from "@/three/constants/scene-constants";
 import { Token } from "@/three/map-plates/map-plate-token";
 import { Plate } from "@/three/map-plates/map-plates";
@@ -77,10 +78,10 @@ const FIXED_LINEUPS: Readonly<Record<string, readonly LineupAsset[]>> = {
     label: `${beast.name} · ${LAYER_NAMES[beast.layer]} ${beast.family}`,
     parts: [{ path: FRONTIER_BEASTS[beastModel(beast)].path, scale: beast.scale }],
   })),
-  ruins: beastsOfFamily("ruin").map((beast) => ({
+  ruins: beastsOfFamily("ruin").map((beast, index) => ({
     label: `${beast.name} · ${LAYER_NAMES[beast.layer]}`,
     parts: [
-      { path: FALLEN_REALM_RUIN_PATH, scale: 1 },
+      { path: ruinKitPath((index % RUIN_VARIANT_COUNT) as RuinVariant), scale: 1 },
       { path: FRONTIER_BEASTS[beastModel(beast)].path, scale: beast.scale },
     ],
   })),

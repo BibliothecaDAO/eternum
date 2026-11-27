@@ -1,8 +1,9 @@
 # Outpost sources
 
-Five Blender 5.2.1 files hold the camp, Canvas & Thatch village, shrine, well and ruin. Textures are packed into each
-source. `OUTPOST_EDITABLE` retains separate construction meshes and is hidden to prevent double rendering.
-`OUTPOST_PRODUCTION` holds the consolidated static presentation. Export reads the saved source without regenerating it.
+Four Blender 5.2.1 files hold the camp, Canvas & Thatch village, shrine and well. Textures are packed into each source.
+Fallen realm ruins are built procedurally at runtime in `apps/game/src/three/structures/ruin-kit.ts`. `OUTPOST_EDITABLE`
+retains separate construction meshes and is hidden to prevent double rendering. `OUTPOST_PRODUCTION` holds the
+consolidated static presentation. Export reads the saved source without regenerating it.
 
 Camp uses a tensioned canvas ridge, timber stockade and supply stores, with a standard separated from the canvas. The
 village combines two thatched limewash cottages, a canvas shelter and a small tent around an open hearth yard. The
@@ -30,7 +31,6 @@ verifier checks decoded Draco positions with a 0.001 tolerance. Production trans
 | village-canvas-thatch.blend | village.glb  |      6149 |          3 | 213200 |
 | shrine.blend                | shrine.glb   |      1816 |          3 |  73524 |
 | well.blend                  | well.glb     |      5068 |          3 | 103684 |
-| ruin.blend                  | ruin.glb     |      2908 |          2 |  92208 |
 
 These are exact delivered asset counts, not frame measurements. The small-landmark ceiling is 6296 triangles, five
 primitives and 257144 bytes, based on the existing well/ruin family.
@@ -46,14 +46,14 @@ export OUTPOST_BUILD_DIR=/absolute/path/outside/the/checkout
 bash apps/game/scripts/outposts/rebuild-outposts.sh "$OUTPOST_BUILD_DIR"
 ```
 
-The wrapper accepts optional runtime names after the directory: `camp village shrine well ruin`. It exports fresh raw
+The wrapper accepts optional runtime names after the directory: `camp village shrine well`. It exports fresh raw
 geometry, compresses UASTC normals (level 2, RDO 0.5, Zstd 18), ETC1S color (quality 180) and Draco edgebreaker, then
 verifies each result. Texture workers are limited to two. Compressed files are in `$OUTPOST_BUILD_DIR/models`, already
 named for runtime. Logs, raw exports and verifier JSON remain beside them. Repeating the command rebuilds the same
 outputs from the packed sources.
 
 After reviewing a rebuilt model, replace its matching file under `public/models/outposts`. Run
-`pnpm --dir apps/game verify:assets scripts/outposts/outpost-assets.test.mjs` to verify all five delivered assets.
+`pnpm --dir apps/game verify:assets scripts/outposts/outpost-assets.test.mjs` to verify all four delivered assets.
 `pnpm --dir apps/game verify:outposts /absolute/model.glb` verifies one compressed file without changing it. The
 verifier checks footprint, contact height, tint and UV attributes, transforms, animation absence, texture formats,
 triangles, primitives, payload and separate ownership cloth.
@@ -61,10 +61,10 @@ triangles, primitives, payload and separate ownership cloth.
 The runtime lab's visible placement and ownership controls provide the model proof described in
 [FEATURE-MAP.md](../../FEATURE-MAP.md). The lab is part of the client; no separate comparison viewer is required.
 
-The ruin has an open court and widened perimeter masonry. Jagged cracks open through the masonry. The violet residue
-geometry has been removed; animated ground mist now belongs to the runtime ruin model. The exposed rafter faces outward.
-Beast meshes, their shared origin and the four runtime scales remain unchanged;
-`pnpm --dir apps/game verify:fallen-realm` verifies zero triangle contacts at each scale.
+Fallen realm ruins are built procedurally at runtime in `apps/game/src/three/structures/ruin-kit.ts` with runtime ground
+mist. Beast meshes, their shared origin and the four runtime scales remain unchanged;
+`pnpm --dir apps/game verify:fallen-realm` verifies zero triangle contacts across all procedural ruin variants at each
+scale.
 
 ## Canvas & Thatch village
 
@@ -97,9 +97,3 @@ Normal exports read the packed source. To intentionally rebuild the source from 
 with `--background --python apps/game/scripts/outposts/author-village.py` from the repository root, then use the export
 wrapper above. This replaces later manual source edits. The former village B source and builder path are removed;
 earlier village studies remain in review evidence and repository history.
-
-The beast courtyard refinement removes the loose central stones and widens the surviving wall plan by 18%, bounded
-inside a 0.85 hex apothem. Beast scales and wall heights are unchanged. `scripts/outposts/widen-ruin-courtyard.py`
-applies that source edit from the prior packed ruin to a separate output source; normal delivery rebuilds read the
-committed `ruin.blend` through the existing exporter. The read-only `verify:fallen-realm` gate checks decoded
-deliveries.

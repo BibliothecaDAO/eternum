@@ -11,6 +11,7 @@ import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset
 import { buildingModelPaths, BUILDINGS_GROUPS, getStructureModelPaths } from "@/three/constants/scene-constants";
 import { resolveBuildingModelSelection } from "@/three/scenes/hexception-building-model";
 import { frontierPaintedBuildingPath, frontierPaintedPath } from "@/three/structures/frontier-painted-buildings";
+import { FALLEN_REALM_RUIN_PATH } from "@/three/structures/frontier-beast";
 import { aspectWonderKitPath } from "@/three/structures/realm-kit";
 
 it("gives every Frontier building its own distinct model without changing other modes", () => {
@@ -60,13 +61,11 @@ it("gives every Frontier building its own distinct model without changing other 
   for (const group of [BUILDINGS_GROUPS.REALMS, BUILDINGS_GROUPS.VILLAGE]) {
     expect(frontier.buildingModelPaths[group]).toEqual(buildingModelPaths()[group]);
   }
-  expect(frontier.structureModelPaths[StructureType.Ruin].slice(1)).toEqual(
-    getStructureModelPaths()[StructureType.Ruin].slice(1),
-  );
+  expect(frontier.structureModelPaths[StructureType.Ruin]).toEqual(getStructureModelPaths()[StructureType.Ruin]);
   expect(frontier.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][BuildingType.ResourceEssence]).toBe(
     frontierPaintedPath("essence-rift"),
   );
-  expect(frontier.structureModelPaths[StructureType.Ruin][0]).toBe(frontierPaintedPath("fallen-realm-ruin"));
+  expect(frontier.structureModelPaths[StructureType.Ruin][0]).toBe(FALLEN_REALM_RUIN_PATH);
 });
 
 it("selects all five painted tiers while keeping Storeroom on its own model and retaining Blitz tier policy", () => {

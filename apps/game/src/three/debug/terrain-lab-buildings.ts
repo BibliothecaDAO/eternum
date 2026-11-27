@@ -7,6 +7,7 @@ import {
 import { FALLEN_REALM_RUIN_PATH, FRONTIER_BEAST_PATHS } from "../structures/frontier-beast";
 import { StructureType } from "@bibliothecadao/types";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
+import { isRuinKitPath } from "../structures/ruin-kit";
 import { modelPath } from "../utils/model-url";
 
 export interface TerrainLabBuilding {
@@ -53,9 +54,11 @@ export const TERRAIN_LAB_BUILDINGS = [
     label:
       path === HYPERSTRUCTURE_MODEL_PATH
         ? "Hyperstructure · Procedural tower"
-        : (REALM_ASSETS.find((asset) => asset.path === path)?.label ??
-          BUILDING_LABELS[filename] ??
-          filename.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase())),
+        : isRuinKitPath(path)
+          ? BUILDING_LABELS.ruin
+          : (REALM_ASSETS.find((asset) => asset.path === path)?.label ??
+            BUILDING_LABELS[filename] ??
+            filename.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase())),
   };
 });
 

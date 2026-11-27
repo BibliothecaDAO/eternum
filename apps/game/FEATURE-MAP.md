@@ -642,19 +642,22 @@ once used. A Well refills the army's stamina by its share of the maximum (more w
 With the local client running, open `/lab/terrain?evidence=/absolute/capture/directory` and run
 `scripts/outposts/prove-runtime.playwright.js` through the browser connection with the page as its argument (remove the
 trailing statement semicolon when supplying it as an expression). The directory must exist. It drives the visible
-controls, checks delivered model responses, captures the six models on grassland and a tropical-coast transition, and
-checks red/green ownership on camp, village and beasts. Save its returned verification JSON beside the 15 captures. Each
-capture blanks its page immediately. Stop the client afterward and retain the evidence.
+controls, checks delivered model responses, captures the four shipped outpost models (`camp`, `village`, `shrine`,
+`well`) on grassland and a tropical-coast transition, and checks red/green ownership on camp and village. Save its
+returned verification JSON beside the 10 captures. Each capture blanks its page immediately. Stop the client afterward
+and retain the evidence.
 
 Asset gates: `pnpm --dir apps/game verify:assets scripts/outposts/outpost-assets.test.mjs`. For live inspection, open
 `/g/<chainId>/<gameId>?spectate=true`, press Map, then select a discovered site's tile. Available examples depend on the
 watched player's revealed tiles. Spectators can inspect selection and presentation; capture and single-use rewards need
 an eligible player. The lab proof does not establish those live actions.
 
-- Ruin: Frontier Map → a discovered fallen realm; its beast still follows the same depth table. In `/lab/terrain`,
-  choose **Ruin · Fallen realm** and place it on the selected tile. Add `&asset=ruin` to the runtime proof URL to
-  capture only the ruin on grassland and the tropical-coast transition. The collision gate covers its four runtime
-  beasts.
+- Ruin: Frontier Map → a discovered fallen realm; its beast still follows the same depth table. Ruins are built
+  procedurally at runtime in `src/three/structures/ruin-kit.ts` as four deterministic per-hex variants
+  (`procedural:ruin:0..3`) sharing `ProcgenMasonryNodeMaterial` and runtime ground mist. In `/lab/terrain`, choose
+  **Ruin · Fallen realm** and place it on the selected tile, or open `/lab/models?family=beasts&group=ruins` to inspect
+  seeded variants alongside their layer beasts. The `verify:fallen-realm` collision gate checks zero masonry contact
+  across all four procedural variants and four runtime beasts.
 
 ### Blitz rules a player meets
 
@@ -887,10 +890,10 @@ they face the camera, as realm models do in the game. A Farm's sails turn.
 In a Frontier game a player meets the set here (the paths are chosen in `src/config/game-modes/index.ts`,
 `src/three/scenes/hexception-building-model.ts` and `src/three/managers/map-site-manager.ts`): on the realm board
 (Realm), the Farm, Workshop and Barracks at their tier, the four training buildings and the Essence rift; on the world
-map, each Shrine, Well, Essence rift and fallen realm's ruin. The realm castles and the camp are drawn only in the lab.
-The board and the placement preview keep any part with a `poleAxis` at its authored heading
-(`src/three/structures/held-heading.ts`), as `InstancedModel` does. `pnpm --dir apps/game verify:painted-buildings`
-checks the deliveries (`public/models/frontier/painted/SOURCE.md`).
+map, each Shrine, Well and Essence rift (fallen realm ruins use the procedural `ruin-kit.ts` variants across all modes).
+The realm castles and the camp are drawn only in the lab. The board and the placement preview keep any part with a
+`poleAxis` at its authored heading (`src/three/structures/held-heading.ts`), as `InstancedModel` does.
+`pnpm --dir apps/game verify:painted-buildings` checks the deliveries (`public/models/frontier/painted/SOURCE.md`).
 
 ## Frontier day end
 

@@ -209,7 +209,6 @@ function frontierStructureModels() {
   const paths = getStructureModelPaths();
   paths[StructureType.Camp] = [FRONTIER_CAMP_MODEL_PATH, ...paths[StructureType.Camp].slice(1)];
   paths[StructureType.Rift] = [frontierPaintedPath("essence-rift"), ...paths[StructureType.Rift].slice(1)];
-  paths[StructureType.Ruin] = [frontierPaintedPath("fallen-realm-ruin"), ...paths[StructureType.Ruin].slice(1)];
   return paths;
 }
 const GAME_MODE_CONFIGS: Record<GameModeId, GameModeConfig> = {

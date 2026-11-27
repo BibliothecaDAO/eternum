@@ -18,6 +18,7 @@ import {
 import { HyperstructureModel } from "../structures/hyperstructure-model";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
 import { isProceduralRealmKitPath, resolveProceduralRealmKit } from "../structures/realm-kit";
+import { isRuinKitPath, resolveProceduralRuinKit } from "../structures/ruin-kit";
 import { SpireModel } from "../structures/spire-model";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import type { WeatherState } from "@/three/managers/weather-manager";
@@ -128,7 +129,10 @@ export class TerrainLabInteraction {
     this.hover.update(delta);
     for (const [key, model] of this.models) {
       if (
-        (key.startsWith("/") || key === HYPERSTRUCTURE_MODEL_PATH || isProceduralRealmKitPath(key)) &&
+        (key.startsWith("/") ||
+          key === HYPERSTRUCTURE_MODEL_PATH ||
+          isProceduralRealmKitPath(key) ||
+          isRuinKitPath(key)) &&
         model.group.visible
       ) {
         if (model instanceof RewardTileModel) model.updatePresentation(0);
@@ -333,7 +337,13 @@ export class TerrainLabInteraction {
       counts.set(building.path, index + 1);
     }
     for (const [path, model] of this.models) {
-      if (!path.startsWith("/") && path !== HYPERSTRUCTURE_MODEL_PATH && !isProceduralRealmKitPath(path)) continue;
+      if (
+        !path.startsWith("/") &&
+        path !== HYPERSTRUCTURE_MODEL_PATH &&
+        !isProceduralRealmKitPath(path) &&
+        !isRuinKitPath(path)
+      )
+        continue;
       const count = counts.get(path) ?? 0;
       model.setCount(count);
       model.group.visible = count > 0;
@@ -368,7 +378,7 @@ export class TerrainLabInteraction {
     const gltf =
       path === HYPERSTRUCTURE_MODEL_PATH
         ? null
-        : (resolveProceduralRealmKit(path) ?? (await gltfLoader.loadAsync(path)));
+        : (resolveProceduralRuinKit(path) ?? resolveProceduralRealmKit(path) ?? (await gltfLoader.loadAsync(path)));
     if (this.disposed) return null;
     const model = gltf ? this.createPreviewModel(gltf, path, capacity, name) : new HyperstructureModel(capacity);
     let retained = false;

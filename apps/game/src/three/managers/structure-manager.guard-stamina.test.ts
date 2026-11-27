@@ -19,7 +19,9 @@ import {
   SUPPLY_POST_STANDARD,
   frontierBeastModelIndex,
   frontierSiteComposition,
+  ruinVariantModelIndex,
 } from "../structures/frontier-beast";
+import { ruinVariantForHex } from "../structures/ruin-kit";
 import { SettlementModel } from "../structures/settlement-model";
 import { StructureManager } from "./structure-manager";
 import { campBeside, SITE, SITE_TILE } from "@/ui/features/frontier/sites/site-fixture";
@@ -269,6 +271,28 @@ describe("Frontier camp and supply post models", () => {
     });
     expect(manager.dummy.position.toArray()).toEqual([0, 0, 0]);
     expect(manager.dummy.scale.toArray()).toEqual([1, 1, 1]);
+  });
+
+  it("selects a deterministic seeded ruin variant per hex and preserves it after clearing", () => {
+    const manager = bindManager(new Map());
+    const coords = { col: 14, row: -9 };
+    const expectedIndex = ruinVariantModelIndex(ruinVariantForHex(coords.col, coords.row));
+    const guarded = {
+      entityId: SITE,
+      structureName: "Fallen Hold",
+      hexCoords: coords,
+      stage: 0,
+      level: 0,
+      isMine: false,
+      isAlly: false,
+      owner: { address: 0n, ownerName: "", guildName: "" },
+      structureType: StructureType.Ruin,
+      hasWonder: false,
+      frontierBeast: { beast: "wyvern" as const, name: "Wyvern", scale: 1.15, idle: { motion: "breath" as const } },
+    };
+    const cleared = { ...guarded, frontierBeast: undefined };
+    expect(manager.getStructureModelIndices(guarded)).toEqual([expectedIndex, frontierBeastModelIndex("wyvern")]);
+    expect(manager.getStructureModelIndices(cleared)).toEqual([expectedIndex]);
   });
 
   it("draws a supply post from its tile's occupier with the clearing Aspect's standard beside it", () => {

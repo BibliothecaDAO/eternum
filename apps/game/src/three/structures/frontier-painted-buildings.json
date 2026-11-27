@@ -184,14 +184,6 @@
     "atlasSize": 512
   },
   {
-    "id": "fallen-realm-ruin",
-    "label": "Fallen realm",
-    "group": "sites",
-    "path": "/models/frontier/painted/fallen-realm-ruin.glb",
-    "architectureTriangles": 5000,
-    "atlasSize": 512
-  },
-  {
     "id": "shrine",
     "label": "Shrine",
     "group": "sites",

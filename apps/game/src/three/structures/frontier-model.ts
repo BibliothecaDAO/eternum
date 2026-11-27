@@ -39,8 +39,8 @@ import { mapAnimationTime as time } from "../effects/endgame/state";
 import { DEEP_PALETTE } from "../terrain/deep-floor-material";
 import { createInstancedMeshWithSharedMatrices } from "../utils/create-instanced-mesh";
 import { MaterialPool } from "../utils/material-pool";
-import { FALLEN_REALM_RUIN_PATH, FRONTIER_BEASTS, type FrontierSpecies } from "./frontier-beast";
-import { frontierPaintedPath } from "./frontier-painted-buildings";
+import { FRONTIER_BEASTS, type FrontierSpecies } from "./frontier-beast";
+import { isRuinKitPath } from "./ruin-kit";
 
 export type BeastLayer = 0 | 1 | 2 | 3;
 
@@ -64,7 +64,7 @@ const BEAST_LAYER_RAMPS = {
 const EMBER_QUADS = 10;
 
 export function frontierModelKind(path: string) {
-  if (path === FALLEN_REALM_RUIN_PATH || path === frontierPaintedPath("fallen-realm-ruin")) return "ruin";
+  if (isRuinKitPath(path)) return "ruin";
   return (Object.keys(FRONTIER_BEASTS) as FrontierSpecies[]).find((species) => FRONTIER_BEASTS[species].path === path);
 }
 

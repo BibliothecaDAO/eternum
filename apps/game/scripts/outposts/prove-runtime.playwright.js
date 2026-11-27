@@ -2,11 +2,9 @@ async (page) => {
   const entry = new URL(page.url());
   const output = entry.searchParams.get("evidence");
   if (!output?.startsWith("/")) throw new Error("Provide ?evidence=/absolute/capture/directory on the lab URL");
-  const assets = entry.searchParams.get("asset")
-    ? [entry.searchParams.get("asset")]
-    : ["camp", "village", "shrine", "well", "ruin"];
-  if (assets.some((asset) => !["camp", "village", "shrine", "well", "ruin"].includes(asset)))
-    throw new Error("Unknown outpost");
+  const validAssets = ["camp", "village", "shrine", "well"];
+  const assets = entry.searchParams.get("asset") ? [entry.searchParams.get("asset")] : validAssets;
+  if (assets.some((asset) => !validAssets.includes(asset))) throw new Error("Unknown outpost");
   const captures = [];
   const errors = [];
   const onError = (error) => errors.push(error.message);

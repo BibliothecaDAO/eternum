@@ -4,6 +4,7 @@ import { FrontierModel, frontierModelKind, type BeastLayer } from "../structures
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
 import { resolveProceduralRealmKit } from "../structures/realm-kit";
+import { resolveProceduralRuinKit, ruinVariantForHex } from "../structures/ruin-kit";
 import { MineKinds, orderAspect, structureName, troopTierIndex } from "@bibliothecadao/types";
 import {
   configManager,
@@ -15,12 +16,14 @@ import {
   type SiteKind,
 } from "@bibliothecadao/eternum";
 import {
+  FALLEN_REALM_VARIANT_MODEL_INDICES,
   SITE_LANDMARK_MODEL_INDEX,
   SUPPLY_POST_MODEL_INDEX,
   SUPPLY_POST_STANDARD,
   frontierBeastModelIndex,
   frontierSiteComposition,
   readStandingFrontierBeast,
+  ruinVariantModelIndex,
 } from "../structures/frontier-beast";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
@@ -965,8 +968,13 @@ export class StructureManager {
         structureType === StructureType.Rift ||
         Boolean(basePath && frontierModelKind(basePath));
       if (!Number.isFinite(structureType) || !basePath || !isExploreShell) continue;
-      if (this.structureModels.get(structureType)?.has(0)) continue;
-      await this.ensureStructureModel(structureType, 0);
+      const indices =
+        structureType === StructureType.Ruin ? FALLEN_REALM_VARIANT_MODEL_INDICES : [SITE_LANDMARK_MODEL_INDEX];
+      for (const index of indices) {
+        if (this.isDestroyed) return;
+        if (this.structureModels.get(structureType)?.has(index)) continue;
+        await this.ensureStructureModel(structureType, index);
+      }
     }
   }
 
@@ -1006,7 +1014,10 @@ export class StructureManager {
   private async loadStructureModel(structureType: StructureType, modelPath: string): Promise<StructureModel> {
     if (structureType === StructureType.Hyperstructure) return new HyperstructureModel(STRUCTURE_INSTANCE_CAPACITY);
     const startedAt = performance.now();
-    const gltf = resolveProceduralRealmKit(modelPath) ?? (await gltfLoader.loadAsync(modelPath));
+    const gltf =
+      resolveProceduralRuinKit(modelPath) ??
+      resolveProceduralRealmKit(modelPath) ??
+      (await gltfLoader.loadAsync(modelPath));
     recordWorldmapRenderDuration("structureModelLoadMs", performance.now() - startedAt);
     recordGameEntryDuration(`structure-model-load:${modelPath}`, performance.now() - startedAt);
     const model = this.createStructureModel(gltf, structureType, modelPath);
@@ -1326,7 +1337,7 @@ export class StructureManager {
     if (!structure.frontierBeast) return this.getModelForStructure(structure)?.height ?? 0;
     const models = this.structureModels.get(structure.structureType);
     const composition = frontierSiteComposition(structure.structureType);
-    const landmark = (models?.get(0)?.height ?? 0) * composition.baseScale;
+    const landmark = (models?.get(this.getBaseStructureModelIndex(structure))?.height ?? 0) * composition.baseScale;
     const guard =
       (models?.get(frontierBeastModelIndex(structure.frontierBeast.beast))?.height ?? 0) *
       structure.frontierBeast.scale;
@@ -1343,6 +1354,9 @@ export class StructureManager {
 
   private getBaseStructureModelIndex(structure: StructureInfo): number {
     if (structure.supplyPost) return SUPPLY_POST_MODEL_INDEX;
+    if (structure.structureType === StructureType.Ruin) {
+      return ruinVariantModelIndex(ruinVariantForHex(structure.hexCoords.col, structure.hexCoords.row));
+    }
     if (structure.frontierBeast)
       return frontierSiteComposition(structure.structureType).baseScale === 0
         ? frontierBeastModelIndex(structure.frontierBeast.beast)
