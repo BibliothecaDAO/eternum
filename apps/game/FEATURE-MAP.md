@@ -639,15 +639,10 @@ once used. A Well refills the army's stamina by its share of the maximum (more w
 **Swear an Oath** for that army. An army further off gets **Move** with its cost. Lab: `/lab/game?scenario=map-sites`;
 `pnpm --dir apps/game playtest --steps lab-map-sites` uses the Well, then the Shrine.
 
-With the local client running, open `/lab/terrain?evidence=/absolute/capture/directory` and run
-`scripts/outposts/prove-runtime.playwright.js` through the browser connection with the page as its argument (remove the
-trailing statement semicolon when supplying it as an expression). The directory must exist. It drives the visible
-controls, checks delivered model responses, captures the four shipped outpost models (`camp`, `village`, `shrine`,
-`well`) on grassland and a tropical-coast transition, and checks red/green ownership on camp and village. Save its
-returned verification JSON beside the 10 captures. Each capture blanks its page immediately. Stop the client afterward
-and retain the evidence.
-
-Asset gates: `pnpm --dir apps/game verify:assets scripts/outposts/outpost-assets.test.mjs`. For live inspection, open
+Camp, village, and the cleared-site standard are built procedurally at runtime in `src/three/structures/outpost-kit.ts`
+(`procedural:outpost:*`, with `SettlementModel` red/green ownership heraldry verified in
+`src/three/structures/outpost-kit.test.ts`), and shrines and wells are built procedurally in
+`src/three/structures/well-shrine-kit.ts` (`src/three/structures/well-shrine-kit.test.ts`). For live inspection, open
 `/g/<chainId>/<gameId>?spectate=true`, press Map, then select a discovered site's tile. Available examples depend on the
 watched player's revealed tiles. Spectators can inspect selection and presentation; capture and single-use rewards need
 an eligible player. The lab proof does not establish those live actions.

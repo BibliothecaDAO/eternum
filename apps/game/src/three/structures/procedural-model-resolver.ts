@@ -1,4 +1,5 @@
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
+import { isProceduralOutpostKitPath, resolveProceduralOutpostKit } from "./outpost-kit";
 import { isRealmBuildingKitPath, resolveRealmBuildingKit } from "./realm-building-kit";
 import { isProceduralRealmKitPath, resolveProceduralRealmKit } from "./realm-kit";
 import { isRealmSupportKitPath, resolveProceduralRealmSupportKit } from "./realm-support-kit";
@@ -11,7 +12,8 @@ export function isProceduralModelPath(path: string): boolean {
     isRuinKitPath(path) ||
     isRealmBuildingKitPath(path) ||
     isRealmSupportKitPath(path) ||
-    isWellShrineKitPath(path)
+    isWellShrineKitPath(path) ||
+    isProceduralOutpostKitPath(path)
   );
 }
 
@@ -21,6 +23,7 @@ export function resolveProceduralModel(path: string): GLTF | null {
     resolveProceduralRealmKit(path) ??
     resolveRealmBuildingKit(path) ??
     resolveProceduralRealmSupportKit(path) ??
-    resolveProceduralWellShrineKit(path)
+    resolveProceduralWellShrineKit(path) ??
+    resolveProceduralOutpostKit(path)
   );
 }

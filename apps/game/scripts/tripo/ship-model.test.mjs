@@ -20,7 +20,7 @@ import {
 import { MODEL_BUDGETS, assertDeliveredAsset, readHexFit, shipTripoModel } from "./ship-model.mjs";
 
 const CLI = fileURLToPath(new URL("./ship-model.mjs", import.meta.url));
-const SAMPLE_KTX2_MODEL = fileURLToPath(new URL("../../public/models/outposts/camp.glb", import.meta.url));
+const SAMPLE_KTX2_MODEL = fileURLToPath(new URL("../../public/models/frontier/beast-wyvern.glb", import.meta.url));
 const createdDirs = [];
 
 afterEach(() => {
@@ -61,7 +61,7 @@ async function extractKtx2Sample() {
     .getRoot()
     .listTextures()
     .find((entry) => entry.getMimeType() === "image/ktx2");
-  if (!texture) throw new Error("Expected a KTX2 texture in camp.glb");
+  if (!texture) throw new Error("Expected a KTX2 texture in beast-wyvern.glb");
   return Buffer.from(texture.getImage());
 }
 

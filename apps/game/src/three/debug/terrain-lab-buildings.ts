@@ -7,6 +7,7 @@ import {
 import { FALLEN_REALM_RUIN_PATH, FRONTIER_BEAST_PATHS } from "../structures/frontier-beast";
 import { StructureType } from "@bibliothecadao/types";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
+import { parseOutpostKitPath } from "../structures/outpost-kit";
 import { isRuinKitPath } from "../structures/ruin-kit";
 import { SHRINE_SITE_MODEL_PATH, WELL_SITE_MODEL_PATH } from "../structures/well-shrine-kit";
 
@@ -45,10 +46,12 @@ export const TERRAIN_LAB_BUILDINGS = [
     SPIRE_MODEL_PATH,
   ]),
 ].map((path) => {
-  const filename = path
-    .split("/")
-    .at(-1)!
-    .replace(/\.glb$/, "");
+  const filename =
+    parseOutpostKitPath(path) ??
+    path
+      .split("/")
+      .at(-1)!
+      .replace(/\.glb$/, "");
   return {
     path,
     label:

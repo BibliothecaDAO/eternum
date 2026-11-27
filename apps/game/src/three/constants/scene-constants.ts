@@ -1,4 +1,5 @@
 import { FRONTIER_PAINTED_REALMS, frontierPaintedBuildingPath } from "../structures/frontier-painted-buildings";
+import { isProceduralOutpostKitPath, OUTPOST_PATHS } from "../structures/outpost-kit";
 import { REALM_PATHS } from "../structures/realm-design";
 import { StructureProgress } from "@bibliothecadao/eternum";
 import {
@@ -53,9 +54,9 @@ enum BuildingFilenames {
 export const RiftModelPath = modelPath("reward-tiles/rift.glb");
 const RIFT_MODEL_PATH = RiftModelPath;
 
-export const VILLAGE_MODEL_PATH = modelPath("outposts/village.glb");
-export const SUPPLY_POST_STANDARD_MODEL_PATH = modelPath("outposts/cleared-standard.glb");
-export const CAMP_MODEL_PATH = modelPath("outposts/camp.glb");
+export const VILLAGE_MODEL_PATH: string = OUTPOST_PATHS.village;
+export const SUPPLY_POST_STANDARD_MODEL_PATH: string = OUTPOST_PATHS["cleared-standard"];
+export const CAMP_MODEL_PATH: string = OUTPOST_PATHS.camp;
 export const REALM_MODEL_PATHS = {
   [RealmLevelNames.Settlement]: REALM_PATHS[0],
   [RealmLevelNames.City]: REALM_PATHS[1],
@@ -68,9 +69,7 @@ export function isRealmModelPath(path: string): boolean {
 }
 
 export function isSettlementModelPath(path: string): boolean {
-  return (
-    [VILLAGE_MODEL_PATH, CAMP_MODEL_PATH, SUPPLY_POST_STANDARD_MODEL_PATH].includes(path) || isRealmModelPath(path)
-  );
+  return isProceduralOutpostKitPath(path) || isRealmModelPath(path);
 }
 
 export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths([
