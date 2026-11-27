@@ -1,6 +1,5 @@
 """Export the approved packed realm sources with their geometry and heraldry contracts."""
 import argparse
-import hashlib
 import importlib.util
 import json
 import math
@@ -12,8 +11,7 @@ import bpy
 from mathutils import Matrix, Vector
 
 APP = Path(__file__).resolve().parents[2]
-CANVAS_SOURCE = APP / 'asset-sources/outposts/village-canvas-thatch.blend'
-SOURCES = {*((APP / 'asset-sources/realms').rglob('*.blend')), CANVAS_SOURCE}
+SOURCES = set((APP / 'asset-sources/realms').rglob('*.blend'))
 
 TIERS = json.loads((Path(__file__).parent / 'citadel-tiers.json').read_text())
 
@@ -23,37 +21,11 @@ def tier_contract():
 
 
 def validate_age(objects):
-    if bpy.context.scene.get('realmDirection') == 'canvas-thatch':
-        return validate_canvas_source(objects)
     option = 'realmDirection' in bpy.context.scene
     spec = importlib.util.spec_from_file_location('validate_realm_ages', Path(__file__).with_name('validate-realm-options.py' if option else 'validate-realm-ages.py'))
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module.validate(objects) if option else module.validate_age(objects, tier_contract())
-
-
-def validate_canvas_source(objects):
-    painting = CANVAS_SOURCE.parent / bpy.context.scene['conceptPainting']
-    if hashlib.sha256(painting.read_bytes()).hexdigest() != bpy.context.scene['conceptSha256']:
-        raise ValueError('Preserve the approved Canvas & Thatch painting')
-    yard = []
-    for obj in objects:
-        marker = obj.data.attributes.get('_YARD_ARCHITECTURE')
-        if marker:
-            yard.extend(v.co for v, mark in zip(obj.data.vertices, marker.data) if mark.value > 0.5)
-    fence = json.loads((APP / 'scripts/outposts/village-yard.json').read_text())
-    inner_apothem = fence['fenceRadius'] * math.sqrt(3) / 2 - fence['postRadius']
-    if not yard:
-        raise ValueError('Preserve Canvas & Thatch yard architecture markers')
-    clearance = inner_apothem - max(v.x * math.cos(side * math.pi / 3) + v.y * math.sin(side * math.pi / 3)
-                                    for v in yard for side in range(6))
-    if clearance < fence['clearance']:
-        raise ValueError(f'Keep Canvas & Thatch architecture {fence["clearance"]} inside the fence; got {clearance}')
-    body = next(obj for obj in objects if obj.name.endswith(' / painted body'))
-    colors = [entry.color[0] for entry in body.data.color_attributes['Surface tint'].data]
-    if max(colors) - min(colors) < 0.05:
-        raise ValueError('Preserve the village vertex contact bake and painted tint')
-    return {'direction': 'canvas-thatch', 'fenceClearance': clearance}
 
 
 def production_meshes(crown):
@@ -405,15 +377,6 @@ def apply_wonder_design(objects, design):
 
 
 def export(output, design=None):
-    if Path(bpy.data.filepath).resolve() == CANVAS_SOURCE.resolve():
-        spec = importlib.util.spec_from_file_location('prepare_canvas_settlement', Path(__file__).with_name('prepare-canvas-settlement.py'))
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        module.prepare()
-        spec = importlib.util.spec_from_file_location('realm_doors', Path(__file__).with_name('revise-realm-doors.py'))
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        module.revise()
     objects = production_meshes(design['crown'] if design else None)
     if 'citadelTier' in bpy.context.scene:
         for obj in objects:

@@ -749,15 +749,16 @@ previously visited view; gameplay distance uses the actual camera position.
 
 ## Realm level icons
 
-`/lab/kit/icons#realm-levels` compares all four realm levels with the current GLB renders and the previous paintings.
-Use **Shipped / By level** to switch the portraits and hex badges, and **24 / 32 / 64 px** to inspect the delivered
-sizes. Each level shows all four ownership cues and its value badge.
+`/lab/kit/icons#realm-levels` compares all four realm levels with the current runtime procedural model renders and the
+previous paintings. Use **Shipped / By level** to switch the portraits and hex badges, and **24 / 32 / 64 px** to
+inspect the delivered sizes. Each level shows all four ownership cues and its value badge.
 `pnpm icons:prove <evidence-dir> https://127.0.0.1:<port> --catalog` drives those controls and decodes both HTML and SVG
 artwork at desktop and phone sizes.
 
 The production entity portrait and castle upgrade use `realmMeaning(level)`; the native minimap selects
 `realmMarkerMeaning(level)` in `minimap-markers.ts`. Category-only realm symbols remain generic. The four reference
-renders use the shipped GLBs named in `realm-model-references.json`, with source and render hashes.
+renders use the runtime procedural base realm kits named in `realm-model-references.json`, with source and render
+hashes.
 
 `/lab/kit/icons#hex-fill` compares the previous realm emblem inset with the production fill at the minimap's default
 19.6 px tile size and at 30 px, for every level and ownership cue. The fill follows each painting's silhouette; the rim,

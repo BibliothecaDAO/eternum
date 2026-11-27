@@ -3,19 +3,18 @@ import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset
 import { Euler, Group, Matrix4, Vector3, type Camera, type Scene } from "three";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
-import { BiomeTypeToId, TileOccupier, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeTypeToId, RealmLevels, TileOccupier, TroopTier, TroopType } from "@bibliothecadao/types";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { FELT_CENTER } from "@/ui/config";
 import {
   ProceduralArmyCharacterLayer,
   type ProceduralArmyCharacterPresentation,
 } from "@/three/characters/procedural-army-character-layer";
+import { createBaseRealmKit } from "@/three/structures/base-realm-kit";
 import { SettlementModel } from "@/three/structures/settlement-model";
 import { SpireManager } from "@/three/managers/spire-manager";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import type { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
-import { modelPath } from "@/three/utils/model-url";
-import { gltfLoader } from "@/three/utils/utils";
 import { advanceGameEnd, resetGameEnd, skipGameEnd } from "@/three/effects/endgame/state";
 import { setEndgameView } from "@/three/effects/endgame/field";
 import { endgameFrame } from "@/three/effects/endgame/sequence";
@@ -94,9 +93,10 @@ export class EndgameFixtureScene {
   async prepare(scene: Scene, terrain: ProceduralTerrain, camera: Camera, compile: PipelineCompiler): Promise<void> {
     resetGameEnd();
     advanceGameEnd(1, false, 0);
-    const asset = await gltfLoader.loadAsync(modelPath("realms/settlement.glb"));
+    const asset = createBaseRealmKit(RealmLevels.Settlement);
     this.realms = new SettlementModel(asset, this.fixture.realms.length, "realm");
     await this.realms.prepare();
+    await compile(this.realms.group, scene);
     scene.add(this.realms.group);
     this.terrain = terrain;
     this.placeRealms(this.fixture.realms);
