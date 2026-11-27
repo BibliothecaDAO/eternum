@@ -1,37 +1,5 @@
 [
   {
-    "id": "settlement",
-    "label": "Settlement",
-    "group": "realms",
-    "path": "/models/frontier/painted/settlement.glb",
-    "architectureTriangles": 8000,
-    "atlasSize": 1024
-  },
-  {
-    "id": "city",
-    "label": "City",
-    "group": "realms",
-    "path": "/models/frontier/painted/city.glb",
-    "architectureTriangles": 12000,
-    "atlasSize": 1024
-  },
-  {
-    "id": "kingdom",
-    "label": "Kingdom",
-    "group": "realms",
-    "path": "/models/frontier/painted/kingdom.glb",
-    "architectureTriangles": 16000,
-    "atlasSize": 1024
-  },
-  {
-    "id": "empire",
-    "label": "Empire",
-    "group": "realms",
-    "path": "/models/frontier/painted/empire.glb",
-    "architectureTriangles": 20000,
-    "atlasSize": 1024
-  },
-  {
     "id": "farm-1",
     "label": "Farm I",
     "group": "farm",

@@ -876,18 +876,18 @@ To regenerate only the Workshop thumbnail with the shared 85% fill normalizer:
 ## Frontier buildings — painted set
 
 Open `/lab/models?family=frontier-painted` (Art → Models → Frontier buildings · painted set). Set shows one group of the
-set at scale one on game terrain through `InstancedModel`: the realm castles, Farm, Workshop or Barracks at tiers I–V,
-the four training buildings, or the map sites. Compare puts the models the game draws today in a row behind (none yet
-for the Farm and Barracks at tiers IV and V). Focus and View (Detail) inspect one building closely; Turn steps through
-the board's six headings while each tier banner holds its heading, broadside to the camera. Realm castles do not turn:
-they face the camera, as realm models do in the game. A Farm's sails turn.
+set at scale one on game terrain through `InstancedModel`: Farm, Workshop or Barracks at tiers I–V, the four training
+buildings, or the map sites (realm castles live in `/lab/models?family=realms` through procedural `base-realm-kit.ts`).
+Compare puts the models the game draws today in a row behind (none yet for the Farm and Barracks at tiers IV and V).
+Focus and View (Detail) inspect one building closely; Turn steps through the board's six headings while each tier banner
+holds its heading, broadside to the camera. A Farm's sails turn.
 
 In a Frontier game a player meets the set here (the paths are chosen in `src/config/game-modes/index.ts`,
 `src/three/scenes/hexception-building-model.ts` and `src/three/managers/map-site-manager.ts`): on the realm board
 (Realm), the Farm, Workshop and Barracks at their tier, the four training buildings and the Essence rift; on the world
 map, each Shrine, Well and Essence rift (fallen realm ruins use the procedural `ruin-kit.ts` variants across all modes).
-The realm castles and the camp are drawn only in the lab. The board and the placement preview keep any part with a
-`poleAxis` at its authored heading (`src/three/structures/held-heading.ts`), as `InstancedModel` does.
+The camp is drawn only in the lab. The board and the placement preview keep any part with a `poleAxis` at its authored
+heading (`src/three/structures/held-heading.ts`), as `InstancedModel` does.
 `pnpm --dir apps/game verify:painted-buildings` checks the deliveries (`public/models/frontier/painted/SOURCE.md`).
 
 ## Frontier day end
