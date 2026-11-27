@@ -29,6 +29,7 @@ export const DEEP_GATE_HEIGHT = 1.34;
 export const DEEP_ARCHIVE_HEIGHT = 1.18;
 export const DEEP_CORE_HEIGHT = 1.08;
 export const DEEP_MINE_HEIGHT = 1.22;
+export const DEEP_ALTAR_HEIGHT = 1.04;
 
 interface KitPart {
   readonly geometry: BufferGeometry;
@@ -67,6 +68,16 @@ const AMBER_CRYSTAL = "#ff9e2c";
 const AMBER_EMISSIVE = "#e86a0c";
 const CYAN_CRYSTAL = "#4af0ff";
 const CYAN_EMISSIVE = "#14c8e6";
+
+const ALTAR_MAIN = "#3c3040";
+const ALTAR_EDGE = "#4f4054";
+const ALTAR_SHADE = "#271e2b";
+const ALTAR_IRON = "#52463a";
+const ALTAR_IRON_EDGE = "#6a5b4a";
+const BANE_CRIMSON = "#ff2e5c";
+const BANE_CRIMSON_EMISSIVE = "#e6154a";
+const BANE_VIOLET = "#5e36ba";
+const BANE_VIOLET_EMISSIVE = "#3f1c96";
 
 const PYLON_X = 0.42;
 const PYLON_BASE_W = 0.28;
@@ -259,6 +270,169 @@ function addMinePulleyAndBasket(masonryParts: KitPart[], amberParts: KitPart[], 
 
   addCrystalCluster(amberParts, -0.025, basketY + 0.04, 0.01, 0.55, 0.4, AMBER_CRYSTAL);
   addCrystalCluster(cyanParts, 0.045, basketY + 0.05, 0.035, 0.52, -0.5, CYAN_CRYSTAL);
+}
+
+export function createDeepAltarKit(): Pick<GLTF, "scene" | "animations"> {
+  const masonryParts: KitPart[] = [];
+  const crimsonParts: KitPart[] = [];
+  const violetParts: KitPart[] = [];
+  const socketParts: KitPart[] = [];
+
+  addAltarDais(masonryParts, crimsonParts, socketParts);
+  addAltarHorns(masonryParts, crimsonParts, socketParts);
+  addAltarBaneOrb(crimsonParts, violetParts);
+
+  const scene = new Group();
+  scene.name = "deep-altar-kit";
+  scene.add(
+    buildMasonryMesh(masonryParts, "deep_altar_masonry"),
+    buildCrystalMesh(crimsonParts, BANE_CRIMSON, BANE_CRIMSON_EMISSIVE, "deep_altar_crimson"),
+    buildCrystalMesh(violetParts, BANE_VIOLET, BANE_VIOLET_EMISSIVE, "deep_altar_violet"),
+    buildSocketGemMesh(socketParts, "deep_gem_altar"),
+  );
+  return { scene, animations: [] };
+}
+
+function addAltarDais(masonryParts: KitPart[], crimsonParts: KitPart[], socketParts: KitPart[]): void {
+  addHollowRing(masonryParts, 0, 0.105, 0.57, 0.33, 12, ALTAR_MAIN, Math.PI / 12);
+  addHollowRing(masonryParts, 0.095, 0.115, 0.556, 0.342, 12, ALTAR_EDGE, Math.PI / 12);
+
+  addHollowRing(crimsonParts, 0.105, 0.152, 0.534, 0.425, 12, BANE_CRIMSON, Math.PI / 12);
+
+  addHollowRing(masonryParts, 0.148, 0.238, 0.522, 0.32, 12, ALTAR_MAIN, Math.PI / 12);
+  addHollowRing(masonryParts, 0.232, 0.252, 0.506, 0.335, 12, ALTAR_EDGE, Math.PI / 12);
+
+  addHollowRing(masonryParts, 0.075, 0.165, 0.332, 0.232, 8, ALTAR_SHADE, Math.PI / 8);
+  addHollowRing(masonryParts, 0.115, 0.228, 0.246, 0.13, 8, ALTAR_EDGE, Math.PI / 8);
+  addHollowRing(masonryParts, 0.115, 0.168, 0.136, 0.096, 8, ALTAR_SHADE, Math.PI / 8);
+
+  const count = 6;
+  for (let i = 0; i < count; i++) {
+    const angle = (i * Math.PI * 2) / count + Math.PI / 6;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const yaw = -angle;
+
+    addRotatedBox(masonryParts, cos * 0.518, 0.13, sin * 0.518, 0.132, 0.26, 0.116, yaw, ALTAR_IRON);
+    addRotatedBox(masonryParts, cos * 0.54, 0.132, sin * 0.54, 0.096, 0.225, 0.094, yaw, ALTAR_IRON_EDGE);
+    addRotatedBox(socketParts, cos * 0.588, 0.138, sin * 0.588, 0.022, 0.068, 0.038, yaw, DEEP_PALETTE.gold);
+  }
+}
+
+function addAltarHorns(masonryParts: KitPart[], crimsonParts: KitPart[], socketParts: KitPart[]): void {
+  const count = 6;
+  const tilt = 0.26;
+  const baseRadius = 0.382;
+  const baseY = 0.175;
+  const hornLength = 0.875;
+
+  for (let i = 0; i < count; i++) {
+    const angle = (i * Math.PI * 2) / count + Math.PI / 6;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const yaw = -angle;
+
+    addAltarHorn(masonryParts, cos * baseRadius, baseY, sin * baseRadius, yaw, tilt, 0.148, 0.156, hornLength);
+
+    const collar = new BoxGeometry(0.168, 0.068, 0.176);
+    collar.translate(0, 0.195, 0);
+    collar.rotateZ(-tilt);
+    collar.rotateY(yaw);
+    collar.translate(cos * baseRadius, baseY, sin * baseRadius);
+    masonryParts.push({ geometry: collar, color: ALTAR_IRON });
+
+    const collarRim = new BoxGeometry(0.174, 0.018, 0.182);
+    collarRim.translate(0, 0.23, 0);
+    collarRim.rotateZ(-tilt);
+    collarRim.rotateY(yaw);
+    collarRim.translate(cos * baseRadius, baseY, sin * baseRadius);
+    masonryParts.push({ geometry: collarRim, color: ALTAR_IRON_EDGE });
+
+    const innerRune = new CylinderGeometry(0.008, 0.028, 0.38, 4);
+    innerRune.translate(-0.044, 0.48, 0);
+    innerRune.rotateZ(-tilt);
+    innerRune.rotateY(yaw);
+    innerRune.translate(cos * baseRadius, baseY, sin * baseRadius);
+    crimsonParts.push({ geometry: innerRune, color: BANE_CRIMSON });
+
+    const outerRune = new CylinderGeometry(0.006, 0.02, 0.28, 4);
+    outerRune.translate(0.046, 0.44, 0);
+    outerRune.rotateZ(-tilt);
+    outerRune.rotateY(yaw);
+    outerRune.translate(cos * baseRadius, baseY, sin * baseRadius);
+    crimsonParts.push({ geometry: outerRune, color: BANE_CRIMSON });
+
+    const collarGem = new CylinderGeometry(0.004, 0.026, 0.042, 4);
+    collarGem.rotateZ(Math.PI / 2);
+    collarGem.translate(-0.088, 0.195, 0);
+    collarGem.rotateZ(-tilt);
+    collarGem.rotateY(yaw);
+    collarGem.translate(cos * baseRadius, baseY, sin * baseRadius);
+    socketParts.push({ geometry: collarGem, color: DEEP_PALETTE.gold });
+  }
+}
+
+function addAltarHorn(
+  parts: KitPart[],
+  x: number,
+  y: number,
+  z: number,
+  yaw: number,
+  tilt: number,
+  baseW: number,
+  baseD: number,
+  length: number,
+): void {
+  const shaftH = length * 0.72;
+  const tipH = length - shaftH;
+  const topW = baseW * 0.44;
+  const topD = baseD * 0.46;
+
+  const shaft = createChamferedRectShape(baseW, baseD, 0.024);
+  const shaftGeo = new ExtrudeGeometry(shaft, { depth: shaftH, bevelEnabled: false });
+  shaftGeo.rotateX(-Math.PI / 2);
+  const pos = shaftGeo.getAttribute("position");
+  for (let index = 0; index < pos.count; index++) {
+    const py = pos.getY(index);
+    const t = Math.max(0, Math.min(1, py / shaftH));
+    const sx = 1 + (topW / baseW - 1) * t;
+    const sz = 1 + (topD / baseD - 1) * t;
+    pos.setXYZ(index, pos.getX(index) * sx, py, pos.getZ(index) * sz);
+  }
+  shaftGeo.rotateZ(-tilt);
+  shaftGeo.rotateY(yaw);
+  shaftGeo.translate(x, y, z);
+  shaftGeo.computeVertexNormals();
+  parts.push({ geometry: shaftGeo, color: ALTAR_MAIN });
+
+  const tip = new CylinderGeometry(0.006, Math.hypot(topW, topD) * 0.5, tipH, 4);
+  tip.rotateY(Math.PI / 4);
+  tip.translate(0, shaftH + tipH / 2, 0);
+  tip.rotateZ(-tilt);
+  tip.rotateY(yaw);
+  tip.translate(x, y, z);
+  parts.push({ geometry: tip, color: ALTAR_EDGE });
+}
+
+function addAltarBaneOrb(crimsonParts: KitPart[], violetParts: KitPart[]): void {
+  const orbY = 0.31;
+
+  const violetSphere = new IcosahedronGeometry(0.146, 0);
+  const violetGeo = violetSphere.index ? violetSphere.toNonIndexed() : violetSphere;
+  violetGeo.translate(0, orbY, 0);
+  violetGeo.computeVertexNormals();
+  if (violetGeo !== violetSphere) violetSphere.dispose();
+  violetParts.push({ geometry: violetGeo, color: BANE_VIOLET });
+
+  const crimsonSphere = new IcosahedronGeometry(0.143, 0);
+  const crimsonGeo = crimsonSphere.index ? crimsonSphere.toNonIndexed() : crimsonSphere;
+  crimsonGeo.rotateX(0.52);
+  crimsonGeo.rotateY(0.78);
+  crimsonGeo.rotateZ(0.35);
+  crimsonGeo.translate(0, orbY, 0);
+  crimsonGeo.computeVertexNormals();
+  if (crimsonGeo !== crimsonSphere) crimsonSphere.dispose();
+  crimsonParts.push({ geometry: crimsonGeo, color: BANE_CRIMSON });
 }
 
 function addMineCrystalVeins(amberParts: KitPart[], cyanParts: KitPart[]): void {

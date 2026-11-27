@@ -1,34 +1,16 @@
 import { ASPECT_HEX } from "@/tokens";
-import { BoxGeometry, Color, Group, type Material, Mesh, MeshStandardMaterial, PlaneGeometry } from "three";
+import { Color, type Material, MeshStandardMaterial, PlaneGeometry } from "three";
 import { describe, expect, it, vi } from "vitest";
-import { DEEP_EMPTY_GEM, DEEP_SITE_SOURCES, DeepLandmarkModel, loadDeepLandmark } from "./deep-landmarks";
+import { DEEP_EMPTY_GEM, DeepLandmarkModel, loadDeepLandmark } from "./deep-landmarks";
 import { isProcgenMasonryMaterial } from "./procgen-masonry-material";
 
-const { loadModel } = vi.hoisted(() => ({
-  loadModel: vi.fn(async () => {
-    const scene = new Group();
-    const body = new Mesh(new BoxGeometry(1, 1.2, 1), new MeshStandardMaterial({ name: "stone" }));
-    body.name = "archive_body";
-    const gem = new Mesh(new BoxGeometry(0.2, 0.2, 0.2), new MeshStandardMaterial({ name: "deep_gem_mat" }));
-    gem.name = "deep_gem";
-    scene.add(body, gem);
-    return { scene };
-  }),
-}));
-
-vi.mock("../utils/utils", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../utils/utils")>()),
-  gltfLoader: { loadAsync: loadModel },
-}));
 vi.mock("../utils/contact-shadow", () => ({
   getContactShadowResources: () => ({ geometry: new PlaneGeometry(1, 1), material: new MeshStandardMaterial() }),
 }));
 
 describe("deep landmark holder colours", () => {
-  it("builds procedural Hyperstructure archive without gltfLoader, lights held socket gems from the Aspect palette, dims dormant masonry, and still loads remaining GLB sites", async () => {
-    loadModel.mockClear();
+  it("builds all four procedural Deep sites without gltfLoader, lights held socket gems from the Aspect palette, and dims dormant masonry", async () => {
     const activeScene = await loadDeepLandmark("foundation", 1);
-    expect(loadModel).not.toHaveBeenCalled();
     const active = new DeepLandmarkModel(activeScene, 4, "Hyperstructure archive", 1);
     expect(active.instancedMeshes.some((mesh) => isProcgenMasonryMaterial(mesh.material as Material))).toBe(true);
     const glowMeshes = active.instancedMeshes.filter((mesh) => mesh.geometry.getAttribute("landmarkGlow"));
@@ -59,27 +41,25 @@ describe("deep landmark holder colours", () => {
     expect((dormantMasonry!.material as MeshStandardMaterial).color.r).toBeCloseTo(0.58, 2);
 
     const coreScene = await loadDeepLandmark("core", 1);
-    expect(loadModel).not.toHaveBeenCalled();
     const core = new DeepLandmarkModel(coreScene, 2, "Essence core", 1);
     expect(core.instancedMeshes.some((mesh) => isProcgenMasonryMaterial(mesh.material as Material))).toBe(true);
     expect(core.instancedMeshes.some((mesh) => mesh.geometry.getAttribute("landmarkGlow"))).toBe(true);
 
     const mineScene = await loadDeepLandmark("mine", 1);
-    expect(loadModel).not.toHaveBeenCalled();
     const mine = new DeepLandmarkModel(mineScene, 2, "Ethereal mine", 1);
     expect(mine.instancedMeshes.some((mesh) => isProcgenMasonryMaterial(mesh.material as Material))).toBe(true);
     expect(mine.instancedMeshes.some((mesh) => mesh.geometry.getAttribute("landmarkGlow"))).toBe(true);
 
-    const glbAltarScene = await loadDeepLandmark("altar", 1);
-    expect(loadModel).toHaveBeenCalledWith(DEEP_SITE_SOURCES.altar.glb);
-    const glbAltar = new DeepLandmarkModel(glbAltarScene, 2, "Bane altar", 1);
-    expect(glbAltar.instancedMeshes.some((mesh) => mesh.geometry.getAttribute("landmarkGlow"))).toBe(true);
+    const altarScene = await loadDeepLandmark("altar", 1);
+    const altar = new DeepLandmarkModel(altarScene, 2, "Bane altar", 1);
+    expect(altar.instancedMeshes.some((mesh) => isProcgenMasonryMaterial(mesh.material as Material))).toBe(true);
+    expect(altar.instancedMeshes.some((mesh) => mesh.geometry.getAttribute("landmarkGlow"))).toBe(true);
 
     active.dispose();
     active.dispose();
     dormant.dispose();
     core.dispose();
     mine.dispose();
-    glbAltar.dispose();
+    altar.dispose();
   });
 });

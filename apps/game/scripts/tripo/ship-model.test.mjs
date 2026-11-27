@@ -17,7 +17,6 @@ import {
   FRONTIER_PAINTED_BUILDINGS,
   frontierPaintedBuildingPath,
 } from "../../src/three/structures/frontier-painted-buildings";
-import { DEEP_SITE_GLB_PATHS } from "../../src/three/structures/deep-landmarks";
 import { MODEL_BUDGETS, assertDeliveredAsset, readHexFit, shipTripoModel } from "./ship-model.mjs";
 
 const CLI = fileURLToPath(new URL("./ship-model.mjs", import.meta.url));
@@ -231,9 +230,9 @@ describe("ship-model pipeline", () => {
     ).rejects.toThrow("leaves the unit pointy hex");
 
     const tooTallRaw = join(dir, "too-tall.glb");
-    await writeSyntheticGlb(tooTallRaw, { width: 0.5, depth: 0.5, height: MODEL_BUDGETS.deepBuilding.maxHeight + 0.2 });
+    await writeSyntheticGlb(tooTallRaw, { width: 0.5, depth: 0.5, height: MODEL_BUDGETS.wonder.maxHeight + 0.2 });
     await expect(
-      shipTripoModel({ input: tooTallRaw, fit, kind: "deepBuilding", out: join(dir, "out6.glb") }),
+      shipTripoModel({ input: tooTallRaw, fit, kind: "wonder", out: join(dir, "out6.glb") }),
     ).rejects.toThrow("exceeds height limit");
   });
 
@@ -350,17 +349,6 @@ describe("ship-model pipeline", () => {
     }
   });
 
-  it("keeps every remaining Tripo Deep building within its budget, grounded, <= 1.42 tall and inside the unit hex", async () => {
-    const io = await createReader();
-    const entries = DEEP_SITE_GLB_PATHS.map((publicPath) => ({ publicPath, kind: "deepBuilding" }));
-    expect(entries.length).toBe(1);
-
-    for (const { publicPath, kind } of entries) {
-      const modelPath = fileURLToPath(new URL(`../../public${publicPath}`, import.meta.url));
-      await assertDeliveredAsset(io, modelPath, kind, MODEL_BUDGETS[kind]);
-    }
-  });
-
   it("keeps one committed source.glb and fit.json pair under asset-sources/tripo for every shipped Tripo delivery", async () => {
     const io = await createReader();
     const paintedPaths = new Set(FRONTIER_PAINTED_BUILDINGS.map((entry) => entry.path));
@@ -384,7 +372,6 @@ describe("ship-model pipeline", () => {
     const expectedStems = [
       ...buildingPaths,
       ...troopPaths,
-      ...DEEP_SITE_GLB_PATHS,
       ...Object.values(FRONTIER_BEASTS).map((entry) => entry.path),
     ]
       .map((publicPath) => publicPath.replace(/^\/models\//, "").replace(/\.glb$/, ""))

@@ -106,7 +106,6 @@ import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { DeepLandmarkModel } from "../structures/deep-landmarks";
 import { ORDER_STANDARD_NAME, resolveOrderSignumCell } from "../structures/order-standard";
 import { FRONTIER_BEASTS } from "../structures/frontier-beast";
-import { DEEP_SITE_GLB_PATHS } from "../structures/deep-landmarks";
 import { DEEP_SITE_FACES, deepSitePlatePay } from "@/ui/features/frontier/deep/deep-site-faces";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { DEEP_WORDS, ownerAndAspect } from "@/ui/design-system/kit/words";
@@ -161,7 +160,7 @@ describe("the Deep's sites on the map", () => {
     );
     await vi.waitFor(() => expect(models.map(({ name }) => name).toSorted()).toEqual(ALL_KIND_NAMES));
     expect(models.map(({ count }) => count)).toEqual([1, 1, 1, 1]);
-    expect(load.mock.calls.map(([path]) => path).toSorted()).toEqual([...DEEP_SITE_GLB_PATHS].toSorted());
+    expect(load).not.toHaveBeenCalled();
     manager.destroy();
   });
 
