@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MeshBasicMaterial, MeshStandardMaterial, Texture } from "three";
+import { createProcgenMasonryMaterial, isProcgenMasonryMaterial } from "../structures/procgen-masonry-material";
 import { createPooledInstancedMaterial, releasePooledInstancedMaterial } from "./army-model-materials";
 import { MaterialPool } from "../utils/material-pool";
 
@@ -46,4 +47,46 @@ it("uses the same instance ownership colour for printed sails and existing stand
   expect((printed.material as MeshBasicMaterial).opacity).toBe(1);
   releasePooledInstancedMaterial(printed.material);
   releasePooledInstancedMaterial(timber.material);
+});
+
+it("handles procedural ship masonry hulls, GPU sails, and ownership pennants cleanly", () => {
+  const hull = createProcgenMasonryMaterial();
+  const sail = new MeshStandardMaterial({ map: new Texture() });
+  sail.name = "Fleet Ownership sail";
+  sail.userData.ownershipColor = true;
+  sail.userData.shipCloth = "sail";
+  const pennant = new MeshStandardMaterial();
+  pennant.name = "Fleet Ownership pennant";
+  pennant.userData.ownershipColor = true;
+  pennant.userData.shipCloth = "pennant";
+
+  const staticSail = new MeshStandardMaterial({ map: new Texture() });
+  staticSail.name = "Static ownership cloth";
+  staticSail.userData.ownershipColor = true;
+
+  const releaseSpy = vi.spyOn(MaterialPool.getInstance(), "releaseMaterial");
+  const hullDispose = vi.spyOn(hull, "dispose");
+
+  const pooledHull = createPooledInstancedMaterial(hull);
+  const pooledSail = createPooledInstancedMaterial(sail);
+  const pooledPennant = createPooledInstancedMaterial(pennant);
+  const pooledStaticSail = createPooledInstancedMaterial(staticSail);
+
+  expect(pooledHull.material).toBe(hull);
+  expect(isProcgenMasonryMaterial(pooledHull.material as MeshStandardMaterial)).toBe(true);
+  expect(pooledHull.usesInstanceColor).toBe(false);
+  expect(pooledSail.usesInstanceColor).toBe(true);
+  expect((pooledSail.material as { positionNode?: unknown }).positionNode).not.toBeNull();
+  expect(pooledPennant.usesInstanceColor).toBe(true);
+  expect((pooledPennant.material as { positionNode?: unknown }).positionNode).not.toBeNull();
+  expect((pooledStaticSail.material as { positionNode?: unknown }).positionNode).toBeNull();
+
+  releasePooledInstancedMaterial([
+    pooledHull.material as MeshStandardMaterial,
+    pooledSail.material as MeshBasicMaterial,
+    pooledPennant.material as MeshBasicMaterial,
+    pooledStaticSail.material as MeshBasicMaterial,
+  ]);
+  expect(hullDispose).toHaveBeenCalledTimes(1);
+  expect(releaseSpy).not.toHaveBeenCalled();
 });

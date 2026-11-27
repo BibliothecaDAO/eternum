@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 
 import { ARMY_MODEL_TOP as PROBED_ARMY_TOP } from "../../../scripts/client-playtest/plates.mjs";
 import { SHIP_WORLD_SCALE } from "../characters/ships/ship-design";
+import { isProceduralShipPath, resolveProceduralShipKit } from "../characters/ships/ship-kit";
 import { ModelType } from "../types/army";
 import { getArmyGroundOffset } from "../utils/model-grounding";
 import {
@@ -48,6 +49,16 @@ const topOf = (meshes: readonly Mesh[]) =>
  * the army model places it), a ship at its waterline and world scale, and the T1 knight as it ships, its articulated
  * model standing at `T1_KNIGHT_WORLD_SCALE`.
  */
+const proceduralShipMeshes = (path: string): Mesh[] => {
+  const gltf = resolveProceduralShipKit(path);
+  if (!gltf) throw new Error(`Unknown procedural ship path: ${path}`);
+  const meshes: Mesh[] = [];
+  gltf.scene.traverse((child) => {
+    if (child instanceof Mesh) meshes.push(child);
+  });
+  return meshes;
+};
+
 const drawnTops = async () => {
   const { createDecoderModule } = createRequire(import.meta.url)("draco3dgltf");
   const io = new NodeIO()
@@ -55,7 +66,7 @@ const drawnTops = async () => {
     .registerDependencies({ "draco3d.decoder": await createDecoderModule() });
   const tops: { model: string; top: number }[] = [];
   for (const [modelType, file] of Object.entries(MODEL_TYPE_TO_FILE) as [ModelType, string][]) {
-    const meshes = await rawMeshes(io, file);
+    const meshes = isProceduralShipPath(file) ? proceduralShipMeshes(file) : await rawMeshes(io, file);
     const top = isShipModel(modelType)
       ? topOf(meshes) * SHIP_WORLD_SCALE
       : topOf(meshes) + getArmyGroundOffset(meshes, modelType);

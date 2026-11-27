@@ -196,7 +196,7 @@
       "entry": [
         "src/main.tsx",
         "src/ui/features/debug/kit-lab/render-model.ts",
-        "scripts/frontier-painted/stamp-source.mjs",
+        "scripts/optimize-structure-models.mjs",
         "scripts/lib/page-touch-worker.mjs"
       ]
     },

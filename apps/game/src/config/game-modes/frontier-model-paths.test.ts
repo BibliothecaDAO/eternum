@@ -8,9 +8,14 @@ import {
 } from "@bibliothecadao/types";
 import { getGameModeConfig } from "./index";
 import { GAME_FAMILIES } from "../../../../../config/source/common/native-preset-modes";
-import { buildingModelPaths, BUILDINGS_GROUPS, getStructureModelPaths } from "@/three/constants/scene-constants";
+import {
+  buildingModelPaths,
+  BUILDINGS_GROUPS,
+  getStructureModelPaths,
+  RiftModelPath,
+} from "@/three/constants/scene-constants";
 import { resolveBuildingModelSelection } from "@/three/scenes/hexception-building-model";
-import { frontierPaintedBuildingPath, frontierPaintedPath } from "@/three/structures/frontier-painted-buildings";
+import { frontierPaintedBuildingPath } from "@/three/structures/frontier-painted-buildings";
 import { FALLEN_REALM_RUIN_PATH } from "@/three/structures/frontier-beast";
 import { aspectWonderKitPath } from "@/three/structures/realm-kit";
 import { REALM_SUPPORT_PATHS } from "@/three/structures/realm-support-kit";
@@ -54,18 +59,13 @@ it("gives every Frontier building its own distinct model without changing other 
     ...getStructureModelPaths()[StructureType.Camp].slice(1),
   ]);
   expect(frontier.structureModelPaths[StructureType.Camp].at(-2)).toBe(REALM_SUPPORT_PATHS["supply-yard"]);
-  expect(frontier.structureModelPaths[StructureType.Rift]).toEqual([
-    frontierPaintedPath("essence-rift"),
-    ...getStructureModelPaths()[StructureType.Rift].slice(1),
-  ]);
+  expect(frontier.structureModelPaths[StructureType.Rift]).toEqual(getStructureModelPaths()[StructureType.Rift]);
   expect(frontier.structureModelPaths[StructureType.Realm]).toEqual(getStructureModelPaths()[StructureType.Realm]);
   for (const group of [BUILDINGS_GROUPS.REALMS, BUILDINGS_GROUPS.VILLAGE]) {
     expect(frontier.buildingModelPaths[group]).toEqual(buildingModelPaths()[group]);
   }
   expect(frontier.structureModelPaths[StructureType.Ruin]).toEqual(getStructureModelPaths()[StructureType.Ruin]);
-  expect(frontier.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][BuildingType.ResourceEssence]).toBe(
-    frontierPaintedPath("essence-rift"),
-  );
+  expect(frontier.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][BuildingType.ResourceEssence]).toBe(RiftModelPath);
   expect(frontier.structureModelPaths[StructureType.Ruin][0]).toBe(FALLEN_REALM_RUIN_PATH);
 });
 

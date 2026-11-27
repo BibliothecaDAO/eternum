@@ -1,7 +1,7 @@
 import { BuildingType, structureName, StructureType } from "@bibliothecadao/types";
 import { MAP_SITES } from "@/config/map-sites";
 import { SPIRE, SUPPLY_POST } from "@/ui/design-system/kit/words";
-import { buildingModelPaths, BUILDINGS_GROUPS, CAMP_MODEL_PATH, RiftModelPath } from "../../constants/scene-constants";
+import { buildingModelPaths, BUILDINGS_GROUPS, CAMP_MODEL_PATH } from "../../constants/scene-constants";
 import { buildingTierModelPath } from "../../structures/building-tiers";
 import {
   FRONTIER_PAINTED_BUILDINGS,
@@ -52,7 +52,6 @@ const BOARD_TYPES: Partial<Record<string, BuildingType>> = {
 };
 const SHIPPED_SITES: Partial<Record<string, string>> = {
   camp: CAMP_MODEL_PATH,
-  "essence-rift": RiftModelPath,
 };
 
 interface LabBuildingEntry {

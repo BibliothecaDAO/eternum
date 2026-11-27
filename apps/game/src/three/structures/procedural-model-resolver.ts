@@ -1,8 +1,10 @@
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
+import { isProceduralShipPath, resolveProceduralShipKit } from "../characters/ships/ship-kit";
 import { isProceduralOutpostKitPath, resolveProceduralOutpostKit } from "./outpost-kit";
 import { isRealmBuildingKitPath, resolveRealmBuildingKit } from "./realm-building-kit";
 import { isProceduralRealmKitPath, resolveProceduralRealmKit } from "./realm-kit";
 import { isRealmSupportKitPath, resolveProceduralRealmSupportKit } from "./realm-support-kit";
+import { isProceduralRewardTilePath, resolveProceduralRewardTileKit } from "./reward-tile-kit";
 import { isRuinKitPath, resolveProceduralRuinKit } from "./ruin-kit";
 import { createSpireKit, SPIRE_MODEL_PATH } from "./spire-kit";
 import { isWellShrineKitPath, resolveProceduralWellShrineKit } from "./well-shrine-kit";
@@ -15,7 +17,9 @@ export function isProceduralModelPath(path: string): boolean {
     isRealmSupportKitPath(path) ||
     isWellShrineKitPath(path) ||
     isProceduralOutpostKitPath(path) ||
-    path === SPIRE_MODEL_PATH
+    path === SPIRE_MODEL_PATH ||
+    isProceduralRewardTilePath(path) ||
+    isProceduralShipPath(path)
   );
 }
 
@@ -27,6 +31,8 @@ export function resolveProceduralModel(path: string): GLTF | null {
     resolveProceduralRealmSupportKit(path) ??
     resolveProceduralWellShrineKit(path) ??
     resolveProceduralOutpostKit(path) ??
-    (path === SPIRE_MODEL_PATH ? createSpireKit() : null)
+    (path === SPIRE_MODEL_PATH ? createSpireKit() : null) ??
+    resolveProceduralRewardTileKit(path) ??
+    resolveProceduralShipKit(path)
   );
 }

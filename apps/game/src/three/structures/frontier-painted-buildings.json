@@ -118,13 +118,5 @@
     "path": "procedural:realm-building:barracks:5",
     "architectureTriangles": 4000,
     "atlasSize": 0
-  },
-  {
-    "id": "essence-rift",
-    "label": "Essence rift",
-    "group": "sites",
-    "path": "/models/frontier/painted/essence-rift.glb",
-    "architectureTriangles": 10000,
-    "atlasSize": 512
   }
 ]

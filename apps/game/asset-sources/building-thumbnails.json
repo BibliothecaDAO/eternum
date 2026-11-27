@@ -60,9 +60,9 @@
     "imageSha256": "13d6ba460d653397b16627f6a42c8e4693982eb9f46bbb4a8067d9cf8b2eae56"
   },
   "/images/buildings/construction/essence-rift.png": {
-    "model": "/models/reward-tiles/rift.glb",
-    "modelSha256": "134730f681899c93287d6167946d58c3f9cfdca7b443f8131e495638135ed2d9",
-    "imageSha256": "4fb5873fbf6547c70370e415deee030a2e567c0f3ad009e2457659af5af68b58"
+    "model": "procedural:reward-tile:rift",
+    "modelSha256": "8d709c7712f62216cb1b1620bc97416766ed35824c09aea51978ee809c864751",
+    "imageSha256": "fbe6709f834b802b8796f0e946c35342eeb90ea8e577bbad0c2c45193a254911"
   },
   "/images/buildings/construction/stable.png": {
     "model": "/models/new-buildings-opt/stable.glb",

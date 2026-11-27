@@ -5,9 +5,10 @@ import {
   getStructureModelPaths,
 } from "@/three/constants/scene-constants";
 import { FALLEN_REALM_RUIN_PATH, FRONTIER_BEAST_PATHS } from "../structures/frontier-beast";
-import { StructureType } from "@bibliothecadao/types";
+import { StructureType, structureName } from "@bibliothecadao/types";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
 import { parseOutpostKitPath } from "../structures/outpost-kit";
+import { PROCEDURAL_RIFT_PATH } from "../structures/reward-tile-kit";
 import { isRuinKitPath } from "../structures/ruin-kit";
 import { SHRINE_SITE_MODEL_PATH, WELL_SITE_MODEL_PATH } from "../structures/well-shrine-kit";
 
@@ -27,6 +28,7 @@ const PROCEDURAL_BUILDING_LABELS: Record<string, string> = {
   [WELL_SITE_MODEL_PATH]: "Well · Procedural spring",
   [SHRINE_SITE_MODEL_PATH]: "Shrine · Procedural sanctuary",
   [SPIRE_MODEL_PATH]: "Spire · Levitating portal",
+  [PROCEDURAL_RIFT_PATH]: `${structureName(StructureType.Rift)} · Procedural vortex`,
 };
 
 const BUILDING_LABELS: Record<string, string> = {

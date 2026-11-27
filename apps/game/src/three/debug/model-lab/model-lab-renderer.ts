@@ -25,6 +25,7 @@ import {
 } from "../../characters/procedural-unit-config";
 import type { ProceduralUnitActor, ProceduralUnitRuntime } from "../../characters/procedural-unit-runtime";
 import { createShipDesign, type ShipDesign, type ShipTier } from "../../characters/ships/ship-design";
+import { createProceduralShipTemplate } from "../../characters/ships/ship-kit";
 import { createSailPrint } from "../../characters/ships/ship-sail-print";
 import { fitShipToHex } from "../../characters/ships/ship-hex-footprint";
 import { findNearestTerrainHex, terrainHexCorners, terrainHexToWorld } from "../../terrain/terrain-coordinates";
@@ -115,7 +116,6 @@ class ModelReviewScene implements ModelLabRenderer {
   private sailArtwork: ImageBitmap | null = null;
   private sailPrintKey = "";
   private artworkGeneration = 0;
-  private readonly shipAssets = new Map<string, Promise<Group>>();
   private slots: Slot[] = [];
   private settings: ModelLabSettings;
   private signature = "";
@@ -321,13 +321,6 @@ class ModelReviewScene implements ModelLabRenderer {
     this.artworkGeneration++;
     this.disposeFootprints();
     this.environment.dispose();
-    for (const pending of this.shipAssets.values()) {
-      void pending.then(
-        (template) => disposeSkinnedSceneTemplates([template]),
-        () => {},
-      );
-    }
-    this.shipAssets.clear();
     this.runtime.dispose();
     this.initialized.rendererRuntime.backend.dispose();
     this.renderer.domElement.remove();
@@ -342,10 +335,10 @@ class ModelReviewScene implements ModelLabRenderer {
   }
 
   private async createShipSlot(settings: ModelLabSettings, tier: ShipTier): Promise<Slot> {
-    const assets = await this.loadShipAssets(settings.army, tier);
-    if (this.disposed) throw new Error("Model review was closed");
+    const assets = createProceduralShipTemplate(settings.army, tier);
     const group = new Group();
     const ship = createShipDesign(assets, settings.army, tier);
+    disposeProceduralTemplate(assets);
     group.add(ship.object);
     return {
       group,
@@ -559,17 +552,6 @@ class ModelReviewScene implements ModelLabRenderer {
     this.footprints.clear();
   }
 
-  private loadShipAssets(army: ModelLabSettings["army"], tier: ShipTier): Promise<Group> {
-    const path = modelPath(`ships/${army}-t${tier}.glb`);
-    let pending = this.shipAssets.get(path);
-    if (!pending) {
-      pending = gltfLoader.loadAsync(path).then((asset) => asset.scene);
-      this.shipAssets.set(path, pending);
-      void pending.catch(() => this.shipAssets.delete(path));
-    }
-    return pending;
-  }
-
   private resize(): void {
     const { width, height } = this.input.container.getBoundingClientRect();
     if (!width || !height) return;
@@ -577,6 +559,15 @@ class ModelReviewScene implements ModelLabRenderer {
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
   }
+}
+
+function disposeProceduralTemplate(template: Group): void {
+  template.traverse((object) => {
+    if (!(object instanceof Mesh)) return;
+    object.geometry.dispose();
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) material.dispose();
+  });
 }
 
 function unitConfig(settings: ModelLabSettings, tier: ShipTier) {

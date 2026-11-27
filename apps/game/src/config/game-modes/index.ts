@@ -11,7 +11,7 @@ import {
   structurePlural,
 } from "@bibliothecadao/types";
 import { BUILDINGS_GROUPS, buildingModelPaths, getStructureModelPaths } from "@/three/constants/scene-constants";
-import { frontierPaintedBuildingPath, frontierPaintedPath } from "@/three/structures/frontier-painted-buildings";
+import { frontierPaintedBuildingPath } from "@/three/structures/frontier-painted-buildings";
 import { FRONTIER_CAMP_MODEL_PATH } from "@/three/structures/frontier-beast";
 
 export type GameModeId = "frontier" | "blitz" | "eternum";
@@ -201,14 +201,12 @@ function frontierBuildingModels() {
     const painted = frontierPaintedBuildingPath(type);
     if (painted) paths[BUILDINGS_GROUPS.BUILDINGS][type] = painted;
   }
-  paths[BUILDINGS_GROUPS.BUILDINGS][BuildingType.ResourceEssence] = frontierPaintedPath("essence-rift");
   return paths;
 }
 
 function frontierStructureModels() {
   const paths = getStructureModelPaths();
   paths[StructureType.Camp] = [FRONTIER_CAMP_MODEL_PATH, ...paths[StructureType.Camp].slice(1)];
-  paths[StructureType.Rift] = [frontierPaintedPath("essence-rift"), ...paths[StructureType.Rift].slice(1)];
   return paths;
 }
 const GAME_MODE_CONFIGS: Record<GameModeId, GameModeConfig> = {

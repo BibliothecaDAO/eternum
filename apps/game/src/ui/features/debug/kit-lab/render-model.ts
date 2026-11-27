@@ -3,6 +3,7 @@ import { WebGPURenderer } from "three/webgpu";
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { SPIRE_MODEL_PATH } from "@/three/structures/spire-kit";
 import { gltfLoader, configureGltfTextureSupport } from "@/three/utils/gltf-loader";
+import { PROCEDURAL_CHEST_PATH } from "@/three/structures/reward-tile-kit";
 
 export async function renderModel(model: string, pixels = 384) {
   const Renderer = WebGPURenderer as unknown as new (options: {
@@ -37,7 +38,7 @@ export async function renderModel(model: string, pixels = 384) {
     } else {
       object = (await gltfLoader.loadAsync(model)).scene;
     }
-    if (model.endsWith("/chest-c2.glb")) {
+    if (model === PROCEDURAL_CHEST_PATH) {
       const { ChestPresentation } = await import("@/three/rewards/chest-presentation");
       new ChestPresentation(object).faceCamera(new T.Vector3(-1.8, 1.55, 2.1));
       const body = object.getObjectByName("ChestBody");

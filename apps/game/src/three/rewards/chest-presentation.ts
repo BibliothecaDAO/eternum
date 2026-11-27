@@ -1,10 +1,10 @@
 import { Color, Group, Material, Matrix4, Mesh, MeshStandardMaterial, Vector3, type Object3D } from "three";
 import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
+import { isProcgenMasonryMaterial } from "../structures/procgen-masonry-material";
 import { color, texture, uniform, vec3 } from "three/tsl";
 
 const CHEST_BODY_SCALE = 0.7;
 
-/** Shared chest finish and orientation for settled instances and tile transitions. */
 export class ChestPresentation {
   private readonly facing = new Group();
   private readonly cameraLocal = new Vector3();
@@ -58,6 +58,7 @@ export class ChestPresentation {
   }
 
   private brightenSurface(source: Material): Material {
+    if (isProcgenMasonryMaterial(source)) return source;
     const cached = this.materials.get(source);
     if (cached) return cached;
     if (source instanceof MeshStandardMaterial && source.name.startsWith("Purple enamel")) {
