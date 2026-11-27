@@ -2,8 +2,6 @@ import { REALM_SKIN_FAMILIES } from "@bibliothecadao/eternum";
 import { rankName, type AspectId } from "@bibliothecadao/types";
 import { BASE_REALM_ASSETS } from "./base-realm-kit";
 import { SEASON_ONE_REALM_KIT_LEVELS, aspectWonderKitPath, seasonOneRealmKitPath } from "./realm-kit";
-import { resolveAgeWonderDesign } from "./wonder-design.mjs";
-import assets from "./realm-assets.json";
 
 interface RealmAssetEntry {
   id: string;
@@ -11,8 +9,6 @@ interface RealmAssetEntry {
   level: number;
   wonder: boolean;
   path: string;
-  source?: string;
-  seed?: number;
   aspect?: AspectId;
   skin?: "season-1";
 }
@@ -57,7 +53,6 @@ export const SEASON_ONE_REALM_ASSETS: readonly RealmAssetEntry[] = SEASON_ONE_RE
 
 export const REALM_ASSETS: readonly RealmAssetEntry[] = [
   ...BASE_REALM_ASSETS,
-  ...assets,
   ...ASPECT_WONDER_KIT_ASSETS,
   ...SEASON_ONE_REALM_ASSETS,
 ];
@@ -66,7 +61,6 @@ export const REALM_PATHS = REALM_ASSETS.map((asset) => asset.path);
 export function realmModelIndex(
   level: number,
   wonder: boolean,
-  entityId: string | number | bigint,
   aspect?: AspectId | null,
   realmSkin?: number | null,
 ): number {
@@ -87,12 +81,7 @@ export function realmModelIndex(
     if (kitIndex < 0) throw new Error(`Missing aspect wonder kit ${kitId}`);
     return kitIndex;
   }
-  const age = ["settlement", "city", "kingdom", "empire"][level];
-  const design = resolveAgeWonderDesign(age, entityId);
-  const id = level === 0 ? "standing-stones" : level === 3 ? `sanctum-${design.crown}` : design.crown;
-  const index = REALM_ASSETS.findIndex((asset) => asset.id === id && asset.level === level && asset.wonder);
-  if (index < 0) throw new Error(`Missing wonder asset ${id} for level ${level}`);
-  return index;
+  return level;
 }
 
 export function isWonderModelPath(path: string): boolean {

@@ -19,7 +19,7 @@ import { BuildingType, RealmLevels, type Structure, StructureType, rankName } fr
 import { useMemo } from "react";
 import type { StructureWithMetadata } from "./chip";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
-import { realmSkinPainting } from "@/ui/design-system/home-icons";
+import { isWonderPainting, realmSkinPainting } from "@/ui/design-system/home-icons";
 import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
@@ -125,7 +125,7 @@ export const useStructuresWithMetadata = ({
         displayName: name,
         originalName,
         realmLevel: normalizedLevel,
-        showsWonder: realmPainting === "wonder",
+        showsWonder: isWonderPainting(realmPainting),
         realmPainting,
         realmLevelLabel,
         population,

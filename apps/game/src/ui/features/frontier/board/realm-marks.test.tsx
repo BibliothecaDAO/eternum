@@ -1,4 +1,5 @@
-import { HOME_KINDS, homeIcon, type HomeKind } from "@/ui/design-system/home-icons";
+import { HOME_KINDS, homeIcon, wonderPainting, type HomeKind } from "@/ui/design-system/home-icons";
+import { aspects } from "@bibliothecadao/types";
 // @vitest-environment jsdom
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
@@ -61,18 +62,20 @@ describe("a lord and a realm's Order on the HUD", () => {
   });
 });
 
-it.each([0, 1, 2, 3])("shows a jade Wonder at level %s, including its depth", (level) => {
-  const badge = render(<RealmBadge level={level} depth={2} hasWonder />);
-  expect(badge.querySelector(`img[src$="/${homeIcon("wonder", level)}.webp"]`)).not.toBeNull();
-  expect(badge.querySelector('[role="img"]')?.getAttribute("aria-label")).toContain("Wonder");
-  expect(badge.querySelector('[data-icon="depth-2"]')).not.toBeNull();
+it.each([0, 1, 2, 3])("shows each Aspect Wonder at level %s, including its depth", (level) => {
+  for (const { id: aspect } of aspects) {
+    const painting = wonderPainting(aspect);
+    const badge = render(<RealmBadge level={level} depth={2} hasWonder painting={painting} />);
+    expect(badge.querySelector(`img[src$="/${homeIcon(painting, level)}.webp"]`)).not.toBeNull();
+    expect(badge.querySelector('[role="img"]')?.getAttribute("aria-label")).toContain("Wonder");
+    expect(badge.querySelector('[data-icon="depth-2"]')).not.toBeNull();
+  }
 });
 
-it("draws every home kind at every level with eight distinct paintings", () => {
-  const drawn = Object.keys(HOME_KINDS).flatMap((kind) =>
-    [0, 1, 2, 3].map((level) => homeIcon(kind as HomeKind, level)),
-  );
-  expect(new Set(drawn).size).toBe(8);
-  expect(() => homeIcon("wonder", 4)).toThrow("Unknown realm level");
+it("draws every home kind at every level with distinct paintings", () => {
+  const kinds = Object.keys(HOME_KINDS) as HomeKind[];
+  const drawn = kinds.flatMap((kind) => [0, 1, 2, 3].map((level) => homeIcon(kind, level)));
+  expect(new Set(drawn).size).toBe(kinds.length * 4);
+  expect(() => homeIcon("wonder-prowess", 4)).toThrow("Unknown realm level");
   expect(() => homeIcon("realm", 1.5)).toThrow("Unknown realm level");
 });

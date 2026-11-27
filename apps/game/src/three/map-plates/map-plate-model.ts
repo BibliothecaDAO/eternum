@@ -3,6 +3,7 @@ import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { realmPaintingKind } from "@/ui/design-system/home-icons";
 
 import type { CSSProperties } from "react";
+import { realmOrderAspect } from "@bibliothecadao/eternum";
 import type { FrontierSpecies } from "../structures/frontier-beast";
 import { beastMeaning, mineMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon";
@@ -11,7 +12,6 @@ import {
   NEUTRAL_OWNER_NAME,
   StructureType,
   TROOP_TYPES,
-  orderAspect,
   structureName,
   frontierSiteName,
   formatExact,
@@ -194,6 +194,7 @@ export const buildStructurePlate = (
     | "level"
     | "hasWonder"
     | "realmOrder"
+    | "realmAspect"
     | "realmSkin"
     | "battleTimerLeft"
   > & { watched?: SeatSide | null; frontier: boolean },
@@ -212,6 +213,7 @@ export const buildStructurePlate = (
         ...(structure.frontierBeast ? { beast: structure.frontierBeast.beast } : {}),
         ...(guard.stamina && guard.stamina.max > 0 ? { stamina: guard.stamina } : {}),
       })) ?? null;
+  const realmAspect = realmOrderAspect(structure.realmOrder, structure.realmAspect);
   return {
     kind: "structure",
     relation: sideOf(structure),
@@ -235,12 +237,8 @@ export const buildStructurePlate = (
           ? realmMeaning(
               structure.level,
               structure.hasWonder,
-              structure.realmSkin !== undefined
-                ? realmPaintingKind(
-                    structure.realmSkin,
-                    structure.realmOrder ? (orderAspect(structure.realmOrder) ?? null) : null,
-                  )
-                : undefined,
+              structure.realmSkin !== undefined ? realmPaintingKind(structure.realmSkin, realmAspect) : undefined,
+              realmAspect,
             )
           : structureMeaning(structure.structureType),
     guards,

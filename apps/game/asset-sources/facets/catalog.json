@@ -3130,36 +3130,6 @@
       }
     },
     {
-      "id": "wonder-realm-0",
-      "label": "Wonder · Settlement",
-      "family": "Structures",
-      "prompt": "prompts/wonder-realm-0.txt",
-      "source": {
-        "kind": "painted",
-        "sha256": "938fc88c10dab9cc3b25f97ab4028b9617f79a5da0ff1c4ae315171377e15d7f"
-      }
-    },
-    {
-      "id": "wonder-realm-1",
-      "label": "Wonder · City",
-      "family": "Structures",
-      "prompt": "prompts/wonder-realm-1.txt",
-      "source": {
-        "kind": "painted",
-        "sha256": "00f8e5045ef7d3fb2a6b6ea7e7b7519fb7e5ccf4f9b5d0346dc1905ff8e340c0"
-      }
-    },
-    {
-      "id": "wonder-realm-2",
-      "label": "Wonder · Kingdom",
-      "family": "Structures",
-      "prompt": "prompts/wonder-realm-2.txt",
-      "source": {
-        "kind": "painted",
-        "sha256": "62d63205528d1b3552f099633302d1033ffcd2f5168053226eef72bc0cdce935"
-      }
-    },
-    {
       "id": "devcon-golden-realm-0",
       "label": "Golden Devcon · Settlement",
       "family": "Structures",
@@ -3197,16 +3167,6 @@
       "source": {
         "kind": "painted",
         "sha256": "b9f0f3fab3ff1042d4315ad23c5ed32cf4d4741addf387fc7391b9e02af879e7"
-      }
-    },
-    {
-      "id": "wonder-realm-3",
-      "label": "Wonder · Empire",
-      "family": "Structures",
-      "prompt": "prompts/wonder-realm-3.txt",
-      "source": {
-        "kind": "painted",
-        "sha256": "4ddd4478896d4031eb6effe870face5bba7c8c3cd881d0a20a48e34fb2ad21f8"
       }
     },
     {
@@ -3743,6 +3703,150 @@
       "source": {
         "kind": "painted",
         "sha256": "e05fa5932279960891ff9caba125340d43fcdc829a8b01d03cd5811ef3b35e1b"
+      }
+    },
+    {
+      "id": "wonder-prowess-realm-0",
+      "label": "Wonder · Prowess · Settlement",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "25e6486f8a8ff09e79e93871311c6fe67ddd8fdd819bf2d8846266558f16476c"
+      }
+    },
+    {
+      "id": "wonder-prowess-realm-1",
+      "label": "Wonder · Prowess · City",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "7a658a4f3f0d5f38b59556150e05c4776885fa38b6ff6e1892a602daf95c4121"
+      }
+    },
+    {
+      "id": "wonder-prowess-realm-2",
+      "label": "Wonder · Prowess · Kingdom",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "15b3f84e7ac76f47b0d37bbadcaaef43e432db119174e8960abea0e2283eaebd"
+      }
+    },
+    {
+      "id": "wonder-prowess-realm-3",
+      "label": "Wonder · Prowess · Empire",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "fe10b5c9eb61ccbdd39693d5fe87ca152b62c021e7abb4a1a6056954ce9318f7"
+      }
+    },
+    {
+      "id": "wonder-luminary-realm-0",
+      "label": "Wonder · Luminary · Settlement",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "e09490653b76ebd664b1781d414f1d40b6ab84767252fb78d5cfb95d372ffa47"
+      }
+    },
+    {
+      "id": "wonder-luminary-realm-1",
+      "label": "Wonder · Luminary · City",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "d0728255c1caf30d2f917276739931ac92b77873e52c936da35b5eb5c6ef1778"
+      }
+    },
+    {
+      "id": "wonder-luminary-realm-2",
+      "label": "Wonder · Luminary · Kingdom",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "808b538e6141a23905178672f587e3aebf0f4caa5e2844e459025524fef992ae"
+      }
+    },
+    {
+      "id": "wonder-luminary-realm-3",
+      "label": "Wonder · Luminary · Empire",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "e55633fa6151e77fff1a4a1e16fae84addbd945c4ba67528784371dafe25a449"
+      }
+    },
+    {
+      "id": "wonder-havoc-realm-0",
+      "label": "Wonder · Havoc · Settlement",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "351e59e30e2e671e45a2c2b704eada40887b24a578c5bd2d96f815cdc2bf3a3c"
+      }
+    },
+    {
+      "id": "wonder-havoc-realm-1",
+      "label": "Wonder · Havoc · City",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "317f2d2d2719f13d6838307edffd1d388e759e51e3fc2268651fc6a77a22d61b"
+      }
+    },
+    {
+      "id": "wonder-havoc-realm-2",
+      "label": "Wonder · Havoc · Kingdom",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "42028f6b20189e6cd4716da19e1ae505b0e1f9d69c20253059d0564cf0b0db02"
+      }
+    },
+    {
+      "id": "wonder-havoc-realm-3",
+      "label": "Wonder · Havoc · Empire",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "6792d968298953c76adbbdad6233430902f9aaa82598a6f373775734e0d3a8cf"
+      }
+    },
+    {
+      "id": "wonder-insight-realm-0",
+      "label": "Wonder · Insight · Settlement",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "3e2eac54998ccd073a4491563b28ea928080f77a8951c925900af293fd91b205"
+      }
+    },
+    {
+      "id": "wonder-insight-realm-1",
+      "label": "Wonder · Insight · City",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "defb740d45d39a7a26d8787f01b85da88935f3e9b53b63ad14a4179bac03683f"
+      }
+    },
+    {
+      "id": "wonder-insight-realm-2",
+      "label": "Wonder · Insight · Kingdom",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "969e51f36c7dc0828ae85038c67d0f839e239102e26d1cf5d4e851caa8596ab4"
+      }
+    },
+    {
+      "id": "wonder-insight-realm-3",
+      "label": "Wonder · Insight · Empire",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "0c92f07cfb72e5006b34f3b836a3e65e35298114de219ed32589394ed3cdd30c"
       }
     }
   ]

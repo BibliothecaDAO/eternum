@@ -1,7 +1,7 @@
 import { Position } from "@bibliothecadao/eternum";
 import type { IncomingTroopArrival, SiteKind } from "@bibliothecadao/eternum";
 
-import { BuildingType, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BuildingType, ID, StructureType, TroopTier, TroopType, type AspectId } from "@bibliothecadao/types";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import type { CosmeticAttachmentTemplate } from "../cosmetics/types";
 import type { FrontierBeast } from "../structures/frontier-beast";
@@ -35,6 +35,7 @@ export interface StructureInfo {
   /** The standing site's beast identity shared by its model and plate. */
   frontierBeast?: FrontierBeast;
   realmOrder?: number;
+  realmAspect?: AspectId | null;
   realmSkin?: number;
   cosmeticId?: string;
   cosmeticAssetPaths?: string[];

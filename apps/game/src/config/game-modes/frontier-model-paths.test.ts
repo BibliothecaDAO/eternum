@@ -74,7 +74,7 @@ it("selects all five painted tiers while keeping Storeroom on its own model and 
     for (const tier of [1, 2, 3, 4, 5]) {
       const selected = resolveBuildingModelSelection(
         { category: type, col: BUILDINGS_CENTER[0] + 1, row: BUILDINGS_CENTER[1], tier },
-        { stage: 0, structureId: 1, wonder: false, frontier: true },
+        { stage: 0, wonder: false, frontier: true },
       );
       expect(
         selected.tierPath ??
@@ -84,20 +84,20 @@ it("selects all five painted tiers while keeping Storeroom on its own model and 
   }
   const keep = resolveBuildingModelSelection(
     { category: BuildingType.ResourceLabor, col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], tier: 5 },
-    { stage: 2, structureId: 1, wonder: false, frontier: true },
+    { stage: 2, wonder: false, frontier: true },
   );
   expect(keep.group).toBe(BUILDINGS_GROUPS.REALMS);
   expect(keep.tierPath).toBeUndefined();
   expect(
     resolveBuildingModelSelection(
       { category: BuildingType.Storehouse, col: BUILDINGS_CENTER[0] + 1, row: BUILDINGS_CENTER[1], tier: 3 },
-      { stage: 0, structureId: 1, wonder: false, frontier: true },
+      { stage: 0, wonder: false, frontier: true },
     ).tierPath,
   ).toBe(REALM_SUPPORT_PATHS.storeroom);
   expect(
     resolveBuildingModelSelection(
       { category: BuildingType.Storehouse, col: BUILDINGS_CENTER[0] + 1, row: BUILDINGS_CENTER[1], tier: 3 },
-      { stage: 0, structureId: 1, wonder: false, frontier: false },
+      { stage: 0, wonder: false, frontier: false },
     ).tierPath,
   ).toBe(REALM_SUPPORT_PATHS["storehouse-3"]);
   expect(getGameModeConfig(GAME_FAMILIES.frontier).assets.buildingModelPaths[BUILDINGS_GROUPS.REALMS].Kingdom).toBe(
@@ -105,17 +105,22 @@ it("selects all five painted tiers while keeping Storeroom on its own model and 
   );
   const frontierWonder = resolveBuildingModelSelection(
     { category: BuildingType.ResourceLabor, col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], tier: 1 },
-    { stage: 2, structureId: 1003, wonder: true, aspect: 1, frontier: true },
+    { stage: 2, wonder: true, aspect: 1, frontier: true },
   );
   expect(frontierWonder.tierPath).toBe(aspectWonderKitPath(1, RealmLevels.Kingdom));
   const frontierEmpireWonder = resolveBuildingModelSelection(
     { category: BuildingType.ResourceLabor, col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], tier: 1 },
-    { stage: 3, structureId: 1003, wonder: true, aspect: 1, frontier: true },
+    { stage: 3, wonder: true, aspect: 1, frontier: true },
   );
   expect(frontierEmpireWonder.tierPath).toBe(aspectWonderKitPath(1, RealmLevels.Empire));
   const blitzWonder = resolveBuildingModelSelection(
     { category: BuildingType.ResourceLabor, col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], tier: 1 },
-    { stage: 2, structureId: 1003, wonder: true, aspect: 1, frontier: false },
+    { stage: 2, wonder: true, aspect: 1, frontier: false },
   );
-  expect(blitzWonder.tierPath).toBe("/models/realms/twin-guardians.glb");
+  expect(blitzWonder.tierPath).toBe(aspectWonderKitPath(1, RealmLevels.Kingdom));
+  const unalignedWonder = resolveBuildingModelSelection(
+    { category: BuildingType.ResourceLabor, col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], tier: 1 },
+    { stage: 2, wonder: true, aspect: null, frontier: false },
+  );
+  expect(unalignedWonder.tierPath).toBeUndefined();
 });

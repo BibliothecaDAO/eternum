@@ -346,11 +346,10 @@ describe("Season 1 procedural Aspect Realm kit", () => {
               const wornFamily = wornRealmSkinFamily({ sealHeld, aspect, hasWonder }, equipped);
               const cosmeticsSkin = wornRealmSkin({ sealHeld, aspect, hasWonder, equipped });
               const showsWonder = wornFamily === REALM_SKIN_FAMILIES.WONDER_REALM_SKIN;
-              const mapIndex = realmModelIndex(level, showsWonder, 1003, aspect, wornFamily);
+              const mapIndex = realmModelIndex(level, showsWonder, aspect, wornFamily);
               const mapAsset = REALM_ASSETS[mapIndex];
               const hexSelection = resolveBuildingModelSelection(keepBuilding, {
                 stage: level,
-                structureId: 1003,
                 mainStructureType: StructureType.Realm,
                 wonder: showsWonder,
                 aspect,

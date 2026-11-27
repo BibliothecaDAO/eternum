@@ -48,7 +48,7 @@ export function realmHeightScenario() {
 function hasRealmModel(category: BuildingType): boolean {
   const { group, type } = resolveBuildingModelSelection(
     { category, col: BUILDINGS_CENTER[0] + 1, row: BUILDINGS_CENTER[1], resource: getProducedResource(category) },
-    { stage: 0, structureId: 7, wonder: false, frontier: true },
+    { stage: 0, wonder: false, frontier: true },
   );
   const paths: Readonly<Record<string, string>> = getGameModeConfig(LAB_GAME.family).assets.buildingModelPaths[group];
   return Boolean(paths[type]);

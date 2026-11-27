@@ -418,7 +418,7 @@ it("draws Season ranks and depths outside streamed scope", async () => {
   const paintings = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
     .filter((badge) => /Settlement|City|Kingdom|Empire/.test(badge.getAttribute("aria-label") ?? ""))
     .map((badge) => badge.querySelector("img")?.getAttribute("src")?.split("/").pop());
-  expect(paintings).toEqual(["realm-3.webp", "realm-1.webp", "realm-0.webp", "wonder-realm-2.webp"]);
+  expect(paintings).toEqual(["realm-3.webp", "realm-1.webp", "realm-0.webp", "wonder-insight-realm-2.webp"]);
 });
 
 /**

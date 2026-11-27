@@ -8,7 +8,7 @@ import { markShadowCastersChanged } from "@/three/shadow-refresh-policy";
 import { presentResult } from "@/three/presented-results";
 import { holdPartHeadings } from "../structures/held-heading";
 import { frontierPaintedBuildingPath } from "../structures/frontier-painted-buildings";
-import { buildingTypeTier, realmWornSkinFamily } from "@bibliothecadao/eternum";
+import { buildingTypeTier, realmAspect, realmWornSkinFamily } from "@bibliothecadao/eternum";
 import { isWonderModelPath } from "../structures/realm-design";
 import { RealmLivingAura } from "../structures/realm-living-aura";
 import { HexceptionModels, disposeBuildingModel, prepareBuildingModel } from "./hexception-models";
@@ -137,7 +137,6 @@ import {
   StructureType,
   getHexDistance,
   getProducedResource,
-  orderAspect,
   resourceName,
 } from "@bibliothecadao/types";
 import gsap from "gsap";
@@ -1642,12 +1641,10 @@ export default class HexceptionScene extends HexagonScene {
       game_id: configManager.getActiveGameId(),
       entity_id: realm.realmId,
     });
-    const orderId = structure?.metadata.order;
-    const aspect = this.mode.id === "frontier" && orderId ? orderAspect(orderId) : null;
+    const aspect = structure ? realmAspect(this.game.store, structure) : null;
     const realmSkin = structure ? realmWornSkinFamily(this.game.store, structure, aspect) : undefined;
     return resolveBuildingModelSelection(building, {
       stage: realm.stage,
-      structureId: realm.realmId,
       mainStructureType: realm.mainStructureType,
       wonder: realm.tiles.showsWonder(realm.realmId),
       aspect,
@@ -1978,6 +1975,11 @@ export default class HexceptionScene extends HexagonScene {
       if (change.previous?.family === change.current?.family) return false;
       const row = change.current ?? change.previous;
       return row?.game_id === gameId && row.entity_id === BigInt(this.shownRealmId);
+    }
+    if (change.model === "HomeAspect") {
+      if (change.previous?.aspect === change.current?.aspect) return false;
+      const row = change.current ?? change.previous;
+      return row?.game_id === gameId && row.home === BigInt(this.shownRealmId);
     }
     if (change.model === "Seal") {
       if (Boolean(change.previous) === Boolean(change.current)) return false;

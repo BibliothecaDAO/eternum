@@ -8,7 +8,7 @@ export function HomeIconsLab() {
     <section data-lab="home-icons" aria-label="Home icons by kind and level" className="mx-auto max-w-5xl p-3">
       <h1 className="!mb-6">Home icons</h1>
       <div
-        className="grid grid-cols-[5rem_repeat(4,minmax(0,1fr))] items-center gap-y-6 text-center text-xs md:text-sm"
+        className="grid grid-cols-[9rem_repeat(4,minmax(0,1fr))] items-center gap-y-6 text-center text-xs md:text-sm"
         role="table"
         aria-label="Home kind by realm level"
       >

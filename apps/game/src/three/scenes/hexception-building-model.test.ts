@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { BUILDINGS_CENTER, BuildingType, RealmLevels, StructureType } from "@bibliothecadao/types";
 import { buildingModelPaths, BUILDINGS_GROUPS, castleLevelToRealmCastle } from "../constants/scene-constants";
 import { realmBuildingKitPath } from "../structures/realm-building-kit";
+import { aspectWonderKitPath } from "../structures/realm-kit";
 import { getBuildingDisplayName, resolveBuildingModelSelection } from "./hexception-building-model";
 
 const context = {
   stage: RealmLevels.Settlement,
-  structureId: 17,
   mainStructureType: StructureType.Realm,
   wonder: false,
 };
@@ -54,10 +54,13 @@ describe("Workshops and central keeps share Labor but keep their own identity", 
     });
   });
 
-  it("keeps a wonder confined to the central keep", () => {
-    const selected = resolveBuildingModelSelection(keep, { ...context, wonder: true });
-    expect(selected.group).toBe(BUILDINGS_GROUPS.REALMS);
-    expect(selected.tierPath).toBe("/models/realms/standing-stones.glb");
-    expect(resolveBuildingModelSelection(labor, { ...context, wonder: true }).tierPath).toBeUndefined();
+  it("keeps a wonder confined to the central keep and falls back to base without an Aspect", () => {
+    const aligned = resolveBuildingModelSelection(keep, { ...context, wonder: true, frontier: true, aspect: 1 });
+    expect(aligned.group).toBe(BUILDINGS_GROUPS.REALMS);
+    expect(aligned.tierPath).toBe(aspectWonderKitPath(1, RealmLevels.Settlement));
+    expect(
+      resolveBuildingModelSelection(labor, { ...context, wonder: true, frontier: true, aspect: 1 }).tierPath,
+    ).toBeUndefined();
+    expect(resolveBuildingModelSelection(keep, { ...context, wonder: true }).tierPath).toBeUndefined();
   });
 });

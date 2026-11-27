@@ -92,7 +92,6 @@ export function resolveBuildingModelSelection(
   building: BoardBuilding,
   context: {
     stage: RealmLevels | StructureProgress;
-    structureId: number;
     mainStructureType?: StructureType;
     wonder: boolean;
     aspect?: AspectId | null;
@@ -100,7 +99,7 @@ export function resolveBuildingModelSelection(
     realmSkin?: number | null;
   },
 ): BuildingModelSelection {
-  const { stage, structureId, mainStructureType, wonder } = context;
+  const { stage, mainStructureType, wonder } = context;
   let group: BUILDINGS_GROUPS;
   let type: BUILDINGS_CATEGORIES_TYPES;
 
@@ -129,15 +128,7 @@ export function resolveBuildingModelSelection(
   }
 
   const resolvedRealmIndex =
-    group === BUILDINGS_GROUPS.REALMS
-      ? realmModelIndex(
-          stage,
-          wonder,
-          structureId,
-          context.frontier ? context.aspect : null,
-          context.frontier ? context.realmSkin : null,
-        )
-      : -1;
+    group === BUILDINGS_GROUPS.REALMS ? realmModelIndex(stage, wonder, context.aspect, context.realmSkin) : -1;
   const tierPath =
     group === BUILDINGS_GROUPS.REALMS && resolvedRealmIndex !== stage
       ? REALM_PATHS[resolvedRealmIndex]

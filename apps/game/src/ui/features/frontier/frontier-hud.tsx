@@ -64,7 +64,7 @@ import { MenuPage } from "./hud/menu-page";
 import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { useFragmentsHeld } from "./value/fragments";
 import { ShopSheet, useReturnToShop } from "./shop/shop-sheet";
-import { homeIcon, homeKind, realmSkinPainting } from "@/ui/design-system/home-icons";
+import { homeIcon, isWonderPainting, realmSkinPainting, type HomeKind } from "@/ui/design-system/home-icons";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { PickedArmy } from "./hud/picked-army";
@@ -560,15 +560,14 @@ const HudMenu = ({
   );
 };
 
-const REALM_PANEL_MODELS = ["HomeAspect", ...REALM_SKIN_MODELS] as const;
-
 const useRealmFace = (realm: NativeRows["Structure"]) => {
-  const facts = useNativeFacts(REALM_PANEL_MODELS);
+  const facts = useNativeFacts(REALM_SKIN_MODELS);
   const aspectId = facts.store.get("HomeAspect", { game_id: realm.game_id, home: realm.entity_id })?.aspect;
   const painting = realmSkinPainting(facts.store, realm);
+  const kind: HomeKind = isWonderPainting(painting) ? painting : "realm";
   return {
     name: useGameModeConfig().structure.getName(realm).name,
-    kind: homeKind(painting === "wonder"),
+    kind,
     painting,
     aspect: aspectId !== undefined ? catalogAspectId(aspectId) : undefined,
   };

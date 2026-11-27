@@ -1,3 +1,4 @@
+import { orderAspect } from "@bibliothecadao/types";
 import { Box3, Color, Matrix4, PerspectiveCamera, Scene, Vector3 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { initializeProceduralCharacterRendererRuntime } from "../../characters/procedural-character-renderer-runtime";
@@ -126,16 +127,17 @@ export async function mountRealmSeries(container: HTMLElement, settings: RealmSe
 type SeriesSlot = { asset: (typeof REALM_ASSETS)[number]; before: boolean };
 
 function realmSeries(settings: RealmSeriesSettings): SeriesSlot[] {
+  const aspect = settings.order ? (orderAspect(settings.order) ?? null) : null;
   const shipped = (level: number, wonder = settings.wonder) =>
-    REALM_ASSETS[realmModelIndex(level, wonder, settings.seed)];
+    REALM_ASSETS[realmModelIndex(level, wonder, wonder ? aspect : null)];
   if (settings.s1) {
     const levels = settings.lineup ? SEASON_ONE_REALM_KIT_LEVELS : [settings.level];
     const entries = settings.wonder ? ASPECT_WONDER_KIT_ASSETS : SEASON_ONE_REALM_ASSETS;
     return levels.flatMap((level) =>
-      [shipped(level, settings.wonder), ...entries.filter((asset) => asset.level === level)].map((asset) => ({
-        asset,
-        before: false,
-      })),
+      (settings.wonder
+        ? entries.filter((asset) => asset.level === level)
+        : [shipped(level, false), ...entries.filter((asset) => asset.level === level)]
+      ).map((asset) => ({ asset, before: false })),
     );
   }
   if (settings.reference && settings.comparison !== "after") {

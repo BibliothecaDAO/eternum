@@ -1,6 +1,6 @@
 import { homeKind } from "@/ui/design-system/home-icons";
 import type { StructureInfo } from "../types";
-import { StructureType } from "@bibliothecadao/types";
+import { StructureType, type AspectId } from "@bibliothecadao/types";
 
 import type { StrategicStructureMarkerKind } from "../managers/strategic-marker-layer";
 
@@ -30,8 +30,11 @@ const reportedUnknownCategories = new Set<number>();
 export function structureMarkerKind({
   structureType,
   hasWonder,
-}: Pick<StructureInfo, "structureType" | "hasWonder">): StrategicStructureMarkerKind {
-  if (structureType === StructureType.Realm) return homeKind(hasWonder);
+  aspect,
+}: Pick<StructureInfo, "structureType" | "hasWonder"> & { aspect?: AspectId | null }): StrategicStructureMarkerKind {
+  if (structureType === StructureType.Realm) {
+    return homeKind(hasWonder, aspect ?? null);
+  }
   const kind = STRUCTURE_MARKER_KIND[structureType] as StrategicStructureMarkerKind | undefined;
   if (kind !== undefined) return kind;
   if (!reportedUnknownCategories.has(structureType)) {

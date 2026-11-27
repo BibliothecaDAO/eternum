@@ -104,14 +104,12 @@ replacement; retain its experimental status until validated.
 
 | Family  | Editable source                                                                                                                               | Optimization from repository root                |
 | ------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| Realms  | `apps/game/scripts/settlements/build-{settlement,city,kingdom,empire}.py` and shared construction helpers                                     | `pnpm --dir apps/game run optimize:realms`       |
+| Realms  | Procedural runtime kits in `apps/game/src/three/structures/base-realm-kit.ts` and `realm-kit.ts` (no shipped realm GLBs)                      | None (built at runtime)                          |
 | Spire   | Runtime procedural kit in `apps/game/src/three/structures/spire-kit.ts` (`procedural:spire`); `build-spire.py` is the unwired obelisk variant | None (built at runtime)                          |
 | Rewards | `apps/game/scripts/reward-tiles/build-reward-tiles.py`                                                                                        | `pnpm --dir apps/game run optimize:reward-tiles` |
 | Fleet   | `apps/game/scripts/fleet/build-fleet.py` and `fleet-model.py`                                                                                 | `pnpm --dir apps/game run optimize:fleet`        |
 
 Inspect each builder's arguments and output paths before running it. Regenerate only the intended assets.
-`stone_textures.py` supplies the shared stone bake; the construction helpers own realm material treatment and roof
-detail. Extend those sources instead of duplicating the stone shader or editing only a binary export.
 
 Structure GLB compression is centralized in `apps/game/scripts/optimize-structure-models.mjs`. The current structure
 instancing path skips scaled child nodes. Draco preserves the baked transforms used here; Meshopt quantization can
@@ -141,7 +139,6 @@ render after deferred loading. Report dashboard and live-world validation separa
 Run the relevant commands without rebuilding unrelated families:
 
 ```bash
-pnpm --dir apps/game run verify:structures
 pnpm --dir apps/game run verify:reward-tiles
 pnpm --dir apps/game run verify:assets
 ```

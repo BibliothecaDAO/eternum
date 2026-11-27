@@ -1,9 +1,10 @@
 import { plateRows } from "./map-plate-rows";
-import { StructureType, siteName } from "@bibliothecadao/types";
+import { ordersOfAspect, StructureType, siteName } from "@bibliothecadao/types";
 import { frontierBeast } from "@/three/structures/frontier-beast";
 import { describe, expect, it } from "vitest";
 
 import { HUD_SHEET, SEAT_COLOURS, seatSide } from "@/tokens";
+import { homeIcon } from "@/ui/design-system/home-icons";
 
 import { attackOrder, buildArmyPlate, buildStructurePlate, guardsToTell } from "./map-plate-model";
 
@@ -212,5 +213,21 @@ describe("a watched plate (side-colours-4: a watching viewer sees each player's 
     });
     expect(buildStructurePlate({ ...structure(), watched: null }).watched).toBeUndefined();
     expect(buildStructurePlate(structure()).watched).toBeUndefined();
+  });
+
+  it("resolves aspect wonder icons identically across modes and falls back to base when unaligned", () => {
+    const order = ordersOfAspect(1)[0]!.orderId;
+    expect(buildStructurePlate(structure({ frontier: true, hasWonder: true, realmOrder: order })).icon).toBe(
+      homeIcon("wonder-prowess", 0),
+    );
+    expect(buildStructurePlate(structure({ frontier: false, hasWonder: true, realmOrder: order })).icon).toBe(
+      homeIcon("wonder-prowess", 0),
+    );
+    expect(
+      buildStructurePlate(structure({ frontier: true, hasWonder: true, realmOrder: 0, realmAspect: 3 })).icon,
+    ).toBe(homeIcon("wonder-havoc", 0));
+    expect(buildStructurePlate(structure({ frontier: true, hasWonder: true, realmOrder: 0 })).icon).toBe(
+      homeIcon("realm", 0),
+    );
   });
 });

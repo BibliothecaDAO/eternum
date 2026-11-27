@@ -37,6 +37,10 @@ describe("the realm skin catalog", () => {
     ]);
     expect(realmSkinIcon(skin("devcon-golden"), RealmLevels.Empire)).toBe("devcon-golden-realm-3");
     expect(realmSkinIcon(skin("season-1-havoc"), RealmLevels.City)).toBe("season-1-havoc-realm-1");
+    expect(realmSkinIcon(skin("wonder-prowess"), RealmLevels.Settlement)).toBe("wonder-prowess-realm-0");
+    expect(realmSkinIcon(skin("wonder-luminary"), RealmLevels.City)).toBe("wonder-luminary-realm-1");
+    expect(realmSkinIcon(skin("wonder-havoc"), RealmLevels.Kingdom)).toBe("wonder-havoc-realm-2");
+    expect(realmSkinIcon(skin("wonder-insight"), RealmLevels.Empire)).toBe("wonder-insight-realm-3");
     for (const each of REALM_SKINS) {
       for (const rank of REALM_RANKS) {
         expect(realmSkinIcon(each, rank), `${each.id} @ ${rank}`).toBeTruthy();
@@ -124,9 +128,9 @@ describe("the skin the page shows worn, against how the game draws the realm", (
           }
   });
 
-  it("does not assign an Aspect variant to a Wonder realm without an Aspect", () => {
+  it("falls back to the base skin for a Wonder realm without an Aspect", () => {
     const worn = wornRealmSkin({ ...NOTHING, hasWonder: true });
-    expect(worn.id).toBe("wonder");
+    expect(worn.id).toBe("base");
     expect(worn.aspect).toBeUndefined();
   });
 });

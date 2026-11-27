@@ -346,29 +346,31 @@ describe("the Cosmetics page", () => {
     expect(buttonNamed(container, COSMETICS_WORDS.eventExclusive)!.disabled).toBe(true);
   });
 
-  it("shows every Season 1 skin's own painting and matching realm icon at each rank", async () => {
+  it("shows every Season 1 and Aspect Wonder skin's own painting and matching realm icon at each rank", async () => {
     directory.games = [];
     const container = await open();
-    const seasonOne = REALM_SKINS.filter((skin) => skin.family === "season-1");
-    expect(seasonOne).toHaveLength(4);
-    for (const skin of seasonOne) {
-      const slug = aspectName(skin.aspect!).toLowerCase();
-      await pick(container, skin.id);
-      const card = container.querySelector<HTMLElement>(`[data-skin="${skin.id}"]`)!;
-      expect(card.querySelectorAll(".cosmetics__badge")).toHaveLength(1);
-      expect(card.querySelector<HTMLElement>("[data-icon]")?.dataset.icon).toBe(`season-1-${slug}-realm-2`);
-      const rankButtons = [...container.querySelectorAll<HTMLButtonElement>(".cosmetics__rank")];
-      expect(rankButtons.map((button) => button.querySelector<HTMLElement>("[data-icon]")?.dataset.icon)).toEqual(
-        REALM_RANKS.map((rank) => `season-1-${slug}-realm-${rank}`),
-      );
-      for (const [index, rank] of REALM_RANKS.entries()) {
-        await act(async () => rankButtons[index]!.click());
-        const expected = `season-1-${slug}-realm-${rank}`;
-        expect(container.querySelector<HTMLElement>("[data-preview] [data-icon]")?.dataset.icon).toBe(expected);
-        const matchingIcons = [...container.querySelectorAll<HTMLElement>(".cosmetics__matching [data-icon]")].map(
-          (icon) => icon.dataset.icon,
+    for (const family of ["season-1", "wonder"] as const) {
+      const familySkins = REALM_SKINS.filter((skin) => skin.family === family);
+      expect(familySkins).toHaveLength(4);
+      for (const skin of familySkins) {
+        const slug = aspectName(skin.aspect!).toLowerCase();
+        await pick(container, skin.id);
+        const card = container.querySelector<HTMLElement>(`[data-skin="${skin.id}"]`)!;
+        expect(card.querySelectorAll(".cosmetics__badge")).toHaveLength(1);
+        expect(card.querySelector<HTMLElement>("[data-icon]")?.dataset.icon).toBe(`${family}-${slug}-realm-2`);
+        const rankButtons = [...container.querySelectorAll<HTMLButtonElement>(".cosmetics__rank")];
+        expect(rankButtons.map((button) => button.querySelector<HTMLElement>("[data-icon]")?.dataset.icon)).toEqual(
+          REALM_RANKS.map((rank) => `${family}-${slug}-realm-${rank}`),
         );
-        expect(matchingIcons).toEqual([expected, expected]);
+        for (const [index, rank] of REALM_RANKS.entries()) {
+          await act(async () => rankButtons[index]!.click());
+          const expected = `${family}-${slug}-realm-${rank}`;
+          expect(container.querySelector<HTMLElement>("[data-preview] [data-icon]")?.dataset.icon).toBe(expected);
+          const matchingIcons = [...container.querySelectorAll<HTMLElement>(".cosmetics__matching [data-icon]")].map(
+            (icon) => icon.dataset.icon,
+          );
+          expect(matchingIcons).toEqual([expected, expected]);
+        }
       }
     }
   });
@@ -578,16 +580,15 @@ describe("the Cosmetics page", () => {
     expect(buttonNamed(reopened, TRY_AGAIN)?.disabled).toBe(false);
   });
 
-  it("offers the unaligned Wonder to a Wonder realm without an Aspect", async () => {
+  it("falls back to the base skin and shows no unaligned Wonder card for a Wonder realm without an Aspect", async () => {
     player.signedIn = true;
     const home = realm({ has_wonder: true, realm_skin: REALM_SKIN_FAMILIES.BASE_REALM_SKIN });
     directory.games = [season([home], false)];
     const container = await open();
-    await pick(container, "wonder");
-    await press(container, COSMETICS_WORDS.equip);
-    expect(player.sent.map(({ command }) => command)).toEqual([
-      { signer: testSigner, entity_id: home.entity_id, family: REALM_SKIN_FAMILIES.WONDER_REALM_SKIN },
-    ]);
+    expect(container.querySelector('[data-skin="wonder"]')).toBeNull();
+    expect(container.querySelector('[data-preview="base"]')).not.toBeNull();
+    expect(container.querySelector('[data-skin="base"] [data-standing="equipped"]')).not.toBeNull();
+    expect(buttonNamed(container, COSMETICS_WORDS.useDefaultOrder)).toBeUndefined();
   });
 
   it("wears and equips the Season 1 Aspect skin at Empire rank once the Seal is held", async () => {

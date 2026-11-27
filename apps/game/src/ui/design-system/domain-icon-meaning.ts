@@ -135,12 +135,22 @@ export function mineMeaning(kind: number): IconMeaning {
   if (kind === 2) return "mine";
   throw new Error(`Unknown mine icon: ${kind}`);
 }
-export function realmMeaning(level: number, hasWonder = false, painting?: HomePaintingKind): IconMeaning {
-  return homeIcon(painting ?? homeKind(hasWonder), level);
+export function realmMeaning(
+  level: number,
+  hasWonder = false,
+  painting?: HomePaintingKind,
+  aspect: AspectId | null = null,
+): IconMeaning {
+  return homeIcon(painting ?? homeKind(hasWonder, aspect), level);
 }
 
-export function realmMarkerMeaning(level: number, hasWonder = false, painting?: HomePaintingKind): IconMeaning {
-  const kind = painting ?? homeKind(hasWonder);
+export function realmMarkerMeaning(
+  level: number,
+  hasWonder = false,
+  painting?: HomePaintingKind,
+  aspect: AspectId | null = null,
+): IconMeaning {
+  const kind = painting ?? homeKind(hasWonder, aspect);
   if (kind !== "realm") return homeIcon(kind, level);
   return `map-${realmMeaning(level)}` as IconMeaning;
 }

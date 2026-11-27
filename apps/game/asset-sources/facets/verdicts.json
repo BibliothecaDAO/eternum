@@ -960,18 +960,6 @@
     "verdict": "equal",
     "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
   },
-  "faceted/wonder-realm-0": {
-    "verdict": "equal",
-    "reason": "Representative Wonder level painted from the shipped standing-stones model; silhouette and materials compared side by side, including at board size."
-  },
-  "faceted/wonder-realm-1": {
-    "verdict": "equal",
-    "reason": "Representative Wonder level painted from the shipped sun-dial model; silhouette and materials compared side by side, including at board size."
-  },
-  "faceted/wonder-realm-2": {
-    "verdict": "equal",
-    "reason": "Representative Wonder level painted from the shipped star-lantern model; silhouette and materials compared side by side, including at board size."
-  },
   "faceted/devcon-golden-realm-0": {
     "verdict": "equal",
     "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
@@ -987,10 +975,6 @@
   "faceted/devcon-golden-realm-3": {
     "verdict": "equal",
     "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
-  },
-  "faceted/wonder-realm-3": {
-    "verdict": "equal",
-    "reason": "Representative Wonder level painted from the shipped sanctum-star model; silhouette and materials compared side by side, including at board size."
   },
   "faceted/order-giants": {
     "verdict": "beats shipped",
@@ -1227,5 +1211,69 @@
   "faceted/season-1-insight-realm-3": {
     "verdict": "beats shipped",
     "reason": "Owner-approved painted Season 1 Insight Empire Facets icon matching Devcon/Base art direction (s1-icons-painted pick)."
+  },
+  "faceted/wonder-prowess-realm-0": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Aspect Wonder Prowess Settlement Facets icon matching Devcon/Base art direction (s1-wonder-icons-painted pick)."
+  },
+  "faceted/wonder-prowess-realm-1": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Aspect Wonder Prowess City Facets icon matching Devcon/Base art direction (s1-wonder-icons-painted pick)."
+  },
+  "faceted/wonder-prowess-realm-2": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Aspect Wonder Prowess Kingdom Facets icon matching Devcon/Base art direction (s1-wonder-icons-painted pick)."
+  },
+  "faceted/wonder-prowess-realm-3": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Aspect Wonder Prowess Empire Facets icon matching Devcon/Base art direction (s1-wonder-icons-painted pick)."
+  },
+  "faceted/wonder-luminary-realm-0": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Aspect Wonder Luminary Settlement Facets icon matching Devcon/Base art direction (s1-wonder-icons-painted pick)."
+  },
+  "faceted/wonder-luminary-realm-1": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Aspect Wonder Luminary City Facets icon matching Devcon/Base art direction (s1-wonder-icons-painted pick)."
+  },
+  "faceted/wonder-luminary-realm-2": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Aspect Wonder Luminary Kingdom Facets icon matching Devcon/Base art direction (s1-wonder-icons-painted pick)."
+  },
+  "faceted/wonder-luminary-realm-3": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Aspect Wonder Luminary Empire Facets icon matching Devcon/Base art direction (s1-wonder-icons-painted pick)."
+  },
+  "faceted/wonder-havoc-realm-0": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Aspect Wonder Havoc Settlement Facets icon matching Devcon/Base art direction (s1-wonder-icons-painted pick)."
+  },
+  "faceted/wonder-havoc-realm-1": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Aspect Wonder Havoc City Facets icon matching Devcon/Base art direction (s1-wonder-icons-painted pick)."
+  },
+  "faceted/wonder-havoc-realm-2": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Aspect Wonder Havoc Kingdom Facets icon matching Devcon/Base art direction (s1-wonder-icons-painted pick)."
+  },
+  "faceted/wonder-havoc-realm-3": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Aspect Wonder Havoc Empire Facets icon matching Devcon/Base art direction (s1-wonder-icons-painted pick)."
+  },
+  "faceted/wonder-insight-realm-0": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Aspect Wonder Insight Settlement Facets icon matching Devcon/Base art direction (s1-wonder-icons-painted pick)."
+  },
+  "faceted/wonder-insight-realm-1": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Aspect Wonder Insight City Facets icon matching Devcon/Base art direction (s1-wonder-icons-painted pick)."
+  },
+  "faceted/wonder-insight-realm-2": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Aspect Wonder Insight Kingdom Facets icon matching Devcon/Base art direction (s1-wonder-icons-painted pick)."
+  },
+  "faceted/wonder-insight-realm-3": {
+    "verdict": "beats shipped",
+    "reason": "Owner-approved painted Aspect Wonder Insight Empire Facets icon matching Devcon/Base art direction (s1-wonder-icons-painted pick)."
   }
 }

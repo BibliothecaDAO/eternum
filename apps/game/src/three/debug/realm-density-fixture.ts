@@ -1,5 +1,7 @@
+import type { AspectId } from "@bibliothecadao/types";
 import { Matrix4, type Scene, Vector3 } from "three";
 import { REALM_ASSETS, realmModelIndex } from "../structures/realm-design";
+import { resolveProceduralRealmKit } from "../structures/realm-kit";
 import { SettlementModel } from "../structures/settlement-model";
 import { gltfLoader } from "../utils/utils";
 import type { WorldmapProceduralTerrain } from "../terrain/worldmap-procedural-terrain";
@@ -13,11 +15,14 @@ export async function createRealmDensityFixture(scene: Scene, terrain: WorldmapP
     for (let index = 0; index < 48; index++) {
       const level = index % 4;
       const entity = 1001 + Math.floor(index / 4);
-      const modelIndex = realmModelIndex(level, index >= 24, entity);
+      const isWonder = index >= 24;
+      const aspect = ((Math.floor(index / 4) % 4) + 1) as AspectId;
+      const modelIndex = realmModelIndex(level, isWonder, isWonder ? aspect : null);
       let model = models.get(modelIndex);
       if (!model) {
         const asset = REALM_ASSETS[modelIndex];
-        model = new SettlementModel(await gltfLoader.loadAsync(asset.path), 6, "realm", asset.wonder);
+        const gltf = resolveProceduralRealmKit(asset.path) ?? (await gltfLoader.loadAsync(asset.path));
+        model = new SettlementModel(gltf, 6, "realm", asset.wonder);
         models.set(modelIndex, model);
         await model.prepare();
         scene.add(model.group);

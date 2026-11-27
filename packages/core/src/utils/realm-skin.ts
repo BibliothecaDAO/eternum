@@ -1,10 +1,10 @@
-import { orderAspect } from "@bibliothecadao/types";
+import { catalogAspectId, orderAspect, type AspectId } from "@bibliothecadao/types";
 import { nativeIdentifiers, type NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import type { NativeFactStore } from "../client/native-fact-store";
 
 export const REALM_SKIN_FAMILIES = nativeIdentifiers.realmSkin;
-export const REALM_SKIN_MODELS = ["RealmSkin", "Seal"] as const;
+export const REALM_SKIN_MODELS = ["RealmSkin", "Seal", "HomeAspect"] as const;
 
 export const realmSkinEnabled = (commandMask: bigint): boolean =>
   (commandMask & BigInt(nativeCommandBits.SetRealmSkin)) !== 0n;
@@ -47,13 +47,30 @@ type RealmSkinStructure = Pick<NativeRows["Structure"], "game_id" | "entity_id" 
 
 export const holdsWonder = (realm: Pick<RealmSkinStructure, "metadata">): boolean => realm.metadata.has_wonder;
 
+export const realmOrderAspect = (order: number | undefined, homeAspect?: AspectId | null): AspectId | null => {
+  if (homeAspect != null) return homeAspect;
+  return order ? (orderAspect(order) ?? null) : null;
+};
+
+export const realmAspect = (
+  store: Pick<NativeFactStore, "get">,
+  realm: Pick<NativeRows["Structure"], "game_id" | "entity_id"> & {
+    readonly metadata: Pick<NativeRows["Structure"]["metadata"], "order">;
+  },
+): AspectId | null => {
+  const homeAspect = store.get("HomeAspect", { game_id: realm.game_id, home: realm.entity_id })?.aspect;
+  return realmOrderAspect(
+    realm.metadata.order,
+    homeAspect !== undefined && homeAspect !== 0 ? catalogAspectId(homeAspect) : null,
+  );
+};
+
 export const realmWornSkinFamily = (
   store: Pick<NativeFactStore, "get">,
   realm: RealmSkinStructure,
   aspect?: number | null,
 ): DrawnRealmSkin => {
-  const resolvedAspect =
-    aspect !== undefined ? aspect : realm.metadata.order ? orderAspect(realm.metadata.order) : null;
+  const resolvedAspect = aspect !== undefined ? aspect : realmAspect(store, realm);
   const sealHeld = store.get("Seal", { game_id: realm.game_id, account: realm.owner }) !== undefined;
   return wornRealmSkinFamily(
     { hasWonder: holdsWonder(realm), sealHeld, aspect: resolvedAspect },

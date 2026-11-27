@@ -31,7 +31,7 @@ it("says what each of a board row's counts is, on hover and to a screen reader, 
     ),
   );
   try {
-    expect(container.querySelector('[data-icon="wonder-realm-0"]')).not.toBeNull();
+    expect(container.querySelector('[data-icon="wonder-prowess-realm-0"]')).not.toBeNull();
     expect(container.querySelector('[role="img"][aria-label="Wonder · Settlement"]')).not.toBeNull();
     const figures = [...container.querySelectorAll<HTMLElement>(".app-board__figure")];
     expect(figures.map((figure) => [figure.textContent, figure.title])).toEqual([

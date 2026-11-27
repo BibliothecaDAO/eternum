@@ -165,6 +165,7 @@ it("presents a cleared camp's supply post, its clearing player's, from its occup
     ownerAddress: 0x111n,
     structureType: StructureType.Camp,
     hasWonder: false,
+    aspect: null,
   });
   projection.dispose();
 });

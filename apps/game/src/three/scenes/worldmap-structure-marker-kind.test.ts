@@ -8,6 +8,10 @@ afterEach(() => vi.restoreAllMocks());
 describe("the far view's marker for a structure", () => {
   it("is the category's own for every category this build knows", () => {
     expect(structureMarkerKind({ structureType: StructureType.Realm, hasWonder: false })).toBe("realm");
+    expect(structureMarkerKind({ structureType: StructureType.Realm, hasWonder: true, aspect: 1 })).toBe(
+      "wonder-prowess",
+    );
+    expect(structureMarkerKind({ structureType: StructureType.Realm, hasWonder: true, aspect: null })).toBe("realm");
     expect(structureMarkerKind({ structureType: StructureType.Rift, hasWonder: false })).toBe("mine");
     expect(structureMarkerKind({ structureType: StructureType.Hyperstructure, hasWonder: false })).toBe(
       "hyperstructure",

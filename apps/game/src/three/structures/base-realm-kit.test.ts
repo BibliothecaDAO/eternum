@@ -53,7 +53,7 @@ describe("Procedural Base Realm kit", () => {
       expect(isBaseRealmKitPath(path)).toBe(true);
       expect(isProceduralRealmKitPath(path)).toBe(true);
       expect(parseBaseRealmKitPath(path)).toBe(level);
-      expect(REALM_ASSETS[realmModelIndex(level, false, 1003)]?.path).toBe(path);
+      expect(REALM_ASSETS[realmModelIndex(level, false)]?.path).toBe(path);
       expect(isRealmModelPath(path)).toBe(true);
       expect(isSettlementModelPath(path)).toBe(true);
       expect(resolveStructureRotationY([path], 1.2)).toBe(0);

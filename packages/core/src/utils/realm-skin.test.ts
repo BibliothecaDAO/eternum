@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   equippedRealmSkin,
   holdsRealmSkin,
+  realmAspect,
+  realmOrderAspect,
   REALM_SKIN_FAMILIES,
   realmShowsWonder,
   realmWornSkinFamily,
@@ -96,5 +98,28 @@ describe("the family a realm wears, which the game draws", () => {
     expect(realmShowsWonder(storeFor(SEASON_ONE_REALM_SKIN, true) as never, wonderRealm)).toBe(false);
     expect(showsWonder(holding(true, false, 3), SEASON_ONE_REALM_SKIN)).toBe(true);
     expect(realmShowsWonder(storeFor(SEASON_ONE_REALM_SKIN, false) as never, wonderRealm)).toBe(true);
+  });
+
+  it("reads HomeAspect ahead of legacy order and falls back to order when HomeAspect is absent", () => {
+    const storeWithAspect = (aspect?: number, hasSeal = false) => ({
+      get: (model: string, key: { game_id: number; home?: bigint; account?: bigint }) => {
+        if (model === "HomeAspect" && key.game_id === 1 && key.home === 7n && aspect !== undefined) {
+          return { game_id: 1, home: 7n, aspect };
+        }
+        if (model === "Seal" && key.game_id === 1 && key.account === 99n && hasSeal) {
+          return { game_id: 1, account: 99n };
+        }
+        return undefined;
+      },
+    });
+    const unaligned = realm(true, 0);
+    expect(realmOrderAspect(0, 3)).toBe(3);
+    expect(realmOrderAspect(1, 3)).toBe(3);
+    expect(realmOrderAspect(1, null)).toBe(1);
+    expect(realmOrderAspect(0, null)).toBeNull();
+    expect(realmAspect(storeWithAspect(3) as never, unaligned)).toBe(3);
+    expect(realmAspect(storeWithAspect(undefined) as never, unaligned)).toBeNull();
+    expect(realmAspect(storeWithAspect(undefined) as never, realm(true, 1))).toBe(1);
+    expect(realmWornSkinFamily(storeWithAspect(3, true) as never, realm(false, 0))).toBe(SEASON_ONE_REALM_SKIN);
   });
 });

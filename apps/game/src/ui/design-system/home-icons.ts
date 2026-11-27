@@ -1,30 +1,63 @@
-import { REALM_SKIN_FAMILIES, realmWornSkinFamily, wornRealmSkinFamily } from "@bibliothecadao/eternum";
+import {
+  realmAspect,
+  realmOrderAspect,
+  REALM_SKIN_FAMILIES,
+  realmWornSkinFamily,
+  wornRealmSkinFamily,
+} from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
-import { aspectName, orderAspect, type AspectId, type RealmLevels } from "@bibliothecadao/types";
+import { aspectName, type AspectId, type RealmLevels } from "@bibliothecadao/types";
 import { iconDefinition, type IconMeaning } from "./icon-meaning";
 import paintings from "./home-icons.json";
-import { REALM } from "./kit/words";
+import { COSMETICS_WORDS, REALM } from "./kit/words";
 
-export type HomeKind = "realm" | "wonder";
 export type HomePaintingKind = keyof typeof paintings;
 
-/** Every home kind has a distinct painting at every age; board captures read the same catalog. */
+const ASPECT_WONDER_PAINTINGS = {
+  1: "wonder-prowess",
+  2: "wonder-luminary",
+  3: "wonder-havoc",
+  4: "wonder-insight",
+} as const satisfies Record<AspectId, HomePaintingKind>;
+
+const ASPECT_SEASON_ONE_PAINTINGS = {
+  1: "season-1-prowess",
+  2: "season-1-luminary",
+  3: "season-1-havoc",
+  4: "season-1-insight",
+} as const satisfies Record<AspectId, HomePaintingKind>;
+
+type WonderHomeKind = (typeof ASPECT_WONDER_PAINTINGS)[AspectId];
+export type HomeKind = "realm" | WonderHomeKind;
+
 const icons = paintings satisfies Record<HomeKind, Record<RealmLevels, string>>;
 export const HOME_KINDS = {
   realm: { label: REALM },
-  wonder: { label: "Wonder" },
+  "wonder-prowess": { label: `${COSMETICS_WORDS.families.wonder} · ${aspectName(1)}` },
+  "wonder-luminary": { label: `${COSMETICS_WORDS.families.wonder} · ${aspectName(2)}` },
+  "wonder-havoc": { label: `${COSMETICS_WORDS.families.wonder} · ${aspectName(3)}` },
+  "wonder-insight": { label: `${COSMETICS_WORDS.families.wonder} · ${aspectName(4)}` },
 } satisfies Record<HomeKind, { label: string }>;
 
-export const homeKind = (hasWonder = false): HomeKind => (hasWonder ? "wonder" : "realm");
+const WONDER_PAINTING_SET = new Set<HomePaintingKind>(Object.values(ASPECT_WONDER_PAINTINGS));
 
-export function seasonOnePainting(aspect: AspectId): HomePaintingKind {
-  const key = `season-1-${aspectName(aspect).toLowerCase()}`;
-  if (!Object.hasOwn(paintings, key)) throw new Error(`Unknown Season 1 painting for aspect: ${aspect}`);
-  return key as HomePaintingKind;
+export function wonderPainting(aspect: AspectId): WonderHomeKind {
+  return ASPECT_WONDER_PAINTINGS[aspect];
 }
 
+export function seasonOnePainting(aspect: AspectId): HomePaintingKind {
+  return ASPECT_SEASON_ONE_PAINTINGS[aspect];
+}
+
+export function isWonderPainting(painting: HomePaintingKind | undefined): painting is WonderHomeKind {
+  return painting !== undefined && WONDER_PAINTING_SET.has(painting);
+}
+
+export const homeKind = (hasWonder = false, aspect: AspectId | null = null): HomeKind =>
+  hasWonder && aspect !== null ? wonderPainting(aspect) : "realm";
+
 export const realmPaintingKind = (family: number, aspect: AspectId | null): HomePaintingKind => {
-  if (family === REALM_SKIN_FAMILIES.WONDER_REALM_SKIN) return "wonder";
+  if (family === REALM_SKIN_FAMILIES.WONDER_REALM_SKIN && aspect !== null) return wonderPainting(aspect);
   if (family === REALM_SKIN_FAMILIES.SEASON_ONE_REALM_SKIN && aspect !== null) return seasonOnePainting(aspect);
   return "realm";
 };
@@ -35,7 +68,7 @@ export const realmSkinPainting = (
     readonly metadata: Pick<NativeRows["Structure"]["metadata"], "has_wonder" | "order">;
   },
 ): HomePaintingKind => {
-  const aspect = structure.metadata.order ? (orderAspect(structure.metadata.order) ?? null) : null;
+  const aspect = realmAspect(store, structure);
   return realmPaintingKind(realmWornSkinFamily(store, structure, aspect), aspect);
 };
 
@@ -45,14 +78,15 @@ export const entryRealmPainting = (entry: {
   readonly ancient_seal?: boolean;
   readonly realm_skin?: number;
 }): { readonly hasWonder: boolean; readonly painting: HomePaintingKind } => {
-  const aspect = entry.order ? (orderAspect(entry.order) ?? null) : null;
+  const aspect = realmOrderAspect(entry.order);
   const family = wornRealmSkinFamily(
     { hasWonder: entry.has_wonder === true, sealHeld: entry.ancient_seal === true, aspect },
     entry.realm_skin ?? REALM_SKIN_FAMILIES.DEFAULT_REALM_SKIN,
   );
+  const painting = realmPaintingKind(family, aspect);
   return {
-    hasWonder: family === REALM_SKIN_FAMILIES.WONDER_REALM_SKIN,
-    painting: realmPaintingKind(family, aspect),
+    hasWonder: isWonderPainting(painting),
+    painting,
   };
 };
 

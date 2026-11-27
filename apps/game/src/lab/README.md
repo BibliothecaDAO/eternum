@@ -149,16 +149,12 @@ performance on a live world. Live proof uses the existing `playtest` command aft
 Open **Models & motion → Realm ladder**, or `/lab/models?family=realms`. Age, normal/wonder, entity, Order and ownership
 controls exercise the same `SettlementModel` used by the world map. All ages compares the ladder at true scale; Close,
 Gameplay and Far use distances 6, 20 and 45. The default is Gameplay; field of view and pitch come from the world-map
-camera profile, along +Z. Drag to orbit and scroll to zoom. The entity picker exposes both city and kingdom designs and
-all seven imperial crowns. The separate sculpt is a study, not a runtime option.
+camera profile, along +Z. Drag to orbit and scroll to zoom. The Order picker chooses the Aspect for Wonder and Season 1
+kits, and the entity picker reseeds wonder aura phase.
 
 `/lab/terrain-benchmark?realms=1` adds 48 production realm placements (24 normal, 24 wonder) to the existing terrain
 trace. The checkbox is also available in the benchmark UI. Its fingerprint ends in `:realms48`; compare identical
 fingerprints for regression claims. The terrain-only trace remains unchanged.
-
-`apps/game/scripts/realms/prove-realm-series.playwright.js` drives the visible realm controls and captures the models,
-heraldry and aura animation. Run its function with the connected browser and a fresh evidence directory; all pages are
-closed when it finishes. Live proof uses the client's existing `playtest` command after dev is available.
 
 ### Realm revision comparison
 
@@ -168,10 +164,6 @@ directory at `apps/game/public/.context/realm-review` (ignored). Open
 Before / After / Before–After; **Age** chooses the matching file in the reference directory. The two versions use the
 same scale, lighting, Order and ownership. Reference comparison is for normal realms; the wonder picker continues to use
 the delivered series. Old assets stay in review evidence, never in production.
-
-Pass `reference: "/.context/realm-review"` alongside `baseUrl` and `output` to the retained
-`prove-realm-series.playwright.js` driver to capture city, kingdom and empire before/after pairs at distances 6 and 20.
-The driver closes its page on success or failure.
 
 ## Facets icons
 

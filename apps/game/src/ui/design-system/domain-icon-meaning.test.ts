@@ -117,21 +117,39 @@ it("keeps the research painting for historical tier purchases and current skill-
   expect(storyMeaning("SkillPointSpent")).toBe("research");
 });
 
-it("reads native Wonder identity at each level, keeping free and ordinary held Realms in the Realm family", () => {
+it("reads native Aspect Wonder identity at each level, falling back to base realms when unaligned", () => {
   const { store, structure } = campBeside();
   for (const level of [0, 1, 2, 3]) {
     for (const realm_id of [0, 711]) {
       const home = {
         ...structure,
         base: { ...structure.base, category: StructureType.Realm, level },
-        metadata: { ...structure.metadata, realm_id, has_wonder: false },
+        metadata: { ...structure.metadata, realm_id, order: 0, has_wonder: false },
       };
       expect(readStructureMeaning(store, home)).toBe(`realm-${level}`);
       expect(readStructureMeaning(store, { ...home, metadata: { ...home.metadata, has_wonder: true } })).toBe(
-        `wonder-realm-${level}`,
+        `realm-${level}`,
       );
+      for (const aspect of aspects) {
+        const slug = aspectName(aspect.id).toLowerCase();
+        const order = ordersOfAspect(aspect.id)[0]!.orderId;
+        const wonderHome = { ...home, metadata: { ...home.metadata, order, has_wonder: true } };
+        const expected = `wonder-${slug}-realm-${level}`;
+        expect(readStructureMeaning(store, wonderHome)).toBe(expected);
+        expect(realmMarkerMeaning(level, true, realmSkinPainting(store, wonderHome))).toBe(expected);
+      }
     }
   }
+  store.applyFacts([
+    { model: "HomeAspect", key: "0xa5c3", value: { game_id: structure.game_id, home: structure.entity_id, aspect: 3 } },
+  ]);
+  const homeAspectWonder = {
+    ...structure,
+    base: { ...structure.base, category: StructureType.Realm, level: 0 },
+    metadata: { ...structure.metadata, order: 0, has_wonder: true },
+  };
+  expect(readStructureMeaning(store, homeAspectWonder)).toBe("wonder-havoc-realm-0");
+  expect(realmMarkerMeaning(0, true, realmSkinPainting(store, homeAspectWonder))).toBe("wonder-havoc-realm-0");
 });
 
 it("reads Season 1 Aspect paintings at each rank when the owner holds a Seal and respects Base equip overrides", () => {

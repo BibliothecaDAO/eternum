@@ -41,7 +41,7 @@ it("grounds every buildable kind and tier in each mode, including keeps", async 
             row: BUILDINGS_CENTER[1],
             resource: getProducedResource(category),
           },
-          { stage: 0, structureId: 7, wonder: false, frontier: mode.id === "frontier" },
+          { stage: 0, wonder: false, frontier: mode.id === "frontier" },
         );
         const models: Readonly<Record<string, string>> = mode.assets.buildingModelPaths[selected.group];
         const path = selected.tierPath ?? models[selected.type];

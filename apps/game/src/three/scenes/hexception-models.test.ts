@@ -19,7 +19,7 @@ function realmView() {
   const pending = deferred<typeof model>();
   const load = vi.fn().mockReturnValueOnce(pending.promise).mockResolvedValue(model);
   const render = vi.fn();
-  const path = "/models/realms/twin-guardians.glb";
+  const path = "/models/realms/kingdom.glb";
   const reconcile = () => {
     if (!entered) return;
     const selected = models.get(path);

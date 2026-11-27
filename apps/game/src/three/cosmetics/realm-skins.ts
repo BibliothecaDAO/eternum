@@ -1,6 +1,6 @@
 import { DRAWN_REALM_SKINS, holdsRealmSkin, REALM_SKIN_FAMILIES, wornRealmSkinFamily } from "@bibliothecadao/eternum";
 import { type AspectId, aspectName, aspects, RealmLevels } from "@bibliothecadao/types";
-import { homeIcon, seasonOnePainting, type HomePaintingKind } from "@/ui/design-system/home-icons";
+import { homeIcon, seasonOnePainting, wonderPainting, type HomePaintingKind } from "@/ui/design-system/home-icons";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { COSMETICS_WORDS } from "@/ui/design-system/kit/words";
 
@@ -41,13 +41,6 @@ export const BASE_REALM_SKIN: RealmSkin = {
   paintings: "realm",
 };
 
-const UNALIGNED_WONDER: RealmSkin = {
-  id: "wonder",
-  family: "wonder",
-  name: COSMETICS_WORDS.families.wonder,
-  paintings: "wonder",
-};
-
 export const REALM_SKINS: readonly RealmSkin[] = [
   ...aspects.map(
     ({ id }): RealmSkin => ({
@@ -55,7 +48,7 @@ export const REALM_SKINS: readonly RealmSkin[] = [
       family: "wonder",
       name: aspectName(id),
       aspect: id,
-      paintings: "wonder",
+      paintings: wonderPainting(id),
     }),
   ),
   ...aspects.map(
@@ -100,18 +93,12 @@ const familyOfCode = (code: number): RealmSkinFamily =>
 
 export const REALM_SKIN_DEFAULT_ORDER: readonly RealmSkinFamily[] = DRAWN_REALM_SKINS.map(familyOfCode);
 
-export const realmSkinsFor = (facts: RealmSkinFacts): readonly RealmSkin[] =>
-  facts.hasWonder && facts.aspect === null ? [UNALIGNED_WONDER, ...REALM_SKINS] : REALM_SKINS;
-
 export const wornRealmSkin = (facts: RealmSkinFacts): RealmSkin => {
   const family = familyOfCode(wornRealmSkinFamily(facts, facts.equipped));
-  return (
-    realmSkinsFor(facts).find((skin) => skin.family === family && realmSkinWearableOnRealm(skin, facts)) ??
-    BASE_REALM_SKIN
-  );
+  return REALM_SKINS.find((skin) => skin.family === family && realmSkinWearableOnRealm(skin, facts)) ?? BASE_REALM_SKIN;
 };
 
 export const wearsDefaultSkin = (facts: RealmSkinFacts): boolean =>
-  wornRealmSkinFamily(facts, facts.equipped) === wornRealmSkinFamily(facts, REALM_SKIN_FAMILIES.DEFAULT_REALM_SKIN);
+  wornRealmSkin(facts).id === wornRealmSkin({ ...facts, equipped: REALM_SKIN_FAMILIES.DEFAULT_REALM_SKIN }).id;
 
 export const realmSkinIcon = (skin: RealmSkin, level: RealmLevels): IconMeaning => homeIcon(skin.paintings, level);

@@ -4,11 +4,13 @@ import { FrontierModel, frontierModelKind, type BeastLayer } from "../structures
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
 import { ruinVariantForHex } from "../structures/ruin-kit";
-import { MineKinds, orderAspect, structureName, troopTierIndex } from "@bibliothecadao/types";
+import { MineKinds, structureName, troopTierIndex, type AspectId } from "@bibliothecadao/types";
 import {
   configManager,
   expeditionDepth,
   readExpeditionRules,
+  realmAspect,
+  realmOrderAspect,
   realmWornSkinFamily,
   siteDisplayName,
   siteKindOf,
@@ -477,6 +479,9 @@ export class StructureManager {
           ) {
             const row = change.current ?? change.previous;
             if (row?.game_id === configManager.getActiveGameId()) touched.add(safeInteger(row.entity_id));
+          } else if (change.model === "HomeAspect") {
+            const row = change.current ?? change.previous;
+            if (row?.game_id === configManager.getActiveGameId()) touched.add(safeInteger(row.home));
           }
         }
         if (refreshAll) {
@@ -508,6 +513,7 @@ export class StructureManager {
         ownerAddress: bigint;
         structureType: StructureType;
         hasWonder: boolean;
+        aspect: AspectId | null;
       }
     | undefined {
     const structure = this.resolveStructureInfoByEntityId(entityId);
@@ -518,6 +524,7 @@ export class StructureManager {
       ownerAddress: structure.owner.address,
       structureType: structure.structureType,
       hasWonder: structure.hasWonder,
+      aspect: realmOrderAspect(structure.realmOrder, structure.realmAspect),
     };
   }
 
@@ -563,6 +570,7 @@ export class StructureManager {
     return {
       ...this.buildSiteInfo(renderable, StructureType.Camp, home?.owner ?? 0n),
       realmOrder: home?.metadata.order,
+      realmAspect: home && this.store ? realmAspect(this.store, home) : null,
       supplyPost: true,
     };
   }
@@ -617,6 +625,8 @@ export class StructureManager {
     });
     const battleCooldownEnd = Math.max(0, ...guards.map((guard) => guard.troops.battle_cooldown_end));
     const battleDirections = this.battleDirectionsByStructure.get(renderable.entityId);
+    const resolvedRealmAspect =
+      renderInfo.type === StructureType.Realm && this.store ? realmAspect(this.store, structureComponent) : null;
 
     return {
       entityId: renderable.entityId,
@@ -642,15 +652,10 @@ export class StructureManager {
         ? readStandingFrontierBeast(this.store, configManager.getActiveGameId(), renderable.entityId)
         : undefined,
       realmOrder: renderInfo.type === StructureType.Realm ? structureComponent?.metadata.order : undefined,
+      realmAspect: renderInfo.type === StructureType.Realm ? resolvedRealmAspect : undefined,
       realmSkin:
         renderInfo.type === StructureType.Realm && this.store
-          ? realmWornSkinFamily(
-              this.store,
-              structureComponent,
-              this.mode.id === "frontier" && structureComponent.metadata.order
-                ? orderAspect(structureComponent.metadata.order)
-                : null,
-            )
+          ? realmWornSkinFamily(this.store, structureComponent, resolvedRealmAspect)
           : undefined,
       cosmeticId: cosmetic.skin.cosmeticId,
       cosmeticAssetPaths: cosmetic.skin.assetPaths,
@@ -1367,8 +1372,7 @@ export class StructureManager {
       ? realmModelIndex(
           structure.level,
           structure.hasWonder,
-          structure.entityId,
-          this.mode.id === "frontier" && structure.realmOrder ? orderAspect(structure.realmOrder) : null,
+          realmOrderAspect(structure.realmOrder, structure.realmAspect),
           structure.realmSkin,
         )
       : structure.stage;
@@ -1653,10 +1657,7 @@ export class StructureManager {
       }
       if (binding.model instanceof SettlementModel) {
         const isFriendlySupplyPost = binding.model.kind === "village" && structure.supplyPost && structure.isMine;
-        const aspect =
-          isFriendlySupplyPost && this.mode.id === "frontier" && structure.realmOrder
-            ? orderAspect(structure.realmOrder)
-            : null;
+        const aspect = isFriendlySupplyPost ? realmOrderAspect(structure.realmOrder, structure.realmAspect) : null;
         if (aspect !== null) {
           binding.model.setAspectAt(binding.instanceIndex, aspect);
         } else {

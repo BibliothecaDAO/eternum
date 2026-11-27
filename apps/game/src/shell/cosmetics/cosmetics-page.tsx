@@ -10,7 +10,7 @@ import {
   REALM_SKIN_DEFAULT_ORDER,
   realmSkinIcon,
   REALM_SKIN_CODES,
-  realmSkinsFor,
+  REALM_SKINS,
   realmSkinStanding,
   realmSkinWearableOnRealm,
   wearsDefaultSkin,
@@ -44,7 +44,7 @@ const FAMILY_ROWS: readonly (readonly RealmSkinFamily[])[] = [["season-1"], ["de
 const isRank = (level: number | null): level is RealmLevels => REALM_RANKS.some((rank) => rank === level);
 
 const ownedCountOf = (facts: RealmSkinFacts) =>
-  realmSkinsFor(facts).filter((skin) => realmSkinStanding(skin, facts) === "owned").length;
+  REALM_SKINS.filter((skin) => realmSkinStanding(skin, facts) === "owned").length;
 
 const isOtherAspectSkin = (standing: RealmSkinStanding, wearable: boolean, facts: RealmSkinFacts) =>
   standing === "owned" && !wearable && facts.aspect !== null;
@@ -113,7 +113,7 @@ const FamilyPanel = ({
   picked: RealmSkin;
   onPick: (skin: RealmSkin) => void;
 }) => {
-  const skins = realmSkinsFor(facts).filter((skin) => skin.family === family);
+  const skins = REALM_SKINS.filter((skin) => skin.family === family);
   return (
     <AppPanel title={COSMETICS_WORDS.families[family]} cue={familyCue(family, skins, facts)}>
       <ul className="cosmetics__cards" data-family={family}>

@@ -1475,26 +1475,6 @@
     "label": "Warlock",
     "family": "Beasts"
   },
-  "wonder-realm-0": {
-    "label": "Wonder · Settlement",
-    "family": "Structures",
-    "art": "wonder-realm-0"
-  },
-  "wonder-realm-1": {
-    "label": "Wonder · City",
-    "family": "Structures",
-    "art": "wonder-realm-1"
-  },
-  "wonder-realm-2": {
-    "label": "Wonder · Kingdom",
-    "family": "Structures",
-    "art": "wonder-realm-2"
-  },
-  "wonder-realm-3": {
-    "label": "Wonder · Empire",
-    "family": "Structures",
-    "art": "wonder-realm-3"
-  },
   "devcon-realm-0": {
     "label": "Devcon · Settlement",
     "family": "Structures",
@@ -1737,6 +1717,86 @@
   "season-1-insight-realm-3": {
     "art": "season-1-insight-realm-3",
     "label": "Season 1 · Insight · Empire",
+    "family": "Structures"
+  },
+  "wonder-prowess-realm-0": {
+    "art": "wonder-prowess-realm-0",
+    "label": "Wonder · Prowess · Settlement",
+    "family": "Structures"
+  },
+  "wonder-prowess-realm-1": {
+    "art": "wonder-prowess-realm-1",
+    "label": "Wonder · Prowess · City",
+    "family": "Structures"
+  },
+  "wonder-prowess-realm-2": {
+    "art": "wonder-prowess-realm-2",
+    "label": "Wonder · Prowess · Kingdom",
+    "family": "Structures"
+  },
+  "wonder-prowess-realm-3": {
+    "art": "wonder-prowess-realm-3",
+    "label": "Wonder · Prowess · Empire",
+    "family": "Structures"
+  },
+  "wonder-luminary-realm-0": {
+    "art": "wonder-luminary-realm-0",
+    "label": "Wonder · Luminary · Settlement",
+    "family": "Structures"
+  },
+  "wonder-luminary-realm-1": {
+    "art": "wonder-luminary-realm-1",
+    "label": "Wonder · Luminary · City",
+    "family": "Structures"
+  },
+  "wonder-luminary-realm-2": {
+    "art": "wonder-luminary-realm-2",
+    "label": "Wonder · Luminary · Kingdom",
+    "family": "Structures"
+  },
+  "wonder-luminary-realm-3": {
+    "art": "wonder-luminary-realm-3",
+    "label": "Wonder · Luminary · Empire",
+    "family": "Structures"
+  },
+  "wonder-havoc-realm-0": {
+    "art": "wonder-havoc-realm-0",
+    "label": "Wonder · Havoc · Settlement",
+    "family": "Structures"
+  },
+  "wonder-havoc-realm-1": {
+    "art": "wonder-havoc-realm-1",
+    "label": "Wonder · Havoc · City",
+    "family": "Structures"
+  },
+  "wonder-havoc-realm-2": {
+    "art": "wonder-havoc-realm-2",
+    "label": "Wonder · Havoc · Kingdom",
+    "family": "Structures"
+  },
+  "wonder-havoc-realm-3": {
+    "art": "wonder-havoc-realm-3",
+    "label": "Wonder · Havoc · Empire",
+    "family": "Structures"
+  },
+  "wonder-insight-realm-0": {
+    "art": "wonder-insight-realm-0",
+    "label": "Wonder · Insight · Settlement",
+    "family": "Structures"
+  },
+  "wonder-insight-realm-1": {
+    "art": "wonder-insight-realm-1",
+    "label": "Wonder · Insight · City",
+    "family": "Structures"
+  },
+  "wonder-insight-realm-2": {
+    "art": "wonder-insight-realm-2",
+    "label": "Wonder · Insight · Kingdom",
+    "family": "Structures"
+  },
+  "wonder-insight-realm-3": {
+    "art": "wonder-insight-realm-3",
+    "label": "Wonder · Insight · Empire",
     "family": "Structures"
   }
 }

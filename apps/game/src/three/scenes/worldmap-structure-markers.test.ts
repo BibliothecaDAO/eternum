@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { REALM_LEVELS, StructureType } from "@bibliothecadao/types";
+import { ordersOfAspect, REALM_LEVELS, StructureType } from "@bibliothecadao/types";
 import { Texture, Vector3, type InstancedMesh } from "three";
 import { expect, it, vi } from "vitest";
 
@@ -10,9 +10,12 @@ import { StructureManager } from "../managers/structure-manager";
 import WorldmapScene from "./worldmap";
 
 const homes = {
-  realm: { hasWonder: false },
-  wonder: { hasWonder: true },
-} satisfies Record<HomeKind, { hasWonder: boolean }>;
+  realm: { hasWonder: false, realmOrder: undefined },
+  "wonder-prowess": { hasWonder: true, realmOrder: ordersOfAspect(1)[0]!.orderId },
+  "wonder-luminary": { hasWonder: true, realmOrder: ordersOfAspect(2)[0]!.orderId },
+  "wonder-havoc": { hasWonder: true, realmOrder: ordersOfAspect(3)[0]!.orderId },
+  "wonder-insight": { hasWonder: true, realmOrder: ordersOfAspect(4)[0]!.orderId },
+} satisfies Record<HomeKind, { hasWonder: boolean; realmOrder?: number }>;
 
 it("writes every far-view home to its own Settlement painting through the manager and scene, at every realm level", async () => {
   const kinds = Object.keys(HOME_KINDS) as HomeKind[];
@@ -31,6 +34,7 @@ it("writes every far-view home to its own Settlement painting through the manage
   );
   const marker = (entityId: number) => ({ entityId, reserved: false, hexCoords: { col: entityId, row: 0 } });
   const manager = Object.assign(Object.create(StructureManager.prototype), {
+    mode: { id: "frontier" },
     structureInfoCache: cached,
     worldSpatialProjection: { getStructure: marker },
     metrics: { structureInfoCacheHits: 0 },
@@ -66,14 +70,24 @@ it("writes every far-view home to its own Settlement painting through the manage
       }
       expect(layer.metrics.structures).toBe(kinds.length);
     }
-    // Reconciliation removes the previous identity instead of leaving two markers for the same home.
-    const wonderId = kinds.indexOf("wonder") + 1;
+    const wonderId = kinds.indexOf("wonder-prowess") + 1;
     cached.get(wonderId)!.hasWonder = false;
     scene.writeStructureMarker(marker(wonderId));
     layer.commit();
-    expect(pool("wonder").count).toBe(0);
+    expect(pool("wonder-prowess").count).toBe(0);
     expect(pool("realm").count).toBe(2);
     expect(layer.metrics.structures).toBe(kinds.length);
+    cached.get(wonderId)!.hasWonder = true;
+    manager.mode = { id: "blitz" };
+    scene.writeStructureMarker(marker(wonderId));
+    layer.commit();
+    expect(pool("wonder-prowess").count).toBe(1);
+    expect(pool("realm").count).toBe(1);
+    cached.get(wonderId)!.realmOrder = 0;
+    scene.writeStructureMarker(marker(wonderId));
+    layer.commit();
+    expect(pool("wonder-prowess").count).toBe(0);
+    expect(pool("realm").count).toBe(2);
   } finally {
     layer.dispose();
     canvas.mockRestore();
