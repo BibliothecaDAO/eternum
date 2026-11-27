@@ -220,6 +220,7 @@ type AppBarPlace = {
   portrait?: string;
   /** The place's own word where it shows the player ("You"): what assistive technology names it, with the player. */
   place?: string;
+  badge?: ReactNode;
   current: boolean;
 };
 
@@ -283,7 +284,10 @@ const AppBarLink = ({ place }: { place: AppBarPlace }) =>
           <span className="app-bar__name" title={place.label}>
             {place.label}
           </span>
-          <AppPortrait src={place.portrait} name={place.label} size="sm" own />
+          <span className="relative inline-flex">
+            <AppPortrait src={place.portrait} name={place.label} size="sm" own />
+            {place.badge}
+          </span>
         </>
       ) : (
         <>

@@ -44,6 +44,7 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "AspectRules",
   "AspectMembers",
   "RaceRules",
+  "RaceResult",
   "AspectHyperstructure",
   "ChestRules",
   "LordsBudget",
@@ -101,6 +102,7 @@ interface DirectoryRows {
   aspectRules: FoldRow[];
   aspectMembers: FoldRow[];
   raceRules: FoldRow[];
+  raceResults: FoldRow[];
   questRules: FoldRow[];
   aspectHyperstructures: FoldRow[];
   releases: FoldRow[];
@@ -163,6 +165,7 @@ function directoryRows(input: DirectoryInput): DirectoryRows {
     aspectRules: rows("AspectRules"),
     aspectMembers: rows("AspectMembers"),
     raceRules: rows("RaceRules"),
+    raceResults: rows("RaceResult"),
     questRules: rows("QuestRules"),
     aspectHyperstructures: rows("AspectHyperstructure"),
     releases: rows("GameRelease"),
@@ -295,6 +298,8 @@ export function directoryFact(model: string, row: Row | undefined): unknown {
       return [row.aspect, row.members];
     case "RaceRules":
       return [row.stage_height, row.season_days];
+    case "RaceResult":
+      return row.winner;
     case "QuestRules":
       return row.bonus_percent;
     case "AspectHyperstructure":
@@ -406,6 +411,9 @@ function aspectRaceOf(facts: DirectoryRows, gameId: unknown): HeraldAspectRace |
   const rules = gameRows(facts.raceRules, gameId)[0];
   if (!rules) return null;
   const rows = gameRows(facts.aspectHyperstructures, gameId);
+  const result = gameRows(facts.raceResults, gameId)[0];
+  const winner =
+    result && result.winner !== null && result.winner !== undefined ? catalogAspectId(number(result.winner)) : null;
   return {
     finish_height: raceFinishHeight(number(rules.stage_height)),
     season_days: number(rules.season_days),
@@ -418,6 +426,7 @@ function aspectRaceOf(facts: DirectoryRows, gameId: unknown): HeraldAspectRace |
       pale_moon_percent: number(rules.pale_moon_percent),
       spoils_percent: number(rules.spoils_percent),
     }),
+    winner,
   };
 }
 

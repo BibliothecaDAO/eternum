@@ -1,4 +1,4 @@
-import { raceRewards, type RaceFacts, type RaceReward } from "./race-amounts";
+import { raceRewards, type RaceFacts, type RaceReward } from "@bibliothecadao/types";
 import { ShardReader, type ShardConnection } from "./shard-rpc";
 import { optionalRow, readConfirmedSnapshot, snapshotUint, type ConfirmedSnapshot } from "./shard-snapshot";
 

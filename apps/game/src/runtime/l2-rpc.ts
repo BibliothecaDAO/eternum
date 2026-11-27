@@ -32,6 +32,8 @@ export const L2_CHAIN = { name: ENVIRONMENT_L2.chain, ...L2_CHAINS[ENVIRONMENT_L
  * production's share a chain and nothing else: a build only ever knows its own environment's.
  */
 export const L2_LEDGER = ENVIRONMENT_L2.ledger;
+export const L2_RACE_REWARDS = ENVIRONMENT_L2.raceRewards;
+export const L2_LEDGER_DEPLOYMENT_BLOCK = ENVIRONMENT_L2.ledgerDeploymentBlock;
 
 /** Whether a chain id, as a wallet or a payload gives it, is this build's L2. */
 export const isL2Chain = (chainId: bigint | string): boolean => BigInt(chainId) === BigInt(L2_CHAIN.id);

@@ -501,6 +501,7 @@ describe("native directory", () => {
       season_days: 30,
       heights: { 1: 6400, 2: 7850, 3: 0, 4: 0 },
       triumph_percents: { 1: 120, 2: 120, 3: 80, 4: 120 },
+      winner: null,
     });
     expect(race(2)).toBeNull();
 
@@ -512,7 +513,24 @@ describe("native directory", () => {
       season_days: 30,
       heights: { 1: 6400, 2: 7850, 3: 4100, 4: 0 },
       triumph_percents: { 1: 120, 2: 120, 3: 80, 4: 120 },
+      winner: null,
     });
+
+    const resultRevision = fold.directoryRevision();
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("RaceResult", ["1"], {
+          winner: new CairoOption(CairoOptionVariant.Some, 2n),
+          ended_at: 200n,
+          scheduled_end_at: 500n,
+        }),
+      ]),
+      13,
+      0,
+    );
+    expect(fold.directoryRevision()).not.toBe(resultRevision);
+    expect(race(1)?.winner).toBe(2);
 
     const raceRevision = fold.directoryRevision();
     seedDerivedRows(fold, decoder, [

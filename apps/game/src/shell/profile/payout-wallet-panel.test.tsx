@@ -28,15 +28,29 @@ vi.mock("@/runtime/distribution-channel", () => ({
   opensThirdPartySignIn: () => app.channel !== "app-store",
 }));
 
+const passkeys = vi.hoisted(() => ({ create: vi.fn() }));
+vi.mock("@/ui/modules/identity/passkey", () => ({
+  createPasskey: passkeys.create,
+  signWithPasskey: vi.fn(),
+  PasskeyUnavailableError: class PasskeyUnavailableError extends Error {},
+}));
+
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { IdentityRequestError } from "@realms-world/identity";
 
 import { PayoutWalletPanel } from "./payout-wallet-panel";
-import { WALLET_WORDS } from "@/ui/design-system/kit/words";
+import type { SeasonRewardState } from "../value/season-reward-context";
+import { SEASON_REWARD_WORDS, TRANSACTION, WALLET_WORDS } from "@/ui/design-system/kit/words";
+import { formatDate, formatDuration, formatExact } from "@bibliothecadao/types";
+import { shortAddress } from "@/ui/design-system/kit/address";
 
 const mounted: (() => Promise<void>)[] = [];
 
-const mount = async (wallet: Parameters<typeof PayoutWalletPanel>[0]["wallet"], onChanged = () => {}) => {
+const mount = async (
+  wallet: Parameters<typeof PayoutWalletPanel>[0]["wallet"],
+  onChanged = () => {},
+  reward: SeasonRewardState | null = null,
+) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement("div");
   document.body.append(container);
@@ -44,7 +58,7 @@ const mount = async (wallet: Parameters<typeof PayoutWalletPanel>[0]["wallet"], 
   await act(async () =>
     root.render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <PayoutWalletPanel wallet={wallet} email="you@mail.test" onChanged={onChanged} />
+        <PayoutWalletPanel wallet={wallet} email="you@mail.test" reward={reward} onChanged={onChanged} />
       </QueryClientProvider>,
     ),
   );
@@ -155,4 +169,105 @@ it("offers no wallet to link inside the iOS app, where none can open: the Realms
   const none = await mount(null);
   expect(none.textContent).toContain(WALLET_WORDS.createWallet);
   expect(none.textContent).not.toContain(WALLET_WORDS.haveOne);
+});
+
+it("creates a default passkey wallet, asks for an emailed code when required, and reports passkey cancellation", async () => {
+  const createdWallet = {
+    address: "0x6c3d70a2d9197da8e24ee33ec8e26b00faccfaafe0fa9bd0003c0eb11397b4f",
+    credentialId: "cred",
+    publicKeyX: "0x1",
+    origin: "https://realms.test",
+    rpId: "realms.test",
+  };
+  useIdentitySessionStore.setState({
+    status: "signed-in",
+    session: {
+      session: { id: "s", expiresAt: "2099-01-01T00:00:00.000Z", userId: "u" },
+      user: { id: "u", realmsId: "0x7", name: "Ysolde", email: "you@mail.test" },
+    },
+  });
+  vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
+  vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue({ success: true, expires_at: 300 });
+  passkeys.create.mockResolvedValueOnce({ credentialId: "cred", publicKey: "spki" });
+  const create = vi
+    .spyOn(identityClient, "createDefaultWallet")
+    .mockRejectedValueOnce(new IdentityRequestError(403, "CODE_REQUIRED"))
+    .mockResolvedValueOnce(createdWallet);
+  const onChanged = vi.fn();
+  const panel = await mount(null, onChanged);
+
+  await press(panel, WALLET_WORDS.createWallet);
+  expect(panel.textContent).toContain(WALLET_WORDS.codeSentTo);
+  await typeCode(panel, "123456");
+  expect(create).toHaveBeenLastCalledWith({ passkey: { credentialId: "cred", publicKey: "spki" }, code: "123456" });
+  expect(onChanged).toHaveBeenCalledOnce();
+
+  useIdentitySessionStore.setState({
+    status: "signed-in",
+    session: {
+      session: { id: "s2", expiresAt: "2099-01-01T00:00:00.000Z", userId: "u2" },
+      user: { id: "u2", realmsId: "0x8", name: "Ysolde", email: "you@mail.test" },
+    },
+  });
+  passkeys.create.mockRejectedValueOnce(new DOMException("cancelled", "NotAllowedError"));
+  const retryPanel = await mount(null);
+  await press(retryPanel, WALLET_WORDS.createWallet);
+  expect(retryPanel.textContent).toContain("Passkey");
+});
+
+it("renders waiting, queued, and paid season reward banners inside the existing payout wallet panel", async () => {
+  const wallet = "0x04a1000000000000000000000000000000000000000000000000000000009c2e";
+  const deadline = Math.floor(Date.now() / 1000) + 5 * 86_400;
+  const waitingReward: SeasonRewardState = {
+    status: "waiting",
+    seasonKey: "0x1:3",
+    seasonTitle: "Season 1",
+    aspect: 1,
+    aspectLabel: "Luminary",
+    lords: 1_420,
+    deadline,
+    secondsLeft: 5 * 86_400,
+    urgent: false,
+  };
+  const waiting = await mount(null, () => {}, waitingReward);
+  expect(waiting.querySelector('[data-reward-banner="waiting"]')?.textContent).toContain(
+    SEASON_REWARD_WORDS.waitingBadge(formatExact(1_420)),
+  );
+  expect(waiting.textContent).toContain(formatDuration(5 * 86_400));
+  expect(waiting.textContent).toContain(SEASON_REWARD_WORDS.waitingPanelNote(formatExact(1_420), formatDate(deadline)));
+
+  const sendingReward: SeasonRewardState = {
+    status: "sending",
+    seasonKey: "0x1:3",
+    seasonTitle: "Season 1",
+    aspect: 1,
+    aspectLabel: "Luminary",
+    lords: 1_420,
+    wallet,
+    deadline,
+    secondsLeft: 5 * 86_400,
+    urgent: false,
+  };
+  const sending = await mount(wallet, () => {}, sendingReward);
+  expect(sending.querySelector('[data-reward-banner="sending"]')?.textContent).toContain(
+    SEASON_REWARD_WORDS.sendingTitle,
+  );
+  expect(sending.textContent).toContain(SEASON_REWARD_WORDS.sendingBody(formatExact(1_420), shortAddress(wallet)));
+
+  const paidReward: SeasonRewardState = {
+    status: "paid",
+    seasonKey: "0x1:3",
+    seasonTitle: "Season 1",
+    aspect: 1,
+    aspectLabel: "Luminary",
+    lords: 1_420,
+    wallet,
+    transactionUrl: "https://voyager.online/tx/0xabc",
+  };
+  const paid = await mount(wallet, () => {}, paidReward);
+  expect(paid.querySelector('[data-reward-banner="paid"]')?.textContent).toContain(
+    SEASON_REWARD_WORDS.paidTitle(formatExact(1_420)),
+  );
+  expect(paid.textContent).toContain(SEASON_REWARD_WORDS.paidChip);
+  expect(paid.textContent).toContain(TRANSACTION);
 });

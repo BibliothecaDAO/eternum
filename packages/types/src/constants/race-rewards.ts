@@ -1,4 +1,4 @@
-import { aspectLordsWorth, aspectRewardShare, aspects, sharesAspectReward } from "@bibliothecadao/types";
+import { aspectLordsWorth, aspectRewardShare, aspects, sharesAspectReward } from "./orders";
 
 export interface RaceFacts {
   winner: number | null;

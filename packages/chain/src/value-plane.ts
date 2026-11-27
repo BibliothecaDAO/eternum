@@ -99,10 +99,14 @@ export const environmentL2 = (environment: ValueEnvironment) => {
     throw new Error(
       `contracts/common/addresses/${path} must name SN_MAIN (l2Chain)`,
     );
+  const ledger = deployedOrNull("ledger", environment);
   return {
     network: "mainnet",
     chain: addresses.l2Chain,
-    ledger: deployedOrNull("ledger", environment),
+    ledger,
+    raceRewards: deployedOrNull("raceRewards", environment),
+    ledgerDeploymentBlock:
+      ledger === null ? null : ledgerDeploymentBlock(environment),
   } as const;
 };
 

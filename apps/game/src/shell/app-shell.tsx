@@ -9,6 +9,7 @@ import { useOutsidePlaySession } from "@/utils/spectator-session";
 
 import { AppMusic } from "./app-music";
 import { AppChatConnection } from "./chat/app-chat";
+import { SeasonRewardProvider } from "./value/season-reward-popup";
 
 /**
  * Every screen outside a game, in the player app's one visual system. Each page composes itself with PageFrame; this
@@ -25,7 +26,7 @@ export const AppShell = () => {
   useOutsidePlaySession();
   const { session } = useIdentitySession();
   return (
-    <>
+    <SeasonRewardProvider>
       <Outlet />
       <AppMusic />
       {session && (
@@ -35,7 +36,7 @@ export const AppShell = () => {
       )}
       {/* The app's one chat connection: its pane, its page and a lobby's chat read it. */}
       {session && <AppChatConnection />}
-    </>
+    </SeasonRewardProvider>
   );
 };
 
