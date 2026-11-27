@@ -16,6 +16,7 @@ import { placeMetadata, placeOf } from "../../model/place";
 import { replyMetadata, replyOf } from "../../model/reply";
 import { PlaceChip } from "../shared/chat-map";
 import { PlayerCard } from "../shared/player-card";
+import { nextHistoryCursor } from "../../model/store";
 import { useStickToLatest } from "@/hooks/use-stick-to-latest";
 import { JumpToLatest } from "../shared/jump-to-latest";
 import { useChatMentions } from "../../hooks/use-chat-mentions";
@@ -95,15 +96,11 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
     }
   }, [isActive, markAsRead, resolvedZoneId]);
 
-  const loadOlder = () => {
-    if (zone?.hasMoreHistory && zone.lastFetchedCursor && !zone.isFetchingHistory && !zone.historyError) {
-      void loadHistory(zone.lastFetchedCursor);
-    }
-  };
+  const olderCursor = nextHistoryCursor(zone);
   const { scrollerRef, hasNewer, jumpToLatest } = useStickToLatest({
     oldest: messages[0]?.id,
     newest: messages.at(-1)?.id,
-    onNearOldest: loadOlder,
+    onNearOldest: olderCursor ? () => void loadHistory(olderCursor) : undefined,
   });
 
   const dateSeparators = useMemo(() => computeDateSeparators(messages), [messages]);

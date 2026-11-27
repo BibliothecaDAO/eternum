@@ -69,6 +69,8 @@ it("auto-loads the first page once when joining a granted zone and does not doub
   actions.joinZone("game:28");
   actions.showRoom("game:28");
   expect(fetch).toHaveBeenCalledTimes(1);
+  expect(WORLD_HISTORY_PAGE_LIMIT).toBe(50);
+  expect(String(fetch.mock.calls[0]?.[0])).toContain("limit=50");
   expect(useRealtimeChatStore.getState().worldZones["game:28"]).toMatchObject({
     lastFetchedCursor: "older-cursor",
     hasMoreHistory: true,
@@ -153,5 +155,6 @@ it("loads direct conversation history once on openConversation and does not doub
 
   actions.openConversation("0xa");
   expect(fetch).toHaveBeenCalledTimes(1);
+  expect(String(fetch.mock.calls[0]?.[0])).toContain("limit=50");
   expect(useRealtimeChatStore.getState().dmThreads["0x7|0xa"]?.messages.map((m) => m.id)).toEqual(["d1"]);
 });

@@ -25,7 +25,21 @@ import { fetchApi } from "@/runtime/app-api";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { receiptDue, threadShown } from "./direct-unread";
 
-export const WORLD_HISTORY_PAGE_LIMIT = 10;
+export const WORLD_HISTORY_PAGE_LIMIT = 50;
+
+export const nextHistoryCursor = (
+  history:
+    | {
+        hasMoreHistory: boolean;
+        lastFetchedCursor?: string | null;
+        isFetchingHistory: boolean;
+        historyError?: string;
+      }
+    | undefined,
+): string | null =>
+  history && history.hasMoreHistory && history.lastFetchedCursor && !history.isFetchingHistory && !history.historyError
+    ? history.lastFetchedCursor
+    : null;
 
 const loadWorldFirstPageIfNeeded = (state: RealtimeChatStore, zoneId: string) => {
   const zone = state.worldZones[zoneId];
@@ -1108,7 +1122,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
 
       try {
         const url = new URL(`/api/chat/dm/threads/${threadId}/messages`, baseUrl);
-        url.searchParams.set("limit", "50");
+        url.searchParams.set("limit", String(WORLD_HISTORY_PAGE_LIMIT));
         if (cursor) {
           url.searchParams.set("cursor", cursor);
         }
