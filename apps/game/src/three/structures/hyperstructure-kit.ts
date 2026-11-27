@@ -25,6 +25,8 @@ import {
   HYPERSTRUCTURE_FAMILIES,
   type HyperstructureFamily,
 } from "./hyperstructure-design";
+import { computeCreaseNormals } from "./procgen-geometry";
+import { HYPERSTRUCTURE_CHANNEL_GLOW, createProcgenGlowMaterial } from "./procgen-glow-material";
 import { createProcgenMasonryMaterial } from "./procgen-masonry-material";
 
 const STONE = "#41494e";
@@ -74,13 +76,7 @@ function createPowerMaterials() {
     metalness: 0.35,
     flatShading: true,
   });
-  const channels = new MeshStandardMaterial({
-    color: "#71c6bd",
-    emissive: "#258d87",
-    emissiveIntensity: 1.5,
-    roughness: 0.4,
-    metalness: 0.25,
-  });
+  const channels = createProcgenGlowMaterial(HYPERSTRUCTURE_CHANNEL_GLOW);
   return { core, channels };
 }
 
@@ -152,8 +148,9 @@ function taperedFin(lowerReach: number, upperReach: number): BufferGeometry {
     const reach = upper ? upperReach : lowerReach;
     position.setXYZ(vertex, (position.getX(vertex) + 0.5) * reach, position.getY(vertex) + 0.5, position.getZ(vertex));
   }
-  geometry.computeVertexNormals();
-  return geometry;
+  const creased = computeCreaseNormals(geometry);
+  geometry.dispose();
+  return creased;
 }
 
 function beamBetween(start: Vector3, end: Vector3, width: number): BufferGeometry {
@@ -266,8 +263,9 @@ function shapeContinuousCourse(
       (z * Math.cos(yaw) - x * Math.sin(yaw)) * radius,
     );
   }
-  geometry.computeVertexNormals();
-  return geometry;
+  const creased = computeCreaseNormals(geometry);
+  geometry.dispose();
+  return creased;
 }
 
 function helixCourse(index: number): BufferGeometry {
