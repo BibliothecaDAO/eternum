@@ -1,0 +1,51 @@
+.season-one-skins {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: theme(spacing.2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.season-one-skins[data-surface-kind="hud"] {
+  gap: theme(spacing[1.5]);
+}
+
+.season-one-skins__tile {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.1);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  padding: theme(spacing.2) theme(spacing[1.5]);
+}
+
+.season-one-skins[data-surface-kind="hud"] .season-one-skins__tile {
+  border-color: var(--hud-line);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  padding: theme(spacing[1.5]) theme(spacing.1);
+}
+
+.season-one-skins__name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  line-height: var(--app-leading-label);
+  font-weight: var(--app-weight-label);
+  color: var(--app-ink);
+}
+
+.season-one-skins[data-surface-kind="hud"] .season-one-skins__name {
+  font-family: var(--hud-font);
+  font-size: var(--hud-text-badge);
+  line-height: var(--hud-leading-badge);
+  font-weight: var(--hud-weight-badge);
+  color: rgb(var(--hud-ink));
+}

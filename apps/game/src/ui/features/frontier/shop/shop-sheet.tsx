@@ -1,3 +1,5 @@
+import "./shop-sheet.css";
+
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { Account } from "starknet";
@@ -16,6 +18,7 @@ import { FRAGMENTS_PAGE_WORDS, REALM, SEAL_CODE_WORDS, SHOP_WORDS } from "@/ui/d
 import { parsePlayRoute } from "@/play/navigation/play-route";
 import { returnPathOf } from "@/shell/return-path";
 import { fragmentsHref } from "@/shell/shop/fragments-route";
+import { SEASON_ONE_REALM_SKINS, SeasonOneSkins } from "@/shell/shop/season-one-skins";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { fragmentsToFill } from "../army/refill";
@@ -24,6 +27,7 @@ import { useFragmentsHeld, useFragmentsSold } from "../value/fragments";
 const SHOP_MODELS = ["Seal", "QuestRules", "SliceRules", "SettledRealm"] as const;
 const PASS_PRICE = nativeFragmentConstants.SEAL_FRAGMENTS;
 const POINTS = nativeFragmentConstants.STAMINA_PER_FRAGMENT;
+const OATH_REROLL = nativeFragmentConstants.OATH_REROLL_FRAGMENTS;
 const PASS_KEY = 0;
 
 export type PassState = { held: true } | { held: false; buying: boolean; onBuy: () => void };
@@ -73,13 +77,7 @@ export const ShopView = ({
   onClose,
 }: ShopViewProps) => (
   <HudSheet label={SHOP_WORDS.title} beside={<FragmentsHeld fragments={fragments} />} onClose={onClose}>
-    <section data-shop="pass" className="flex flex-col gap-2">
-      <HudRow lead={<Icon name="final-seal" size={48} />} title={SHOP_WORDS.pass} detail={SHOP_WORDS.passFor} />
-      {questBonus !== null && <span className="text-hud-body text-hud-ink">{SHOP_WORDS.questBonus(questBonus)}</span>}
-      {bonusHeld !== null && <HudNotice tone="good" line={SHOP_WORDS.bonusHeld(bonusHeld)} />}
-      {pass && <PassFoot pass={pass} fragments={fragments} />}
-      {pass && !pass.held && code}
-    </section>
+    <PassSection pass={pass} fragments={fragments} questBonus={questBonus} bonusHeld={bonusHeld} />
     <HudRow
       lead={<Icon name="fragment" size={32} />}
       title={SHOP_WORDS.fragments(fragments)}
@@ -94,14 +92,64 @@ export const ShopView = ({
       <HudRow
         lead={<Icon name="stamina" size={32} />}
         title={SHOP_WORDS.stamina}
-        detail={SHOP_WORDS.staminaLine(POINTS, bar, fragmentsForBar(bar), fragmentsForBar(bar) * FRAGMENT_CENTS)}
+        detail={
+          <span className="flex flex-col gap-0.5">
+            <span>
+              {SHOP_WORDS.staminaLine(POINTS, bar, fragmentsForBar(bar), fragmentsForBar(bar) * FRAGMENT_CENTS)}
+            </span>
+            <span>{SHOP_WORDS.oathSwapLine(OATH_REROLL)}</span>
+          </span>
+        }
       />
     )}
+    {pass && !pass.held && code}
   </HudSheet>
 );
 
-const PassFoot = ({ pass, fragments }: { pass: PassState; fragments: number }) => {
-  if (pass.held) return <HudNotice tone="good" line={SHOP_WORDS.held} />;
+const PassSection = ({
+  pass,
+  fragments,
+  questBonus,
+  bonusHeld,
+}: {
+  pass: PassState | null;
+  fragments: number;
+  questBonus: number | null;
+  bonusHeld: string | null;
+}) => {
+  if (pass?.held) {
+    return (
+      <section data-shop="pass" data-held="" className="shop-sheet-seal">
+        <HudNotice tone="good" line={SHOP_WORDS.held} />
+        <div className="shop-sheet-perks">
+          {questBonus !== null && (
+            <span className="text-hud-label text-hud-good">{SHOP_WORDS.questBonus(questBonus)}</span>
+          )}
+          <span className="text-hud-label text-hud-muted">
+            {SHOP_WORDS.skinsIncluded(SEASON_ONE_REALM_SKINS.length)}
+          </span>
+        </div>
+        <SeasonOneSkins surface="hud" />
+      </section>
+    );
+  }
+  return (
+    <section data-shop="pass" className="shop-sheet-seal">
+      <HudRow lead={<Icon name="final-seal" size={44} />} title={SHOP_WORDS.pass} detail={SHOP_WORDS.passFor} />
+      <div className="shop-sheet-perks">
+        {questBonus !== null && (
+          <span className="text-hud-body text-hud-good">{SHOP_WORDS.questBonus(questBonus)}</span>
+        )}
+        <span className="text-hud-label text-hud-muted">{SHOP_WORDS.skinsIncluded(SEASON_ONE_REALM_SKINS.length)}</span>
+      </div>
+      <SeasonOneSkins surface="hud" />
+      {bonusHeld !== null && <HudNotice tone="good" line={SHOP_WORDS.bonusHeld(bonusHeld)} />}
+      {pass && <PassFoot pass={pass} fragments={fragments} />}
+    </section>
+  );
+};
+
+const PassFoot = ({ pass, fragments }: { pass: Extract<PassState, { held: false }>; fragments: number }) => {
   const more = Math.max(0, PASS_PRICE - fragments);
   return (
     <div className="flex flex-col gap-1">

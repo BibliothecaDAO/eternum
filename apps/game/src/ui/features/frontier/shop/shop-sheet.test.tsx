@@ -14,8 +14,10 @@ vi.mock("@/sync/action-outcome", async (original) => ({
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { configManager } from "@bibliothecadao/eternum";
+import { nativeFragmentConstants } from "@bibliothecadao/eternum/game-client";
 import { sellingFragments } from "../value/fragments-fixture";
 import { GameProvider } from "@/hooks/context/game-context";
+import { SEASON_ONE_REALM_SKINS } from "@/shell/shop/season-one-skins";
 import { transferArmies } from "../army/transfer-fixture";
 import { ShopSheet, ShopView, type ShopViewProps } from "./shop-sheet";
 import { ANCIENT_SEAL } from "@bibliothecadao/types";
@@ -74,6 +76,10 @@ describe("the shop", () => {
     expect(text()).toContain("Fragments 340");
     expect(text()).toContain(SHOP_WORDS.fragmentsLine(1));
     expect(text()).toContain(SHOP_WORDS.staminaLine(2, 180, 90, 90));
+    expect(text()).toContain(SHOP_WORDS.oathSwapLine(nativeFragmentConstants.OATH_REROLL_FRAGMENTS));
+    expect(
+      [...host.querySelectorAll("[data-season-one-skin]")].map((el) => el.getAttribute("data-season-one-skin")),
+    ).toEqual(SEASON_ONE_REALM_SKINS.map((skin) => skin.id));
   });
 
   it("prices a gap below the smallest purchase at that purchase", () => {
@@ -103,6 +109,8 @@ describe("the shop", () => {
   it("reads a held Ancient Seal from the account's Seal row: no purchase, no code, the Ancient Seal named as held", () => {
     renderShop([{ model: "Seal", key: "0x5ea1", value: { game_id: 1, account: PLAYER, granted_at: "1" } }]);
     expect(text()).toContain(SHOP_WORDS.held);
+    expect(host.querySelector("[data-shop=pass]")?.hasAttribute("data-held")).toBe(true);
+    expect(host.querySelectorAll("[data-season-one-skin]")).toHaveLength(SEASON_ONE_REALM_SKINS.length);
     expect(getPass()).toBeUndefined();
     expect(host.querySelector("[data-shop=code]")).toBeNull();
   });

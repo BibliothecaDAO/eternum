@@ -15,9 +15,13 @@ vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
 vi.mock("@/hooks/context/starknet-provider", async () => ({
   StarknetProvider: (await import("@/ui/modules/identity/test-wallet")).StandInStarknetProvider,
 }));
+const sessionWallet = vi.hoisted(() => ({ address: "0x4a1" as string | null }));
 vi.mock("@/hooks/context/identity-session", async (original) => ({
   ...(await original<typeof import("@/hooks/context/identity-session")>()),
-  useIdentitySession: () => ({ status: "signed-in", session: { user: { realmsId: "realms-1", address: WALLET } } }),
+  useIdentitySession: () => ({
+    status: "signed-in",
+    session: { user: { realmsId: "realms-1", address: sessionWallet.address } },
+  }),
 }));
 const defaultWallet = vi.hoisted(() => ({
   read: { wallet: null as null | undefined, failed: false, retry: () => {} },
@@ -59,10 +63,18 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { installWallet } from "@/ui/modules/identity/test-wallet";
 
 import { setViewportWidth } from "../frame/test-viewport";
+import { linkWalletHref } from "../profile/settings-route";
 import { SEASON_SPENDS_FRAGMENTS } from "../season";
 import { FragmentsPage } from "./fragments-page";
 import { fragmentsHref } from "./fragments-route";
-import { FRAGMENTS_PAGE_WORDS, SEASON_ERROR, WALLET_WORDS } from "@/ui/design-system/kit/words";
+import { SEASON_ONE_REALM_SKINS } from "./season-one-skins";
+import {
+  FRAGMENTS_PAGE_WORDS,
+  SEAL_CODE_WORDS,
+  SEASON_ERROR,
+  SHOP_WORDS,
+  WALLET_WORDS,
+} from "@/ui/design-system/kit/words";
 
 const WALLET = "0x4a1";
 const WEI = 10n ** 18n;
@@ -77,8 +89,8 @@ const QUOTE = {
 const unmounts: (() => Promise<void>)[] = [];
 
 const Where = () => {
-  const { pathname, hash } = useLocation();
-  return <output data-where>{`${pathname}${hash}`}</output>;
+  const { pathname, search, hash } = useLocation();
+  return <output data-where>{`${pathname}${search}${hash}`}</output>;
 };
 
 const mount = async (entry: string = fragmentsHref(GAME, "/g/0x52/7/map#shop"), spends: boolean | "default" = true) => {
@@ -128,6 +140,7 @@ const UNKNOWN = new IdentityRequestError(404, "unknown_payment");
 afterEach(async () => {
   for (const unmount of unmounts.splice(0)) await unmount();
   l2.lords = QUOTE.token;
+  sessionWallet.address = WALLET;
   defaultWallet.read = { wallet: null, failed: false, retry: () => {} };
   directoryGames.games = [];
   directoryGames.isError = false;
@@ -266,8 +279,9 @@ it("resolves the active Frontier season on /shop, supports custom amounts >= 100
     .mockResolvedValue({ fragments: 250, cents: 250, quote: QUOTE });
   const page = await mount("/shop");
   expect(page.querySelector("[data-shop-spend]")?.textContent).toContain("The Ancient Seal");
+  expect(page.querySelector("[data-shop-spend]")?.textContent).toContain(SHOP_WORDS.questBonus(50));
   expect(page.querySelector("[data-shop-spend]")?.textContent).toContain(
-    FRAGMENTS_PAGE_WORDS.sealCardDetail(50, "Season 3"),
+    SHOP_WORDS.skinsIncluded(SEASON_ONE_REALM_SKINS.length),
   );
   const customInput = page.querySelector<HTMLInputElement>("[data-fragment-custom] input")!;
   await act(async () => {
@@ -331,4 +345,81 @@ it("defaults FragmentsPage open/closed state from SEASON_SPENDS_FRAGMENTS", asyn
   const page = await mount(fragmentsHref(GAME, "/"), "default");
   expect(page.querySelector("[data-shop-closed]") !== null).toBe(!SEASON_SPENDS_FRAGMENTS);
   expect(page.querySelector("[data-fragment-packs]") !== null).toBe(SEASON_SPENDS_FRAGMENTS);
+});
+
+it("lets a player without a linked wallet browse packs, view all 4 Season 1 skins, and apply a Seal code, prompting wallet link only at Pay", async () => {
+  setViewportWidth(1440);
+  sessionWallet.address = null;
+  defaultWallet.read = { wallet: null, failed: false, retry: () => {} };
+  directoryGames.games = [
+    {
+      chainId: GAME.chainId,
+      game_id: GAME.gameId,
+      name: "frontier-1795248000",
+      season_number: 1,
+      mode: "frontier",
+      status: "Live",
+      clock_scale: 1,
+      quest_bonus_percent: 50,
+      clock: { start_main_at: 100, end_at: 9_999_999_999 },
+    },
+  ];
+  vi.spyOn(identityClient, "getSealCode").mockResolvedValue({ held: false });
+  const redeem = vi.spyOn(identityClient, "redeemSealCode").mockResolvedValue({ held: true });
+  const price = vi.spyOn(identityClient, "priceFragments");
+  const page = await mount("/shop");
+
+  const skins = [...page.querySelectorAll("[data-season-one-skin]")].map((node) =>
+    node.getAttribute("data-season-one-skin"),
+  );
+  expect(skins).toEqual(SEASON_ONE_REALM_SKINS.map((skin) => skin.id));
+  expect(page.querySelector("[data-fragment-packs]")).not.toBeNull();
+  expect(page.querySelector("[data-wallet-deferred]")?.textContent).toBe(FRAGMENTS_PAGE_WORDS.noWalletNote);
+
+  await vi.waitFor(() => expect(page.querySelector('[data-seal-code="open"]')).not.toBeNull());
+  const input = page.querySelector<HTMLInputElement>('[data-seal-code="open"] input')!;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "SEAL2345");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await act(async () => {
+    page.querySelector<HTMLFormElement>('[data-seal-code="open"] form')!.requestSubmit();
+  });
+  expect(redeem).toHaveBeenCalledWith("SEAL2345");
+  await vi.waitFor(() => expect(page.querySelector('[data-seal-code="held"]')).not.toBeNull());
+  expect(page.textContent).toContain(SEAL_CODE_WORDS.held);
+  expect(price).not.toHaveBeenCalled();
+
+  await press(page, FRAGMENTS_PAGE_WORDS.pay(1_000));
+  expect(price).not.toHaveBeenCalled();
+  expect(page.querySelector("[data-where]")?.textContent).toBe(linkWalletHref("/shop"));
+});
+
+it("shows a 2-tab phone layout switching between Season 1 Ancient Seal and Buy Fragments", async () => {
+  setViewportWidth(360);
+  directoryGames.games = [
+    {
+      chainId: GAME.chainId,
+      game_id: GAME.gameId,
+      name: "frontier-1795248000",
+      season_number: 1,
+      mode: "frontier",
+      status: "Live",
+      clock_scale: 1,
+      quest_bonus_percent: 50,
+      clock: { start_main_at: 100, end_at: 9_999_999_999 },
+    },
+  ];
+  vi.spyOn(identityClient, "getSealCode").mockResolvedValue({ held: false });
+  const page = await mount("/shop");
+
+  const tabs = [...page.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent);
+  expect(tabs).toEqual([FRAGMENTS_PAGE_WORDS.passTab, FRAGMENTS_PAGE_WORDS.buyTab]);
+  expect(page.querySelector("[data-shop-spend]")).not.toBeNull();
+  expect(page.querySelectorAll("[data-season-one-skin]")).toHaveLength(SEASON_ONE_REALM_SKINS.length);
+  expect(page.querySelector("[data-fragment-packs]")).toBeNull();
+
+  await press(page, FRAGMENTS_PAGE_WORDS.buyTab);
+  expect(page.querySelector("[data-fragment-packs]")).not.toBeNull();
+  expect(page.querySelector("[data-shop-spend]")).toBeNull();
 });

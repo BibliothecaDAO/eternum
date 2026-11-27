@@ -1,0 +1,20 @@
+.shop-sheet-seal {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.2);
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  padding: theme(spacing[2.5]);
+}
+
+.shop-sheet-seal[data-held] {
+  border-color: color-mix(in srgb, var(--hud-good) 50%, transparent);
+  background: color-mix(in srgb, var(--hud-good) 10%, var(--hud-well));
+}
+
+.shop-sheet-perks {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing[0.5]);
+}

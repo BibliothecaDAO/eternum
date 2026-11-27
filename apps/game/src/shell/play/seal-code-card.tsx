@@ -7,11 +7,20 @@ import { SEAL_CODE_WORDS } from "@/ui/design-system/kit/words";
 
 import { useRedeemSealCode, useSealCode } from "./seal-code";
 
-export const SealCodeCard = ({ owner, compact = false }: { owner: string | null; compact?: boolean }) => {
+export const SealCodeCard = ({
+  owner,
+  compact = false,
+  embedded = false,
+}: {
+  owner: string | null;
+  compact?: boolean;
+  embedded?: boolean;
+}) => {
   const held = useSealCode(owner);
   if (held.isError) return <ServiceFailure service="season" error={held.error} retry={() => void held.refetch()} />;
   if (!held.data) return null;
   if (compact) return <CompactSealDisclosure owner={owner} held={held.data.held} />;
+  if (embedded) return <EmbeddedSealCard owner={owner} held={held.data.held} />;
   return (
     <section data-seal-code={held.data.held ? "held" : "open"} className="app-well w-full gap-3 p-4 text-left">
       <SealHeading held={held.data.held} />
@@ -19,6 +28,19 @@ export const SealCodeCard = ({ owner, compact = false }: { owner: string | null;
     </section>
   );
 };
+
+const EmbeddedSealCard = ({ owner, held }: { owner: string | null; held: boolean }) => (
+  <section data-seal-code={held ? "held" : "open"} className="app-well shop-code-well w-full gap-2.5 p-3.5 text-left">
+    <span className="flex items-center gap-2.5">
+      <Icon name="final-seal" size={28} />
+      <span className="flex flex-col">
+        <span className="text-app-strong text-app-ink">{held ? SEAL_CODE_WORDS.held : SEAL_CODE_WORDS.haveCode}</span>
+        {held && <span className="text-app-label text-app-muted">{SEAL_CODE_WORDS.heldLine}</span>}
+      </span>
+    </span>
+    {!held && <RedeemForm owner={owner} />}
+  </section>
+);
 
 const CompactSealDisclosure = ({ owner, held }: { owner: string | null; held: boolean }) => {
   const [expanded, setExpanded] = useState(false);

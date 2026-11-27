@@ -1547,6 +1547,8 @@ export const SHOP_WORDS = {
   pass: ANCIENT_SEAL,
   passFor: "For the whole season",
   questBonus: (percent: number) => `Daily quest pays ${formatExact(percent)}% more`,
+  skinsIncluded: (count: number) =>
+    `All ${formatCount(count, `${COSMETICS_WORDS.families["season-1"]} Aspect skin`, `${COSMETICS_WORDS.families["season-1"]} Aspect skins`)}`,
   bonusHeld: (holder: string) => `Your ${holder} already gives this bonus`,
   getPass: `Get the ${ANCIENT_SEAL}`,
   getting: "Getting…",
@@ -1559,17 +1561,21 @@ export const SHOP_WORDS = {
   stamina: "Stamina refill",
   staminaLine: (points: number, bar: number, fragments: number, cents: number) =>
     `Each ${FRAGMENT} refills ${formatExact(points)} points. A bar of ${formatExact(bar)} is ${formatCount(fragments, FRAGMENT, FRAGMENTS)}, ${formatDollars(cents)}.`,
+  oathSwapLine: (cost: number) => `Oath swap: ${formatCount(cost, FRAGMENT, FRAGMENTS)}`,
 } as const;
 
 export const FRAGMENTS_PAGE_WORDS = {
   title: `Get ${FRAGMENTS}`,
   buyTab: `Buy ${FRAGMENTS}`,
-  spendTab: `Spend ${FRAGMENTS}`,
+  passTab: `${COSMETICS_WORDS.families["season-1"]} ${ANCIENT_SEAL}`,
+  passBadge: "Pass",
+  unitPrice: (cents: number) => `${formatCount(cents, "cent")} each`,
   customLabel: "Custom amount",
   customHint: (min: number) => `Minimum ${formatExact(min)} ${FRAGMENTS}`,
+  selectedLabel: "Selected",
+  noWalletNote: "No wallet linked yet. Clicking Pay links a wallet once. Browsing and codes need no wallet.",
+  walletPending: "Checking your wallet…",
   sealCardTitle: `The ${ANCIENT_SEAL}`,
-  sealCardDetail: (percent: number, seasonName?: string) =>
-    `+${formatExact(percent)}% daily quest labor · ${seasonName ? `${seasonName} ` : ""}Realm skin`,
   sealInGameNote: `Activate your ${ANCIENT_SEAL} inside your Realm once you hold enough ${FRAGMENTS}.`,
   inGameUsesTitle: `In-game ${FRAGMENTS} uses`,
   inGameStamina: (points: number) =>
