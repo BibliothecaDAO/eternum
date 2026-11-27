@@ -25,7 +25,7 @@ export const BiomeEnvironmentBar = ({ biome, onSelect, ethereal = false }: Biome
       <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
         {neutral ? (
           <span className="text-hud-body text-hud-muted">
-            {ethereal ? "Ethereal — neutral terrain" : "Neutral terrain"}
+            {ethereal ? "Ethereal · neutral terrain" : "Neutral terrain"}
           </span>
         ) : (
           <HudSelect

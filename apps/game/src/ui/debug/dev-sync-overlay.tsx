@@ -1,9 +1,10 @@
+import { UNKNOWN } from "@bibliothecadao/types";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { useEffect, useState } from "react";
 
 const formatAge = (timestamp: number, now: number): string => {
-  if (!timestamp) return "—";
+  if (!timestamp) return UNKNOWN;
   const seconds = Math.max(0, Math.round((now - timestamp) / 1000));
   if (seconds < 60) return `${seconds}s`;
   return `${Math.floor(seconds / 60)}m${(seconds % 60).toString().padStart(2, "0")}s`;

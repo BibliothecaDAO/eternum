@@ -2,7 +2,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { AmountInput, HudButton } from "@/ui/design-system/kit/hud-elements";
 import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { resourceName } from "@bibliothecadao/types";
+import { resourceName, UNKNOWN } from "@bibliothecadao/types";
 
 /** One input of a run as the panel shows it: what is held, what the run burns, and the budget typed into it, if any. */
 export interface RunInput {
@@ -34,7 +34,7 @@ export const RunInputsPanel = ({
 }) => (
   <div className="cursor-pointer space-y-1" onClick={onSelect}>
     <div className="text-hud-label text-hud-muted">{title}</div>
-    {inputs === undefined && <div className="text-hud-strong">—</div>}
+    {inputs === undefined && <div className="text-hud-strong">{UNKNOWN}</div>}
     {inputs?.map((input) => (
       <RunInputRow key={input.resource} input={input} onBudget={(amount) => onBudget(input.resource, amount)} />
     ))}

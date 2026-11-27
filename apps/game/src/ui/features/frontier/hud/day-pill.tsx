@@ -1,3 +1,4 @@
+import { UNKNOWN } from "@bibliothecadao/types";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
@@ -65,7 +66,7 @@ export const FrontierDayClock = ({
 
 export const DayPill = ({ clock, compact = false }: { clock: DayClock; compact?: boolean }) => {
   const left = dayLeftCompact(clock.secondsLeft);
-  const day = clock.day ?? "—";
+  const day = clock.day ?? UNKNOWN;
   const elapsed = dayElapsedShare(clock);
   return (
     <span

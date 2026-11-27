@@ -130,7 +130,7 @@ export class HexHoverLabel {
       statusRow.appendChild(productionText);
 
       const separator = document.createElement("span");
-      separator.textContent = "—";
+      separator.textContent = "·";
       statusRow.appendChild(separator);
 
       const status = document.createElement("span");

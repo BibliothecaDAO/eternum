@@ -3,7 +3,15 @@ import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
-import { formatExact, formatFigure, formatGain, formatRate, resourceName, structureName } from "@bibliothecadao/types";
+import {
+  formatExact,
+  formatFigure,
+  formatGain,
+  formatRate,
+  resourceName,
+  structureName,
+  UNKNOWN,
+} from "@bibliothecadao/types";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { InlineProduction } from "@/ui/features/settlement/production/inline-production";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -382,9 +390,9 @@ const LocalTilePanel = () => {
               disabled={!isPreviewing && (!canBuildAnother || isActionLoading)}
               title={
                 isPreviewing
-                  ? "Cancel build — click again to place a new building"
+                  ? "Cancel build: click again to place a new building"
                   : canBuildAnother
-                    ? "Build another — pick an empty tile to place it"
+                    ? "Build another: pick an empty tile to place it"
                     : buildBlockedReason
               }
               aria-pressed={isPreviewing}
@@ -478,7 +486,7 @@ const LocalTilePanel = () => {
 
           {ongoingCost === undefined && (
             <SectionRow label="Burns a cycle">
-              <span className="text-hud-muted">—</span>
+              <span className="text-hud-muted">{UNKNOWN}</span>
             </SectionRow>
           )}
           {ongoingCost !== undefined && ongoingCost.length > 0 && (
@@ -509,7 +517,7 @@ const LocalTilePanel = () => {
 
           {canManageBuilding && (
             <>
-              {nextBuildCost === undefined && <SectionRow label="Build cost">—</SectionRow>}
+              {nextBuildCost === undefined && <SectionRow label="Build cost">{UNKNOWN}</SectionRow>}
               {buildCost.length > 0 && (
                 <SectionRow label="Build cost">
                   {buildCost.map((entry, index) => {

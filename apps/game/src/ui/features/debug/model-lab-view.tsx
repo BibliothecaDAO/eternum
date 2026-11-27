@@ -249,8 +249,8 @@ function UnitModelLabView() {
               value={settings.detail}
               onChange={(event) => change({ detail: event.target.value as ModelLabSettings["detail"] })}
             >
-              <option value="hero">Near — 13,499 triangles</option>
-              <option value="crowd">Mid — 4,498 triangles</option>
+              <option value="hero">Near · 13,499 triangles</option>
+              <option value="crowd">Mid · 4,498 triangles</option>
             </select>
           </label>
         )}
