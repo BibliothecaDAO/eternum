@@ -108,7 +108,7 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
 
   return (
     <section ref={section} className={`relative flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
-      <div className="flex-1 min-h-0 px-3 py-2">
+      <div className="flex-1 min-h-0 px-3 pb-2">
         {!hasChannelAccess && (
           <p className="text-hud-body text-hud-cue">{reconnecting ? "Reconnecting…" : "Chat unavailable."}</p>
         )}
@@ -117,7 +117,7 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
         )}
         {hasChannelAccess && zone && muted !== null && (
           <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
-            <div ref={scrollerRef} className="flex flex-1 min-h-0 flex-col overflow-y-auto pr-1">
+            <div ref={scrollerRef} className="chat-message-scroller flex flex-1 min-h-0 flex-col overflow-y-auto pr-1">
               {zone.historyError && (
                 <div className="mb-2">
                   <HudNotice

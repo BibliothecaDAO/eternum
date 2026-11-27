@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { installHudSheet } from "@/ui/design-system/kit/hud-sheet-test-support";
 
 vi.mock("@/sync/action-outcome", async (original) => ({
   ...(await original<typeof import("@/sync/action-outcome")>()),
@@ -18,7 +19,7 @@ import { GameProvider } from "@/hooks/context/game-context";
 import { transferArmies } from "../army/transfer-fixture";
 import { ShopSheet, ShopView, type ShopViewProps } from "./shop-sheet";
 import { ANCIENT_SEAL } from "@bibliothecadao/types";
-import { SHOP_WORDS } from "@/ui/design-system/kit/words";
+import { FRAGMENTS_PAGE_WORDS, SHOP_WORDS } from "@/ui/design-system/kit/words";
 
 const PLAYER = "0x111";
 
@@ -138,7 +139,90 @@ describe("the shop", () => {
     renderShop([]);
     expect(host.querySelector("[data-shop=pass]")?.textContent).not.toContain("already gives this bonus");
   });
+
+  it("stacks the Fragments row below its description inside narrow sheet containers and keeps rows non-shrinking", () => {
+    const sheet = installHudSheet();
+    try {
+      view({ fragments: 1_250 });
+      const body = host.querySelector<HTMLElement>(".ui-frame__body")!;
+      expect(body).not.toBeNull();
+      expect(window.getComputedStyle(body).containerType).toBe("inline-size");
+
+      const rows = [...host.querySelectorAll<HTMLElement>(".ui-row")];
+      expect(rows.length).toBeGreaterThanOrEqual(3);
+      for (const row of rows) {
+        expect(window.getComputedStyle(row).flexShrink).toBe("0");
+      }
+      const fragmentsRow = rows.find((row) => row.textContent?.includes(SHOP_WORDS.fragments(1_250)))!;
+      expect(fragmentsRow).toBeDefined();
+      expect(body.contains(fragmentsRow)).toBe(true);
+      expect(fragmentsRow.querySelector(".ui-row__controls > .ui-button:not([data-icon-only])")?.textContent).toBe(
+        FRAGMENTS_PAGE_WORDS.title,
+      );
+
+      const narrowRules = narrowContainerRules(sheet, 390);
+      const rowWrapRule = narrowRules.find((rule) => matchesHasSelector(fragmentsRow, rule.selectorText));
+      expect(rowWrapRule?.style.flexWrap).toBe("wrap");
+
+      const controlsRule = narrowRules.find(
+        (rule) =>
+          rule.selectorText.endsWith("> .ui-row__controls") &&
+          matchesHasSelector(fragmentsRow, rule.selectorText.slice(0, -"> .ui-row__controls".length)),
+      );
+      expect(controlsRule?.style.flexBasis).toBe("100%");
+
+      const controlChildRule = narrowRules.find(
+        (rule) =>
+          rule.selectorText.endsWith("> .ui-row__controls > *") &&
+          matchesHasSelector(fragmentsRow, rule.selectorText.slice(0, -"> .ui-row__controls > *".length)),
+      );
+      expect(controlChildRule?.style.flexGrow).toBe("1");
+
+      for (const otherRow of rows.filter((row) => row !== fragmentsRow)) {
+        expect(matchesHasSelector(otherRow, rowWrapRule!.selectorText)).toBe(false);
+      }
+    } finally {
+      sheet.remove();
+    }
+  });
 });
+
+type ContainerRule = CSSGroupingRule & { conditionText: string; containerQuery: string };
+
+const isContainerRule = (rule: CSSRule): rule is ContainerRule => "containerQuery" in rule && "cssRules" in rule;
+
+const narrowContainerRules = (sheet: HTMLStyleElement, maxWidthPx: number): CSSStyleRule[] =>
+  [...sheet.sheet!.cssRules]
+    .filter(
+      (rule): rule is ContainerRule => isContainerRule(rule) && rule.conditionText === `(max-width: ${maxWidthPx}px)`,
+    )
+    .flatMap((container) =>
+      [...container.cssRules].filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule),
+    );
+
+const matchesHasSelector = (element: Element, selector: string): boolean => {
+  const predicates: string[] = [];
+  let base = "";
+  for (let i = 0; i < selector.length; i++) {
+    if (selector.startsWith(":has(", i)) {
+      let depth = 0;
+      const start = i + 5;
+      for (i = start; i < selector.length; i++) {
+        if (selector[i] === "(") depth++;
+        else if (selector[i] === ")") {
+          if (depth === 0) break;
+          depth--;
+        }
+      }
+      predicates.push(selector.slice(start, i).trim());
+    } else {
+      base += selector[i];
+    }
+  }
+  const trimmedBase = base.trim();
+  if (!trimmedBase || !element.matches(trimmedBase)) return false;
+  return predicates.every((inner) => element.querySelector(`:scope ${inner}`) !== null);
+};
 
 const renderShop = (facts: object[], selling = true) => {
   const store = transferArmies();

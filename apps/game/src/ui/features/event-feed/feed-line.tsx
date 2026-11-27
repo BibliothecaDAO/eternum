@@ -1,3 +1,4 @@
+import "./feed-line.css";
 import { HudRanked } from "@/ui/design-system/kit/hud-elements";
 import { useGame } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -48,7 +49,7 @@ export const FeedRuleLine = ({ story }: { story: ProcessedStoryEvent }) => {
     <FeedRow
       story={story}
       line={line}
-      className="ui-event ui-feed-line items-center"
+      className="ui-event ui-feed-line feed-rule-line items-center"
       lead={
         <span
           className={`my-1 w-1 shrink-0 self-stretch rounded-full ${CONCERN_RULES[line.concern]}`}

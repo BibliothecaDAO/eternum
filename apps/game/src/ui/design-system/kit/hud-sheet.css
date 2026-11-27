@@ -767,6 +767,7 @@ button.ui-ring:focus-visible .ui-ring__face {
 /* ── List row: one thing of a list (a holding, a player): what it is, what it says, its value; chosen, a gold bar. ── */
 .ui-row {
   display: flex;
+  flex-shrink: 0;
   min-height: var(--hud-control);
   align-items: center;
   gap: theme(spacing.2);
@@ -867,6 +868,17 @@ span.ui-row__choose {
   flex: none;
   align-items: center;
   gap: theme(spacing.1);
+}
+@container (max-width: 390px) {
+  .ui-row:has(> .ui-row__controls > .ui-button:not([data-icon-only])):has(.ui-row__detail) {
+    flex-wrap: wrap;
+  }
+  .ui-row:has(> .ui-row__controls > .ui-button:not([data-icon-only])):has(.ui-row__detail) > .ui-row__controls {
+    flex-basis: 100%;
+  }
+  .ui-row:has(> .ui-row__controls > .ui-button:not([data-icon-only])):has(.ui-row__detail) > .ui-row__controls > * {
+    flex: 1 1 0%;
+  }
 }
 
 /* ── Table row: one row of a table (the leaderboard), its columns on the caller's grid (--cols, --cols-wide from a
@@ -1097,6 +1109,7 @@ span.ui-row__choose {
   flex: 1;
   flex-direction: column;
   overflow-y: auto;
+  container-type: inline-size;
 }
 /* The body's padding and gap are defaults a page's layout may change (bodyClassName's p-0, gap-1): no weight of their
    own, so a utility always wins. */

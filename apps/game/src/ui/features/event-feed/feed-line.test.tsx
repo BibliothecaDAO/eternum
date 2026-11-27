@@ -3,6 +3,7 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
+import { installHudSheet } from "@/ui/design-system/kit/hud-sheet-test-support";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import {
   buildStoryEventPresentation,
@@ -440,4 +441,26 @@ it("names the player once where a story's own words already name them, in gold w
 it("names no one on a story no player owns", async () => {
   const row = story("0x0", "BlitzFinalized", {});
   expect(await draw(row)).toEqual({ words: "Blitz finalized", reward: null, gold: false });
+});
+
+it("allows mobile feed rows to wrap so battle outcomes are never truncated mid-word", async () => {
+  const sheet = installHudSheet();
+  try {
+    const row = story(DJIZUS, "BattleEvent", {
+      attacker_id: 201,
+      defender_id: 301,
+      attacker: { player: DJIZUS, category: "Knight", tier: "T1", before: scaled(7000), after: "0", roll: 0 },
+      defender: { player: KRUMP, category: "Knight", tier: "T1", before: scaled(1400), after: scaled(1028), roll: 0 },
+    });
+    await draw(row, FeedRuleLine);
+    const mobileText = host.querySelector<HTMLElement>("[data-feed-line] .ui-event__text")!;
+    expect(mobileText.textContent).toContain("Army lost");
+    expect(window.getComputedStyle(mobileText).whiteSpace).toBe("normal");
+
+    await draw(row, FeedLine);
+    const desktopText = host.querySelector<HTMLElement>("[data-feed-line] .ui-event__text")!;
+    expect(window.getComputedStyle(desktopText).whiteSpace).toBe("nowrap");
+  } finally {
+    sheet.remove();
+  }
 });
