@@ -1,6 +1,7 @@
-import { useAccountStore } from "@/hooks/store/use-account-store";
-import type { GameClient } from "@bibliothecadao/eternum";
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
+import { isRealmCategory, isViewerOwner, readExpeditionRules, type GameClient } from "@bibliothecadao/eternum";
+import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import type { ContractAddress } from "@bibliothecadao/types";
 import { disposeActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import type { AccountInterface } from "starknet";
 import { create } from "zustand";
@@ -67,6 +68,43 @@ export const useRealmVisit = (): RealmVisit | null => useRealmVisitStore((state)
 export const startRealmVisit = (visit: RealmVisit): void => {
   requireActiveGameClient().visit(visit.player);
   useRealmVisitStore.setState({ visit });
+};
+
+export const needsRealmVisit = (
+  store: NativeFactStore,
+  gameId: number,
+  owner: number | bigint,
+  viewer: ContractAddress | null = accountAddress(),
+): boolean => {
+  const account = BigInt(owner);
+  if (account <= 0n || !readExpeditionRules(store, gameId)) return false;
+  return !isViewerOwner(account, viewer);
+};
+
+export const syncRealmVisitForStructure = (
+  store: NativeFactStore,
+  gameId: number,
+  structure: {
+    entity_id: number | bigint;
+    owner: number | bigint;
+    base?: { category: number };
+  },
+): void => {
+  const owner = BigInt(structure.owner);
+  if (isViewerOwner(owner, accountAddress())) {
+    leaveRealmVisit();
+    return;
+  }
+  if (!structure.base || !isRealmCategory(structure.base.category)) return;
+  if (!needsRealmVisit(store, gameId, owner)) return;
+  const structureId = safeInteger(structure.entity_id);
+  const current = useRealmVisitStore.getState().visit;
+  if (current && BigInt(current.player) === owner && current.structureId === structureId) return;
+  startRealmVisit({
+    player: `0x${owner.toString(16)}`,
+    structureId,
+    opensOn: null,
+  });
 };
 
 export const leaveRealmVisit = (): void => {

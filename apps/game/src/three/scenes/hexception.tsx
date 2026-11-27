@@ -105,7 +105,7 @@ import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 
 import { openProduction } from "@/ui/features/settlement/production/open-production";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
-import { requireActiveGameClient } from "@/sync/active-game-client";
+import { requireActiveGameClient, syncRealmVisitForStructure } from "@/sync/active-game-client";
 import { sendBuilding } from "@/ui/features/settlement/construction/send-building";
 import { playerStructuresView, readFactView, watchFactView } from "@/sync/fact-views";
 import {
@@ -342,6 +342,7 @@ export default class HexceptionScene extends HexagonScene {
   private shownMapHexes = new Set<string>();
   private pageAhead: { request: string; page: Promise<PreparedTerrainPage> } | null = null;
   private gridIsStale = false;
+  private shownRealmBuildingsScoped = true;
   private readonly localZoomPersistDebounceMs = 500;
   private localZoomPersistTimeout: ReturnType<typeof setTimeout> | null = null;
   private readonly handleLocalZoomControlsChange = () => {
@@ -1145,6 +1146,7 @@ export default class HexceptionScene extends HexagonScene {
     if (!structure) throw new Error(`No structure is available at local route ${position.col},${position.row}`);
     const site = structureMapPosition(this.game.store, structure);
     if (!site) throw new Error("The expedition has not started");
+    syncRealmVisitForStructure(this.game.store, configManager.getActiveGameId(), structure);
     useUIStore.getState().setStructureEntityId(safeInteger(structure.entity_id), {
       worldMapPosition: Position.fromContract({ x: site.x, y: site.y }),
     });
@@ -1218,7 +1220,11 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private handleBuildingUpdate(update: BuildingSystemUpdate, realmGeneration: number): void {
-    if (!this.ownsRealmGeneration(realmGeneration)) return;
+    if (!this.ownsRealmGeneration(realmGeneration) || !this.shownRealmBuildingsScoped) return;
+    if (!this.isEntered) {
+      this.gridIsStale = true;
+      return;
+    }
 
     if (update.buildingType !== BuildingType.None) {
       playBuildingSound(update.buildingType);
@@ -1373,6 +1379,7 @@ export default class HexceptionScene extends HexagonScene {
   /** Each cell of the realm and its surroundings, as a matrix under its biome; the buildable hexes are registered. */
   private layOutGridCells(radius: number): Record<BiomeType | "Empty" | string, Matrix4[]> {
     this.gridIsStale = false;
+    this.shownRealmBuildingsScoped = this.areShownBuildingsInScope();
     const layout = this.layOutRealm(this.shownRealmBinding(), radius);
     this.highlights = layout.highlights;
     this.shownMapHexes = layout.mapHexes;
@@ -1945,7 +1952,20 @@ export default class HexceptionScene extends HexagonScene {
       if (level > this.structureStage) this.newRingRadius = buildableRadius(level);
       this.removeCastleFromScene();
     }
-    if (level !== undefined || changes.some((change) => this.changesShownGround(change))) this.redrawStaleGrid();
+    const buildingsScoped = this.areShownBuildingsInScope();
+    const buildingsEnteredScope = buildingsScoped && !this.shownRealmBuildingsScoped;
+    this.shownRealmBuildingsScoped = buildingsScoped;
+    if (level !== undefined || buildingsEnteredScope || changes.some((change) => this.changesShownGround(change)))
+      this.redrawStaleGrid();
+  }
+
+  private areShownBuildingsInScope(): boolean {
+    return Boolean(
+      this.game.store.absenceKnown("Building", {
+        game_id: configManager.getActiveGameId(),
+        structure_id: this.shownRealmId,
+      }).known,
+    );
   }
 
   /** The shown structure's new level, when the change is one to its level. */

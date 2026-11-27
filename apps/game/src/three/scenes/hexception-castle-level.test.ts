@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, expect, it } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { BUILDINGS_CENTER, BuildingType } from "@bibliothecadao/types";
+import type { GameClient } from "@bibliothecadao/eternum";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
 
-const { TileManager } = await import("@bibliothecadao/eternum");
+const { TileManager, WorldUpdateListener } = await import("@bibliothecadao/eternum");
 const { frontierDay } = await import("@/ui/features/frontier/deploy/deploy-fixture");
 const { default: HexceptionScene } = await import("./hexception");
 const { localCameraMaxDistance } = await import("./local-camera-reach");
@@ -26,6 +30,9 @@ const realmView = ({ store }: Fixture) => {
     game: { store },
     state: { structureEntityId: REALM, setSelectedBuildingHex: () => {} },
     shownRealmId: REALM,
+    shownRealmBuildingsScoped: true,
+    activeRealmGeneration: 0,
+    buildings: [],
     structureStage: 0,
     newRingRadius: null,
     isEntered: true,
@@ -167,4 +174,140 @@ it("fits the farthest zoom to a phone turned while the realm was still being ent
   expect(view.scene.controls.maxDistance).toBe(
     localCameraMaxDistance({ plotRadius: 3, aspect: 390 / 844, fovDegrees: 45 }),
   );
+});
+
+it("redraws a visited realm view when its Building rows enter scope with the visit snapshot", () => {
+  const fixture = frontierDay();
+  const rivalRealmId = 88;
+  const ownRealm = fixture.store.require("Structure", { game_id: 1, entity_id: REALM });
+  fixture.store.applyFacts([
+    {
+      model: "Structure",
+      key: "0x58",
+      value: { ...ownRealm, entity_id: rivalRealmId, owner: "0x222", metadata: { ...ownRealm.metadata, realm_id: 9 } },
+    },
+  ] as never);
+  view = realmView(fixture);
+  view.scene.shownRealmId = rivalRealmId;
+  view.scene.shownRealmBuildingsScoped = false;
+  view.scene.tileManager = TileManager.forStructure(fixture.store, {} as never, rivalRealmId);
+  expect(view.scene.tileManager.existingBuildings()).toEqual([]);
+
+  fixture.store.applyFacts([
+    {
+      model: "Building",
+      key: "0x5801",
+      value: {
+        game_id: 1,
+        structure_id: rivalRealmId.toString(),
+        inner_col: BUILDINGS_CENTER[0],
+        inner_row: BUILDINGS_CENTER[1],
+        category: BuildingType.ResourceLabor,
+        paused: false,
+        labor_paid: "0",
+      },
+    },
+    {
+      model: "Building",
+      key: "0x5802",
+      value: {
+        game_id: 1,
+        structure_id: rivalRealmId.toString(),
+        inner_col: BUILDINGS_CENTER[0] + 1,
+        inner_row: BUILDINGS_CENTER[1],
+        category: BuildingType.ResourceWheat,
+        paused: false,
+        labor_paid: "0",
+      },
+    },
+  ] as never);
+  expect(view.builds).toHaveLength(0);
+
+  fixture.store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", visit: "0x222", timestamp: 350 });
+  expect(view.builds).toHaveLength(1);
+  expect(view.scene.tileManager.existingBuildings()).toHaveLength(2);
+});
+
+it("reconciles two live buildings confirmed in the same block incrementally without a full grid redraw", () => {
+  const fixture = frontierDay();
+  view = realmView(fixture);
+  const targeted: { col: number; row: number }[] = [];
+  view.scene.applyTargetedBuildingReconciliation = (reconciliation: { position: { col: number; row: number } }) => {
+    targeted.push(reconciliation.position);
+  };
+  const listener = new WorldUpdateListener({ store: fixture.store } as never);
+  const stopBuildings = listener.Buildings.onBuildingUpdate(REALM, (update) =>
+    view!.scene.handleBuildingUpdate(update, 0),
+  );
+  try {
+    fixture.store.applyFacts([
+      {
+        model: "Building",
+        key: "0x701",
+        value: {
+          game_id: 1,
+          structure_id: String(REALM),
+          inner_col: BUILDINGS_CENTER[0] + 1,
+          inner_row: BUILDINGS_CENTER[1],
+          category: BuildingType.ResourceWheat,
+          paused: false,
+          labor_paid: "0",
+        },
+      },
+      {
+        model: "Building",
+        key: "0x702",
+        value: {
+          game_id: 1,
+          structure_id: String(REALM),
+          inner_col: BUILDINGS_CENTER[0] - 1,
+          inner_row: BUILDINGS_CENTER[1],
+          category: BuildingType.ResourceWheat,
+          paused: false,
+          labor_paid: "0",
+        },
+      },
+    ] as never);
+  } finally {
+    stopBuildings();
+  }
+  expect(view.builds).toEqual([]);
+  expect(targeted).toEqual([
+    { col: BUILDINGS_CENTER[0] + 1, row: BUILDINGS_CENTER[1] },
+    { col: BUILDINGS_CENTER[0] - 1, row: BUILDINGS_CENTER[1] },
+  ]);
+});
+
+it("starts a realm visit when opening an unowned realm on a hex route and leaves it when returning to an owned realm", () => {
+  const fixture = frontierDay();
+  const rivalRealmId = 89;
+  const ownRealm = fixture.store.require("Structure", { game_id: 1, entity_id: REALM });
+  const rivalStructure = {
+    ...ownRealm,
+    entity_id: rivalRealmId,
+    owner: "0x333",
+    metadata: { ...ownRealm.metadata, realm_id: 10 },
+  };
+  fixture.store.applyFacts([{ model: "Structure", key: "0x59", value: rivalStructure }] as never);
+  const visit = vi.fn();
+  useAccountStore.setState({ account: { address: "0x111" } as never });
+  installActiveGameClient({
+    setup: { store: fixture.store },
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    dispose: vi.fn(),
+    visit,
+  } as unknown as GameClient);
+  let targetRealmId = rivalRealmId;
+  const scene = Object.assign(Object.create(HexceptionScene.prototype), {
+    game: { store: fixture.store },
+    readRouteStructure: () => fixture.store.require("Structure", { game_id: 1, entity_id: targetRealmId }),
+  });
+  scene.selectRouteStructure(REALM_TILE);
+  expect(visit).toHaveBeenLastCalledWith("0x333");
+
+  targetRealmId = REALM;
+  scene.selectRouteStructure(REALM_TILE);
+  expect(visit).toHaveBeenLastCalledWith(null);
+  disposeGameSyncSession();
 });

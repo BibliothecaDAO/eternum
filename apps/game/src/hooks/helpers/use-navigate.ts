@@ -1,8 +1,7 @@
 import { useGame } from "@/hooks/context/game-context";
 import { openPlace } from "@/play/navigation/open-place";
-import { leaveRealmVisit } from "@/sync/active-game-client";
+import { syncRealmVisitForStructure } from "@/sync/active-game-client";
 import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
-import { useAccountStore } from "../store/use-account-store";
 import { configManager, entityMapPosition, Position } from "@bibliothecadao/eternum";
 
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
@@ -42,12 +41,12 @@ export const useGoToStructure = (setupResult: GameClientSetup | null) => {
     isMapView: boolean,
     options?: { spectator?: boolean },
   ) => {
-    const owner = setupResult?.store.get("Structure", {
-      game_id: configManager.getActiveGameId(),
+    const gameId = configManager.getActiveGameId();
+    const structure = setupResult?.store.get("Structure", {
+      game_id: gameId,
       entity_id: structureEntityId,
-    })?.owner;
-    const address = useAccountStore.getState().account?.address;
-    if (address && owner === BigInt(address)) leaveRealmVisit();
+    });
+    if (structure && setupResult) syncRealmVisitForStructure(setupResult.store, gameId, structure);
     setStructureEntityId(structureEntityId, {
       spectator: options?.spectator ?? false,
       worldMapPosition: targetPosition,
