@@ -580,7 +580,7 @@ it("gives a phone Realm beside one layer menu under its pill, whose presses swit
   }
 });
 
-it("lays a phone's places on its tab bar with no tab for the scene, the place switch alone changing it", async () => {
+it("lays a phone's 5 tabs (Realm, Surface, Research, Season, Chat) at the bottom and places Menu separately top-right", async () => {
   viewport.set(390);
   const route = window.location.pathname + window.location.search;
   window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
@@ -591,19 +591,23 @@ it("lays a phone's places on its tab bar with no tab for the scene, the place sw
         button.getAttribute("aria-label"),
         button.getAttribute("aria-current"),
       ]);
+    const menuButton = () => host.querySelector<HTMLButtonElement>(".frontier-phone-top__row > button[data-hud-menu]")!;
     expect(tabs()).toEqual([
+      ["Realm", null],
+      ["Map view, Surface", "page"],
       ["Research", null],
       ["Season", null],
       ["Chat", null],
-      ["Menu", null],
     ]);
+    expect(menuButton().getAttribute("aria-label")).toBe("Menu");
+    expect(menuButton().getAttribute("aria-current")).toBeNull();
     await pressPlace("Research");
     expect(surfaceNamed("Research")).not.toBeNull();
-    expect(tabs()[0]).toEqual(["Research", "page"]);
+    expect(tabs()[2]).toEqual(["Research", "page"]);
     await pressPlace("Research");
     expect(surfaceNamed("Research")).toBeNull();
     await fromMenu("Today");
-    expect(tabs()[3]).toEqual(["Menu", "page"]);
+    expect(menuButton().getAttribute("aria-current")).toBe("page");
   } finally {
     window.history.replaceState(null, "", route);
   }
@@ -652,7 +656,7 @@ it("closes the open popover when the player goes from the map to the Realm", asy
 
 const pressPlace = (word: string) =>
   act(async () =>
-    [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')]
+    [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button, [data-hud-menu]')]
       .find((button) => button.getAttribute("aria-label") === word || button.textContent?.endsWith(word))!
       .click(),
   );

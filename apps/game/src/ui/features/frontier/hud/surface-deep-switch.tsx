@@ -14,7 +14,7 @@ import {
   selectLayer,
   unlockedLayerForTier,
 } from "./map-layers";
-import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
+import { useHudLayout, useHudSideways } from "@/hooks/helpers/use-compact-hud";
 import { useHudPopover } from "./hud-popover";
 
 type LayerKey = "surface" | EtherealLayer;
@@ -88,20 +88,60 @@ const layerEntries = ({ isMapView, layers, onGoSurface, onSwitch }: PlaceSwitchP
   ];
 };
 
+const LayerMenuList = ({ entries, onClose }: { entries: readonly LayerEntry[]; onClose: () => void }) => (
+  <div role="tablist" aria-label={MAP_VIEW} data-surface-deep-switch className="frontier-place-menu__list">
+    {entries.map((entry) => (
+      <button
+        key={entry.key}
+        type="button"
+        role="tab"
+        className="ui-row frontier-place-row"
+        data-depth={entry.depth === undefined ? undefined : String(entry.depth)}
+        data-locked={entry.locked || undefined}
+        aria-label={entry.label}
+        aria-selected={entry.selected}
+        disabled={entry.locked}
+        onClick={() => {
+          onClose();
+          entry.choose();
+        }}
+      >
+        <Icon name={entry.locked ? "lock" : entry.mark} size={26} />
+        <span className="frontier-place-row__text">
+          <span className="frontier-place-row__name">{entry.label}</span>
+          {entry.line && <span className="frontier-place-row__line">{entry.line}</span>}
+        </span>
+        {entry.selected && <Icon name="check" size={16} className="frontier-place-row__check" />}
+      </button>
+    ))}
+  </div>
+);
+
+const usePlaceSwitchState = (
+  props: PlaceSwitchProps & { lines?: Partial<Record<LayerKey, string>> },
+  placement: "below" | "above" = "below",
+) => {
+  const entries = layerEntries(props).map((entry) => ({
+    ...entry,
+    line: entry.locked ? entry.line : props.lines?.[entry.key],
+  }));
+  const shownKey = shownLayerKey(props.layers);
+  const shown = entries.find((entry) => entry.key === shownKey) ?? entries[0]!;
+  const inRealm = !props.isMapView;
+  const { open, close, triggerProps, popover } = useHudPopover(placement);
+  const layout = useHudLayout();
+  return { entries, shown, inRealm, open, close, triggerProps, popover, layout };
+};
+
 export const PlaceSwitch = ({
   realm,
   lines,
   ...props
 }: PlaceSwitchProps & { realm?: { mark: IconMeaning }; lines?: Partial<Record<LayerKey, string>> }) => {
-  const entries = layerEntries(props).map((entry) => ({
-    ...entry,
-    line: entry.locked ? entry.line : lines?.[entry.key],
-  }));
-  const shownKey = shownLayerKey(props.layers);
-  const shown = entries.find((entry) => entry.key === shownKey) ?? entries[0]!;
-  const inRealm = !props.isMapView;
-  const { open, close, triggerProps, popover } = useHudPopover();
-  const layout = useHudLayout();
+  const { entries, shown, inRealm, open, close, triggerProps, popover, layout } = usePlaceSwitchState({
+    ...props,
+    lines,
+  });
   return (
     <div
       role="group"
@@ -136,35 +176,74 @@ export const PlaceSwitch = ({
         <span className="frontier-place-pill__name">{shown.label}</span>
         <Icon name={open ? "chevron-up" : "chevron-down"} size={14} />
       </HudSegment>
-      {popover(
-        <div role="tablist" aria-label={MAP_VIEW} data-surface-deep-switch className="frontier-place-menu__list">
-          {entries.map((entry) => (
-            <button
-              key={entry.key}
-              type="button"
-              role="tab"
-              className="ui-row frontier-place-row"
-              data-depth={entry.depth === undefined ? undefined : String(entry.depth)}
-              data-locked={entry.locked || undefined}
-              aria-label={entry.label}
-              aria-selected={entry.selected}
-              disabled={entry.locked}
-              onClick={() => {
-                close();
-                entry.choose();
-              }}
-            >
-              <Icon name={entry.locked ? "lock" : entry.mark} size={26} />
-              <span className="frontier-place-row__text">
-                <span className="frontier-place-row__name">{entry.label}</span>
-                {entry.line && <span className="frontier-place-row__line">{entry.line}</span>}
-              </span>
-              {entry.selected && <Icon name="check" size={16} className="frontier-place-row__check" />}
-            </button>
-          ))}
-        </div>,
-        { className: "ui-popover frontier-place-popover", layout },
-      )}
+      {popover(<LayerMenuList entries={entries} onClose={close} />, {
+        className: "ui-popover frontier-place-popover",
+        layout,
+      })}
+    </div>
+  );
+};
+
+export const PhonePlaceTabs = ({
+  realm,
+  lines,
+  surfaceOpen = false,
+  ...props
+}: PlaceSwitchProps & {
+  realm?: { mark: IconMeaning };
+  lines?: Partial<Record<LayerKey, string>>;
+  surfaceOpen?: boolean;
+}) => {
+  const sideways = useHudSideways();
+  const { entries, shown, inRealm, open, close, triggerProps, popover, layout } = usePlaceSwitchState(
+    { ...props, lines },
+    sideways ? "below" : "above",
+  );
+  return (
+    <div
+      role="group"
+      aria-label={MAP_VIEW}
+      data-place-switch=""
+      data-place={inRealm ? REALM : shown.label}
+      className="contents"
+    >
+      <button
+        type="button"
+        aria-label={REALM}
+        aria-current={inRealm && !surfaceOpen ? "page" : undefined}
+        disabled={props.canOpenRealm === false}
+        className="frontier-tab frontier-place-switch__realm"
+        onClick={() => {
+          close();
+          props.onGoRealm();
+        }}
+      >
+        <span className="frontier-tab__icon">
+          <Icon name={realm?.mark ?? "realm"} size={24} loading="eager" decoding="sync" />
+        </span>
+        <span className="frontier-tab__label">{REALM}</span>
+      </button>
+      <button
+        type="button"
+        {...triggerProps}
+        aria-haspopup="true"
+        aria-label={`${MAP_VIEW}, ${shown.label}`}
+        aria-current={!inRealm && !surfaceOpen ? "page" : undefined}
+        data-place-pill=""
+        className="frontier-tab frontier-tab--layer"
+      >
+        <span className="frontier-tab__icon">
+          <Icon name={shown.mark} size={24} loading="eager" decoding="sync" />
+        </span>
+        <span className="frontier-tab__label frontier-tab__label--layer">
+          <span>{shown.label}</span>
+          <Icon name={open ? "chevron-up" : "chevron-down"} size={11} />
+        </span>
+      </button>
+      {popover(<LayerMenuList entries={entries} onClose={close} />, {
+        className: "ui-popover frontier-place-popover",
+        layout,
+      })}
     </div>
   );
 };

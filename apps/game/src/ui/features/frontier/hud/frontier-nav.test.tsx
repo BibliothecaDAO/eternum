@@ -8,7 +8,7 @@ import { PhoneTabBar, type HudSurface } from "./frontier-nav";
 import { selectLayer } from "./map-layers";
 import { useOnePanel } from "./one-panel";
 import { toggleQuestDock, useQuestDockOpen } from "../day/quest-dock";
-import { PlaceSwitch } from "./surface-deep-switch";
+import { PhonePlaceTabs } from "./surface-deep-switch";
 
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
 vi.mock("../frontier-home", () => ({ useGoToFrontierPlace: () => vi.fn() }));
@@ -41,14 +41,22 @@ function PhoneHud({ open }: { open: HudSurface }) {
   return (
     <>
       <output data-page>{surface ?? "map"}</output>
-      <PlaceSwitch
-        isMapView
-        layers={layers}
-        onGoRealm={() => openSurface(null)}
-        onGoSurface={() => selectLayer(layers, 0, () => openSurface(null))}
-        onSwitch={() => openSurface(null)}
+      <PhoneTabBar
+        surface={surface}
+        onSurface={openSurface}
+        feedUnread={0}
+        chatUnread={0}
+        placeTabs={
+          <PhonePlaceTabs
+            isMapView
+            layers={layers}
+            surfaceOpen={surface !== null}
+            onGoRealm={() => openSurface(null)}
+            onGoSurface={() => selectLayer(layers, 0, () => openSurface(null))}
+            onSwitch={() => openSurface(null)}
+          />
+        }
       />
-      <PhoneTabBar surface={surface} onSurface={openSurface} feedUnread={0} chatUnread={0} />
       <button onClick={() => openSurface(open)}>Open page</button>
     </>
   );

@@ -21,7 +21,7 @@ import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/frontier-desktop";
-import { PhoneTabBar, type HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
+import { phoneMenuProps, PhoneTabBar, type HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
 import { TopBarView } from "@/ui/features/frontier/hud/phone-top-bar";
 import { RealmCard } from "@/ui/features/frontier/hud/realm-card";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
@@ -89,7 +89,7 @@ import { DailyQuestChip } from "@/ui/features/frontier/hud/daily-quest-chip";
 import { QUEST_DOCK_CASES } from "@/ui/features/frontier/day/quest-dock-fixtures";
 import { QuestDockView } from "@/ui/features/frontier/day/quest-dock-view";
 import type { MapLayers } from "@/ui/features/frontier/hud/map-layers";
-import { PlaceSwitch, placeLines } from "@/ui/features/frontier/hud/surface-deep-switch";
+import { PhonePlaceTabs, PlaceSwitch, placeLines } from "@/ui/features/frontier/hud/surface-deep-switch";
 import { WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 
@@ -851,6 +851,7 @@ export const HudLab = () => {
         </div>
       </div>
     );
+  const places = labPlaces(lab);
   return (
     <>
       <div
@@ -865,7 +866,7 @@ export const HudLab = () => {
           <TopBarView
             stocks={{ stores: [...lab.stores], realmName: LAB_REALM_NAME, onOpenRealm: noop }}
             clock={<DayPill clock={lab.clock} compact />}
-            placeSwitch={<LabPlaceSwitch lab={lab} />}
+            menu={phoneMenuProps(places)}
             quest={<LabDailyQuest />}
             questCard={lab.quest && <QuestDockView {...QUEST_DOCK_CASES[lab.quest]} layout="phone" />}
             notice={
@@ -947,7 +948,24 @@ export const HudLab = () => {
           </>
         }
         dock={(desktop || !lab.order) && <LabDock lab={lab} />}
-        nav={!lab.visiting && <PhoneTabBar {...labPlaces(lab)} />}
+        nav={
+          !lab.visiting && (
+            <PhoneTabBar
+              {...places}
+              placeTabs={
+                <PhonePlaceTabs
+                  isMapView={lab.realmView === undefined}
+                  layers={LAB_MAP_LAYERS}
+                  onGoRealm={noop}
+                  onGoSurface={noop}
+                  realm={{ mark: homeIcon("realm", 1) }}
+                  lines={placeLines(lab.armies)}
+                  surfaceOpen={places.surface !== null}
+                />
+              }
+            />
+          )
+        }
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} stores={lab.stores} open={labOpenSlots(lab)} />}
         {lab.results && (
@@ -1255,17 +1273,6 @@ const LabDailyQuest = () => {
 };
 
 const labQuestFacts = () => [labQuestRulesFact()];
-
-const LabPlaceSwitch = ({ lab }: { lab: LabState }) => (
-  <PlaceSwitch
-    isMapView={lab.realmView === undefined}
-    layers={LAB_MAP_LAYERS}
-    onGoRealm={noop}
-    onGoSurface={noop}
-    realm={{ mark: homeIcon("realm", 1) }}
-    lines={placeLines(lab.armies)}
-  />
-);
 
 const LabRealmCard = ({ lab }: { lab: LabState }) => (
   <RealmCard

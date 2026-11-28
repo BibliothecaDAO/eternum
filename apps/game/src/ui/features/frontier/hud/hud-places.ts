@@ -39,6 +39,9 @@ export const HUD_PLACES = [
 export const useHudPlaces = (state: HudPlacesState): HudPlaceItem[] =>
   resolveHudPlaces(state, usePartShown("research"));
 
+export const feedPlaceDot = (feedUnread: number): string | undefined =>
+  resolveHudPlaces({ feedUnread, chatUnread: 0 }, false).find((place) => place.key === "feed")?.countLabel;
+
 const resolveHudPlaces = (
   { researchReady, feedUnread, chatUnread, chatOpen = false }: HudPlacesState,
   researchOpen: boolean,

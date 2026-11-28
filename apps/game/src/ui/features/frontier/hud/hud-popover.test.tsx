@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it } from "vitest";
 
-import { HudPopoverRoot, popoverAnchor, useHudPopover } from "./hud-popover";
+import { HudPopoverRoot, popoverAboveAnchor, popoverAnchor, useHudPopover } from "./hud-popover";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -72,9 +72,10 @@ it("closes on a press outside it and on Escape, handing focus back to its trigge
   expect(document.activeElement).toBe(trigger("Quest"));
 });
 
-it("anchors a popover under the horizontal centre of its trigger", () => {
+it("anchors a popover under the horizontal centre of its trigger, or above when placed over a bottom bar", () => {
   expect(popoverAnchor({ left: 610, bottom: 44, width: 92 })).toEqual({ x: 656, top: 52 });
   expect(popoverAnchor({ left: 196, bottom: 86, width: 102 })).toEqual({ x: 247, top: 94 });
+  expect(popoverAboveAnchor({ left: 80, top: 776, width: 72 }, 844)).toEqual({ x: 116, bottom: 76 });
 });
 
 it("opens in the HUD's own root at the HUD's scale, its anchor in that scale's pixels", () => {

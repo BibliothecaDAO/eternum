@@ -26,8 +26,9 @@ import { PickedArmy } from "./picked-army";
 import { DayPill } from "./day-pill";
 import { RealmCard } from "./realm-card";
 import { TopBarView } from "./phone-top-bar";
-import { PhoneTabBar } from "./frontier-nav";
+import { phoneMenuProps, PhoneTabBar } from "./frontier-nav";
 import { HUD_PLACES } from "./hud-places";
+import { unreadFeedEvents } from "@/ui/design-system/kit/words";
 import { OfflineBanner, OfflineNotice } from "./offline-notice";
 import { type StoreReading, storeLine, storeRateText } from "./status-strip";
 import { tomorrowLasts } from "@/ui/design-system/kit/words";
@@ -186,10 +187,12 @@ describe("the status strip", () => {
       3_600,
     );
     const onOpenRealm = vi.fn();
+    const onOpenMenu = vi.fn();
     act(() =>
       root.render(
         <TopBarView
           clock={<DayPill clock={day} compact />}
+          menu={{ open: false, dot: "2 unread feed events", onOpen: onOpenMenu }}
           stocks={{
             realmName: "Duskbite",
             onOpenRealm,
@@ -200,14 +203,18 @@ describe("the status strip", () => {
               store("troops", 1_500, 3_000),
             ],
           }}
-          placeSwitch={<button type="button">Places</button>}
           notice={<aside aria-label="Lesson" />}
           quest={<button type="button">Quest</button>}
         />,
       ),
     );
     const bar = host.querySelector(".frontier-bar")!;
-    expect([...bar.children].map((part) => part.textContent)).toEqual(["Places", "125K9K3K", "Day 111h"]);
+    expect([...bar.children].map((part) => part.textContent)).toEqual(["125K9K3K", "Day 111h"]);
+    const menu = host.querySelector<HTMLButtonElement>('.frontier-phone-top__row > button[aria-label="Menu"]')!;
+    expect(menu.hasAttribute("data-hud-menu")).toBe(true);
+    expect(menu.querySelector("[data-dot]")).not.toBeNull();
+    act(() => menu.click());
+    expect(onOpenMenu).toHaveBeenCalledTimes(1);
     const realm = bar.querySelector<HTMLButtonElement>('button[aria-label="Duskbite"]')!;
     expect([...realm.querySelectorAll(".frontier-stock-chip")].map((chip) => chip.getAttribute("data-store"))).toEqual([
       "essence",
@@ -254,7 +261,7 @@ describe("the status strip", () => {
     );
     const top = host.querySelector(".frontier-phone-top")!;
     expect([...top.children].map((part) => part.className || part.getAttribute("aria-label"))).toEqual([
-      "ui-popover frontier-bar pointer-events-auto",
+      "frontier-phone-top__row",
       "Duskbite",
     ]);
   });
@@ -395,35 +402,75 @@ describe("an open slot whose army is being deployed", () => {
 });
 
 describe("the phone tab bar", () => {
-  it("lays Research, Season, Chat and Menu, each with its count, and lights the open page", () => {
+  it("lays Realm, Surface, Research, Season and Chat in one 5-tab bar without Menu, each with its count", () => {
     const onSurface = vi.fn();
+    const placeTabs = (
+      <>
+        <button type="button" aria-label="Realm">
+          Realm
+        </button>
+        <button type="button" aria-label="Map view, Surface">
+          Surface
+        </button>
+      </>
+    );
     act(() =>
-      root.render(<PhoneTabBar surface={null} onSurface={onSurface} researchReady feedUnread={2} chatUnread={3} />),
+      root.render(
+        <PhoneTabBar
+          surface={null}
+          onSurface={onSurface}
+          researchReady
+          feedUnread={2}
+          chatUnread={3}
+          placeTabs={placeTabs}
+        />,
+      ),
     );
     const buttons = [...host.querySelectorAll("button")];
-    expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual(["Research", "Season", "Chat", "Menu"]);
-    expect(buttons.map((button) => button.getAttribute("aria-current"))).toEqual([null, null, null, null]);
+    expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual([
+      "Realm",
+      "Map view, Surface",
+      "Research",
+      "Season",
+      "Chat",
+    ]);
+    expect(buttons.map((button) => button.getAttribute("aria-current"))).toEqual([null, null, null, null, null]);
     expect(buttons.map((button) => button.querySelector(".frontier-tab__badge")?.textContent ?? null)).toEqual([
+      null,
+      null,
       "1",
       null,
       "3",
-      null,
     ]);
-    expect(buttons[3]!.querySelector("[data-dot]")).not.toBeNull();
-    act(() => buttons[1]!.click());
+    act(() => buttons[3]!.click());
     expect(onSurface).toHaveBeenLastCalledWith("season");
     act(() =>
       root.render(
-        <PhoneTabBar surface="today" onSurface={onSurface} researchReady={false} feedUnread={0} chatUnread={0} />,
+        <PhoneTabBar
+          surface="season"
+          onSurface={onSurface}
+          researchReady={false}
+          feedUnread={0}
+          chatUnread={0}
+          placeTabs={placeTabs}
+        />,
       ),
     );
-    expect(barButtons()).toEqual(["Research", "Season", "Chat", "Menu"]);
-    expect(host.querySelector('button[aria-label="Menu"]')!.getAttribute("aria-current")).toBe("page");
-    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Menu"]')!.click());
+    expect(barButtons()).toEqual(["Realm", "Map view, Surface", "Research", "Season", "Chat"]);
+    expect(host.querySelector('button[aria-label="Season"]')!.getAttribute("aria-current")).toBe("page");
+    expect(host.querySelector('button[aria-label="Menu"]')).toBeNull();
+    const menuState = phoneMenuProps({ surface: "today", onSurface, feedUnread: 2 });
+    expect([menuState.open, menuState.dot]).toEqual([true, unreadFeedEvents(2)]);
+    expect(phoneMenuProps({ surface: null, onSurface, feedUnread: 0 }).dot).toBeUndefined();
+    act(() => root.render(<TopBarView clock={<span>Day</span>} stocks={{ stores: [] }} menu={menuState} />));
+    const menuButton = host.querySelector<HTMLButtonElement>('[data-hud-menu][aria-label="Menu"]')!;
+    expect(menuButton.getAttribute("aria-current")).toBe("page");
+    expect(menuButton.querySelector("[data-dot]")?.getAttribute("aria-label")).toBe(unreadFeedEvents(2));
+    act(() => menuButton.click());
     expect(onSurface).toHaveBeenLastCalledWith("menu");
   });
 
-  it("keeps Season on the tab bar from the first minute while Research waits on its moment", () => {
+  it("keeps Season and Chat on the tab bar from the first minute while Research waits on its moment", () => {
     act(() =>
       root.render(
         <OpeningProvider opened={new Set()}>
@@ -431,7 +478,7 @@ describe("the phone tab bar", () => {
         </OpeningProvider>,
       ),
     );
-    expect(barButtons()).toEqual(["Season", "Chat", "Menu"]);
+    expect(barButtons()).toEqual(["Season", "Chat"]);
   });
 
   it("names an army by its troops, and the picked army by that name alone, with no chip for the count", () => {

@@ -49,10 +49,10 @@ import { useResearchTree } from "./research/research-facts";
 import { canResearchNow } from "./research/research-tree";
 import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
-import { PhoneTabBar, type HudSurface } from "./hud/frontier-nav";
+import { phoneMenuProps, PhoneTabBar, type HudSurface } from "./hud/frontier-nav";
 import { selectLayer, useMapLayers } from "./hud/map-layers";
 import { FrontierTopBar } from "./hud/phone-top-bar";
-import { PlaceSwitch, placeLines } from "./hud/surface-deep-switch";
+import { PhonePlaceTabs, PlaceSwitch, placeLines } from "./hud/surface-deep-switch";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { useFirstBuild, useMarkFirstBuild } from "./build/first-build";
@@ -237,12 +237,13 @@ const FrontierHudBody = ({
     },
     onSwitch: close,
   };
-  const placeSwitch = (
-    <PlaceSwitch
-      {...placeChoices}
-      realm={shown ? { mark: homeIcon(realmSkinPainting(headerFacts.store, shown), shown.base.level) } : undefined}
-      lines={own ? placeLines(ownArmies) : undefined}
-    />
+  const realmMark = shown
+    ? { mark: homeIcon(realmSkinPainting(headerFacts.store, shown), shown.base.level) }
+    : undefined;
+  const armyLines = own ? placeLines(ownArmies) : undefined;
+  const placeSwitch = <PlaceSwitch {...placeChoices} realm={realmMark} lines={armyLines} />;
+  const phonePlaceTabs = (
+    <PhonePlaceTabs {...placeChoices} realm={realmMark} lines={armyLines} surfaceOpen={surface !== null} />
   );
   const page =
     surface === "research" && realm ? (
@@ -355,7 +356,7 @@ const FrontierHudBody = ({
             }
           : undefined
       }
-      placeSwitch={placeSwitch}
+      menu={phoneMenuProps(placesState)}
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
       questCard={noticeAtFoot ? undefined : questDock || undefined}
       notice={noticeAtFoot ? undefined : openingNotice}
@@ -452,7 +453,7 @@ const FrontierHudBody = ({
           <div className="min-w-0 flex-1">{armyDock}</div>
         </div>
       }
-      nav={<PhoneTabBar {...placesState} />}
+      nav={<PhoneTabBar {...placesState} placeTabs={phonePlaceTabs} />}
     >
       {sheets}
     </HudBands>

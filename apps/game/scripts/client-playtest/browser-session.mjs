@@ -167,7 +167,7 @@ export const screenPoint = ([dx, dy]) => [Math.round(VIEWPORT.width / 2 + dx), M
  * button's name, so the name alone does not find it.
  */
 const placeSlotExpression = (word) => `JSON.stringify((() => {
-  const slot = [...document.querySelectorAll('nav[aria-label="Places"] button')].find(
+  const slot = [...document.querySelectorAll('nav[aria-label="Places"] button, [data-hud-menu]')].find(
     (button) =>
       button.getAttribute("aria-label") === ${JSON.stringify(word)} ||
       button.lastElementChild?.textContent.trim() === ${JSON.stringify(word)},

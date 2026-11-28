@@ -27,9 +27,20 @@ export const popoverAnchor = (trigger: Pick<DOMRect, "left" | "bottom" | "width"
   top: Math.round(trigger.bottom + POPOVER_GAP),
 });
 
+export const popoverAboveAnchor = (
+  trigger: Pick<DOMRect, "left" | "top" | "width">,
+  viewportHeight: number,
+): { x: number; bottom: number } => ({
+  x: Math.round(trigger.left + trigger.width / 2),
+  bottom: Math.round(viewportHeight - trigger.top + POPOVER_GAP),
+});
+
+type PopoverPlacement = "below" | "above";
+type PopoverCoords = { x: number; top?: number; bottom?: number };
+
 export const HudPopoverRoot = createContext<{ node: HTMLElement | null; scale: number }>({ node: null, scale: 1 });
 
-export const useHudPopover = () => {
+export const useHudPopover = (placement: PopoverPlacement = "below") => {
   const root = useContext(HudPopoverRoot);
   const id = useId();
   const open = useOpenPopover((state) => state.open === id);
@@ -39,7 +50,7 @@ export const useHudPopover = () => {
     () => useOpenPopover.setState((state) => (state.open === id ? { open: null } : state)),
     [id],
   );
-  const anchor = useTriggerAnchor(trigger, open, root.scale);
+  const anchor = useTriggerAnchor(trigger, open, root.scale, placement);
   useClosesOnPressOutside(open, close, trigger, layer);
   useEffect(() => {
     return close;
@@ -61,7 +72,15 @@ export const useHudPopover = () => {
   const popover = (children: ReactNode, attributes: { className: string; layout?: string }) =>
     open &&
     createPortal(
-      <PopoverLayer id={id} layer={layer} anchor={anchor} onClose={close} onKeyDown={closeOnEscape} {...attributes}>
+      <PopoverLayer
+        id={id}
+        layer={layer}
+        anchor={anchor}
+        placement={placement}
+        onClose={close}
+        onKeyDown={closeOnEscape}
+        {...attributes}
+      >
         {children}
       </PopoverLayer>,
       root.node ?? document.body,
@@ -73,6 +92,7 @@ const PopoverLayer = ({
   id,
   layer,
   anchor,
+  placement,
   className,
   layout,
   onClose,
@@ -81,7 +101,8 @@ const PopoverLayer = ({
 }: {
   id: string;
   layer: RefObject<HTMLDivElement>;
-  anchor: { x: number; top: number } | null;
+  anchor: PopoverCoords | null;
+  placement: PopoverPlacement;
   className: string;
   layout?: string;
   onClose: () => void;
@@ -93,7 +114,11 @@ const PopoverLayer = ({
     layer.current?.focus({ preventScroll: true });
   }, [layer]);
   const style = anchor
-    ? ({ "--popover-x": `${anchor.x}px`, "--popover-top": `${anchor.top}px` } as CSSProperties)
+    ? ({
+        "--popover-x": `${anchor.x}px`,
+        ...(anchor.top !== undefined ? { "--popover-top": `${anchor.top}px` } : {}),
+        ...(anchor.bottom !== undefined ? { "--popover-bottom": `${anchor.bottom}px` } : {}),
+      } as CSSProperties)
     : undefined;
   return (
     <div
@@ -102,6 +127,7 @@ const PopoverLayer = ({
       tabIndex={-1}
       data-hud-popover=""
       data-layout={layout}
+      data-placement={placement === "above" ? "above" : undefined}
       className={`ui frontier-popover pointer-events-auto ${className}`}
       style={style}
       onKeyDown={onKeyDown}
@@ -111,8 +137,13 @@ const PopoverLayer = ({
   );
 };
 
-const useTriggerAnchor = (trigger: RefObject<HTMLElement>, open: boolean, scale: number) => {
-  const [anchor, setAnchor] = useState<{ x: number; top: number } | null>(null);
+const useTriggerAnchor = (
+  trigger: RefObject<HTMLElement>,
+  open: boolean,
+  scale: number,
+  placement: PopoverPlacement,
+) => {
+  const [anchor, setAnchor] = useState<PopoverCoords | null>(null);
   useLayoutEffect(() => {
     if (!open) {
       setAnchor(null);
@@ -121,8 +152,13 @@ const useTriggerAnchor = (trigger: RefObject<HTMLElement>, open: boolean, scale:
     const update = () => {
       const rect = trigger.current?.getBoundingClientRect();
       if (!rect) return;
-      const { x, top } = popoverAnchor(rect);
-      setAnchor({ x: x / scale, top: top / scale });
+      if (placement === "above") {
+        const { x, bottom } = popoverAboveAnchor(rect, window.innerHeight || 768);
+        setAnchor({ x: x / scale, bottom: bottom / scale });
+      } else {
+        const { x, top } = popoverAnchor(rect);
+        setAnchor({ x: x / scale, top: top / scale });
+      }
     };
     update();
     window.addEventListener("resize", update);
@@ -131,7 +167,7 @@ const useTriggerAnchor = (trigger: RefObject<HTMLElement>, open: boolean, scale:
       window.removeEventListener("resize", update);
       window.removeEventListener("scroll", update, true);
     };
-  }, [open, trigger, scale]);
+  }, [open, trigger, scale, placement]);
   return anchor;
 };
 

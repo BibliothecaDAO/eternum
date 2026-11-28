@@ -180,16 +180,14 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
   });
 
   const place = async (word: string) => {
-    const direct = [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')].find(
-      (button) => button.getAttribute("aria-label") === word || button.textContent?.endsWith(word),
-    );
+    const direct = [
+      ...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button, [data-hud-menu]'),
+    ].find((button) => button.getAttribute("aria-label") === word || button.textContent?.endsWith(word));
     if (direct) {
       await act(async () => direct.click());
       return;
     }
-    await act(async () =>
-      host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Menu"]')!.click(),
-    );
+    await act(async () => host.querySelector<HTMLButtonElement>('button[data-hud-menu][aria-label="Menu"]')!.click());
     await act(async () =>
       host.querySelector<HTMLButtonElement>(`section[aria-label="Menu"] button[aria-label="${word}"]`)!.click(),
     );

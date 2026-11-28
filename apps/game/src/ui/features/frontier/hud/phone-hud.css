@@ -4,14 +4,47 @@
   flex-direction: column;
   gap: theme(spacing.2);
 }
+.frontier-phone-top__row {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.2);
+}
 .frontier-bar {
   display: flex;
-  height: 52px;
+  min-width: 0;
+  flex: 1;
+  height: 48px;
   align-items: center;
   gap: theme(spacing[1.5]);
   border-radius: var(--hud-radius-panel);
-  padding: 0 4px 0 6px;
+  padding: 0 6px;
   color: rgb(var(--hud-ink));
+}
+.frontier-menu-btn {
+  position: relative;
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--hud-radius-round);
+  color: rgb(var(--hud-ink));
+  cursor: pointer;
+}
+.frontier-menu-btn[aria-current="page"] {
+  border-color: rgb(var(--hud-gold));
+  background: var(--hud-chosen);
+}
+.frontier-menu-btn__dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--hud-surface-to);
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-gold));
 }
 .frontier-bar__day {
   display: inline-flex;
@@ -59,12 +92,12 @@
   min-width: 0;
   flex: 0 1 auto;
   align-items: center;
-  justify-content: center;
-  margin-inline: auto;
+  justify-content: flex-start;
+  margin-right: auto;
   border: 0;
   border-radius: var(--hud-radius-control);
   background: transparent;
-  padding: 4px theme(spacing.2);
+  padding: 4px theme(spacing.1);
   color: inherit;
 }
 button.frontier-stock-chips {
@@ -90,21 +123,6 @@ button.frontier-stock-chips[aria-expanded="true"] {
 }
 .frontier-stock-chip + .frontier-stock-chip {
   border-left: 1px solid var(--hud-divider);
-}
-.frontier-bar .frontier-place-switch {
-  height: 36px;
-  box-shadow: none;
-}
-.frontier-bar .frontier-place-switch__realm {
-  padding: 0 theme(spacing[1.5]);
-}
-.frontier-bar .frontier-place-switch__word,
-.frontier-bar .frontier-place-pill__name {
-  display: none;
-}
-.frontier-bar .frontier-place-pill {
-  gap: 2px;
-  padding: 0 theme(spacing[1.5]);
 }
 .frontier-stock-chip__icon {
   display: inline-flex;
@@ -248,8 +266,13 @@ button.frontier-stock-chips[aria-expanded="true"] {
   cursor: pointer;
 }
 .frontier-tab[aria-current="page"] {
+  border-color: rgb(var(--hud-gold) / 0.45);
   background: var(--hud-chosen);
   color: rgb(var(--hud-ink));
+}
+.frontier-tab:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 .frontier-tab__icon {
   position: relative;
@@ -259,11 +282,21 @@ button.frontier-stock-chips[aria-expanded="true"] {
   overflow: hidden;
   max-width: 100%;
   font-family: var(--hud-font-display);
-  font-size: var(--hud-text-body);
+  font-size: var(--hud-text-label);
   line-height: 1;
   font-weight: var(--hud-weight-strong);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.frontier-tab__label--layer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.frontier-tab__label--layer > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .frontier-tab__badge {
   position: absolute;
@@ -287,17 +320,10 @@ button.frontier-stock-chips[aria-expanded="true"] {
 .frontier-tab__badge[data-tone="good"] {
   background: var(--hud-good);
 }
-.frontier-tab__dot {
-  position: absolute;
-  top: -3px;
-  right: -5px;
-  width: 10px;
-  height: 10px;
-  border: 1.5px solid var(--hud-surface-to);
-  border-radius: var(--hud-radius-round);
-  background: rgb(var(--hud-gold));
-}
 @media (max-width: 440px) {
+  .frontier-tab__label {
+    font-size: var(--hud-text-badge);
+  }
   .frontier-bar[data-has-glory] {
     gap: theme(spacing.1);
   }
@@ -313,12 +339,20 @@ button.frontier-stock-chips[aria-expanded="true"] {
     width: 15px;
     height: 15px;
   }
-  .frontier-bar[data-has-glory] .frontier-place-switch__realm,
-  .frontier-bar[data-has-glory] .frontier-place-pill {
-    padding-inline: theme(spacing.1);
+  .frontier-bar[data-has-glory] .frontier-bar__glory {
+    gap: 2px;
+    padding: 0 5px;
+    font-size: var(--hud-text-badge);
   }
 }
 @media (max-width: 380px) {
+  .frontier-phone-top__row {
+    gap: theme(spacing[1.5]);
+  }
+  .frontier-menu-btn {
+    width: 40px;
+    height: 40px;
+  }
   .frontier-stock-chip {
     font-size: var(--hud-text-label);
   }
@@ -330,14 +364,11 @@ button.frontier-stock-chips[aria-expanded="true"] {
   }
   .frontier-bar {
     gap: theme(spacing.1);
-  }
-  .frontier-bar .frontier-place-switch__realm,
-  .frontier-bar .frontier-place-pill {
-    padding-inline: theme(spacing.1);
+    padding: 0 4px;
   }
   .frontier-stock-chip__icon img {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
   }
 }
 [data-under-sheet]:has([data-army-action] > *) .frontier-phone-foot {

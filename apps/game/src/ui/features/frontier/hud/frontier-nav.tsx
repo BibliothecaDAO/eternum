@@ -1,9 +1,10 @@
 import "./phone-hud.css";
 
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { MENU } from "@/ui/design-system/kit/words";
+import type { ReactNode } from "react";
 
-import { useHudPlaces } from "./hud-places";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+
+import { feedPlaceDot, useHudPlaces } from "./hud-places";
 
 export type HudSurface =
   | "realm"
@@ -24,9 +25,22 @@ type PlacesState = {
   researchReady?: boolean;
   feedUnread: number;
   chatUnread: number;
+  placeTabs?: ReactNode;
 };
 
 const MENU_SURFACES: readonly HudSurface[] = ["menu", "feed", "today", "settings", "shop"];
+
+const isMenuSurface = (surface: HudSurface | null): boolean => surface !== null && MENU_SURFACES.includes(surface);
+
+export const phoneMenuProps = ({
+  surface,
+  onSurface,
+  feedUnread,
+}: Pick<PlacesState, "surface" | "onSurface" | "feedUnread">) => ({
+  open: isMenuSurface(surface),
+  dot: feedPlaceDot(feedUnread),
+  onOpen: () => onSurface(surface === "menu" ? null : "menu"),
+});
 
 const usePlaces = ({ surface, researchReady, feedUnread, chatUnread }: PlacesState) =>
   useHudPlaces({
@@ -37,14 +51,13 @@ const usePlaces = ({ surface, researchReady, feedUnread, chatUnread }: PlacesSta
   });
 
 export const PhoneTabBar = (state: PlacesState) => {
-  const { surface, onSurface } = state;
+  const { surface, onSurface, placeTabs } = state;
   const places = usePlaces(state);
-  const feed = places.find((place) => place.key === "feed");
   const tabs = places.filter((place) => place.key !== "feed");
-  const onMenu = surface !== null && MENU_SURFACES.includes(surface);
   const toggle = (target: HudSurface) => onSurface(surface === target ? null : target);
   return (
     <nav aria-label="Places" className="ui-popover frontier-tab-bar pointer-events-auto">
+      {placeTabs}
       {tabs.map((place) => (
         <PlaceTab
           key={place.key}
@@ -53,13 +66,6 @@ export const PhoneTabBar = (state: PlacesState) => {
           onPress={() => toggle(place.key)}
         />
       ))}
-      <PlaceTab
-        label={MENU}
-        icon="menu"
-        current={onMenu}
-        dot={feed?.count ? feed.countLabel : undefined}
-        onPress={() => toggle("menu")}
-      />
     </nav>
   );
 };
@@ -71,7 +77,6 @@ type PlaceTabProps = {
   count?: number;
   countTone?: "good";
   countLabel?: string;
-  dot?: string;
   current: boolean;
   onPress: () => void;
 };
@@ -83,7 +88,6 @@ const PlaceTab = ({
   count,
   countTone,
   countLabel,
-  dot,
   current,
   onPress,
 }: PlaceTabProps) => (
@@ -95,13 +99,12 @@ const PlaceTab = ({
     onClick={onPress}
   >
     <span className="frontier-tab__icon">
-      <Icon name={icon} size={26} loading="eager" decoding="sync" />
+      <Icon name={icon} size={24} loading="eager" decoding="sync" />
       {count !== undefined && (
         <span className="frontier-tab__badge" data-tone={countTone} aria-label={countLabel}>
           {count}
         </span>
       )}
-      {dot && <span className="frontier-tab__dot" data-dot="" aria-label={dot} />}
     </span>
     <span className="frontier-tab__label">{label}</span>
   </button>

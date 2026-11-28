@@ -2,7 +2,7 @@ import "./phone-hud.css";
 
 import { Icon } from "@/ui/design-system/icon";
 import { SheetDock } from "@/ui/design-system/kit/hud-elements";
-import { SEASON } from "@/ui/design-system/kit/words";
+import { MENU, SEASON } from "@/ui/design-system/kit/words";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
@@ -38,11 +38,17 @@ type SeasonGlory = {
   onOpen: () => void;
 };
 
+type TopBarMenu = {
+  open?: boolean;
+  dot?: string;
+  onOpen: () => void;
+};
+
 type TopBarViewProps = {
   stocks: Stocks;
   clock: ReactNode;
   season?: SeasonGlory;
-  placeSwitch?: ReactNode;
+  menu?: TopBarMenu;
   quest?: ReactNode;
   questCard?: ReactNode;
   notice?: ReactNode;
@@ -55,7 +61,7 @@ export const TopBarView = ({
   stocks,
   clock,
   season,
-  placeSwitch,
+  menu,
   quest,
   questCard,
   notice,
@@ -64,11 +70,13 @@ export const TopBarView = ({
   todayCard,
 }: TopBarViewProps) => (
   <div className="frontier-phone-top">
-    <div className="ui-popover frontier-bar pointer-events-auto" data-has-glory={season ? "" : undefined}>
-      {placeSwitch}
-      <StockChips {...stocks} />
-      <div className="frontier-bar__day">{clock}</div>
-      {season && <SeasonGloryButton {...season} />}
+    <div className="frontier-phone-top__row">
+      <div className="ui-popover frontier-bar pointer-events-auto" data-has-glory={season ? "" : undefined}>
+        <StockChips {...stocks} />
+        {season && <SeasonGloryButton {...season} />}
+        <div className="frontier-bar__day">{clock}</div>
+      </div>
+      {menu && <PhoneMenuButton {...menu} />}
     </div>
     {realmCard ?? (todayCard && <TodayUnderBar card={todayCard} />) ?? (
       <div data-map-cluster className="frontier-phone-float">
@@ -85,6 +93,22 @@ export const TopBarView = ({
       </div>
     )}
   </div>
+);
+
+const PhoneMenuButton = ({ open = false, dot, onOpen }: TopBarMenu) => (
+  <button
+    type="button"
+    aria-label={MENU}
+    aria-current={open ? "page" : undefined}
+    aria-expanded={open}
+    data-hud-menu=""
+    data-hud-part=""
+    className="ui-popover frontier-menu-btn pointer-events-auto"
+    onClick={onOpen}
+  >
+    <Icon name="menu" size={20} loading="eager" decoding="sync" />
+    {dot && <span className="frontier-menu-btn__dot" data-dot="" aria-label={dot} />}
+  </button>
 );
 
 const SeasonGloryButton = ({ glory, open = false, onOpen }: SeasonGlory) => (

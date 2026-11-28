@@ -6727,9 +6727,10 @@ export const STEP_SETS = {
           const menuOpened = openThePlaceMenu(browser);
           const worldHud = browser.read(`(() => ({
             places: [...document.querySelectorAll('nav[aria-label="Places"] button')].map((button) => button.getAttribute('aria-label') || button.textContent?.trim()),
+            menuButton: Boolean(document.querySelector('.frontier-phone-top__row > button[data-hud-menu][aria-label="${HUD_WORDS.menu}"]')),
             questChip: Boolean(document.querySelector('[data-daily-quest-chip]')),
             depthSwitch: Boolean(document.querySelector('[data-surface-deep-switch]')),
-            realmWorld: [...document.querySelectorAll('[aria-label="Map view"] :is([role="tab"], [aria-pressed])')].map((tab) => tab.getAttribute('aria-label') || tab.textContent?.trim()),
+            realmWorld: [...document.querySelectorAll('[aria-label="${wordAt("MAP_VIEW")}"] :is([role="tab"], [aria-pressed], .frontier-place-switch__realm)')].map((tab) => tab.getAttribute('aria-label') || tab.textContent?.trim()),
             armies: document.querySelectorAll('nav[aria-label="Armies"] button').length,
             desktopStores: [...document.querySelectorAll('.frontier-realm-card [aria-label="Stores"] [data-store]')].map((tile) => tile.dataset.store),
             realmCard: Boolean(document.querySelector('.frontier-realm-card')),
@@ -6739,37 +6740,36 @@ export const STEP_SETS = {
           return { shot, worldHud };
         },
         verify: ({ seen, played }) => {
-          const base = inScene("map", "Deep")({ seen, played });
+          const base = inScene("map", layerName(3))({ seen, played });
           if (base.status !== "completed") return base;
           const h = played.worldHud;
+          const realm = wordAt("REALM");
+          const mapView = wordAt("MAP_VIEW");
+          const hasAllLayers = LAYER_NAMES.every((name) => h.realmWorld.includes(name));
           const ok = onADesktop()
             ? h.realmCard &&
-              h.places.includes("Research") &&
-              h.places.includes("Season") &&
-              h.places.includes("Feed") &&
+              h.places.includes(HUD_WORDS.research) &&
+              h.places.includes(HUD_WORDS.season) &&
+              h.places.includes(HUD_WORDS.feed) &&
               h.places.includes(HUD_WORDS.settings) &&
               !h.places.includes(HUD_WORDS.chat) &&
               !h.places.includes("Relics") &&
               h.questChip &&
               everyStock(h.desktopStores) &&
               h.depthSwitch &&
-              h.realmWorld.includes("Realm") &&
-              h.realmWorld.includes("Surface") &&
-              h.realmWorld.includes("Veil") &&
-              h.realmWorld.includes("Hollow") &&
-              h.realmWorld.includes("Deep") &&
+              h.realmWorld.includes(realm) &&
+              hasAllLayers &&
               !h.realmWorld.includes("World") &&
               h.armies > 0
             : h.placePill &&
+              h.menuButton &&
               h.questChip &&
               h.depthSwitch &&
-              h.realmWorld.includes("Realm") &&
-              h.realmWorld.includes("Surface") &&
-              h.realmWorld.includes("Veil") &&
-              h.realmWorld.includes("Hollow") &&
-              h.realmWorld.includes("Deep") &&
+              h.realmWorld.includes(realm) &&
+              hasAllLayers &&
               h.armies > 0 &&
-              h.places.join() === [HUD_WORDS.research, HUD_WORDS.season, HUD_WORDS.chat, HUD_WORDS.menu].join();
+              h.places.join() ===
+                [realm, `${mapView}, ${layerName(3)}`, HUD_WORDS.research, HUD_WORDS.season, HUD_WORDS.chat].join();
           return ok
             ? completed(played)
             : failed("World view must render the full approved HUD parts for this viewport", played);

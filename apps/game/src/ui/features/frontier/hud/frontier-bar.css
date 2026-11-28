@@ -144,6 +144,11 @@
   left: auto;
   right: var(--popover-edge);
 }
+.frontier-popover[data-placement="above"] {
+  top: auto;
+  bottom: var(--popover-bottom, 0px);
+  max-height: calc(100dvh - var(--popover-bottom, 0px) - var(--popover-edge));
+}
 
 .frontier-day-wrap {
   position: relative;
