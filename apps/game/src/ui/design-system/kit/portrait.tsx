@@ -1,3 +1,4 @@
+import { UNKNOWN } from "@bibliothecadao/types";
 import type { CSSProperties } from "react";
 
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
@@ -71,7 +72,7 @@ export const Portrait = ({
 /** A seat known taken whose player is not named: the portrait's ring around a dash. */
 const EmptyPortrait = () => (
   <span className="flex size-full items-center justify-center rounded-full border-2 border-kit-line2 bg-kit-plate2 text-kit-muted">
-    —
+    {UNKNOWN}
   </span>
 );
 

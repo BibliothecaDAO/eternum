@@ -132,6 +132,10 @@ function OathChoice({
 }
 
 const LONG_HERO = 10;
+const COMPACT_LONG_HERO = 7;
+
+const heroLengthBand = (hero: string) =>
+  hero.length >= LONG_HERO ? "wide" : hero.length >= COMPACT_LONG_HERO ? "compact" : undefined;
 
 const OathFace = ({ id, pickBase }: { id: number; pickBase: PickEffectBase }) => {
   const badge = oathStatBadge(id, pickBase);
@@ -142,7 +146,7 @@ const OathFace = ({ id, pickBase }: { id: number; pickBase: PickEffectBase }) =>
       </span>
       <b className="oath-choice__name">{oathName(id)}</b>
       <span className="oath-choice__well">
-        <span className="oath-choice__effect" data-long={badge.hero.length >= LONG_HERO || undefined}>
+        <span className="oath-choice__effect" data-long={heroLengthBand(badge.hero)}>
           <Icon name={badge.icon} size={28} />
           {badge.hero}
         </span>

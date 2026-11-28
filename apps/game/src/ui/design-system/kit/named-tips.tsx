@@ -11,11 +11,12 @@ import { type RankedWords } from "./words";
  */
 const NAMED = '[data-tip], [role="img"][aria-label], [role="meter"][aria-label], button[aria-label]';
 const BANE_CUT = "[data-tip-bane]";
+const OWN_OVERLAY = "[data-own-overlay]";
 
 /** A press this long on a touch screen asks for the name; a shorter one is the tap it always was. */
-const HOLD_MS = 450;
+export const HOLD_MS = 450;
 /** A finger that travels this far is scrolling, not asking. */
-const HOLD_SLOP_PX = 10;
+export const HOLD_SLOP_PX = 10;
 /** A held name stays this long after the finger lifts, so it can be read uncovered. */
 const LINGER_MS = 1_600;
 /** Within this much of the screen's top a name has no room above its thing. */
@@ -100,6 +101,7 @@ const baneNotes = (anchor: HTMLElement): BaneNote[] => {
  */
 const namedAt = (target: EventTarget | null): Named | null => {
   const element = target instanceof Element ? target : null;
+  if (element?.closest(OWN_OVERLAY)) return null;
   const anchor = element?.closest<HTMLElement>(NAMED) ?? element?.closest<HTMLElement>(BANE_CUT);
   if (!anchor || coversScreen(anchor)) return null;
   const line = ownWords(anchor);

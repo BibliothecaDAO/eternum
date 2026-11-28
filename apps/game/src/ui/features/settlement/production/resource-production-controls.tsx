@@ -16,6 +16,7 @@ import {
   resourceName,
   formatCharge,
   formatTypedNumber,
+  UNKNOWN,
 } from "@bibliothecadao/types";
 import { useState } from "react";
 import {
@@ -109,7 +110,7 @@ export const ResourceProductionControls = ({
         </span>
         <p className="text-hud-label">
           {run === undefined
-            ? "—"
+            ? UNKNOWN
             : `${runOutputLine(run, selectedResource)} from ${run.inputs
                 .map((input) => `${formatCharge(fromUnits(input.units))} ${resourceName(input.resource, false)}`)
                 .join(" · ")}`}
@@ -163,7 +164,7 @@ export const ResourceProductionControls = ({
         {failure && <ActionFailureNotice failure={failure} />}
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hud-divider pt-3">
           <span className="flex items-center gap-1.5 text-hud-strong">
-            {run ? runOutputLine(run, selectedResource) : "—"}
+            {run ? runOutputLine(run, selectedResource) : UNKNOWN}
             <ResourceIcon resource={selectedResource} size="xs" withTooltip={false} />
           </span>
           <span className="text-hud-label text-hud-cue">Time required {timeRequired}</span>

@@ -24,7 +24,7 @@ import { TROOP_TYPES, TroopType } from "../types/common";
 import type { QuestLine } from "../constants/quests";
 import { formatCount, nounFor } from "./count";
 
-const UNKNOWN = "—";
+export const UNKNOWN = "—";
 
 export const LORDS = "LORDS";
 export const FRAGMENT = "Fragment";
@@ -86,6 +86,11 @@ export const FRONTIER_TROOP_NAMES = {
   [TroopType.Paladin]: { one: "Scout", many: "Scouts" },
   [TroopType.Crossbowman]: { one: "Crossbow", many: "Crossbows" },
 } as const satisfies Record<TroopType, { one: string; many: string }>;
+
+export const COMBAT_CLASS_WORDS = {
+  blade: "Melee",
+  bow: "Ranged",
+} as const;
 
 export const frontierTroopName = (troop: TroopType | string, count?: number): string | undefined => {
   const words = (FRONTIER_TROOP_NAMES as Record<string, { one: string; many: string }>)[troop];

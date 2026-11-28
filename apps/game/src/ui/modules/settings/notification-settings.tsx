@@ -1,3 +1,4 @@
+import { UNKNOWN } from "@bibliothecadao/types";
 import { LEVEL_WORDS, PROFILE_WORDS } from "@/ui/design-system/kit/words";
 import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identity-session";
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
@@ -23,7 +24,7 @@ export const NotificationSettings = () => {
           label={PROFILE_WORDS.notifications}
           value={level ?? ""}
           options={[
-            ...(level ? [] : [{ value: "" as const, label: "—", disabled: true }]),
+            ...(level ? [] : [{ value: "" as const, label: UNKNOWN, disabled: true }]),
             ...NOTIFICATION_LEVELS.map((id) => ({ value: id, label: LEVEL_WORDS[id] })),
           ]}
           disabled={preferences.status !== "ready"}
@@ -50,7 +51,7 @@ const DeviceEnd = ({ state, onToggle }: { state: ThisDeviceState; onToggle: () =
     case "blocked":
       return <HudChip tone="warn">{PROFILE_WORDS.blocked}</HudChip>;
     case "unavailable":
-      return <HudChip>—</HudChip>;
+      return <HudChip>{UNKNOWN}</HudChip>;
     case "saving":
       return <HudLoading line="" />;
     default:

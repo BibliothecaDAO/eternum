@@ -1,4 +1,5 @@
-import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
+import { nativeResearchConstants as research, nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
+import { formatExact, rankName } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
 import { EARLY_REALM, MID_REALM } from "./progression-fixture";
@@ -37,9 +38,9 @@ describe("the castle's tree as the contract rules it", () => {
     ]);
     expect(why(EARLY_REALM, "row-0")).toBe("Needs 500 Essence");
     expect(why(EARLY_REALM, "row-1")).toBe("Needs a Workshop");
-    expect(why(EARLY_REALM, "row-2")).toBe("Needs City");
-    expect(why(EARLY_REALM, "row-4")).toBe("Needs Kingdom");
-    expect(why(EARLY_REALM, "row-5")).toBe("Needs Kingdom");
+    expect(why(EARLY_REALM, "row-2")).toBe(RESEARCH_TREE.needsLevel(rankName(1)));
+    expect(why(EARLY_REALM, "row-4")).toBe(RESEARCH_TREE.needsLevel(rankName(2)));
+    expect(why(EARLY_REALM, "row-5")).toBe(RESEARCH_TREE.needsLevel(rankName(2)));
     expect(why({ ...EARLY_REALM, castleLevel: 2 }, "row-5")).toBe("Needs a Supply yard");
     expect(why(EARLY_REALM, "well")).toBe("Needs 2,500 Essence");
     expect(why(EARLY_REALM, "shrine")).toBe("Needs Well lore first");
@@ -127,9 +128,18 @@ it("offers independent Camp and Depot upgrades with their exact next output and 
   expect(researchEffectLine(node(realm, `row-${research.ROW_RATIONS}`))).toBe(
     "1.4 wheat per troop → 1.2 wheat per troop (less)",
   );
-  expect(researchEffectLine(node(EARLY_REALM, "well"))).toBe("None → 40% max stamina each");
-  expect(researchEffectLine(node({ ...EARLY_REALM, essence: 2_500 }, "well"))).toBe("None → 40% max stamina each");
-  expect(researchEffectLine(node(MID_REALM, "spire"))).toBe("Closed → Open");
+  const wellPercent = formatExact(nativeRuleConstants.WELL_REFILL_PERCENT);
+  expect(researchEffectLine(node(EARLY_REALM, "well"))).toBe(RESEARCH_TREE.loreEffects.well(wellPercent));
+  expect(researchEffectLine(node({ ...EARLY_REALM, essence: 2_500 }, "well"))).toBe(
+    RESEARCH_TREE.loreEffects.well(wellPercent),
+  );
+  expect(researchEffectLine(node(EARLY_REALM, "shrine"))).toBe(RESEARCH_TREE.loreEffects.shrine);
+  expect(researchEffectLine(node(MID_REALM, "spire"))).toBe(RESEARCH_TREE.loreEffects.spire);
+  expect(node(EARLY_REALM, "well").gives.line).toBe(RESEARCH_TREE.loreDescriptions.well(wellPercent));
+  expect(node(EARLY_REALM, "shrine").gives.line).toBe(RESEARCH_TREE.loreDescriptions.shrine);
+  expect(node(MID_REALM, "spire").gives.line).toBe(RESEARCH_TREE.loreDescriptions.spire);
+  expect(needLine({ kind: "level", met: true, level: rankName(2) })).toBe(RESEARCH_TREE.rankMet(rankName(2)));
+  expect(node(EARLY_REALM, "spire").needs.some((need) => need.kind === "level")).toBe(false);
 });
 
 it("shows only Knight slots at Settlement and each troop's three exact purchases at City", () => {
@@ -192,9 +202,9 @@ it("gives every research node a concise shortEffect label from one source that f
     "row-4": "2 → 1.8 wheat",
     "row-5": "180 → 216 ⚡",
     "row-6": "2 → 3 Oaths",
-    well: "+40% ⚡",
-    shrine: "Opens",
-    spire: "Opens",
+    well: RESEARCH_TREE.shortEffects.well(formatExact(nativeRuleConstants.WELL_REFILL_PERCENT)),
+    shrine: RESEARCH_TREE.shortEffects.shrine,
+    spire: RESEARCH_TREE.shortEffects.spire,
   });
 
   const mid = Object.fromEntries(readResearchTree(MID_REALM).map((item) => [item.key, item.shortEffect]));
@@ -204,9 +214,9 @@ it("gives every research node a concise shortEffect label from one source that f
     "row-7": "2 → 3 Oaths",
     "row-11": "2 → 3 Oaths",
     "row-5": "216 → 252 ⚡",
-    well: "+40% ⚡",
-    shrine: "Open",
-    spire: "Opens",
+    well: RESEARCH_TREE.shortEffects.well(formatExact(nativeRuleConstants.WELL_REFILL_PERCENT)),
+    shrine: RESEARCH_TREE.shortEffects.shrine,
+    spire: RESEARCH_TREE.shortEffects.spire,
   });
 
   const maxed = readResearchTree({

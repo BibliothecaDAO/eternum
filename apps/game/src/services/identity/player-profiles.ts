@@ -1,3 +1,4 @@
+import { UNKNOWN } from "@bibliothecadao/types";
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { displayPlayerName, getInternalAddressName } from "@bibliothecadao/eternum";
@@ -112,7 +113,7 @@ const readOwnProfile = (address: string | bigint): IdentityProfile | null => {
 
 /** What a name not known shows: waiting on identity, or identity's ask failed. */
 const NAME_WAITING_MARK = "…";
-const NAME_UNAVAILABLE_MARK = "—";
+const NAME_UNAVAILABLE_MARK = UNKNOWN;
 
 /**
  * How a player's name reads, decided in one place for every surface, drawn or imperative:

@@ -1,0 +1,35 @@
+.chat-message-scroller {
+  padding-top: theme(spacing.2);
+  mask-image: linear-gradient(to bottom, transparent, rgb(var(--hud-ink)) theme(spacing.4));
+}
+
+.chat-message-row__reply {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--hud-fast) var(--hud-ease);
+}
+
+@media (hover: hover) {
+  .chat-message-row:not([data-lit]):not([data-mentions-me]):hover {
+    background: color-mix(in srgb, var(--hud-hover) 55%, transparent);
+  }
+  .chat-message-row:hover .chat-message-row__reply {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.chat-message-row:focus-within .chat-message-row__reply {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (pointer: coarse) {
+  .chat-message-row {
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+}

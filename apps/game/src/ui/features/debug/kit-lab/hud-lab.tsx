@@ -49,9 +49,10 @@ import { BuildView } from "@/ui/features/frontier/build/build-view";
 import { buildGroupOf } from "@/ui/features/frontier/build/build-options";
 import { CastleResearch, CastleView } from "@/ui/features/frontier/upgrade/castle-view";
 import { ArmyDetail } from "@/ui/features/frontier/army/army-panel";
-import { MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progression-fixture";
+import { MID_REALM, PRESET_TROOP_FIGURES, VETERAN_ARMY } from "@/ui/features/frontier/research/progression-fixture";
 import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
 import { BuildingCardView, type CardMakes } from "@/ui/features/frontier/building/building-card";
+import { troopForBuilding } from "@/ui/features/frontier/troops/troop-traits-card";
 import { buildingIcon, buildingName } from "@/ui/features/frontier/build/building-names";
 import { nativeResearchConstants as research, nativeStructureConstants } from "@bibliothecadao/eternum/game-client";
 import { type RealmResearchFacts, readResearchTree } from "@/ui/features/frontier/research/research-tree";
@@ -198,7 +199,7 @@ const DEPLOY: LabDeploy = { count: 1_000 };
 
 type LabSite = Omit<Parameters<typeof SiteCardView>[0], "onClose" | "onRealm">;
 
-const ARMY_CHIP = { art: "knight-t1" as const, troops: 5_000 };
+const ARMY_CHIP = { art: "knight-t1" as const, troops: 5_000, category: TroopType.Knight };
 const ATTACK_30 = { kind: "attack" as const, stamina: 30, onAttack: () => undefined };
 /** This attack: the army's losses and the guard it leaves, as its result shows (none left clears the site). */
 const FIGHT = (troopsLost: number, guardLeft = 0) => ({ troopsLost, guardLeft });
@@ -207,6 +208,7 @@ const CAMP_CARD: LabSite = {
   beast: undefined,
   army: ARMY_CHIP,
   guard: 1_100,
+  figures: PRESET_TROOP_FIGURES,
   fight: FIGHT(180),
   pay: { icon: "labor", amount: 550 },
   opensPost: true,
@@ -214,9 +216,10 @@ const CAMP_CARD: LabSite = {
 };
 const RUIN_CARD: LabSite = {
   site: "Ruin",
-  beast: { name: "Troll", beast: "troll", combatClass: "Knight" },
+  beast: { name: "Troll", beast: "troll", combatClass: TroopType.Knight },
   army: ARMY_CHIP,
   guard: 3_400,
+  figures: PRESET_TROOP_FIGURES,
   fight: FIGHT(1_250, 1_520),
   pay: null,
   verb: ATTACK_30,
@@ -482,9 +485,10 @@ const SEASON_BOARD_YOU_FIRST = [
  */
 const OWNERS_CAMP: LabSite = {
   site: "Camp",
-  beast: { name: "Troll", beast: "troll", combatClass: "Knight" },
-  army: { art: "knight-t1", troops: 1_500 },
+  beast: { name: "Troll", beast: "troll", combatClass: TroopType.Knight },
+  army: { art: "knight-t1", troops: 1_500, category: TroopType.Knight },
   guard: 1_300,
+  figures: PRESET_TROOP_FIGURES,
   fight: FIGHT(180, 740),
   pay: { icon: "wood", amount: 650 },
   verb: { kind: "short", stamina: { cost: 30, held: 14, wait: 31 * 60 } },
@@ -495,7 +499,7 @@ const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
     ready: {
       ...OWNERS_CAMP,
       beast: undefined,
-      army: { art: "knight-t1", troops: 5_000 },
+      army: { art: "knight-t1", troops: 5_000, category: TroopType.Knight },
       guard: 1_100,
       fight: FIGHT(180),
       pay: { icon: "labor", amount: 550 },
@@ -503,7 +507,7 @@ const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
     },
     loses: {
       ...OWNERS_CAMP,
-      army: { art: "knight-t1", troops: 400 },
+      army: { art: "knight-t1", troops: 400, category: TroopType.Knight },
       fight: FIGHT(400, 1_150),
       verb: ATTACK_30,
     },
@@ -1195,12 +1199,14 @@ const LabBuildingCard = ({ building }: { building: keyof typeof LAB_BUILDINGS })
   const node = readResearchTree({ ...MID_REALM, essence, learned }).find(
     (each) => each.row === row && each.maxTier === 5,
   );
+  const troopCategory = troopForBuilding(category);
   return (
     <BuildingCardView
       name={buildingName(category)}
       icon={buildingIcon(category)}
       standing={standing}
       makes={makes}
+      troop={troopCategory ? { category: troopCategory, figures: PRESET_TROOP_FIGURES } : undefined}
       node={node}
       orders={{
         sending: false,

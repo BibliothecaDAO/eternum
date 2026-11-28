@@ -5,7 +5,7 @@
  */
 import { RESOURCE_PRECISION } from "../constants/utils";
 import { formatCount } from "./count";
-import { POINT, POINTS } from "./nouns";
+import { POINT, POINTS, UNKNOWN } from "./nouns";
 
 const exact = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 // Nine places: the resource precision every balance and charge settles to, which a typed amount keeps.
@@ -18,7 +18,7 @@ const dollars = new Intl.NumberFormat("en-US", { style: "currency", currency: "U
  * thousand; one held but under a unit is "<1", so it never reads as nothing; an unknown one is "—", never zero.
  */
 export const formatAmount = (value: number | undefined): string => {
-  if (value === undefined) return "—";
+  if (value === undefined) return UNKNOWN;
   if (value !== 0 && Math.abs(value) < 1) return value < 0 ? "-<1" : "<1";
   return Math.abs(value) < 10_000 ? exact.format(value) : compact.format(value);
 };
@@ -28,7 +28,7 @@ export const formatAmount = (value: number | undefined): string => {
  * to the unit, so never a price, a cost or anything a transaction moves; those are charges (formatCharge).
  */
 export const formatExact = (value: number | bigint | undefined): string =>
-  value === undefined ? "—" : exact.format(value);
+  value === undefined ? UNKNOWN : exact.format(value);
 
 /**
  * A charge: a cost, a price, an order's amount and total, a swap's debit and credit, a fee, and a reward shown beside
@@ -46,7 +46,7 @@ export const formatCharge = (value: number | undefined): string => formatAmount(
  * here, never as "+" before an amount (lint-guards.mjs).
  */
 export const formatGain = (value: number | undefined): string => {
-  if (value === undefined) return "—";
+  if (value === undefined) return UNKNOWN;
   if (value > 0 && value < 1) return UNDER_ONE;
   return Math.abs(value) < 10_000 ? signedExact.format(value) : signedCompact.format(value);
 };
@@ -64,7 +64,7 @@ const signedCompact = new Intl.NumberFormat("en-US", {
  * reads as an amount and a gain do ("<1", "under 1").
  */
 export const formatShort = (value: number | undefined, { signed = false } = {}): string => {
-  if (value === undefined) return "—";
+  if (value === undefined) return UNKNOWN;
   if (Math.abs(value) >= 1_000) return (signed ? signedCompact : compact).format(value);
   return signed ? formatGain(value) : formatAmount(value);
 };
@@ -149,7 +149,7 @@ const figures = (magnitude: number) => (magnitude >= 10 ? WHOLE : magnitude >= 1
  * figures below ("12", "2.5", "0.25"), signed when it is a change ("+2.5").
  */
 export const formatFigure = (value: number | undefined, { signed = false } = {}): string => {
-  if (value === undefined) return "—";
+  if (value === undefined) return UNKNOWN;
   const digits = figures(Math.abs(value));
   return signed ? SIGN(digits).format(value) : new Intl.NumberFormat("en-US", digits).format(value);
 };
@@ -159,7 +159,7 @@ export const formatFigure = (value: number | undefined, { signed = false } = {})
  * a bonus or a malus ("+10%", "-5%").
  */
 export const formatPercent = (fraction: number | undefined, { signed = false } = {}): string => {
-  if (fraction === undefined) return "—";
+  if (fraction === undefined) return UNKNOWN;
   const percent = fraction * 100;
   const digits = Math.abs(percent) >= 10 ? WHOLE : ONE_PLACE;
   const text = signed ? SIGN(digits).format(percent) : new Intl.NumberFormat("en-US", digits).format(percent);
@@ -167,18 +167,18 @@ export const formatPercent = (fraction: number | undefined, { signed = false } =
 };
 
 export const formatRate = (perSecond: number | undefined): string =>
-  perSecond === undefined ? "—" : `${formatFigure(perSecond * 60, { signed: true })}/min`;
+  perSecond === undefined ? UNKNOWN : `${formatFigure(perSecond * 60, { signed: true })}/min`;
 
 const ORDINAL = new Intl.PluralRules("en-US", { type: "ordinal" });
 const ORDINAL_ENDINGS: Record<string, string> = { one: "st", two: "nd", few: "rd", other: "th" };
 
 /** A place in a ranking: "1st", "2nd", "23rd", "11th". */
 export const formatOrdinal = (place: number | undefined): string =>
-  place === undefined ? "—" : `${exact.format(place)}${ORDINAL_ENDINGS[ORDINAL.select(place)]}`;
+  place === undefined ? UNKNOWN : `${exact.format(place)}${ORDINAL_ENDINGS[ORDINAL.select(place)]}`;
 
 /** Points, always exact: a player counts them to the unit against the one above. "1 point", "1,250 points". */
 export const formatPoints = (points: number | undefined): string =>
-  points === undefined ? `— ${POINTS}` : formatCount(points, POINT, POINTS);
+  points === undefined ? `${UNKNOWN} ${POINTS}` : formatCount(points, POINT, POINTS);
 
 /** A count read off the chain or a holding's metadata, written whole: unknown or below zero is none. */
 const wholeCount = (value: number) => exact.format(Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0);

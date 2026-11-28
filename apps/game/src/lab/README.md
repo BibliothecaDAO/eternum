@@ -291,11 +291,11 @@ pnpm --dir apps/game prove:studio --port 4199 --out <fresh-evidence-directory>
 `--base-url https://127.0.0.1:<port>` drives a client already served by you; `--size 1080x1920` films vertical;
 `--game frontier` uses Frontier's light; `--takes battle,explore` rolls only those.
 
-`/lab/game?scenario=battle-target` sends Crossbows through two attacks on a blade beast; `deep-battle-target` faces
+`/lab/game?scenario=battle-target` sends Crossbows through two attacks on a melee beast; `deep-battle-target` faces
 Knights in a guard slot. Select the army, open the site card and Attack twice. The landing playtest's
 `lab-battle-target` and `lab-deep-battle-target` drive those paths on desktop and phone, compare the exact preview and
 resulting facts with the native-tested `frontier-marks.txt` receipts, and retain screenshots. Site cards show the
-guard's Blade/Bow mark from its troop fact. These are lab proofs.
+guard's Melee/Ranged mark from its troop fact. These are lab proofs.
 
 Frontier town: open the Realm, tap a free plot and choose Range or Conscription Camp from City, or Rations Depot from
 Kingdom. The Range produces Crossbows for Deploy. Tap the Camp or Depot to buy its next tier: Camp increases all troop

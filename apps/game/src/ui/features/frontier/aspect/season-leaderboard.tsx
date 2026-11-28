@@ -118,7 +118,7 @@ export const SeasonLeaderboard = (props: SeasonLeaderboardProps) => {
             {props.result.winner === null ? ASPECT_PAGE_WORDS.noFinisher : ASPECT_PAGE_WORDS.won(props.result.winner)}
           </span>
         )}
-        <AspectStrip race={props.race} finishHeight={props.finishHeight} stages={props.stages} />
+        <AspectStrip race={props.race} finishHeight={props.finishHeight} stages={props.stages} phone={phone} />
         <div className="season-board__main">
           <section className="season-board__glory" aria-label={SEASON_WORDS.gloryLeaderboard}>
             <div className="season-board__tabs">
@@ -165,10 +165,12 @@ const AspectStrip = ({
   race,
   finishHeight,
   stages,
+  phone,
 }: {
   race: readonly SeasonAspect[];
   finishHeight: number;
   stages: number;
+  phone: boolean;
 }) => (
   <ol className="season-board__aspects">
     {race.map((aspect) => (
@@ -197,9 +199,9 @@ const AspectStrip = ({
           ))}
         </span>
         <span className="season-aspect__foot">
-          <span className="season-aspect__pool">
+          <span className="season-aspect__pool" aria-label={WORDS.pool(aspect.pool)}>
             <Icon name="lords" size={16} />
-            {WORDS.pool(aspect.pool)}
+            {phone ? formatShort(aspect.pool) : WORDS.pool(aspect.pool)}
           </span>
           <span className="season-aspect__members">
             <Icon name="people" size={16} />

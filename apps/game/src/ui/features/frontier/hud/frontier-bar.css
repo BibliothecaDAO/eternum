@@ -72,12 +72,15 @@
 .frontier-quest-orb[aria-expanded="true"] .frontier-progress-ring--lg {
   border-color: rgb(var(--hud-gold));
 }
-.frontier-quest-orb[data-ready="true"] .frontier-progress-ring--lg {
+.frontier-quest-orb[data-ready="true"] .frontier-progress-ring--lg,
+.frontier-quest-orb[data-cleared] .frontier-progress-ring--lg {
   border-color: rgb(var(--hud-gold));
   box-shadow: 0 0 14px rgb(var(--hud-gold) / 0.55);
 }
 .frontier-quest-orb__count[data-cleared] {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-color: rgb(var(--hud-gold));
   background: rgb(var(--hud-gold));
   color: rgb(var(--hud-dark));
@@ -226,23 +229,47 @@
 }
 .frontier-day-pill[data-compact] {
   height: 36px;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  padding: 0 theme(spacing[1.5]);
+  gap: theme(spacing[1.5]);
+  padding: 0 theme(spacing.2) 0 theme(spacing.1);
+}
+.frontier-day-pill[data-compact] .frontier-day-pill__ring.frontier-progress-ring {
+  width: 20px;
+  height: 20px;
 }
 .frontier-day-pill[data-compact] .frontier-day-pill__day {
-  font-family: var(--hud-font);
-  font-size: var(--hud-text-body);
-  font-weight: var(--hud-weight-title);
-  letter-spacing: 0;
-  color: rgb(var(--hud-gold));
+  letter-spacing: 0.06em;
 }
 .frontier-day-pill[data-compact] .frontier-day-pill__left {
-  border-left: 0;
-  padding-left: 0;
-  font-size: var(--hud-text-badge);
-  color: rgb(var(--hud-ink));
+  padding-left: theme(spacing[1.5]);
+  font-size: var(--hud-text-label);
+}
+.frontier-day-pill[data-compact] .frontier-day-pill__share {
+  height: 2px;
+}
+@media (max-width: 440px) {
+  .frontier-day-pill[data-compact] {
+    gap: 3px;
+    padding: 0 5px 0 3px;
+  }
+  .frontier-day-pill[data-compact] .frontier-day-pill__ring.frontier-progress-ring {
+    width: 17px;
+    height: 17px;
+  }
+  .frontier-day-pill[data-compact] .frontier-day-pill__ring img {
+    width: 11px;
+    height: 11px;
+  }
+  .frontier-day-pill[data-compact] .frontier-day-pill__day {
+    letter-spacing: 0.04em;
+  }
+  .frontier-day-pill[data-compact] .frontier-day-pill__day,
+  .frontier-day-pill[data-compact] .frontier-day-pill__numeral,
+  .frontier-day-pill[data-compact] .frontier-day-pill__left {
+    font-size: var(--hud-text-badge);
+  }
+  .frontier-day-pill[data-compact] .frontier-day-pill__left {
+    padding-left: 3px;
+  }
 }
 
 .frontier-place-switch {

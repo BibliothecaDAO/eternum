@@ -1,14 +1,18 @@
-import { createContext, useContext } from "react";
+import { createContext, useCallback, useContext } from "react";
 
 import { useGame } from "@/hooks/context/game-context";
 import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useAccountAddress } from "@/hooks/store/use-account-store";
+import { playerAspectOf, usePlayerAspects } from "@/hooks/use-player-aspect";
 
 import { linkFrom, openOnMap } from "@/play/navigation/open-place";
 import { getActiveGame } from "@/runtime/world/store";
-import { startRealmVisit } from "@/sync/active-game-client";
+import { needsRealmVisit, startRealmVisit } from "@/sync/active-game-client";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { isExpeditionRealm, Position, structureMapPosition } from "@bibliothecadao/eternum";
+import type { AspectId } from "@bibliothecadao/types";
+import { useChatPeople } from "../../hooks/use-chat-people";
 import { placeLoaded, placeOnMap, sameGame, type SharedPlace } from "../../model/place";
 
 /**
@@ -34,6 +38,7 @@ export interface ChatMap {
   read: (place: SharedPlace) => PlaceReading;
   /** A player's realm in this game, by their Realms id, as a place to open; none for a player with no realm here. */
   realmOf: (playerId: string) => SharedPlace | null;
+  aspectOf: (playerId: string) => AspectId | null;
   /** The game's registered players with a claimed name, each with their portrait: whom chat mentions in a game. */
   players: readonly { name: string; portrait: string | null }[];
 }
@@ -41,6 +46,19 @@ export interface ChatMap {
 export const ChatMapContext = createContext<ChatMap | null>(null);
 
 export const useChatMap = () => useContext(ChatMapContext);
+
+const NO_ASPECT = (): AspectId | null => null;
+
+export const useChatPlayerAspect = (): ((playerId: string) => AspectId | null) => useChatMap()?.aspectOf ?? NO_ASPECT;
+
+export const useGamePlayerAspect = (): ((playerId: string) => AspectId | null) => {
+  const people = useChatPeople();
+  const playerAspects = usePlayerAspects();
+  return useCallback(
+    (playerId: string) => playerAspectOf(playerAspects, people.accountOf(playerId)),
+    [playerAspects, people],
+  );
+};
 
 const PLACE_MODELS = ["Structure", "ExplorerTroops", "TileOccupancy"] as const;
 
@@ -60,6 +78,7 @@ export const usePlaceReader = (): ((place: SharedPlace) => PlaceReading) => {
     setup: { store },
   } = useGame();
   useNativeRevision(PLACE_MODELS);
+  const viewer = useAccountAddress();
   const selectArmy = useSelectArmyOnMap();
   const here = getActiveGame();
   return (place) => {
@@ -67,36 +86,57 @@ export const usePlaceReader = (): ((place: SharedPlace) => PlaceReading) => {
     if (!here || !sameGame(place.game, here)) return { ...asSent, open: null, gone: false, elsewhere: true };
     const now = placeOnMap(store, place.game, place, place.at);
     if (now) {
-      const open = openerOf(store, place, selectArmy);
+      const liveTile = liveTileOf(store, place);
+      if (!liveTile) return { name: now.name, icon: now.icon, open: null, gone: true, elsewhere: false };
+      const owner = now.owner ?? place.owner;
+      const open =
+        owner !== undefined && needsRealmVisit(store, place.game.gameId, BigInt(owner.player), viewer)
+          ? visitOpener(place, owner, liveTile)
+          : openerOf(place, liveTile, selectArmy);
       return { name: now.name, icon: now.icon, open, gone: open === null, elsewhere: false };
     }
     if (placeLoaded(store, place.game, place)) return { ...asSent, open: null, gone: true, elsewhere: false };
     if (!place.tile || !place.owner) return { ...asSent, open: null, gone: false, elsewhere: false };
-    const { tile, owner } = place;
-    const select =
-      place.kind === "army"
-        ? { kind: "army" as const, entityId: place.entityId, tile: "own" as const }
-        : { kind: "structure" as const, entityId: place.entityId };
-    const open = linkFrom(place.at, () =>
-      startRealmVisit({ player: owner.player, structureId: owner.realm, opensOn: { tile, select } }),
-    );
+    const open = visitOpener(place, place.owner, place.tile);
     return { ...asSent, open, gone: open === null, elsewhere: false };
   };
 };
 
-const openerOf = (
+const liveTileOf = (
   store: ReturnType<typeof useGame>["setup"]["store"],
   place: SharedPlace,
-  selectArmy: (entityId: number) => void,
-): (() => void) | null => {
+): NonNullable<SharedPlace["tile"]> | null => {
   const gameId = place.game.gameId;
-  if (place.kind === "army")
-    return store.entityOccupancy(gameId, place.entityId) ? linkFrom(place.at, () => selectArmy(place.entityId)) : null;
-  // A Frontier realm stands on its day's site; any other structure on the tile it occupies, none once it is gone.
+  if (place.kind === "army") {
+    const stands = store.entityOccupancy(gameId, place.entityId);
+    return stands ? { col: stands.col, row: stands.row, alt: stands.alt } : null;
+  }
   const structure = store.get("Structure", { game_id: gameId, entity_id: place.entityId });
   const onMap = structure && (isExpeditionRealm(store, structure) || store.entityOccupancy(gameId, place.entityId));
   const site = onMap ? structureMapPosition(store, structure) : null;
-  if (!site) return null;
+  return site ? { col: site.x, row: site.y, alt: site.alt } : null;
+};
+
+const visitOpener = (
+  place: SharedPlace,
+  owner: NonNullable<SharedPlace["owner"]>,
+  tile: NonNullable<SharedPlace["tile"]>,
+): (() => void) | null => {
+  const select =
+    place.kind === "army"
+      ? { kind: "army" as const, entityId: place.entityId, tile: "own" as const }
+      : { kind: "structure" as const, entityId: place.entityId };
+  return linkFrom(place.at, () =>
+    startRealmVisit({ player: owner.player, structureId: owner.realm, opensOn: { tile, select } }),
+  );
+};
+
+const openerOf = (
+  place: SharedPlace,
+  tile: NonNullable<SharedPlace["tile"]>,
+  selectArmy: (entityId: number) => void,
+): (() => void) | null => {
+  if (place.kind === "army") return linkFrom(place.at, () => selectArmy(place.entityId));
   const intent = { kind: "structure" as const, entityId: place.entityId };
-  return linkFrom(place.at, () => openOnMap(Position.fromContract(site), intent));
+  return linkFrom(place.at, () => openOnMap(Position.fromContract({ x: tile.col, y: tile.row }), intent));
 };

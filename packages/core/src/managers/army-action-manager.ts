@@ -645,7 +645,7 @@ export class ArmyActionManager {
     if (pathStart && (pathStart.col !== position.x || pathStart.row !== position.y)) {
       return Promise.reject(
         new Error(
-          `Explorer position drifted — path expected (${pathStart.col}, ${pathStart.row}) but chain reports (${position.x}, ${position.y}). Retry with a fresh path.`,
+          `Explorer position drifted: path expected (${pathStart.col}, ${pathStart.row}) but chain reports (${position.x}, ${position.y}). Retry with a fresh path.`,
         ),
       );
     }

@@ -16,6 +16,8 @@ import { placeMetadata, placeOf } from "../../model/place";
 import { replyMetadata, replyOf } from "../../model/reply";
 import { PlaceChip } from "../shared/chat-map";
 import { PlayerCard } from "../shared/player-card";
+import { useChatPlayerAspect } from "../shared/use-chat-map";
+import { nextHistoryCursor } from "../../model/store";
 import { useStickToLatest } from "@/hooks/use-stick-to-latest";
 import { JumpToLatest } from "../shared/jump-to-latest";
 import { useChatMentions } from "../../hooks/use-chat-mentions";
@@ -67,6 +69,7 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
   const messages = zone?.messages ?? NO_MESSAGES;
   // A sender's name is read as the list draws, and the list draws again when one lands.
   const people = useChatPeople();
+  const aspectOf = useChatPlayerAspect();
   const mentionable = useChatMentions(resolvedZoneId);
   const links = useLinkOpener();
   const section = useRef<HTMLElement>(null);
@@ -95,15 +98,11 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
     }
   }, [isActive, markAsRead, resolvedZoneId]);
 
-  const loadOlder = () => {
-    if (zone?.hasMoreHistory && zone.lastFetchedCursor && !zone.isFetchingHistory && !zone.historyError) {
-      void loadHistory(zone.lastFetchedCursor);
-    }
-  };
+  const olderCursor = nextHistoryCursor(zone);
   const { scrollerRef, hasNewer, jumpToLatest } = useStickToLatest({
     oldest: messages[0]?.id,
     newest: messages.at(-1)?.id,
-    onNearOldest: loadOlder,
+    onNearOldest: olderCursor ? () => void loadHistory(olderCursor) : undefined,
   });
 
   const dateSeparators = useMemo(() => computeDateSeparators(messages), [messages]);
@@ -111,7 +110,7 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
 
   return (
     <section ref={section} className={`relative flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
-      <div className="flex-1 min-h-0 px-3 py-2">
+      <div className="flex-1 min-h-0 px-3 pb-2">
         {!hasChannelAccess && (
           <p className="text-hud-body text-hud-cue">{reconnecting ? "Reconnecting…" : "Chat unavailable."}</p>
         )}
@@ -120,7 +119,7 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
         )}
         {hasChannelAccess && zone && muted !== null && (
           <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
-            <div ref={scrollerRef} className="flex flex-1 min-h-0 flex-col overflow-y-auto pr-1">
+            <div ref={scrollerRef} className="chat-message-scroller flex flex-1 min-h-0 flex-col overflow-y-auto pr-1">
               {zone.historyError && (
                 <div className="mb-2">
                   <HudNotice
@@ -167,6 +166,7 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
                           head
                             ? {
                                 name: senderName,
+                                aspect: aspectOf(senderId),
                                 time: formatWorldMessageTime(message),
                                 onName:
                                   senderId === self
@@ -179,6 +179,7 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
                           reply && !isMuted
                             ? {
                                 name: people.nameOf(reply.playerId, byId.get(reply.id)?.sender.displayName),
+                                aspect: aspectOf(reply.playerId),
                                 excerpt: reply.excerpt,
                                 onShow: () => quoted.show(reply.id),
                               }
@@ -250,6 +251,7 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
             replying
               ? {
                   name: people.nameOf(replying.sender.playerId, replying.sender.displayName),
+                  aspect: aspectOf(replying.sender.playerId),
                   excerpt: replying.content,
                   onCancel: () => setReplying(null),
                 }

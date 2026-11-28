@@ -1,0 +1,7 @@
+.ui-feed-line.feed-rule-line .ui-event__text {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}

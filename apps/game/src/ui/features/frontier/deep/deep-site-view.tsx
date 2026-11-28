@@ -17,7 +17,7 @@ import {
   HudSheet,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
-import { ARMY, DEEP_WORDS, MOVE, TROOPS } from "@/ui/design-system/kit/words";
+import { ARMY, DEEP_WORDS, MOVE, TROOPS, type TroopFigures } from "@/ui/design-system/kit/words";
 import {
   aspectName,
   type AspectId,
@@ -28,6 +28,7 @@ import {
   formatExact,
   formatRate,
   formatShortDuration,
+  frontierTroopName,
 } from "@bibliothecadao/types";
 import { beastMeaning, troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/balance.gen";
@@ -35,6 +36,8 @@ import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-nat
 import { AttackStamina, FightArena } from "../sites/fight-side";
 import { BeastMarkBadge, combatMarkOf } from "../sites/combat-mark";
 import type { DeepSiteFight } from "../sites/site-card-plan";
+import type { ArmyStaminaCosts } from "../deploy/troop-figures";
+import { UnitDetailsTrigger } from "../troops/unit-details-popover";
 
 import { DEEP_SITE_FACES } from "./deep-site-faces";
 
@@ -97,6 +100,8 @@ export interface DeepSiteProps {
   guard: DeepGuard;
   fight?: DeepSiteFight;
   pickBase: PickEffectBase;
+  figures?: TroopFigures;
+  attackerStamina?: ArmyStaminaCosts;
   order: DeepOrder | DeepBlock;
   onClose: () => void;
 }
@@ -108,7 +113,19 @@ const FIGHT_ORDER = Array.from(
 
 const siteName = (key: DeepSiteProps["site"]) => deepSites.find((each) => each.key === key)!.name;
 
-export const DeepSiteView = ({ site, ring, rates, opening, guard, fight, pickBase, order, onClose }: DeepSiteProps) => {
+export const DeepSiteView = ({
+  site,
+  ring,
+  rates,
+  opening,
+  guard,
+  fight,
+  pickBase,
+  figures,
+  attackerStamina,
+  order,
+  onClose,
+}: DeepSiteProps) => {
   const name = siteName(site);
   const secondary = rates && secondaryRate(rates);
   return (
@@ -120,11 +137,13 @@ export const DeepSiteView = ({ site, ring, rates, opening, guard, fight, pickBas
       <div data-deep-site={site} data-deep-guard={guard.kind} className="deep-site">
         {rates ? <RateStrip rates={rates} /> : opening && <LockedKinds pays={opening.pays} />}
         {fight ? (
-          <FightPreview site={site} fight={fight} guard={guard} />
+          <FightPreview site={site} fight={fight} guard={guard} figures={figures} attackerStamina={attackerStamina} />
         ) : (
-          <GuardStrip site={site} guard={guard} pickBase={pickBase} />
+          <GuardStrip site={site} guard={guard} pickBase={pickBase} figures={figures} />
         )}
-        {fight && guard.kind === "held" && <GuardStrip site={site} guard={guard} pickBase={pickBase} />}
+        {fight && guard.kind === "held" && (
+          <GuardStrip site={site} guard={guard} pickBase={pickBase} figures={figures} />
+        )}
         {rates && secondary?.kind !== "drain" && <PoisonStrip rates={rates} />}
         {opening && <OpeningBar opening={opening} />}
       </div>
@@ -260,42 +279,63 @@ const FightPreview = ({
   site,
   fight,
   guard,
+  figures,
+  attackerStamina,
 }: {
   site: DeepSiteProps["site"];
   fight: DeepSiteFight;
   guard: DeepGuard;
+  figures: TroopFigures | undefined;
+  attackerStamina: ArmyStaminaCosts | undefined;
 }) => {
   const result = fight.result && !("refused" in fight.result) ? fight.result : undefined;
   const frontGuard = guard.kind === "held" ? guard.slots.find((each) => each.armyId === guard.next) : undefined;
+  const attackerArt = troopMeaning(fight.attackerTroops);
   const defenderLabel = guard.kind === "beast" ? DEEP_BEASTS[site].name : (frontGuard?.realm ?? TROOPS);
   const defenderArt =
     guard.kind === "beast" ? beastMeaning(beastModel(DEEP_BEASTS[site])) : troopMeaning(fight.defenderTroops);
-  const defenderBadge =
-    guard.kind === "beast" ? (
-      <BeastMarkBadge category={guard.category} />
-    ) : guard.kind === "held" ? (
+  const defenderCategory = guard.kind === "beast" ? guard.category : fight.defenderTroops.category;
+  const cornerBadge =
+    guard.kind === "held" ? (
       <span className="deep-fight__aspect" aria-hidden="true">
         <AspectMark aspect={guard.aspectId} size={14} decorative />
       </span>
-    ) : null;
+    ) : undefined;
   return (
     <FightArena
       ours={{
         label: ARMY,
-        mark: <Icon name={troopMeaning(fight.attackerTroops)} size={96} className="size-full" />,
+        mark: <Icon name={attackerArt} size={96} className="size-full" />,
         before: fight.army,
         kept: result && fight.army - result.troopsLost,
+        combatCategory: fight.attackerTroops.category,
+        details: {
+          role: "player",
+          name: frontierTroopName(fight.attackerTroops.category) ?? ARMY,
+          art: attackerArt,
+          category: fight.attackerTroops.category,
+          strength: fight.army,
+          figures,
+          staminaCosts: attackerStamina,
+        },
       }}
       theirs={{
         label: defenderLabel,
-        mark: (
-          <span className="relative block size-full">
-            <Icon name={defenderArt} size={96} className="size-full" />
-            {defenderBadge}
-          </span>
-        ),
+        mark: <Icon name={defenderArt} size={96} className="size-full" />,
         before: fight.defender,
         kept: result?.guardLeft,
+        combatCategory: defenderCategory,
+        beastMark: guard.kind === "beast",
+        cornerBadge,
+        details: {
+          role: guard.kind === "beast" ? "deepBeast" : "enemyGuard",
+          name: defenderLabel,
+          art: defenderArt,
+          category: defenderCategory,
+          strength: fight.defender,
+          figures,
+          vsCategory: fight.attackerTroops.category,
+        },
       }}
     />
   );
@@ -313,32 +353,57 @@ const slotTip = (slot: DeepSlot, next: boolean, pickBase: PickEffectBase): strin
   ].join(" · ");
 };
 
-const BeastRow = ({ site, guard }: { site: DeepSiteProps["site"]; guard: Extract<DeepGuard, { kind: "beast" }> }) => (
-  <div data-deep-beast className="deep-beast">
-    <span className="deep-beast__portrait">
-      <Icon name={beastMeaning(beastModel(DEEP_BEASTS[site]))} size={48} className="size-full" />
-      <BeastMarkBadge category={guard.category} />
-    </span>
-    <span className="deep-beast__words">
-      <span className="deep-beast__name">
-        {DEEP_BEASTS[site].name}
-        <span className="deep-beast__tag">{combatMarkOf(guard.category).label}</span>
+const BeastRow = ({
+  site,
+  guard,
+  figures,
+}: {
+  site: DeepSiteProps["site"];
+  guard: Extract<DeepGuard, { kind: "beast" }>;
+  figures: TroopFigures | undefined;
+}) => {
+  const art = beastMeaning(beastModel(DEEP_BEASTS[site]));
+  return (
+    <div data-deep-beast className="deep-beast">
+      <UnitDetailsTrigger
+        openOnClick
+        subject={{
+          role: "deepBeast",
+          name: DEEP_BEASTS[site].name,
+          art,
+          category: guard.category,
+          strength: guard.troops,
+          figures,
+        }}
+      >
+        <span className="deep-beast__portrait">
+          <Icon name={art} size={48} className="size-full" />
+          <BeastMarkBadge category={guard.category} />
+        </span>
+      </UnitDetailsTrigger>
+      <span className="deep-beast__words">
+        <span className="deep-beast__name">
+          {DEEP_BEASTS[site].name}
+          <span className="deep-beast__tag">{combatMarkOf(guard.category).label}</span>
+        </span>
+        <b className="deep-beast__troops">{DEEP_WORDS.troops(guard.troops)}</b>
       </span>
-      <b className="deep-beast__troops">{DEEP_WORDS.troops(guard.troops)}</b>
-    </span>
-  </div>
-);
+    </div>
+  );
+};
 
 const GuardStrip = ({
   site,
   guard,
   pickBase,
+  figures,
 }: {
   site: DeepSiteProps["site"];
   guard: DeepGuard;
   pickBase: PickEffectBase;
+  figures: TroopFigures | undefined;
 }) => {
-  if (guard.kind === "beast") return <BeastRow site={site} guard={guard} />;
+  if (guard.kind === "beast") return <BeastRow site={site} guard={guard} figures={figures} />;
   if (guard.kind === "open") return <HudRow lead={<Icon name="flag" size={32} />} title={DEEP_WORDS.open} />;
   const filled = FIGHT_ORDER.flatMap((slot) => {
     const held = guard.slots.find((each) => each.slot === slot);

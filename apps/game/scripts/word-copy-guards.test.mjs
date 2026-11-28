@@ -32,6 +32,10 @@ const hits = async (path, source) => {
 const TEST = "apps/game/src/ui/features/zz-guard-probe.test.tsx";
 const STEPS = "apps/game/scripts/client-playtest/zz-guard-probe-steps.mjs";
 const SCREEN = "apps/game/src/ui/features/zz-guard-probe.tsx";
+const WORDS_FILE = "apps/game/src/ui/design-system/kit/words.ts";
+const TYPES_AMOUNT = "packages/types/src/words/amount.ts";
+const TYPES_NOUNS = "packages/types/src/words/nouns.ts";
+const CORE_STORY = "packages/core/src/systems/story-event-formatter.ts";
 const quoted = (text) => JSON.stringify(text);
 
 describe("the player phrases the guard reads", () => {
@@ -68,6 +72,30 @@ describe("the guard", () => {
     expect(await hits(TEST, `settle({ revertReason: ${quoted(WALLET_WORDS.createWallet)} });`)).toBe(0);
     expect(await hits(TEST, `expect(text).toContain(${quoted(CLOSE)});`)).toBe(0);
     expect(await hits(SCREEN, `const label = ${quoted(WALLET_WORDS.createWallet)};`)).toBe(0);
+  });
+});
+
+describe("the em-dash guard", () => {
+  it("refuses em-dashes and hand-typed placeholder copies in words modules, core, and UI components", async () => {
+    expect(await hits(WORDS_FILE, 'export const LINE = "Victory \u2014 defeated";')).toBe(1);
+    expect(await hits(WORDS_FILE, 'export const EMPTY = "\u2014";')).toBe(1);
+    expect(await hits(TYPES_AMOUNT, 'export const missing = () => "\u2014";')).toBe(1);
+    expect(await hits(TYPES_NOUNS, 'export const LINE = "Realm \u2014 home";')).toBe(1);
+    expect(await hits(CORE_STORY, 'export const title = "Raid \u2014 realm lost";')).toBe(1);
+    expect(await hits(CORE_STORY, 'export const line = `${x ?? "\u2014"} wheat`;')).toBe(1);
+    expect(await hits(SCREEN, "const tip = `${name} \u2014 ${effect}`;")).toBe(1);
+    expect(await hits(SCREEN, 'const tip = "Cancel build \u2014 click again";')).toBe(1);
+    expect(await hits(SCREEN, "export const View = () => <span>{a} \u2014 {b}</span>;")).toBe(1);
+    expect(await hits(SCREEN, "export const View = () => <span>\u2014</span>;")).toBe(1);
+    expect(await hits(SCREEN, 'const fallback = value ?? "\u2014";')).toBe(1);
+  });
+
+  it("allows only the single UNKNOWN constant in nouns.ts, references to UNKNOWN, and comments", async () => {
+    expect(await hits(TYPES_NOUNS, 'export const UNKNOWN = "\u2014";')).toBe(0);
+    expect(await hits(SCREEN, "export const View = () => <span>{UNKNOWN}</span>;")).toBe(0);
+    expect(await hits(SCREEN, "const fallback = value ?? UNKNOWN;")).toBe(0);
+    expect(await hits(SCREEN, "const title = `Guards: ${UNKNOWN}`;")).toBe(0);
+    expect(await hits(SCREEN, "// Note \u2014 comment only\nexport const ok = 1;")).toBe(0);
   });
 });
 

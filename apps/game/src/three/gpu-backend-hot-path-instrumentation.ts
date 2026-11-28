@@ -102,7 +102,7 @@ function digestSpikeFrame(durationMs: number, report: string, now: number): void
   if (now - spikeDigest.windowStartedAt < SPIKE_DIGEST_WINDOW_MS) return;
   const windowSeconds = ((now - spikeDigest.windowStartedAt) / 1000).toFixed(1);
   console.warn(
-    `[FramePerf] ${spikeDigest.count} spike frames in ${windowSeconds}s, worst ${Math.round(spikeDigest.maxDurationMs)}ms — ${spikeDigest.worstReport}`,
+    `[FramePerf] ${spikeDigest.count} spike frames in ${windowSeconds}s, worst ${Math.round(spikeDigest.maxDurationMs)}ms: ${spikeDigest.worstReport}`,
   );
   spikeDigest.count = 0;
   spikeDigest.maxDurationMs = 0;

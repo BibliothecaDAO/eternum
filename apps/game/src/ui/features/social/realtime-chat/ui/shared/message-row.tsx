@@ -1,12 +1,14 @@
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudButton } from "@/ui/design-system/kit/hud-elements";
-import { CHAT_WORDS } from "@/ui/design-system/kit/words";
-import { type PointerEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import "./message-row.css";
 
-/** A finger dragged this far right on a message answers it, as a phone's chats do. */
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HudAspectName, HudButton } from "@/ui/design-system/kit/hud-elements";
+import { CHAT_WORDS } from "@/ui/design-system/kit/words";
+import type { AspectId } from "@bibliothecadao/types";
+import { type MouseEvent, type PointerEvent, type ReactNode, useCallback, useEffect, useRef } from "react";
+
 const SWIPE_PX = 56;
-/** Moved less than this, a press is a click or a tap. */
-const TAP_PX = 8;
+const MOVE_CANCEL_PX = 8;
+const LONG_PRESS_MS = 450;
 
 export const MessageRow = ({
   id,
@@ -18,44 +20,86 @@ export const MessageRow = ({
   children,
 }: {
   id: string;
-  /** The run's head: who wrote it and when; none for a message within a run. */
-  run?: { name: string; time: string; onName?: () => void };
-  /** The message this one answers. */
-  quote?: { name: string; excerpt: string; onShow: () => void };
+  run?: { name: string; aspect?: AspectId | null; time: string; onName?: () => void };
+  quote?: { name: string; aspect?: AspectId | null; excerpt: string; onShow: () => void };
   mentionsMe?: boolean;
-  /** Shown just now, from a reply's quote. */
   lit?: boolean;
-  /** Answering it; none for a row that offers no Reply (a muted player's). */
   onReply?: () => void;
   children: ReactNode;
 }) => {
-  const [actions, setActions] = useState(false);
-  const press = useRef<{ x: number; y: number; touch: boolean } | null>(null);
-  const reply = useRef<HTMLDivElement>(null);
+  const press = useRef<{ x: number; y: number; triggered: boolean } | null>(null);
+  const suppressContextMenu = useRef(false);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearHold = useCallback(() => {
+    if (holdTimer.current !== null) {
+      clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+    }
+  }, []);
+
   useEffect(() => {
-    if (actions) reply.current?.scrollIntoView?.({ block: "nearest" });
-  }, [actions]);
+    return clearHold;
+  }, [clearHold]);
+
   const onPointerDown = (event: PointerEvent) => {
-    press.current = { x: event.clientX, y: event.clientY, touch: event.pointerType === "touch" };
+    if (event.pointerType !== "touch" || !onReply || (event.target as Element).closest("a, button")) return;
+    clearHold();
+    suppressContextMenu.current = false;
+    const state = { x: event.clientX, y: event.clientY, triggered: false };
+    press.current = state;
+    holdTimer.current = setTimeout(() => {
+      holdTimer.current = null;
+      if (press.current !== state) return;
+      state.triggered = true;
+      suppressContextMenu.current = true;
+      window.getSelection?.()?.removeAllRanges?.();
+      onReply();
+    }, LONG_PRESS_MS);
   };
+
+  const onPointerMove = (event: PointerEvent) => {
+    const start = press.current;
+    if (!start) return;
+    if (Math.abs(event.clientX - start.x) >= MOVE_CANCEL_PX || Math.abs(event.clientY - start.y) >= MOVE_CANCEL_PX) {
+      clearHold();
+    }
+  };
+
   const onPointerUp = (event: PointerEvent) => {
+    clearHold();
     const start = press.current;
     press.current = null;
-    if (!start || (event.target as Element).closest("a, button")) return;
+    if (!start || start.triggered || !onReply) return;
     const dx = event.clientX - start.x;
     const dy = Math.abs(event.clientY - start.y);
-    if (start.touch && dx >= SWIPE_PX && dy < SWIPE_PX / 2) onReply?.();
-    else if (Math.abs(dx) < TAP_PX && dy < TAP_PX) setActions((shown) => !shown);
+    if (dx >= SWIPE_PX && dy < SWIPE_PX / 2) onReply();
+  };
+
+  const onPointerCancel = () => {
+    clearHold();
+    press.current = null;
+  };
+
+  const onContextMenu = (event: MouseEvent) => {
+    if (press.current || suppressContextMenu.current) {
+      suppressContextMenu.current = false;
+      event.preventDefault();
+    }
   };
 
   return (
     <li
       data-message-id={id}
       data-mentions-me={mentionsMe || undefined}
+      data-lit={lit || undefined}
       onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      onContextMenu={onContextMenu}
       className={cn(
-        "group rounded px-1 py-0.5 text-hud-body leading-snug text-hud-ink transition-colors",
+        "chat-message-row group relative rounded px-1 py-0.5 text-hud-body leading-snug text-hud-ink transition-colors",
         mentionsMe && "bg-hud-chosen",
         lit && "bg-hud-hover",
       )}
@@ -68,7 +112,9 @@ export const MessageRow = ({
             className="flex w-full min-w-0 items-center gap-1 text-left text-hud-label text-hud-muted"
           >
             <span aria-hidden className="h-2 w-3 shrink-0 rounded-tl border-l-2 border-t-2 border-hud-line-strong" />
-            <span className="shrink-0 text-hud-accent">{quote.name}</span>
+            <HudAspectName aspect={quote.aspect ?? null} className="shrink-0">
+              {quote.name}
+            </HudAspectName>
             <span className="truncate">{quote.excerpt}</span>
           </button>
         )}
@@ -80,21 +126,23 @@ export const MessageRow = ({
           )}
           {run &&
             (run.onName ? (
-              <button type="button" onClick={run.onName} className="mr-1.5 text-hud-strong text-hud-accent">
-                {run.name}
+              <button type="button" onClick={run.onName} className="mr-1.5 text-hud-strong">
+                <HudAspectName aspect={run.aspect ?? null}>{run.name}</HudAspectName>
               </button>
             ) : (
-              <span className="mr-1.5 text-hud-strong text-hud-accent">{run.name}</span>
+              <HudAspectName aspect={run.aspect ?? null} className="mr-1.5 text-hud-strong">
+                {run.name}
+              </HudAspectName>
             ))}
           <span data-message-words>{children}</span>
         </p>
       </div>
       {onReply && (
-        <div ref={reply} className={cn("justify-end pt-1 group-focus-within:flex", actions ? "flex" : "hidden")}>
+        <span className="chat-message-row__reply">
           <HudButton kind="secondary" size="sm" onClick={onReply}>
             {CHAT_WORDS.reply}
           </HudButton>
-        </div>
+        </span>
       )}
     </li>
   );

@@ -1,5 +1,5 @@
 import { useHudLayout } from "@/hooks/helpers/use-compact-hud";
-import { formatAmount, formatExact, formatMoment, LORDS, formatShort } from "@bibliothecadao/types";
+import { formatAmount, formatExact, formatMoment, LORDS, formatShort, UNKNOWN } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import {
@@ -164,7 +164,7 @@ const BoardHead = () => (
   </HudTableHead>
 );
 
-const rankShown = (rank: number | undefined) => (rank === undefined ? "—" : `#${rank}`);
+const rankShown = (rank: number | undefined) => (rank === undefined ? UNKNOWN : `#${rank}`);
 
 const SeasonChip = ({ rank }: { rank: number | null | undefined }) => {
   if (rank === null) return null;
@@ -223,7 +223,8 @@ const SeasonPodium = ({ podium }: { podium: readonly SeasonPodiumPlace[] | null 
 const prizePlaces = (podium: readonly SeasonPodiumPlace[] | null): readonly SeasonPodiumPlace[] =>
   podium ?? [1, 2, 3].map((place) => ({ place, lords: Number.NaN, holder: "open" as const }));
 
-const prizeShown = (lords: number, format: (lords: number) => string) => (Number.isNaN(lords) ? "—" : format(lords));
+const prizeShown = (lords: number, format: (lords: number) => string) =>
+  Number.isNaN(lords) ? UNKNOWN : format(lords);
 
 /** Who holds a prize place by name, or why no one does yet. */
 const PrizeHolder = ({ holder }: { holder: SeasonPodiumPlace["holder"] }) => (

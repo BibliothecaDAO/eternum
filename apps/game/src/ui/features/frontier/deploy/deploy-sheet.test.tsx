@@ -2,10 +2,11 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  COMBAT_MARK_WORDS,
   DEPLOY_WORDS,
   NO_OPEN_TILE,
   NO_TROOPS_AT_HOME,
-  TROOP_TRAIT_WORDS,
+  UNIT_DETAILS_WORDS,
   wheatForOnly,
 } from "@/ui/design-system/kit/words";
 
@@ -264,14 +265,16 @@ describe("the Deploy sheet", () => {
     },
   );
 
-  it("tells each troop's fight and reveal traits on its card, in its tip, and under the cards for the one chosen", () => {
+  it("keeps deploy tiles minimal with corner combat mark, name, count, and unit-details tip without inline trait clutter", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
+    const staminaRules = store.require("SliceRules", { game_id: 1 }).troop_stamina_config;
     const figures = {
       lightCut: 100 - nativeRuleConstants.FRONTIER_LIGHT_DAMAGE_PERCENT,
       guardCut: 100 - nativeRuleConstants.FRONTIER_KNIGHT_GUARD_DAMAGE_PERCENT,
       scoutReveal: nativeRuleConstants.SCOUT_EXPLORE_STAMINA,
-      baseReveal: store.require("SliceRules", { game_id: 1 }).troop_stamina_config.stamina_explore_stamina_cost,
+      baseReveal: staminaRules.stamina_explore_stamina_cost,
+      attackStamina: staminaRules.stamina_attack_req,
     };
     expect(troopFigures(store, 1)).toEqual(figures);
     const knight = { mark: "blade", light: false, guard: true, scout: false } as const;
@@ -280,9 +283,19 @@ describe("the Deploy sheet", () => {
     try {
       const card = host.querySelector<HTMLElement>(".deploy-troop-card")!;
       expect(card.getAttribute("aria-pressed")).toBe("true");
-      expect(card.querySelector("[data-troop-trait]")?.textContent).toBe(TROOP_TRAIT_WORDS.card(knight, figures));
-      expect(card.getAttribute("data-tip")).toBe(TROOP_TRAIT_WORDS.tip(knight, figures));
-      expect(host.querySelector("[data-troop-summary]")?.textContent).toBe(TROOP_TRAIT_WORDS.summary(knight, figures));
+      expect(card.querySelector(`[data-combat-mark="${COMBAT_MARK_WORDS.blade}"]`)).not.toBeNull();
+      expect(card.querySelector("[data-troop-trait]")).toBeNull();
+      expect(host.querySelector("[data-troop-summary]")).toBeNull();
+      expect(card.getAttribute("data-tip")).toBeNull();
+      const trigger = card.closest<HTMLElement>("[data-unit-details-trigger]")!;
+      act(() => {
+        const hover = new MouseEvent("pointerover", { bubbles: true, cancelable: true });
+        Object.defineProperty(hover, "pointerType", { value: "mouse" });
+        trigger.dispatchEvent(hover);
+      });
+      const popover = document.querySelector<HTMLElement>("[data-unit-details-popover]")!;
+      expect(popover.textContent).toContain(COMBAT_MARK_WORDS.blade);
+      expect(popover.textContent).toContain(UNIT_DETAILS_WORDS.headline(knight, figures));
     } finally {
       act(() => root.unmount());
       host.remove();

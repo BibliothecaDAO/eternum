@@ -1,11 +1,23 @@
-.frontier-crown {
+:root {
+  --frontier-top-bar-height: 40px;
+  --frontier-top-bar-inset: theme(spacing.4);
+}
+.frontier-top-bar {
   position: fixed;
-  top: theme(spacing.4);
-  right: calc(theme(spacing.hud-frontier-rail) + theme(spacing.8));
-  left: calc(theme(spacing.hud-frontier-left) + theme(spacing.8));
+  top: var(--frontier-top-bar-inset);
+  right: var(--frontier-top-bar-inset);
+  left: calc(theme(spacing.hud-frontier-left) + var(--frontier-top-bar-inset) * 2);
   z-index: theme(zIndex.hud-rail);
   display: flex;
-  height: 40px;
+  height: var(--frontier-top-bar-height);
+  align-items: center;
+  gap: theme(spacing.3);
+}
+.frontier-crown {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 0%;
+  height: 100%;
   align-items: center;
   justify-content: center;
   gap: theme(spacing[2.5]);
@@ -46,7 +58,7 @@
   text-align: left;
 }
 .frontier-crown .frontier-quest-orb {
-  height: 40px;
+  height: var(--frontier-top-bar-height);
   flex-direction: row;
   gap: theme(spacing.2);
   border-radius: var(--hud-radius-control);
@@ -61,9 +73,10 @@
   width: 18px;
   height: 18px;
 }
-.frontier-crown .frontier-quest-orb__count,
-.frontier-crown .frontier-quest-orb[data-ready="true"] .frontier-quest-orb__count {
+.frontier-crown .frontier-quest-orb__count {
   position: static;
+  order: 2;
+  margin-top: 0;
   transform: none;
   border: 0;
   background: transparent;
@@ -72,6 +85,37 @@
   font-size: var(--hud-text-body);
   text-transform: none;
   letter-spacing: 0;
+}
+.frontier-crown .frontier-quest-orb[data-cleared] {
+  border-color: rgb(var(--hud-gold) / 0.85);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, rgb(var(--hud-gold)) 22%, var(--hud-surface-from)),
+    color-mix(in srgb, rgb(var(--hud-gold)) 12%, var(--hud-surface-to))
+  );
+  box-shadow:
+    var(--hud-shadow-panel),
+    0 0 14px rgb(var(--hud-gold) / 0.35),
+    inset 0 1px 0 rgb(var(--hud-gold) / 0.35);
+}
+.frontier-crown .frontier-quest-orb[data-cleared] .frontier-progress-ring--lg {
+  border-color: rgb(var(--hud-gold));
+  box-shadow: 0 0 10px rgb(var(--hud-gold) / 0.45);
+}
+.frontier-crown .frontier-quest-orb[data-cleared] .frontier-quest-orb__name {
+  color: rgb(var(--hud-gold));
+}
+.frontier-crown .frontier-quest-orb[data-cleared] .frontier-quest-orb__count[data-cleared] {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(var(--hud-gold));
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-gold));
+  padding: 0;
+  color: rgb(var(--hud-dark));
 }
 .frontier-crown .frontier-quest-orb__words {
   display: inline-flex;
@@ -87,9 +131,6 @@
 .frontier-crown .frontier-quest-orb__objective {
   font-size: var(--hud-text-label);
   color: var(--hud-muted);
-}
-.frontier-crown .frontier-quest-orb__count {
-  order: 2;
 }
 .frontier-crown .frontier-quest-orb__alert {
   order: 3;
@@ -181,7 +222,7 @@
 
 .frontier-corner {
   position: fixed;
-  top: theme(spacing.4);
+  top: var(--frontier-top-bar-inset);
   bottom: theme(spacing.hud-base);
   z-index: theme(zIndex.hud-rail);
   display: flex;
@@ -190,11 +231,12 @@
   gap: theme(spacing.3);
 }
 .frontier-corner--left {
-  left: theme(spacing.4);
+  left: var(--frontier-top-bar-inset);
   width: theme(spacing.hud-frontier-left);
 }
 .frontier-corner--right {
-  right: theme(spacing.4);
+  top: calc(var(--frontier-top-bar-inset) * 2 + var(--frontier-top-bar-height));
+  right: var(--frontier-top-bar-inset);
   bottom: 72px;
   gap: theme(spacing.4);
 }
@@ -385,30 +427,27 @@
 
 .frontier-commands {
   display: flex;
-  width: theme(spacing.hud-frontier-rail);
   flex: none;
-  align-self: flex-end;
+  min-width: theme(spacing.hud-frontier-rail);
+  height: 100%;
   align-items: center;
   gap: 5px;
-  height: 40px;
 }
 .frontier-places {
   display: flex;
-  min-width: 0;
-  flex: 1;
+  flex: 1 0 auto;
   gap: 5px;
 }
 .frontier-place {
   position: relative;
   display: inline-flex;
   height: 36px;
-  flex: 1 1 auto;
+  flex: 1 0 auto;
   align-items: center;
   justify-content: center;
-  min-width: 0;
   gap: 4px;
   border-radius: var(--hud-radius-control);
-  padding: 0 5px;
+  padding: 0 9px;
   color: rgb(var(--hud-ink));
   font-family: var(--hud-font-display);
   font-size: var(--hud-text-label);

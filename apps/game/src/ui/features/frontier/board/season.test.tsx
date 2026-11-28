@@ -8,8 +8,17 @@ import { SeasonDetailSheet } from "./season-detail";
 import { SeasonList, type SeasonListRow } from "./season-list";
 import { seasonPodium } from "./season-pool";
 import { TARGET_MARKS } from "../sites/site-marks";
-import { LAYER_NAMES } from "@bibliothecadao/types";
-import { LORDS_EARNED, POOL_NOT_PUBLISHED, SEASON_CLIMB, SEASON_ERROR } from "@/ui/design-system/kit/words";
+import { catalogOrder, LAYER_NAMES, LORDS } from "@bibliothecadao/types";
+import {
+  CHESTS,
+  ESSENCE,
+  LABOR,
+  LORDS_EARNED,
+  POOL_NOT_PUBLISHED,
+  SEASON_CLIMB,
+  SEASON_ERROR,
+  SITES_CLEARED,
+} from "@/ui/design-system/kit/words";
 
 const namesALayerBelow = (host: HTMLElement) => LAYER_NAMES.slice(1).some((name) => host.textContent?.includes(name));
 
@@ -170,6 +179,13 @@ describe("the season list", () => {
     };
     const onVisit = vi.fn();
     const other = render(<SeasonDetailSheet detail={detail} label="Aldric" onVisit={onVisit} onClose={vi.fn()} />);
+    expect(other.host.textContent).toContain(catalogOrder(detail.order).fullOrderName);
+    expect(other.host.textContent).toContain(SITES_CLEARED);
+    expect(other.host.textContent).toContain(CHESTS);
+    expect(other.host.textContent).toContain(LORDS);
+    expect(other.host.textContent).toContain(ESSENCE);
+    expect(other.host.textContent).toContain(LABOR);
+    expect(other.host.textContent).not.toContain("=");
     expect(other.host.querySelector("[aria-label='Ruin 9']")).not.toBeNull();
     // No Ethereal layer is drawn until the realm has gone through its spire.
     expect(namesALayerBelow(other.host)).toBe(false);

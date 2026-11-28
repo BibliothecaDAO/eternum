@@ -160,6 +160,7 @@ it("includes shared Deep field armies and all held guards with their home facts"
 it("includes the own Aspect's member identities and shared race heights without adding their private map regions", () => {
   const teamRows = [
     ...rows,
+    { model: "Structure", value: { entity_id: "3", owner: "12", base: { category: 1 }, metadata: { realm_id: 3 } } },
     { model: "HomeAspect", value: { home: "1", aspect: 1 } },
     { model: "HomeAspect", value: { home: "3", aspect: 1 } },
     { model: "HomeAspect", value: { home: "2", aspect: 2 } },
@@ -177,6 +178,9 @@ it("includes the own Aspect's member identities and shared race heights without 
   expect(rowInGameSyncScope("EntityName", { entity_id: "3" }, own)).toBe(true);
   expect(rowInGameSyncScope("Building", { structure_id: "3" }, own)).toBe(false);
   expect(rowInGameSyncScope("Structure", { entity_id: "4" }, own)).toBe(false);
+  const visitingFellow = deriveGameSyncScope("0xa", 350, expedition, teamRead, "0xc");
+  expect(visitingFellow.expedition?.realms).toEqual(new Set(["1", "3"]));
+  expect(rowInGameSyncScope("Building", { structure_id: "3" }, visitingFellow)).toBe(true);
   const visiting = deriveGameSyncScope("0xa", 350, expedition, teamRead, "0xbbb");
   expect(rowInGameSyncScope("Structure", { entity_id: "4" }, visiting)).toBe(true);
   expect(visiting.expedition?.regions).toEqual(own.expedition?.regions);

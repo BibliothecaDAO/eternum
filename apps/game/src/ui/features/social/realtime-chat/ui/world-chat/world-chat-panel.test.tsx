@@ -38,6 +38,7 @@ const GAME_MAP = {
   selected: null,
   read: (place: { name: string; icon: never }) => ({ name: place.name, icon: place.icon, open: null, elsewhere: true }),
   realmOf: () => null,
+  aspectOf: () => null,
   players: PLAYERS.flatMap((player) =>
     player.name ? [{ name: player.name, portrait: `/portrait/${player.address}.png` }] : [],
   ),
@@ -267,4 +268,14 @@ it("draws a mention of a player as their name, and marks a message that mentions
     "write to ada@realms.test, Maelis",
   ]);
   expect(rows.map((row) => row.querySelector("p button")?.textContent)).toEqual(["Corwin", "Ada", "Aldric"]);
+});
+
+it("gives the chat message scroller top padding and a top fade mask so scrolled lines do not slice against the header", () => {
+  drawRoom([message("1", "Corwin", "Hold the ridge")]);
+  const scroller = host.querySelector<HTMLElement>(".chat-message-scroller")!;
+  expect(scroller).not.toBeNull();
+  const style = window.getComputedStyle(scroller);
+  expect(style.paddingTop).not.toBe("");
+  expect(style.paddingTop).not.toBe("0px");
+  expect(style.maskImage).toContain("linear-gradient");
 });

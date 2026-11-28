@@ -1,4 +1,4 @@
-import { HudNotice } from "@/ui/design-system/kit/hud-elements";
+import { HudAspectName, HudNotice } from "@/ui/design-system/kit/hud-elements";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { formatClockTime } from "@bibliothecadao/types";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
@@ -16,6 +16,8 @@ import { placeMetadata, placeOf } from "../../model/place";
 import { replyMetadata, replyOf } from "../../model/reply";
 import { PlaceChip } from "../shared/chat-map";
 import { useMute } from "../shared/player-card";
+import { useChatPlayerAspect } from "../shared/use-chat-map";
+import { nextHistoryCursor } from "../../model/store";
 import { useStickToLatest } from "@/hooks/use-stick-to-latest";
 import { JumpToLatest } from "../shared/jump-to-latest";
 import { useLinkOpener } from "../shared/leaving-realms";
@@ -73,6 +75,7 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, className }: D
 
   const onlinePlayers = useRealtimeChatSelector((state) => state.onlinePlayers);
   const people = useChatPeople();
+  const aspectOf = useChatPlayerAspect();
   const nameOf = (playerId: string) => people.nameOf(playerId, onlinePlayers[playerId]?.displayName);
   const recipientLabel = recipientId ? nameOf(recipientId) : undefined;
 
@@ -103,29 +106,27 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, className }: D
   const dmMessages = thread?.messages ?? NO_MESSAGES;
   const dateSeparators = useMemo(() => computeDateSeparators(dmMessages), [dmMessages]);
 
-  const loadOlder = () => {
-    if (thread?.hasMoreHistory && thread.lastFetchedCursor && !thread.isFetchingHistory && !thread.historyError) {
-      void loadHistory(thread.lastFetchedCursor);
-    }
-  };
+  const olderCursor = nextHistoryCursor(thread);
   const { scrollerRef, hasNewer, jumpToLatest } = useStickToLatest({
     oldest: dmMessages[0]?.id,
     newest: dmMessages.at(-1)?.id,
-    onNearOldest: loadOlder,
+    onNearOldest: olderCursor ? () => void loadHistory(olderCursor) : undefined,
   });
 
   return (
     <section ref={section} className={`relative flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
       {thread && recipientId && (
         <header className="flex items-center gap-2 border-b border-hud-line px-2 py-1 text-hud-label">
-          <span className="min-w-0 flex-1 truncate text-hud-strong text-hud-ink">{recipientLabel}</span>
+          <HudAspectName aspect={aspectOf(recipientId)} className="min-w-0 flex-1 truncate text-hud-strong">
+            {recipientLabel}
+          </HudAspectName>
           <MuteButton playerId={recipientId} />
         </header>
       )}
-      <div className="flex-1 min-h-0 px-3 py-2">
+      <div className="flex-1 min-h-0 px-3 pb-2">
         {thread && (
           <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
-            <div ref={scrollerRef} className="flex-1 min-h-0 overflow-y-auto pr-1">
+            <div ref={scrollerRef} className="chat-message-scroller flex-1 min-h-0 overflow-y-auto pr-1">
               {thread.historyError && (
                 <div className="mb-2">
                   <HudNotice
@@ -166,6 +167,7 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, className }: D
                           run || dateSeparators.has(index)
                             ? {
                                 name: labelOf(message.senderId),
+                                aspect: aspectOf(message.senderId),
                                 time: toDisplayTime(message),
                               }
                             : undefined
@@ -174,6 +176,7 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, className }: D
                           reply
                             ? {
                                 name: labelOf(reply.playerId),
+                                aspect: aspectOf(reply.playerId),
                                 excerpt: reply.excerpt,
                                 onShow: () => quoted.show(reply.id),
                               }
@@ -224,7 +227,12 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, className }: D
         disabled={!recipientId}
         replying={
           replying
-            ? { name: labelOf(replying.senderId), excerpt: replying.content, onCancel: () => setReplying(null) }
+            ? {
+                name: labelOf(replying.senderId),
+                aspect: aspectOf(replying.senderId),
+                excerpt: replying.content,
+                onCancel: () => setReplying(null),
+              }
             : undefined
         }
       />

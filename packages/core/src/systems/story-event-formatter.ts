@@ -23,6 +23,7 @@ import {
   troopPlural,
   TroopTier,
   type TroopType,
+  UNKNOWN,
   VERDICT_WORDS,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
@@ -103,17 +104,17 @@ const archivedFormatters = {
   },
   TradeAccepted: (_event, payload) => ({
     title: "Trade filled",
-    description: `${formatResourceAmount(payload.offered_amount) ?? "—"} ${resourceName(Number(payload.offered_resource), false)} for ${formatResourceAmount(payload.requested_amount) ?? "—"} ${resourceName(Number(payload.requested_resource), false)}`,
+    description: `${formatResourceAmount(payload.offered_amount) ?? UNKNOWN} ${resourceName(Number(payload.offered_resource), false)} for ${formatResourceAmount(payload.requested_amount) ?? UNKNOWN} ${resourceName(Number(payload.requested_resource), false)}`,
     icon: "resource",
   }),
   TradeCancelled: (_event, payload) => ({
     title: "Trade cancelled",
-    description: `Trade ${formatNumber(payload.value) ?? "—"}`,
+    description: `Trade ${formatNumber(payload.value) ?? UNKNOWN}`,
     icon: "resource",
   }),
   BankSwap: (_event, payload) => ({
     title: payload.buy ? "Bought at the bank" : "Sold at the bank",
-    description: `${formatResourceAmount(payload.resource_amount) ?? "—"} ${resourceName(Number(payload.resource_type), false)} for ${formatResourceAmount(payload.lords_amount) ?? "—"} ${LORDS}`,
+    description: `${formatResourceAmount(payload.resource_amount) ?? UNKNOWN} ${resourceName(Number(payload.resource_type), false)} for ${formatResourceAmount(payload.lords_amount) ?? UNKNOWN} ${LORDS}`,
     icon: "resource",
   }),
   BankLiquidity: (_, payload) => ({
@@ -125,18 +126,18 @@ const archivedFormatters = {
     title: "Faith points earned",
     description: joinPieces([
       describeStructureName(payload.wonder_id, components),
-      `+${formatNumber(payload.new_points) ?? "—"} (${formatNumber(payload.total_points) ?? "—"} in all)`,
+      `+${formatNumber(payload.new_points) ?? UNKNOWN} (${formatNumber(payload.total_points) ?? UNKNOWN} in all)`,
     ]),
     icon: "prize",
   }),
   FaithPledged: (_event, payload, components) => ({
     title: "Faith given",
-    description: `${describeStructureName(payload.structure_id, components) ?? "—"} → ${describeStructureName(payload.wonder_id, components) ?? "—"}`,
+    description: `${describeStructureName(payload.structure_id, components) ?? UNKNOWN} → ${describeStructureName(payload.wonder_id, components) ?? UNKNOWN}`,
     icon: "realm",
   }),
   FaithRemoved: (_event, payload, components) => ({
     title: "Faith withdrawn",
-    description: `${describeStructureName(payload.structure_id, components) ?? "—"} from ${describeStructureName(payload.wonder_id, components) ?? "—"}`,
+    description: `${describeStructureName(payload.structure_id, components) ?? UNKNOWN} from ${describeStructureName(payload.wonder_id, components) ?? UNKNOWN}`,
     icon: "realm",
   }),
   TierBought: (event, payload, components, resolvePlayerName) => {

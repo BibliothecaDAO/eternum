@@ -1,10 +1,12 @@
 import { useGame } from "@/hooks/context/game-context";
+import { identityUsername, useIdentitySession } from "@/hooks/context/identity-session";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { reasonLine } from "@/ui/design-system/kit/reasons";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
+import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { useRealmVisit } from "@/sync/active-game-client";
 import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
@@ -21,7 +23,7 @@ import { useHudLayout, useHudTablet } from "@/hooks/helpers/use-compact-hud";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { type ComponentType, type ReactNode, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { RealmVisitFoot, useRealmVisitNavigation, useVisitedRealm } from "./board/realm-visit";
+import { RealmVisitFoot, SpectatedPlayerChip, useRealmVisitNavigation, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, useSeasonRank } from "./board/season-board";
 import { useSpectatorWatch } from "./board/spectator-watch";
 import { useExpeditionRules, useFrontierRealm, useGoToFrontierPlace } from "./frontier-home";
@@ -127,6 +129,7 @@ const FrontierHudBody = ({
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const { isMapView } = useQuery();
   const spectating = useUIStore(isWatching);
+  const { status: identityStatus, session: identitySession } = useIdentitySession();
   const realm = useFrontierRealm();
   // The realm on the board: on a visit (a spectator's watch is one too) the visited realm, whose strip, panel and
   // armies the HUD shows; no order renders for a realm the player does not own.
@@ -303,6 +306,35 @@ const FrontierHudBody = ({
   const todayCard = surface === "today" && (
     <FrontierToday rules={rules} realm={realm ?? visited} own={Boolean(own)} onClose={close} />
   );
+  const isPlayingVisitor = Boolean(
+    realm &&
+    visit &&
+    identityStatus === "signed-in" &&
+    identityUsername(identitySession) !== null &&
+    !isExplicitSpectateSession(),
+  );
+  const spectatorVisit =
+    spectating && visit ? <SpectatedPlayerChip player={visit.player} onOpen={() => setSurface("season")} /> : undefined;
+  const spectatorAccount =
+    spectating && !isPlayingVisitor ? (
+      <IdentityChip compact season={desktop ? { rank: seasonRank, onOpen: () => setSurface("season") } : undefined} />
+    ) : undefined;
+  const spectatorLead =
+    spectatorVisit || spectatorAccount ? (
+      <>
+        {spectatorVisit}
+        {spectatorAccount}
+      </>
+    ) : undefined;
+  const phoneSpectatorChip =
+    spectatorVisit && spectatorAccount ? (
+      <div className="flex flex-wrap items-center gap-1.5">
+        {spectatorVisit}
+        {spectatorAccount}
+      </div>
+    ) : (
+      (spectatorVisit ?? spectatorAccount)
+    );
   const topBar = (
     <FrontierTopBar
       rules={rules}
@@ -316,7 +348,7 @@ const FrontierHudBody = ({
       quest={own ? <DailyQuestChip realm={own} /> : undefined}
       questCard={noticeAtFoot ? undefined : questDock || undefined}
       notice={noticeAtFoot ? undefined : openingNotice}
-      spectatorChip={spectating ? <IdentityChip compact /> : undefined}
+      spectatorChip={phoneSpectatorChip}
       realmCard={realmVisible ? realmCard : undefined}
       todayCard={todayCard || undefined}
       onOpenToday={() => setSurface(surface === "today" ? null : "today")}
@@ -391,11 +423,7 @@ const FrontierHudBody = ({
           surface={surface}
           onSurface={setSurface}
           research={own ? canResearchNow(research?.nodes) : undefined}
-          lead={
-            spectating ? (
-              <IdentityChip compact season={{ rank: seasonRank, onOpen: () => setSurface("season") }} />
-            ) : undefined
-          }
+          lead={spectatorLead}
         />
       }
     >

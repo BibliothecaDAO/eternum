@@ -63,7 +63,7 @@ export function OathSockets({
               key={index}
               role="img"
               aria-label={oath.name}
-              data-tip={`${oath.name} — ${oath.effect}`}
+              data-tip={`${oath.name}: ${oath.effect}`}
               className="oath-socket"
               data-filled=""
             >

@@ -1,5 +1,5 @@
 import { HudNotice, HudTabs } from "@/ui/design-system/kit/hud-elements";
-import { formatCount } from "@bibliothecadao/types";
+import { formatCount, UNKNOWN } from "@bibliothecadao/types";
 
 interface ArmyTypeToggleProps {
   armyType: boolean;
@@ -44,13 +44,13 @@ export const ArmyTypeToggle = ({
         tabs={[
           {
             key: "attack",
-            label: `Attack ${currentExplorersCount}/${maxExplorers ?? "—"}`,
-            title: `Field armies: ${currentExplorersCount} of ${maxExplorers ?? "—"}`,
+            label: `Attack ${currentExplorersCount}/${maxExplorers ?? UNKNOWN}`,
+            title: `Field armies: ${currentExplorersCount} of ${maxExplorers ?? UNKNOWN}`,
           },
           {
             key: "defense",
-            label: `Defense ${currentGuardsCount ?? "—"}/${maxGuards}`,
-            title: `Guard slots filled: ${currentGuardsCount ?? "—"} of ${maxGuards}`,
+            label: `Defense ${currentGuardsCount ?? UNKNOWN}/${maxGuards}`,
+            title: `Guard slots filled: ${currentGuardsCount ?? UNKNOWN} of ${maxGuards}`,
             disabled: !canInteractWithDefense,
           },
         ]}

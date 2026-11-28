@@ -1622,12 +1622,12 @@
     },
     "combat-blade": {
       "art": "combat-blade",
-      "label": "Blade",
+      "label": "Melee",
       "family": "Combat"
     },
     "combat-bow": {
       "art": "combat-bow",
-      "label": "Bow",
+      "label": "Ranged",
       "family": "Combat"
     },
     "bane-world": {

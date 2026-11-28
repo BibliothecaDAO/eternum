@@ -361,6 +361,7 @@ import {
   type RankedWords,
   type QuestUnit,
   ASPECT_REWARD,
+  COMBAT_CLASS_WORDS,
   formatOrdinal,
   FRONTIER_TROOP_NAMES,
   TroopType,
@@ -376,7 +377,6 @@ export { type RankedWords, rankedText } from "@bibliothecadao/types";
 
 export const LEFT = "left";
 export const DAY = "Day";
-export const dayShort = (day: number | string) => `D${day}`;
 /** A day of the season against its last: "Day 10 of 14". */
 export const dayOfSeason = (day: string, lastDay: string) => `${DAY} ${day} of ${lastDay}`;
 /** When the season ends, as a local day and clock time: "Season ends 31 Oct 21:40". */
@@ -478,14 +478,14 @@ export const COUNTDOWN_WORDS = {
 } as const;
 export const PRESEASON_WORDS = {
   aspectTitle: "Season 1 Aspect",
-  optionalLine: "Optional — choose your Season 1 Aspect now or later. You can change it any time until Season 1 opens.",
+  optionalLine: "Optional: choose your Season 1 Aspect now or later. You can change it any time until Season 1 opens.",
   joined: "Joined",
   pick: "Choose your side",
   orderTitle: "Choose your Order",
   orderLine: (aspect: string) => `Inside ${aspect}. Your Order is your Realm's name and crest.`,
   playAs: (order: string) => `Play as ${order}`,
   invitePickPrompt:
-    "Pick an Aspect above to unlock your Season 1 invite link — friends start in your Aspect when Season 1 opens.",
+    "Pick an Aspect above to unlock your Season 1 invite link. Friends start in your Aspect when Season 1 opens.",
   inviteSignedOut: "Sign in to get your Season 1 invite link and earn Fragments when friends join.",
 } as const;
 export const SEASON_INVITE_WORDS = {
@@ -783,7 +783,6 @@ export const siteTitle = (place: string | undefined, kind: string, guard: string
   [place, kind === guard ? undefined : kind].filter(Boolean).join(" ");
 export const ARRIVING = "Arriving";
 /** A done site, and the chests the clears paid (screen-reader words; the screen shows Fl and Ch). */
-export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
 export const SHRINE = "Shrine";
 export const WELL = "Well";
@@ -1226,22 +1225,22 @@ export const DEPLOY_WORDS = {
   howMany: (troop: string) => `${troop} to deploy`,
   deployCount: (count: number) => `${DEPLOY} ${formatExact(count)}`,
 } as const;
-export const COMBAT_MARK_WORDS = { blade: "Blade", bow: "Bow" } as const satisfies Record<CombatMark, string>;
-const lessBy = (cut: number) => formatPercent(-cut / 100, { signed: true });
-const told = (...parts: (string | false)[]) => parts.filter((part): part is string => part !== false).join(" · ");
-const STRIKE_ORDER_WORDS = {
-  card: { blade: false, bow: "1st strike" },
-  summary: { blade: false, bow: `Strikes first vs blades` },
-  tip: {
-    blade: `Hits together vs ${COMBAT_MARK_WORDS.blade}, after ${COMBAT_MARK_WORDS.bow}`,
-    bow: `Strikes first vs ${COMBAT_MARK_WORDS.blade}, together vs ${COMBAT_MARK_WORDS.bow}`,
-  },
-} as const satisfies Record<"card" | "summary" | "tip", Record<CombatMark, string | false>>;
+export const COMBAT_MARK_WORDS = COMBAT_CLASS_WORDS satisfies Record<CombatMark, string>;
+const lessPercent = (cut: number) => formatPercent(cut / 100);
+const MARK_HEADLINE = {
+  blade: "Full damage",
+  bow: `Strikes first vs ${COMBAT_MARK_WORDS.blade}`,
+} as const satisfies Record<CombatMark, string>;
+const STRIKE_RULE_WORDS = {
+  blade: `Hits together vs ${COMBAT_MARK_WORDS.blade}, after ${COMBAT_MARK_WORDS.bow}`,
+  bow: `Hits together vs ${COMBAT_MARK_WORDS.bow}`,
+} as const satisfies Record<CombatMark, string>;
 export interface TroopFigures {
   lightCut: number;
   guardCut: number;
   scoutReveal: number;
   baseReveal: number;
+  attackStamina: number;
 }
 export interface TroopTraits {
   mark: CombatMark;
@@ -1250,38 +1249,68 @@ export interface TroopTraits {
   scout: boolean;
 }
 const LIGHT_AGAINST = FRONTIER_TROOP_NAMES[TroopType.Knight].many;
+const scoutRevealLine = (figures: TroopFigures) => `${formatExact(figures.scoutReveal)} stamina reveal`;
+const lightDamageLine = (figures: TroopFigures) => `${lessPercent(figures.lightCut)} less damage vs ${LIGHT_AGAINST}`;
+const guardDeepLine = (figures: TroopFigures) =>
+  `${lessPercent(figures.guardCut)} less damage taken guarding in the ${DEEP}`;
+const troopLines = ({ light, guard, scout }: TroopTraits, figures: TroopFigures): readonly string[] => {
+  const result: string[] = [];
+  if (scout) result.push(scoutRevealLine(figures));
+  if (!light) result.push(MARK_HEADLINE.blade);
+  if (light) result.push(lightDamageLine(figures));
+  if (guard) result.push(guardDeepLine(figures));
+  return result;
+};
 export const TROOP_TRAIT_WORDS = {
-  card: ({ mark, light, guard, scout }: TroopTraits, figures: TroopFigures) =>
-    told(
-      !light && "Full dmg",
-      STRIKE_ORDER_WORDS.card[mark],
-      guard && "Guard",
-      scout && formatExact(figures.scoutReveal),
-      light && lessBy(figures.lightCut),
-    ),
-  summary: ({ mark, light, guard, scout }: TroopTraits, figures: TroopFigures) =>
-    told(
-      COMBAT_MARK_WORDS[mark],
-      !light && "Full damage",
-      STRIKE_ORDER_WORDS.summary[mark],
-      scout && `Reveals for ${formatExact(figures.scoutReveal)} stamina (not ${formatExact(figures.baseReveal)})`,
-      light && `${lessBy(figures.lightCut)} damage vs ${LIGHT_AGAINST}`,
-      guard && `${lessBy(figures.guardCut)} damage taken guarding in the ${DEEP}`,
-    ),
-  tip: ({ mark, light, guard, scout }: TroopTraits, figures: TroopFigures) =>
-    told(
-      COMBAT_MARK_WORDS[mark],
-      !light && "Full damage",
-      STRIKE_ORDER_WORDS.tip[mark],
-      light && `${lessBy(figures.lightCut)} damage vs ${LIGHT_AGAINST}`,
-      guard && `${lessBy(figures.guardCut)} damage taken in the ${DEEP}`,
-      scout && `Reveals tiles for ${formatExact(figures.scoutReveal)} stamina`,
-    ),
+  lines: troopLines,
+  pills: ({ light, guard, scout }: TroopTraits, figures: TroopFigures): readonly string[] => {
+    const result: string[] = [];
+    if (scout) result.push(scoutRevealLine(figures));
+    if (!light) result.push(MARK_HEADLINE.blade);
+    if (guard) result.push(`${lessPercent(figures.guardCut)} less guarding`);
+    if (light) result.push(`${lessPercent(figures.lightCut)} less vs ${LIGHT_AGAINST}`);
+    return result;
+  },
+  damageValue: ({ light }: TroopTraits, figures: TroopFigures) =>
+    light ? lightDamageLine(figures) : MARK_HEADLINE.blade,
+  guardValue: guardDeepLine,
 } as const;
 export const BEAST_MARK_TIPS = {
   blade: `${COMBAT_MARK_WORDS.blade} · Hits together vs ${COMBAT_MARK_WORDS.blade} · ${COMBAT_MARK_WORDS.bow} strikes first against it`,
   bow: `${COMBAT_MARK_WORDS.bow} · Strikes first against ${COMBAT_MARK_WORDS.blade} · Hits together vs ${COMBAT_MARK_WORDS.bow}`,
 } as const satisfies Record<CombatMark, string>;
+export const UNIT_DETAILS_WORDS = {
+  role: {
+    player: "Player unit",
+    beast: "Beast",
+    deepBeast: `${DEEP} beast`,
+    enemyGuard: "Enemy guard",
+    enemyArmy: "Enemy army",
+  },
+  classUnit: (mark: CombatMark) => `${COMBAT_MARK_WORDS[mark]} unit`,
+  classGuard: (mark: CombatMark) => `${COMBAT_MARK_WORDS[mark]} guard`,
+  headline: ({ mark, scout }: TroopTraits, figures: TroopFigures): string =>
+    scout ? scoutRevealLine(figures) : MARK_HEADLINE[mark],
+  strikeRule: STRIKE_RULE_WORDS,
+  beastHeadline: MARK_HEADLINE,
+  rows: {
+    damage: "Damage",
+    guardDeep: `Guarding ${DEEP}`,
+    revealStamina: "Reveal stamina",
+    attackStamina: "Attack stamina",
+    trainedAt: "Trained at",
+    strength: "Strength",
+    matchup: "Matchup",
+  },
+  staminaPerTile: (cost: number) => `${formatExact(cost)} stamina per tile`,
+  staminaCost: (cost: number) => `${formatExact(cost)} stamina`,
+  matchup: {
+    attacker: "You strike first",
+    defender: "Enemy strikes first",
+    simultaneous: "Simultaneous strike",
+  },
+  inspectLabel: (name: string) => `${name}: unit details`,
+} as const;
 export const SIZE_ROW = { fewer: "One fewer", more: "One more", max: "Max" } as const;
 export const BUILD = "Build";
 export const BUILT = "Built";
@@ -1881,7 +1910,7 @@ export const PROFILE_WORDS = {
   settingsShort: "Settings",
   tabsLabel: "Account sections",
   noAspectInviteTitle: "No invite link yet",
-  noAspectInvite: "Join an Aspect first — your personal link will appear here.",
+  noAspectInvite: "Join an Aspect first. Your personal link will appear here.",
   joinAspect: "Join an Aspect",
   friendReward: `+${formatExact(FRIEND_FRAGMENTS)} ${FRAGMENTS} for each friend who reaches ${formatExact(FRIEND_GLORY)} ${ASPECT_PAGE_WORDS.glory}`,
   guide: "Guide",
@@ -2280,7 +2309,7 @@ export const formatTravelBlockedSummary = ({
 
   if (requirements.length === 0) return null;
 
-  return `Cannot move — needs ${requirements.join(" and ")}`;
+  return `Cannot move: needs ${requirements.join(" and ")}`;
 };
 
 /** The visible reason food keeps an army still: what one step costs it (a charge) and what its realm holds. */
@@ -2357,8 +2386,6 @@ const RESEARCH_STATES = {
   locked: "Locked",
 } as const;
 
-const RESEARCH_OPEN = "Open";
-
 export const RESEARCH_TREE = {
   /** Said while the realm's knowledge, balances, prices or board rules have not all arrived. */
   onItsWay: "Loading research…",
@@ -2407,21 +2434,26 @@ export const RESEARCH_TREE = {
       next !== undefined ? `${figureStep(now, next)} ${WHEAT.toLowerCase()}` : `${now} ${WHEAT.toLowerCase()}`,
     logistics: (now: string, next?: string) => (next !== undefined ? `${figureStep(now, next)} ⚡` : `${now} ⚡`),
     well: (percent: string) => `+${percent}% ⚡`,
-    open: (done: boolean) => (done ? RESEARCH_OPEN : "Opens"),
+    shrine: `Finds ${SHRINE}s`,
+    spire: `Opens the ${DEEP}`,
   },
   nouns: { essence: ESSENCE, labor: LABOR },
-  wellLore: `Uncover ${WELL}s on the map — use one to refill ${STAMINA}`,
-  shrineLore: `Uncover ${SHRINE}s on the map — use one to swear an Oath`,
-  each: (gain: string) => `${gain} each`,
+  loreEffects: {
+    well: (percent: string) => `+${percent}% max ${STAMINA} at ${WELL}s`,
+    shrine: `Reveals ${SHRINE}s on the map`,
+    spire: `Opens the ${DEEP} via map ${SPIRE}s`,
+  },
+  loreDescriptions: {
+    well: (percent: string) => `Reveals ${WELL}s on the map. Visit a ${WELL} to refill ${percent}% max ${STAMINA}.`,
+    shrine: `Reveals ${SHRINE}s on the map. Use a ${SHRINE} to pick a permanent Oath for that army, or pass for ${STAMINA}.`,
+    spire: `Reveals ${SPIRE}s on the map. Descend through a ${SPIRE} to enter the ${DEEP} and earn ${ASPECT_PAGE_WORDS.glory}.`,
+  },
   lore: loreOf,
-  opensLayers: `Opens every layer under the ${layerName(0)}`,
-  opens: RESEARCH_OPEN,
-  closed: "Closed",
-  none: "None",
   build: (building: string) => `Build a ${building}`,
   stands: (building: string) => `${building} built`,
   needsBuilding: (building: string) => `Needs a ${building}`,
-  needsLevel: (level: string) => `Needs ${level}`,
+  needsLevel: (level: string) => `Needs ${level} rank`,
+  rankMet: (level: string) => `${level} rank`,
   needsFirst: (what: string) => `Needs ${what} first`,
   needsResource: (amount: string, noun: string) => `Needs ${amount} ${noun}`,
   store: (limit: string, need: string, level: string) => `Labor storage ${limit} / ${need} · ${level}`,
@@ -2431,13 +2463,6 @@ export const RESEARCH_TREE = {
   less: `(${LESS_WORD})`,
   step: figureStep,
   price: (essence: string) => `${essence} ${ESSENCE}`,
-} as const;
-
-/**
- * An army's per-tile resource reward.
- */
-export const ARMY_DETAIL = {
-  troops: (count: number) => formatCount(count, "troop"),
 } as const;
 
 /** Deleting the picked army, for good. */
@@ -2470,9 +2495,9 @@ export const QUICK_ATTACK_WORDS = {
 } as const;
 
 export const BATTLE_OUTCOME_WORDS = {
-  Victory: "Victory — the enemy was defeated",
-  Defeat: "Defeat — your force was defeated",
-  Draw: "Both armies survive — no decisive result",
+  Victory: "Victory: the enemy was defeated",
+  Defeat: "Defeat: your force was defeated",
+  Draw: "Both armies survive: no decisive result",
 } as const;
 
 export const TRIBE_WORDS = {
@@ -2521,26 +2546,26 @@ export const PICK_EFFECT_WORDS = {
   damageTaken: "Damage taken",
   damageTakenScope: (scope: string) => `Damage taken ${scope}`,
   staminaRecovery: `${STAMINA_TITLE} recovery`,
+  oathStaminaRecovery: `${STAMINA} recovery`,
   clearedSiteRewards: `Cleared site ${LABOR.toLowerCase()} & ${ESSENCE}`,
-  battleDamageDealt: "Battle damage dealt",
-  battleDamageTaken: "Battle damage taken",
-  damageTakenGuarding: "Damage taken when guarding a site",
-  siteRewardsUnderLoss: (loss: string) => `Site rewards when you lose under ${loss} troops`,
-  siteRewards: "Cleared site rewards",
-  revealTileStamina: `${STAMINA_TITLE} to reveal a tile`,
-  twinsDamage: "Of your largest adjacent army's damage when attacking",
-  furyRefund: `${STAMINA_TITLE} back when an attack defeats the enemy`,
-  wellRefill: `Max ${STAMINA} refilled at a Well`,
-  revealOrdinal: (ordinal: string) => `${ordinal} reveal`,
-  findAfter: (emptyReveals: string) => `Guaranteed find after ${emptyReveals}`,
-  skillDamage: (below: string) => `Damage when an attack drops you under ${below} ${STAMINA}`,
-  revealRewards: "Tile reveal rewards",
-  titansMax: (from: string, to: string, gain: string) => `Max ${STAMINA} (${from} → ${to}) and ${gain} now`,
-  titansMaxGain: (gain: string) => `Max ${STAMINA} and ${gain} now`,
-  deepPoisonEvery: (cadence: string) => `${DEEP} poison drain every ${cadence}`,
+  battleDamageDealt: "battle damage dealt",
+  battleDamageTaken: "battle damage taken",
+  damageTakenGuarding: "damage taken guarding",
+  siteRewardsUnderLoss: (loss: string) => `site rewards (<${loss} lost)`,
+  siteRewards: "cleared site rewards",
+  revealTileStamina: `reveal ${STAMINA}`,
+  twinsDamage: "adjacent army's attack",
+  furyRefundPercent: `attack ${STAMINA} back on kill`,
+  furyRefund: `${STAMINA} back on kill`,
+  wellRefill: `${WELL} ${STAMINA} refill`,
+  detectionHero: (count: string) => `${count} empty`,
+  detectionUnit: "reveals guarantee a find",
+  skillDamage: (below: string) => `damage below ${below} ${STAMINA}`,
+  revealRewards: "tile reveal rewards",
+  titansMax: (from: string, to: string) => `max ${STAMINA} & now (${from} → ${to})`,
+  titansMaxGain: `max ${STAMINA} & now`,
   deepPoison: `${DEEP} poison drain`,
-  attackStaminaCost: `Attack ${STAMINA} cost`,
-  staminaRecoveryFromTo: (from: string, to: string) => `${STAMINA_TITLE} recovery (${from} → ${to})`,
+  attackStaminaCost: `attack ${STAMINA}`,
 } as const;
 
 export const REALM_SIDE_WORDS = {

@@ -3,6 +3,8 @@
 // @vitest-environment jsdom
 // @vitest-environment jsdom
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
+import { aspectVariables } from "@/tokens";
+import { installHudSheet } from "@/ui/design-system/kit/hud-sheet-test-support";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import {
   buildStoryEventPresentation,
@@ -202,7 +204,7 @@ it("says a fight's army was lost", async () => {
   expect((await draw(row)).words).toBe(`djizus attacked ${siteDisplayName(CAMP)} · Army lost`);
 });
 
-it("marks each ruled row with who it concerns, the player's own fights by how they went, and says how long ago it was", async () => {
+it("draws mobile feed rows without a leading vertical bar and shows how long ago each row happened", async () => {
   const fight = (attacker: string, armyAfter: string, guardAfter: string) =>
     story(attacker, "BattleEvent", {
       attacker_id: 70,
@@ -217,17 +219,89 @@ it("marks each ruled row with who it concerns, the player's own fights by how th
       },
       defender: { player: "0x0", category: "Knight", tier: "T1", before: "1400000000000", after: guardAfter, roll: 0 },
     });
-  const rule = async (row: ProcessedStoryEvent) => {
+  for (const row of [
+    fight(DJIZUS, "6500000000000", "0"),
+    fight(DJIZUS, "0", "1028000000000"),
+    fight(KRUMP, "6500000000000", "0"),
+    story(DJIZUS, "TierBought", { explorer_id: 70, attribute: "Logistics", tier: 3, price: 400 }),
+  ]) {
     await draw(row, FeedRuleLine);
     const line = host.querySelector("[data-feed-line]")!;
-    return [line.getAttribute("data-rule"), line.querySelector(".ui-event__time")!.textContent];
-  };
-  expect(await rule(fight(DJIZUS, "6500000000000", "0"))).toEqual(["good", "2m"]);
-  expect(await rule(fight(DJIZUS, "0", "1028000000000"))).toEqual(["bad", "2m"]);
-  expect(await rule(fight(KRUMP, "6500000000000", "0"))).toEqual(["world", "2m"]);
-  expect(
-    await rule(story(DJIZUS, "TierBought", { explorer_id: 70, attribute: "Logistics", tier: 3, price: 400 })),
-  ).toEqual(["own", "2m"]);
+    expect(line.hasAttribute("data-rule")).toBe(false);
+    expect(line.querySelector(':scope > span[aria-hidden="true"]')).toBeNull();
+    expect(line.firstElementChild?.classList.contains("ui-event__text")).toBe(true);
+    expect(line.querySelector(".ui-event__time")!.textContent).toBe("2m");
+  }
+});
+
+it("colors actor and defender usernames by their NativeFactStore Aspect in desktop and mobile feed lines", async () => {
+  const baseRealm = game.store.require("Structure", { game_id: 1, entity_id: 7 });
+  game.store.applyFacts([
+    { model: "Structure", key: "0x71", value: { ...baseRealm, entity_id: 71, owner: DJIZUS } },
+    { model: "Structure", key: "0x72", value: { ...baseRealm, entity_id: 72, owner: KRUMP } },
+    { model: "HomeAspect", key: "0x1:0x71", value: { game_id: 1, home: 71, aspect: 1 } },
+    { model: "HomeAspect", key: "0x1:0x72", value: { game_id: 1, home: 72, aspect: 4 } },
+  ] as never);
+
+  const battle = story(DJIZUS, "BattleEvent", {
+    attacker_id: 70,
+    defender_id: 80,
+    attacker: { player: DJIZUS, category: "Knight", tier: "T1", before: scaled(7000), after: scaled(6500), roll: 0 },
+    defender: { player: KRUMP, category: "Knight", tier: "T1", before: scaled(1400), after: "0", roll: 0 },
+  });
+
+  const sheet = installHudSheet();
+  try {
+    for (const Line of [FeedLine, FeedRuleLine]) {
+      await draw(battle, Line);
+      const names = [...host.querySelectorAll<HTMLElement>("[data-feed-line] .ui-aspect-name")];
+      expect(
+        names.map((node) => [
+          node.textContent,
+          node.getAttribute("data-aspect"),
+          node.style.getPropertyValue("--hud-aspect"),
+          window.getComputedStyle(node).color,
+        ]),
+      ).toEqual([
+        ["djizus", "1", aspectVariables(1)["--hud-aspect"], "rgb(var(--hud-aspect))"],
+        ["Krump", "4", aspectVariables(4)["--hud-aspect"], "rgb(var(--hud-aspect))"],
+      ]);
+    }
+  } finally {
+    sheet.remove();
+  }
+});
+
+it("falls back cleanly to default username ink when a feed player has no Aspect in NativeFactStore", async () => {
+  const sheet = installHudSheet();
+  try {
+    const worldRow = story(KRUMP, "ExplorationReward", {
+      explorer_id: 71,
+      coord: { x: 2147483651, y: 2147483652, alt: false },
+      resource_type: ResourcesIds.Essence,
+      amount: scaled(646.7),
+    });
+    await draw(worldRow, FeedRuleLine);
+    const worldName = host.querySelector<HTMLElement>("[data-feed-line] .ui-aspect-name")!;
+    expect(worldName.textContent).toBe("Krump");
+    expect(worldName.hasAttribute("data-aspect")).toBe(false);
+    expect(worldName.style.getPropertyValue("--hud-aspect")).toBe("");
+    expect(window.getComputedStyle(worldName).color).toBe("rgb(var(--hud-ink))");
+
+    const ownRow = story(DJIZUS, "ExplorationReward", {
+      explorer_id: 70,
+      coord: { x: 2147483650, y: 2147483652, alt: false },
+      resource_type: ResourcesIds.Labor,
+      amount: scaled(0.4),
+    });
+    await draw(ownRow, FeedRuleLine);
+    const ownName = host.querySelector<HTMLElement>("[data-feed-line] .ui-aspect-name")!;
+    expect(ownName.textContent).toBe("djizus");
+    expect(ownName.hasAttribute("data-aspect")).toBe(false);
+    expect(window.getComputedStyle(ownName).color).toBe("rgb(var(--hud-gold))");
+  } finally {
+    sheet.remove();
+  }
 });
 
 /** A fight on the camp's site, the attacker's army lost to its guard. */
@@ -438,4 +512,26 @@ it("names the player once where a story's own words already name them, in gold w
 it("names no one on a story no player owns", async () => {
   const row = story("0x0", "BlitzFinalized", {});
   expect(await draw(row)).toEqual({ words: "Blitz finalized", reward: null, gold: false });
+});
+
+it("allows mobile feed rows to wrap so battle outcomes are never truncated mid-word", async () => {
+  const sheet = installHudSheet();
+  try {
+    const row = story(DJIZUS, "BattleEvent", {
+      attacker_id: 201,
+      defender_id: 301,
+      attacker: { player: DJIZUS, category: "Knight", tier: "T1", before: scaled(7000), after: "0", roll: 0 },
+      defender: { player: KRUMP, category: "Knight", tier: "T1", before: scaled(1400), after: scaled(1028), roll: 0 },
+    });
+    await draw(row, FeedRuleLine);
+    const mobileText = host.querySelector<HTMLElement>("[data-feed-line] .ui-event__text")!;
+    expect(mobileText.textContent).toContain("Army lost");
+    expect(window.getComputedStyle(mobileText).whiteSpace).toBe("normal");
+
+    await draw(row, FeedLine);
+    const desktopText = host.querySelector<HTMLElement>("[data-feed-line] .ui-event__text")!;
+    expect(window.getComputedStyle(desktopText).whiteSpace).toBe("nowrap");
+  } finally {
+    sheet.remove();
+  }
 });

@@ -1,6 +1,3 @@
-.frontier-corner--right[data-wide="true"]:has([data-season-board]) {
-  max-width: 60rem;
-}
 .season-board {
   display: flex;
   min-height: 0;
@@ -101,6 +98,7 @@
   font-size: var(--hud-text-label);
   font-weight: var(--hud-weight-strong);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .season-aspect__members {
   margin-left: auto;

@@ -6842,7 +6842,7 @@ export default class WorldmapScene extends WarpTravel {
       invalidatedTimedOutTransition: recoveryDecision.shouldInvalidateTimedOutTransition,
     };
 
-    console.warn("[WorldmapScene] Chunk transition hard timeout — forcing recovery", {
+    console.warn("[WorldmapScene] Chunk transition hard timeout: forcing recovery", {
       reason,
       chunkKey,
       timeoutMs: info.timeoutMs,

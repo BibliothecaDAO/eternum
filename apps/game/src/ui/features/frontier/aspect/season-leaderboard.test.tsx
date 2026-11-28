@@ -14,9 +14,11 @@ import {
   nativeMember,
   type OwnGloryRow,
 } from "@/shell/season-tab/glory-rows";
+import { HUD_QUERIES } from "@/tokens";
+import { SEASON_BOARD_WORDS } from "@/ui/design-system/kit/words";
 import type { RaceMemberRow } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION, type AspectId } from "@bibliothecadao/types";
-import { SeasonLeaderboard } from "./season-leaderboard";
+import { formatShort, RESOURCE_PRECISION, type AspectId } from "@bibliothecadao/types";
+import { SeasonLeaderboard, type SeasonAspect, type SeasonStanding } from "./season-leaderboard";
 
 const ASPECTS = [1, 2, 3, 4] as const;
 const OWN = 7n;
@@ -176,4 +178,77 @@ it("ranks the player's drawn row at the same global place as Your Standing when 
   const drawn = boardRows(nativeRosters(native), 0, own).find((row) => row.own);
   expect(own.place).toBe(13);
   expect(drawn?.rank).toBe(own.place);
+});
+
+it("drops the LORDS word on phone Aspect cards while keeping the footer and desktop cards unchanged", () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const race: SeasonAspect[] = [
+    { aspectId: 1, rank: 1, height: 10_000, stage: 5, pool: 250_000, members: 40, own: false },
+    { aspectId: 2, rank: 2, height: 3_100, stage: 2, pool: 31_000, members: 18, own: true },
+    { aspectId: 3, rank: 3, height: 950, stage: 1, pool: 9_500, members: 12, own: false },
+    { aspectId: 4, rank: 4, height: 0, stage: 1, pool: 0, members: 5, own: false },
+  ];
+  const standing: SeasonStanding = {
+    realm: "Duskbite",
+    aspectId: 2,
+    aspectRank: 2,
+    order: null,
+    glory: 320,
+    gloryRank: 4,
+    shares: true,
+    pool: 31_000,
+    share: 148,
+    stage: 2,
+    triumphs: [],
+    altar: null,
+  };
+  const renderAt = (desktop: boolean) => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: desktop && query === HUD_QUERIES.desktop,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <MemoryRouter>
+            <SeasonLeaderboard
+              players={75}
+              race={race}
+              finishHeight={10_000}
+              stages={5}
+              result={null}
+              rosters={nativeRosters(SMALL)}
+              own={ownRow(SMALL)}
+              standing={standing}
+              names="ready"
+              onClose={() => undefined}
+            />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      ),
+    );
+    const pools = [...host.querySelectorAll(".season-aspect__pool")].map((el) => ({
+      text: el.textContent,
+      aria: el.getAttribute("aria-label"),
+    }));
+    const footer = host.querySelector(".season-board__phone-foot")?.textContent ?? "";
+    act(() => root.unmount());
+    vi.unstubAllGlobals();
+    return { pools, footer };
+  };
+
+  const phone = renderAt(false);
+  expect(phone.pools).toEqual(
+    race.map((aspect) => ({ text: formatShort(aspect.pool), aria: SEASON_BOARD_WORDS.pool(aspect.pool) })),
+  );
+  expect(phone.footer).toContain(SEASON_BOARD_WORDS.footerPool(standing.pool, standing.share));
+
+  const desktop = renderAt(true);
+  expect(desktop.pools).toEqual(
+    race.map((aspect) => ({ text: SEASON_BOARD_WORDS.pool(aspect.pool), aria: SEASON_BOARD_WORDS.pool(aspect.pool) })),
+  );
 });

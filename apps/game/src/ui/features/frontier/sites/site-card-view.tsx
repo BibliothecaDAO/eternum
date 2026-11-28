@@ -1,5 +1,5 @@
 import type { FrontierBeast } from "@/three/structures/frontier-beast";
-import { type Troops, formatShort } from "@bibliothecadao/types";
+import { FRONTIER_TROOP_NAMES, type Troops, type TroopType, formatShort } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -23,17 +23,20 @@ import {
   TROOPS,
   FIGHT_RESULT,
   FIGHT_WORDS,
+  type TroopFigures,
 } from "@/ui/design-system/kit/words";
 
 import type { OrderInFlight } from "@/hooks/store/use-actions-in-flight";
 import type { ReactNode } from "react";
 
 import { BaneFigure, BaneLine } from "../day/bane-mark";
+import type { ArmyStaminaCosts } from "../deploy/troop-figures";
 import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
 import { GuardToken } from "../hud/army-token";
+import { UnitDetailsTrigger, type UnitDetailsSubject } from "../troops/unit-details-popover";
 import { AttackStamina, FightArena } from "./fight-side";
-import { BeastMarkBadge } from "./combat-mark";
+import { BeastMarkBadge, CombatMarkBadge } from "./combat-mark";
 import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
 
@@ -56,6 +59,8 @@ export const SiteCardView = ({
   beast,
   army,
   guard,
+  defenderCategory,
+  figures,
   fight,
   pay,
   relic,
@@ -71,8 +76,10 @@ export const SiteCardView = ({
   site: AttackTargetKind;
   name?: string;
   beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: Troops["category"] }) | undefined;
-  army: { art: IconMeaning; troops: number } | null;
+  army: { art: IconMeaning; troops: number; category?: TroopType; staminaCosts?: ArmyStaminaCosts } | null;
   guard: number | null | undefined;
+  defenderCategory?: TroopType;
+  figures?: TroopFigures;
   fight: SiteFight | undefined;
   pay: { icon: IconMeaning; amount: number; fits?: number } | null;
   relic?: ReactNode;
@@ -90,6 +97,7 @@ export const SiteCardView = ({
   const title = name ? siteTitle(name, word, beast?.name) : word;
   const armyless = army === null;
   const guardIcon = beast ? beastMeaning(beast.beast) : "troops";
+  const enemyCategory = beast?.combatClass ?? defenderCategory;
   const siteGuard = site !== "Army";
   const facing = facingOf(army, guard, fight);
   const lost = facing !== undefined && isArmyLost(facing);
@@ -110,18 +118,41 @@ export const SiteCardView = ({
       </Reward>
     ) : null;
   const what = beast?.name !== title ? beast?.name : undefined;
+  const armylessEnemyDetails: UnitDetailsSubject | undefined = enemyCategory
+    ? {
+        role: beast ? "beast" : "enemyArmy",
+        name: beast?.name ?? FRONTIER_TROOP_NAMES[enemyCategory].many,
+        art: guardIcon,
+        category: enemyCategory,
+        strength: typeof guard === "number" ? guard : undefined,
+        figures,
+      }
+    : undefined;
+  const guardToken =
+    typeof guard === "number" ? (
+      <GuardToken
+        label={beast?.name ?? TROOPS}
+        art={guardIcon}
+        troops={guard}
+        mark={
+          enemyCategory &&
+          (beast ? <BeastMarkBadge category={enemyCategory} /> : <CombatMarkBadge category={enemyCategory} />)
+        }
+      />
+    ) : null;
   return (
     <HudSheet label={title} cue={<HudChip icons={[icon]}>{TARGET_MARKS[site].word}</HudChip>} onClose={onClose}>
       {armyless ? (
         <header className="flex items-center gap-3">
-          {typeof guard === "number" ? (
+          {guardToken ? (
             <BaneFigure figure="guards" pill altered={siteGuard}>
-              <GuardToken
-                label={beast?.name ?? TROOPS}
-                art={guardIcon}
-                troops={guard}
-                mark={beast && <BeastMarkBadge category={beast.combatClass} />}
-              />
+              {armylessEnemyDetails ? (
+                <UnitDetailsTrigger subject={armylessEnemyDetails} openOnClick>
+                  {guardToken}
+                </UnitDetailsTrigger>
+              ) : (
+                guardToken
+              )}
             </BaneFigure>
           ) : (
             <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
@@ -138,6 +169,8 @@ export const SiteCardView = ({
             guard={guard}
             facing={facing}
             beast={beast}
+            enemyCategory={enemyCategory}
+            figures={figures}
             guardIcon={guardIcon}
             siteGuard={siteGuard}
           />
@@ -210,13 +243,17 @@ const FightPanel = ({
   guard,
   facing,
   beast,
+  enemyCategory,
+  figures,
   guardIcon,
   siteGuard,
 }: {
-  army: { art: IconMeaning; troops: number } | null;
+  army: { art: IconMeaning; troops: number; category?: TroopType; staminaCosts?: ArmyStaminaCosts } | null;
   guard: number | null | undefined;
   facing: Facing | undefined;
   beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: Troops["category"] }) | undefined;
+  enemyCategory: TroopType | undefined;
+  figures: TroopFigures | undefined;
   guardIcon: IconMeaning;
   siteGuard: boolean;
 }) => (
@@ -228,6 +265,18 @@ const FightPanel = ({
             mark: <SemanticIcon name={army.art} size={96} className="size-full" />,
             before: army.troops,
             kept: facing && armyLeft(facing),
+            combatCategory: army.category,
+            details: army.category
+              ? {
+                  role: "player",
+                  name: FRONTIER_TROOP_NAMES[army.category].many,
+                  art: army.art,
+                  category: army.category,
+                  strength: army.troops,
+                  figures,
+                  staminaCosts: army.staminaCosts,
+                }
+              : undefined,
           }
         : undefined
     }
@@ -235,15 +284,23 @@ const FightPanel = ({
       guard !== null
         ? {
             label: beast?.name ?? TROOPS,
-            mark: (
-              <span className="relative block size-full">
-                <SemanticIcon name={guardIcon} size={96} className="size-full" />
-                {beast && <BeastMarkBadge category={beast.combatClass} />}
-              </span>
-            ),
+            mark: <SemanticIcon name={guardIcon} size={96} className="size-full" />,
             before: guard,
             kept: facing?.fight.guardLeft,
             bane: siteGuard ? "guards" : undefined,
+            combatCategory: enemyCategory,
+            beastMark: Boolean(beast),
+            details: enemyCategory
+              ? {
+                  role: beast ? "beast" : "enemyArmy",
+                  name: beast?.name ?? FRONTIER_TROOP_NAMES[enemyCategory].many,
+                  art: guardIcon,
+                  category: enemyCategory,
+                  strength: typeof guard === "number" ? guard : undefined,
+                  figures,
+                  vsCategory: army?.category,
+                }
+              : undefined,
           }
         : undefined
     }

@@ -3,6 +3,7 @@ import { act } from "react";
 import { PerspectiveCamera, Vector3 } from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { COMBAT_MARK_WORDS } from "@/ui/design-system/kit/words";
 import { HUD_COLUMN_MARK } from "../utils/labels/hud-clearance";
 import { MapPlateLayer } from "./map-plate-layer";
 import { plateSize } from "./map-plate-layout";
@@ -113,8 +114,8 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
     const beastToken = plateOf("2,800")!.querySelector<HTMLElement>(".mp-token")!;
     expect(beastToken.textContent).toBe("2,800");
     expect(beastToken.querySelector('[data-icon="beast-wyvern"]')).not.toBeNull();
-    expect(beastToken.getAttribute("aria-label")).toBe("Blade, Wyvern 2,800");
-    expect(beastToken.querySelector('[data-combat-mark="Blade"]')).not.toBeNull();
+    expect(beastToken.getAttribute("aria-label")).toBe(`${COMBAT_MARK_WORDS.blade}, Wyvern 2,800`);
+    expect(beastToken.querySelector(`[data-combat-mark="${COMBAT_MARK_WORDS.blade}"]`)).not.toBeNull();
     expect(plateOf("1,321")!.textContent).toContain("T1");
     structures.setHover(1);
     await frame();

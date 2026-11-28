@@ -34,7 +34,7 @@ export interface ProceduralDragonAvatarStats {
   appearanceId: "icy-dragon-cc-by";
   appearanceLabel: "Icy Dragon";
   assetId: "icy-dragon-gltf";
-  assetLabel: "Icy Dragon glTF — CC BY 4.0";
+  assetLabel: "Icy Dragon glTF · CC BY 4.0";
   authoredClipCount: number;
   boneCount: number;
   maximumBoneStretchRatio: 1;
@@ -153,7 +153,7 @@ export class ProceduralDragonAvatar {
       appearanceId: "icy-dragon-cc-by",
       appearanceLabel: "Icy Dragon",
       assetId: "icy-dragon-gltf",
-      assetLabel: "Icy Dragon glTF — CC BY 4.0",
+      assetLabel: "Icy Dragon glTF · CC BY 4.0",
       authoredClipCount: 0,
       boneCount: this.boneCount,
       maximumBoneStretchRatio: 1,

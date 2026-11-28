@@ -1,6 +1,14 @@
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useId, useRef, useState } from "react";
-import { HudButton, HudField, HudIconButton, HudMenu, menuOptionId } from "@/ui/design-system/kit/hud-elements";
+import {
+  HudAspectName,
+  HudButton,
+  HudField,
+  HudIconButton,
+  HudMenu,
+  menuOptionId,
+} from "@/ui/design-system/kit/hud-elements";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
+import type { AspectId } from "@bibliothecadao/types";
 import type { MentionablePlayer } from "../../hooks/use-chat-mentions";
 import { insertMention, mentionChoices, typedMention } from "../../model/mentions";
 import type { SharedPlace } from "../../model/place";
@@ -18,7 +26,7 @@ interface MessageComposerProps {
   /** Who an "@" typed in the message may name: a list of them opens over the field as the name is typed. */
   mentions?: readonly MentionablePlayer[];
   /** The message being answered: who wrote it and how it starts, over the field, with the way to put the reply away. */
-  replying?: { name: string; excerpt: string; onCancel: () => void };
+  replying?: { name: string; aspect?: AspectId | null; excerpt: string; onCancel: () => void };
 }
 
 const NO_MENTIONS: readonly MentionablePlayer[] = [];
@@ -128,8 +136,10 @@ export function MessageComposer({
       className="flex flex-shrink-0 flex-col gap-1 border-t border-hud-divider px-3 pb-3 pt-2.5"
     >
       {replying && (
-        <div className="flex min-w-0 items-center gap-1.5 px-1 text-hud-label text-hud-muted">
-          <span className="shrink-0 text-hud-accent">{replying.name}</span>
+        <div className="flex min-w-0 items-center gap-1.5 rounded-r border-l-2 border-hud-accent bg-hud-well px-2 py-1 text-hud-label text-hud-muted">
+          <HudAspectName aspect={replying.aspect ?? null} className="shrink-0">
+            {replying.name}
+          </HudAspectName>
           <span className="min-w-0 flex-1 truncate">{replying.excerpt}</span>
           <HudIconButton
             icon="close"

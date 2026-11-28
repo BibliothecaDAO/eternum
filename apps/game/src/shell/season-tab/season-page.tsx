@@ -9,6 +9,7 @@ import {
   formatExact,
   orderAspect,
   type AspectId,
+  UNKNOWN,
 } from "@bibliothecadao/types";
 import { useState, type CSSProperties } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -261,7 +262,7 @@ const AspectStandingActions = ({ season }: { season: AspectSeasonGame }) => {
 const FrontierDay = ({ season }: { season: DirectoryGame }) => {
   const now = useNowSeconds();
   return (
-    <AppChip icon="hourglass">{`${seasonTitle(season)} · ${DAY} ${directoryDay(season, now).day ?? "—"}`}</AppChip>
+    <AppChip icon="hourglass">{`${seasonTitle(season)} · ${DAY} ${directoryDay(season, now).day ?? UNKNOWN}`}</AppChip>
   );
 };
 

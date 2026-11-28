@@ -5,16 +5,7 @@ import {
   nativeOathConstants as oaths,
   nativeRuleConstants as rules,
 } from "@bibliothecadao/eternum/game-client";
-import {
-  formatDuration,
-  formatGain,
-  formatOrdinal,
-  formatPercent,
-  formatRate,
-  orders,
-  RESOURCE_PRECISION,
-  TroopType,
-} from "@bibliothecadao/types";
+import { formatGain, formatPercent, orders, RESOURCE_PRECISION, TroopType } from "@bibliothecadao/types";
 import { PICK_EFFECT_WORDS as WORDS } from "@/ui/design-system/kit/words";
 import release from "../../../../../../../contracts/l3/world-native/schema/release-definition.json";
 
@@ -37,9 +28,7 @@ const card = (oath: number, category: TroopType, held = 0) => oathStatBadge(oath
 const knightMax = RULES.troop_stamina_config.stamina_knight_max;
 const reveal = RULES.troop_stamina_config.stamina_explore_stamina_cost;
 const attack = RULES.troop_stamina_config.stamina_attack_req;
-const perSecond = RULES.troop_stamina_config.stamina_gain_per_tick / RULES.tick_config.armies_tick_in_seconds;
 const deepLoss = Number(release.definition.economy.deep.Some.loss_per_tick) / RESOURCE_PRECISION;
-const cadence = formatDuration(RULES.tick_config.armies_tick_in_seconds);
 
 const percent = (value: number) => formatPercent(value / 100);
 const signed = (value: number) => formatPercent(value / 100, { signed: true });
@@ -54,17 +43,17 @@ const inReadingOrder = (text: string, figures: readonly string[]) => {
 };
 
 const CONDITIONS: Record<number, readonly string[]> = {
-  [oaths.VITRIOL]: [cadence],
+  [oaths.VITRIOL]: [WORDS.deepPoison],
   [oaths.POWER]: [],
   [oaths.GIANTS]: [],
   [oaths.PROTECTION]: [WORDS.damageTakenGuarding],
   [oaths.REFLECTION]: [],
-  [oaths.DETECTION]: [String(oaths.DETECTION_EMPTY_REVEAL_LIMIT)],
+  [oaths.DETECTION]: [WORDS.detectionUnit],
   [oaths.BRILLIANCE]: [],
   [oaths.RAGE]: [],
   [oaths.ANGER]: [],
-  [oaths.TITANS]: [formatGain(oaths.TITANS_STAMINA)],
-  [oaths.ENLIGHTENMENT]: [],
+  [oaths.TITANS]: [WORDS.titansMaxGain],
+  [oaths.ENLIGHTENMENT]: [WORDS.oathStaminaRecovery],
   [oaths.FOX]: [],
   [oaths.SKILL]: [String(oaths.SKILL_BELOW_STAMINA)],
   [oaths.FURY]: [WORDS.furyRefund],
@@ -78,16 +67,12 @@ const FIGURES: Record<number, readonly string[]> = {
   [oaths.GIANTS]: [signed(-oaths.GIANTS_REDUCTION_PERCENT)],
   [oaths.PROTECTION]: [signed(-oaths.PROTECTION_REDUCTION_PERCENT)],
   [oaths.REFLECTION]: [percent(rules.WELL_REFILL_PERCENT), percent(oaths.REFLECTION_WELL_PERCENT)],
-  [oaths.DETECTION]: [formatOrdinal(oaths.DETECTION_EMPTY_REVEAL_LIMIT + 1)],
+  [oaths.DETECTION]: [String(oaths.DETECTION_EMPTY_REVEAL_LIMIT)],
   [oaths.BRILLIANCE]: [signed(oaths.BRILLIANCE_PAY_PERCENT - 100)],
   [oaths.RAGE]: [signed(oaths.RAGE_PAY_PERCENT - 100)],
   [oaths.ANGER]: [String(attack), String(oaths.ANGER_ATTACK_STAMINA)],
   [oaths.TITANS]: [formatGain(oaths.TITANS_STAMINA), String(knightMax), String(knightMax + oaths.TITANS_STAMINA)],
-  [oaths.ENLIGHTENMENT]: [
-    signed((oaths.ENLIGHTENMENT_REGEN_BPS - 10_000) / 100),
-    formatRate(perSecond),
-    formatRate((perSecond * oaths.ENLIGHTENMENT_REGEN_BPS) / 10_000),
-  ],
+  [oaths.ENLIGHTENMENT]: [signed((oaths.ENLIGHTENMENT_REGEN_BPS - 10_000) / 100)],
   [oaths.FOX]: [String(reveal), String(Math.floor((reveal * (100 - oaths.FOX_REVEAL_DISCOUNT_PERCENT)) / 100))],
   [oaths.SKILL]: [signed(oaths.SKILL_DAMAGE_PERCENT)],
   [oaths.FURY]: [formatGain(Math.floor((attack * oaths.FURY_REFUND_PERCENT) / 100))],
@@ -108,12 +93,16 @@ describe("an Oath's card", () => {
       }
   });
 
-  it("shows each Oath's own rule figures, and no two Oaths read alike", () => {
+  it("shows each Oath's own compact figures with no em-dashes, and no two Oaths read alike", () => {
     const named = orders.filter((order) => order.orderId > 0 && order.orderId <= 16).map((order) => order.orderId);
     for (const oath of named) {
-      const { hero, unit } = card(oath, TroopType.Knight);
+      const badge = card(oath, TroopType.Knight);
+      const description = oathEffectDescription(oath, baseOf(TroopType.Knight));
+      expect(badge.hero.length, oathName(oath)).toBeGreaterThan(0);
       expect(FIGURES[oath], oathName(oath)).not.toBeUndefined();
-      expect(inReadingOrder(`${hero} ${unit}`, FIGURES[oath]!), oathName(oath)).toBe(true);
+      expect(inReadingOrder(description, FIGURES[oath]!), oathName(oath)).toBe(true);
+      expect(description).not.toContain("\u2014");
+      expect(description).toBe(description.trim());
     }
     const texts = named.map((oath) => oathEffectDescription(oath, baseOf(TroopType.Knight)));
     expect(new Set(texts).size).toBe(named.length);
@@ -134,9 +123,10 @@ describe("an Oath's card", () => {
       `+${Math.floor((oaths.ANGER_ATTACK_STAMINA * oaths.FURY_REFUND_PERCENT) / 100)}`,
     );
     expect(card(oaths.VITRIOL, TroopType.Knight).hero).toBe(`${deepLoss} → ${oaths.VITRIOL_LOSS_PER_TICK}`);
-    const recovery = card(oaths.ENLIGHTENMENT, TroopType.Knight).unit;
-    const factor = oaths.ENLIGHTENMENT_REGEN_BPS / 10_000;
-    for (const rate of [perSecond, perSecond * factor]) expect(recovery).toContain(formatRate(rate));
+    expect(card(oaths.ENLIGHTENMENT, TroopType.Knight).unit).toBe(WORDS.oathStaminaRecovery);
+    expect(card(oaths.DETECTION, TroopType.Knight).hero).toBe(
+      WORDS.detectionHero(String(oaths.DETECTION_EMPTY_REVEAL_LIMIT)),
+    );
   });
 
   it("marks a combat Oath with the army's own class: Blade for Knights and Scouts, Bow for Crossbows", () => {
@@ -150,6 +140,10 @@ describe("an Oath's card", () => {
   it("says in its tooltip exactly what the card says", () => {
     const { hero, unit } = card(oaths.SKILL, TroopType.Knight);
     expect(oathEffectDescription(oaths.SKILL, baseOf(TroopType.Knight))).toBe(`${hero} ${unit}`);
+    const detection = card(oaths.DETECTION, TroopType.Knight);
+    expect(oathEffectDescription(oaths.DETECTION, baseOf(TroopType.Knight))).toBe(
+      `${detection.hero} ${detection.unit}`,
+    );
     expect(() => oathStatBadge(17, baseOf(TroopType.Knight))).toThrow();
   });
 });
