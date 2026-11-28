@@ -1,6 +1,5 @@
 import { lazy, Suspense, useState } from "react";
 import { useQueries } from "@tanstack/react-query";
-import type { FragmentPrice } from "@realms-world/identity";
 
 import { l2Provider } from "@/runtime/l2-rpc";
 import { AppChoice, AppNotice } from "@/ui/design-system/kit/app-elements";
@@ -11,13 +10,20 @@ import { tokenBalanceOf } from "@/ui/modules/identity/wallet-send";
 
 import { Loading } from "../loading";
 import { lordsOf } from "../value/ledger";
-import { PAY_TOKEN_ICONS, payTokensFor, paymentIn, type PayToken, type TokenPayment } from "./pay-tokens";
+import {
+  PAY_TOKEN_ICONS,
+  payTokensFor,
+  paymentIn,
+  type FragmentQuote,
+  type PayToken,
+  type TokenPayment,
+} from "./pay-tokens";
 
 const WalletSign = lazy(() =>
   import("@/shell/value/wallet-actions").then((module) => ({ default: module.WalletSign })),
 );
 
-type Quote = NonNullable<FragmentPrice["quote"]>;
+type Quote = FragmentQuote;
 
 export const PayWith = ({
   payer,

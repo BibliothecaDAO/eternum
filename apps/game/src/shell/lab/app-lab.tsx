@@ -1,6 +1,7 @@
 import { canonicalRealm } from "@bibliothecadao/eternum";
 import type { HeraldAspectRoster } from "@bibliothecadao/eternum/game-sync";
 import { aspects, catalogOrder, RESOURCE_PRECISION, type AspectId } from "@bibliothecadao/types";
+import { splitLordsPayment } from "@realms-world/chain";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
@@ -411,14 +412,20 @@ const answerIdentity = (screen: LabScreen) => {
     sealCode = { held: true };
     return sealCode;
   };
-  identityClient.priceFragments = async (_game, fragments) => ({
-    fragments,
-    cents: fragments,
-    quote: {
-      ...LAB_FRAGMENT_QUOTE,
-      lordsWei: String((BigInt(LAB_FRAGMENT_QUOTE.lordsWei) * BigInt(fragments)) / 1_000n),
-    },
-  });
+  identityClient.priceFragments = async (_game, fragments) => {
+    const total = (BigInt(LAB_FRAGMENT_QUOTE.lordsWei) * BigInt(fragments)) / 1_000n;
+    const split = splitLordsPayment(total);
+    return {
+      fragments,
+      cents: fragments,
+      quote: {
+        ...LAB_FRAGMENT_QUOTE,
+        lordsWei: String(total),
+        treasuryWei: String(split.treasuryWei),
+        veLordsWei: String(split.veLordsWei),
+      },
+    };
+  };
   identityClient.payFragments = async () => ({ state: "delivering" });
   identityClient.fragmentPayment = async () => ({ state: "delivered", fragments: 1_000 });
   identityClient.readDefaultWallet = async () => null;

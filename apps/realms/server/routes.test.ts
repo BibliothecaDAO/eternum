@@ -76,6 +76,9 @@ it.each([
   ["/api/seal-code", "POST"],
   ["/api/shop/receipt", "POST"],
   ["/api/shop/purchase-check", "POST"],
+  ["/api/shop/external/quote", "POST"],
+  ["/api/shop/external/pay", "POST"],
+  ["/api/shop/stripe/intent", "POST"],
   ["/api/notifications/push/subscribe", "POST"],
 ])("rejects sibling-origin and originless cookie mutations at %s", async (path, method) => {
   for (const originHeader of [null, "https://herald.realms.party", "null"]) {
@@ -140,4 +143,23 @@ it("requires bearer operator auth on GET /api/operator/seal-codes", async () => 
     );
     expect([response.status, await response.json()]).toEqual([401, { error: "unauthorized" }]);
   }
+});
+
+it("routes GET /api/shop/stripe/intent/:id to the Stripe payment status handler and exempts the Stripe webhook from same-origin", async () => {
+  const signedOutAuth = { api: { getSession: async () => null } } as unknown as IdentityAuth;
+  const status = await routeIdentityRequest(
+    new Request(origin + "/api/shop/stripe/intent/pi_test_1", { method: "GET" }),
+    env,
+    signedOutAuth,
+    platform,
+  );
+  expect([status.status, await status.json()]).toEqual([401, { error: "unauthorized" }]);
+
+  const webhook = await routeIdentityRequest(
+    new Request(origin + "/api/shop/stripe/webhook", { method: "POST", body: "{}" }),
+    env,
+    signedOutAuth,
+    platform,
+  );
+  expect([webhook.status, await webhook.json()]).toEqual([503, { error: "stripe_disabled" }]);
 });

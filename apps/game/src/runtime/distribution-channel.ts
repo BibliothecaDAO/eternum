@@ -83,3 +83,5 @@ export const distributionChannel = (): DistributionChannel =>
  * Sign in with Apple beside it (App Review Guideline 4.8), so v1 signs in with an emailed code only.
  */
 export const opensThirdPartySignIn = (): boolean => distributionChannel() !== "app-store";
+
+export const allowsWebCheckout = (): boolean => distributionChannel() === "web";

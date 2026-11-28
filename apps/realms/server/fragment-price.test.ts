@@ -50,7 +50,7 @@ const ask = async (
       db,
       access: options.access ?? seated,
       readLordsQuote: options.market ?? market(0.003637),
-      payee: { token: "0x55", treasury: "0x7a" },
+      payee: { token: "0x55", treasury: "0x7a", veLords: "0x91b" },
       now: () => 1_000,
     },
   );

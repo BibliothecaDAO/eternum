@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { createIdentityClient } from "@realms-world/identity";
 import { afterAll, beforeAll, expect, it, vi } from "vitest";
 
 import { buildWorkerBundle, migrationStatements, newStorage, ORIGIN, startWorker, vapidKeys } from "./workerd-harness";
@@ -47,6 +48,31 @@ it("routes the directory read through the launch service binding", async () => {
 it("serves health and email sign-in while the chain is unreachable, and the top list says it is unavailable", async () => {
   expect((await worker.mf.dispatchFetch(`${ORIGIN}/api/health`)).status).toBe(200);
   expect(await (await worker.mf.dispatchFetch(`${ORIGIN}/api/auth/providers`)).json()).toEqual({ providers: [] });
+  const methods = await worker.mf.dispatchFetch(`${ORIGIN}/api/shop/payment-methods`);
+  expect(methods.status).toBe(200);
+  expect(await methods.json()).toMatchObject({ evm: null, solana: null, stripe: null });
+  const client = createIdentityClient({
+    apiUrl: `${ORIGIN}/api`,
+    fetch: (input, init) => worker.mf.dispatchFetch(String(input), init as never) as unknown as Promise<Response>,
+  });
+  expect(await client.shopPaymentMethods()).toMatchObject({ evm: null, solana: null, stripe: null });
+  await expect(
+    client.quoteExternalPayment({ chainId: "0x1", gameId: 1, fragments: 500, rail: "evm" }),
+  ).rejects.toMatchObject({
+    status: 403,
+  });
+  await expect(client.payExternalPayment("q", `0x${"aa".repeat(32)}`)).rejects.toMatchObject({ status: 403 });
+  await expect(client.externalPayment(`0x${"aa".repeat(32)}`)).rejects.toMatchObject({ status: 401 });
+  await expect(client.createStripeIntent({ chainId: "0x1", gameId: 1, fragments: 500 })).rejects.toMatchObject({
+    status: 403,
+  });
+  await expect(client.stripePayment("pi_123")).rejects.toMatchObject({ status: 401 });
+  const webhook = await worker.mf.dispatchFetch(`${ORIGIN}/api/shop/stripe/webhook`, {
+    method: "POST",
+    body: "{}",
+  });
+  expect(webhook.status).toBe(503);
+  expect(await webhook.json()).toEqual({ error: "stripe_disabled" });
   const player = await worker.signInWithEmailCode("no-chain@realms.test");
   expect(player.realmsId).toMatch(/^0x/);
   const top = await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings/top`);

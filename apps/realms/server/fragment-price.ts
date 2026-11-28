@@ -1,12 +1,13 @@
 import { FRAGMENT_CENTS, FRAGMENTS_A_DAY, MIN_FRAGMENTS } from "@bibliothecadao/types";
+import { splitLordsPayment } from "@realms-world/chain";
 
 import type { IdentityAuth } from "./auth";
 import { json } from "./http";
 import { quoteLords, type LordsQuoteReader } from "./lords-price";
-import { fragmentsBoughtOn, type LordsPayee } from "./fragment-payments";
+import { fragmentsReservedOn, type LordsPayee } from "./fragment-payments";
 import { authorizeShop, namedGame, type NamedGame, type ShopAccess } from "./shop-game";
 
-const QUOTE_SECONDS = 600;
+export const QUOTE_SECONDS = 600;
 const WEI_PER_LORDS = 10n ** 18n;
 
 export interface FragmentPriceWorld {
@@ -29,7 +30,7 @@ export async function handleFragmentPrice(
   if (seat instanceof Response) return seat;
   const fragments = Number(url.searchParams.get("fragments"));
   if (!isFragmentAmount(fragments)) return json({ error: "invalid_fragments" }, 400);
-  const remaining = FRAGMENTS_A_DAY - (await fragmentsBoughtOn(world.db, seat.owner, world.now()));
+  const remaining = FRAGMENTS_A_DAY - (await fragmentsReservedOn(world.db, seat.owner, world.now()));
   if (fragments > remaining) return json({ error: "daily_cap", remaining: Math.max(remaining, 0) }, 429);
   const cents = fragments * FRAGMENT_CENTS;
   const lords = await quoteLords(cents, world.readLordsQuote);
@@ -37,7 +38,7 @@ export async function handleFragmentPrice(
   return json({ fragments, cents, quote: await recordQuote(world, seat.owner, game!, fragments, lords) });
 }
 
-const isFragmentAmount = (fragments: number) => Number.isSafeInteger(fragments) && fragments >= MIN_FRAGMENTS;
+export const isFragmentAmount = (fragments: number) => Number.isSafeInteger(fragments) && fragments >= MIN_FRAGMENTS;
 
 async function recordQuote(
   world: FragmentPriceWorld,
@@ -47,17 +48,22 @@ async function recordQuote(
   lords: number,
 ) {
   const now = world.now();
+  const totalWei = BigInt(lords) * WEI_PER_LORDS;
+  const split = splitLordsPayment(totalWei);
   const quote = {
     id: crypto.randomUUID(),
-    lordsWei: (BigInt(lords) * WEI_PER_LORDS).toString(),
+    lordsWei: totalWei.toString(),
     token: world.payee.token,
     treasury: world.payee.treasury,
+    treasuryWei: split.treasuryWei.toString(),
+    veLords: world.payee.veLords,
+    veLordsWei: split.veLordsWei.toString(),
     expiresAt: now + QUOTE_SECONDS,
   };
   await world.db
     .prepare(
       `INSERT INTO "fragment_quotes" ("id", "owner", "chain_id", "game_id", "fragments", "lords_wei", "token", "treasury",
-       "expires_at", "created_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       "treasury_wei", "ve_lords", "ve_lords_wei", "expires_at", "created_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       quote.id,
@@ -68,6 +74,9 @@ async function recordQuote(
       quote.lordsWei,
       quote.token,
       quote.treasury,
+      quote.treasuryWei,
+      quote.veLords,
+      quote.veLordsWei,
       quote.expiresAt,
       now,
     )

@@ -27,6 +27,17 @@ export const isSettledPayment = (receipt: PaymentReceipt) =>
 export const isRevertedPayment = (receipt: PaymentReceipt) =>
   receipt.execution_status === "REVERTED";
 
+const VELORDS_SPLIT_BPS = 500n;
+const SPLIT_BPS_DENOMINATOR = 10_000n;
+
+export const splitLordsPayment = (
+  lordsWei: bigint,
+): { treasuryWei: bigint; veLordsWei: bigint } => {
+  if (lordsWei < 0n) throw new Error("LORDS amount must be non-negative");
+  const veLordsWei = (lordsWei * VELORDS_SPLIT_BPS) / SPLIT_BPS_DENOMINATOR;
+  return { treasuryWei: lordsWei - veLordsWei, veLordsWei };
+};
+
 export const lordsPaidBy = (
   receipt: PaymentReceipt,
   payment: { token: string; treasury: string; payers: readonly string[] },
@@ -42,6 +53,31 @@ export const lordsPaidBy = (
         payers.includes(transfer.from),
     )
     .reduce((paid, transfer) => paid + transfer.wei, 0n);
+};
+
+export const lordsSplitPaidBy = (
+  receipt: PaymentReceipt,
+  payment: {
+    token: string;
+    treasury: string;
+    veLords: string;
+    payers: readonly string[];
+  },
+): { treasuryWei: bigint; veLordsWei: bigint; totalWei: bigint } => {
+  const treasuryWei = lordsPaidBy(receipt, {
+    token: payment.token,
+    treasury: payment.treasury,
+    payers: payment.payers,
+  });
+  const veLordsWei =
+    BigInt(payment.veLords) === BigInt(payment.treasury)
+      ? 0n
+      : lordsPaidBy(receipt, {
+          token: payment.token,
+          treasury: payment.veLords,
+          payers: payment.payers,
+        });
+  return { treasuryWei, veLordsWei, totalWei: treasuryWei + veLordsWei };
 };
 
 const transferOf = ({ keys, data }: PaymentEvent): Transfer | null => {

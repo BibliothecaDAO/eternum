@@ -49,6 +49,11 @@ const IdentityVars = Schema.Struct({
   APNS_PRIVATE_KEY: Schema.optional(Schema.String),
   /** AVNU's paymaster key: it sponsors default wallets' recovery steps (server/paymaster.ts). */
   AVNU_PAYMASTER_API_KEY: Schema.optional(Schema.NonEmptyString),
+  EVM_RPC_URL: Schema.optional(Schema.String),
+  SOLANA_RPC_URL: Schema.optional(Schema.String),
+  STRIPE_SECRET_KEY: Schema.optional(Schema.String),
+  STRIPE_WEBHOOK_SECRET: Schema.optional(Schema.String),
+  STRIPE_PUBLISHABLE_KEY: Schema.optional(Schema.String),
 });
 
 export interface IdentityEnv extends Schema.Schema.Type<typeof IdentityVars> {
@@ -83,6 +88,9 @@ export const decodeIdentityEnv = (raw: Record<string, unknown>): IdentityEnv => 
   const vars = decodeWithoutValues(raw);
   socialProvidersOf(vars);
   apnsCredentialsOf(vars);
+  stripeCredentialsOf(vars);
+  evmRpcUrlOf(vars);
+  solanaRpcUrlOf(vars);
   return {
     ...vars,
     DB: raw.DB as D1Database,
@@ -123,6 +131,46 @@ export const apnsCredentialsOf = (
   if (!teamId || !keyId || !privateKey)
     throw new Error("identity_environment_invalid: APNS_TEAM_ID, APNS_KEY_ID and APNS_PRIVATE_KEY are set together");
   return { teamId, keyId, privateKey };
+};
+
+export interface StripeCredentials {
+  secretKey: string;
+  webhookSecret: string;
+  publishableKey: string;
+}
+
+export const stripeCredentialsOf = (
+  env: Pick<IdentityEnv, "STRIPE_SECRET_KEY" | "STRIPE_WEBHOOK_SECRET" | "STRIPE_PUBLISHABLE_KEY">,
+): StripeCredentials | null => {
+  const {
+    STRIPE_SECRET_KEY: secretKey,
+    STRIPE_WEBHOOK_SECRET: webhookSecret,
+    STRIPE_PUBLISHABLE_KEY: publishableKey,
+  } = env;
+  if (!secretKey && !webhookSecret && !publishableKey) return null;
+  if (!secretKey || !webhookSecret || !publishableKey)
+    throw new Error(
+      "identity_environment_invalid: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET and STRIPE_PUBLISHABLE_KEY are set together",
+    );
+  return { secretKey, webhookSecret, publishableKey };
+};
+
+export const evmRpcUrlOf = (env: Pick<IdentityEnv, "EVM_RPC_URL">): string | null =>
+  optionalHttpsUrl("EVM_RPC_URL", env.EVM_RPC_URL);
+
+export const solanaRpcUrlOf = (env: Pick<IdentityEnv, "SOLANA_RPC_URL">): string | null =>
+  optionalHttpsUrl("SOLANA_RPC_URL", env.SOLANA_RPC_URL);
+
+const optionalHttpsUrl = (name: string, value: string | undefined): string | null => {
+  if (!value) return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error(`identity_environment_invalid: ${name} must be an HTTPS URL`);
+  }
+  if (parsed.protocol !== "https:") throw new Error(`identity_environment_invalid: ${name} must be an HTTPS URL`);
+  return value;
 };
 
 export const ACCOUNT_CLASS_HASH = playerAccount.accountClassHash;

@@ -6,6 +6,8 @@ import {
   isRevertedPayment,
   isSettledPayment,
   lordsPaidBy,
+  lordsSplitPaidBy,
+  splitLordsPayment,
 } from "./lords-payment";
 
 const TOKEN =
@@ -152,5 +154,53 @@ describe("a LORDS payment read from mainnet receipts", () => {
         payers: [BUYER],
       }),
     ).toBe(BOUGHT);
+  });
+});
+
+describe("Starknet 5% veLords / 95% treasury split", () => {
+  const VELORDS =
+    "0x91b13b83e5c34112aa066a844d4cbe6af99b3d134293829ca1730ea4869a71";
+
+  it("splits any LORDS wei amount with exact 5% veLords and exact sum equal to lordsWei", () => {
+    for (const total of [
+      0n,
+      1n,
+      19n,
+      20n,
+      100n,
+      275n * 10n ** 18n,
+      2_750n * 10n ** 18n,
+      999_999_999_999_999_999n,
+    ]) {
+      const split = splitLordsPayment(total);
+      expect(split.treasuryWei + split.veLordsWei).toBe(total);
+      expect(split.veLordsWei).toBe((total * 500n) / 10_000n);
+    }
+    expect(() => splitLordsPayment(-1n)).toThrow("non-negative");
+  });
+
+  it("reads both treasury and veLords transfers from the same receipt independently", () => {
+    const split = splitLordsPayment(WEI);
+    const full = lordsSplitPaidBy(
+      receipt([
+        keyedTransfer(PAYER, TREASURY, split.treasuryWei),
+        keyedTransfer(PAYER, VELORDS, split.veLordsWei),
+      ]),
+      { token: TOKEN, treasury: TREASURY, veLords: VELORDS, payers: [PAYER] },
+    );
+    expect(full).toEqual({
+      treasuryWei: split.treasuryWei,
+      veLordsWei: split.veLordsWei,
+      totalWei: WEI,
+    });
+    const missingVeLords = lordsSplitPaidBy(
+      receipt([keyedTransfer(PAYER, TREASURY, WEI)]),
+      { token: TOKEN, treasury: TREASURY, veLords: VELORDS, payers: [PAYER] },
+    );
+    expect(missingVeLords).toEqual({
+      treasuryWei: WEI,
+      veLordsWei: 0n,
+      totalWei: WEI,
+    });
   });
 });

@@ -14,7 +14,23 @@ export type ValuePlaneContract =
   | "villagePass"
   | "lootChests"
   | "cosmetics"
-  | "treasury";
+  | "treasury"
+  | "veLords";
+
+export const EVM_PAYMENT_CHAIN_ID = 1 as const;
+export const SOLANA_PAYMENT_CLUSTER = "mainnet-beta" as const;
+
+export interface EvmPaymentRail {
+  readonly chainId: typeof EVM_PAYMENT_CHAIN_ID;
+  readonly usdc: string;
+  readonly treasury: string;
+}
+
+export interface SolanaPaymentRail {
+  readonly cluster: typeof SOLANA_PAYMENT_CLUSTER;
+  readonly usdc: string;
+  readonly treasury: string;
+}
 
 export type ValueEnvironment = "staging" | "production";
 
@@ -22,6 +38,8 @@ type AddressBook = Partial<Record<ValuePlaneContract, string>> & {
   l2Chain: string;
   /** The block the ledger was deployed in, written with its address by setup. */
   ledgerDeploymentBlock?: number;
+  evm?: { chainId?: number; usdc?: string; treasury?: string };
+  solana?: { cluster?: string; usdc?: string; treasury?: string };
 };
 
 /** Dev and production share mainnet, but never select contracts by network. */
@@ -122,4 +140,80 @@ const deployedOrNull = (
 ): string | null => {
   const value = addressBook(environment).addresses[contract];
   return value && BigInt(value) !== BigInt(0) ? value : null;
+};
+
+const EVM_ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
+const SOLANA_ADDRESS_PATTERN = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+
+export function assertAllowedEvmPaymentChain(
+  chainId: number,
+): asserts chainId is typeof EVM_PAYMENT_CHAIN_ID {
+  if (chainId !== EVM_PAYMENT_CHAIN_ID) {
+    throw new Error(
+      `Unsupported EVM payment chainId ${chainId}: only Ethereum mainnet (${EVM_PAYMENT_CHAIN_ID}) is allowed`,
+    );
+  }
+}
+
+export const evmPaymentRail = (
+  environment: ValueEnvironment,
+): EvmPaymentRail => {
+  const { addresses, path } = addressBook(environment);
+  const rail = addresses.evm;
+  if (!rail || typeof rail.chainId !== "number") {
+    throw new Error(
+      `contracts/common/addresses/${path} is missing evm payment configuration`,
+    );
+  }
+  assertAllowedEvmPaymentChain(rail.chainId);
+  if (
+    !rail.usdc ||
+    !EVM_ADDRESS_PATTERN.test(rail.usdc) ||
+    BigInt(rail.usdc) === 0n
+  ) {
+    throw new Error(
+      `contracts/common/addresses/${path} has an invalid evm.usdc address`,
+    );
+  }
+  if (
+    !rail.treasury ||
+    !EVM_ADDRESS_PATTERN.test(rail.treasury) ||
+    BigInt(rail.treasury) === 0n
+  ) {
+    throw new Error(
+      `contracts/common/addresses/${path} has an invalid evm.treasury address`,
+    );
+  }
+  return {
+    chainId: EVM_PAYMENT_CHAIN_ID,
+    usdc: rail.usdc,
+    treasury: rail.treasury,
+  };
+};
+
+export const solanaPaymentRail = (
+  environment: ValueEnvironment,
+): SolanaPaymentRail => {
+  const { addresses, path } = addressBook(environment);
+  const rail = addresses.solana;
+  if (!rail || rail.cluster !== SOLANA_PAYMENT_CLUSTER) {
+    throw new Error(
+      `contracts/common/addresses/${path} must configure solana cluster ${SOLANA_PAYMENT_CLUSTER}`,
+    );
+  }
+  if (!rail.usdc || !SOLANA_ADDRESS_PATTERN.test(rail.usdc)) {
+    throw new Error(
+      `contracts/common/addresses/${path} has an invalid solana.usdc address`,
+    );
+  }
+  if (!rail.treasury || !SOLANA_ADDRESS_PATTERN.test(rail.treasury)) {
+    throw new Error(
+      `contracts/common/addresses/${path} has an invalid solana.treasury address`,
+    );
+  }
+  return {
+    cluster: SOLANA_PAYMENT_CLUSTER,
+    usdc: rail.usdc,
+    treasury: rail.treasury,
+  };
 };

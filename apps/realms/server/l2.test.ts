@@ -7,7 +7,15 @@ import {
   fetchIdentityRpc,
   readPaymentReceipt,
 } from "./l2";
-import { apnsCredentialsOf, decodeIdentityEnv, socialProvidersOf, vapidKeysOf } from "./env";
+import {
+  apnsCredentialsOf,
+  decodeIdentityEnv,
+  evmRpcUrlOf,
+  socialProvidersOf,
+  solanaRpcUrlOf,
+  stripeCredentialsOf,
+  vapidKeysOf,
+} from "./env";
 import { verifyWalletOnL2 } from "./wallet-signature";
 
 const env = {
@@ -191,6 +199,32 @@ it("requires the generated push pair but no sign-in provider or duplicated const
   });
   for (const name of Object.keys(apns))
     expect(() => decodeIdentityEnv({ ...settings, ...apns, [name]: undefined })).toThrow("APNS_TEAM_ID, APNS_KEY_ID");
+  expect(stripeCredentialsOf(decoded)).toBeNull();
+  const stripe = {
+    STRIPE_SECRET_KEY: "sk_test_123",
+    STRIPE_WEBHOOK_SECRET: "whsec_123",
+    STRIPE_PUBLISHABLE_KEY: "pk_test_123",
+  };
+  expect(stripeCredentialsOf(decodeIdentityEnv({ ...settings, ...stripe }))).toEqual({
+    secretKey: "sk_test_123",
+    webhookSecret: "whsec_123",
+    publishableKey: "pk_test_123",
+  });
+  for (const name of Object.keys(stripe)) {
+    expect(() => decodeIdentityEnv({ ...settings, ...stripe, [name]: undefined })).toThrow(
+      "STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET and STRIPE_PUBLISHABLE_KEY",
+    );
+  }
+  expect(evmRpcUrlOf(decoded)).toBeNull();
+  expect(solanaRpcUrlOf(decoded)).toBeNull();
+  expect(evmRpcUrlOf(decodeIdentityEnv({ ...settings, EVM_RPC_URL: "https://eth.example" }))).toBe(
+    "https://eth.example",
+  );
+  expect(solanaRpcUrlOf(decodeIdentityEnv({ ...settings, SOLANA_RPC_URL: "https://sol.example" }))).toBe(
+    "https://sol.example",
+  );
+  expect(() => decodeIdentityEnv({ ...settings, EVM_RPC_URL: "http://eth.example" })).toThrow("EVM_RPC_URL");
+  expect(() => decodeIdentityEnv({ ...settings, SOLANA_RPC_URL: "http://sol.example" })).toThrow("SOLANA_RPC_URL");
 });
 
 it("reads a payment once its block is closed, with the block's time, and an unknown or unclosed one as not yet there", async () => {

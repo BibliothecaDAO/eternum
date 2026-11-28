@@ -1,15 +1,16 @@
 import "./fragments-page.css";
 
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
-import { IdentityRequestError, type FragmentPrice } from "@realms-world/identity";
+import { IdentityRequestError, type ShopPaymentMethods } from "@realms-world/identity";
 import { FRAGMENT_CENTS, MIN_FRAGMENTS, STORE_PRODUCTS, formatCharge } from "@bibliothecadao/types";
 import { nativeFragmentConstants } from "@bibliothecadao/eternum/game-client";
 
 import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
+import { allowsWebCheckout } from "@/runtime/distribution-channel";
 import { L2_LORDS } from "@/runtime/l2-rpc";
-import { Icon } from "@/ui/design-system/icon";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import {
   AppButton,
   AppChip,
@@ -36,19 +37,39 @@ import { lordsOf } from "../value/ledger";
 import { invalidateLordsBalance } from "../value/use-lords-balance";
 import { usePayer } from "../value/use-payer";
 import { WalletUnread } from "../value/wallet-unread";
-import { followPayment, forgetPayment, rememberPayment, sentPaymentOf, type SentPayment } from "./fragment-payment";
-import { PAY_TOKEN_ICONS, payTokensForToken, type PayToken } from "./pay-tokens";
+import {
+  availableRails,
+  followPayment,
+  forgetPayment,
+  rememberPayment,
+  sentPaymentOf,
+  type PaymentRailKey,
+  type SentPayment,
+  type ShopGameRef,
+} from "./fragment-payment";
+import { PAY_TOKEN_ICONS, payTokensForToken, quoteSplitOf, type FragmentQuote, type PayToken } from "./pay-tokens";
 import { PayWith } from "./pay-with";
 import { SEASON_ONE_REALM_SKINS, SeasonOneSkins } from "./season-one-skins";
+
+const StripeCheckout = lazy(() => import("./stripe-checkout"));
+const EvmCheckout = lazy(() => import("./evm-checkout"));
+const SolanaCheckout = lazy(() => import("./solana-checkout"));
 
 const PACKS = Object.values(STORE_PRODUCTS).map(({ fragments }) => fragments);
 const SEAL = nativeFragmentConstants.SEAL_FRAGMENTS;
 const POLL_MS = 3_000;
 
-type ShopGame = { chainId: string; gameId: number };
-type Quote = NonNullable<FragmentPrice["quote"]>;
+const RAIL_ICONS = {
+  stripe: "fragment",
+  starknet: "lords",
+  evm: "brand-eth",
+  solana: "brand-usdc",
+} as const satisfies Record<PaymentRailKey, IconMeaning>;
+
 type Refusal = keyof typeof FRAGMENTS_PAGE_WORDS.refused;
-type Paying = { fragments: number; cents: number; quote: Quote };
+type Paying =
+  | { readonly rail: "starknet"; readonly fragments: number; readonly cents: number; readonly quote: FragmentQuote }
+  | { readonly rail: "stripe" | "evm" | "solana"; readonly fragments: number };
 type ShopZone = "spend" | "buy";
 type DirectoryFailure = { error: unknown; retry: () => void };
 type WalletState = {
@@ -126,7 +147,7 @@ const ShopWorkspace = ({
   next,
 }: {
   account: string;
-  game: ShopGame | null;
+  game: ShopGameRef | null;
   hasExplicitGame: boolean;
   questBonusPercent: number | null;
   directoryFailure: DirectoryFailure | null;
@@ -136,10 +157,29 @@ const ShopWorkspace = ({
   const { session } = useIdentitySession();
   const { pathname, search } = useLocation();
   const phone = useLayout() === "phone";
-  const [zone, setZone] = useState<ShopZone>(hasExplicitGame ? "buy" : "spend");
+  const webCheckout = allowsWebCheckout();
+  const [zone, setZone] = useState<ShopZone>(webCheckout && hasExplicitGame ? "buy" : "spend");
   const { payer, passkey, failed, retry } = usePayer();
   const [paying, setPaying] = useState<Paying | null>(null);
   const [sent, setSent] = useState<SentPayment | null>(() => sentPaymentOf(account));
+  const methodsQuery = useQuery({
+    queryKey: ["shopPaymentMethods"],
+    queryFn: () => identityClient.shopPaymentMethods(),
+    enabled: webCheckout,
+    retry: false,
+  });
+  const methods = methodsQuery.data;
+  const spendSection = <SpendZone owner={session?.user.realmsId ?? null} questBonusPercent={questBonusPercent} />;
+
+  if (!webCheckout) {
+    return (
+      <div className="shop-closed" data-shop-page data-store-shell>
+        {spendSection}
+        <AppNotice line={FRAGMENTS_PAGE_WORDS.webCheckoutOnly} />
+      </div>
+    );
+  }
+
   if (sent) {
     const again = () => {
       forgetPayment(account);
@@ -152,15 +192,64 @@ const ShopWorkspace = ({
     };
     return <Delivery sent={sent} next={next} onSettled={onSettled} onAgain={again} />;
   }
-  if (paying && payer) {
-    const onSent = (hash: string) => {
-      const payment = { quoteId: paying.quote.id, hash, fragments: paying.fragments };
+
+  if (paying) {
+    const recordPayment = (payment: SentPayment) => {
       rememberPayment(account, payment);
       void invalidateLordsBalance(queryClient);
       setSent(payment);
     };
-    return <Pay payer={payer} passkey={passkey} paying={paying} onSent={onSent} />;
+    if (paying.rail === "starknet" && payer) {
+      return (
+        <Pay
+          payer={payer}
+          passkey={passkey}
+          paying={paying}
+          onSent={(hash) =>
+            recordPayment({ quoteId: paying.quote.id, hash, fragments: paying.fragments, rail: "starknet" })
+          }
+        />
+      );
+    }
+    if (game && paying.rail === "stripe" && methods?.stripe) {
+      return (
+        <Suspense fallback={<Loading />}>
+          <StripeCheckout
+            game={game}
+            fragments={paying.fragments}
+            publishableKey={methods.stripe.publishableKey}
+            onPaid={recordPayment}
+            onCancel={() => setPaying(null)}
+          />
+        </Suspense>
+      );
+    }
+    if (game && paying.rail === "evm" && methods?.evm) {
+      return (
+        <Suspense fallback={<Loading />}>
+          <EvmCheckout
+            game={game}
+            fragments={paying.fragments}
+            onPaid={recordPayment}
+            onCancel={() => setPaying(null)}
+          />
+        </Suspense>
+      );
+    }
+    if (game && paying.rail === "solana" && methods?.solana) {
+      return (
+        <Suspense fallback={<Loading />}>
+          <SolanaCheckout
+            game={game}
+            fragments={paying.fragments}
+            onPaid={recordPayment}
+            onCancel={() => setPaying(null)}
+          />
+        </Suspense>
+      );
+    }
   }
+
   const wallet: WalletState = { payer, failed, retry, linkWalletTo: linkWalletHref(`${pathname}${search}`) };
   const buySection = (
     <AppPanel
@@ -173,11 +262,10 @@ const ShopWorkspace = ({
       ) : game === null ? (
         <p className="text-app-body text-app-muted">{FRAGMENTS_PAGE_WORDS.noLiveSeason}</p>
       ) : (
-        <Choose game={game} wallet={wallet} onPriced={setPaying} />
+        <Choose game={game} wallet={wallet} methods={methods} onPriced={setPaying} />
       )}
     </AppPanel>
   );
-  const spendSection = <SpendZone owner={session?.user.realmsId ?? null} questBonusPercent={questBonusPercent} />;
   if (phone) {
     return (
       <div className="shop-phone" data-shop-page>
@@ -225,7 +313,10 @@ const SealShowcase = ({ questBonusPercent }: { questBonusPercent: number | null 
       </span>
       <div className="shop-seal-hero__meta">
         <div className="shop-seal-hero__head">
-          <h3 className="shop-seal-hero__title">{FRAGMENTS_PAGE_WORDS.sealCardTitle}</h3>
+          <div className="shop-seal-hero__title-row">
+            <h3 className="shop-seal-hero__title">{FRAGMENTS_PAGE_WORDS.sealCardTitle}</h3>
+            <AppChip tone="gold">{SHOP_WORDS.founderBadge}</AppChip>
+          </div>
           <span className="shop-seal-hero__cost">
             <Icon name="fragment" size={16} />
             {formatCharge(SEAL)}
@@ -266,16 +357,21 @@ const FragmentUses = () => (
 const Choose = ({
   game,
   wallet,
+  methods,
   onPriced,
 }: {
-  game: ShopGame;
+  game: ShopGameRef;
   wallet: WalletState;
+  methods: ShopPaymentMethods | undefined;
   onPriced: (paying: Paying) => void;
 }) => {
   const navigate = useNavigate();
   const [fragments, setFragments] = useState<number>(SEAL);
   const [customText, setCustomText] = useState("");
   const [waitingWallet, setWaitingWallet] = useState(false);
+  const [chosenRail, setChosenRail] = useState<PaymentRailKey | null>(null);
+  const rails = availableRails(methods);
+  const activeRail: PaymentRailKey = chosenRail && rails.includes(chosenRail) ? chosenRail : (rails[0] ?? "starknet");
   const tokens = payTokensForToken(L2_LORDS);
   const price = useMutation({ mutationFn: (wanted: number) => identityClient.priceFragments(game, wanted) });
   const { mutate: requestPrice } = price;
@@ -288,7 +384,7 @@ const Choose = ({
   const displayAmount = canPay ? selectedAmount : fragments;
 
   useEffect(() => {
-    if (!waitingWallet) return;
+    if (!waitingWallet || activeRail !== "starknet") return;
     if (wallet.failed) {
       setWaitingWallet(false);
       return;
@@ -302,12 +398,14 @@ const Choose = ({
       setWaitingWallet(false);
       if (canPay) {
         requestPrice(selectedAmount, {
-          onSuccess: ({ fragments: priced, cents, quote }) => quote && onPriced({ fragments: priced, cents, quote }),
+          onSuccess: ({ fragments: priced, cents, quote }) =>
+            quote && onPriced({ rail: "starknet", fragments: priced, cents, quote }),
         });
       }
     }
   }, [
     waitingWallet,
+    activeRail,
     wallet.failed,
     wallet.payer,
     wallet.linkWalletTo,
@@ -320,6 +418,10 @@ const Choose = ({
 
   const pay = () => {
     if (!canPay) return;
+    if (activeRail !== "starknet") {
+      onPriced({ rail: activeRail, fragments: selectedAmount });
+      return;
+    }
     if (wallet.payer === null) {
       navigate(wallet.linkWalletTo);
       return;
@@ -329,7 +431,8 @@ const Choose = ({
       return;
     }
     requestPrice(selectedAmount, {
-      onSuccess: ({ fragments: priced, cents, quote }) => quote && onPriced({ fragments: priced, cents, quote }),
+      onSuccess: ({ fragments: priced, cents, quote }) =>
+        quote && onPriced({ rail: "starknet", fragments: priced, cents, quote }),
     });
   };
 
@@ -377,12 +480,14 @@ const Choose = ({
           onChange={(event) => setCustomText(event.target.value)}
         />
       </div>
+      {rails.length > 1 && <RailSelector rails={rails} active={activeRail} onSelect={setChosenRail} />}
       {price.data && !price.data.quote && <AppNotice tone="warn" line={FRAGMENTS_PAGE_WORDS.noPrice} />}
       {isDailyCap(price.error) && <AppNotice tone="warn" line={FRAGMENTS_PAGE_WORDS.dailyCap} />}
       {price.isError && !isDailyCap(price.error) && <ServiceFailure service="season" error={price.error} retry={pay} />}
       <CheckoutFoot
         displayAmount={displayAmount}
         canPay={canPay}
+        activeRail={activeRail}
         tokens={tokens}
         wallet={wallet}
         busy={
@@ -398,9 +503,39 @@ const Choose = ({
   );
 };
 
+const RailSelector = ({
+  rails,
+  active,
+  onSelect,
+}: {
+  rails: readonly PaymentRailKey[];
+  active: PaymentRailKey;
+  onSelect: (rail: PaymentRailKey) => void;
+}) => (
+  <div className="shop-rails" data-payment-rails>
+    <span className="text-app-label text-app-muted">{FRAGMENTS_PAGE_WORDS.paymentMethodLabel}</span>
+    <div className="shop-rails__grid">
+      {rails.map((rail) => (
+        <button
+          key={rail}
+          type="button"
+          className="app-choice shop-rail"
+          data-rail={rail}
+          aria-pressed={active === rail}
+          onClick={() => onSelect(rail)}
+        >
+          <Icon name={RAIL_ICONS[rail]} size={18} />
+          <span>{FRAGMENTS_PAGE_WORDS.rails[rail]}</span>
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
 const CheckoutFoot = ({
   displayAmount,
   canPay,
+  activeRail,
   tokens,
   wallet,
   busy,
@@ -408,51 +543,57 @@ const CheckoutFoot = ({
 }: {
   displayAmount: number;
   canPay: boolean;
+  activeRail: PaymentRailKey;
   tokens: readonly PayToken[];
   wallet: WalletState;
   busy?: string;
   onPay: () => void;
-}) => (
-  <div className="shop-checkout">
-    <div className="shop-checkout__summary">
-      <span className="text-app-label text-app-muted">{FRAGMENTS_PAGE_WORDS.selectedLabel}</span>
-      <span className="shop-checkout__total">
-        <span>{FRAGMENTS_PAGE_WORDS.pack(displayAmount)}</span>
-        <span className="shop-checkout__dollars">{FRAGMENTS_PAGE_WORDS.price(displayAmount)}</span>
-      </span>
+}) => {
+  const starknet = activeRail === "starknet";
+  return (
+    <div className="shop-checkout">
+      <div className="shop-checkout__summary">
+        <span className="text-app-label text-app-muted">{FRAGMENTS_PAGE_WORDS.selectedLabel}</span>
+        <span className="shop-checkout__total">
+          <span>{FRAGMENTS_PAGE_WORDS.pack(displayAmount)}</span>
+          <span className="shop-checkout__dollars">{FRAGMENTS_PAGE_WORDS.price(displayAmount)}</span>
+        </span>
+      </div>
+      {starknet && (
+        <div className="shop-methods">
+          <span className="shop-methods__icons" aria-hidden="true">
+            {tokens.map(({ key }) => (
+              <Icon key={key} name={PAY_TOKEN_ICONS[key]} size={18} />
+            ))}
+          </span>
+          <span>{FRAGMENTS_PAGE_WORDS.payWithTokens(tokens.map(({ symbol }) => symbol))}</span>
+        </div>
+      )}
+      {starknet && wallet.payer === undefined && wallet.failed ? (
+        <WalletUnread onRetry={wallet.retry} />
+      ) : (
+        <>
+          <AppButton
+            kind="primary"
+            size="lg"
+            icon={displayAmount === SEAL ? "final-seal" : "fragment"}
+            className="w-full"
+            disabled={!canPay}
+            busy={busy}
+            onClick={onPay}
+          >
+            {FRAGMENTS_PAGE_WORDS.pay(displayAmount)}
+          </AppButton>
+          {starknet && wallet.payer === null && (
+            <p className="shop-wallet-note" data-wallet-deferred>
+              {FRAGMENTS_PAGE_WORDS.noWalletNote}
+            </p>
+          )}
+        </>
+      )}
     </div>
-    <div className="shop-methods">
-      <span className="shop-methods__icons" aria-hidden="true">
-        {tokens.map(({ key }) => (
-          <Icon key={key} name={PAY_TOKEN_ICONS[key]} size={18} />
-        ))}
-      </span>
-      <span>{FRAGMENTS_PAGE_WORDS.payWithTokens(tokens.map(({ symbol }) => symbol))}</span>
-    </div>
-    {wallet.payer === undefined && wallet.failed ? (
-      <WalletUnread onRetry={wallet.retry} />
-    ) : (
-      <>
-        <AppButton
-          kind="primary"
-          size="lg"
-          icon={displayAmount === SEAL ? "final-seal" : "fragment"}
-          className="w-full"
-          disabled={!canPay}
-          busy={busy}
-          onClick={onPay}
-        >
-          {FRAGMENTS_PAGE_WORDS.pay(displayAmount)}
-        </AppButton>
-        {wallet.payer === null && (
-          <p className="shop-wallet-note" data-wallet-deferred>
-            {FRAGMENTS_PAGE_WORDS.noWalletNote}
-          </p>
-        )}
-      </>
-    )}
-  </div>
-);
+  );
+};
 
 const Pay = ({
   payer,
@@ -462,23 +603,26 @@ const Pay = ({
 }: {
   payer: string;
   passkey: boolean;
-  paying: Paying;
+  paying: Extract<Paying, { rail: "starknet" }>;
   onSent: (hash: string) => void;
-}) => (
-  <AppPanel
-    icon={paying.fragments === SEAL ? "final-seal" : "fragment"}
-    title={FRAGMENTS_PAGE_WORDS.pack(paying.fragments)}
-  >
-    <div className="flex flex-col gap-3" data-fragment-quote={paying.quote.id}>
-      <AppFigure
-        tone="gold"
-        value={FRAGMENTS_PAGE_WORDS.price(paying.fragments)}
-        label={FRAGMENTS_PAGE_WORDS.treasuryReceives(lordsOf(BigInt(paying.quote.lordsWei)))}
-      />
-      <PayWith payer={payer} passkey={passkey} quote={paying.quote} cents={paying.cents} onSent={onSent} />
-    </div>
-  </AppPanel>
-);
+}) => {
+  const split = quoteSplitOf(paying.quote);
+  const label =
+    split.veLordsWei > 0n
+      ? FRAGMENTS_PAGE_WORDS.veLordsSplit(lordsOf(split.treasuryWei), lordsOf(split.veLordsWei))
+      : FRAGMENTS_PAGE_WORDS.treasuryReceives(lordsOf(split.treasuryWei));
+  return (
+    <AppPanel
+      icon={paying.fragments === SEAL ? "final-seal" : "fragment"}
+      title={FRAGMENTS_PAGE_WORDS.pack(paying.fragments)}
+    >
+      <div className="flex flex-col gap-3" data-fragment-quote={paying.quote.id}>
+        <AppFigure tone="gold" value={FRAGMENTS_PAGE_WORDS.price(paying.fragments)} label={label} />
+        <PayWith payer={payer} passkey={passkey} quote={paying.quote} cents={paying.cents} onSent={onSent} />
+      </div>
+    </AppPanel>
+  );
+};
 
 const Delivery = ({
   sent,
@@ -493,7 +637,7 @@ const Delivery = ({
 }) => {
   const navigate = useNavigate();
   const payment = useQuery({
-    queryKey: ["fragmentPayment", sent.hash],
+    queryKey: ["fragmentPayment", sent.rail ?? "starknet", sent.hash],
     queryFn: () => followPayment(sent),
     refetchInterval: (query) => (query.state.data?.state === "delivering" ? POLL_MS : false),
     retry: false,
@@ -525,7 +669,7 @@ const Delivery = ({
   );
 };
 
-const shopGameOf = (search: string): ShopGame | null => {
+const shopGameOf = (search: string): ShopGameRef | null => {
   const params = new URLSearchParams(search);
   const chainId = params.get("chain");
   const gameId = Number(params.get("game"));

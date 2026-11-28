@@ -123,4 +123,10 @@ describe("the page's channel", () => {
     expect(ios.distributionChannel()).toBe("app-store");
     expect(ios.opensThirdPartySignIn()).toBe(false);
   });
+
+  it("allows web checkout only on the web, hiding it inside Google Play and App Store shells", async () => {
+    expect((await boot(CHROME_ANDROID)).allowsWebCheckout()).toBe(true);
+    expect((await boot(CHROME_ANDROID, "/?channel=play")).allowsWebCheckout()).toBe(false);
+    expect((await boot(`${SAFARI} RealmsApp/ios`)).allowsWebCheckout()).toBe(false);
+  });
 });

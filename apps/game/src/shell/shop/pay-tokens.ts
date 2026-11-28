@@ -17,7 +17,13 @@ export const PAY_TOKEN_ICONS = {
 const SLIPPAGE = 0.01;
 const FEE_ROOM_PER_FEE_PRICED = 2n;
 
-type Quote = NonNullable<FragmentPrice["quote"]>;
+export type FragmentQuote = NonNullable<FragmentPrice["quote"]>;
+
+interface QuoteSplit {
+  readonly treasuryWei: bigint;
+  readonly veLords: string;
+  readonly veLordsWei: bigint;
+}
 
 export interface PayToken {
   key: MainnetToken;
@@ -42,28 +48,46 @@ const MAINNET_PAY_TOKENS: readonly PayToken[] = (Object.keys(MAINNET_TOKENS) as 
 export const payTokensForToken = (token: string): PayToken[] =>
   isMainnetLords(token) ? [...MAINNET_PAY_TOKENS] : [{ key: "lords", ...MAINNET_TOKENS.lords, address: token }];
 
-export const payTokensFor = (quote: Quote): PayToken[] => payTokensForToken(quote.token);
+export const payTokensFor = (quote: FragmentQuote): PayToken[] => payTokensForToken(quote.token);
+
+export const quoteSplitOf = (quote: FragmentQuote): QuoteSplit => {
+  const totalWei = BigInt(quote.lordsWei);
+  const treasuryWei = BigInt(quote.treasuryWei);
+  const veLordsWei = BigInt(quote.veLordsWei);
+  if (treasuryWei < 0n || veLordsWei < 0n || treasuryWei + veLordsWei !== totalWei) {
+    throw new Error(`Invalid quote split: treasury=${treasuryWei} + veLords=${veLordsWei} !== total=${totalWei}`);
+  }
+  return { treasuryWei, veLords: quote.veLords, veLordsWei };
+};
+
+const transferCallsFor = (quote: FragmentQuote): Call[] => {
+  const split = quoteSplitOf(quote);
+  return [
+    ...(split.treasuryWei > 0n ? [transferLordsCall(quote.token, quote.treasury, split.treasuryWei)] : []),
+    ...(split.veLordsWei > 0n ? [transferLordsCall(quote.token, split.veLords, split.veLordsWei)] : []),
+  ];
+};
 
 export const paymentIn = async (
   token: PayToken,
-  quote: Quote,
+  quote: FragmentQuote,
   payer: string,
   passkey: boolean,
 ): Promise<TokenPayment> => {
   const lordsWei = BigInt(quote.lordsWei);
-  const pay = transferLordsCall(quote.token, quote.treasury, lordsWei);
-  if (token.key === "lords") return { token, cost: lordsWei, most: lordsWei, calls: [pay], lordsBought: 0n };
+  const transfers = transferCallsFor(quote);
+  if (token.key === "lords") return { token, cost: lordsWei, most: lordsWei, calls: transfers, lordsBought: 0n };
   const purchase = (lords: bigint) =>
     avnuLordsPurchase({ sellToken: token.address, lordsWei: lords, taker: payer, slippage: SLIPPAGE });
   const exact = await purchase(lordsWei);
-  const priced = passkey ? ((await defaultWalletFeeOf([...exact.calls, pay]))?.max ?? 0n) : 0n;
+  const priced = passkey ? ((await defaultWalletFeeOf([...exact.calls, ...transfers]))?.max ?? 0n) : 0n;
   const fee = priced * FEE_ROOM_PER_FEE_PRICED;
   const bought = fee === 0n ? exact : await purchase(lordsWei + fee);
   return {
     token,
     cost: bought.sellAmount,
     most: bought.maxSellAmount,
-    calls: [...bought.calls, pay],
+    calls: [...bought.calls, ...transfers],
     lordsBought: lordsWei + fee,
   };
 };

@@ -257,6 +257,9 @@ const fragmentPriceSchema = Schema.Struct({
       lordsWei: Schema.String,
       token: Schema.String,
       treasury: Schema.String,
+      treasuryWei: Schema.String,
+      veLords: Schema.String,
+      veLordsWei: Schema.String,
       expiresAt: Schema.Number,
     }),
   ),
@@ -267,6 +270,51 @@ const fragmentPaymentSchema = Schema.Struct({
   fragments: Schema.optional(Schema.Number),
 });
 export type FragmentPayment = typeof fragmentPaymentSchema.Type;
+
+const shopPaymentMethodsSchema = Schema.Struct({
+  starknet: Schema.Boolean,
+  evm: Schema.NullOr(
+    Schema.Struct({
+      chainId: Schema.Literal(1),
+    }),
+  ),
+  solana: Schema.NullOr(
+    Schema.Struct({
+      cluster: Schema.Literal("mainnet-beta"),
+    }),
+  ),
+  stripe: Schema.NullOr(
+    Schema.Struct({
+      publishableKey: Schema.String,
+    }),
+  ),
+});
+export type ShopPaymentMethods = typeof shopPaymentMethodsSchema.Type;
+
+const externalPaymentQuoteSchema = Schema.Struct({
+  fragments: Schema.Number,
+  cents: Schema.Number,
+  quote: Schema.Struct({
+    id: Schema.String,
+    rail: Schema.Literals(["evm", "solana"]),
+    chainId: Schema.NullOr(Schema.Number),
+    token: Schema.String,
+    treasury: Schema.String,
+    usdcUnits: Schema.String,
+    memo: Schema.String,
+    recentBlockhash: Schema.NullOr(Schema.String),
+    expiresAt: Schema.Number,
+  }),
+});
+export type ExternalPaymentQuote = typeof externalPaymentQuoteSchema.Type;
+
+const stripePaymentIntentSchema = Schema.Struct({
+  intentId: Schema.String,
+  clientSecret: Schema.String,
+  fragments: Schema.Number,
+  cents: Schema.Number,
+});
+export type StripePaymentIntent = typeof stripePaymentIntentSchema.Type;
 
 const readJson = async <T>(response: Response, decode: (value: unknown) => T): Promise<T> => {
   if (!response.ok) throw await requestFailure(response);
@@ -640,6 +688,64 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
       decode(fragmentPaymentSchema),
     );
 
+  const shopPaymentMethods = async (): Promise<ShopPaymentMethods> =>
+    readJson(
+      await request("/shop/payment-methods", { method: "GET", cache: "no-store" }),
+      decode(shopPaymentMethodsSchema),
+    );
+
+  const quoteExternalPayment = async (input: {
+    chainId: string;
+    gameId: number;
+    fragments: number;
+    rail: "evm" | "solana";
+    networkChainId?: number;
+  }): Promise<ExternalPaymentQuote> =>
+    readJson(
+      await request("/shop/external/quote", {
+        method: "POST",
+        body: JSON.stringify({
+          chain: input.chainId,
+          game: input.gameId,
+          fragments: input.fragments,
+          rail: input.rail,
+          ...(input.networkChainId !== undefined ? { networkChainId: input.networkChainId } : {}),
+        }),
+      }),
+      decode(externalPaymentQuoteSchema),
+    );
+
+  const payExternalPayment = async (quoteId: string, txHash: string): Promise<FragmentPayment> =>
+    readJson(
+      await request("/shop/external/pay", { method: "POST", body: JSON.stringify({ quoteId, txHash }) }),
+      decode(fragmentPaymentSchema),
+    );
+
+  const externalPayment = async (txHash: string): Promise<FragmentPayment> =>
+    readJson(
+      await request(`/shop/external/pay/${encodeURIComponent(txHash)}`, { method: "GET", cache: "no-store" }),
+      decode(fragmentPaymentSchema),
+    );
+
+  const createStripeIntent = async (input: {
+    chainId: string;
+    gameId: number;
+    fragments: number;
+  }): Promise<StripePaymentIntent> =>
+    readJson(
+      await request("/shop/stripe/intent", {
+        method: "POST",
+        body: JSON.stringify({ chain: input.chainId, game: input.gameId, fragments: input.fragments }),
+      }),
+      decode(stripePaymentIntentSchema),
+    );
+
+  const stripePayment = async (intentId: string): Promise<FragmentPayment> =>
+    readJson(
+      await request(`/shop/stripe/intent/${encodeURIComponent(intentId)}`, { method: "GET", cache: "no-store" }),
+      decode(fragmentPaymentSchema),
+    );
+
   /** What the account's shared links brought, settled as it is read. */
   const shareTally = async (): Promise<ShareTally> =>
     readJson(await request("/shares", { method: "GET", cache: "no-store" }), decode(shareTallySchema));
@@ -714,6 +820,12 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     priceFragments,
     payFragments,
     fragmentPayment,
+    shopPaymentMethods,
+    quoteExternalPayment,
+    payExternalPayment,
+    externalPayment,
+    createStripeIntent,
+    stripePayment,
     getPushConfiguration: () => pushRequest("config", decode(pushConfigurationSchema)),
     registerPushSubscription: (input: PushRegistration) =>
       pushRequest("subscribe", decode(Schema.Struct({ id: Schema.String })), input),

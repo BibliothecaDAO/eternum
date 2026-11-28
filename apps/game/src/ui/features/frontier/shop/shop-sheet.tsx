@@ -10,6 +10,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { notificationOwnerOf, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
+import { allowsWebCheckout } from "@/runtime/distribution-channel";
 import { useRedeemSealCode } from "@/shell/play/seal-code";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudField, HudNotice, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
@@ -75,36 +76,41 @@ export const ShopView = ({
   code,
   onGetFragments,
   onClose,
-}: ShopViewProps) => (
-  <HudSheet label={SHOP_WORDS.title} beside={<FragmentsHeld fragments={fragments} />} onClose={onClose}>
-    <PassSection pass={pass} fragments={fragments} questBonus={questBonus} bonusHeld={bonusHeld} />
-    <HudRow
-      lead={<Icon name="fragment" size={32} />}
-      title={SHOP_WORDS.fragments(fragments)}
-      detail={SHOP_WORDS.fragmentsLine(FRAGMENT_CENTS)}
-      controls={
-        <HudButton kind="secondary" icon="fragment" onClick={onGetFragments}>
-          {FRAGMENTS_PAGE_WORDS.title}
-        </HudButton>
-      }
-    />
-    {bar !== null && (
+}: ShopViewProps) => {
+  const webCheckout = allowsWebCheckout();
+  return (
+    <HudSheet label={SHOP_WORDS.title} beside={<FragmentsHeld fragments={fragments} />} onClose={onClose}>
+      <PassSection pass={pass} fragments={fragments} questBonus={questBonus} bonusHeld={bonusHeld} />
       <HudRow
-        lead={<Icon name="stamina" size={32} />}
-        title={SHOP_WORDS.stamina}
-        detail={
-          <span className="flex flex-col gap-0.5">
-            <span>
-              {SHOP_WORDS.staminaLine(POINTS, bar, fragmentsForBar(bar), fragmentsForBar(bar) * FRAGMENT_CENTS)}
-            </span>
-            <span>{SHOP_WORDS.oathSwapLine(OATH_REROLL)}</span>
-          </span>
+        lead={<Icon name="fragment" size={32} />}
+        title={SHOP_WORDS.fragments(fragments)}
+        detail={SHOP_WORDS.fragmentsLine(FRAGMENT_CENTS)}
+        controls={
+          webCheckout ? (
+            <HudButton kind="secondary" icon="fragment" onClick={onGetFragments}>
+              {FRAGMENTS_PAGE_WORDS.title}
+            </HudButton>
+          ) : undefined
         }
       />
-    )}
-    {pass && !pass.held && code}
-  </HudSheet>
-);
+      {bar !== null && (
+        <HudRow
+          lead={<Icon name="stamina" size={32} />}
+          title={SHOP_WORDS.stamina}
+          detail={
+            <span className="flex flex-col gap-0.5">
+              <span>
+                {SHOP_WORDS.staminaLine(POINTS, bar, fragmentsForBar(bar), fragmentsForBar(bar) * FRAGMENT_CENTS)}
+              </span>
+              <span>{SHOP_WORDS.oathSwapLine(OATH_REROLL)}</span>
+            </span>
+          }
+        />
+      )}
+      {pass && !pass.held && code}
+    </HudSheet>
+  );
+};
 
 const PassSection = ({
   pass,
@@ -120,7 +126,10 @@ const PassSection = ({
   if (pass?.held) {
     return (
       <section data-shop="pass" data-held="" className="shop-sheet-seal">
-        <HudNotice tone="good" line={SHOP_WORDS.held} />
+        <div className="flex items-center justify-between gap-2">
+          <HudNotice tone="good" line={SHOP_WORDS.held} />
+          <HudChip tone="gold">{SHOP_WORDS.founderBadge}</HudChip>
+        </div>
         <div className="shop-sheet-perks">
           {questBonus !== null && (
             <span className="text-hud-label text-hud-good">{SHOP_WORDS.questBonus(questBonus)}</span>
@@ -135,7 +144,12 @@ const PassSection = ({
   }
   return (
     <section data-shop="pass" className="shop-sheet-seal">
-      <HudRow lead={<Icon name="final-seal" size={44} />} title={SHOP_WORDS.pass} detail={SHOP_WORDS.passFor} />
+      <HudRow
+        lead={<Icon name="final-seal" size={44} />}
+        title={SHOP_WORDS.pass}
+        detail={SHOP_WORDS.passFor}
+        trail={<HudChip tone="gold">{SHOP_WORDS.founderBadge}</HudChip>}
+      />
       <div className="shop-sheet-perks">
         {questBonus !== null && (
           <span className="text-hud-body text-hud-good">{SHOP_WORDS.questBonus(questBonus)}</span>

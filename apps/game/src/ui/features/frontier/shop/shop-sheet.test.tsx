@@ -3,6 +3,12 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installHudSheet } from "@/ui/design-system/kit/hud-sheet-test-support";
 
+const appChannel = vi.hoisted(() => ({ current: "web" as "web" | "play" | "app-store" }));
+vi.mock("@/runtime/distribution-channel", () => ({
+  distributionChannel: () => appChannel.current,
+  allowsWebCheckout: () => appChannel.current === "web",
+}));
+
 vi.mock("@/sync/action-outcome", async (original) => ({
   ...(await original<typeof import("@/sync/action-outcome")>()),
   untilApplied: async (sent: Promise<unknown>) => {
@@ -37,6 +43,7 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
+  appChannel.current = "web";
   vi.restoreAllMocks();
 });
 
@@ -68,6 +75,7 @@ describe("the shop", () => {
   it("offers the Ancient Seal for 1,000 Fragments, and says what is missing in dollars while short", () => {
     view({});
     expect(text()).toContain(ANCIENT_SEAL);
+    expect(text()).toContain(SHOP_WORDS.founderBadge);
     expect(text()).toContain(SHOP_WORDS.passFor);
     expect(text()).toContain(SHOP_WORDS.questBonus(50));
     expect(getPass()?.disabled).toBe(true);
@@ -109,6 +117,7 @@ describe("the shop", () => {
   it("reads a held Ancient Seal from the account's Seal row: no purchase, no code, the Ancient Seal named as held", () => {
     renderShop([{ model: "Seal", key: "0x5ea1", value: { game_id: 1, account: PLAYER, granted_at: "1" } }]);
     expect(text()).toContain(SHOP_WORDS.held);
+    expect(text()).toContain(SHOP_WORDS.founderBadge);
     expect(host.querySelector("[data-shop=pass]")?.hasAttribute("data-held")).toBe(true);
     expect(host.querySelectorAll("[data-season-one-skin]")).toHaveLength(SEASON_ONE_REALM_SKINS.length);
     expect(getPass()).toBeUndefined();
@@ -193,6 +202,20 @@ describe("the shop", () => {
       sheet.remove();
     }
   });
+
+  it.each(["play", "app-store"] as const)(
+    "hides Get Fragments inside the %s store shell while keeping in-game Seal spend and code redemption",
+    (channel) => {
+      appChannel.current = channel;
+      view({ fragments: 1_250 });
+      expect(text()).toContain(SHOP_WORDS.founderBadge);
+      expect(getPass()).toBeDefined();
+      expect(host.querySelector("[data-code]")).not.toBeNull();
+      expect(
+        [...host.querySelectorAll("button")].some((button) => button.textContent === FRAGMENTS_PAGE_WORDS.title),
+      ).toBe(false);
+    },
+  );
 });
 
 type ContainerRule = CSSGroupingRule & { conditionText: string; containerQuery: string };

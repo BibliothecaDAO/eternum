@@ -7,5 +7,16 @@
   "realms": "0x7ae27a31bb6526e3de9cf02f081f6ce0615ac12a6d7b85ee58b8ad7947a2809",
   "ledger": "0x1442675ed56552f724c93f1f1785040ac90eaa75a70bdbe04dc6678ab0ec504",
   "ledgerDeploymentBlock": 17290991,
-  "treasury": "0x038190434b4afa188bdfa0b671c079d7772f84b90318b89e6d2a97f30374e231"
+  "treasury": "0x038190434b4afa188bdfa0b671c079d7772f84b90318b89e6d2a97f30374e231",
+  "veLords": "0x91b13b83e5c34112aa066a844d4cbe6af99b3d134293829ca1730ea4869a71",
+  "evm": {
+    "chainId": 1,
+    "usdc": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    "treasury": "0x7a57925fAbDD81fc3Ac7e858d45fe9C364ab7688"
+  },
+  "solana": {
+    "cluster": "mainnet-beta",
+    "usdc": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "treasury": "9JKLWyKA3FrTae4wRcaSK6TDu8n1GNdhJSjpBAPrcpNQ"
+  }
 }

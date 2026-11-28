@@ -1,7 +1,7 @@
 import { questBonusPercent, triumphPercentsOf } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { orderAspect, StructureType } from "@bibliothecadao/types";
-import { LORDS_ADDRESS } from "@realms-world/chain";
+import { LORDS_ADDRESS, splitLordsPayment } from "@realms-world/chain";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import type { Session, ShareTally } from "@realms-world/identity";
 
@@ -380,11 +380,16 @@ export const labJoinedShare = (screen: LabScreen) =>
     ? ({ kind: "aspect", chainId: null, gameId: null, moment: LAB_INVITE.moment, name: LAB_INVITE.name } as const)
     : null;
 export const labSealCode = (screen: LabScreen) => ({ held: screen === "preseason-sealed" });
+const LAB_FRAGMENT_LORDS_WEI = 2_750n * 10n ** 18n;
+const LAB_FRAGMENT_SPLIT = splitLordsPayment(LAB_FRAGMENT_LORDS_WEI);
 export const LAB_FRAGMENT_QUOTE = {
   id: "lab-quote",
-  lordsWei: String(2_750n * 10n ** 18n),
+  lordsWei: String(LAB_FRAGMENT_LORDS_WEI),
   token: LORDS_ADDRESS,
   treasury: "0x7a",
+  treasuryWei: String(LAB_FRAGMENT_SPLIT.treasuryWei),
+  veLords: "0x91b",
+  veLordsWei: String(LAB_FRAGMENT_SPLIT.veLordsWei),
   expiresAt: NOW + 600,
 };
 

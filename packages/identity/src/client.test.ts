@@ -320,8 +320,56 @@ describe("decoded identity boundary", () => {
     "getNotificationPreferences",
     "availableSignInProviders",
     "listSignInProviders",
+    "shopPaymentMethods",
   ] as const)("rejects invalid %s data", async (method) => {
     const client = createIdentityClient({ apiUrl: "/api", fetch: async () => Response.json({}) });
     await expect(client[method]()).rejects.toBeInstanceOf(IdentityInvalidResponse);
+  });
+
+  it("reads payment methods, external USDC quotes/payments, and Stripe payment intents", async () => {
+    const methods = {
+      starknet: true,
+      evm: { chainId: 1 as const },
+      solana: { cluster: "mainnet-beta" as const },
+      stripe: { publishableKey: "pk_test_123" },
+    };
+    const externalQuote = {
+      fragments: 500,
+      cents: 500,
+      quote: {
+        id: "q-ext",
+        rail: "evm" as const,
+        chainId: 1,
+        token: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        treasury: "0x7a57925fAbDD81fc3Ac7e858d45fe9C364ab7688",
+        usdcUnits: "5000000",
+        memo: "11111111222243338444555555555555",
+        recentBlockhash: null,
+        expiresAt: 1_600,
+      },
+    };
+    const stripeIntent = {
+      intentId: "pi_123",
+      clientSecret: "pi_123_secret_abc",
+      fragments: 500,
+      cents: 500,
+    };
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(Response.json(methods))
+      .mockResolvedValueOnce(Response.json(externalQuote))
+      .mockResolvedValueOnce(Response.json({ state: "delivering" }))
+      .mockResolvedValueOnce(Response.json({ state: "delivered", fragments: 500 }))
+      .mockResolvedValueOnce(Response.json(stripeIntent))
+      .mockResolvedValueOnce(Response.json({ state: "delivered", fragments: 500 }));
+    const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
+    expect(await client.shopPaymentMethods()).toEqual(methods);
+    expect(
+      await client.quoteExternalPayment({ chainId: "0x1", gameId: 7, fragments: 500, rail: "evm", networkChainId: 1 }),
+    ).toEqual(externalQuote);
+    expect(await client.payExternalPayment("q-ext", "0x" + "aa".repeat(32))).toEqual({ state: "delivering" });
+    expect(await client.externalPayment("0x" + "aa".repeat(32))).toEqual({ state: "delivered", fragments: 500 });
+    expect(await client.createStripeIntent({ chainId: "0x1", gameId: 7, fragments: 500 })).toEqual(stripeIntent);
+    expect(await client.stripePayment("pi_123")).toEqual({ state: "delivered", fragments: 500 });
   });
 });

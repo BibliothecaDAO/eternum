@@ -27,6 +27,14 @@ import {
   handleShopRefunds,
   lordsPayeeOf,
 } from "./fragment-payments";
+import {
+  externalPaymentWorldOf,
+  handleExternalPay,
+  handleExternalPayment,
+  handleExternalQuote,
+} from "./external-payments";
+import { handlePaymentMethods } from "./payment-methods";
+import { handleStripeIntent, handleStripePayment, handleStripeWebhook, stripePaymentWorldOf } from "./stripe-payments";
 import { shopAccessOf } from "./shop-game";
 import { handlePurchaseCheck, handleStoreReceipt, storeVerifiersOf } from "./store-receipts";
 import { handleOpeningProgress } from "./opening-progress";
@@ -161,6 +169,25 @@ export const routeIdentityRequest = async (
       verifiers: storeVerifiersOf(env),
       now: nowSeconds,
     });
+  if (pathname === "/api/shop/payment-methods") return handlePaymentMethods(request, env);
+  if (pathname === "/api/shop/external/quote")
+    return handleExternalQuote(
+      request,
+      auth,
+      externalPaymentWorldOf(env, shopAccessOf(env, platform.fetchShard, nowSeconds)),
+    );
+  if (pathname === "/api/shop/external/pay") return handleExternalPay(request, auth, externalPaymentWorldOf(env));
+  if (pathname.startsWith("/api/shop/external/pay/"))
+    return handleExternalPayment(request, auth, externalPaymentWorldOf(env));
+  if (pathname === "/api/shop/stripe/intent")
+    return handleStripeIntent(
+      request,
+      auth,
+      stripePaymentWorldOf(env, shopAccessOf(env, platform.fetchShard, nowSeconds)),
+    );
+  if (pathname.startsWith("/api/shop/stripe/intent/"))
+    return handleStripePayment(request, auth, stripePaymentWorldOf(env));
+  if (pathname === "/api/shop/stripe/webhook") return handleStripeWebhook(request, stripePaymentWorldOf(env));
   if (pathname === "/api/shop/fragments")
     return handleFragmentPrice(request, auth, {
       db: env.DB,
@@ -285,7 +312,8 @@ const routeShares = async (
  */
 const requiresSameOrigin = (request: Request, pathname: string): boolean => {
   const operatorRoute =
-    pathname.startsWith("/api/operator/") || ["/api/devices/bots", "/api/directory/shard"].includes(pathname);
+    pathname.startsWith("/api/operator/") ||
+    ["/api/devices/bots", "/api/directory/shard", "/api/shop/stripe/webhook"].includes(pathname);
   if (operatorRoute) return false;
   return (
     !["GET", "HEAD", "OPTIONS"].includes(request.method) ||

@@ -2,7 +2,21 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+
+const appChannel = vi.hoisted(() => ({ current: "web" as "web" | "play" | "app-store" }));
+vi.mock("@/runtime/distribution-channel", () => ({
+  distributionChannel: () => appChannel.current,
+  allowsWebCheckout: () => appChannel.current === "web",
+}));
+const paymentMethods = vi.hoisted(() => ({
+  read: {
+    starknet: true,
+    evm: null as { chainId: 1 } | null,
+    solana: null as { cluster: "mainnet-beta" } | null,
+    stripe: null as { publishableKey: string } | null,
+  },
+}));
 
 const l2 = vi.hoisted(() => ({ lords: "0x10e5" }));
 vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
@@ -57,7 +71,7 @@ vi.mock("../profile/profile-pages", () => ({
   SignedInOnly: ({ children }: { children: (account: string) => ReactNode }) => children("realms-1"),
 }));
 
-import { MAINNET_TOKENS } from "@realms-world/chain";
+import { MAINNET_TOKENS, splitLordsPayment } from "@realms-world/chain";
 import { IdentityRequestError } from "@realms-world/identity";
 import { identityClient } from "@/hooks/context/identity-session";
 import { installWallet } from "@/ui/modules/identity/test-wallet";
@@ -65,6 +79,7 @@ import { installWallet } from "@/ui/modules/identity/test-wallet";
 import { setViewportWidth } from "../frame/test-viewport";
 import { linkWalletHref } from "../profile/settings-route";
 import { SEASON_SPENDS_FRAGMENTS } from "../season";
+import { lordsOf } from "../value/ledger";
 import { FragmentsPage } from "./fragments-page";
 import { fragmentsHref } from "./fragments-route";
 import { SEASON_ONE_REALM_SKINS } from "./season-one-skins";
@@ -79,11 +94,15 @@ import {
 const WALLET = "0x4a1";
 const WEI = 10n ** 18n;
 const GAME = { chainId: "0x52", gameId: 7 };
+const QUOTE_SPLIT = splitLordsPayment(2_750n * WEI);
 const QUOTE = {
   id: "quote-1",
   lordsWei: String(2_750n * WEI),
   token: "0x10e5",
   treasury: "0x7a",
+  treasuryWei: String(QUOTE_SPLIT.treasuryWei),
+  veLords: "0x91b",
+  veLordsWei: String(QUOTE_SPLIT.veLordsWei),
   expiresAt: Math.floor(Date.now() / 1000) + 600,
 };
 const unmounts: (() => Promise<void>)[] = [];
@@ -137,8 +156,19 @@ const settled = async (check: () => void) => {
 
 const UNKNOWN = new IdentityRequestError(404, "unknown_payment");
 
+beforeEach(() => {
+  vi.spyOn(identityClient, "shopPaymentMethods").mockImplementation(async () => paymentMethods.read);
+});
+
 afterEach(async () => {
   for (const unmount of unmounts.splice(0)) await unmount();
+  appChannel.current = "web";
+  paymentMethods.read = {
+    starknet: true,
+    evm: null,
+    solana: null,
+    stripe: null,
+  };
   l2.lords = QUOTE.token;
   sessionWallet.address = WALLET;
   defaultWallet.read = { wallet: null, failed: false, retry: () => {} };
@@ -170,14 +200,21 @@ it("offers the store's packs in dollars, the Ancient Seal's chosen, and pays its
   expect(page.textContent).not.toContain("ETH");
   await press(page, "Pay $10.00");
   expect(price).toHaveBeenCalledWith(GAME, 1_000);
-  expect(page.textContent).toContain(FRAGMENTS_PAGE_WORDS.treasuryReceives(2750));
+  expect(page.textContent).toContain(
+    FRAGMENTS_PAGE_WORDS.veLordsSplit(lordsOf(QUOTE_SPLIT.treasuryWei), lordsOf(QUOTE_SPLIT.veLordsWei)),
+  );
   expect(page.textContent).not.toContain("Paid as");
   await settled(() => expect(wallet.transactions()).toHaveLength(1));
   expect(wallet.transactions()[0]).toEqual([
     {
       contract_address: QUOTE.token,
       entry_point: "transfer",
-      calldata: [QUOTE.treasury, String(2_750n * WEI), "0"],
+      calldata: [QUOTE.treasury, QUOTE.treasuryWei, "0"],
+    },
+    {
+      contract_address: QUOTE.token,
+      entry_point: "transfer",
+      calldata: [QUOTE.veLords, QUOTE.veLordsWei, "0"],
     },
   ]);
   await settled(() => expect(page.querySelector("[data-fragments-delivered]")).not.toBeNull());
@@ -422,4 +459,80 @@ it("shows a 2-tab phone layout switching between Season 1 Ancient Seal and Buy F
   await press(page, FRAGMENTS_PAGE_WORDS.buyTab);
   expect(page.querySelector("[data-fragment-packs]")).not.toBeNull();
   expect(page.querySelector("[data-shop-spend]")).toBeNull();
+});
+
+it("displays the S1 Founder badge and hides all web checkout rails inside Google Play and App Store shells", async () => {
+  setViewportWidth(1440);
+  paymentMethods.read = {
+    starknet: true,
+    evm: { chainId: 1 },
+    solana: { cluster: "mainnet-beta" },
+    stripe: { publishableKey: "pk_test_1" },
+  };
+  vi.spyOn(identityClient, "getSealCode").mockResolvedValue({ held: false });
+
+  appChannel.current = "web";
+  const webPage = await mount();
+  await vi.waitFor(() => expect(webPage.querySelector("[data-payment-rails]")).not.toBeNull());
+  expect(webPage.querySelector("[data-shop-spend]")?.textContent).toContain(SHOP_WORDS.founderBadge);
+  expect([...webPage.querySelectorAll("[data-rail]")].map((node) => node.getAttribute("data-rail"))).toEqual([
+    "stripe",
+    "starknet",
+    "evm",
+    "solana",
+  ]);
+  expect(webPage.querySelector("[data-store-shell]")).toBeNull();
+
+  for (const channel of ["play", "app-store"] as const) {
+    appChannel.current = channel;
+    const shellPage = await mount();
+    expect(shellPage.querySelector("[data-store-shell]")).not.toBeNull();
+    expect(shellPage.querySelector("[data-shop-spend]")?.textContent).toContain(SHOP_WORDS.founderBadge);
+    expect(shellPage.textContent).toContain(FRAGMENTS_PAGE_WORDS.webCheckoutOnly);
+    expect(shellPage.querySelector("[data-fragment-packs]")).toBeNull();
+    expect(shellPage.querySelector("[data-payment-rails]")).toBeNull();
+    expect(shellPage.querySelector("[data-stripe-checkout]")).toBeNull();
+    expect(shellPage.querySelector("[data-evm-checkout]")).toBeNull();
+    expect(shellPage.querySelector("[data-solana-checkout]")).toBeNull();
+  }
+});
+
+it("emits both 95% treasury and 5% veLords transfers when a Starknet quote carries a veLords split", async () => {
+  const splitQuote = {
+    ...QUOTE,
+    lordsWei: String(2_000n * WEI),
+    treasuryWei: String(1_900n * WEI),
+    veLords: "0x5e10",
+    veLordsWei: String(100n * WEI),
+  };
+  vi.spyOn(identityClient, "priceFragments").mockResolvedValue({
+    fragments: 1_000,
+    cents: 1_000,
+    quote: splitQuote,
+  });
+  vi.spyOn(identityClient, "payFragments").mockResolvedValue({ state: "delivered", fragments: 1_000 });
+  vi.spyOn(identityClient, "fragmentPayment").mockRejectedValue(UNKNOWN);
+
+  installWallet("argentX", { account: WALLET, approves: false });
+  const preview = await mount();
+  await press(preview, FRAGMENTS_PAGE_WORDS.pay(1_000));
+  expect(preview.textContent).toContain(FRAGMENTS_PAGE_WORDS.veLordsSplit(1_900, 100));
+  await unmounts.pop()!();
+
+  const wallet = installWallet("argentX", { account: WALLET });
+  const page = await mount();
+  await press(page, FRAGMENTS_PAGE_WORDS.pay(1_000));
+  await settled(() => expect(wallet.transactions()).toHaveLength(1));
+  expect(wallet.transactions()[0]).toEqual([
+    {
+      contract_address: splitQuote.token,
+      entry_point: "transfer",
+      calldata: [splitQuote.treasury, String(1_900n * WEI), "0"],
+    },
+    {
+      contract_address: splitQuote.token,
+      entry_point: "transfer",
+      calldata: [splitQuote.veLords, String(100n * WEI), "0"],
+    },
+  ]);
 });

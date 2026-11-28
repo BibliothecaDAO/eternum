@@ -1,4 +1,5 @@
 import { afterEach, expect, it } from "vitest";
+import { splitLordsPayment } from "@realms-world/chain";
 
 import type { IdentityAuth } from "./auth";
 import type { FragmentCredit } from "./fragment-credit";
@@ -20,6 +21,7 @@ const OTHER = "0xb2";
 const WALLET = "0xb0b";
 const TOKEN = "0x55";
 const TREASURY = "0x7a";
+const VELORDS = "0x91b";
 const TRANSFER = "0x99cd8bde557814842a3121e8ddfd433a539b8c9f14bf31ebf108d12e6196e9";
 const NOW = 1_000_000;
 const WEI_PER_LORDS = 10n ** 18n;
@@ -27,6 +29,9 @@ const WEI_PER_LORDS = 10n ** 18n;
 interface Offer {
   id: string;
   lordsWei: string;
+  treasuryWei: string;
+  veLords: string;
+  veLordsWei: string;
   expiresAt: number;
 }
 
@@ -54,28 +59,40 @@ const migrated = async () => {
 const signedIn = (realmsId: string) =>
   ({ api: { getSession: async () => ({ user: { realmsId } }) } }) as unknown as IdentityAuth;
 
-const paying = (wei: bigint, from = WALLET, status = "SUCCEEDED"): SettledReceipt["receipt"] => ({
-  execution_status: status,
-  finality_status: "ACCEPTED_ON_L2",
-  events: [
-    {
-      from_address: TOKEN,
-      keys: [TRANSFER, from, TREASURY],
-      data: [`0x${wei.toString(16)}`, "0x0"],
-    },
-  ],
-});
+const paying = (wei: bigint, from = WALLET, status = "SUCCEEDED"): SettledReceipt["receipt"] => {
+  const split = splitLordsPayment(wei);
+  return {
+    execution_status: status,
+    finality_status: "ACCEPTED_ON_L2",
+    events: [
+      {
+        from_address: TOKEN,
+        keys: [TRANSFER, from, TREASURY],
+        data: [`0x${split.treasuryWei.toString(16)}`, "0x0"],
+      },
+      {
+        from_address: TOKEN,
+        keys: [TRANSFER, from, VELORDS],
+        data: [`0x${split.veLordsWei.toString(16)}`, "0x0"],
+      },
+    ],
+  };
+};
 
 const ROUTER = "0x4270219d365d6b017231b52e92b3fb5d7c8378b05e9abc97724537a80e93b0f";
 
-const swappedThenSent = (wei: bigint, sentBy: string): SettledReceipt["receipt"] => ({
-  execution_status: "SUCCEEDED",
-  finality_status: "ACCEPTED_ON_L2",
-  events: [
-    { from_address: TOKEN, keys: [TRANSFER], data: [ROUTER, WALLET, `0x${wei.toString(16)}`, "0x0"] },
-    { from_address: TOKEN, keys: [TRANSFER], data: [sentBy, TREASURY, `0x${wei.toString(16)}`, "0x0"] },
-  ],
-});
+const swappedThenSent = (wei: bigint, sentBy: string): SettledReceipt["receipt"] => {
+  const split = splitLordsPayment(wei);
+  return {
+    execution_status: "SUCCEEDED",
+    finality_status: "ACCEPTED_ON_L2",
+    events: [
+      { from_address: TOKEN, keys: [TRANSFER], data: [ROUTER, WALLET, `0x${wei.toString(16)}`, "0x0"] },
+      { from_address: TOKEN, keys: [TRANSFER], data: [sentBy, TREASURY, `0x${split.treasuryWei.toString(16)}`, "0x0"] },
+      { from_address: TOKEN, keys: [TRANSFER], data: [sentBy, VELORDS, `0x${split.veLordsWei.toString(16)}`, "0x0"] },
+    ],
+  };
+};
 
 const shop = async () => {
   const db = await migrated();
@@ -101,7 +118,7 @@ const shop = async () => {
         db,
         access: async () => true,
         readLordsQuote: async (cents) => (BigInt(cents) * BigInt(lordsPerDollar) * WEI_PER_LORDS) / 100n,
-        payee: { token: TOKEN, treasury: TREASURY },
+        payee: { token: TOKEN, treasury: TREASURY, veLords: VELORDS },
         now: () => NOW,
       },
     );
@@ -142,9 +159,10 @@ const shop = async () => {
   };
 };
 
-it("quotes Fragments as a LORDS transfer to the treasury, held for ten minutes", async () => {
+it("quotes Fragments as a 95/5 treasury and veLords LORDS split, held for ten minutes", async () => {
   const { quote } = await shop();
   const [status, body] = await quote(1_000);
+  const split = splitLordsPayment(500n * WEI_PER_LORDS);
   expect(status).toBe(200);
   expect(body).toEqual({
     fragments: 1_000,
@@ -154,9 +172,36 @@ it("quotes Fragments as a LORDS transfer to the treasury, held for ten minutes",
       lordsWei: (500n * WEI_PER_LORDS).toString(),
       token: TOKEN,
       treasury: TREASURY,
+      treasuryWei: split.treasuryWei.toString(),
+      veLords: VELORDS,
+      veLordsWei: split.veLordsWei.toString(),
       expiresAt: NOW + 600,
     },
   });
+});
+
+it("refuses as underpaid when a Starknet tx sends 100% to treasury without the 5% veLords transfer", async () => {
+  const { quote, pay, receipts, credits, settle } = await shop();
+  const [, { quote: offer }] = await quote(1_000);
+  receipts.set(
+    "0x555",
+    settle({
+      execution_status: "SUCCEEDED",
+      finality_status: "ACCEPTED_ON_L2",
+      events: [
+        {
+          from_address: TOKEN,
+          keys: [TRANSFER, WALLET, TREASURY],
+          data: [`0x${BigInt(offer.lordsWei).toString(16)}`, "0x0"],
+        },
+      ],
+    }),
+  );
+  expect(await pay(offer.id, "0x555")).toEqual([
+    409,
+    { error: "refund_due", refund: { token: TOKEN, wei: offer.lordsWei } },
+  ]);
+  expect(credits).toEqual([]);
 });
 
 it("delivers a paid quote's Fragments to its game once, under the payment's own id", async () => {
