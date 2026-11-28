@@ -10,6 +10,17 @@ import { TransactionNoAnswerError } from "@bibliothecadao/eternum/game-client";
 import { aspectName, seasonGameName, StructureType } from "@bibliothecadao/types";
 
 const directory = vi.hoisted(() => ({ games: [] as unknown[] | null, confirmedBlock: 10 }));
+const player = vi.hoisted(() => ({
+  signedIn: false,
+  account: null as string | null,
+  refused: false,
+  outcomeMissing: false,
+  beforeOutcome: async () => {},
+  reportedBlock: 11 as number | null,
+  beforeAttach: () => {},
+  activeGame: null as { chainId: string; gameId: number } | null,
+  sent: [] as { context: unknown; command: unknown }[],
+}));
 vi.mock("../herald", async (original) => ({
   ...(await original<typeof import("../herald")>()),
   useDirectory: () => ({
@@ -18,16 +29,7 @@ vi.mock("../herald", async (original) => ({
     isError: false,
     refetch: async () => {},
   }),
-}));
-const player = vi.hoisted(() => ({
-  signedIn: false,
-  refused: false,
-  outcomeMissing: false,
-  beforeOutcome: async () => {},
-  reportedBlock: 11 as number | null,
-  beforeAttach: () => {},
-  activeGame: null as { chainId: string; gameId: number } | null,
-  sent: [] as { context: unknown; command: unknown }[],
+  useRealmsPlayer: () => ({ data: player.account }),
 }));
 vi.mock("@/hooks/context/identity-session", async (original) => {
   const actual = await original<typeof import("@/hooks/context/identity-session")>();
@@ -86,7 +88,16 @@ vi.mock("@/init/bootstrap", () => ({
   },
 }));
 
-import { DeviceLimitError, DeviceRemovedError, REALM_SKIN_FAMILIES } from "@bibliothecadao/eternum";
+import {
+  GOLDEN_DEVCON_HOLDERS,
+  REGULAR_DEVCON_HOLDERS,
+} from "../../../../../contracts/l3/world-native/schema/devcon-holders.gen";
+import {
+  devCosmeticsUnlocked,
+  DeviceLimitError,
+  DeviceRemovedError,
+  REALM_SKIN_FAMILIES,
+} from "@bibliothecadao/eternum";
 import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { REALM_RANKS, REALM_SKINS } from "@/three/cosmetics/realm-skins";
@@ -114,12 +125,13 @@ const realm = (over: Partial<HeraldPlayerStructure>): HeraldPlayerStructure => (
   ...over,
 });
 
-const season = (structures: HeraldPlayerStructure[], ancient_seal: boolean) => ({
+const season = (structures: HeraldPlayerStructure[], ancient_seal: boolean, dev_mode_on = false) => ({
   chainId: "0x52",
   game_id: 1,
   name: seasonGameName(NOW - 1_000),
   mode: "frontier",
   status: "Live",
+  dev_mode_on,
   realm_skin_enabled: true,
   clock: { start_main_at: NOW - 1_000, end_at: NOW + 100_000 },
   player_state: { registered: true, settled: true, structures, fragments: null, ancient_seal },
@@ -139,6 +151,7 @@ afterEach(async () => {
   await act(async () => root?.unmount());
   root = null;
   player.signedIn = false;
+  player.account = null;
   player.refused = false;
   player.outcomeMissing = false;
   player.beforeOutcome = async () => {};
@@ -392,6 +405,8 @@ describe("the Cosmetics page", () => {
       COSMETICS_WORDS.defaultOrder([
         COSMETICS_WORDS.families.wonder,
         COSMETICS_WORDS.families["season-1"],
+        COSMETICS_WORDS.goldenDevcon,
+        COSMETICS_WORDS.devcon,
         COSMETICS_WORDS.families.base,
       ]),
     );
@@ -679,6 +694,62 @@ describe("the Cosmetics page", () => {
     await drawAgain();
     expect(container.querySelector('[data-skin="wonder-havoc"] [data-standing="equipped"]')).not.toBeNull();
     expect(buttonNamed(container, COSMETICS_WORDS.useDefaultOrder)).toBeUndefined();
+  });
+
+  it("owns Devcon skins from the player's Season 0 account before founding a realm and lets holders equip them", async () => {
+    player.signedIn = true;
+    player.account = REGULAR_DEVCON_HOLDERS[0]!;
+    directory.games = [];
+    const regularContainer = await open();
+    expect(standings(regularContainer).devcon).toBe("owned");
+    expect(standings(regularContainer)["devcon-golden"]).toBe("event");
+
+    player.account = GOLDEN_DEVCON_HOLDERS[0]!;
+    directory.games = [season([realm({ entity_id: 7, aspect: 2 })], false)];
+    await drawAgain();
+    expect(standings(regularContainer).devcon).toBe("owned");
+    expect(standings(regularContainer)["devcon-golden"]).toBe("owned");
+    expect(regularContainer.querySelector('[data-skin="devcon-golden"] [data-standing="equipped"]')).not.toBeNull();
+    await pick(regularContainer, "devcon");
+    await press(regularContainer, COSMETICS_WORDS.equip);
+    expect(player.sent.map(({ command }) => command)).toEqual([
+      { signer: testSigner, entity_id: 7, family: REALM_SKIN_FAMILIES.DEVCON_REALM_SKIN },
+    ]);
+  });
+
+  it("unlocks every wearable skin for equip on a dev game and stays locked on production games", async () => {
+    expect(devCosmeticsUnlocked({ dev_mode_on: false })).toBe(false);
+    expect(devCosmeticsUnlocked(undefined)).toBe(false);
+    expect(devCosmeticsUnlocked({ dev_mode_on: true })).toBe(true);
+
+    player.signedIn = true;
+    useAccountStore.setState({ account: { address: "0x1" } } as never);
+    directory.games = [season([realm({ entity_id: 7, aspect: 2 })], false, false)];
+    const prodContainer = await open();
+    expect(standings(prodContainer).devcon).toBe("event");
+    expect(standings(prodContainer)["devcon-golden"]).toBe("event");
+    expect(standings(prodContainer)["season-1-luminary"]).toBe("pass");
+    expect(standings(prodContainer)["wonder-luminary"]).toBe("wonder");
+
+    directory.games = [season([realm({ entity_id: 7, aspect: 2 })], false, true)];
+    await drawAgain();
+    expect(prodContainer.querySelector('[data-skin="base"] [data-standing="equipped"]')).not.toBeNull();
+    const state = standings(prodContainer);
+    expect(state.devcon).toBe("owned");
+    expect(state["devcon-golden"]).toBe("owned");
+    expect(state["season-1-luminary"]).toBe("owned");
+    expect(state["wonder-luminary"]).toBe("owned");
+
+    await pick(prodContainer, "devcon-golden");
+    await press(prodContainer, COSMETICS_WORDS.equip);
+    directory.confirmedBlock = 15;
+    await drawAgain();
+    await pick(prodContainer, "wonder-luminary");
+    await press(prodContainer, COSMETICS_WORDS.equip);
+    expect(player.sent.map(({ command }) => command)).toEqual([
+      { signer: testSigner, entity_id: 7, family: REALM_SKIN_FAMILIES.GOLDEN_DEVCON_REALM_SKIN },
+      { signer: testSigner, entity_id: 7, family: REALM_SKIN_FAMILIES.WONDER_REALM_SKIN },
+    ]);
   });
 
   it("opens inside You on a phone", async () => {

@@ -7,8 +7,8 @@ pub use crate::commands::{Command, CreateExplorer, Move};
 pub use crate::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
 pub use crate::map::IMapLogicDispatcher;
 pub use crate::names::{
-    BASE_REALM_SKIN, DEFAULT_REALM_SKIN, INamesDispatcher, INamesDispatcherTrait, SEASON_ONE_REALM_SKIN, SetEntityName,
-    SetRealmSkin, WONDER_REALM_SKIN,
+    BASE_REALM_SKIN, DEFAULT_REALM_SKIN, DEVCON_REALM_SKIN, GOLDEN_DEVCON_REALM_SKIN, INamesDispatcher,
+    INamesDispatcherTrait, SEASON_ONE_REALM_SKIN, SetEntityName, SetRealmSkin, WONDER_REALM_SKIN,
 };
 pub use crate::ownership::{GuardAddStory, Story};
 pub use crate::resources::{IResourceOperationsDispatcher, ResourceKey, ResourceSlot};

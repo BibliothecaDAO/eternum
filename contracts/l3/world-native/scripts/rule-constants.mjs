@@ -69,6 +69,37 @@ export async function readStructureConstants(root) {
   return unsignedLists(await readFile(new URL("src/balance/structures.cairo", root), "utf8"));
 }
 
+export async function readDevconHolders(root) {
+  const source = await readFile(new URL("src/devcon_holders.cairo", root), "utf8");
+  const lists = Object.fromEntries(
+    [...source.matchAll(/^pub const ([A-Z][A-Z0-9_]*): \[felt252; ([0-9]+)\] = \[([0-9a-fx,\s]*)\];$/gm)].map(
+      ([, name, length, body]) => {
+        const values = body
+          .split(",")
+          .map((value) => value.trim())
+          .filter(Boolean);
+        if (values.length !== Number(length))
+          throw new Error(`${name} declares ${length} values and lists ${values.length}`);
+        for (let index = 0; index < values.length; index++) {
+          if (!/^0x[1-9a-f][0-9a-f]*$/.test(values[index]))
+            throw new Error(`${name}[${index}] must be canonical lowercase hex`);
+          if (index > 0 && BigInt(values[index]) <= BigInt(values[index - 1]))
+            throw new Error(`${name} must be strictly sorted ascending`);
+        }
+        return [name, values];
+      },
+    ),
+  );
+  const golden = lists.GOLDEN_DEVCON_HOLDERS;
+  const regular = lists.REGULAR_DEVCON_HOLDERS;
+  if (!golden || !regular) throw new Error("Missing GOLDEN_DEVCON_HOLDERS or REGULAR_DEVCON_HOLDERS");
+  const goldenSet = new Set(golden);
+  for (const holder of regular) {
+    if (goldenSet.has(holder)) throw new Error("Devcon golden and regular holder sets overlap");
+  }
+  return { GOLDEN_DEVCON_HOLDERS: golden, REGULAR_DEVCON_HOLDERS: regular };
+}
+
 function unsignedLists(source) {
   return Object.fromEntries(
     [...source.matchAll(/^pub const ([A-Z][A-Z0-9_]*): \[u(?:8|16|32); ([0-9]+)\] = \[([0-9,\s]*)\];$/gm)].map(

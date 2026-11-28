@@ -21,10 +21,12 @@ export const FrontierRows = ({
   entries,
   own,
   rows,
+  devUnlocked = false,
 }: {
   entries: readonly HeraldFrontierLeaderboardEntry[];
   own: HeraldFrontierLeaderboardEntry | undefined;
   rows: number;
+  devUnlocked?: boolean;
 }) => {
   const navigate = useNavigate();
   const here = useLocation();
@@ -32,12 +34,17 @@ export const FrontierRows = ({
   return (
     <AppBoard
       rows={rows}
-      entries={entries.map((entry) => frontierEntry(entry, entry === own, () => open(entry.address)))}
+      entries={entries.map((entry) => frontierEntry(entry, entry === own, devUnlocked, () => open(entry.address)))}
     />
   );
 };
 
-const frontierEntry = (entry: HeraldFrontierLeaderboardEntry, own: boolean, onClick: () => void): AppBoardEntry => {
+const frontierEntry = (
+  entry: HeraldFrontierLeaderboardEntry,
+  own: boolean,
+  devUnlocked: boolean,
+  onClick: () => void,
+): AppBoardEntry => {
   const aspect = orderAspect(entry.order);
   return {
     key: entry.address,
@@ -47,7 +54,7 @@ const frontierEntry = (entry: HeraldFrontierLeaderboardEntry, own: boolean, onCl
       <>
         <AppRank rank={entry.rank} medal />
         {aspect && <AspectMark aspect={aspect} size={20} decorative />}
-        <RealmBadge level={entry.level} depth={entry.deepest_depth} {...entryRealmPainting(entry)} />
+        <RealmBadge level={entry.level} depth={entry.deepest_depth} {...entryRealmPainting(entry, devUnlocked)} />
       </>
     ),
     name: <PlayerName account={entry.address} you={own} portrait />,

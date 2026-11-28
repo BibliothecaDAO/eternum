@@ -4,7 +4,7 @@ export const NativeTroopType = {
   "Paladin": "Paladin",
   "Crossbowman": "Crossbowman"
 } as const;
-export const nativeFactSchemaIdentity = "b9a4507c091cb37a98df851b4949e4c58824e123697365b53c16cc6a317bb57a";
+export const nativeFactSchemaIdentity = "19bfc9e4978320b11d97813dd5b1e42f64b94925d6a147143b2185f7b85ef741";
 export const nativeIdentifiers = {
   "rule": {
     "ENTRY_ENTITLEMENT": 0,
@@ -119,7 +119,9 @@ export const nativeIdentifiers = {
     "DEFAULT_REALM_SKIN": 0,
     "BASE_REALM_SKIN": 1,
     "SEASON_ONE_REALM_SKIN": 2,
-    "WONDER_REALM_SKIN": 3
+    "WONDER_REALM_SKIN": 3,
+    "DEVCON_REALM_SKIN": 4,
+    "GOLDEN_DEVCON_REALM_SKIN": 5
   }
 } as const;
 export const nativeReleaseConstants = {

@@ -19,6 +19,7 @@ mod day_schedule;
 pub mod days;
 pub mod deep;
 pub mod deposits;
+pub mod devcon_holders;
 pub mod discovery;
 pub mod entity_ids;
 pub mod entry;
