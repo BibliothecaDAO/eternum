@@ -192,6 +192,103 @@ export function addLump(
   }
 }
 
+const LEAF = { tilt: 0.75, lift: 0.96, pointed: 1.5 };
+/** A fluffy mass: how large its dark core is beside it, and how far a neighbour hides its leaves. */
+const FLUFF = { core: 0.72, hidden: 0.9 };
+
+/**
+ * A fluffy crown: leaves scattered over a lump's surface, each a small pointed card lying on it and tipped its own
+ * way. Every leaf is lit as the ball it lies on, so a mass of them shades as one soft crown with a ragged edge.
+ */
+export function addLeafCloud(
+  mesh,
+  lump,
+  { rng, count, size, light, dark, attach, reach, rise = 0, pointed = LEAF.pointed, neighbours = [] },
+) {
+  const { centre, radius, squash = 1 } = lump;
+  const lowest = centre[1] - radius * squash;
+  for (let leaf = 0; leaf < count; leaf += 1) {
+    const out = randomDirection(rng);
+    if (out[1] < HIDDEN_FROM_MAP_CAMERA) continue;
+    const middle = add(centre, [
+      out[0] * radius * LEAF.lift,
+      out[1] * radius * squash * LEAF.lift,
+      out[2] * radius * LEAF.lift,
+    ]);
+    if (neighbours.some((other) => isInsideLump(middle, other))) continue;
+    const normal = normalise([out[0], out[1] / squash, out[2]]);
+    const [across, along] = perpendiculars(normal);
+    const turn = rng() * Math.PI * 2;
+    const tip = normalise(
+      add(add(scale(across, Math.cos(turn)), scale(along, Math.sin(turn))), scale(normal, (rng() - 0.5) * LEAF.tilt)),
+    );
+    const side = normalise(cross(normal, tip));
+    const half = size * (0.75 + rng() * 0.5);
+    const corners = [
+      add(middle, scale(tip, half * pointed)),
+      add(middle, scale(side, half)),
+      add(middle, scale(tip, -half * pointed)),
+      add(middle, scale(side, -half)),
+    ];
+    const tone = Math.min(1, Math.max(0, (middle[1] - lowest) / (radius * squash * 2)));
+    const colour = shadeColour(mixColour(dark, light, tone ** 0.8), rng, 0.12);
+    const bend = corners.map(
+      (corner) => Math.min(1, length(subtract(corner, attach)) / reach) * riseFromGround(corner[1], rise),
+    );
+    for (const face of [
+      [0, 1, 3],
+      [2, 3, 1],
+    ]) {
+      addTriangle(
+        mesh,
+        face.map((corner) => corners[corner]),
+        colour,
+        face.map((corner) => bend[corner]),
+        { normals: [normal, normal, normal], foliage: true },
+      );
+    }
+  }
+}
+
+/**
+ * One mass of a fluffy crown: a dark core seen between its leaves, under a cloud of leaves that gives it a ragged
+ * edge. `leafSize` is a leaf's half width as a share of the mass's radius.
+ */
+export function addFluffyMass(
+  mesh,
+  lump,
+  { rng, leaves, leafSize, pointed, light, dark, core, attach, reach, rise = 0, neighbours = [] },
+) {
+  const heart = { ...lump, radius: lump.radius * FLUFF.core, coarse: true };
+  addLump(mesh, heart, { rng, roughness: 0.1, light: core, dark: core, attach, reach, rise });
+  addLeafCloud(mesh, lump, {
+    rng,
+    count: leaves,
+    size: lump.radius * leafSize,
+    pointed,
+    light,
+    dark,
+    attach,
+    reach,
+    rise,
+    neighbours: neighbours.map((other) => ({ ...other, radius: other.radius * FLUFF.hidden })),
+  });
+}
+
+/** Every mass of a crown, each hidden where it sinks into its neighbours. */
+export function addFluffyCrown(mesh, lumps, foliage) {
+  lumps.forEach((lump, index) => {
+    addFluffyMass(mesh, lump, { ...foliage, neighbours: lumps.filter((_, other) => other !== index) });
+  });
+}
+
+function randomDirection(rng) {
+  const height = rng() * 2 - 1;
+  const angle = rng() * Math.PI * 2;
+  const ring = Math.sqrt(1 - height * height);
+  return [Math.cos(angle) * ring, height, Math.sin(angle) * ring];
+}
+
 function riseFromGround(height, rise) {
   return rise > 0 ? Math.min(1, Math.max(0, height / rise - 0.15)) : 1;
 }

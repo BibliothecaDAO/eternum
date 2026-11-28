@@ -1,10 +1,13 @@
-import { addFrustum, addLump, createFloraMesh, createRandom } from "../flora-geometry.mjs";
+import { addFluffyCrown, addFrustum, createFloraMesh, createRandom } from "../flora-geometry.mjs";
 import { colour as linearColour } from "../../biome-creatures/creature-coat.mjs";
 
 const BARK_WHITE = linearColour("#e4e0d2");
 const BARK_BAND = linearColour("#3b3631");
 const LEAF_LIGHT = linearColour("#a8c45a");
 const LEAF_DARK = linearColour("#557a34");
+const LEAF_CORE = linearColour("#3f6a30");
+/** A birch is airy: small leaves, and fewer of them, so its crown shows more of the light through it. */
+const FOLIAGE = { leaves: 52, leafSize: 0.34 };
 
 export const birch = {
   id: "birch",
@@ -41,26 +44,24 @@ export const birch = {
       });
     }
     const turn = rng() * Math.PI * 2;
-    const lumps = [0, 1, 2, 3].map((index) => {
+    const lumps = [0, 1, 2, 3, 4, 5].map((index) => {
       const angle = turn + index * 2.4;
       const out = index === 0 ? 0 : height * (0.08 + rng() * 0.05);
       return {
-        centre: [top[0] + Math.cos(angle) * out, height * (0.58 + index * 0.08), top[2] + Math.sin(angle) * out],
-        radius: height * (0.15 - index * 0.015 + rng() * 0.02),
-        squash: 1.05,
+        centre: [top[0] + Math.cos(angle) * out, height * (0.56 + index * 0.065), top[2] + Math.sin(angle) * out],
+        radius: height * (0.14 - index * 0.011 + rng() * 0.02),
+        squash: 1.15,
         coarse: true,
       };
     });
-    lumps.forEach((lump, index) => {
-      addLump(mesh, lump, {
-        rng,
-        roughness: 0.14,
-        light: LEAF_LIGHT,
-        dark: LEAF_DARK,
-        attach: trunkAt(0.85),
-        reach: height * 0.45,
-        neighbours: lumps.filter((_, other) => other !== index),
-      });
+    addFluffyCrown(mesh, lumps, {
+      rng,
+      ...FOLIAGE,
+      light: LEAF_LIGHT,
+      dark: LEAF_DARK,
+      core: LEAF_CORE,
+      attach: trunkAt(0.85),
+      reach: height * 0.45,
     });
     return mesh;
   },

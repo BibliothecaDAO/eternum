@@ -100,7 +100,7 @@ export function groundSurface(input: GroundSurfaceInput) {
     const dry = smoothstep(TERRAIN_WATER_LEVEL - 0.004, TERRAIN_WATER_LEVEL + 0.012, input.world.y);
     const facet = facetAt(at);
     const groundAt = LOOK === "facet" ? facet.middle : at;
-    const ground = chooseGround({ biomeMap, at: groundAt, climate: input.climate.xy, wobble, dry });
+    const ground = chooseGround({ biomeMap, at: groundAt, wobble, dry });
     const biome = ground.get("biome") as Node<"float">;
     const kind = ground.get("kind") as Node<"float">;
     const brush: Brush = {
@@ -347,16 +347,17 @@ function paintSnow(brush: Brush): void {
   brush.gloss.assign(0.25);
 }
 
-const Ground = struct({ biome: "float", kind: "float", other: "vec3", contest: "float", frontier: "float" });
+const Ground = struct({ biome: "float", kind: "float", other: "vec3", contest: "float" });
 
-function chooseGround(input: {
-  biomeMap: Texture;
-  at: Node<"vec2">;
-  climate: Node<"vec2">;
-  wobble: Node<"float">;
-  dry: Node<"float">;
-}) {
-  const { at, climate, wobble, dry } = input;
+/** Where two biomes meet: how far the line may sway off the tile's edge, and how wide the two paints mix over it. */
+const BORDER = { sway: 0.22, blend: 0.1 };
+
+/**
+ * The ground a point shows. A tile keeps its own biome up to its edge; the line between two biomes sways a little
+ * about that edge, the same way from both sides, and the two paints mix over a narrow band along it.
+ */
+function chooseGround(input: { biomeMap: Texture; at: Node<"vec2">; wobble: Node<"float">; dry: Node<"float"> }) {
+  const { at, wobble, dry } = input;
   return Fn(() => {
     const fromMiddle = nearestHexLocalPosition(at);
     const middleAt = at.sub(fromMiddle);
@@ -371,7 +372,6 @@ function chooseGround(input: {
     const claim = float(0.5).toVar();
     const other = ownPaint.toVar();
     const contest = float(0).toVar();
-    const frontier = float(0).toVar();
     const apothem = TERRAIN_HEX_HORIZONTAL_SPACING / 2;
     const outside = smoothstep(INNER_DISC, INNER_DISC + 0.3, fromMiddle.length().div(apothem));
     for (let side = 0; side < 6; side += 1) {
@@ -384,27 +384,23 @@ function chooseGround(input: {
         .greaterThan(0)
         .and(besideKind.notEqual(G("water")))
         .and(besideBiome.notEqual(ownBiome));
-      const span = beside.ba.sub(own.ba);
+      const reach = dot(fromMiddle, toward);
       const leaning = besideBiome.greaterThan(ownBiome).select(wobble, wobble.negate());
-      const across = dot(climate.sub(own.ba), span)
-        .div(max(dot(span, span), 1e-4))
-        .add(leaning)
-        .sub(0.5);
-      const band = meets.select(outside.mul(smoothstep(0, 0.4, dot(fromMiddle, toward).div(apothem))), 0);
-      const theirs = band.mul(ownWater.select(dry, smoothstep(-0.05, 0.05, across)));
+      const ours = float(apothem).sub(reach).sub(leaning.mul(BORDER.sway));
+      const shore = outside.mul(smoothstep(0, 0.4, reach.div(apothem))).mul(dry);
+      const theirs = meets.select(ownWater.select(shore, step(ours, 0)), 0);
       const besidePaint = PAINT.element(int(besideBiome)) as unknown as Node<"vec3">;
       If(theirs.greaterThan(claim), () => {
         claim.assign(theirs);
         biome.assign(besideBiome);
         kind.assign(besideKind);
       });
-      const close = ownWater.select(0, band.mul(smoothstep(0.2, 0, abs(across))));
-      frontier.assign(max(frontier, band.mul(smoothstep(0.7, 0, abs(across)))));
+      const close = meets.and(ownWater.not()).select(smoothstep(BORDER.blend, 0, abs(ours)), 0);
       If(close.greaterThan(contest), () => {
         contest.assign(close);
         other.assign(mix(besidePaint, ownPaint, step(0.5, theirs)));
       });
     }
-    return Ground(biome, kind, other, contest, frontier);
+    return Ground(biome, kind, other, contest);
   })();
 }

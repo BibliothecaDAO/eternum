@@ -1,8 +1,10 @@
-import { addLump, createFloraMesh, createRandom } from "../flora-geometry.mjs";
+import { addFluffyCrown, createFloraMesh, createRandom } from "../flora-geometry.mjs";
 import { colour as linearColour } from "../../biome-creatures/creature-coat.mjs";
 
 const LEAF_LIGHT = linearColour("#7c9a4c");
 const LEAF_DARK = linearColour("#3b5a35");
+const LEAF_CORE = linearColour("#2c4a2c");
+const FOLIAGE = { leaves: 34, leafSize: 0.36 };
 
 export const shrub = {
   id: "shrub",
@@ -26,17 +28,15 @@ export const shrub = {
         };
       }),
     ];
-    lumps.forEach((lump, index) => {
-      addLump(mesh, lump, {
-        rng,
-        roughness: 0.14,
-        light: LEAF_LIGHT,
-        dark: LEAF_DARK,
-        attach: [0, 0, 0],
-        reach: height * 1.1,
-        rise: height * 0.8,
-        neighbours: lumps.filter((_, other) => other !== index),
-      });
+    addFluffyCrown(mesh, lumps, {
+      rng,
+      ...FOLIAGE,
+      light: LEAF_LIGHT,
+      dark: LEAF_DARK,
+      core: LEAF_CORE,
+      attach: [0, 0, 0],
+      reach: height * 1.1,
+      rise: height * 0.8,
     });
     return mesh;
   },

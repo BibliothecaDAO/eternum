@@ -13,6 +13,8 @@ import { configureWorldSunShadows } from "@/three/effects/world-sun-shadows";
 import { configureRendererColorOutput } from "@/three/renderer-color-output";
 import { WorldAtmosphereController } from "@/three/effects/world-atmosphere-controller";
 import { createLocalTerrainLabRequest } from "./local-terrain-lab";
+import { createTerrainLabRealGround, type TerrainLabRealGround } from "./terrain-lab-real-ground";
+import { terrainLabRealGroundRequested } from "./terrain-lab-trials";
 import { StructureType } from "@bibliothecadao/types";
 import {
   AmbientLight,
@@ -240,6 +242,7 @@ interface TerrainDebugRuntime {
   interaction: TerrainLabInteraction | null;
   firstRenderMs: number;
   frameSamplesMs: number[];
+  realGround: TerrainLabRealGround | null;
   renderer: TerrainDebugRendererSurface;
   realmModel: InstancedModel | null;
   scene: Scene;
@@ -328,6 +331,7 @@ async function mountOnCanvas(
         runtime.endgame?.dispose();
         runtime.stage?.dispose();
         runtime.realmModel?.dispose();
+        runtime.realGround?.dispose();
         runtime.terrain.dispose();
         runtime.weather.dispose();
         runtime.atmosphere.dispose();
@@ -507,6 +511,10 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     | "textures"
   >;
   scene.add(terrain.object3d);
+  const realGround = terrainLabRealGroundRequested()
+    ? createTerrainLabRealGround(terrain, prepared.request.cells)
+    : null;
+  if (realGround) scene.add(realGround.object3d);
   if (realmModel) scene.add(realmModel.group);
   const { atmosphere, sun } = createGameLighting(scene, input.gameMode);
   const weather = new WeatherLabRuntime(scene, sun, controls, (x, z) => terrain.sampleHeight(x, z));
@@ -564,6 +572,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     cameraFrame,
     controls,
     frameSamplesMs: [],
+    realGround,
     realmModel,
     renderer,
     scene,

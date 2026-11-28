@@ -22,6 +22,8 @@ import {
   color,
   mix,
   normalGeometry,
+  normalView,
+  positionViewDirection,
   positionLocal,
   smoothstep,
   uniform,
@@ -412,7 +414,10 @@ function createTerrainPropMaterial(
   const mossyColor = mix(vertexColor().rgb, color("#627858"), mossMask.mul(0.48));
   const canopyLight = foliageWeight.mul(smoothstep(0.1, 0.85, normalGeometry.y)).mul(0.18);
   const foliageColor = mix(mossyColor, color("#afc675"), canopyLight);
-  material.colorNode = mix(foliageColor, color("#d8e0df"), snowMask.mul(0.78));
+  // A crown catches the light along its edge, the way a soft ball of leaves does.
+  const rim = normalView.dot(positionViewDirection).clamp(0, 1).oneMinus().pow(3).mul(foliageWeight).mul(0.4);
+  const rimmedColor = mix(foliageColor, color("#d6ee8c"), rim);
+  material.colorNode = mix(rimmedColor, color("#d8e0df"), snowMask.mul(0.78));
   material.emissiveNode = attribute<"vec3">(TERRAIN_PROP_GLOW_ATTRIBUTE, "vec3")
     .mul(plant.w.clamp(0, 1))
     .mul(GLOW_INTENSITY);

@@ -74,7 +74,7 @@ function createTerrainWaterMaterial(
   waterMotion: UniformNode<"float", number>,
   grid: TerrainGrid,
 ): MeshStandardNodeMaterial {
-  const material = new MeshPhysicalNodeMaterial({ metalness: 0, roughness: 0.42, ior: 1.333, specularIntensity: 0.42 });
+  const material = new MeshPhysicalNodeMaterial({ metalness: 0, roughness: 0.2, ior: 1.333, specularIntensity: 0.9 });
   material.name = "terrain-water";
   const shore = attribute<"float">("terrainShore", "float");
   const waterDepth = attribute<"float">("terrainWaterDepth", "float").max(TERRAIN_MIN_RENDERED_WATER_DEPTH);
@@ -89,17 +89,18 @@ function createTerrainWaterMaterial(
   const waveNormalView = transformNormalToView(waves.normal.add(createRippleSlope(waterMotion)).normalize());
   material.normalNode = waveNormalView;
 
-  // Emerald shelf water and blue offshore water remain identifiable without relying on sun glare.
-  const shelfColor = mix(color("#709b90"), color("#377d88"), smoothstep(0.005, 0.1, waterDepth));
-  const bathymetryColor = mix(shelfColor, color("#24435c"), smoothstep(0.12, 0.31, waterDepth));
-  const shorelineColor = mix(bathymetryColor, color("#819c83"), shore.mul(shallowEdge).mul(0.1));
+  // A lagoon by the shore and open sea beyond it: turquoise over the shelf, deepening to blue offshore.
+  const shelfColor = mix(color("#74d9cf"), color("#2ba7c6"), smoothstep(0.005, 0.1, waterDepth));
+  const bathymetryColor = mix(shelfColor, color("#165c96"), smoothstep(0.12, 0.31, waterDepth));
+  const shorelineColor = mix(bathymetryColor, color("#a6ead8"), shore.mul(shallowEdge).mul(0.35));
   const fresnel = waveNormalView.dot(positionViewDirection).clamp(0, 1).oneMinus().pow(4).mul(depthMotion);
-  const reflectiveColor = mix(shorelineColor, color("#b6d8e2"), fresnel.mul(0.14));
+  const reflectiveColor = mix(shorelineColor, color("#d4efff"), fresnel.mul(0.4));
   const foam = createTerrainWaterFoam(shore, waterDepth, waterMotion);
   const lit = reflectiveColor.add(createShallowBedLight(waterDepth, waterMotion));
-  material.colorNode = shadeTerrainSurface(mix(lit, color("#dce8de"), foam.mul(0.7)), grid);
-  const waterRoughness = mix(0.5, 0.42, depthBlend).add(shore.mul(shallowEdge).mul(0.08));
-  material.roughnessNode = mix(waterRoughness, 0.78, foam).clamp(0.18, 0.78);
+  material.colorNode = shadeTerrainSurface(mix(lit, color("#f4fbf7"), foam.mul(0.9)), grid);
+  material.emissiveNode = createSunGlitter(waterDepth, waterMotion).mul(foam.oneMinus());
+  const waterRoughness = mix(0.26, 0.16, depthBlend).add(shore.mul(shallowEdge).mul(0.06));
+  material.roughnessNode = mix(waterRoughness, 0.78, foam).clamp(0.12, 0.78);
   return material;
 }
 
@@ -167,6 +168,21 @@ function createRippleSlope(waterMotion: UniformNode<"float", number>): Node<"vec
   return vec3(ripple.x.mul(-0.5), 0, ripple.y.mul(-0.5));
 }
 
+/** Sun glitter: where two drifting ripple nets cross, the open water flashes for a moment. */
+function createSunGlitter(waterDepth: Node<"float">, waterMotion: UniformNode<"float", number>): Node<"vec3"> {
+  const drift = time.mul(waterMotion);
+  const net = (scale: number, flow: Node<"vec2">) =>
+    texture(terrainWaveTile(), positionLocal.xz.mul(scale).add(flow)).a;
+  const crossing = net(1.37, vec2(drift.mul(0.034), drift.mul(0.021))).mul(
+    net(1.91, vec2(drift.mul(-0.027), drift.mul(0.038))),
+  );
+  const open = smoothstep(TERRAIN_SHALLOW_WATER_DEPTH, TERRAIN_DEEP_WATER_DEPTH, waterDepth).mul(0.7).add(0.3);
+  return vec3(0.95, 1, 1)
+    .mul(smoothstep(0.66, 0.9, crossing))
+    .mul(open)
+    .mul(0.9);
+}
+
 function createShallowBedLight(waterDepth: Node<"float">, waterMotion: UniformNode<"float", number>): Node<"vec3"> {
   const drift = time.mul(waterMotion);
   const net = (scale: number, flow: Node<"vec2">) =>
@@ -197,7 +213,7 @@ function createTerrainWaterFoam(
     .mul(0.28)
     .add(0.72);
   const surfZone = smoothstep(0.012, 0.075, waterDepth).oneMinus();
-  const shorelineWash = smoothstep(0.003, 0.012, waterDepth).oneMinus().mul(0.2);
+  const shorelineWash = smoothstep(0.003, 0.016, waterDepth).oneMinus().mul(0.55);
   return shore.mul(surfZone.mul(breakerBand).mul(breakup).add(shorelineWash)).clamp(0, 1);
 }
 

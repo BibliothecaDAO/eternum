@@ -1,9 +1,12 @@
-import { addFrustum, addLump, createFloraMesh, createRandom } from "../flora-geometry.mjs";
+import { addFluffyCrown, addFrustum, createFloraMesh, createRandom } from "../flora-geometry.mjs";
 import { colour as linearColour } from "../../biome-creatures/creature-coat.mjs";
 
 const BARK = linearColour("#5a4632");
 const LEAF_LIGHT = linearColour("#3e8a36");
 const LEAF_DARK = linearColour("#14391b");
+const LEAF_CORE = linearColour("#0f2f17");
+/** A jungle crown is a wide flat table of large leaves. */
+const FOLIAGE = { leaves: 60, leafSize: 0.3 };
 
 export const rainforestCanopy = {
   id: "rainforest-canopy",
@@ -38,8 +41,8 @@ export const rainforestCanopy = {
     }
     const lumps = [
       { centre: [0, height * 0.84, 0], radius: height * 0.26, squash: 0.42 },
-      ...[0, 1, 2, 3].map((side) => {
-        const angle = turn + (side * Math.PI) / 2 + (rng() - 0.5) * 0.7;
+      ...[0, 1, 2, 3, 4, 5].map((side) => {
+        const angle = turn + (side * Math.PI) / 3 + (rng() - 0.5) * 0.6;
         const out = height * (0.3 + rng() * 0.05);
         return {
           centre: [Math.cos(angle) * out, height * (0.78 + rng() * 0.04), Math.sin(angle) * out],
@@ -49,16 +52,14 @@ export const rainforestCanopy = {
         };
       }),
     ];
-    lumps.forEach((lump, index) => {
-      addLump(mesh, lump, {
-        rng,
-        roughness: 0.12,
-        light: LEAF_LIGHT,
-        dark: LEAF_DARK,
-        attach: crownBase,
-        reach: height * 0.5,
-        neighbours: lumps.filter((_, other) => other !== index),
-      });
+    addFluffyCrown(mesh, lumps, {
+      rng,
+      ...FOLIAGE,
+      light: LEAF_LIGHT,
+      dark: LEAF_DARK,
+      core: LEAF_CORE,
+      attach: crownBase,
+      reach: height * 0.5,
     });
     return mesh;
   },

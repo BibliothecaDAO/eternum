@@ -5,14 +5,14 @@
       "id": "birch",
       "file": "birch.glb",
       "height": 1.6,
-      "radius": 0.463,
+      "radius": 0.486,
       "triangles": [
-        171,
-        179,
-        180
+        680,
+        720,
+        742
       ],
-      "bytes": 24848,
-      "sha256": "fd8ea8d33f3922794e5b7a4956b134d80ae3b2a3c7a63d6a41cd46f0f6c533e4"
+      "bytes": 78156,
+      "sha256": "a87790412766bf5ee22581fb52dbec31fb387e832becaab70ea17c985773064e"
     },
     {
       "id": "bloom-coral",
@@ -44,14 +44,14 @@
       "id": "broadleaf",
       "file": "broadleaf.glb",
       "height": 1.5,
-      "radius": 0.738,
+      "radius": 0.735,
       "triangles": [
-        245,
-        253,
-        248
+        1508,
+        1544,
+        1550
       ],
-      "bytes": 33448,
-      "sha256": "2ec31155ba1d4d5366fcc738334e6a84b53baa1870cd1c99a66f2c4f76d1f6bb"
+      "bytes": 165760,
+      "sha256": "9e7fcd253184b27972f2539065506b0e50d382ff0acc4e9b7746b2119f423c84"
     },
     {
       "id": "cactus",
@@ -70,14 +70,14 @@
       "id": "conifer",
       "file": "conifer.glb",
       "height": 1.9,
-      "radius": 0.523,
+      "radius": 0.511,
       "triangles": [
-        282,
-        366,
-        282
+        628,
+        818,
+        616
       ],
-      "bytes": 40844,
-      "sha256": "ede8b942ed9b3952fbd99d67de40daae810e8f6dd2b81dbac378583bde42ac7b"
+      "bytes": 76892,
+      "sha256": "286eb8ec953f69a3e731d60af56ce84e0e6b08cb929b33e13c9f8fb5c75c7fbe"
     },
     {
       "id": "cycad",
@@ -226,14 +226,14 @@
       "id": "rainforest-canopy",
       "file": "rainforest-canopy.glb",
       "height": 2,
-      "radius": 1.112,
+      "radius": 1.19,
       "triangles": [
-        207,
-        208,
-        210
+        901,
+        891,
+        905
       ],
-      "bytes": 29728,
-      "sha256": "e8f2a610465871cc23c11a604717d21dea31a0ad187f36fed00156cf958a5737"
+      "bytes": 99648,
+      "sha256": "783b18c4c76a66cf7bb57ec115cac2f3838f8737a5e8670b54282c2f43e55fb9"
     },
     {
       "id": "root-arch",
@@ -252,14 +252,14 @@
       "id": "shrub",
       "file": "shrub.glb",
       "height": 0.5,
-      "radius": 0.38,
+      "radius": 0.416,
       "triangles": [
-        66,
-        65,
-        67
+        216,
+        216,
+        236
       ],
-      "bytes": 16144,
-      "sha256": "9ffd869e2a0bef889e09bab060ba43c1a32cdf6eaf295990e8ee9c8def1e7b9e"
+      "bytes": 31664,
+      "sha256": "74cc3a04d5f1816baa5b82c75f10cd0b8c44f37199e0dffa62ff3110b4a59964"
     },
     {
       "id": "standing-stone",
