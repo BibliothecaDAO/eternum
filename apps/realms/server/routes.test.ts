@@ -112,7 +112,7 @@ it("accepts app-origin mutations and leaves operator routes to bearer authentica
   expect(denied.status).toBe(401);
 });
 
-it.each(["/api/operator/chat-retention"])(
+it.each(["/api/operator/chat-retention", "/api/operator/seal-codes"])(
   "answers an operator POST at %s without an Origin by its token, never by the origin rule",
   async (path) => {
     for (const authorization of [undefined, "Bearer wrong"]) {
@@ -126,3 +126,18 @@ it.each(["/api/operator/chat-retention"])(
     }
   },
 );
+
+it("requires bearer operator auth on GET /api/operator/seal-codes", async () => {
+  for (const authorization of [undefined, "Bearer wrong"]) {
+    const response = await routeIdentityRequest(
+      new Request(origin + "/api/operator/seal-codes", {
+        method: "GET",
+        headers: authorization ? { authorization } : {},
+      }),
+      env,
+      auth,
+      platform,
+    );
+    expect([response.status, await response.json()]).toEqual([401, { error: "unauthorized" }]);
+  }
+});

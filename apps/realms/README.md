@@ -106,13 +106,25 @@ curl -s -H "authorization: Bearer $OPERATOR_TOKEN" https://<identity origin>/api
 
 ## Free Ancient Seal codes
 
-One command, `pnpm --dir apps/realms seal-codes`, issues a batch of free Ancient Seal codes and loads them into an
-environment's database; run without arguments, it prints its usage. It writes the printed codes to `<out>/codes.txt`
-(readable by you only) and their hashes to `<out>/codes.sql`, then loads that file with
-`wrangler d1 execute DB --remote --env <environment>` (your Cloudflare login). The same seed and label give the same
-codes, and a code already loaded is left as it is, so the command is safe to run again after a failure. A player redeems
-one code per account in the shop (`POST /api/seal-code`); the Seal reaches every Frontier game the account entered,
-through the relay, and a game entered later grants it on entry.
+- `POST /api/operator/seal-codes` (operator token, JSON `{label, count, expiresAt?}`): mints `1..200` formatted
+  (`XXXX-XXXX`) Ancient Seal codes for `label` (`[a-z0-9-]{1,40}`, optional future Unix `expiresAt`), stores only their
+  SHA-256 hashes in D1, and returns the plaintext codes with `cache-control: no-store`. Codes are derived
+  deterministically from the operator secret and `label`, and inserted with `ON CONFLICT DO NOTHING`, so retrying a
+  dropped request returns the exact same codes without adding rows. Reusing a `label` with a different `expiresAt` or
+  after rotating the operator secret is refused with `409` (`label_expiry_mismatch` or `label_key_mismatch`) and inserts
+  nothing.
+- `GET /api/operator/seal-codes` (operator token): returns `{labels: [{label, issued, redeemed, remaining, expired}]}`
+  grouped by `label`.
+
+```bash
+curl -s -X POST -H "authorization: Bearer $OPERATOR_TOKEN" -H "content-type: application/json" \
+  -d '{"label":"playtest-nov","count":25}' https://<identity origin>/api/operator/seal-codes
+curl -s -H "authorization: Bearer $OPERATOR_TOKEN" https://<identity origin>/api/operator/seal-codes
+```
+
+A player redeems one code per account in the shop (`POST /api/seal-code`, accepting both `XXXX-XXXX` and unhyphenated
+forms, and `/shop?code=<CODE>` prefills the form); the Seal reaches every Frontier game the account entered, through the
+relay, and a game entered later grants it on entry.
 
 ## Fragments paid in LORDS
 

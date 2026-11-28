@@ -35,7 +35,6 @@ import { accountKey } from "./player-accounts";
 import { settleShareInvites, shareWorldOf } from "./shares";
 import { ORIGIN } from "./workerd-harness";
 import { createTestD1 } from "./test-d1";
-import { sealCodeFiles } from "../scripts/seal-codes";
 import { orders, seasonGameName, testnetGameName } from "@bibliothecadao/types";
 
 const GUARDIAN_KEY = "0x2dccce1da22003777062ee0870e9881b460a8b7eca276870f57c601f182136c";
@@ -1345,17 +1344,17 @@ describe("identity Worker", () => {
   });
 
   it("holds one free Seal code on an account: case-blind, the same answer again, none from a taken, expired or unknown code, and no code spent on an account that has the Seal", async () => {
-    const { codes, sql } = await sealCodeFiles(
-      { label: "playtest", count: 3, expiresAt: null },
-      "a seed of at least thirty-two secret characters",
-    );
-    const [alpha, brave, charm] = codes as [string, string, string];
-    const runOperatorFile = async () => {
-      for (const statement of sql.split(";\n").filter((each) => each.trim() !== ""))
-        await env.DB.prepare(statement).run();
+    const mintPlaytest = async () => {
+      const response = await createBrowser().request("/api/operator/seal-codes", {
+        body: { label: "playtest", count: 3, expiresAt: null },
+        token: OPERATOR_TOKEN,
+      });
+      expect(response.status).toBe(201);
+      return ((await response.json()) as { codes: string[] }).codes;
     };
-    await runOperatorFile();
-    await runOperatorFile();
+    const codes = await mintPlaytest();
+    expect(await mintPlaytest()).toEqual(codes);
+    const [alpha, brave, charm] = codes as [string, string, string];
     await env.DB.prepare('INSERT INTO "seal_codes" ("code_hash", "label", "expires_at") VALUES (?, ?, 1)')
       .bind(await sealCodeHash("LATE2345"), "playtest")
       .run();

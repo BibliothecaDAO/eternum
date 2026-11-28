@@ -32,7 +32,7 @@ import { handlePurchaseCheck, handleStoreReceipt, storeVerifiersOf } from "./sto
 import { handleOpeningProgress } from "./opening-progress";
 import { handleOrderIntent } from "./order-intent";
 import { readSeasonStart } from "./launch-calendar";
-import { handleSealCode, sealCodeWorldOf } from "./seal-codes";
+import { handleOperatorSealCodes, handleSealCode, sealCodeWorldOf } from "./seal-codes";
 import { handleNotificationPreferences } from "./notification-preferences";
 import { handleNewsEmailOptOut, NEWS_EMAIL_OPT_OUT_PATH } from "./news-email-opt-out";
 import { handleProfile, handleProfiles } from "./profiles";
@@ -148,6 +148,10 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/order-intent")
     return handleOrderIntent(request, auth, env.DB, () => readSeasonStart(env.LAUNCH));
   if (pathname === "/api/seal-code") return handleSealCode(request, auth, sealCodeWorldOf(env, platform.fetchShard));
+  if (pathname === "/api/operator/seal-codes") {
+    if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
+    return handleOperatorSealCodes(request, env.DB, env.OPERATOR_TOKEN, nowSeconds);
+  }
   if (pathname === "/api/shop/purchase-check")
     return handlePurchaseCheck(request, auth, { access: shopAccessOf(env, platform.fetchShard, nowSeconds) });
   if (pathname === "/api/shop/receipt")

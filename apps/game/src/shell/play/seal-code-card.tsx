@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { useLocation } from "react-router-dom";
 
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppField } from "@/ui/design-system/kit/app-elements";
@@ -6,6 +7,8 @@ import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { SEAL_CODE_WORDS } from "@/ui/design-system/kit/words";
 
 import { useRedeemSealCode, useSealCode } from "./seal-code";
+
+const prefilledCode = (search: string): string => new URLSearchParams(search).get("code")?.trim() ?? "";
 
 export const SealCodeCard = ({
   owner,
@@ -16,20 +19,30 @@ export const SealCodeCard = ({
   compact?: boolean;
   embedded?: boolean;
 }) => {
+  const { search } = useLocation();
+  const initialCode = prefilledCode(search);
   const held = useSealCode(owner);
   if (held.isError) return <ServiceFailure service="season" error={held.error} retry={() => void held.refetch()} />;
   if (!held.data) return null;
-  if (compact) return <CompactSealDisclosure owner={owner} held={held.data.held} />;
-  if (embedded) return <EmbeddedSealCard owner={owner} held={held.data.held} />;
+  if (compact) return <CompactSealDisclosure owner={owner} held={held.data.held} initialCode={initialCode} />;
+  if (embedded) return <EmbeddedSealCard owner={owner} held={held.data.held} initialCode={initialCode} />;
   return (
     <section data-seal-code={held.data.held ? "held" : "open"} className="app-well w-full gap-3 p-4 text-left">
       <SealHeading held={held.data.held} />
-      {!held.data.held && <RedeemForm owner={owner} />}
+      {!held.data.held && <RedeemForm owner={owner} initialCode={initialCode} />}
     </section>
   );
 };
 
-const EmbeddedSealCard = ({ owner, held }: { owner: string | null; held: boolean }) => (
+const EmbeddedSealCard = ({
+  owner,
+  held,
+  initialCode,
+}: {
+  owner: string | null;
+  held: boolean;
+  initialCode: string;
+}) => (
   <section data-seal-code={held ? "held" : "open"} className="app-well shop-code-well w-full gap-2.5 p-3.5 text-left">
     <span className="flex items-center gap-2.5">
       <Icon name="final-seal" size={28} />
@@ -38,12 +51,23 @@ const EmbeddedSealCard = ({ owner, held }: { owner: string | null; held: boolean
         {held && <span className="text-app-label text-app-muted">{SEAL_CODE_WORDS.heldLine}</span>}
       </span>
     </span>
-    {!held && <RedeemForm owner={owner} />}
+    {!held && <RedeemForm owner={owner} initialCode={initialCode} />}
   </section>
 );
 
-const CompactSealDisclosure = ({ owner, held }: { owner: string | null; held: boolean }) => {
-  const [expanded, setExpanded] = useState(false);
+const CompactSealDisclosure = ({
+  owner,
+  held,
+  initialCode,
+}: {
+  owner: string | null;
+  held: boolean;
+  initialCode: string;
+}) => {
+  const [expanded, setExpanded] = useState(initialCode !== "");
+  useEffect(() => {
+    if (initialCode !== "") setExpanded(true);
+  }, [initialCode]);
   if (held)
     return (
       <div data-seal-code="held" className="seal-disclosure seal-disclosure--held">
@@ -71,7 +95,7 @@ const CompactSealDisclosure = ({ owner, held }: { owner: string | null; held: bo
       {expanded && (
         <div className="seal-disclosure__body">
           <p className="text-app-label text-app-muted">{SEAL_CODE_WORDS.line}</p>
-          <RedeemForm owner={owner} />
+          <RedeemForm owner={owner} initialCode={initialCode} />
         </div>
       )}
     </div>
@@ -88,9 +112,16 @@ const SealHeading = ({ held }: { held: boolean }) => (
   </span>
 );
 
-const RedeemForm = ({ owner }: { owner: string | null }) => {
-  const [code, setCode] = useState("");
+const RedeemForm = ({ owner, initialCode }: { owner: string | null; initialCode: string }) => {
+  const [code, setCode] = useState(initialCode);
   const { redeem, refusal } = useRedeemSealCode(owner);
+  const { reset } = redeem;
+  useEffect(() => {
+    if (initialCode !== "") {
+      setCode(initialCode);
+      reset();
+    }
+  }, [initialCode, reset]);
   const submit = (event: FormEvent) => {
     event.preventDefault();
     redeem.mutate(code);
@@ -109,7 +140,7 @@ const RedeemForm = ({ owner }: { owner: string | null }) => {
             error={refusal && SEAL_CODE_WORDS.refused[refusal]}
             onChange={(event) => {
               setCode(event.target.value);
-              redeem.reset();
+              reset();
             }}
           />
         </span>
